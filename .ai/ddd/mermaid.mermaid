@@ -1,0 +1,318 @@
+flowchart LR
+    %% --- LEGENDA ---
+    subgraph Legenda
+        DE0[Domain Event]
+        CMD0[Command]
+        RM0[(Read Model)]
+        POL0>Policy]
+        AGG0{Aggregate}
+        HS0[/!/]
+        ACT0((Actor))
+        EX0{{External System}}
+        style DE0 fill:#FF9900,color:black
+        style CMD0 fill:#1E90FF,color:white
+        style RM0 fill:#32CD32,color:black
+        style POL0 fill:#9932CC,color:white
+        style AGG0 fill:#FFFF00,color:black
+        style HS0 fill:#FF0000,color:white
+        style ACT0 fill:#FFFF00,color:black
+        style EX0 fill:#A9A9A9,color:white
+    end
+
+    %% --- PROCES POBIERANIA I PRZETWARZANIA ---
+    subgraph Proces_Przetwarzania_Email
+        DE1[Email pobrany]
+        DE2[Email przefiltrowany]
+        DE3[Email przeanalizowany i sklasyfikowany]
+        DE4[Akcja wybrana]
+        
+        DE1 --> DE2
+        DE2 --> DE3
+        DE3 --> DE4
+        
+        style DE1 fill:#FF9900,color:black
+        style DE2 fill:#FF9900,color:black
+        style DE3 fill:#FF9900,color:black
+        style DE4 fill:#FF9900,color:black
+        
+        HS1[/Kryteria filtracji?/]
+        style HS1 fill:#FF0000,color:white
+        DE2 -.-> HS1
+    end
+
+    %% --- SPAM ---
+    subgraph Kategoria_SPAM
+        DE5[Email oznaczony spam]
+        DE6[Email przeniesiony spam]
+        DE7[Email otagowany spam]
+        DE8[Walidacja spamu zakolejkowana]
+        
+        DE4 --> DE5
+        DE5 --> DE6
+        DE6 --> DE7
+        DE7 --> DE8
+        
+        style DE5 fill:#FF9900,color:black
+        style DE6 fill:#FF9900,color:black
+        style DE7 fill:#FF9900,color:black
+        style DE8 fill:#FF9900,color:black
+    end
+
+    %% --- PILNY ---
+    subgraph Kategoria_PILNY
+        DE9[Email wstepnie oznaczony pilny]
+        DE10[Kontekst pilnosci pobrany]
+        DE11[Pilnosc zwalidowana]
+        DE12[Powiadomienie pilne wyslane]
+        DE13[Email przeniesiony wazne]
+        DE14[Email otagowany pilny]
+        
+        DE4 --> DE9
+        DE9 --> DE10
+        DE10 --> DE11
+        DE11 --> DE12
+        DE12 --> DE13
+        DE13 --> DE14
+        
+        style DE9 fill:#FF9900,color:black
+        style DE10 fill:#FF9900,color:black
+        style DE11 fill:#FF9900,color:black
+        style DE12 fill:#FF9900,color:black
+        style DE13 fill:#FF9900,color:black
+        style DE14 fill:#FF9900,color:black
+        
+        HS2[/Powiadomienie async - jak weryfikowac?/]
+        style HS2 fill:#FF0000,color:white
+        DE12 -.-> HS2
+    end
+
+    %% --- WHITELISTA ---
+    subgraph Kategoria_WHITELISTA
+        DE15[Email oznaczony VIP]
+        DE16[Draft email wygenerowany]
+        DE17[Email przeniesiony do przeczytania]
+        DE18[Email otagowany VIP]
+        
+        DE4 --> DE15
+        DE15 --> DE16
+        DE16 --> DE17
+        DE17 --> DE18
+        
+        style DE15 fill:#FF9900,color:black
+        style DE16 fill:#FF9900,color:black
+        style DE17 fill:#FF9900,color:black
+        style DE18 fill:#FF9900,color:black
+        
+        HS3[/Czy whitelista ma sens?/]
+        style HS3 fill:#FF0000,color:white
+        DE15 -.-> HS3
+    end
+
+    %% --- DELEGACJA PODSTAWOWA ---
+    subgraph Kategoria_DELEGACJA_Podstawowa
+        DE19[Zadanie wyodrebnione]
+        DE20[Lista delegatow pobrana]
+        DE21[Delegat zidentyfikowany]
+        DE22[Email delegacji wyslany]
+        DE23[Przypomnienie zaplanowane]
+        DE24[Email otagowany delegacja]
+        DE25[Log zapisany w bazie]
+        
+        DE4 --> DE19
+        DE19 --> DE20
+        DE20 --> DE21
+        DE21 --> DE22
+        DE22 --> DE23
+        DE23 --> DE24
+        DE24 --> DE25
+        
+        style DE19 fill:#FF9900,color:black
+        style DE20 fill:#FF9900,color:black
+        style DE21 fill:#FF9900,color:black
+        style DE22 fill:#FF9900,color:black
+        style DE23 fill:#FF9900,color:black
+        style DE24 fill:#FF9900,color:black
+        style DE25 fill:#FF9900,color:black
+        
+        HS4[/Delegat nieznany - co dalej?/]
+        style HS4 fill:#FF0000,color:white
+        DE21 -.-> HS4
+    end
+
+    %% --- DELEGACJA WYMAGA DOPRECYZOWANIA ---
+    subgraph Kategoria_DELEGACJA_Doprecyzowanie
+        DE26[Brak informacji wykryty]
+        DE27[Szablon doprecyzowania wygenerowany]
+        DE28[Draft email stworzony NIE WYSLANY]
+        DE29[Log zapisany w bazie]
+        DE30[Przypomnienie zaplanowane]
+        DE31[Email otagowany wymaga akcji]
+        
+        DE19 --> DE26
+        DE26 --> DE27
+        DE27 --> DE28
+        DE28 --> DE29
+        DE29 --> DE30
+        DE30 --> DE31
+        
+        style DE26 fill:#FF9900,color:black
+        style DE27 fill:#FF9900,color:black
+        style DE28 fill:#FF9900,color:black
+        style DE29 fill:#FF9900,color:black
+        style DE30 fill:#FF9900,color:black
+        style DE31 fill:#FF9900,color:black
+    end
+
+    %% --- SPOTKANIE WOLNY TERMIN ---
+    subgraph Kategoria_SPOTKANIE_Wolny
+        DE32[Email oznaczony spotkanie]
+        DE33[Kalendarz sprawdzony]
+        DE34[Termin pokrywa sie]
+        DE35[Spotkanie zarezerwowane]
+        DE36[Potwierdzenie wyslane]
+        DE37[Email otagowany spotkanie]
+        DE38[Log zapisany w bazie]
+        
+        DE4 --> DE32
+        DE32 --> DE33
+        DE33 --> DE34
+        DE34 --> DE35
+        DE35 --> DE36
+        DE36 --> DE37
+        DE37 --> DE38
+        
+        style DE32 fill:#FF9900,color:black
+        style DE33 fill:#FF9900,color:black
+        style DE34 fill:#FF9900,color:black
+        style DE35 fill:#FF9900,color:black
+        style DE36 fill:#FF9900,color:black
+        style DE37 fill:#FF9900,color:black
+        style DE38 fill:#FF9900,color:black
+    end
+
+    %% --- SPOTKANIE KONFLIKT ---
+    subgraph Kategoria_SPOTKANIE_Konflikt
+        DE39[Konflikt terminow wykryty]
+        DE40[Wolne terminy znalezione]
+        DE41[Propozycja terminow wyslana]
+        DE42[Email otagowany spotkanie]
+        DE43[Log zapisany w bazie]
+        
+        DE33 --> DE39
+        DE39 --> DE40
+        DE40 --> DE41
+        DE41 --> DE42
+        DE42 --> DE43
+        
+        style DE39 fill:#FF9900,color:black
+        style DE40 fill:#FF9900,color:black
+        style DE41 fill:#FF9900,color:black
+        style DE42 fill:#FF9900,color:black
+        style DE43 fill:#FF9900,color:black
+    end
+
+    %% --- INFORMACYJNY ---
+    subgraph Kategoria_INFORMACYJNY
+        DE44[Email podsumowany]
+        DE45[Podsumowanie zapisane w bazie]
+        DE46[Email otagowany informacyjny]
+        DE47[Email przeniesiony do archiwum]
+        
+        DE4 --> DE44
+        DE44 --> DE45
+        DE45 --> DE46
+        DE46 --> DE47
+        
+        style DE44 fill:#FF9900,color:black
+        style DE45 fill:#FF9900,color:black
+        style DE46 fill:#FF9900,color:black
+        style DE47 fill:#FF9900,color:black
+    end
+
+    %% --- ZAKONCZENIE CYKLU ---
+    subgraph Zakonczenie_Cyklu_Przetwarzania
+        DE48[Cykl przetwarzania zakonczony]
+        
+        DE8 --> DE48
+        DE14 --> DE48
+        DE18 --> DE48
+        DE25 --> DE48
+        DE31 --> DE48
+        DE38 --> DE48
+        DE43 --> DE48
+        DE47 --> DE48
+        
+        style DE48 fill:#FF9900,color:black
+    end
+
+    %% --- SYSTEM PODSUMOWANIA ---
+    subgraph System_Podsumowania
+        DE49[Czas podsumowania osiagniety]
+        DE50[Dane z bazy pobrane]
+        DE51[Emaile posegregowane]
+        DE52[Raport wygenerowany]
+        DE53[Raport wyslany WhatsApp]
+        DE54[Raport opublikowany na WWW]
+        
+        DE49 --> DE50
+        DE50 --> DE51
+        DE51 --> DE52
+        DE52 --> DE53
+        DE53 --> DE54
+        
+        style DE49 fill:#FF9900,color:black
+        style DE50 fill:#FF9900,color:black
+        style DE51 fill:#FF9900,color:black
+        style DE52 fill:#FF9900,color:black
+        style DE53 fill:#FF9900,color:black
+        style DE54 fill:#FF9900,color:black
+        
+        HS5[/Jak segregowac emaile w raporcie?/]
+        style HS5 fill:#FF0000,color:white
+        DE51 -.-> HS5
+    end
+
+    %% --- SYSTEM PRZYPOMNIEN ---
+    subgraph System_Przypomnien
+        DE55[Modul przypomnien uruchomiony]
+        DE56[Deadline przypomnienia osiagniety]
+        DE57[Brak odpowiedzi wykryty]
+        DE58[Przypomnienie dodane do raportu]
+        DE59[Status przypomnienia zaktualizowany]
+        
+        DE54 --> DE55
+        DE55 --> DE56
+        DE56 --> DE57
+        DE57 --> DE58
+        DE58 --> DE59
+        
+        style DE55 fill:#FF9900,color:black
+        style DE56 fill:#FF9900,color:black
+        style DE57 fill:#FF9900,color:black
+        style DE58 fill:#FF9900,color:black
+        style DE59 fill:#FF9900,color:black
+    end
+
+    %% --- INPUT OD PREZESA ---
+    subgraph Input_od_Prezesa
+        DE60[Wiadomosc WhatsApp otrzymana]
+        DE61[Wiadomosc przetworzona]
+        DE62[Decyzja rozpoznana]
+        DE63[Przypomnienie wyslane pojedyncze]
+        DE64[Przypomnienia wyslane wszystkie]
+        
+        DE60 --> DE61
+        DE61 --> DE62
+        DE62 --> DE63
+        DE62 --> DE64
+        
+        style DE60 fill:#FF9900,color:black
+        style DE61 fill:#FF9900,color:black
+        style DE62 fill:#FF9900,color:black
+        style DE63 fill:#FF9900,color:black
+        style DE64 fill:#FF9900,color:black
+        
+        HS6[/Jak parsowac glos i tekst?/]
+        style HS6 fill:#FF0000,color:white
+        DE61 -.-> HS6
+    end
