@@ -1,0 +1,33 @@
+graph TD
+    subgraph "Źródła Danych (Gmail/IMAP)"
+        Inbox["Skrzynka Odbiorcza"]
+        Sent["Folder Wysłane"]
+        Manual["Folder 'Manualna Obsługa'"]
+        Drafts["Drafty Systemowe"]
+    end
+
+    subgraph "Moduł Inicjalizacji i Aktualizacji"
+        InitProcess["Proces Inicjalizacji<br/>(One-time Batch)"]
+        MaintProcess["Proces Maintenance<br/>(Cykliczny Cron)"]
+        
+        Logic_Class["Klasyfikator Kategorii<br/>(VIP/Spam/Pracownik)"]
+        Logic_Diff["Analizator Różnic<br/>(Draft vs Sent)"]
+        Logic_Comp["Ekstraktor Kompetencji"]
+    end
+
+    subgraph "Baza Danych (PostgreSQL)"
+        DB_Contacts["Tabela: Kontakty<br/>(Opis, Styl, Kompetencje, Wagi)"]
+        DB_Categories["Tabela: Kategorie<br/>(Listy Emaili, Zasady Stylu)"]
+    end
+
+    Inbox & Sent --> InitProcess
+    InitProcess --> Logic_Class
+    Logic_Class --> DB_Contacts
+    Logic_Class --> DB_Categories
+
+    Manual & Sent & Drafts --> MaintProcess
+    MaintProcess --> Logic_Diff
+    MaintProcess --> Logic_Comp
+    Logic_Diff --> DB_Contacts
+    Logic_Diff --> DB_Categories
+    Logic_Comp --> DB_Contacts

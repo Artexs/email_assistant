@@ -1,0 +1,44 @@
+graph TD
+    Email[Nowy Email] --> ConfigCheck{Konfiguracja & Whitelista}
+    
+    %% Kontekst dla AI (Wagi)
+    ConfigCheck -.->|Metadane: Znany/VIP/Nieznany| Context[Kontekst i Wagi]
+    Context -.-> AICore
+
+    %% Ścieżka 1: Definitywny Spam (Czarna Lista)
+    ConfigCheck -->|Zablokowany Nadawca| ToolSpam[Narzędzie: Spam]
+    
+    %% Ścieżka 2: Główna Analiza (Dla wszystkich niezablokowanych)
+    ConfigCheck -->|Dozwolony Nadawca| AICore[Analiza Treści AI]
+    
+    AICore --> Decision{Klasyfikacja i Pewność}
+
+    %% Obsługa Niskiej Pewności
+    Decision -->|Pewność < 70%| ManualAction[Folder: Manualna Obsługa]
+
+    %% Routing do Konkretnych Narzędzi
+    Decision -->|STRATEGIC / VIP| ToolUrgent[Narzędzie: Priorytet]
+    Decision -->|OPERATIONAL / ADMIN| ToolDelegation[Narzędzie: Delegacja]
+    Decision -->|MEETING| ToolMeeting[Narzędzie: Spotkania]
+    Decision -->|INFO / KNOWLEDGE| ToolSummary[Narzędzie: Podsumowanie]
+    Decision -->|NOTIFICATIONS| ToolArchive[Narzędzie: Auto-Archiwizacja]
+    Decision -->|SPAM / NOISE| ToolSpam
+
+    %% Wykonanie Akcji (Efekty Uboczne)
+    ToolUrgent --> GmailVIP[Gmail: Oznacz VIP + Przenieś]
+    ToolDelegation --> GmailDraft[Gmail: Utwórz Draft Delegacji]
+    ToolMeeting --> GmailMeeting[Gmail: Draft Odpowiedzi / Kalendarz]
+    ToolSummary --> GmailSummary[Gmail: Archiwizuj + Generuj Notatkę]
+    ToolArchive --> GmailArchive[Gmail: Oznacz przeczytane + Archiwizuj]
+    ToolSpam --> GmailSpam[Gmail: Przenieś do Kosza/Spamu]
+    
+    %% Wspólne Logowanie do Bazy Danych (Atomowość logiczna)
+    GmailVIP --> DBLog[DB: Zapisz Zdarzenie i Akcję]
+    GmailDraft --> DBLog
+    GmailMeeting --> DBLog
+    GmailSummary --> DBLog
+    GmailArchive --> DBLog
+    GmailSpam --> DBLog
+    ManualAction --> DBLog
+    
+    DBLog --> End((Koniec))
