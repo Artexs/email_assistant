@@ -1,0 +1,52 @@
+graph TD
+    subgraph "Warstwa Zewnętrzna"
+        WA_Service[Modul WhatsApp Interface and Intent Parser]
+        Frontend[Frontend App Panel EA Exec]
+    end
+
+    subgraph "Core Backend Orkiestrator"
+        API_Gateway[API Gateway Router]
+        
+        subgraph "Logic Services"
+            IntentHandler[Intent Executor Service]
+            MultiEmailManager[Multi-Email Logic]
+            EAFlowManager[EA Hand-off Logic]
+            ContextEngine[Context and Threading Engine]
+        end
+        
+        subgraph "Cron Jobs"
+            ChaserCron[Chaser Cron Monitor Delegacji]
+            ReportCron[Daily Report Cron Agregacja]
+        end
+    end
+
+    subgraph "Persistence and Infrastructure"
+        DB[(Supabase PostgreSQL)]
+        Gmail_Adapter[Gmail Adapter]
+        LLM_Service[OpenAI Service RAG and Generation]
+    end
+
+    %% Przepływy
+    WA_Service -->|REST: Execute Intent| API_Gateway
+    Frontend -->|REST: Manage Config/Drafts| API_Gateway
+    
+    API_Gateway --> IntentHandler
+    API_Gateway --> EAFlowManager
+    
+    IntentHandler --> MultiEmailManager
+    IntentHandler --> ContextEngine
+    IntentHandler --> LLM_Service
+    
+    MultiEmailManager --> Gmail_Adapter
+    MultiEmailManager --> DB
+    
+    EAFlowManager --> DB
+    
+    ChaserCron --> DB
+    ChaserCron --> WA_Service
+    ReportCron --> DB
+    ReportCron --> WA_Service
+
+    %% Relacje Danych
+    ContextEngine -.->|Fetch Thread History| Gmail_Adapter
+    ContextEngine -.->|Read| DB
