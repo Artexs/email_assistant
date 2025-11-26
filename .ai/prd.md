@@ -1,99 +1,182 @@
-# Product Requirements Document (PRD) - AI Email Assistant (MVP)
+# Dokument Wymagań Produktowych (PRD) - Asystent Email AI (MVP)
 
-## 1. Product Overview
+## 1. Przegląd Produktu
 
-The AI Email Assistant is an intelligent tool designed to automate and optimize inbox management for high-level executives and managers (the "President" role). The product aims to drastically reduce the time spent handling email by automatically categorizing, delegating tasks, managing spam, and intelligently summarizing threads.
+Asystent Email AI to inteligentne narzędzie zaprojektowane w celu automatyzacji i optymalizacji zarządzania skrzynką odbiorczą dla kadry kierowniczej wyższego szczebla i menedżerów (rola "Prezesa"). Celem produktu jest drastyczne skrócenie czasu poświęcanego na obsługę poczty poprzez automatyczne kategoryzowanie, delegowanie zadań, zarządzanie spamem i inteligentne podsumowywanie wątków.
 
-The goal of the MVP (Minimum Viable Product) is to deliver a functional system that takes over four key, repeatable actions, maximizing the ratio of automatically handled emails versus those requiring manual intervention.
+Celem MVP (Minimum Viable Product) jest dostarczenie funkcjonalnego systemu, który przejmuje cztery kluczowe, powtarzalne czynności, maksymalizując stosunek automatycznie obsługiwanych wiadomości do tych wymagających ręcznej interwencji.
 
-## 2. User Problem
+## 2. Problem Użytkownika
 
-Executives and high-level managers dedicate an excessive amount of time to manually sorting, processing, and responding to an avalanche of incoming emails. This manual intervention distracts them from higher-value strategic and operational tasks. They require a reliable, transparent, and fully controlled tool that can filter out noise, handle routine tasks (like delegation), and deliver condensed, critical summaries while preserving their professional communication style.
+Dyrektorzy i menedżerowie wysokiego szczebla poświęcają nadmierną ilość czasu na ręczne sortowanie, przetwarzanie i odpowiadanie na lawinę przychodzących e-maili. Ta ręczna interwencja odciąga ich od zadań strategicznych i operacyjnych o wyższej wartości. Potrzebują niezawodnego, przejrzystego i w pełni kontrolowanego narzędzia, które potrafi odfiltrować szum, obsłużyć rutynowe zadania (takie jak delegowanie) i dostarczyć skondensowane, krytyczne podsumowania, zachowując jednocześnie ich profesjonalny styl komunikacji.
 
-## 3. Functional Requirements
+## 3. Wymagania Funkcjonalne
 
-### 3.1 Core Processing (Triage Orchestrator)
+### 3.1 Moduł Orkiestratora i Logika Rdzenia (Backend)
 
-The system must implement a central Triage module that orchestrates the email processing flow.
+Moduł ten pełni funkcję centralnego węzła logicznego, odpowiedzialnego za agregację danych, zarządzanie konfiguracją oraz cykliczne procesy (Cron Jobs). Jest bezstanowy w kontekście przetwarzania pojedynczego e-maila, ale zarządza stanem globalnym systemu.
 
-- **Filtrowanie Priorytetowe:** The Triage must first check if the sender's address is on the Whitelist. Whitelisted emails have the highest priority and cannot be classified as Spam or moved to the Spam folder (a hard business rule).
-- **Definicja Akcji:** The Triage programmatically defines the four available MVP actions: Spam, Delegation, Meeting Handling (limited), and Informational Summary.
-- **Klasyfikacja:** After Whitelist filtering, the email is passed to the AI for classification against available actions, taking into account the current status (ON/OFF) of each action. The Whitelist's influence on other actions acts as a modifier in the AI prompt.
-- **Egzekucja:** The system must execute the action that best fits the classification, provided that its individual switch is set to ON.
+- **Zakres Odpowiedzialności:**
+  - **API & Komunikacja:** Obsługa żądań z Frontendu i Modułu WhatsApp.
+  - **Wysyłka (Gmail API):** Realizacja wysyłki wiadomości (Draft Approval, Nowy Email, Delegacja).
+  - **Zarządzanie Delegacjami:** Monitorowanie statusów i obsługa "Chaser Cron".
 
-### 3.2 MVP Actions
+- **Kluczowe Mechaniki:**
+  - **Obsługa Wielu Aliasów (Multi-Email):** System obsługuje wiele skrzynek podpiętych pod jedno konto. Odpowiedzi są wysyłane z adresu, na który przyszła wiadomość (zachowanie kontekstu), a nowe wiadomości z adresu głównego.
+  - **EA Hand-Off (Filtr Asystenta):** Model przepływu `Triage -> Draft -> EA Review -> Executive Notification`. Wiadomości mogą być oznaczone jako `EA_ACTIONED` (nie powiadamiają Prezesa) lub `EXECUTIVE_REVIEW` (wymagają zatwierdzenia).
+  - **Context Mapping (Threading):** Pobieranie pełnej historii wątku (Gmail Thread ID) dla zapewnienia spójności kontekstu dla LLM.
 
-The system must fully support four key actions:
+- **Procesy Cykliczne (Cron Jobs):**
+  - **Chaser Cron:** Sprawdza przeterminowane delegacje i flaguje je do raportu lub monitu.
+  - **Daily Report Cron:** Generuje i wysyła zagregowane podsumowania (1-3 razy dziennie).
+  - **Config Cron:** Zarządza globalnymi przełącznikami i oknami czasowymi raportowania.
 
-- **Spam:** Move the message to the designated Spam folder.
-- **Podsumowanie Informacyjne:** Generate a summary of the email content and archive the original message upon completion of the summary generation.
-- **Delegacja:** Send a formatted response/forward to the designated delegate and log the action for progress tracking.
-- **Obsługa Spotkań:** Limited to detecting calendar conflicts and suggesting alternative solutions.
+- **Obsługiwane Intencje (API):**
+  - `INTENT_APPROVE_DRAFT`, `INTENT_CORRECT_DRAFT`, `INTENT_DELEGATE_MANUAL`, `INTENT_NEW_EMAIL`, `INTENT_MEETING_BRIEF`, `INTENT_CHECK_STATUS`, `INTENT_GET_INFO`, `INTENT_CONFIG_WHITELIST`.
 
-### 3.3 Configuration Panel
+### 3.2 Silnik Triage i Rejestr Narzędzi
 
-The system must provide an accessible web interface for configuration management.
+Moduł Triage odpowiada za podejmowanie decyzji o klasyfikacji wiadomości. Nie stosuje "ślepego" FastTracka, lecz wykorzystuje wagi kontekstowe (np. status VIP) do sterowania progiem decyzyjnym AI.
 
-- **Kontrola Akcji:** The panel must contain four individual ON/OFF switches for each of the actions (Spam, Delegation, Meeting Handling, Informational Summary).
-- **Kontrola Globalna:** The panel must include one main switch "Auto Send/Draft" (Wysyłanie Auto/Draft), which allows the system to either send responses automatically or only create drafts.
-- **Styl Prezesa:** A simplified text form. The initial content (max 500 characters) is suggested by the AI after scanning 100 sent messages. The user must manually approve or edit it.
-- **Zarządzanie Listami:** Separate CRUD (Create, Read, Update, Delete) interfaces must exist for:
-  - **Whitelist:** Email addresses that bypass Spam classification.
-  - **Delegates List:** Including fields for Name, Email, and Competencies.
-- **Wdrożenie Nieblokujące:** The user should be able to activate the system immediately. A "Deployment Checklist" must be visible in the dashboard, encouraging configuration of optional settings (Style, Lists).
+- **Logika Decyzyjna (Context-Aware):**
+  - **Wagi:** Status nadawcy (VIP, Zespół, Nieznany) jest przekazywany do promptu jako silna sugestia.
+  - **Confidence Threshold:** Jeśli pewność klasyfikacji AI wynosi < 70%, wiadomość trafia do folderu "Manualna Obsługa" z etykietą `❓ AI Unsure`.
+  - **Atomowość:** Operacje na Gmailu i wpisy do DB są traktowane spójnie (transakcyjnie).
 
-### 3.4 Communication and Auditing
+- **Rejestr Narzędzi (Tools Registry):**
+  - **Priorytet (Strategic/VIP):** Przeniesienie do folderu VIP, oznaczenie gwiazdką.
+  - **Delegacja (Operational/Admin):** Analiza treści -> Wybór delegata -> Utworzenie Draftu Delegacji.
+  - **Spotkania (Meeting):** Wykrycie prośby -> Sprawdzenie konfliktu -> Utworzenie Draftu Odpowiedzi.
+  - **Podsumowanie (Info/Knowledge):** Generowanie "pigułki wiedzy" (3 zdania) -> Archiwizacja oryginału.
+  - **Auto-Archiwizacja (Notifications):** Oznaczenie jako przeczytane -> Archiwizacja (dla powiadomień systemowych).
+  - **Spam (Noise):** Przeniesienie do Spam/Kosza (z logowaniem "Cichego Spamu" dla weryfikacji False Positives).
 
-- **Komunikacja Zewnętrzna:** The system must implement communication via WhatsApp (or another agreed-upon messenger) to deliver daily reports and activity summaries to the President.
-- **Ręczna Obsługa (Folder):** A designated email folder named "Manual Handling" must be completely outside the system's jurisdiction. The system can move emails there but must not process them further.
-- **Ręczna Delegacja:** A separate "Delegate Manually" function on the dashboard (WWW/WhatsApp) must allow the President to manually initiate a task. This function must send a formatted message with a 'delegation' tag and add it to the database for progress tracking.
+- **Centralne Logowanie:** Każde narzędzie kończy pracę wpisem do `DB Action Log`, co buduje pełny "Audit Trail" dla raportów.
 
-## 4. Product Boundaries
+### 3.3 Moduł Modelu Mentalnego ("The Brain")
 
-| Category | Inclusions (MVP Scope) | Exclusions (Phase 2 / TODO) |
+Backendowy moduł odpowiedzialny za budowę i utrzymanie "Cyfrowego Modelu Mentalnego" Prezesa. Nie posiada interfejsu UI, lecz dostarcza kontekst dla Triage i API.
+
+- **Inicjalizacja (Cold Start):**
+  - Jednorazowa analiza ostatnich 6 miesięcy (lub 2000 wiadomości) w celu zbudowania startowej bazy wiedzy o kontaktach i stylu.
+  - W przypadku pustej skrzynki system startuje na ustawieniach domyślnych ("Bezpieczny Styl").
+
+- **Struktura Danych (Tożsamość i Kompetencje):**
+  - **Kategorie:** Definicje grup (VIP, Zespół, Spam) z domyślnymi stylami.
+  - **Kontakty:** Szczegółowe karty z `TrustScore` (Waga), Opisem Kompetencji i Indywidualnym Stylem.
+
+- **Pętla Zwrotna (Feedback Loop):**
+  - **Analiza Manualna:** Jeśli e-mail trafił do folderu "Manualna Obsługa", a potem do Kosza -> obniżenie wagi nadawcy.
+  - **Analiza Draftów (Diff):** Porównanie wygenerowanego draftu z wersją ostatecznie wysłaną przez Prezesa. Różnice aktualizują wzorzec stylu.
+
+- **Ekstrakcja Kompetencji:**
+  - Automatyczne tagowanie delegatów na podstawie treści zlecanych im zadań (np. "faktura" -> Finanse).
+
+### 3.4 Moduł Asystenta AI (Interface Gateway)
+
+Warstwa interfejsu oddzielająca użytkownika od logiki backendu. Działa jako "tłumacz" i orkiestrator konwersacji, zapewniając naturalną interakcję (Tekst/Głos).
+
+- **Wielokanałowa Obsługa (Voice & Text):**
+  - Obsługa wiadomości tekstowych i notatek głosowych (Voice Notes) przez WhatsApp.
+  - Integracja z modelem STT (np. Whisper) do natychmiastowej transkrypcji.
+
+- **NLU i Zarządzanie Intencjami:**
+  - Analiza języka naturalnego w celu identyfikacji intencji (np. `SEND_EMAIL`, `GET_BRIEFING`).
+  - Obsługa "skakania po tematach" (Context Switching) i dopytywanie o szczegóły (Disambiguation).
+
+- **Dynamiczny "Human in the Loop":**
+  - **Safety Logic:** Asystent decyduje, kiedy prosić o potwierdzenie.
+  - **VIP/High Risk:** Wymusza potwierdzenie draftu przed wysłaniem.
+  - **Routine/Low Risk:** Informuje o wykonaniu akcji automatycznej.
+
+- **Synteza i Powiadomienia:**
+  - **Briefingi:** Zamiana surowych danych na naturalne podsumowania ("Masz spotkanie z X...").
+  - **Push vs Digest:** Pilne sprawy (VIP) są wysyłane natychmiast, reszta w raportach cyklicznych.
+
+### 3.5 Panel Konfiguracyjny (UI)
+
+Webowy interfejs użytkownika służący do zarządzania globalną konfiguracją systemu, ustawieniami osobistego stylu i monitorowaniem statusu kluczowych delegacji.
+
+- **Dashboard Status:**
+  - Widok statusu kluczowych delegacji (bez pełnych logów).
+  - Wskaźniki ryzyka (np. brak odpowiedzi delegata).
+
+- **Konfiguracja i Sterowanie:**
+  - **Włączniki Narzędzi:** Globalne przełączniki ON/OFF dla każdej automatyzacji (np. Auto-Delegacja).
+  - **Edytor Stylu:** Pole tekstowe do edycji aktywnego promptu systemowego ("Stylu Prezesa").
+  - **Reaktywność:** UI musi aktywnie odświeżać stan konfiguracji (Sync z WhatsApp).
+
+- **Zarządzanie Listami (CRUD):**
+  - **Whitelista:** Dodawanie/usuwanie adresów priorytetowych (wymaga potwierdzenia usunięcia).
+  - **Delegaci:** Zarządzanie listą delegatów. Pole "Kompetencje/Kontekst" jest obowiązkowe.
+  - **Walidacja:** Blokada dodania adresu Prezesa do listy delegatów.
+
+- **Onboarding i Konto:**
+  - Status podpięcia Gmail i WhatsApp.
+  - Zarządzanie tokenami i autoryzacją.
+
+### 3.4 Komunikacja i Audyt
+
+- **Komunikacja Zewnętrzna:** System musi zaimplementować komunikację przez WhatsApp (lub inny uzgodniony komunikator), aby dostarczać codzienne raporty i podsumowania aktywności do Prezesa.
+- **Ręczna Obsługa (Folder):** Wyznaczony folder e-mail o nazwie "Manual Handling" (Obsługa Ręczna) musi znajdować się całkowicie poza jurysdykcją systemu. System może przenosić tam e-maile, ale nie może ich dalej przetwarzać.
+- **Ręczna Delegacja:** Oddzielna funkcja "Deleguj Ręcznie" w panelu (WWW/WhatsApp) musi pozwalać Prezesowi na ręczne zainicjowanie zadania. Funkcja ta musi wysłać sformatowaną wiadomość z tagiem 'delegacja' i dodać ją do bazy danych w celu śledzenia postępów.
+
+## 4. Granice Produktu
+
+| Kategoria | W zakresie (Zakres MVP) | Poza zakresem (Faza 2 / TODO) |
 | :--- | :--- | :--- |
-| **Styl Komunikacji** | Simplified style generation (scan 100 emails, one proposal). | Advanced self-learning module (Phase 2). |
-| **Role Użytkownika** | Only the President (Owner) role with full privileges. | Full implementation of the Assistant role and multi-tenant schema (organizationId) (TODO). |
-| **Akcje** | Four core actions: Spam, Delegation, Informational Summary, Meeting Handling (limited). | Extended Meeting Handling scenarios; handling status inquiries (TODO). |
-| **Audyt/Logowanie** | Basic statistics counting (handled emails, manual emails). | Detailed logging and monitoring for developers (Audit Trail) (TODO). |
+| **Styl Komunikacji** | Generowanie uproszczonego stylu (skan 6 miesięcy/2000 e-maili). Edycja ręczna promptu. | Zaawansowany moduł samouczący się w czasie rzeczywistym (Faza 2). |
+| **Role Użytkownika** | Rola Prezesa (Właściciel) oraz wsparcie dla EA (Hand-Off w panelu). | Pełny system multi-tenant (SaaS) z wieloma organizacjami. |
+| **Akcje i Narzędzia** | "Hard 6" Tools: Spam, Delegacja, Spotkania, Podsumowanie, Wyjaśnienie, Manual/Emergency. | Zaawansowane negocjacje terminów, automatyczne płatności. |
+| **Intencje (NLU)** | 8 kluczowych intencji (m.in. Approve Draft, Correct Draft, Delegate Manual). | Dowolna konwersacja o pogodzie, newsach itp. (General Chat). |
+| **Kanały** | WhatsApp (Tekst/Głos) + Web Panel. | Slack, Teams, Telegram, Dedykowana aplikacja mobilna. |
 
-## 5. User Stories
+## 5. Historyjki Użytkownika (User Stories)
 
-### 5.1 Onboarding and Configuration
+### 5.1 Wdrożenie i Konfiguracja
 
-| ID | Title | Description | Acceptance Criteria |
+| ID | Tytuł | Opis | Kryteria Akceptacji |
 | :--- | :--- | :--- | :--- |
-| **US-001** | **System Activation** | As a President, I want to activate the system immediately upon first login so that it automatically starts filtering without requiring full configuration. | 1. The system starts processing emails immediately after activating the main switch.<br>2. A "Deployment Checklist" is displayed, encouraging optional configuration of lists and style. |
-| **US-002** | **Simplified Style Generation** | As a President, I want the system to scan my past communication and propose a single "Style Description" so that I can quickly approve and activate my personalized communication tone. | 1. The system scans the last 100 sent emails and generates one suggested "Style Description" (max 500 characters).<br>2. The President must manually approve or edit the suggested Style in the web panel before it is used for outbound communication. |
-| **US-003** | **Whitelist Management** | As a President, I want to manually add/remove email addresses to a Whitelist so that I can ensure important senders are always treated as trusted. | 1. A dedicated Whitelist configuration page with a CRUD interface exists.<br>2. Any email address on the Whitelist is guaranteed not to be classified as Spam. |
-| **US-004** | **Individual Action Control** | As a President, I want to have separate ON/OFF switches for each core action so that I can control exactly which parts of my inbox are automated. | 1. The Configuration Panel displays four distinct ON/OFF switches for Spam, Delegation, Meeting Handling, and Informational Summary.<br>2. The Triage Orchestrator only executes an action if its respective switch is set to ON. |
-| **US-005** | **Global Sending Control** | As a President, I want to set a global control to choose between automatic sending or draft creation so that I can manage my level of risk tolerance. | 1. A global switch named "Auto Send/Draft" (Wysyłanie Auto/Draft) is available.<br>2. When set to 'Draft', any action requiring an outbound email (e.g., Delegation, Meeting Response) creates a draft instead of sending automatically. |
-| **US-014** | **Authentication and Authorization** | As a President, I must securely log in to the application and maintain full administrative control over all system configurations and data. | 1. The system requires secure user authentication (e.g., standard login process).<br>2. Only the "President" role has full administrative permissions to modify Configuration, Lists, and Action Controls. |
+| **US-001** | **Aktywacja Systemu** | Jako Prezes, chcę aktywować system natychmiast po pierwszym zalogowaniu, aby automatycznie rozpoczął filtrowanie bez konieczności pełnej konfiguracji. | 1. System rozpoczyna przetwarzanie e-maili natychmiast po aktywowaniu głównego przełącznika.<br>2. Wyświetlana jest "Lista kontrolna wdrożenia", zachęcająca do opcjonalnej konfiguracji list i stylu. |
+| **US-002** | **Generowanie Uproszczonego Stylu** | Jako Prezes, chcę, aby system przeskanował moją dotychczasową komunikację i zaproponował jeden "Opis Stylu", abym mógł szybko zatwierdzić i aktywować mój spersonalizowany ton komunikacji. | 1. System skanuje ostatnie 100 wysłanych e-maili i generuje jeden sugerowany "Opis Stylu" (maks. 500 znaków).<br>2. Prezes musi ręcznie zatwierdzić lub edytować sugerowany Styl w panelu webowym, zanim zostanie on użyty do komunikacji wychodzącej. |
+| **US-003** | **Zarządzanie Białą Listą** | Jako Prezes, chcę ręcznie dodawać/usuwać adresy e-mail do Białej Listy, aby mieć pewność, że ważni nadawcy są zawsze traktowani jako zaufani. | 1. Istnieje dedykowana strona konfiguracji Białej Listy z interfejsem CRUD.<br>2. Każdy adres e-mail na Białej Liście ma gwarancję, że nie zostanie sklasyfikowany jako Spam. |
+| **US-004** | **Indywidualna Kontrola Akcji** | Jako Prezes, chcę mieć oddzielne przełączniki WŁ/WYŁ dla każdej głównej akcji, aby móc dokładnie kontrolować, które części mojej skrzynki odbiorczej są automatyzowane. | 1. Panel Konfiguracyjny wyświetla cztery oddzielne przełączniki WŁ/WYŁ dla Spamu, Delegacji, Obsługi Spotkań i Podsumowania Informacyjnego.<br>2. Orkiestrator Triage wykonuje akcję tylko wtedy, gdy jej odpowiedni przełącznik jest ustawiony na WŁ. |
+| **US-005** | **Globalna Kontrola Wysyłania** | Jako Prezes, chcę ustawić globalną kontrolę, aby wybrać między automatycznym wysyłaniem a tworzeniem wersji roboczych, abym mógł zarządzać moim poziomem tolerancji ryzyka. | 1. Dostępny jest globalny przełącznik o nazwie "Auto Send/Draft" (Wysyłanie Auto/Draft).<br>2. Gdy ustawiony na 'Draft', każda akcja wymagająca wysłania e-maila (np. Delegacja, Odpowiedź na Spotkanie) tworzy wersję roboczą zamiast wysyłać automatycznie. |
+| **US-014** | **Uwierzytelnianie i Autoryzacja** | Jako Prezes, muszę bezpiecznie logować się do aplikacji i zachować pełną kontrolę administracyjną nad wszystkimi konfiguracjami systemu i danymi. | 1. System wymaga bezpiecznego uwierzytelniania użytkownika (np. standardowy proces logowania).<br>2. Tylko rola "Prezesa" ma pełne uprawnienia administracyjne do modyfikowania Konfiguracji, List i Kontroli Akcji. |
 
-### 5.2 Core Processing and Triage
+### 5.2 Główne Przetwarzanie i Triage
 
-| ID | Title | Description | Acceptance Criteria |
+| ID | Tytuł | Opis | Kryteria Akceptacji |
 | :--- | :--- | :--- | :--- |
-| **US-006** | **Whitelist Priority** | As a President, I need the system to prioritize my Whitelist for Spam filtering so that trusted senders' emails are never incorrectly moved to the Spam folder. | 1. When an email arrives, the Triage module checks the Whitelist first.<br>2. If the sender is on the Whitelist, the Triage skips the Spam classification check.<br>3. The email cannot be moved to the Spam folder by the system. |
-| **US-007** | **Informational Summary Action** | As a President, I want the system to read and summarize non-urgent, informational emails so that I can quickly grasp the content without opening the original email. | 1. If the AI classifies the email as 'Informational Summary' and the action is ON, the system generates a concise summary.<br>2. The original email is archived after the summary is generated. |
-| **US-008** | **Delegation Action** | As a President, I want the system to automatically identify delegation-suitable emails and forward them to the correct delegate so that tasks are actioned quickly. | 1. If the AI classifies the email as 'Delegation' and the action is ON, the system selects the appropriate delegate based on the Delegates List/Competencies.<br>2. The system sends a formatted email/response to the delegate.<br>3. The action is logged to the database for progress tracking. |
-| **US-009** | **Meeting Conflict Detection** | As a President, I want the system to detect meeting conflicts in my calendar when new meeting requests arrive and suggest solutions. | 1. If the AI classifies the email as 'Meeting Handling' and the action is ON, the system checks for existing calendar conflicts.<br>2. The system suggests potential solutions (e.g., reschedule suggestion). |
-| **US-010** | **Manual Handling Folder** | As a President, I want to be able to manually move certain emails to a designated folder that the automation system will completely ignore. | 1. The system never accesses or processes emails placed in the designated "Manual Handling" folder.<br>2. The system can place an email into this folder if it's explicitly configured to do so in the workflow (e.g., unclassified). |
-| **US-015** | **Multiple Action Classification** | As a President, I need the Triage to correctly prioritize and select only one action when an email could potentially match several classifications. | 1. The Triage Orchestrator must select the single best-fitting action for execution.<br>2. The Triage must check the explicit hierarchy: Whitelist check $\rightarrow$ AI Classification $\rightarrow$ Action ON/OFF status $\rightarrow$ Execute action. |
+| **US-006** | **Priorytet Białej Listy** | Jako Prezes, potrzebuję, aby system priorytetowo traktował moją Białą Listę przy filtrowaniu Spamu, aby e-maile od zaufanych nadawców nigdy nie były błędnie przenoszone do folderu Spam. | 1. Gdy przychodzi e-mail, moduł Triage najpierw sprawdza Białą Listę.<br>2. Jeśli nadawca jest na Białej Liście, Triage pomija sprawdzanie klasyfikacji Spam.<br>3. E-mail nie może zostać przeniesiony do folderu Spam przez system. |
+| **US-007** | **Akcja Podsumowania Informacyjnego** | Jako Prezes, chcę, aby system czytał i podsumowywał niepilne, informacyjne e-maile, abym mógł szybko zrozumieć treść bez otwierania oryginalnego e-maila. | 1. Jeśli AI sklasyfikuje e-mail jako 'Podsumowanie Informacyjne' i akcja jest WŁ, system generuje zwięzłe podsumowanie.<br>2. Oryginalny e-mail jest archiwizowany po wygenerowaniu podsumowania. |
+| **US-008** | **Akcja Delegacji** | Jako Prezes, chcę, aby system automatycznie identyfikował e-maile nadające się do delegowania i przekazywał je do odpowiedniego delegata, aby zadania były szybko realizowane. | 1. Jeśli AI sklasyfikuje e-mail jako 'Delegacja' i akcja jest WŁ, system wybiera odpowiedniego delegata na podstawie Listy Delegatów/Kompetencji.<br>2. System wysyła sformatowany e-mail/odpowiedź do delegata.<br>3. Akcja jest logowana w bazie danych w celu śledzenia postępów. |
+| **US-009** | **Wykrywanie Konfliktów Spotkań** | Jako Prezes, chcę, aby system wykrywał konflikty spotkań w moim kalendarzu, gdy przychodzą nowe prośby o spotkanie, i sugerował rozwiązania. | 1. Jeśli AI sklasyfikuje e-mail jako 'Obsługa Spotkań' i akcja jest WŁ, system sprawdza istniejące konflikty w kalendarzu.<br>2. System sugeruje potencjalne rozwiązania (np. sugestia zmiany terminu). |
+| **US-010** | **Folder Obsługi Ręcznej** | Jako Prezes, chcę mieć możliwość ręcznego przenoszenia niektórych e-maili do wyznaczonego folderu, który system automatyzacji będzie całkowicie ignorował. | 1. System nigdy nie uzyskuje dostępu ani nie przetwarza e-maili umieszczonych w wyznaczonym folderze "Manual Handling" (Obsługa Ręczna).<br>2. System może umieścić e-mail w tym folderze, jeśli jest to wyraźnie skonfigurowane w przepływie pracy (np. niesklasyfikowane). |
+| **US-015** | **Klasyfikacja Wielu Akcji** | Jako Prezes, potrzebuję, aby Triage poprawnie priorytetyzował i wybierał tylko jedną akcję, gdy e-mail potencjalnie pasuje do kilku klasyfikacji. | 1. Orkiestrator Triage musi wybrać jedną najlepiej pasującą akcję do wykonania.<br>2. Triage musi sprawdzić jawną hierarchię: Sprawdzenie Białej Listy $\rightarrow$ Klasyfikacja AI $\rightarrow$ Status Akcji WŁ/WYŁ $\rightarrow$ Wykonanie akcji. |
 
-### 5.3 Reporting and Auditing
+### 5.3 Raportowanie i Audyt
 
-| ID | Title | Description | Acceptance Criteria |
+| ID | Tytuł | Opis | Kryteria Akceptacji |
 | :--- | :--- | :--- | :--- |
-| **US-011** | **Daily Activity Report (WhatsApp)** | As a President, I want to receive a daily summary of the system's actions on my preferred messenger (WhatsApp) so that I can maintain trust and transparency. | 1. The system delivers a report of daily activity via WhatsApp (or another integrated messenger).<br>2. The report must clearly state what the system did (e.g., "Handled 50 emails. 5 delegated to Finance Dept."). |
-| **US-012** | **Manual Delegation Tracking** | As a President, I want to manually initiate a delegation task via the dashboard or WhatsApp and have the system track it like an automatic delegation. | 1. A "Delegate Manually" button/functionality exists on the WWW panel and is accessible via WhatsApp.<br>2. Activating this function sends a pre-formatted email/message with a 'delegation' tag.<br>3. The sent task is added to the database for tracking. |
-| **US-013** | **Basic Statistics View** | As a President, I want to view basic statistics on system performance so that I can gauge the value and effectiveness of the automation. | 1. The dashboard displays basic statistics (e.g., total emails handled, number of emails moved to 'Manual Handling').<br>2. Statistics allow for measuring the key success metric (handled vs. manual intervention ratio). |
+| **US-011** | **Dzienny Raport Aktywności (WhatsApp)** | Jako Prezes, chcę otrzymywać codzienne podsumowanie działań systemu na moim preferowanym komunikatorze (WhatsApp), abym mógł zachować zaufanie i przejrzystość. | 1. System dostarcza raport dziennej aktywności przez WhatsApp (lub inny zintegrowany komunikator).<br>2. Raport musi jasno określać, co zrobił system (np. "Obsłużono 50 e-maili. 5 oddelegowano do Działu Finansów"). |
+| **US-012** | **Śledzenie Ręcznej Delegacji** | Jako Prezes, chcę ręcznie inicjować zadanie delegacji przez panel lub WhatsApp i aby system śledził je tak jak automatyczną delegację. | 1. Przycisk/funkcjonalność "Deleguj Ręcznie" istnieje w panelu WWW i jest dostępna przez WhatsApp.<br>2. Aktywacja tej funkcji wysyła wstępnie sformatowany e-mail/wiadomość z tagiem 'delegacja'.<br>3. Wysłane zadanie jest dodawane do bazy danych w celu śledzenia. |
+| **US-013** | **Widok Podstawowych Statystyk** | Jako Prezes, chcę przeglądać podstawowe statystyki wydajności systemu, abym mógł ocenić wartość i skuteczność automatyzacji. | 1. Panel wyświetla podstawowe statystyki (np. całkowita liczba obsłużonych e-maili, liczba e-maili przeniesionych do 'Obsługi Ręcznej').<br>2. Statystyki pozwalają na mierzenie kluczowego wskaźnika sukcesu (stosunek obsłużonych do ręcznej interwencji). |
 
-## 6. Success Metrics
+### 5.4 Interakcja z Asystentem (Nowe)
 
-| Metric | Definition | Target |
+| ID | Tytuł | Opis | Kryteria Akceptacji |
+| :--- | :--- | :--- | :--- |
+| **US-016** | **Obsługa Notatek Głosowych** | Jako Prezes, chcę wysyłać notatki głosowe na WhatsApp, aby szybko delegować zadania w biegu. | 1. Plik audio wysłany na WhatsApp jest transkrybowany przez STT.<br>2. Transkrypcja jest przetwarzana jako intencja (np. "Deleguj do Ani"). |
+| **US-017** | **EA Hand-Off (Filtr Asystenta)** | Jako Prezes, chcę, aby moja Asystentka weryfikowała drafty przed wysłaniem, abym otrzymywał powiadomienia tylko o sprawach krytycznych. | 1. Drafty trafiają najpierw do weryfikacji EA w panelu.<br>2. Tylko status `EXECUTIVE_REVIEW` wyzwala powiadomienie Push do Prezesa. |
+| **US-018** | **Cold Start (Analiza Historii)** | Jako Prezes, chcę, aby system automatycznie nauczył się mojego stylu z historii maili przy pierwszym uruchomieniu. | 1. System skanuje do 2000 ostatnich wiadomości wysłanych.<br>2. Profil stylu i kompetencji kontaktów jest tworzony automatycznie. |
+| **US-019** | **Korekta Draftu (NLU)** | Jako Prezes, chcę móc poprawić treść draftu odpisując na WhatsApp "Zmień X na Y", bez konieczności logowania do panelu. | 1. System rozpoznaje intencję korekty.<br>2. Treść draftu jest aktualizowana i ponownie przesyłana do akceptacji. |
+
+## 6. Metryki Sukcesu
+
+| Metryka | Definicja | Cel |
 | :--- | :--- | :--- |
-| **Primary Goal** | Maximization of automatic handling. Ratio of emails automatically handled (by the system) to emails requiring manual intervention (moved to "Manual Handling" folder). | 90% of all incoming emails are handled automatically (Spam, Delegation, Summary, Meeting) within 30 days of configuration. |
-| **Accuracy (Whitelist)** | Percentage of correct Spam classification for addresses on the Whitelist. | 100% accuracy (Hard Business Rule). |
-| **Time to Value (TTV)** | Time from system activation to the first successfully delegated or summarized email. | Less than 1 hour. |
-| **Engagement (Auditing)** | Daily activity report viewing rate via external messenger. | $\geq 80\%$ daily views of the WhatsApp/Messenger report. |
+| **Główny Cel** | Maksymalizacja automatycznej obsługi. Stosunek e-maili obsłużonych automatycznie (przez system) do e-maili wymagających ręcznej interwencji (przeniesionych do folderu "Manual Handling"). | 90% wszystkich przychodzących e-maili jest obsługiwanych automatycznie (Spam, Delegacja, Podsumowanie, Spotkanie) w ciągu 30 dni od konfiguracji. |
+| **Dokładność (Biała Lista)** | Procent poprawnej klasyfikacji Spamu dla adresów z Białej Listy. | 100% dokładności (Twarda Reguła Biznesowa). |
+| **Czas do Wartości (TTV)** | Czas od aktywacji systemu do pierwszego pomyślnie oddelegowanego lub podsumowanego e-maila. | Mniej niż 1 godzina. |
+| **Zaangażowanie (Audyt)** | Dzienny wskaźnik wyświetlania raportu aktywności przez zewnętrzny komunikator. | $\geq 80\%$ dziennych wyświetleń raportu WhatsApp/Messenger. |
