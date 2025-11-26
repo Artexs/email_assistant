@@ -1,3 +1,5 @@
+//// https://gemini.google.com/app/7173008def951052?hl=pl
+
 # Dokumentacja Modułu: Inicjalizacja i Aktualizacja Konfiguracji (The "Brain")
 
 ## 1. Opis i Cel Biznesowy

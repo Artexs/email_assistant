@@ -1,0 +1,32 @@
+graph TD
+    subgraph "Kanały Komunikacji"
+        WA[WhatsApp User]
+        Web[Web Chat Interface]
+    end
+
+    subgraph "Moduł Asystenta (Interface Layer)"
+        Listener[Webhook Listener & Auth]
+        STT[Whisper API - Voice-to-Text]
+        NLU[LLM Core - Rozumienie Intencji]
+        Synth[Synteza Odpowiedzi]
+        ContextDB[Pamięć Konwersacji & Vector DB]
+    end
+
+    subgraph "Backend (Logic & Tools)"
+        Orchestrator[Orchestrator API]
+        TriageService[Triage Service]
+        DataTools[RAG / Calendar / Email Data]
+    end
+
+    WA & Web --> Listener
+    Listener -->|Audio| STT
+    Listener -->|Tekst| NLU
+    STT --> NLU
+    
+    NLU <--> ContextDB
+    NLU -->|JSON Intent: Send/Delegate/Query| Orchestrator
+    
+    Orchestrator -->|Status/Raw Data| Synth
+    Orchestrator -->|Push Notification| Synth
+    
+    Synth --> WA

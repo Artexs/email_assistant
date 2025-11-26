@@ -1,3 +1,5 @@
+//// https://gemini.google.com/app/dd14c77affc9a8e5?hl=pl
+
 # Analiza Biznesowa Modułu: Triage Orchestrator
 
 **Wersja:** 1.1 (Po doprecyzowaniu przepływu i narzędzi)

@@ -1,0 +1,23 @@
+graph TD
+    subgraph UI [Frontend/UI: Panel Konfiguracyjny]
+        A[Dashboard: Status Delegacji]
+        B[Konfiguracja: Włączniki/Styl]
+        C[Zarządzanie Listami]
+        D[Sekcja Konta OPTIONAL]
+    end
+
+    subgraph Backend [Backend]
+        E(Orchestrator API & Config Adapter)
+        F(Triage: Logika Biznesowa)
+        G(Brain: Kontekst & Styl)
+        H(Delegations DB)
+    end
+
+    UI -->|REST/TRPC| E
+    E -->|Write/Read| G
+    E -->|Write/Read| H
+    A -->|Read Status/Delegations| H
+    B -->|Write Config| G
+    C -->|Write/Read Lists| G
+    D -->|Auth/Token Management| Supabase(Supabase Auth)
+    F -->|Business Logic| E
