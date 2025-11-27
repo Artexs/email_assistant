@@ -1,94 +1,107 @@
-# 10x Astro Starter
+# Asystent Email AI
 
-A modern, opinionated starter template for building fast, accessible, and AI-friendly web applications.
+## Spis Treści
+- [Opis Projektu](#opis-projektu)
+- [Stos Technologiczny](#stos-technologiczny)
+- [Uruchomienie Lokalne](#uruchomienie-lokalne)
+- [Dostępne Skrypty](#dostępne-skrypty)
+- [Zakres Projektu](#zakres-projektu)
+- [Status Projektu](#status-projektu)
+- [Licencja](#licencja)
 
-## Tech Stack
+## Opis Projektu
 
-- [Astro](https://astro.build/) v5.5.5 - Modern web framework for building fast, content-focused websites
-- [React](https://react.dev/) v19.0.0 - UI library for building interactive components
-- [TypeScript](https://www.typescriptlang.org/) v5 - Type-safe JavaScript
-- [Tailwind CSS](https://tailwindcss.com/) v4.0.17 - Utility-first CSS framework
+**Asystent Email AI** to inteligentne narzędzie zaprojektowane w celu automatyzacji i optymalizacji zarządzania skrzynką odbiorczą dla kadry kierowniczej wyższego szczebla i menedżerów (rola "Prezesa"). Celem produktu jest drastyczne skrócenie czasu poświęcanego na obsługę poczty poprzez automatyczne kategoryzowanie, delegowanie zadań, zarządzanie spamem i inteligentne podsumowywanie wątków.
 
-## Prerequisites
+System działa jako "cyfrowy asystent", który filtruje szum, obsługuje rutynowe zadania i dostarcza skondensowane podsumowania, pozwalając użytkownikowi skupić się na zadaniach strategicznych. Rozwiązuje problem nadmiaru e-maili i konieczności ręcznego sortowania, dostarczając jednocześnie pełną kontrolę nad procesem.
 
-- Node.js v22.14.0 (as specified in `.nvmrc`)
-- npm (comes with Node.js)
+## Stos Technologiczny
 
-## Getting Started
+Projekt wykorzystuje nowoczesny stos technologiczny zapewniający wydajność, skalowalność i bezpieczeństwo.
 
-1. Clone the repository:
+### Frontend
+- **Astro:** Główny framework webowy, zapewniający wysoką wydajność i Server-Side Rendering (SSR).
+- **React:** Wykorzystywany do budowy interaktywnych komponentów UI ("islands of interactivity").
+- **TypeScript:** Gwarantuje statyczne typowanie, poprawiając jakość i utrzymywalność kodu.
+- **Tailwind CSS:** Framework CSS typu utility-first do szybkiego i spójnego stylowania.
 
-```bash
-git clone https://github.com/przeprogramowani/10x-astro-starter.git
-cd 10x-astro-starter
-```
+### Backend & Baza Danych
+- **Supabase:** Platforma Backend-as-a-Service (BaaS) obsługująca uwierzytelnianie (Auth) oraz bazę danych PostgreSQL.
+- **Astro API Routes:** Serverless backend endpoints do bezpiecznej komunikacji z usługami zewnętrznymi.
+- **Node.js:** Środowisko uruchomieniowe dla narzędzi i serwera.
 
-2. Install dependencies:
+### AI & Integracje
+- **OpenAI API:** Główny dostawca modeli LLM (Large Language Models).
+- **Langfuse:** Narzędzie do observability i monitorowania promptów oraz wyników AI.
+- **Gmail API:** Integracja do odbioru, wysyłki i zarządzania wiadomościami e-mail.
+- **WhatsApp:** Kanał komunikacji z użytkownikiem (wiadomości tekstowe i notatki głosowe).
 
-```bash
-npm install
-```
+### Narzędzia Deweloperskie i Testy
+- **Docker:** Konteneryzacja aplikacji zapewniająca spójność środowisk.
+- **Vitest:** Framework do testów jednostkowych.
+- **Playwright:** Narzędzie do testów end-to-end (E2E).
+- **GitHub Actions:** Automatyzacja procesów CI/CD.
 
-3. Run the development server:
+## Uruchomienie Lokalne
 
-```bash
-npm run dev
-```
+Aby uruchomić projekt w środowisku lokalnym, postępuj zgodnie z poniższymi krokami.
 
-4. Build for production:
+### Wymagania wstępne
+- **Node.js**: Wersja `22.14.0` (zgodnie z plikiem `.nvmrc`).
+- **npm**: Menedżer pakietów.
 
-```bash
-npm run build
-```
+### Instalacja
 
-## Available Scripts
+1. **Sklonuj repozytorium:**
+   ```bash
+   git clone <adres-repozytorium>
+   cd email_assistant
+   ```
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
-- `npm run lint:fix` - Fix ESLint issues
+2. **Zainstaluj zależności:**
+   ```bash
+   npm install
+   ```
 
-## Project Structure
+3. **Skonfiguruj zmienne środowiskowe:**
+   Utwórz plik `.env` w głównym katalogu projektu. Uzupełnij go o wymagane klucze API i konfigurację (np. `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `OPENAI_API_KEY`).
 
-```md
-.
-├── src/
-│   ├── layouts/    # Astro layouts
-│   ├── pages/      # Astro pages
-│   │   └── api/    # API endpoints
-│   ├── components/ # UI components (Astro & React)
-│   └── assets/     # Static assets
-├── public/         # Public assets
-```
+4. **Uruchom serwer deweloperski:**
+   ```bash
+   npm run dev
+   ```
 
-## AI Development Support
+Aplikacja powinna być dostępna pod adresem `http://localhost:4321`.
 
-This project is configured with AI development tools to enhance the development experience, providing guidelines for:
+## Dostępne Skrypty
 
-- Project structure
-- Coding practices
-- Frontend development
-- Styling with Tailwind
-- Accessibility best practices
-- Astro and React guidelines
+W pliku `package.json` zdefiniowane są następujące skrypty:
 
-### Cursor IDE
+- `npm run dev`: Uruchamia lokalny serwer deweloperski Astro.
+- `npm run build`: Buduje aplikację do wersji produkcyjnej.
+- `npm run preview`: Uruchamia podgląd zbudowanej wersji produkcyjnej.
+- `npm run lint`: Uruchamia linter (ESLint) w celu sprawdzenia jakości kodu.
+- `npm run lint:fix`: Automatycznie naprawia błędy wykryte przez linter.
+- `npm run format`: Formatuje kod przy użyciu Prettier.
 
-The project includes AI rules in `.cursor/rules/` directory that help Cursor IDE understand the project structure and provide better code suggestions.
+## Zakres Projektu
 
-### GitHub Copilot
+Projekt w obecnej fazie **MVP (Minimum Viable Product)** koncentruje się na kluczowych funkcjonalnościach:
 
-AI instructions for GitHub Copilot are available in `.github/copilot-instructions.md`
+| Kategoria | W zakresie (MVP) |
+| :--- | :--- |
+| **Role Użytkownika** | Rola Prezesa (Właściciel) oraz wsparcie dla EA (Executive Assistant). |
+| **Narzędzia ("Hard 6")** | Spam, Delegacja, Spotkania, Podsumowanie, Wyjaśnienie, Manual/Emergency. |
+| **Kanały Komunikacji** | WhatsApp (Tekst/Głos) + Panel Webowy. |
+| **Intencje (NLU)** | 8 kluczowych intencji (m.in. Approve Draft, Correct Draft, Delegate Manual). |
+| **Styl Komunikacji** | Generowanie uproszczonego stylu na podstawie historii (skan ostatnich wiadomości). |
 
-### Windsurf
+## Status Projektu
 
-The `.windsurfrules` file contains AI configuration for Windsurf.
+🟢 **Status: W trakcie rozwoju (MVP)**
 
-## Contributing
+Projekt jest aktywnie rozwijany. Obecnie trwają prace nad implementacją kluczowych modułów MVP, w tym integracji z Gmail API oraz logiki orkiestratora.
 
-Please follow the AI guidelines and coding practices defined in the AI configuration files when contributing to this project.
+## Licencja
 
-## License
-
-MIT
+Projekt udostępniony na licencji MIT.
