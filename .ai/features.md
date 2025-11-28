@@ -16,7 +16,7 @@
 * **Cron Job**:
     * **Triage Engine**: uruchamia Triage Engine
     * **Daily Report**: Generowanie podsumowań aktywności Triage dla każdego emaila oraz wysłanie raportu na WhatsApp
-    * **Chaser**: monitorowanie delegowanych zadań, wysłanie ponaglenia (email) oraz powiadomienie Executive'a
+    * **Chaser**: monitorowanie delegowanych zadań, wysłanie ponaglenia (email) oraz powiadomienie Executive'a, (sprawdzenie ew. dubli)
     * **Aktualizacja profilu Executive'a**: uruchamia Mental Model - cykliczne aktualizacje
     * notatka na WhatsApp przed umówionym spotkaniem
 * **EA Hand-Off**: Workflow przekierowujący drafty do weryfikacji przez Asystentkę (EA) przed powiadomieniem Prezesa.
@@ -33,10 +33,9 @@
 ### Triage Engine
 * Silnik decyzyjny klasyfikujący wiadomości:
     * listy z emailami (VIP, Zespół, Delegate, Spam)
-    * AI - wymaga dobrego **prompta klasyfikującego**
+    * AI - wymaga dobrego **prompta klasyfikującego** - opcjonalnie budowanie prompta z kilku części
     * pewność klasyfikacji <70%, wiadomość przeniesiona do folderu obsługi ręcznej
-    * pewność klasyfikacji <70%, przygotowany draft wiadomości
-* Uruchamia następujące narzędzia:
+* Uruchamia następujące narzędzia (może więcej niż 1):
     * **Spam Tool**: Przenoszenie niechcianych wiadomości do folderu Spam/Kosz, ew. zmniejszenie wagi nadawcy w *Mental Model*.
     * **Summary Tool**: Generowanie 3-zdaniowych "pigułek wiedzy" dla e-maili informacyjnych i archiwizacja oryginału.
     * **Delegation Tool**: Wyodrębnienie zadania, doboru delegata i utworzenia draftu lub wysłania wiadomości delegującej.
@@ -44,21 +43,39 @@
         * **Auto-Book**: Rezerwacja i potwierdzanie spotkań w wolnych terminach kalendarza.
         * **Conflict Detection**: Sugerowanie alternatywnych terminów w przypadku konfliktu.
     * **Manual Handling Folder**: Wiadomości trudne do automatyzacji, zostawione do ręcznego przetwarzania.
+* generowanie draft/gotowych emaili (pobranie konfiguracji z bazy sql oraz wektorowej?)
 * Pobiera konfigurację narzędzi z bazy. Które narzędzia są dostępne oraz jaki mają zakres swobody (wysłać wiadomość lub tylko przygotować draft)
+* narzędzie przetwarzające emaile wraz z wpisami do bazy jednocześnie (Transakcja?). 
+* obsługa załączników?
+* Sanityzacja Danych - opcjonalnie czyszczenie wrażliwych danych 
 
 ##
 ### Mental Model
 * **Inicjalizacja**: Skanuje historię e-maili w celu wygenerowania startowego profilu stylu użytkownika.
-* Generuje **whitelisty** z listą emaili oraz **styl odpowiedzi** dla każdej grup docelowych:
+* **Whitelisty** - listy emaili zawierające **styl odpowiedzi** dla każdej grupy docelowej. dla każdego emaila - opis oraz waga (ważności/trafności):
     * VIP - lista ważnych osobistości, od których emaile zawsze są przerwarzane z wysokim priorytetm
-    * Zespół - lista współpracowników wraz z krótkim opisem / historią konwersacji
-    * Delegate - lista osób decyzyjnych wraz z opisem ich zakresu kompetencji 
-    * Spam - pomiń emaile 
+    * Zespół - (współ)pracownicy wraz z krótkim opisem / historią konwersacji
+    * Finanse/prawo/umowy
+    * Spam
+* **Delegate** - lista osób decyzyjnych wraz z opisem ich zakresu kompetencji (być może powinna być z powyższymi)
 * **Cykliczne aktualizacje**: odczytuje historię nieprzetworzonych (folder **Manualna obsługa**) lub niepewnych **draft** emaili w bazie danych. Skanuje następujące foldery w poszukiwaniu zmian:
     * folder wysłane: aktualizacja wzorca stylu i dopisanie do bazy danych (dodatkowa tabela/pole)
     * folder spam/kosz: obniżanie wagi nadawcy
     * folder manualna obsługa - wiadomość odczytana: ??
     * **draft -> wysłane**: aktualizacja wzorca stylu oraz danych dotyczących adresata (np delegacje) w bazie
+* Filtr Szumu: Odrzucanie adresów noreply, support oraz maili bez struktury konwersacyjnej.
+* Baza danych:
+    * Tabela **categories** (Słownik): 
+        * few_shot_examples: JSONB, tablica par wiadomości [{q: "...", a: "..."}].
+        * base_style_prompt: Tekstowa instrukcja ogólna (np. "Pisz krótko").
+    * Tabela contacts (Wiedza):
+        * trust_score: Integer (-100 do 100). Domyślnie 0. Spam < -50, VIP > 50.
+        * competence_tags: Tablica tekstowa (Append-only), np. ["faktury", "umowy"].
+        * competence_summary: Synteza wygenerowana przez LLM raz na cykl (np. miesiąc).
+    * Tabela draft_audit (Snapshot):
+        * Kluczowa dla "Diff Logic". Przechowuje generated_draft_body i category_snapshot w momencie generowania draftu.
+
+
 
 ##
 ### AI Assistant + WhatsApp
@@ -67,7 +84,7 @@
     * cykliczne otrzymywanie podsumowań aktywności Triage
     * akceptacja draftów / korekta wiadomości z powyższego podsumowania
     * wyszukaj wiadomość/informacje w skrzynce
-    * wysłanie nowej wiadomości email
+    * wysłanie nowej wiadomości email + wysyłanie plików
     * otrzymaj notatkę przed spotkaniem
     * konfiguracja konta: 
         * zaktualizuj jedną z list email (zablokuj / odblokuj adres),
@@ -75,6 +92,9 @@
         * wyłącz powiadomienia (tryb koncentracji) na jakiś czas (np urlop, delegacja)
 * **Voice**: Transkrypcja notatek głosowych WhatsApp
 * **Two-Way WhatsApp Communication**: Pełna obsługa konwersacyjna - Asystent przechowuje kontekst rozmowy, może pytać, pobierać dane z bazy oraz systemu, uruchamiać narzędzia i generować odpowiedzi dla użytkownika
+* jawna komunikacja WhatsApp że proces jest przetwarzany - szybka wiadomość (Przetwarzam...)
+* **Autoryzacja WhatsApp**: Mapowanie numeru telefonu WhatsApp na user_id w bazie (Whitelista numerów).
+
 
 ##
 ### UI Interface (www)
