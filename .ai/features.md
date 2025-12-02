@@ -16,7 +16,7 @@
 * **Cron Job**:
     * **Triage Engine**: uruchamia Triage Engine
     * **Daily Report**: Generowanie podsumowań aktywności Triage dla każdego emaila oraz wysłanie raportu na WhatsApp
-    * **Chaser**: monitorowanie delegowanych zadań, wysłanie ponaglenia (email) oraz powiadomienie Executive'a, (sprawdzenie ew. dubli)
+    * **Delegaci**: monitorowanie delegowanych zadań, wysłanie ponaglenia (email) oraz powiadomienie Executive'a, (sprawdzenie ew. dubli)
     * **Aktualizacja profilu Executive'a**: uruchamia Mental Model - cykliczne aktualizacje
     * notatka na WhatsApp przed umówionym spotkaniem
 * **EA Hand-Off**: Workflow przekierowujący drafty do weryfikacji przez Asystentkę (EA) przed powiadomieniem Prezesa.
