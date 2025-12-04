@@ -100,8 +100,8 @@ create trigger on_mailbox_updated
 create table public.secrets (
   id uuid not null primary key default gen_random_uuid(),
   user_id uuid not null references public.users(id) on delete cascade,
-  service_name text not null,
-  credentials jsonb not null,
+  secret_name text not null,
+  secret_value jsonb not null,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

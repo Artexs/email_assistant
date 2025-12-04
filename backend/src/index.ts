@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-console.log("test 123");
+// console.log("test 123");
 
 // const PORT = process.env.PORT || 3000;
 
