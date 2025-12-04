@@ -1019,6 +1019,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
    ```
 
 7. **Tabela `konwersacje_whatsapp`** (dla dwukierunkowej komunikacji - Phase 2):
+
    ```sql
    CREATE TABLE konwersacje_whatsapp (
      id UUID PRIMARY KEY,
