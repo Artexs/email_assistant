@@ -1,6 +1,7 @@
 # Asystent Email AI
 
 ## Spis Treści
+
 - [Opis Projektu](#opis-projektu)
 - [Stos Technologiczny](#stos-technologiczny)
 - [Uruchomienie Lokalne](#uruchomienie-lokalne)
@@ -20,23 +21,27 @@ System działa jako "cyfrowy asystent", który filtruje szum, obsługuje rutynow
 Projekt wykorzystuje nowoczesny stos technologiczny zapewniający wydajność, skalowalność i bezpieczeństwo.
 
 ### Frontend
+
 - **Astro:** Główny framework webowy, zapewniający wysoką wydajność i Server-Side Rendering (SSR).
 - **React:** Wykorzystywany do budowy interaktywnych komponentów UI ("islands of interactivity").
 - **TypeScript:** Gwarantuje statyczne typowanie, poprawiając jakość i utrzymywalność kodu.
 - **Tailwind CSS:** Framework CSS typu utility-first do szybkiego i spójnego stylowania.
 
 ### Backend & Baza Danych
+
 - **Supabase:** Platforma Backend-as-a-Service (BaaS) obsługująca uwierzytelnianie (Auth) oraz bazę danych PostgreSQL.
 - **Astro API Routes:** Serverless backend endpoints do bezpiecznej komunikacji z usługami zewnętrznymi.
 - **Node.js:** Środowisko uruchomieniowe dla narzędzi i serwera.
 
 ### AI & Integracje
+
 - **OpenAI API:** Główny dostawca modeli LLM (Large Language Models).
 - **Langfuse:** Narzędzie do observability i monitorowania promptów oraz wyników AI.
 - **Gmail API:** Integracja do odbioru, wysyłki i zarządzania wiadomościami e-mail.
 - **WhatsApp:** Kanał komunikacji z użytkownikiem (wiadomości tekstowe i notatki głosowe).
 
 ### Narzędzia Deweloperskie i Testy
+
 - **Docker:** Konteneryzacja aplikacji zapewniająca spójność środowisk.
 - **Vitest:** Framework do testów jednostkowych.
 - **Playwright:** Narzędzie do testów end-to-end (E2E).
@@ -47,18 +52,21 @@ Projekt wykorzystuje nowoczesny stos technologiczny zapewniający wydajność, s
 Aby uruchomić projekt w środowisku lokalnym, postępuj zgodnie z poniższymi krokami.
 
 ### Wymagania wstępne
+
 - **Node.js**: Wersja `22.14.0` (zgodnie z plikiem `.nvmrc`).
 - **npm**: Menedżer pakietów.
 
 ### Instalacja
 
 1. **Sklonuj repozytorium:**
+
    ```bash
    git clone <adres-repozytorium>
    cd email_assistant
    ```
 
 2. **Zainstaluj zależności:**
+
    ```bash
    npm install
    ```
@@ -88,13 +96,13 @@ W pliku `package.json` zdefiniowane są następujące skrypty:
 
 Projekt w obecnej fazie **MVP (Minimum Viable Product)** koncentruje się na kluczowych funkcjonalnościach:
 
-| Kategoria | W zakresie (MVP) |
-| :--- | :--- |
-| **Role Użytkownika** | Rola Prezesa (Właściciel) oraz wsparcie dla EA (Executive Assistant). |
-| **Narzędzia ("Hard 6")** | Spam, Delegacja, Spotkania, Podsumowanie, Wyjaśnienie, Manual/Emergency. |
-| **Kanały Komunikacji** | WhatsApp (Tekst/Głos) + Panel Webowy. |
-| **Intencje (NLU)** | 8 kluczowych intencji (m.in. Approve Draft, Correct Draft, Delegate Manual). |
-| **Styl Komunikacji** | Generowanie uproszczonego stylu na podstawie historii (skan ostatnich wiadomości). |
+| Kategoria                | W zakresie (MVP)                                                                   |
+| :----------------------- | :--------------------------------------------------------------------------------- |
+| **Role Użytkownika**     | Rola Prezesa (Właściciel) oraz wsparcie dla EA (Executive Assistant).              |
+| **Narzędzia ("Hard 6")** | Spam, Delegacja, Spotkania, Podsumowanie, Wyjaśnienie, Manual/Emergency.           |
+| **Kanały Komunikacji**   | WhatsApp (Tekst/Głos) + Panel Webowy.                                              |
+| **Intencje (NLU)**       | 8 kluczowych intencji (m.in. Approve Draft, Correct Draft, Delegate Manual).       |
+| **Styl Komunikacji**     | Generowanie uproszczonego stylu na podstawie historii (skan ostatnich wiadomości). |
 
 ## Status Projektu
 

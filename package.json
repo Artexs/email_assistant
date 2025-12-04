@@ -46,18 +46,20 @@
     "eslint-plugin-react": "7.37.4",
     "eslint-plugin-react-compiler": "19.0.0-beta-aeaed83-20250323",
     "eslint-plugin-react-hooks": "5.2.0",
-    "husky": "9.1.7",
-    "lint-staged": "15.5.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "prettier-plugin-astro": "0.14.1",
     "typescript-eslint": "8.28.0"
   },
   "lint-staged": {
-    "*.{ts,tsx,astro}": [
-      "eslint --fix",
-      "prettier --write"
+    "backend/**/*.{ts,tsx}": [
+      "bun fmtb"
+    ],
+    "!(backend)/**/*.{ts,tsx,astro}": [
+      "bun fmt"
     ],
     "*.{json,css,md}": [
-      "prettier --write"
+      "bun fmt"
     ]
   }
 }
