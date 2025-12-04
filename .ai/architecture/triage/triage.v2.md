@@ -23,32 +23,32 @@ graph TD
     %% Wejście
     Input[Cron / Webhook] --> Fetch[Pobierz Email (Gmail API)]
     Fetch --> DB_Lookups[(DB: Whitelista & Config)]
-    
+
     %% Analiza Kontekstowa
     DB_Lookups --> ContextBuilder[Budowanie Kontekstu + Wagi]
     ContextBuilder --> SwitchType{Typ Nadawcy}
-    
+
     %% Ścieżka Szybka (Block)
     SwitchType -->|Blocked| ToolSpam[Narzędzie: Spam]
-    
+
     %% Ścieżka AI
     SwitchType -->|VIP / Team / Unknown| AI_Process[LLM Classifier (OpenAI)]
     AI_Process --> Validator{Confidence > 70%?}
-    
+
     %% Walidacja
     Validator -->|Nie| ToolManual[Narzędzie: Manual Review]
     Validator -->|Tak| Router{Router Kategorii}
-    
+
     %% Narzędzia
     Router -->|STRATEGIC| ToolPriority[Narzędzie: Priorytet]
     Router -->|MEETING| ToolMeeting[Narzędzie: Spotkania]
     Router -->|INFO| ToolSummary[Narzędzie: Podsumowanie]
     Router -->|NOTIFICATIONS| ToolArchive[Narzędzie: Auto-Archiwizacja]
     Router -->|SPAM| ToolSpam
-    
+
     %% Narzędzie Delegacji (Złożone)
     Router -->|OPERATIONAL / ADMIN| ToolDelegation[Narzędzie: Delegacja]
-    
+
     %% Egzekucja (Gmail)
     ToolPriority --> G_Label[Gmail: Label 'VIP']
     ToolMeeting --> G_DraftM[Gmail: Draft Odpowiedzi]
@@ -56,10 +56,10 @@ graph TD
     ToolArchive --> G_ArchA[Gmail: Mark Read + Archive]
     ToolSpam --> G_Trash[Gmail: Trash]
     ToolManual --> G_LabelM[Gmail: Label 'Review']
-    
+
     %% Egzekucja Delegacji (Gmail)
     ToolDelegation --> G_DraftD[Gmail: Draft Delegacji]
-    
+
     %% Zapis do Bazy Danych (Transakcje)
     G_Label --> LogDB
     G_DraftM --> LogDB
@@ -67,12 +67,12 @@ graph TD
     G_ArchA --> LogDB
     G_Trash --> LogDB
     G_LabelM --> LogDB
-    
+
     %% Specjalny Zapis dla Delegacji
     G_DraftD --> TransakcjaDelegacji[Transakcja DB]
     TransakcjaDelegacji --> LogDB[Tabela: action_logs]
     TransakcjaDelegacji --> DelegDB[Tabela: delegations]
-    
+
     LogDB --> End((Koniec Procesu))
 ```
 
@@ -84,6 +84,7 @@ Wymagane są następujące tabele i struktury. Typy danych w formacie PostgreSQL
 
 **A. action_logs (Audit Trail)**
 Główna tabela logująca każdą decyzję Triage'u.
+
 - `id`: UUID (Primary Key)
 - `email_id`: String (ID wiadomości z Gmaila, unikalne)
 - `category`: Enum (STRATEGIC, OPERATIONAL, ADMIN, INFO, NOTIFICATIONS, NOISE, MANUAL_REVIEW)
@@ -95,6 +96,7 @@ Główna tabela logująca każdą decyzję Triage'u.
 
 **B. delegations (Encje Biznesowe)**
 Tabela przechowująca aktywne procesy delegacji. Wypełniana tylko przez DelegationTool.
+
 - `id`: UUID (Primary Key)
 - `source_email_id`: String (FK do Gmail ID)
 - `status`: Enum (DRAFT_CREATED, SENT, IN_PROGRESS, COMPLETED) - Inicjalnie: DRAFT_CREATED
@@ -105,6 +107,7 @@ Tabela przechowująca aktywne procesy delegacji. Wypełniana tylko przez Delegat
 - `created_at`: Timestamp
 
 **C. whitelist_rules (Konfiguracja)**
+
 - `email`: String (Unique)
 - `type`: Enum (VIP, TEAM, BLOCKED, FINANCE)
 - `weight_modifier`: Float (np. 1.5 dla VIP - podbija szansę na kategorię STRATEGIC)
@@ -116,11 +119,11 @@ Definicje typów dla komunikacji wewnątrz backendu.
 ```typescript
 // Wynik działania AI (Structured Output z OpenAI)
 interface TriageAnalysisResult {
-  category: 'STRATEGIC' | 'OPERATIONAL' | 'ADMIN' | 'INFO' | 'NOTIFICATIONS' | 'NOISE';
+  category: "STRATEGIC" | "OPERATIONAL" | "ADMIN" | "INFO" | "NOTIFICATIONS" | "NOISE";
   confidence: number; // 0.0 - 1.0
   reasoning: string; // Dlaczego taka decyzja?
   suggested_action: {
-    tool: 'DELEGATION' | 'SUMMARY' | 'MEETING' | 'ARCHIVE' | 'SPAM';
+    tool: "DELEGATION" | "SUMMARY" | "MEETING" | "ARCHIVE" | "SPAM";
     payload?: {
       delegate_email?: string; // Dla Delegacji
       task_description?: string; // Dla Delegacji
@@ -147,18 +150,21 @@ interface ToolExecutionResult {
 
 **Krok 1: Budowanie Promptu (Context Injection)**
 Prompt systemowy musi dynamicznie przyjmować zmienne.
+
 - **Input:** Treść maila + Metadane nadawcy (z tabeli whitelist_rules).
 - **Logic:**
   - Jeśli nadawca jest VIP -> Dodaj instrukcję: "Sender is critical stakeholder. Bias towards STRATEGIC category."
   - Jeśli nadawca jest TEAM -> Dodaj instrukcję: "Sender is internal team. Look for requests/reports (OPERATIONAL)."
 
 **Krok 2: Klasyfikacja AI (LLM Call)**
+
 - Użyj modelu z obsługą JSON Mode (np. GPT-4o lub GPT-3.5-Turbo).
 - Zdefiniuj Zod Schema zgodny z TriageAnalysisResult.
 
 **Krok 3: Router i Bezpiecznik (Safety Guardrail)**
+
 ```typescript
-if (analysis.confidence < 0.70) {
+if (analysis.confidence < 0.7) {
   return executeManualReviewTool(email);
 }
 // Switch case po analysis.category
@@ -166,6 +172,7 @@ if (analysis.confidence < 0.70) {
 
 **Krok 4: Logika Narzędzia Delegacji (Kluczowa Zmiana)**
 Narzędzie DelegationTool wykonuje sekwencję:
+
 1. **Gmail API:** Utwórz draft (users.messages.drafts.create).
    - To: analysis.suggested_action.payload.delegate_email
    - Subject: Fwd: ${original_subject}
@@ -178,6 +185,7 @@ Narzędzie DelegationTool wykonuje sekwencję:
 
 **Krok 5: Obsługa Notifications (Agresywna)**
 Dla kategorii NOTIFICATIONS:
+
 - Wywołaj users.messages.batchModify: dodaj Label PROCESSED, usuń Label INBOX (Archiwizacja).
 - Nie generuj podsumowania, chyba że treść zawiera słowa kluczowe: Error, Failed, Overdue.
 

@@ -18,6 +18,7 @@ Osobna aplikacja internetowa, stanowiąca centrum dowodzenia dla użytkownika (P
 **Komunikacja:** Łączy się z App 1 (API Server) poprzez REST/TRPC oraz bezpośrednio z Supabase (Auth).
 
 **Kluczowe Widoki i Funkcjonalności:**
+
 - **Dashboard Główny:** Wizualizacja statystyk (liczba przetworzonych maili, zaoszczędzony czas, stosunek automat vs manual).
 - **Panel Konfiguracyjny:**
   - **Action Switches:** Globalne włączniki (ON/OFF) dla każdego Narzędzia (Spam, Delegacja, Spotkania).
@@ -36,6 +37,7 @@ Są to niezależne procesy Node.js uruchamiane w kontenerach lub na serwerze. Dz
 **Rola:** Obsługa interakcji w czasie rzeczywistym z Frontendem i zewnętrznymi webhookami.
 
 **Funkcjonalności:**
+
 - **API Gateway:** Endpointy dla Frontendu (odbieranie konfiguracji, ręczne delegacje).
 - **Webhook Receiver:** Odbieranie zdarzeń z WhatsApp (wiadomości tekstowe i głosowe).
 - **User Intent Processor:** Analiza żądań użytkownika (np. "Zdeleguj to ręcznie", "Dodaj X do whitelisty") i uruchamianie odpowiednich akcji w Config Manager.
@@ -47,6 +49,7 @@ Są to niezależne procesy Node.js uruchamiane w kontenerach lub na serwerze. Dz
 **Rola:** "Mózg" operacyjny systemu. Cykliczne przetwarzanie skrzynki odbiorczej.
 
 **Funkcjonalności:**
+
 - **Cron Trigger:** Uruchamianie pętli przetwarzania (np. co 5 minut).
 - **Triage Orchestrator:** Zarządzanie przepływem: Pobranie -> Decyzja -> Wykonanie.
 - **Committer (Result Handler):** Jedyny punkt, który wykonuje zmiany (Side Effects). Odbiera "Plany Wykonania" od Narzędzi i atomowo aplikuje zmiany (DB + Gmail).
@@ -57,6 +60,7 @@ Są to niezależne procesy Node.js uruchamiane w kontenerach lub na serwerze. Dz
 **Rola:** Ciężkie operacje obliczeniowe, które nie mogą blokować głównego Triage'u.
 
 **Funkcjonalności:**
+
 - **Vector Trainer:** Indeksowanie historycznych i nowych wątków mailowych do bazy wektorowej (dla RAG).
 - **Style Analyzer:** Analiza wysłanych wiadomości w celu aktualizacji wzorca "Stylu Prezesa".
 - **Initial Seed:** Skrypty pierwszego uruchomienia (import danych).
@@ -76,29 +80,35 @@ Warstwa "czystej" logiki biznesowej. Moduły tutaj nie wiedzą, czy zostały uru
 Każde narzędzie implementuje wspólny interfejs. Są to funkcje czyste (pure functions) – nie modyfikują bazy ani nie wysyłają maili bezpośrednio. Zwracają obiekt ExecutionPlan.
 
 **Spam Tool:**
+
 - Wykrywa spam.
 - Zwraca plan: MOVE_TO_SPAM, LEARN_NEGATIVE.
 
 **Delegation Tool:**
+
 - Analizuje treść zadania i dobiera delegata.
 - Generuje treść delegacji (Draft/Send).
 - Zwraca plan: CREATE_TASK, SEND_EMAIL (lub DRAFT), NOTIFY_WHATSAPP.
 
 **Meeting Tool:**
+
 - Parsuje daty z treści.
 - Sprawdza kolizje (przez Calendar Adapter).
 - Zwraca plan: REPLY_WITH_SLOTS lub ASK_FOR_CLARIFICATION.
 
 **Summary Tool:**
+
 - Generuje skrót informacyjny.
 - Zwraca plan: ARCHIVE_EMAIL, SAVE_SUMMARY.
 
 **Clarification Tool:**
+
 - Uruchamiane, gdy brakuje danych do delegacji.
 - Generuje draft zapytania do nadawcy lub Prezesa.
 - Zwraca plan: CREATE_DRAFT, FLAG_FOR_REVIEW.
 
 **Manual / Emergency Tool:**
+
 - Fallback dla niskiej pewności AI lub błędów.
 - Zwraca plan: MOVE_TO_MANUAL, LOG_ERROR, ALERT_ADMIN.
 

@@ -4,6 +4,7 @@
 - Strona konfiguracja - podgląd wszystkich adresów email (zablokowanych/przechodzących w celu łatwego odblokowanoa/zablokowania adresu)
 
 WhatsApp ->
+
 - zablokuj email spam,
 - odblokuj adres email,
 - wyszukaj wiadomość/informacje w skrzynce
@@ -24,5 +25,6 @@ Relacja: Podwładny (Project Manager). Temat: Projekt X. Styl: Nieformalny, kró
 trzeba rozpoznawać KOMPETENCJE 'delegata'
 
 OPCJONALNIE:
+
 - podmiana danych wrażliwych (pesel, haslo, byc moze imie/nazwisko? )
 - Wersjonowanie Konfiguracji (Backup) - konfiguracja powinna mieć wiele kopii w bazie - każda kolejna zmiana powinna zostać zachowana, a zwracana jedynie ta aktywna.

@@ -5,91 +5,100 @@ Ten dokument zawiera szczegółowy projekt schematu bazy danych dla modułu Ment
 ## 1. Lista Tabel
 
 ### 1.1. `users` (Public)
+
 Centralna tabela użytkowników, powiązana z systemem uwierzytelniania (np. `auth.users` w Supabase).
 
-| Kolumna | Typ Danych | Ograniczenia | Opis |
-| :--- | :--- | :--- | :--- |
-| `id` | `UUID` | `PRIMARY KEY`, `REFERENCES auth.users(id)` | Unikalny identyfikator użytkownika (powiązany z Auth). |
-| `email` | `TEXT` | `NOT NULL`, `UNIQUE` | Adres email logowania użytkownika. |
-| `full_name` | `TEXT` | | Imię i nazwisko użytkownika. |
-| `created_at` | `TIMESTAMPTZ` | `DEFAULT NOW()` | Data utworzenia konta. |
-| `updated_at` | `TIMESTAMPTZ` | `DEFAULT NOW()` | Data ostatniej aktualizacji. |
+| Kolumna      | Typ Danych    | Ograniczenia                               | Opis                                                   |
+| :----------- | :------------ | :----------------------------------------- | :----------------------------------------------------- |
+| `id`         | `UUID`        | `PRIMARY KEY`, `REFERENCES auth.users(id)` | Unikalny identyfikator użytkownika (powiązany z Auth). |
+| `email`      | `TEXT`        | `NOT NULL`, `UNIQUE`                       | Adres email logowania użytkownika.                     |
+| `full_name`  | `TEXT`        |                                            | Imię i nazwisko użytkownika.                           |
+| `created_at` | `TIMESTAMPTZ` | `DEFAULT NOW()`                            | Data utworzenia konta.                                 |
+| `updated_at` | `TIMESTAMPTZ` | `DEFAULT NOW()`                            | Data ostatniej aktualizacji.                           |
 
 ### 1.2. `mailboxes`
+
 Reprezentuje skrzynki pocztowe podpięte przez użytkownika (np. konta Gmail). Użytkownik może mieć wiele skrzynek.
 
-| Kolumna | Typ Danych | Ograniczenia | Opis |
-| :--- | :--- | :--- | :--- |
-| `id` | `UUID` | `PRIMARY KEY`, `DEFAULT gen_random_uuid()` | Unikalny identyfikator skrzynki. |
-| `user_id` | `UUID` | `NOT NULL`, `REFERENCES users(id) ON DELETE CASCADE` | Właściciel skrzynki. |
-| `email` | `TEXT` | `NOT NULL` | Adres email skrzynki (np. prezes@firma.com). |
-| `is_active` | `BOOLEAN` | `DEFAULT TRUE` | Czy skrzynka jest aktywna w systemie. |
-| `created_at` | `TIMESTAMPTZ` | `DEFAULT NOW()` | Data dodania skrzynki. |
-| `updated_at` | `TIMESTAMPTZ` | `DEFAULT NOW()` | Data ostatniej aktualizacji. |
+| Kolumna      | Typ Danych    | Ograniczenia                                         | Opis                                         |
+| :----------- | :------------ | :--------------------------------------------------- | :------------------------------------------- |
+| `id`         | `UUID`        | `PRIMARY KEY`, `DEFAULT gen_random_uuid()`           | Unikalny identyfikator skrzynki.             |
+| `user_id`    | `UUID`        | `NOT NULL`, `REFERENCES users(id) ON DELETE CASCADE` | Właściciel skrzynki.                         |
+| `email`      | `TEXT`        | `NOT NULL`                                           | Adres email skrzynki (np. prezes@firma.com). |
+| `is_active`  | `BOOLEAN`     | `DEFAULT TRUE`                                       | Czy skrzynka jest aktywna w systemie.        |
+| `created_at` | `TIMESTAMPTZ` | `DEFAULT NOW()`                                      | Data dodania skrzynki.                       |
+| `updated_at` | `TIMESTAMPTZ` | `DEFAULT NOW()`                                      | Data ostatniej aktualizacji.                 |
 
 **Ograniczenia złożone:**
+
 - `UNIQUE(user_id, email)`: Zapobiega dodaniu tej samej skrzynki dwa razy dla jednego użytkownika.
 
 ### 1.3. `secrets`
+
 Przechowuje wrażliwe dane uwierzytelniające (tokeny, hasła aplikacji) dla usług zewnętrznych. Oddzielona od `mailboxes` dla bezpieczeństwa.
 
-| Kolumna | Typ Danych | Ograniczenia | Opis |
-| :--- | :--- | :--- | :--- |
-| `id` | `UUID` | `PRIMARY KEY`, `DEFAULT gen_random_uuid()` | Unikalny identyfikator sekretu. |
-| `user_id` | `UUID` | `NOT NULL`, `REFERENCES users(id) ON DELETE CASCADE` | Właściciel sekretu (powiązanie z użytkownikiem, nie skrzynką). |
-| `service_name` | `TEXT` | `NOT NULL` | Nazwa serwisu (np. 'GMAIL', 'OPENAI') lub email id (np. 'kowalski@gmail.com'). |
-| `credentials` | `JSONB` | `NOT NULL` | Zaszyfrowane lub ustrukturyzowane dane (np. `{access_token, refresh_token}`). |
-| `created_at` | `TIMESTAMPTZ` | `DEFAULT NOW()` | Data utworzenia. |
-| `updated_at` | `TIMESTAMPTZ` | `DEFAULT NOW()` | Data ostatniej aktualizacji. |
+| Kolumna        | Typ Danych    | Ograniczenia                                         | Opis                                                                           |
+| :------------- | :------------ | :--------------------------------------------------- | :----------------------------------------------------------------------------- |
+| `id`           | `UUID`        | `PRIMARY KEY`, `DEFAULT gen_random_uuid()`           | Unikalny identyfikator sekretu.                                                |
+| `user_id`      | `UUID`        | `NOT NULL`, `REFERENCES users(id) ON DELETE CASCADE` | Właściciel sekretu (powiązanie z użytkownikiem, nie skrzynką).                 |
+| `service_name` | `TEXT`        | `NOT NULL`                                           | Nazwa serwisu (np. 'GMAIL', 'OPENAI') lub email id (np. 'kowalski@gmail.com'). |
+| `credentials`  | `JSONB`       | `NOT NULL`                                           | Zaszyfrowane lub ustrukturyzowane dane (np. `{access_token, refresh_token}`).  |
+| `created_at`   | `TIMESTAMPTZ` | `DEFAULT NOW()`                                      | Data utworzenia.                                                               |
+| `updated_at`   | `TIMESTAMPTZ` | `DEFAULT NOW()`                                      | Data ostatniej aktualizacji.                                                   |
 
 ### 1.4. `categories` (Mental Model)
+
 Definiuje grupy kontaktów i style komunikacji (np. VIP, Zespół, Spam).
 
-| Kolumna | Typ Danych | Ograniczenia | Opis |
-| :--- | :--- | :--- | :--- |
-| `id` | `UUID` | `PRIMARY KEY`, `DEFAULT gen_random_uuid()` | Unikalny identyfikator kategorii. |
-| `mailbox_id` | `UUID` | `NOT NULL`, `REFERENCES mailboxes(id) ON DELETE CASCADE` | Skrzynka, do której należy kategoria. |
-| `name` | `TEXT` | `NOT NULL` | Nazwa kategorii (np. 'VIP'). |
-| `base_style_prompt` | `TEXT` | | Instrukcja stylu dla LLM (np. "Pisz krótko i formalnie"). |
-| `generated_style_prompt` | `TEXT` | | Ulepszony prompt stylu dla LLM (np. "Pisz krótko i formalnie, ale nie zbyt formelnie"). |
-| `created_at` | `TIMESTAMPTZ` | `DEFAULT NOW()` | Data utworzenia. |
-| `updated_at` | `TIMESTAMPTZ` | `DEFAULT NOW()` | Data ostatniej aktualizacji. |
+| Kolumna                  | Typ Danych    | Ograniczenia                                             | Opis                                                                                    |
+| :----------------------- | :------------ | :------------------------------------------------------- | :-------------------------------------------------------------------------------------- |
+| `id`                     | `UUID`        | `PRIMARY KEY`, `DEFAULT gen_random_uuid()`               | Unikalny identyfikator kategorii.                                                       |
+| `mailbox_id`             | `UUID`        | `NOT NULL`, `REFERENCES mailboxes(id) ON DELETE CASCADE` | Skrzynka, do której należy kategoria.                                                   |
+| `name`                   | `TEXT`        | `NOT NULL`                                               | Nazwa kategorii (np. 'VIP').                                                            |
+| `base_style_prompt`      | `TEXT`        |                                                          | Instrukcja stylu dla LLM (np. "Pisz krótko i formalnie").                               |
+| `generated_style_prompt` | `TEXT`        |                                                          | Ulepszony prompt stylu dla LLM (np. "Pisz krótko i formalnie, ale nie zbyt formelnie"). |
+| `created_at`             | `TIMESTAMPTZ` | `DEFAULT NOW()`                                          | Data utworzenia.                                                                        |
+| `updated_at`             | `TIMESTAMPTZ` | `DEFAULT NOW()`                                          | Data ostatniej aktualizacji.                                                            |
 
 ### 1.5. `contacts` (Mental Model)
+
 Baza wiedzy o nadawcach. Przechowuje informacje o kontaktach, ich wadze i historii interakcji.
 
-| Kolumna | Typ Danych | Ograniczenia | Opis |
-| :--- | :--- | :--- | :--- |
-| `id` | `UUID` | `PRIMARY KEY`, `DEFAULT gen_random_uuid()` | Unikalny identyfikator kontaktu. |
-| `mailbox_id` | `UUID` | `NOT NULL`, `REFERENCES mailboxes(id) ON DELETE CASCADE` | Skrzynka, w której kontakt występuje. |
-| `category_id` | `UUID` | `REFERENCES categories(id) ON DELETE SET NULL` | Przypisana kategoria (styl). |
-| `email` | `TEXT` | `NOT NULL` | Adres email kontaktu. |
-| `display_name` | `TEXT` | | Wyświetlana nazwa kontaktu. |
-| `trust_score` | `INTEGER` | `DEFAULT 0` | Wskaźnik zaufania (-100 do 100). |
-| `last_interaction_at` | `TIMESTAMPTZ` | | Data ostatniej interakcji. |
-| `draft_audit` | `JSONB` | `DEFAULT '[]'::jsonb` | Log zmian w draftach (do nauki stylu). |
-| `created_at` | `TIMESTAMPTZ` | `DEFAULT NOW()` | Data utworzenia. |
-| `updated_at` | `TIMESTAMPTZ` | `DEFAULT NOW()` | Data ostatniej aktualizacji. |
+| Kolumna               | Typ Danych    | Ograniczenia                                             | Opis                                   |
+| :-------------------- | :------------ | :------------------------------------------------------- | :------------------------------------- |
+| `id`                  | `UUID`        | `PRIMARY KEY`, `DEFAULT gen_random_uuid()`               | Unikalny identyfikator kontaktu.       |
+| `mailbox_id`          | `UUID`        | `NOT NULL`, `REFERENCES mailboxes(id) ON DELETE CASCADE` | Skrzynka, w której kontakt występuje.  |
+| `category_id`         | `UUID`        | `REFERENCES categories(id) ON DELETE SET NULL`           | Przypisana kategoria (styl).           |
+| `email`               | `TEXT`        | `NOT NULL`                                               | Adres email kontaktu.                  |
+| `display_name`        | `TEXT`        |                                                          | Wyświetlana nazwa kontaktu.            |
+| `trust_score`         | `INTEGER`     | `DEFAULT 0`                                              | Wskaźnik zaufania (-100 do 100).       |
+| `last_interaction_at` | `TIMESTAMPTZ` |                                                          | Data ostatniej interakcji.             |
+| `draft_audit`         | `JSONB`       | `DEFAULT '[]'::jsonb`                                    | Log zmian w draftach (do nauki stylu). |
+| `created_at`          | `TIMESTAMPTZ` | `DEFAULT NOW()`                                          | Data utworzenia.                       |
+| `updated_at`          | `TIMESTAMPTZ` | `DEFAULT NOW()`                                          | Data ostatniej aktualizacji.           |
 
 **Ograniczenia złożone:**
+
 - `UNIQUE(mailbox_id, email)`: Unikalny kontakt w ramach jednej skrzynki.
 
 ### 1.6. `delegates` (Mental Model)
+
 Lista osób, do których można delegować zadania.
 
-| Kolumna | Typ Danych | Ograniczenia | Opis |
-| :--- | :--- | :--- | :--- |
-| `id` | `UUID` | `PRIMARY KEY`, `DEFAULT gen_random_uuid()` | Unikalny identyfikator delegata. |
-| `mailbox_id` | `UUID` | `NOT NULL`, `REFERENCES mailboxes(id) ON DELETE CASCADE` | Skrzynka, z której odbywa się delegacja. |
-| `email` | `TEXT` | `NOT NULL` | Adres email delegata. |
-| `display_name` | `TEXT` | | Nazwa delegata. |
-| `competence_tags` | `TEXT[]` | `DEFAULT '{}'` | Tagi kompetencji (np. ['faktury', 'hr']). |
-| `active` | `BOOLEAN` | `DEFAULT TRUE` | Czy delegat jest aktywny. |
-| `draft_audit` | `JSONB` | `DEFAULT '[]'::jsonb` | Log zmian w draftach delegacji. |
-| `created_at` | `TIMESTAMPTZ` | `DEFAULT NOW()` | Data utworzenia. |
-| `updated_at` | `TIMESTAMPTZ` | `DEFAULT NOW()` | Data ostatniej aktualizacji. |
+| Kolumna           | Typ Danych    | Ograniczenia                                             | Opis                                      |
+| :---------------- | :------------ | :------------------------------------------------------- | :---------------------------------------- |
+| `id`              | `UUID`        | `PRIMARY KEY`, `DEFAULT gen_random_uuid()`               | Unikalny identyfikator delegata.          |
+| `mailbox_id`      | `UUID`        | `NOT NULL`, `REFERENCES mailboxes(id) ON DELETE CASCADE` | Skrzynka, z której odbywa się delegacja.  |
+| `email`           | `TEXT`        | `NOT NULL`                                               | Adres email delegata.                     |
+| `display_name`    | `TEXT`        |                                                          | Nazwa delegata.                           |
+| `competence_tags` | `TEXT[]`      | `DEFAULT '{}'`                                           | Tagi kompetencji (np. ['faktury', 'hr']). |
+| `active`          | `BOOLEAN`     | `DEFAULT TRUE`                                           | Czy delegat jest aktywny.                 |
+| `draft_audit`     | `JSONB`       | `DEFAULT '[]'::jsonb`                                    | Log zmian w draftach delegacji.           |
+| `created_at`      | `TIMESTAMPTZ` | `DEFAULT NOW()`                                          | Data utworzenia.                          |
+| `updated_at`      | `TIMESTAMPTZ` | `DEFAULT NOW()`                                          | Data ostatniej aktualizacji.              |
 
 **Ograniczenia złożone:**
+
 - `UNIQUE(mailbox_id, email)`: Unikalny delegat w ramach jednej skrzynki.
 
 ---
@@ -135,11 +144,15 @@ Dla zapewnienia wydajności zapytań należy utworzyć następujące indeksy:
 Wszystkie tabele muszą mieć włączone RLS (`ALTER TABLE ... ENABLE ROW LEVEL SECURITY`).
 
 ### 4.1. `users`, `mailboxes`, `secrets`
+
 Dostęp tylko dla właściciela rekordu.
+
 - **Polityka**: `auth.uid() = user_id`
 
 ### 4.2. `categories`, `contacts`, `delegates`
+
 Dostęp dla użytkownika będącego właścicielem skrzynki, do której należy rekord.
+
 - **Polityka (SELECT, INSERT, UPDATE, DELETE)**:
   ```sql
   EXISTS (

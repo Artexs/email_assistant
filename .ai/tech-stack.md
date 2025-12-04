@@ -38,16 +38,20 @@ This document outlines the core technologies used in the AI email assistant proj
 - **Tailscale:** Provides secure networking for the deployment process, allowing the GitHub Actions runner to connect to the production server.
 
 ## AI Integration
+
 - **OpenAI API** — główny dostawca LLM (bezpośrednie połączenie przez middleware).
 - **Langfuse** — observability / trace promptów i wyników LLM (monitoring).
 
 ## Communication Modules
+
 - **Gmail API** — odbiór, pobieranie załączników, tworzenie draftów, etykiety.
 - **SMTP / Nodemailer** — uniwersalna wysyłka email (fallback).
 
 ## Middleware & Microservices
+
 - **Microservices (Node/TypeScript)**:
 - **Docker Compose** — uruchamianie lokalne wszystkich serwisów (Redis, workers, app services).
 
 ## Monitoring
+
 - **(placeholder)** — Monitoring / logging - to be defined.

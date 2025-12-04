@@ -6,17 +6,17 @@
 
 #### **Architektura Systemu**
 
-1. **Dwa główne procesy**: 
+1. **Dwa główne procesy**:
    - Proces Inicjalizacji (one-time) - uczenie się stylu prezesa z historii emaili
    - Proces Operacyjny (cykliczny) - pobieranie i przetwarzanie nowych emaili co kilka minut
 
-2. **Model przetwarzania**: 
+2. **Model przetwarzania**:
    - Emaile pobierane synchronicznie (wszystkie nieodczytane od ostatniej aktualizacji)
    - Przetwarzanie natychmiastowe po pobraniu
    - Buforowanie wyników w bazie danych
    - Prezentacja rezultatów w określonych godzinach (np. 10:00 i 14:00) + możliwość manualnego uruchomienia
 
-3. **Usunięcie nadmiarowych kroków**: 
+3. **Usunięcie nadmiarowych kroków**:
    - Usunięto DE2 (Email zbuforowany) - emaile są od razu przetwarzane
    - Połączono analizę i klasyfikację w jeden krok (DE2)
    - Usunięto filtrację emaili z głównego flow (funkcjonalność na przyszłość)
@@ -31,7 +31,7 @@
    - Informacyjny
    - Spam (najniższy)
 
-5. **System tagowania**: 
+5. **System tagowania**:
    - Email może mieć wiele tagów jednocześnie
    - Fizycznie email trafia do jednego folderu (według hierarchii)
    - Tagowanie następuje sekwencyjnie podczas wykonywania akcji
@@ -54,7 +54,7 @@
    - Po oznaczeniu VIP, email wraca do procesu klasyfikacji z podwyższonym priorytetem
 
 9. **Kategoria DELEGACJA - trzy scenariusze**:
-   
+
    **a) Delegacja Podstawowa** (automatyczna):
    - Zadanie wyodrębnione z emaila
    - Lista delegatów pobrana z bazy danych (statyczna, z opcjonalnym auto-uczeniem)
@@ -82,7 +82,7 @@
     - Opcjonalna funkcjonalność: auto-korekta/auto-uczenie z historii (uruchamiane manualnie)
 
 11. **Kategoria SPOTKANIE - dwa scenariusze**:
-    
+
     **a) Wolny termin**:
     - Kalendarz sprawdzony
     - Termin pokrywa się z wolnym miejscem
@@ -233,7 +233,7 @@
 
 8. **Kategoria awaryjna jako safety net**: Każdy edge case ma miejsce docelowe zamiast powodować crash systemu.
 
-9. **Raport sekcyjny (Typ A) dla executive'ów**: 
+9. **Raport sekcyjny (Typ A) dla executive'ów**:
    - Najbardziej "actionable" - prezes wie co robić
    - Łatwy do implementacji (proste GROUP BY)
    - Naturalnie odpowiada kategoriom systemowym
@@ -283,6 +283,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 **Kluczowy problem**: Prezesi i menedżerowie tonują w emailach. Większość wiadomości wymaga prostych akcji (delegacja, potwierdzenie spotkania, archiwizacja), ale zajmuje cenny czas.
 
 **Rozwiązanie**: System AI, który:
+
 1. Automatycznie klasyfikuje i przetwarza emaile
 2. Deleguje zadania do odpowiednich osób
 3. Zarządza spotkaniami
@@ -296,18 +297,21 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 #### **Epic 1: Automatyczne Przetwarzanie Emaili**
 
 **US-1.1**: Jako prezes, chcę aby system automatycznie pobierał moje nowe emaile co kilka minut, żebym nie musiał ręcznie sprawdzać skrzynki.
-- **Acceptance Criteria**: 
+
+- **Acceptance Criteria**:
   - System pobiera emaile cyklicznie (konfigurowalny interwał, domyślnie: co 5 minut)
   - Pobierane są tylko nieodczytane emaile od ostatniej synchronizacji
   - System może być uruchomiony manualnie przez prezesa
 
 **US-1.2**: Jako prezes, chcę aby spam i newslettery były automatycznie usuwane z mojego widoku, żebym widział tylko istotne wiadomości.
+
 - **Acceptance Criteria**:
   - Emaile sklasyfikowane jako spam są przenoszone do folderu "Spam"
   - System taguje wiadomości jako "spam"
   - W przyszłości: walidacja na podstawie historii nadawcy
 
 **US-1.3**: Jako prezes, chcę otrzymywać natychmiastowe powiadomienie o pilnych emailach, żebym mógł szybko zareagować na kryzysowe sytuacje.
+
 - **Acceptance Criteria**:
   - AI klasyfikuje emaile jako potencjalnie pilne
   - System pobiera kontekst pilności z bazy danych (firma, stanowisko, kontrahenci)
@@ -316,6 +320,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
   - Email przenoszony do folderu "Ważne"
 
 **US-1.4**: Jako prezes, chcę aby emaile od VIP-ów (zarząd, akcjonariusze) były traktowane priorytetowo, ale nadal automatycznie przetwarzane.
+
 - **Acceptance Criteria**:
   - Whitelista adresów email w bazie danych
   - Emaile z whitelisty mają wyższy priorytet podczas klasyfikacji
@@ -325,6 +330,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 #### **Epic 2: Automatyczna Delegacja Zadań**
 
 **US-2.1**: Jako prezes, chcę aby system automatycznie delegował proste zadania do odpowiednich osób, żebym nie musiał tego robić ręcznie.
+
 - **Acceptance Criteria**:
   - System wyodrębnia zadanie z treści emaila
   - Pobiera listę delegatów z bazy danych (imię, email, kompetencje)
@@ -334,6 +340,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
   - Planuje przypomnienie w przypadku braku odpowiedzi
 
 **US-2.2**: Jako prezes, chcę otrzymywać draft emaila delegacji gdy system nie ma wystarczających informacji, żebym mógł go uzupełnić przed wysłaniem.
+
 - **Acceptance Criteria**:
   - AI wykrywa brak kluczowych informacji (delegat, deadline, budżet itp.)
   - Generuje szablon delegacji z pytaniami
@@ -342,6 +349,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
   - Informacja pojawia się w dziennym raporcie
 
 **US-2.3**: Jako prezes, chcę otrzymywać przypomnienia o delegacjach bez odpowiedzi, żebym mógł ponaglić realizację lub ponownie przypisać zadanie.
+
 - **Acceptance Criteria**:
   - System sprawdza deadline delegacji raz dziennie
   - Wykrywa brak odpowiedzi po X dniach (konfigurowalny)
@@ -350,6 +358,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
   - Aktualizuje status delegacji w bazie
 
 **US-2.4**: Jako prezes, gdy system nie może zidentyfikować delegata, chcę aby email trafił do mojej asystentki, żeby mogła go ręcznie przypisać.
+
 - **Acceptance Criteria**:
   - Email przenoszony do folderu "Manualna obsługa"
   - Tag: "wymaga interwencji"
@@ -359,6 +368,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 #### **Epic 3: Automatyczne Zarządzanie Spotkaniami**
 
 **US-3.1**: Jako prezes, chcę aby system automatycznie rezerwował spotkania gdy proponowany termin jest wolny, żebym nie tracił czasu na potwierdzenia.
+
 - **Acceptance Criteria**:
   - System sprawdza kalendarz
   - Jeśli termin z emaila jest wolny → rezerwuje automatycznie
@@ -367,6 +377,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
   - Log w bazie danych
 
 **US-3.2**: Jako prezes, gdy termin spotkania koliduje z moim kalendarzem, chcę aby system zaproponował alternatywne terminy, żebym nie musiał sam ich szukać.
+
 - **Acceptance Criteria**:
   - System wykrywa konflikt terminów
   - Znajduje 3-5 najbliższych wolnych terminów
@@ -377,6 +388,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 #### **Epic 4: Cykliczne Podsumowania**
 
 **US-4.1**: Jako prezes, chcę otrzymywać podsumowanie emaili 2 razy dziennie (np. 10:00 i 14:00), żebym wiedział co się dzieje bez ciągłego sprawdzania skrzynki.
+
 - **Acceptance Criteria**:
   - Cronjob uruchamiany o określonych godzinach (konfigurowalny)
   - Pobiera dane z bazy (tabela emails + delegacje)
@@ -385,12 +397,14 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
   - Publikuje pełną wersję na stronie WWW
 
 **US-4.2**: Jako prezes, chcę móc ręcznie wygenerować podsumowanie w dowolnym momencie, na wypadek gdybym potrzebował szybkiej aktualizacji.
+
 - **Acceptance Criteria**:
   - Webhook/button na WhatsApp lub stronie WWW
   - Generuje raport on-demand
   - Wysyła natychmiast
 
 **US-4.3**: Jako prezes, chcę aby podsumowanie było podzielone na sekcje, żebym od razu wiedział co wymaga mojej akcji.
+
 - **Acceptance Criteria**:
   - Sekcja 1: PILNE (z linkami do emaili)
   - Sekcja 2: WYMAGA AKCJI (drafty do akceptacji, konflikty spotkań)
@@ -401,6 +415,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 #### **Epic 5: Moduł WhatsApp (dwukierunkowa komunikacja)**
 
 **US-5.1**: Jako prezes, chcę móc dyktować nowy email przez WhatsApp (głosowo lub tekstowo), żeby system go wygenerował i wysłał.
+
 - **Acceptance Criteria**:
   - Transkrypcja głosu (Whisper API lub podobny)
   - Rozpoznanie intencji: "wyślij email"
@@ -411,6 +426,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
   - Wysyłka po potwierdzeniu
 
 **US-5.2**: Jako prezes, chcę móc zapytać system o listę przypomnień (dziś/jutro), żebym wiedział jakie delegacje są w trakcie.
+
 - **Acceptance Criteria**:
   - Rozpoznanie intencji: "pokaż przypomnienia"
   - Parsing parametru czasu (dziś, jutro, zakres)
@@ -419,6 +435,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
   - Wysłanie na WhatsApp
 
 **US-5.3**: Jako prezes, chcę móc wyszukać historię konwersacji z daną osobą lub na dany temat, żebym szybko przypomniał sobie kontekst.
+
 - **Acceptance Criteria**:
   - Rozpoznanie intencji: "szukaj konwersacji"
   - Parsing parametrów: osoba, temat, zakres czasu
@@ -427,6 +444,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
   - Wysłanie na WhatsApp
 
 **US-5.4**: Jako prezes, chcę móc wysłać przypomnienie do delegata (lub wszystkich naraz), gdy widzę że zadanie się opóźnia.
+
 - **Acceptance Criteria**:
   - Rozpoznanie intencji: "wyślij przypomnienie"
   - Parsing parametrów: pojedyncze/wszystkie, do kogo
@@ -437,6 +455,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 #### **Epic 6: Dashboard WWW (dla asystentek i power-users)**
 
 **US-6.1**: Jako asystentka, chcę widzieć dashboard z listą wszystkich przypomnień (przeterminowane + w trakcie), żebym mogła zarządzać delegacjami.
+
 - **Acceptance Criteria**:
   - Strona WWW z tabelą delegacji
   - Filtry: przeterminowane, w trakcie, zakończone
@@ -445,6 +464,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
   - Real-time aktualizacja
 
 **US-6.2**: Jako asystentka, chcę widzieć pełną wersję raportu dziennego na stronie WWW, żebym miała więcej szczegółów niż prezes na WhatsApp.
+
 - **Acceptance Criteria**:
   - Wszystkie sekcje z wersji WhatsApp
   - Dodatkowe szczegóły: pełne treści emaili, załączniki
@@ -505,7 +525,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 
 1. **Email Processor Service** (Python/Node.js):
    - Połączenie z serwerem email (IMAP/Gmail API)
-   - Cykliczne pobieranie (cron: */5 * * * *)
+   - Cykliczne pobieranie (cron: _/5 _ \* \* \*)
    - Klasyfikacja AI (OpenAI API / Claude API)
    - Orchestracja akcji
 
@@ -543,6 +563,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 ### **MVP Scope (Phase 1)**
 
 **IN SCOPE**:
+
 - ✅ Proces Operacyjny (pełny flow przetwarzania emaili)
 - ✅ Kategorie: Spam, Pilny, Delegacja (podstawowa + doprecyzowanie), Spotkanie, Informacyjny, Awaryjna
 - ✅ System podsumowań (raport sekcyjny, 2x dziennie)
@@ -552,6 +573,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 - ✅ Statyczna baza delegatów (manual setup)
 
 **OUT OF SCOPE** (Phase 2+):
+
 - ❌ Proces Inicjalizacji (uczenie się stylu prezesa)
 - ❌ Dwukierunkowa komunikacja WhatsApp (4 intencje)
 - ❌ Auto-uczenie bazy delegatów
@@ -638,6 +660,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 **Problem**: Nie jest jasne, jak dokładnie działa flow dla emaili z whitelisty.
 
 **Pytania do rozstrzygnięcia**:
+
 1. Czy email VIP wraca do etapu analizy/klasyfikacji (DE2) z **innym kontekstem**?
 2. Czy może VIP to **modifier**, a nie osobna kategoria?
    - Email może być: "VIP + Delegacja" lub "VIP + Pilny" jednocześnie
@@ -656,6 +679,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 **Problem**: Potrzebujemy doprecyzować format raportu wysyłanego na WhatsApp i WWW.
 
 **Pytania do rozstrzygnięcia**:
+
 1. **Głębokość podsumowań emaili informacyjnych**:
    - 2-3 zdania?
    - Bullet points z kluczowymi faktami?
@@ -684,6 +708,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 **Problem**: Zidentyfikowano 4 główne intencje, ale prawdopodobnie będzie ich więcej.
 
 **Pytania do rozstrzygnięcia**:
+
 1. **Czy są jeszcze inne intencje poza 4 głównymi**?
    - "Pokaż draft emaili do akceptacji"?
    - "Zaktualizuj deadline delegacji"?
@@ -711,6 +736,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 **Problem**: Jak zarządzać stanem wieloetapowej konwersacji prezesa z systemem przez WhatsApp?
 
 **Pytania do rozstrzygnięcia**:
+
 1. **Gdzie przechowywać stan konwersacji**?
    - Opcja A: W pamięci sesji WhatsApp (może się zgubić)
    - Opcja B: W bazie danych (tabela "konwersacje" z session_id, state, context)
@@ -760,7 +786,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 3. **Rozpoznawanie zakresu czasu**:
    - "ostatnie 3 dni" = parsing NLP (dateparser library)
    - Predefiniowane: "dziś", "wczoraj", "ten tydzień", "ostatni miesiąc"
-   - Co jeśli prezes powie "od poniedziałku"? 
+   - Co jeśli prezes powie "od poniedziałku"?
      - Czy system zakłada "ostatni poniedziałek" czy "najbliższy przyszły"?
      - Pytanie doprecyzowujące?
 
@@ -778,6 +804,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 **Problem**: Nie został jeszcze szczegółowo omówiony proces uczenia się stylu prezesa z historii emaili.
 
 **Pytania do rozstrzygnięcia**:
+
 1. **Co dokładnie system uczy się**?
    - Ton (formalny/nieformalny, bezpośredni/dyplomatyczny)
    - Długość odpowiedzi (zwięzłe/obszerne)
@@ -820,6 +847,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 **Pytania do rozstrzygnięcia**:
 
 1. **Tabela `emails` - dodatkowe pola**:
+
    ```sql
    CREATE TABLE emails (
      id UUID PRIMARY KEY,
@@ -835,31 +863,31 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
      attachments JSONB, -- [{name, size, type, url}]
      received_at TIMESTAMP,
      processed_at TIMESTAMP,
-     
+
      -- Klasyfikacja
      kategoria VARCHAR(50), -- spam/delegacja/pilny/spotkanie/informacyjny/awaryjna
      tagi TEXT[], -- array: ['vip', 'pilny', 'delegacja']
      folder VARCHAR(100), -- według hierarchii
      confidence_score FLOAT, -- 0-1, pewność klasyfikacji AI
-     
+
      -- AI Processing
      podsumowanie TEXT, -- AI summary
      intencja TEXT, -- extracted intent
      entities JSONB, -- extracted: osoby, daty, kwoty, etc.
-     
+
      -- Status
      status VARCHAR(50), -- processed/pending/error/requires_action
      error_message TEXT,
-     
+
      -- Metadata
      is_vip BOOLEAN DEFAULT FALSE,
      is_read BOOLEAN DEFAULT FALSE,
      priority INTEGER DEFAULT 0, -- 0-10 dla sortowania
-     
+
      created_at TIMESTAMP DEFAULT NOW(),
      updated_at TIMESTAMP DEFAULT NOW()
    );
-   
+
    CREATE INDEX idx_emails_kategoria ON emails(kategoria);
    CREATE INDEX idx_emails_received_at ON emails(received_at);
    CREATE INDEX idx_emails_status ON emails(status);
@@ -869,42 +897,43 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
    **Pytanie**: Czy ta struktura pokrywa wszystkie use case'y?
 
 2. **Tabela `delegacje` - relacje i statusy**:
+
    ```sql
    CREATE TABLE delegacje (
      id UUID PRIMARY KEY,
      email_id UUID REFERENCES emails(id),
-     
+
      -- Delegat
      delegat_name VARCHAR(255),
      delegat_email VARCHAR(255),
      delegat_id UUID, -- FK do tabeli delegaci (jeśli istnieje)
-     
+
      -- Zadanie
      tytul TEXT,
      opis TEXT,
      deadline DATE,
      priorytet VARCHAR(20), -- low/medium/high/urgent
-     
+
      -- Status tracking
      status VARCHAR(50), -- wyslane/czeka_na_odpowiedz/przeterminowane/zakonczone/anulowane
      data_wyslania TIMESTAMP,
      data_odpowiedzi TIMESTAMP,
      data_zakonczenia TIMESTAMP,
-     
+
      -- Przypomnienia
      przypomnienie_po_dniach INTEGER DEFAULT 3,
      data_ostatniego_przypomnienia TIMESTAMP,
      liczba_przypomnien INTEGER DEFAULT 0,
-     
+
      -- Draft (dla delegacji wymagających doprecyzowania)
      is_draft BOOLEAN DEFAULT FALSE,
      draft_email_body TEXT,
      wymaga_akcji TEXT, -- co trzeba doprecyzować
-     
+
      created_at TIMESTAMP DEFAULT NOW(),
      updated_at TIMESTAMP DEFAULT NOW()
    );
-   
+
    CREATE INDEX idx_delegacje_deadline ON delegacje(deadline);
    CREATE INDEX idx_delegacje_status ON delegacje(status);
    CREATE INDEX idx_delegacje_delegat_email ON delegacje(delegat_email);
@@ -913,6 +942,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
    **Pytanie**: Czy potrzebujemy osobnej tabeli `delegaci` z bazą osób i kompetencji?
 
 3. **Tabela `delegaci` (baza osób)**:
+
    ```sql
    CREATE TABLE delegaci (
      id UUID PRIMARY KEY,
@@ -923,22 +953,23 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
      dzial VARCHAR(100),
      kompetencje TEXT[], -- ['raporty finansowe', 'analizy', 'prezentacje']
      opis TEXT,
-     
+
      -- Metadata
      is_active BOOLEAN DEFAULT TRUE,
      ostatnia_delegacja TIMESTAMP,
      liczba_delegacji INTEGER DEFAULT 0,
      sredni_czas_reakcji INTERVAL, -- średni czas do odpowiedzi
-     
+
      created_at TIMESTAMP DEFAULT NOW(),
      updated_at TIMESTAMP DEFAULT NOW()
    );
-   
+
    CREATE INDEX idx_delegaci_email ON delegaci(email);
    CREATE INDEX idx_delegaci_dzial ON delegaci(dzial);
    ```
 
 4. **Tabela `whitelista`**:
+
    ```sql
    CREATE TABLE whitelista (
      id UUID PRIMARY KEY,
@@ -947,13 +978,14 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
      kategoria VARCHAR(50), -- ceo/board/shareholder/partner/vip
      opis TEXT,
      zawsze_pilne BOOLEAN DEFAULT FALSE, -- force priority
-     
+
      created_at TIMESTAMP DEFAULT NOW(),
      updated_at TIMESTAMP DEFAULT NOW()
    );
    ```
 
 5. **Tabela `kontekst_pilnosci`** (reguły dla określania pilności):
+
    ```sql
    CREATE TABLE kontekst_pilnosci (
      id UUID PRIMARY KEY,
@@ -963,13 +995,14 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
      priorytet INTEGER, -- wyższy = pilniejsze
      opis TEXT,
      is_active BOOLEAN DEFAULT TRUE,
-     
+
      created_at TIMESTAMP DEFAULT NOW(),
      updated_at TIMESTAMP DEFAULT NOW()
    );
    ```
 
 6. **Tabela `logi`** (audit trail):
+
    ```sql
    CREATE TABLE logi (
      id UUID PRIMARY KEY,
@@ -979,7 +1012,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
      user_id UUID, -- kto wywołał (system/prezes/asystentka)
      timestamp TIMESTAMP DEFAULT NOW()
    );
-   
+
    CREATE INDEX idx_logi_email_id ON logi(email_id);
    CREATE INDEX idx_logi_akcja ON logi(akcja);
    CREATE INDEX idx_logi_timestamp ON logi(timestamp);
@@ -996,7 +1029,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
      context JSONB, -- cały kontekst konwersacji
      last_message_at TIMESTAMP,
      timeout_at TIMESTAMP, -- kiedy konwersacja wygasa
-     
+
      created_at TIMESTAMP DEFAULT NOW(),
      updated_at TIMESTAMP DEFAULT NOW()
    );
@@ -1228,6 +1261,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 **Rekomendacja**: Rozpisać w osobnej sesji Event Stormingu gdy będzie implementowany (Phase 2). Tymczasowo w PRD:
 
 **Process Initialization - High-Level Flow**:
+
 1. Prezes podłącza konto email
 2. System importuje historię emaili (sent by prezes, ostatnie 6 miesięcy)
 3. System filtruje emaile (tylko odpowiedzi, min. 50 znaków)
@@ -1237,6 +1271,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 7. Prezes akceptuje model → system ready
 
 **Eventy** (do rozwinięcia w Phase 2):
+
 - DE_INIT_1: Konto email połączone
 - DE_INIT_2: Historia emaili zaimportowana
 - DE_INIT_3: Emaile przefiltrowane
@@ -1254,6 +1289,7 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 **Problem**: Obecny design zakłada 1 prezesa. Jak skalować na wielu użytkowników?
 
 **Pytania do rozstrzygnięcia** (dla Phase 3+):
+
 1. Czy każdy prezes ma osobną bazę danych?
 2. Czy wspólna baza z tenant_id?
 3. Jak izolować dane między prezesami?
@@ -1291,28 +1327,33 @@ System automatyzacji emaili dla menedżerów wyższego szczebla i ich asystentek
 #### **MVP Development Priority**
 
 **Phase 1.1 - Core Processing (Miesiąc 1)**:
+
 - Email pobieranie (cron job)
 - Klasyfikacja AI (5 kategorii podstawowych)
 - Akcje podstawowe (przenoszenie, tagowanie, logging)
 - Baza danych (setup)
 
 **Phase 1.2 - Delegacje (Miesiąc 2)**:
+
 - Baza delegatów (manual entry)
 - Delegacja podstawowa (auto-send)
 - Delegacja doprecyzowanie (draft)
 - System przypomnień (cron)
 
 **Phase 1.3 - Podsumowania (Miesiąc 2-3)**:
+
 - Raport sekcyjny (generator)
 - WhatsApp integration (wysyłanie)
 - Harmonogram (2x dziennie)
 
 **Phase 1.4 - Dashboard WWW (Miesiąc 3)**:
+
 - Lista przypomnień
 - Widok raportów
 - Basic stats
 
 **Phase 1.5 - UAT & Polish (Miesiąc 4)**:
+
 - 2 tygodnie UAT z prezesem
 - Bug fixes
 - Performance tuning
@@ -1354,11 +1395,13 @@ Przeprowadzona sesja Event Stormingu odkryła kompleksowy system automatyzacji e
 System jest **dobrze zdefiniowany na poziomie MVP**, z jasnym zakresem Phase 1 i roadmapą na Phase 2+.
 
 **Największe ryzyka**:
+
 1. Accuracy AI (czy 85% wystarczy?)
 2. Dwukierunkowa komunikacja WhatsApp (złożoność state management)
 3. Security/privacy (wrażliwe dane prezesa)
 
 **Biggest wins**:
+
 1. Jasna hierarchia priorytetów (pilny > VIP > delegacja...)
 2. Raport sekcyjny (actionable format)
 3. Closed-loop delegacji (przypomnienia)

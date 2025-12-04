@@ -20,7 +20,7 @@ graph TD
     subgraph "Moduł Inicjalizacji i Aktualizacji"
         InitProcess[Proces Inicjalizacji<br/>(One-time Batch)]
         MaintProcess[Proces Maintenance<br/>(Cykliczny Cron)]
-        
+
         Logic_Class[Klasyfikator Kategorii<br/>(VIP/Spam/Pracownik)]
         Logic_Diff[Analizator Różnic<br/>(Draft vs Sent)]
         Logic_Comp[Ekstraktor Kompetencji]
@@ -47,48 +47,58 @@ graph TD
 ## 3. Szczegółowy Opis Funkcjonalności
 
 ### F1. Inicjalizacja "Zimny Start" (Batch Processing)
+
 **Kategoria:** [MVP]
 **Opis:** Jednorazowe uruchomienie skanera historii w celu zbudowania startowej bazy wiedzy.
+
 - **Zakres:** Ostatnie 6 miesięcy lub 2000 wysłanych wiadomości (limit hybrydowy).
 - **Logika:**
-    - Pobranie par wiadomości (Otrzymana - Wysłana).
-    - Ekstrakcja encji (Kto to jest?) na podstawie domeny i słów kluczowych.
-    - Wstępne przypisanie do kategorii (Współpracownik, Klient, Inne) na podstawie prostych heurystyk (np. @firma.com = Pracownik).
-    - Generowanie ogólnych instrukcji stylu dla głównych kategorii.
+  - Pobranie par wiadomości (Otrzymana - Wysłana).
+  - Ekstrakcja encji (Kto to jest?) na podstawie domeny i słów kluczowych.
+  - Wstępne przypisanie do kategorii (Współpracownik, Klient, Inne) na podstawie prostych heurystyk (np. @firma.com = Pracownik).
+  - Generowanie ogólnych instrukcji stylu dla głównych kategorii.
 - **Edge Case:** Pusta skrzynka (nowe konto) -> System pomija analizę i startuje na domyślnych ustawieniach ("Bezpieczny Styl").
 
 ### F2. Struktura Danych "Tożsamość i Kompetencje"
+
 **Kategoria:** [MVP]
 **Opis:** Implementacja dwupoziomowej struktury danych zgodnie z ustaleniami.
+
 - **Tabela Kategorii:** Przechowuje definicje grup (VIP, Zespół, Spam, Notyfikacje) oraz przypisane do nich domyślne style komunikacji.
 - **Tabela Kontaktów (Emaili):** Szczegółowa karta kontaktu zawierająca:
-    - Email (klucz)
-    - Kategoria (FK)
-    - Waga/TrustScore (do automatyzacji awansów/degradacji)
-    - Opis Kompetencji (dla delegatów)
-    - Indywidualny Styl (opcjonalny override stylu kategorii)
+  - Email (klucz)
+  - Kategoria (FK)
+  - Waga/TrustScore (do automatyzacji awansów/degradacji)
+  - Opis Kompetencji (dla delegatów)
+  - Indywidualny Styl (opcjonalny override stylu kategorii)
 
 ### F3. Pętla Zwrotna (Maintenance & Learning)
+
 **Kategoria:** [MVP]
 **Opis:** Cykliczny proces analizujący manualne interwencje w celu aktualizacji bazy.
+
 - **Analiza Folderu "Manualna Obsługa":**
-    - Jeśli mail z tego folderu trafił do Kosza/Spamu -> Zmniejsz wagę kontaktu / Dodaj do Spamlisty.
-    - Jeśli na maila została wysłana odpowiedź -> Przeanalizuj parę i zaktualizuj kontekst kontaktu.
+  - Jeśli mail z tego folderu trafił do Kosza/Spamu -> Zmniejsz wagę kontaktu / Dodaj do Spamlisty.
+  - Jeśli na maila została wysłana odpowiedź -> Przeanalizuj parę i zaktualizuj kontekst kontaktu.
 - **Analiza Draftów (Diff Logic):**
-    - Porównanie Treści Draftu (zapisanego w DB) z Treścią Wysłaną.
-    - Jeśli różnica jest istotna -> Zapisz wersję wysłaną jako nowy "Wzorzec Stylu" dla danej kategorii/kontaktu.
+  - Porównanie Treści Draftu (zapisanego w DB) z Treścią Wysłaną.
+  - Jeśli różnica jest istotna -> Zapisz wersję wysłaną jako nowy "Wzorzec Stylu" dla danej kategorii/kontaktu.
 
 ### F4. Ekstrakcja Kompetencji (Append & Summarize)
+
 **Kategoria:** [MVP]
 **Opis:** Budowanie profilu delegata na podstawie treści zadań, które są mu zlecane (zarówno automatycznie, jak i ręcznie).
+
 - **Mechanizm:**
-    - Wykrycie słów kluczowych w mailu delegującym (np. "sprawdź umowę", "faktura").
-    - Dopisanie tagów do profilu kontaktu.
-    - Okresowe (np. raz w miesiącu) przeredagowanie tagów w spójny "Opis Kompetencji" przez LLM.
+  - Wykrycie słów kluczowych w mailu delegującym (np. "sprawdź umowę", "faktura").
+  - Dopisanie tagów do profilu kontaktu.
+  - Okresowe (np. raz w miesiącu) przeredagowanie tagów w spójny "Opis Kompetencji" przez LLM.
 
 ### F5. Obsługa Notyfikacji vs Spam
+
 **Kategoria:** [MVP]
 **Opis:** Rozróżnienie niechcianych wiadomości od raportów systemowych.
+
 - **Spam:** Trafia na czarną listę (autocharing/blokada).
 - **Notyfikacje:** (np. wyciągi bankowe, raporty z Jira) Trafiają do kategorii "Informacyjne" z poleceniem generowania podsumowań (Summary), zamiast pełnego archiwizowania.
 
