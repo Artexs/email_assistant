@@ -6,7 +6,7 @@
     "dev": "bun --watch src/index.ts",
     "build": "tsc",
     "start": "bun src/index.ts",
-    "adapter": "bun src/adapters/run_test.ts",
+    "test_adapter": "bun src/adapters/test_adapter.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -19,6 +19,7 @@
     "express": "^4.19.2",
     "googleapis": "^167.0.0",
     "helmet": "^7.1.0",
+    "imapflow": "^1.1.1",
     "openai": "^6.10.0"
   },
   "devDependencies": {

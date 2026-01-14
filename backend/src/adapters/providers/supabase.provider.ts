@@ -14,14 +14,7 @@ export class SupabaseAdapter implements IDatabaseProvider {
    * Apply filters and options to a Supabase query
    */
   private applyQueryOptions(query: ReturnType<SupabaseClient["from"]>, options?: QueryOptions) {
-    let modifiedQuery = query;
-
-    // Apply select
-    if (options?.select) {
-      modifiedQuery = modifiedQuery.select(options.select);
-    } else {
-      modifiedQuery = modifiedQuery.select("*");
-    }
+    let modifiedQuery = query.select(options?.select || "*");
 
     // Apply filters
     if (options?.filters) {
