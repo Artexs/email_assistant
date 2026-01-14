@@ -28,3 +28,5 @@ OPCJONALNIE:
 
 - podmiana danych wrażliwych (pesel, haslo, byc moze imie/nazwisko? )
 - Wersjonowanie Konfiguracji (Backup) - konfiguracja powinna mieć wiele kopii w bazie - każda kolejna zmiana powinna zostać zachowana, a zwracana jedynie ta aktywna.
+
+Kolejka zadań dla cron jobs - aby nie dopuścić do jednoczesnego pobierania emaili dla wszystkich użytkowników na raz.
