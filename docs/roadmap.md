@@ -33,7 +33,7 @@ Each slice ends with something that works end to end and that the user can try.
 | Slice | Content | Result for the user | Size | Needs |
 |---|---|---|---|---|
 | **S0 Foundation** | Move to `apps/server`, `apps/web`, `packages/core`; env check; logger; DB layer; new migration (tenancy, mailboxes, credentials, settings, rules, emails, triage results, actions, audit); local Supabase; CI (lint, typecheck, test); remove old adapters | Nothing visible yet. Clean base, CI green | S | — |
-| **S1 Shadow triage** | Gmail OAuth connect (CLI + callback route); history sync; HTML → text; hard rules; LLM classifier with Zod schema; planners; policy in `shadow` mode; audit; eval runner + first labeled set | The system reads your mail and logs what it *would* do. You see accuracy numbers | L | S0 |
+| **S1 Shadow triage** | **Gate: Gemini Cloud Billing on before real mail.** Gmail OAuth connect (CLI + callback route); history sync; HTML → text; hard rules; LLM classifier with Zod schema; planners; policy in `shadow` mode; audit; eval runner + first labeled set | The system reads your mail and logs what it *would* do. You see accuracy numbers | L | S0 |
 | **S2 Telegram** | Bot, chat linking, digest builder + schedule, urgent notices, `/digest` `/pause` `/status` | Daily digest and urgent notices on your phone | M | S1 |
 | **S3 Assist actions** | Committer, Gmail labels / archive / mark read / star, summaries, manual label, retries, tool switches, mode switch | Your inbox gets cleaner for real; every change is reversible | M | S1 (S2 for notices) |
 | **S4 Drafts, approvals, delegation** | Delegates, delegation + clarification drafts, approval flow with Telegram buttons, send after approval, delegation tracking, chaser | Delegations go out after one tap and are followed up | L | S2, S3 |
@@ -67,11 +67,11 @@ graph LR
 | DB tables | 14 |
 | HTTP route groups | 8 |
 | Web pages | 10 |
-| External services | 4: Gmail API, Telegram Bot API, LLM API, Supabase (DB + Auth) |
+| External services | 4: Gmail API, Telegram Bot API, Google Gemini API, Supabase (DB + Auth) |
 | Source files | about 180–220 (with tests) |
 | Lines of TypeScript | about 12–18 thousand (with tests) |
 
-Server runtime libraries (about 9): `hono`, `@googleapis/gmail` (or `googleapis`), `openai` (or `ai`, see §5), `zod`,
+Server runtime libraries (about 9): `hono`, `@googleapis/gmail` (or `googleapis`), `@google/genai`, `zod`,
 `kysely` + `pg`, `croner`, `grammy`, `html-to-text`. Web: `astro`, `react`, `tailwindcss`, shadcn components, `@supabase/supabase-js`.
 
 Hardest parts (most risk):
@@ -86,14 +86,9 @@ Hardest parts (most risk):
 - Repeated fixed jobs become saved scripts, not skills: `bun run db:types`, `bun run eval`, `bun run gmail:connect`.
 - Each slice gets a task file in `tasks/active/` with a file-level plan before code starts.
 
-## 5. Open choice: LLM library (ADR 0007 under review)
+## 5. LLM: Google Gemini (ADR 0007, decided 2026-11-02)
 
-The usage is small: two calls (`classify` → structured JSON, `write` → summary / draft text), in one file `platform/llm.ts`.
-
-| Option | For | Against |
-|---|---|---|
-| **A. OpenAI SDK (already in the repo) + configurable `baseURL`** | Official, stable, Zod helper built in. Same code works with OpenAI, OpenRouter (many models incl. Claude, Gemini) and local OpenAI-compatible servers (Ollama, vLLM) | Native features of non-OpenAI providers only through OpenRouter; structured-output support depends on the model behind OpenRouter |
-| **B. Vercel AI SDK (`ai`) + provider packages** | One API for all providers natively; Zod output; built-in telemetry for Langfuse | Extra layer; 3 major versions in about 1.5 years (5, 6, 7) with breaking changes; string model ids go through Vercel's gateway unless you use provider packages |
-
-Recommendation: **A for the MVP.** Our wrapper (`classify`, `write`) hides the library, so a later move to B is one file.
-Langfuse is **not needed at the start**: `triage_results` stores model, prompt version, tokens and latency. Add Langfuse when prompt work needs it.
+- SDK `@google/genai`, key `GEMINI_API_KEY`, model from config `GEMINI_MODEL` (dev: `gemini-3.8-flash`).
+- All calls go through `platform/llm.ts` (`classify`, `write`). Langfuse later, if prompt work needs it.
+- Setup check: `cd backend && bun run gemini:test` (script `backend/src/scripts/gemini_test.ts`).
+- **Billing gate:** free tier only with test data. Turn on Cloud Billing before S1 runs on real Gmail, and before any real user.

@@ -31,8 +31,7 @@ graph LR
     Gmail[Gmail API]
     M365[Microsoft Graph - Phase 2]
     TG[Telegram Bot API]
-    LLM[LLM API<br/>OpenAI / Anthropic / OpenRouter]
-    LF[Langfuse<br/>LLM traces]
+    LLM[Google Gemini API]
 
     Exec -->|browser| Web
     Exec <-->|chat, buttons| TG
@@ -44,7 +43,6 @@ graph LR
     Server -.-> M365
     Server <-->|bot updates, messages| TG
     Server -->|structured output| LLM
-    Server -->|traces| LF
 ```
 
 ## 3. Repository layout
@@ -224,10 +222,11 @@ Data retention: `body_text` is cleared after `data_retention_days` (default 30).
 - Inline buttons carry only the action id (callback data is max 64 bytes).
 
 ### LLM (ADR 0007)
-- Vercel AI SDK; provider and model are config. Two roles: `classifier` (cheap, fast) and `writer` (drafts, summaries).
+- Google Gemini through `@google/genai`, only inside `platform/llm.ts`. Model ID from config (`GEMINI_MODEL`, dev: `gemini-3.8-flash`). Two roles: `classifier` and `writer`.
 - Structured output with Zod schemas from `packages/core`.
 - Prompt injection defense: the email is put in a marked data block; the output schema has enums and ids only; the policy gate checks every action anyway.
-- Each call is traced in Langfuse with the prompt version. `triage_results` stores model + prompt version.
+- `triage_results` stores model, prompt version, tokens and latency. Langfuse can come later.
+- Free tier only with test data. **Cloud Billing (paid tier) must be on before real users or real emails** (first point: S1 on real Gmail).
 - `evals/` holds labeled cases (synthetic or anonymized). A prompt change must pass the eval before merge.
 
 ## 7. Security and privacy
@@ -236,7 +235,7 @@ Data retention: `body_text` is cleared after `data_retention_days` (default 30).
 - **Tenant isolation:** RLS for any Supabase access + `TenantContext` in every server query.
 - **Web → server:** Supabase JWT, verified on the server. The web app does not read domain tables directly.
 - **Logs:** no mail bodies and no tokens in logs.
-- **LLM provider:** zero-retention / no-training settings; a DPA before the first customer; mark the provider in the privacy policy.
+- **LLM provider (Gemini):** paid tier before real data (paid-tier data is not used for training); a DPA before the first customer; name the provider in the privacy policy.
 - **EU data:** Supabase project in an EU region; server hosted in the EU for production.
 - **Delete:** deleting a mailbox removes credentials, emails and results; deleting an organization removes everything.
 
@@ -287,7 +286,7 @@ Detail, scope, sizes and dependencies: `docs/roadmap.md`.
 | `backend/supabase/migrations/2025…_mental_model_schema.sql` | Replaced by the S0 migration (no production data exists — confirm that no hosted Supabase project uses it). |
 | `IDatabaseProvider` / `SupabaseAdapter` (generic CRUD) | Removed. Typed repositories per module with transactions. |
 | `ImapEmailProvider` | Kept aside as a possible IMAP adapter (Phase 2). Not used in MVP. |
-| `OpenAIAdapter` / `ILLMProvider` | Replaced by the AI SDK client in `platform/llm`. |
+| `OpenAIAdapter` / `ILLMProvider` | Replaced by the Gemini wrapper in `platform/llm`; `openai` dependency removed in S0. |
 | `Providers` factory | Removed; each module builds its adapters from config. |
 | `utils/log.ts` | Kept and extended (levels, module prefix). |
 | `.ai/` docs | Kept as history. `.ai/AGENT.md` is rewritten in S0 to match this file. |

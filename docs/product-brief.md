@@ -55,7 +55,7 @@
 | Q5 | Autonomy | The system never sends mail on its own. It sends only when the user directly tells it to (approve button or explicit command). Labels, moves and archive are allowed. |
 | Q6 | Audit log | Yes, a minimal append-only log in MVP (agent recommendation, accepted). |
 | Q7 | Language, volume | Polish + English mail, under 200 mails per day per mailbox (default accepted). |
-| Q8 | Cloud LLM, budget | Cloud LLM with zero-retention API is OK; small budget, cheap model for classification (default accepted). |
+| Q8 | Cloud LLM, budget | **Google Gemini** (user decision 2026-11-02). Free tier for development with test data; Cloud Billing (paid tier) before real users or real emails. |
 
 ## 5. Consequences of "a product for sale"
 

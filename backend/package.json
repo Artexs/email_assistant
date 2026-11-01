@@ -10,9 +10,11 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "fmt": "bun run lint:fix && bun run format"
+    "fmt": "bun run lint:fix && bun run format",
+    "gemini:test": "bun src/scripts/gemini_test.ts"
   },
   "dependencies": {
+    "@google/genai": "^2.32.0",
     "@supabase/supabase-js": "^2.86.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

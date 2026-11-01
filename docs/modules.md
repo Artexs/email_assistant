@@ -100,7 +100,7 @@ Each module folder: `index.ts` (public API), `service.ts`, `repo.ts` (DB), `rout
 |---|---|---|
 | `config` | Reads and checks env at start; fails fast on a missing key | Zod |
 | `db` | Postgres pool, transactions, `TenantContext`, generated types | Kysely + kysely-codegen (confirm in S0) |
-| `llm` | Model roles `classifier` / `writer`, structured output, retries, tracing | Vercel AI SDK, Langfuse |
+| `llm` | Model roles `classifier` / `writer`, structured output, retries | `@google/genai` (Gemini), Zod |
 | `crypto` | AES-256-GCM encrypt / decrypt with key version | Web Crypto / `node:crypto` |
 | `log` | Levels, `[module]` prefix, no mail bodies or tokens | own `log` util |
 | `http` | Hono app, JWT check (Supabase), error handler, `/health` | Hono |
@@ -138,7 +138,7 @@ Each module folder: `index.ts` (public API), `service.ts`, `repo.ts` (DB), `rout
 |---|---|
 | `rules` (in `core`) | Hard rules before AI: blocklist → spam; whitelist → never spam; user's Manual label → skip; `noreply` detection |
 | `classifier` | Builds the prompt (email in a marked data block + sender context), calls `llm.classifier`, validates `TriageAnalysis` (category, confidence, reason, fields) |
-| `prompts/` | Versioned prompt texts; the version id goes to `triage_results` and Langfuse |
+| `prompts/` | Versioned prompt texts; the version id goes to `triage_results` |
 | `planners` (in `core`) | One per category: spam, notification, info, urgent, manual; delegation and reply in S4. Each returns an `ExecutionPlan` (list of actions) |
 | `summarizer` | For info mail: `llm.writer` makes a short summary that goes into the plan payload |
 | `worker` (job) | Claims `pending` emails (`SKIP LOCKED`), runs rules → classifier → planner, saves `triage_results` + `actions` (status `planned`), sets email `triaged` |

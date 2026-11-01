@@ -1,4 +1,4 @@
-> **Status 2026-11-02 — in progress.** Product brief accepted. `docs/architecture.md`, `docs/modules.md` + ADR 0001–0009 written (status: proposed). Left: user review of the architecture and ADRs → set ADRs to accepted → start slice S0 (foundation) as a new task file. Sections 2–5 below are the first draft; the docs in `docs/` replace them.
+> **Status 2026-11-02 — in progress.** Docs done: product brief, architecture, modules, roadmap, ADR 0001–0009 (0007 = Gemini, accepted). Left: Gemini key from the user → `bun run gemini:test` passes; user review → set other ADRs to accepted; how tasks/docs are managed is decided in a separate chat (handoff `~/.pi/agent/notes/2026-11-02-handoff-docs-and-tasks.md`); then start S0 as its own task file.
 
 # Architecture reset for email_assistant
 
@@ -131,3 +131,4 @@ Rules for this pipeline:
 - 2026-11-01: User answers: SaaS for business owners/managers; pilot = user + one Gmail; MVP cut OK; Telegram first (mobile app later); no send without direct user command; minimal audit log; defaults for language/volume/LLM. Wrote `docs/architecture.md` (diagrams, data model, slices S0–S6), `docs/decisions/0001–0009`, `.ai/README.md` (history marker); updated CLAUDE.md pointers.
 - 2026-11-02: User asked for a high-level overview (repo split, tech, modules). Wrote `docs/modules.md`: monorepo layout, "DB state + small workers" communication, module/sub-module catalog with owned tables and slices, web pages, status flows. Linked it from architecture.md.
 - 2026-11-02: User asked about AI SDK and the S0–S6 slices, scope and size. Wrote `docs/roadmap.md` (scope in/out, slices with size and dependencies, size estimate, LLM library options). ADR 0007 under review: recommend OpenAI SDK + configurable baseURL, Langfuse later. MVP drafts = delegation + clarification only.
+- 2026-11-02: User chose Google Gemini (free tier for dev). Installed `@google/genai` 2.32.0 in backend, added `backend/.env.example` (GEMINI_API_KEY, GEMINI_MODEL=gemini-3.8-flash), script `bun run gemini:test`. Rewrote ADR 0007 (accepted) and updated architecture, modules, roadmap, product brief. Billing gate: paid tier before real mail (S1).
