@@ -13,7 +13,7 @@ Before you diagnose an alert, grep docs/known-alerts.md.
 - Never hardcode or commit secrets, tokens or `.env`. Read them from env/config.
 - Template literals for strings with variables, never `+` concatenation.
 - `const` / `let` only, no `var`.
-- Commit and push all work to `main` only, with a standard `git push`. Never create other branches. Never force-push (`--force`, `-f`, `--force-with-lease`).
+- Commit and push all work to `master` only, with a standard `git push`. Never create other branches. Never force-push (`--force`, `-f`, `--force-with-lease`).
 
 ## Tasks
 

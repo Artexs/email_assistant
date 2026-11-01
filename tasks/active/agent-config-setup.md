@@ -7,7 +7,7 @@ Source inventory: `notes/2026-11-01-agent-config-inventory.md`.
 ## Done
 - Copied skill `vps-ssh` from `mega/.claude/skills/` → `.claude/skills/`. Added: own folder `~/email_assistant/` and URL path `/email_assistant/` (server and port are shared with other projects).
 - `mega-browser` was copied, then removed: the user said it is not useful here.
-- Wrote `CLAUDE.md` (universal parts only + project summary; imports `.ai/AGENT.md`). User added rule: commit and push to `main` only, never force-push.
+- Wrote `CLAUDE.md` (universal parts only + project summary; imports `.ai/AGENT.md`). User added rule: commit and push to `master` only (the repo's main branch; no `main` exists, do not rename), never force-push.
 - Created work structure: `tasks/{active,planned,done}/`, `tasks/README.md` (from Hotshots-appbackend), `notes/`, `docs/known-alerts.md` (template from Hotshots-appbackend, Telegram text removed).
 
 ## Left
