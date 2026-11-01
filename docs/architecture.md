@@ -73,6 +73,8 @@ evals/                 prompt evaluation runner + synthetic / anonymized cases (
 docs/                  product-brief.md, architecture.md, decisions/, known-alerts.md
 ```
 
+Full list of modules, sub-modules, jobs and pages: `docs/modules.md`.
+
 Module rules:
 - A module exposes one `index.ts`. Other modules import only from it.
 - `packages/core` has no I/O. Business rules there are unit-tested without mocks.
@@ -106,6 +108,8 @@ flowchart TD
     Commit -->|error, retries left| Store
     Commit -->|error, no retries left| PlanManual
 ```
+
+Each step that crosses a module border is a DB status change that the next worker picks up (see `docs/modules.md` §2).
 
 Pipeline rules:
 1. **Hard rules before AI.** A whitelisted sender is never spam. A mail with the user's Manual Handling label is never touched.
@@ -190,7 +194,7 @@ erDiagram
 | `sender_rules` | mailbox_id, pattern (address or domain), kind (`whitelist` / `blocklist` / `vip`) |
 | `emails` | id, org_id, mailbox_id, provider_message_id, thread_id, from, to, subject, received_at, body_text (retention-limited), status, attempts, locked_at |
 | `triage_results` | email_id, category, confidence, reason, model, prompt_version, tokens, created_at |
-| `actions` | id, org_id, email_id, type, payload jsonb, status (`planned` / `awaiting_approval` / `approved` / `applied` / `rejected` / `expired` / `failed`), idempotency_key, approved_by, approved_at |
+| `actions` | id, org_id, email_id, type, payload jsonb, status (`planned` / `ready` / `logged` / `awaiting_approval` / `approved` / `applied` / `rejected` / `expired` / `failed`), notified_at, idempotency_key, approved_by, approved_at |
 | `audit_log` | id, org_id, email_id, action_id, actor (`system` / user id), event, reason, data jsonb, created_at — append-only |
 | `chat_links` | user_id, channel (`telegram`), external_chat_id, linked_at |
 | `digests` | org_id, user_id, period, content, sent_at |

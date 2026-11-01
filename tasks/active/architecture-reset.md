@@ -1,4 +1,4 @@
-> **Status 2026-11-01 — in progress.** Product brief accepted. `docs/architecture.md` + ADR 0001–0009 written (status: proposed). Left: user review of the architecture and ADRs → set ADRs to accepted → start slice S0 (foundation) as a new task file. Sections 2–5 below are the first draft; the docs in `docs/` replace them.
+> **Status 2026-11-02 — in progress.** Product brief accepted. `docs/architecture.md`, `docs/modules.md` + ADR 0001–0009 written (status: proposed). Left: user review of the architecture and ADRs → set ADRs to accepted → start slice S0 (foundation) as a new task file. Sections 2–5 below are the first draft; the docs in `docs/` replace them.
 
 # Architecture reset for email_assistant
 
@@ -129,3 +129,4 @@ Rules for this pipeline:
 - 2026-11-01: Read all docs and code. Wrote the review note and this plan. Removed flashcard text from `.ai/tech-stack.md`.
 - 2026-11-01: Read event storming + detailed PRD summary in full. Wrote `docs/product-brief.md` (decided items, 6 conflicts, Q1–Q8 with defaults). Repo origin: 10xDevs Astro starter (2025-04-06).
 - 2026-11-01: User answers: SaaS for business owners/managers; pilot = user + one Gmail; MVP cut OK; Telegram first (mobile app later); no send without direct user command; minimal audit log; defaults for language/volume/LLM. Wrote `docs/architecture.md` (diagrams, data model, slices S0–S6), `docs/decisions/0001–0009`, `.ai/README.md` (history marker); updated CLAUDE.md pointers.
+- 2026-11-02: User asked for a high-level overview (repo split, tech, modules). Wrote `docs/modules.md`: monorepo layout, "DB state + small workers" communication, module/sub-module catalog with owned tables and slices, web pages, status flows. Linked it from architecture.md.
