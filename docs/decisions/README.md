@@ -22,6 +22,6 @@ Template:
 | 0004 | Gmail API first, behind a MailProvider port | proposed |
 | 0005 | Telegram first, behind a ChatChannel port | proposed |
 | 0006 | Postgres (Supabase) for data, auth and work queue | proposed |
-| 0007 | LLM through Vercel AI SDK with Zod structured output | proposed |
+| 0007 | LLM through Vercel AI SDK with Zod structured output | under review |
 | 0008 | Minimal append-only audit log in MVP | proposed |
 | 0009 | Mail credentials encrypted in the server, never readable by clients | proposed |

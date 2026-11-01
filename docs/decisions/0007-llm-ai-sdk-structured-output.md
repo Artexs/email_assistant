@@ -1,5 +1,5 @@
 # 0007 — LLM through Vercel AI SDK with Zod structured output
-- Status: proposed
+- Status: proposed — under review 2026-11-02 (`docs/roadmap.md` §5 recommends the OpenAI SDK with a configurable baseURL for MVP)
 - Date: 2026-11-01
 
 ## Context
