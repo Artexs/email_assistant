@@ -3,8 +3,10 @@
 AI email assistant for managers: it categorizes mail, delegates tasks, filters spam and summarizes threads.
 Astro + React frontend in `src/`, Bun/TypeScript backend in `backend/`, Supabase.
 
-Architecture and patterns: @.ai/AGENT.md
-Product and stack: `.ai/prd.md`, `.ai/tech-stack.md`, `.ai/features.md`.
+Product (source of truth): `docs/product-brief.md`.
+Architecture and stack: `docs/architecture.md`, decisions in `docs/decisions/` (ADRs).
+Code patterns: @.ai/AGENT.md (to be rewritten in slice S0 to match `docs/architecture.md`).
+Old specs in `.ai/` are history: read them for detail, not for decisions.
 
 Before you diagnose an alert, grep docs/known-alerts.md.
 

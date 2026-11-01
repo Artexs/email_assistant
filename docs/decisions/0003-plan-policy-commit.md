@@ -1,0 +1,21 @@
+# 0003 — LLM returns data; plan → policy → commit; no send without user command
+- Status: proposed
+- Date: 2026-11-01
+
+## Context
+Trust is the product value. Email text is untrusted input (prompt injection). The user decided:
+the system never sends mail on its own, only when the user directly tells it to (product brief Q5).
+The old docs had two models: pure tools + committer (`main_overview.md`) and tools with side effects (`triage.v2.md`).
+
+## Decision
+- The LLM returns structured data only (category, confidence, reason, extracted fields, delegate id from a given list).
+- Tools are pure: they build an `ExecutionPlan`.
+- A policy gate decides per action: `apply`, `await_approval` or `log_only`, from mailbox mode, tool switch, risk and VIP status.
+- Only the committer has side effects. It is idempotent per action.
+- Every `send` action needs an approval record (user, time, channel). Approval = a button tap or a direct user command.
+- Mailbox modes in MVP: `shadow` (log only, default) and `assist`. No auto-send mode.
+
+## Consequences
+- Safe start: a new mailbox runs in shadow mode and only logs what it would do.
+- Easy tests: tools and policy are pure functions in `packages/core`.
+- Approvals need a channel (ADR 0005) and an `actions` table with statuses.

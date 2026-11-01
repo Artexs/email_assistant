@@ -5,7 +5,7 @@ This document outlines the core technologies used in the AI email assistant proj
 ## Frontend
 
 - **Astro:** The primary web framework. Used for its content-focused architecture, server-side rendering capabilities, and high performance. It acts as the orchestrator for the entire frontend.
-- **React:** Used for building interactive UI components ("islands of interactivity"). Specifically for features like the flashcard review grid, the study module, and other dynamic user interface elements.
+- **React:** Used for building interactive UI components ("islands of interactivity"). Specifically for features like the config panel, list management (whitelist, delegates), the style editor, and the delegation dashboard.
 - **TypeScript:** Provides static typing for all JavaScript code, improving code quality, maintainability, and developer experience.
 - **Tailwind CSS:** A utility-first CSS framework used for rapidly styling the application. It allows for building custom designs without writing traditional CSS.
 
@@ -13,12 +13,12 @@ This document outlines the core technologies used in the AI email assistant proj
 
 - **Supabase:** The all-in-one backend-as-a-service (BaaS) platform.
   - **Supabase Auth:** Manages all user authentication, including sign-up, login, password reset, and email verification.
-  - **Supabase Database:** A managed PostgreSQL database used to store all user data and flashcard content. It leverages Row Level Security (RLS) to ensure data privacy.
-- **Astro API Routes:** Used to create serverless backend endpoints for handling specific tasks, most importantly for securely communicating with the external AI service to generate flashcards.
+  - **Supabase Database:** A managed PostgreSQL database used to store all user data (mailboxes, contacts, delegates, categories, logs). It leverages Row Level Security (RLS) to ensure data privacy.
+- **Astro API Routes:** Used to create serverless backend endpoints for handling specific tasks, most importantly for securely communicating with the backend and external services.
 
 ## AI
 
-- **External AI Service (TBD):** An external API (e.g., OpenAI's GPT series, Google's Gemini) will be called from a secure backend route to perform the core function of generating questions and answers from user-provided text.
+- **External AI Service (TBD):** An external API (e.g., OpenAI's GPT series, Google's Gemini) will be called from a secure backend route to classify emails, generate drafts and summarize threads.
 
 ## Development & Tooling
 
