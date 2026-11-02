@@ -10,6 +10,7 @@ In mode `assist` the system changes the mailbox for real (folder moves, mark rea
 ## Done when
 - One week of `assist` mode with at most N wrong moves, found by Undo or feedback (the user sets N before the start).
 - The Undo button restores the mail (folder, read state, flag) and writes feedback (test).
+- A user move back to INBOX after a system move gives exactly one `imap_move` feedback row; after an Undo it gives none; a second identical copy of a moved mail is stored and triaged as a new mail (tests).
 - Every applied action has an audit row.
 - A test stops the process between the IMAP call and the DB commit; after restart there is no double action.
 - Soft errors do not count toward the 3 tries; after 3 hard errors the action is `failed` and the user gets a notice.

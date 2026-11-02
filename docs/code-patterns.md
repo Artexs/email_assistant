@@ -1,6 +1,6 @@
 # Code patterns — rules for agents and humans
 
-> **Proposed 2026-11-02.** Replaces `.ai/AGENT.md` (history: it describes the old `IntegrationFactory` and generic adapters; do not use them).
+> **Accepted 2026-11-02** (user). Replaces `.ai/AGENT.md` (history: it describes the old `IntegrationFactory` and generic adapters; do not use them).
 > Source: `docs/architecture.md` §3–4 and `docs/modules.md` §3. When code and this file disagree, fix one of them in the same commit.
 
 ## Layout and borders
@@ -25,6 +25,8 @@
 ## Side effects
 - Only `actions.committer` changes a mailbox or sends mail. Planners and the policy are pure functions in `packages/core`.
 - Non-idempotent provider calls (`create_draft`, `send`): commit status `applying` first; add the header `X-EA-Action-Id`.
+- `send` is at-most-once: never retry it by itself after SMTP DATA starts (`docs/architecture.md` §4.1 rule 6).
+- No import cycles between modules: a module sets a column that another module's worker reads (`docs/modules.md` §2).
 - The LLM returns data that a Zod schema checks. LLM text is untrusted: never use it as a recipient, a folder name or a command.
 
 ## Config and secrets

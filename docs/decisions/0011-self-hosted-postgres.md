@@ -1,5 +1,5 @@
 # 0011 — Own Postgres in Compose on the home VPS; no Supabase
-- Status: proposed (user decision 2026-11-02; the ADR text waits for the user's ADR review)
+- Status: accepted (user, 2026-11-02)
 - Date: 2026-11-02
 - Supersedes: 0006
 
@@ -13,7 +13,9 @@ Local Supabase starts about 10 containers. The server needs plain Postgres with 
   `db` listens only on the internal Compose network (or `127.0.0.1`). It has no public port.
 - SQL migration files in `db/migrations/` are the source of truth. A small runner applies them (tool chosen in S0, for example `dbmate`).
 - Query layer: Kysely + kysely-codegen (types from the DB).
-- The server uses its own DB role `app` (not the superuser). `app` has only INSERT and SELECT on `audit_log`.
+- The server uses its own DB role `app` (not the superuser). `db/roles.sql` creates `app` and `migrator` (owner of the tables, runs the migrations);
+  migrations grant `app` its rights.
+  `app` has only INSERT and SELECT on `audit_log`.
   One privileged function deletes the data of a mailbox or an organization.
 - Tenant isolation: every repository function takes a `TenantContext` and filters by `org_id`. Integration tests check this.
   Option for S6: the server runs under RLS with `set_config('app.org_id', …)` in each transaction.

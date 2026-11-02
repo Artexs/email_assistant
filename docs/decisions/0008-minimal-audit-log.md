@@ -1,5 +1,5 @@
 # 0008 — Minimal append-only audit log in MVP
-- Status: proposed
+- Status: accepted (user, 2026-11-02)
 - Date: 2026-11-01
 
 ## Context

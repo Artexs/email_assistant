@@ -1,5 +1,5 @@
 # 0002 — One repo, Bun workspaces, modular monolith
-- Status: proposed
+- Status: accepted (user, 2026-11-02)
 - Date: 2026-11-01
 
 ## Context

@@ -20,7 +20,7 @@
 | Processing | Fetch new mail every ~5 min, process at once, store results. Show results at fixed times (10:00, 14:00) + on demand. | event storming 1–2 |
 | Categories | One physical folder per email, many tags. Priority: Urgent > Delegation > Meeting > Info > Spam (VIP raises priority, it is not a category). **Changed 2026-11-02:** the MVP category list is in `docs/architecture.md` §4.2; meeting requests count as "needs reply" until Phase 2. | event storming 4–5 |
 | VIP / whitelist | VIP is a priority modifier, not a category. Whitelisted mail is never spam (hard rule, before AI). | event storming 8, `prd.md` US-006 |
-| Low confidence | AI confidence below the threshold → "Manual Handling" folder (`AI/Manual`). Start value 70%; the S1b eval sets one threshold per category. | `prd.md` 3.2 |
+| Low confidence | AI confidence below the threshold → category `unsure`, digest section NEEDS ACTION. **Changed 2026-11-02:** it moves to the "Manual Handling" folder (`AI/Manual`) only when the user turns on that switch (default: stays in INBOX). Start value 70%; the S1b eval sets one threshold per category. | `prd.md` 3.2 |
 | Manual Handling folder | Write-only: the system puts mail there and never touches it again. | `ddd/szczegółowe_…` |
 | Delegation | A: delegate found → delegation draft + track (**changed:** send only after approval, Q5). B: data missing → draft with questions. C: no delegate → Manual Handling. | event storming 9 |
 | Follow-up | Overdue delegations go to the report. The user can send a reminder (one or all). | event storming 20–22 |

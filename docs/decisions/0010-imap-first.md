@@ -1,5 +1,5 @@
 # 0010 — IMAP + SMTP with a password first, behind a MailProvider port
-- Status: proposed (user decision 2026-11-02; the ADR text waits for the user's ADR review)
+- Status: accepted (user, 2026-11-02)
 - Date: 2026-11-02
 - Supersedes: 0004
 
@@ -16,7 +16,9 @@ That cost does not apply to IMAP at Interia. Many Polish business mailboxes are 
 - One `MailProvider` port in the `mail` module. First adapter: `imap/` (libraries `imapflow`, `mailparser`, `nodemailer`).
 - TLS certificates are always checked (the old Interia config turned the check off: `backend/src/adapters/get_provider.ts:35`).
 - Folders replace Gmail labels: `AI/Spam`, `AI/Info`, `AI/Notifications`, `AI/Manual` (names from config, per mailbox).
-- Sync: poll INBOX every 5 minutes with a cursor (UIDVALIDITY + last UID). The dedup key is the `Message-ID` header.
+- Sync: poll INBOX every 5 minutes with a cursor (UIDVALIDITY + last UID). The dedup key is the `Message-ID` header + a content hash.
+- Send is at-most-once: SMTP has no idempotency key. The action is `applied` at once after the SMTP 250, and the system never retries
+  a send by itself after an error with an unknown stage (`docs/architecture.md` §4.1 rule 6).
   IMAP IDLE (push) can come later.
 - The rules for sync, threads, moves, drafts and send are in `docs/architecture.md` §6.1.
 

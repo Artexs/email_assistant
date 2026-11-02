@@ -1,5 +1,5 @@
 # 0001 — Multi-tenant SaaS, one pilot tenant in MVP
-- Status: proposed
+- Status: accepted (user, 2026-11-02)
 - Date: 2026-11-01
 
 ## Context
@@ -13,6 +13,6 @@ and multi-tenancy "later". Adding tenancy later means a data migration and a sec
 - MVP runs one organization (the pilot user). Sign-up for other organizations comes in slice S6.
 
 ## Consequences
-- Small extra cost now (one column, one policy per table). No rewrite later.
+- Small extra cost now (one `org_id` column and one filter per query, with tests). No rewrite later.
 - Every server query must carry a `TenantContext` (see ADR 0011).
 - The assistant role exists in the schema but has no UI until Phase 2.

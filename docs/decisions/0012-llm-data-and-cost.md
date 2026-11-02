@@ -1,5 +1,5 @@
 # 0012 — LLM: data rules, endpoint per stage, cost and failure limits
-- Status: proposed (user decision on data 2026-11-02; the ADR text waits for the user's ADR review)
+- Status: accepted (user, 2026-11-02)
 - Date: 2026-11-02
 - Amends: 0007 (Gemini and `@google/genai` stay)
 
@@ -14,6 +14,7 @@ Price of `gemini-3.8-flash` (per 1M tokens, paid): $0.75 input / $3.75 output un
 Output includes thinking tokens. On 2026-11-02 the model returned `503 high demand`, and one call hung for more than 90 s.
 
 ## Decision
+- **Billing gate point:** ADR 0007 names "slice S1 on the user's real Gmail". It is now slice S1b on the user's Interia mail.
 - **Pilot (the user's own Interia mail):** Gemini Developer API, paid tier. The user accepts the 55-day abuse logging
   and no EU location (user, 2026-11-02). Cloud Billing must be on before real mail (ADR 0007 gate stays).
 - **Before the first external customer:** `platform/llm.ts` moves to Vertex AI with the EU endpoint and its zero-data-retention setup.

@@ -1,6 +1,6 @@
 # Module catalog — AI Email Assistant
 
-> **Proposed 2026-11-02, revised 2026-11-02** after the cold review (IMAP first, own Postgres, feedback and Undo).
+> **Accepted 2026-11-02** (user). Revised 2026-11-02 after the cold review (IMAP first, own Postgres, feedback and Undo) and a second review (`tasks/done/docs-and-adr-review.md`).
 > Detail for `docs/architecture.md` sections 3–5. Decisions: `docs/decisions/`.
 
 ## 1. Big picture
@@ -40,9 +40,9 @@ flowchart LR
         J6[delegation.chaser<br/>daily, S4]
     end
 
-    J1 --> E1[(emails<br/>pending)]
-    J1 --> F1[(triage_feedback<br/>user moved mail back)]
+    J1 --> E1[(emails<br/>pending / returned_at)]
     E1 --> J2
+    J2 --> F1[(triage_feedback<br/>user moved mail back)]
     J2 --> A1[(actions<br/>ready / awaiting_approval / logged)]
     A1 -->|ready| J3
     A1 -->|awaiting_approval| J4
@@ -75,10 +75,14 @@ graph TD
     api --> actions
     api --> audit
     api --> reports
+    api --> triage
+    api --> channels
+    api --> delegation
     triage --> config
     triage --> mail
     triage --> core
     triage --> delegation
+    triage --> actions
     actions --> mail
     actions --> audit
     actions --> core
@@ -86,6 +90,12 @@ graph TD
     channels --> reports
     channels --> triage
     channels --> tenancy
+    channels --> mail
+    config --> tenancy
+    reports --> tenancy
+    reports --> actions
+    reports --> triage
+    reports --> delegation
     reports --> audit
     reports --> core
     delegation --> actions
@@ -100,7 +110,9 @@ graph TD
 ```
 
 `triage → delegation`: the hard rule "reply in a delegation thread" reads open delegations (S4).
-`channels → triage`: the ✅ / ✏️ buttons write feedback through `triage.recordFeedback()`.
+`triage → actions`: the triage worker writes the action rows through `actions.createPlanned()` in its transaction.
+`channels → triage`: the ✅ / ✏️ buttons and the Undo button write feedback through `triage.recordFeedback()`.
+`actions` never calls `triage`, and `mail` never calls `triage`: they set columns that the triage worker reads (no import cycles).
 
 ## 3. Modules in `apps/server`
 
@@ -124,7 +136,7 @@ Code rules: `docs/code-patterns.md`.
 ### 3.1 `tenancy` — who is who (S0)
 
 - **Owns:** `organizations`, `users`, `memberships`.
-- **Does:** creates the pilot organization and user (CLI `bun run org:create`); resolves `TenantContext` from a session (web) or a linked chat (Telegram); checks roles.
+- **Does:** creates the pilot organization and user (CLI `bun run org:create`, S0); owns style text and digest times; resolves `TenantContext` from a session (web) or a linked chat (Telegram); checks roles.
 - **Later:** login (S5), self sign-up (S6), invite assistant (Phase 2).
 
 ### 3.2 `mail` — access to mailboxes (S1a)
@@ -137,7 +149,7 @@ Code rules: `docs/code-patterns.md`.
 | `imap/mapper` | MIME → `Email` (`mailparser`): headers, `thread_key`, HTML → plain text (`html-to-text`), size limit |
 | `connect` | CLI `bun run mailbox:connect` (web form in S5): login test, capabilities, special-use folders, `AI/*` folders, encrypted secret |
 | `connections` | Mailbox list / pause / remove; `mailbox_credentials`; status `active` / `auth_error` / `paused` |
-| `sync` (job) | Every 5 min per active mailbox: new INBOX mail → `emails` (`pending`); known mail back in INBOX → feedback; new cursor |
+| `sync` (job) | Every 5 min per active mailbox: new INBOX mail → `emails` (`pending`); known mail back in INBOX after a system move → `emails.returned_at`; new cursor |
 | `fake/` | In-memory `MailProvider` for tests |
 
 - **Owns:** `mailboxes`, `mailbox_credentials`, `emails`.
@@ -147,7 +159,8 @@ Code rules: `docs/code-patterns.md`.
 ### 3.3 `config` — user settings (S1a, UI in S5)
 
 - **Owns:** `mailbox_settings` (mode `shadow` / `assist`, tool switches, category policy), `sender_rules` (whitelist, blocklist, VIP; address or domain;
-  per organization, optional per mailbox). Style text lives on `organizations`; digest times on `memberships`.
+  per organization, optional per mailbox). Style text (`organizations`) and digest times (`memberships`) belong to `tenancy`;
+  `config`, `reports` and the API read and write them through `tenancy`'s `index.ts`.
 - **Does:** validation (for example: the owner's own address cannot be a delegate); default settings for a new mailbox (mode `shadow`, all automatic moves off).
 
 ### 3.4 `triage` — understand each email (S1b)
@@ -159,7 +172,7 @@ Code rules: `docs/code-patterns.md`.
 | `prompts/` | Versioned prompt texts; the version id goes to `triage_results` |
 | `planners` (in `core`) | One per category: `urgent`, `needs_reply`, `info`, `notification`, `spam`, `unsure`; `delegation` in S4. Each returns an `ExecutionPlan` |
 | `policy` (in `core`) | Pure truth table (`docs/architecture.md` §4.3): `apply` / `await_approval` / `log_only` per action |
-| `feedback` | `recordFeedback()` from CLI, Telegram, Undo, IMAP moves, web; labeling CLI `bun run triage:label` |
+| `feedback` | `recordFeedback()` (verdict, optional true category) from CLI, Telegram, Undo, web; turns `emails.returned_at` into feedback; labeling CLI `bun run triage:label` |
 | `worker` (job) | Claims `pending` emails (`SKIP LOCKED`), runs rules → classifier → planner → policy, saves `triage_results` + `actions` in one transaction, sets email `triaged` |
 
 - **Owns:** `triage_results`, `triage_feedback`.
@@ -168,10 +181,10 @@ Code rules: `docs/code-patterns.md`.
 
 | Sub-module | Does |
 |---|---|
-| `committer` (job) | Takes `ready` and `approved` actions; `applying` before non-idempotent calls; calls `MailProvider`; sets `applied` / `failed`; writes `audit_log` in the same transaction; recovery from `applying` by `X-EA-Action-Id` |
+| `committer` (job) | Takes `ready` and `approved` actions (a send only after its draft is `applied`); `applying` before `create_draft` and `send`; calls `MailProvider`; sets `applied` / `failed` and `emails.folder`; writes `audit_log` in the same transaction; recovery from `applying` by `X-EA-Action-Id` (send: at-most-once, `docs/architecture.md` §4.1 rule 6) |
 | `approvals` | `approve(actionId, user, channel)`, `reject(...)` — conditional update on `awaiting_approval` |
-| `undo` | `undo(actionId, user)`: builds the reverse plan, marks the original `undone`, writes feedback |
-| `expiry` (job) | `awaiting_approval` older than 48 h → `expired` |
+| `undo` | `undo(actionId, user)`: creates the reverse action (`ready`). The committer applies it, then sets the original `undone` and `emails.folder` in one transaction. The caller writes the feedback row |
+| `expiry` (job) | `awaiting_approval` 48 h after `notified_at` → `expired`; a send whose draft is `failed` or `undone` → `expired` (`draft_missing`) |
 | `retry` | Backoff for soft errors (no count); hard errors count; after 3 → `failed` + notice |
 
 - **Owns:** `actions`.

@@ -1,5 +1,5 @@
 # 0003 — LLM returns data; plan → policy → commit; no send without user command
-- Status: proposed
+- Status: accepted (user, 2026-11-02)
 - Date: 2026-11-01
 
 ## Context

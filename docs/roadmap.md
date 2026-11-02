@@ -1,6 +1,6 @@
 # Roadmap, scope and size — AI Email Assistant
 
-> **Proposed 2026-11-02, revised 2026-11-02** after the cold review (`tasks/done/mvp-plan-review.md`) and the user's answers
+> **Accepted 2026-11-02** (user). Revised 2026-11-02 after the cold review (`tasks/done/mvp-plan-review.md`) and the user's answers
 > (Interia IMAP pilot, home VPS, own Postgres, changed slice plan accepted).
 > Explains the delivery slices from `docs/architecture.md` §11. The plan is known at module level (`docs/modules.md`).
 > Each slice has a task file (`tasks/planned/s0-foundation.md` … `s6-pre-sale.md`) with its goal, done-when and status.
@@ -30,7 +30,8 @@
 ### Not in the MVP (Phase 2)
 - Gmail and Microsoft 365 adapters (OAuth; Gmail OAuth needs Google verification + CASA), web pages for approvals, digests and delegation,
   style learning, two-way chat with intents, voice notes, meetings + calendar, mobile app, WhatsApp, RAG / vector search,
-  manual delegation from chat (old PRD US-012), assistant role UI.
+  manual delegation from chat (old PRD US-012) and the Sent-folder check for manual delegations (`.ai/notes.md`), assistant role UI,
+  a stats page (old PRD US-013; the MVP has the weekly "handled share" line in the digest).
 
 ## 2. Slices
 
@@ -92,7 +93,7 @@ Hardest parts (most risk):
 1. Classification accuracy on real Polish + English mail (S1b). This is why S1b runs in shadow mode and S3 waits for the go/no-go table.
 2. IMAP edge cases (S1a): provider differences (MOVE, UIDPLUS, keywords), UIDVALIDITY changes, mail without `Message-ID`,
    mail that the user moves back, threads built from headers.
-3. Exactly-once actions and approvals across crashes and retries (S3, S4).
+3. Exactly-once drafts and moves, at-most-once send, and approvals across crashes and retries (S3, S4).
 4. Prompt injection that reaches delegates through drafts (S4).
 5. Home VPS operations: backups, liveness, updates (from S1a).
 
@@ -108,7 +109,7 @@ Hardest parts (most risk):
 
 - SDK `@google/genai`, key `GEMINI_API_KEY`, model from config `GEMINI_MODEL` (dev: `gemini-3.8-flash`), optional `GEMINI_MODEL_CLASSIFIER`.
 - All calls go through `platform/llm.ts` (`classify`, `write`): timeout 30 s, rate limiter, 429 / 503 / timeout = soft errors.
-- Setup check: `cd backend && bun run gemini:test` (script `backend/src/scripts/gemini_test.ts`). On 2026-11-02 the key worked, but the model returned `503 high demand`.
+- Setup check: `cd backend && bun run gemini:test` (script `backend/src/scripts/gemini_test.ts`; S0 moves it to `apps/server/src/scripts/` and runs it from the repo root). On 2026-11-02 the key worked, but the model returned `503 high demand`.
 - **Billing gate:** free tier only with test data. Turn on Cloud Billing before S1b runs on real mail.
 - **Data:** pilot on the Gemini API paid tier (55-day abuse logging, no EU location, accepted). Vertex AI EU before the first external customer (S6).
 - **Cost:** about $20 per mailbox per month at 200 mails/day with `gemini-3.8-flash` now, about $40 from 2027-01-01 (price doubles).
