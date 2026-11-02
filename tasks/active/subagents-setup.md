@@ -41,13 +41,33 @@ stop and report when the step is unclear (do not guess); return files changed, t
 6. Reviewer: `disallowedTools: Edit, Write` still leaves Bash, which can write files. Is a prompt rule enough, or add a hook?
 7. Harness: these files work in Claude Code. The user also uses pi (`~/.pi/agent`). Does the user run the slices in Claude Code? [pi subagent support not verified]
 
+## Review of the proposal (second agent, 2026-11-02; not agreed yet)
+Sources: Claude Code docs (link below); MEGA course `~/Documents/repos/mega`: lessons s01e02 "Subagents and Workers", s01e04 "Multi-agent";
+examples `fork-or-fresh-subagent`, `worker-result-handoff`, `pr-review-rules`, `self-verification`, `effort-routing`, `worktree-isolation`.
+- Keep the main session as planner + orchestrator. Correct: only it can ask the user, and the plan needs approval.
+- The plan file is the only brief. A fresh subagent knows only its prompt (`fork-or-fresh-subagent`: task-only subagent kept 0–1 of 4 earlier decisions).
+  So each step must hold: goal, files, interfaces, decisions from the chat, test to write, check command, done-when, out of scope.
+- Fixed report shape for the implementer (files, check command + output, commit hash, deviations, open points). `worker-result-handoff`: a filed report beats reading the screen.
+- Reviewer gets rules + plan + touched files, not the diff only (`pr-review-rules`). It runs the check commands itself and does not trust the implementer's output (`self-verification`: green tests are not proof).
+- Review cost: review each `[risky]` step at once; review normal steps together at the end of the slice (one commit range). Max 2 fix rounds, then the user decides.
+- Fix round: send findings back to the same implementer (`SendMessage` resumes it with its history), not a new one.
+- Nesting: a `tools` allowlist without `Agent` already blocks nesting for that subagent. No env var needed.
+- Reviewer read-only: add a subagent-scoped `PreToolUse` hook on Bash that blocks `git commit|push|reset|checkout|rm` and `>` redirects (exit 2). A prompt rule alone is weak.
+- Permissions: no `defaultMode` in `~/.claude/settings.json` and no `.claude/settings.json` in the repo (checked). Add a project allowlist (`bun test`, typecheck, `git add|commit|diff|status|log`) so subagents do not stop on prompts.
+- Optional: a skill `run-slice` holds the orchestrator procedure, so a session starts with one command. The loop text stays in `tasks/README.md`.
+- Not now: background workers / worktrees (course s01e04, Limen + Herdr). Builds run one at a time on `master`, so foreground subagents are enough.
+- pi: `~/.pi/agent/extensions/` has only `handoff.ts` and `web-privacy-guard.ts`. No subagent support in pi now (checked); run slices in Claude Code.
+
 ## Facts (Claude Code docs, checked 2026-11-02, https://code.claude.com/docs/en/sub-agents)
 - Files: `.claude/agents/*.md` (project, commit them) or `~/.claude/agents/` (all projects). Markdown with YAML frontmatter; the body is the system prompt.
 - Required fields: `name`, `description`. Useful: `tools`, `disallowedTools`, `model` (`sonnet`, `opus`, `haiku`, `fable`, a full id, or `inherit`), `permissionMode`, `maxTurns`, `effort`, `color`, `skills`.
 - A subagent starts with a fresh context: its system prompt, the task message, CLAUDE.md files, a git status snapshot. It returns only a summary.
 - A subagent cannot ask the user questions (`AskUserQuestion` is removed). Permission prompts pass through to the user.
 - Call one explicitly with `@agent-<name>` or by name in the prompt. `/agents` now only prints where the files live.
+- Model order: per-call `model` (aliases only) > frontmatter `model` > `CLAUDE_CODE_SUBAGENT_MODEL` > main model. `effort`: `low`–`max`. `maxTurns` stops a runaway subagent.
+- Subagent-scoped `hooks` in frontmatter run only while that subagent runs. `memory: project` gives a subagent its own `MEMORY.md` across sessions.
 - `isolation: worktree` runs a subagent in a temporary git worktree. Do not use it: `CLAUDE.md` forbids other branches.
 
 ## Log
 - 2026-11-02: Created from the MVP review chat. The user asked for three subagents and a handoff to discuss them with another agent.
+- 2026-11-02: Second agent checked the handoff claims (all true), read the course material, added "Review of the proposal". No agent files yet.
