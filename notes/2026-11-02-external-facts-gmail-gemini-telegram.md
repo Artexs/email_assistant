@@ -74,6 +74,16 @@ Each fact has its source URL. Check the facts again if they are older than about
 - `setWebhook` `secret_token`: 1–256 characters `A-Z a-z 0-9 _ -`, sent in header `X-Telegram-Bot-Api-Secret-Token`.
   — https://core.telegram.org/bots/api/methods/setwebhook.md
 
+## Interia mail (IMAP) — the pilot mailbox since 2026-11-02
+
+- Turn on mail-client access first: Ustawienia → Główne ustawienia → Parametry → "korzystam z programu pocztowego" = TAK.
+- IMAP `poczta.interia.pl`, port 993 SSL/TLS. SMTP `poczta.interia.pl`, port 465 SSL/TLS (or 587 STARTTLS); SMTP needs login.
+  User name = the full address. — https://pomoc.poczta.interia.pl/programy-pocztowe/news-parametry-do-konfiguracji-programow-pocztowych,nId,2136275
+- Interia turns off the unencrypted port 143. — https://pomoc.poczta.interia.pl/programy-pocztowe/news-wylaczamy-nieszyfrowany-port-143-sprawdz-jak-przejsc-na-port,nId,23503253
+- Not checked yet: app passwords, and the server's IMAP extensions (IDLE, MOVE, UIDPLUS, CONDSTORE, custom keywords).
+  Check them with `imapflow` on the real account before S1.
+- Google verification and CASA apply only to Gmail scopes. They do not apply to Interia IMAP.
+
 ## Local facts (this repo and the dev server)
 
 - The azyl dev server home folder is shared with other projects and tools (`.claude/skills/vps-ssh/SKILL.md`).

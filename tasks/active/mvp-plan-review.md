@@ -1,4 +1,4 @@
-> **Status 2026-11-02 — in progress.** Left: the user decides on each finding (accept / reject / later) and answers the 5 questions at the end of "Findings"; then an agent applies the accepted fixes to `docs/` and the slice files.
+> **Status 2026-11-02 — in progress.** Left: the user answers the open points in "User answers" (Gemini retention, IMAP scope, VPS DB, plan accept); then an agent applies the accepted fixes to `docs/` and the slice files.
 
 # Cold review of the MVP plan
 
@@ -436,6 +436,28 @@ Milestones: **pilot MVP** = S0–S4 (the user's own mailbox, Telegram + CLI). **
 4. Is "precision ≥ 98% per category" the right bar for automatic archive? (F6)
 5. Do you accept the changed slice plan, in full or in part?
 
+### User answers (2026-11-02)
+- **Pilot host (Q3):** a home VPS that runs all the time. → F2 is solved in principle.
+  A home host needs no inbound port: IMAP polling and Telegram long polling use outbound connections only.
+  Still open: the DB on the VPS (self-hosted Postgres / Supabase) or hosted Supabase in the EU; backups.
+- **Pilot mailbox (Q1):** IMAP at Interia (`@poczta.interia.pl`), not Gmail. This changes ADR 0004 (Gmail API first).
+  - Google verification and CASA do not apply to Interia. They apply only to apps that use Gmail scopes.
+    → F3 and F11 drop out for the pilot. They come back only if the product later serves Gmail users.
+  - F8 becomes "IMAP rules": folders instead of labels, cursor = UID + UIDVALIDITY,
+    threads from `Message-ID` / `In-Reply-To` / `References`, drafts by APPEND to the Drafts folder, send by SMTP + APPEND to Sent.
+  - F9 still applies: a folder MOVE gives the mail a new UID, and SMTP has no idempotency key.
+    Find a moved or sent mail again by its `Message-ID`.
+  - New: the IMAP password (or app password) goes into `mailbox_credentials`, encrypted (ADR 0009 stays).
+    Fix the old Interia config: `tls: { rejectUnauthorized: false }` in `backend/src/adapters/get_provider.ts:35` turns off the certificate check.
+  - New: check the server features on the real account before S1: IDLE, MOVE, UIDPLUS, CONDSTORE, custom keywords (for tags).
+  - Interia setup: turn on "korzystam z programu pocztowego" (Ustawienia → Główne ustawienia → Parametry).
+    IMAP `poczta.interia.pl:993` SSL/TLS, SMTP `poczta.interia.pl:465` SSL/TLS (pomoc.poczta.interia.pl).
+- **Still open:**
+  1. Q2: do you accept the Gemini API paid tier for your Interia mail (55-day abuse logging, no EU location)?
+  2. Is IMAP only for the pilot, or the product's first mail type (Gmail and Microsoft 365 later)? This decides the new ADR that replaces ADR 0004.
+  3. Q4: precision ≥ 98% per category before automatic archive. Default if no answer.
+  4. Q5: accept the changed slice plan, with S1a = "IMAP read + home VPS" and S6a (Google verification) only when Gmail users come.
+
 ## Done-checklist
 - [ ] Done-when checks pass.
 - [ ] `docs/` describe the accepted fixes; related ADRs updated.
@@ -447,3 +469,5 @@ Milestones: **pilot MVP** = S0–S4 (the user's own mailbox, Telegram + CLI). **
 - 2026-11-02: Reviewer (Claude Code, claude-opus-5-5) read all scope files, the old `.ai/` docs and the code in `backend/` and `src/`.
   Checked the external facts with sources (note above). Wrote 22 findings (1 blocker, 12 major, 9 minor) and a changed slice plan.
   No change to `docs/` or the slice files.
+- 2026-11-02: User answers: the pilot runs on a home VPS; the pilot mailbox is Interia IMAP, not Gmail.
+  Recorded under "User answers": F3 and F11 drop out for the pilot; F8 becomes IMAP rules; 4 points still open.
