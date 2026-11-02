@@ -1,4 +1,4 @@
-> **Status 2026-11-01 — in progress.** Left: decide on old rule files (`.cursor/rules/`, `.windsurfrules`, `.ai/`; `.github/copilot-instructions.md` does not exist); check code rules from Hotshots-appbackend.
+> **Status 2026-11-02 — planned** (moved from `active/` by the cold review, finding F22). Left: decide on old rule files (`.cursor/rules/`, `.windsurfrules`, `.ai/`; `.github/copilot-instructions.md` exists (10xDevs template with placeholders)); check code rules from Hotshots-appbackend.
 
 # Agent config setup for email_assistant
 

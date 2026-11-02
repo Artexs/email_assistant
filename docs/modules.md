@@ -1,23 +1,25 @@
 # Module catalog — AI Email Assistant
 
-> **Proposed 2026-11-02.** Detail for `docs/architecture.md` sections 3–5. Decisions: `docs/decisions/`.
+> **Proposed 2026-11-02, revised 2026-11-02** after the cold review (IMAP first, own Postgres, feedback and Undo).
+> Detail for `docs/architecture.md` sections 3–5. Decisions: `docs/decisions/`.
 
 ## 1. Big picture
 
 - **One repository** (monorepo, Bun workspaces). Not many repos: one developer, shared types, one CI, atomic changes.
   A future mobile app also goes into this repo as `apps/mobile`.
-- **Three deployable parts:** `apps/server` (one Bun process), `apps/web` (Astro), Postgres (Supabase).
+- **Two containers in the pilot:** `server` (one Bun process; from S5 it also serves the web build) and `db` (Postgres 17). Compose files in `deploy/`.
 - **One shared package:** `packages/core` (pure logic + Zod schemas, no I/O).
 
 ```
 email_assistant/
 ├─ apps/
 │  ├─ server/        Bun + Hono: HTTP API, workers, scheduler, Telegram bot
-│  ├─ web/           Astro + React: web panel
+│  ├─ web/           Web panel (S5)
 │  └─ mobile/        (Phase 2) mobile app
 ├─ packages/
-│  └─ core/          domain types, Zod schemas, rules, policy, planners, digest builder
-├─ supabase/         SQL migrations, seed
+│  └─ core/          domain types, Zod schemas, categories, rules, policy, planners, digest builder
+├─ db/migrations/    SQL migrations
+├─ deploy/           compose.yaml, server Dockerfile, backup script
 ├─ evals/            prompt evaluation
 └─ docs/
 ```
@@ -34,29 +36,34 @@ flowchart LR
         J2[triage.worker<br/>every 15 s]
         J3[actions.committer<br/>every 15 s]
         J4[channels.notifier<br/>every 15 s]
-        J5[reports.digest<br/>user times]
+        J5[reports.digest<br/>member times]
         J6[delegation.chaser<br/>daily, S4]
     end
 
-    E1[(emails<br/>pending)] --> J2
-    J1 --> E1
-    J2 --> A1[(actions<br/>planned → ready /<br/>awaiting_approval)]
+    J1 --> E1[(emails<br/>pending)]
+    J1 --> F1[(triage_feedback<br/>user moved mail back)]
+    E1 --> J2
+    J2 --> A1[(actions<br/>ready / awaiting_approval / logged)]
     A1 -->|ready| J3
     A1 -->|awaiting_approval| J4
     J4 -->|button tap| A2[(actions<br/>approved)]
     A2 --> J3
     J3 --> A3[(actions applied<br/>+ audit_log)]
+    A3 --> J4
     A3 --> J5
 ```
+
+Small jobs (not in the picture): `actions.expiry` (hourly), `platform.retention` (daily), `platform.heartbeat` (every 5 min).
 
 Why:
 - **Crash safety.** If the process stops, no work is lost. On restart each worker continues from the DB state.
 - **No import cycles.** Example: `actions` needs to ask for approval and `channels` needs to approve actions.
   `actions` only sets `awaiting_approval`; `channels.notifier` reads it. `channels` calls `actions.approve()` on a button tap.
-- **Visible state.** Each email and action has a status you can query and show in the web panel.
-- Latency is seconds to minutes. This is fine for email. Urgent notices go out within one notifier tick.
+- **Visible state.** Each email and action has a status you can query and show.
+- Latency is seconds to minutes. This is fine for email. Urgent notices go out within one notifier tick after triage (≤ 10 min after arrival).
 
-Direct calls stay for reads and simple commands (for example `triage` reads `config` rules; `api` routes call module services).
+Direct calls stay for reads and simple commands (for example `triage` reads `config` rules; API routes call module services).
+The triage worker calls the pure policy from `packages/core` in its own transaction (no separate gate job).
 
 Module dependencies (arrow = "uses"):
 
@@ -71,11 +78,13 @@ graph TD
     triage --> config
     triage --> mail
     triage --> core
+    triage --> delegation
     actions --> mail
     actions --> audit
     actions --> core
     channels --> actions
     channels --> reports
+    channels --> triage
     channels --> tenancy
     reports --> audit
     reports --> core
@@ -90,86 +99,96 @@ graph TD
     platform[platform<br/>db, llm, crypto, log, http, scheduler]
 ```
 
+`triage → delegation`: the hard rule "reply in a delegation thread" reads open delegations (S4).
+`channels → triage`: the ✅ / ✏️ buttons write feedback through `triage.recordFeedback()`.
+
 ## 3. Modules in `apps/server`
 
 Each module folder: `index.ts` (public API), `service.ts`, `repo.ts` (DB), `routes.ts` (HTTP, if any), `jobs.ts` (workers, if any), `*.test.ts`.
+Code rules: `docs/code-patterns.md`.
 
 ### 3.0 `platform` — technical base (not a business module)
 
 | Part | Does | Tech |
 |---|---|---|
 | `config` | Reads and checks env at start; fails fast on a missing key | Zod |
-| `db` | Postgres pool, transactions, `TenantContext`, generated types | Kysely + kysely-codegen (confirm in S0) |
-| `llm` | Model roles `classifier` / `writer`, structured output, retries | `@google/genai` (Gemini), Zod |
-| `crypto` | AES-256-GCM encrypt / decrypt with key version | Web Crypto / `node:crypto` |
-| `log` | Levels, `[module]` prefix, no mail bodies or tokens | own `log` util |
-| `http` | Hono app, JWT check (Supabase), error handler, `/health` | Hono |
+| `db` | Postgres pool, transactions, `TenantContext`, generated types, migration runner | Kysely + kysely-codegen, `pg`; runner chosen in S0 (for example `dbmate`) |
+| `llm` | Roles `classifier` / `writer`, structured output, timeout, rate limiter, soft-error rules | `@google/genai` (Gemini), Zod |
+| `crypto` | AES-256-GCM encrypt / decrypt with key version | `node:crypto` |
+| `log` | Levels, `[module]` prefix, no mail bodies or secrets | own `log` util |
+| `http` | Hono app, session check (S5), error handler, `/health` | Hono |
 | `scheduler` | Cron-like timers for jobs; one tick never overlaps the next | croner |
+| `retention` (job) | Clears text columns after their retention time (`docs/architecture.md` §7) | — |
+| `heartbeat` (job) | Pings the external dead-man's-switch service | — |
 
 ### 3.1 `tenancy` — who is who (S0)
 
-- **Owns:** `organizations`, `memberships`.
-- **Does:** creates the pilot organization; resolves `TenantContext` from a JWT (web) or a linked chat (Telegram); checks roles.
-- **Later:** self sign-up, invite assistant (S6 / Phase 2).
+- **Owns:** `organizations`, `users`, `memberships`.
+- **Does:** creates the pilot organization and user (CLI `bun run org:create`); resolves `TenantContext` from a session (web) or a linked chat (Telegram); checks roles.
+- **Later:** login (S5), self sign-up (S6), invite assistant (Phase 2).
 
-### 3.2 `mail` — access to mailboxes (S1)
+### 3.2 `mail` — access to mailboxes (S1a)
 
 | Sub-module | Does |
 |---|---|
-| `port.ts` | `MailProvider` interface: `syncSince(cursor)`, `getMessage`, `ensureLabels`, `modifyLabels`, `archive`, `markRead`, `createDraft`, `sendDraft`, `getThread` |
-| `gmail/oauth` | Connect flow (consent URL, callback), token refresh, scope check |
-| `gmail/client` | Gmail API calls with backoff on 429 / 5xx |
-| `gmail/mapper` | Gmail message → `Email` (headers, thread id, HTML → plain text, size limit) |
-| `connections` | Mailbox list / add / pause / remove; `mailbox_credentials` (encrypted); status `active` / `auth_error` |
-| `sync` (job) | Every 5 min per active mailbox: history since cursor → upsert `emails` with status `pending`; new cursor |
+| `port.ts` | `MailProvider` interface: `fetchNewSince(cursor)`, `getMessage`, `findByMessageId`, `ensureFolders`, `move`, `setFlags`, `appendDraft`, `send`, `capabilities` |
+| `imap/client` | IMAP over TLS (`imapflow`): connection, UID cursor, MOVE or COPY + EXPUNGE, flags, APPEND, `SEARCH HEADER`; backoff on errors |
+| `imap/smtp` | SMTP over TLS (`nodemailer`): send with `X-EA-Action-Id`, `In-Reply-To`, `References`; copy to Sent if needed |
+| `imap/mapper` | MIME → `Email` (`mailparser`): headers, `thread_key`, HTML → plain text (`html-to-text`), size limit |
+| `connect` | CLI `bun run mailbox:connect` (web form in S5): login test, capabilities, special-use folders, `AI/*` folders, encrypted secret |
+| `connections` | Mailbox list / pause / remove; `mailbox_credentials`; status `active` / `auth_error` / `paused` |
+| `sync` (job) | Every 5 min per active mailbox: new INBOX mail → `emails` (`pending`); known mail back in INBOX → feedback; new cursor |
 | `fake/` | In-memory `MailProvider` for tests |
 
 - **Owns:** `mailboxes`, `mailbox_credentials`, `emails`.
-- **Later:** `graph/` (Microsoft 365), `imap/` (other providers), Gmail push (Pub/Sub).
+- **Rules:** `docs/architecture.md` §6.1.
+- **Later:** `gmail/` and `graph/` (Microsoft 365) adapters with OAuth (Phase 2); IMAP IDLE.
 
-### 3.3 `config` — user settings (S1, UI in S5)
+### 3.3 `config` — user settings (S1a, UI in S5)
 
-- **Owns:** `mailbox_settings` (mode `shadow` / `assist`, tool switches, digest times, style text), `sender_rules` (whitelist, blocklist, VIP; address or domain).
-- **Does:** validation (for example: the owner's own address cannot be a delegate); default settings for a new mailbox.
+- **Owns:** `mailbox_settings` (mode `shadow` / `assist`, tool switches, category policy), `sender_rules` (whitelist, blocklist, VIP; address or domain;
+  per organization, optional per mailbox). Style text lives on `organizations`; digest times on `memberships`.
+- **Does:** validation (for example: the owner's own address cannot be a delegate); default settings for a new mailbox (mode `shadow`, all automatic moves off).
 
-### 3.4 `triage` — understand each email (S1)
+### 3.4 `triage` — understand each email (S1b)
 
 | Sub-module | Does |
 |---|---|
-| `rules` (in `core`) | Hard rules before AI: blocklist → spam; whitelist → never spam; user's Manual label → skip; `noreply` detection |
-| `classifier` | Builds the prompt (email in a marked data block + sender context), calls `llm.classifier`, validates `TriageAnalysis` (category, confidence, reason, fields) |
+| `rules` (in `core`) | Hard rules before AI: blocklist → spam; whitelist / VIP → no `spam` in the allowed list; `noreply` detection; reply in a delegation thread (S4) |
+| `classifier` | Builds the prompt (email in a marked data block + sender context + last 3 thread mails), calls `llm.classifier`, validates `TriageAnalysis` (category, confidence, reason, fields, summary for `info`) |
 | `prompts/` | Versioned prompt texts; the version id goes to `triage_results` |
-| `planners` (in `core`) | One per category: spam, notification, info, urgent, manual; delegation and reply in S4. Each returns an `ExecutionPlan` (list of actions) |
-| `summarizer` | For info mail: `llm.writer` makes a short summary that goes into the plan payload |
-| `worker` (job) | Claims `pending` emails (`SKIP LOCKED`), runs rules → classifier → planner, saves `triage_results` + `actions` (status `planned`), sets email `triaged` |
+| `planners` (in `core`) | One per category: `urgent`, `needs_reply`, `info`, `notification`, `spam`, `unsure`; `delegation` in S4. Each returns an `ExecutionPlan` |
+| `policy` (in `core`) | Pure truth table (`docs/architecture.md` §4.3): `apply` / `await_approval` / `log_only` per action |
+| `feedback` | `recordFeedback()` from CLI, Telegram, Undo, IMAP moves, web; labeling CLI `bun run triage:label` |
+| `worker` (job) | Claims `pending` emails (`SKIP LOCKED`), runs rules → classifier → planner → policy, saves `triage_results` + `actions` in one transaction, sets email `triaged` |
 
-- **Owns:** `triage_results`.
+- **Owns:** `triage_results`, `triage_feedback`.
 
-### 3.5 `actions` — the only place with side effects (S1 log-only, S3 apply)
+### 3.5 `actions` — the only place that changes the mailbox (S3; S1b writes `logged` rows)
 
 | Sub-module | Does |
 |---|---|
-| `policy` (in `core`) | For each planned action: `apply` / `await_approval` / `log_only`, from mode, tool switch, risk, VIP |
-| `gate` | Runs policy on `planned` actions → status `ready`, `awaiting_approval` or `logged` |
-| `committer` (job) | Takes `ready` and `approved` actions, calls `MailProvider`, sets `applied` / `failed`, writes `audit_log` in the same transaction; idempotency key per action |
-| `approvals` | `approve(actionId, user, channel)`, `reject(...)`; expiry job (for example after 48 h → `expired`) |
-| `retry` | Backoff for soft errors; after 3 failures → plan "label AI/Manual" |
+| `committer` (job) | Takes `ready` and `approved` actions; `applying` before non-idempotent calls; calls `MailProvider`; sets `applied` / `failed`; writes `audit_log` in the same transaction; recovery from `applying` by `X-EA-Action-Id` |
+| `approvals` | `approve(actionId, user, channel)`, `reject(...)` — conditional update on `awaiting_approval` |
+| `undo` | `undo(actionId, user)`: builds the reverse plan, marks the original `undone`, writes feedback |
+| `expiry` (job) | `awaiting_approval` older than 48 h → `expired` |
+| `retry` | Backoff for soft errors (no count); hard errors count; after 3 → `failed` + notice |
 
 - **Owns:** `actions`.
 - **Rule:** a `send` action is applied only with an approval record (ADR 0003).
 
-### 3.6 `audit` — what happened and why (S1)
+### 3.6 `audit` — what happened and why (S1b)
 
-- **Owns:** `audit_log` (append-only).
-- **Does:** `record(event)` inside other modules' transactions; queries for the digest and the web audit view.
+- **Owns:** `audit_log` (append-only; the DB role `app` has only INSERT and SELECT).
+- **Does:** `record(event)` inside other modules' transactions; queries for the digest and the web activity view. No mail text in `data`.
 
-### 3.7 `reports` — digest and urgent notices (S2)
+### 3.7 `reports` — digest and metrics (S2)
 
 | Sub-module | Does |
 |---|---|
-| `builder` (in `core`) | From audit + actions since the last digest: sections URGENT → NEEDS ACTION → DONE AUTOMATICALLY → REMINDERS |
-| `renderers` | Telegram text (short, links), web view (full) |
-| `digest` (job) | At each user's digest times (organization timezone); also on demand (`/digest` command) |
+| `builder` (in `core`) | From actions and audit since the last digest: URGENT → NEEDS ACTION → DONE AUTOMATICALLY → REMINDERS; "last sync"; "not processed" items; weekly handled share (`docs/architecture.md` §4.4) |
+| `renderers` | Telegram text (short lines with ✅ / ✏️ buttons), web view (S5) |
+| `digest` (job) | At each member's digest times (organization timezone); also on demand (`/digest`) |
 
 - **Owns:** `digests`.
 
@@ -177,15 +196,14 @@ Each module folder: `index.ts` (public API), `service.ts`, `repo.ts` (DB), `rout
 
 | Sub-module | Does |
 |---|---|
-| `port.ts` | `ChatChannel` interface: `send`, `sendApproval(action)`, `edit`, and handlers for commands and button taps |
-| `telegram/bot` | Bot client, long polling (dev) / webhook with secret token (prod) | 
-| `telegram/linking` | One-time token → `t.me/<bot>?start=<token>` → saves `chat_links` |
+| `port.ts` | `ChatChannel` interface: `send`, `sendApproval(action)`, `edit`, handlers for commands and button taps |
+| `telegram/bot` | grammY bot client, long polling (webhook with secret token only with a public HTTPS address) |
+| `telegram/linking` | One-time token (15 min, one user) → `t.me/<bot>?start=<token>` → saves `chat_links` |
 | `telegram/commands` | `/start`, `/help`, `/digest`, `/pause`, `/resume`, `/status` |
-| `telegram/callbacks` | Button tap → check chat → user → org → `actions.approve/reject` → edit message |
-| `notifier` (job) | Sends approval requests for new `awaiting_approval` actions and urgent notices (sets `notified_at`) |
+| `telegram/callbacks` | Button tap → check chat → user → org → `actions.approve / reject / undo` or `triage.recordFeedback` → answer → edit message |
+| `notifier` (job) | Sends approval requests, urgent and `auth_error` notices, result edits ("✅ Sent"); sets `notified_at` |
 
-- **Owns:** `chat_links`.
-- **Tech:** grammY (Telegram bot framework for TypeScript).
+- **Owns:** `chat_links`, `chat_link_tokens`.
 - **Later:** `mobile/` (push to the app), `whatsapp/`, and the `assistant` module (intents, chat state, voice).
 
 ### 3.9 `delegation` — hand work to people and follow up (S4)
@@ -193,9 +211,9 @@ Each module folder: `index.ts` (public API), `service.ts`, `repo.ts` (DB), `rout
 | Sub-module | Does |
 |---|---|
 | `delegates` | CRUD; competence tags; active flag |
-| `planner` (in `core`) | Delegation plan: delegate id from the list, task summary, due date; missing data → "ask" draft |
-| `tracking` | `delegations` statuses: `drafted` → `sent` → `answered` / `overdue` → `done` |
-| `chaser` (job) | Daily: overdue items without a reply in the thread → reminder draft → approval request |
+| `planner` (in `core`) | Delegation plan: delegate id from the list, task summary, due date; missing data → clarification draft. The draft quotes the original mail |
+| `tracking` | `delegations` statuses: `drafted` → `sent` → `answered` / `overdue` → `done`; reply detection by `In-Reply-To` / `References` |
+| `chaser` (job) | Daily: overdue items without a reply → reminder draft → approval request ("send all" = one approval for the list) |
 
 - **Owns:** `delegates`, `delegations`.
 
@@ -203,14 +221,16 @@ Each module folder: `index.ts` (public API), `service.ts`, `repo.ts` (DB), `rout
 
 | Route group | Used by | Slice |
 |---|---|---|
-| `GET /health` | monitoring | S0 |
-| `/oauth/google/start`, `/oauth/google/callback` | web, CLI | S1 |
-| `/me`, `/mailboxes` | web | S1 / S5 |
+| `GET /health` | heartbeat, monitoring | S0 |
+| `/auth/*` (login method decided in S5) | web | S5 |
+| `/me`, `/mailboxes` (connect, pause, remove) | web | S5 |
 | `/settings`, `/rules` | web | S5 |
-| `/actions` (list pending, approve, reject) | web, mobile later | S4 / S5 |
-| `/audit`, `/digests` | web | S5 |
-| `/channels/telegram/link`, `/channels/telegram/webhook` | web, Telegram | S2 |
-| `/delegates`, `/delegations` | web | S4 / S5 |
+| `/actions` (list, approve, reject, undo) | web, mobile later | S5 |
+| `/activity`, `/feedback` | web | S5 |
+| `/channels/telegram/link` | web | S5 (CLI before) |
+| `/delegates`, `/delegations` | web | Phase 2 web; Telegram + CLI in S4 |
+
+Before S5, the CLI scripts call the module services directly (no HTTP).
 
 ### 3.11 Phase 2 modules (not built in MVP)
 
@@ -225,34 +245,26 @@ Each module folder: `index.ts` (public API), `service.ts`, `repo.ts` (DB), `rout
 
 | Page | Content | Slice |
 |---|---|---|
-| Login | Supabase Auth (email link or Google sign-in) | S5 |
-| Onboarding checklist | Connect Gmail → link Telegram → choose mode → optional lists | S5 |
-| Mailboxes | Status, connect / re-connect, pause, remove | S5 |
-| Settings | Mode, tool switches, digest times, style text | S5 |
+| Login | Method decided at the S5 start (own `users` table) | S5 |
+| Onboarding checklist | Connect mailbox → link Telegram → choose mode → optional lists | S5 |
+| Mailboxes | Status, connect (address + password), pause, remove | S5 |
+| Settings | Mode, tool switches, category policy, digest times, style text | S5 |
 | Rules | Whitelist, blocklist, VIP | S5 |
-| Approvals | Pending actions with approve / reject | S5 |
-| Activity | Audit log: what happened to each mail and why | S5 |
-| Digests | Past reports | S5 |
-| Delegation | Delegates and open delegations | S5 |
+| Activity | What happened to each mail and why; Undo; ✅ / ✏️ feedback | S5 |
+| Approvals | Pending actions with approve / reject (Telegram has them from S4) | Phase 2 web |
+| Digests | Past reports (Telegram has them from S2) | Phase 2 web |
+| Delegation | Delegates and open delegations | Phase 2 web |
 | Account | Delete mailbox / account and data | S6 |
 
-Until S5 the user works through Telegram and a few CLI scripts (connect Gmail, create organization).
+Until S5 the user works through Telegram and CLI scripts (`org:create`, `mailbox:connect`, `triage:label`, `telegram:link`, `delegates:add`).
 
 ## 5. `packages/core` — shared pure logic
 
-- `types/`: `Email`, `TriageAnalysis`, `ExecutionPlan`, `Action`, `ActionStatus`, `MailboxMode`, `Category`.
+- `types/`: `Email`, `Category`, `TriageAnalysis`, `ExecutionPlan`, `Action`, `ActionStatus`, `MailboxMode`.
 - `schemas/`: Zod schemas for LLM output, API input and output.
-- `rules/`, `policy/`, `planners/`, `digest/`: pure functions with unit tests.
+- `rules/`, `policy/`, `planners/`, `digest/`, `metrics/`: pure functions with unit tests.
 - No imports from `apps/*`, no DB, no network.
 
 ## 6. Status flows
 
-```
-emails.status:   pending → processing → triaged → done
-                                 └→ failed (after 3 tries; email gets AI/Manual)
-actions.status:  planned → ready → applied
-                         → awaiting_approval → approved → applied
-                                             → rejected | expired
-                         → logged            (shadow mode)
-                   ready/approved → failed   (after retries)
-```
+See `docs/architecture.md` §4.6 (one source).

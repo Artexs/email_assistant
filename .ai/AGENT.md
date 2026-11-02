@@ -1,5 +1,7 @@
 # Architecture & Patterns
 
+> **History (2026-11-02).** Do not use these patterns. Current code rules: `docs/code-patterns.md`.
+
 ## Adapter Pattern (Shared Interface)
 
 We use a "Shared Interface" pattern for external integrations (e.g., LLMs, Mail Providers, Databases, WhatsApp) to decouple business logic from specific vendors.

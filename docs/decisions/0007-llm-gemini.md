@@ -1,5 +1,5 @@
 # 0007 — LLM: Google Gemini through the official `@google/genai` SDK
-- Status: accepted (user decision 2026-11-02)
+- Status: accepted (user decision 2026-11-02); amended by 0012 (data rules per stage, cost and failure limits)
 - Date: 2026-11-02
 
 ## Context

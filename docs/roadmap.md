@@ -1,31 +1,36 @@
 # Roadmap, scope and size — AI Email Assistant
 
-> **Proposed 2026-11-02.** Explains the delivery slices S0–S6 from `docs/architecture.md` §11.
-> The plan is known at module level (`docs/modules.md`). Each slice has a task file (`tasks/planned/s0-foundation.md` … `s6-pre-sale.md`)
-> with its goal, done-when and status. The file-level plan is written in that file when the slice moves to `tasks/active/`.
-> Results of S1 (real accuracy on real mail) can change S3–S5. Rules: `tasks/README.md`.
+> **Proposed 2026-11-02, revised 2026-11-02** after the cold review (`tasks/done/mvp-plan-review.md`) and the user's answers
+> (Interia IMAP pilot, home VPS, own Postgres, changed slice plan accepted).
+> Explains the delivery slices from `docs/architecture.md` §11. The plan is known at module level (`docs/modules.md`).
+> Each slice has a task file (`tasks/planned/s0-foundation.md` … `s6-pre-sale.md`) with its goal, done-when and status.
+> The file-level plan is written in that file when the slice moves to `tasks/active/`.
+> Results of S1b (real accuracy on real mail) can change S3–S5 through the go/no-go table. Rules: `tasks/README.md`.
 
 ## 1. Scope
 
-### In the MVP (S0–S5)
-- Connect one or more Gmail mailboxes (OAuth), encrypted tokens.
-- Fetch new mail every 5 minutes.
-- Triage: hard rules (whitelist, blocklist, VIP, Manual label) + AI category:
-  urgent, info (with summary), notification, spam, delegation, unsure → manual.
-- Two mailbox modes: `shadow` (log only) and `assist` (labels, archive, drafts; send only after the user's approval).
+### Pilot MVP (S0–S4): the user's own Interia mailbox, Telegram + CLI
+- Connect one or more IMAP mailboxes (address + password or app password), encrypted secrets.
+- Fetch new INBOX mail every 5 minutes.
+- Triage: hard rules (whitelist, blocklist, VIP) + AI category:
+  `urgent`, `needs_reply`, `delegation`, `info` (with summary), `notification`, `spam`, `unsure`.
+- Two mailbox modes: `shadow` (log only) and `assist` (folder moves, mark read, flags, drafts; send only after the user's approval).
+- Feedback from the user (labels, ✅ / ✏️ buttons, Undo); a go/no-go bar per category before automatic moves.
 - Drafts: delegation drafts and "ask for missing info" (clarification) drafts. No general reply writing in MVP.
 - Delegation: delegates list, tracking, daily chaser with reminder drafts.
-- Telegram: link chat, daily digest, urgent notices, approve / reject / send buttons, a few commands.
-- Web panel: login, onboarding, mailboxes, settings, rules, approvals, activity (audit), digests, delegation.
-- Audit log of every decision and action.
-- Tenant-aware data model (one pilot organization).
-- Prompt evaluation set and runner.
+- Telegram: link chat, digest at set times, urgent and `auth_error` notices, approve / reject / send / undo buttons, a few commands.
+- Audit log of every decision and action; the weekly "handled share" metric.
+- Tenant-aware data model (one pilot organization). Prompt evaluation set and runner.
+- Runs on the home VPS in Compose (`server` + `db`), with backups and a heartbeat.
 
-### Pre-sale (S6)
-- Google OAuth verification + CASA security assessment, self sign-up, billing, assistant role, account and data deletion.
+### Sellable MVP (+ S5, S6)
+- Web panel (lite): login, connect mailbox, link Telegram, settings, rules, activity.
+- Sign-up, billing, account and data deletion, hosted EU production, Vertex AI EU, privacy policy and DPA, cost model.
 
 ### Not in the MVP (Phase 2)
-- Style learning, two-way chat with intents, voice notes, meeting handling + calendar, Microsoft 365, mobile app, WhatsApp, RAG / vector search.
+- Gmail and Microsoft 365 adapters (OAuth; Gmail OAuth needs Google verification + CASA), web pages for approvals, digests and delegation,
+  style learning, two-way chat with intents, voice notes, meetings + calendar, mobile app, WhatsApp, RAG / vector search,
+  manual delegation from chat (old PRD US-012), assistant role UI.
 
 ## 2. Slices
 
@@ -33,63 +38,78 @@ Each slice ends with something that works end to end and that the user can try.
 
 | Slice | Content | Result for the user | Size | Needs |
 |---|---|---|---|---|
-| **S0 Foundation** | Move to `apps/server`, `apps/web`, `packages/core`; env check; logger; DB layer; new migration (tenancy, mailboxes, credentials, settings, rules, emails, triage results, actions, audit); local Supabase; CI (lint, typecheck, test); remove old adapters | Nothing visible yet. Clean base, CI green | S | — |
-| **S1 Shadow triage** | **Gate: Gemini Cloud Billing on before real mail.** Gmail OAuth connect (CLI + callback route); history sync; HTML → text; hard rules; LLM classifier with Zod schema; planners; policy in `shadow` mode; audit; eval runner + first labeled set | The system reads your mail and logs what it *would* do. You see accuracy numbers | L | S0 |
-| **S2 Telegram** | Bot, chat linking, digest builder + schedule, urgent notices, `/digest` `/pause` `/status` | Daily digest and urgent notices on your phone | M | S1 |
-| **S3 Assist actions** | Committer, Gmail labels / archive / mark read / star, summaries, manual label, retries, tool switches, mode switch | Your inbox gets cleaner for real; every change is reversible | M | S1 (S2 for notices) |
-| **S4 Drafts, approvals, delegation** | Delegates, delegation + clarification drafts, approval flow with Telegram buttons, send after approval, delegation tracking, chaser | Delegations go out after one tap and are followed up | L | S2, S3 |
-| **S5 Web panel** | Supabase login, onboarding checklist, all pages from `docs/modules.md` §4, API routes | Setup and control without the CLI | L | S1 (API), S3, S4 |
-| **S6 Pre-sale** | Google verification + CASA, sign-up, billing, assistant role, deletion, production hosting in the EU | First external customer can sign up | L + external wait | S5 |
+| **S0 Foundation** | Move to `apps/server`, `apps/web`, `packages/core`; env check; logger; DB layer + migration runner; tenancy tables; Compose `db` for dev; CI (lint, typecheck, unit + integration); `/health`; old code and deps removed | Nothing visible yet. Clean base, CI green | M | ADR review |
+| **S1a IMAP read + pilot host** | IMAP adapter (read part), connect CLI, encrypted password, capability check, sync with the IMAP rules, test mailbox seed, Compose on the home VPS, heartbeat, nightly encrypted backup | Your Interia INBOX is copied into the system every 5 minutes, on the home VPS | M | S0 |
+| **S1b Shadow triage** | **Gate: Gemini Cloud Billing on before real mail.** Hard rules; classifier with Zod schema (summary in the same call); planners; policy in `shadow` mode; audit; feedback table + labeling CLI; eval runner with synthetic and injection cases; cost caps | The system logs what it *would* do. You get precision per category and a go/no-go table | L | S1a |
+| **S2 Telegram** | Bot (dev + pilot), chat linking, shadow digest with ✅ / ✏️ buttons, urgent and `auth_error` notices, "last sync" line, `/digest` `/pause` `/resume` `/status` | Digest and urgent notices on your phone; you correct the AI with one tap | M | S1b |
+| **S3 Assist actions** | Committer with `applying` status and retries on the action row; folder moves, mark read, flag, summaries; Undo button; automatic moves only for categories that passed go/no-go; mode switch | Your inbox gets cleaner for real; every change has Undo | M | S2 |
+| **S4 Drafts, approvals, delegation** | Delegates (CLI), delegation + clarification drafts (quote the original), approval with Telegram buttons, SMTP send after approval, delegation tracking, chaser, injection guards | Delegations go out after one tap and are followed up | L | S3 |
+| **S5 Web panel (lite)** | Market check first (which mail the customers use); login; pages: onboarding, mailboxes, settings, rules, activity; API routes; web reachable from outside (proxy or tunnel) | Setup and control without the CLI | M | S3 (S4 for delegation data) |
+| **S6 Pre-sale** | Sign-up, billing, deletion, hosted EU production, Vertex AI EU, privacy policy + DPA, cost model | The first external customer can sign up | L | S5 |
 
-Order: `S0 → S1 → S2 and S3 (any order) → S4 → S5 → S6`.
+Order: `S0 → S1a → S1b → S2 → S3 → S4 → S5 → S6`.
 
 ```mermaid
 graph LR
-    S0 --> S1
-    S1 --> S2
-    S1 --> S3
-    S2 --> S4
+    R[ADR review] --> S0
+    S0 --> S1a
+    S1a --> S1b
+    S1b --> S2
+    S2 --> S3
     S3 --> S4
     S4 --> S5
-    S1 -.API.-> S5
+    S3 -.can start early.-> S5
     S5 --> S6
 ```
 
-## 3. Size of the MVP (S0–S5), rough estimate
+Before each start (user steps):
+- S1a: turn on "korzystam z programu pocztowego" in Interia; create a second Interia account for tests; Docker or Podman on the home VPS.
+- S1b: Cloud Billing on for the Gemini key (before real mail).
+- S2: create two Telegram bots (dev, pilot) with BotFather.
+- S5: ask 5–10 target customers which mail provider they use (decides if Gmail / Microsoft 365 come before S6).
+
+## 3. Size of the MVP (S0–S6), rough estimate
 
 | Item | Count |
 |---|---|
-| Deployable parts | 2 apps (server, web) + Postgres |
+| Containers | 2 in the pilot (`server`, `db`); the web build is served by `server` |
 | Shared packages | 1 (`packages/core`) |
 | Server business modules | 9: tenancy, mail, config, triage, actions, audit, reports, channels, delegation |
-| Server platform parts | 7: config, db, llm, crypto, log, http, scheduler |
-| Sub-modules | about 35 |
-| Background jobs | 7: mail sync, triage worker, action gate, committer, notifier, digest, chaser (+ approval expiry) |
-| DB tables | 14 |
+| Server platform parts | 9: config, db, llm, crypto, log, http, scheduler, retention, heartbeat |
+| Sub-modules | about 40 |
+| Background jobs | 9: mail sync, triage worker, committer, notifier, digest, approval expiry, retention, heartbeat, chaser |
+| DB tables | 17 |
 | HTTP route groups | 8 |
-| Web pages | 10 |
-| External services | 4: Gmail API, Telegram Bot API, Google Gemini API, Supabase (DB + Auth) |
-| Source files | about 180–220 (with tests) |
-| Lines of TypeScript | about 12–18 thousand (with tests) |
+| Web pages | 6 in S5-lite (+ account page in S6; 3 more in Phase 2) |
+| External services (pilot) | 3: the IMAP/SMTP provider, Telegram Bot API, Google Gemini API |
+| Source files | about 160–200 (with tests) |
+| Lines of TypeScript | about 10–16 thousand (with tests) |
 
-Server runtime libraries (about 9): `hono`, `@googleapis/gmail` (or `googleapis`), `@google/genai`, `zod`,
-`kysely` + `pg`, `croner`, `grammy`, `html-to-text`. Web: `astro`, `react`, `tailwindcss`, shadcn components, `@supabase/supabase-js`.
+Server runtime libraries (about 11): `hono`, `imapflow`, `mailparser`, `nodemailer`, `html-to-text`, `@google/genai`, `zod`,
+`kysely` + `pg`, `croner`, `grammy`, and the migration runner (chosen in S0). Web: decided at the S5 start.
 
 Hardest parts (most risk):
-1. Classification accuracy on real Polish + English mail (S1). This is why S1 runs in shadow mode first.
-2. Gmail sync edge cases: history gaps, token expiry (7 days in "Testing"), threads, HTML mail.
+1. Classification accuracy on real Polish + English mail (S1b). This is why S1b runs in shadow mode and S3 waits for the go/no-go table.
+2. IMAP edge cases (S1a): provider differences (MOVE, UIDPLUS, keywords), UIDVALIDITY changes, mail without `Message-ID`,
+   mail that the user moves back, threads built from headers.
 3. Exactly-once actions and approvals across crashes and retries (S3, S4).
-4. Google verification + CASA before sale (S6): outside our control, takes weeks.
+4. Prompt injection that reaches delegates through drafts (S4).
+5. Home VPS operations: backups, liveness, updates (from S1a).
 
 ## 4. Agent tooling for the implementation
 
-- No new agent skills are needed. Existing: `vps-ssh` (dev server), `gh-tickets` (issues), `handoff`.
-- Repeated fixed jobs become saved scripts, not skills: `bun run db:types`, `bun run eval`, `bun run gmail:connect`.
+- No new agent skills are needed. Existing: `vps-ssh` (azyl demo server), `gh-tickets` (issues), `handoff`.
+- Repeated fixed jobs become saved scripts, not skills: `bun run db:migrate`, `bun run db:types`, `bun run eval`,
+  `bun run org:create`, `bun run mailbox:connect`, `bun run mailbox:check`, `bun run triage:label`, `bun run telegram:link`.
+- Code rules for agents: `docs/code-patterns.md`.
 - Each slice has a task file in `tasks/`. It gets a file-level plan in `tasks/active/` before code starts (`tasks/README.md`).
 
-## 5. LLM: Google Gemini (ADR 0007, decided 2026-11-02)
+## 5. LLM: Google Gemini (ADR 0007, ADR 0012)
 
-- SDK `@google/genai`, key `GEMINI_API_KEY`, model from config `GEMINI_MODEL` (dev: `gemini-3.8-flash`).
-- All calls go through `platform/llm.ts` (`classify`, `write`). Langfuse later, if prompt work needs it.
-- Setup check: `cd backend && bun run gemini:test` (script `backend/src/scripts/gemini_test.ts`).
-- **Billing gate:** free tier only with test data. Turn on Cloud Billing before S1 runs on real Gmail, and before any real user.
+- SDK `@google/genai`, key `GEMINI_API_KEY`, model from config `GEMINI_MODEL` (dev: `gemini-3.8-flash`), optional `GEMINI_MODEL_CLASSIFIER`.
+- All calls go through `platform/llm.ts` (`classify`, `write`): timeout 30 s, rate limiter, 429 / 503 / timeout = soft errors.
+- Setup check: `cd backend && bun run gemini:test` (script `backend/src/scripts/gemini_test.ts`). On 2026-11-02 the key worked, but the model returned `503 high demand`.
+- **Billing gate:** free tier only with test data. Turn on Cloud Billing before S1b runs on real mail.
+- **Data:** pilot on the Gemini API paid tier (55-day abuse logging, no EU location, accepted). Vertex AI EU before the first external customer (S6).
+- **Cost:** about $20 per mailbox per month at 200 mails/day with `gemini-3.8-flash` now, about $40 from 2027-01-01 (price doubles).
+  The S1b eval compares a Flash-Lite model for the classifier.

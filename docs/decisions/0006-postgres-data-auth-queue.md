@@ -1,5 +1,5 @@
 # 0006 — Postgres (Supabase) for data, auth and work queue
-- Status: proposed
+- Status: superseded by 0011 (2026-11-02: own Postgres on the home VPS, no Supabase)
 - Date: 2026-11-01
 
 ## Context

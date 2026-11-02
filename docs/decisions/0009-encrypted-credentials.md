@@ -7,12 +7,13 @@ The current `secrets` table stores credentials as plain JSONB and has an RLS SEL
 a logged-in browser can read mail passwords and tokens. It also links secrets to the user, not the mailbox.
 
 ## Decision
-- New table `mailbox_credentials` (one row per mailbox): encrypted refresh token, key version, scopes.
+- New table `mailbox_credentials` (one row per mailbox): encrypted secret (IMAP/SMTP password or app password, ADR 0010), secret kind, key version.
 - Encryption in the server: AES-256-GCM, key from env `CREDENTIALS_KEY`, `key_version` for rotation.
-- RLS on, no policies: only the server reads the table.
-- The old `secrets` table is dropped in the S0 migration.
+- Only the server process reads the table and decrypts the secret in memory. The secret never goes to logs or to the web app.
+- The old Supabase migration with the `secrets` table is removed in S0 (ADR 0011).
+- On mailbox removal the row is deleted, and the user gets a notice to change the mailbox password.
 
 ## Consequences
-- A DB leak alone does not expose tokens.
+- A DB leak or a backup leak alone does not expose passwords (backups are also encrypted).
 - Key loss means all mailboxes must re-connect: store the key in a password manager / secret store.
-- Supabase Vault stays an option if the key handling moves to the DB later.
+- The secret is a full mailbox password: prefer an app password where the provider has one.

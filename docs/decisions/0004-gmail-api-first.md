@@ -1,5 +1,5 @@
 # 0004 — Gmail API first, behind a MailProvider port
-- Status: proposed
+- Status: superseded by 0010 (2026-11-02: the pilot mailbox is Interia IMAP, not Gmail)
 - Date: 2026-11-01
 
 ## Context

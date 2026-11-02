@@ -13,4 +13,6 @@ The user accepted the recommendation (product brief Q6).
 
 ## Consequences
 - The digest and the future "what happened to my mail" view read from one table.
-- No UPDATE or DELETE on `audit_log` (except data deletion on account removal).
+- No UPDATE or DELETE on `audit_log`: the server's DB role `app` has only INSERT and SELECT on it (ADR 0011).
+  One privileged function deletes the rows of a removed mailbox or organization.
+- `audit_log.data` holds ids, codes and numbers, never mail text (retention rules: `docs/architecture.md` §7).

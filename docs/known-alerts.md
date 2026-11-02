@@ -18,3 +18,10 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.`
+
+- **First seen:** 2026-11-02
+- **Source:** Gemini API, `cd backend && bun run gemini:test` (model `gemini-3.8-flash`, free tier). HTTP 503, status `UNAVAILABLE`.
+- **Cause:** Google-side overload of the model. Not a key or config error (the key was accepted). One call hung for more than 90 s before the error.
+- **Fix:** retry later. In the app: `platform/llm.ts` treats 503 as a soft error (wait with backoff, no count toward the 3 tries) and uses a 30 s timeout (ADR 0012). Optional fallback model in config.
+- **Status:** workaround

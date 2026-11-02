@@ -1,4 +1,4 @@
-> **Status 2026-11-02 — in progress.** Left: the user answers the open points in "User answers" (Gemini retention, IMAP scope, VPS DB, plan accept); then an agent applies the accepted fixes to `docs/` and the slice files.
+> **Status 2026-11-02 — done.** The user decided on all findings (column "Decision"); the accepted fixes are in `docs/` and the slice files. Next: the user's ADR review (`planned/docs-and-adr-review.md`), then S0.
 
 # Cold review of the MVP plan
 
@@ -16,7 +16,7 @@ A second agent, with no chat history, checks the MVP plan before S0 starts. It f
 - [x] Reviewer reads all scope files and checks them against each other and against the current code (`backend/`, `src/`).
 - [x] Reviewer checks external facts that the plan depends on (Gmail scopes and verification, Gemini model and billing, Telegram Bot API), with sources. Facts and URLs: `notes/2026-11-02-external-facts-gmail-gemini-telegram.md`.
 - [x] Reviewer writes the findings here. No changes to `docs/` before the user agrees.
-- [ ] User decides; agent applies the accepted fixes.
+- [x] User decides; agent applies the accepted fixes.
 
 ## Findings
 
@@ -39,28 +39,28 @@ Severity:
 
 | ID | Severity | Finding | Fix before | Decision |
 |---|---|---|---|---|
-| F1 | blocker | Agents get the old code patterns during S0 | S0 | |
-| F2 | major | S1 has no always-on host for one week of real mail | S1 | |
-| F3 | major | The weekly Gmail re-connect breaks the one-week checks | S1 | |
-| F4 | major | The brief promises "zero retention" and "EU data"; the Gemini API gives neither | S1 real mail | |
-| F5 | major | No way to label, correct or undo; the success metric has no counter | S1 | |
-| F6 | major | S1 has no quality bar; the S3 check cannot fail | S1 | |
-| F7 | major | The category list and "Manual Handling" differ between files | S1 | |
-| F8 | major | Gmail thread and sync rules are not defined | S1 | |
-| F9 | major | Committer: two retry designs, and no exactly-once method for Gmail calls | S1 / S3 | |
-| F10 | major | Prompt injection can reach the user and the delegates as trusted text | S4 (evals in S1) | |
-| F11 | major | Google verification comes last, but it is the longest wait | S3 | |
-| F12 | major | S0 is bigger than "S" and fixes tables before S1 can teach anything | S0 | |
-| F13 | major | Data model conflicts and gaps | each migration | |
-| F14 | minor | RLS policies that nothing uses; append-only only by convention | S0 | |
-| F15 | minor | Data retention covers only the mail body | S1 | |
-| F16 | minor | Weak done-when checks in S0, S2, S4, S6 | each slice | |
-| F17 | minor | The policy table is not complete | S2 | |
-| F18 | minor | LLM cost and rate limits are not planned | S1 | |
-| F19 | minor | Telegram details | S2 | |
-| F20 | minor | Small conflicts between files | S0 | |
-| F21 | minor | Before S5: check the customers' mail providers; cut the web panel | S5 | |
-| F22 | minor | Task hygiene | now | |
+| F1 | blocker | Agents get the old code patterns during S0 | S0 | accepted, applied: `docs/code-patterns.md`, `CLAUDE.md:8` |
+| F2 | major | S1 has no always-on host for one week of real mail | S1 | accepted: home VPS (Q10); slice S1a |
+| F3 | major | The weekly Gmail re-connect breaks the one-week checks | S1 | dropped: IMAP, no OAuth (Q9) |
+| F4 | major | The brief promises "zero retention" and "EU data"; the Gemini API gives neither | S1 real mail | accepted: Q11; ADR 0012 |
+| F5 | major | No way to label, correct or undo; the success metric has no counter | S1 | accepted: architecture §4.4 |
+| F6 | major | S1 has no quality bar; the S3 check cannot fail | S1 | accepted (98% bar): S1b, S3 files |
+| F7 | major | The category list and "Manual Handling" differ between files | S1 | accepted: architecture §4.2 |
+| F8 | major | Gmail thread and sync rules are not defined | S1 | accepted as IMAP rules: architecture §6.1 |
+| F9 | major | Committer: two retry designs, and no exactly-once method for Gmail calls | S1 / S3 | accepted: architecture §4.1 rules 5–7 |
+| F10 | major | Prompt injection can reach the user and the delegates as trusted text | S4 (evals in S1) | accepted: architecture §7; S4 file |
+| F11 | major | Google verification comes last, but it is the longest wait | S3 | dropped for MVP: IMAP; returns with Gmail (Phase 2) |
+| F12 | major | S0 is bigger than "S" and fixes tables before S1 can teach anything | S0 | accepted: S0 file; migrations per slice |
+| F13 | major | Data model conflicts and gaps | each migration | accepted: architecture §5 |
+| F14 | minor | RLS policies that nothing uses; append-only only by convention | S0 | changed: no Supabase; DB role `app` (ADR 0011) |
+| F15 | minor | Data retention covers only the mail body | S1 | accepted: architecture §7 |
+| F16 | minor | Weak done-when checks in S0, S2, S4, S6 | each slice | accepted: slice files |
+| F17 | minor | The policy table is not complete | S2 | accepted: architecture §4.3 |
+| F18 | minor | LLM cost and rate limits are not planned | S1 | accepted: ADR 0012 |
+| F19 | minor | Telegram details | S2 | accepted: ADR 0005; architecture §6.2 |
+| F20 | minor | Small conflicts between files | S0 | accepted: architecture, modules |
+| F21 | minor | Before S5: check the customers' mail providers; cut the web panel | S5 | accepted: S5 file; roadmap |
+| F22 | minor | Task hygiene | now | accepted: test run (503, still open); agent-config moved to `planned/` |
 
 ---
 
@@ -452,17 +452,20 @@ Milestones: **pilot MVP** = S0–S4 (the user's own mailbox, Telegram + CLI). **
   - New: check the server features on the real account before S1: IDLE, MOVE, UIDPLUS, CONDSTORE, custom keywords (for tags).
   - Interia setup: turn on "korzystam z programu pocztowego" (Ustawienia → Główne ustawienia → Parametry).
     IMAP `poczta.interia.pl:993` SSL/TLS, SMTP `poczta.interia.pl:465` SSL/TLS (pomoc.poczta.interia.pl).
-- **Still open:**
-  1. Q2: do you accept the Gemini API paid tier for your Interia mail (55-day abuse logging, no EU location)?
-  2. Is IMAP only for the pilot, or the product's first mail type (Gmail and Microsoft 365 later)? This decides the new ADR that replaces ADR 0004.
-  3. Q4: precision ≥ 98% per category before automatic archive. Default if no answer.
-  4. Q5: accept the changed slice plan, with S1a = "IMAP read + home VPS" and S6a (Google verification) only when Gmail users come.
+- **Second answers (2026-11-02):**
+  1. Q2: "ok" — the user accepts the Gemini API paid tier for the Interia mail (ADR 0012).
+  2. IMAP with the mailbox password is the product's mail access for now; Google sign-in (OAuth / SSO) maybe later (ADR 0010).
+     POP3 is not supported: it has no folders, no flags and no drafts.
+  3. Own database on the home VPS; Compose with `server` + `db` (ADR 0011). The user asked how containers change build and test time:
+     answer in `docs/architecture.md` §9 ("Containers and time").
+  4. Q4 and Q5: "use your suggestion" — all findings accepted; 98% bar; changed slice plan. The verification track (S6a) is dropped
+     because of IMAP; S1 is split into S1a and S1b.
 
 ## Done-checklist
-- [ ] Done-when checks pass.
-- [ ] `docs/` describe the accepted fixes; related ADRs updated.
+- [x] Done-when checks pass (every finding has a decision; fixes listed in the "Decision" column).
+- [x] `docs/` describe the accepted fixes; related ADRs updated (new 0010–0012; 0004, 0006 superseded; 0001, 0003, 0005, 0007, 0008, 0009 changed).
 - [x] Learned facts are in `notes/` (`notes/2026-11-02-external-facts-gmail-gemini-telegram.md`).
-- [ ] Follow-up ideas are in `planned/`.
+- [x] Follow-up ideas are in `planned/` (`docs-and-adr-review.md` scope updated; slice files S0–S6 rewritten; new `s1a-imap-read-pilot-host.md`).
 
 ## Log
 - 2026-11-02: Created. The user asked for a cold review of the MVP plan by another agent.
@@ -471,3 +474,9 @@ Milestones: **pilot MVP** = S0–S4 (the user's own mailbox, Telegram + CLI). **
   No change to `docs/` or the slice files.
 - 2026-11-02: User answers: the pilot runs on a home VPS; the pilot mailbox is Interia IMAP, not Gmail.
   Recorded under "User answers": F3 and F11 drop out for the pilot; F8 becomes IMAP rules; 4 points still open.
+- 2026-11-02: Second user answers (Gemini terms OK, IMAP with password, own Postgres in Compose, "use your suggestion").
+  Applied all fixes: new ADR 0010 (IMAP first), 0011 (own Postgres, no Supabase), 0012 (LLM data and cost); 0004 and 0006 superseded;
+  0001, 0003, 0005, 0007, 0008, 0009 changed; `docs/architecture.md`, `docs/modules.md`, `docs/roadmap.md` rewritten; product brief Q9–Q11;
+  new `docs/code-patterns.md` + `CLAUDE.md` pointer; slice files rewritten (`s1-shadow-triage.md` → `s1b-…`, new `s1a-…`).
+  Ran `cd backend && bun run gemini:test`: key accepted, model answered 503 "high demand" (alert in `docs/known-alerts.md`).
+  Moved `agent-config-setup.md` to `planned/`.

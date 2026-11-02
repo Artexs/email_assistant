@@ -1,0 +1,29 @@
+# 0010 — IMAP + SMTP with a password first, behind a MailProvider port
+- Status: proposed (user decision 2026-11-02; the ADR text waits for the user's ADR review)
+- Date: 2026-11-02
+- Supersedes: 0004
+
+## Context
+The pilot mailbox is at Interia (`@poczta.interia.pl`), not Gmail (user, 2026-11-02).
+The user wants mail access through IMAP with the mailbox password for now. Google sign-in (OAuth / SSO) can come later.
+The Gmail API path (ADR 0004) needs Google verification and a yearly CASA assessment for every public app.
+That cost does not apply to IMAP at Interia. Many Polish business mailboxes are at IMAP hosts (Interia, Onet, WP, home.pl, OVH, nazwa.pl).
+
+## Decision
+- Mail access: IMAP over TLS (port 993) to read and move mail, SMTP over TLS (port 465) to send. Login = address + password.
+  Use an app password if the provider has one (check at Interia in S1a).
+- POP3 is not supported: it has no folders, no flags and no drafts, so the system cannot archive or move mail with it.
+- One `MailProvider` port in the `mail` module. First adapter: `imap/` (libraries `imapflow`, `mailparser`, `nodemailer`).
+- TLS certificates are always checked (the old Interia config turned the check off: `backend/src/adapters/get_provider.ts:35`).
+- Folders replace Gmail labels: `AI/Spam`, `AI/Info`, `AI/Notifications`, `AI/Manual` (names from config, per mailbox).
+- Sync: poll INBOX every 5 minutes with a cursor (UIDVALIDITY + last UID). The dedup key is the `Message-ID` header.
+  IMAP IDLE (push) can come later.
+- The rules for sync, threads, moves, drafts and send are in `docs/architecture.md` §6.1.
+
+## Consequences
+- No Google verification and no CASA for the pilot and for IMAP customers.
+- The stored secret is a full mailbox password, not a scoped token. It is encrypted (ADR 0009). An app password limits the damage.
+- IMAP has no thread ids and no labels: the system builds threads from headers and uses one folder per mail.
+- Server features differ per provider (MOVE, UIDPLUS, keywords, SPECIAL-USE). S1a checks them and stores them per mailbox.
+- Microsoft 365 turned off password login for IMAP; Gmail needs OAuth or an app password. Adding them is a new adapter
+  (Phase 2), and Gmail OAuth brings back Google verification.

@@ -1,11 +1,11 @@
 # CLAUDE.md
 
 AI email assistant for managers: it categorizes mail, delegates tasks, filters spam and summarizes threads.
-Astro + React frontend in `src/`, Bun/TypeScript backend in `backend/`, Supabase.
+Now: Astro starter in `src/`, old Bun backend in `backend/`. Target (from S0): Bun workspaces `apps/server`, `apps/web`, `packages/core`; own Postgres; IMAP mail; Telegram; Gemini.
 
 Product (source of truth): `docs/product-brief.md`.
 Architecture and stack: `docs/architecture.md`, decisions in `docs/decisions/` (ADRs).
-Code patterns: @.ai/AGENT.md (to be rewritten in slice S0 to match `docs/architecture.md`).
+Code patterns: @docs/code-patterns.md (`.ai/AGENT.md` is history: its factory pattern is no longer used).
 Old specs in `.ai/` are history: read them for detail, not for decisions.
 
 Before you diagnose an alert, grep docs/known-alerts.md.

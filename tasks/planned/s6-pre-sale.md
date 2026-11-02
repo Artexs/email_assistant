@@ -5,15 +5,19 @@
 Scope: `docs/roadmap.md` §2, row S6. Modules: `docs/modules.md`. Needs: S5.
 
 ## Goal
-The first external customer can sign up: Google verification + CASA, sign-up, billing, assistant role, account and data deletion, EU production hosting.
+The first external customer can sign up: sign-up, billing, account and data deletion, hosted EU production, Vertex AI EU, privacy policy and DPA, cost model.
 
 ## Done when
-- The first external customer can sign up.
+- The first external customer can sign up and connect a mailbox.
+- `platform/llm.ts` uses Vertex AI with the EU endpoint and the zero-data-retention setup.
+- A deletion test removes every row of an organization; mailbox removal tells the user to change the mailbox password.
+- The privacy policy names Google as the LLM processor; the DPA with Google is in place.
+- A one-page cost model (LLM + hosting + optional CASA if Gmail comes) gives a price per mailbox.
 
 ## Plan
 Written when the task starts (files to change, steps, tests).
 
-Start Google verification early: it is an external wait of weeks.
+If Gmail customers come (Phase 2 adapter): Google verification and a yearly CASA assessment are an external wait of weeks. Start them early.
 
 ## Done-checklist
 - [ ] Done-when checks pass (name the command and its output in the log).
@@ -23,3 +27,4 @@ Start Google verification early: it is an external wait of weeks.
 
 ## Log
 - 2026-11-02: Created from `docs/roadmap.md` and `docs/architecture.md` §11.
+- 2026-11-02: Changed after the cold review (`tasks/done/mvp-plan-review.md`) and the user's answers (IMAP, home VPS, own Postgres).
