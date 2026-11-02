@@ -1,4 +1,4 @@
-> **Status 2026-11-02 — planned.** Left: everything. Write the file-level plan when the task moves to `active/`.
+> **Status 2026-11-02 — in progress.** Left: the planner writes the plan; the user approves it; then all stages.
 
 # S0 Foundation
 
@@ -24,7 +24,7 @@ A clean base: Bun workspaces (`apps/server`, `apps/web`, `packages/core`), env c
 ## Plan
 Written when the task starts (files to change, steps, tests).
 
-Notes: pick the migration runner (for example `dbmate`) and confirm Kysely + kysely-codegen here. Fix root lint, husky and lint-staged paths (they point to `backend/**`).
+Notes: migration runner = `dbmate` (user decision 2026-11-02; plain SQL files in `db/migrations/`, ADR 0011). Query layer = Kysely + kysely-codegen (ADR 0011). Fix root lint, husky and lint-staged paths (they point to `backend/**`).
 The old `ImapEmailProvider` and all other old adapters are deleted in S0 (S1a can read them with `git show 29e9522:<path>`).
 The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postgres:17` works).
 
