@@ -264,17 +264,17 @@ Data retention: `body_text` is cleared after `data_retention_days` (default 30).
 
 ## 11. Delivery slices
 
-Detail, scope, sizes and dependencies: `docs/roadmap.md`.
+Detail, scope, sizes and dependencies: `docs/roadmap.md`. Goal, done-when, plan and status of each slice: its task file in `tasks/`.
 
-| Slice | Content | Done when |
+| Slice | Content | Task file |
 |---|---|---|
-| S0 Foundation | Workspaces layout, env check, logger, CI, new migration (tenancy, mailboxes, credentials, settings, rules, emails, triage_results, actions, audit_log), local Supabase | CI green; migration applies on a clean local DB |
-| S1 Shadow triage | Gmail OAuth connect, history sync, rules, LLM classify, plans logged (mode `shadow`), eval runner | One week of the user's mail classified; accuracy measured on ≥ 100 labeled mails |
-| S2 Telegram | Bot, chat linking, digest at set times, urgent notice | The user gets the digest in Telegram each day |
-| S3 Assist actions | Committer, labels / archive / summary / manual, tool switches, mode switch | `assist` mode runs one week without a wrong irreversible action |
-| S4 Drafts + approval + delegation | Delegation + clarification drafts (no general reply writing in MVP), approve / reject / send buttons, delegations, chaser | A delegation goes out only after a button tap and is followed up |
-| S5 Web panel | Login, connect mailbox, switches, lists, delegates, audit view | The user can set up a mailbox without the CLI |
-| S6 Pre-sale | Google verification + CASA, onboarding, billing, assistant role, account deletion | First external customer can sign up |
+| S0 Foundation | Workspaces layout, env check, logger, CI, new migration (tenancy, mailboxes, credentials, settings, rules, emails, triage_results, actions, audit_log), local Supabase | `s0-foundation.md` |
+| S1 Shadow triage | Gmail OAuth connect, history sync, rules, LLM classify, plans logged (mode `shadow`), eval runner | `s1-shadow-triage.md` |
+| S2 Telegram | Bot, chat linking, digest at set times, urgent notice | `s2-telegram.md` |
+| S3 Assist actions | Committer, labels / archive / summary / manual, tool switches, mode switch | `s3-assist-actions.md` |
+| S4 Drafts + approval + delegation | Delegation + clarification drafts (no general reply writing in MVP), approve / reject / send buttons, delegations, chaser | `s4-drafts-approvals-delegation.md` |
+| S5 Web panel | Login, connect mailbox, switches, lists, delegates, audit view | `s5-web-panel.md` |
+| S6 Pre-sale | Google verification + CASA, onboarding, billing, assistant role, account deletion | `s6-pre-sale.md` |
 | Phase 2 | Style learning, two-way chat + voice, meetings + calendar, Microsoft 365, mobile app, RAG | — |
 
 ## 12. What happens to the current code

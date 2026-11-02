@@ -1,8 +1,9 @@
 # Roadmap, scope and size — AI Email Assistant
 
 > **Proposed 2026-11-02.** Explains the delivery slices S0–S6 from `docs/architecture.md` §11.
-> The plan is known at module level (`docs/modules.md`). File-level plans are written per slice, as `tasks/active/<slice>.md`,
-> when the slice starts. Results of S1 (real accuracy on real mail) can change S3–S5.
+> The plan is known at module level (`docs/modules.md`). Each slice has a task file (`tasks/planned/s0-foundation.md` … `s6-pre-sale.md`)
+> with its goal, done-when and status. The file-level plan is written in that file when the slice moves to `tasks/active/`.
+> Results of S1 (real accuracy on real mail) can change S3–S5. Rules: `tasks/README.md`.
 
 ## 1. Scope
 
@@ -84,7 +85,7 @@ Hardest parts (most risk):
 
 - No new agent skills are needed. Existing: `vps-ssh` (dev server), `gh-tickets` (issues), `handoff`.
 - Repeated fixed jobs become saved scripts, not skills: `bun run db:types`, `bun run eval`, `bun run gmail:connect`.
-- Each slice gets a task file in `tasks/active/` with a file-level plan before code starts.
+- Each slice has a task file in `tasks/`. It gets a file-level plan in `tasks/active/` before code starts (`tasks/README.md`).
 
 ## 5. LLM: Google Gemini (ADR 0007, decided 2026-11-02)
 

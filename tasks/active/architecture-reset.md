@@ -1,4 +1,4 @@
-> **Status 2026-11-02 — in progress.** Docs done: product brief, architecture, modules, roadmap, ADR 0001–0009 (0007 = Gemini, accepted). Left: Gemini key from the user → `bun run gemini:test` passes; user review → set other ADRs to accepted; how tasks/docs are managed is decided in a separate chat (handoff `~/.pi/agent/notes/2026-11-02-handoff-docs-and-tasks.md`); then start S0 as its own task file.
+> **Status 2026-11-02 — in progress.** Docs done: product brief, architecture, modules, roadmap, ADR 0001–0009 (0007 = Gemini, accepted). Left: Gemini key from the user → `bun run gemini:test` passes; user review → set other ADRs to accepted; then move this file to `done/` and move `tasks/planned/s0-foundation.md` to `active/`. Sections 2–5 are replaced by `docs/` and `tasks/planned/s*.md`.
 
 # Architecture reset for email_assistant
 
@@ -132,3 +132,4 @@ Rules for this pipeline:
 - 2026-11-02: User asked for a high-level overview (repo split, tech, modules). Wrote `docs/modules.md`: monorepo layout, "DB state + small workers" communication, module/sub-module catalog with owned tables and slices, web pages, status flows. Linked it from architecture.md.
 - 2026-11-02: User asked about AI SDK and the S0–S6 slices, scope and size. Wrote `docs/roadmap.md` (scope in/out, slices with size and dependencies, size estimate, LLM library options). ADR 0007 under review: recommend OpenAI SDK + configurable baseURL, Langfuse later. MVP drafts = delegation + clarification only.
 - 2026-11-02: User chose Google Gemini (free tier for dev). Installed `@google/genai` 2.32.0 in backend, added `backend/.env.example` (GEMINI_API_KEY, GEMINI_MODEL=gemini-3.8-flash), script `bun run gemini:test`. Rewrote ADR 0007 (accepted) and updated architecture, modules, roadmap, product brief. Billing gate: paid tier before real mail (S1).
+- 2026-11-02: Task convention decided with the user: `tasks/README.md` (one source per fact, life of a task, template, done-checklist). Slices S0–S6 are task files in `tasks/planned/`; architecture §11 and roadmap link to them.
