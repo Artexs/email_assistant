@@ -58,6 +58,16 @@ examples `fork-or-fresh-subagent`, `worker-result-handoff`, `pr-review-rules`, `
 - Not now: background workers / worktrees (course s01e04, Limen + Herdr). Builds run one at a time on `master`, so foreground subagents are enough.
 - pi: `~/.pi/agent/extensions/` has only `handoff.ts` and `web-privacy-guard.ts`. No subagent support in pi now (checked); run slices in Claude Code.
 
+## Facts: pi (checked 2026-11-02, pi 1.4.0)
+- Subagents in pi are an example extension, not built in: `/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent/examples/extensions/subagent/` (README, `index.ts`, `agents.ts`, sample `planner`/`reviewer`/`scout`/`worker`, prompts `/implement`, `/implement-and-review`). Not installed now (`~/.pi/agent/extensions/` has only `handoff.ts`, `web-privacy-guard.ts`).
+- Install: copy `index.ts` + `agents.ts` to `~/.pi/agent/extensions/subagent/`; agents in `~/.pi/agent/agents/*.md` (default) or `.pi/agents/*.md` (only with `agentScope: "both"` + a confirm prompt).
+- Agent fields: only `name`, `description`, `tools` (pi names: `read, edit, write, bash, grep, find, ls`), `model` (e.g. `claude-bridge/claude-sonnet-5-5`). No `effort`/thinking field, no per-call model or thinking, no hooks, no `maxTurns`.
+- Each call runs `pi --mode json -p --no-session` as a new process: no resume. A fix round is a new call with the findings.
+- Thinking: when `model` is set, the extension passes no `--thinking`; pi then uses `modelThinkingLevels` from `~/.pi/agent/settings.json` (now: opus medium, sonnet medium). Small patch needed for a per-agent `thinking` field.
+- pi asks no permission for tool calls (docs/security.md). Read-only reviewer / no-commit implementer = prompt rule + the main session checks `git status` and `git log` after each call.
+- The child process loads the user extensions and packages, so `web-privacy-guard.ts` and `pi-web-access` (`web_search`, `fetch_content`) work there. A `tools` list without `subagent` blocks nesting.
+- pi reads `CLAUDE.md` as a context file, so repo rules apply. Skills: `~/.pi/agent/skills`, `~/.agents/skills`, `.agents/skills`.
+
 ## Facts (Claude Code docs, checked 2026-11-02, https://code.claude.com/docs/en/sub-agents)
 - Files: `.claude/agents/*.md` (project, commit them) or `~/.claude/agents/` (all projects). Markdown with YAML frontmatter; the body is the system prompt.
 - Required fields: `name`, `description`. Useful: `tools`, `disallowedTools`, `model` (`sonnet`, `opus`, `haiku`, `fable`, a full id, or `inherit`), `permissionMode`, `maxTurns`, `effort`, `color`, `skills`.
@@ -73,3 +83,4 @@ examples `fork-or-fresh-subagent`, `worker-result-handoff`, `pr-review-rules`, `
 ## Log
 - 2026-11-02: Created from the MVP review chat. The user asked for three subagents and a handoff to discuss them with another agent.
 - 2026-11-02: Second agent checked the handoff claims (all true), read the course material, added "Review of the proposal". No agent files yet.
+- 2026-11-02: The user runs slices in pi, not Claude Code. Checked the pi subagent extension; facts in "Facts: pi". Planner web search: discussed.
