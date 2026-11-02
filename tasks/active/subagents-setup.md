@@ -1,4 +1,4 @@
-> **Status 2026-11-02 — in progress.** Left: the user reviews the 3 agent texts; `run-slice` skill (main-session procedure); `CLAUDE.md` commit rule; "How to run a slice" in `tasks/README.md`; first real run on S0; backup of `~/.pi/agent/agents` + extension.
+> **Status 2026-11-02 — in progress.** Left: first real run on S0 (each agent tested on a real job); backup of `~/.pi/agent/agents`, `skills/run-slice` and `extensions/subagent` (not in git).
 
 # Subagents for the slice loop (plan → build → review)
 
@@ -86,3 +86,4 @@ examples `fork-or-fresh-subagent`, `worker-result-handoff`, `pr-review-rules`, `
 - 2026-11-02: The user runs slices in pi, not Claude Code. Checked the pi subagent extension; facts in "Facts: pi". Planner web search: discussed.
 - 2026-11-02: Agreed with the user: pi first; agents `planner`, `implementer`, `reviewer` (global, `~/.pi/agent/agents/`); planner gets web search; subagents never commit; one commit per reviewed stage by the main session.
 - 2026-11-02: Installed the subagent extension to `~/.pi/agent/extensions/subagent/` (copy of the pi 1.4.0 example + patch: frontmatter `thinking`, per-call `model`/`thinking`, `--no-mcp` for children). Wrote the 3 agent files. Smoke tests: reviewer (Haiku override) ran `git log` and listed only `bash, find, grep, ls, read`; implementer with per-call `claude-bridge/claude-haiku-5-5` + `minimal` ran as `claude-bridge/claude-haiku-5-5:minimal`. Not in git yet (no backup).
+- 2026-11-02: The user approved the agent texts. Added the `CLAUDE.md` stage-commit rule (with the user's staged-diff rule), "How to run a slice" in `tasks/README.md`, and the explicit-only skill `~/.pi/agent/skills/run-slice/SKILL.md` (`disable-model-invocation: true`, because it commits and pushes). Load check: `pi -p "/skill:run-slice TEST ONLY…"` → "First heading: `# Run a slice`, Loop steps: 7".

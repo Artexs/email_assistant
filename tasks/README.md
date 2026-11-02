@@ -32,6 +32,30 @@ Move a file between folders with `git mv` when its state changes.
 4. **Finish.** Do the done-checklist. Set the status to `done`, then `git mv` the file to `done/`.
    Ideas that came up and are not done go to new files in `planned/`.
 
+## How to run a slice
+
+Big tasks (the slices S0–S6 in `docs/roadmap.md`) run in a plan → build → review loop in pi.
+Start it with `/skill:run-slice tasks/planned/<name>.md`. The skill (`~/.pi/agent/skills/run-slice/`) holds the full procedure.
+
+| Who | Model | Does |
+|---|---|---|
+| Main session (you talk to it) | Opus | Calls the subagents, checks their work, asks the user, commits each stage |
+| `planner` subagent | Opus, high | Writes the `## Plan` in the task file: stages, steps, questions for the user |
+| `implementer` subagent | Sonnet, medium (Opus, high for `[risky]` stages) | Builds one step: test first, code, checks. Never commits |
+| `reviewer` subagent | Opus, high | Reviews one stage, runs the checks, gives PASS or FAIL. Read-only |
+
+The subagents are global: `~/.pi/agent/agents/*.md`, via the extension in `~/.pi/agent/extensions/subagent/`.
+
+1. **Plan.** The planner writes the plan. **The user answers its questions and approves the plan.** The main session commits the plan.
+2. **Build.** The implementer builds each step of a stage. The changes stay uncommitted.
+3. **Review.** The reviewer checks the stage. On FAIL, the implementer fixes the findings (max 2 rounds, then the user decides).
+4. **Commit.** On PASS, the main session ticks the steps, adds a log line, and commits and pushes the stage (rules in `CLAUDE.md`).
+5. **End.** **The user tries the result.** The main session closes the task.
+
+Plan shape: stages of 1 `[risky]` step or 2–4 normal steps (about 300 changed lines or less). Each step has Goal, Files, Interfaces,
+Decisions, Test, Check, Done when, Out of scope. `[risky]` areas: data integrity, sync and dedup, exactly-once, security, auth, tenant
+isolation, sending to people, LLM prompts and evals, migrations.
+
 ## Template
 
 ```markdown

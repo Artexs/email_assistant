@@ -15,7 +15,13 @@ Before you diagnose an alert, grep docs/known-alerts.md.
 - Never hardcode or commit secrets, tokens or `.env`. Read them from env/config.
 - Template literals for strings with variables, never `+` concatenation.
 - `const` / `let` only, no `var`.
+- Before each commit, review the staged changes (`git diff --staged`). Look for bugs, secrets, debug code, and changes that are not part of the task. Fix all problems, then commit.
 - Commit and push all work to `master` only, with a standard `git push`. Never create other branches. Never force-push (`--force`, `-f`, `--force-with-lease`).
+- Plan stages (the plan → build → review loop in `tasks/README.md` § "How to run a slice"):
+  - Subagents (`planner`, `implementer`, `reviewer`) never commit or push. The main session commits and pushes.
+  - One commit per stage, only after the reviewer gives PASS. The commit holds the code and the task file update (ticked steps, log line).
+  - Commit message: `<area>: <slice> stage N — <what>`. Body: the steps, the check command and its result, `Reviewed: PASS`.
+  - A problem found after the push gets a new fix commit. Never rewrite pushed history.
 
 ## Tasks
 
