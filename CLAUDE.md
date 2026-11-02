@@ -19,7 +19,7 @@ Before you diagnose an alert, grep docs/known-alerts.md.
 
 ## Tasks
 
-- All work lives in task files in `tasks/{planned,active,done}/`, not in `docs/`. How a task moves, the template and where each fact lives: `tasks/README.md`.
+- **Tasks** are the record of all work in the project. Each feature or bigger job gets a task file that moves from `planned/` to `active/` to `done/`. If `tasks/README.md` exists, read it before you create or move a task, because it has the template and the rules.
 - When I ask for a new task or an implementation plan, create `tasks/planned/<name>.md` (or `tasks/active/` if I say to start now).
 - Every plan starts with a status line: `> **Status YYYY-MM-DD — <planned | in progress | code done, deploy left | done>.**`
   plus what's left to do.
