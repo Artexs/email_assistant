@@ -65,6 +65,8 @@ examples `fork-or-fresh-subagent`, `worker-result-handoff`, `pr-review-rules`, `
 - A subagent cannot ask the user questions (`AskUserQuestion` is removed). Permission prompts pass through to the user.
 - Call one explicitly with `@agent-<name>` or by name in the prompt. `/agents` now only prints where the files live.
 - Model order: per-call `model` (aliases only) > frontmatter `model` > `CLAUDE_CODE_SUBAGENT_MODEL` > main model. `effort`: `low`–`max`. `maxTurns` stops a runaway subagent.
+- Per-call `effort` exists too (needs v2.1.292+; installed: 2.1.312, checked 2026-11-02). `CLAUDE_CODE_EFFORT_LEVEL` overrides both: do not set it. Per-call `model` and `effort` stay on resume.
+- Discussed 2026-11-02 (not agreed yet): drop `implementer-strong`; three agents `planner`, `implementer`, `reviewer`; risky steps = `implementer` with per-call `model: opus`, `effort: high`; subagents never commit; the main session makes one commit per reviewed stage and pushes it.
 - Subagent-scoped `hooks` in frontmatter run only while that subagent runs. `memory: project` gives a subagent its own `MEMORY.md` across sessions.
 - `isolation: worktree` runs a subagent in a temporary git worktree. Do not use it: `CLAUDE.md` forbids other branches.
 
