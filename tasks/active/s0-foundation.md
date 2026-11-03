@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Stages 1–4 done. Left: stages 5–7.
+> **Status 2026-11-03 — in progress.** Stages 1–5 done. Left: stages 6–7.
 
 # S0 Foundation
 
@@ -216,7 +216,7 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
   - Out of scope: repository functions (stage 5); RLS (S6 option).
 
 ### Stage 5 — Tenancy module, `org_id` filter test, `org:create` [risky]
-- [ ] **5.1 Tenancy repository + service, isolation test, `org:create` CLI**
+- [x] **5.1 Tenancy repository + service, isolation test, `org:create` CLI**
   - Goal: The `tenancy` module reads only rows of the caller's organization, and `bun run org:create` creates the pilot organization, user and owner membership.
   - Files: `apps/server/src/modules/tenancy/index.ts`, `repo.ts`, `service.ts`; `apps/server/src/scripts/org-create.ts`; `apps/server/test/integration/tenancy.test.ts`; root `package.json` (script `org:create` = `bun apps/server/src/scripts/org-create.ts`).
   - Interfaces:
@@ -290,7 +290,7 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
    - Answer (2026-11-03): (a). The main session took the recommendation because the user said to run without a stop; the user can change it before stage 7.
 
 ## Not verified
-- Kysely exposes `isTransaction` on `Kysely` / `Transaction` (step 5.1).
+- Confirmed (Kysely 0.29.8 `kysely.d.ts`): `isTransaction` exists on `Kysely` and `Transaction` (step 5.1).
 - `kysely-codegen` flag names `--dialect`, `--url 'env(VAR)'`, `--out-file`, `--exclude-pattern` (step 4.1). Check with `bunx kysely-codegen --help`.
 - `bun run --filter '*' <script>` runs the script in every workspace that has it (steps 1.1, 1.2).
 - Bun does not override an env var that the parent process sets explicitly (also an empty string) with a `.env` value, and Bun loads `.env` only from the current folder (step 6.2 test).
@@ -316,3 +316,4 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
 - 2026-11-03: Stage 2 (`apps/server` config + log, Gemini script, `backend/` removed) built and reviewed: FAIL, then PASS in round 2. Fix: the script is now `apps/server/src/scripts/gemini-check.ts`, because Bun's test patterns match `*_test.ts` and `test:unit` sent a real Gemini call. Checks: `bun install --frozen-lockfile`, `bun run lint`, `bun run typecheck`, `bun run test:unit` (10 pass, 3 files) — all pass. Root `.env` moved from `backend/.env` (untracked). Kept `z.string().url()` as planned.
 - 2026-11-03: Stage 3 (DB roles, Compose `db` on 5433, dbmate 2.37.0, grants migration) built and reviewed: PASS. Checks on an empty volume: `db:up` healthy; `db:migrate` applied `20261103000001_app_grants.sql`; `current_user` = `migrator` / `app`; `app` `create table` → `permission denied for schema public`; second `db:migrate` exit 0; `db:rollback` + `db:migrate` work. `bun install --frozen-lockfile`, `bun run lint`, `bun run typecheck`, `bun run test:unit` (10 pass) — all pass. Real local passwords set in the root `.env`. Accepted: healthcheck in CMD array form; PUBLIC keeps CONNECT on the DB (as planned).
 - 2026-11-03: Stage 4 (tenancy migration, `db:types` with kysely-codegen 0.20, `platform/db`, app-role test) built and reviewed: PASS. Checks: empty volume `db:up` + `db:migrate` applied both migrations; `db:types` → 3 tables, no `schema_migrations`; `bun run test:int` (6 pass), `bun run test:unit` (10 pass), `bun run lint`, `bun run typecheck`, `bun install --frozen-lockfile` — all pass. Confirmed: kysely-codegen flags; `pg` returns `time[]` as `string[]`. `dotenv` is only a transitive dependency of kysely-codegen (in `bun.lock`, not in any `package.json`).
+- 2026-11-03: Stage 5 (tenancy module, isolation tests, `org:create` CLI) built and reviewed: PASS. Checks: `bun run test:int` (13 pass), `bun run test:unit` (10 pass), `bun run lint`, `bun run typecheck`, `bun install --frozen-lockfile` — all pass; no leftover rows after the CLI test. Kept the planned timezone check (`Intl.supportedValuesOf`): under Bun it rejects `Europe/Kyiv`, `Asia/Kolkata`, `Etc/UTC` (see `notes/2026-11-03-bun-timezones.md`); `Europe/Warsaw` and `UTC` pass.
