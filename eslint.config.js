@@ -1,11 +1,13 @@
 import { includeIgnoreFile } from "@eslint/compat";
 import eslint from "@eslint/js";
-import eslintPluginPrettier from "eslint-plugin-prettier/recommended";
 import eslintPluginAstro from "eslint-plugin-astro";
+import eslintPluginImport from "eslint-plugin-import";
+import eslintPluginPrettier from "eslint-plugin-prettier/recommended";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import pluginReact from "eslint-plugin-react";
 import reactCompiler from "eslint-plugin-react-compiler";
 import eslintPluginReactHooks from "eslint-plugin-react-hooks";
+import globals from "globals";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import tseslint from "typescript-eslint";
@@ -23,8 +25,11 @@ const baseConfig = tseslint.config({
   },
 });
 
+const webFiles = ["apps/web/**/*.{js,jsx,ts,tsx,astro}"];
+const webScriptFiles = ["apps/web/**/*.{js,jsx,ts,tsx}"];
+
 const jsxA11yConfig = tseslint.config({
-  files: ["**/*.{js,jsx,ts,tsx}"],
+  files: webScriptFiles,
   extends: [jsxA11y.flatConfigs.recommended],
   languageOptions: {
     ...jsxA11y.flatConfigs.recommended.languageOptions,
@@ -35,7 +40,7 @@ const jsxA11yConfig = tseslint.config({
 });
 
 const reactConfig = tseslint.config({
-  files: ["**/*.{js,jsx,ts,tsx}"],
+  files: webScriptFiles,
   extends: [pluginReact.configs.flat.recommended],
   languageOptions: {
     ...pluginReact.configs.flat.recommended.languageOptions,
@@ -56,11 +61,53 @@ const reactConfig = tseslint.config({
   },
 });
 
+const astroConfig = eslintPluginAstro.configs["flat/recommended"].map((config) => ({
+  ...config,
+  files: config.files ?? webFiles,
+}));
+
+const nodeConfig = tseslint.config({
+  files: ["apps/server/**/*.ts", "packages/**/*.ts"],
+  plugins: {
+    import: eslintPluginImport,
+  },
+  languageOptions: {
+    globals: {
+      ...globals.node,
+    },
+  },
+  settings: {
+    "import/resolver": {
+      typescript: {
+        project: ["apps/server/tsconfig.json", "packages/*/tsconfig.json"],
+      },
+    },
+  },
+  rules: {
+    "prefer-const": "error",
+    "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+    "import/order": [
+      "error",
+      {
+        groups: ["builtin", "external", "internal", "parent", "sibling", "index"],
+        "newlines-between": "always",
+        alphabetize: { order: "asc", caseInsensitive: true },
+      },
+    ],
+  },
+});
+
 export default tseslint.config(
   includeIgnoreFile(gitignorePath),
+  { ignores: ["backend/**", "**/dist/**", "apps/web/.astro/**"] },
   baseConfig,
   jsxA11yConfig,
   reactConfig,
-  eslintPluginAstro.configs["flat/recommended"],
+  ...astroConfig,
+  nodeConfig,
+  {
+    files: ["apps/web/src/env.d.ts"],
+    rules: { "@typescript-eslint/no-empty-object-type": "off" },
+  },
   eslintPluginPrettier
 );

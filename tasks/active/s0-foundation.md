@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Plan done. Left: stages 1–7.
+> **Status 2026-11-03 — in progress.** Stage 1 done. Left: stages 2–7.
 
 # S0 Foundation
 
@@ -41,7 +41,7 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
 - After each stage, these must pass: `bun install --frozen-lockfile`, `bun run lint`, `bun run typecheck`, `bun run test:unit` (from stage 2 on). From stage 4 on, also `bun run test:int` with the Compose `db` running and migrated.
 
 ### Stage 1 — Workspaces, `packages/core`, web app move, root lint
-- [ ] **1.1 Root workspace and `packages/core`**
+- [x] **1.1 Root workspace and `packages/core`**
   - Goal: The root `package.json` becomes a Bun workspace root, and `packages/core` exists with one pure, unit-tested module.
   - Files: `package.json` (root, rewrite), `tsconfig.base.json` (new), `packages/core/package.json`, `packages/core/tsconfig.json`, `packages/core/src/index.ts`, `packages/core/src/tenancy.ts`, `packages/core/src/tenancy.test.ts`; delete root `package-lock.json` (`git rm`); regenerate `bun.lock`.
   - Interfaces:
@@ -55,7 +55,7 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
   - Check: `bun install` then `bun run test:unit` and `bun run typecheck`.
   - Done when: the core test passes; `ls package-lock.json` fails; `bun.lock` is the only lockfile at the root.
   - Out of scope: `apps/server`; `backend/` (it stays untouched until stage 2, outside the workspaces).
-- [ ] **1.2 Move the Astro starter to `apps/web`**
+- [x] **1.2 Move the Astro starter to `apps/web`**
   - Goal: The Astro starter lives in `apps/web` as workspace `@ea/web`, and it lints, typechecks and builds.
   - Files: `git mv src apps/web/src`, `git mv public apps/web/public`, `git mv astro.config.mjs apps/web/astro.config.mjs`, `git mv components.json apps/web/components.json`, `git mv tsconfig.json apps/web/tsconfig.json`; new `apps/web/package.json`; change `apps/web/tsconfig.json`, `apps/web/src/env.d.ts`, `.vscode/launch.json`, `.vscode/settings.json`, `.gitignore`.
   - Interfaces:
@@ -69,7 +69,7 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
   - Check: `bun install`, `bun run web:build`, `bun run --filter @ea/web typecheck`.
   - Done when: the web build writes `apps/web/dist/`; `astro check` reports 0 errors; no root `src/`, `public/`, `astro.config.mjs`, `components.json`, `tsconfig.json` remain.
   - Out of scope: changes to pages, components or styles.
-- [ ] **1.3 Root lint, format, husky, lint-staged**
+- [x] **1.3 Root lint, format, husky, lint-staged**
   - Goal: One root ESLint and Prettier config covers all workspaces, and the pre-commit hook lints only staged files.
   - Files: `eslint.config.js`, `.prettierrc.json`, `.prettierignore` (new), `package.json` (`lint-staged` block), `.husky/pre-commit`.
   - Interfaces:
@@ -312,3 +312,4 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
 - 2026-11-02: Created from `docs/roadmap.md` and `docs/architecture.md` §11.
 - 2026-11-02: Changed after the cold review (`tasks/done/mvp-plan-review.md`) and the user's answers (IMAP, home VPS, own Postgres).
 - 2026-11-03: Planner wrote the plan (7 stages; 3, 4, 5 are `[risky]`). README = English (Question 1, option a).
+- 2026-11-03: Stage 1 (workspaces, `packages/core`, `apps/web`, root lint) built and reviewed: PASS. Checks: `bun install --frozen-lockfile`, `bun run lint`, `bun run typecheck`, `bun run test:unit` (2 pass), `bun run web:build` — all pass. Deviations accepted: React/a11y lint only on `{js,jsx,ts,tsx}` (not `.astro`); `no-empty-object-type` off for `apps/web/src/env.d.ts`.
