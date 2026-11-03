@@ -1,4 +1,3 @@
 bun.lock
 **/dist/
 apps/web/.astro/
-backend/

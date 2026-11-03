@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Stage 1 done. Left: stages 2–7.
+> **Status 2026-11-03 — in progress.** Stages 1–2 done. Left: stages 3–7.
 
 # S0 Foundation
 
@@ -85,7 +85,7 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
   - Out of scope: new lint rules beyond the ones listed; fixing old files in `.ai/`, `.cursor/`, `.github/copilot-instructions.md`, `.windsurfrules`.
 
 ### Stage 2 — `apps/server` base, config, log; old `backend/` removed
-- [ ] **2.1 `apps/server` package, env check, logger**
+- [x] **2.1 `apps/server` package, env check, logger**
   - Goal: `apps/server` exists with a Zod env check that fails on a missing key and a `log` util with levels and a module prefix.
   - Files: `apps/server/package.json`, `apps/server/tsconfig.json`, `apps/server/src/platform/config.ts`, `apps/server/src/platform/config.test.ts`, `apps/server/src/platform/log.ts`, `apps/server/src/platform/log.test.ts`; root `package.json` (`test:unit` = `bun test packages/core apps/server/src`).
   - Interfaces:
@@ -98,10 +98,10 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
   - Check: `bun install`, `bun run test:unit`, `bun run typecheck`, `bun run lint`.
   - Done when: all listed test cases pass.
   - Out of scope: `main.ts`, HTTP, DB (later stages).
-- [ ] **2.2 Move the Gemini test script; root `.env` and `.env.example`**
+- [x] **2.2 Move the Gemini test script; root `.env` and `.env.example`**
   - Goal: `bun run gemini:test` runs from the repo root and reads the key from the root `.env`.
-  - Files: `git mv backend/src/scripts/gemini_test.ts apps/server/src/scripts/gemini_test.ts` (then edit it); `apps/server/package.json` (add `@google/genai` `^2.32.0`); root `package.json` (script `gemini:test` = `bun apps/server/src/scripts/gemini_test.ts`); `.env.example` (rewrite); local move `backend/.env` → `.env` (not tracked).
-  - Interfaces: The script removes the `dotenv` and `path` imports, uses `createLog("gemini_test")` from `../platform/log`, reads `process.env.GEMINI_API_KEY` and `process.env.GEMINI_MODEL`, and on a missing key logs `Missing GEMINI_API_KEY or GEMINI_MODEL in .env` and exits 1.
+  - Files: `git mv backend/src/scripts/gemini_test.ts apps/server/src/scripts/gemini-check.ts` (then edit it); `apps/server/package.json` (add `@google/genai` `^2.32.0`); root `package.json` (script `gemini:test` = `bun apps/server/src/scripts/gemini-check.ts`); `.env.example` (rewrite); local move `backend/.env` → `.env` (not tracked).
+  - Interfaces: The script removes the `dotenv` and `path` imports, uses `createLog("gemini-check")` from `../platform/log`, reads `process.env.GEMINI_API_KEY` and `process.env.GEMINI_MODEL`, and on a missing key logs `Missing GEMINI_API_KEY or GEMINI_MODEL in .env` and exits 1.
   - Decisions:
     - `.env` handling: if the root `.env` does not exist, run `mv backend/.env .env`. If the root `.env` exists, stop and ask the main session. Never print the file. After the move, append the new keys from `.env.example` with placeholder values only if they are missing (the user fills in passwords in stage 3).
     - Root `.env.example` lists only keys that the code reads. After this step: `GEMINI_API_KEY=###`, `GEMINI_MODEL=gemini-3.8-flash` (keep the two comment lines from `backend/.env.example`), `DATABASE_URL`, `PORT=8080`, `LOG_LEVEL=info`. Stage 3 adds `MIGRATOR_DATABASE_URL`, `POSTGRES_PASSWORD`, `MIGRATOR_PASSWORD`, `APP_PASSWORD`. Remove `SUPABASE_URL`, `SUPABASE_KEY`, `OPENROUTER_API_KEY`, `IMAP_USER`, `IMAP_PASSWORD`.
@@ -110,9 +110,9 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
   - Check: `bun run gemini:test` from the repo root. A model reply or a Gemini `503 UNAVAILABLE` both prove the key loads (the 503 is a known alert in `docs/known-alerts.md`). A "Missing GEMINI_API_KEY" message is a FAIL.
   - Done when: the script runs from the root and reaches the Gemini API.
   - Out of scope: `platform/llm.ts` (S1b).
-- [ ] **2.3 Delete `backend/` and the old dependencies; update the Gemini docs**
+- [x] **2.3 Delete `backend/` and the old dependencies; update the Gemini docs**
   - Goal: The old server code, Supabase files and old dependencies are gone, and the docs name the new Gemini command.
-  - Files: `git rm -r backend` (all tracked files); `rm -rf backend` for the untracked rest (`node_modules/`; check with `git status --ignored backend` first that only `node_modules/` and no `.env` is left); `eslint.config.js` and `.prettierignore` (remove the `backend` lines); `tasks/active/gemini-setup.md` (status line, done-when and "Result so far": the command is `bun run gemini:test` from the repo root, script `apps/server/src/scripts/gemini_test.ts`, env in the root `.env`); `docs/roadmap.md` §5 "Setup check" line (new command and path; keep the 503 sentence).
+  - Files: `git rm -r backend` (all tracked files); `rm -rf backend` for the untracked rest (`node_modules/`; check with `git status --ignored backend` first that only `node_modules/` and no `.env` is left); `eslint.config.js` and `.prettierignore` (remove the `backend` lines); `tasks/active/gemini-setup.md` (status line, done-when and "Result so far": the command is `bun run gemini:test` from the repo root, script `apps/server/src/scripts/gemini-check.ts`, env in the root `.env`); `docs/roadmap.md` §5 "Setup check" line (new command and path; keep the 503 sentence).
   - Interfaces: none.
   - Decisions: `backend/supabase/` and its migration are removed (ADR 0011). `ImapEmailProvider`, `get_provider.ts`, `OpenAIAdapter`, `SupabaseAdapter`, `test_adapter.ts` and the interfaces are deleted; S1a reads them with `git show 29e9522:<path>`. `openai`, `express`, `helmet`, `cors`, `googleapis`, `@supabase/supabase-js`, `dotenv` must not be in any `package.json`. `imapflow` stays: add `imapflow` `^1.1.1` to `apps/server/package.json` dependencies. `@google/genai` stays (step 2.2).
   - Test: none.
@@ -313,3 +313,4 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
 - 2026-11-02: Changed after the cold review (`tasks/done/mvp-plan-review.md`) and the user's answers (IMAP, home VPS, own Postgres).
 - 2026-11-03: Planner wrote the plan (7 stages; 3, 4, 5 are `[risky]`). README = English (Question 1, option a).
 - 2026-11-03: Stage 1 (workspaces, `packages/core`, `apps/web`, root lint) built and reviewed: PASS. Checks: `bun install --frozen-lockfile`, `bun run lint`, `bun run typecheck`, `bun run test:unit` (2 pass), `bun run web:build` — all pass. Deviations accepted: React/a11y lint only on `{js,jsx,ts,tsx}` (not `.astro`); `no-empty-object-type` off for `apps/web/src/env.d.ts`.
+- 2026-11-03: Stage 2 (`apps/server` config + log, Gemini script, `backend/` removed) built and reviewed: FAIL, then PASS in round 2. Fix: the script is now `apps/server/src/scripts/gemini-check.ts`, because Bun's test patterns match `*_test.ts` and `test:unit` sent a real Gemini call. Checks: `bun install --frozen-lockfile`, `bun run lint`, `bun run typecheck`, `bun run test:unit` (10 pass, 3 files) — all pass. Root `.env` moved from `backend/.env` (untracked). Kept `z.string().url()` as planned.

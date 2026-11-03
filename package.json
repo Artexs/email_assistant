@@ -9,12 +9,13 @@
   ],
   "scripts": {
     "typecheck": "bun run --filter '*' typecheck",
-    "test:unit": "bun test packages/core",
+    "test:unit": "bun test packages/core apps/server/src",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "web:dev": "bun run --filter @ea/web dev",
-    "web:build": "bun run --filter @ea/web build"
+    "web:build": "bun run --filter @ea/web build",
+    "gemini:test": "bun apps/server/src/scripts/gemini-check.ts"
   },
   "devDependencies": {
     "@eslint/compat": "1.2.7",

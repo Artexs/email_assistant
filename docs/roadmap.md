@@ -109,7 +109,7 @@ Hardest parts (most risk):
 
 - SDK `@google/genai`, key `GEMINI_API_KEY`, model from config `GEMINI_MODEL` (dev: `gemini-3.8-flash`), optional `GEMINI_MODEL_CLASSIFIER`.
 - All calls go through `platform/llm.ts` (`classify`, `write`): timeout 30 s, rate limiter, 429 / 503 / timeout = soft errors.
-- Setup check: `cd backend && bun run gemini:test` (script `backend/src/scripts/gemini_test.ts`; S0 moves it to `apps/server/src/scripts/` and runs it from the repo root). On 2026-11-02 the key worked, but the model returned `503 high demand`.
+- Setup check: `bun run gemini:test` from the repo root (script `apps/server/src/scripts/gemini-check.ts`, env in the root `.env`). On 2026-11-02 the key worked, but the model returned `503 high demand`.
 - **Billing gate:** free tier only with test data. Turn on Cloud Billing before S1b runs on real mail.
 - **Data:** pilot on the Gemini API paid tier (55-day abuse logging, no EU location, accepted). Vertex AI EU before the first external customer (S6).
 - **Cost:** about $20 per mailbox per month at 200 mails/day with `gemini-3.8-flash` now, about $40 from 2027-01-01 (price doubles).

@@ -1,0 +1,14 @@
+{
+  "name": "@ea/server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ea/core": "workspace:*",
+    "@google/genai": "^2.32.0",
+    "imapflow": "^1.1.1",
+    "zod": "^4.1.12"
+  }
+}
