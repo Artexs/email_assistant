@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–14. Left: stages 15–17 (16–17 with the user on the VPS).
+> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–15. Left: stages 16–17 (16–17 with the user on the VPS).
 
 # S1a IMAP read + pilot host
 
@@ -476,7 +476,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Out of scope: S5 web access.
 
 ### Stage 15 — Nightly encrypted backup and restore test [risky]
-- [ ] **15.1 `deploy/backup.sh`, `deploy/restore-test.sh`, schedule**
+- [x] **15.1 `deploy/backup.sh`, `deploy/restore-test.sh`, schedule**
   - Goal: A nightly job writes an encrypted `pg_dump`, copies it off the VPS, and a restore script proves that a backup restores.
   - Files: `deploy/backup.sh` (new, executable), `deploy/restore-test.sh` (new, executable), `deploy/backup.env.example` (new), `.gitignore` (add `deploy/backup.env`), `deploy/README.md` (section Backups).
   - Interfaces:
@@ -572,3 +572,4 @@ None. The user answered Questions 1–8 on 2026-11-03; the answers are in "Decis
 - 2026-11-03: Stage 12 done (scheduler, sync job, heartbeat, server wiring). croner scheduler (protect, no overlap), heartbeat (HEARTBEAT_URL, never logged, never throws), mail sync job (one mailbox error never stops others, provider always closed), main.ts wiring, pg connectionTimeoutMillis 5000 (db-pool-timeouts moved to done). Two FAIL rounds on test strength (silent-DB timeout test, mailbox order in the login-error test), both fixed; user said go. Manual start: /health ok, db up, heartbeat-off warn. Checks: lint + typecheck exit 0; test:unit 129 pass; test:int 99 pass. Reviewer PASS.
 - 2026-11-03: Stage 13 done (test tools for the 48-hour run). mailbox:seed (refuses any mailbox that is not TEST_MAILBOX_ADDRESS, before credentials), mailbox:rescan (forceRescan), mailbox:audit (missing/duplicates multiset, shared fetchSince with the one-day SINCE shift). Review minors fixed. Checks: lint + typecheck exit 0; test:unit 135 pass; test:int 106 pass. Reviewer PASS.
 - 2026-11-03: Stage 14 done (server image, VPS Compose, runbook). deploy/Dockerfile (oven/bun:1.3.14, USER bun, no .env), .dockerignore, server service (no ports, unless-stopped, healthcheck /health), deploy/README.md runbook. FAIL round 1 fixed (Update migrates from a rebuilt image: run --build; nested .env ignore; read -rsp + unset P; cron log), round 2 minors fixed (real sync log format, bash note). Follow-up: tasks/planned/server-env-scope.md. Checks: docker build ok; prod compose: 0 published ports, db + server healthy, migrate exit 0; lint exit 0; test:unit 135 pass; test:int 106 pass. Reviewer PASS.
+- 2026-11-03: Stage 15 done (nightly encrypted backup and restore test). deploy/backup.sh (pg_dump -Fc piped to age, PGDMP check, copy to rclone remote then rename, local retention, absolute BACKUP_DIR), deploy/restore-test.sh (throwaway postgres:17, --network none, counts), backup.env.example, README Backups with cron PATH. Reviewer tested counts 2/3/1/57 restored and all failure paths leave no .dump.age. Coordinator re-ran backup + restore on the dev db: exit 0 both. Checks: shellcheck exit 0; lint exit 0; test:unit 135 pass; test:int 106 pass. Reviewer PASS.
