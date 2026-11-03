@@ -9,6 +9,8 @@
   ],
   "scripts": {
     "typecheck": "bun run --filter '*' typecheck",
+    "dev": "bun --watch apps/server/src/main.ts",
+    "start": "bun apps/server/src/main.ts",
     "test:unit": "bun test packages/core apps/server/src",
     "test:int": "bun test apps/server/test",
     "lint": "eslint .",

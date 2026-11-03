@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Stages 1–5 done. Left: stages 6–7.
+> **Status 2026-11-03 — in progress.** Stages 1–6 done. Left: stage 7 and the End step.
 
 # S0 Foundation
 
@@ -235,7 +235,7 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
   - Out of scope: login, sessions, chat linking (S2, S5); roles checks beyond storing `owner`.
 
 ### Stage 6 — HTTP server and `GET /health`
-- [ ] **6.1 Hono app with `GET /health`**
+- [x] **6.1 Hono app with `GET /health`**
   - Goal: `GET /health` returns 200 with the DB status when the DB answers, and 503 when it does not.
   - Files: `apps/server/src/platform/http.ts`, `apps/server/src/platform/http.test.ts`, `apps/server/test/integration/health.test.ts`; `apps/server/package.json` (dependency `hono`).
   - Interfaces: `export function createApp(deps: { checkDb: () => Promise<boolean> }): Hono`. `GET /health` → DB up: status 200, JSON `{ "status": "ok", "db": "up" }`; DB down: status 503, JSON `{ "status": "error", "db": "down" }`. An error handler (`app.onError`) logs `[http]` with the error message and returns 500 `{ "error": "internal" }`. Unknown routes: Hono default 404.
@@ -244,7 +244,7 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
   - Check: `bun run test:unit`, `bun run test:int`, `bun run lint`, `bun run typecheck`.
   - Done when: all tests pass.
   - Out of scope: other routes; sessions (S5).
-- [ ] **6.2 `main.ts` start-up and env-check start test**
+- [x] **6.2 `main.ts` start-up and env-check start test**
   - Goal: `bun run dev` starts the server, and a missing env key stops the start with exit code 1.
   - Files: `apps/server/src/main.ts`, `apps/server/src/main.test.ts`; root `package.json` (scripts `dev` = `bun --watch apps/server/src/main.ts`, `start` = `bun apps/server/src/main.ts`).
   - Interfaces: `main.ts` order: `loadConfig()` (on `ConfigError`: log `[main] config error: missing or bad keys: <keys>` and `process.exit(1)`) → `setLogLevel(config.LOG_LEVEL)` → `createDb(config.DATABASE_URL)` → `await assertAppRole(db)` (on error: log and exit 1) → `createApp({ checkDb: () => checkDb(db) })` → `Bun.serve({ port: config.PORT, fetch: app.fetch })` → log `[main] listening on port <port>`. On `SIGTERM` / `SIGINT`: stop the server, `await db.destroy()`, exit 0.
@@ -317,3 +317,4 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
 - 2026-11-03: Stage 3 (DB roles, Compose `db` on 5433, dbmate 2.37.0, grants migration) built and reviewed: PASS. Checks on an empty volume: `db:up` healthy; `db:migrate` applied `20261103000001_app_grants.sql`; `current_user` = `migrator` / `app`; `app` `create table` → `permission denied for schema public`; second `db:migrate` exit 0; `db:rollback` + `db:migrate` work. `bun install --frozen-lockfile`, `bun run lint`, `bun run typecheck`, `bun run test:unit` (10 pass) — all pass. Real local passwords set in the root `.env`. Accepted: healthcheck in CMD array form; PUBLIC keeps CONNECT on the DB (as planned).
 - 2026-11-03: Stage 4 (tenancy migration, `db:types` with kysely-codegen 0.20, `platform/db`, app-role test) built and reviewed: PASS. Checks: empty volume `db:up` + `db:migrate` applied both migrations; `db:types` → 3 tables, no `schema_migrations`; `bun run test:int` (6 pass), `bun run test:unit` (10 pass), `bun run lint`, `bun run typecheck`, `bun install --frozen-lockfile` — all pass. Confirmed: kysely-codegen flags; `pg` returns `time[]` as `string[]`. `dotenv` is only a transitive dependency of kysely-codegen (in `bun.lock`, not in any `package.json`).
 - 2026-11-03: Stage 5 (tenancy module, isolation tests, `org:create` CLI) built and reviewed: PASS. Checks: `bun run test:int` (13 pass), `bun run test:unit` (10 pass), `bun run lint`, `bun run typecheck`, `bun install --frozen-lockfile` — all pass; no leftover rows after the CLI test. Kept the planned timezone check (`Intl.supportedValuesOf`): under Bun it rejects `Europe/Kyiv`, `Asia/Kolkata`, `Etc/UTC` (see `notes/2026-11-03-bun-timezones.md`); `Europe/Warsaw` and `UTC` pass.
+- 2026-11-03: Stage 6 (Hono `GET /health`, `main.ts`, env-check start test) built and reviewed: PASS. Checks: `bun run test:unit` (15 pass), `bun run test:int` (14 pass), `bun run lint`, `bun run typecheck`, `bun install --frozen-lockfile` — all pass. Manual: `/health` 200 `{"status":"ok","db":"up"}` with the db up, 503 with the db stopped, exit 1 with the migrator URL, SIGTERM/SIGINT exit 0. Review fix: shutdown guard against a second signal (double SIGINT → exit 0, checked by the main session). Follow-up: `tasks/planned/db-pool-timeouts.md`.

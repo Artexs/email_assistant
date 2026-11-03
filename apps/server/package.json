@@ -8,6 +8,7 @@
   "dependencies": {
     "@ea/core": "workspace:*",
     "@google/genai": "^2.32.0",
+    "hono": "^4.13.16",
     "imapflow": "^1.1.1",
     "kysely": "^0.29.8",
     "pg": "^8.23.1",
