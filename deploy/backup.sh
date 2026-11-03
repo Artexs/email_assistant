@@ -65,7 +65,7 @@ if [[ ! -s "$part" ]]; then
 fi
 
 # Copy before the rename: a failed copy leaves no local .dump.age either
-rclone copyto "$part" "$BACKUP_REMOTE/$name"
+rclone copyto --no-check-dest "$part" "$BACKUP_REMOTE/$name"
 mv "$part" "$final"
 
 # Local retention only. Remote retention is a lifecycle rule on the bucket.
