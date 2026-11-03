@@ -105,7 +105,7 @@ If somebody steals the VPS, they cannot read or delete old backups.
 
 ### VPS setup (once)
 
-1. Install `age` and `rclone`.
+1. Install `age` and `rclone`. The B2 backend needs a recent rclone: Ubuntu 22.04 apt has 1.53, which fails. Put rclone 1.75 or later in `~/bin/rclone`.
 2. `rclone config`: make a remote of type `b2` (for example `b2`) with the write-only key ID and key.
    The config is in `~/.config/rclone/rclone.conf`. Run `chmod 600 ~/.config/rclone/rclone.conf`. Never put it in git.
 3. `cp deploy/backup.env.example deploy/backup.env && chmod 600 deploy/backup.env`, then set:
@@ -116,9 +116,10 @@ If somebody steals the VPS, they cannot read or delete old backups.
    - `COMPOSE`: default `docker compose`.
    `deploy/backup.env` is in `.gitignore`.
 4. Run one backup by hand: `deploy/backup.sh`. The last line is `backup ok <name> <bytes>`.
-   If `rclone copyto` fails because the write-only key cannot list or read the bucket, add `--no-check-dest` (and `--s3-no-check-bucket` for an `s3` remote) to the `rclone copyto` line in `deploy/backup.sh`.
+   `backup.sh` calls `rclone copyto --no-check-dest`, because the write-only key cannot read the target (HTTP 401). For an `s3` remote, also add `--s3-no-check-bucket`.
+   If you put rclone in `~/bin`, run it as `PATH=$HOME/bin:$PATH deploy/backup.sh`.
 5. Run `mkdir -p ~/ea-logs`, then add these crontab lines (`crontab -e`). Cron has a small `PATH`, so the first line sets it for `age` and `rclone`:
-   `PATH=/usr/local/bin:/usr/bin:/bin`
+   `PATH=/home/<user>/bin:/usr/local/bin:/usr/bin:/bin`
    `30 3 * * * cd <repo> && deploy/backup.sh >> ~/ea-logs/backup.log 2>&1`
 
 On any failure, `backup.sh` exits with a non-zero code and leaves no `.dump.age` file.

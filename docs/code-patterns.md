@@ -6,7 +6,7 @@
 ## Layout and borders
 - Packages: `@ea/server` (`apps/server`), `@ea/web` (`apps/web`), `@ea/core` (`packages/core`).
 - Server code lives in `apps/server/src/modules/<module>/` and `apps/server/src/platform/`. Shared pure code lives in `packages/core/`.
-- Real platform paths: `platform/config.ts`, `platform/log.ts`, `platform/http.ts`, `platform/db/`.
+- Real platform paths: `platform/config.ts`, `platform/log.ts`, `platform/http.ts`, `platform/db/`, `platform/crypto.ts`, `platform/errors.ts`, `platform/scheduler.ts`, `platform/heartbeat.ts`.
 - A module exposes one `index.ts`. Other modules import only from it, never from its inner files.
 - Module files: `index.ts` (public API), `service.ts`, `repo.ts` (DB), `routes.ts` (HTTP), `jobs.ts` (workers), `*.test.ts` next to the code.
 - `packages/core` has no I/O: no DB, no network, no `process.env`, no imports from `apps/*`.
@@ -20,7 +20,7 @@
 ## Data access
 - Typed repositories with Kysely. One repository function = one clear query. Column names are snake_case in TypeScript.
 - Generated DB types live in `apps/server/src/platform/db/schema.ts`. Never edit this file by hand. Run `bun run db:types` after each migration.
-- Every repository function takes a `TenantContext` and filters by `org_id`. A test checks each new function for the filter. Only `insertOrganization` and `insertUser` take no `TenantContext`.
+- Every repository function takes a `TenantContext` and filters by `org_id`. A test checks each new function for the filter. Only `insertOrganization`, `insertUser` and `listSyncTargets` (`mail/repo.ts`: the sync job lists the active mailboxes of all organizations) take no `TenantContext`.
 - Status changes and their `audit_log` row go in one transaction.
 - Work items are claimed with `FOR UPDATE SKIP LOCKED`. Conditional updates (`WHERE status = …`) guard every status change.
 - Schema changes only through a new dbmate file `db/migrations/YYYYMMDDHHMMSS_<name>.sql` with `-- migrate:up` and `-- migrate:down`. Never edit an applied migration.

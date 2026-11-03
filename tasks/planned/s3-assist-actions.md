@@ -19,6 +19,15 @@ In mode `assist` the system changes the mailbox for real (folder moves, mark rea
 ## Plan
 Written when the task starts (files to change, steps, tests).
 
+### Input from S1a (2026-11-03): Interia cannot search by `Message-ID`
+- Interia `UID SEARCH HEADER Message-ID <id>` returns no match, also for mail that is in the folder (also with the id without `<>`).
+  `SEARCH HEADER Subject` works. Facts: `notes/2026-11-03-interia-imap-capabilities.md`.
+- `ImapMailProvider.findByMessageId` (`apps/server/src/modules/mail/imap/client.ts`) uses that search. At Interia it always returns null,
+  so sync treats every known mail that comes back to INBOX as "returned", also when it is a second identical copy.
+- S1a is not affected (shadow mode moves nothing). Before the first move in S3, change `findByMessageId`: for example a `SEARCH SINCE`
+  (a few days before the stored date) plus a FETCH of `ENVELOPE` and a compare of the normalized `Message-ID` in code, or the
+  UIDPLUS `COPYUID` reply for the new UID after a move. Test it on the real Interia mailbox.
+
 ## Done-checklist
 - [ ] Done-when checks pass (name the command and its output in the log).
 - [ ] `docs/` describe what was built (architecture, modules, roadmap); related ADRs set to accepted or superseded.

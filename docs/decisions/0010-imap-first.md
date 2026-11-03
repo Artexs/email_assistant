@@ -27,5 +27,8 @@ That cost does not apply to IMAP at Interia. Many Polish business mailboxes are 
 - The stored secret is a full mailbox password, not a scoped token. It is encrypted (ADR 0009). An app password limits the damage.
 - IMAP has no thread ids and no labels: the system builds threads from headers and uses one folder per mail.
 - Server features differ per provider (MOVE, UIDPLUS, keywords, SPECIAL-USE). S1a checks them and stores them per mailbox.
+- 2026-11-03 (S1a check): Interia has IDLE and UIDPLUS; no MOVE, CONDSTORE, SPECIAL-USE capability or custom keywords; no `UIDNEXT` on SELECT;
+  `SEARCH HEADER` finds nothing for `X-` headers and `Message-ID`; SMTP does not save sent mail. App passwords: not checked yet; the pilot uses the normal password.
+  Details: `notes/2026-11-03-interia-imap-capabilities.md`.
 - Microsoft 365 turned off password login for IMAP; Gmail needs OAuth or an app password. Adding them is a new adapter
   (Phase 2), and Gmail OAuth brings back Google verification.

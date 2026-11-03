@@ -356,7 +356,10 @@ Tenancy:
   After the SMTP 250 the action is `applied` at once; then a copy goes to Sent (search first, APPEND if missing), but only if the server
   does not save sent mail by itself (S1a checks this at Interia). At-most-once: never retry a send by itself (§4.1 rule 6).
 - **Capabilities to check per mailbox (S1a):** IDLE, MOVE, UIDPLUS, CONDSTORE, SPECIAL-USE, custom keywords (`PERMANENTFLAGS \*`), auto-save of sent mail,
-  `SEARCH HEADER` on a custom `X-` header [not verified at Interia].
+  `SEARCH HEADER` on a custom `X-` header.
+- **Interia facts (checked 2026-11-03, `notes/2026-11-03-interia-imap-capabilities.md`):** IDLE and UIDPLUS yes; MOVE, CONDSTORE, SPECIAL-USE and custom keywords no.
+  So moves use `UID COPY` + `\Deleted` + `UID EXPUNGE`. No `UIDNEXT` on SELECT: the adapter asks `STATUS`, then uses the highest UID + 1.
+  `SEARCH HEADER` finds nothing for `X-` headers and for `Message-ID` (Subject works): S3 must find moved mail another way. SMTP does not save sent mail: the committer APPENDs to `Wysłane`.
 - **Interia setup:** the user turns on "korzystam z programu pocztowego" (Ustawienia → Główne ustawienia → Parametry).
   IMAP `poczta.interia.pl:993`, SMTP `poczta.interia.pl:465`, both SSL/TLS, login = the full address.
 - **Later:** Gmail (OAuth, or an app password with 2-Step Verification) and Microsoft 365 (OAuth / Graph; password IMAP is off) as new adapters.
@@ -427,10 +430,11 @@ Tenancy:
   retention cleanup daily; chaser daily (S4).
 - **Work queue:** `emails` and `actions` rows with `status`, `attempts`, `next_attempt_at`, `locked_at`, claimed with `FOR UPDATE SKIP LOCKED`.
 - **Mailbox errors:** IMAP/SMTP login error → mailbox `auth_error`, a Telegram notice, other mailboxes continue. Connection errors → backoff.
-- **Liveness:** the server sends a heartbeat every 5 min to an external dead-man's-switch service (outbound only). The service alerts when heartbeats stop.
+- **Liveness:** the server sends a heartbeat every 5 min to Healthchecks.io (`HEARTBEAT_URL`, outbound only; period 5 min, grace 10 min, email alert). The service alerts when heartbeats stop.
   A Telegram admin notice goes out when the last good sync is older than 30 min. Every digest shows "last sync HH:MM", also when it is empty.
 - **`GET /health`:** DB reachable, last good sync per mailbox.
-- **Backups (before S3):** a nightly `pg_dump`, encrypted (for example with `age`), copied off the VPS. One restore test per month.
+- **Backups:** `deploy/backup.sh` at 03:30 every night: `pg_dump`, encrypted with `age` (only the public key on the VPS), copied with `rclone` to a
+  Backblaze B2 bucket with a write-only key; remote retention is a bucket lifecycle rule. `deploy/restore-test.sh` on the Mac; one restore test per month.
 - **Logging:** `log` util with levels and a `[module]` prefix.
 
 ## 9. Testing
@@ -460,10 +464,11 @@ Tenancy:
 ## 10. Deployment
 
 - **Dev:** the user's Mac (Docker CLI + Colima, started at login). `docker compose up db`, server with `bun --watch`, the dev Telegram bot, the test Interia mailbox.
-- **Pilot:** the home VPS, on all the time. Compose (Docker or Podman) with two services:
+- **Pilot:** the home VPS, on all the time. Compose (Docker, user decision 2026-11-03) with two services:
   - `db`: `postgres:17`, a named volume, no public port;
   - `server`: an image built on the VPS from the repo, `restart: unless-stopped`, env file with mode 600.
-  Docker or Podman is picked at the S1a start. Podman needs `podman-restart.service` or quadlets to restart containers after a reboot [not verified]; S1a has a reboot test.
+  `deploy/compose.yaml` is the VPS file; `deploy/compose.dev.yaml` adds the dev `db` port 5433 and GreenMail on the Mac.
+  Restart after a reboot: `systemctl enable docker` + `restart: unless-stopped` (reboot test passed 2026-11-03). Facts: `notes/2026-11-03-pilot-vps.md`.
   No inbound port: IMAP, SMTP, Telegram long polling and Gemini are outbound connections.
   The web panel (S5) needs inbound access: a reverse proxy with TLS or a tunnel (decide in S5).
 - **Production for external customers (S6):** a hosted EU VPS with the same Compose files (availability, physical security, GDPR duties of a processor).

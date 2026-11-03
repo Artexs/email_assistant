@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–15. Left: stages 16–17 (16–17 with the user on the VPS).
+> **Status 2026-11-04 — in progress.** Done: stages 1–16, 17.2, most of 17.3. Left: 17.1 (48-hour test runs until 2026-11-05T23:17Z; the user moves one mail back to INBOX; check `~/ea-logs/rescan.log` and `audit.log`), then roadmap row, done-checklist and `git mv` to `done/`.
 
 # S1a IMAP read + pilot host
 
@@ -491,7 +491,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
 
 ### Stage 16 — Pilot host live (user + main session)
 Needs: the user steps done (Interia IMAP on, test account, Docker on the VPS). The main session does these steps with the user (SSH to the VPS). No subagent builds them. Write each result into the log.
-- [ ] **16.1 Deploy and reboot test**
+- [x] **16.1 Deploy and reboot test**
   - Goal: `server` and `db` run on the home VPS and start again after a reboot.
   - Files: none in git (VPS `.env`, mode 600).
   - Decisions: Docker (user decision 2026-11-03); `sudo systemctl enable docker`. Follow `deploy/README.md`. `db` has no public port.
@@ -499,13 +499,13 @@ Needs: the user steps done (Interia IMAP on, test account, Docker on the VPS). T
   - Check: the commands above; log the output.
   - Done when: both containers run after the reboot.
   - Out of scope: S5 inbound access.
-- [ ] **16.2 Heartbeat and stop alert**
+- [x] **16.2 Heartbeat and stop alert**
   - Goal: The dead-man's-switch service gets the heartbeat, and a stopped server raises its alert.
   - Decisions: Healthchecks.io (user decision 2026-11-03): one check, period 5 min, grace about 10 min, an email or Telegram integration (set in the service); its ping URL goes into `HEARTBEAT_URL` in the VPS `.env`, never into git or the log.
   - Test: the service shows pings; `docker compose … stop server`; wait for the alert (email or the channel of the service); `start server`; the check goes back to up.
   - Check: log the alert time and channel.
   - Done when: one alert was received and the check recovered.
-- [ ] **16.3 Connect the mailboxes and run `mailbox:check`**
+- [x] **16.3 Connect the mailboxes and run `mailbox:check`**
   - Goal: The test mailbox and the real Interia mailbox are connected on the VPS, and the capability facts are in `notes/`.
   - Files: `notes/2026-11-XX-interia-imap-capabilities.md` (new; date of the run).
   - Decisions: `org:create` for the pilot org; `mailbox:connect` for the test account and the real account (password on stdin). `mailbox:check` read-only on the real account; `--probe` only on the test account (user decision 2026-11-03). The note lists: each capability of both accounts, the special-use folders, `search-header`, `smtp-saves-sent`, whether Interia offers app passwords (not known on 2026-11-03; the user checks the Interia account settings; ADR 0010: check in S1a), the date, and that the test account ran the probe. If Interia offers app passwords, connect the real account with an app password and `--secret-kind app_password`. Delete the probe mails by hand after the run.
@@ -518,7 +518,7 @@ Needs: the user steps done (Interia IMAP on, test account, Docker on the VPS). T
   - Decisions (procedure): start time `T0`; cron on the VPS: `0 * * * * cd <repo> && docker compose -f deploy/compose.yaml --env-file .env run --rm server bun run mailbox:seed --org-id <org> --mailbox-id <test mailbox>`. Move back (simulated system move, because shadow mode moves nothing): the user makes a folder `EA-test` in Interia webmail and moves one stored test mail from INBOX into it; the main session sets that row's `folder = 'EA-test'` (`docker compose … exec db psql -U postgres -d email_assistant -c "update emails set folder = 'EA-test' where id = '<id>'"`); the user moves the mail back to INBOX; after the next sync the row has `returned_at` set and no new row exists. Forced rescan: at about hour 24, `bun run mailbox:rescan …` in the container; the next sync log line has `sync <mailbox id> rescan:`. At the end (≥ 48 h, right after a sync): `bun run mailbox:audit … --since <T0>` → `missing=0 duplicates=0`, exit 0. Remove the cron line.
   - Check: the audit output, the `returned_at` query, the rescan log line; log all three.
   - Done when: the audit exits 0 after ≥ 48 hours and both events are logged.
-- [ ] **17.2 Nightly backup and one restore test**
+- [x] **17.2 Nightly backup and one restore test**
   - Goal: The nightly backup runs on the VPS, the copy is off the VPS, and one restore test is done and logged.
   - Decisions: Backblaze B2 bucket with `rclone` and a write-only key (user decision 2026-11-03); set it up on the VPS as `deploy/README.md` § Backups says; one manual `deploy/backup.sh` run first proves that the write-only key can copy. The `age` private key stays off the VPS (password manager / the Mac); `restore-test.sh` runs on the Mac with a file fetched from the target.
   - Check: the cron log line `backup ok …` of one night; `restore-test.sh` counts equal the VPS counts at backup time; log both.
@@ -573,3 +573,10 @@ None. The user answered Questions 1–8 on 2026-11-03; the answers are in "Decis
 - 2026-11-03: Stage 13 done (test tools for the 48-hour run). mailbox:seed (refuses any mailbox that is not TEST_MAILBOX_ADDRESS, before credentials), mailbox:rescan (forceRescan), mailbox:audit (missing/duplicates multiset, shared fetchSince with the one-day SINCE shift). Review minors fixed. Checks: lint + typecheck exit 0; test:unit 135 pass; test:int 106 pass. Reviewer PASS.
 - 2026-11-03: Stage 14 done (server image, VPS Compose, runbook). deploy/Dockerfile (oven/bun:1.3.14, USER bun, no .env), .dockerignore, server service (no ports, unless-stopped, healthcheck /health), deploy/README.md runbook. FAIL round 1 fixed (Update migrates from a rebuilt image: run --build; nested .env ignore; read -rsp + unset P; cron log), round 2 minors fixed (real sync log format, bash note). Follow-up: tasks/planned/server-env-scope.md. Checks: docker build ok; prod compose: 0 published ports, db + server healthy, migrate exit 0; lint exit 0; test:unit 135 pass; test:int 106 pass. Reviewer PASS.
 - 2026-11-03: Stage 15 done (nightly encrypted backup and restore test). deploy/backup.sh (pg_dump -Fc piped to age, PGDMP check, copy to rclone remote then rename, local retention, absolute BACKUP_DIR), deploy/restore-test.sh (throwaway postgres:17, --network none, counts), backup.env.example, README Backups with cron PATH. Reviewer tested counts 2/3/1/57 restored and all failure paths leave no .dump.age. Coordinator re-ran backup + restore on the dev db: exit 0 both. Checks: shellcheck exit 0; lint exit 0; test:unit 135 pass; test:int 106 pass. Reviewer PASS.
+- 2026-11-03: Stage 16 (live, main session + user). One Interia account only (user decision): `TEST_MAILBOX_ADDRESS` = the pilot address, probe ran on it. VPS facts: `notes/2026-11-03-pilot-vps.md`.
+  16.1: `ps` after `sudo reboot`: `email-assistant-server-1 Up 23 minutes (healthy)`, `email-assistant-db-1 Up 23 minutes (healthy)`; host listens only on 22.
+  16.2: `HEARTBEAT_URL` set (Healthchecks.io, period 5 min, grace 10 min, email); the user confirmed pings and the alert during the reboot.
+  16.3: org `Pilot` created; mailbox connected with the normal password (app passwords not checked). First sync failed (`bigint "NaN"`: no UIDNEXT on SELECT); fixed in 2 commits (STATUS / highest UID fallback). `initial: fetched 2, stored 0, uid updated 2`. Capabilities and probe: `notes/2026-11-03-interia-imap-capabilities.md`. Found: `SEARCH HEADER Message-ID` finds nothing at Interia; S3 input written.
+- 2026-11-03: 17.1 started. T0 = 2026-11-03T23:12:42Z, first seed `appended 1`, next sync stored it once. Cron: hourly seed, one rescan `5 11 4 11 *`, `~/ea-48h-end.sh` at `17 23 5 11 *` (audit, then removes the test lines). Row `f4d83c99-…` (the first seed mail) set to `folder = 'EA-test'`; the user makes the move to `EA-test` and back.
+- 2026-11-03: 17.2 done. rclone 1.75.2 in `~/bin` (apt 1.53 fails); `backup.sh` now uses `copyto --no-check-dest` (write-only key gave 401). `backup ok ea-20261103T231230Z.dump.age 21042`; nightly cron 03:30. Restore test on the Mac (`restore-test.sh`, key `~/.config/ea-backup/age-key.txt`): organizations 1, users 1, mailboxes 1, emails 2 = VPS counts at backup time.
+- 2026-11-04: 17.3 docs: architecture §6.1/§8/§10, modules §3.2/§3.3, code-patterns, ADR 0010 line, known-alerts (NaN, 401), deploy README (rclone), S3 input. Roadmap and done-checklist after 17.1.

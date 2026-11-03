@@ -143,14 +143,19 @@ Code rules: `docs/code-patterns.md`.
 
 | Sub-module | Does |
 |---|---|
-| `port.ts` | `MailProvider` interface: `fetchNewSince(cursor)`, `getMessage`, `findByMessageId`, `ensureFolders`, `move`, `setFlags`, `appendDraft`, `send`, `capabilities` |
-| `imap/client` | IMAP over TLS (`imapflow`): connection, UID cursor, MOVE or COPY + EXPUNGE, flags, APPEND, `SEARCH HEADER`; backoff on errors |
-| `imap/smtp` | SMTP over TLS (`nodemailer`): send with `X-EA-Action-Id`, `In-Reply-To`, `References`; copy to Sent if needed |
-| `imap/mapper` | MIME → `Email` (`mailparser`): headers, `thread_key`, HTML → plain text (`html-to-text`), size limit |
-| `connect` | CLI `bun run mailbox:connect` (web form in S5): login test, capabilities, special-use folders, `AI/*` folders, encrypted secret |
-| `connections` | Mailbox list / pause / remove; `mailbox_credentials`; status `active` / `auth_error` / `paused` |
-| `sync` (job) | Every 5 min per active mailbox: new INBOX mail → `emails` (`pending`); known mail back in INBOX after a system move → `emails.returned_at`; new cursor |
-| `fake/` | In-memory `MailProvider` for tests |
+| `port.ts` | `MailProvider` read port: `serverInfo`, `inboxStatus`, `fetchAbove`, `searchInboxSince`, `fetchByUids`, `fetchBodyText`, `findByMessageId`, `close`; `MailAuthError`. Write methods (move, flags, draft, send) come in S3/S4 |
+| `imap/client.ts` | `ImapMailProvider` over TLS (`imapflow`): INBOX status (STATUS / highest UID fallback for `UIDNEXT`), UID fetch, search, body text |
+| `imap/mapper.ts` | IMAP message → `MessageMeta` / body text (`mailparser`, `html-to-text`), size limit |
+| `imap/smtp.ts` | SMTP login check (`nodemailer`); send comes in S4 |
+| `imap/probe.ts`, `imap/tools.ts` | Write probes for `mailbox:check --probe`; APPEND for the seed tool (test only) |
+| `connect.ts` | `connectMailbox`: IMAP + SMTP login check, capabilities, folder map, encrypted secret, default settings (CLI `mailbox:connect`) |
+| `check.ts` | `checkMailbox`: read-only capability report, optional write probes (CLI `mailbox:check`) |
+| `sync-rules.ts` | Pure rules: `Message-ID` normalize, content hash, dedup keys, thread key, cursor filter, decisions for incoming mail |
+| `sync.ts` | `syncMailbox`: modes `initial` (24 h), `incremental` (UID cursor), `rescan` (7 days after a UIDVALIDITY change) |
+| `jobs.ts` | `createMailSyncJob`: every 5 min for each active mailbox (`listSyncTargets`); one mailbox error never stops the others |
+| `repo.ts` | `mailboxes`, `mailbox_credentials`, `emails` queries; guarded cursor update; `forceRescan` |
+| `seed.ts`, `audit.ts`, `tools.ts` | 48-hour test tools: `mailbox:seed` (test address only), `mailbox:rescan`, `mailbox:audit` |
+| `fake/` | In-memory `MailProvider` for tests; `test/contract/` runs the same suite on fake and GreenMail |
 
 - **Owns:** `mailboxes`, `mailbox_credentials`, `emails`.
 - **Rules:** `docs/architecture.md` §6.1.
@@ -162,6 +167,7 @@ Code rules: `docs/code-patterns.md`.
   per organization, optional per mailbox). Style text (`organizations`) and digest times (`memberships`) belong to `tenancy`;
   `config`, `reports` and the API read and write them through `tenancy`'s `index.ts`.
 - **Does:** validation (for example: the owner's own address cannot be a delegate); default settings for a new mailbox (mode `shadow`, all automatic moves off).
+- **Built in S1a:** `config/repo.ts` reads and writes `mailbox_settings` (defaults on connect). `sender_rules` and validation come in S1b.
 
 ### 3.4 `triage` — understand each email (S1b)
 
