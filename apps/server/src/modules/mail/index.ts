@@ -1,5 +1,6 @@
 export { checkMailbox, type CheckDeps, type CheckOptions, type CheckReport } from "./check";
 export { buildFolderMap, connectMailbox, type ConnectDeps, type ConnectInput } from "./connect";
+export { createMailSyncJob, type MailSyncJobDeps } from "./jobs";
 export { openImapProvider, type ImapConnectOptions } from "./imap/client";
 export { verifySmtpLogin, type SmtpConnectOptions } from "./imap/smtp";
 export {

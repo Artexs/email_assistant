@@ -12,9 +12,20 @@ if (!migratorUrl) {
 }
 const migratorDb = createDb(migratorUrl);
 const unreachableDb = createDb("postgres://app:wrong@127.0.0.1:1/none");
+// A local listener that accepts TCP connections and never answers: only the pool connection timeout ends the wait.
+const silentServer = Bun.listen({
+  hostname: "127.0.0.1",
+  port: 0,
+  socket: {
+    open: () => undefined,
+    data: () => undefined,
+  },
+});
+const silentDb = createDb(`postgres://app:x@127.0.0.1:${silentServer.port}/none`);
 
 afterAll(async () => {
-  await Promise.all([db.destroy(), migratorDb.destroy(), unreachableDb.destroy()]);
+  silentServer.stop(true);
+  await Promise.all([db.destroy(), migratorDb.destroy(), unreachableDb.destroy(), silentDb.destroy()]);
 });
 
 describe("db role", () => {
@@ -46,4 +57,10 @@ describe("checkDb", () => {
   test("is false when the DB does not answer", async () => {
     expect(await checkDb(unreachableDb)).toBe(false);
   });
+
+  test("is false within 7 s when the DB accepts the connection and never answers", async () => {
+    const started = Date.now();
+    expect(await checkDb(silentDb)).toBe(false);
+    expect(Date.now() - started).toBeLessThan(7000);
+  }, 10_000);
 });

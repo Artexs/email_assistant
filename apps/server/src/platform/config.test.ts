@@ -80,4 +80,21 @@ describe("loadConfig", () => {
   test("throws ConfigError when CREDENTIALS_KEY_VERSION is not a positive integer", () => {
     expect(configError({ ...fullEnv, CREDENTIALS_KEY_VERSION: "0" }).keys).toContain("CREDENTIALS_KEY_VERSION");
   });
+
+  test("treats an empty HEARTBEAT_URL as missing", () => {
+    expect(loadConfig({ ...fullEnv, HEARTBEAT_URL: "" }).HEARTBEAT_URL).toBeUndefined();
+    expect(loadConfig(fullEnv).HEARTBEAT_URL).toBeUndefined();
+  });
+
+  test("accepts a HEARTBEAT_URL", () => {
+    expect(loadConfig({ ...fullEnv, HEARTBEAT_URL: "https://hc.example/ping/abc" }).HEARTBEAT_URL).toBe(
+      "https://hc.example/ping/abc"
+    );
+  });
+
+  test("throws ConfigError when HEARTBEAT_URL is not a URL, with no value in the message", () => {
+    const error = configError({ ...fullEnv, HEARTBEAT_URL: "not a url" });
+    expect(error.keys).toContain("HEARTBEAT_URL");
+    expect(error.message).not.toContain("not a url");
+  });
 });

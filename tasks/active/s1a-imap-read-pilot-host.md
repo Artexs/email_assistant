@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–11. Left: stages 12–17 (16–17 with the user on the VPS).
+> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–12. Left: stages 13–17 (16–17 with the user on the VPS).
 
 # S1a IMAP read + pilot host
 
@@ -378,7 +378,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Out of scope: running the check on Interia (stage 16); the note in `notes/` (stage 16).
 
 ### Stage 12 — Scheduler, sync job, heartbeat, server wiring
-- [ ] **12.1 `platform/scheduler`**
+- [x] **12.1 `platform/scheduler`**
   - Goal: Jobs run on a cron pattern, and one tick never overlaps the next.
   - Files: `apps/server/src/platform/scheduler.ts` (new), `apps/server/src/platform/scheduler.test.ts` (new), `apps/server/package.json` (add `croner`), `bun.lock`.
   - Interfaces: `export interface Scheduler { add(name: string, pattern: string, fn: () => Promise<void>): void; stop(): void }`; `export function createScheduler(): Scheduler` — `new Cron(pattern, { protect: true, catch: (error) => log.error(\`${name} failed:\`, message) }, fn)`; a skipped tick (protect) logs `debug`.
@@ -387,7 +387,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Check: `bun run test:unit`, `bun run typecheck`, `bun run lint`.
   - Done when: tests pass.
   - Out of scope: other jobs of later slices.
-- [ ] **12.2 `platform/heartbeat` and `HEARTBEAT_URL`**
+- [x] **12.2 `platform/heartbeat` and `HEARTBEAT_URL`**
   - Goal: The server pings the dead-man's-switch URL every 5 minutes while the DB answers.
   - Files: `apps/server/src/platform/heartbeat.ts` (new), `apps/server/src/platform/heartbeat.test.ts` (new), `apps/server/src/platform/config.ts`, `apps/server/src/platform/config.test.ts`, `.env.example`.
   - Interfaces: config `HEARTBEAT_URL`: optional URL; an empty string counts as missing (`z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional())`). `export function createHeartbeat(deps: { url: string | undefined; checkDb: () => Promise<boolean>; fetch?: typeof fetch; timeoutMs?: number }): { tick(): Promise<void> }` — no URL → `tick` does nothing (main logs one `warn` at start); DB down → no ping, `warn`; DB up → `GET url` with `AbortSignal.timeout(timeoutMs ?? 10_000)`; non-2xx or error → `warn` with the status or `error.message` only. `tick` never throws. The URL is never logged (it is a secret token for most services).
@@ -396,7 +396,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Check: `bun run test:unit`, `bun run typecheck`, `bun run lint`.
   - Done when: tests pass.
   - Out of scope: Telegram admin notice for an old sync (S2).
-- [ ] **12.3 Mail sync job and `main.ts` wiring**
+- [x] **12.3 Mail sync job and `main.ts` wiring**
   - Error rule (coordinator, from the stage 10 review): nodemailer gives `ETLS` "Connection closed unexpectedly" when the server drops the TLS handshake; `smtp.ts` maps it to HardError. If the job sees SMTP errors, map this case to SoftError so one network drop does not log `error` on each tick.
   - Goal: The server syncs every active mailbox every 5 minutes, marks login errors, and sends the heartbeat.
   - Files: `apps/server/src/modules/mail/jobs.ts` (new), `apps/server/test/integration/mail-jobs.test.ts` (new), `apps/server/src/modules/mail/index.ts`, `apps/server/src/main.ts`.
@@ -407,12 +407,12 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Check: `bun run test:int`, `bun run test:unit` (`main.test.ts` still passes), `bun run typecheck`, `bun run lint`. Manual: `bun run start` with the dev db → log lines `[main] listening`, no error; Ctrl-C exits 0.
   - Done when: tests pass and the manual start works.
   - Out of scope: `/health` per-mailbox data (user decision 2026-11-03: not in S1a); Telegram notices.
-- [ ] **12.4 DB pool connection timeout**
+- [x] **12.4 DB pool connection timeout**
   - Goal: `checkDb` returns `false` fast when the DB host drops packets, so `/health` and the heartbeat do not hang.
   - Files: `apps/server/src/platform/db/index.ts`, `apps/server/test/integration/db-role.test.ts`, `tasks/planned/db-pool-timeouts.md` (`git mv` to `tasks/done/`, status `done`, log line).
   - Interfaces: `new Pool({ connectionString, max: 10, connectionTimeoutMillis: 5000 })`.
   - Decisions: from `tasks/planned/db-pool-timeouts.md`: the `pg` `Pool` gets `connectionTimeoutMillis` (5000); a test shows `checkDb` returns `false` within the timeout against an address that does not answer.
-  - Test: `checkDb(createDb("postgres://app:x@10.255.255.1:5432/none"))` resolves `false` in less than 7 s (`10.255.255.1` is a non-routable address that drops packets [not verified on every network]).
+  - Test: `checkDb(createDb(...))` on a local `Bun.listen` TCP listener (`127.0.0.1`, port 0) that accepts and never answers resolves `false` in less than 7 s. The test fails without `connectionTimeoutMillis`.
   - Check: `bun run test:int`.
   - Done when: the test passes.
   - Out of scope: statement timeouts.
@@ -541,7 +541,7 @@ None. The user answered Questions 1–8 on 2026-11-03; the answers are in "Decis
 - imapflow: `doSTARTTLS: false` turns STARTTLS off for plain loopback; `messageDelete(..., { uid: true })` uses `UID EXPUNGE` when UIDPLUS is there; the error codes of connection errors (stage 9). Check in `node_modules/imapflow/lib/`.
 - `mailparser` `simpleParser` and `html-to-text` APIs and `@types` packages; `nodemailer` `verify()` and the `EAUTH` code (stages 9–11).
 - croner options `protect` and `catch`, and the seconds field in `* * * * * *` (stage 12.1). Check in `node_modules/croner` after install.
-- `10.255.255.1` drops packets on the dev Mac and the CI runner (step 12.4).
+- `10.255.255.1` gives ECONNREFUSED in ~13 ms on the dev network, so the test does not use it (step 12.4).
 - The `oven/bun:1.3.14` image tag; the `dbmate` npm package installs its Linux binary in the image from a `bun.lock` made on macOS (stage 14.1).
 - `rclone` accepts a local path as the destination (stage 15 test); `age` header text.
 - `rclone copyto` works with a B2 key that can only write, and whether it needs `--no-check-dest` (stage 15, 17.2).
@@ -569,3 +569,4 @@ None. The user answered Questions 1–8 on 2026-11-03; the answers are in "Decis
 - 2026-11-03: Stage 9 done (IMAP adapter (read) with TLS checks). mail/imap client, mapper, tools; contract suite passes on GreenMail; self-signed IMAPS cert is rejected; no rejectUnauthorized. Accepted deviations: TLS test host localhost (imapflow IP servername bug under Bun, see notes/2026-11-03-imapflow-tls-under-bun.md), LIST check before 'mail gone', empty INBOX gives []. Checks: lint + typecheck exit 0; test:unit 109 pass; test:int 75 pass. Reviewer PASS.
 - 2026-11-03: Stage 10 done (mailbox:connect with the encrypted password). connectMailbox (IMAP + SMTP login check, AES-GCM secret with aad mailbox:<id>, default settings), SMTP adapter (nodemailer 10.3.1), CLI with password on stdin only. Tests read the raw row: no plain text, base64 or hex of the password. Accepted deviations: no @types/nodemailer, html5 email pattern. SMTP TLS facts appended to notes/2026-11-03-imapflow-tls-under-bun.md. Checks: lint + typecheck exit 0; test:unit 117 pass; test:int 84 pass. Reviewer PASS.
 - 2026-11-03: Stage 11 done (mailbox:check with write probes). checkMailbox read-only report + --probe (SEARCH HEADER draft, Sent auto-save via mail to self); delete only with UIDPLUS; probe failures name 'EA probe <id>' for cleanup; tests prove the user's own \\Deleted mail survives. GreenMail facts in notes/2026-11-03-greenmail-facts.md. Checks: lint + typecheck exit 0; test:unit 117 pass; test:int 94 pass. Reviewer PASS.
+- 2026-11-03: Stage 12 done (scheduler, sync job, heartbeat, server wiring). croner scheduler (protect, no overlap), heartbeat (HEARTBEAT_URL, never logged, never throws), mail sync job (one mailbox error never stops others, provider always closed), main.ts wiring, pg connectionTimeoutMillis 5000 (db-pool-timeouts moved to done). Two FAIL rounds on test strength (silent-DB timeout test, mailbox order in the login-error test), both fixed; user said go. Manual start: /health ok, db up, heartbeat-off warn. Checks: lint + typecheck exit 0; test:unit 129 pass; test:int 99 pass. Reviewer PASS.

@@ -11,7 +11,7 @@ export type Db = Kysely<DB>;
 export function createDb(databaseUrl: string): Db {
   return new Kysely<DB>({
     dialect: new PostgresDialect({
-      pool: new Pool({ connectionString: databaseUrl, max: 10 }),
+      pool: new Pool({ connectionString: databaseUrl, max: 10, connectionTimeoutMillis: 5000 }),
     }),
   });
 }
