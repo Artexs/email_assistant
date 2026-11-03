@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–2. Left: stages 3–17 (16–17 with the user on the VPS).
+> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–3. Left: stages 4–17 (16–17 with the user on the VPS).
 
 # S1a IMAP read + pilot host
 
@@ -87,7 +87,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Out of scope: S1b tables (`actions`, `triage_*`, `audit_log`, `sender_rules`); repository code.
 
 ### Stage 3 — Mail port, typed errors, fake provider, contract suite
-- [ ] **3.1 Typed errors, `MailProvider` port, seed message renderer**
+- [x] **3.1 Typed errors, `MailProvider` port, seed message renderer**
   - Goal: The `mail` module has its read-side port, its message types and a pure MIME renderer for synthetic mail.
   - Files: `apps/server/src/platform/errors.ts` (new), `apps/server/src/modules/mail/port.ts` (new), `apps/server/src/modules/mail/seed.ts` (new), `apps/server/src/modules/mail/seed.test.ts` (new), `apps/server/src/modules/mail/index.ts` (new).
   - Interfaces:
@@ -124,7 +124,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Check: `bun run test:unit`, `bun run typecheck`, `bun run lint`.
   - Done when: tests pass; nothing outside `mail/` imports `mail/port.ts` directly.
   - Out of scope: IMAP code, DB code.
-- [ ] **3.2 Fake provider and the shared contract suite**
+- [x] **3.2 Fake provider and the shared contract suite**
   - Goal: An in-memory `MailProvider` exists for tests, and one contract suite checks it (stage 9 runs the same suite on the IMAP adapter).
   - Files: `apps/server/src/modules/mail/fake/index.ts` (new), `apps/server/src/modules/mail/fake/fake.test.ts` (new), `apps/server/test/contract/mail-provider.ts` (new, not a `*.test.ts` file).
   - Interfaces:
@@ -557,3 +557,4 @@ None. The user answered Questions 1–8 on 2026-11-03; the answers are in "Decis
 - 2026-11-03: User approved the plan and answered: Q1 user steps not done yet, Docker on the VPS, app passwords not known (stage 16 finds out); Q2 Healthchecks.io; Q3 Backblaze B2 + rclone, write-only key, age-encrypted file; Q4 yes (step 12.4); Q5 no; Q6 no AI/* folders in S1a; Q7 read-only check on the real account, probe on the test account; Q8 listSyncTargets in mail/repo.ts. age, rclone, shellcheck installed on the Mac. Planner updated the plan.
 - 2026-11-03: Stage 1 done (1.1 crypto + CREDENTIALS_KEY). Checks: test:unit 30 pass, test:int 14 pass, lint + typecheck exit 0. Reviewer PASS (2 minor: duplicate key regex, base64 length; not fixed).
 - 2026-11-03: Stage 2 done (mail tables migration). Migration 20261103100001_mail.sql (mailboxes, mailbox_credentials, mailbox_settings, emails), generated schema.ts, 6 schema tests. Checks: db:migrate/rollback/migrate exit 0; lint + typecheck exit 0; test:unit 30 pass; test:int 20 pass. Reviewer PASS.
+- 2026-11-03: Stage 3 done (mail port, typed errors, fake provider, contract suite). SoftError/HardError, MailProvider port, MailAuthError, seed renderer (ASCII only), fake provider, contract suite; reviewer minors fixed (meta copies, body limit test, empty Message-ID, ASCII headers). Checks: lint + typecheck exit 0; test:unit 53 pass 0 fail. Reviewer PASS.
