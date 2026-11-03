@@ -9,7 +9,84 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 
+export type Int8 = ColumnType<string, bigint | number | string, bigint | number | string>;
+
+export type Json = JsonValue;
+
+export type JsonArray = JsonValue[];
+
+export type JsonObject = {
+  [x: string]: JsonValue | undefined;
+};
+
+export type JsonPrimitive = boolean | number | string | null;
+
+export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
+
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
+
+export interface Emails {
+  attempts: Generated<number>;
+  body_text: string | null;
+  cc_addresses: Generated<string[]>;
+  content_hash: string;
+  created_at: Generated<Timestamp>;
+  dedup_key: string;
+  folder: Generated<string>;
+  from_address: string | null;
+  id: Generated<string>;
+  in_reply_to: string | null;
+  locked_at: Timestamp | null;
+  mailbox_id: string;
+  message_id_header: string | null;
+  next_attempt_at: Timestamp | null;
+  org_id: string;
+  received_at: Timestamp;
+  references_header: string | null;
+  returned_at: Timestamp | null;
+  skip_reason: string | null;
+  status: Generated<string>;
+  subject: string | null;
+  thread_key: string;
+  to_addresses: Generated<string[]>;
+  uid: Int8;
+}
+
+export interface MailboxCredentials {
+  created_at: Generated<Timestamp>;
+  encrypted_secret: string;
+  key_version: number;
+  mailbox_id: string;
+  org_id: string;
+  secret_kind: string;
+}
+
+export interface Mailboxes {
+  address: string;
+  capabilities: Generated<Json>;
+  created_at: Generated<Timestamp>;
+  folder_map: Generated<Json>;
+  id: Generated<string>;
+  imap_host: string;
+  imap_port: number;
+  last_synced_at: Timestamp | null;
+  last_uid: Int8 | null;
+  org_id: string;
+  protocol: Generated<string>;
+  smtp_host: string;
+  smtp_port: number;
+  status: Generated<string>;
+  uidvalidity: Int8 | null;
+}
+
+export interface MailboxSettings {
+  category_policy: Generated<Json>;
+  mailbox_id: string;
+  mode: Generated<string>;
+  org_id: string;
+  tool_switches: Generated<Json>;
+  updated_at: Generated<Timestamp>;
+}
 
 export interface Memberships {
   created_at: Generated<Timestamp>;
@@ -36,6 +113,10 @@ export interface Users {
 }
 
 export interface DB {
+  emails: Emails;
+  mailbox_credentials: MailboxCredentials;
+  mailbox_settings: MailboxSettings;
+  mailboxes: Mailboxes;
   memberships: Memberships;
   organizations: Organizations;
   users: Users;
