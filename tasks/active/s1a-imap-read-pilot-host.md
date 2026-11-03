@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–13. Left: stages 14–17 (16–17 with the user on the VPS).
+> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–14. Left: stages 15–17 (16–17 with the user on the VPS).
 
 # S1a IMAP read + pilot host
 
@@ -447,7 +447,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Out of scope: any fix of found differences.
 
 ### Stage 14 — Server image, VPS Compose, runbook
-- [ ] **14.1 Server Dockerfile**
+- [x] **14.1 Server Dockerfile**
   - Goal: An image of the server builds from the repo and has `bun` and `dbmate`.
   - Files: `deploy/Dockerfile` (new), `.dockerignore` (new).
   - Interfaces: `FROM oven/bun:1.3.14`; `WORKDIR /app`; copy `package.json`, `bun.lock`, `apps/server/package.json`, `apps/web/package.json`, `packages/core/package.json` to their paths; `RUN bun install --frozen-lockfile` (dev dependencies stay: `dbmate` and `kysely-codegen` are needed for `db:migrate`); copy `apps/server`, `packages/core`, `db`, `tsconfig.base.json`; `USER bun`; `EXPOSE 8080`; `CMD ["bun", "apps/server/src/main.ts"]`. `.dockerignore`: `node_modules`, `**/node_modules`, `.env`, `.env.*`, `.git`, `apps/web/dist`, `apps/web/.astro`, `tasks`, `notes`, `docs`, `.ai`.
@@ -456,7 +456,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Check: `docker build -f deploy/Dockerfile -t ea-server .` exits 0; `docker run --rm ea-server bun --version` prints `1.3.14`; `docker run --rm ea-server bunx dbmate --version` prints a version; `docker run --rm ea-server ls -a /app | grep -c '^.env$'` prints `0`.
   - Done when: the checks pass.
   - Out of scope: the web build (S5).
-- [ ] **14.2 `server` service in Compose**
+- [x] **14.2 `server` service in Compose**
   - Goal: Compose runs `server` and `db` with `restart: unless-stopped`, and `db` has no host port outside dev.
   - Files: `deploy/compose.yaml`.
   - Interfaces: `services.server`: `build: { context: .., dockerfile: deploy/Dockerfile }`, `image: ea-server`, `restart: unless-stopped`, `env_file: ../.env`, `environment: DATABASE_URL: postgres://app:${APP_PASSWORD:?}@db:5432/email_assistant?sslmode=disable` and `MIGRATOR_DATABASE_URL: postgres://migrator:${MIGRATOR_PASSWORD:?}@db:5432/email_assistant?sslmode=disable` (they override the dev URLs of the env file), `depends_on: { db: { condition: service_healthy } }`, `healthcheck: test: ["CMD", "bun", "-e", "const r = await fetch('http://127.0.0.1:8080/health'); process.exit(r.ok ? 0 : 1)"]`, `interval: 30s`, `retries: 3`. No `ports` (no inbound port in the pilot).
@@ -465,7 +465,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Check: `docker compose -f deploy/compose.yaml --env-file .env config` is valid and has no `published` port; on the Mac: `docker compose -f deploy/compose.yaml --env-file .env up -d --build --wait` exits 0 (server healthy); `docker compose -f deploy/compose.yaml --env-file .env run --rm server bun run db:migrate` exits 0; `docker compose -f deploy/compose.yaml --env-file .env logs server | grep -c listening` ≥ 1; then `docker compose -f deploy/compose.yaml --env-file .env stop server`. `bun run db:up` still works for dev.
   - Done when: the checks pass.
   - Out of scope: VPS work (stage 16).
-- [ ] **14.3 Runbook `deploy/README.md`**
+- [x] **14.3 Runbook `deploy/README.md`**
   - Goal: A later agent or the user can install, update and test the pilot on the home VPS from one file.
   - Files: `deploy/README.md` (new).
   - Interfaces (sections): Requirements (Docker with the Compose plugin, git; `age` public recipient and `rclone` for backups); First install (clone; root `.env` from `.env.example` with `chmod 600 .env`; which keys are needed on the VPS: `POSTGRES_PASSWORD`, `MIGRATOR_PASSWORD`, `APP_PASSWORD` (URL-safe), `CREDENTIALS_KEY`, `CREDENTIALS_KEY_VERSION`, `HEARTBEAT_URL`, `TEST_MAILBOX_ADDRESS`, `LOG_LEVEL`; `DATABASE_URL` / `MIGRATOR_DATABASE_URL` are set by Compose); start `db`; migrate (`docker compose … run --rm server bun run db:migrate`); `org:create`; `mailbox:connect` with the password on stdin; start `server`); Update (`git pull`, `up -d --build`, migrate); Logs; Reboot (`sudo systemctl enable docker`; the services have `restart: unless-stopped`); Heartbeat (Healthchecks.io: make one check with period 5 min and grace 10 min, add an email or Telegram integration, put its ping URL in `HEARTBEAT_URL`; how to test a stop); The 48-hour test procedure (stage 17.1 text); Backups (stage 15 fills it).
@@ -515,7 +515,7 @@ Needs: the user steps done (Interia IMAP on, test account, Docker on the VPS). T
 ### Stage 17 — 48-hour sync test, restore test, docs (user + main session)
 - [ ] **17.1 48-hour sync test on the test mailbox**
   - Goal: 48 hours of sync with no lost and no duplicate mail, with hourly synthetic mail, one manual move back to INBOX and one forced rescan.
-  - Decisions (procedure): start time `T0`; cron on the VPS: `0 * * * * cd <repo> && docker compose -f deploy/compose.yaml --env-file .env run --rm server bun run mailbox:seed --org-id <org> --mailbox-id <test mailbox>`. Move back (simulated system move, because shadow mode moves nothing): the user makes a folder `EA-test` in Interia webmail and moves one stored test mail from INBOX into it; the main session sets that row's `folder = 'EA-test'` (`docker compose … exec db psql -U postgres -d email_assistant -c "update emails set folder = 'EA-test' where id = '<id>'"`); the user moves the mail back to INBOX; after the next sync the row has `returned_at` set and no new row exists. Forced rescan: at about hour 24, `bun run mailbox:rescan …` in the container; the next sync log shows `mode=rescan`. At the end (≥ 48 h, right after a sync): `bun run mailbox:audit … --since <T0>` → `missing=0 duplicates=0`, exit 0. Remove the cron line.
+  - Decisions (procedure): start time `T0`; cron on the VPS: `0 * * * * cd <repo> && docker compose -f deploy/compose.yaml --env-file .env run --rm server bun run mailbox:seed --org-id <org> --mailbox-id <test mailbox>`. Move back (simulated system move, because shadow mode moves nothing): the user makes a folder `EA-test` in Interia webmail and moves one stored test mail from INBOX into it; the main session sets that row's `folder = 'EA-test'` (`docker compose … exec db psql -U postgres -d email_assistant -c "update emails set folder = 'EA-test' where id = '<id>'"`); the user moves the mail back to INBOX; after the next sync the row has `returned_at` set and no new row exists. Forced rescan: at about hour 24, `bun run mailbox:rescan …` in the container; the next sync log line has `sync <mailbox id> rescan:`. At the end (≥ 48 h, right after a sync): `bun run mailbox:audit … --since <T0>` → `missing=0 duplicates=0`, exit 0. Remove the cron line.
   - Check: the audit output, the `returned_at` query, the rescan log line; log all three.
   - Done when: the audit exits 0 after ≥ 48 hours and both events are logged.
 - [ ] **17.2 Nightly backup and one restore test**
@@ -571,3 +571,4 @@ None. The user answered Questions 1–8 on 2026-11-03; the answers are in "Decis
 - 2026-11-03: Stage 11 done (mailbox:check with write probes). checkMailbox read-only report + --probe (SEARCH HEADER draft, Sent auto-save via mail to self); delete only with UIDPLUS; probe failures name 'EA probe <id>' for cleanup; tests prove the user's own \\Deleted mail survives. GreenMail facts in notes/2026-11-03-greenmail-facts.md. Checks: lint + typecheck exit 0; test:unit 117 pass; test:int 94 pass. Reviewer PASS.
 - 2026-11-03: Stage 12 done (scheduler, sync job, heartbeat, server wiring). croner scheduler (protect, no overlap), heartbeat (HEARTBEAT_URL, never logged, never throws), mail sync job (one mailbox error never stops others, provider always closed), main.ts wiring, pg connectionTimeoutMillis 5000 (db-pool-timeouts moved to done). Two FAIL rounds on test strength (silent-DB timeout test, mailbox order in the login-error test), both fixed; user said go. Manual start: /health ok, db up, heartbeat-off warn. Checks: lint + typecheck exit 0; test:unit 129 pass; test:int 99 pass. Reviewer PASS.
 - 2026-11-03: Stage 13 done (test tools for the 48-hour run). mailbox:seed (refuses any mailbox that is not TEST_MAILBOX_ADDRESS, before credentials), mailbox:rescan (forceRescan), mailbox:audit (missing/duplicates multiset, shared fetchSince with the one-day SINCE shift). Review minors fixed. Checks: lint + typecheck exit 0; test:unit 135 pass; test:int 106 pass. Reviewer PASS.
+- 2026-11-03: Stage 14 done (server image, VPS Compose, runbook). deploy/Dockerfile (oven/bun:1.3.14, USER bun, no .env), .dockerignore, server service (no ports, unless-stopped, healthcheck /health), deploy/README.md runbook. FAIL round 1 fixed (Update migrates from a rebuilt image: run --build; nested .env ignore; read -rsp + unset P; cron log), round 2 minors fixed (real sync log format, bash note). Follow-up: tasks/planned/server-env-scope.md. Checks: docker build ok; prod compose: 0 published ports, db + server healthy, migrate exit 0; lint exit 0; test:unit 135 pass; test:int 106 pass. Reviewer PASS.

@@ -1,0 +1,13 @@
+node_modules
+**/node_modules
+.env
+.env.*
+.git
+apps/web/dist
+apps/web/.astro
+tasks
+notes
+docs
+.ai
+**/.env
+**/.env.*

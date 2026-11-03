@@ -19,5 +19,31 @@ services:
       interval: 2s
       retries: 15
 
+  server:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: ea-server
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      # These override the dev URLs of the env file
+      DATABASE_URL: postgres://app:${APP_PASSWORD:?}@db:5432/email_assistant?sslmode=disable
+      MIGRATOR_DATABASE_URL: postgres://migrator:${MIGRATOR_PASSWORD:?}@db:5432/email_assistant?sslmode=disable
+      PORT: "8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "bun",
+          "-e",
+          "const r = await fetch('http://127.0.0.1:8080/health'); process.exit(r.ok ? 0 : 1)",
+        ]
+      interval: 30s
+      retries: 3
+
 volumes:
   db-data: {}
