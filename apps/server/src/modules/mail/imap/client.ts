@@ -172,7 +172,10 @@ class ImapMailProvider implements MailProvider {
       this.withMailbox(INBOX, async () => {
         const box = this.client.mailbox;
         if (box === false) throw new HardError("IMAP INBOX is not open");
-        return { uidValidity: Number(box.uidValidity), uidNext: box.uidNext };
+        const uidValidity = Number(box.uidValidity);
+        if (!Number.isFinite(uidValidity)) throw new HardError("IMAP INBOX gave no valid UIDVALIDITY");
+        if (!Number.isFinite(box.uidNext)) throw new HardError("IMAP INBOX gave no valid UIDNEXT");
+        return { uidValidity, uidNext: box.uidNext };
       })
     );
   }
