@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Stages 1–2 done. Left: stages 3–7.
+> **Status 2026-11-03 — in progress.** Stages 1–3 done. Left: stages 4–7.
 
 # S0 Foundation
 
@@ -121,7 +121,7 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
   - Out of scope: other docs (stage 7).
 
 ### Stage 3 — DB roles, Compose `db`, dbmate runner [risky]
-- [ ] **3.1 `db/roles.sql`, Compose `db` with init script, dbmate, grants migration**
+- [x] **3.1 `db/roles.sql`, Compose `db` with init script, dbmate, grants migration**
   - Goal: `bun run db:up` starts an empty Postgres 17 with the roles `migrator` and `app`, and `bun run db:migrate` applies the migrations as `migrator`.
   - Files: `db/roles.sql`, `deploy/compose.yaml`, `deploy/db-init/10-roles.sh` (mode 755), `db/migrations/20261103000001_app_grants.sql`, root `package.json` (devDependency `dbmate`; scripts), `.env.example`, `.gitignore` (add `db/schema.sql` in case dbmate writes it).
   - Interfaces:
@@ -314,3 +314,4 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
 - 2026-11-03: Planner wrote the plan (7 stages; 3, 4, 5 are `[risky]`). README = English (Question 1, option a).
 - 2026-11-03: Stage 1 (workspaces, `packages/core`, `apps/web`, root lint) built and reviewed: PASS. Checks: `bun install --frozen-lockfile`, `bun run lint`, `bun run typecheck`, `bun run test:unit` (2 pass), `bun run web:build` — all pass. Deviations accepted: React/a11y lint only on `{js,jsx,ts,tsx}` (not `.astro`); `no-empty-object-type` off for `apps/web/src/env.d.ts`.
 - 2026-11-03: Stage 2 (`apps/server` config + log, Gemini script, `backend/` removed) built and reviewed: FAIL, then PASS in round 2. Fix: the script is now `apps/server/src/scripts/gemini-check.ts`, because Bun's test patterns match `*_test.ts` and `test:unit` sent a real Gemini call. Checks: `bun install --frozen-lockfile`, `bun run lint`, `bun run typecheck`, `bun run test:unit` (10 pass, 3 files) — all pass. Root `.env` moved from `backend/.env` (untracked). Kept `z.string().url()` as planned.
+- 2026-11-03: Stage 3 (DB roles, Compose `db` on 5433, dbmate 2.37.0, grants migration) built and reviewed: PASS. Checks on an empty volume: `db:up` healthy; `db:migrate` applied `20261103000001_app_grants.sql`; `current_user` = `migrator` / `app`; `app` `create table` → `permission denied for schema public`; second `db:migrate` exit 0; `db:rollback` + `db:migrate` work. `bun install --frozen-lockfile`, `bun run lint`, `bun run typecheck`, `bun run test:unit` (10 pass) — all pass. Real local passwords set in the root `.env`. Accepted: healthcheck in CMD array form; PUBLIC keeps CONNECT on the DB (as planned).

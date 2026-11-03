@@ -1,0 +1,24 @@
+name: email-assistant
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: email_assistant
+      MIGRATOR_PASSWORD: ${MIGRATOR_PASSWORD:?}
+      APP_PASSWORD: ${APP_PASSWORD:?}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ../db/roles.sql:/db/roles.sql:ro
+      - ./db-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "email_assistant"]
+      interval: 2s
+      retries: 15
+
+volumes:
+  db-data: {}

@@ -4,6 +4,9 @@ dist/
 # generated types
 .astro/
 
+# dbmate schema dump (not used: --no-dump-schema)
+db/schema.sql
+
 # dependencies
 node_modules/
 

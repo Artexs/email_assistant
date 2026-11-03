@@ -15,7 +15,11 @@
     "format": "prettier --write .",
     "web:dev": "bun run --filter @ea/web dev",
     "web:build": "bun run --filter @ea/web build",
-    "gemini:test": "bun apps/server/src/scripts/gemini-check.ts"
+    "gemini:test": "bun apps/server/src/scripts/gemini-check.ts",
+    "db:up": "docker compose -f deploy/compose.yaml --env-file .env up -d --wait db",
+    "db:down": "docker compose -f deploy/compose.yaml --env-file .env down",
+    "db:migrate": "dbmate -e MIGRATOR_DATABASE_URL --no-dump-schema --wait migrate",
+    "db:rollback": "dbmate -e MIGRATOR_DATABASE_URL --no-dump-schema rollback"
   },
   "devDependencies": {
     "@eslint/compat": "1.2.7",
@@ -23,6 +27,7 @@
     "@types/bun": "^1.3.0",
     "@typescript-eslint/eslint-plugin": "8.28.0",
     "@typescript-eslint/parser": "8.28.0",
+    "dbmate": "^2.37.0",
     "eslint": "9.23.0",
     "eslint-config-prettier": "10.1.1",
     "eslint-import-resolver-typescript": "4.2.5",
