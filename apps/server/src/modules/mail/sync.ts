@@ -4,7 +4,7 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 
-import { INBOX, type MailProvider, type MessageMeta } from "./port";
+import { INBOX, type InboxStatus, type MailProvider, type MessageMeta } from "./port";
 import {
   findCopies,
   getMailbox,
@@ -14,6 +14,7 @@ import {
   updateCursor,
   updateEmailUid,
   type Cursor,
+  type MailboxRow,
   type NewEmail,
 } from "./repo";
 import {
@@ -31,6 +32,10 @@ const log = createLog("mail");
 
 const DEFAULT_CHUNK_SIZE = 50;
 const BODY_TEXT_LIMIT = 100_000;
+const HOUR_MS = 3_600_000;
+const DAY_MS = 24 * HOUR_MS;
+const INITIAL_WINDOW_MS = DAY_MS;
+const RESCAN_WINDOW_MS = 7 * DAY_MS;
 
 export interface SyncDeps {
   db: Db | Transaction<DB>;
@@ -151,14 +156,14 @@ async function planChunk(
   return writes;
 }
 
-// Phase 2: one transaction that applies the chunk and moves the cursor with it.
+// Phase 2: one transaction that applies the chunk. `next` moves the cursor with it; `null` keeps it.
 async function applyChunk(
   deps: SyncDeps,
   ctx: TenantContext,
   mailboxId: string,
   writes: Write[],
   expected: Cursor,
-  next: Cursor,
+  next: Cursor | null,
   result: SyncResult
 ): Promise<void> {
   const run = async (trx: Transaction<DB>) => {
@@ -180,7 +185,7 @@ async function applyChunk(
         returned += 1;
       }
     }
-    if (!(await updateCursor(trx, ctx, mailboxId, expected, next))) {
+    if (next !== null && !(await updateCursor(trx, ctx, mailboxId, expected, next))) {
       throw new CursorMovedError(`cursor of mailbox ${mailboxId} moved during the sync`);
     }
     return { stored, uidUpdated, returned };
@@ -194,17 +199,46 @@ async function applyChunk(
   result.returned += counts.returned;
 }
 
+// After the last chunk of an initial sync or a rescan: set the cursor in one more transaction.
+async function setCursor(
+  deps: SyncDeps,
+  ctx: TenantContext,
+  mailboxId: string,
+  expected: Cursor,
+  next: Cursor
+): Promise<void> {
+  const run = async (trx: Transaction<DB>) => {
+    if (!(await updateCursor(trx, ctx, mailboxId, expected, next))) {
+      throw new CursorMovedError(`cursor of mailbox ${mailboxId} moved during the sync`);
+    }
+  };
+  await (deps.db.isTransaction ? run(deps.db as Transaction<DB>) : deps.db.transaction().execute(run));
+}
+
+function selectMode(mailbox: MailboxRow, status: InboxStatus): SyncResult["mode"] {
+  if (mailbox.uidvalidity === null) return "initial";
+  return mailbox.uidvalidity === status.uidValidity ? "incremental" : "rescan";
+}
+
+// INBOX mail with INTERNALDATE at or after `since`. IMAP SINCE is by day, so filter again by the time.
+async function fetchSince(provider: MailProvider, since: Date): Promise<MessageMeta[]> {
+  // SINCE is a date in the server's time zone, but imapflow sends the UTC date: search one day earlier.
+  const uids = await provider.searchInboxSince(new Date(since.getTime() - DAY_MS));
+  if (uids.length === 0) return [];
+  const metas = await provider.fetchByUids(uids);
+  const inWindow = metas.filter((meta) => meta.internalDate.getTime() >= since.getTime());
+  // Cursor 0 drops no uid: this only sorts and drops repeated uids.
+  return filterAboveCursor(inWindow, 0).kept;
+}
+
 export async function syncMailbox(deps: SyncDeps, ctx: TenantContext, mailboxId: string): Promise<SyncResult> {
   const mailbox = await getMailbox(deps.db, ctx, mailboxId);
   if (!mailbox) throw new HardError(`mailbox ${mailboxId} not found`);
 
   const status = await deps.provider.inboxStatus();
-  if (mailbox.uidvalidity === null || mailbox.uidvalidity !== status.uidValidity) {
-    throw new HardError("initial sync and rescan come in stage 7");
-  }
-
+  const mode = selectMode(mailbox, status);
   const result: SyncResult = {
-    mode: "incremental",
+    mode,
     fetched: 0,
     stored: 0,
     uidUpdated: 0,
@@ -212,20 +246,40 @@ export async function syncMailbox(deps: SyncDeps, ctx: TenantContext, mailboxId:
     skippedOwn: 0,
     ignoredBelowCursor: 0,
   };
-  const metas = await deps.provider.fetchAbove(mailbox.last_uid ?? 0);
-  const { kept, ignored } = filterAboveCursor(metas, mailbox.last_uid ?? 0);
-  result.fetched = metas.length;
-  result.ignoredBelowCursor = ignored;
+
+  let kept: MessageMeta[];
+  if (mode === "incremental") {
+    const metas = await deps.provider.fetchAbove(mailbox.last_uid ?? 0);
+    const filtered = filterAboveCursor(metas, mailbox.last_uid ?? 0);
+    kept = filtered.kept;
+    result.fetched = metas.length;
+    result.ignoredBelowCursor = filtered.ignored;
+  } else {
+    const windowMs = mode === "initial" ? INITIAL_WINDOW_MS : RESCAN_WINDOW_MS;
+    kept = await fetchSince(deps.provider, new Date(deps.now().getTime() - windowMs));
+    result.fetched = kept.length;
+  }
 
   const chunkSize = deps.chunkSize ?? DEFAULT_CHUNK_SIZE;
   const state: RunState = { matched: new Set(), newKeys: new Map() };
-  let cursor: Cursor = { uidValidity: mailbox.uidvalidity, lastUid: mailbox.last_uid };
-  for (let start = 0; start < kept.length; start += chunkSize) {
-    const chunk = kept.slice(start, start + chunkSize);
+  const start: Cursor = { uidValidity: mailbox.uidvalidity, lastUid: mailbox.last_uid };
+  let cursor = start;
+  for (let offset = 0; offset < kept.length; offset += chunkSize) {
+    const chunk = kept.slice(offset, offset + chunkSize);
     const writes = await planChunk(deps, ctx, mailboxId, chunk, state, result);
-    const next: Cursor = { uidValidity: cursor.uidValidity, lastUid: chunk[chunk.length - 1]?.uid ?? cursor.lastUid };
-    await applyChunk(deps, ctx, mailboxId, writes, cursor, next, result);
-    cursor = next;
+    if (mode === "incremental") {
+      const next: Cursor = { uidValidity: cursor.uidValidity, lastUid: chunk[chunk.length - 1]?.uid ?? cursor.lastUid };
+      await applyChunk(deps, ctx, mailboxId, writes, cursor, next, result);
+      cursor = next;
+    } else {
+      // A crash before the last chunk keeps the old cursor: the next run scans again, the dedup key stops duplicates.
+      await applyChunk(deps, ctx, mailboxId, writes, start, null, result);
+    }
+  }
+  if (mode !== "incremental") {
+    const highest = kept[kept.length - 1]?.uid ?? 0;
+    const lastUid = Math.max(status.uidNext - 1, highest);
+    await setCursor(deps, ctx, mailboxId, start, { uidValidity: status.uidValidity, lastUid });
   }
 
   log.info(

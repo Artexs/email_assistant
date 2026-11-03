@@ -20,6 +20,7 @@ The system classifies the user's mail and logs what it *would* do (mode `shadow`
 Written when the task starts (files to change, steps, tests).
 
 **Gate:** Gemini Cloud Billing must be on before the system reads real mail (ADR 0007, ADR 0012). Use the test mailbox until then.
+Input from S1a (stage 7 review): after a UIDVALIDITY rescan, rows older than 7 days keep the uid from the old UIDVALIDITY. Code that moves or flags mail must not trust `emails.uid` alone: check the mail by Message-ID first.
 
 ## Done-checklist
 - [ ] Done-when checks pass (name the command and its output in the log).

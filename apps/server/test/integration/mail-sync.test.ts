@@ -50,12 +50,18 @@ async function setup(trx: Transaction<DB>): Promise<Setup> {
   return { ctx, mailboxId, address: mailbox.address, fake: createFakeMailProvider({ uidValidity: UID_VALIDITY }) };
 }
 
+const NOW = new Date("2026-11-03T12:00:00Z");
+
+function hoursAgo(hours: number): Date {
+  return new Date(NOW.getTime() - hours * 3_600_000);
+}
+
 function deps(trx: Db | Transaction<DB>, provider: MailProvider, overrides: Partial<SyncDeps> = {}): SyncDeps {
   return {
     db: trx,
     provider,
     isOwnActionId: async () => false,
-    now: () => new Date("2026-11-03T12:00:00Z"),
+    now: () => NOW,
     ...overrides,
   };
 }
@@ -115,6 +121,38 @@ function onBodyCall(fake: FakeMailProvider, hook: (call: number) => Promise<void
       await hook(call);
       return fake.fetchBodyText(uid);
     },
+    findByMessageId: (folder, messageId) => fake.findByMessageId(folder, messageId),
+    close: () => fake.close(),
+  };
+}
+
+// Runs `hook` once, right after the first call of `method` returns.
+function afterFirstCall(
+  fake: FakeMailProvider,
+  method: "inboxStatus" | "searchInboxSince",
+  hook: () => void
+): MailProvider {
+  let done = false;
+  const once = <T>(value: T): T => {
+    if (!done) {
+      done = true;
+      hook();
+    }
+    return value;
+  };
+  return {
+    serverInfo: () => fake.serverInfo(),
+    inboxStatus: async () => {
+      const status = await fake.inboxStatus();
+      return method === "inboxStatus" ? once(status) : status;
+    },
+    fetchAbove: (lastUid) => fake.fetchAbove(lastUid),
+    searchInboxSince: async (since) => {
+      const uids = await fake.searchInboxSince(since);
+      return method === "searchInboxSince" ? once(uids) : uids;
+    },
+    fetchByUids: (uids) => fake.fetchByUids(uids),
+    fetchBodyText: (uid) => fake.fetchBodyText(uid),
     findByMessageId: (folder, messageId) => fake.findByMessageId(folder, messageId),
     close: () => fake.close(),
   };
@@ -437,11 +475,245 @@ describe("syncMailbox: incremental", () => {
     }
   });
 
-  test("a mailbox without a cursor waits for stage 7", async () => {
+  test("after an outage all 50 mails above the cursor are stored", async () => {
     await withRollback(db, async (trx) => {
-      const { orgId, mailboxId } = await createOrgWithMailbox(trx);
-      const fake = createFakeMailProvider({ uidValidity: UID_VALIDITY });
-      await expect(syncMailbox(deps(trx, fake), { orgId }, mailboxId)).rejects.toThrow("stage 7");
+      const s = await setup(trx);
+      for (let n = 1; n <= 50; n += 1) s.fake.deliver("INBOX", seed(n), { internalDate: hoursAgo(24 * 10) });
+
+      const result = await syncMailbox(deps(trx, s.fake, { chunkSize: 20 }), s.ctx, s.mailboxId);
+      expect(result.mode).toBe("incremental");
+      expect(result.stored).toBe(50);
+      expect(await emails(trx, s.mailboxId)).toHaveLength(50);
+      expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY, lastUid: 50 });
+    });
+  });
+});
+
+// Mailbox with no cursor: the first sync is `initial`.
+async function setupNew(trx: Transaction<DB>): Promise<Setup> {
+  const { orgId, mailboxId } = await createOrgWithMailbox(trx);
+  const mailbox = await trx
+    .selectFrom("mailboxes")
+    .select("address")
+    .where("id", "=", mailboxId)
+    .executeTakeFirstOrThrow();
+  return {
+    ctx: { orgId },
+    mailboxId,
+    address: mailbox.address,
+    fake: createFakeMailProvider({ uidValidity: UID_VALIDITY }),
+  };
+}
+
+// Three known mails at uids 3, 4, 5, then a UIDVALIDITY change renumbers them to 1, 2, 3.
+async function setupKnown(trx: Transaction<DB>): Promise<Setup> {
+  const s = await setup(trx);
+  for (let n = 1; n <= 2; n += 1) s.fake.remove("INBOX", s.fake.deliver("INBOX", seed(100 + n)));
+  for (let n = 1; n <= 3; n += 1) s.fake.deliver("INBOX", seed(n), { internalDate: hoursAgo(24 * n) });
+  const first = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+  expect(first.stored).toBe(3);
+  expect((await emails(trx, s.mailboxId)).map((row) => Number(row.uid))).toEqual([3, 4, 5]);
+  return s;
+}
+
+describe("syncMailbox: initial", () => {
+  test("the first sync stores only the last 24 hours and sets the cursor", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setupNew(trx);
+      s.fake.deliver("INBOX", seed(1), { internalDate: hoursAgo(24 * 3) });
+      s.fake.deliver("INBOX", seed(2), { internalDate: hoursAgo(25) });
+      s.fake.deliver("INBOX", seed(3), { internalDate: hoursAgo(23) });
+      s.fake.deliver("INBOX", seed(4), { internalDate: hoursAgo(2) });
+
+      const result = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(result.mode).toBe("initial");
+      expect(result.stored).toBe(2);
+      expect((await emails(trx, s.mailboxId)).map((row) => Number(row.uid))).toEqual([3, 4]);
+      expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY, lastUid: 4 });
+
+      s.fake.deliver("INBOX", seed(5), { internalDate: hoursAgo(1) });
+      const next = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(next.mode).toBe("incremental");
+      expect(next.stored).toBe(1);
+      expect((await emails(trx, s.mailboxId)).map((row) => Number(row.uid))).toEqual([3, 4, 5]);
+      expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY, lastUid: 5 });
+    });
+  });
+
+  test("a mail delivered after inboxStatus and before the search is stored and sets the cursor", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setupNew(trx);
+      s.fake.deliver("INBOX", seed(1), { internalDate: hoursAgo(2) });
+      let late = 0;
+      const provider = afterFirstCall(s.fake, "inboxStatus", () => {
+        late = s.fake.deliver("INBOX", seed(2), { internalDate: hoursAgo(1) });
+      });
+
+      const result = await syncMailbox(deps(trx, provider), s.ctx, s.mailboxId);
+      expect(result.mode).toBe("initial");
+      expect(result.stored).toBe(2);
+      expect(late).toBe(2);
+      expect((await emails(trx, s.mailboxId)).map((row) => Number(row.uid))).toEqual([1, late]);
+      expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY, lastUid: late });
+    });
+  });
+
+  test("a mail delivered after the search is left for the next incremental sync", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setupNew(trx);
+      s.fake.deliver("INBOX", seed(1), { internalDate: hoursAgo(2) });
+      const { uidNext } = await s.fake.inboxStatus();
+      let late = 0;
+      const provider = afterFirstCall(s.fake, "searchInboxSince", () => {
+        late = s.fake.deliver("INBOX", seed(2), { internalDate: hoursAgo(1) });
+      });
+
+      const result = await syncMailbox(deps(trx, provider), s.ctx, s.mailboxId);
+      expect(result.mode).toBe("initial");
+      expect(result.stored).toBe(1);
+      expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY, lastUid: uidNext - 1 });
+
+      const next = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(next.mode).toBe("incremental");
+      expect(next.stored).toBe(1);
+      expect((await emails(trx, s.mailboxId)).map((row) => Number(row.uid))).toEqual([1, late]);
+      expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY, lastUid: late });
+    });
+  });
+
+  test("an empty INBOX sets the cursor to uidNext - 1", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setupNew(trx);
+      s.fake.remove("INBOX", s.fake.deliver("INBOX", seed(1)));
+      s.fake.remove("INBOX", s.fake.deliver("INBOX", seed(2)));
+
+      const result = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(result.mode).toBe("initial");
+      expect(result.stored).toBe(0);
+      expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY, lastUid: 2 });
+    });
+  });
+
+  test("chunks of the first sync do not move the cursor; it is set after the last chunk", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setupNew(trx);
+      for (let n = 1; n <= 5; n += 1) s.fake.deliver("INBOX", seed(n), { internalDate: hoursAgo(1) });
+      const cursorsSeen: unknown[] = [];
+      const provider = onBodyCall(s.fake, async () => {
+        cursorsSeen.push(
+          await trx
+            .selectFrom("mailboxes")
+            .select(["uidvalidity", "last_uid"])
+            .where("id", "=", s.mailboxId)
+            .executeTakeFirstOrThrow()
+        );
+      });
+
+      const result = await syncMailbox(deps(trx, provider, { chunkSize: 2 }), s.ctx, s.mailboxId);
+      expect(result.stored).toBe(5);
+      expect(cursorsSeen).toEqual(Array.from({ length: 5 }, () => ({ uidvalidity: null, last_uid: null })));
+      expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY, lastUid: 5 });
+    });
+  });
+
+  test("a crash in the middle of the first sync keeps no cursor; the next run has no duplicate", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setupNew(trx);
+      for (let n = 1; n <= 3; n += 1) s.fake.deliver("INBOX", seed(n), { internalDate: hoursAgo(1) });
+      const provider = onBodyCall(s.fake, async (call) => {
+        if (call === 3) s.fake.failOn("fetchBodyText", new SoftError("x"), 1);
+      });
+
+      await expect(syncMailbox(deps(trx, provider, { chunkSize: 2 }), s.ctx, s.mailboxId)).rejects.toBeInstanceOf(
+        SoftError
+      );
+      expect((await emails(trx, s.mailboxId)).map((row) => Number(row.uid))).toEqual([1, 2]);
+      const row = await trx
+        .selectFrom("mailboxes")
+        .select(["uidvalidity", "last_uid"])
+        .where("id", "=", s.mailboxId)
+        .executeTakeFirstOrThrow();
+      expect(row).toEqual({ uidvalidity: null, last_uid: null });
+
+      const next = await syncMailbox(deps(trx, s.fake, { chunkSize: 2 }), s.ctx, s.mailboxId);
+      expect(next.mode).toBe("initial");
+      expect(next.stored).toBe(1);
+      expect(next.uidUpdated).toBe(2);
+      expect((await emails(trx, s.mailboxId)).map((row) => Number(row.uid))).toEqual([1, 2, 3]);
+      expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY, lastUid: 3 });
+    });
+  });
+});
+
+describe("syncMailbox: rescan", () => {
+  test("a UIDVALIDITY change gives known mail its new uid and stores only the new mail", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setupKnown(trx);
+      await trx.updateTable("emails").set({ status: "triaged" }).where("mailbox_id", "=", s.mailboxId).execute();
+      s.fake.resetUidValidity(UID_VALIDITY + 1);
+      s.fake.deliver("INBOX", seed(4), { internalDate: hoursAgo(1) });
+
+      const result = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(result.mode).toBe("rescan");
+      expect(result.stored).toBe(1);
+      expect(result.uidUpdated).toBe(3);
+      const rows = await emails(trx, s.mailboxId);
+      expect(rows).toHaveLength(4);
+      expect(rows.map((row) => [Number(row.uid), row.message_id_header, row.status])).toEqual([
+        [1, "<m1@x.test>", "triaged"],
+        [2, "<m2@x.test>", "triaged"],
+        [3, "<m3@x.test>", "triaged"],
+        [4, "<m4@x.test>", "pending"],
+      ]);
+      expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY + 1, lastUid: 4 });
+
+      const next = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(next.mode).toBe("incremental");
+      expect(next.stored).toBe(0);
+    });
+  });
+
+  test("a crash in the middle of a rescan keeps the old UIDVALIDITY; the next run has no duplicate", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setupKnown(trx);
+      s.fake.resetUidValidity(UID_VALIDITY + 1);
+      s.fake.deliver("INBOX", seed(4), { internalDate: hoursAgo(1) });
+      s.fake.failOn("fetchBodyText", new SoftError("x"), 1);
+
+      await expect(syncMailbox(deps(trx, s.fake, { chunkSize: 2 }), s.ctx, s.mailboxId)).rejects.toBeInstanceOf(
+        SoftError
+      );
+      expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY, lastUid: 5 });
+      expect((await emails(trx, s.mailboxId)).map((row) => Number(row.uid))).toEqual([1, 2, 5]);
+
+      const next = await syncMailbox(deps(trx, s.fake, { chunkSize: 2 }), s.ctx, s.mailboxId);
+      expect(next.mode).toBe("rescan");
+      expect(next.stored).toBe(1);
+      const rows = await emails(trx, s.mailboxId);
+      expect(rows.map((row) => Number(row.uid))).toEqual([1, 2, 3, 4]);
+      expect(new Set(rows.map((row) => row.dedup_key)).size).toBe(4);
+      expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY + 1, lastUid: 4 });
+    });
+  });
+
+  test("a mail 8 days old in INBOX is not read again by a rescan", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setupKnown(trx);
+      s.fake.deliver("INBOX", seed(9), { internalDate: hoursAgo(24 * 8) });
+      s.fake.resetUidValidity(UID_VALIDITY + 1);
+
+      const result = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(result.mode).toBe("rescan");
+      expect(result.stored).toBe(0);
+      expect(result.uidUpdated).toBe(3);
+      const rows = await emails(trx, s.mailboxId);
+      expect(rows.map((row) => row.message_id_header)).toEqual(["<m1@x.test>", "<m2@x.test>", "<m3@x.test>"]);
+      expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY + 1, lastUid: 4 });
+
+      const next = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(next.mode).toBe("incremental");
+      expect(next.stored).toBe(0);
+      expect(await emails(trx, s.mailboxId)).toHaveLength(3);
     });
   });
 });

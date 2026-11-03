@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–6. Left: stages 7–17 (16–17 with the user on the VPS).
+> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–7. Left: stages 8–17 (16–17 with the user on the VPS).
 
 # S1a IMAP read + pilot host
 
@@ -262,7 +262,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Out of scope: initial sync, UIDVALIDITY rescan, auth errors, the scheduler, IMAP.
 
 ### Stage 7 — First sync and UIDVALIDITY rescan [risky]
-- [ ] **7.1 `syncMailbox` modes `initial` and `rescan`**
+- [x] **7.1 `syncMailbox` modes `initial` and `rescan`**
   - Goal: A new mailbox stores only the last 24 hours of INBOX mail, and a UIDVALIDITY change rescans 7 days without duplicates.
   - Files: `apps/server/src/modules/mail/sync.ts`, `apps/server/test/integration/mail-sync.test.ts`.
   - Interfaces: no new exports. Internal: `selectMode(mailbox, status): "initial" | "incremental" | "rescan"`.
@@ -563,3 +563,4 @@ None. The user answered Questions 1–8 on 2026-11-03; the answers are in "Decis
 - 2026-11-03: Stage 4 done (pure sync rules). sync-rules.ts (Message-ID normalize, content hash, dedup keys, thread key, cursor filter, decideIncoming, resolveFolderCheck), 29 tests. Review questions decided: stage 9 mapper gives a valid internalDate and null/[] for empty headers (added to 9.1). Checks: lint + typecheck exit 0; test:unit 82 pass; test:int 20 pass. Reviewer PASS.
 - 2026-11-03: Stage 5 done (mail and config repositories, tenant filter tests). mail/repo.ts (mailboxes, credentials, emails, conditional cursor update, listSyncTargets exception), config module (mailbox_settings), test fixtures, 14 org_id filter tests. Checks: lint + typecheck exit 0; test:unit 82 pass; test:int 34 pass. Reviewer PASS.
 - 2026-11-03: Stage 6 done (incremental sync). syncMailbox with a cursor: plan phase outside the transaction, one transaction per chunk, guarded cursor, CursorMovedError. Accepted deviations: same-run copies get #2, thread_key uses the normalized Message-ID. Review minors fixed (tests, references_header null, per-chunk commit test); NUL rule added to 9.1. Checks: lint + typecheck exit 0; test:unit 82 pass; test:int 53 pass. Reviewer PASS.
+- 2026-11-03: Stage 7 done (first sync and UIDVALIDITY rescan). Modes initial (24 h) and rescan (7 days), cursor set once after the last chunk. Accepted deviations: lastUid = max(uidNext-1, highest scanned uid); no fetch for an empty search. Review minors fixed: SINCE one day earlier, tests for mail that arrives during the scan. S1b input added to tasks/planned/s1b-shadow-triage.md (old uids after a rescan). Checks: lint + typecheck exit 0; test:unit 82 pass; test:int 62 pass. Reviewer PASS.
