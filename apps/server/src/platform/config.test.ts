@@ -97,4 +97,13 @@ describe("loadConfig", () => {
     expect(error.keys).toContain("HEARTBEAT_URL");
     expect(error.message).not.toContain("not a url");
   });
+
+  test("treats an empty TEST_MAILBOX_ADDRESS as missing and rejects a bad one", () => {
+    expect(loadConfig({ ...fullEnv, TEST_MAILBOX_ADDRESS: "" }).TEST_MAILBOX_ADDRESS).toBeUndefined();
+    expect(loadConfig(fullEnv).TEST_MAILBOX_ADDRESS).toBeUndefined();
+    expect(loadConfig({ ...fullEnv, TEST_MAILBOX_ADDRESS: "test@interia.pl" }).TEST_MAILBOX_ADDRESS).toBe(
+      "test@interia.pl"
+    );
+    expect(configError({ ...fullEnv, TEST_MAILBOX_ADDRESS: "nope" }).keys).toContain("TEST_MAILBOX_ADDRESS");
+  });
 });

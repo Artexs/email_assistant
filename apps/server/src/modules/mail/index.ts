@@ -1,5 +1,6 @@
 export { checkMailbox, type CheckDeps, type CheckOptions, type CheckReport } from "./check";
 export { buildFolderMap, connectMailbox, type ConnectDeps, type ConnectInput } from "./connect";
+export { compareInboxWithDb, type AuditCounts, type InboxKey } from "./audit";
 export { createMailSyncJob, type MailSyncJobDeps } from "./jobs";
 export { openImapProvider, type ImapConnectOptions } from "./imap/client";
 export { verifySmtpLogin, type SmtpConnectOptions } from "./imap/smtp";
@@ -13,6 +14,8 @@ export {
   type MailServerInfo,
   type MessageMeta,
 } from "./port";
+export { forceRescan } from "./repo";
 export type { Cursor, MailboxRow, NewEmail } from "./repo";
 export { renderSeedMessage, type SeedMessage } from "./seed";
 export { CursorMovedError, syncMailbox, type SyncDeps, type SyncResult } from "./sync";
+export { auditMailbox, seedMailbox, type ToolDeps } from "./tools";

@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–12. Left: stages 13–17 (16–17 with the user on the VPS).
+> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–13. Left: stages 14–17 (16–17 with the user on the VPS).
 
 # S1a IMAP read + pilot host
 
@@ -418,7 +418,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Out of scope: statement timeouts.
 
 ### Stage 13 — Test tools for the 48-hour run
-- [ ] **13.1 `mailbox:seed` (APPEND synthetic mail to the test mailbox only)**
+- [x] **13.1 `mailbox:seed` (APPEND synthetic mail to the test mailbox only)**
   - Goal: A script APPENDs synthetic mail into the INBOX of the test mailbox, and refuses every other mailbox.
   - Files: `apps/server/src/scripts/mailbox-seed.ts` (new), `apps/server/src/platform/config.ts` (+ test), `.env.example`, root `package.json` (script `mailbox:seed`), `apps/server/test/integration/mail-seed.test.ts` (new).
   - Interfaces: config `TEST_MAILBOX_ADDRESS`: optional email, empty = missing. CLI `bun run mailbox:seed --org-id <uuid> --mailbox-id <uuid> [--count 1]`. Each mail: `messageId = <seed-<uuid>@ea-seed.test>`, `from = seed@ea-seed.test`, `to = [mailbox address]`, `subject = EA seed <ISO time>`, short text, header `X-EA-Seed: 1`; `renderSeedMessage` + `appendRaw(…, "INBOX", raw)`. Prints `appended <n>`.
@@ -427,7 +427,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Check: `bun run test:int`, `bun run typecheck`, `bun run lint`.
   - Done when: tests pass.
   - Out of scope: eval cases (S1b).
-- [ ] **13.2 `mailbox:rescan` (force a UIDVALIDITY rescan)**
+- [x] **13.2 `mailbox:rescan` (force a UIDVALIDITY rescan)**
   - Goal: The operator can force the next sync to run the UIDVALIDITY rescan.
   - Files: `apps/server/src/modules/mail/repo.ts` (add `forceRescan`), `apps/server/src/scripts/mailbox-rescan.ts` (new), root `package.json` (script `mailbox:rescan`), `apps/server/test/integration/mail-repo.test.ts`, `apps/server/test/integration/mail-sync.test.ts`.
   - Interfaces: `forceRescan(db, ctx, mailboxId): Promise<boolean>` — `UPDATE mailboxes SET uidvalidity = 0 WHERE org_id AND id AND uidvalidity IS NOT NULL`. CLI `bun run mailbox:rescan --org-id <uuid> --mailbox-id <uuid>` → prints `rescan forced` or exits 1 when no row changed.
@@ -436,7 +436,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Check: `bun run test:int`, `bun run typecheck`, `bun run lint`.
   - Done when: tests pass.
   - Out of scope: other admin commands.
-- [ ] **13.3 `mailbox:audit` (no lost, no duplicate mail)**
+- [x] **13.3 `mailbox:audit` (no lost, no duplicate mail)**
   - Goal: A script compares the INBOX with the stored rows and reports lost and duplicate mail.
   - Files: `apps/server/src/modules/mail/audit.ts` (new), `apps/server/src/modules/mail/audit.test.ts` (new), `apps/server/src/modules/mail/repo.ts` (add `listInboxEmailKeys`), `apps/server/src/scripts/mailbox-audit.ts` (new), root `package.json` (script `mailbox:audit`), `apps/server/test/integration/mail-repo.test.ts`.
   - Interfaces: `listInboxEmailKeys(db, ctx, mailboxId, since: Date): Promise<{ message_id_header: string | null; content_hash: string }[]>` (rows with `folder = 'INBOX'` and `received_at >= since`); pure `compareInboxWithDb(inbox: { messageId: string | null; hash: string }[], rows: { messageId: string | null; hash: string }[]): { inbox: number; stored: number; missing: number; duplicates: number }` — count per `(messageId, hash)`: `missing` = sum of max(0, inbox count − stored count); `duplicates` = sum of max(0, stored count − inbox count). CLI `bun run mailbox:audit --org-id <uuid> --mailbox-id <uuid> --since <ISO time>`: reads INBOX metas (`searchInboxSince` + `fetchByUids`, keep `internalDate >= since`), computes the keys with `normalizeMessageId` and `contentHash`, prints `inbox=<n> stored=<n> missing=<n> duplicates=<n>`; exit 0 when `missing = 0` and `duplicates = 0`, else exit 2. Read-only.
@@ -570,3 +570,4 @@ None. The user answered Questions 1–8 on 2026-11-03; the answers are in "Decis
 - 2026-11-03: Stage 10 done (mailbox:connect with the encrypted password). connectMailbox (IMAP + SMTP login check, AES-GCM secret with aad mailbox:<id>, default settings), SMTP adapter (nodemailer 10.3.1), CLI with password on stdin only. Tests read the raw row: no plain text, base64 or hex of the password. Accepted deviations: no @types/nodemailer, html5 email pattern. SMTP TLS facts appended to notes/2026-11-03-imapflow-tls-under-bun.md. Checks: lint + typecheck exit 0; test:unit 117 pass; test:int 84 pass. Reviewer PASS.
 - 2026-11-03: Stage 11 done (mailbox:check with write probes). checkMailbox read-only report + --probe (SEARCH HEADER draft, Sent auto-save via mail to self); delete only with UIDPLUS; probe failures name 'EA probe <id>' for cleanup; tests prove the user's own \\Deleted mail survives. GreenMail facts in notes/2026-11-03-greenmail-facts.md. Checks: lint + typecheck exit 0; test:unit 117 pass; test:int 94 pass. Reviewer PASS.
 - 2026-11-03: Stage 12 done (scheduler, sync job, heartbeat, server wiring). croner scheduler (protect, no overlap), heartbeat (HEARTBEAT_URL, never logged, never throws), mail sync job (one mailbox error never stops others, provider always closed), main.ts wiring, pg connectionTimeoutMillis 5000 (db-pool-timeouts moved to done). Two FAIL rounds on test strength (silent-DB timeout test, mailbox order in the login-error test), both fixed; user said go. Manual start: /health ok, db up, heartbeat-off warn. Checks: lint + typecheck exit 0; test:unit 129 pass; test:int 99 pass. Reviewer PASS.
+- 2026-11-03: Stage 13 done (test tools for the 48-hour run). mailbox:seed (refuses any mailbox that is not TEST_MAILBOX_ADDRESS, before credentials), mailbox:rescan (forceRescan), mailbox:audit (missing/duplicates multiset, shared fetchSince with the one-day SINCE shift). Review minors fixed. Checks: lint + typecheck exit 0; test:unit 135 pass; test:int 106 pass. Reviewer PASS.

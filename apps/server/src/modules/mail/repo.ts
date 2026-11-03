@@ -222,3 +222,31 @@ export async function listSyncTargets(db: DbOrTrx): Promise<{ orgId: string; mai
     .execute();
   return rows.map((row) => ({ orgId: row.org_id, mailboxId: row.id }));
 }
+
+// Forces the next sync to rescan: a real server never has UIDVALIDITY 0, so the sync sees a change.
+export async function forceRescan(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<boolean> {
+  const result = await db
+    .updateTable("mailboxes")
+    .set({ uidvalidity: "0" })
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", mailboxId)
+    .where("uidvalidity", "is not", null)
+    .executeTakeFirst();
+  return result.numUpdatedRows === 1n;
+}
+
+export async function listInboxEmailKeys(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  since: Date
+): Promise<{ message_id_header: string | null; content_hash: string }[]> {
+  return db
+    .selectFrom("emails")
+    .select(["message_id_header", "content_hash"])
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("folder", "=", "INBOX")
+    .where("received_at", ">=", since)
+    .execute();
+}

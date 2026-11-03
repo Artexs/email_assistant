@@ -11,6 +11,14 @@ export const configSchema = z.object({
   CREDENTIALS_KEY: z.string().refine(isCredentialsKey, "must be base64 of 32 bytes"),
   CREDENTIALS_KEY_VERSION: z.coerce.number().int().positive().default(1),
   HEARTBEAT_URL: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional()),
+  // Not `z.email()`: the GreenMail test address is `user@localhost`, with no dot in the domain.
+  TEST_MAILBOX_ADDRESS: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z
+      .string()
+      .regex(/^[^\s@]+@[^\s@]+$/)
+      .optional()
+  ),
 });
 
 export type Config = z.infer<typeof configSchema>;

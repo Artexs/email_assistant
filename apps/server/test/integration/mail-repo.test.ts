@@ -7,11 +7,13 @@ import { getMailboxSettings, insertDefaultSettings } from "../../src/modules/con
 import type { NewEmail } from "../../src/modules/mail";
 import {
   findCopies,
+  forceRescan,
   getCredentials,
   getMailbox,
   insertCredentials,
   insertEmail,
   insertMailbox,
+  listInboxEmailKeys,
   listSyncTargets,
   lockMailbox,
   markEmailReturned,
@@ -174,6 +176,24 @@ describe("mail repository: mailboxes", () => {
   });
 });
 
+describe("mail repository: forceRescan", () => {
+  test("sets uidvalidity to 0 only for the owner, and not on a never-synced mailbox", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+
+      expect(await forceRescan(trx, a.ctx, a.mailboxId)).toBe(false);
+
+      await updateCursor(trx, a.ctx, a.mailboxId, { uidValidity: null, lastUid: null }, { uidValidity: 7, lastUid: 5 });
+      expect(await forceRescan(trx, b.ctx, a.mailboxId)).toBe(false);
+      expect((await getMailbox(trx, a.ctx, a.mailboxId))?.uidvalidity).toBe(7);
+
+      expect(await forceRescan(trx, a.ctx, a.mailboxId)).toBe(true);
+      const row = await getMailbox(trx, a.ctx, a.mailboxId);
+      expect({ uidValidity: row?.uidvalidity, lastUid: row?.last_uid }).toEqual({ uidValidity: 0, lastUid: 5 });
+    });
+  });
+});
+
 describe("mail repository: credentials", () => {
   test("getCredentials returns the row only for the owner's context", async () => {
     await withRollback(db, async (trx) => {
@@ -304,6 +324,71 @@ describe("mail repository: emails", () => {
         returnedAt: at,
         status: "pending",
       });
+    });
+  });
+});
+
+describe("mail repository: listInboxEmailKeys", () => {
+  test("lists INBOX rows since the time, and filters by org_id", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      const since = new Date("2026-11-03T09:00:00Z");
+      await insertEmail(trx, a.ctx, newEmail(a.mailboxId));
+      await insertEmail(
+        trx,
+        a.ctx,
+        newEmail(a.mailboxId, {
+          dedup_key: "hash:old",
+          content_hash: "old",
+          received_at: new Date("2026-11-03T08:00:00Z"),
+        })
+      );
+      await insertEmail(
+        trx,
+        a.ctx,
+        newEmail(a.mailboxId, { dedup_key: "hash:moved", content_hash: "moved", folder: "AI/Info" })
+      );
+
+      await insertEmail(
+        trx,
+        a.ctx,
+        newEmail(a.mailboxId, {
+          dedup_key: "hash:edge",
+          message_id_header: "<edge@x.test>",
+          content_hash: "edge",
+          received_at: since,
+        })
+      );
+      const otherMailboxId = randomUUID();
+      await insertMailbox(trx, a.ctx, {
+        id: otherMailboxId,
+        address: `other-${otherMailboxId}@x.test`,
+        imapHost: "imap.x.test",
+        imapPort: 993,
+        smtpHost: "smtp.x.test",
+        smtpPort: 465,
+        capabilities: testCapabilities,
+        folderMap: {},
+      });
+      await insertEmail(
+        trx,
+        a.ctx,
+        newEmail(otherMailboxId, {
+          dedup_key: "hash:other",
+          message_id_header: "<other@x.test>",
+          content_hash: "other",
+        })
+      );
+
+      const rows = await listInboxEmailKeys(trx, a.ctx, a.mailboxId, since);
+      expect(rows).toHaveLength(2);
+      expect(rows).toEqual(
+        expect.arrayContaining([
+          { message_id_header: "<1@x.test>", content_hash: "hash-1" },
+          { message_id_header: "<edge@x.test>", content_hash: "edge" },
+        ])
+      );
+      expect(await listInboxEmailKeys(trx, b.ctx, a.mailboxId, since)).toEqual([]);
     });
   });
 });

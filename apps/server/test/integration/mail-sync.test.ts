@@ -9,7 +9,7 @@ import {
   type SyncDeps,
 } from "../../src/modules/mail";
 import { createFakeMailProvider, type FakeMailProvider } from "../../src/modules/mail/fake";
-import { updateCursor } from "../../src/modules/mail/repo";
+import { forceRescan, updateCursor } from "../../src/modules/mail/repo";
 import type { DB, Db, TenantContext } from "../../src/platform/db";
 import { SoftError } from "../../src/platform/errors";
 
@@ -670,6 +670,21 @@ describe("syncMailbox: rescan", () => {
       const next = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
       expect(next.mode).toBe("incremental");
       expect(next.stored).toBe(0);
+    });
+  });
+
+  test("forceRescan makes the next sync a rescan that stores no duplicate", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setupKnown(trx);
+      expect(await forceRescan(trx, s.ctx, s.mailboxId)).toBe(true);
+
+      const result = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(result.mode).toBe("rescan");
+      expect(result.stored).toBe(0);
+      expect(await emails(trx, s.mailboxId)).toHaveLength(3);
+      expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY, lastUid: 5 });
+
+      expect((await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId)).mode).toBe("incremental");
     });
   });
 
