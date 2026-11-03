@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–10. Left: stages 11–17 (16–17 with the user on the VPS).
+> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–11. Left: stages 12–17 (16–17 with the user on the VPS).
 
 # S1a IMAP read + pilot host
 
@@ -359,7 +359,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Out of scope: mailbox remove / pause; web form (S5); sending mail.
 
 ### Stage 11 — `mailbox:check` with write probes [risky]
-- [ ] **11.1 Capability report and the two probes**
+- [x] **11.1 Capability report and the two probes**
   - Goal: `bun run mailbox:check` prints the capabilities, the special-use folders and, with `--probe`, whether `SEARCH HEADER` finds a custom `X-` header and whether SMTP saves sent mail by itself.
   - Files: `apps/server/src/modules/mail/check.ts` (new), `apps/server/src/modules/mail/imap/probe.ts` (new), `apps/server/src/modules/mail/imap/smtp.ts` (add `sendProbeToSelf`), `apps/server/src/scripts/mailbox-check.ts` (new), `apps/server/test/integration/mail-check.test.ts` (new), root `package.json` (script `mailbox:check`), `apps/server/src/modules/mail/index.ts`.
   - Interfaces:
@@ -568,3 +568,4 @@ None. The user answered Questions 1–8 on 2026-11-03; the answers are in "Decis
 - 2026-11-03: Stage 8 done (dev Compose split, GreenMail, CI service). compose.yaml without db port + restart unless-stopped; compose.dev.yaml (db 127.0.0.1:5433, GreenMail 2.1.15); dev:up; CI greenmail service and TEST_* env; README. Checks: base compose publishes 0 ports; dev:up healthy; lint + typecheck exit 0; test:unit 82 pass; test:int 62 pass. Reviewer PASS.
 - 2026-11-03: Stage 9 done (IMAP adapter (read) with TLS checks). mail/imap client, mapper, tools; contract suite passes on GreenMail; self-signed IMAPS cert is rejected; no rejectUnauthorized. Accepted deviations: TLS test host localhost (imapflow IP servername bug under Bun, see notes/2026-11-03-imapflow-tls-under-bun.md), LIST check before 'mail gone', empty INBOX gives []. Checks: lint + typecheck exit 0; test:unit 109 pass; test:int 75 pass. Reviewer PASS.
 - 2026-11-03: Stage 10 done (mailbox:connect with the encrypted password). connectMailbox (IMAP + SMTP login check, AES-GCM secret with aad mailbox:<id>, default settings), SMTP adapter (nodemailer 10.3.1), CLI with password on stdin only. Tests read the raw row: no plain text, base64 or hex of the password. Accepted deviations: no @types/nodemailer, html5 email pattern. SMTP TLS facts appended to notes/2026-11-03-imapflow-tls-under-bun.md. Checks: lint + typecheck exit 0; test:unit 117 pass; test:int 84 pass. Reviewer PASS.
+- 2026-11-03: Stage 11 done (mailbox:check with write probes). checkMailbox read-only report + --probe (SEARCH HEADER draft, Sent auto-save via mail to self); delete only with UIDPLUS; probe failures name 'EA probe <id>' for cleanup; tests prove the user's own \\Deleted mail survives. GreenMail facts in notes/2026-11-03-greenmail-facts.md. Checks: lint + typecheck exit 0; test:unit 117 pass; test:int 94 pass. Reviewer PASS.

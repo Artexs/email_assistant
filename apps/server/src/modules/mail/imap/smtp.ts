@@ -34,7 +34,7 @@ export function smtpTransportOptions(opts: SmtpConnectOptions): SMTPTransportOpt
 }
 
 /** Maps a nodemailer error to a typed error. The message never holds the password; the original is the `cause`. */
-export function toSmtpError(error: unknown): Error {
+export function toSmtpError(error: unknown, action = "verify"): Error {
   if (error instanceof SoftError || error instanceof HardError) return error;
   const fields = (typeof error === "object" && error !== null ? error : {}) as {
     code?: unknown;
@@ -46,10 +46,10 @@ export function toSmtpError(error: unknown): Error {
     return new MailAuthError("SMTP login failed", { cause: error });
   }
   if ((code !== null && SOFT_CODES.has(code)) || (originalCode !== null && SOFT_SOCKET_CODES.has(originalCode))) {
-    return new SoftError(`SMTP verify: connection error ${originalCode ?? code}`, { cause: error });
+    return new SoftError(`SMTP ${action}: connection error ${originalCode ?? code}`, { cause: error });
   }
   const shown = originalCode ?? code;
-  return new HardError(`SMTP verify failed${shown === null ? "" : ` (${shown})`}`, { cause: error });
+  return new HardError(`SMTP ${action} failed${shown === null ? "" : ` (${shown})`}`, { cause: error });
 }
 
 /** Connects, starts TLS and logs in, then closes. Sends no mail. */
@@ -59,6 +59,27 @@ export async function verifySmtpLogin(opts: SmtpConnectOptions): Promise<void> {
     await transport.verify();
   } catch (error) {
     throw toSmtpError(error);
+  } finally {
+    transport.close();
+  }
+}
+
+/** `mailbox:check --probe` only. Sends one short mail to the mailbox's own address; no retry (send is at-most-once). */
+export async function sendProbeToSelf(
+  opts: SmtpConnectOptions,
+  input: { address: string; probeId: string }
+): Promise<void> {
+  const transport = createTransport(smtpTransportOptions(opts));
+  try {
+    await transport.sendMail({
+      from: input.address,
+      to: input.address,
+      subject: `EA probe ${input.probeId}`,
+      text: "Email assistant probe. You can delete this mail.",
+      headers: { "X-EA-Probe": input.probeId },
+    });
+  } catch (error) {
+    throw toSmtpError(error, "send");
   } finally {
     transport.close();
   }
