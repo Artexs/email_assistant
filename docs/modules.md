@@ -124,7 +124,7 @@ Code rules: `docs/code-patterns.md`.
 | Part | Does | Tech |
 |---|---|---|
 | `config` | Reads and checks env at start; fails fast on a missing key | Zod |
-| `db` | Postgres pool, transactions, `TenantContext`, generated types, migration runner | Kysely + kysely-codegen, `pg`; runner chosen in S0 (for example `dbmate`) |
+| `db` | Postgres pool, transactions, `TenantContext`, generated types, migration runner | Kysely + kysely-codegen, `pg`; `dbmate` (chosen in S0) |
 | `llm` | Roles `classifier` / `writer`, structured output, timeout, rate limiter, soft-error rules | `@google/genai` (Gemini), Zod |
 | `crypto` | AES-256-GCM encrypt / decrypt with key version | `node:crypto` |
 | `log` | Levels, `[module]` prefix, no mail bodies or secrets | own `log` util |

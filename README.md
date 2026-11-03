@@ -1,115 +1,65 @@
-# Asystent Email AI
+# Email Assistant
 
-## Spis Treści
+An AI email assistant for managers. It categorizes mail, delegates tasks, filters spam and summarizes threads.
+Product description: [docs/product-brief.md](docs/product-brief.md).
 
-- [Opis Projektu](#opis-projektu)
-- [Stos Technologiczny](#stos-technologiczny)
-- [Uruchomienie Lokalne](#uruchomienie-lokalne)
-- [Dostępne Skrypty](#dostępne-skrypty)
-- [Zakres Projektu](#zakres-projektu)
-- [Status Projektu](#status-projektu)
-- [Licencja](#licencja)
+## Stack
 
-## Opis Projektu
+- Bun workspaces: `apps/server`, `apps/web`, `packages/core`.
+- Server: Hono on Bun.
+- Database: Postgres 17, migrations with dbmate, queries with Kysely.
+- AI: Gemini.
+- Web: Astro starter (stays until S5).
 
-**Asystent Email AI** to inteligentne narzędzie zaprojektowane w celu automatyzacji i optymalizacji zarządzania skrzynką odbiorczą dla kadry kierowniczej wyższego szczebla i menedżerów (rola "Prezesa"). Celem produktu jest drastyczne skrócenie czasu poświęcanego na obsługę poczty poprzez automatyczne kategoryzowanie, delegowanie zadań, zarządzanie spamem i inteligentne podsumowywanie wątków.
+Details: [docs/architecture.md](docs/architecture.md). Decisions: `docs/decisions/`.
 
-System działa jako "cyfrowy asystent", który filtruje szum, obsługuje rutynowe zadania i dostarcza skondensowane podsumowania, pozwalając użytkownikowi skupić się na zadaniach strategicznych. Rozwiązuje problem nadmiaru e-maili i konieczności ręcznego sortowania, dostarczając jednocześnie pełną kontrolę nad procesem.
+## Setup
 
-## Stos Technologiczny
+Requirements: [Bun](https://bun.sh) and Docker.
 
-Projekt wykorzystuje nowoczesny stos technologiczny zapewniający wydajność, skalowalność i bezpieczeństwo.
+```bash
+bun install
+cp .env.example .env     # fill in the passwords; the passwords in the URLs must match the password keys
+bun run db:up            # starts the Compose `db` and waits until it is healthy
+bun run db:migrate
+bun run org:create --org-name "Acme" --email "boss@example.com" --display-name "Boss"
+bun run dev
+curl http://127.0.0.1:8080/health   # {"status":"ok","db":"up"}
+```
 
-### Frontend
+The Compose `db` listens on host port **5433**, because a local Postgres often uses 5432.
+Dev URLs in `.env.example` use port 5433.
 
-- **Astro:** Główny framework webowy, zapewniający wysoką wydajność i Server-Side Rendering (SSR).
-- **React:** Wykorzystywany do budowy interaktywnych komponentów UI ("islands of interactivity").
-- **TypeScript:** Gwarantuje statyczne typowanie, poprawiając jakość i utrzymywalność kodu.
-- **Tailwind CSS:** Framework CSS typu utility-first do szybkiego i spójnego stylowania.
+## Scripts
 
-### Backend & Baza Danych
+| Script                                                       | What it does                                         |
+| :----------------------------------------------------------- | :--------------------------------------------------- |
+| `bun run dev`                                                | Starts the server with file watch                    |
+| `bun run start`                                              | Starts the server                                    |
+| `bun run lint`                                               | Runs ESLint                                          |
+| `bun run typecheck`                                          | Runs the type check in every workspace               |
+| `bun run test:unit`                                          | Runs unit tests (no database)                        |
+| `bun run test:int`                                           | Runs integration tests (needs the `db` and migrated) |
+| `bun run db:up`                                              | Starts the `db` container                            |
+| `bun run db:down`                                            | Stops the `db` container                             |
+| `bun run db:migrate`                                         | Applies migrations as the `migrator` role            |
+| `bun run db:rollback`                                        | Rolls back the last migration                        |
+| `bun run db:types`                                           | Generates the Kysely types from the database         |
+| `bun run org:create --org-name … --email … --display-name …` | Creates an organization and its first user           |
+| `bun run gemini:test`                                        | Checks the Gemini API key                            |
+| `bun run web:dev`                                            | Starts the Astro dev server                          |
+| `bun run web:build`                                          | Builds the Astro app                                 |
 
-- **Supabase:** Platforma Backend-as-a-Service (BaaS) obsługująca uwierzytelnianie (Auth) oraz bazę danych PostgreSQL.
-- **Astro API Routes:** Serverless backend endpoints do bezpiecznej komunikacji z usługami zewnętrznymi.
-- **Node.js:** Środowisko uruchomieniowe dla narzędzi i serwera.
+## Reset the dev database
 
-### AI & Integracje
+This deletes all dev data.
 
-- **OpenAI API:** Główny dostawca modeli LLM (Large Language Models).
-- **Langfuse:** Narzędzie do observability i monitorowania promptów oraz wyników AI.
-- **Gmail API:** Integracja do odbioru, wysyłki i zarządzania wiadomościami e-mail.
-- **WhatsApp:** Kanał komunikacji z użytkownikiem (wiadomości tekstowe i notatki głosowe).
+```bash
+docker compose -f deploy/compose.yaml --env-file .env down -v
+bun run db:up
+bun run db:migrate
+```
 
-### Narzędzia Deweloperskie i Testy
+## License
 
-- **Docker:** Konteneryzacja aplikacji zapewniająca spójność środowisk.
-- **Vitest:** Framework do testów jednostkowych.
-- **Playwright:** Narzędzie do testów end-to-end (E2E).
-- **GitHub Actions:** Automatyzacja procesów CI/CD.
-
-## Uruchomienie Lokalne
-
-Aby uruchomić projekt w środowisku lokalnym, postępuj zgodnie z poniższymi krokami.
-
-### Wymagania wstępne
-
-- **Node.js**: Wersja `22.14.0` (zgodnie z plikiem `.nvmrc`).
-- **npm**: Menedżer pakietów.
-
-### Instalacja
-
-1. **Sklonuj repozytorium:**
-
-   ```bash
-   git clone <adres-repozytorium>
-   cd email_assistant
-   ```
-
-2. **Zainstaluj zależności:**
-
-   ```bash
-   npm install
-   ```
-
-3. **Skonfiguruj zmienne środowiskowe:**
-   Utwórz plik `.env` w głównym katalogu projektu. Uzupełnij go o wymagane klucze API i konfigurację (np. `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `OPENAI_API_KEY`).
-
-4. **Uruchom serwer deweloperski:**
-   ```bash
-   npm run dev
-   ```
-
-Aplikacja powinna być dostępna pod adresem `http://localhost:4321`.
-
-## Dostępne Skrypty
-
-W pliku `package.json` zdefiniowane są następujące skrypty:
-
-- `npm run dev`: Uruchamia lokalny serwer deweloperski Astro.
-- `npm run build`: Buduje aplikację do wersji produkcyjnej.
-- `npm run preview`: Uruchamia podgląd zbudowanej wersji produkcyjnej.
-- `npm run lint`: Uruchamia linter (ESLint) w celu sprawdzenia jakości kodu.
-- `npm run lint:fix`: Automatycznie naprawia błędy wykryte przez linter.
-- `npm run format`: Formatuje kod przy użyciu Prettier.
-
-## Zakres Projektu
-
-Projekt w obecnej fazie **MVP (Minimum Viable Product)** koncentruje się na kluczowych funkcjonalnościach:
-
-| Kategoria                | W zakresie (MVP)                                                                   |
-| :----------------------- | :--------------------------------------------------------------------------------- |
-| **Role Użytkownika**     | Rola Prezesa (Właściciel) oraz wsparcie dla EA (Executive Assistant).              |
-| **Narzędzia ("Hard 6")** | Spam, Delegacja, Spotkania, Podsumowanie, Wyjaśnienie, Manual/Emergency.           |
-| **Kanały Komunikacji**   | WhatsApp (Tekst/Głos) + Panel Webowy.                                              |
-| **Intencje (NLU)**       | 8 kluczowych intencji (m.in. Approve Draft, Correct Draft, Delegate Manual).       |
-| **Styl Komunikacji**     | Generowanie uproszczonego stylu na podstawie historii (skan ostatnich wiadomości). |
-
-## Status Projektu
-
-🟢 **Status: W trakcie rozwoju (MVP)**
-
-Projekt jest aktywnie rozwijany. Obecnie trwają prace nad implementacją kluczowych modułów MVP, w tym integracji z Gmail API oraz logiki orkiestratora.
-
-## Licencja
-
-Projekt udostępniony na licencji MIT.
+MIT.

@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Stages 1–6 done. Left: stage 7 and the End step.
+> **Status 2026-11-03 — in progress.** Stages 1–7 done. Left: green CI check and the End step (user tries the result, done-checklist).
 
 # S0 Foundation
 
@@ -255,7 +255,7 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
   - Out of scope: scheduler, workers, Telegram (later slices).
 
 ### Stage 7 — CI, README, docs
-- [ ] **7.1 GitHub Actions CI**
+- [x] **7.1 GitHub Actions CI**
   - Goal: CI runs lint, typecheck, unit tests, migrations, integration tests and the web build on every push and pull request to `master`.
   - Files: `.github/workflows/ci.yml`.
   - Interfaces: one job `ci` on `ubuntu-latest`. `services.postgres`: `image: postgres:17`, env `POSTGRES_USER: postgres`, `POSTGRES_PASSWORD: postgres`, `POSTGRES_DB: email_assistant`, `ports: ["5432:5432"]`, health options `--health-cmd pg_isready --health-interval 2s --health-timeout 5s --health-retries 15`. Job env: `DATABASE_URL: postgres://app:app_ci@localhost:5432/email_assistant?sslmode=disable`, `MIGRATOR_DATABASE_URL: postgres://migrator:migrator_ci@localhost:5432/email_assistant?sslmode=disable`. Steps: `actions/checkout@v4`; `oven-sh/setup-bun@v2` with `bun-version: 1.3.14`; `bun install --frozen-lockfile`; `bun run lint`; `bun run typecheck`; `bun run test:unit`; roles: `psql "postgresql://postgres:postgres@localhost:5432/email_assistant" -v ON_ERROR_STOP=1 -v migrator_password=migrator_ci -v app_password=app_ci -f db/roles.sql`; `bun run db:migrate`; `bun run test:int`; `bun run web:build`.
@@ -264,7 +264,7 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
   - Check: optional, if Docker is up: `docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest`. The real check is the green run after the main session pushes: `gh run list --limit 1` and `gh run view <id>`.
   - Done when: the CI run on `master` is green.
   - Out of scope: deploy jobs, eval jobs, mail-server container (S1a/S1b).
-- [ ] **7.2 README for Bun**
+- [x] **7.2 README for Bun**
   - Goal: The README tells a new developer how to install, start the `db`, migrate and run the server with Bun.
   - Files: `README.md`.
   - Decisions: README says Bun, not npm. Remove the old stack lines that are not true now (Supabase, OpenAI, Gmail API, WhatsApp, Langfuse, Vitest, Node/npm). Content: one paragraph about the product (link `docs/product-brief.md`); stack (Bun workspaces, Hono, Postgres 17 with dbmate and Kysely, Gemini, Astro starter until S5; link `docs/architecture.md`); setup: `bun install`, `cp .env.example .env` and fill in the passwords, `bun run db:up`, `bun run db:migrate`, `bun run org:create --org-name … --email … --display-name …`, `bun run dev`, `curl http://127.0.0.1:8080/health`; scripts table (`dev`, `start`, `lint`, `typecheck`, `test:unit`, `test:int`, `db:up`, `db:down`, `db:migrate`, `db:rollback`, `db:types`, `org:create`, `gemini:test`, `web:dev`, `web:build`); reset of the dev DB (`down -v`); note that Compose `db` uses host port 5433. Language: see Question 1.
@@ -272,7 +272,7 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
   - Check: `grep -niE 'npm|supabase|openai' README.md` prints nothing.
   - Done when: the check passes and every command in the README exists in `package.json`.
   - Out of scope: other docs.
-- [ ] **7.3 Docs match the new layout**
+- [x] **7.3 Docs match the new layout**
   - Goal: `docs/` describe what S0 built.
   - Files: `docs/code-patterns.md`, `docs/modules.md` §3.0, `docs/architecture.md` §3 and §9 (only the lines below), `docs/decisions/0011-self-hosted-postgres.md` (one dated line).
   - Decisions — write exactly these facts:
@@ -318,3 +318,4 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
 - 2026-11-03: Stage 4 (tenancy migration, `db:types` with kysely-codegen 0.20, `platform/db`, app-role test) built and reviewed: PASS. Checks: empty volume `db:up` + `db:migrate` applied both migrations; `db:types` → 3 tables, no `schema_migrations`; `bun run test:int` (6 pass), `bun run test:unit` (10 pass), `bun run lint`, `bun run typecheck`, `bun install --frozen-lockfile` — all pass. Confirmed: kysely-codegen flags; `pg` returns `time[]` as `string[]`. `dotenv` is only a transitive dependency of kysely-codegen (in `bun.lock`, not in any `package.json`).
 - 2026-11-03: Stage 5 (tenancy module, isolation tests, `org:create` CLI) built and reviewed: PASS. Checks: `bun run test:int` (13 pass), `bun run test:unit` (10 pass), `bun run lint`, `bun run typecheck`, `bun install --frozen-lockfile` — all pass; no leftover rows after the CLI test. Kept the planned timezone check (`Intl.supportedValuesOf`): under Bun it rejects `Europe/Kyiv`, `Asia/Kolkata`, `Etc/UTC` (see `notes/2026-11-03-bun-timezones.md`); `Europe/Warsaw` and `UTC` pass.
 - 2026-11-03: Stage 6 (Hono `GET /health`, `main.ts`, env-check start test) built and reviewed: PASS. Checks: `bun run test:unit` (15 pass), `bun run test:int` (14 pass), `bun run lint`, `bun run typecheck`, `bun install --frozen-lockfile` — all pass. Manual: `/health` 200 `{"status":"ok","db":"up"}` with the db up, 503 with the db stopped, exit 1 with the migrator URL, SIGTERM/SIGINT exit 0. Review fix: shutdown guard against a second signal (double SIGINT → exit 0, checked by the main session). Follow-up: `tasks/planned/db-pool-timeouts.md`.
+- 2026-11-03: Stage 7 (CI workflow, English README, docs match the layout) built and reviewed: PASS. Checks: actionlint exit 0; `grep -niE 'npm|supabase|openai' README.md` → nothing; `grep -rn 'for example \`dbmate\`' docs --exclude-dir=decisions` → nothing (ADR 0011 line 14 keeps its original text; the plan allows one dated line); `bun run lint`, `bun run typecheck`, `bun run test:unit` (15 pass) — all pass. Added `permissions: contents: read` to the workflow (review hardening). Known: 18 files in `docs/` were not Prettier-formatted before S0; not changed here.

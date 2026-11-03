@@ -4,7 +4,9 @@
 > Source: `docs/architecture.md` §3–4 and `docs/modules.md` §3. When code and this file disagree, fix one of them in the same commit.
 
 ## Layout and borders
+- Packages: `@ea/server` (`apps/server`), `@ea/web` (`apps/web`), `@ea/core` (`packages/core`).
 - Server code lives in `apps/server/src/modules/<module>/` and `apps/server/src/platform/`. Shared pure code lives in `packages/core/`.
+- Real platform paths: `platform/config.ts`, `platform/log.ts`, `platform/http.ts`, `platform/db/`.
 - A module exposes one `index.ts`. Other modules import only from it, never from its inner files.
 - Module files: `index.ts` (public API), `service.ts`, `repo.ts` (DB), `routes.ts` (HTTP), `jobs.ts` (workers), `*.test.ts` next to the code.
 - `packages/core` has no I/O: no DB, no network, no `process.env`, no imports from `apps/*`.
@@ -16,11 +18,13 @@
 - Only `platform/llm.ts` imports `@google/genai`. Only `mail/imap/` imports `imapflow`, `mailparser`, `nodemailer`. Only `channels/telegram/` imports `grammy`.
 
 ## Data access
-- Typed repositories with Kysely (types from `kysely-codegen`). One repository function = one clear query.
-- Every repository function takes a `TenantContext` and filters by `org_id`. A test checks each new function for the filter.
+- Typed repositories with Kysely. One repository function = one clear query. Column names are snake_case in TypeScript.
+- Generated DB types live in `apps/server/src/platform/db/schema.ts`. Never edit this file by hand. Run `bun run db:types` after each migration.
+- Every repository function takes a `TenantContext` and filters by `org_id`. A test checks each new function for the filter. Only `insertOrganization` and `insertUser` take no `TenantContext`.
 - Status changes and their `audit_log` row go in one transaction.
 - Work items are claimed with `FOR UPDATE SKIP LOCKED`. Conditional updates (`WHERE status = …`) guard every status change.
-- Schema changes only through a new SQL file in `db/migrations/`. Never edit an applied migration.
+- Schema changes only through a new dbmate file `db/migrations/YYYYMMDDHHMMSS_<name>.sql` with `-- migrate:up` and `-- migrate:down`. Never edit an applied migration.
+- Migrations run as the `migrator` role with `bun run db:migrate`. The server runs as the `app` role.
 
 ## Side effects
 - Only `actions.committer` changes a mailbox or sends mail. Planners and the policy are pure functions in `packages/core`.
@@ -41,7 +45,8 @@
 - Errors: throw typed errors (`SoftError` for timeout / 429 / 503 / lost connection, `HardError` for the rest); the job runner decides the retry.
 
 ## Tests
-- `bun test`. Pure logic in `packages/core`: unit tests without mocks.
-- Repositories: integration tests against Postgres in a container (each test in a transaction that rolls back).
+- `bun run test:unit` runs unit tests; `bun run test:int` runs integration tests.
+- Unit tests stay next to the code. Pure logic in `packages/core`: unit tests without mocks.
+- Integration tests live in `apps/server/test/integration/`. Repositories: tests against Postgres in a container (each test in a transaction that rolls back).
 - Adapters: contract tests; the fake and the real adapter pass the same suite.
 - A prompt or model change runs `bun run eval` and must pass the go/no-go table.

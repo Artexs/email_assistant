@@ -67,7 +67,9 @@ apps/
 packages/
   core/                Pure TypeScript: domain types, Zod schemas, categories, rules, policy, planners, digest. No I/O.
 db/migrations/         SQL migrations (source of truth)
+db/roles.sql           Postgres roles (`app`, `migrator`)
 deploy/                compose.yaml, Dockerfile for server, backup script
+deploy/db-init/        Init script that runs `db/roles.sql` in the db container
 evals/                 Eval runner + synthetic and injection cases (no real mail in git)
 docs/                  product-brief.md, architecture.md, modules.md, roadmap.md, decisions/, known-alerts.md, code-patterns.md
 ```
@@ -434,7 +436,7 @@ Tenancy:
 ## 9. Testing
 
 - **Unit** (`bun test`, `packages/core`): categories, rules, policy, planners, digest. Pure, no mocks, no containers.
-- **Integration:** repositories and tenant filters against Postgres in a container. Start the container once; a normal test runs in a transaction that rolls back.
+- **Integration** (`apps/server/test/integration/`): repositories and tenant filters against Postgres in a container. Start the container once; a normal test runs in a transaction that rolls back.
   Tests that need several connections (`SKIP LOCKED` claims, the crash tests of S3 and S4) use a fresh schema or truncate the tables.
 - **Mail adapter:** contract tests — the fake `MailProvider` and the IMAP adapter pass the same suite.
   CI runs the IMAP adapter against a local mail-server container (for example GreenMail). Check that it has the same extensions as Interia.
@@ -495,7 +497,7 @@ Detail, scope, sizes and dependencies: `docs/roadmap.md`. Goal, done-when, plan 
 | `ImapEmailProvider` | Deleted in S0. S1a reads it from git if needed: `git show 29e9522:backend/src/adapters/providers/email.provider.ts`. |
 | `get_provider.ts` (`Providers` factory) | Removed. It turns off the TLS check for Interia (line 35). |
 | `OpenAIAdapter` / `ILLMProvider` | Replaced by `platform/llm.ts` (Gemini). |
-| `backend/src/scripts/gemini_test.ts` | Moved in S0 to `apps/server/src/scripts/`; `bun run gemini:test` runs from the repo root. |
+| `backend/src/scripts/gemini_test.ts` | Moved in S0 to `apps/server/src/scripts/gemini-check.ts`; `bun run gemini:test` runs from the repo root. |
 | Dependencies `openai`, `express`, `helmet`, `cors`, `googleapis`, `@supabase/supabase-js`, `dotenv` | Removed in S0 (Bun reads `.env`). `imapflow` and `@google/genai` stay. |
 | `utils/log.ts` | Kept and extended (levels, module prefix). |
 | `.ai/` docs | Kept as history. Code rules for agents: `docs/code-patterns.md`. |
