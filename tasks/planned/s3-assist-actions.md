@@ -28,6 +28,14 @@ Written when the task starts (files to change, steps, tests).
   (a few days before the stored date) plus a FETCH of `ENVELOPE` and a compare of the normalized `Message-ID` in code, or the
   UIDPLUS `COPYUID` reply for the new UID after a move. Test it on the real Interia mailbox.
 
+### Input from S1a (2026-11-04): Interia keeps the UID on a move
+- The user moved a stored mail (UID 38829) from INBOX to a new folder and back. It came back with UID 38829. A mail moved into the new folder
+  kept its INBOX UID (38831) there too. RFC 3501 does not allow this, but Interia does it.
+- So the S1a sync rule "known mail back in INBOX = a mail above the UID cursor" never fires at Interia: a returned mail is below the cursor.
+- Before the first move in S3, add another check. For example: each sync, for rows with `folder` other than INBOX and moved in the last N days,
+  check whether INBOX has that UID (`UID FETCH <uid> (ENVELOPE)`) and compare the `Message-ID`. Do not trust `COPYUID` to give a new UID at Interia;
+  test what the server returns. The S3 test "user move back to INBOX gives one `imap_move` feedback row" must run on the real Interia mailbox.
+
 ## Done-checklist
 - [ ] Done-when checks pass (name the command and its output in the log).
 - [ ] `docs/` describe what was built (architecture, modules, roadmap); related ADRs set to accepted or superseded.

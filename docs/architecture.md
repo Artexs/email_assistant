@@ -360,6 +360,7 @@ Tenancy:
 - **Interia facts (checked 2026-11-03, `notes/2026-11-03-interia-imap-capabilities.md`):** IDLE and UIDPLUS yes; MOVE, CONDSTORE, SPECIAL-USE and custom keywords no.
   So moves use `UID COPY` + `\Deleted` + `UID EXPUNGE`. No `UIDNEXT` on SELECT: the adapter asks `STATUS`, then uses the highest UID + 1.
   `SEARCH HEADER` finds nothing for `X-` headers and for `Message-ID` (Subject works): S3 must find moved mail another way. SMTP does not save sent mail: the committer APPENDs to `Wysłane`.
+  A move keeps the UID (against RFC 3501): a mail moved back to INBOX is below the cursor, so S3 needs another "returned" check.
 - **Interia setup:** the user turns on "korzystam z programu pocztowego" (Ustawienia → Główne ustawienia → Parametry).
   IMAP `poczta.interia.pl:993`, SMTP `poczta.interia.pl:465`, both SSL/TLS, login = the full address.
 - **Later:** Gmail (OAuth, or an app password with 2-Step Verification) and Microsoft 365 (OAuth / Graph; password IMAP is off) as new adapters.

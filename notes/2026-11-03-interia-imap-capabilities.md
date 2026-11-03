@@ -44,5 +44,8 @@ The probe mail `EA probe 6a8a502f-…` stayed in INBOX; the user deletes it by h
   3 stored INBOX mails, raw id and id without `<>` → 0 matches; `SEARCH HEADER Subject "EA seed"` → 1 match).
   So `findByMessageId` always returns null at Interia. S1a is not affected; S3 must change it before the first move
   (`tasks/planned/s3-assist-actions.md`, "Input from S1a").
+- **A move keeps the UID** (checked 2026-11-04). The user moved stored mail UID 38829 to a new folder `EA-test` and back: it came back as 38829.
+  The probe mail moved from INBOX (UID 38831) into the new folder kept UID 38831 there (the folder had only that mail).
+  This breaks the RFC 3501 rule that UIDs only grow. The sync cursor never sees a mail that comes back to INBOX. S3 input: `tasks/planned/s3-assist-actions.md`.
 - **SMTP does not save sent mail.** After a send (S4), the committer must APPEND a copy to `Wysłane`.
 - **IDLE works.** Push sync can come later.

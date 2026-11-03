@@ -1,4 +1,4 @@
-> **Status 2026-11-04 — in progress.** Done: stages 1–16, 17.2, most of 17.3. Left: 17.1 (48-hour test runs until 2026-11-05T23:17Z; the user moves one mail back to INBOX; check `~/ea-logs/rescan.log` and `audit.log`), then roadmap row, done-checklist and `git mv` to `done/`.
+> **Status 2026-11-04 — done.** Closed by the user before the 48-hour test ended. Left (follow-up): the final audit check in `tasks/planned/s1a-48h-audit-check.md`. Not met: the move back to INBOX (Interia keeps the UID on a move; input for S3).
 
 # S1a IMAP read + pilot host
 
@@ -523,7 +523,7 @@ Needs: the user steps done (Interia IMAP on, test account, Docker on the VPS). T
   - Decisions: Backblaze B2 bucket with `rclone` and a write-only key (user decision 2026-11-03); set it up on the VPS as `deploy/README.md` § Backups says; one manual `deploy/backup.sh` run first proves that the write-only key can copy. The `age` private key stays off the VPS (password manager / the Mac); `restore-test.sh` runs on the Mac with a file fetched from the target.
   - Check: the cron log line `backup ok …` of one night; `restore-test.sh` counts equal the VPS counts at backup time; log both.
   - Done when: one restore test is logged.
-- [ ] **17.3 Docs, notes, alerts, follow-ups**
+- [x] **17.3 Docs, notes, alerts, follow-ups**
   - Goal: The docs describe what S1a built, and the done-checklist is complete.
   - Files: `docs/architecture.md` (§6.1 Interia facts, §8 heartbeat service and backup target, §10 Docker decision and `compose.dev.yaml`), `docs/modules.md` (§3.2 real file list of `mail/`, port read part; §3.3 `config` repo), `docs/roadmap.md` (S1a done), `docs/code-patterns.md` (the `listSyncTargets` exception; real `platform` paths `crypto.ts`, `errors.ts`, `scheduler.ts`, `heartbeat.ts`), `docs/decisions/0010-imap-first.md` (one dated line: app password at Interia yes/no), `docs/known-alerts.md` (new alerts seen in the run), `tasks/planned/` (follow-ups), this task file (done-checklist, status).
   - Decisions: one source per fact (`tasks/README.md`). Docs describe the built state, not steps.
@@ -549,10 +549,10 @@ None. The user answered Questions 1–8 on 2026-11-03; the answers are in "Decis
 - Interia: capabilities, `SEARCH HEADER` on `X-` headers, auto-save of sent mail, app passwords (stage 16 finds out).
 
 ## Done-checklist
-- [ ] Done-when checks pass (name the command and its output in the log).
-- [ ] `docs/` describe what was built (architecture, modules, roadmap); related ADRs set to accepted or superseded.
-- [ ] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
-- [ ] Follow-up ideas are in `planned/`.
+- [ ] Done-when checks pass: all except the 48-hour audit (follow-up `tasks/planned/s1a-48h-audit-check.md`) and the move back to INBOX (Interia keeps the UID; S3 input).
+- [x] `docs/` describe what was built (architecture, modules, roadmap); related ADRs set to accepted or superseded.
+- [x] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
+- [x] Follow-up ideas are in `planned/`.
 
 ## Log
 - 2026-11-02: Created from the cold review (`tasks/done/mvp-plan-review.md`, findings F2, F8) and the user's answers (Interia IMAP, home VPS).
@@ -580,3 +580,9 @@ None. The user answered Questions 1–8 on 2026-11-03; the answers are in "Decis
 - 2026-11-03: 17.1 started. T0 = 2026-11-03T23:12:42Z, first seed `appended 1`, next sync stored it once. Cron: hourly seed, one rescan `5 11 4 11 *`, `~/ea-48h-end.sh` at `17 23 5 11 *` (audit, then removes the test lines). Row `f4d83c99-…` (the first seed mail) set to `folder = 'EA-test'`; the user makes the move to `EA-test` and back.
 - 2026-11-03: 17.2 done. rclone 1.75.2 in `~/bin` (apt 1.53 fails); `backup.sh` now uses `copyto --no-check-dest` (write-only key gave 401). `backup ok ea-20261103T231230Z.dump.age 21042`; nightly cron 03:30. Restore test on the Mac (`restore-test.sh`, key `~/.config/ea-backup/age-key.txt`): organizations 1, users 1, mailboxes 1, emails 2 = VPS counts at backup time.
 - 2026-11-04: 17.3 docs: architecture §6.1/§8/§10, modules §3.2/§3.3, code-patterns, ADR 0010 line, known-alerts (NaN, 401), deploy README (rclone), S3 input. Roadmap and done-checklist after 17.1.
+- 2026-11-04: Move back to INBOX (17.1): the user moved the first seed mail to `EA-test` and back. The sync saw nothing new (`fetched 1, stored 0, … ignored below cursor 1`).
+  A read-only IMAP check showed the seed mail in INBOX with its old UID 38829, and the probe mail in the new folder `EA-test` with its INBOX UID 38831.
+  Interia keeps the UID when a mail moves between folders (against RFC 3501), so a mail that comes back is below the cursor. Row `f4d83c99-…` reset to `folder = 'INBOX'`.
+  Not a problem in S1a (nothing moves mail); input written into `tasks/planned/s3-assist-actions.md`.
+- 2026-11-04: `bun run gemini:test` on the Mac: still `503 UNAVAILABLE` (known alert). Input for S1b.
+- 2026-11-04: S1a closed by the user before the 48-hour test ended. The test keeps running on the VPS; check: `tasks/planned/s1a-48h-audit-check.md`. Task moved to `done/`.
