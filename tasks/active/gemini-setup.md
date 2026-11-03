@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — code done, check left.** Left: `bun run gemini:test` from the repo root must return a reply (the key works; on 2026-11-02 the model answered `503 high demand`). Try again later.
+> **Status 2026-11-04 — code done, check left.** Left: a reply from `GEMINI_MODEL` (`gemini-3.8-flash` still `503`). The key works: Flash-Lite models answer (log 2026-11-04). S1b picks the classifier model.
 
 # Google Gemini API setup
 
@@ -27,3 +27,4 @@ The backend can call Google Gemini with a key from env and a model ID from confi
 ## Log
 - 2026-11-02: Code done in the restart chat. Created as a task file on 2026-11-02 from `architecture-reset.md` §6.
 - 2026-11-02: Ran `cd backend && bun run gemini:test` (cold-review agent). First run hung > 90 s; second run: `Request failed: {"error":{"code":503,"message":"This model is currently experiencing high demand. ...","status":"UNAVAILABLE"}}`, exit 1. The key is accepted (no 400/403). Alert in `docs/known-alerts.md`; rules in ADR 0012 (timeout, 503 = soft error).
+- 2026-11-04: Free-tier key check with a one-off script: `gemini-3.5-flash-lite` 837 ms, `gemini-3.1-flash-lite` 1003 ms, `gemini-flash-lite-latest` 971 ms answered; `gemini-3.8-flash` and `gemini-3.7-flash` gave `503 high demand`; `gemini-2.5-flash-lite` 404. `bun run gemini:test` still fails (it uses `gemini-3.8-flash`).

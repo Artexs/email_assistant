@@ -20,6 +20,13 @@ The system classifies the user's mail and logs what it *would* do (mode `shadow`
 Written when the task starts (files to change, steps, tests).
 
 **Gate:** Gemini Cloud Billing must be on before the system reads real mail (ADR 0007, ADR 0012). Use the test mailbox until then.
+Input from the S1a close (2026-11-04):
+- User decision: build S1b on the Gemini **free tier** ("we should use the free tier from Gemini"). The billing gate for real mail stays (ADR 0007/0012) until the user changes it.
+- There is **no separate test mailbox**: the user has one Interia account (the pilot mailbox). So with the free tier, only synthetic mail
+  (eval set, `mailbox:seed` mails) may go to the LLM. The triage worker on the VPS must stay off for real mail until the gate opens (a switch).
+- Free-tier check 2026-11-04 (same key as `.env`): `gemini-3.8-flash` and `gemini-3.7-flash` gave `503 high demand` (20–55 s);
+  `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite` and `gemini-flash-lite-latest` answered in about 1 s. `gemini-2.5-flash-lite` is gone (404).
+- Interia facts that touch S1b: `notes/2026-11-03-interia-imap-capabilities.md` (no custom keywords, no `Message-ID` search, UID kept on a move).
 Input from S1a (stage 7 review): after a UIDVALIDITY rescan, rows older than 7 days keep the uid from the old UIDVALIDITY. Code that moves or flags mail must not trust `emails.uid` alone: check the mail by Message-ID first.
 
 ## Done-checklist
@@ -31,3 +38,4 @@ Input from S1a (stage 7 review): after a UIDVALIDITY rescan, rows older than 7 d
 ## Log
 - 2026-11-02: Created from `docs/roadmap.md` and `docs/architecture.md` §11.
 - 2026-11-02: Changed after the cold review (`tasks/done/mvp-plan-review.md`) and the user's answers (IMAP, home VPS, own Postgres).
+- 2026-11-04: S1a closed. User: start S1b on the Gemini free tier; handoff `~/.pi/agent/notes/2026-11-04-handoff-s1b-shadow-triage.md`.
