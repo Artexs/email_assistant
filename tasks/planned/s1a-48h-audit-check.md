@@ -1,4 +1,9 @@
-> **Status 2026-11-04 — planned.** Left: everything. Do it after 2026-11-05T23:17Z (the cron end of the S1a 48-hour test).
+> **Status 2026-11-04 — blocked until 2026-11-05T23:30Z.** Left: everything. Do not start before that time (UTC).
+
+> **Blocked until:** 2026-11-05T23:30Z (UTC). Check the time first: `date -u`.
+> **Why:** the 48-hour test runs on the VPS until 2026-11-05T23:12Z; the cron end script runs the audit at 23:17Z and writes `~/ea-logs/audit.log`.
+> An earlier check finds no audit result. Never run the end script, the audit or a cron change early: it stops or spoils the test.
+> **Before that time, an agent may only:** read the logs, for example `tail ~/ea-logs/seed.log` (read-only).
 
 # S1a 48-hour sync test — final check
 

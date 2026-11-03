@@ -11,6 +11,10 @@ A new session reads `active/` first. The `done/` folder is the history of the wo
 
 Move a file between folders with `git mv` when its state changes.
 
+**Blocked tasks.** A task that must not start before a time or an event has the status `blocked until <UTC time or event>`
+and a `> **Blocked until:**` line under the status with the reason and what an agent may do before then.
+Before you pick a task, read its status line. Check `date -u`. Do not start a blocked task before its time, and tell the user when it opens.
+
 ## Where each fact lives (one source per fact)
 
 | Place | Holds | Does not hold |
