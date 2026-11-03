@@ -10,3 +10,4 @@ export {
 } from "./port";
 export type { Cursor, MailboxRow, NewEmail } from "./repo";
 export { renderSeedMessage, type SeedMessage } from "./seed";
+export { CursorMovedError, syncMailbox, type SyncDeps, type SyncResult } from "./sync";

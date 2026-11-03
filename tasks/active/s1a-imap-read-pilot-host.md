@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–5. Left: stages 6–17 (16–17 with the user on the VPS).
+> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–6. Left: stages 7–17 (16–17 with the user on the VPS).
 
 # S1a IMAP read + pilot host
 
@@ -217,7 +217,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Out of scope: services, provider calls, CLI.
 
 ### Stage 6 — Incremental sync [risky]
-- [ ] **6.1 `syncMailbox` for a mailbox with a cursor**
+- [x] **6.1 `syncMailbox` for a mailbox with a cursor**
   - Goal: A sync run stores each new INBOX mail exactly once, updates known mail without a new triage, and moves the cursor only with the stored rows.
   - Files: `apps/server/src/modules/mail/sync.ts` (new), `apps/server/test/integration/mail-sync.test.ts` (new), `apps/server/src/modules/mail/index.ts` (export `syncMailbox`, `SyncResult`, `SyncDeps`).
   - Interfaces:
@@ -319,6 +319,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
     - `tools.ts` (test and dev tools only, not on the port): `appendRaw(opts: ImapConnectOptions, folder: string, raw: string, flags?: string[]): Promise<void>` (creates the folder when missing).
   - Decisions: `docs/architecture.md` §6.1 and §7: IMAP over TLS on port 993; TLS certificates are always checked; the old code turned the check off (`rejectUnauthorized: false`) and that must never come back. Plain IMAP exists only for the local GreenMail test server on a loopback host. Only `mail/imap/` imports `imapflow`, `mailparser` (`html-to-text` is not limited). `UID FETCH n:*` filtering stays in `sync-rules` (the adapter returns what the server returns). No mail text in logs.
   - Mapper rules (coordinator, from the stage 4 review): `internalDate` is always a valid `Date` (an invalid or missing INTERNALDATE throws `HardError`); empty `In-Reply-To` / `References` / `Message-ID` headers map to `null` / `[]`, never `""`, because `threadKey` uses `??` and `contentHash` calls `toISOString()`. The mapper tests cover both.
+  - NUL rule (coordinator, from the stage 6 review): Postgres `text` rejects `\u0000`, so the mapper removes NUL characters from the subject, addresses and body text. Otherwise one mail fails `insertEmail` on every run and blocks the cursor. The mapper tests cover it.
   - Test:
     - `client.test.ts`: `imapFlowOptions` for `poczta.interia.pl:993` → `secure: true`, no `tls` key, no `doSTARTTLS`; for `127.0.0.1:3143` → `secure: false`, `doSTARTTLS: false`; `secure: false` with `poczta.interia.pl` throws.
     - `mapper.test.ts`: header folding; `references` with 3 ids; `actionId` trim; html-only source → text without tags; broken source → `null`.
@@ -561,3 +562,4 @@ None. The user answered Questions 1–8 on 2026-11-03; the answers are in "Decis
 - 2026-11-03: Stage 3 done (mail port, typed errors, fake provider, contract suite). SoftError/HardError, MailProvider port, MailAuthError, seed renderer (ASCII only), fake provider, contract suite; reviewer minors fixed (meta copies, body limit test, empty Message-ID, ASCII headers). Checks: lint + typecheck exit 0; test:unit 53 pass 0 fail. Reviewer PASS.
 - 2026-11-03: Stage 4 done (pure sync rules). sync-rules.ts (Message-ID normalize, content hash, dedup keys, thread key, cursor filter, decideIncoming, resolveFolderCheck), 29 tests. Review questions decided: stage 9 mapper gives a valid internalDate and null/[] for empty headers (added to 9.1). Checks: lint + typecheck exit 0; test:unit 82 pass; test:int 20 pass. Reviewer PASS.
 - 2026-11-03: Stage 5 done (mail and config repositories, tenant filter tests). mail/repo.ts (mailboxes, credentials, emails, conditional cursor update, listSyncTargets exception), config module (mailbox_settings), test fixtures, 14 org_id filter tests. Checks: lint + typecheck exit 0; test:unit 82 pass; test:int 34 pass. Reviewer PASS.
+- 2026-11-03: Stage 6 done (incremental sync). syncMailbox with a cursor: plan phase outside the transaction, one transaction per chunk, guarded cursor, CursorMovedError. Accepted deviations: same-run copies get #2, thread_key uses the normalized Message-ID. Review minors fixed (tests, references_header null, per-chunk commit test); NUL rule added to 9.1. Checks: lint + typecheck exit 0; test:unit 82 pass; test:int 53 pass. Reviewer PASS.
