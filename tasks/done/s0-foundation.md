@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Stages 1–7 done. Left: green CI check and the End step (user tries the result, done-checklist).
+> **Status 2026-11-03 — done.** All 7 stages committed, CI green, user approved.
 
 # S0 Foundation
 
@@ -303,10 +303,10 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
 - Confirmed (https://github.com/amacneil/dbmate, `main.go`): `-e/--env` names the env var with the URL, `--no-dump-schema`, `--wait`, default migrations folder `./db/migrations`, global options come before the command.
 
 ## Done-checklist
-- [ ] Done-when checks pass (name the command and its output in the log).
-- [ ] `docs/` describe what was built (architecture, modules, roadmap); related ADRs set to accepted or superseded.
-- [ ] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
-- [ ] Follow-up ideas are in `planned/`.
+- [x] Done-when checks pass (name the command and its output in the log).
+- [x] `docs/` describe what was built (architecture, modules, roadmap); related ADRs set to accepted or superseded.
+- [x] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
+- [x] Follow-up ideas are in `planned/`.
 
 ## Log
 - 2026-11-02: Created from `docs/roadmap.md` and `docs/architecture.md` §11.
@@ -319,3 +319,4 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
 - 2026-11-03: Stage 5 (tenancy module, isolation tests, `org:create` CLI) built and reviewed: PASS. Checks: `bun run test:int` (13 pass), `bun run test:unit` (10 pass), `bun run lint`, `bun run typecheck`, `bun install --frozen-lockfile` — all pass; no leftover rows after the CLI test. Kept the planned timezone check (`Intl.supportedValuesOf`): under Bun it rejects `Europe/Kyiv`, `Asia/Kolkata`, `Etc/UTC` (see `notes/2026-11-03-bun-timezones.md`); `Europe/Warsaw` and `UTC` pass.
 - 2026-11-03: Stage 6 (Hono `GET /health`, `main.ts`, env-check start test) built and reviewed: PASS. Checks: `bun run test:unit` (15 pass), `bun run test:int` (14 pass), `bun run lint`, `bun run typecheck`, `bun install --frozen-lockfile` — all pass. Manual: `/health` 200 `{"status":"ok","db":"up"}` with the db up, 503 with the db stopped, exit 1 with the migrator URL, SIGTERM/SIGINT exit 0. Review fix: shutdown guard against a second signal (double SIGINT → exit 0, checked by the main session). Follow-up: `tasks/planned/db-pool-timeouts.md`.
 - 2026-11-03: Stage 7 (CI workflow, English README, docs match the layout) built and reviewed: PASS. Checks: actionlint exit 0; `grep -niE 'npm|supabase|openai' README.md` → nothing; `grep -rn 'for example \`dbmate\`' docs --exclude-dir=decisions` → nothing (ADR 0011 line 14 keeps its original text; the plan allows one dated line); `bun run lint`, `bun run typecheck`, `bun run test:unit` (15 pass) — all pass. Added `permissions: contents: read` to the workflow (review hardening). Known: 18 files in `docs/` were not Prettier-formatted before S0; not changed here.
+- 2026-11-03: End: CI green on `master` (run 41606056635, `6fb59f0`). Done-when checks: `bun install --frozen-lockfile` no changes; `bun run lint` 0; `bun run typecheck` 0; `bun run test:unit` 15 pass; `bun run test:int` 14 pass; `db:migrate` nothing pending; `db:types --print` 0; old-deps grep empty; no `package-lock.json`, no `backend/`; `bun run start` + `curl /health` → `200 {"status":"ok","db":"up"}`. User approved. Notes: `notes/2026-11-03-bun-timezones.md`. Follow-up: `tasks/planned/db-pool-timeouts.md`.
