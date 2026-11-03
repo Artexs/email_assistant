@@ -1,4 +1,6 @@
+export { buildFolderMap, connectMailbox, type ConnectDeps, type ConnectInput } from "./connect";
 export { openImapProvider, type ImapConnectOptions } from "./imap/client";
+export { verifySmtpLogin, type SmtpConnectOptions } from "./imap/smtp";
 export {
   INBOX,
   MailAuthError,

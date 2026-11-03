@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–9. Left: stages 10–17 (16–17 with the user on the VPS).
+> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–10. Left: stages 11–17 (16–17 with the user on the VPS).
 
 # S1a IMAP read + pilot host
 
@@ -330,7 +330,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Out of scope: SMTP (stage 10/11), move/flag/append on the port, IDLE.
 
 ### Stage 10 — `mailbox:connect` with the encrypted password [risky]
-- [ ] **10.1 Connect service, SMTP login check, CLI**
+- [x] **10.1 Connect service, SMTP login check, CLI**
   - Goal: `bun run mailbox:connect` tests the IMAP and SMTP login, stores the mailbox with its capabilities and folder map, the encrypted password and default settings, in one transaction.
   - Files: `apps/server/src/modules/mail/connect.ts` (new), `apps/server/src/modules/mail/imap/smtp.ts` (new), `apps/server/src/modules/mail/imap/smtp.test.ts` (new), `apps/server/src/scripts/mailbox-connect.ts` (new), `apps/server/test/integration/mail-connect.test.ts` (new), `apps/server/package.json` (add `nodemailer`, dev `@types/nodemailer`), `bun.lock`, root `package.json` (script `mailbox:connect` = `bun apps/server/src/scripts/mailbox-connect.ts`), `apps/server/src/modules/mail/index.ts`.
   - Interfaces:
@@ -397,6 +397,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Done when: tests pass.
   - Out of scope: Telegram admin notice for an old sync (S2).
 - [ ] **12.3 Mail sync job and `main.ts` wiring**
+  - Error rule (coordinator, from the stage 10 review): nodemailer gives `ETLS` "Connection closed unexpectedly" when the server drops the TLS handshake; `smtp.ts` maps it to HardError. If the job sees SMTP errors, map this case to SoftError so one network drop does not log `error` on each tick.
   - Goal: The server syncs every active mailbox every 5 minutes, marks login errors, and sends the heartbeat.
   - Files: `apps/server/src/modules/mail/jobs.ts` (new), `apps/server/test/integration/mail-jobs.test.ts` (new), `apps/server/src/modules/mail/index.ts`, `apps/server/src/main.ts`.
   - Interfaces: `export function createMailSyncJob(deps: { db: Db | Transaction<DB>; secrets: SecretBox; openProvider(opts: ImapConnectOptions): Promise<MailProvider>; isOwnActionId: SyncDeps["isOwnActionId"]; now(): Date }): { run(): Promise<void> }`. `run`: `listSyncTargets` → for each target in turn: `ctx = { orgId }`; `getMailbox`; `getCredentials` + `decrypt` (aad `mailbox:<id>`); `openProvider({ host: imap_host, port: imap_port, user: address, password })`; `syncMailbox`; `markSynced(now())`; log one `info` line with the counts. `MailAuthError` → `setMailboxStatus("auth_error")` + `warn`; `SoftError` / `CursorMovedError` → `warn`, next tick tries again; other errors → `error`. One mailbox error never stops the others. Always `close()` the provider.
@@ -566,3 +567,4 @@ None. The user answered Questions 1–8 on 2026-11-03; the answers are in "Decis
 - 2026-11-03: Stage 7 done (first sync and UIDVALIDITY rescan). Modes initial (24 h) and rescan (7 days), cursor set once after the last chunk. Accepted deviations: lastUid = max(uidNext-1, highest scanned uid); no fetch for an empty search. Review minors fixed: SINCE one day earlier, tests for mail that arrives during the scan. S1b input added to tasks/planned/s1b-shadow-triage.md (old uids after a rescan). Checks: lint + typecheck exit 0; test:unit 82 pass; test:int 62 pass. Reviewer PASS.
 - 2026-11-03: Stage 8 done (dev Compose split, GreenMail, CI service). compose.yaml without db port + restart unless-stopped; compose.dev.yaml (db 127.0.0.1:5433, GreenMail 2.1.15); dev:up; CI greenmail service and TEST_* env; README. Checks: base compose publishes 0 ports; dev:up healthy; lint + typecheck exit 0; test:unit 82 pass; test:int 62 pass. Reviewer PASS.
 - 2026-11-03: Stage 9 done (IMAP adapter (read) with TLS checks). mail/imap client, mapper, tools; contract suite passes on GreenMail; self-signed IMAPS cert is rejected; no rejectUnauthorized. Accepted deviations: TLS test host localhost (imapflow IP servername bug under Bun, see notes/2026-11-03-imapflow-tls-under-bun.md), LIST check before 'mail gone', empty INBOX gives []. Checks: lint + typecheck exit 0; test:unit 109 pass; test:int 75 pass. Reviewer PASS.
+- 2026-11-03: Stage 10 done (mailbox:connect with the encrypted password). connectMailbox (IMAP + SMTP login check, AES-GCM secret with aad mailbox:<id>, default settings), SMTP adapter (nodemailer 10.3.1), CLI with password on stdin only. Tests read the raw row: no plain text, base64 or hex of the password. Accepted deviations: no @types/nodemailer, html5 email pattern. SMTP TLS facts appended to notes/2026-11-03-imapflow-tls-under-bun.md. Checks: lint + typecheck exit 0; test:unit 117 pass; test:int 84 pass. Reviewer PASS.
