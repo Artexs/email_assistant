@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–3. Left: stages 4–17 (16–17 with the user on the VPS).
+> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–4. Left: stages 5–17 (16–17 with the user on the VPS).
 
 # S1a IMAP read + pilot host
 
@@ -155,7 +155,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Out of scope: IMAP adapter; DB.
 
 ### Stage 4 — Pure sync rules: dedup key, content hash, thread key, decisions [risky]
-- [ ] **4.1 `mail/sync-rules.ts`**
+- [x] **4.1 `mail/sync-rules.ts`**
   - Goal: All dedup and "is this mail new" rules are pure functions with unit tests.
   - Files: `apps/server/src/modules/mail/sync-rules.ts` (new), `apps/server/src/modules/mail/sync-rules.test.ts` (new).
   - Interfaces:
@@ -318,6 +318,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
     - `mapper.ts`: `parseHeaderBlock(raw: Buffer | undefined): Map<string, string>` (lower-case names, unfolds continuation lines); `toMessageMeta(msg: FetchMessageObject): MessageMeta` (envelope `from[0].address`, `to`/`cc` addresses, `subject`, `date`, `messageId`, `inReplyTo`; `references` split on whitespace from the header block; `actionId` from `x-ea-action-id`, trimmed); `bodyTextFromSource(source: Buffer): Promise<string | null>` (`simpleParser`: `text`, else `html-to-text` of `html`; cut to 100_000 characters; parse error → `null`).
     - `tools.ts` (test and dev tools only, not on the port): `appendRaw(opts: ImapConnectOptions, folder: string, raw: string, flags?: string[]): Promise<void>` (creates the folder when missing).
   - Decisions: `docs/architecture.md` §6.1 and §7: IMAP over TLS on port 993; TLS certificates are always checked; the old code turned the check off (`rejectUnauthorized: false`) and that must never come back. Plain IMAP exists only for the local GreenMail test server on a loopback host. Only `mail/imap/` imports `imapflow`, `mailparser` (`html-to-text` is not limited). `UID FETCH n:*` filtering stays in `sync-rules` (the adapter returns what the server returns). No mail text in logs.
+  - Mapper rules (coordinator, from the stage 4 review): `internalDate` is always a valid `Date` (an invalid or missing INTERNALDATE throws `HardError`); empty `In-Reply-To` / `References` / `Message-ID` headers map to `null` / `[]`, never `""`, because `threadKey` uses `??` and `contentHash` calls `toISOString()`. The mapper tests cover both.
   - Test:
     - `client.test.ts`: `imapFlowOptions` for `poczta.interia.pl:993` → `secure: true`, no `tls` key, no `doSTARTTLS`; for `127.0.0.1:3143` → `secure: false`, `doSTARTTLS: false`; `secure: false` with `poczta.interia.pl` throws.
     - `mapper.test.ts`: header folding; `references` with 3 ids; `actionId` trim; html-only source → text without tags; broken source → `null`.
@@ -558,3 +559,4 @@ None. The user answered Questions 1–8 on 2026-11-03; the answers are in "Decis
 - 2026-11-03: Stage 1 done (1.1 crypto + CREDENTIALS_KEY). Checks: test:unit 30 pass, test:int 14 pass, lint + typecheck exit 0. Reviewer PASS (2 minor: duplicate key regex, base64 length; not fixed).
 - 2026-11-03: Stage 2 done (mail tables migration). Migration 20261103100001_mail.sql (mailboxes, mailbox_credentials, mailbox_settings, emails), generated schema.ts, 6 schema tests. Checks: db:migrate/rollback/migrate exit 0; lint + typecheck exit 0; test:unit 30 pass; test:int 20 pass. Reviewer PASS.
 - 2026-11-03: Stage 3 done (mail port, typed errors, fake provider, contract suite). SoftError/HardError, MailProvider port, MailAuthError, seed renderer (ASCII only), fake provider, contract suite; reviewer minors fixed (meta copies, body limit test, empty Message-ID, ASCII headers). Checks: lint + typecheck exit 0; test:unit 53 pass 0 fail. Reviewer PASS.
+- 2026-11-03: Stage 4 done (pure sync rules). sync-rules.ts (Message-ID normalize, content hash, dedup keys, thread key, cursor filter, decideIncoming, resolveFolderCheck), 29 tests. Review questions decided: stage 9 mapper gives a valid internalDate and null/[] for empty headers (added to 9.1). Checks: lint + typecheck exit 0; test:unit 82 pass; test:int 20 pass. Reviewer PASS.
