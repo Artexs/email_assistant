@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Plan approved. Left: stages 1–17 (16–17 with the user on the VPS).
+> **Status 2026-11-03 — in progress.** Plan approved. Done: stage 1. Left: stages 2–17 (16–17 with the user on the VPS).
 
 # S1a IMAP read + pilot host
 
@@ -54,7 +54,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
 - After each stage, these must pass: `bun install --frozen-lockfile`, `bun run lint`, `bun run typecheck`, `bun run test:unit`, `bun run test:int` (Compose `db` up and migrated; from stage 8 also the GreenMail container up: `bun run dev:up`).
 
 ### Stage 1 — Credential encryption and config key [risky]
-- [ ] **1.1 `platform/crypto` (AES-256-GCM) and `CREDENTIALS_KEY`**
+- [x] **1.1 `platform/crypto` (AES-256-GCM) and `CREDENTIALS_KEY`**
   - Goal: The server can encrypt and decrypt a mailbox secret with a key from env, and the start stops when the key is missing or bad.
   - Files: `apps/server/src/platform/crypto.ts` (new), `apps/server/src/platform/crypto.test.ts` (new), `apps/server/src/platform/config.ts`, `apps/server/src/platform/config.test.ts`, `.env.example`, `.github/workflows/ci.yml`, root `.env` (append the key without printing it, see Facts).
   - Interfaces:
@@ -555,3 +555,4 @@ None. The user answered Questions 1–8 on 2026-11-03; the answers are in "Decis
 - 2026-11-02: Created from the cold review (`tasks/done/mvp-plan-review.md`, findings F2, F8) and the user's answers (Interia IMAP, home VPS).
 - 2026-11-03: Planner wrote the plan (17 stages; 1, 2, 4, 5, 6, 7, 9, 10, 11, 15 are `[risky]`; 16–17 are manual with the user). Open: Questions 1–8.
 - 2026-11-03: User approved the plan and answered: Q1 user steps not done yet, Docker on the VPS, app passwords not known (stage 16 finds out); Q2 Healthchecks.io; Q3 Backblaze B2 + rclone, write-only key, age-encrypted file; Q4 yes (step 12.4); Q5 no; Q6 no AI/* folders in S1a; Q7 read-only check on the real account, probe on the test account; Q8 listSyncTargets in mail/repo.ts. age, rclone, shellcheck installed on the Mac. Planner updated the plan.
+- 2026-11-03: Stage 1 done (1.1 crypto + CREDENTIALS_KEY). Checks: test:unit 30 pass, test:int 14 pass, lint + typecheck exit 0. Reviewer PASS (2 minor: duplicate key regex, base64 length; not fixed).

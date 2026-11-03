@@ -36,6 +36,8 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run lint
       - run: bun run typecheck
+      - name: Generate a test credentials key
+        run: echo "CREDENTIALS_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
       - run: bun run test:unit
       - name: Create database roles
         run: >-
