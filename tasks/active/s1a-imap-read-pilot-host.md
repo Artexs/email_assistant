@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–4. Left: stages 5–17 (16–17 with the user on the VPS).
+> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–5. Left: stages 6–17 (16–17 with the user on the VPS).
 
 # S1a IMAP read + pilot host
 
@@ -193,7 +193,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Out of scope: DB and provider calls; the X-EA-Action-Id check (stage 6, it needs a DB lookup).
 
 ### Stage 5 — Mail and config repositories, tenant filter tests [risky]
-- [ ] **5.1 `mail/repo.ts`, `config` module, `org_id` filter tests**
+- [x] **5.1 `mail/repo.ts`, `config` module, `org_id` filter tests**
   - Goal: Typed repository functions for the S1a tables exist, and a test shows each one filters by `org_id`.
   - Files: `apps/server/src/modules/mail/repo.ts` (new), `apps/server/src/modules/config/repo.ts` (new), `apps/server/src/modules/config/index.ts` (new), `apps/server/test/integration/fixtures.ts` (new), `apps/server/test/integration/mail-repo.test.ts` (new), `apps/server/src/modules/mail/index.ts` (export the row types only).
   - Interfaces (`type DbOrTrx = Db | Transaction<DB>`; `Cursor = { uidValidity: number | null; lastUid: number | null }`):
@@ -560,3 +560,4 @@ None. The user answered Questions 1–8 on 2026-11-03; the answers are in "Decis
 - 2026-11-03: Stage 2 done (mail tables migration). Migration 20261103100001_mail.sql (mailboxes, mailbox_credentials, mailbox_settings, emails), generated schema.ts, 6 schema tests. Checks: db:migrate/rollback/migrate exit 0; lint + typecheck exit 0; test:unit 30 pass; test:int 20 pass. Reviewer PASS.
 - 2026-11-03: Stage 3 done (mail port, typed errors, fake provider, contract suite). SoftError/HardError, MailProvider port, MailAuthError, seed renderer (ASCII only), fake provider, contract suite; reviewer minors fixed (meta copies, body limit test, empty Message-ID, ASCII headers). Checks: lint + typecheck exit 0; test:unit 53 pass 0 fail. Reviewer PASS.
 - 2026-11-03: Stage 4 done (pure sync rules). sync-rules.ts (Message-ID normalize, content hash, dedup keys, thread key, cursor filter, decideIncoming, resolveFolderCheck), 29 tests. Review questions decided: stage 9 mapper gives a valid internalDate and null/[] for empty headers (added to 9.1). Checks: lint + typecheck exit 0; test:unit 82 pass; test:int 20 pass. Reviewer PASS.
+- 2026-11-03: Stage 5 done (mail and config repositories, tenant filter tests). mail/repo.ts (mailboxes, credentials, emails, conditional cursor update, listSyncTargets exception), config module (mailbox_settings), test fixtures, 14 org_id filter tests. Checks: lint + typecheck exit 0; test:unit 82 pass; test:int 34 pass. Reviewer PASS.
