@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–8. Left: stages 9–17 (16–17 with the user on the VPS).
+> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–9. Left: stages 10–17 (16–17 with the user on the VPS).
 
 # S1a IMAP read + pilot host
 
@@ -301,7 +301,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Out of scope: tests.
 
 ### Stage 9 — IMAP adapter (read) with TLS checks [risky]
-- [ ] **9.1 `mail/imap/` client and mapper; contract suite and TLS test on GreenMail**
+- [x] **9.1 `mail/imap/` client and mapper; contract suite and TLS test on GreenMail**
   - Goal: The real `MailProvider` reads INBOX over IMAP, always checks TLS certificates, and passes the same contract suite as the fake.
   - Files: `apps/server/src/modules/mail/imap/client.ts` (new), `apps/server/src/modules/mail/imap/mapper.ts` (new), `apps/server/src/modules/mail/imap/mapper.test.ts` (new), `apps/server/src/modules/mail/imap/client.test.ts` (new), `apps/server/src/modules/mail/imap/tools.ts` (new), `apps/server/test/integration/imap-contract.test.ts` (new), `apps/server/test/integration/imap-tls.test.ts` (new), `apps/server/package.json` (add `mailparser`, `html-to-text`, dev `@types/mailparser`, `@types/html-to-text`), `bun.lock`, `apps/server/src/modules/mail/index.ts` (export `openImapProvider`, `ImapConnectOptions`).
   - Interfaces:
@@ -565,3 +565,4 @@ None. The user answered Questions 1–8 on 2026-11-03; the answers are in "Decis
 - 2026-11-03: Stage 6 done (incremental sync). syncMailbox with a cursor: plan phase outside the transaction, one transaction per chunk, guarded cursor, CursorMovedError. Accepted deviations: same-run copies get #2, thread_key uses the normalized Message-ID. Review minors fixed (tests, references_header null, per-chunk commit test); NUL rule added to 9.1. Checks: lint + typecheck exit 0; test:unit 82 pass; test:int 53 pass. Reviewer PASS.
 - 2026-11-03: Stage 7 done (first sync and UIDVALIDITY rescan). Modes initial (24 h) and rescan (7 days), cursor set once after the last chunk. Accepted deviations: lastUid = max(uidNext-1, highest scanned uid); no fetch for an empty search. Review minors fixed: SINCE one day earlier, tests for mail that arrives during the scan. S1b input added to tasks/planned/s1b-shadow-triage.md (old uids after a rescan). Checks: lint + typecheck exit 0; test:unit 82 pass; test:int 62 pass. Reviewer PASS.
 - 2026-11-03: Stage 8 done (dev Compose split, GreenMail, CI service). compose.yaml without db port + restart unless-stopped; compose.dev.yaml (db 127.0.0.1:5433, GreenMail 2.1.15); dev:up; CI greenmail service and TEST_* env; README. Checks: base compose publishes 0 ports; dev:up healthy; lint + typecheck exit 0; test:unit 82 pass; test:int 62 pass. Reviewer PASS.
+- 2026-11-03: Stage 9 done (IMAP adapter (read) with TLS checks). mail/imap client, mapper, tools; contract suite passes on GreenMail; self-signed IMAPS cert is rejected; no rejectUnauthorized. Accepted deviations: TLS test host localhost (imapflow IP servername bug under Bun, see notes/2026-11-03-imapflow-tls-under-bun.md), LIST check before 'mail gone', empty INBOX gives []. Checks: lint + typecheck exit 0; test:unit 109 pass; test:int 75 pass. Reviewer PASS.

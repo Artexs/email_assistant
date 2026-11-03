@@ -1,3 +1,4 @@
+export { openImapProvider, type ImapConnectOptions } from "./imap/client";
 export {
   INBOX,
   MailAuthError,
