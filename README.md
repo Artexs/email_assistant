@@ -27,7 +27,8 @@ bun run dev
 curl http://127.0.0.1:8080/health   # {"status":"ok","db":"up"}
 ```
 
-The Compose `db` listens on host port **5433**, because a local Postgres often uses 5432.
+The dev Compose file (`deploy/compose.dev.yaml`) publishes the `db` on host port **5433**, because a local Postgres often uses 5432.
+`bun run dev:up` also starts GreenMail, a local mail server (SMTP 3025, IMAP 3143, IMAPS 3993) for tests.
 Dev URLs in `.env.example` use port 5433.
 
 ## Scripts
@@ -40,8 +41,9 @@ Dev URLs in `.env.example` use port 5433.
 | `bun run typecheck`                                          | Runs the type check in every workspace               |
 | `bun run test:unit`                                          | Runs unit tests (no database)                        |
 | `bun run test:int`                                           | Runs integration tests (needs the `db` and migrated) |
-| `bun run db:up`                                              | Starts the `db` container                            |
-| `bun run db:down`                                            | Stops the `db` container                             |
+| `bun run db:up`                                              | Starts the `db` container (dev port 5433)            |
+| `bun run dev:up`                                             | Starts `db` and the GreenMail test mail server       |
+| `bun run db:down`                                            | Stops the dev containers                             |
 | `bun run db:migrate`                                         | Applies migrations as the `migrator` role            |
 | `bun run db:rollback`                                        | Rolls back the last migration                        |
 | `bun run db:types`                                           | Generates the Kysely types from the database         |
@@ -55,7 +57,7 @@ Dev URLs in `.env.example` use port 5433.
 This deletes all dev data.
 
 ```bash
-docker compose -f deploy/compose.yaml --env-file .env down -v
+docker compose -f deploy/compose.yaml -f deploy/compose.dev.yaml --env-file .env down -v
 bun run db:up
 bun run db:migrate
 ```

@@ -25,7 +25,16 @@ jobs:
           --health-interval 2s
           --health-timeout 5s
           --health-retries 15
+      greenmail:
+        image: greenmail/standalone:2.1.15
+        env:
+          GREENMAIL_OPTS: "-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled -Dgreenmail.verbose=false"
+        ports: ["3025:3025", "3143:3143", "3993:3993"]
     env:
+      TEST_IMAP_HOST: 127.0.0.1
+      TEST_IMAP_PORT: "3143"
+      TEST_IMAPS_PORT: "3993"
+      TEST_SMTP_PORT: "3025"
       DATABASE_URL: postgres://app:app_ci@localhost:5432/email_assistant?sslmode=disable
       MIGRATOR_DATABASE_URL: postgres://migrator:migrator_ci@localhost:5432/email_assistant?sslmode=disable
     steps:

@@ -20,8 +20,9 @@
     "web:build": "bun run --filter @ea/web build",
     "gemini:test": "bun apps/server/src/scripts/gemini-check.ts",
     "org:create": "bun apps/server/src/scripts/org-create.ts",
-    "db:up": "docker compose -f deploy/compose.yaml --env-file .env up -d --wait db",
-    "db:down": "docker compose -f deploy/compose.yaml --env-file .env down",
+    "db:up": "docker compose -f deploy/compose.yaml -f deploy/compose.dev.yaml --env-file .env up -d --wait db",
+    "dev:up": "docker compose -f deploy/compose.yaml -f deploy/compose.dev.yaml --env-file .env up -d --wait db greenmail",
+    "db:down": "docker compose -f deploy/compose.yaml -f deploy/compose.dev.yaml --env-file .env down",
     "db:migrate": "dbmate -e MIGRATOR_DATABASE_URL --no-dump-schema --wait migrate",
     "db:rollback": "dbmate -e MIGRATOR_DATABASE_URL --no-dump-schema rollback",
     "db:types": "kysely-codegen --dialect postgres --url 'env(MIGRATOR_DATABASE_URL)' --out-file apps/server/src/platform/db/schema.ts --exclude-pattern schema_migrations"

@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–7. Left: stages 8–17 (16–17 with the user on the VPS).
+> **Status 2026-11-03 — in progress.** Plan approved. Done: stages 1–8. Left: stages 9–17 (16–17 with the user on the VPS).
 
 # S1a IMAP read + pilot host
 
@@ -278,7 +278,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Out of scope: IMAP, scheduler, the `mailbox:rescan` CLI (stage 13).
 
 ### Stage 8 — Dev Compose split, GreenMail test server, CI service
-- [ ] **8.1 `compose.dev.yaml` with the db port and GreenMail**
+- [x] **8.1 `compose.dev.yaml` with the db port and GreenMail**
   - Goal: The base Compose file has no host port, and dev runs the db port and a local IMAP/SMTP test server from a second file.
   - Files: `deploy/compose.yaml`, `deploy/compose.dev.yaml` (new), root `package.json` (scripts), `README.md` (dev commands, if it names `db:up`).
   - Interfaces:
@@ -290,7 +290,7 @@ Stages 1–15 need no user step: they use a fake provider and a local GreenMail 
   - Check: `docker compose -f deploy/compose.yaml --env-file .env config | grep -c published` → `0`; `bun run dev:up` exits 0; `nc -z 127.0.0.1 3143` and `nc -z 127.0.0.1 5433` succeed; `bun run test:int` passes.
   - Done when: the checks pass.
   - Out of scope: the `server` service (stage 14).
-- [ ] **8.2 GreenMail in CI and test env keys**
+- [x] **8.2 GreenMail in CI and test env keys**
   - Goal: CI has a GreenMail service, and the tests find it through env.
   - Files: `.github/workflows/ci.yml`, `.env.example`.
   - Interfaces: CI `services.greenmail`: `image: greenmail/standalone:2.1.15`, `env: GREENMAIL_OPTS: <same as 8.1>`, `ports: ["3025:3025", "3143:3143", "3993:3993"]`. Job `env`: `TEST_IMAP_HOST: 127.0.0.1`, `TEST_IMAP_PORT: "3143"`, `TEST_IMAPS_PORT: "3993"`, `TEST_SMTP_PORT: "3025"`. `.env.example`: the same four keys with these values under a comment `# Local GreenMail test server (bun run dev:up)`.
@@ -564,3 +564,4 @@ None. The user answered Questions 1–8 on 2026-11-03; the answers are in "Decis
 - 2026-11-03: Stage 5 done (mail and config repositories, tenant filter tests). mail/repo.ts (mailboxes, credentials, emails, conditional cursor update, listSyncTargets exception), config module (mailbox_settings), test fixtures, 14 org_id filter tests. Checks: lint + typecheck exit 0; test:unit 82 pass; test:int 34 pass. Reviewer PASS.
 - 2026-11-03: Stage 6 done (incremental sync). syncMailbox with a cursor: plan phase outside the transaction, one transaction per chunk, guarded cursor, CursorMovedError. Accepted deviations: same-run copies get #2, thread_key uses the normalized Message-ID. Review minors fixed (tests, references_header null, per-chunk commit test); NUL rule added to 9.1. Checks: lint + typecheck exit 0; test:unit 82 pass; test:int 53 pass. Reviewer PASS.
 - 2026-11-03: Stage 7 done (first sync and UIDVALIDITY rescan). Modes initial (24 h) and rescan (7 days), cursor set once after the last chunk. Accepted deviations: lastUid = max(uidNext-1, highest scanned uid); no fetch for an empty search. Review minors fixed: SINCE one day earlier, tests for mail that arrives during the scan. S1b input added to tasks/planned/s1b-shadow-triage.md (old uids after a rescan). Checks: lint + typecheck exit 0; test:unit 82 pass; test:int 62 pass. Reviewer PASS.
+- 2026-11-03: Stage 8 done (dev Compose split, GreenMail, CI service). compose.yaml without db port + restart unless-stopped; compose.dev.yaml (db 127.0.0.1:5433, GreenMail 2.1.15); dev:up; CI greenmail service and TEST_* env; README. Checks: base compose publishes 0 ports; dev:up healthy; lint + typecheck exit 0; test:unit 82 pass; test:int 62 pass. Reviewer PASS.
