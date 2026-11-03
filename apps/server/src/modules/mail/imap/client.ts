@@ -174,8 +174,17 @@ class ImapMailProvider implements MailProvider {
         if (box === false) throw new HardError("IMAP INBOX is not open");
         const uidValidity = Number(box.uidValidity);
         if (!Number.isFinite(uidValidity)) throw new HardError("IMAP INBOX gave no valid UIDVALIDITY");
-        if (!Number.isFinite(box.uidNext)) throw new HardError("IMAP INBOX gave no valid UIDNEXT");
-        return { uidValidity, uidNext: box.uidNext };
+        // Interia sends no UIDNEXT on SELECT: ask with STATUS, then fall back to the highest UID + 1.
+        let uidNext = box.uidNext;
+        if (!Number.isFinite(uidNext)) {
+          uidNext = (await this.client.status(INBOX, { uidNext: true })).uidNext as number;
+        }
+        if (!Number.isFinite(uidNext) && box.exists > 0) {
+          const last = await this.client.fetchOne("*", { uid: true }, { uid: true });
+          uidNext = last === false ? NaN : last.uid + 1;
+        }
+        if (!Number.isFinite(uidNext)) uidNext = 1;
+        return { uidValidity, uidNext };
       })
     );
   }
