@@ -99,7 +99,7 @@ const nodeConfig = tseslint.config({
 
 export default tseslint.config(
   includeIgnoreFile(gitignorePath),
-  { ignores: ["**/dist/**", "apps/web/.astro/**"] },
+  { ignores: ["**/dist/**", "apps/web/.astro/**", "apps/server/src/platform/db/schema.ts"] },
   baseConfig,
   jsxA11yConfig,
   reactConfig,

@@ -9,6 +9,11 @@
     "@ea/core": "workspace:*",
     "@google/genai": "^2.32.0",
     "imapflow": "^1.1.1",
+    "kysely": "^0.29.8",
+    "pg": "^8.23.1",
     "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1"
   }
 }

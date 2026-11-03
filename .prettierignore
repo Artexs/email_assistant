@@ -1,3 +1,4 @@
 bun.lock
 **/dist/
 apps/web/.astro/
+apps/server/src/platform/db/schema.ts

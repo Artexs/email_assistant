@@ -1,4 +1,4 @@
-> **Status 2026-11-03 — in progress.** Stages 1–3 done. Left: stages 4–7.
+> **Status 2026-11-03 — in progress.** Stages 1–4 done. Left: stages 5–7.
 
 # S0 Foundation
 
@@ -168,7 +168,7 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
   - Out of scope: tables (stage 4); the `server` Compose service (S1a); backups (S1a).
 
 ### Stage 4 — Tenancy tables, Kysely DB layer, role check [risky]
-- [ ] **4.1 Tenancy migration, `db:types`, `platform/db`, app-role test**
+- [x] **4.1 Tenancy migration, `db:types`, `platform/db`, app-role test**
   - Goal: The tenancy tables exist, Kysely types come from the DB, and the server's DB layer refuses any role except `app`.
   - Files: `db/migrations/20261103000002_tenancy.sql`; `apps/server/src/platform/db/schema.ts` (generated, committed); `apps/server/src/platform/db/index.ts`; `apps/server/src/platform/db/tenant-context.ts`; `apps/server/test/integration/helpers.ts`; `apps/server/test/integration/db-role.test.ts`; `apps/server/package.json` (dependencies `kysely`, `pg`; devDependency `@types/pg`); root `package.json` (devDependency `kysely-codegen`; scripts `db:types`, `test:int`); `eslint.config.js` and `.prettierignore` (ignore `apps/server/src/platform/db/schema.ts`).
   - Interfaces:
@@ -315,3 +315,4 @@ The dev Mac has the Docker CLI + Colima (installed 2026-11-02, `docker run postg
 - 2026-11-03: Stage 1 (workspaces, `packages/core`, `apps/web`, root lint) built and reviewed: PASS. Checks: `bun install --frozen-lockfile`, `bun run lint`, `bun run typecheck`, `bun run test:unit` (2 pass), `bun run web:build` — all pass. Deviations accepted: React/a11y lint only on `{js,jsx,ts,tsx}` (not `.astro`); `no-empty-object-type` off for `apps/web/src/env.d.ts`.
 - 2026-11-03: Stage 2 (`apps/server` config + log, Gemini script, `backend/` removed) built and reviewed: FAIL, then PASS in round 2. Fix: the script is now `apps/server/src/scripts/gemini-check.ts`, because Bun's test patterns match `*_test.ts` and `test:unit` sent a real Gemini call. Checks: `bun install --frozen-lockfile`, `bun run lint`, `bun run typecheck`, `bun run test:unit` (10 pass, 3 files) — all pass. Root `.env` moved from `backend/.env` (untracked). Kept `z.string().url()` as planned.
 - 2026-11-03: Stage 3 (DB roles, Compose `db` on 5433, dbmate 2.37.0, grants migration) built and reviewed: PASS. Checks on an empty volume: `db:up` healthy; `db:migrate` applied `20261103000001_app_grants.sql`; `current_user` = `migrator` / `app`; `app` `create table` → `permission denied for schema public`; second `db:migrate` exit 0; `db:rollback` + `db:migrate` work. `bun install --frozen-lockfile`, `bun run lint`, `bun run typecheck`, `bun run test:unit` (10 pass) — all pass. Real local passwords set in the root `.env`. Accepted: healthcheck in CMD array form; PUBLIC keeps CONNECT on the DB (as planned).
+- 2026-11-03: Stage 4 (tenancy migration, `db:types` with kysely-codegen 0.20, `platform/db`, app-role test) built and reviewed: PASS. Checks: empty volume `db:up` + `db:migrate` applied both migrations; `db:types` → 3 tables, no `schema_migrations`; `bun run test:int` (6 pass), `bun run test:unit` (10 pass), `bun run lint`, `bun run typecheck`, `bun install --frozen-lockfile` — all pass. Confirmed: kysely-codegen flags; `pg` returns `time[]` as `string[]`. `dotenv` is only a transitive dependency of kysely-codegen (in `bun.lock`, not in any `package.json`).
