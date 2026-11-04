@@ -44,13 +44,13 @@ Start it with `/skill:run-slice tasks/planned/<name>.md`. The skill (`~/.pi/agen
 | Who | Model | Does |
 |---|---|---|
 | Main session (you talk to it) | Opus | Calls the subagents, checks their work, asks the user, commits each stage |
-| `planner` subagent | Opus, high | Writes the `## Plan` in the task file: stages, steps, questions for the user |
+| `planner` subagent | Opus, medium | Adds step detail to the approved stages in `## Plan` (files, interfaces, tests, checks). Never makes the plan |
 | `implementer` subagent | Sonnet, medium (Opus, high for `[risky]` stages) | Builds one step: test first, code, checks. Never commits |
 | `reviewer` subagent | Opus, high | Reviews one stage, runs the checks, gives PASS or FAIL. Read-only |
 
 The subagents are global: `~/.pi/agent/agents/*.md`, via the extension in `~/.pi/agent/extensions/subagent/`.
 
-1. **Plan.** The planner writes the plan. **The user answers its questions and approves the plan.** The main session commits the plan.
+1. **Plan.** The user and the main session write the stages in `## Plan`. **The user approves them.** The planner adds the step detail. **The user answers its questions.** The main session commits the plan.
 2. **Build.** The implementer builds each step of a stage. The changes stay uncommitted.
 3. **Review.** The reviewer checks the stage. On FAIL, the implementer fixes the findings (max 2 rounds, then the user decides).
 4. **Commit.** On PASS, the main session ticks the steps, adds a log line, and commits and pushes the stage (rules in `CLAUDE.md`).
