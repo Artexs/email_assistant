@@ -1,5 +1,5 @@
 # 0012 — LLM: data rules, endpoint per stage, cost and failure limits
-- Status: accepted (user, 2026-11-02)
+- Status: accepted (user, 2026-11-02); amended by 0013 (pilot mailbox on the free tier, 2026-11-04)
 - Date: 2026-11-02
 - Amends: 0007 (Gemini and `@google/genai` stay)
 

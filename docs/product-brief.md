@@ -30,7 +30,7 @@
 | Control | Mailbox modes `shadow` (nothing changes, only a report) and `assist` (moves and drafts, send only after approval). ON/OFF switch per action. Undo for every change. | `ddd/szczegółowe_…` "Testowanie" |
 | Onboarding | Not blocking. The system starts at once; a checklist suggests the optional setup. HS13 suggests 1 week dry-run. | `prd.md` US-001, HS13 |
 | Channel | A chat channel is the key interface, not only the web panel. (**Changed:** Telegram first, not WhatsApp, Q4.) | `ddd/szczegółowe_…` "Komunikacja" |
-| Privacy | **Changed 2026-11-02 (Q11):** pilot = Gemini API paid tier (Google keeps prompts 55 days for abuse checks; no EU location). Before external customers: Vertex AI with the EU endpoint and zero data retention. Final goal: local models. | `ddd/szczegółowe_…` "Bezpieczeństwo" |
+| Privacy | **Changed 2026-11-04 (ADR 0013):** the temporary pilot mailbox runs on the Gemini API free tier (the user accepts the free-tier terms: human review and training); the paid tier before any other person's mail. **Changed 2026-11-02 (Q11):** pilot = Gemini API paid tier (Google keeps prompts 55 days for abuse checks; no EU location). Before external customers: Vertex AI with the EU endpoint and zero data retention. Final goal: local models. | `ddd/szczegółowe_…` "Bezpieczeństwo" |
 | Success metric | Share of mail handled without the user (definition: `docs/architecture.md` §4.4). Target 80–90%. Whitelist accuracy 100%. | `prd.md` 6, event storming |
 
 ## 3. Conflicts in the old docs and how they are resolved
@@ -55,10 +55,10 @@
 | Q5 | Autonomy | The system never sends mail on its own. It sends only when the user directly tells it to (approve button or explicit command). Labels, moves and archive are allowed. |
 | Q6 | Audit log | Yes, a minimal append-only log in MVP (agent recommendation, accepted). |
 | Q7 | Language, volume | Polish + English mail, under 200 mails per day per mailbox (default accepted). |
-| Q8 | Cloud LLM, budget | **Google Gemini** (user decision 2026-11-02). Free tier for development with test data; Cloud Billing (paid tier) before real users or real emails. |
+| Q8 | Cloud LLM, budget | **Google Gemini** (user decision 2026-11-02). Free tier for development with test data; Cloud Billing (paid tier) before real users or real emails. 2026-11-04: the temporary pilot mailbox counts as test data and runs on the free tier (ADR 0013). |
 | Q9 | Mail access | **IMAP + SMTP with the mailbox password** (Interia first; app password where possible). POP3 is not supported (no folders, no drafts). Google sign-in (OAuth / SSO) maybe later (user, 2026-11-02; ADR 0010). |
 | Q10 | Hosting and DB | **Home VPS that runs all the time; own Postgres;** Docker/Podman Compose with `server` + `db` (user, 2026-11-02; ADR 0011). External customers later need a hosted EU server. |
-| Q11 | LLM data in the pilot | The user accepts the Gemini API paid-tier data terms for their own mail (55-day abuse logging, no EU location) (user, 2026-11-02; ADR 0012). |
+| Q11 | LLM data in the pilot | The user accepts the Gemini API paid-tier data terms for their own mail (55-day abuse logging, no EU location) (user, 2026-11-02; ADR 0012). 2026-11-04: the temporary pilot mailbox runs on the free tier (ADR 0013). |
 
 ## 5. Consequences of "a product for sale"
 

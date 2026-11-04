@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 0 — Pilot free-tier gate: ADR 0013, docs, real limits (before any real mail reaches the LLM)
 
-- [ ] **0.1 ADR 0013 and the gate lines in the docs**
+- [x] **0.1 ADR 0013 and the gate lines in the docs**
   - Goal: the docs record the user decision: the temporary pilot mailbox may go to the Gemini free tier, with the free-tier terms accepted; billing stays required before any other person's mail.
   - Files: create `docs/decisions/0013-pilot-mailbox-free-tier.md`; change `docs/decisions/0007-llm-gemini.md` (Status line only), `docs/decisions/0012-llm-data-and-cost.md` (Status line only), `docs/decisions/README.md` (table), `docs/architecture.md` (§6.3 "Data by stage" and "Billing gate"; §7 "Privacy by stage" table, pilot LLM cell; §9 "Test mailbox" lines; §10 "Dev" line; §11 S1b row), `docs/roadmap.md` (§2 S1b row "Gate: …"; §2 user steps: the S1a line "create a second Interia account for tests" and the S1b line; §5 "Billing gate" and "Data"), `docs/product-brief.md` (row "Privacy", line 33; row "Q8", line 58).
   - Interfaces: none (docs only).
@@ -39,7 +39,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
   - Done when: ADR 0013 exists and is in the README table; 0007 and 0012 point to it; the grep shows no conflicting gate line.
   - Out of scope: any change to the decision text of 0007 or 0012 (only the Status line); code; config; `.env`; the VPS.
 
-- [ ] **0.2 User step: read the free-tier limits in AI Studio** (the main session asks the user; no code)
+- [x] **0.2 User step: read the free-tier limits in AI Studio** (the main session asks the user; no code)
   - Goal: the real limits of the project replace the third-party numbers before config defaults are set (step 9.1).
   - Steps: the user opens Google AI Studio, the rate-limit view of the project that owns `GEMINI_API_KEY`, and reads requests per minute (RPM), tokens per minute (TPM) and requests per day (RPD) for `gemini-3.5-flash-lite` and `gemini-3.8-flash`. The user also says if the Mac `.env` key and the VPS key are in the same project (then they share one quota). The main session writes the numbers and the date under "Input" → "Real limits for this project".
   - Decisions for step 9.1 (copied there): `GEMINI_RPM` default = classifier RPM × 0.8, rounded down, min 1. `LLM_DAILY_CAP` default = 300 when 300 ≤ classifier RPD − 100 (100 calls stay free for eval runs); else classifier RPD − 100. If the numbers are not there when 7.1 is built, use `GEMINI_RPM` 10 and `LLM_DAILY_CAP` 300 and write a log line; a later small commit updates the defaults.

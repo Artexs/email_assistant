@@ -41,7 +41,7 @@ Each slice ends with something that works end to end and that the user can try.
 |---|---|---|---|---|
 | **S0 Foundation** | Move to `apps/server`, `apps/web`, `packages/core`; env check; logger; DB layer + migration runner; tenancy tables; Compose `db` for dev; CI (lint, typecheck, unit + integration); `/health`; old code and deps removed | Nothing visible yet. Clean base, CI green | M | ADR review |
 | **S1a IMAP read + pilot host** (done 2026-11-04) | IMAP adapter (read part), connect CLI, encrypted password, capability check, sync with the IMAP rules, test mailbox seed, Compose on the home VPS, heartbeat, nightly encrypted backup | Your Interia INBOX is copied into the system every 5 minutes, on the home VPS | M | S0 |
-| **S1b Shadow triage** | **Gate: Gemini Cloud Billing on before real mail.** Hard rules; classifier with Zod schema (summary in the same call); planners; policy in `shadow` mode; audit; feedback table + labeling CLI; eval runner with synthetic and injection cases; cost caps | The system logs what it *would* do. You get precision per category and a go/no-go table | L | S1a |
+| **S1b Shadow triage** | **Gate: free tier only for the temporary pilot mailbox (ADR 0013); Cloud Billing before any other person's mail.** Hard rules; classifier with Zod schema (summary in the same call); planners; policy in `shadow` mode; audit; feedback table + labeling CLI; eval runner with synthetic and injection cases; cost caps | The system logs what it *would* do. You get precision per category and a go/no-go table | L | S1a |
 | **S2 Telegram** | Bot (dev + pilot), chat linking, shadow digest with ✅ / ✏️ buttons, urgent and `auth_error` notices, "last sync" line, `/digest` `/pause` `/resume` `/status` | Digest and urgent notices on your phone; you correct the AI with one tap | M | S1b |
 | **S3 Assist actions** | Committer with `applying` status and retries on the action row; folder moves, mark read, flag, summaries; Undo button; automatic moves only for categories that passed go/no-go; mode switch | Your inbox gets cleaner for real; every change has Undo | M | S2 |
 | **S4 Drafts, approvals, delegation** | Delegates (CLI), delegation + clarification drafts (quote the original), approval with Telegram buttons, SMTP send after approval, delegation tracking, chaser, injection guards | Delegations go out after one tap and are followed up | L | S3 |
@@ -64,8 +64,8 @@ graph LR
 ```
 
 Before each start (user steps):
-- S1a: turn on "korzystam z programu pocztowego" in Interia; create a second Interia account for tests; Docker or Podman on the home VPS.
-- S1b: Cloud Billing on for the Gemini key (before real mail).
+- S1a: turn on "korzystam z programu pocztowego" in Interia; no second Interia account: the pilot mailbox is the test mailbox (user 2026-11-04); Docker or Podman on the home VPS.
+- S1b: read the free-tier limits in AI Studio. Cloud Billing on before any other person's mail (ADR 0013).
 - S2: create two Telegram bots (dev, pilot) with BotFather.
 - S5: ask 5–10 target customers which mail provider they use (decides if Gmail / Microsoft 365 come before S6).
 
@@ -105,12 +105,12 @@ Hardest parts (most risk):
 - Code rules for agents: `docs/code-patterns.md`.
 - Each slice has a task file in `tasks/`. It gets a file-level plan in `tasks/active/` before code starts (`tasks/README.md`).
 
-## 5. LLM: Google Gemini (ADR 0007, ADR 0012)
+## 5. LLM: Google Gemini (ADR 0007, ADR 0012, ADR 0013)
 
 - SDK `@google/genai`, key `GEMINI_API_KEY`, model from config `GEMINI_MODEL` (dev: `gemini-3.8-flash`), optional `GEMINI_MODEL_CLASSIFIER`.
 - All calls go through `platform/llm.ts` (`classify`, `write`): timeout 30 s, rate limiter, 429 / 503 / timeout = soft errors.
 - Setup check: `bun run gemini:test` from the repo root (script `apps/server/src/scripts/gemini-check.ts`, env in the root `.env`). On 2026-11-02 the key worked, but the model returned `503 high demand`.
-- **Billing gate:** free tier only with test data. Turn on Cloud Billing before S1b runs on real mail.
-- **Data:** pilot on the Gemini API paid tier (55-day abuse logging, no EU location, accepted). Vertex AI EU before the first external customer (S6).
+- **Billing gate:** free tier only with test data. The temporary pilot Interia mailbox counts as test data (ADR 0013, user 2026-11-04). Cloud Billing (or Vertex AI) on before any other person's mail.
+- **Data:** pilot = Gemini API free tier for the temporary pilot mailbox (ADR 0013; the free-tier terms allow human review and training; accepted by the user 2026-11-04); the paid tier (55-day abuse logging, no EU location, accepted 2026-11-02) when billing goes on; Vertex AI EU before the first external customer (S6).
 - **Cost:** about $20 per mailbox per month at 200 mails/day with `gemini-3.8-flash` now, about $40 from 2027-01-01 (price doubles).
   The S1b eval compares a Flash-Lite model for the classifier.

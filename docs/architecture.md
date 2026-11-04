@@ -375,15 +375,17 @@ Tenancy:
 - Content on Telegram: notices, digest lines (sender, subject, AI summary), draft text for approval. No raw mail bodies.
   Bot chats are not end-to-end encrypted; the user accepts this content on Telegram servers.
 
-### 6.3 LLM (ADR 0007, ADR 0012)
+### 6.3 LLM (ADR 0007, ADR 0012, ADR 0013)
 - Google Gemini through `@google/genai`, only inside `platform/llm.ts`. Model ids from config: `GEMINI_MODEL` (dev: `gemini-3.8-flash`),
   optional `GEMINI_MODEL_CLASSIFIER`. Two roles: `classifier` (one call per mail, summary included) and `writer` (drafts, S4).
 - Structured output: JSON schema from the Zod schema in `packages/core`; the result is checked with Zod again.
 - Each call: timeout 30 s; lowest thinking setting for `classifier`; 429 / 503 / timeout are soft errors; a rate limiter keeps calls under the tier limit.
 - `triage_results` stores model, prompt version, tokens in/out and latency.
-- **Data by stage:** pilot = Gemini API paid tier (55-day abuse logging, no EU location; accepted by the user 2026-11-02).
-  Before the first external customer = Vertex AI with the EU endpoint and its zero-data-retention setup.
-- **Billing gate:** free tier only with test data. Cloud Billing on before the system reads real mail (first point: S1b).
+- **Data by stage:** pilot = Gemini API free tier for the temporary pilot mailbox (ADR 0013; the free-tier terms allow human review and training;
+  accepted by the user 2026-11-04); the paid tier (55-day abuse logging, no EU location, accepted 2026-11-02) when billing goes on.
+  Vertex AI with the EU endpoint and its zero-data-retention setup before the first external customer.
+- **Billing gate:** free tier only with test data. The temporary pilot Interia mailbox counts as test data (ADR 0013, user 2026-11-04).
+  Cloud Billing (or Vertex AI) on before any other person's mail.
 - `evals/` holds synthetic and injection cases. A prompt or model change must pass the eval before merge (§9).
 
 ## 7. Security and privacy
@@ -420,7 +422,7 @@ Tenancy:
 
   | | Pilot (the user's own mail) | External customers (S6) |
   |---|---|---|
-  | LLM | Gemini API paid tier; 55-day abuse logging; no EU location | Vertex AI EU endpoint; zero-data-retention setup |
+  | LLM | Gemini API free tier for the temporary pilot mailbox (ADR 0013: human review and training allowed by the free-tier terms, accepted). Paid tier (55-day abuse logging, no EU location) when billing goes on | Vertex AI EU endpoint; zero-data-retention setup |
   | Server + DB | home VPS of the user | hosted EU VPS |
   | Papers | — | Privacy policy names Google as processor; DPA with Google |
 
@@ -445,8 +447,8 @@ Tenancy:
   Tests that need several connections (`SKIP LOCKED` claims, the crash tests of S3 and S4) use a fresh schema or truncate the tables.
 - **Mail adapter:** contract tests — the fake `MailProvider` and the IMAP adapter pass the same suite.
   CI runs the IMAP adapter against a local mail-server container (for example GreenMail). Check that it has the same extensions as Interia.
-- **Test mailbox:** a second Interia account for tests only. A seed script APPENDs the synthetic eval mails into its INBOX (APPEND does not send).
-  Use it before the billing gate and for the 48-hour sync test (S1a).
+- **Test mailbox:** there is no second Interia account; the pilot mailbox is the test mailbox (user 2026-11-04). A seed script APPENDs the synthetic eval mails
+  (`@ea-seed.test` Message-IDs) into its INBOX (APPEND does not send). Use them for the eval and the 48-hour sync test (S1a).
 - **Evals** (`evals/`): synthetic and injection cases in git; real labels only in the DB. Report per category: precision and recall; whitelist rule 100%.
   CI runs the eval only when `prompts/`, `evals/` or the model config change, with a paid key and a budget alert.
 - **Web:** Playwright smoke tests (S5).
@@ -464,7 +466,7 @@ Tenancy:
 
 ## 10. Deployment
 
-- **Dev:** the user's Mac (Docker CLI + Colima, started at login). `docker compose up db`, server with `bun --watch`, the dev Telegram bot, the test Interia mailbox.
+- **Dev:** the user's Mac (Docker CLI + Colima, started at login). `docker compose up db`, server with `bun --watch`, the dev Telegram bot, GreenMail as the local test mail server (no second Interia account: the pilot mailbox is the test mailbox, ADR 0013).
 - **Pilot:** the home VPS, on all the time. Compose (Docker, user decision 2026-11-03) with two services:
   - `db`: `postgres:17`, a named volume, no public port;
   - `server`: an image built on the VPS from the repo, `restart: unless-stopped`, env file with mode 600.
@@ -484,7 +486,7 @@ Detail, scope, sizes and dependencies: `docs/roadmap.md`. Goal, done-when, plan 
 |---|---|---|
 | S0 Foundation | Workspaces, env check, logger, DB layer + migration runner, tenancy tables, Compose `db` for dev, CI, `/health`, old code removed | `s0-foundation.md` |
 | S1a IMAP read + pilot host | IMAP adapter (read), connect CLI, encrypted password, sync with the IMAP rules, test mailbox, Compose on the home VPS, heartbeat, backups | `s1a-imap-read-pilot-host.md` |
-| S1b Shadow triage | Hard rules, classifier, planners, policy (`shadow`), audit, feedback table, labeling CLI, eval runner, cost caps; billing gate before real mail | `s1b-shadow-triage.md` |
+| S1b Shadow triage | Hard rules, classifier, planners, policy (`shadow`), audit, feedback table, labeling CLI, eval runner, cost caps; gate: free tier only for the temporary pilot mailbox (ADR 0013), Cloud Billing before any other person's mail | `s1b-shadow-triage.md` |
 | S2 Telegram | Bot, chat linking, shadow digest with feedback buttons, urgent and `auth_error` notices, commands | `s2-telegram.md` |
 | S3 Assist actions | Committer, folder moves / mark read / flag, Undo, retries, go/no-go per category, mode switch | `s3-assist-actions.md` |
 | S4 Drafts + approval + delegation | Delegation and clarification drafts, approval with buttons, send by SMTP, delegations, chaser, injection guards | `s4-drafts-approvals-delegation.md` |

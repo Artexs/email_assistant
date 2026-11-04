@@ -1,4 +1,4 @@
-> **Status 2026-11-04 — in progress: plan approved (commit 44dc707), build not started.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: build from stage 0 (stage 0.2 is a user step: read the free-tier limits in AI Studio), with 4 user checkpoints. Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
+> **Status 2026-11-04 — in progress: stage 0 done (ADR 0013, docs, limits: defaults).** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 1–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check; the VPS `.env` needs a `GEMINI_API_KEY` first.
 
 # S1b Shadow triage
 
@@ -67,7 +67,8 @@ Free-tier limits (third-party sources from 2026-10, not on Google's page, which 
 - Per project: about 500 requests per day for `gemini-3.5-flash-lite` and `gemini-3.1-flash-lite`; only about 20 per day for `gemini-3.8-flash`. Requests per day reset at midnight Pacific time.
 - A forum report (2026-11-03): the 3.5 Flash-Lite daily quota once did not reset on time (429 "limit 500").
 - Consequences for the plan: the 3.8 Flash comparison must fit in about 20 calls per day (a small subset, resumable over several days); the `LLM_DAILY_CAP` default (300) stays under the Flash-Lite daily quota; the eval runner and the worker share one project quota; 429 stays a soft error.
-- Real limits for this project (step 0.2, read by the user in AI Studio): _not read yet_.
+- Real limits for this project (step 0.2, read by the user in AI Studio): _not read yet_ (2026-11-04). The user chose the fallback defaults: `GEMINI_RPM` 10, `LLM_DAILY_CAP` 300 (step 9.1 uses them).
+- Mac and VPS keys (checked 2026-11-04 by the main session, read-only, hash compare, no key printed): the VPS `~/email_assistant/.env` has the line `GEMINI_API_KEY=` with an empty value. So the VPS has no Gemini key now. Before stage 37, the user puts a key in the VPS `.env`. If it is the Mac key, the Mac and the VPS share one project quota.
 
 Input from the S1a close (2026-11-04):
 
@@ -113,7 +114,7 @@ The main session stops after the commit of the named stage and gives the user a 
 Each stage lives in its own file in [`s1b-shadow-triage/`](s1b-shadow-triage/). An implementer or reviewer reads this file (Input, Rules, checkpoints) and only the stage file of its step.
 The main session ticks the step boxes in the stage file and the stage box here.
 
-- [ ] [Stage 0](s1b-shadow-triage/stage-00-pilot-free-tier-gate-adr-0013-docs-real-limits.md) — Pilot free-tier gate: ADR 0013, docs, real limits (before any real mail reaches the LLM)
+- [x] [Stage 0](s1b-shadow-triage/stage-00-pilot-free-tier-gate-adr-0013-docs-real-limits.md) — Pilot free-tier gate: ADR 0013, docs, real limits (before any real mail reaches the LLM)
 - [ ] [Stage 1](s1b-shadow-triage/stage-01-core-triage-types-and-hard-rules.md) — Core triage types and hard rules
 - [ ] [Stage 2](s1b-shadow-triage/stage-02-planners-and-policy.md) — Planners and policy [risky]
 - [ ] [Stage 3](s1b-shadow-triage/stage-03-s1b-tables-migration.md) — S1b tables migration [risky]
@@ -198,3 +199,4 @@ None open (Q26–Q29 answered 2026-11-04).
 - 2026-11-04: Cold plan review: FAIL (findings 1–25, 28). User answers (free-tier terms accepted, minimum support 30, backfill when too few real mails) and main-session decisions added under "Input". Plan updated to 31 stages (0–30). Step map old → new: 0.x → 0.x; 1.x → 1.x; 2.1 → 2.1; 3.1 → 3.1 (+ `emails.backfilled_at`); 4.1 → 4.1; 5.1 → 5.1 (rules, audit, actions) + 6.1 (triage repo); 6.1/6.2 → 7.1/7.2; 7.1 → 8.1; 8.1 → 9.1 (+ `selectCases`); 9.1 → 10.1; 10.1 → 11.1 (runner logic) + 12.1 (report, CLI); 11.1 → 13.1 (success path) + 14.1 (error rules, pause) + 15.1 (job); 12.1 → 16.1 (cost gates) + 17.1 (wiring, log test); 13.x → 18.x; 14.1 → 19.1; 14.2 → 20.1; 14.3 → 20.2; 14.4 → 21.1; new 22.1 (backfill), 23.1 (re-queue, Question 1); 15.1 → 24.1 (full run) + 26.1 (comparison); 15.2 → 25.1 + 25.2; 16.1 → 27.1; 16.2 → 28.1 + 29.1 (backfill run) + 30.1 (final eval).
 - 2026-11-04: Second cold plan review: FAIL (5 major, 20 minor, 4 questions); fixed. User answers: Q26 personal data on the free tier accepted; simple LLM calls (no temperature, no thinking setting); Q27 "not comparable: 503" after 3 Pacific quota days counts as done; Q28 `llm_blocked` → `unsure` at once; Q29 answer (a), stage 33 is built. 41 stages (0–40). Old → new for the tail: 24 → 34, 25 → 35, 26 → 36, 27–30 → 37–40. User checkpoints added (after stages 8, 18, 25; before 37).
 - 2026-11-04: User approved the plan; committed as 44dc707. Handoff for the build: `~/.pi/agent/notes/2026-11-04-handoff-s1b-build.md`.
+- 2026-11-04: Stage 0 done: ADR 0013, gate lines in architecture, roadmap, product brief (also the §6.3 / §5 headings and brief Q11, review fixes). Prettier: the 6 old docs files already failed `--check` at HEAD; the edits add no new problems (main-session bar). Limits not read; user chose the defaults. VPS `GEMINI_API_KEY` is empty. Reviewed: PASS.
