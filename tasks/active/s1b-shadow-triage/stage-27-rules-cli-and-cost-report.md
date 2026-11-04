@@ -8,7 +8,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
   - Goal: the user can add whitelist, blocklist and VIP rules before S5.
   - Files: create `apps/server/src/scripts/rules.ts`; change root `package.json` (`"rules:add": "bun apps/server/src/scripts/rules.ts add"`, `"rules:list": "bun apps/server/src/scripts/rules.ts list"`).
   - Interfaces: `bun run rules:add --org-id <uuid> [--mailbox-id <uuid>] --pattern <address or domain> --kind whitelist|blocklist|vip`; `bun run rules:list --org-id <uuid> [--mailbox-id <uuid>]`.
-  - Decisions: pattern check: an address `local@domain` or a domain (`firma.pl`), no spaces; stored in lower case (`insertSenderRule`). Validation rule from modules §3.3 ("the owner's own address cannot be a delegate") is for delegates (S4), not for these rules. `rules:list` prints the patterns to stdout through an `out()` helper (they are the user's own settings, not log lines).
+  - Decisions: pattern check: an address `local@domain` or a domain (`firma.pl`), no spaces; reject a leading `@` (`@firma.test` would count as an address and never match) and a domain without a dot (`test` would match every `*.test` sender) (stage 1 review, 2026-11-04); stored in lower case (`insertSenderRule`). Validation rule from modules §3.3 ("the owner's own address cannot be a delegate") is for delegates (S4), not for these rules. `rules:list` prints the patterns to stdout through an `out()` helper (they are the user's own settings, not log lines).
   - Test: none beyond the repo tests; manual run on the dev DB.
   - Check: `bun run lint && bun run typecheck`; manual run.
   - Done when: `rules:add` then `rules:list` shows the rule; a duplicate prints "already there".

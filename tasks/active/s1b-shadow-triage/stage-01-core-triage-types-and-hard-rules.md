@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 1 — Core triage types and hard rules
 
-- [ ] **1.1 Categories, settings schemas, analysis schema**
+- [x] **1.1 Categories, settings schemas, analysis schema**
   - Goal: shared Zod types for categories, mailbox settings JSON and the LLM output.
   - Files: create `packages/core/src/triage/categories.ts`, `packages/core/src/triage/settings.ts`, `packages/core/src/triage/analysis.ts`, `packages/core/src/triage/index.ts`, tests `packages/core/src/triage/settings.test.ts`, `packages/core/src/triage/analysis.test.ts`; change `packages/core/src/index.ts` (add `export * from "./triage";`).
   - Interfaces:
@@ -24,7 +24,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
   - Done when: the tests pass and `@ea/core` exports the names above.
   - Out of scope: the DB, the LLM call, planners.
 
-- [ ] **1.2 Hard sender rules**
+- [x] **1.2 Hard sender rules**
   - Goal: a pure function that applies whitelist, blocklist and VIP before the AI.
   - Files: create `packages/core/src/triage/rules.ts`, `packages/core/src/triage/rules.test.ts`; export from `packages/core/src/triage/index.ts`.
   - Interfaces:
@@ -46,7 +46,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
   - Done when: the tests pass.
   - Out of scope: reading rules from the DB (stage 5), the rules CLI (stage 27).
 
-- [ ] **1.3 Threshold decision and LLM text marking**
+- [x] **1.3 Threshold decision and LLM text marking**
   - Goal: turn a low-confidence answer into `unsure`, and mark risky parts of LLM text.
   - Files: create `packages/core/src/triage/threshold.ts`, `packages/core/src/triage/untrusted-text.ts` and their `*.test.ts`; export from the triage index.
   - Interfaces:
