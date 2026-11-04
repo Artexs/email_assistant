@@ -17,13 +17,13 @@ Before you pick a task, read its status line. Check `date -u`. Do not start a bl
 
 ## Where each fact lives (one source per fact)
 
-| Place | Holds | Does not hold |
-|---|---|---|
-| `docs/` | The product and architecture as they are now + the target design, ADRs | Steps, status, logs |
-| `docs/roadmap.md` | Slice list: order, content, size, dependencies, link to the task file | File-level plans, status |
-| `tasks/` | The work: goal, scope, done-when, file-level plan, status, log | Stable decisions (they go to `docs/`) |
-| `notes/` | Facts learned that a later agent needs and that are not a task | Plans |
-| `.ai/` | History (2025 docs) | Decisions |
+| Place             | Holds                                                                  | Does not hold                         |
+| ----------------- | ---------------------------------------------------------------------- | ------------------------------------- |
+| `docs/`           | The product and architecture as they are now + the target design, ADRs | Steps, status, logs                   |
+| `docs/roadmap.md` | Slice list: order, content, size, dependencies, link to the task file  | File-level plans, status              |
+| `tasks/`          | The work: goal, scope, done-when, file-level plan, status, log         | Stable decisions (they go to `docs/`) |
+| `notes/`          | Facts learned that a later agent needs and that are not a task         | Plans                                 |
+| `.ai/`            | History (2025 docs)                                                    | Decisions                             |
 
 ## Life of a task
 
@@ -41,12 +41,12 @@ Before you pick a task, read its status line. Check `date -u`. Do not start a bl
 Big tasks (the slices S0–S6 in `docs/roadmap.md`) run in a plan → build → review loop in pi.
 Start it with `/skill:run-slice tasks/planned/<name>.md`. The skill (`~/.pi/agent/skills/run-slice/`) holds the full procedure.
 
-| Who | Model | Does |
-|---|---|---|
-| Main session (you talk to it) | Opus | Calls the subagents, checks their work, asks the user, commits each stage |
-| `planner` subagent | Opus, medium | Adds step detail to the approved stages in `## Plan` (files, interfaces, tests, checks). Never makes the plan |
-| `implementer` subagent | Sonnet, medium (Opus, high for `[risky]` stages) | Builds one step: test first, code, checks. Never commits |
-| `reviewer` subagent | Opus, high | Reviews one stage, runs the checks, gives PASS or FAIL. Read-only |
+| Who                           | Model                                            | Does                                                                                                          |
+| ----------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| Main session (you talk to it) | Opus                                             | Calls the subagents, checks their work, asks the user, commits each stage                                     |
+| `planner` subagent            | Opus, medium                                     | Adds step detail to the approved stages in `## Plan` (files, interfaces, tests, checks). Never makes the plan |
+| `implementer` subagent        | Sonnet, medium (Opus, high for `[risky]` stages) | Builds one step: test first, code, checks. Never commits                                                      |
+| `reviewer` subagent           | Opus, high                                       | Reviews one stage, runs the checks, gives PASS or FAIL. Read-only                                             |
 
 The subagents are global: `~/.pi/agent/agents/*.md`, via the extension in `~/.pi/agent/extensions/subagent/`.
 
@@ -60,6 +60,11 @@ Plan shape: stages of 1 `[risky]` step or 2–4 normal steps (about 300 changed 
 Decisions, Test, Check, Done when, Out of scope. `[risky]` areas: data integrity, sync and dedup, exactly-once, security, auth, tenant
 isolation, sending to people, LLM prompts and evals, migrations.
 
+**Big plans: one file per stage.** When a plan has more than about 15 stages, keep the task file small (status, goal, done when,
+input, rules, checkpoints, a stage list with one box per stage, results, log) and put each stage in `tasks/<state>/<name>/stage-NN-<slug>.md`.
+Each subagent call then reads the task file and one stage file, not the whole plan. Tick the steps in the stage file and the stage box
+in the task file. Move the folder together with the task file (`git mv`). Example: `tasks/active/s1b-shadow-triage/`.
+
 ## Template
 
 ```markdown
@@ -70,21 +75,27 @@ isolation, sending to people, LLM prompts and evals, migrations.
 Scope: <link to docs/roadmap.md row or other source>. Needs: <tasks that must be done first>.
 
 ## Goal
+
 <one or two sentences>
 
 ## Done when
+
 - <check that can be tested>
 
 ## Plan
+
 <written when the task starts: files to change, steps, tests>
+
 - [ ] step
 
 ## Done-checklist
+
 - [ ] Done-when checks pass (name the command and its output in the log).
 - [ ] `docs/` describe what was built (architecture, modules, roadmap); related ADRs set to accepted or superseded.
 - [ ] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
 - [ ] Follow-up ideas are in `planned/`.
 
 ## Log
+
 - YYYY-MM-DD: <what was done or decided>
 ```
