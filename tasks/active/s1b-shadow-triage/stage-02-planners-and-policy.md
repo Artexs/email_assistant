@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 2 — Planners and policy [risky]
 
-- [ ] **2.1 Category planners and the policy truth table**
+- [x] **2.1 Category planners and the policy truth table**
   - Goal: pure functions that turn a category into planned actions and decide `apply` / `await_approval` / `log_only` for each one.
   - Files: create `packages/core/src/triage/planners.ts`, `packages/core/src/triage/policy.ts`, `packages/core/src/triage/planners.test.ts`, `packages/core/src/triage/policy.test.ts`; export from the triage index.
   - Interfaces:

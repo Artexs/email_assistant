@@ -1,4 +1,4 @@
-> **Status 2026-11-04 — in progress: stages 0–1 done.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 2–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
+> **Status 2026-11-04 — in progress: stages 0–2 done.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 3–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
 
 # S1b Shadow triage
 
@@ -117,7 +117,7 @@ The main session ticks the step boxes in the stage file and the stage box here.
 
 - [x] [Stage 0](s1b-shadow-triage/stage-00-pilot-free-tier-gate-adr-0013-docs-real-limits.md) — Pilot free-tier gate: ADR 0013, docs, real limits (before any real mail reaches the LLM)
 - [x] [Stage 1](s1b-shadow-triage/stage-01-core-triage-types-and-hard-rules.md) — Core triage types and hard rules
-- [ ] [Stage 2](s1b-shadow-triage/stage-02-planners-and-policy.md) — Planners and policy [risky]
+- [x] [Stage 2](s1b-shadow-triage/stage-02-planners-and-policy.md) — Planners and policy [risky]
 - [ ] [Stage 3](s1b-shadow-triage/stage-03-s1b-tables-migration.md) — S1b tables migration [risky]
 - [ ] [Stage 4](s1b-shadow-triage/stage-04-email-claim-and-release-queries.md) — Email claim and release queries [risky]
 - [ ] [Stage 5](s1b-shadow-triage/stage-05-sender-rule-and-audit-repositories.md) — Sender rule and audit repositories [risky]
@@ -203,3 +203,4 @@ None open (Q26–Q29 answered 2026-11-04).
 - 2026-11-04: Stage 0 done: ADR 0013, gate lines in architecture, roadmap, product brief (also the §6.3 / §5 headings and brief Q11, review fixes). Prettier: the 6 old docs files already failed `--check` at HEAD; the edits add no new problems (main-session bar). Limits not read; user chose the defaults. VPS `GEMINI_API_KEY` is empty. Reviewed: PASS.
 - 2026-11-04: Step 0.2 update: user sent the AI Studio limits (Flash-Lite RPM 15, 3.8 Flash RPM 5, TPM 250K; RPD not visible). Defaults: `GEMINI_RPM` 12, `LLM_DAILY_CAP` 300. VPS key set by the user: same key and project as the Mac.
 - 2026-11-04: Stage 1 done: core triage types, settings, analysis schema, hard sender rules, threshold, untrusted-text marking. Review fixes: date/phone and URL masking, `noreply+tag`. Stage 27 gets the pattern check (leading `@`, domain without dot). Reviewed: PASS.
+- 2026-11-04: Stage 2 done: category planners and the policy truth table (shadow logs only; `unsure` move needs only `move_unsure` and `movesSupported`; `mark_read` ignores `movesSupported`). Reviewed: PASS.
