@@ -1,4 +1,4 @@
-> **Status 2026-11-04 — in progress: stage 0 done (ADR 0013, docs, limits: defaults).** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 1–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check; the VPS `.env` needs a `GEMINI_API_KEY` first.
+> **Status 2026-11-04 — in progress: stage 0 done (ADR 0013, docs, limits: defaults).** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 1–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
 
 # S1b Shadow triage
 
@@ -67,8 +67,9 @@ Free-tier limits (third-party sources from 2026-10, not on Google's page, which 
 - Per project: about 500 requests per day for `gemini-3.5-flash-lite` and `gemini-3.1-flash-lite`; only about 20 per day for `gemini-3.8-flash`. Requests per day reset at midnight Pacific time.
 - A forum report (2026-11-03): the 3.5 Flash-Lite daily quota once did not reset on time (429 "limit 500").
 - Consequences for the plan: the 3.8 Flash comparison must fit in about 20 calls per day (a small subset, resumable over several days); the `LLM_DAILY_CAP` default (300) stays under the Flash-Lite daily quota; the eval runner and the worker share one project quota; 429 stays a soft error.
-- Real limits for this project (step 0.2, read by the user in AI Studio): _not read yet_ (2026-11-04). The user chose the fallback defaults: `GEMINI_RPM` 10, `LLM_DAILY_CAP` 300 (step 9.1 uses them).
-- Mac and VPS keys (checked 2026-11-04 by the main session, read-only, hash compare, no key printed): the VPS `~/email_assistant/.env` has the line `GEMINI_API_KEY=` with an empty value. So the VPS has no Gemini key now. Before stage 37, the user puts a key in the VPS `.env`. If it is the Mac key, the Mac and the VPS share one project quota.
+- Real limits for this project (step 0.2, AI Studio "Gemini API Rate Limit" view, project "Gemini Project", free tier, screenshots from the user 2026-11-04): `gemini-3.5-flash-lite` RPM 15, TPM 250K; `gemini-3.1-flash-lite` RPM 15, TPM 250K; `gemini-3.8-flash` RPM 5, TPM 250K; `gemini-3.6-flash` RPM 5, RPD 20 (chart limit line). RPD for 3.5 Flash-Lite and 3.8 Flash: not visible in the screenshots (bars only) [not verified; third-party sources say about 500 and about 20]. The view also showed "You have reached a rate limit" (3.6 Flash peak 6/5 RPM, not from S1b).
+- Defaults for step 9.1 from these numbers: `GEMINI_RPM` = 15 × 0.8 = 12. `LLM_DAILY_CAP` = 300 (the RPD is not known; 300 stays only if RPD ≥ 400).
+- Mac and VPS keys (checked 2026-11-04 by the main session, read-only, sha256 prefix compare, no key printed): the user put a key in the VPS `.env` on 2026-11-04; it is the same key as the Mac `.env`. So the Mac and the VPS share one project quota (eval runs and the VPS worker count against the same limits).
 
 Input from the S1a close (2026-11-04):
 
@@ -200,3 +201,4 @@ None open (Q26–Q29 answered 2026-11-04).
 - 2026-11-04: Second cold plan review: FAIL (5 major, 20 minor, 4 questions); fixed. User answers: Q26 personal data on the free tier accepted; simple LLM calls (no temperature, no thinking setting); Q27 "not comparable: 503" after 3 Pacific quota days counts as done; Q28 `llm_blocked` → `unsure` at once; Q29 answer (a), stage 33 is built. 41 stages (0–40). Old → new for the tail: 24 → 34, 25 → 35, 26 → 36, 27–30 → 37–40. User checkpoints added (after stages 8, 18, 25; before 37).
 - 2026-11-04: User approved the plan; committed as 44dc707. Handoff for the build: `~/.pi/agent/notes/2026-11-04-handoff-s1b-build.md`.
 - 2026-11-04: Stage 0 done: ADR 0013, gate lines in architecture, roadmap, product brief (also the §6.3 / §5 headings and brief Q11, review fixes). Prettier: the 6 old docs files already failed `--check` at HEAD; the edits add no new problems (main-session bar). Limits not read; user chose the defaults. VPS `GEMINI_API_KEY` is empty. Reviewed: PASS.
+- 2026-11-04: Step 0.2 update: user sent the AI Studio limits (Flash-Lite RPM 15, 3.8 Flash RPM 5, TPM 250K; RPD not visible). Defaults: `GEMINI_RPM` 12, `LLM_DAILY_CAP` 300. VPS key set by the user: same key and project as the Mac.
