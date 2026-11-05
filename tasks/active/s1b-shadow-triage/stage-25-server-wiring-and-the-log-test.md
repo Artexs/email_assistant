@@ -18,3 +18,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
   - Check: `bun run dev:up && bun run db:migrate && bun run lint && bun run typecheck && bun run test:unit && bun run test:int`. Then start the server once on the Mac without `TRIAGE_LLM_SCOPE` (`bun run start`, stop it after the first log lines) and see "triage worker is off".
   - Done when: the tests pass and the server starts with the default `off`.
   - Out of scope: the VPS, Telegram notices.
+
+## Added at stage 22 review
+
+- A stale take-back now counts one attempt (stage 22). A restart while a batch runs would count an attempt for every claimed mail not yet tried (up to `batchSize`). In `main.ts`, on SIGTERM / SIGINT, let the running batch finish, or release untried claimed mail with `countAttempt: false`. Decide with the implementer and add a test or a note in the log.

@@ -68,7 +68,8 @@ export type TriageOutcome =
   | { kind: "retry_later" }
   | { kind: "paused"; until: Date };
 
-const HARD_ERROR_TRIES = 3;
+// A mail ends in `triage_error` when it reaches this many tries (the count includes stale take-backs).
+export const HARD_ERROR_TRIES = 3;
 const HARD_ERROR_WAIT_MS = 5 * 60_000;
 
 function payloadOf(action: PlannedAction): Record<string, string> {

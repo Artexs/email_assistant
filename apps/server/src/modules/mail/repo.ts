@@ -255,6 +255,8 @@ export async function forceRescan(db: DbOrTrx, ctx: TenantContext, mailboxId: st
 
 // Claims due pending rows and stale processing rows. `locked_at` = `opts.now` (a JS value, not SQL now()):
 // it is the token for releaseEmail and finishEmail, so it must survive the round trip exactly.
+// Taking back a stale processing row counts an attempt (the earlier run may have died on this mail), so `attempts` in
+// the result is the new value.
 export async function claimEmails(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -281,7 +283,16 @@ export async function claimEmails(
       return query.orderBy("received_at").orderBy("id").limit(opts.limit).forUpdate().skipLocked();
     })
     .updateTable("emails as e")
-    .set({ status: "processing", locked_at: opts.now })
+    .set((eb) => ({
+      status: "processing",
+      locked_at: opts.now,
+      attempts: eb
+        .case()
+        .when("e.status", "=", "processing")
+        .then(eb("e.attempts", "+", 1))
+        .else(eb.ref("e.attempts"))
+        .end(),
+    }))
     .from("picked")
     .whereRef("e.id", "=", "picked.id")
     .where("e.org_id", "=", ctx.orgId)

@@ -22,5 +22,7 @@ export type { CaseResult, CasesEvalReport, EvalReport, EvalReportBase, RealEvalR
 export { evalExitCode, renderEvalReport } from "./eval-report";
 export { createLlmPause } from "./pause";
 export type { LlmPause } from "./pause";
-export { finishTriageError, saveTriage, triageOne } from "./service";
+export { finishTriageError, HARD_ERROR_TRIES, saveTriage, triageOne } from "./service";
 export type { TriageDecision, TriageDeps, TriageMailbox, TriageOutcome } from "./service";
+export { createTriageJob } from "./jobs";
+export type { TriageJobDeps, TriageScope } from "./jobs";

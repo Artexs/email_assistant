@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 22 — Triage job: mailboxes, scope, settings, claim [risky]
 
-- [ ] **22.1 `createTriageJob`: the loop over allowed mailboxes**
+- [x] **22.1 `createTriageJob`: the loop over allowed mailboxes**
   - Goal: a job that runs `triageOne` on claimed mail of each allowed mailbox (the pause stop and the error release come in step 23.1).
   - Files: create `apps/server/src/modules/triage/jobs.ts`; export `createTriageJob`, `TriageJobDeps`, `TriageScope`, `createLlmPause` from `triage/index.ts`; change `apps/server/test/integration/fixtures.ts` (new `pauseOtherMailboxes`); create `apps/server/test/integration/triage-job.test.ts`.
   - Interfaces:

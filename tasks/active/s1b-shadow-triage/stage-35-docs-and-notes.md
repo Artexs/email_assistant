@@ -20,7 +20,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
       - add `processing → pending (soft error, config error or daily cap: no count; untried claimed mail keeps its next_attempt_at)`;
       - add `processing → pending (hard error with tries left: attempts + 1, next try after 5 min)`;
       - add `processing → triaged as unsure (safety block, reason llm_blocked)`;
-      - add `processing → processing (stale claim: locked_at older than 5 min, taken again by a later run)`;
+      - add `processing → processing (stale claim: locked_at older than 5 min, taken again by a later run; the take-back counts one attempt, and a mail that reaches 3 attempts ends as unsure / triage_error without an LLM call, stage 22)`;
       - add `skipped → pending (one-off backfill re-queue of too_old mail in the window, stage 33)`;
       - remove "pending stays pending (daily LLM cap reached …)".
     - architecture §5 data model: `emails.backfilled_at`; `audit_log` events `email.triaged`, `email.skipped`, `action.planned`, `llm.call`, `email.requeued`.

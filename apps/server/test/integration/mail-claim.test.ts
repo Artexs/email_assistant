@@ -82,6 +82,8 @@ describe("claimEmails", () => {
       expect(await emailState(trx, first.id)).toMatchObject({ status: "pending", locked_at: null, attempts: 0 });
 
       expect(ids(await claimEmails(trx, ctx, mailboxId, claimOpts()))).toEqual([p1, p4]);
+      // A pending row does not count an attempt when it is claimed.
+      expect((await emailState(trx, p4)).attempts).toBe(0);
     });
   });
 
@@ -97,7 +99,9 @@ describe("claimEmails", () => {
 
       const claimed = await claimEmails(trx, ctx, mailboxId, claimOpts());
       expect(ids(claimed)).toEqual([stale]);
-      expect(claimed[0]?.attempts).toBe(2);
+      // The take-back counts an attempt.
+      expect(claimed[0]?.attempts).toBe(3);
+      expect((await emailState(trx, stale)).attempts).toBe(3);
       expect(claimed[0]?.locked_at.getTime()).toBe(now.getTime());
       expect((await emailState(trx, fresh)).locked_at?.getTime()).toBe(minutesFromNow(-1).getTime());
     });

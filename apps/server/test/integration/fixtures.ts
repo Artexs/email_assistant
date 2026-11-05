@@ -74,3 +74,8 @@ export async function insertTestEmail(
     .executeTakeFirstOrThrow();
   return row.id;
 }
+
+// Other tests and dev data leave active mailboxes in the DB; the job tests want only their own. The rollback undoes it.
+export async function pauseOtherMailboxes(trx: Transaction<DB>): Promise<void> {
+  await trx.updateTable("mailboxes").set({ status: "paused" }).where("status", "=", "active").execute();
+}
