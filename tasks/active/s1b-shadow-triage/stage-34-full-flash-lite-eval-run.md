@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 34 — Full Flash-Lite eval run [risky]
 
-- [ ] **34.1 Full eval with `gemini-3.5-flash-lite` and the provisional model choice**
+- [x] **34.1 Full eval with `gemini-3.5-flash-lite` and the provisional model choice**
   - Goal: real eval numbers on the full synthetic and injection sets for the default classifier, before the VPS stages.
   - Files: create `evals/results/<date>-gemini-3.5-flash-lite.md` (synthetic data only); change this task file ("Results": provisional go/no-go table, provisional model choice; log line).
   - Interfaces: none new.

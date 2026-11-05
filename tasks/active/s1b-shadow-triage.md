@@ -1,4 +1,4 @@
-> **Status 2026-11-05 — in progress: stages 0–33 done, checkpoint 3 group review passed.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 34–40, with 1 user checkpoint left (before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
+> **Status 2026-11-05 — in progress: stages 0–34 done, checkpoint 3 group review passed.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 35–40, with 1 user checkpoint left (before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
 
 # S1b Shadow triage
 
@@ -153,7 +153,7 @@ The main session ticks the step boxes in the stage file and the stage box here.
 - [x] [Stage 31](s1b-shadow-triage/stage-31-one-off-inbox-backfill-backfillinbox.md) — One-off INBOX backfill: `backfillInbox` [risky]
 - [x] [Stage 32](s1b-shadow-triage/stage-32-one-off-inbox-backfill-tool-and-cli.md) — One-off INBOX backfill: tool and CLI [risky]
 - [x] [Stage 33](s1b-shadow-triage/stage-33-re-queue-too-old-mail-in-the-backfill-window.md) — Re-queue `too_old` mail in the backfill window [risky]
-- [ ] [Stage 34](s1b-shadow-triage/stage-34-full-flash-lite-eval-run.md) — Full Flash-Lite eval run [risky]
+- [x] [Stage 34](s1b-shadow-triage/stage-34-full-flash-lite-eval-run.md) — Full Flash-Lite eval run [risky]
 - [ ] [Stage 35](s1b-shadow-triage/stage-35-docs-and-notes.md) — Docs and notes
 - [ ] [Stage 36](s1b-shadow-triage/stage-36-model-comparison-with-gemini-3-8-flash.md) — Model comparison with `gemini-3.8-flash` [risky]
 - [ ] [Stage 37](s1b-shadow-triage/stage-37-vps-deploy-synthetic-smoke-run-real-mail-count.md) — VPS: deploy, synthetic smoke run, real-mail count [risky]
@@ -163,7 +163,44 @@ The main session ticks the step boxes in the stage file and the stage box here.
 
 ### Results (filled in stages 34, 36 and 40)
 
-Go/no-go table: _not yet_. Model choice: _not yet_.
+#### Stage 34: provisional synthetic run (2026-11-05, `gemini-3.5-flash-lite`, prompt `classifier-v1`)
+
+Report: `evals/results/2026-11-05-gemini-3.5-flash-lite.md` (synthetic data only). Exit code 0. 91 of 92 cases done; 1 case ended in `http_503` after 4 retries (below the 10% limit). The run was resumed once from the state file after a tool timeout. No generation settings, so numbers can change between runs.
+
+Checks: whitelist 12 of 12 (100%). Injection 12 of 12 passed. Blocked by Google (`llm_blocked`): 0. Rule results (blocklist, no LLM call): 6 of 6 right.
+A one-case follow-up run (whitelisted sender, schema without `spam`) got no HTTP 400, so Gemini accepts the `z.toJSONSchema` keywords.
+
+Provisional go/no-go table (bar 98%, minimum support 30 kept rows). With about 15 cases per category, every category is `no-go: too few`. The precision column shows what the bar would say with enough rows.
+
+| category     | threshold | precision | recall | kept | decision       |
+| ------------ | --------- | --------- | ------ | ---- | -------------- |
+| urgent       | n/a       | 100.0%    | 100.0% | 15   | no-go: too few |
+| needs_reply  | n/a       | 95.0%     | 100.0% | 20   | no-go: too few |
+| info         | n/a       | 76.5%     | 81.3%  | 17   | no-go: too few |
+| notification | n/a       | 100.0%    | 82.4%  | 14   | no-go: too few |
+| spam         | n/a       | 84.2%     | 88.9%  | 19   | no-go: too few |
+
+`delegation` and `unsure`: no synthetic support (n/a).
+
+Threshold sweep: precision does not change between 0.50 and 0.90 for any category. Only `needs_reply` at 0.95 moves (94.7% precision, 94.7% recall, 19 kept). The model gives confidence 0.90 to 1.00 for almost every mail, so the sweep cannot yet pick a threshold.
+
+Confidence histogram (total / correct):
+
+| category     | 0.00–0.89 | 0.90–0.94 | 0.95–1.00 |
+| ------------ | --------- | --------- | --------- |
+| urgent       | 0 / 0     | 0 / 0     | 15 / 15   |
+| needs_reply  | 0 / 0     | 1 / 1     | 19 / 18   |
+| info         | 0 / 0     | 0 / 0     | 17 / 13   |
+| notification | 0 / 0     | 0 / 0     | 14 / 14   |
+| spam         | 0 / 0     | 0 / 0     | 19 / 16   |
+
+Errors in the confusion matrix: 3 `info` mails predicted `spam`; 2 `notification` mails predicted `info`; 1 `notification` mail predicted `needs_reply`; 2 `spam` mails predicted `info`. Wrong answers still have confidence 0.95 or more, so a confidence threshold does not remove them. On this data the model's confidence does not separate right from wrong answers; the real-mail sweep (step 40.1) decides if a threshold can work. The metrics include the 12 injection cases (85 LLM rows = 73 synthetic + 12 injection); 2 of the 8 wrong answers are injection mails (`inj-07`, `inj-09`, spam predicted `info`; both passed the injection check).
+
+Usage: average tokens in / out 698 / 88; latency p50 / p95 1010 ms / 8614 ms; cost per mail $0.000429; cost per mailbox per month at 200 mails per day $2.57 (price source: https://ai.google.dev/gemini-api/docs/pricing, checked 2026-11-05).
+
+Provisional model choice: `gemini-3.5-flash-lite`. The stage 34 rule is met (whitelist 100%, every injection case passes). Stage 36 makes the choice final. Open for the main session: `info` precision (76.5%) and `spam` precision (84.2%) are far below the 98% bar; a prompt change would need `classifier-v2` as a new [risky] step.
+
+Final go/no-go table (real mail, step 40.1): _not yet_. Final model choice: _not yet_.
 
 ## Questions for the user
 
@@ -241,3 +278,4 @@ None open (Q26–Q29 answered 2026-11-04).
 - 2026-11-05: Stage 31 done: `backfillInbox` in `mail/sync.ts` (mode `backfill`; read-only provider calls; `applyChunk` with `next = null`, so the cursor never moves; `backfilled_at` only on inserts; preconditions before any fetch; extra guard: `since` more than 30 days back → `HardError`). 8 tests on the fake provider, incl. a read-only call check. Unit 411 pass, int 203 pass (2 runs). Reviewed: PASS (Sonnet; one fix round).
 - 2026-11-05: Stage 32 done: `backfillMailbox` (provider closed in `finally`, no provider without stored credentials) and `bun run mailbox:backfill --days 1–30` (counts only; `CursorMovedError` → exit 1 with "run the same command again"). GreenMail: `--days 30` → fetched 8, stored 0, uid updated 8, exit 0; `--days 31` → usage, exit 1. Unit 411 pass, int 206 pass (2 runs). Reviewed: PASS (Sonnet). The output shows two count lines (`backfillInbox` and the CLI): accepted.
 - 2026-11-05: Stage 33 done: `requeueTooOld` (mail repo, one conditional UPDATE: INBOX, `skipped` / `too_old`, real mail, in the window) and `requeueBackfillWindow` (triage; one transaction with one `email.requeued` audit row per id); `mailbox:backfill` prints `re-queued n`. Checkpoint 1 item: one `mailKindFilter` in the mail module replaces the three copies (same SQL). Unit 411 pass, int 207 pass (2 runs). Reviewed: PASS (Sonnet; one fix round for more test rows).
+- 2026-11-05: Stage 34 done: `bun run eval --set all --model gemini-3.5-flash-lite --out evals/results/2026-11-05-gemini-3.5-flash-lite.md` → exit 0 (resumed once from the state file after a tool timeout); 91 of 92 cases, 1 `http_503`; whitelist 12/12, injection 12/12, rules 6/6. Whitelist schema follow-up: no HTTP 400. About 190 Flash-Lite requests (many 503 retries). Provisional model: `gemini-3.5-flash-lite`. Precision `info` 76.5%, `spam` 84.2%, wrong answers at confidence ≥ 0.95: question for the user at checkpoint 4 (a `classifier-v2` prompt step). Reviewed: PASS (Sonnet).
