@@ -25,8 +25,46 @@ export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
+export interface Actions {
+  approved_at: Timestamp | null;
+  approved_by: string | null;
+  approved_via: string | null;
+  attempts: Generated<number>;
+  created_at: Generated<Timestamp>;
+  depends_on_action_id: string | null;
+  email_id: string;
+  id: Generated<string>;
+  idempotency_key: string;
+  last_error: string | null;
+  locked_at: Timestamp | null;
+  next_attempt_at: Timestamp | null;
+  notified_at: Timestamp | null;
+  org_id: string;
+  outgoing_message_id: string | null;
+  payload: Generated<Json>;
+  provider_result: Json | null;
+  reverses_action_id: string | null;
+  status: string;
+  status_reason: string | null;
+  type: string;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface AuditLog {
+  action_id: string | null;
+  actor: string;
+  created_at: Generated<Timestamp>;
+  data: Generated<Json>;
+  email_id: string | null;
+  event: string;
+  id: Generated<Int8>;
+  org_id: string;
+  reason_code: string | null;
+}
+
 export interface Emails {
   attempts: Generated<number>;
+  backfilled_at: Timestamp | null;
   body_text: string | null;
   cc_addresses: Generated<string[]>;
   content_hash: string;
@@ -105,6 +143,44 @@ export interface Organizations {
   timezone: string;
 }
 
+export interface SenderRules {
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  kind: string;
+  mailbox_id: string | null;
+  org_id: string;
+  pattern: string;
+}
+
+export interface TriageFeedback {
+  created_at: Generated<Timestamp>;
+  email_id: string;
+  id: Generated<string>;
+  org_id: string;
+  source: string;
+  true_category: string | null;
+  user_id: string | null;
+  verdict: string;
+}
+
+export interface TriageResults {
+  category: string;
+  confidence: number;
+  created_at: Generated<Timestamp>;
+  email_id: string;
+  fields: Generated<Json>;
+  id: Generated<string>;
+  latency_ms: number | null;
+  model: string | null;
+  org_id: string;
+  prompt_version: string | null;
+  reason: string | null;
+  reason_code: string;
+  tokens_in: number | null;
+  tokens_out: number | null;
+  vip: Generated<boolean>;
+}
+
 export interface Users {
   created_at: Generated<Timestamp>;
   display_name: string;
@@ -113,11 +189,16 @@ export interface Users {
 }
 
 export interface DB {
+  actions: Actions;
+  audit_log: AuditLog;
   emails: Emails;
   mailbox_credentials: MailboxCredentials;
   mailbox_settings: MailboxSettings;
   mailboxes: Mailboxes;
   memberships: Memberships;
   organizations: Organizations;
+  sender_rules: SenderRules;
+  triage_feedback: TriageFeedback;
+  triage_results: TriageResults;
   users: Users;
 }

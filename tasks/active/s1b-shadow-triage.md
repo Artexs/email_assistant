@@ -1,4 +1,4 @@
-> **Status 2026-11-04 — in progress: stages 0–2 done.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 3–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
+> **Status 2026-11-05 — in progress: stages 0–3 done.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 4–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
 
 # S1b Shadow triage
 
@@ -110,6 +110,10 @@ The main session stops after the commit of the named stage and gives the user a 
 3. After stage 25 — worker: the whole pipeline runs locally.
 4. Before stage 37 — the last check before real mail goes to the VPS shadow run.
 
+### Review model (user decision 2026-11-04)
+
+Stage reviews run on Sonnet, high, also for `[risky]` stages. Opus, high reviews only the critical stages 3 (migration), 4 (claim and release), 11 (prompt and injection guard), 22 and 23 (job claim and release), and the group review at each user checkpoint.
+
 ### Stages
 
 Each stage lives in its own file in [`s1b-shadow-triage/`](s1b-shadow-triage/). An implementer or reviewer reads this file (Input, Rules, checkpoints) and only the stage file of its step.
@@ -118,7 +122,7 @@ The main session ticks the step boxes in the stage file and the stage box here.
 - [x] [Stage 0](s1b-shadow-triage/stage-00-pilot-free-tier-gate-adr-0013-docs-real-limits.md) — Pilot free-tier gate: ADR 0013, docs, real limits (before any real mail reaches the LLM)
 - [x] [Stage 1](s1b-shadow-triage/stage-01-core-triage-types-and-hard-rules.md) — Core triage types and hard rules
 - [x] [Stage 2](s1b-shadow-triage/stage-02-planners-and-policy.md) — Planners and policy [risky]
-- [ ] [Stage 3](s1b-shadow-triage/stage-03-s1b-tables-migration.md) — S1b tables migration [risky]
+- [x] [Stage 3](s1b-shadow-triage/stage-03-s1b-tables-migration.md) — S1b tables migration [risky]
 - [ ] [Stage 4](s1b-shadow-triage/stage-04-email-claim-and-release-queries.md) — Email claim and release queries [risky]
 - [ ] [Stage 5](s1b-shadow-triage/stage-05-sender-rule-and-audit-repositories.md) — Sender rule and audit repositories [risky]
 - [ ] [Stage 6](s1b-shadow-triage/stage-06-actions-repository.md) — Actions repository [risky]
@@ -204,3 +208,4 @@ None open (Q26–Q29 answered 2026-11-04).
 - 2026-11-04: Step 0.2 update: user sent the AI Studio limits (Flash-Lite RPM 15, 3.8 Flash RPM 5, TPM 250K; RPD not visible). Defaults: `GEMINI_RPM` 12, `LLM_DAILY_CAP` 300. VPS key set by the user: same key and project as the Mac.
 - 2026-11-04: Stage 1 done: core triage types, settings, analysis schema, hard sender rules, threshold, untrusted-text marking. Review fixes: date/phone and URL masking, `noreply+tag`. Stage 27 gets the pattern check (leading `@`, domain without dot). Reviewed: PASS.
 - 2026-11-04: Stage 2 done: category planners and the policy truth table (shadow logs only; `unsure` move needs only `move_unsure` and `movesSupported`; `mark_read` ignores `movesSupported`). Reviewed: PASS.
+- 2026-11-05: Stage 3 done: migration `20261104000001_triage.sql` (5 tables, `emails.backfilled_at`, append-only `audit_log`). Review fix: `actions.depends_on_action_id` / `reverses_action_id` are composite FKs with `org_id` (deviation from the plan text, stage file updated). Reviewed: PASS (Opus, 2 rounds). Also commits the user's review-model edits (README table row, task head).

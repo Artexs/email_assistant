@@ -46,7 +46,7 @@ Start it with `/skill:run-slice tasks/planned/<name>.md`. The skill (`~/.pi/agen
 | Main session (you talk to it) | Opus                                             | Calls the subagents, checks their work, asks the user, commits each stage                                     |
 | `planner` subagent            | Opus, medium                                     | Adds step detail to the approved stages in `## Plan` (files, interfaces, tests, checks). Never makes the plan |
 | `implementer` subagent        | Sonnet, medium (Opus, high for `[risky]` stages) | Builds one step: test first, code, checks. Never commits                                                      |
-| `reviewer` subagent           | Opus, high                                       | Reviews one stage, runs the checks, gives PASS or FAIL. Read-only                                             |
+| `reviewer` subagent           | Sonnet, high (Opus, high for critical stages and group reviews; critical = migration, exactly-once, auth/tenant, injection guard, sending) | Reviews one stage, runs the checks, gives PASS or FAIL. Read-only. Group review on Opus at each user checkpoint (else every 5 stages) |
 
 The subagents are global: `~/.pi/agent/agents/*.md`, via the extension in `~/.pi/agent/extensions/subagent/`.
 
