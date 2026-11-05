@@ -83,6 +83,7 @@ graph TD
     triage --> core
     triage --> delegation
     triage --> actions
+    triage --> audit
     actions --> mail
     actions --> audit
     actions --> core
@@ -111,6 +112,7 @@ graph TD
 
 `triage → delegation`: the hard rule "reply in a delegation thread" reads open delegations (S4).
 `triage → actions`: the triage worker writes the action rows through `actions.createPlanned()` in its transaction.
+`triage → audit`: the triage worker and `triage/backfill.ts` write audit rows through `audit.recordAudit()` in their transactions.
 `channels → triage`: the ✅ / ✏️ buttons and the Undo button write feedback through `triage.recordFeedback()`.
 `actions` never calls `triage`, and `mail` never calls `triage`: they set columns that the triage worker reads (no import cycles).
 
@@ -151,10 +153,10 @@ Code rules: `docs/code-patterns.md`.
 | `connect.ts` | `connectMailbox`: IMAP + SMTP login check, capabilities, folder map, encrypted secret, default settings (CLI `mailbox:connect`) |
 | `check.ts` | `checkMailbox`: read-only capability report, optional write probes (CLI `mailbox:check`) |
 | `sync-rules.ts` | Pure rules: `Message-ID` normalize, content hash, dedup keys, thread key, cursor filter, decisions for incoming mail |
-| `sync.ts` | `syncMailbox`: modes `initial` (24 h), `incremental` (UID cursor), `rescan` (7 days after a UIDVALIDITY change) |
+| `sync.ts` | `syncMailbox`: modes `initial` (24 h), `incremental` (UID cursor), `rescan` (7 days after a UIDVALIDITY change). `backfillInbox` (S1b): one-off, read-only fetch of the last 1–30 days; stores missing mail with `backfilled_at`; the cursor never moves |
 | `jobs.ts` | `createMailSyncJob`: every 5 min for each active mailbox (`listSyncTargets`); one mailbox error never stops the others |
 | `repo.ts` | `mailboxes`, `mailbox_credentials`, `emails` queries; guarded cursor update; `forceRescan` |
-| `seed.ts`, `audit.ts`, `tools.ts` | 48-hour test tools: `mailbox:seed` (test address only), `mailbox:rescan`, `mailbox:audit` |
+| `seed.ts`, `audit.ts`, `tools.ts` | 48-hour test tools: `mailbox:seed` (test address only; S1b: `--eval-cases synthetic\|injection\|all` seeds the eval cases), `mailbox:rescan`, `mailbox:audit`; S1b: `backfillMailbox` (backfill only); the script `mailbox:backfill` then calls `triage.requeueBackfillWindow` |
 | `fake/` | In-memory `MailProvider` for tests; `test/contract/` runs the same suite on fake and GreenMail |
 
 - **Owns:** `mailboxes`, `mailbox_credentials`, `emails`.
@@ -167,7 +169,8 @@ Code rules: `docs/code-patterns.md`.
   per organization, optional per mailbox). Style text (`organizations`) and digest times (`memberships`) belong to `tenancy`;
   `config`, `reports` and the API read and write them through `tenancy`'s `index.ts`.
 - **Does:** validation (for example: the owner's own address cannot be a delegate); default settings for a new mailbox (mode `shadow`, all automatic moves off).
-- **Built in S1a:** `config/repo.ts` reads and writes `mailbox_settings` (defaults on connect). `sender_rules` and validation come in S1b.
+- **Built in S1a:** `config/repo.ts` reads and writes `mailbox_settings` (defaults on connect).
+- **Built in S1b:** `sender_rules` (`listSenderRules`, `insertSenderRule`) and the CLI `bun run rules:add` / `rules:list` (the pattern is an address or a domain with a dot, lower case). Other validation comes later.
 
 ### 3.4 `triage` — understand each email (S1b)
 
@@ -182,8 +185,17 @@ Code rules: `docs/code-patterns.md`.
 | `worker` (job) | Claims `pending` emails (`SKIP LOCKED`), runs rules → classifier → planner → policy, saves `triage_results` + `actions` in one transaction, sets email `triaged` |
 
 - **Owns:** `triage_results`, `triage_feedback`.
+- **Built in S1b** (`apps/server/src/modules/triage/`; `packages/core` has the rules, planners, policy and metrics):
+  - `service.ts`: `triageOne` (age rule, hard rules, daily cap, classifier, save), `saveTriage` (result, actions and audit rows in one transaction; a lost claim writes nothing), `finishTriageError`.
+  - `jobs.ts`: `createTriageJob`, started by `main.ts` as `triage.worker` every 15 s. It follows `TRIAGE_LLM_SCOPE` (`off` builds no worker). Per mailbox: settings, rules, claim, loop. One mailbox error never stops the others.
+  - `pause.ts`: `createLlmPause`, the LLM client pause (5 min, doubling to 60 min). Error rules: `docs/architecture.md` §4.1 rule 7. Shutdown waits up to 30 s for a batch.
+  - `feedback.ts`, `label-input.ts`: `recordFeedback`, `listForLabeling`, `parseLabelInput`; CLI `bun run triage:label` (interactive, or one label with flags; Enter or `w` on an `unsure` row asks again, because a true category is needed). Rows get source `cli`. The `imap_move` feedback from `returned_at` is not built yet (S3).
+  - `backfill.ts`: `requeueBackfillWindow` (`skipped / too_old` real mail of the window → `pending`, one `email.requeued` audit row for each mail, one transaction).
+  - `eval*.ts`: `runEval`, `buildRealReport`, `renderEvalReport`; CLI `bun run eval`. `bun run triage:cost` prints tokens, latency and cost per mail and per mailbox per month from stored results.
 
 ### 3.5 `actions` — the only place that changes the mailbox (S3; S1b writes `logged` rows)
+
+Built in S1b: `createPlanned`, `listActionsForEmail`, `listSummaries`. The triage worker writes the rows with the status that the policy gives (§4.3). In `shadow` mode, mailbox changes are `logged`; a `save_summary` row is `ready` and waits for the committer. The committer and the other parts come in S3.
 
 | Sub-module | Does |
 |---|---|
@@ -200,6 +212,7 @@ Code rules: `docs/code-patterns.md`.
 
 - **Owns:** `audit_log` (append-only; the DB role `app` has only INSERT and SELECT).
 - **Does:** `record(event)` inside other modules' transactions; queries for the digest and the web activity view. No mail text in `data`.
+- **Built in S1b:** `recordAudit`, `countLlmCallsSince` (the daily cap), the event names in `auditEvents`: `email.triaged`, `email.skipped`, `action.planned`, `llm.call`, `email.requeued`.
 
 ### 3.7 `reports` — digest and metrics (S2)
 

@@ -1,5 +1,7 @@
-import { GoogleGenAI } from "@google/genai";
+import { z } from "zod";
 
+import { describeError } from "../platform/errors";
+import { createLlmClient } from "../platform/llm";
 import { createLog } from "../platform/log";
 
 const log = createLog("gemini-check");
@@ -13,14 +15,18 @@ async function main() {
     process.exit(1);
   }
 
-  const ai = new GoogleGenAI({ apiKey });
-  const res = await ai.models.generateContent({ model, contents: "Say hello" });
+  const llm = createLlmClient({ apiKey, classifierModel: model, timeoutMs: 30_000, rpm: 12 });
+  const { data, usage } = await llm.classify({
+    schema: z.object({ greeting: z.string() }),
+    system: "Answer with a JSON object.",
+    prompt: "Say hello in the field greeting.",
+  });
 
-  log.info(`model=${model}`);
-  log.info(res.text);
+  log.info(`model=${usage.model} latencyMs=${usage.latencyMs} tokensIn=${usage.tokensIn} tokensOut=${usage.tokensOut}`);
+  log.info(data.greeting);
 }
 
 main().catch((error) => {
-  log.error("Request failed:", error instanceof Error ? error.message : error);
+  log.error(`Request failed: ${describeError(error)}`);
   process.exit(1);
 });

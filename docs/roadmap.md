@@ -48,6 +48,8 @@ Each slice ends with something that works end to end and that the user can try.
 | **S5 Web panel (lite)** | Market check first (which mail the customers use); login; pages: onboarding, mailboxes, settings, rules, activity; API routes; web reachable from outside (proxy or tunnel) | Setup and control without the CLI | M | S3 (S4 for delegation data) |
 | **S6 Pre-sale** | Sign-up, billing, deletion, hosted EU production, Vertex AI EU, privacy policy + DPA, cost model | The first external customer can sign up | L | S5 |
 
+S1b state (2026-11-05): built and tested (task file `tasks/active/s1b-shadow-triage.md`, stages 0–34): hard rules, classifier `classifier-v1`, planners, policy, triage worker with LLM pause and daily cap, audit, feedback table and labeling CLI, eval runner (synthetic, injection, `--real`), cost report, backfill and re-queue, sender rules CLI, docs and notes (stage 35). First eval run (stage 34, `gemini-3.5-flash-lite`): whitelist and injection 12/12, no category at the 98% bar yet. Waiting: the model comparison (stage 36) and the VPS stages 37–40 (deploy, one week of real mail in shadow mode, labels, cost, final eval and go/no-go table). S1b is not done until the go/no-go table exists.
+
 Order: `S0 → S1a → S1b → S2 → S3 → S4 → S5 → S6`.
 
 ```mermaid
@@ -101,14 +103,16 @@ Hardest parts (most risk):
 
 - No new agent skills are needed. Existing: `vps-ssh` (azyl demo server), `gh-tickets` (issues), `handoff`.
 - Repeated fixed jobs become saved scripts, not skills: `bun run db:migrate`, `bun run db:types`, `bun run eval`,
-  `bun run org:create`, `bun run mailbox:connect`, `bun run mailbox:check`, `bun run triage:label`, `bun run telegram:link`.
+  `bun run org:create`, `bun run mailbox:connect`, `bun run mailbox:check`, `bun run telegram:link`.
+  S1b scripts: `bun run eval` (cases, or `--real` on labels), `bun run triage:label` (label results), `bun run triage:cost` (tokens, latency, cost),
+  `bun run rules:add` / `rules:list` (sender rules), `bun run mailbox:seed --eval-cases` (eval mails into the test mailbox), `bun run mailbox:backfill` (one-off older mail and re-queue).
 - Code rules for agents: `docs/code-patterns.md`.
 - Each slice has a task file in `tasks/`. It gets a file-level plan in `tasks/active/` before code starts (`tasks/README.md`).
 
 ## 5. LLM: Google Gemini (ADR 0007, ADR 0012, ADR 0013)
 
-- SDK `@google/genai`, key `GEMINI_API_KEY`, model from config `GEMINI_MODEL` (dev: `gemini-3.8-flash`), optional `GEMINI_MODEL_CLASSIFIER`.
-- All calls go through `platform/llm.ts` (`classify`, `write`): timeout 30 s, rate limiter, 429 / 503 / timeout = soft errors.
+- SDK `@google/genai`, key `GEMINI_API_KEY`, model from config `GEMINI_MODEL` (dev: `gemini-3.8-flash`), `GEMINI_MODEL_CLASSIFIER` (default `gemini-3.5-flash-lite`, provisional: `docs/architecture.md` §6.3), `GEMINI_RPM`, `LLM_DAILY_CAP`, `TRIAGE_LLM_SCOPE`.
+- All calls go through `platform/llm.ts` (`classify`; `write` comes in S4): timeout 30 s, rate limiter, 429 / 5xx / timeout = soft errors (pause: `docs/architecture.md` §4.1 rule 7).
 - Setup check: `bun run gemini:test` from the repo root (script `apps/server/src/scripts/gemini-check.ts`, env in the root `.env`). On 2026-11-02 the key worked, but the model returned `503 high demand`.
 - **Billing gate:** free tier only with test data. The temporary pilot Interia mailbox counts as test data (ADR 0013, user 2026-11-04). Cloud Billing (or Vertex AI) on before any other person's mail.
 - **Data:** pilot = Gemini API free tier for the temporary pilot mailbox (ADR 0013; the free-tier terms allow human review and training; accepted by the user 2026-11-04); the paid tier (55-day abuse logging, no EU location, accepted 2026-11-02) when billing goes on; Vertex AI EU before the first external customer (S6).

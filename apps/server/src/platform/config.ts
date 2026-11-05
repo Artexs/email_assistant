@@ -26,7 +26,7 @@ export const configSchema = z
     ),
     GEMINI_API_KEY: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
     // Writer role (S4) and fallback.
-    GEMINI_MODEL: z.string().default("gemini-3.8-flash"),
+    GEMINI_MODEL: z.preprocess((v) => (v === "" ? undefined : v), z.string().default("gemini-3.8-flash")),
     GEMINI_MODEL_CLASSIFIER: z.preprocess(
       (v) => (v === "" ? undefined : v),
       z.string().default("gemini-3.5-flash-lite")

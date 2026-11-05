@@ -169,6 +169,10 @@ describe("loadConfig", () => {
     );
   });
 
+  test("treats an empty GEMINI_MODEL as the default", () => {
+    expect(loadConfig({ ...fullEnv, GEMINI_MODEL: "" }).GEMINI_MODEL).toBe("gemini-3.8-flash");
+  });
+
   test("classifierModel returns the set GEMINI_MODEL_CLASSIFIER", () => {
     const config = loadConfig({ ...fullEnv, GEMINI_MODEL_CLASSIFIER: "gemini-3.1-flash-lite" });
     expect(classifierModel(config)).toBe("gemini-3.1-flash-lite");

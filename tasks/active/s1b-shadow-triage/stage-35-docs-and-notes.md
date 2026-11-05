@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 35 — Docs and notes
 
-- [ ] **35.1 Docs describe what S1b built**
+- [x] **35.1 Docs describe what S1b built**
   - Goal: the docs describe the current state of the triage pipeline, its config and its scripts.
   - Files: `docs/architecture.md`, `docs/modules.md`, `docs/roadmap.md`, `docs/code-patterns.md` (only if a rule changed).
   - Interfaces: none (docs only).
@@ -38,7 +38,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
   - Done when: a reader can find each new config key, script, status flow and audit event in the docs.
   - Out of scope: ADR text, closing `tasks/active/gemini-setup.md` (main session decides).
 
-- [ ] **35.2 Notes and known alerts**
+- [x] **35.2 Notes and known alerts**
   - Goal: later agents find the free-tier facts and the meaning of the new alert lines.
   - Files: create `notes/2026-11-xx-gemini-free-tier-triage.md` (date of the step); change `docs/known-alerts.md`.
   - Interfaces: none.

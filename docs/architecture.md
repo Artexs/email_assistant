@@ -145,12 +145,30 @@ Pipeline rules:
      Only an error with a known stage before DATA (connect, TLS, AUTH, MAIL FROM, RCPT TO) is safe to retry: `applying → approved`.
      How `nodemailer` reports the stage of an error is checked when S4 starts [not verified].
 7. **Retries live on the row that failed.** LLM errors retry the email (`emails.attempts`); mailbox errors retry the action (`actions.attempts`).
-   Soft errors (timeout, 429, 503, lost connection) wait with backoff (`next_attempt_at`) and do not count; the row keeps its status.
+   Soft errors wait with backoff (`next_attempt_at`) and do not count; the row keeps its status.
    Hard errors add 1 to `attempts`. After 3 hard errors: an email becomes `unsure` (reason `triage_error`);
    an action becomes `failed`, and the user gets a notice. Rule 6 wins for `send`.
-8. **Cost limits.** A daily cap of LLM calls per mailbox (default 300): when it is reached, the mail stays `pending`
-   with `next_attempt_at` = the next day. Mail older than 7 days is not sent to the LLM: status `skipped` (reason `too_old`);
-   the digest lists it as "not processed" (ADR 0012).
+   The triage worker (S1b; `triage/service.ts`, `triage/jobs.ts`, `triage/pause.ts`) applies this rule to the email as follows:
+   - **Soft error** (timeout, HTTP 429, 500, 502, 503, 504): the LLM client of the process pauses. The pause is 5 min.
+     Each next soft or config error without a good LLM answer in between doubles it, up to 60 min. The pause is in memory and covers all mailboxes.
+     The mail goes back to `pending` with `next_attempt_at` = the pause end. It gets no count. The job claims no mail during the pause.
+     Claimed mail that the worker did not try keeps its old `next_attempt_at`. One `warn` line per pause.
+   - **Config error** (HTTP 401, 402, 403, 404; HTTP 400 with `FAILED_PRECONDITION` or `API_KEY_INVALID`): the same pause, no count.
+     One `error` line names the keys to check.
+   - **Safety block** (`llm_blocked`): the mail becomes `unsure` at once. The worker writes one `llm.call` row and does not retry.
+   - **Hard error** (an HTTP 400 without the two config signs, an unreadable answer, an error without an HTTP status such as a lost network connection, or any other HTTP status that is not listed):
+     the mail waits a fixed 5 min and `attempts` goes up by 1. At 3 attempts the mail becomes `unsure` (`triage_error`).
+     A stale claim (`locked_at` older than 5 min) that a later run takes back also counts one attempt.
+     A mail that reaches 3 attempts this way becomes `unsure` (`triage_error`) without an LLM call.
+   - **Error outside the LLM call** (thread read, save, DB): the mail in work counts one try, with a 5-min wait, like a hard error.
+     At 3 tries it becomes `unsure` (`triage_error`). If that save fails, the mail goes back with a count.
+     Mail that the worker claimed later in the same batch goes back with no count. The error stops this mailbox only; the next mailbox runs.
+   - **Shutdown:** the server waits up to 30 s for a running batch. A batch that is cut off leaves claimed mail in `processing`;
+     the next start takes it back and counts one attempt for each mail.
+8. **Cost limits.** The daily cap (default 300, `LLM_DAILY_CAP`) counts every LLM call attempt (`audit_log` event `llm.call`)
+   per mailbox per `America/Los_Angeles` day (the quota day of the free tier). At the cap the mail goes back to `pending`
+   with `next_attempt_at` = the start of the next quota day, with no count. Mail older than 7 days is not sent to the LLM: status `skipped` (reason `too_old`);
+   the digest lists it as "not processed" (ADR 0012). Mail with `emails.backfilled_at` set skips the 7-day rule (one-off backfill, §6.1).
 
 ### 4.2 Categories and folders
 
@@ -251,10 +269,15 @@ sequenceDiagram
 
 ```
 emails.status:   pending → processing → triaged → done                (done = all its actions have an end status)
-                 processing → pending                                 (LLM error with tries left: soft = no count, hard = attempts + 1)
+                 processing → pending                                 (soft error, config error or daily cap: no count; untried claimed mail keeps its next_attempt_at)
+                 processing → pending                                 (hard error with tries left: attempts + 1, next try after 5 min)
+                 processing → pending                                 (error on the mailbox, for example a DB error: untried claimed mail goes back, no count)
                  processing → triaged as `unsure`                     (after 3 hard errors, reason triage_error)
-                 pending → skipped                                    (older than 7 days, reason too_old)
-                 pending stays pending                                (daily LLM cap reached: next_attempt_at = next day)
+                 processing → triaged as `unsure`                     (safety block, reason llm_blocked)
+                 processing → processing                              (stale claim: locked_at older than 5 min, taken again by a later run;
+                                                                       the take-back counts one attempt; a mail at 3 attempts ends as unsure / triage_error without an LLM call)
+                 processing → skipped                                 (older than 7 days and not backfilled, reason too_old)
+                 skipped → pending                                    (one-off backfill re-queue of too_old mail in the window)
 
 actions.status:  ready → applied                                      (idempotent: move, flag, mark read, save summary)
                  ready → applying → applied                           (create_draft)
@@ -300,11 +323,11 @@ erDiagram
 | `mailbox_credentials` | mailbox_id, encrypted_secret, secret_kind (`password` / `app_password`), key_version — server only (ADR 0009) | S1a |
 | `mailbox_settings` | mailbox_id, mode, tool_switches jsonb, category_policy jsonb (auto on/off + threshold per category) | S1a |
 | `sender_rules` | org_id, mailbox_id (null = all mailboxes), pattern (address or domain), kind (`whitelist` / `blocklist` / `vip`) | S1b |
-| `emails` | id, org_id, mailbox_id, dedup_key (unique per mailbox), message_id_header, content_hash, uid, folder, returned_at, thread_key, in_reply_to, references_header, from_address, to_addresses, cc_addresses, subject, received_at, body_text (retention), status (§4.6), skip_reason, attempts, next_attempt_at, locked_at | S1a |
+| `emails` | id, org_id, mailbox_id, dedup_key (unique per mailbox), message_id_header, content_hash, uid, folder, returned_at, thread_key, in_reply_to, references_header, from_address, to_addresses, cc_addresses, subject, received_at, body_text (retention), status (§4.6), skip_reason, attempts, next_attempt_at, locked_at, backfilled_at (S1b; set by the one-off backfill) | S1a |
 | `triage_results` | email_id, org_id, category, vip, confidence, reason_code, reason, fields jsonb, model, prompt_version, tokens_in, tokens_out, latency_ms, created_at | S1b |
 | `triage_feedback` | org_id, email_id, verdict (`right` / `wrong`), true_category (nullable), source (`cli` / `telegram` / `undo` / `imap_move` / `web`), user_id, created_at | S1b |
 | `actions` | id, org_id, email_id, type, payload jsonb, status (§4.6), status_reason, attempts, next_attempt_at, locked_at, last_error (no mail text), provider_result jsonb, idempotency_key, outgoing_message_id, depends_on_action_id, reverses_action_id, notified_at, approved_by, approved_at, approved_via | S1b |
-| `audit_log` | id, org_id, email_id, action_id, actor (`system` / user id), event, reason_code, data jsonb (ids, codes, numbers only), created_at — append-only | S1b |
+| `audit_log` | id, org_id, email_id, action_id, actor (`system` / user id), event, reason_code, data jsonb (ids, codes, numbers only), created_at — append-only. S1b events: `email.triaged`, `email.skipped`, `action.planned`, `llm.call` (`reason_code` = outcome: `ok` or the error code), `email.requeued` | S1b |
 | `chat_links` | user_id, channel (`telegram`), external_chat_id, linked_at | S2 |
 | `chat_link_tokens` | token_hash, user_id, expires_at (15 min), used_at | S2 |
 | `digests` | org_id, user_id, period_start, period_end, content (retention), sent_at | S2 |
@@ -343,6 +366,11 @@ Tenancy:
   If `emails.folder` = INBOX, update `uid` silently. In shadow mode the system moves nothing, so no flag is set. Never triage a known mail again.
 - **First connect:** only INBOX mail from the last 24 hours.
 - **After an outage:** the next sync takes all UIDs above the cursor (IMAP keeps them). Mail older than 7 days is stored but not sent to the LLM.
+- **Backfill (S1b, one-off):** `bun run mailbox:backfill --org-id <uuid> --mailbox-id <uuid> [--days 1-30]` reads INBOX mail of the last days.
+  It stores the missing mail with `emails.backfilled_at` set and never moves the cursor. It changes nothing in the mailbox.
+  It refuses a window of more than 30 days (the body is cleared after 30 days, §7). Then it re-queues real mail of the window that the worker
+  skipped as `too_old` (`skipped → pending`, one `email.requeued` audit row for each mail).
+  The re-queue sets `backfilled_at` = now, so re-queued mail skips the 7-day rule.
 - **UIDVALIDITY change:** rescan INBOX mail of the last 7 days; the dedup key stops duplicates; known mail only gets its new `uid`.
 - **Threads:** `thread_key` = the first `Message-ID` in `References`, else `In-Reply-To`, else the mail's own `Message-ID`.
   The LLM gets the last 3 mails with the same `thread_key` from the DB as context.
@@ -376,11 +404,21 @@ Tenancy:
   Bot chats are not end-to-end encrypted; the user accepts this content on Telegram servers.
 
 ### 6.3 LLM (ADR 0007, ADR 0012, ADR 0013)
-- Google Gemini through `@google/genai`, only inside `platform/llm.ts`. Model ids from config: `GEMINI_MODEL` (dev: `gemini-3.8-flash`),
-  optional `GEMINI_MODEL_CLASSIFIER`. Two roles: `classifier` (one call per mail, summary included) and `writer` (drafts, S4).
+- Google Gemini through `@google/genai`, only inside `platform/llm.ts`. Model ids from config: `GEMINI_MODEL` (writer role, S4; dev: `gemini-3.8-flash`),
+  `GEMINI_MODEL_CLASSIFIER` (default `gemini-3.5-flash-lite`). Two roles: `classifier` (one call per mail, summary included) and `writer` (drafts, S4).
+- **Classifier model (provisional, stage 34, 2026-11-05):** `gemini-3.5-flash-lite`. The eval on the 92 synthetic and injection cases ran with it:
+  91 cases answered (1 `http_503`), whitelist 12/12, injection 12/12, hard rules 6/6. Precision was 76.5% for `info` and 84.2% for `spam`,
+  so no category reaches the 98% bar yet. The comparison with `gemini-3.8-flash` is still open (stage 36), and stage 36 updates this line.
+  The model choice lives here and not in ADR 0013.
 - Structured output: JSON schema from the Zod schema in `packages/core`; the result is checked with Zod again.
-- Each call: timeout 30 s; lowest thinking setting for `classifier`; 429 / 503 / timeout are soft errors; a rate limiter keeps calls under the tier limit.
-- `triage_results` stores model, prompt version, tokens in/out and latency.
+- Each call: timeout 30 s (`GEMINI_TIMEOUT_MS`); a rate limiter keeps calls under `GEMINI_RPM` (default 12) in this process.
+  Simple calls: no `temperature` and no thinking setting; each model uses its default thinking (`gemini-3.5-flash-lite` defaults to minimal, Google thinking page, read 2026-11-04).
+  Error classes (soft, config, safety block, hard) and the pause: §4.1 rule 7.
+- `triage_results` stores model, prompt version, tokens in/out and latency. Output tokens include thinking tokens.
+- **Triage config keys:** `TRIAGE_LLM_SCOPE` (default `off`): `off` = no triage worker; `synthetic` = only the seeded test mail of every mailbox;
+  `all` = also real mail, only of the mailbox `TEST_MAILBOX_ADDRESS`. The server refuses to start with `synthetic` or `all` and no `GEMINI_API_KEY`,
+  and with `all` and no `TEST_MAILBOX_ADDRESS`. `LLM_DAILY_CAP` (default 300): the cap of §4.1 rule 8.
+  `GEMINI_RPM` (default 12). The LLM pause (§4.1 rule 7) has no key: 5 min, doubling to 60 min.
 - **Data by stage:** pilot = Gemini API free tier for the temporary pilot mailbox (ADR 0013; the free-tier terms allow human review and training;
   accepted by the user 2026-11-04); the paid tier (55-day abuse logging, no EU location, accepted 2026-11-02) when billing goes on.
   Vertex AI with the EU endpoint and its zero-data-retention setup before the first external customer.
@@ -450,6 +488,11 @@ Tenancy:
 - **Test mailbox:** there is no second Interia account; the pilot mailbox is the test mailbox (user 2026-11-04). A seed script APPENDs the synthetic eval mails
   (`@ea-seed.test` Message-IDs) into its INBOX (APPEND does not send). Use them for the eval and the 48-hour sync test (S1a).
 - **Evals** (`evals/`): synthetic and injection cases in git; real labels only in the DB. Report per category: precision and recall; whitelist rule 100%.
+  `bun run eval` options: `--per-category n` (a subset), `--retries n` (soft-error retries per case), resume from a state file in `evals/.runs/`
+  (`<model>-<prompt-version>-<set>[-pc<n>].jsonl`, outside git; `--state` sets another file, `--fresh` starts again),
+  a minimum support of 30 kept rows per category (`--min-kept`), a confidence histogram, and `--real` (labels from `triage_feedback`, no LLM call).
+  Exit code 0 = pass, 1 = a check failed (whitelist, injection, or too many error cases), 2 = the run is not complete (run the same command again).
+  `evals/README.md` has the commands.
   CI runs the eval only when `prompts/`, `evals/` or the model config change, with a paid key and a budget alert.
 - **Web:** Playwright smoke tests (S5).
 - **CI:** GitHub Actions — lint, typecheck, unit tests, integration tests (service containers: Postgres, mail server).
