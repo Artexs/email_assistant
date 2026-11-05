@@ -1,4 +1,4 @@
-> **Status 2026-11-05 — in progress: stages 0–20 done.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 21–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
+> **Status 2026-11-05 — in progress: stages 0–21 done.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 22–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
 
 # S1b Shadow triage
 
@@ -140,7 +140,7 @@ The main session ticks the step boxes in the stage file and the stage box here.
 - [x] [Stage 18](s1b-shadow-triage/stage-18-eval-report-and-cli.md) — Eval report and CLI [risky]
 - [x] [Stage 19](s1b-shadow-triage/stage-19-triage-save-path.md) — Triage save path [risky]
 - [x] [Stage 20](s1b-shadow-triage/stage-20-triage-of-one-email-success-path.md) — Triage of one email: success path [risky]
-- [ ] [Stage 21](s1b-shadow-triage/stage-21-triage-of-one-email-llm-error-rules-and-the-paus.md) — Triage of one email: LLM error rules and the pause [risky]
+- [x] [Stage 21](s1b-shadow-triage/stage-21-triage-of-one-email-llm-error-rules-and-the-paus.md) — Triage of one email: LLM error rules and the pause [risky]
 - [ ] [Stage 22](s1b-shadow-triage/stage-22-triage-job-mailboxes-scope-settings-claim.md) — Triage job: mailboxes, scope, settings, claim [risky]
 - [ ] [Stage 23](s1b-shadow-triage/stage-23-triage-job-stop-on-a-pause-release-on-a-mailbox.md) — Triage job: stop on a pause, release on a mailbox error [risky]
 - [ ] [Stage 24](s1b-shadow-triage/stage-24-cost-gates-7-day-rule-with-the-backfill-waiver-d.md) — Cost gates: 7-day rule with the backfill waiver, daily cap [risky]
@@ -227,3 +227,4 @@ None open (Q26–Q29 answered 2026-11-04).
 - 2026-11-05: Checkpoint 2 group review (stages 9–18, Opus): PASS. Fixed in code: `+` concatenation, `whitelist.errors` count, `costPerMail` prototype-name test. Other findings written as follow-ups into the stage 28, 30, 34 and 35 files.
 - 2026-11-05: Stage 19 done: `describeError`, `saveTriage` (result, actions and audit rows in one transaction; lost claim returns `lost`). Unit 379 pass, int 144 pass. Reviewed: PASS (Sonnet; fix round for plain-object `code`).
 - 2026-11-05: Stage 20 done: `triageOne` (hard rules, thread context, classifier, `llm.call` row, threshold, save). Unit 379 pass, int 151 pass. Reviewed: PASS (Sonnet; fix round for 3 minor findings). Follow-up for the `llm.call` audit write in the `catch` is in the stage 21 file.
+- 2026-11-05: Stage 21 done: LLM error rules in `triageOne` (soft/config pause, blocked → `unsure`, 3 hard tries), `createLlmPause`, `finishTriageError`; the `llm.call` audit write no longer hides the LLM error. Unit 384 pass, int 158 pass. Reviewed: PASS (Sonnet; fix round for test gaps). `TriageDeps.pause` is required: the job (stage 22) builds it with `createLlmPause()`.

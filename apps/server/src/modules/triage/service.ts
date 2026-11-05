@@ -15,13 +15,15 @@ import {
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { llmErrorCode, type LlmClient, type LlmUsage } from "../../platform/llm";
+import { describeError, SoftError } from "../../platform/errors";
+import { LlmBlockedError, LlmConfigError, llmErrorCode, type LlmClient, type LlmUsage } from "../../platform/llm";
 import { createLog } from "../../platform/log";
 import { createPlanned, type PlannedActionInput } from "../actions";
 import { auditEvents, recordAudit } from "../audit";
-import { finishEmail, isSyntheticMessageId, listThreadContext, type ClaimedEmail } from "../mail";
+import { finishEmail, isSyntheticMessageId, listThreadContext, releaseEmail, type ClaimedEmail } from "../mail";
 
 import { classifyEmail, type ClassifierEmail } from "./classifier";
+import type { LlmPause } from "./pause";
 import { PROMPT_VERSION } from "./prompts/classifier-v1";
 import { insertTriageResult } from "./repo";
 
@@ -56,10 +58,18 @@ export interface TriageDecision {
 export interface TriageDeps {
   db: Db | Transaction<DB>;
   llm: LlmClient;
+  pause: LlmPause;
   now(): Date;
 }
 
-export type TriageOutcome = { kind: "triaged" } | { kind: "lost" };
+export type TriageOutcome =
+  | { kind: "triaged" }
+  | { kind: "lost" }
+  | { kind: "retry_later" }
+  | { kind: "paused"; until: Date };
+
+const HARD_ERROR_TRIES = 3;
+const HARD_ERROR_WAIT_MS = 5 * 60_000;
 
 function payloadOf(action: PlannedAction): Record<string, string> {
   switch (action.type) {
@@ -156,6 +166,79 @@ export async function saveTriage(
   return result;
 }
 
+// The mail ends in `unsure` without an LLM answer. The job also uses it after 3 failed runs.
+export async function finishTriageError(
+  deps: TriageDeps,
+  ctx: TenantContext,
+  mailbox: TriageMailbox,
+  email: ClaimedEmail
+): Promise<TriageOutcome> {
+  const rules = applyHardRules(email.from_address, mailbox.rules);
+  return saveTriage(deps.db, ctx, mailbox, email, {
+    finalCategory: "unsure",
+    modelCategory: null,
+    confidence: 0,
+    reasonCode: "triage_error",
+    reason: null,
+    summary: null,
+    fields: {},
+    vip: rules.kind === "spam" ? false : rules.vip,
+    model: null,
+    promptVersion: null,
+    usage: null,
+    auditReasonCode: "triage_error",
+  });
+}
+
+// The error rules for an error from `classifyEmail`; the `llm.call` row is already written.
+async function handleClassifyError(
+  deps: TriageDeps,
+  ctx: TenantContext,
+  mailbox: TriageMailbox,
+  email: ClaimedEmail,
+  vip: boolean,
+  error: unknown
+): Promise<TriageOutcome> {
+  const now = deps.now();
+  // Soft and config errors: the mail is not at fault. Release it without a count and pause the client.
+  if (error instanceof SoftError || error instanceof LlmConfigError) {
+    const kind = error instanceof SoftError ? "soft" : "config";
+    const until = deps.pause.trip(kind, llmErrorCode(error), now);
+    const released = await releaseEmail(deps.db, ctx, email.id, email.locked_at, {
+      nextAttemptAt: until,
+      countAttempt: false,
+    });
+    return released ? { kind: "paused", until } : { kind: "lost" };
+  }
+  if (error instanceof LlmBlockedError) {
+    deps.pause.reset();
+    return saveTriage(deps.db, ctx, mailbox, email, {
+      finalCategory: "unsure",
+      modelCategory: null,
+      confidence: 0,
+      reasonCode: "llm_blocked",
+      reason: null,
+      summary: null,
+      fields: {},
+      vip,
+      model: null,
+      promptVersion: PROMPT_VERSION,
+      usage: null,
+      auditReasonCode: "llm_blocked",
+    });
+  }
+  if (email.attempts + 1 < HARD_ERROR_TRIES) {
+    const released = await releaseEmail(deps.db, ctx, email.id, email.locked_at, {
+      nextAttemptAt: new Date(now.getTime() + HARD_ERROR_WAIT_MS),
+      countAttempt: true,
+    });
+    if (!released) return { kind: "lost" };
+    log.warn(`triage ${email.id}: ${describeError(error)}, try ${email.attempts + 1} of ${HARD_ERROR_TRIES}`);
+    return { kind: "retry_later" };
+  }
+  return finishTriageError(deps, ctx, mailbox, email);
+}
+
 // Triage one claimed email: hard rules, then the classifier, then `saveTriage`.
 // The `llm.call` rows go to `deps.db` outside the save transaction: a call counts also when the mail is lost.
 export async function triageOne(
@@ -209,23 +292,29 @@ export async function triageOne(
       allowed: rules.allowed,
     });
   } catch (error) {
-    await recordAudit(deps.db, ctx, {
-      emailId: email.id,
-      actor: "system",
-      event: auditEvents.llmCall,
-      reasonCode: llmErrorCode(error),
-      data: {
-        mailbox_id: mailbox.id,
-        model: deps.llm.classifierModel,
-        prompt_version: PROMPT_VERSION,
-        tokens_in: null,
-        tokens_out: null,
-        latency_ms: Date.now() - start,
-      },
-      at: deps.now(),
-    });
-    throw error;
+    // A failed audit write must not hide the LLM error from the rules below.
+    try {
+      await recordAudit(deps.db, ctx, {
+        emailId: email.id,
+        actor: "system",
+        event: auditEvents.llmCall,
+        reasonCode: llmErrorCode(error),
+        data: {
+          mailbox_id: mailbox.id,
+          model: deps.llm.classifierModel,
+          prompt_version: PROMPT_VERSION,
+          tokens_in: null,
+          tokens_out: null,
+          latency_ms: Date.now() - start,
+        },
+        at: deps.now(),
+      });
+    } catch (auditError) {
+      log.warn(`triage ${email.id}: llm.call audit write failed: ${describeError(auditError)}`);
+    }
+    return handleClassifyError(deps, ctx, mailbox, email, rules.vip, error);
   }
+  deps.pause.reset();
   const { analysis, usage, promptVersion } = result;
   await recordAudit(deps.db, ctx, {
     emailId: email.id,

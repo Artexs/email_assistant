@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 21 — Triage of one email: LLM error rules and the pause [risky]
 
-- [ ] **21.1 Soft, config, blocked and hard errors in `triageOne`; `createLlmPause`; `finishTriageError`**
+- [x] **21.1 Soft, config, blocked and hard errors in `triageOne`; `createLlmPause`; `finishTriageError`**
   - Goal: a 429 / 503 / timeout or a config error never moves mail to `unsure` and pauses the LLM client; a safety block goes to `unsure` at once; hard errors retry and end in `unsure` after 3 tries.
   - Files: create `apps/server/src/modules/triage/pause.ts`, `apps/server/src/modules/triage/pause.test.ts`; change `apps/server/src/modules/triage/service.ts`, `triage/index.ts`; extend `apps/server/test/integration/triage-service.test.ts`.
   - Interfaces:

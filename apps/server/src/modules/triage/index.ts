@@ -20,5 +20,7 @@ export type {
 export { runEval, toClassifierInput } from "./eval";
 export type { CaseResult, CasesEvalReport, EvalReport, EvalReportBase, RealEvalReport } from "./eval";
 export { evalExitCode, renderEvalReport } from "./eval-report";
-export { saveTriage, triageOne } from "./service";
+export { createLlmPause } from "./pause";
+export type { LlmPause } from "./pause";
+export { finishTriageError, saveTriage, triageOne } from "./service";
 export type { TriageDecision, TriageDeps, TriageMailbox, TriageOutcome } from "./service";
