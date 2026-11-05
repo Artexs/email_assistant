@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 20 — Triage of one email: success path [risky]
 
-- [ ] **20.1 `triageOne`: rules, thread context, classifier, `llm.call` row, threshold, save**
+- [x] **20.1 `triageOne`: rules, thread context, classifier, `llm.call` row, threshold, save**
   - Goal: triage one claimed email through the hard rules and the classifier, with one `llm.call` audit row per LLM call, and save it with `saveTriage`.
   - Files: change `apps/server/src/modules/triage/service.ts`, `triage/index.ts`; extend `apps/server/test/integration/triage-service.test.ts`.
   - Interfaces:

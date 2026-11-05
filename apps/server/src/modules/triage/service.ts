@@ -1,6 +1,8 @@
 import {
   actionStatusFor,
+  applyHardRules,
   autoFor,
+  decideCategory,
   decidePolicy,
   planActions,
   type Category,
@@ -13,12 +15,14 @@ import {
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
-import type { LlmUsage } from "../../platform/llm";
+import { llmErrorCode, type LlmClient, type LlmUsage } from "../../platform/llm";
 import { createLog } from "../../platform/log";
 import { createPlanned, type PlannedActionInput } from "../actions";
 import { auditEvents, recordAudit } from "../audit";
-import { finishEmail, type ClaimedEmail } from "../mail";
+import { finishEmail, isSyntheticMessageId, listThreadContext, type ClaimedEmail } from "../mail";
 
+import { classifyEmail, type ClassifierEmail } from "./classifier";
+import { PROMPT_VERSION } from "./prompts/classifier-v1";
 import { insertTriageResult } from "./repo";
 
 const log = createLog("triage");
@@ -49,6 +53,14 @@ export interface TriageDecision {
   auditReasonCode: string;
 }
 
+export interface TriageDeps {
+  db: Db | Transaction<DB>;
+  llm: LlmClient;
+  now(): Date;
+}
+
+export type TriageOutcome = { kind: "triaged" } | { kind: "lost" };
+
 function payloadOf(action: PlannedAction): Record<string, string> {
   switch (action.type) {
     case "move":
@@ -68,7 +80,7 @@ export async function saveTriage(
   mailbox: TriageMailbox,
   email: ClaimedEmail,
   decision: TriageDecision
-): Promise<{ kind: "triaged" } | { kind: "lost" }> {
+): Promise<TriageOutcome> {
   const categoryAuto = autoFor(mailbox.policy, decision.finalCategory);
   const items: PlannedActionInput[] = planActions(decision.finalCategory, decision.summary).map((action) => ({
     type: action.type,
@@ -86,7 +98,7 @@ export async function saveTriage(
     idempotencyKey: `${email.id}:${action.type}`,
   }));
 
-  const run = async (trx: Transaction<DB>): Promise<{ kind: "triaged" } | { kind: "lost" }> => {
+  const run = async (trx: Transaction<DB>): Promise<TriageOutcome> => {
     if (!(await finishEmail(trx, ctx, email.id, email.locked_at, { status: "triaged" }))) {
       log.warn(`triage ${email.id}: lost the claim`);
       return { kind: "lost" };
@@ -142,4 +154,108 @@ export async function saveTriage(
     );
   }
   return result;
+}
+
+// Triage one claimed email: hard rules, then the classifier, then `saveTriage`.
+// The `llm.call` rows go to `deps.db` outside the save transaction: a call counts also when the mail is lost.
+export async function triageOne(
+  deps: TriageDeps,
+  ctx: TenantContext,
+  mailbox: TriageMailbox,
+  email: ClaimedEmail
+): Promise<TriageOutcome> {
+  const rules = applyHardRules(email.from_address, mailbox.rules);
+  if (rules.kind === "spam") {
+    return saveTriage(deps.db, ctx, mailbox, email, {
+      finalCategory: "spam",
+      modelCategory: null,
+      confidence: 1,
+      reasonCode: "blocklist",
+      reason: null,
+      summary: null,
+      fields: {},
+      vip: false,
+      model: null,
+      promptVersion: null,
+      usage: null,
+      auditReasonCode: "blocklist",
+    });
+  }
+
+  const threadRows = await listThreadContext(deps.db, ctx, mailbox.id, email.thread_key, email.received_at, email.id, {
+    syntheticOnly: isSyntheticMessageId(email.message_id_header),
+  });
+  const classifierEmail: ClassifierEmail = {
+    from: email.from_address,
+    to: email.to_addresses,
+    cc: email.cc_addresses,
+    subject: email.subject,
+    receivedAt: email.received_at,
+    bodyText: email.body_text,
+    thread: threadRows.reverse().map((row) => ({
+      from: row.from_address,
+      subject: row.subject,
+      receivedAt: row.received_at,
+      bodyExcerpt: row.body_excerpt,
+    })),
+  };
+
+  const start = Date.now();
+  let result: Awaited<ReturnType<typeof classifyEmail>>;
+  try {
+    result = await classifyEmail(deps.llm, {
+      email: classifierEmail,
+      sender: { whitelisted: rules.whitelisted, vip: rules.vip, noreply: rules.noreply },
+      allowed: rules.allowed,
+    });
+  } catch (error) {
+    await recordAudit(deps.db, ctx, {
+      emailId: email.id,
+      actor: "system",
+      event: auditEvents.llmCall,
+      reasonCode: llmErrorCode(error),
+      data: {
+        mailbox_id: mailbox.id,
+        model: deps.llm.classifierModel,
+        prompt_version: PROMPT_VERSION,
+        tokens_in: null,
+        tokens_out: null,
+        latency_ms: Date.now() - start,
+      },
+      at: deps.now(),
+    });
+    throw error;
+  }
+  const { analysis, usage, promptVersion } = result;
+  await recordAudit(deps.db, ctx, {
+    emailId: email.id,
+    actor: "system",
+    event: auditEvents.llmCall,
+    reasonCode: "ok",
+    data: {
+      mailbox_id: mailbox.id,
+      model: usage.model,
+      prompt_version: promptVersion,
+      tokens_in: usage.tokensIn,
+      tokens_out: usage.tokensOut,
+      latency_ms: usage.latencyMs,
+    },
+    at: deps.now(),
+  });
+
+  const { category, belowThreshold } = decideCategory(analysis, mailbox.policy);
+  return saveTriage(deps.db, ctx, mailbox, email, {
+    finalCategory: category,
+    modelCategory: analysis.category,
+    confidence: analysis.confidence,
+    reasonCode: analysis.reason_code,
+    reason: analysis.reason,
+    summary: analysis.summary,
+    fields: analysis.fields,
+    vip: rules.vip,
+    model: usage.model,
+    promptVersion,
+    usage,
+    auditReasonCode: belowThreshold ? "below_threshold" : analysis.reason_code,
+  });
 }

@@ -3,8 +3,9 @@ import type { Transaction } from "kysely";
 
 import { listActionsForEmail } from "../../src/modules/actions";
 import { claimEmails, type ClaimedEmail } from "../../src/modules/mail";
-import { saveTriage, type TriageDecision, type TriageMailbox } from "../../src/modules/triage";
+import { saveTriage, triageOne, type TriageDecision, type TriageMailbox } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
+import { LlmSoftError, type LlmClient } from "../../src/platform/llm";
 
 import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -197,6 +198,249 @@ describe("saveTriage", () => {
       const log = await audit(trx, emailId);
       expect(log.filter((r) => r.event === "action.planned")).toHaveLength(2);
       expect(log.filter((r) => r.event === "email.triaged")).toHaveLength(2);
+    });
+  });
+});
+
+interface FakeLlm extends LlmClient {
+  requests: { system: string; prompt: string }[];
+}
+
+function fakeLlm(answer: (() => unknown) | Error): FakeLlm {
+  const requests: { system: string; prompt: string }[] = [];
+  return {
+    classifierModel: "fake-model",
+    requests,
+    async classify(req) {
+      requests.push({ system: req.system, prompt: req.prompt });
+      if (answer instanceof Error) throw answer;
+      return {
+        data: req.schema.parse(answer()),
+        usage: { model: "fake-model", tokensIn: 100, tokensOut: 20, latencyMs: 300 },
+      };
+    },
+  } as FakeLlm;
+}
+
+const analysis =
+  (overrides: Record<string, unknown> = {}) =>
+  () => ({
+    category: "info",
+    confidence: 0.9,
+    reason_code: "newsletter",
+    reason: "a newsletter",
+    summary: "short summary",
+    fields: { due_date: null, language: "pl" },
+    ...overrides,
+  });
+
+async function setupMail(
+  trx: Transaction<DB>,
+  overrides: Parameters<typeof insertTestEmail>[3] = {},
+  rules: TriageMailbox["rules"] = [],
+  syntheticOnly = false
+) {
+  const base = await setup(trx);
+  const emailId = await insertTestEmail(trx, base.ctx, base.mailbox.id, overrides);
+  const claimed = await claimEmails(trx, base.ctx, base.mailbox.id, {
+    now,
+    limit: 10,
+    staleBefore: new Date(now.getTime() - 5 * 60_000),
+    syntheticOnly,
+  });
+  const email = claimed.find((row) => row.id === emailId);
+  if (!email) throw new Error("claim failed");
+  return { ...base, emailId, email, mailbox: { ...base.mailbox, rules } };
+}
+
+async function llmRows(trx: Transaction<DB>, emailId: string) {
+  return (await audit(trx, emailId)).filter((r) => r.event === "llm.call");
+}
+
+describe("triageOne", () => {
+  test("an info mail is triaged with one ok llm.call row", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, emailId, email, mailbox } = await setupMail(trx, { from_address: "news@shop.test" });
+      const llm = fakeLlm(analysis());
+      expect(await triageOne({ db: trx, llm, now: () => now }, ctx, mailbox, email)).toEqual({ kind: "triaged" });
+
+      expect(llm.requests).toHaveLength(1);
+      expect(await emailStatus(trx, emailId)).toBe("triaged");
+      const [row] = await results(trx, emailId);
+      expect(row).toMatchObject({
+        category: "info",
+        reason_code: "newsletter",
+        model: "fake-model",
+        prompt_version: "classifier-v1",
+        tokens_in: 100,
+        tokens_out: 20,
+      });
+      const calls = await llmRows(trx, emailId);
+      expect(calls).toHaveLength(1);
+      expect(calls[0]?.reason_code).toBe("ok");
+      expect(calls[0]?.data).toEqual({
+        mailbox_id: mailbox.id,
+        model: "fake-model",
+        prompt_version: "classifier-v1",
+        tokens_in: 100,
+        tokens_out: 20,
+        latency_ms: 300,
+      });
+      const log = await audit(trx, emailId);
+      expect(log.filter((r) => r.event === "email.triaged")).toHaveLength(1);
+      expect(log.filter((r) => r.event === "action.planned")).toHaveLength(2);
+      expect(await listActionsForEmail(trx, ctx, emailId)).toHaveLength(2);
+    });
+  });
+
+  test("a blocklist sender is spam without an LLM call", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, emailId, email, mailbox } = await setupMail(trx, { from_address: "bad@spam.test" }, [
+        { pattern: "spam.test", kind: "blocklist" },
+      ]);
+      const llm = fakeLlm(analysis());
+      expect(await triageOne({ db: trx, llm, now: () => now }, ctx, mailbox, email)).toEqual({ kind: "triaged" });
+
+      expect(llm.requests).toHaveLength(0);
+      const [row] = await results(trx, emailId);
+      expect(row).toMatchObject({ category: "spam", model: null, reason_code: "blocklist", confidence: 1 });
+      expect(await llmRows(trx, emailId)).toHaveLength(0);
+      const triaged = (await audit(trx, emailId)).find((r) => r.event === "email.triaged");
+      expect(triaged?.reason_code).toBe("blocklist");
+    });
+  });
+
+  test("a whitelisted sender gets an allowed list without spam", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, email, mailbox } = await setupMail(trx, { from_address: "boss@corp.test" }, [
+        { pattern: "corp.test", kind: "whitelist" },
+      ]);
+      const llm = fakeLlm(analysis());
+      await triageOne({ db: trx, llm, now: () => now }, ctx, mailbox, email);
+
+      expect(llm.requests).toHaveLength(1);
+      const system = llm.requests[0]?.system ?? "";
+      const other = fakeLlm(analysis());
+      const plain = await setupMail(trx, { from_address: "someone@else.test" });
+      await triageOne({ db: trx, llm: other, now: () => now }, plain.ctx, plain.mailbox, plain.email);
+      expect(other.requests[0]?.system).not.toBe(system);
+      expect(other.requests[0]?.system).toContain("spam");
+      expect(system).not.toContain("spam");
+    });
+  });
+
+  test("confidence below the threshold gives unsure with the below_threshold code", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, emailId, email, mailbox } = await setupMail(trx);
+      const llm = fakeLlm(analysis({ confidence: 0.5, reason_code: "fyi" }));
+      await triageOne({ db: trx, llm, now: () => now }, ctx, mailbox, email);
+
+      const [row] = await results(trx, emailId);
+      expect(row).toMatchObject({ category: "unsure", reason_code: "fyi", confidence: 0.5 });
+      expect(row?.fields).toMatchObject({ model_category: "info" });
+      const triaged = (await audit(trx, emailId)).find((r) => r.event === "email.triaged");
+      expect(triaged?.reason_code).toBe("below_threshold");
+    });
+  });
+
+  test("an LLM error is rethrown unchanged and leaves one llm.call row with its code", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, emailId, email, mailbox } = await setupMail(trx);
+      const error = new LlmSoftError("http_503", "fake-model");
+      const llm = fakeLlm(error);
+      const thrown = await triageOne({ db: trx, llm, now: () => now }, ctx, mailbox, email).catch((e: unknown) => e);
+      expect(thrown).toBe(error);
+
+      const calls = await llmRows(trx, emailId);
+      expect(calls).toHaveLength(1);
+      expect(calls[0]?.reason_code).toBe("http_503");
+      expect(calls[0]?.data).toMatchObject({ model: "fake-model", tokens_in: null, tokens_out: null });
+      expect(await results(trx, emailId)).toHaveLength(0);
+      expect(await emailStatus(trx, emailId)).toBe("processing");
+    });
+  });
+
+  test("older mails of the thread reach the prompt oldest first", async () => {
+    await withRollback(db, async (trx) => {
+      const threadKey = "thread:order";
+      const base = await setup(trx);
+      const markers = [
+        ["FIRST-MARKER", "2026-11-05T08:00:00Z"],
+        ["SECOND-MARKER", "2026-11-05T09:00:00Z"],
+        ["THIRD-MARKER", "2026-11-05T10:00:00Z"],
+      ] as const;
+      for (const [index, [marker, at]] of markers.entries()) {
+        await insertTestEmail(trx, base.ctx, base.mailbox.id, {
+          thread_key: threadKey,
+          message_id_header: `<order-${index}@corp.test>`,
+          body_text: marker,
+          received_at: new Date(at),
+          status: "triaged",
+        });
+      }
+      const currentId = await insertTestEmail(trx, base.ctx, base.mailbox.id, {
+        thread_key: threadKey,
+        message_id_header: "<order-current@corp.test>",
+        body_text: "current",
+        received_at: new Date("2026-11-05T11:00:00Z"),
+      });
+      const claimed = await claimEmails(trx, base.ctx, base.mailbox.id, {
+        now,
+        limit: 10,
+        staleBefore: new Date(now.getTime() - 5 * 60_000),
+        syntheticOnly: false,
+      });
+      const email = claimed.find((row) => row.id === currentId);
+      if (!email) throw new Error("claim failed");
+      const llm = fakeLlm(analysis());
+      await triageOne({ db: trx, llm, now: () => now }, base.ctx, base.mailbox, email);
+
+      const prompt = llm.requests[0]?.prompt ?? "";
+      const positions = markers.map(([marker]) => prompt.indexOf(marker));
+      expect(positions.every((p) => p >= 0)).toBe(true);
+      expect(positions[0]).toBeLessThan(positions[1] ?? -1);
+      expect(positions[1]).toBeLessThan(positions[2] ?? -1);
+    });
+  });
+
+  test("a synthetic mail does not see real mail of its thread", async () => {
+    await withRollback(db, async (trx) => {
+      const threadKey = "thread:shared";
+      const base = await setup(trx);
+      await insertTestEmail(trx, base.ctx, base.mailbox.id, {
+        thread_key: threadKey,
+        message_id_header: "<real@corp.test>",
+        body_text: "REAL-MARKER-XYZ",
+        received_at: new Date("2026-11-05T10:00:00Z"),
+        status: "triaged",
+      });
+      await insertTestEmail(trx, base.ctx, base.mailbox.id, {
+        thread_key: threadKey,
+        message_id_header: "<old@ea-seed.test>",
+        body_text: "SYNTH-MARKER-ABC",
+        received_at: new Date("2026-11-05T09:00:00Z"),
+        status: "triaged",
+      });
+      const currentId = await insertTestEmail(trx, base.ctx, base.mailbox.id, {
+        thread_key: threadKey,
+        message_id_header: "<a@ea-seed.test>",
+        body_text: "current",
+        received_at: new Date("2026-11-05T11:00:00Z"),
+      });
+      const claimed = await claimEmails(trx, base.ctx, base.mailbox.id, {
+        now,
+        limit: 10,
+        staleBefore: new Date(now.getTime() - 5 * 60_000),
+        syntheticOnly: true,
+      });
+      const email = claimed.find((row) => row.id === currentId);
+      if (!email) throw new Error("claim failed");
+      const llm = fakeLlm(analysis());
+      await triageOne({ db: trx, llm, now: () => now }, base.ctx, base.mailbox, email);
+
+      const prompt = llm.requests[0]?.prompt ?? "";
+      expect(prompt).not.toContain("REAL-MARKER-XYZ");
+      expect(prompt).toContain("SYNTH-MARKER-ABC");
     });
   });
 });

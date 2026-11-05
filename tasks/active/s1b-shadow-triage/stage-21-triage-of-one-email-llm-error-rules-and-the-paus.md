@@ -31,3 +31,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
   - Check: `bun run dev:up && bun run db:migrate && bun run lint && bun run typecheck && bun run test:unit && bun run test:int`
   - Done when: the tests pass.
   - Out of scope: the job loop and the release of the other claimed mails (stages 22–23), the cap and the 7-day rule (stage 24).
+
+## Follow-up from the stage 20 review
+
+- In `triageOne` (stage 20) the `llm.call` audit write sits inside the `catch`. If `recordAudit` fails there, its error replaces the LLM error and the error rules see a DB error. Decide here: wrap that audit write in its own `try`/`catch` (log `warn` with `describeError`), then rethrow the LLM error. Add a test.
