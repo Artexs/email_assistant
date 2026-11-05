@@ -1,4 +1,4 @@
-> **Status 2026-11-05 — in progress: stages 0–32 done, checkpoint 3 group review passed.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 33–40, with 1 user checkpoint left (before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
+> **Status 2026-11-05 — in progress: stages 0–33 done, checkpoint 3 group review passed.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 34–40, with 1 user checkpoint left (before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
 
 # S1b Shadow triage
 
@@ -152,7 +152,7 @@ The main session ticks the step boxes in the stage file and the stage box here.
 - [x] [Stage 30](s1b-shadow-triage/stage-30-eval-subset-and-resume.md) — Eval subset and resume [risky]
 - [x] [Stage 31](s1b-shadow-triage/stage-31-one-off-inbox-backfill-backfillinbox.md) — One-off INBOX backfill: `backfillInbox` [risky]
 - [x] [Stage 32](s1b-shadow-triage/stage-32-one-off-inbox-backfill-tool-and-cli.md) — One-off INBOX backfill: tool and CLI [risky]
-- [ ] [Stage 33](s1b-shadow-triage/stage-33-re-queue-too-old-mail-in-the-backfill-window.md) — Re-queue `too_old` mail in the backfill window [risky]
+- [x] [Stage 33](s1b-shadow-triage/stage-33-re-queue-too-old-mail-in-the-backfill-window.md) — Re-queue `too_old` mail in the backfill window [risky]
 - [ ] [Stage 34](s1b-shadow-triage/stage-34-full-flash-lite-eval-run.md) — Full Flash-Lite eval run [risky]
 - [ ] [Stage 35](s1b-shadow-triage/stage-35-docs-and-notes.md) — Docs and notes
 - [ ] [Stage 36](s1b-shadow-triage/stage-36-model-comparison-with-gemini-3-8-flash.md) — Model comparison with `gemini-3.8-flash` [risky]
@@ -240,3 +240,4 @@ None open (Q26–Q29 answered 2026-11-04).
 - 2026-11-05: Stage 30 done: eval `--per-category`, `--state` (default `evals/.runs/<model>-<prompt-version>-<set>[-pc<n>].jsonl`, outside git), `--fresh`; resume skips cases with a result without an error; stop after 3 LLM cases in a row end in an error (no LLM call after the stop); `evalExitCode` 0 / 1 / 2; report "N of M cases done" and "N error cases: run again"; `toPrediction`, `DEFAULT_MAILS_PER_DAY`, shared `EXCERPT_CHARS`, `evals/README.md` Run / Resume / Quota. Decision: a run that ends with some error cases stays `complete` (10% tolerance). No real LLM call. Unit 411 pass, int 195 pass. Reviewed: PASS (Sonnet; one fix round, re-review PASS).
 - 2026-11-05: Stage 31 done: `backfillInbox` in `mail/sync.ts` (mode `backfill`; read-only provider calls; `applyChunk` with `next = null`, so the cursor never moves; `backfilled_at` only on inserts; preconditions before any fetch; extra guard: `since` more than 30 days back → `HardError`). 8 tests on the fake provider, incl. a read-only call check. Unit 411 pass, int 203 pass (2 runs). Reviewed: PASS (Sonnet; one fix round).
 - 2026-11-05: Stage 32 done: `backfillMailbox` (provider closed in `finally`, no provider without stored credentials) and `bun run mailbox:backfill --days 1–30` (counts only; `CursorMovedError` → exit 1 with "run the same command again"). GreenMail: `--days 30` → fetched 8, stored 0, uid updated 8, exit 0; `--days 31` → usage, exit 1. Unit 411 pass, int 206 pass (2 runs). Reviewed: PASS (Sonnet). The output shows two count lines (`backfillInbox` and the CLI): accepted.
+- 2026-11-05: Stage 33 done: `requeueTooOld` (mail repo, one conditional UPDATE: INBOX, `skipped` / `too_old`, real mail, in the window) and `requeueBackfillWindow` (triage; one transaction with one `email.requeued` audit row per id); `mailbox:backfill` prints `re-queued n`. Checkpoint 1 item: one `mailKindFilter` in the mail module replaces the three copies (same SQL). Unit 411 pass, int 207 pass (2 runs). Reviewed: PASS (Sonnet; one fix round for more test rows).

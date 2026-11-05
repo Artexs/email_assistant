@@ -21,8 +21,11 @@ export {
   getMailbox,
   listSyncTargets,
   listThreadContext,
+  mailKindFilter,
   releaseEmail,
+  requeueTooOld,
 } from "./repo";
+export type { MailKind } from "./repo";
 export type { ClaimedEmail, Cursor, MailboxRow, NewEmail } from "./repo";
 export {
   isSyntheticMessageId,

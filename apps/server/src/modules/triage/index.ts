@@ -31,3 +31,4 @@ export { finishTriageError, HARD_ERROR_TRIES, saveTriage, triageOne } from "./se
 export type { TriageDecision, TriageDeps, TriageMailbox, TriageOutcome } from "./service";
 export { createTriageJob } from "./jobs";
 export type { TriageJobDeps, TriageScope } from "./jobs";
+export { requeueBackfillWindow } from "./backfill";

@@ -1,4 +1,12 @@
-import { sql, type Insertable, type Selectable, type Transaction } from "kysely";
+import {
+  expressionBuilder,
+  sql,
+  type Expression,
+  type Insertable,
+  type Selectable,
+  type SqlBool,
+  type Transaction,
+} from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 
@@ -7,6 +15,18 @@ import { SYNTHETIC_MESSAGE_ID_LIKE } from "./seed";
 import type { KnownCopy } from "./sync-rules";
 
 type DbOrTrx = Db | Transaction<DB>;
+
+export type MailKind = "real" | "synthetic";
+
+// Filter on `emails.message_id_header`: real mail is every row without a synthetic Message-ID (also NULL).
+export function mailKindFilter(kind: MailKind): Expression<SqlBool> {
+  const eb = expressionBuilder<DB, "emails">();
+  if (kind === "synthetic") return eb("emails.message_id_header", "ilike", SYNTHETIC_MESSAGE_ID_LIKE);
+  return eb.or([
+    eb("emails.message_id_header", "is", null),
+    eb("emails.message_id_header", "not ilike", SYNTHETIC_MESSAGE_ID_LIKE),
+  ]);
+}
 
 export interface Cursor {
   uidValidity: number | null;
@@ -279,7 +299,7 @@ export async function claimEmails(
             eb.and([eb("status", "=", "processing"), eb("locked_at", "<", opts.staleBefore)]),
           ])
         );
-      if (opts.syntheticOnly) query = query.where("message_id_header", "ilike", SYNTHETIC_MESSAGE_ID_LIKE);
+      if (opts.syntheticOnly) query = query.where(mailKindFilter("synthetic"));
       return query.orderBy("received_at").orderBy("id").limit(opts.limit).forUpdate().skipLocked();
     })
     .updateTable("emails as e")
@@ -384,7 +404,7 @@ export async function listThreadContext(
     .where("thread_key", "=", threadKey)
     .where("received_at", "<", before)
     .where("id", "!=", excludeId);
-  if (opts.syntheticOnly) query = query.where("message_id_header", "ilike", SYNTHETIC_MESSAGE_ID_LIKE);
+  if (opts.syntheticOnly) query = query.where(mailKindFilter("synthetic"));
   return query.orderBy("received_at", "desc").orderBy("id", "desc").limit(3).execute();
 }
 
@@ -402,4 +422,26 @@ export async function listInboxEmailKeys(
     .where("folder", "=", "INBOX")
     .where("received_at", ">=", since)
     .execute();
+}
+
+// Gives stored real INBOX mail of the window that the worker skipped as `too_old` a new triage run. No audit: the caller writes it.
+export async function requeueTooOld(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { since: Date; now: Date }
+): Promise<string[]> {
+  const rows = await trx
+    .updateTable("emails")
+    .set({ status: "pending", skip_reason: null, next_attempt_at: null, backfilled_at: opts.now })
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("folder", "=", "INBOX")
+    .where("status", "=", "skipped")
+    .where("skip_reason", "=", "too_old")
+    .where("received_at", ">=", opts.since)
+    .where(mailKindFilter("real"))
+    .returning("id")
+    .execute();
+  return rows.map((row) => row.id);
 }

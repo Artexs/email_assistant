@@ -12,6 +12,7 @@ export const auditEvents = {
   emailSkipped: "email.skipped",
   actionPlanned: "action.planned",
   llmCall: "llm.call",
+  emailRequeued: "email.requeued",
 } as const;
 
 export interface AuditEvent {

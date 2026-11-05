@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 33 — Re-queue `too_old` mail in the backfill window [risky]
 
-- [ ] **33.1 `requeueTooOld` (mail) and `requeueBackfillWindow` (triage), called by the backfill script**
+- [x] **33.1 `requeueTooOld` (mail) and `requeueBackfillWindow` (triage), called by the backfill script**
   - Goal: the backfill also gives the 7-day waiver to stored real INBOX mail of the window that the worker skipped as `too_old` (user answer Q29: (a)).
   - Files: change `apps/server/src/modules/mail/repo.ts` (`requeueTooOld`), `apps/server/src/modules/mail/index.ts` (export); change `apps/server/src/modules/audit/repo.ts` and `audit/index.ts` (`auditEvents.emailRequeued = "email.requeued"`); create `apps/server/src/modules/triage/backfill.ts` (`requeueBackfillWindow`), export from `triage/index.ts`; change `apps/server/src/scripts/mailbox-backfill.ts` (calls `requeueBackfillWindow` after `backfillMailbox`, prints `re-queued n`); create `apps/server/test/integration/triage-requeue.test.ts`.
   - Interfaces:

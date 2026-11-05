@@ -3,6 +3,7 @@ import { parseArgs } from "node:util";
 import { z } from "zod";
 
 import { backfillMailbox, CursorMovedError } from "../modules/mail";
+import { requeueBackfillWindow } from "../modules/triage";
 import { loadConfig } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
@@ -14,6 +15,7 @@ const log = createLog("mailbox-backfill");
 const usage = [
   "usage: bun run mailbox:backfill --org-id <uuid> --mailbox-id <uuid> [--days 30]",
   "  One-off, read-only on the mailbox. Stores INBOX mail of the last 1-30 days that the sync missed.",
+  "  Then re-queues stored real mail of that window that the worker skipped as too old.",
   "  Exit 0: done. Exit 1: usage error or failure.",
 ].join("\n");
 
@@ -57,13 +59,17 @@ async function main(): Promise<number> {
   try {
     await assertAppRole(db);
     const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
+    const now = new Date();
     const result = await backfillMailbox({ db, secrets }, { orgId: options.orgId }, options.mailboxId, {
       days: options.days,
-      now: new Date(),
+      now,
     });
     log.info(
       `backfill ${options.mailboxId}: fetched ${result.fetched}, stored ${result.stored}, uid updated ${result.uidUpdated}, returned ${result.returned}`
     );
+    const since = new Date(now.getTime() - options.days * 24 * 60 * 60 * 1000);
+    const requeued = await requeueBackfillWindow(db, { orgId: options.orgId }, options.mailboxId, { since, now });
+    log.info(`re-queued ${requeued}`);
     return 0;
   } catch (error) {
     if (error instanceof CursorMovedError) {

@@ -1,13 +1,13 @@
 import { categorySchema, feedbackVerdicts, type Category, type FeedbackSource, type FeedbackVerdict } from "@ea/core";
-import { expressionBuilder, type Expression, type NotNull, type SqlBool, type Transaction } from "kysely";
+import type { NotNull, Transaction } from "kysely";
 import { z } from "zod";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { SYNTHETIC_MESSAGE_ID_LIKE } from "../mail";
+import { mailKindFilter, type MailKind } from "../mail";
 
 type DbOrTrx = Db | Transaction<DB>;
 
-export type MailKind = "real" | "synthetic";
+export type { MailKind };
 
 export interface TriageResultInput {
   emailId: string;
@@ -132,18 +132,6 @@ export async function insertFeedback(db: DbOrTrx, ctx: TenantContext, row: Feedb
   return inserted.id;
 }
 
-// Filter on the joined `emails` row: real mail is every row without a synthetic Message-ID (also NULL).
-function mailFilter(mail: MailKind): Expression<SqlBool> {
-  const eb = expressionBuilder<DB, "emails">();
-  if (mail === "synthetic") {
-    return eb("emails.message_id_header", "ilike", SYNTHETIC_MESSAGE_ID_LIKE);
-  }
-  return eb.or([
-    eb("emails.message_id_header", "is", null),
-    eb("emails.message_id_header", "not ilike", SYNTHETIC_MESSAGE_ID_LIKE),
-  ]);
-}
-
 const verdictSchema = z.enum(feedbackVerdicts);
 
 // The latest result per email with no feedback row, newest mail first.
@@ -174,7 +162,7 @@ export async function listUnlabeled(
         .where("triage_results.org_id", "=", ctx.orgId)
         .where("emails.org_id", "=", ctx.orgId)
         .where("emails.mailbox_id", "=", mailboxId)
-        .where(mailFilter(opts.mail))
+        .where(mailKindFilter(opts.mail))
         .where(({ not, exists, selectFrom }) =>
           not(
             exists(
@@ -224,7 +212,7 @@ export async function listLabeledResults(
         .where("triage_results.org_id", "=", ctx.orgId)
         .where("emails.org_id", "=", ctx.orgId)
         .where("emails.mailbox_id", "=", mailboxId)
-        .where(mailFilter(opts.mail))
+        .where(mailKindFilter(opts.mail))
         .orderBy("triage_results.email_id")
         .orderBy("triage_results.created_at", "desc")
         .orderBy("triage_results.id", "desc")
@@ -286,7 +274,7 @@ export async function listUsageSince(
     .where("emails.mailbox_id", "=", mailboxId)
     .where("triage_results.model", "is not", null)
     .where("triage_results.created_at", ">=", since)
-    .where(mailFilter(opts.mail))
+    .where(mailKindFilter(opts.mail))
     .orderBy("triage_results.created_at")
     .orderBy("triage_results.id")
     .$narrowType<{ model: NotNull }>()
