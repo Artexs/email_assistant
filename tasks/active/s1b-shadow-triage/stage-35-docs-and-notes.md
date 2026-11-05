@@ -54,3 +54,9 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 - `apps/server/src/scripts/gemini-check.ts` imports `@google/genai` (code-patterns: only `platform/llm.ts`) and logs `error.message`, which holds the HTTP error body. Rebuild it on `createLlmClient` (log `llmErrorCode`) or delete it in favour of `bun run eval --limit 1`.
 - Empty `GEMINI_MODEL=` gives `""` (the classifier key falls back to the default). Record for S4, or add the same preprocess.
+
+## Follow-ups from the checkpoint 3 group review
+
+- Architecture §4.1 rule 7: errors outside the LLM call (thread read, save, DB) count a try in the job, with a 5-minute wait and `unsure` / `triage_error` at 3. Later claimed mail goes back with no count. Shutdown waits up to 30 s for a batch.
+- Architecture §4.6: add `processing → pending` for the release of untried mail on a mailbox error (no count).
+- Step 35.2 known-alerts: add `triage <mailboxId> failed: <Class>`, `triage failed: <Class>`, `triage <id>: lost the claim`, `release failed`, `triage_error save failed`, `llm.call audit write failed` (35.2 lists only four lines today).

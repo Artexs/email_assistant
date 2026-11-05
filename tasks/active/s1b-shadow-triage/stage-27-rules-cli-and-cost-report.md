@@ -23,3 +23,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
   - Check: `bun run lint && bun run typecheck`; manual run.
   - Done when: a manual run prints the figures for the dev mailbox.
   - Out of scope: a Telegram cost line.
+
+## Note from the checkpoint 3 group review
+
+- In `triageOne` the `latency_ms` of an error `llm.call` row (`Date.now() - start`) includes the rate-limiter wait; the `ok` row uses `usage.latencyMs`. Do not use error-row latency in the cost report.

@@ -21,3 +21,9 @@ Shell setup, preconditions and the SQL queries (Q1–QH) are in [`vps-shared.md`
   - Check: Q2 = 0; Q3 = `triaged 20`; Q4 has no `http_4xx` row; `$C logs --since 1h server | grep -E "daily LLM cap|triage paused|LLM config error"` prints nothing (or each line is explained in the log); `$C run --rm -T server bun run triage:cost --org-id <ORG> --mailbox-id <MB> --mail synthetic --days 1` prints the figures.
   - Done when: the checks pass and the Q1 table is in the log.
   - Out of scope: `TRIAGE_LLM_SCOPE=all`, labeling, the backfill, evals on the VPS, any crontab change.
+
+## Follow-ups from the checkpoint 3 group review
+
+- Add `stop_grace_period: 45s` to the `server` service in `deploy/compose.yaml` before the deploy. `main.ts` waits up to 30 s for a running batch on SIGTERM, but Docker kills after 10 s by default; each deploy during a batch then adds one attempt to up to 5 mails.
+- `main.ts`: after SIGTERM, a running `triage.run()` still claims the next mailboxes. Scope `all` has one mailbox, so this is low risk; a `stop()` flag in the job is optional.
+- Tell the user at checkpoint 4: a mail whose LLM call is in flight during 3 restarts ends as `unsure` / `triage_error` (a stale take-back counts an attempt).
