@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
+import { auditEvents, recordAudit } from "../../src/modules/audit";
 import { insertDefaultSettings } from "../../src/modules/config";
 import { createLlmPause, createTriageJob, triageOne, type TriageScope } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
@@ -58,7 +59,15 @@ function fakeLlm(): FakeLlm {
 }
 
 function job(trx: Transaction<DB>, llm: LlmClient, scope: TriageScope) {
-  return createTriageJob({ db: trx, llm, pause: createLlmPause(), scope, batchSize: 5, now: () => now });
+  return createTriageJob({
+    db: trx,
+    llm,
+    pause: createLlmPause(),
+    scope,
+    batchSize: 5,
+    dailyCap: 1000,
+    now: () => now,
+  });
 }
 
 async function mailboxWithSettings(trx: Transaction<DB>, opts?: { address?: string }) {
@@ -229,6 +238,7 @@ describe("createTriageJob: pause and errors", () => {
       pause: createLlmPause(),
       scope: { kind: "synthetic" },
       batchSize: 5,
+      dailyCap: 1000,
       now: () => clock.at,
       ...overrides,
     });
@@ -560,6 +570,78 @@ describe("createTriageJob: pause and errors", () => {
         next_attempt_at: null,
         locked_at: null,
       });
+    });
+  });
+});
+
+describe("createTriageJob: daily cap", () => {
+  const dayStart = new Date("2026-11-05T08:00:00Z");
+
+  function capLines(): string[] {
+    return errorSpy.mock.calls
+      .map((call: unknown[]) => String(call[1]))
+      .filter((line: string) => line.includes("daily LLM cap reached for mailbox"));
+  }
+
+  test("at the cap two runs log one warn line; a blocklist mail in the batch is triaged", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const { ctx, mailboxId } = await mailboxWithSettings(trx);
+      await trx
+        .insertInto("sender_rules")
+        .values({ org_id: ctx.orgId, mailbox_id: mailboxId, pattern: "spam.test", kind: "blocklist" })
+        .execute();
+      for (let i = 0; i < 2; i += 1) {
+        await recordAudit(trx, ctx, {
+          actor: "system",
+          event: auditEvents.llmCall,
+          reasonCode: "ok",
+          data: { mailbox_id: mailboxId },
+          at: minutesFromNow(-10 + i),
+        });
+      }
+      const first = await insertTestEmail(trx, ctx, mailboxId, {
+        message_id_header: "<a@ea-seed.test>",
+        received_at: minutesFromNow(-30),
+      });
+      const blocked = await insertTestEmail(trx, ctx, mailboxId, {
+        message_id_header: "<b@ea-seed.test>",
+        received_at: minutesFromNow(-20),
+        from_address: "bad@spam.test",
+      });
+      const last = await insertTestEmail(trx, ctx, mailboxId, {
+        message_id_header: "<c@ea-seed.test>",
+        received_at: minutesFromNow(-10),
+      });
+      const llm = fakeLlm();
+      const capped = createTriageJob({
+        db: trx,
+        llm,
+        pause: createLlmPause(),
+        scope: { kind: "synthetic" },
+        batchSize: 5,
+        dailyCap: 2,
+        now: () => now,
+      });
+
+      await capped.run();
+      await capped.run();
+
+      expect(llm.prompts).toHaveLength(0);
+      expect((await emailRow(trx, blocked)).status).toBe("triaged");
+      for (const id of [first, last]) {
+        const row = await trx
+          .selectFrom("emails")
+          .select(["status", "attempts", "next_attempt_at"])
+          .where("id", "=", id)
+          .executeTakeFirstOrThrow();
+        expect(row).toEqual({ status: "pending", attempts: 0, next_attempt_at: new Date("2026-11-06T08:00:00Z") });
+      }
+      const lines = capLines();
+      expect(lines).toHaveLength(1);
+      expect(lines[0]).toBe(
+        `daily LLM cap reached for mailbox ${mailboxId}: 2 calls since ${dayStart.toISOString()} (America/Los_Angeles day); mail waits until 2026-11-06T08:00:00.000Z`
+      );
     });
   });
 });

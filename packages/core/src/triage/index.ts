@@ -6,6 +6,7 @@ export * from "./eval-case";
 export * from "./metrics";
 export * from "./planners";
 export * from "./policy";
+export * from "./quota-day";
 export * from "./rules";
 export * from "./settings";
 export * from "./threshold";

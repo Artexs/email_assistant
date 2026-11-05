@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 24 — Cost gates: 7-day rule with the backfill waiver, daily cap [risky]
 
-- [ ] **24.1 `too_old` skip, daily cap per Los Angeles day**
+- [x] **24.1 `too_old` skip, daily cap per Los Angeles day**
   - Goal: the worker skips mail older than 7 days unless the backfill stored it, and stops LLM calls of a mailbox at the daily cap.
   - Files: create `packages/core/src/triage/quota-day.ts`, `packages/core/src/triage/quota-day.test.ts` (export from the triage index); change `apps/server/src/modules/triage/service.ts`, `apps/server/src/modules/triage/jobs.ts`; extend `apps/server/test/integration/triage-service.test.ts` and `triage-job.test.ts`.
   - Interfaces:

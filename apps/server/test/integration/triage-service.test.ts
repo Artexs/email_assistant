@@ -2,7 +2,7 @@ import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import { listActionsForEmail } from "../../src/modules/actions";
-import { countLlmCallsSince } from "../../src/modules/audit";
+import { auditEvents, countLlmCallsSince, recordAudit } from "../../src/modules/audit";
 import { claimEmails, type ClaimedEmail } from "../../src/modules/mail";
 import {
   finishTriageError,
@@ -297,7 +297,9 @@ describe("triageOne", () => {
     await withRollback(db, async (trx) => {
       const { ctx, emailId, email, mailbox } = await setupMail(trx, { from_address: "news@shop.test" });
       const llm = fakeLlm(analysis());
-      expect(await triageOne({ db: trx, llm, pause: fakePause(), now: () => now }, ctx, mailbox, email)).toEqual({
+      expect(
+        await triageOne({ db: trx, llm, pause: fakePause(), dailyCap: 1000, now: () => now }, ctx, mailbox, email)
+      ).toEqual({
         kind: "triaged",
       });
 
@@ -336,7 +338,9 @@ describe("triageOne", () => {
         { pattern: "spam.test", kind: "blocklist" },
       ]);
       const llm = fakeLlm(analysis());
-      expect(await triageOne({ db: trx, llm, pause: fakePause(), now: () => now }, ctx, mailbox, email)).toEqual({
+      expect(
+        await triageOne({ db: trx, llm, pause: fakePause(), dailyCap: 1000, now: () => now }, ctx, mailbox, email)
+      ).toEqual({
         kind: "triaged",
       });
 
@@ -355,14 +359,14 @@ describe("triageOne", () => {
         { pattern: "corp.test", kind: "whitelist" },
       ]);
       const llm = fakeLlm(analysis());
-      await triageOne({ db: trx, llm, pause: fakePause(), now: () => now }, ctx, mailbox, email);
+      await triageOne({ db: trx, llm, pause: fakePause(), dailyCap: 1000, now: () => now }, ctx, mailbox, email);
 
       expect(llm.requests).toHaveLength(1);
       const system = llm.requests[0]?.system ?? "";
       const other = fakeLlm(analysis());
       const plain = await setupMail(trx, { from_address: "someone@else.test" });
       await triageOne(
-        { db: trx, llm: other, pause: fakePause(), now: () => now },
+        { db: trx, llm: other, pause: fakePause(), dailyCap: 1000, now: () => now },
         plain.ctx,
         plain.mailbox,
         plain.email
@@ -377,7 +381,7 @@ describe("triageOne", () => {
     await withRollback(db, async (trx) => {
       const { ctx, emailId, email, mailbox } = await setupMail(trx);
       const llm = fakeLlm(analysis({ confidence: 0.5, reason_code: "fyi" }));
-      await triageOne({ db: trx, llm, pause: fakePause(), now: () => now }, ctx, mailbox, email);
+      await triageOne({ db: trx, llm, pause: fakePause(), dailyCap: 1000, now: () => now }, ctx, mailbox, email);
 
       const [row] = await results(trx, emailId);
       expect(row).toMatchObject({ category: "unsure", reason_code: "fyi", confidence: 0.5 });
@@ -392,7 +396,7 @@ describe("triageOne", () => {
       const { ctx, emailId, email, mailbox } = await setupMail(trx);
       const llm = fakeLlm(new LlmSoftError("http_429", "fake-model"));
       const pause = fakePause();
-      const outcome = await triageOne({ db: trx, llm, pause, now: () => now }, ctx, mailbox, email);
+      const outcome = await triageOne({ db: trx, llm, pause, dailyCap: 1000, now: () => now }, ctx, mailbox, email);
 
       const until = new Date(now.getTime() + 5 * 60_000);
       expect(outcome).toEqual({ kind: "paused", until });
@@ -414,7 +418,7 @@ describe("triageOne", () => {
         const { ctx, emailId, email, mailbox } = await setupMail(trx);
         const llm = fakeLlm(new LlmConfigError(code, "fake-model"));
         const pause = fakePause();
-        const outcome = await triageOne({ db: trx, llm, pause, now: () => now }, ctx, mailbox, email);
+        const outcome = await triageOne({ db: trx, llm, pause, dailyCap: 1000, now: () => now }, ctx, mailbox, email);
 
         expect(outcome.kind).toBe("paused");
         expect(pause.trips).toEqual([{ kind: "config", code }]);
@@ -431,7 +435,7 @@ describe("triageOne", () => {
       const { ctx, emailId, email, mailbox } = await setupMail(trx);
       const llm = fakeLlm(new LlmBlockedError("fake-model"));
       const pause = fakePause();
-      const outcome = await triageOne({ db: trx, llm, pause, now: () => now }, ctx, mailbox, email);
+      const outcome = await triageOne({ db: trx, llm, pause, dailyCap: 1000, now: () => now }, ctx, mailbox, email);
 
       expect(outcome).toEqual({ kind: "triaged" });
       expect(llm.requests).toHaveLength(1);
@@ -462,7 +466,7 @@ describe("triageOne", () => {
   test("finishTriageError saves unsure with the triage_error code", async () => {
     await withRollback(db, async (trx) => {
       const { ctx, emailId, email, mailbox } = await setupMail(trx);
-      const deps = { db: trx, llm: fakeLlm(analysis()), pause: fakePause(), now: () => now };
+      const deps = { db: trx, llm: fakeLlm(analysis()), pause: fakePause(), dailyCap: 1000, now: () => now };
       expect(await finishTriageError(deps, ctx, mailbox, email)).toEqual({ kind: "triaged" });
       const [row] = await results(trx, emailId);
       expect(row).toMatchObject({ category: "unsure", reason_code: "triage_error", confidence: 0, model: null });
@@ -484,7 +488,12 @@ describe("triageOne", () => {
         const attemptsAfter: number[] = [];
 
         for (let run = 1; run <= 3; run += 1) {
-          const outcome = await triageOne({ db: trx, llm, pause, now: () => clock }, ctx, mailbox, email);
+          const outcome = await triageOne(
+            { db: trx, llm, pause, dailyCap: 1000, now: () => clock },
+            ctx,
+            mailbox,
+            email
+          );
           if (run < 3) {
             expect(outcome).toEqual({ kind: "retry_later" });
             const mail = await trx.selectFrom("emails").selectAll().where("id", "=", emailId).executeTakeFirstOrThrow();
@@ -526,7 +535,7 @@ describe("triageOne", () => {
           .where("id", "=", emailId)
           .execute();
         const outcome = await triageOne(
-          { db: trx, llm: fakeLlm(error), pause: fakePause(), now: () => now },
+          { db: trx, llm: fakeLlm(error), pause: fakePause(), dailyCap: 1000, now: () => now },
           ctx,
           mailbox,
           email
@@ -549,7 +558,7 @@ describe("triageOne", () => {
       const { ctx, emailId, email, mailbox } = await setupMail(trx);
       const pause = fakePause();
       const soft = await triageOne(
-        { db: trx, llm: fakeLlm(new LlmSoftError("http_429", "fake-model")), pause, now: () => now },
+        { db: trx, llm: fakeLlm(new LlmSoftError("http_429", "fake-model")), pause, dailyCap: 1000, now: () => now },
         ctx,
         mailbox,
         email
@@ -569,7 +578,7 @@ describe("triageOne", () => {
       if (!again) throw new Error("claim failed");
 
       const outcome = await triageOne(
-        { db: trx, llm: fakeLlm(analysis()), pause, now: () => clock },
+        { db: trx, llm: fakeLlm(analysis()), pause, dailyCap: 1000, now: () => clock },
         ctx,
         mailbox,
         again
@@ -599,7 +608,12 @@ describe("triageOne", () => {
       try {
         const pause = fakePause();
         const llm = fakeLlm(new LlmSoftError("http_503", "fake-model"));
-        const outcome = await triageOne({ db: failing, llm, pause, now: () => now }, ctx, mailbox, email);
+        const outcome = await triageOne(
+          { db: failing, llm, pause, dailyCap: 1000, now: () => now },
+          ctx,
+          mailbox,
+          email
+        );
 
         expect(outcome.kind).toBe("paused");
         expect(pause.trips).toEqual([{ kind: "soft", code: "http_503" }]);
@@ -645,7 +659,12 @@ describe("triageOne", () => {
       const email = claimed.find((row) => row.id === currentId);
       if (!email) throw new Error("claim failed");
       const llm = fakeLlm(analysis());
-      await triageOne({ db: trx, llm, pause: fakePause(), now: () => now }, base.ctx, base.mailbox, email);
+      await triageOne(
+        { db: trx, llm, pause: fakePause(), dailyCap: 1000, now: () => now },
+        base.ctx,
+        base.mailbox,
+        email
+      );
 
       const prompt = llm.requests[0]?.prompt ?? "";
       const positions = markers.map(([marker]) => prompt.indexOf(marker));
@@ -688,11 +707,133 @@ describe("triageOne", () => {
       const email = claimed.find((row) => row.id === currentId);
       if (!email) throw new Error("claim failed");
       const llm = fakeLlm(analysis());
-      await triageOne({ db: trx, llm, pause: fakePause(), now: () => now }, base.ctx, base.mailbox, email);
+      await triageOne(
+        { db: trx, llm, pause: fakePause(), dailyCap: 1000, now: () => now },
+        base.ctx,
+        base.mailbox,
+        email
+      );
 
       const prompt = llm.requests[0]?.prompt ?? "";
       expect(prompt).not.toContain("REAL-MARKER-XYZ");
       expect(prompt).toContain("SYNTH-MARKER-ABC");
+    });
+  });
+});
+
+describe("triageOne: cost gates", () => {
+  const dayStart = new Date("2026-11-05T08:00:00Z");
+  const nextDayStart = new Date("2026-11-06T08:00:00Z");
+  const eightDaysAgo = new Date(now.getTime() - 8 * 24 * 3_600_000);
+
+  function deps(trx: Transaction<DB>, llm: LlmClient, dailyCap = 1000) {
+    return { db: trx, llm, pause: fakePause(), dailyCap, now: () => now };
+  }
+
+  async function addLlmCalls(trx: Transaction<DB>, ctx: TenantContext, mailboxId: string, at: Date[]) {
+    for (const when of at) {
+      await recordAudit(trx, ctx, {
+        actor: "system",
+        event: auditEvents.llmCall,
+        reasonCode: "ok",
+        data: { mailbox_id: mailboxId },
+        at: when,
+      });
+    }
+  }
+
+  test("a mail older than 7 days is skipped as too_old, without an LLM call", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, emailId, email, mailbox } = await setupMail(trx, { received_at: eightDaysAgo });
+      const llm = fakeLlm(analysis());
+      expect(await triageOne(deps(trx, llm), ctx, mailbox, email)).toEqual({ kind: "skipped" });
+
+      expect(llm.requests).toHaveLength(0);
+      const mail = await trx
+        .selectFrom("emails")
+        .select(["status", "skip_reason", "locked_at"])
+        .where("id", "=", emailId)
+        .executeTakeFirstOrThrow();
+      expect(mail).toEqual({ status: "skipped", skip_reason: "too_old", locked_at: null });
+      const skipped = (await audit(trx, emailId)).filter((r) => r.event === "email.skipped");
+      expect(skipped).toHaveLength(1);
+      expect(skipped[0]?.reason_code).toBe("too_old");
+      expect(skipped[0]?.data).toEqual({ mailbox_id: mailbox.id });
+      expect(await results(trx, emailId)).toHaveLength(0);
+      expect(await llmRows(trx, emailId)).toHaveLength(0);
+    });
+  });
+
+  test("a too_old mail with a lost claim returns lost and writes nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, emailId, email, mailbox } = await setupMail(trx, { received_at: eightDaysAgo });
+      await trx
+        .updateTable("emails")
+        .set({ locked_at: new Date(now.getTime() + 60_000) })
+        .where("id", "=", emailId)
+        .execute();
+      expect(await triageOne(deps(trx, fakeLlm(analysis())), ctx, mailbox, email)).toEqual({ kind: "lost" });
+      expect(await emailStatus(trx, emailId)).toBe("processing");
+      expect((await audit(trx, emailId)).filter((r) => r.event === "email.skipped")).toHaveLength(0);
+    });
+  });
+
+  test("an 8-day-old mail with backfilled_at is triaged with an LLM call", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, emailId, email, mailbox } = await setupMail(trx, {
+        received_at: eightDaysAgo,
+        backfilled_at: now,
+      });
+      const llm = fakeLlm(analysis());
+      expect(await triageOne(deps(trx, llm), ctx, mailbox, email)).toEqual({ kind: "triaged" });
+      expect(llm.requests).toHaveLength(1);
+      expect(await emailStatus(trx, emailId)).toBe("triaged");
+    });
+  });
+
+  test("at the daily cap the mail waits for the next quota day; no LLM call", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, emailId, email, mailbox } = await setupMail(trx);
+      await addLlmCalls(trx, ctx, mailbox.id, [dayStart, new Date(now.getTime() - 60_000)]);
+      const llm = fakeLlm(analysis());
+
+      expect(await triageOne(deps(trx, llm, 2), ctx, mailbox, email)).toEqual({
+        kind: "capped",
+        until: nextDayStart,
+        dayStart,
+      });
+      expect(llm.requests).toHaveLength(0);
+      const mail = await trx.selectFrom("emails").selectAll().where("id", "=", emailId).executeTakeFirstOrThrow();
+      expect(mail.status).toBe("pending");
+      expect(mail.next_attempt_at).toEqual(nextDayStart);
+      expect(mail.attempts).toBe(0);
+      expect(mail.locked_at).toBeNull();
+    });
+  });
+
+  test("calls from before the quota day start do not count", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, email, mailbox } = await setupMail(trx);
+      await addLlmCalls(trx, ctx, mailbox.id, [
+        new Date(dayStart.getTime() - 1),
+        new Date(dayStart.getTime() - 3_600_000),
+      ]);
+      const llm = fakeLlm(analysis());
+      expect(await triageOne(deps(trx, llm, 2), ctx, mailbox, email)).toEqual({ kind: "triaged" });
+      expect(llm.requests).toHaveLength(1);
+    });
+  });
+
+  test("a blocklist mail is still triaged at the cap", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, emailId, email, mailbox } = await setupMail(trx, { from_address: "bad@spam.test" }, [
+        { pattern: "spam.test", kind: "blocklist" },
+      ]);
+      await addLlmCalls(trx, ctx, mailbox.id, [dayStart, dayStart]);
+      const llm = fakeLlm(analysis());
+      expect(await triageOne(deps(trx, llm, 2), ctx, mailbox, email)).toEqual({ kind: "triaged" });
+      expect(llm.requests).toHaveLength(0);
+      expect(await emailStatus(trx, emailId)).toBe("triaged");
     });
   });
 });

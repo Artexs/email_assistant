@@ -4,7 +4,10 @@ import {
   autoFor,
   decideCategory,
   decidePolicy,
+  nextQuotaDayStart,
   planActions,
+  QUOTA_TIMEZONE,
+  quotaDayStart,
   type Category,
   type CategoryPolicy,
   type MailboxMode,
@@ -19,7 +22,7 @@ import { describeError, SoftError } from "../../platform/errors";
 import { LlmBlockedError, LlmConfigError, llmErrorCode, type LlmClient, type LlmUsage } from "../../platform/llm";
 import { createLog } from "../../platform/log";
 import { createPlanned, type PlannedActionInput } from "../actions";
-import { auditEvents, recordAudit } from "../audit";
+import { auditEvents, countLlmCallsSince, recordAudit } from "../audit";
 import { finishEmail, isSyntheticMessageId, listThreadContext, releaseEmail, type ClaimedEmail } from "../mail";
 
 import { classifyEmail, type ClassifierEmail } from "./classifier";
@@ -59,6 +62,8 @@ export interface TriageDeps {
   db: Db | Transaction<DB>;
   llm: LlmClient;
   pause: LlmPause;
+  // The most `llm.call` rows of one mailbox per quota day.
+  dailyCap: number;
   now(): Date;
 }
 
@@ -66,11 +71,15 @@ export type TriageOutcome =
   | { kind: "triaged" }
   | { kind: "lost" }
   | { kind: "retry_later" }
+  | { kind: "skipped" }
+  | { kind: "capped"; until: Date; dayStart: Date }
   | { kind: "paused"; until: Date };
 
 // A mail ends in `triage_error` when it reaches this many tries (the count includes stale take-backs).
 export const HARD_ERROR_TRIES = 3;
 const HARD_ERROR_WAIT_MS = 5 * 60_000;
+// Mail older than this is not triaged, unless the backfill stored it (architecture §4.1 rule 8).
+const MAX_AGE_MS = 7 * 24 * 3_600_000;
 
 function payloadOf(action: PlannedAction): Record<string, string> {
   switch (action.type) {
@@ -240,7 +249,31 @@ async function handleClassifyError(
   return finishTriageError(deps, ctx, mailbox, email);
 }
 
-// Triage one claimed email: hard rules, then the classifier, then `saveTriage`.
+// One transaction: the email status `skipped` and its audit row. `false` in `finishEmail` means a lost claim.
+async function skipTooOld(
+  deps: TriageDeps,
+  ctx: TenantContext,
+  mailbox: TriageMailbox,
+  email: ClaimedEmail
+): Promise<TriageOutcome> {
+  const run = async (trx: Transaction<DB>): Promise<TriageOutcome> => {
+    if (!(await finishEmail(trx, ctx, email.id, email.locked_at, { status: "skipped", skipReason: "too_old" }))) {
+      log.warn(`triage ${email.id}: lost the claim`);
+      return { kind: "lost" };
+    }
+    await recordAudit(trx, ctx, {
+      emailId: email.id,
+      actor: "system",
+      event: auditEvents.emailSkipped,
+      reasonCode: "too_old",
+      data: { mailbox_id: mailbox.id },
+    });
+    return { kind: "skipped" };
+  };
+  return deps.db.isTransaction ? run(deps.db as Transaction<DB>) : deps.db.transaction().execute(run);
+}
+
+// Triage one claimed email: age rule, hard rules, daily cap, then the classifier, then `saveTriage`.
 // The `llm.call` rows go to `deps.db` outside the save transaction: a call counts also when the mail is lost.
 export async function triageOne(
   deps: TriageDeps,
@@ -248,6 +281,9 @@ export async function triageOne(
   mailbox: TriageMailbox,
   email: ClaimedEmail
 ): Promise<TriageOutcome> {
+  if (email.backfilled_at === null && email.received_at.getTime() < deps.now().getTime() - MAX_AGE_MS) {
+    return skipTooOld(deps, ctx, mailbox, email);
+  }
   const rules = applyHardRules(email.from_address, mailbox.rules);
   if (rules.kind === "spam") {
     return saveTriage(deps.db, ctx, mailbox, email, {
@@ -264,6 +300,18 @@ export async function triageOne(
       usage: null,
       auditReasonCode: "blocklist",
     });
+  }
+
+  // Every call attempt counts, so the cap holds also when calls fail.
+  const callTime = deps.now();
+  const dayStart = quotaDayStart(callTime, QUOTA_TIMEZONE);
+  if ((await countLlmCallsSince(deps.db, ctx, mailbox.id, dayStart)) >= deps.dailyCap) {
+    const until = nextQuotaDayStart(callTime, QUOTA_TIMEZONE);
+    const released = await releaseEmail(deps.db, ctx, email.id, email.locked_at, {
+      nextAttemptAt: until,
+      countAttempt: false,
+    });
+    return released ? { kind: "capped", until, dayStart } : { kind: "lost" };
   }
 
   const threadRows = await listThreadContext(deps.db, ctx, mailbox.id, email.thread_key, email.received_at, email.id, {

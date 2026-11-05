@@ -1,4 +1,4 @@
-import { mailboxModes, parseCategoryPolicy, parseToolSwitches } from "@ea/core";
+import { mailboxModes, parseCategoryPolicy, parseToolSwitches, QUOTA_TIMEZONE } from "@ea/core";
 import type { Transaction } from "kysely";
 import { z } from "zod";
 
@@ -28,6 +28,7 @@ export interface TriageJobDeps {
   pause: LlmPause;
   scope: TriageScope;
   batchSize: number;
+  dailyCap: number;
   now(): Date;
   // Only for tests of an error outside the LLM call.
   triageOne?: typeof triageOne;
@@ -36,6 +37,8 @@ export interface TriageJobDeps {
 // The log lines carry the mailbox id only: never the address.
 export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
   const warnedNoSettings = new Set<string>();
+  // The quota day (ISO start) for which a mailbox already got the cap warning.
+  const warnedCap = new Map<string, string>();
   const triage = deps.triageOne ?? triageOne;
   const scopeAddress = deps.scope.kind === "all" ? deps.scope.mailboxAddress.trim().toLowerCase() : null;
 
@@ -92,6 +95,17 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
                 continue;
               }
               const outcome = await triage(deps, ctx, mailbox, email);
+              // The cap holds LLM calls only: the next mail may be a blocklist or too-old mail.
+              if (outcome.kind === "capped") {
+                const dayStart = outcome.dayStart.toISOString();
+                if (warnedCap.get(mailboxId) !== dayStart) {
+                  warnedCap.set(mailboxId, dayStart);
+                  log.warn(
+                    `daily LLM cap reached for mailbox ${mailboxId}: ${deps.dailyCap} calls since ${dayStart} (${QUOTA_TIMEZONE} day); mail waits until ${outcome.until.toISOString()}`
+                  );
+                }
+                continue;
+              }
               if (outcome.kind === "paused" || deps.pause.isPaused(deps.now())) {
                 // The quota is per project: stop all mailboxes. Untried mail keeps its old `next_attempt_at`.
                 await releaseUntried(ctx, claimed.slice(index + 1));
