@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 7 — Triage repository: writes [risky]
 
-- [ ] **7.1 `insertTriageResult`, `latestTriageResult`, `insertFeedback`**
+- [x] **7.1 `insertTriageResult`, `latestTriageResult`, `insertFeedback`**
   - Goal: typed writes and the latest-result read for triage results and labels, each with a tenant filter test.
   - Files: create `apps/server/src/modules/triage/repo.ts`, `apps/server/src/modules/triage/index.ts`; create `apps/server/test/integration/triage-repo.test.ts`.
   - Interfaces (all take `db: Db | Transaction<DB>, ctx: TenantContext` first):
