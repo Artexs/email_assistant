@@ -1,1 +1,7 @@
-export { getMailboxSettings, insertDefaultSettings, type MailboxSettingsRow } from "./repo";
+export {
+  getMailboxSettings,
+  insertDefaultSettings,
+  insertSenderRule,
+  listSenderRules,
+  type MailboxSettingsRow,
+} from "./repo";

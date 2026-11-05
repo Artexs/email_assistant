@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 5 — Sender rule and audit repositories [risky]
 
-- [ ] **5.1 Repositories for `sender_rules` and `audit_log`, with `org_id` filters**
+- [x] **5.1 Repositories for `sender_rules` and `audit_log`, with `org_id` filters**
   - Goal: typed queries for sender rules and the audit log, each with a tenant filter test, and the LLM call count for the daily cap.
   - Files: change `apps/server/src/modules/config/repo.ts`, `apps/server/src/modules/config/index.ts`; create `apps/server/src/modules/audit/repo.ts`, `apps/server/src/modules/audit/index.ts`; create `apps/server/test/integration/rules-audit-repo.test.ts`.
   - Interfaces (all take `db: Db | Transaction<DB>, ctx: TenantContext` first):
