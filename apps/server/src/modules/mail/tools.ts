@@ -9,10 +9,10 @@ import { HardError } from "../../platform/errors";
 import { compareInboxWithDb, type AuditCounts } from "./audit";
 import { openImapProvider, type ImapConnectOptions } from "./imap/client";
 import { appendRaw } from "./imap/tools";
-import { INBOX } from "./port";
+import { INBOX, type MailProvider } from "./port";
 import { getCredentials, getMailbox, listInboxEmailKeys, type MailboxRow } from "./repo";
 import { renderSeedMessage, SYNTHETIC_MESSAGE_ID_DOMAIN, type SeedMessage } from "./seed";
-import { fetchSince } from "./sync";
+import { backfillInbox, fetchSince, type SyncResult } from "./sync";
 import { contentHash, normalizeMessageId } from "./sync-rules";
 
 // Operator tools for the 48-hour run (`mailbox:seed`, `mailbox:audit`).
@@ -100,4 +100,25 @@ export async function auditMailbox(
     metas.map((meta) => ({ messageId: normalizeMessageId(meta.messageId), hash: contentHash(meta) })),
     rows.map((row) => ({ messageId: row.message_id_header, hash: row.content_hash }))
   );
+}
+
+/** One-off, read-only: stores INBOX mail of the last `days` days that the regular sync missed (`backfilled_at`). */
+export async function backfillMailbox(
+  deps: ToolDeps & { openProvider?: (opts: ImapConnectOptions) => Promise<MailProvider> },
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { days: number; now: Date }
+): Promise<SyncResult> {
+  const imap = await loadImapOptions(deps, ctx, mailboxId, await getMailboxOrThrow(deps, ctx, mailboxId));
+  const provider = await (deps.openProvider ?? openImapProvider)(imap);
+  try {
+    return await backfillInbox(
+      { db: deps.db, provider, isOwnActionId: async () => false, now: () => opts.now },
+      ctx,
+      mailboxId,
+      { since: new Date(opts.now.getTime() - opts.days * 24 * 3_600_000) }
+    );
+  } finally {
+    await provider.close();
+  }
 }

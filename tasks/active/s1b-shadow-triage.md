@@ -1,4 +1,4 @@
-> **Status 2026-11-05 — in progress: stages 0–31 done, checkpoint 3 group review passed.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 32–40, with 1 user checkpoint left (before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
+> **Status 2026-11-05 — in progress: stages 0–32 done, checkpoint 3 group review passed.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 33–40, with 1 user checkpoint left (before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
 
 # S1b Shadow triage
 
@@ -151,7 +151,7 @@ The main session ticks the step boxes in the stage file and the stage box here.
 - [x] [Stage 29](s1b-shadow-triage/stage-29-eval-mail-seed-and-eval-cases-in-the-server-imag.md) — Eval mail seed and eval cases in the server image [risky]
 - [x] [Stage 30](s1b-shadow-triage/stage-30-eval-subset-and-resume.md) — Eval subset and resume [risky]
 - [x] [Stage 31](s1b-shadow-triage/stage-31-one-off-inbox-backfill-backfillinbox.md) — One-off INBOX backfill: `backfillInbox` [risky]
-- [ ] [Stage 32](s1b-shadow-triage/stage-32-one-off-inbox-backfill-tool-and-cli.md) — One-off INBOX backfill: tool and CLI [risky]
+- [x] [Stage 32](s1b-shadow-triage/stage-32-one-off-inbox-backfill-tool-and-cli.md) — One-off INBOX backfill: tool and CLI [risky]
 - [ ] [Stage 33](s1b-shadow-triage/stage-33-re-queue-too-old-mail-in-the-backfill-window.md) — Re-queue `too_old` mail in the backfill window [risky]
 - [ ] [Stage 34](s1b-shadow-triage/stage-34-full-flash-lite-eval-run.md) — Full Flash-Lite eval run [risky]
 - [ ] [Stage 35](s1b-shadow-triage/stage-35-docs-and-notes.md) — Docs and notes
@@ -239,3 +239,4 @@ None open (Q26–Q29 answered 2026-11-04).
 - 2026-11-05: Stage 29 done: `mailbox:seed --eval-cases synthetic|injection|all --per-category n`, RFC 2047 encoded words for Subject and display names (address never encoded; CR/LF and malformed `<…>` throw), `seedMailbox` takes `messages` behind the unchanged `TEST_MAILBOX_ADDRESS` guard, `COPY evals/cases` in `deploy/Dockerfile`. Image check: `injection.json`, `synthetic.json`. GreenMail: appended 5, synced 5, `with_from` 5 / `total` 5; no LLM call. Unit 400 pass, int 195 pass. Reviewed: PASS (Sonnet; one fix round for 2 minors and 1 question).
 - 2026-11-05: Stage 30 done: eval `--per-category`, `--state` (default `evals/.runs/<model>-<prompt-version>-<set>[-pc<n>].jsonl`, outside git), `--fresh`; resume skips cases with a result without an error; stop after 3 LLM cases in a row end in an error (no LLM call after the stop); `evalExitCode` 0 / 1 / 2; report "N of M cases done" and "N error cases: run again"; `toPrediction`, `DEFAULT_MAILS_PER_DAY`, shared `EXCERPT_CHARS`, `evals/README.md` Run / Resume / Quota. Decision: a run that ends with some error cases stays `complete` (10% tolerance). No real LLM call. Unit 411 pass, int 195 pass. Reviewed: PASS (Sonnet; one fix round, re-review PASS).
 - 2026-11-05: Stage 31 done: `backfillInbox` in `mail/sync.ts` (mode `backfill`; read-only provider calls; `applyChunk` with `next = null`, so the cursor never moves; `backfilled_at` only on inserts; preconditions before any fetch; extra guard: `since` more than 30 days back → `HardError`). 8 tests on the fake provider, incl. a read-only call check. Unit 411 pass, int 203 pass (2 runs). Reviewed: PASS (Sonnet; one fix round).
+- 2026-11-05: Stage 32 done: `backfillMailbox` (provider closed in `finally`, no provider without stored credentials) and `bun run mailbox:backfill --days 1–30` (counts only; `CursorMovedError` → exit 1 with "run the same command again"). GreenMail: `--days 30` → fetched 8, stored 0, uid updated 8, exit 0; `--days 31` → usage, exit 1. Unit 411 pass, int 206 pass (2 runs). Reviewed: PASS (Sonnet). The output shows two count lines (`backfillInbox` and the CLI): accepted.

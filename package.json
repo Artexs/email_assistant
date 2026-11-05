@@ -30,6 +30,7 @@
     "mailbox:seed": "bun apps/server/src/scripts/mailbox-seed.ts",
     "mailbox:rescan": "bun apps/server/src/scripts/mailbox-rescan.ts",
     "mailbox:audit": "bun apps/server/src/scripts/mailbox-audit.ts",
+    "mailbox:backfill": "bun apps/server/src/scripts/mailbox-backfill.ts",
     "db:up": "docker compose -f deploy/compose.yaml -f deploy/compose.dev.yaml --env-file .env up -d --wait db",
     "dev:up": "docker compose -f deploy/compose.yaml -f deploy/compose.dev.yaml --env-file .env up -d --wait db greenmail",
     "db:down": "docker compose -f deploy/compose.yaml -f deploy/compose.dev.yaml --env-file .env down",

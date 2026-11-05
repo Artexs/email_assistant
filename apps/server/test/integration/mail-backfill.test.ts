@@ -1,8 +1,11 @@
+import { randomBytes } from "node:crypto";
+
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import {
   backfillInbox,
+  backfillMailbox,
   CursorMovedError,
   syncMailbox,
   type MailProvider,
@@ -10,7 +13,8 @@ import {
   type SyncDeps,
 } from "../../src/modules/mail";
 import { createFakeMailProvider } from "../../src/modules/mail/fake";
-import { updateCursor } from "../../src/modules/mail/repo";
+import { insertCredentials, updateCursor } from "../../src/modules/mail/repo";
+import { createSecretBox } from "../../src/platform/crypto";
 import type { DB, Db, TenantContext } from "../../src/platform/db";
 import { HardError, SoftError } from "../../src/platform/errors";
 
@@ -223,6 +227,73 @@ describe("backfillInbox", () => {
       await expect(
         backfillInbox(deps(trx, s.fake), { orgId: other.orgId }, s.mailboxId, { since: SINCE })
       ).rejects.toBeInstanceOf(HardError);
+    });
+  });
+});
+
+describe("backfillMailbox", () => {
+  const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
+
+  async function withPassword(trx: Transaction<DB>, s: { ctx: TenantContext; mailboxId: string }) {
+    const secret = secrets.encrypt("pw", `mailbox:${s.mailboxId}`);
+    await insertCredentials(trx, s.ctx, {
+      mailboxId: s.mailboxId,
+      encryptedSecret: secret.ciphertext,
+      secretKind: "password",
+      keyVersion: secret.keyVersion,
+    });
+  }
+
+  test("runs the backfill over the opened provider and closes it", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await syncedMailbox(trx);
+      await withPassword(trx, s);
+      const result = await backfillMailbox({ db: trx, secrets, openProvider: async () => s.fake }, s.ctx, s.mailboxId, {
+        days: 30,
+        now: NOW,
+      });
+      expect(result.mode).toBe("backfill");
+      expect(result.stored).toBe(3);
+      expect(result.uidUpdated).toBe(1);
+      expect(s.fake.closed).toBe(true);
+    });
+  });
+
+  test("closes the provider when the backfill fails", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await syncedMailbox(trx);
+      await withPassword(trx, s);
+      s.fake.resetUidValidity(UID_VALIDITY + 1);
+      await expect(
+        backfillMailbox({ db: trx, secrets, openProvider: async () => s.fake }, s.ctx, s.mailboxId, {
+          days: 30,
+          now: NOW,
+        })
+      ).rejects.toBeInstanceOf(SoftError);
+      expect(s.fake.closed).toBe(true);
+    });
+  });
+
+  test("a mailbox without stored credentials gives HardError and opens no provider", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await syncedMailbox(trx);
+      let opened = 0;
+      const attempt = backfillMailbox(
+        {
+          db: trx,
+          secrets,
+          openProvider: async () => {
+            opened += 1;
+            return s.fake;
+          },
+        },
+        s.ctx,
+        s.mailboxId,
+        { days: 30, now: NOW }
+      );
+      await expect(attempt).rejects.toBeInstanceOf(HardError);
+      await expect(attempt).rejects.toThrow("mailbox has no stored password");
+      expect(opened).toBe(0);
     });
   });
 });

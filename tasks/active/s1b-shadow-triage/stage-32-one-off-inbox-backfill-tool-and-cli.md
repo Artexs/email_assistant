@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 32 — One-off INBOX backfill: tool and CLI [risky]
 
-- [ ] **32.1 `backfillMailbox` and `bun run mailbox:backfill`**
+- [x] **32.1 `backfillMailbox` and `bun run mailbox:backfill`**
   - Goal: an operator command that opens the IMAP connection, runs `backfillInbox` and prints counts only.
   - Files: change `apps/server/src/modules/mail/tools.ts` (new `backfillMailbox`), `apps/server/src/modules/mail/index.ts` (export); create `apps/server/src/scripts/mailbox-backfill.ts`; change root `package.json` (`"mailbox:backfill": "bun apps/server/src/scripts/mailbox-backfill.ts"`); extend `apps/server/test/integration/mail-backfill.test.ts`.
   - Interfaces:
