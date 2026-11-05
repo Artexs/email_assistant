@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 14 — Eval cases: `info` and `notification` [risky]
 
-- [ ] **14.1 At least 30 synthetic cases for `info` and `notification`**
+- [x] **14.1 At least 30 synthetic cases for `info` and `notification`**
   - Goal: labeled synthetic cases for the next two categories.
   - Files: change `evals/cases/synthetic.json`, `apps/server/src/modules/triage/eval-cases.test.ts`.
   - Interfaces: none new.

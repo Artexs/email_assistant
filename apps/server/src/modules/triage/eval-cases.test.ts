@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { evalCaseSchema, splitAddress } from "@ea/core";
+import { applyHardRules, evalCaseSchema, splitAddress, type EvalCase } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 import { z } from "zod";
 
@@ -15,6 +15,19 @@ function load(file: string) {
 const synthetic = load("synthetic.json");
 const injection = load("injection.json");
 const all = [...synthetic, ...injection];
+
+function trustedCases(cases: EvalCase[]): EvalCase[] {
+  return cases.filter((c) => c.senderRules.some((r) => r.kind === "whitelist" || r.kind === "vip"));
+}
+
+function expectRuleMatches(evalCase: EvalCase) {
+  const result = applyHardRules(splitAddress(evalCase.from).address, evalCase.senderRules);
+  expect(result.kind).toBe("classify");
+  if (result.kind !== "classify") return;
+  expect(result.whitelisted).toBe(true);
+  expect(result.allowed).not.toContain("spam");
+  expect(evalCase.expected.category).not.toBe("spam");
+}
 
 function isReservedDomain(domain: string): boolean {
   return domain === "test" || domain.endsWith(".test") || reservedDomains.some((d) => domain === d);
@@ -71,12 +84,40 @@ describe("eval case files", () => {
     });
 
     test("at least 4 whitelist or vip cases are not spam", () => {
-      const trusted = both.filter((c) => c.senderRules.some((r) => r.kind === "whitelist" || r.kind === "vip"));
+      const trusted = trustedCases(both);
       expect(trusted.length).toBeGreaterThanOrEqual(4);
+      for (const evalCase of trusted) expectRuleMatches(evalCase);
     });
 
     test("at least 3 cases have thread entries", () => {
       expect(both.filter((c) => c.thread.length > 0).length).toBeGreaterThanOrEqual(3);
+    });
+  });
+
+  describe("info and notification coverage", () => {
+    const info = synthetic.filter((c) => c.expected.category === "info");
+    const notification = synthetic.filter((c) => c.expected.category === "notification");
+    const both = [...info, ...notification];
+
+    test("each category has at least 15 cases", () => {
+      expect(info.length).toBeGreaterThanOrEqual(15);
+      expect(notification.length).toBeGreaterThanOrEqual(15);
+    });
+
+    test("at least half of the cases are Polish", () => {
+      expect(both.filter((c) => c.lang === "pl").length).toBeGreaterThanOrEqual(both.length / 2);
+    });
+
+    test("each category has at least 3 borderline cases", () => {
+      for (const group of [info, notification]) {
+        expect(group.filter((c) => c.note?.startsWith("borderline:")).length).toBeGreaterThanOrEqual(3);
+      }
+    });
+
+    test("at least 6 whitelist or vip cases are not spam", () => {
+      const trusted = trustedCases(both);
+      expect(trusted.length).toBeGreaterThanOrEqual(6);
+      for (const evalCase of trusted) expectRuleMatches(evalCase);
     });
   });
 });

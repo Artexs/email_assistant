@@ -551,5 +551,530 @@
     "expected": {
       "category": "needs_reply"
     }
+  },
+  {
+    "id": "syn-info-01",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Biuletyn Branżowy <redakcja@biuletyn-handlowy.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Biuletyn tygodnia: ceny paliw i nowe przepisy",
+    "body": "W tym wydaniu: prognoza cen paliw na listopad, zmiany w przepisach o fakturach oraz wywiad z prezesem izby handlowej.\nCzytaj online lub w załączonym PDF.\nRedakcja Biuletynu Branżowego",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "info"
+    }
+  },
+  {
+    "id": "syn-info-02",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Dział HR <hr@firma-partner.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Informacja: dzień wolny 11 listopada",
+    "body": "Szanowni Państwo,\ninformujemy, że 11 listopada biuro będzie nieczynne z okazji Święta Niepodległości.\nKolejny dzień pracy: 12 listopada.\nDział HR",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "info"
+    }
+  },
+  {
+    "id": "syn-info-03",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Anna Wójcik <anna.wojcik@dostawca-beta.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "FYI: nowy cennik od 1 grudnia",
+    "body": "Dzień dobry,\nprzesyłam do wiadomości nowy cennik obowiązujący od 1 grudnia. Zmiany dotyczą kategorii B i C.\nNie wymaga to żadnej decyzji z Państwa strony.\nAnna Wójcik",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "info"
+    }
+  },
+  {
+    "id": "syn-info-04",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Konferencja Logistyka <biuro@konferencja-logistyka.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Program konferencji 2026 jest już dostępny",
+    "body": "Opublikowaliśmy pełny program konferencji, która odbędzie się 20 stycznia w Poznaniu.\nLista prelegentów i agenda są na naszej stronie.\nDo zobaczenia!",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "info"
+    }
+  },
+  {
+    "id": "syn-info-05",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Zespół IT <it@firma-partner.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Zaplanowana przerwa w pracy poczty w sobotę",
+    "body": "Informujemy, że w sobotę 7 listopada w godz. 22:00–24:00 serwer poczty będzie niedostępny z powodu aktualizacji.\nNie są wymagane żadne działania.\nZespół IT",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "info"
+    }
+  },
+  {
+    "id": "syn-info-06",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Kamil Dąbrowski <kamil.dabrowski@klient-alfa.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Podsumowanie spotkania z 30 października",
+    "body": "Cześć,\nw załączeniu notatki ze spotkania z 30 października. Ustaliliśmy harmonogram wdrożenia do końca grudnia.\nTo tylko do wiadomości, bez potrzeby odpowiedzi.\nKamil",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "info"
+    }
+  },
+  {
+    "id": "syn-info-07",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Newsletter Księgowy <info@ksiegowosc-online.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Czy wiesz, że… 5 zmian w JPK od stycznia",
+    "body": "Od stycznia czekają nas zmiany w JPK. Zebraliśmy pięć najważniejszych w jednym artykule.\nCzy Twoja firma jest gotowa? Sprawdź nasz poradnik.\nPozdrawiamy, zespół Księgowość Online",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "info"
+    },
+    "note": "borderline: newsletter with a rhetorical question, no reply needed"
+  },
+  {
+    "id": "syn-info-08",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Marta Szymańska <marta.szymanska@klient-gamma.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Nowe godziny pracy naszego biura",
+    "body": "Dzień dobry,\ninformuję, że od przyszłego tygodnia nasze biuro pracuje w godzinach 9:00–17:00.\nJeśli ma Pan jakieś pytania, proszę dać znać, ale nie jest to konieczne.\nMarta Szymańska",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "info"
+    },
+    "note": "borderline: announcement with an optional invitation to ask, no reply needed"
+  },
+  {
+    "id": "syn-info-09",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Sklep Hurtowy <oferty@sklep-hurtowy.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Nowości w ofercie: jesienna kolekcja",
+    "body": "Zapraszamy do zapoznania się z jesienną kolekcją. Nowe produkty są już dostępne w katalogu.\nRabat 10% dla stałych klientów do końca miesiąca.\nZespół Sklep Hurtowy",
+    "thread": [],
+    "senderRules": [
+      {
+        "pattern": "sklep-hurtowy.test",
+        "kind": "whitelist"
+      }
+    ],
+    "expected": {
+      "category": "info"
+    },
+    "note": "whitelist sender, marketing-like text, not spam"
+  },
+  {
+    "id": "syn-info-10",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Tech Digest <editor@tech-digest.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "This week in cloud: 7 stories you may have missed",
+    "body": "Top stories: new region launches, pricing changes, and a deep dive into container security.\nRead the full digest on our site.\nThe Tech Digest team",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "info"
+    }
+  },
+  {
+    "id": "syn-info-11",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Facilities <facilities@supplier-kappa.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Office closed on Friday 6 November",
+    "body": "Hello,\nthis is to let you know that our office will be closed on Friday 6 November for maintenance.\nNormal operations resume on Monday.\nFacilities team",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "info"
+    }
+  },
+  {
+    "id": "syn-info-12",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Lena Fox <lena.fox@partner-delta.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "FYI: updated project timeline",
+    "body": "Hi,\nI am sharing the updated project timeline. The review moved from 10 to 12 November.\nNo action is needed from your side.\nLena",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "info"
+    }
+  },
+  {
+    "id": "syn-info-13",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Product Weekly <hello@product-weekly.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Would you like to see our new features?",
+    "body": "Hi there,\nwe shipped dashboards, exports and a faster search this month.\nWould you like a tour? You can book a demo any time, or just read the release notes.\nProduct Weekly",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "info"
+    },
+    "note": "borderline: newsletter with a question to the reader, a mass mailing, not needs_reply"
+  },
+  {
+    "id": "syn-info-14",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Ben Carter <ben.carter@client-omega.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Heads up: we changed our bank details",
+    "body": "Hello,\nplease note that our bank account changed. The new details are on the attached letter, valid from 1 December.\nI will not need a confirmation, this is for your records.\nBen",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "info"
+    },
+    "note": "borderline: information that could need action later, no reply requested; the info label assumes a trusted, known supplier"
+  },
+  {
+    "id": "syn-info-15",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Acme Supplies <news@acme-supplies.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Autumn sale starts Monday - catalogue inside",
+    "body": "Dear customer,\nour autumn sale starts Monday. Up to 40% off selected lines.\nBrowse the catalogue and plan your orders.\nAcme Supplies",
+    "thread": [],
+    "senderRules": [
+      {
+        "pattern": "acme-supplies.test",
+        "kind": "whitelist"
+      }
+    ],
+    "expected": {
+      "category": "info"
+    },
+    "note": "whitelist sender, marketing-like text, not spam"
+  },
+  {
+    "id": "syn-info-16",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Dorota Lis <dorota.lis@vip-klient.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Wyjątkowa okazja - nasz nowy raport rynkowy",
+    "body": "Dzień dobry,\nwłaśnie opublikowaliśmy raport rynkowy za trzeci kwartał. Znajdzie Pan w nim dane o cenach i popycie.\nPrzesyłam do wiadomości, bez potrzeby odpowiedzi.\nDorota Lis",
+    "thread": [],
+    "senderRules": [
+      {
+        "pattern": "dorota.lis@vip-klient.test",
+        "kind": "vip"
+      }
+    ],
+    "expected": {
+      "category": "info"
+    },
+    "note": "vip sender, marketing-like text, not spam"
+  },
+  {
+    "id": "syn-notif-01",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Poczta Kurierska <powiadomienia@kurier-szybki.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Twoja paczka została wysłana",
+    "body": "Dzień dobry,\npaczka nr PK123456789 została nadana i dotrze do Państwa jutro do godz. 16:00.\nŚledź przesyłkę na stronie przewoźnika.\nKurier Szybki",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "notification"
+    }
+  },
+  {
+    "id": "syn-notif-02",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Bank Polna <noreply@bank-polna.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Potwierdzenie przelewu na kwotę 2 450,00 zł",
+    "body": "Informujemy, że przelew na kwotę 2 450,00 zł został zrealizowany 31 października 2026.\nOdbiorca: Dostawca Beta Sp. z o.o.\nWiadomość wygenerowana automatycznie.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "notification"
+    }
+  },
+  {
+    "id": "syn-notif-03",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Kalendarz <kalendarz@firma-partner.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Przypomnienie: spotkanie zespołu jutro o 9:30",
+    "body": "To przypomnienie o spotkaniu „Przegląd tygodnia” zaplanowanym na jutro o 9:30 w sali konferencyjnej B.\nWiadomość automatyczna z systemu kalendarza.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "notification"
+    }
+  },
+  {
+    "id": "syn-notif-04",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Serwis Chmurowy <noreply@serwis-chmurowy.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Nowe logowanie na Twoje konto",
+    "body": "Zarejestrowaliśmy logowanie na Twoje konto z nowego urządzenia (Warszawa, 2 listopada, 08:12).\nJeśli to Ty, nie musisz nic robić.\nZespół bezpieczeństwa",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "notification"
+    }
+  },
+  {
+    "id": "syn-notif-05",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Sklep Internetowy <zamowienia@sklep-internetowy.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Potwierdzenie zamówienia nr 88231",
+    "body": "Dziękujemy za zakupy!\nTwoje zamówienie nr 88231 zostało przyjęte. Szacowany termin dostawy: 9 listopada.\nWiadomość wygenerowana automatycznie.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "notification"
+    }
+  },
+  {
+    "id": "syn-notif-06",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "System Fakturowania <noreply@system-faktur.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Wystawiono fakturę FV/2026/11/004",
+    "body": "W systemie wystawiono fakturę FV/2026/11/004 na kwotę 1 230,00 zł. Termin płatności: 18 listopada.\nFaktura jest dostępna w panelu klienta.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "notification"
+    },
+    "note": "borderline: automatic invoice with a distant due date, not urgent"
+  },
+  {
+    "id": "syn-notif-07",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Zespół Platformy <powiadomienia@platforma-projekty.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Zaktualizowano regulamin usługi",
+    "body": "Informujemy o zmianie regulaminu, która wchodzi w życie 1 grudnia.\nJeśli nie zgadzasz się ze zmianami, możesz usunąć konto w ustawieniach.\nNie musisz podejmować żadnych działań, aby kontynuować korzystanie z usługi.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "notification"
+    },
+    "note": "borderline: system notice that mentions an action, but none is required"
+  },
+  {
+    "id": "syn-notif-08",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Paweł Kowal <pawel.kowal@dostawca-beta.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Paczka u kuriera",
+    "body": "Cześć,\nwysłałem Ci dziś paczkę z próbkami, numer przesyłki to 5500123987. Powinna dojść w czwartek.\nPaweł",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "notification"
+    },
+    "note": "borderline: shipping notice written by a person, no reply needed"
+  },
+  {
+    "id": "syn-notif-09",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Kurier Szybki <info@kurier-szybki.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Paczka czeka w punkcie odbioru - promocja na przesyłki",
+    "body": "Twoja paczka czeka w punkcie odbioru przy ul. Długiej 12 przez 7 dni.\nKorzystaj z promocji: -20% na kolejną wysyłkę!\nKurier Szybki",
+    "thread": [],
+    "senderRules": [
+      {
+        "pattern": "kurier-szybki.test",
+        "kind": "whitelist"
+      }
+    ],
+    "expected": {
+      "category": "notification"
+    },
+    "note": "whitelist sender, marketing-like text, not spam"
+  },
+  {
+    "id": "syn-notif-10",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Code Host <noreply@code-host.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "[repo/app] Build passed on main",
+    "body": "The build for commit 4f3a2b1 on branch main passed.\nAll 214 tests succeeded in 3 min 12 s.\nThis is an automated message.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "notification"
+    }
+  },
+  {
+    "id": "syn-notif-11",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Parcel Express <tracking@parcel-express.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Your package is out for delivery",
+    "body": "Good news! Your package 7788-2201 is out for delivery today.\nEstimated arrival: between 12:00 and 16:00.\nTrack it on our website.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "notification"
+    }
+  },
+  {
+    "id": "syn-notif-12",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Cloud Billing <billing@cloud-service.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Your receipt for October 2026",
+    "body": "Thank you for your payment.\nAmount: $48.00. Invoice number: INV-2026-10-4471. Paid on 1 November.\nThis is an automated receipt.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "notification"
+    }
+  },
+  {
+    "id": "syn-notif-13",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Security <noreply@cloud-service.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Please review your account settings",
+    "body": "As part of our yearly checkup, please review your security settings when you have time.\nNo action is required if your settings are already up to date.\nThe Security team",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "notification"
+    },
+    "note": "borderline: system notice that asks for an optional action"
+  },
+  {
+    "id": "syn-notif-14",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Calendar <calendar@supplier-kappa.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Invitation: Quarterly review on 12 November",
+    "body": "Mia Stone invited you to Quarterly review.\nWhen: 12 November, 14:00-15:00.\nReply to this invitation with Yes, No or Maybe.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "notification"
+    },
+    "note": "borderline: automatic calendar invitation with RSVP buttons"
+  },
+  {
+    "id": "syn-notif-15",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Acme Supplies <orders@acme-supplies.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Your order has shipped - get 15% off your next one",
+    "body": "Your order #55120 has shipped and will arrive on 8 November.\nUse code AUTUMN15 to get 15% off your next order.\nAcme Supplies",
+    "thread": [],
+    "senderRules": [
+      {
+        "pattern": "acme-supplies.test",
+        "kind": "whitelist"
+      }
+    ],
+    "expected": {
+      "category": "notification"
+    },
+    "note": "whitelist sender, marketing-like text, not spam"
+  },
+  {
+    "id": "syn-notif-16",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Jo Marsh <jo.marsh@vip-client.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Limited time: your tracking link",
+    "body": "Hi,\nyour samples left our warehouse today. Tracking number: 90021177.\nNo reply needed, just so you know they are on the way.\nJo",
+    "thread": [],
+    "senderRules": [
+      {
+        "pattern": "jo.marsh@vip-client.test",
+        "kind": "vip"
+      }
+    ],
+    "expected": {
+      "category": "notification"
+    },
+    "note": "vip sender, marketing-like text, not spam"
   }
 ]
