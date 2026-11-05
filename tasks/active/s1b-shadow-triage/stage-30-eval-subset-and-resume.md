@@ -22,3 +22,10 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
   - Check: `bun run lint && bun run typecheck && bun run test:unit`
   - Done when: the tests pass.
   - Out of scope: real labels, any change to the classifier or the prompt.
+
+## Follow-ups from the checkpoint 2 group review (2026-11-05)
+
+- Extract one `toPrediction(CaseResult)` for both the live and the `done` path; `runEval` builds predictions inside the loop (rule rows: `modelCategory "spam"`, confidence 1, while `CaseResult` holds `null`). Either add `whitelisted: boolean` to `CaseResult` or recompute it from the case.
+- Add the stop rule for a spent quota: without it a full run on a spent quota retries every case 4 times (about 130 s per case, about 3 h for 90 cases).
+- Update `evals/README.md` "Run": it lacks the flags `--set`, `--limit`, `--model`, `--out`, `--bar`, `--min-kept`, `--retries`, and still says "Stage 18 adds `bun run eval`".
+- Export one `DEFAULT_MAILS_PER_DAY = 200` from core `cost.ts`; `eval.ts` and `eval-report.ts` each define `MAILS_PER_DAY` (stage 27 needs it a third time). Optional: share the 500-character excerpt constant (`EXCERPT_LENGTH` in `eval.ts`, `EXCERPT_CHARS` in `prompts/classifier-v1.ts`).

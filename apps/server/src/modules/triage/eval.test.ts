@@ -132,7 +132,7 @@ describe("runEval", () => {
     const report = await runEval(harness().deps(llm), { ...opts, cases: [c] });
     expect(calls).toHaveLength(1);
     expect(calls[0]?.system).not.toContain("spam");
-    expect(report.whitelist).toEqual({ passed: 1, total: 1 });
+    expect(report.whitelist).toEqual({ passed: 1, total: 1, errors: 0 });
   });
 
   test("toClassifierInput maps addresses, thread times and the excerpt", () => {
@@ -197,6 +197,12 @@ describe("runEval", () => {
     expect(report.errorCodes).toEqual({ http_503: 1 });
     expect(report.cases[0]?.errorCode).toBe("http_503");
     expect(report.predictions).toHaveLength(0);
+  });
+
+  test("a whitelisted case that errors counts in whitelist errors, not in the total", async () => {
+    const c = makeCase({ senderRules: [{ pattern: "firma.test", kind: "whitelist" }], from: "anna@firma.test" });
+    const report = await runEval(harness().deps(fakeLlm([soft()]).llm), { ...opts, cases: [c] });
+    expect(report.whitelist).toEqual({ passed: 0, total: 0, errors: 1 });
   });
 
   test("2 soft errors with retries 1 end as an error after one wait", async () => {

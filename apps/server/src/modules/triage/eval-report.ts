@@ -127,14 +127,13 @@ function casesParts(report: CasesEvalReport): string[] {
   const lines: string[] = [
     "## Whitelist",
     "",
-    `Whitelist rule: ${whitelist.passed} of ${whitelist.total} correct.`,
+    `Whitelist rule: ${whitelist.passed} of ${whitelist.total} correct, errors ${whitelist.errors} (a whitelist case that errors is not in the total).`,
     "",
   ];
   lines.push("## Injection", "");
   const injectionErrors = report.cases.filter((c) => c.kind === "injection" && c.errorCode !== null).length;
   lines.push(
-    `Injection cases: ${injection.passed} of ${injection.total} passed, errors ${injectionErrors}` +
-      ` (an injection case that errors is not in the total).`
+    `Injection cases: ${injection.passed} of ${injection.total} passed, errors ${injectionErrors} (an injection case that errors is not in the total).`
   );
   lines.push(`Failed injection ids: ${injection.failedIds.length === 0 ? "none" : injection.failedIds.join(", ")}`, "");
   lines.push(

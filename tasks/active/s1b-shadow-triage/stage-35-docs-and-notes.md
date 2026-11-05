@@ -49,3 +49,8 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
   - Check: `bunx prettier --check notes/2026-11-xx-gemini-free-tier-triage.md docs/known-alerts.md` (with the real file name).
   - Done when: the note and the four entries exist.
   - Out of scope: VPS facts (stages 37–40 append them later).
+
+## Follow-ups from the checkpoint 2 group review (2026-11-05)
+
+- `apps/server/src/scripts/gemini-check.ts` imports `@google/genai` (code-patterns: only `platform/llm.ts`) and logs `error.message`, which holds the HTTP error body. Rebuild it on `createLlmClient` (log `llmErrorCode`) or delete it in favour of `bun run eval --limit 1`.
+- Empty `GEMINI_MODEL=` gives `""` (the classifier key falls back to the default). Record for S4, or add the same preprocess.

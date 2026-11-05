@@ -21,3 +21,8 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
   - Check: `bun run dev:up && bun run db:migrate && bun run lint && bun run typecheck && bun run test:unit && bun run test:int`
   - Done when: the tests pass.
   - Out of scope: re-classifying real mail with a new model (that sends real mail to the LLM).
+
+## Follow-ups from the checkpoint 2 group review (2026-11-05)
+
+- Set `RealEvalReport.errors` = count of `source: "error"` rows and `errorCodes = { triage_error: n }`, so that the header and the "Errors:" line agree with `ruleSummary.error.total`.
+- Open question: in `thresholdSweep` a `wrongOnly` row counts as a false positive for its `modelCategory`. When the stored category was `unsure` (below the threshold), the "wrong" verdict is about `unsure`. Decide: the labeling CLI asks for a true category on `unsure` rows, or `buildRealPredictions` drops `wrongOnly` when the stored category is `unsure`.

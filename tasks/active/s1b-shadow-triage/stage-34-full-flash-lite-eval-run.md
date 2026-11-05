@@ -23,3 +23,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
   - Check: the eval command exits 0; `bun run lint && bun run typecheck && bun run test:unit`.
   - Done when: the report is in `evals/results/`, and the provisional table and model choice are in this file (or the stop report went to the main session).
   - Out of scope: real mail, a prompt change, the 3.8 Flash comparison (stage 36).
+
+## Follow-ups from the checkpoint 2 group review (2026-11-05)
+
+- The stage 18 smoke run used only the full `allowed` list. The schema without `spam` (whitelisted sender) has not reached Gemini yet: run at least one whitelist case early, and check that `z.toJSONSchema` keywords (`maxLength`, `pattern`, nullable) are accepted [not verified]. Do not start the full run late in a Pacific day (spent quota, 4 retries per case).

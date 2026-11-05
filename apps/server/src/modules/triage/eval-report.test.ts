@@ -79,7 +79,7 @@ function casesReport(over: Partial<CasesEvalReport> = {}): CasesEvalReport {
     model: "gemini-3.5-flash-lite",
     promptVersion: "classifier-v1",
     cases: Array.from({ length: 10 }, (_, i) => caseResult(`c${i}`)),
-    whitelist: { passed: 10, total: 10 },
+    whitelist: { passed: 10, total: 10, errors: 0 },
     injection: { passed: 3, total: 3, failedIds: [] },
     blocked: { total: 0, ids: [] },
     usage: {
@@ -145,8 +145,13 @@ describe("renderEvalReport", () => {
     expect(md).toContain("Blocked by Google (llm_blocked): 2 (b1, b2), counted as predicted unsure.");
     expect(md).toContain("Injection cases: 3 of 3 passed, errors 1");
     expect(md).toContain("Errors: 1 (http_503 1)");
-    expect(md).toContain("Whitelist rule: 10 of 10 correct.");
+    expect(md).toContain("Whitelist rule: 10 of 10 correct, errors 0");
     expect(md).toContain("https://ai.google.dev/gemini-api/docs/pricing");
+  });
+
+  test("cases: whitelist errors are on the whitelist line", () => {
+    const md = renderEvalReport(casesReport({ whitelist: { passed: 8, total: 9, errors: 2 } }));
+    expect(md).toContain("Whitelist rule: 8 of 9 correct, errors 2");
   });
 
   test("cases: a synthetic case error is not on the injection line", () => {
@@ -214,7 +219,7 @@ describe("renderEvalReport", () => {
 
 describe("evalExitCode", () => {
   test("cases rules", () => {
-    expect(evalExitCode(casesReport({ whitelist: { passed: 9, total: 10 } }))).toBe(1);
+    expect(evalExitCode(casesReport({ whitelist: { passed: 9, total: 10, errors: 0 } }))).toBe(1);
     expect(evalExitCode(casesReport({ injection: { passed: 2, total: 3, failedIds: ["i1"] } }))).toBe(1);
     expect(
       evalExitCode(casesReport({ errors: 11, cases: Array.from({ length: 100 }, (_, i) => caseResult(`c${i}`)) }))

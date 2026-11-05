@@ -19,6 +19,12 @@ describe("costPerMail", () => {
     expect(costPerMail("gemini-unknown", 100, 100, new Date("2026-11-05T00:00:00Z"))).toBeNull();
   });
 
+  test("an Object.prototype key is not a model", () => {
+    const date = new Date("2026-11-05T00:00:00Z");
+    expect(costPerMail("constructor", 1, 1, date)).toBeNull();
+    expect(costPerMail("toString", 1, 1, date)).toBeNull();
+  });
+
   test("every price row names a source URL and a check date", () => {
     for (const rows of Object.values(llmPrices)) {
       for (const row of rows) {

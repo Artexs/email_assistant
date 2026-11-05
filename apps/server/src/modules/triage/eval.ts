@@ -70,7 +70,7 @@ export interface CasesEvalReport extends EvalReportBase {
   model: string;
   promptVersion: string;
   cases: CaseResult[];
-  whitelist: { passed: number; total: number };
+  whitelist: { passed: number; total: number; errors: number };
   injection: { passed: number; total: number; failedIds: string[] };
   blocked: { total: number; ids: string[] };
   usage: {
@@ -178,7 +178,7 @@ export async function runEval(
   const cases: CaseResult[] = [];
   const predictions: Prediction[] = [];
   const errorCodes: Record<string, number> = {};
-  const whitelist = { passed: 0, total: 0 };
+  const whitelist = { passed: 0, total: 0, errors: 0 };
   const blockedIds: string[] = [];
   const usages: LlmUsage[] = [];
 
@@ -256,6 +256,8 @@ export async function runEval(
       if (result.finalCategory !== null) {
         whitelist.total += 1;
         if (result.finalCategory !== "spam") whitelist.passed += 1;
+      } else {
+        whitelist.errors += 1;
       }
     }
     cases.push(result);
