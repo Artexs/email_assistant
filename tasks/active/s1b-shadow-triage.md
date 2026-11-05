@@ -1,4 +1,4 @@
-> **Status 2026-11-05 — in progress: stages 0–35 done, checkpoint 3 group review passed.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 36–40, with 1 user checkpoint left (before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
+> **Status 2026-11-05 — in progress: stages 0–35 done, checkpoint 3 group review passed.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stage 36 (day 1 of the 3.8 Flash comparison done; Flash-Lite subset done), stages 37–40, with 1 user checkpoint left (before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
 
 # S1b Shadow triage
 
@@ -200,6 +200,30 @@ Usage: average tokens in / out 698 / 88; latency p50 / p95 1010 ms / 8614 ms; co
 
 Provisional model choice: `gemini-3.5-flash-lite`. The stage 34 rule is met (whitelist 100%, every injection case passes). Stage 36 makes the choice final. Open for the main session: `info` precision (76.5%) and `spam` precision (84.2%) are far below the 98% bar; a prompt change would need `classifier-v2` as a new [risky] step.
 
+#### Stage 36: model comparison (subset `--per-category 3`, 18 cases)
+
+Reports (synthetic data only): `evals/results/2026-11-05-gemini-3.5-flash-lite-pc3.md` (exit 0, 17 of 18 cases done, 1 `http_503` = 5.6%, below the 10% limit; resumed twice from the state file) and `evals/results/2026-11-05-gemini-3.8-flash-pc3.md` (exit 2, 0 of 18 done).
+
+3.8 Flash availability (Pacific quota days; "not comparable: 503" needs 3 different days):
+
+| Pacific day | result                                                                                             | error counts by code |
+| ----------- | -------------------------------------------------------------------------------------------------- | -------------------- |
+| 2026-11-05  | exit 2: run stopped on soft errors after 3 cases (`inj-01`..`inj-03`, about 6 requests), 0 answers | `http_503`: 3        |
+
+Day 1 of 3. The comparison table below stays empty until `gemini-3.8-flash` answers on a day, or until 3 days are listed.
+
+Flash-Lite on the subset (prompt `classifier-v1`): whitelist 4 of 4 (100%); injection 3 of 3 passed; blocked by Google 0; rules 1 of 1. Precision / recall: urgent 100.0% / 100.0%; needs_reply 100.0% / 100.0%; info 100.0% / 66.7%; notification 100.0% / 100.0%; spam 83.3% / 100.0% (support 2–6 rows, so only a smoke check). Average tokens in / out 685 / 85; latency p50 / p95 5520 ms / 18081 ms; cost per mail $0.000418; per mailbox per month at 200 mails per day $2.51 (price source: https://ai.google.dev/gemini-api/docs/pricing, checked 2026-11-05).
+
+| metric                     | gemini-3.5-flash-lite | gemini-3.8-flash |
+| -------------------------- | --------------------- | ---------------- |
+| whitelist / injection      | 4/4 / 3/3             | no data          |
+| avg tokens in / out        | 685 / 85              | no data          |
+| latency p50 / p95          | 5520 / 18081 ms       | no data          |
+| cost per mail              | $0.000418             | no data          |
+| cost per mailbox per month | $2.51                 | no data          |
+
+Model choice: no change, `gemini-3.5-flash-lite` stays provisional (no comparison yet). Architecture §6.3 is not changed.
+
 Final go/no-go table (real mail, step 40.1): _not yet_. Final model choice: _not yet_.
 
 ## Questions for the user
@@ -280,3 +304,4 @@ None open (Q26–Q29 answered 2026-11-04).
 - 2026-11-05: Stage 33 done: `requeueTooOld` (mail repo, one conditional UPDATE: INBOX, `skipped` / `too_old`, real mail, in the window) and `requeueBackfillWindow` (triage; one transaction with one `email.requeued` audit row per id); `mailbox:backfill` prints `re-queued n`. Checkpoint 1 item: one `mailKindFilter` in the mail module replaces the three copies (same SQL). Unit 411 pass, int 207 pass (2 runs). Reviewed: PASS (Sonnet; one fix round for more test rows).
 - 2026-11-05: Stage 34 done: `bun run eval --set all --model gemini-3.5-flash-lite --out evals/results/2026-11-05-gemini-3.5-flash-lite.md` → exit 0 (resumed once from the state file after a tool timeout); 91 of 92 cases, 1 `http_503`; whitelist 12/12, injection 12/12, rules 6/6. Whitelist schema follow-up: no HTTP 400. About 190 Flash-Lite requests (many 503 retries). Provisional model: `gemini-3.5-flash-lite`. Precision `info` 76.5%, `spam` 84.2%, wrong answers at confidence ≥ 0.95: question for the user at checkpoint 4 (a `classifier-v2` prompt step). Reviewed: PASS (Sonnet).
 - 2026-11-05: Stage 35 done: architecture §4.1 rules 7 and 8, §4.6 flows, §5, §6.1, §6.3 (provisional classifier model), §9; modules §2 `triage --> audit`, §3.2–3.6; roadmap S1b state and scripts; note `notes/2026-11-05-gemini-free-tier-triage.md`; 10 new entries in `docs/known-alerts.md`. Code follow-ups: `gemini-check.ts` on `createLlmClient` (logs `describeError` only), empty `GEMINI_MODEL` = default (test). Fact: a network error (no HTTP status) is a hard error `unknown` (stage 10 plan), so about 15 min without network ends a mail as `unsure`: question for the user at checkpoint 4. `gemini:test` (one request, `gemini-3.8-flash`) → `LlmSoftError timeout`. `prettier --check` still fails on architecture, modules and roadmap as at HEAD (no new lines). Unit 412 pass, int 207 pass. Reviewed: PASS (Sonnet; round 1 FAIL for a false note line, fixed).
+- 2026-11-05: Stage 36 day 1 (not complete): `gemini-3.8-flash` subset run exit 2, `http_503` on 3 of 3 tried cases (day 1 of 3 for "not comparable: 503"); `gemini-3.5-flash-lite` subset run exit 0 after 2 resumes (17 of 18, 1 `http_503`; whitelist 4/4, injection 3/3). About 43 Flash-Lite and 6 Flash requests. Model choice unchanged (provisional Flash-Lite). Next: run the 3.8 command again on the next Pacific days. Reviewed: PASS (Sonnet; round 1 FAIL for usage numbers from a partial run, fixed).
