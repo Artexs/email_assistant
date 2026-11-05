@@ -14,6 +14,14 @@ export interface SeedMessage {
 
 const BOUNDARY = "ea-seed-boundary-0001";
 
+// Synthetic mail = a Message-ID that ends with `@ea-seed.test>`. Not a security boundary: any sender can write such an id.
+export const SYNTHETIC_MESSAGE_ID_DOMAIN = "ea-seed.test";
+export const SYNTHETIC_MESSAGE_ID_LIKE = `%@${SYNTHETIC_MESSAGE_ID_DOMAIN}>`;
+
+export function isSyntheticMessageId(messageId: string | null): boolean {
+  return messageId !== null && messageId.toLowerCase().endsWith(`@${SYNTHETIC_MESSAGE_ID_DOMAIN}>`);
+}
+
 function isAscii(text: string): boolean {
   for (let i = 0; i < text.length; i += 1) {
     if (text.charCodeAt(i) > 0x7f) return false;

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type { Transaction } from "kysely";
 
-import type { MailCapabilities } from "../../src/modules/mail";
+import type { MailCapabilities, NewEmail } from "../../src/modules/mail";
 import { insertMailbox } from "../../src/modules/mail/repo";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
@@ -43,4 +43,34 @@ export async function createOrgWithMailbox(
     }
   );
   return { orgId, userId, mailboxId };
+}
+
+export async function insertTestEmail(
+  trx: Transaction<DB>,
+  ctx: { orgId: string },
+  mailboxId: string,
+  overrides?: Partial<NewEmail> & {
+    status?: string;
+    attempts?: number;
+    next_attempt_at?: Date | null;
+    locked_at?: Date | null;
+    backfilled_at?: Date | null;
+  }
+): Promise<string> {
+  const row = await trx
+    .insertInto("emails")
+    .values({
+      org_id: ctx.orgId,
+      mailbox_id: mailboxId,
+      dedup_key: `test:${randomUUID()}`,
+      thread_key: `test:${randomUUID()}`,
+      content_hash: "h",
+      uid: 1,
+      received_at: new Date(),
+      status: "pending",
+      ...overrides,
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  return row.id;
 }

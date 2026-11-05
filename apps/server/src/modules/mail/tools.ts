@@ -11,7 +11,7 @@ import { openImapProvider, type ImapConnectOptions } from "./imap/client";
 import { appendRaw } from "./imap/tools";
 import { INBOX } from "./port";
 import { getCredentials, getMailbox, listInboxEmailKeys, type MailboxRow } from "./repo";
-import { renderSeedMessage } from "./seed";
+import { renderSeedMessage, SYNTHETIC_MESSAGE_ID_DOMAIN } from "./seed";
 import { fetchSince } from "./sync";
 import { contentHash, normalizeMessageId } from "./sync-rules";
 
@@ -63,7 +63,7 @@ export async function seedMailbox(
   for (let n = 0; n < opts.count; n += 1) {
     const now = new Date();
     const raw = renderSeedMessage({
-      messageId: `<seed-${randomUUID()}@ea-seed.test>`,
+      messageId: `<seed-${randomUUID()}@${SYNTHETIC_MESSAGE_ID_DOMAIN}>`,
       from: "seed@ea-seed.test",
       to: [address],
       subject: `EA seed ${now.toISOString()}`,

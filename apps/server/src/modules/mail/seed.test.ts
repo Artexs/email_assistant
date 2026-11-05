@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { renderSeedMessage, type SeedMessage } from "./seed";
+import { isSyntheticMessageId, renderSeedMessage, type SeedMessage } from "./seed";
 
 const base: SeedMessage = {
   messageId: "<a1@example.test>",
@@ -69,5 +69,18 @@ describe("renderSeedMessage", () => {
   test("non-ASCII in a header name or value throws", () => {
     expect(() => renderSeedMessage({ ...base, subject: "Zażółć" })).toThrow(Error);
     expect(() => renderSeedMessage({ ...base, headers: { "X-Zażółć": "a" } })).toThrow(Error);
+  });
+});
+
+describe("isSyntheticMessageId", () => {
+  test("a Message-ID that ends with @ea-seed.test> is synthetic, in any case", () => {
+    expect(isSyntheticMessageId("<a@ea-seed.test>")).toBe(true);
+    expect(isSyntheticMessageId("<A@EA-SEED.TEST>")).toBe(true);
+  });
+
+  test("another domain, no closing > or null is not synthetic", () => {
+    expect(isSyntheticMessageId("<a@ea-seed.test.evil>")).toBe(false);
+    expect(isSyntheticMessageId("a@ea-seed.test")).toBe(false);
+    expect(isSyntheticMessageId(null)).toBe(false);
   });
 });

@@ -14,8 +14,22 @@ export {
   type MailServerInfo,
   type MessageMeta,
 } from "./port";
-export { forceRescan } from "./repo";
-export type { Cursor, MailboxRow, NewEmail } from "./repo";
-export { renderSeedMessage, type SeedMessage } from "./seed";
+export {
+  claimEmails,
+  finishEmail,
+  forceRescan,
+  getMailbox,
+  listSyncTargets,
+  listThreadContext,
+  releaseEmail,
+} from "./repo";
+export type { ClaimedEmail, Cursor, MailboxRow, NewEmail } from "./repo";
+export {
+  isSyntheticMessageId,
+  renderSeedMessage,
+  SYNTHETIC_MESSAGE_ID_DOMAIN,
+  SYNTHETIC_MESSAGE_ID_LIKE,
+  type SeedMessage,
+} from "./seed";
 export { CursorMovedError, syncMailbox, type SyncDeps, type SyncResult } from "./sync";
 export { auditMailbox, seedMailbox, type ToolDeps } from "./tools";

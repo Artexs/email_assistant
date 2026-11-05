@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 4 — Email claim and release queries [risky]
 
-- [ ] **4.1 Mail repository functions for the triage worker**
+- [x] **4.1 Mail repository functions for the triage worker**
   - Goal: the triage worker can claim, release and finish emails safely with `FOR UPDATE SKIP LOCKED` and conditional updates.
   - Files: change `apps/server/src/modules/mail/repo.ts`; change `apps/server/src/modules/mail/index.ts` (export `claimEmails`, `releaseEmail`, `finishEmail`, `listThreadContext`, `type ClaimedEmail`, and also the existing `getMailbox` and `listSyncTargets`, which the triage job needs; export `SYNTHETIC_MESSAGE_ID_DOMAIN`, `SYNTHETIC_MESSAGE_ID_LIKE` and `isSyntheticMessageId`); change `apps/server/src/modules/mail/seed.ts` (export `SYNTHETIC_MESSAGE_ID_DOMAIN = "ea-seed.test"`, `SYNTHETIC_MESSAGE_ID_LIKE = "%@ea-seed.test>"` and `isSyntheticMessageId(messageId: string | null): boolean` = `messageId !== null && messageId.toLowerCase().endsWith("@ea-seed.test>")`) and `apps/server/src/modules/mail/tools.ts` (use the domain constant in the seed Message-ID); change `apps/server/src/modules/mail/seed.test.ts` (`isSyntheticMessageId` cases); change `apps/server/test/integration/fixtures.ts` (new `insertTestEmail`); create `apps/server/test/integration/mail-claim.test.ts`.
   - Interfaces (all take `db: Db | Transaction<DB>, ctx: TenantContext` first and filter by `org_id`):
