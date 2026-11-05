@@ -1,4 +1,4 @@
-> **Status 2026-11-05 — in progress: stages 0–18 done.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 19–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
+> **Status 2026-11-05 — in progress: stages 0–19 done.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 20–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
 
 # S1b Shadow triage
 
@@ -138,7 +138,7 @@ The main session ticks the step boxes in the stage file and the stage box here.
 - [x] [Stage 16](s1b-shadow-triage/stage-16-eval-metrics-and-go-no-go.md) — Eval metrics and go/no-go [risky]
 - [x] [Stage 17](s1b-shadow-triage/stage-17-eval-runner-logic.md) — Eval runner logic [risky]
 - [x] [Stage 18](s1b-shadow-triage/stage-18-eval-report-and-cli.md) — Eval report and CLI [risky]
-- [ ] [Stage 19](s1b-shadow-triage/stage-19-triage-save-path.md) — Triage save path [risky]
+- [x] [Stage 19](s1b-shadow-triage/stage-19-triage-save-path.md) — Triage save path [risky]
 - [ ] [Stage 20](s1b-shadow-triage/stage-20-triage-of-one-email-success-path.md) — Triage of one email: success path [risky]
 - [ ] [Stage 21](s1b-shadow-triage/stage-21-triage-of-one-email-llm-error-rules-and-the-paus.md) — Triage of one email: LLM error rules and the pause [risky]
 - [ ] [Stage 22](s1b-shadow-triage/stage-22-triage-job-mailboxes-scope-settings-claim.md) — Triage job: mailboxes, scope, settings, claim [risky]
@@ -225,3 +225,4 @@ None open (Q26–Q29 answered 2026-11-04).
 - 2026-11-05: Stage 17 done: `runEval` (retries 10/20/40/60 s, blocked and config-error paths, whitelist and injection checks). Reviewed: PASS (Sonnet). Accepted deviation: `decidePolicy` is not called (the check reads planner output only; policy cannot add actions). For stage 18: show `errors` next to the injection line, because an injection case that errors drops out of `injection.total`.
 - 2026-11-05: Stage 18 done: `renderEvalReport`, `evalExitCode`, `bun run eval`. Invalid-key run exits 1 (`http_400_key`). Live smoke run (inj-01..03, gemini-3.5-flash-lite): 3 of 3 passed, 0 errors, avg 671 tokens in / 86 out, p50 2394 ms, about $2.50 per mailbox per month at 200 mails/day. Reviewed: PASS (Sonnet; fix round for the injection error count and the last-resort log). Checkpoint 2 reached; group review next.
 - 2026-11-05: Checkpoint 2 group review (stages 9–18, Opus): PASS. Fixed in code: `+` concatenation, `whitelist.errors` count, `costPerMail` prototype-name test. Other findings written as follow-ups into the stage 28, 30, 34 and 35 files.
+- 2026-11-05: Stage 19 done: `describeError`, `saveTriage` (result, actions and audit rows in one transaction; lost claim returns `lost`). Unit 379 pass, int 144 pass. Reviewed: PASS (Sonnet; fix round for plain-object `code`).

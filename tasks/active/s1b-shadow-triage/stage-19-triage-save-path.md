@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 19 — Triage save path [risky]
 
-- [ ] **19.1 `describeError` and `saveTriage`: result, actions and audit rows in one transaction**
+- [x] **19.1 `describeError` and `saveTriage`: result, actions and audit rows in one transaction**
   - Goal: save one triage decision of a claimed email in one transaction, and handle a lost claim without a throw.
   - Files: change `apps/server/src/platform/errors.ts` (add `describeError`); create `apps/server/src/platform/errors.test.ts`; create `apps/server/src/modules/triage/service.ts` (this step: `TriageMailbox`, `TriageDecision`, `saveTriage`); export from `triage/index.ts`; create `apps/server/test/integration/triage-service.test.ts`.
   - Interfaces:
