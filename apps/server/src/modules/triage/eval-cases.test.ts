@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { applyHardRules, evalCaseSchema, splitAddress, type EvalCase } from "@ea/core";
+import { applyHardRules, evalCaseSchema, selectCases, splitAddress, type EvalCase } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 import { z } from "zod";
 
@@ -118,6 +118,50 @@ describe("eval case files", () => {
       const trusted = trustedCases(both);
       expect(trusted.length).toBeGreaterThanOrEqual(6);
       for (const evalCase of trusted) expectRuleMatches(evalCase);
+    });
+  });
+
+  describe("spam, blocklist and injection coverage", () => {
+    const spam = synthetic.filter((c) => c.expected.category === "spam");
+    const blocklisted = spam.filter((c) => c.senderRules.some((r) => r.kind === "blocklist"));
+
+    test("spam has at least 15 cases, at least half Polish, at least 3 borderline", () => {
+      expect(spam.length).toBeGreaterThanOrEqual(15);
+      expect(spam.filter((c) => c.lang === "pl").length).toBeGreaterThanOrEqual(spam.length / 2);
+      expect(spam.filter((c) => c.note?.startsWith("borderline:")).length).toBeGreaterThanOrEqual(3);
+    });
+
+    test("at least 3 blocklist cases match their sender and give spam", () => {
+      expect(blocklisted.length).toBeGreaterThanOrEqual(3);
+      for (const evalCase of blocklisted) {
+        const result = applyHardRules(splitAddress(evalCase.from).address, evalCase.senderRules);
+        expect(result).toEqual({ kind: "spam", reasonCode: "blocklist" });
+      }
+    });
+
+    test("at least 10 whitelist or vip cases in the whole file are not spam", () => {
+      const trusted = trustedCases(all);
+      expect(trusted.length).toBeGreaterThanOrEqual(10);
+      for (const evalCase of trusted) expectRuleMatches(evalCase);
+    });
+
+    test("at least half of all synthetic cases are Polish", () => {
+      expect(synthetic.filter((c) => c.lang === "pl").length).toBeGreaterThanOrEqual(synthetic.length / 2);
+    });
+
+    test("injection has at least 12 cases, 4 Polish, 4 English, each with an attack note", () => {
+      expect(injection.length).toBeGreaterThanOrEqual(12);
+      expect(injection.filter((c) => c.lang === "pl").length).toBeGreaterThanOrEqual(4);
+      expect(injection.filter((c) => c.lang === "en").length).toBeGreaterThanOrEqual(4);
+      for (const evalCase of injection) expect(evalCase.note?.startsWith("attack:")).toBe(true);
+    });
+
+    test("subset sizes are exact", () => {
+      const subset = selectCases(all, { perCategory: 3 });
+      expect(subset).toHaveLength(18);
+      expect(trustedCases(subset).length).toBeGreaterThanOrEqual(1);
+      expect(subset.filter((c) => c.senderRules.some((r) => r.kind === "blocklist")).length).toBeGreaterThanOrEqual(1);
+      expect(selectCases(synthetic, { perCategory: 4 })).toHaveLength(20);
     });
   });
 });

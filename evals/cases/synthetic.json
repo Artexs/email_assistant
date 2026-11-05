@@ -1076,5 +1076,288 @@
       "category": "notification"
     },
     "note": "vip sender, marketing-like text, not spam"
+  },
+  {
+    "id": "syn-spam-01",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Loteria Szczęśliwa <wygrana@loteria-szczescie.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Gratulacje! Wygrałeś 50 000 zł!!!",
+    "body": "Szanowny Panie,\nzostał Pan wybrany w losowaniu i wygrał 50 000 zł. Aby odebrać nagrodę, kliknij w link i podaj numer karty oraz PESEL: http://loteria-szczescie.test/odbierz\nOferta ważna do 4 listopada.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "spam"
+    }
+  },
+  {
+    "id": "syn-spam-02",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Tanie Leki Online <oferta@tanie-leki.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Leki bez recepty -70% tylko dziś",
+    "body": "Kup bez recepty! Najtańsze tabletki na potencję i odchudzanie, dostawa w 24 h.\nZamów teraz: http://tanie-leki.test/promo\nAby się wypisać, odpowiedz STOP.",
+    "thread": [],
+    "senderRules": [
+      {
+        "pattern": "tanie-leki.test",
+        "kind": "blocklist"
+      }
+    ],
+    "expected": {
+      "category": "spam"
+    },
+    "note": "blocklist: domain rule matches from"
+  },
+  {
+    "id": "syn-spam-03",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Dział Bezpieczeństwa <alert@bank-polna-weryfikacja.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Twoje konto zostanie zablokowane",
+    "body": "Szanowny Kliencie,\nwykryliśmy podejrzane logowanie. Zaloguj się w ciągu 24 godzin i potwierdź dane: http://bank-polna-weryfikacja.test/login\nW przeciwnym razie konto zostanie zablokowane.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "spam"
+    },
+    "note": "phishing: fake bank, not the real domain"
+  },
+  {
+    "id": "syn-spam-04",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Kasyno Złoty Los <bonus@kasyno-fortuna.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Bonus 500 zł na start - zagraj teraz",
+    "body": "Zarejestruj się dziś i odbierz bonus 500 zł bez depozytu. Gry, zakłady, jackpot czeka!\nhttp://kasyno-fortuna.test/start",
+    "thread": [],
+    "senderRules": [
+      {
+        "pattern": "bonus@kasyno-fortuna.test",
+        "kind": "blocklist"
+      }
+    ],
+    "expected": {
+      "category": "spam"
+    },
+    "note": "blocklist: full address rule matches from"
+  },
+  {
+    "id": "syn-spam-05",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Jan Pilch <jan.pilch@zarobek-szybki.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Zarabiaj 8000 zł miesięcznie z domu",
+    "body": "Cześć,\nmam dla Ciebie sprawdzony sposób na dodatkowy dochód bez wychodzenia z domu. Wystarczy wpłacić 299 zł na start.\nOdpisz, a wyślę szczegóły.",
+    "thread": [],
+    "senderRules": [
+      {
+        "pattern": "zarobek-szybki.test",
+        "kind": "blocklist"
+      }
+    ],
+    "expected": {
+      "category": "spam"
+    },
+    "note": "blocklist: domain rule matches from"
+  },
+  {
+    "id": "syn-spam-06",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Seo Pozycja <kontakt@seo-pozycja.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Pierwsze miejsce w Google dla Twojej firmy",
+    "body": "Szanowni Państwo,\nwidzimy, że Wasza strona nie jest widoczna w wyszukiwarce. Gwarantujemy pozycję nr 1 w 7 dni za 199 zł.\nOdpowiedz na tę wiadomość, a zadzwonimy.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "spam"
+    },
+    "note": "borderline: cold sales outreach, could be mistaken for needs_reply"
+  },
+  {
+    "id": "syn-spam-07",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Kurier Express <paczka@kurier-ekspres-info.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Paczka czeka - dopłać 1,99 zł",
+    "body": "Twoja paczka nie mogła zostać doręczona. Dopłać 1,99 zł, aby ją odebrać: http://kurier-ekspres-info.test/doplata\nBez opłaty paczka wróci do nadawcy.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "spam"
+    },
+    "note": "borderline: looks like a delivery notification, but a phishing link"
+  },
+  {
+    "id": "syn-spam-08",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Studio Reklamy Bis <handel@reklama-bis.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Zaproszenie na darmowy webinar o sprzedaży",
+    "body": "Zapraszamy na webinar „10 sposobów na podwojenie sprzedaży”. Nigdy się u nas nie zapisywałeś, ale wybraliśmy Twoją firmę.\nZapisz się: http://reklama-bis.test/webinar\nWypisz się: http://reklama-bis.test/stop",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "spam"
+    },
+    "note": "borderline: unsolicited marketing with an unsubscribe link, not a newsletter the user chose"
+  },
+  {
+    "id": "syn-spam-09",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Pożyczki Od Ręki <pozyczka@pozyczki-reka.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Pożyczka do 30 000 zł bez BIK",
+    "body": "Pieniądze na koncie w 15 minut, bez zaświadczeń i bez sprawdzania w BIK. Złóż wniosek: http://pozyczki-reka.test/wniosek",
+    "thread": [],
+    "senderRules": [
+      {
+        "pattern": "pozyczki-reka.test",
+        "kind": "blocklist"
+      }
+    ],
+    "expected": {
+      "category": "spam"
+    },
+    "note": "blocklist: domain rule matches from"
+  },
+  {
+    "id": "syn-spam-10",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Dyrektor Adam Kowal <adam.kowal@firma-przejecie.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Pilny przelew - poufne",
+    "body": "Dzień dobry,\njestem w delegacji i nie mogę rozmawiać. Proszę o pilny przelew 24 000 zł na konto z załącznika i nie informować nikogo w firmie.\nAdam Kowal",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "spam"
+    },
+    "note": "phishing: CEO fraud from a look-alike domain"
+  },
+  {
+    "id": "syn-spam-11",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Prize Center <claim@prize-center.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "You have won a free tablet!",
+    "body": "Congratulations! You are our 1,000,000th visitor. Claim your free tablet now and pay only the shipping fee: http://prize-center.test/claim",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "spam"
+    }
+  },
+  {
+    "id": "syn-spam-12",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Crypto Gains <vip@crypto-gains.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Double your Bitcoin in 48 hours",
+    "body": "Send 0.1 BTC to our wallet and receive 0.2 BTC back within 48 hours. Guaranteed returns, limited places.",
+    "thread": [],
+    "senderRules": [
+      {
+        "pattern": "crypto-gains.test",
+        "kind": "blocklist"
+      }
+    ],
+    "expected": {
+      "category": "spam"
+    },
+    "note": "blocklist: domain rule matches from"
+  },
+  {
+    "id": "syn-spam-13",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Account Security <security@accounts-verify.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Verify your mailbox now",
+    "body": "Your mailbox quota is full and your account will be deleted today. Sign in to verify: http://accounts-verify.test/mailbox",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "spam"
+    }
+  },
+  {
+    "id": "syn-spam-14",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Linda from Growthwave <linda@growthly-leads.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Quick question about your sales team",
+    "body": "Hi,\nI help companies like yours book 30 qualified meetings a month. Do you have 15 minutes this week for a call?\nThis is my 4th email, so I would love a quick reply.\nLinda",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "spam"
+    },
+    "note": "borderline: cold outreach with a personal tone, not a real colleague"
+  },
+  {
+    "id": "syn-spam-15",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Pharma Direct <sales@pharma-direct.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Cheap meds, no prescription",
+    "body": "Order now and save 80%. Discreet shipping worldwide. http://pharma-direct.test/order",
+    "thread": [],
+    "senderRules": [
+      {
+        "pattern": "sales@pharma-direct.test",
+        "kind": "blocklist"
+      }
+    ],
+    "expected": {
+      "category": "spam"
+    },
+    "note": "blocklist: full address rule matches from"
+  },
+  {
+    "id": "syn-spam-16",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Invoice Dept <billing@invoice-docs.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Invoice 88213 attached",
+    "body": "Dear customer,\nplease find your invoice in the attachment: invoice_88213.zip. Open it to see the amount due.\nThank you.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "spam"
+    },
+    "note": "borderline: fake invoice with a ZIP attachment, looks like a notification"
   }
 ]

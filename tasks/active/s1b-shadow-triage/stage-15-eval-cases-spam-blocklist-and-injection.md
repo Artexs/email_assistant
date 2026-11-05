@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 15 — Eval cases: `spam`, blocklist and injection [risky]
 
-- [ ] **15.1 At least 15 `spam` cases and at least 12 injection cases; the subset size**
+- [x] **15.1 At least 15 `spam` cases and at least 12 injection cases; the subset size**
   - Goal: the last synthetic category, the blocklist cases, the prompt-injection set, and the exact subset sizes.
   - Files: change `evals/cases/synthetic.json`, `evals/cases/injection.json`, `apps/server/src/modules/triage/eval-cases.test.ts`.
   - Interfaces: none new.
