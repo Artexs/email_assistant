@@ -29,8 +29,8 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `LLM soft error <code>: triage paused for <n> min, until <time>`
 
 - **First seen:** 2026-11-05
-- **Source:** `apps/server/src/modules/triage/pause.ts` (`[triage]`). Codes: `http_429`, `http_500`, `http_502`, `http_503`, `http_504`, `timeout`.
-- **Cause:** Google quota or overload (the model, not the mail). The LLM client of the process pauses with a backoff of 5 → 60 min, in memory.
+- **Source:** `apps/server/src/modules/triage/pause.ts` (`[triage]`). Codes: `http_429`, `http_500`, `http_502`, `http_503`, `http_504`, `timeout`, `network`.
+- **Cause:** Google quota or overload, or no network connection to Google (code `network`: refused, reset or DNS failure). Not the mail. The LLM client of the process pauses with a backoff of 5 → 60 min, in memory.
 - **Fix:** Wait. The mail goes back to `pending` with `next_attempt_at` = the pause end and no try count. A restart clears the pause. Often seen with `gemini-3.8-flash` (503) and on Flash-Lite at busy times (`notes/2026-11-05-gemini-free-tier-triage.md`).
 - **Status:** workaround
 

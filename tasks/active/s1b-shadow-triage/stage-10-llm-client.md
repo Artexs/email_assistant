@@ -17,7 +17,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
     - `createLlmClient(opts: { apiKey: string; classifierModel: string; timeoutMs: number; rpm: number; generate?: GenerateFn; now?: () => number; sleep?: (ms: number) => Promise<void> }): LlmClient`.
     - `createRateLimiter(opts: { rpm: number; now: () => number; sleep: (ms: number) => Promise<void> }): { acquire(): Promise<void> }`.
     - Error classes, each with `readonly code: string` and `readonly model: string`:
-      - `class LlmSoftError extends SoftError`: codes `http_429`, `http_500`, `http_502`, `http_503`, `http_504`, `timeout`.
+      - `class LlmSoftError extends SoftError`: codes `http_429`, `http_500`, `http_502`, `http_503`, `http_504`, `timeout`, `network`.
       - `class LlmConfigError extends HardError`: codes `http_401`, `http_402`, `http_403`, `http_404`, `http_400_key`, `http_400_precondition`.
       - `class LlmBlockedError extends HardError`: code `llm_blocked` (user answer Q28).
       - `class LlmHardError extends HardError`: code `http_<status>` for every other HTTP status (also a plain `http_400`), and `unknown`.
@@ -38,7 +38,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
       3. `status` 401, 402, 403 or 404 → `LlmConfigError` `http_<status>` (a bad key, no payment, no access or an unknown model: retrying the mail does not help, main-session decision 2026-11-04).
       4. `status` 400: the SDK puts the JSON error body into `error.message` (`throwErrorIfNotOK` in `node_modules/@google/genai/dist/node/index.mjs`: `message = JSON.stringify(errorBody)`, checked 2026-11-04). Parse it with `JSON.parse` inside a `try` (a parse failure = no details). When an entry of `body.error.details` has `reason === "API_KEY_INVALID"` → `LlmConfigError` `http_400_key`. Else when `body.error.status === "FAILED_PRECONDITION"` → `LlmConfigError` `http_400_precondition` (for example: the free tier is not open in this region, or the call needs billing). Else → `LlmHardError` `http_400`. Read the body only in this code: never log it, never store it, never put any part of it into an error message.
       5. Any other numeric `status` → `LlmHardError` `http_<status>`.
-      6. Every other error (also a network failure: the SDK does not document its class or fields [not verified]) → `LlmHardError` `unknown` (review finding 16; "Questions for the user" 1 asks about network errors).
+      6. Every other error (also a network failure: the SDK does not document its class or fields [not verified]) → `LlmHardError` `unknown` (review finding 16; "Questions for the user" 1 asks about network errors). Changed 2026-11-05 (local fix stage before stage 37): an `Error` with no status and a socket or DNS code (own or on `cause`) → `LlmSoftError` `network`; without such a code it stays `unknown`.
       - Empty text without a block, bad JSON or a Zod failure → `LlmOutputError` `bad_output`.
       - Error messages: \`LLM error ${code} (${model})\` only. Never the prompt, the answer, the error body or the key (ADR 0012: soft errors do not count toward the 3 tries; the caller decides).
     - Rate limiter: call starts are at least `60000 / rpm` ms apart, in this process.

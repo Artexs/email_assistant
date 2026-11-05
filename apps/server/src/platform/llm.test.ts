@@ -212,10 +212,27 @@ describe("classify errors", () => {
     expect(Date.now() - started).toBeLessThan(1000);
   });
 
-  test("a network failure is unknown", async () => {
-    const error = await caught(client(failWith(new TypeError("fetch failed"))).classify(request));
-    expect(error).toBeInstanceOf(LlmHardError);
-    expect(llmErrorCode(error)).toBe("unknown");
+  test.each(["ECONNREFUSED", "ENOTFOUND", "ConnectionClosed"])("a TypeError with code %s is network", async (code) => {
+    const error = await caught(
+      client(failWith(Object.assign(new TypeError("fetch failed"), { code }))).classify(request)
+    );
+    expect(error).toBeInstanceOf(LlmSoftError);
+    expect(llmErrorCode(error)).toBe("network");
+  });
+
+  test("a network code on the cause is network", async () => {
+    const cause = Object.assign(new Error("connect"), { code: "ECONNRESET" });
+    const error = await caught(client(failWith(new TypeError("fetch failed", { cause }))).classify(request));
+    expect(error).toBeInstanceOf(LlmSoftError);
+    expect(llmErrorCode(error)).toBe("network");
+  });
+
+  test("an error without a network code is unknown", async () => {
+    for (const failure of [new TypeError("fetch failed"), Object.assign(new Error("x"), { code: "ERR_OTHER" })]) {
+      const error = await caught(client(failWith(failure)).classify(request));
+      expect(error).toBeInstanceOf(LlmHardError);
+      expect(llmErrorCode(error)).toBe("unknown");
+    }
   });
 
   test("llmErrorCode of a plain error is unknown", () => {
@@ -235,6 +252,7 @@ describe("classify errors", () => {
       failWith(withStatus(400, JSON.stringify({ error: { message: "MARKER-BODY" } }))),
       failWith(withStatus(503, "MARKER-BODY")),
       failWith(new TypeError("MARKER-BODY")),
+      failWith(Object.assign(new TypeError("MARKER-BODY"), { code: "ECONNREFUSED" })),
       answer({ text: "MARKER-BODY" }),
       answer({ text: '{"category":"MARKER-BODY"}' }),
       answer({ text: undefined, blockReason: "SAFETY" }),

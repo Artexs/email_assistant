@@ -25,6 +25,7 @@ services:
       dockerfile: deploy/Dockerfile
     image: ea-server
     restart: unless-stopped
+    stop_grace_period: 45s
     env_file: ../.env
     environment:
       # These override the dev URLs of the env file

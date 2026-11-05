@@ -60,10 +60,11 @@ Source: AI Studio "Gemini API Rate Limit" view, project "Gemini Project", free t
 - Table `audit_log`, `event` = `llm.call`. One row for each call attempt, also for a failed call.
 - `reason_code` is the outcome: `ok`, or the error code: `http_429`, `http_503`, `timeout`, `http_400_key`, `http_400`, `unknown`, and so on.
 - `data` holds `mailbox_id`, `model`, `prompt_version`, `tokens_in`, `tokens_out`, `latency_ms`. For a failed call the tokens are `null`.
-- Soft errors (`timeout`, `http_429`, `http_500`, `http_502`, `http_503`, `http_504`) pause the LLM client. The mail gets no try count.
+- Soft errors (`timeout`, `network`, `http_429`, `http_500`, `http_502`, `http_503`, `http_504`) pause the LLM client. The mail gets no try count.
 - Config errors (`http_401`, `http_402`, `http_403`, `http_404`, `http_400_key`, `http_400_precondition`) also pause the client.
 - Hard errors (for example `http_400`, `unknown`) wait 5 minutes and count one try. Three tries end as `unsure` / `triage_error`.
 - A safety block (`llm_blocked`) ends as `unsure` at once.
-- A network error has no HTTP status. It is a hard error `unknown` (stage 10 plan): it does not pause the client and counts one try.
+- A network error has no HTTP status. It is a soft error `network` when the error has a socket or DNS code (for example `ECONNREFUSED`, `ENOTFOUND`) on itself or on `cause`. It pauses the client and counts no try.
+  An error without such a code (for example a plain `TypeError`) stays a hard error `unknown`, so a bug in our code does not loop.
   Architecture §4.1 rule 7 says the same.
 - Count calls for one day: `select count(*) from audit_log where event = 'llm.call' and data->>'mailbox_id' = '<id>' and created_at >= '<quota day start>'`.

@@ -149,14 +149,14 @@ Pipeline rules:
    Hard errors add 1 to `attempts`. After 3 hard errors: an email becomes `unsure` (reason `triage_error`);
    an action becomes `failed`, and the user gets a notice. Rule 6 wins for `send`.
    The triage worker (S1b; `triage/service.ts`, `triage/jobs.ts`, `triage/pause.ts`) applies this rule to the email as follows:
-   - **Soft error** (timeout, HTTP 429, 500, 502, 503, 504): the LLM client of the process pauses. The pause is 5 min.
+   - **Soft error** (timeout, a lost network connection, HTTP 429, 500, 502, 503, 504): the LLM client of the process pauses. The pause is 5 min.
      Each next soft or config error without a good LLM answer in between doubles it, up to 60 min. The pause is in memory and covers all mailboxes.
      The mail goes back to `pending` with `next_attempt_at` = the pause end. It gets no count. The job claims no mail during the pause.
      Claimed mail that the worker did not try keeps its old `next_attempt_at`. One `warn` line per pause.
    - **Config error** (HTTP 401, 402, 403, 404; HTTP 400 with `FAILED_PRECONDITION` or `API_KEY_INVALID`): the same pause, no count.
      One `error` line names the keys to check.
    - **Safety block** (`llm_blocked`): the mail becomes `unsure` at once. The worker writes one `llm.call` row and does not retry.
-   - **Hard error** (an HTTP 400 without the two config signs, an unreadable answer, an error without an HTTP status such as a lost network connection, or any other HTTP status that is not listed):
+   - **Hard error** (an HTTP 400 without the two config signs, an unreadable answer, an error without an HTTP status and without a network code, or any other HTTP status that is not listed):
      the mail waits a fixed 5 min and `attempts` goes up by 1. At 3 attempts the mail becomes `unsure` (`triage_error`).
      A stale claim (`locked_at` older than 5 min) that a later run takes back also counts one attempt.
      A mail that reaches 3 attempts this way becomes `unsure` (`triage_error`) without an LLM call.

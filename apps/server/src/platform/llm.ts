@@ -45,7 +45,7 @@ export type GenerateFn = (req: GenerateRequest) => Promise<GenerateResult>;
 // Error messages hold only the code and the model: never the prompt, the answer, the error body or the key.
 const errorMessage = (code: string, model: string): string => `LLM error ${code} (${model})`;
 
-type SoftCode = "http_429" | "http_500" | "http_502" | "http_503" | "http_504" | "timeout";
+type SoftCode = "http_429" | "http_500" | "http_502" | "http_503" | "http_504" | "timeout" | "network";
 type ConfigCode = "http_401" | "http_402" | "http_403" | "http_404" | "http_400_key" | "http_400_precondition";
 
 /** Timeout, 429 or 5xx: the quota or the service, not the mail. */
@@ -119,8 +119,32 @@ export function llmErrorCode(error: unknown): string {
 const SOFT_STATUSES = new Set([429, 500, 502, 503, 504]);
 const CONFIG_STATUSES = new Set([401, 402, 403, 404]);
 
+/** Codes of a lost or refused connection (Node/undici and Bun names). */
+const NETWORK_CODES = new Set([
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "ENOTFOUND",
+  "EAI_AGAIN",
+  "ETIMEDOUT",
+  "EPIPE",
+  "ENETUNREACH",
+  "EHOSTUNREACH",
+  "ConnectionRefused",
+  "ConnectionClosed",
+  "FailedToOpenSocket",
+  "UND_ERR_SOCKET",
+  "UND_ERR_CONNECT_TIMEOUT",
+]);
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+/** A fetch failure has no status. Only a known socket or DNS code counts: a plain TypeError is a bug and stays hard. */
+function isNetworkError(error: Record<string, unknown>): boolean {
+  if (!(error instanceof Error)) return false;
+  const codes = [error.code, isRecord(error.cause) ? error.cause.code : undefined];
+  return codes.some((code) => typeof code === "string" && NETWORK_CODES.has(code));
 }
 
 /** The SDK puts the JSON error body into `message`. Read here only: never log or store it. */
@@ -144,7 +168,9 @@ export function classifyLlmError(error: unknown, model: string): LlmSoftError | 
   if (!isRecord(error)) return new LlmHardError("unknown", model);
   if (error.name === "AbortError" || error.name === "TimeoutError") return new LlmSoftError("timeout", model);
   const status = error.status;
-  if (typeof status !== "number") return new LlmHardError("unknown", model);
+  if (typeof status !== "number") {
+    return isNetworkError(error) ? new LlmSoftError("network", model) : new LlmHardError("unknown", model);
+  }
   if (SOFT_STATUSES.has(status)) return new LlmSoftError(`http_${status}` as SoftCode, model);
   if (CONFIG_STATUSES.has(status)) return new LlmConfigError(`http_${status}` as ConfigCode, model);
   if (status === 400) {

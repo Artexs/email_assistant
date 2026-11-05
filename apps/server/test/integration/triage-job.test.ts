@@ -328,6 +328,27 @@ describe("createTriageJob: pause and errors", () => {
     });
   });
 
+  test("a network error pauses the client; the mail stays pending without a count", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const { ctx, mailboxId } = await mailboxWithSettings(trx);
+      const [first] = await threeMails(trx, ctx, mailboxId);
+      const { llm, state } = flakyLlm();
+      state.failWith = new LlmSoftError("network", "fake-model");
+      const triage = clockJob(trx, llm, { at: now });
+
+      await triage.run();
+      expect(llm.prompts).toHaveLength(1);
+      expect(await fullRow(trx, first)).toEqual({
+        status: "pending",
+        attempts: 0,
+        next_attempt_at: minutesFromNow(5),
+        locked_at: null,
+      });
+      expect(logLines("LLM soft error network")).toHaveLength(1);
+    });
+  });
+
   test("a config error logs one error line and leaves the mails pending without a count", async () => {
     await withRollback(db, async (trx) => {
       await pauseOtherMailboxes(trx);
