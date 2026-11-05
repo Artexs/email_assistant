@@ -20,6 +20,9 @@ export const llmPrices: Record<string, LlmPrice[]> = {
 
 const DAYS_PER_MONTH = 30;
 
+// Mail volume that cost reports assume when no real rate is known.
+export const DEFAULT_MAILS_PER_DAY = 200;
+
 export function costPerMail(model: string, tokensIn: number, tokensOut: number, at: Date): number | null {
   const prices = Object.hasOwn(llmPrices, model) ? llmPrices[model] : undefined;
   if (!prices) return null;

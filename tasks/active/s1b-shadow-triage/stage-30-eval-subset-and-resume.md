@@ -4,11 +4,11 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 30 — Eval subset and resume [risky]
 
-- [ ] **30.1 Eval runner: subset and resume for a small daily quota**
+- [x] **30.1 Eval runner: subset and resume for a small daily quota**
   - Goal: an eval run can use a fixed subset and continue over several days, so the `gemini-3.8-flash` comparison fits its free-tier quota (about 20 requests per day [not verified]).
   - Files: change `apps/server/src/modules/triage/eval.ts`, `apps/server/src/modules/triage/eval.test.ts`, `apps/server/src/modules/triage/eval-report.ts`, `apps/server/src/scripts/eval.ts`, `evals/README.md`, `.gitignore` (add `evals/.runs/`).
   - Interfaces:
-    - New CLI flags: `--per-category <n>` (subset through `selectCases`, step 12.1), `--state <file.jsonl>` (default `evals/.runs/<model>-<set>[-pc<n>].jsonl`), `--fresh` (delete the state file first).
+    - New CLI flags: `--per-category <n>` (subset through `selectCases`, step 12.1), `--state <file.jsonl>` (default `evals/.runs/<model>-<prompt-version>-<set>[-pc<n>].jsonl`), `--fresh` (delete the state file first).
     - `runEval` input gets `done?: CaseResult[]` (results read from the state) and deps get `onResult?(r: CaseResult): Promise<void>` (the CLI appends one JSON line per finished case).
     - `CasesEvalReport` (step 17.1) gets `complete: boolean`, `stoppedReason: string | null`, `doneCount: number`, `totalCount: number`. `RealEvalReport` does not change. `evalExitCode` returns `0 | 1 | 2`.
   - Decisions:

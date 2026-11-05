@@ -6,6 +6,7 @@ import {
   computeMetrics,
   confusionMatrix,
   costPerMail,
+  DEFAULT_MAILS_PER_DAY,
   decideCategory,
   EVAL_RECEIVED_AT,
   type EvalCase,
@@ -18,21 +19,22 @@ import {
   splitAddress,
   thresholdSweep,
 } from "@ea/core";
+import { z } from "zod";
 
 import { SoftError } from "../../platform/errors";
 import { LlmBlockedError, type LlmClient, LlmConfigError, llmErrorCode, type LlmUsage } from "../../platform/llm";
 import { createLog } from "../../platform/log";
 
 import { type ClassifierEmail, classifyEmail } from "./classifier";
-import { PROMPT_VERSION } from "./prompts/classifier-v1";
+import { EXCERPT_CHARS, PROMPT_VERSION } from "./prompts/classifier-v1";
 import type { MailKind } from "./repo";
 
 const log = createLog("eval");
 
 const HOUR_MS = 3_600_000;
-const EXCERPT_LENGTH = 500;
 const RETRY_WAITS_MS = [10_000, 20_000, 40_000, 60_000];
-const MAILS_PER_DAY = 200;
+const STOP_AFTER_ERRORS = 3;
+const STOP_REASON = "soft errors in a row (quota or overload), resume later";
 const SAFE_ACTION_TYPES: readonly string[] = ["move", "mark_read", "flag", "save_summary"];
 
 export interface CaseResult {
@@ -43,6 +45,7 @@ export interface CaseResult {
   finalCategory: Category | null;
   confidence: number | null;
   source: "llm" | "rule";
+  whitelisted: boolean;
   blocked: boolean;
   usage: LlmUsage | null;
   errorCode: string | null;
@@ -70,6 +73,10 @@ export interface CasesEvalReport extends EvalReportBase {
   model: string;
   promptVersion: string;
   cases: CaseResult[];
+  complete: boolean;
+  stoppedReason: string | null;
+  doneCount: number;
+  totalCount: number;
   whitelist: { passed: number; total: number; errors: number };
   injection: { passed: number; total: number; failedIds: string[] };
   blocked: { total: number; ids: string[] };
@@ -104,7 +111,7 @@ export function toClassifierInput(c: EvalCase): ClassifierEmail {
       from: splitAddress(t.from).address,
       subject: t.subject,
       receivedAt: new Date(EVAL_RECEIVED_AT.getTime() - (n - i) * HOUR_MS),
-      bodyExcerpt: t.body.slice(0, EXCERPT_LENGTH),
+      bodyExcerpt: t.body.slice(0, EXCERPT_CHARS),
     })),
   };
 }
@@ -132,6 +139,55 @@ interface Deps {
   llm: LlmClient;
   sleep: (ms: number) => Promise<void>;
   now: () => Date;
+  // Called once for each new result (not for results from `done`). The CLI appends it to the state file.
+  onResult?: (result: CaseResult) => Promise<void>;
+}
+
+// One state line. It holds no case text: ids, categories, numbers and codes only.
+const caseResultSchema = z.object({
+  id: z.string(),
+  kind: z.enum(["synthetic", "injection"]),
+  expected: z.enum(categories),
+  modelCategory: z.enum(categories).nullable(),
+  finalCategory: z.enum(categories).nullable(),
+  confidence: z.number().nullable(),
+  source: z.enum(["llm", "rule"]),
+  whitelisted: z.boolean(),
+  blocked: z.boolean(),
+  usage: z.object({ model: z.string(), tokensIn: z.number(), tokensOut: z.number(), latencyMs: z.number() }).nullable(),
+  errorCode: z.string().nullable(),
+  plannedTypes: z.array(z.string()),
+  injectionPassed: z.boolean().nullable(),
+});
+
+// Later lines win. A line that does not parse (for example a cut write) is skipped.
+export function parseCaseResults(text: string): CaseResult[] {
+  const byId = new Map<string, CaseResult>();
+  for (const line of text.split("\n")) {
+    if (line.trim() === "") continue;
+    try {
+      const parsed = caseResultSchema.safeParse(JSON.parse(line));
+      if (parsed.success) byId.set(parsed.data.id, parsed.data);
+    } catch {
+      continue;
+    }
+  }
+  return [...byId.values()];
+}
+
+// The same mapping for a new result and for one read from the state. An error has no prediction.
+export function toPrediction(r: CaseResult): Prediction | null {
+  if (r.errorCode !== null || r.finalCategory === null) return null;
+  if (r.source === "rule") {
+    return { expected: r.expected, predicted: r.finalCategory, modelCategory: "spam", confidence: 1, source: "rule" };
+  }
+  return {
+    expected: r.expected,
+    predicted: r.finalCategory,
+    modelCategory: r.modelCategory ?? "unsure",
+    confidence: r.confidence ?? 0,
+    source: "llm",
+  };
 }
 
 type Classified =
@@ -170,89 +226,116 @@ async function classifyWithRetry(
   }
 }
 
+async function runCase(deps: Deps, c: EvalCase, input: { model: string; retries: number }): Promise<CaseResult> {
+  const expected = c.expected.category;
+  const rules = applyHardRules(splitAddress(c.from).address, c.senderRules);
+  const base = { id: c.id, kind: c.kind, expected };
+
+  if (rules.kind === "spam") {
+    const actions = planActions("spam", null);
+    return {
+      ...base,
+      modelCategory: null,
+      finalCategory: "spam",
+      confidence: null,
+      source: "rule",
+      whitelisted: false,
+      blocked: false,
+      usage: null,
+      errorCode: null,
+      plannedTypes: actions.map((a) => a.type),
+      injectionPassed: c.kind === "injection" ? injectionHolds(actions) : null,
+    };
+  }
+
+  const classified = await classifyWithRetry(
+    deps,
+    c,
+    rules.allowed,
+    { whitelisted: rules.whitelisted, vip: rules.vip, noreply: rules.noreply },
+    input
+  );
+  if (classified.kind === "error") {
+    log.warn(`case ${c.id} failed: ${classified.code}`);
+    return {
+      ...base,
+      modelCategory: null,
+      finalCategory: null,
+      confidence: null,
+      source: "llm",
+      whitelisted: rules.whitelisted,
+      blocked: false,
+      usage: null,
+      errorCode: classified.code,
+      plannedTypes: [],
+      injectionPassed: null,
+    };
+  }
+  const blocked = classified.kind === "blocked";
+  const analysis = classified.kind === "ok" ? classified.result.analysis : null;
+  const finalCategory = analysis ? decideCategory(analysis, {}).category : "unsure";
+  const actions = planActions(finalCategory, analysis?.summary ?? null);
+  return {
+    ...base,
+    modelCategory: analysis?.category ?? "unsure",
+    finalCategory,
+    confidence: analysis?.confidence ?? 0,
+    source: "llm",
+    whitelisted: rules.whitelisted,
+    blocked,
+    usage: classified.kind === "ok" ? classified.result.usage : null,
+    errorCode: null,
+    plannedTypes: actions.map((a) => a.type),
+    injectionPassed: c.kind === "injection" ? injectionHolds(actions) : null,
+  };
+}
+
+// `done`: results from an earlier run. A result without an error (also a blocked one) is not run again.
+// After STOP_AFTER_ERRORS LLM cases in a row end in an error, the run stops: a spent quota fails every call.
 export async function runEval(
   deps: Deps,
-  input: { cases: EvalCase[]; model: string; bar: number; minKept: number; retries: number }
+  input: {
+    cases: EvalCase[];
+    model: string;
+    bar: number;
+    minKept: number;
+    retries: number;
+    done?: CaseResult[];
+  }
 ): Promise<CasesEvalReport> {
   const startedAt = deps.now();
+  const earlier = new Map((input.done ?? []).filter((r) => r.errorCode === null).map((r) => [r.id, r]));
   const cases: CaseResult[] = [];
   const predictions: Prediction[] = [];
   const errorCodes: Record<string, number> = {};
   const whitelist = { passed: 0, total: 0, errors: 0 };
   const blockedIds: string[] = [];
   const usages: LlmUsage[] = [];
+  let errorsInRow = 0;
+  let stoppedReason: string | null = null;
 
   for (const c of input.cases) {
-    const expected = c.expected.category;
-    const rules = applyHardRules(splitAddress(c.from).address, c.senderRules);
-    const base = { id: c.id, kind: c.kind, expected };
-    let result: CaseResult;
-
-    if (rules.kind === "spam") {
-      const actions = planActions("spam", null);
-      result = {
-        ...base,
-        modelCategory: null,
-        finalCategory: "spam",
-        confidence: null,
-        source: "rule",
-        blocked: false,
-        usage: null,
-        errorCode: null,
-        plannedTypes: actions.map((a) => a.type),
-        injectionPassed: c.kind === "injection" ? injectionHolds(actions) : null,
-      };
-      predictions.push({ expected, predicted: "spam", modelCategory: "spam", confidence: 1, source: "rule" });
-    } else {
-      const classified = await classifyWithRetry(
-        deps,
-        c,
-        rules.allowed,
-        { whitelisted: rules.whitelisted, vip: rules.vip, noreply: rules.noreply },
-        input
-      );
-      if (classified.kind === "error") {
-        errorCodes[classified.code] = (errorCodes[classified.code] ?? 0) + 1;
-        log.warn(`case ${c.id} failed: ${classified.code}`);
-        result = {
-          ...base,
-          modelCategory: null,
-          finalCategory: null,
-          confidence: null,
-          source: "llm",
-          blocked: false,
-          usage: null,
-          errorCode: classified.code,
-          plannedTypes: [],
-          injectionPassed: null,
-        };
-      } else {
-        const blocked = classified.kind === "blocked";
-        const analysis = classified.kind === "ok" ? classified.result.analysis : null;
-        const modelCategory: Category = analysis?.category ?? "unsure";
-        const confidence = analysis?.confidence ?? 0;
-        const finalCategory = analysis ? decideCategory(analysis, {}).category : "unsure";
-        const actions = planActions(finalCategory, analysis?.summary ?? null);
-        const usage = classified.kind === "ok" ? classified.result.usage : null;
-        if (usage) usages.push(usage);
-        if (blocked) blockedIds.push(c.id);
-        result = {
-          ...base,
-          modelCategory,
-          finalCategory,
-          confidence,
-          source: "llm",
-          blocked,
-          usage,
-          errorCode: null,
-          plannedTypes: actions.map((a) => a.type),
-          injectionPassed: c.kind === "injection" ? injectionHolds(actions) : null,
-        };
-        predictions.push({ expected, predicted: finalCategory, modelCategory, confidence, source: "llm" });
+    let result = earlier.get(c.id);
+    if (result === undefined) {
+      if (stoppedReason === null && errorsInRow >= STOP_AFTER_ERRORS) {
+        stoppedReason = STOP_REASON;
+        log.warn(`stop: ${STOP_AFTER_ERRORS} cases in a row ended in an error`);
       }
+      // After the stop, only earlier results are added: no new LLM call.
+      if (stoppedReason !== null) continue;
+      result = await runCase(deps, c, input);
+      await deps.onResult?.(result);
+      if (result.errorCode !== null) errorsInRow += 1;
+      else if (result.source === "llm") errorsInRow = 0;
+      log.info(`case ${c.id}: ${result.finalCategory ?? `error ${result.errorCode}`}`);
     }
 
-    if (rules.kind === "classify" ? rules.whitelisted : false) {
+    const prediction = toPrediction(result);
+    if (prediction) predictions.push(prediction);
+    if (result.errorCode !== null) errorCodes[result.errorCode] = (errorCodes[result.errorCode] ?? 0) + 1;
+    if (result.usage) usages.push(result.usage);
+    if (result.blocked) blockedIds.push(result.id);
+    if (result.whitelisted) {
       if (result.finalCategory !== null) {
         whitelist.total += 1;
         if (result.finalCategory !== "spam") whitelist.passed += 1;
@@ -261,7 +344,6 @@ export async function runEval(
       }
     }
     cases.push(result);
-    log.info(`case ${c.id}: ${result.finalCategory ?? `error ${result.errorCode}`}`);
   }
 
   const injectionCases = cases.filter((r) => r.injectionPassed !== null);
@@ -294,6 +376,10 @@ export async function runEval(
     model: input.model,
     promptVersion: PROMPT_VERSION,
     cases,
+    complete: stoppedReason === null,
+    stoppedReason,
+    doneCount: cases.filter((r) => r.errorCode === null).length,
+    totalCount: input.cases.length,
     whitelist,
     injection: {
       passed: injectionCases.filter((r) => r.injectionPassed === true).length,
@@ -307,7 +393,7 @@ export async function runEval(
       latencyP50: percentile(latencies, 0.5),
       latencyP95: percentile(latencies, 0.95),
       costPerMail: perMail,
-      monthlyCostAt200: perMail === null ? null : monthlyCost(perMail, MAILS_PER_DAY),
+      monthlyCostAt200: perMail === null ? null : monthlyCost(perMail, DEFAULT_MAILS_PER_DAY),
     },
   };
 }

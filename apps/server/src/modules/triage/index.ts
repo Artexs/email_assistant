@@ -21,7 +21,7 @@ export type {
   UnlabeledResult,
   UsageRow,
 } from "./repo";
-export { runEval, toClassifierInput } from "./eval";
+export { parseCaseResults, runEval, toClassifierInput, toPrediction } from "./eval";
 export type { CaseResult, CasesEvalReport, EvalReport, EvalReportBase, RealEvalReport } from "./eval";
 export { buildRealPredictions, buildRealReport } from "./eval-real";
 export { evalExitCode, renderEvalReport } from "./eval-report";

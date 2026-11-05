@@ -7,7 +7,7 @@ export const PROMPT_VERSION = "classifier-v1";
 
 const BODY_CHARS = 8000;
 const THREAD_MAILS = 3;
-const EXCERPT_CHARS = 500;
+export const EXCERPT_CHARS = 500;
 
 // Short meanings from architecture §4.2. Only the allowed ones go into the prompt.
 const MEANINGS: Record<Category, string> = {

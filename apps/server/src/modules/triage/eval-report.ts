@@ -1,9 +1,8 @@
-import { barCategories, categories, llmPrices } from "@ea/core";
+import { barCategories, categories, DEFAULT_MAILS_PER_DAY, llmPrices } from "@ea/core";
 
 import type { CasesEvalReport, EvalReport } from "./eval";
 
 const MAX_ERROR_SHARE = 0.1;
-const MAILS_PER_DAY = 200;
 const MIN_REAL_LABELS = 100;
 
 const pct = (value: number | null): string => (value === null ? "n/a" : `${(value * 100).toFixed(1)}%`);
@@ -30,6 +29,11 @@ function header(report: EvalReport): string[] {
         `- model: ${report.model}`,
         `- prompt version: ${report.promptVersion}`,
         `- cases: ${counts(report.cases, "synthetic")} synthetic, ${counts(report.cases, "injection")} injection`,
+        `- ${report.doneCount} of ${report.totalCount} cases done${report.complete ? "" : " (run not complete)"}`,
+        ...(report.stoppedReason === null ? [] : [`- stopped: ${report.stoppedReason}`]),
+        ...(report.errors === 0
+          ? []
+          : [`- ${report.errors} error cases: run again with the same command to retry them`]),
         `- ${bar}`,
         `- ${support}`,
         "- no generation settings: results can change between runs",
@@ -145,7 +149,7 @@ function casesParts(report: CasesEvalReport): string[] {
     `- average tokens in / out: ${num(usage.avgTokensIn)} / ${num(usage.avgTokensOut)}`,
     `- latency p50 / p95: ${num(usage.latencyP50)} ms / ${num(usage.latencyP95)} ms`,
     `- cost per mail: ${usd(usage.costPerMail)}`,
-    `- cost per mailbox per month at ${MAILS_PER_DAY} mails per day: ${usd(usage.monthlyCostAt200)}`
+    `- cost per mailbox per month at ${DEFAULT_MAILS_PER_DAY} mails per day: ${usd(usage.monthlyCostAt200)}`
   );
   const prices = Object.hasOwn(llmPrices, report.model) ? llmPrices[report.model] : undefined;
   if (prices) {
@@ -165,14 +169,15 @@ export function renderEvalReport(report: EvalReport, opts: { title?: string } = 
   return `${lines.join("\n").trimEnd()}\n`;
 }
 
-export function evalExitCode(report: EvalReport): 0 | 1 {
+// 0 = pass, 1 = a check failed, 2 = the run is not complete (resume with the same command).
+export function evalExitCode(report: EvalReport): 0 | 1 | 2 {
   switch (report.kind) {
     case "real":
       return 0;
     case "cases":
       if (report.whitelist.passed < report.whitelist.total) return 1;
       if (report.injection.failedIds.length > 0) return 1;
-      if (report.errors / report.cases.length > MAX_ERROR_SHARE) return 1;
-      return 0;
+      if (report.complete && report.errors / report.cases.length > MAX_ERROR_SHARE) return 1;
+      return report.complete ? 0 : 2;
   }
 }

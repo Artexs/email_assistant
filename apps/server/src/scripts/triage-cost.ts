@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
 
-import { costPerMail, llmPrices, monthlyCost } from "@ea/core";
+import { costPerMail, DEFAULT_MAILS_PER_DAY, llmPrices, monthlyCost } from "@ea/core";
 import { z } from "zod";
 
 import { listUsageSince, type MailKind, type UsageRow } from "../modules/triage";
@@ -13,7 +13,6 @@ const log = createLog("triage-cost");
 
 const usage = "usage: bun run triage:cost --org-id <uuid> --mailbox-id <uuid> [--days 7] [--mail real|synthetic]";
 
-const MAILS_PER_DAY = 200;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 interface Options {
@@ -96,7 +95,7 @@ function reportModel(model: string, rows: UsageRow[], days: number): void {
     `  cost per mailbox per month at ${perDay.toFixed(2)} mails per day: ${usd(avgCost === null ? null : monthlyCost(avgCost, perDay))}`
   );
   out(
-    `  cost per mailbox per month at ${MAILS_PER_DAY} mails per day: ${usd(avgCost === null ? null : monthlyCost(avgCost, MAILS_PER_DAY))}`
+    `  cost per mailbox per month at ${DEFAULT_MAILS_PER_DAY} mails per day: ${usd(avgCost === null ? null : monthlyCost(avgCost, DEFAULT_MAILS_PER_DAY))}`
   );
 
   const prices = Object.hasOwn(llmPrices, model) ? llmPrices[model] : undefined;

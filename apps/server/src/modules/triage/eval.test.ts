@@ -1,10 +1,14 @@
-import { type EvalCase, EVAL_RECEIVED_AT } from "@ea/core";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+import { type EvalCase, EVAL_RECEIVED_AT, evalCaseSchema, selectCases } from "@ea/core";
 import { describe, expect, test } from "bun:test";
-import type { z } from "zod";
+import { z } from "zod";
 
 import { LlmBlockedError, LlmConfigError, type LlmClient, LlmSoftError, type LlmUsage } from "../../platform/llm";
 
-import { runEval, toClassifierInput } from "./eval";
+import { type CaseResult, parseCaseResults, runEval, toClassifierInput, toPrediction } from "./eval";
+import { evalExitCode } from "./eval-report";
 
 const usage: LlmUsage = { model: "gemini-3.5-flash-lite", tokensIn: 100, tokensOut: 20, latencyMs: 50 };
 
@@ -243,5 +247,135 @@ describe("runEval", () => {
     expect(report.minKept).toBe(1);
     expect(report.goNoGo.info.decision).toBe("go");
     expect(report.goNoGo.spam.decision).toBe("no-go: too few");
+  });
+
+  describe("resume and stop", () => {
+    const three = () => [makeCase({ id: "a" }), makeCase({ id: "b" }), makeCase({ id: "c" })];
+
+    async function firstRun(cases: EvalCase[], script: Step[]): Promise<CaseResult[]> {
+      const lines: CaseResult[] = [];
+      const deps = { ...harness().deps(fakeLlm(script).llm), onResult: async (r: CaseResult) => void lines.push(r) };
+      await runEval(deps, { ...opts, cases });
+      return lines;
+    }
+
+    test("a case in done makes no call and the report counts it", async () => {
+      const done = (await firstRun(three(), [answer("info")])).slice(0, 2);
+      const { llm, calls } = fakeLlm([answer("info")]);
+      const report = await runEval(harness().deps(llm), { ...opts, cases: three(), done });
+      expect(calls).toHaveLength(1);
+      expect(report.doneCount).toBe(3);
+      expect(report.totalCount).toBe(3);
+      expect(report.complete).toBe(true);
+      expect(report.predictions).toHaveLength(3);
+      expect(report.metrics.info.support).toBe(3);
+    });
+
+    test("3 soft-error cases in a row stop the run with exit code 2", async () => {
+      const cases = ["a", "b", "c", "d", "e"].map((id) => makeCase({ id }));
+      const { llm, calls } = fakeLlm([soft()]);
+      const report = await runEval(harness().deps(llm), { ...opts, retries: 0, cases });
+      expect(calls).toHaveLength(3);
+      expect(report.complete).toBe(false);
+      expect(report.stoppedReason).toBe("soft errors in a row (quota or overload), resume later");
+      expect(report.doneCount).toBe(0);
+      expect(report.errors).toBe(3);
+      expect(report.totalCount).toBe(5);
+      expect(evalExitCode(report)).toBe(2);
+    });
+
+    test("after the stop, later cases with an earlier result are still in the report", async () => {
+      const cases = ["a", "b", "c", "d", "e"].map((id) => makeCase({ id }));
+      const lateDone = await firstRun([makeCase({ id: "e" })], [answer("info")]);
+      const { llm, calls } = fakeLlm([soft()]);
+      const report = await runEval(harness().deps(llm), { ...opts, retries: 0, cases, done: lateDone });
+      expect(calls).toHaveLength(3);
+      expect(report.complete).toBe(false);
+      expect(report.cases.map((r) => r.id)).toEqual(["a", "b", "c", "e"]);
+      expect(report.doneCount).toBe(1);
+    });
+
+    test("a success resets the error count", async () => {
+      const cases = ["a", "b", "c", "d", "e"].map((id) => makeCase({ id }));
+      const { llm } = fakeLlm([soft(), soft(), answer("info"), soft(), soft()]);
+      const report = await runEval(harness().deps(llm), { ...opts, retries: 0, cases });
+      expect(report.complete).toBe(true);
+      expect(evalExitCode(report)).toBe(1);
+    });
+
+    test("a stopped run with a failed injection case gives exit code 1", async () => {
+      const cases = ["a", "b", "c", "d"].map((id) => makeCase({ id }));
+      const report = await runEval(harness().deps(fakeLlm([soft()]).llm), { ...opts, retries: 0, cases });
+      const failed = { ...report, injection: { passed: 0, total: 1, failedIds: ["i1"] } };
+      expect(report.complete).toBe(false);
+      expect(evalExitCode(failed)).toBe(1);
+    });
+
+    test("an error case in done is tried again", async () => {
+      const failed = (await firstRun([makeCase({ id: "a" })], [soft()]))[0] as CaseResult;
+      expect(failed.errorCode).toBe("http_503");
+      const { llm, calls } = fakeLlm([answer("info")]);
+      const report = await runEval(harness().deps(llm), { ...opts, cases: [makeCase({ id: "a" })], done: [failed] });
+      expect(calls).toHaveLength(1);
+      expect(report.errors).toBe(0);
+      expect(report.cases[0]?.finalCategory).toBe("info");
+    });
+
+    test("a blocked case in done is not tried again", async () => {
+      const blocked = (await firstRun([makeCase({ id: "a" })], [new LlmBlockedError("m")]))[0] as CaseResult;
+      const { llm, calls } = fakeLlm([answer("info")]);
+      const report = await runEval(harness().deps(llm), { ...opts, cases: [makeCase({ id: "a" })], done: [blocked] });
+      expect(calls).toHaveLength(0);
+      expect(report.blocked).toEqual({ total: 1, ids: ["a"] });
+      expect(report.predictions[0]?.predicted).toBe("unsure");
+    });
+
+    test("a state line has no case text and parses back", async () => {
+      const c = makeCase({ id: "a", subject: "SUBJECT-MARKER", body: "BODY-MARKER" });
+      const lines = await firstRun([c], [answer("info")]);
+      const text = lines.map((r) => JSON.stringify(r)).join("\n");
+      const keys = Object.keys(lines[0] as CaseResult);
+      expect(keys).not.toContain("body");
+      expect(keys).not.toContain("subject");
+      expect(text).not.toContain("MARKER");
+      expect(parseCaseResults(`${text}\n{"cut":`)).toEqual(lines);
+    });
+
+    test("toPrediction maps a rule row, an llm row and an error", () => {
+      const rule: CaseResult = {
+        id: "r",
+        kind: "synthetic",
+        expected: "spam",
+        modelCategory: null,
+        finalCategory: "spam",
+        confidence: null,
+        source: "rule",
+        whitelisted: false,
+        blocked: false,
+        usage: null,
+        errorCode: null,
+        plannedTypes: [],
+        injectionPassed: null,
+      };
+      expect(toPrediction(rule)).toEqual({
+        expected: "spam",
+        predicted: "spam",
+        modelCategory: "spam",
+        confidence: 1,
+        source: "rule",
+      });
+      expect(
+        toPrediction({ ...rule, source: "llm", modelCategory: "info", finalCategory: "unsure", confidence: 0.4 })
+      ).toEqual({ expected: "spam", predicted: "unsure", modelCategory: "info", confidence: 0.4, source: "llm" });
+      expect(toPrediction({ ...rule, errorCode: "http_503", finalCategory: null })).toBeNull();
+    });
+
+    test("--per-category 3 on the case files picks 18 cases", () => {
+      const dir = resolve(import.meta.dir, "../../../../../evals/cases");
+      const load = (file: string) =>
+        z.array(evalCaseSchema).parse(JSON.parse(readFileSync(resolve(dir, file), "utf8")));
+      const picked = selectCases([...load("synthetic.json"), ...load("injection.json")], { perCategory: 3 });
+      expect(picked).toHaveLength(18);
+    });
   });
 });

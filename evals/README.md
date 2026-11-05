@@ -1,6 +1,6 @@
 # Evals
 
-Test cases for the triage classifier. Stage 18 adds `bun run eval`.
+Test cases for the triage classifier. `bun run eval` runs them against the LLM.
 
 ## Files
 
@@ -32,7 +32,44 @@ The structural test is `apps/server/src/modules/triage/eval-cases.test.ts`.
 
 ## Run
 
-`bun run eval` (stage 18). The LLM call sends no generation settings (step 10.1), so results can change between runs of the same cases.
+`bun run eval` classifies the cases with the LLM and prints a report (precision, recall, go/no-go, injection, whitelist, usage).
+The LLM call sends no generation settings (step 10.1), so results can change between runs of the same cases.
+
+Flags (all optional):
+
+- `--model <id>`: classifier model. Default: `GEMINI_MODEL_CLASSIFIER`.
+- `--set synthetic|injection|all`: which case files. Default `all`.
+- `--per-category <n>`: fixed subset through `selectCases` (see "Subset rule").
+- `--limit <n>`: keep only the first `n` cases after the subset.
+- `--retries <n>`: retries per case after a soft error (429, 503, timeout). Default 4.
+- `--bar <0..1>`: precision bar for "go". Default 0.98.
+- `--min-kept <n>`: minimum kept rows per category for "go". Default 30.
+- `--out <file.md>`: also write the report to a file.
+- `--state <file.jsonl>`: state file. Default `evals/.runs/<model>-<prompt-version>-<set>[-pc<n>].jsonl`.
+- `--fresh`: delete the state file first.
+
+`bun run eval --real --org-id <uuid> --mailbox-id <uuid> [--synthetic]` reads the labels from `triage_feedback`. It makes no LLM call.
+
+### Resume
+
+The runner appends one JSON line per finished case to the state file. The file is in `evals/.runs/`, outside git.
+A line holds ids, categories, numbers and codes only, no mail text.
+
+- On start, cases with a result and no error are skipped (no LLM call). A case blocked by Google counts as done.
+- Cases that ended in an error run again. The report shows "N error cases: run again with the same command to retry them".
+- The default state file name holds the model, the prompt version and the set. After a change of the expected labels in `evals/cases`, use `--fresh`.
+- After 3 cases in a row end in an error (retries used up), the run stops. The report says "run not complete" and the exit code is 2.
+  Run the same command again later (for example after the daily quota reset at midnight Pacific time).
+- Exit codes: 0 = pass, 1 = a check failed (whitelist below 100%, an injection case failed, or more than 10% errors in a complete run), 2 = run not complete.
+
+### Quota
+
+The runner and the worker share one Gemini project quota (free tier).
+
+- A full run (`--set all`) is about 90 cases, about 90 requests when no call fails. Each retry is one more request.
+- `--set all --per-category 3` is 18 cases (15 synthetic and 3 injection): 18 requests, at most 36 with `--retries 1`.
+- The `gemini-3.8-flash` comparison uses `--per-category 3 --retries 1`, 18 to 36 requests per model. The free tier allows about 20 requests per day for this model [not verified], so the run can need two days.
+- With `TRIAGE_LLM_SCOPE=all` on the VPS, check the quota left for the day before you start a run.
 
 ## Subset rule
 

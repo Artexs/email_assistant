@@ -63,6 +63,7 @@ function caseResult(id: string, over: Partial<CaseResult> = {}): CaseResult {
     finalCategory: "info",
     confidence: 0.9,
     source: "llm",
+    whitelisted: false,
     blocked: false,
     usage: null,
     errorCode: null,
@@ -79,6 +80,10 @@ function casesReport(over: Partial<CasesEvalReport> = {}): CasesEvalReport {
     model: "gemini-3.5-flash-lite",
     promptVersion: "classifier-v1",
     cases: Array.from({ length: 10 }, (_, i) => caseResult(`c${i}`)),
+    complete: true,
+    stoppedReason: null,
+    doneCount: 10,
+    totalCount: 10,
     whitelist: { passed: 10, total: 10, errors: 0 },
     injection: { passed: 3, total: 3, failedIds: [] },
     blocked: { total: 0, ids: [] },
@@ -119,6 +124,16 @@ describe("renderEvalReport", () => {
     expect(decisionOf(md, "info")).toBe("no-go");
     expect(decisionOf(md, "urgent")).toBe("no-go: too few");
     expect(md).toContain("Minimum support: 30 kept rows per category (user 2026-11-04).");
+  });
+
+  test("cases: done count, stop reason and error line", () => {
+    const md = renderEvalReport(
+      casesReport({ complete: false, stoppedReason: "quota", doneCount: 7, totalCount: 10, errors: 3 })
+    );
+    expect(md).toContain("7 of 10 cases done (run not complete)");
+    expect(md).toContain("stopped: quota");
+    expect(md).toContain("3 error cases: run again with the same command to retry them");
+    expect(renderEvalReport(casesReport())).not.toContain("error cases");
   });
 
   test("cases: a go decision", () => {
@@ -228,6 +243,7 @@ describe("evalExitCode", () => {
     const blocked = casesReport({ blocked: { total: 2, ids: ["a", "b"] } });
     expect(evalExitCode(blocked)).toBe(0);
     expect(evalExitCode(casesReport())).toBe(0);
+    expect(evalExitCode(casesReport({ complete: false, stoppedReason: "quota" }))).toBe(2);
   });
 
   test("real is always 0", () => {

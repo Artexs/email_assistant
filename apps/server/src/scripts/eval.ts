@@ -1,11 +1,19 @@
-import { readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { parseArgs } from "node:util";
 
-import { type EvalCase, evalCaseSchema } from "@ea/core";
+import { type EvalCase, evalCaseSchema, selectCases } from "@ea/core";
 import { z } from "zod";
 
-import { buildRealReport, evalExitCode, listLabeledResults, renderEvalReport, runEval } from "../modules/triage";
+import {
+  buildRealReport,
+  evalExitCode,
+  listLabeledResults,
+  parseCaseResults,
+  renderEvalReport,
+  runEval,
+} from "../modules/triage";
+import { PROMPT_VERSION } from "../modules/triage/prompts/classifier-v1";
 import { classifierModel, loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { createLlmClient, LlmConfigError } from "../platform/llm";
@@ -14,11 +22,13 @@ import { createLog } from "../platform/log";
 const log = createLog("eval");
 
 const casesDir = resolve(import.meta.dir, "../../../../evals/cases");
+const runsDir = resolve(import.meta.dir, "../../../../evals/.runs");
 const sets = ["synthetic", "injection", "all"] as const;
 
 const usage = [
   "usage: bun run eval [--model <id>] [--set synthetic|injection|all] [--bar 0.98] [--min-kept 30]",
-  "                    [--retries 4] [--limit n] [--out <file.md>]",
+  "                    [--retries 4] [--limit n] [--per-category n] [--state <file.jsonl>] [--fresh]",
+  "                    [--out <file.md>]",
   "       bun run eval --real --org-id <uuid> --mailbox-id <uuid> [--synthetic] [--bar 0.98] [--min-kept 30]",
   "                    [--out <file.md>]",
 ].join("\n");
@@ -30,6 +40,9 @@ const optionsSchema = z.object({
   "min-kept": z.coerce.number().int().positive().default(30),
   retries: z.coerce.number().int().min(0).default(4),
   limit: z.coerce.number().int().positive().optional(),
+  "per-category": z.coerce.number().int().positive().optional(),
+  state: z.string().min(1).optional(),
+  fresh: z.boolean().default(false),
   out: z.string().min(1).optional(),
   real: z.boolean().default(false),
   synthetic: z.boolean().default(false),
@@ -39,7 +52,7 @@ const optionsSchema = z.object({
 
 // --real reads labels from the DB and takes no case-run options; the case run takes no DB options.
 const realOnly = ["org-id", "mailbox-id", "synthetic"] as const;
-const casesOnly = ["model", "set", "retries", "limit"] as const;
+const casesOnly = ["model", "set", "retries", "limit", "per-category", "state", "fresh"] as const;
 
 function readOptions() {
   try {
@@ -52,6 +65,9 @@ function readOptions() {
         "min-kept": { type: "string" },
         retries: { type: "string" },
         limit: { type: "string" },
+        "per-category": { type: "string" },
+        state: { type: "string" },
+        fresh: { type: "boolean" },
         out: { type: "string" },
         real: { type: "boolean" },
         synthetic: { type: "boolean" },
@@ -129,21 +145,41 @@ async function main(): Promise<number> {
     rpm: config.GEMINI_RPM,
   });
 
-  const selected = [
-    ...(options.set === "injection" ? [] : loadCases("synthetic.json")),
-    ...(options.set === "synthetic" ? [] : loadCases("injection.json")),
-  ].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  const selected = selectCases(
+    [
+      ...(options.set === "injection" ? [] : loadCases("synthetic.json")),
+      ...(options.set === "synthetic" ? [] : loadCases("injection.json")),
+    ],
+    { perCategory: options["per-category"] }
+  );
   const cases = options.limit === undefined ? selected : selected.slice(0, options.limit);
+
+  // The state file holds per-case results (ids, categories, numbers), no mail text. It lives outside git.
+  const perCategory = options["per-category"] === undefined ? "" : `-pc${options["per-category"]}`;
+  const stateFile =
+    options.state ??
+    resolve(runsDir, `${model.replace(/[^\w.-]/g, "_")}-${PROMPT_VERSION}-${options.set}${perCategory}.jsonl`);
+  if (options.fresh) rmSync(stateFile, { force: true });
+  mkdirSync(dirname(stateFile), { recursive: true });
+  const done = existsSync(stateFile) ? parseCaseResults(readFileSync(stateFile, "utf8")) : [];
+  log.info(`state ${stateFile}: ${done.length} earlier results`);
 
   try {
     const report = await runEval(
-      { llm, sleep: (ms) => new Promise((done) => setTimeout(done, ms)), now: () => new Date() },
-      { cases, model, bar: options.bar, minKept: options["min-kept"], retries: options.retries }
+      {
+        llm,
+        sleep: (ms) => new Promise((finish) => setTimeout(finish, ms)),
+        now: () => new Date(),
+        onResult: async (result) => appendFileSync(stateFile, `${JSON.stringify(result)}\n`),
+      },
+      { cases, model, bar: options.bar, minKept: options["min-kept"], retries: options.retries, done }
     );
     const markdown = renderEvalReport(report, { title: `Eval report: ${options.set} set` });
     out(markdown);
     if (options.out !== undefined) writeFileSync(options.out, markdown);
-    return evalExitCode(report);
+    const code = evalExitCode(report);
+    if (!report.complete) log.warn(`${report.stoppedReason ?? "run not complete"}: resume with the same command`);
+    return code;
   } catch (error) {
     if (error instanceof LlmConfigError) {
       log.error(`LLM config error ${error.code}`);

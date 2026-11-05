@@ -28,3 +28,6 @@ pnpm-debug.log*
 
 # backup settings (VPS only)
 deploy/backup.env
+
+# eval run state (per-case results)
+evals/.runs/
