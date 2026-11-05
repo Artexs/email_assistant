@@ -1,3 +1,7 @@
+export { listForLabeling, recordFeedback } from "./feedback";
+export type { LabelItem, RecordFeedbackInput } from "./feedback";
+export { parseLabelInput } from "./label-input";
+export type { LabelInput } from "./label-input";
 export { classifyEmail } from "./classifier";
 export type { ClassifierEmail, SenderContext } from "./classifier";
 export {

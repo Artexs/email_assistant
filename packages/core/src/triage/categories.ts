@@ -30,5 +30,8 @@ export const ruleReasonCodes = ["blocklist", "triage_error", "llm_blocked"] as c
 export const feedbackSources = ["cli", "telegram", "undo", "imap_move", "web"] as const;
 export type FeedbackSource = (typeof feedbackSources)[number];
 
+export const feedbackVerdicts = ["right", "wrong"] as const;
+export type FeedbackVerdict = (typeof feedbackVerdicts)[number];
+
 // Only the `reason_code` of the `email.triaged` audit row when the threshold made the category `unsure`.
 export const BELOW_THRESHOLD_REASON = "below_threshold";

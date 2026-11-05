@@ -1,5 +1,6 @@
-import { categorySchema, type Category, type FeedbackSource } from "@ea/core";
+import { categorySchema, feedbackVerdicts, type Category, type FeedbackSource, type FeedbackVerdict } from "@ea/core";
 import { expressionBuilder, type Expression, type NotNull, type SqlBool, type Transaction } from "kysely";
+import { z } from "zod";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 import { SYNTHETIC_MESSAGE_ID_LIKE } from "../mail";
@@ -50,7 +51,7 @@ export interface LabeledResult {
   reason_code: string;
   model: string | null;
   fields: unknown;
-  verdict: "right" | "wrong";
+  verdict: FeedbackVerdict;
   true_category: Category | null;
 }
 
@@ -64,7 +65,7 @@ export interface UsageRow {
 
 export interface FeedbackInput {
   emailId: string;
-  verdict: "right" | "wrong";
+  verdict: FeedbackVerdict;
   trueCategory: Category | null;
   source: FeedbackSource;
   userId: string | null;
@@ -143,12 +144,7 @@ function mailFilter(mail: MailKind): Expression<SqlBool> {
   ]);
 }
 
-function parseVerdict(verdict: string): "right" | "wrong" {
-  if (verdict === "right" || verdict === "wrong") {
-    return verdict;
-  }
-  throw new Error(`unknown feedback verdict: ${verdict}`);
-}
+const verdictSchema = z.enum(feedbackVerdicts);
 
 // The latest result per email with no feedback row, newest mail first.
 export async function listUnlabeled(
@@ -260,7 +256,7 @@ export async function listLabeledResults(
   return rows.map((row) => ({
     ...row,
     category: categorySchema.parse(row.category),
-    verdict: parseVerdict(row.verdict),
+    verdict: verdictSchema.parse(row.verdict),
     true_category: row.true_category === null ? null : categorySchema.parse(row.true_category),
   }));
 }
