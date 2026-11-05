@@ -19,3 +19,4 @@ export type {
 } from "./repo";
 export { runEval, toClassifierInput } from "./eval";
 export type { CaseResult, CasesEvalReport, EvalReport, EvalReportBase, RealEvalReport } from "./eval";
+export { evalExitCode, renderEvalReport } from "./eval-report";

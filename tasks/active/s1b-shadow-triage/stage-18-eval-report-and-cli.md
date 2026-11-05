@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 18 — Eval report and CLI [risky]
 
-- [ ] **18.1 `renderEvalReport` and `bun run eval`**
+- [x] **18.1 `renderEvalReport` and `bun run eval`**
   - Goal: one command that runs the eval on the synthetic and injection sets and prints the Markdown report and the go/no-go table.
   - Files: create `apps/server/src/modules/triage/eval-report.ts`, `apps/server/src/modules/triage/eval-report.test.ts`, `apps/server/src/scripts/eval.ts`; export `renderEvalReport` and `evalExitCode` from `triage/index.ts`; change root `package.json` (`"eval": "bun apps/server/src/scripts/eval.ts"`).
   - Interfaces:

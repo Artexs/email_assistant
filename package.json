@@ -18,6 +18,7 @@
     "format": "prettier --write .",
     "web:dev": "bun run --filter @ea/web dev",
     "web:build": "bun run --filter @ea/web build",
+    "eval": "bun apps/server/src/scripts/eval.ts",
     "gemini:test": "bun apps/server/src/scripts/gemini-check.ts",
     "org:create": "bun apps/server/src/scripts/org-create.ts",
     "mailbox:connect": "bun apps/server/src/scripts/mailbox-connect.ts",
