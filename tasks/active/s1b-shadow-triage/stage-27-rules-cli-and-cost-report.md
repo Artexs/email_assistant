@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 27 — Rules CLI and cost report
 
-- [ ] **27.1 `bun run rules:add` and `rules:list`**
+- [x] **27.1 `bun run rules:add` and `rules:list`**
   - Goal: the user can add whitelist, blocklist and VIP rules before S5.
   - Files: create `apps/server/src/scripts/rules.ts`; change root `package.json` (`"rules:add": "bun apps/server/src/scripts/rules.ts add"`, `"rules:list": "bun apps/server/src/scripts/rules.ts list"`).
   - Interfaces: `bun run rules:add --org-id <uuid> [--mailbox-id <uuid>] --pattern <address or domain> --kind whitelist|blocklist|vip`; `bun run rules:list --org-id <uuid> [--mailbox-id <uuid>]`.
@@ -14,7 +14,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
   - Done when: `rules:add` then `rules:list` shows the rule; a duplicate prints "already there".
   - Out of scope: delete or edit of rules (S5 web).
 
-- [ ] **27.2 `bun run triage:cost`**
+- [x] **27.2 `bun run triage:cost`**
   - Goal: tokens, latency and cost per mail and per mailbox per month from stored results.
   - Files: create `apps/server/src/scripts/triage-cost.ts`; change root `package.json` (`"triage:cost": "bun apps/server/src/scripts/triage-cost.ts"`).
   - Interfaces: `bun run triage:cost --org-id <uuid> --mailbox-id <uuid> [--days 7] [--mail real|synthetic]` (default `real`).

@@ -1,4 +1,4 @@
-> **Status 2026-11-05 — in progress: stages 0–26 done, checkpoint 3 group review passed.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 27–40, with 1 user checkpoint left (before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
+> **Status 2026-11-05 — in progress: stages 0–27 done, checkpoint 3 group review passed.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 28–40, with 1 user checkpoint left (before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
 
 # S1b Shadow triage
 
@@ -146,7 +146,7 @@ The main session ticks the step boxes in the stage file and the stage box here.
 - [x] [Stage 24](s1b-shadow-triage/stage-24-cost-gates-7-day-rule-with-the-backfill-waiver-d.md) — Cost gates: 7-day rule with the backfill waiver, daily cap [risky]
 - [x] [Stage 25](s1b-shadow-triage/stage-25-server-wiring-and-the-log-test.md) — Server wiring and the log test [risky]
 - [x] [Stage 26](s1b-shadow-triage/stage-26-feedback-and-labeling-cli.md) — Feedback and labeling CLI
-- [ ] [Stage 27](s1b-shadow-triage/stage-27-rules-cli-and-cost-report.md) — Rules CLI and cost report
+- [x] [Stage 27](s1b-shadow-triage/stage-27-rules-cli-and-cost-report.md) — Rules CLI and cost report
 - [ ] [Stage 28](s1b-shadow-triage/stage-28-real-label-eval.md) — Real-label eval [risky]
 - [ ] [Stage 29](s1b-shadow-triage/stage-29-eval-mail-seed-and-eval-cases-in-the-server-imag.md) — Eval mail seed and eval cases in the server image [risky]
 - [ ] [Stage 30](s1b-shadow-triage/stage-30-eval-subset-and-resume.md) — Eval subset and resume [risky]
@@ -234,3 +234,4 @@ None open (Q26–Q29 answered 2026-11-04).
 - 2026-11-05: Stage 25 done: `main.ts` scope switch (`off` builds nothing; `synthetic`, `all`), `triage.worker` every 15 s, shutdown waits up to 30 s for a running batch, log test with 9 markers (`triage-logs.test.ts`). Server on the Mac starts with "triage worker is off". Unit 388 pass, int 182 pass. Reviewed: PASS (Sonnet). Decision on shutdown: a batch cut off after 30 s leaves untried mail claimed; the next start counts one attempt each (accepted, 3 tries per mail). Checkpoint 3 reached; group review next.
 - 2026-11-05: Checkpoint 3 group review (stages 19–25, Opus): PASS, 7 minor findings and 1 question, no code change. Follow-ups written into the stage 27, 35 and 37 files. Open minors (not fixed): one `error` line every 15 s for a mailbox with a permanent settings parse error (`jobs.ts`); the attempts guard runs before the 7-day rule and blocklist; weak `not.toBe("triaged")` assert in `triage-job.test.ts`; no `stop()` flag in the job. User stop after stage 25.
 - 2026-11-05: Stage 26 done: `recordFeedback`, `listForLabeling` (`feedback.ts`), `feedbackVerdicts` in core, `parseLabelInput`, `bun run triage:label` (interactive and one-label forms). User decision: `w` and Enter on an `unsure` row ask again (a true category is needed); stage 28 drops scripted `wrong`-only labels on `unsure` rows. Manual run on the dev DB wrote 2 `triage_feedback` rows with source `cli`. Unit 394 pass, int 188 pass (2 runs). Reviewed: PASS (Sonnet). `prompt()` in Docker is not verified (stage 37).
+- 2026-11-05: Stage 27 done: `bun run rules:add` / `rules:list` (pattern check, lower case, "already there", scope header line) and `bun run triage:cost` (per model: LLM results, results per day, avg tokens, latency p50/p95 from stored results only, cost per mail and per mailbox per month at the observed rate and at 200 per day, paid-tier price line). Manual runs on the dev DB OK. Unit 394 pass. Reviewed: PASS (Sonnet; one fix round for 2 minors). Open minor: NULL tokens count as 0 in `triage-cost.ts`.
