@@ -1,4 +1,4 @@
-> **Status 2026-11-05 — in progress: stages 0–12 done.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 13–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
+> **Status 2026-11-05 — in progress: stages 0–13 done.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 14–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
 
 # S1b Shadow triage
 
@@ -132,7 +132,7 @@ The main session ticks the step boxes in the stage file and the stage box here.
 - [x] [Stage 10](s1b-shadow-triage/stage-10-llm-client.md) — LLM client [risky]
 - [x] [Stage 11](s1b-shadow-triage/stage-11-classifier-and-prompt-v1.md) — Classifier and prompt v1 [risky]
 - [x] [Stage 12](s1b-shadow-triage/stage-12-eval-case-schema-address-split-and-subset-rule.md) — Eval case schema, address split and subset rule [risky]
-- [ ] [Stage 13](s1b-shadow-triage/stage-13-eval-cases-urgent-and-needs-reply.md) — Eval cases: `urgent` and `needs_reply` [risky]
+- [x] [Stage 13](s1b-shadow-triage/stage-13-eval-cases-urgent-and-needs-reply.md) — Eval cases: `urgent` and `needs_reply` [risky]
 - [ ] [Stage 14](s1b-shadow-triage/stage-14-eval-cases-info-and-notification.md) — Eval cases: `info` and `notification` [risky]
 - [ ] [Stage 15](s1b-shadow-triage/stage-15-eval-cases-spam-blocklist-and-injection.md) — Eval cases: `spam`, blocklist and injection [risky]
 - [ ] [Stage 16](s1b-shadow-triage/stage-16-eval-metrics-and-go-no-go.md) — Eval metrics and go/no-go [risky]
@@ -219,3 +219,4 @@ None open (Q26–Q29 answered 2026-11-04).
 - 2026-11-05: Stage 10 done: `platform/llm.ts` (structured call, timeout, rate limiter, typed errors with codes). Reviewed: PASS (Sonnet). Note: `scripts/gemini-check.ts` also imports `@google/genai` (outside the stage).
 - 2026-11-05: Stage 11 done: classifier + prompt `classifier-v1` (nonce data blocks, `<<<`/`>>>` stripped, untrusted-text marking). Reviewed: PASS (Opus, critical). Minors left: weak `toContain(category)` test for `info`; type-only import cycle prompt↔classifier. Implementer rule changed by the user: all implementers run on default Sonnet, no Opus override.
 - 2026-11-05: Stage 12 done: eval case schema, `splitAddress`, `selectCases`, empty case files, structural test. Reviewed: PASS (Sonnet). Minor for stage 13: `eval-cases.test.ts` domain check passes an address without `@`; add an `@` assertion when stage 13 adds cases.
+- 2026-11-05: Stage 13 done: 32 synthetic cases (16 urgent, 16 needs_reply), count tests, stage 12 `@` fix. Reviewed: PASS (Sonnet). Open minors: whitelist test does not run `applyHardRules` on `from`; Polish case bodies have no diacritics (consider some in stage 14/15).

@@ -36,6 +36,7 @@ describe("eval case files", () => {
       const values = [evalCase.from, ...evalCase.to, ...evalCase.cc, ...evalCase.thread.map((message) => message.from)];
       for (const value of values) {
         const { address } = splitAddress(value);
+        expect(address).toContain("@");
         expect(address).toMatch(/^[\x21-\x7e]+$/);
         const domain = address.slice(address.lastIndexOf("@") + 1).toLowerCase();
         expect(isReservedDomain(domain)).toBe(true);
@@ -47,5 +48,35 @@ describe("eval case files", () => {
     for (const evalCase of all) {
       for (const rule of evalCase.senderRules) expect(rule.pattern).toBe(rule.pattern.toLowerCase());
     }
+  });
+
+  describe("urgent and needs_reply coverage", () => {
+    const urgent = synthetic.filter((c) => c.expected.category === "urgent");
+    const needsReply = synthetic.filter((c) => c.expected.category === "needs_reply");
+    const both = [...urgent, ...needsReply];
+
+    test("each category has at least 15 cases", () => {
+      expect(urgent.length).toBeGreaterThanOrEqual(15);
+      expect(needsReply.length).toBeGreaterThanOrEqual(15);
+    });
+
+    test("at least half of the cases are Polish", () => {
+      expect(both.filter((c) => c.lang === "pl").length).toBeGreaterThanOrEqual(both.length / 2);
+    });
+
+    test("each category has at least 3 borderline cases", () => {
+      for (const group of [urgent, needsReply]) {
+        expect(group.filter((c) => c.note?.startsWith("borderline:")).length).toBeGreaterThanOrEqual(3);
+      }
+    });
+
+    test("at least 4 whitelist or vip cases are not spam", () => {
+      const trusted = both.filter((c) => c.senderRules.some((r) => r.kind === "whitelist" || r.kind === "vip"));
+      expect(trusted.length).toBeGreaterThanOrEqual(4);
+    });
+
+    test("at least 3 cases have thread entries", () => {
+      expect(both.filter((c) => c.thread.length > 0).length).toBeGreaterThanOrEqual(3);
+    });
   });
 });

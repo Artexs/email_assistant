@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 13 — Eval cases: `urgent` and `needs_reply` [risky]
 
-- [ ] **13.1 At least 30 synthetic cases for `urgent` and `needs_reply`**
+- [x] **13.1 At least 30 synthetic cases for `urgent` and `needs_reply`**
   - Goal: labeled synthetic cases for the first two categories, Polish and English.
   - Files: change `evals/cases/synthetic.json`, `apps/server/src/modules/triage/eval-cases.test.ts`.
   - Interfaces: none new (cases follow `evalCaseSchema`, step 12.1).

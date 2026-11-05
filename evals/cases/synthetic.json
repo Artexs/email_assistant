@@ -1,1 +1,555 @@
-[]
+[
+  {
+    "id": "syn-urgent-01",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Marek Zielinski <marek.zielinski@klient-alfa.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "PILNE: serwer produkcyjny nie odpowiada",
+    "body": "Dzien dobry,\nod 8:40 nasz system zamowien nie odpowiada. Klienci nie moga skladac zamowien.\nProsze o telefon do mnie jak najszybciej, mam czas do 10:00, potem eskaluje do zarzadu.\nMarek Zielinski",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "urgent"
+    }
+  },
+  {
+    "id": "syn-urgent-02",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Ewa Wrona <ewa.wrona@bank-polna.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Termin platnosci mija dzis o 16:00",
+    "body": "Szanowny Kliencie,\nprzypominamy, ze termin platnosci faktury FV/2026/10/118 mija dzisiaj, 2 listopada 2026, o godz. 16:00.\nPo tym terminie naliczymy odsetki oraz wstrzymamy dostawy.\nProsze o potwierdzenie przelewu.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "urgent"
+    }
+  },
+  {
+    "id": "syn-urgent-03",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Kancelaria Nowak <biuro@kancelaria-nowak.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Odpowiedz do jutra do 12:00 - pismo sadowe",
+    "body": "Szanowny Panie,\nw zalaczeniu pismo od strony przeciwnej. Termin na odpowiedz uplywa jutro, 3 listopada, o 12:00.\nBez Pana decyzji dzisiaj nie zdazymy przygotowac odpowiedzi.\nProsze o telefon po poludniu.\nAnna Nowak, radca prawny",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "urgent"
+    }
+  },
+  {
+    "id": "syn-urgent-04",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Tomasz Bielak <tomasz.bielak@firma.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Awaria klimatyzacji w serwerowni",
+    "body": "Szefie,\ntemperatura w serwerowni to juz 38 stopni. Wylaczamy czesc maszyn za 30 minut.\nPotrzebuje Twojej zgody na wezwanie serwisu awaryjnego (koszt ok. 4000 zl). Prosze o decyzje teraz.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "urgent"
+    }
+  },
+  {
+    "id": "syn-urgent-05",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Joanna Kruk <joanna.kruk@dostawca-beta.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Ostatnie wezwanie do zaplaty",
+    "body": "Dzien dobry,\nmimo wczesniejszych przypomnien faktura 2026/09/412 na kwote 18 450 zl pozostaje nieoplacona.\nJezeli nie otrzymamy platnosci do dzis do konca dnia, przekazemy sprawe do windykacji.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "urgent"
+    }
+  },
+  {
+    "id": "syn-urgent-06",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Pawel Lis <pawel.lis@urzad-miasta.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Wezwanie do uzupelnienia wniosku - ostatni dzien",
+    "body": "Szanowny Panie,\nwzywamy do uzupelnienia wniosku nr 4411/2026 do konca dnia dzisiejszego.\nBrak uzupelnienia spowoduje pozostawienie wniosku bez rozpatrzenia.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "urgent"
+    }
+  },
+  {
+    "id": "syn-urgent-07",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Rezerwacje Hotel Lipa <rezerwacje@hotel-lipa.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Faktura automatyczna - platnosc wymagana dzis",
+    "body": "To jest wiadomosc automatyczna.\nTermin platnosci faktury 77/2026 za wynajem sali konferencyjnej mija dzisiaj.\nKwota: 6 200 zl. Brak wplaty do 23:59 anuluje rezerwacje na piatek.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "urgent"
+    },
+    "note": "borderline: automatic invoice due today, not notification"
+  },
+  {
+    "id": "syn-urgent-08",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Dzial IT <it@firma.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Wygasa certyfikat SSL jutro rano",
+    "body": "Certyfikat dla sklep.firma.test wygasa jutro o 7:00.\nOdnowienie wymaga Twojej zgody jako wlasciciela konta. Bez odnowienia sklep przestanie dzialac.\nProsze o potwierdzenie do dzisiaj do 18:00.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "urgent"
+    },
+    "note": "borderline: system alert that needs a human decision today"
+  },
+  {
+    "id": "syn-urgent-09",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Karolina Mazur <karolina.mazur@klient-gamma.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Re: Oferta - klient grozi rezygnacja",
+    "body": "Dzien dobry,\nczekam na Panska odpowiedz od tygodnia. Jezeli do konca dzisiejszego dnia nie dostane wiazacej oferty, podpisuje umowe z konkurencja.\nKarolina Mazur",
+    "thread": [
+      {
+        "from": "szef@firma.test",
+        "subject": "Oferta",
+        "body": "Dzien dobry, wysylam wstepna oferte. Wrocimy do szczegolow w przyszlym tygodniu."
+      }
+    ],
+    "senderRules": [],
+    "expected": {
+      "category": "urgent"
+    },
+    "note": "borderline: customer deadline in a thread; also needs a reply"
+  },
+  {
+    "id": "syn-urgent-10",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Daniel Foster <daniel.foster@client-delta.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "URGENT: payment gateway down",
+    "body": "Hi,\nour checkout has been failing since 9:15 this morning. We lose about 40 orders per hour.\nPlease call me as soon as you read this. I am available on my mobile until noon.\nDaniel",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "urgent"
+    }
+  },
+  {
+    "id": "syn-urgent-11",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Legal Team <legal@partner-sigma.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Contract must be signed today",
+    "body": "Dear Sir,\nthe signing window for the supply contract closes today at 17:00 CET. After that the price offer expires and we must re-quote.\nPlease sign the attached document or tell us if you need changes before 15:00.\nRegards,\nClaire Dubois",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "urgent"
+    }
+  },
+  {
+    "id": "syn-urgent-12",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Billing <billing@cloud-host.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Final notice: account suspension tomorrow",
+    "body": "Your invoice INV-20261031 is 14 days overdue.\nYour hosting account will be suspended on 3 November 2026 at 08:00 UTC unless payment is received.\nAmount due: 1,240.00 EUR.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "urgent"
+    },
+    "note": "borderline: automatic billing notice with a deadline, not notification"
+  },
+  {
+    "id": "syn-urgent-13",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Rachel Kim <rachel.kim@investor-omega.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Need your decision before the board call at 14:00",
+    "body": "Hi,\nthe board call is today at 14:00. I need your yes or no on the bridge financing before that.\nIf I do not hear from you by 13:30, we remove it from the agenda.\nRachel",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "urgent"
+    }
+  },
+  {
+    "id": "syn-urgent-14",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Mark Hale <mark.hale@firma.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Security incident: leaked API key",
+    "body": "A production API key was pushed to a public repository 20 minutes ago.\nI rotated it, but we must decide today whether to notify customers.\nPlease join the call at 11:00 or reply with your decision.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "urgent"
+    }
+  },
+  {
+    "id": "syn-urgent-15",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Sophie Lang <sophie.lang@vip-client.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Exclusive offer ends today - but I need your answer",
+    "body": "Hello,\nthis looks like a promo, but it is not. The special rate we agreed on expires today at midnight.\nPlease confirm by 18:00 so I can hold the conference hall for your team.\nSophie",
+    "thread": [],
+    "senderRules": [
+      {
+        "pattern": "sophie.lang@vip-client.test",
+        "kind": "vip"
+      }
+    ],
+    "expected": {
+      "category": "urgent"
+    },
+    "note": "vip sender, marketing-like text, not spam"
+  },
+  {
+    "id": "syn-urgent-16",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Biuro Partnera <oferty@partner-promo.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "OSTATNIA SZANSA - promocja konczy sie dzis!",
+    "body": "Specjalna oferta tylko dla Ciebie! Rabat 30% znika dzisiaj o 23:59.\nPotwierdz zamowienie hurtowe z naszej umowy ramowej do godziny 15:00, inaczej tracisz cene z umowy.\nPozdrawiamy, zespol Partner Promo",
+    "thread": [],
+    "senderRules": [
+      {
+        "pattern": "partner-promo.test",
+        "kind": "whitelist"
+      }
+    ],
+    "expected": {
+      "category": "urgent"
+    },
+    "note": "whitelist sender, marketing-like text, real deadline"
+  },
+  {
+    "id": "syn-reply-01",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Piotr Sowa <piotr.sowa@klient-alfa.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Pytanie o wycene projektu",
+    "body": "Dzien dobry,\nprzesylam zakres prac. Czy moglby Pan podac wstepna wycene do piatku?\nInteresuje nas tez, ile czasu zajmie wdrozenie.\nPozdrawiam,\nPiotr Sowa",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "needs_reply"
+    }
+  },
+  {
+    "id": "syn-reply-02",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Agnieszka Dab <agnieszka.dab@firma.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Urlop w grudniu",
+    "body": "Czesc,\nchcialabym wziac urlop od 15 do 24 grudnia. Czy mozesz to zaakceptowac?\nDaj znac, jesli kolidowalo by to z planem wdrozenia.\nAgnieszka",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "needs_reply"
+    }
+  },
+  {
+    "id": "syn-reply-03",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Robert Kaczmarek <robert.kaczmarek@partner-sigma.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Spotkanie w przyszlym tygodniu?",
+    "body": "Dzien dobry,\nchcialbym umowic spotkanie w sprawie wspolpracy. Czy pasuje Panu wtorek 10 listopada o 11:00 albo sroda o 14:00?\nProsze o informacje, ktory termin jest dobry.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "borderline: meeting request without a deadline"
+  },
+  {
+    "id": "syn-reply-04",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Newsletter Branzowy <redakcja@branza-news.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Tygodnik Branzowy #45 - i pytanie do Ciebie",
+    "body": "Czesc,\noto nasze tematy tygodnia: raport o rynku, wywiad z prezesem, kalendarz targow.\nPS. Panie Pawle, czy zgodzi sie Pan na krotki wywiad do grudniowego wydania? Wystarczy odpowiedz na tego maila.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "borderline: newsletter with a direct question to the user"
+  },
+  {
+    "id": "syn-reply-05",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Ola Wrzos <ola.wrzos@dostawca-beta.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Re: Termin dostawy",
+    "body": "Dzien dobry,\ndziekuje za informacje. Czy mozemy przesunac dostawe na 12 listopada? Magazyn jest wtedy wolny.\nProsze o potwierdzenie.",
+    "thread": [
+      {
+        "from": "szef@firma.test",
+        "subject": "Termin dostawy",
+        "body": "Dzien dobry, dostawa planowana na 6 listopada. Prosze o potwierdzenie terminu."
+      }
+    ],
+    "senderRules": [],
+    "expected": {
+      "category": "needs_reply"
+    }
+  },
+  {
+    "id": "syn-reply-06",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Michal Gora <michal.gora@firma.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Prosba o akceptacje budzetu",
+    "body": "Szefie,\nw zalaczeniu budzet marketingu na Q1. Prosze o uwagi lub akceptacje.\nNie jest to pilne, ale chcialbym zamknac temat w tym tygodniu.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "borderline: request with a soft deadline, not urgent"
+  },
+  {
+    "id": "syn-reply-07",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Sklep Biurowy <zamowienia@sklep-biurowy.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Stali klienci: potwierdz adres dostawy",
+    "body": "Dzien dobry,\nprzygotowalismy zamowienie z Panskiej umowy rocznej. Czy adres dostawy ul. Lipowa 5 jest aktualny?\nProsimy o krotka odpowiedz, wysylamy w czwartek.",
+    "thread": [],
+    "senderRules": [
+      {
+        "pattern": "zamowienia@sklep-biurowy.test",
+        "kind": "whitelist"
+      }
+    ],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "whitelist sender, marketing-like layout, not spam"
+  },
+  {
+    "id": "syn-reply-08",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Beata Konieczna <beata.konieczna@vip-klient.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Wyjatkowa oferta dla Pana - prosze o opinie",
+    "body": "Dzien dobry,\nprzygotowalam specjalna oferte cenowa na nowy sezon. Wyglada jak reklama, ale to wersja robocza.\nCzy moglby Pan przejrzec ja i napisac, co zmienic, zanim wysle ja do reszty klientow?",
+    "thread": [],
+    "senderRules": [
+      {
+        "pattern": "beata.konieczna@vip-klient.test",
+        "kind": "vip"
+      }
+    ],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "vip sender, marketing-like text, not spam"
+  },
+  {
+    "id": "syn-reply-09",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Wojciech Pik <wojciech.pik@klient-gamma.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Re: Re: Faktura korygujaca",
+    "body": "Dzien dobry,\nw poprzedniej wiadomosci pisalem o bledzie w NIP. Czy moze Pan potwierdzic, ze dane do korekty sa poprawne?\nPozdrawiam, Wojciech Pik",
+    "thread": [
+      {
+        "from": "wojciech.pik@klient-gamma.test",
+        "subject": "Faktura korygujaca",
+        "body": "Dzien dobry, w fakturze FV/2026/10/090 jest bledny NIP. Prosze o korekte."
+      },
+      {
+        "from": "szef@firma.test",
+        "subject": "Re: Faktura korygujaca",
+        "body": "Dzien dobry, sprawdzimy i wrocimy z informacja."
+      }
+    ],
+    "senderRules": [],
+    "expected": {
+      "category": "needs_reply"
+    }
+  },
+  {
+    "id": "syn-reply-10",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Laura Bennett <laura.bennett@client-delta.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Question about the proposal",
+    "body": "Hi,\nthanks for the proposal. Could you clarify whether the price includes support after launch?\nAlso, what is the earliest start date for your team?\nBest,\nLaura",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "needs_reply"
+    }
+  },
+  {
+    "id": "syn-reply-11",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Chris Marlow <chris.marlow@partner-sigma.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Intro call next week?",
+    "body": "Hello,\nI would like to schedule a 30-minute call to discuss a possible partnership.\nAre you free Tuesday or Wednesday afternoon?\nChris",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "borderline: meeting request"
+  },
+  {
+    "id": "syn-reply-12",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Hannah Ortiz <hannah.ortiz@firma.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Can you approve the new hire?",
+    "body": "Hi boss,\nthe candidate accepted our offer. I need your approval on the salary band before I send the contract.\nNo rush, but this week would be great.\nHannah",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "needs_reply"
+    }
+  },
+  {
+    "id": "syn-reply-13",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Product Weekly <digest@product-weekly.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "This week in product + a question for you",
+    "body": "Top stories: roadmap tools, pricing experiments, hiring trends.\nPersonal note: we saw your talk last month. Would you like to contribute a guest column? Reply to this email if you are interested.",
+    "thread": [],
+    "senderRules": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "borderline: newsletter with a direct question to the user"
+  },
+  {
+    "id": "syn-reply-14",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Oliver Grant <oliver.grant@supplier-kappa.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Re: Delivery schedule",
+    "body": "Thanks for the update. Can we move the delivery to 12 November? Our warehouse is free that day.\nPlease confirm.",
+    "thread": [
+      {
+        "from": "szef@firma.test",
+        "subject": "Delivery schedule",
+        "body": "Hi Oliver, the delivery is planned for 6 November. Please confirm the slot."
+      }
+    ],
+    "senderRules": [],
+    "expected": {
+      "category": "needs_reply"
+    }
+  },
+  {
+    "id": "syn-reply-15",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Acme Supplies <orders@acme-supplies.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Your yearly contract: confirm renewal terms",
+    "body": "Dear customer,\nyour yearly supply contract renews on 1 December. Do you want to keep the current volume of 500 units, or change it?\nPlease reply with your choice. Sale prices apply to all renewals.",
+    "thread": [],
+    "senderRules": [
+      {
+        "pattern": "acme-supplies.test",
+        "kind": "whitelist"
+      }
+    ],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "whitelist sender, marketing-like text, not spam"
+  },
+  {
+    "id": "syn-reply-16",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Nina Ward <nina.ward@vip-client.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Quick favour: intro to your CTO",
+    "body": "Hi,\nwould you be able to introduce me to your CTO? I would like to discuss an integration.\nA short reply with a yes or a no is enough.\nNina",
+    "thread": [],
+    "senderRules": [
+      {
+        "pattern": "nina.ward@vip-client.test",
+        "kind": "vip"
+      }
+    ],
+    "expected": {
+      "category": "needs_reply"
+    }
+  }
+]
