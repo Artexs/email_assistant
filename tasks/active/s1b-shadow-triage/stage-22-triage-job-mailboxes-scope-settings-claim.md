@@ -31,3 +31,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
   - Check: `bun run dev:up && bun run db:migrate && bun run lint && bun run typecheck && bun run test:unit && bun run test:int`
   - Done when: the tests pass.
   - Out of scope: the pause stop and the error release (stage 23), the daily cap, the 7-day rule (stage 24), `main.ts` (stage 25).
+
+## Added at checkpoint 1 (group review, 2026-11-05)
+
+- A stale `processing` row that the claim takes back does not count an attempt (stage 4). A mail that kills the process before the LLM call would then repeat every 5 minutes, and no `llm.call` row limits it. Decide in this stage: when `claimEmails` returns a row that was stale, count the attempt, so the `attempts >= 3` rule applies. Add a test.

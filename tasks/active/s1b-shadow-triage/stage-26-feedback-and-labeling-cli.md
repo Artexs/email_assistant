@@ -32,3 +32,8 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
   - Check: `bun run lint && bun run typecheck && bun run test:unit`. Manual run on the dev DB: seed GreenMail (`TEST_MAILBOX_ADDRESS=<GreenMail mailbox address> bun run mailbox:seed … --count 2`), start the server once with `TRIAGE_LLM_SCOPE=synthetic` (about 2 free-tier requests) until the mails are `triaged`, then `bun run triage:label --org-id … --mailbox-id … --synthetic` and label one mail.
   - Done when: the tests pass and a manual run writes a `triage_feedback` row with source `cli`.
   - Out of scope: a web or Telegram labeling UI.
+
+## Added at checkpoint 1 (group review, 2026-11-05)
+
+- Add `feedbackVerdicts` and `FeedbackVerdict` to `packages/core/src/triage/categories.ts` (next to `feedbackSources`). Parse with `z.enum(feedbackVerdicts)` in `triage/repo.ts` (`parseVerdict` throws a plain `Error` now) and use the type in `recordFeedback`.
+- `listLabeledResults` does not return `prompt_version`. Add it if stage 34 can produce `classifier-v2` (the real eval would need to split versions).

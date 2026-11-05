@@ -20,3 +20,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
   - Check: `bun run dev:up && bun run db:migrate && bun run lint && bun run typecheck && bun run test:unit && bun run test:int`
   - Done when: the tests pass.
   - Out of scope: other skip reasons, other statuses, a re-triage of known mail.
+
+## Added at checkpoint 1 (group review, 2026-11-05)
+
+- The real / synthetic SQL test exists in the mail repo (`claimEmails`, `listThreadContext`) and in `triage/repo.ts` (`mailFilter`). Before this stage writes a third copy, export one predicate helper from the mail module (it owns `SYNTHETIC_MESSAGE_ID_LIKE`) and use it in `mailFilter` and `requeueTooOld`.

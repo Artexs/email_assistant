@@ -214,3 +214,4 @@ None open (Q26–Q29 answered 2026-11-04).
 - 2026-11-05: Stage 6 done: actions repository (`createPlanned`, `listActionsForEmail`, `listSummaries`), tenant tests. Reviewed: PASS (Sonnet). Accepted minors: rows of one plan share `created_at`, so their order is by uuid; `listSummaries` has no ORDER BY (one summary per email by idempotency key).
 - 2026-11-05: Stage 7 done: triage repository writes (`insertTriageResult`, `latestTriageResult`, `insertFeedback`), tenant and FK tests. Reviewed: PASS (Sonnet).
 - 2026-11-05: Stage 8 done: `listUnlabeled`, `listLabeledResults`, `listUsageSince` with the real/synthetic filter. Reviewed: PASS (Sonnet). Checkpoint 1 reached.
+- 2026-11-05: Checkpoint 1 group review (stages 3–8, Opus): PASS. Follow-ups written into stage 22, 26 and 33 files and `tasks/planned/s1b-claim-index.md`; `tasks/README.md` re-formatted with prettier.
