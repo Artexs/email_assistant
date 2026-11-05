@@ -1,4 +1,4 @@
-> **Status 2026-11-05 — in progress: stages 0–10 done.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 11–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
+> **Status 2026-11-05 — in progress: stages 0–11 done.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 12–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
 
 # S1b Shadow triage
 
@@ -130,7 +130,7 @@ The main session ticks the step boxes in the stage file and the stage box here.
 - [x] [Stage 8](s1b-shadow-triage/stage-08-triage-repository-lists-with-the-real-synthetic.md) — Triage repository: lists with the real / synthetic filter [risky]
 - [x] [Stage 9](s1b-shadow-triage/stage-09-llm-config-keys.md) — LLM config keys [risky]
 - [x] [Stage 10](s1b-shadow-triage/stage-10-llm-client.md) — LLM client [risky]
-- [ ] [Stage 11](s1b-shadow-triage/stage-11-classifier-and-prompt-v1.md) — Classifier and prompt v1 [risky]
+- [x] [Stage 11](s1b-shadow-triage/stage-11-classifier-and-prompt-v1.md) — Classifier and prompt v1 [risky]
 - [ ] [Stage 12](s1b-shadow-triage/stage-12-eval-case-schema-address-split-and-subset-rule.md) — Eval case schema, address split and subset rule [risky]
 - [ ] [Stage 13](s1b-shadow-triage/stage-13-eval-cases-urgent-and-needs-reply.md) — Eval cases: `urgent` and `needs_reply` [risky]
 - [ ] [Stage 14](s1b-shadow-triage/stage-14-eval-cases-info-and-notification.md) — Eval cases: `info` and `notification` [risky]
@@ -217,3 +217,4 @@ None open (Q26–Q29 answered 2026-11-04).
 - 2026-11-05: Checkpoint 1 group review (stages 3–8, Opus): PASS. Follow-ups written into stage 22, 26 and 33 files and `tasks/planned/s1b-claim-index.md`; `tasks/README.md` re-formatted with prettier.
 - 2026-11-05: Stage 9 done: LLM config keys, `classifierModel`, `TRIAGE_LLM_SCOPE` check (defaults RPM 12, cap 300). Reviewed: PASS (Sonnet).
 - 2026-11-05: Stage 10 done: `platform/llm.ts` (structured call, timeout, rate limiter, typed errors with codes). Reviewed: PASS (Sonnet). Note: `scripts/gemini-check.ts` also imports `@google/genai` (outside the stage).
+- 2026-11-05: Stage 11 done: classifier + prompt `classifier-v1` (nonce data blocks, `<<<`/`>>>` stripped, untrusted-text marking). Reviewed: PASS (Opus, critical). Minors left: weak `toContain(category)` test for `info`; type-only import cycle prompt↔classifier. Implementer rule changed by the user: all implementers run on default Sonnet, no Opus override.

@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 11 — Classifier and prompt v1 [risky]
 
-- [ ] **11.1 Classifier with a marked data block**
+- [x] **11.1 Classifier with a marked data block**
   - Goal: build the classifier prompt from an email, call the LLM, and return a checked `TriageAnalysis`.
   - Files: create `apps/server/src/modules/triage/prompts/classifier-v1.ts`, `apps/server/src/modules/triage/classifier.ts`, `apps/server/src/modules/triage/classifier.test.ts`; export `classifyEmail` and its types from `triage/index.ts`.
   - Interfaces:

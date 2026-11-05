@@ -1,3 +1,5 @@
+export { classifyEmail } from "./classifier";
+export type { ClassifierEmail, SenderContext } from "./classifier";
 export {
   insertFeedback,
   insertTriageResult,
