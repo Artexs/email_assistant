@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 23 — Triage job: stop on a pause, release on a mailbox error [risky]
 
-- [ ] **23.1 Pause stop, release of untried mail, per-mailbox error handling**
+- [x] **23.1 Pause stop, release of untried mail, per-mailbox error handling**
   - Goal: the job stops the whole run when the LLM client pauses, and one mailbox error never stops the others and never leaves a mail in a retry loop.
   - Files: change `apps/server/src/modules/triage/jobs.ts`; extend `apps/server/test/integration/triage-job.test.ts`.
   - Interfaces: none new (`finishTriageError` from step 21.1).

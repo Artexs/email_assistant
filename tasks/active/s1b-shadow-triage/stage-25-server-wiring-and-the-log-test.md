@@ -22,3 +22,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 ## Added at stage 22 review
 
 - A stale take-back now counts one attempt (stage 22). A restart while a batch runs would count an attempt for every claimed mail not yet tried (up to `batchSize`). In `main.ts`, on SIGTERM / SIGINT, let the running batch finish, or release untried claimed mail with `countAttempt: false`. Decide with the implementer and add a test or a note in the log.
+
+## Added at stage 23 review
+
+- `recoverFromError` in `jobs.ts` has a pause branch (a soft/config error whose release failed) without its own test. Add one if stage 25 touches the job: soft error trips the pause, `releaseEmail` fails once, a mail at `attempts` 2 must stay out of `unsure`.
