@@ -1,0 +1,61 @@
+import { z } from "zod";
+
+import { senderRuleKinds } from "./rules";
+
+// The receivedAt of every eval case. "Today" in a case text is 2026-11-02 (a Monday).
+export const EVAL_RECEIVED_AT = new Date("2026-11-02T09:00:00Z");
+
+export const evalCaseSchema = z.object({
+  id: z.string().regex(/^[a-z0-9-]+$/),
+  kind: z.enum(["synthetic", "injection"]),
+  lang: z.enum(["pl", "en"]),
+  from: z.string(),
+  to: z.array(z.string()).min(1),
+  cc: z.array(z.string()).default([]),
+  subject: z.string(),
+  body: z.string(),
+  thread: z.array(z.object({ from: z.string(), subject: z.string(), body: z.string() })).default([]),
+  senderRules: z.array(z.object({ pattern: z.string(), kind: z.enum(senderRuleKinds) })).default([]),
+  expected: z.object({ category: z.enum(["urgent", "needs_reply", "info", "notification", "spam"]) }),
+  note: z.string().optional(),
+});
+
+export type EvalCase = z.infer<typeof evalCaseSchema>;
+
+function byId(a: EvalCase, b: EvalCase): number {
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
+
+function hasKind(evalCase: EvalCase, kinds: readonly string[]): boolean {
+  return evalCase.senderRules.some((rule) => kinds.includes(rule.kind));
+}
+
+// Priority: (1) first whitelist/vip case, (2) first blocklist-only case, (3) cases without rules, (4) the rest.
+function prioritize(cases: readonly EvalCase[]): EvalCase[] {
+  const sorted = [...cases].sort(byId);
+  const first = sorted.find((c) => hasKind(c, ["whitelist", "vip"]));
+  const second = sorted.find((c) => hasKind(c, ["blocklist"]) && !hasKind(c, ["whitelist", "vip"]));
+  const picked = new Set([first, second]);
+  const noRules = sorted.filter((c) => !picked.has(c) && c.senderRules.length === 0);
+  const rest = sorted.filter((c) => !picked.has(c) && c.senderRules.length > 0);
+  return [first, second, ...noRules, ...rest].filter((c): c is EvalCase => c !== undefined);
+}
+
+export function selectCases(cases: readonly EvalCase[], opts: { perCategory?: number }): EvalCase[] {
+  const n = opts.perCategory;
+  if (n === undefined) return [...cases].sort(byId);
+
+  const selected: EvalCase[] = [];
+  const synthetic = cases.filter((c) => c.kind === "synthetic");
+  const categories = new Set(synthetic.map((c) => c.expected.category));
+  for (const category of categories) {
+    selected.push(...prioritize(synthetic.filter((c) => c.expected.category === category)).slice(0, n));
+  }
+  selected.push(
+    ...cases
+      .filter((c) => c.kind === "injection")
+      .sort(byId)
+      .slice(0, n)
+  );
+  return selected.sort(byId);
+}

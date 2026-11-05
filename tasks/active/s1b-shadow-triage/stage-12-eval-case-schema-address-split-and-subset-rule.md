@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 12 — Eval case schema, address split and subset rule [risky]
 
-- [ ] **12.1 Case schema, `splitAddress`, `selectCases`, empty case files with structural checks**
+- [x] **12.1 Case schema, `splitAddress`, `selectCases`, empty case files with structural checks**
   - Goal: the case schema, one address split rule for the eval runner and the seed script, one rule that picks the same subset every time, and the case files with their structural test (cases come in stages 13–15).
   - Files: create `packages/core/src/triage/eval-case.ts` (Zod schema, `EVAL_RECEIVED_AT`, `selectCases`), `packages/core/src/triage/address.ts` (`splitAddress`), `packages/core/src/triage/eval-case.test.ts`, `packages/core/src/triage/address.test.ts`; export all from `packages/core/src/triage/index.ts`; create `evals/README.md`, `evals/cases/synthetic.json` (content `[]`), `evals/cases/injection.json` (content `[]`), `apps/server/src/modules/triage/eval-cases.test.ts`.
   - Interfaces:
