@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 10 — LLM client [risky]
 
-- [ ] **10.1 `platform/llm.ts`: simple structured call, timeout, rate limiter, error classes with codes**
+- [x] **10.1 `platform/llm.ts`: simple structured call, timeout, rate limiter, error classes with codes**
   - Goal: one wrapper for Gemini that returns Zod-checked data and turns each failure into a typed error with a machine code.
   - Files: create `apps/server/src/platform/llm.ts`, `apps/server/src/platform/llm.test.ts`.
   - Interfaces:
