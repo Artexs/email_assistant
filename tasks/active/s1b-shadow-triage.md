@@ -1,4 +1,4 @@
-> **Status 2026-11-05 — in progress: stages 0–5 done.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 6–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
+> **Status 2026-11-05 — in progress: stages 0–6 done.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 7–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
 
 # S1b Shadow triage
 
@@ -125,7 +125,7 @@ The main session ticks the step boxes in the stage file and the stage box here.
 - [x] [Stage 3](s1b-shadow-triage/stage-03-s1b-tables-migration.md) — S1b tables migration [risky]
 - [x] [Stage 4](s1b-shadow-triage/stage-04-email-claim-and-release-queries.md) — Email claim and release queries [risky]
 - [x] [Stage 5](s1b-shadow-triage/stage-05-sender-rule-and-audit-repositories.md) — Sender rule and audit repositories [risky]
-- [ ] [Stage 6](s1b-shadow-triage/stage-06-actions-repository.md) — Actions repository [risky]
+- [x] [Stage 6](s1b-shadow-triage/stage-06-actions-repository.md) — Actions repository [risky]
 - [ ] [Stage 7](s1b-shadow-triage/stage-07-triage-repository-writes.md) — Triage repository: writes [risky]
 - [ ] [Stage 8](s1b-shadow-triage/stage-08-triage-repository-lists-with-the-real-synthetic.md) — Triage repository: lists with the real / synthetic filter [risky]
 - [ ] [Stage 9](s1b-shadow-triage/stage-09-llm-config-keys.md) — LLM config keys [risky]
@@ -211,3 +211,4 @@ None open (Q26–Q29 answered 2026-11-04).
 - 2026-11-05: Stage 3 done: migration `20261104000001_triage.sql` (5 tables, `emails.backfilled_at`, append-only `audit_log`). Review fix: `actions.depends_on_action_id` / `reverses_action_id` are composite FKs with `org_id` (deviation from the plan text, stage file updated). Reviewed: PASS (Opus, 2 rounds). Also commits the user's review-model edits (README table row, task head).
 - 2026-11-05: Stage 4 done: claim/release/finish/thread-context queries for emails (`FOR UPDATE SKIP LOCKED` CTE, `locked_at` token), `insertTestEmail`, synthetic Message-ID helpers. Reviewed: PASS (Opus). Accepted risk (reviewer question): a stale `processing` row re-claimed after a hard crash does not count an attempt, so a mail that kills the process each time is retried every 5 min; the daily LLM cap bounds cost. Stage 22 may count the attempt on stale re-claim.
 - 2026-11-05: Stage 5 done: `listSenderRules`, `insertSenderRule`, audit module (`recordAudit`, `countLlmCallsSince`, `auditEvents`), two-tenant tests. Reviewed: PASS (Sonnet).
+- 2026-11-05: Stage 6 done: actions repository (`createPlanned`, `listActionsForEmail`, `listSummaries`), tenant tests. Reviewed: PASS (Sonnet). Accepted minors: rows of one plan share `created_at`, so their order is by uuid; `listSummaries` has no ORDER BY (one summary per email by idempotency key).

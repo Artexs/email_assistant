@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 6 — Actions repository [risky]
 
-- [ ] **6.1 `createPlanned`, `listActionsForEmail`, `listSummaries`, with `org_id` filters**
+- [x] **6.1 `createPlanned`, `listActionsForEmail`, `listSummaries`, with `org_id` filters**
   - Goal: typed queries for the `actions` table, with idempotent inserts and a tenant filter test.
   - Files: create `apps/server/src/modules/actions/repo.ts`, `apps/server/src/modules/actions/index.ts`; create `apps/server/test/integration/actions-repo.test.ts`.
   - Interfaces (all take `db: Db | Transaction<DB>, ctx: TenantContext` first):
