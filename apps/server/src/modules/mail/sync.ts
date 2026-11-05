@@ -36,6 +36,7 @@ const HOUR_MS = 3_600_000;
 const DAY_MS = 24 * HOUR_MS;
 const INITIAL_WINDOW_MS = DAY_MS;
 const RESCAN_WINDOW_MS = 7 * DAY_MS;
+const BODY_RETENTION_MS = 30 * DAY_MS;
 
 export interface SyncDeps {
   db: Db | Transaction<DB>;
@@ -46,7 +47,7 @@ export interface SyncDeps {
 }
 
 export interface SyncResult {
-  mode: "initial" | "incremental" | "rescan";
+  mode: "initial" | "incremental" | "rescan" | "backfill";
   fetched: number;
   stored: number;
   uidUpdated: number;
@@ -284,6 +285,59 @@ export async function syncMailbox(deps: SyncDeps, ctx: TenantContext, mailboxId:
 
   log.info(
     `sync ${mailboxId} ${result.mode}: fetched ${result.fetched}, stored ${result.stored}, uid updated ${result.uidUpdated}, returned ${result.returned}, skipped own ${result.skippedOwn}, ignored below cursor ${result.ignoredBelowCursor}`
+  );
+  return result;
+}
+
+/**
+ * One-off, read-only fetch of older INBOX mail from `opts.since` on. Stores the missing mails with
+ * `backfilled_at` and never moves the cursor.
+ */
+export async function backfillInbox(
+  deps: SyncDeps,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { since: Date }
+): Promise<SyncResult> {
+  if (opts.since.getTime() < deps.now().getTime() - BODY_RETENTION_MS) {
+    throw new HardError("backfill since is more than 30 days back");
+  }
+  const mailbox = await getMailbox(deps.db, ctx, mailboxId);
+  if (!mailbox) throw new HardError(`mailbox ${mailboxId} not found`);
+  if (mailbox.uidvalidity === null) throw new HardError("mailbox was never synced: run the sync first");
+
+  const status = await deps.provider.inboxStatus();
+  if (status.uidValidity !== mailbox.uidvalidity) {
+    throw new SoftError("UIDVALIDITY changed: wait for the regular sync to rescan, then run the backfill again");
+  }
+
+  const kept = await fetchSince(deps.provider, opts.since);
+  const result: SyncResult = {
+    mode: "backfill",
+    fetched: kept.length,
+    stored: 0,
+    uidUpdated: 0,
+    returned: 0,
+    skippedOwn: 0,
+    ignoredBelowCursor: 0,
+  };
+
+  const chunkSize = deps.chunkSize ?? DEFAULT_CHUNK_SIZE;
+  const state: RunState = { matched: new Set(), newKeys: new Map() };
+  const start: Cursor = { uidValidity: mailbox.uidvalidity, lastUid: mailbox.last_uid };
+  for (let offset = 0; offset < kept.length; offset += chunkSize) {
+    const chunk = kept.slice(offset, offset + chunkSize);
+    const writes = await planChunk(deps, ctx, mailboxId, chunk, state, result);
+    const backfilledAt = deps.now();
+    for (const write of writes) {
+      if (write.kind === "insert") write.row.backfilled_at = backfilledAt;
+    }
+    // `next` is null: the cursor never moves.
+    await applyChunk(deps, ctx, mailboxId, writes, start, null, result);
+  }
+
+  log.info(
+    `backfill ${mailboxId}: fetched ${result.fetched}, stored ${result.stored}, uid updated ${result.uidUpdated}, returned ${result.returned}, skipped own ${result.skippedOwn}`
   );
   return result;
 }

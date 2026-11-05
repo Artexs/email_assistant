@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 31 — One-off INBOX backfill: `backfillInbox` [risky]
 
-- [ ] **31.1 `backfillInbox` in `mail/sync.ts`**
+- [x] **31.1 `backfillInbox` in `mail/sync.ts`**
   - Goal: a one-off, read-only fetch of older INBOX mail, up to 30 days back, that stores the missing mails with `backfilled_at` and never moves the UID cursor.
   - Files: change `apps/server/src/modules/mail/sync.ts` (new `backfillInbox`; `SyncResult["mode"]` gets `"backfill"`), `apps/server/src/modules/mail/index.ts` (export `backfillInbox`); create `apps/server/test/integration/mail-backfill.test.ts`.
   - Interfaces:

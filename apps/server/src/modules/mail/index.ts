@@ -31,5 +31,5 @@ export {
   SYNTHETIC_MESSAGE_ID_LIKE,
   type SeedMessage,
 } from "./seed";
-export { CursorMovedError, syncMailbox, type SyncDeps, type SyncResult } from "./sync";
+export { backfillInbox, CursorMovedError, syncMailbox, type SyncDeps, type SyncResult } from "./sync";
 export { auditMailbox, seedMailbox, type ToolDeps } from "./tools";
