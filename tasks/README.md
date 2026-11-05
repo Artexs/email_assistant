@@ -39,14 +39,15 @@ Before you pick a task, read its status line. Check `date -u`. Do not start a bl
 ## How to run a slice
 
 Big tasks (the slices S0–S6 in `docs/roadmap.md`) run in a plan → build → review loop in pi.
-Start it with `/skill:run-slice tasks/planned/<name>.md`. The skill (`~/.pi/agent/skills/run-slice/`) holds the full procedure.
+Start it with `/skill:run-task tasks/planned/<name>.md`. The skill (`~/.pi/agent/skills/run-task/`) holds the full procedure.
+Each subagent uses the model of its agent file (`~/.pi/agent/agents/`). A task file can name other models for some stages (example: a "Review model" section); only then the main session sets a model.
 
-| Who                           | Model                                                                                                                                      | Does                                                                                                                                  |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Main session (you talk to it) | Opus                                                                                                                                       | Calls the subagents, checks their work, asks the user, commits each stage                                                             |
-| `planner` subagent            | Opus, medium                                                                                                                               | Adds step detail to the approved stages in `## Plan` (files, interfaces, tests, checks). Never makes the plan                         |
-| `implementer` subagent        | Sonnet, medium (Opus, high for `[risky]` stages)                                                                                           | Builds one step: test first, code, checks. Never commits                                                                              |
-| `reviewer` subagent           | Sonnet, high (Opus, high for critical stages and group reviews; critical = migration, exactly-once, auth/tenant, injection guard, sending) | Reviews one stage, runs the checks, gives PASS or FAIL. Read-only. Group review on Opus at each user checkpoint (else every 5 stages) |
+| Who                           | Model                                                           | Does                                                                                                                          |
+| ----------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Main session (you talk to it) | Opus                                                            | Calls the subagents, checks their work, asks the user, commits each stage                                                     |
+| `planner` subagent            | Opus, medium                                                    | Adds step detail to the approved stages in `## Plan` (files, interfaces, tests, checks). Never makes the plan                 |
+| `implementer` subagent        | Sonnet, medium                                                  | Builds one step: test first, code, checks. Never commits                                                                      |
+| `reviewer` subagent           | Sonnet, high (other models only where the task file names them) | Reviews one stage, runs the checks, gives PASS or FAIL. Read-only. Group review at each user checkpoint (else every 5 stages) |
 
 The subagents are global: `~/.pi/agent/agents/*.md`, via the extension in `~/.pi/agent/extensions/subagent/`.
 
