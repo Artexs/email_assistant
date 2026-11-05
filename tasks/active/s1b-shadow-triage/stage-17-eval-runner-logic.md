@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 17 — Eval runner logic [risky]
 
-- [ ] **17.1 `runEval`: classify every case through the worker's code path**
+- [x] **17.1 `runEval`: classify every case through the worker's code path**
   - Goal: a function that classifies eval cases with a chosen model and returns a report object (no rendering, no CLI).
   - Files: create `apps/server/src/modules/triage/eval.ts`, `apps/server/src/modules/triage/eval.test.ts`; export from `triage/index.ts`.
   - Interfaces:

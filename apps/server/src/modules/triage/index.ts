@@ -17,3 +17,5 @@ export type {
   UnlabeledResult,
   UsageRow,
 } from "./repo";
+export { runEval, toClassifierInput } from "./eval";
+export type { CaseResult, CasesEvalReport, EvalReport, EvalReportBase, RealEvalReport } from "./eval";
