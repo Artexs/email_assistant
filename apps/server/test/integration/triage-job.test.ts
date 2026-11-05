@@ -550,6 +550,61 @@ describe("createTriageJob: pause and errors", () => {
     });
   });
 
+  test("a soft error whose release fails does not end a mail at its last try as triage_error", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const { ctx, mailboxId } = await mailboxWithSettings(trx);
+      const mail = await insertTestEmail(trx, ctx, mailboxId, {
+        message_id_header: "<last@ea-seed.test>",
+        attempts: 2,
+      });
+      // The first `updateTable("emails")` after the arm throws: this is the `releaseEmail` of the soft error.
+      let armed = false;
+      const failingDb = new Proxy(trx, {
+        get(target, prop) {
+          const value: unknown = Reflect.get(target, prop, target);
+          if (typeof value !== "function") return value;
+          if (prop === "updateTable") {
+            return (table: string) => {
+              if (armed) {
+                armed = false;
+                throw new Error("MARKER-RELEASE");
+              }
+              return (value as (t: string) => unknown).call(target, table);
+            };
+          }
+          return value.bind(target);
+        },
+      });
+      const { llm, state } = flakyLlm();
+      state.failWith = new LlmSoftError("http_503", "fake-model");
+      const triage = clockJob(
+        trx,
+        llm,
+        { at: now },
+        {
+          db: failingDb,
+          triageOne: async (...args: Parameters<typeof triageOne>) => {
+            armed = true;
+            return triageOne(...args);
+          },
+        }
+      );
+
+      await triage.run();
+
+      expect(llm.prompts).toHaveLength(1);
+      const row = await emailRow(trx, mail);
+      expect(row.status).not.toBe("triaged");
+      expect(row.attempts).toBe(2);
+      const results = await trx.selectFrom("triage_results").select("id").where("email_id", "=", mail).execute();
+      expect(results).toHaveLength(0);
+      expect(logLines("triage_error save failed")).toHaveLength(0);
+      expect(logLines("failed:")).toHaveLength(1);
+      expect(errorSpy.mock.calls.flat().join(" ")).not.toContain("MARKER-");
+    });
+  });
+
   test("a paused client at the start of run() claims nothing and logs nothing", async () => {
     await withRollback(db, async (trx) => {
       await pauseOtherMailboxes(trx);

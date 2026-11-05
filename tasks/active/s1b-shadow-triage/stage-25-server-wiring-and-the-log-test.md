@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 25 — Server wiring and the log test [risky]
 
-- [ ] **25.1 `main.ts` scope switch, scheduler entry, no mail text in logs**
+- [x] **25.1 `main.ts` scope switch, scheduler entry, no mail text in logs**
   - Goal: the worker runs only when the switch allows it, and no log line carries mail text, a summary, an error message or a key.
   - Files: change `apps/server/src/main.ts`; create `apps/server/test/integration/triage-logs.test.ts`.
   - Interfaces: in `main.ts`, only when `config.TRIAGE_LLM_SCOPE !== "off"`: `const llm = createLlmClient({ apiKey: config.GEMINI_API_KEY, classifierModel: classifierModel(config), timeoutMs: config.GEMINI_TIMEOUT_MS, rpm: config.GEMINI_RPM })`, `const pause = createLlmPause()`, `createTriageJob({ db, llm, pause, scope, batchSize: 5, dailyCap: config.LLM_DAILY_CAP, now: () => new Date() })`, `scheduler.add("triage.worker", "*/15 * * * * *", triage.run)` (croner 6-field pattern).

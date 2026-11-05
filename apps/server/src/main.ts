@@ -1,9 +1,11 @@
 import { createMailSyncJob, openImapProvider } from "./modules/mail";
-import { ConfigError, loadConfig } from "./platform/config";
+import { createLlmPause, createTriageJob, type TriageScope } from "./modules/triage";
+import { classifierModel, ConfigError, loadConfig, type Config } from "./platform/config";
 import { createSecretBox } from "./platform/crypto";
 import { assertAppRole, checkDb, createDb } from "./platform/db";
 import { createHeartbeat } from "./platform/heartbeat";
 import { createApp } from "./platform/http";
+import { createLlmClient } from "./platform/llm";
 import { createLog, setLogLevel } from "./platform/log";
 import { createScheduler } from "./platform/scheduler";
 
@@ -20,6 +22,20 @@ function loadConfigOrExit() {
     }
     process.exit(1);
   }
+}
+
+// null: the worker is off. The config check guarantees the keys that the other scopes need.
+function triageScope(config: Config): TriageScope | null {
+  if (config.TRIAGE_LLM_SCOPE === "off") {
+    log.info("triage worker is off (TRIAGE_LLM_SCOPE=off)");
+    return null;
+  }
+  if (config.TRIAGE_LLM_SCOPE === "synthetic") {
+    log.info("triage takes only synthetic mail (TRIAGE_LLM_SCOPE=synthetic)");
+    return { kind: "synthetic" };
+  }
+  log.warn("triage sends the real mail of the TEST_MAILBOX_ADDRESS mailbox to Gemini (TRIAGE_LLM_SCOPE=all)");
+  return { kind: "all", mailboxAddress: config.TEST_MAILBOX_ADDRESS ?? "" };
 }
 
 const config = loadConfigOrExit();
@@ -53,7 +69,34 @@ if (config.HEARTBEAT_URL === undefined) log.warn("HEARTBEAT_URL is not set: the 
 const scheduler = createScheduler();
 scheduler.add("mail.sync", "*/5 * * * *", mailSync.run);
 scheduler.add("platform.heartbeat", "*/5 * * * *", heartbeat.tick);
+
+// The run of the triage worker that is going now. Shutdown waits for it.
+let triageRun: Promise<void> = Promise.resolve();
+const scope = triageScope(config);
+if (scope !== null) {
+  const llm = createLlmClient({
+    apiKey: config.GEMINI_API_KEY ?? "",
+    classifierModel: classifierModel(config),
+    timeoutMs: config.GEMINI_TIMEOUT_MS,
+    rpm: config.GEMINI_RPM,
+  });
+  const triage = createTriageJob({
+    db,
+    llm,
+    pause: createLlmPause(),
+    scope,
+    batchSize: 5,
+    dailyCap: config.LLM_DAILY_CAP,
+    now: () => new Date(),
+  });
+  scheduler.add("triage.worker", "*/15 * * * * *", () => {
+    triageRun = triage.run();
+    return triageRun;
+  });
+}
 void heartbeat.tick();
+
+const SHUTDOWN_WAIT_MS = 30_000;
 
 let stopping = false;
 
@@ -61,6 +104,11 @@ async function shutdown(): Promise<void> {
   if (stopping) return;
   stopping = true;
   scheduler.stop();
+  // A kill in the middle of a batch makes the next start count an attempt for each claimed mail. Wait for the batch, but not for ever.
+  await Promise.race([
+    triageRun.catch(() => undefined),
+    new Promise<void>((resolve) => setTimeout(resolve, SHUTDOWN_WAIT_MS)),
+  ]);
   await server.stop();
   await db.destroy();
   process.exit(0);

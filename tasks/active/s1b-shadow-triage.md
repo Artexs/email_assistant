@@ -1,4 +1,4 @@
-> **Status 2026-11-05 — in progress: stages 0–24 done.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 25–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
+> **Status 2026-11-05 — in progress: stages 0–25 done.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 26–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
 
 # S1b Shadow triage
 
@@ -144,7 +144,7 @@ The main session ticks the step boxes in the stage file and the stage box here.
 - [x] [Stage 22](s1b-shadow-triage/stage-22-triage-job-mailboxes-scope-settings-claim.md) — Triage job: mailboxes, scope, settings, claim [risky]
 - [x] [Stage 23](s1b-shadow-triage/stage-23-triage-job-stop-on-a-pause-release-on-a-mailbox.md) — Triage job: stop on a pause, release on a mailbox error [risky]
 - [x] [Stage 24](s1b-shadow-triage/stage-24-cost-gates-7-day-rule-with-the-backfill-waiver-d.md) — Cost gates: 7-day rule with the backfill waiver, daily cap [risky]
-- [ ] [Stage 25](s1b-shadow-triage/stage-25-server-wiring-and-the-log-test.md) — Server wiring and the log test [risky]
+- [x] [Stage 25](s1b-shadow-triage/stage-25-server-wiring-and-the-log-test.md) — Server wiring and the log test [risky]
 - [ ] [Stage 26](s1b-shadow-triage/stage-26-feedback-and-labeling-cli.md) — Feedback and labeling CLI
 - [ ] [Stage 27](s1b-shadow-triage/stage-27-rules-cli-and-cost-report.md) — Rules CLI and cost report
 - [ ] [Stage 28](s1b-shadow-triage/stage-28-real-label-eval.md) — Real-label eval [risky]
@@ -231,3 +231,4 @@ None open (Q26–Q29 answered 2026-11-04).
 - 2026-11-05: Stage 22 done: `createTriageJob` (scope, settings, claim loop), `pauseOtherMailboxes`. Checkpoint 1 decision: `claimEmails` counts one attempt on a stale take-back; the job ends a mail with `attempts >= 3` as `unsure` / `triage_error` without an LLM call (`HARD_ERROR_TRIES`). Unit 384 pass, int 164 pass. Reviewed: PASS (Opus; round 1 FAIL for the missing guard). Follow-ups: stage 25 (SIGTERM and untried claimed mail), stage 35 (docs text).
 - 2026-11-05: Stage 23 done: pause stop, release of untried mail, per-mailbox error handling in `createTriageJob`. Unit 384 pass, int 173 pass. Reviewed: PASS (Opus; fix round for release robustness and pause branches). One untested branch noted in the stage 25 file.
 - 2026-11-05: Stage 24 done: `too_old` skip (7-day rule, waiver for `backfilled_at`), daily cap per Los Angeles day (`quota-day.ts`), one `warn` per mailbox per quota day. Unit 388 pass, int 180 pass. Reviewed: PASS (Sonnet). `main.ts` (stage 25) must pass `dailyCap: config.LLM_DAILY_CAP`.
+- 2026-11-05: Stage 25 done: `main.ts` scope switch (`off` builds nothing; `synthetic`, `all`), `triage.worker` every 15 s, shutdown waits up to 30 s for a running batch, log test with 9 markers (`triage-logs.test.ts`). Server on the Mac starts with "triage worker is off". Unit 388 pass, int 182 pass. Reviewed: PASS (Sonnet). Decision on shutdown: a batch cut off after 30 s leaves untried mail claimed; the next start counts one attempt each (accepted, 3 tries per mail). Checkpoint 3 reached; group review next.
