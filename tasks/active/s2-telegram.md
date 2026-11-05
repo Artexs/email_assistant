@@ -1,4 +1,4 @@
-> **Status 2026-11-05 — in progress.** The plan is written (24 stages, one file per stage) and waits for the user's approval. Left: the build of stages 0–23 (stage 0 starts with the user's BotFather step), then the done-checklist.
+> **Status 2026-11-05 — in progress.** The plan is approved by the user (commit 6773a42). Left: the build of stages 0–23 (stage 0 starts with the user's BotFather step), then the done-checklist.
 
 # S2 Telegram
 
@@ -147,7 +147,7 @@ _Not yet._
 
 ## Questions for the user
 
-The plan uses a default for each question; the build can start without an answer. An answer changes the named stage.
+Answered 2026-11-05: the user approved the plan as written, so each question keeps the plan default (1 lines for other mail: yes; 2 the D3 exception: yes; 3 `mailbox:password` in S2: yes; 4 the LLM pause notice: no follow-up file; 5 the VPS deploy time: the user decides at checkpoint 4). A later answer changes the named stage.
 
 1. **P2, a change from the handoff proposal:** the digest also gives lines (with ✅ / ✏️) to `info`, `notification` and `spam` mail while there is room in the 15 lines, not only counts. Why: S3 needs labels of exactly these categories. Keep it? (Stage 4.)
 2. **D3:** an unlinked chat gets no reply, except `/start` with a link that exists but is used or expired (a short "ask for a new link" reply). Unknown links get no reply. Keep the exception, or no reply at all? (Stage 14.)
@@ -168,3 +168,4 @@ The plan uses a default for each question; the build can start without an answer
 - 2026-11-02: Changed after the cold review (`tasks/done/mvp-plan-review.md`) and the user's answers (IMAP, home VPS, own Postgres).
 - 2026-11-05: Moved to `active/`. The main session writes the full file-level plan (handoff `~/.pi/agent/notes/2026-11-05-handoff-s2-telegram-plan.md`). Checked the handoff "Current state" against the code: no difference.
 - 2026-11-05: Plan written: 24 stages (0–23), one file per stage in `s2-telegram/`; 17 stages `[risky]`. Facts checked: grammY 1.46.0 source and a local probe (Bun 1.4.4, fake Bot API), Bot API pages, `pg` types of `time[]` and `bigint`. Product defaults P1–P6 and design decisions D1–D19 are under "Input"; 5 questions for the user. `bunx prettier --check` passes on all plan files.
+- 2026-11-05: The user approved the plan ("Okay"). The 5 questions keep the defaults (see "Questions for the user"). Next: a build session with `/skill:run-task tasks/active/s2-telegram.md`, starting at stage 0.
