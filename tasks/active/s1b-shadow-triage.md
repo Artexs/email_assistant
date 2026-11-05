@@ -1,4 +1,4 @@
-> **Status 2026-11-05 — in progress: stages 0–7 done.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 8–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
+> **Status 2026-11-05 — in progress: stages 0–8 done.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stages 9–40, with 4 user checkpoints (after 8, 18, 25; before 37). Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z and the S1a 48-hour audit check.
 
 # S1b Shadow triage
 
@@ -127,7 +127,7 @@ The main session ticks the step boxes in the stage file and the stage box here.
 - [x] [Stage 5](s1b-shadow-triage/stage-05-sender-rule-and-audit-repositories.md) — Sender rule and audit repositories [risky]
 - [x] [Stage 6](s1b-shadow-triage/stage-06-actions-repository.md) — Actions repository [risky]
 - [x] [Stage 7](s1b-shadow-triage/stage-07-triage-repository-writes.md) — Triage repository: writes [risky]
-- [ ] [Stage 8](s1b-shadow-triage/stage-08-triage-repository-lists-with-the-real-synthetic.md) — Triage repository: lists with the real / synthetic filter [risky]
+- [x] [Stage 8](s1b-shadow-triage/stage-08-triage-repository-lists-with-the-real-synthetic.md) — Triage repository: lists with the real / synthetic filter [risky]
 - [ ] [Stage 9](s1b-shadow-triage/stage-09-llm-config-keys.md) — LLM config keys [risky]
 - [ ] [Stage 10](s1b-shadow-triage/stage-10-llm-client.md) — LLM client [risky]
 - [ ] [Stage 11](s1b-shadow-triage/stage-11-classifier-and-prompt-v1.md) — Classifier and prompt v1 [risky]
@@ -213,3 +213,4 @@ None open (Q26–Q29 answered 2026-11-04).
 - 2026-11-05: Stage 5 done: `listSenderRules`, `insertSenderRule`, audit module (`recordAudit`, `countLlmCallsSince`, `auditEvents`), two-tenant tests. Reviewed: PASS (Sonnet).
 - 2026-11-05: Stage 6 done: actions repository (`createPlanned`, `listActionsForEmail`, `listSummaries`), tenant tests. Reviewed: PASS (Sonnet). Accepted minors: rows of one plan share `created_at`, so their order is by uuid; `listSummaries` has no ORDER BY (one summary per email by idempotency key).
 - 2026-11-05: Stage 7 done: triage repository writes (`insertTriageResult`, `latestTriageResult`, `insertFeedback`), tenant and FK tests. Reviewed: PASS (Sonnet).
+- 2026-11-05: Stage 8 done: `listUnlabeled`, `listLabeledResults`, `listUsageSince` with the real/synthetic filter. Reviewed: PASS (Sonnet). Checkpoint 1 reached.

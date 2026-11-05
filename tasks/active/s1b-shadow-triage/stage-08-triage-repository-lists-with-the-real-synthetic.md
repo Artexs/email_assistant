@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 8 — Triage repository: lists with the real / synthetic filter [risky]
 
-- [ ] **8.1 `listUnlabeled`, `listLabeledResults`, `listUsageSince`**
+- [x] **8.1 `listUnlabeled`, `listLabeledResults`, `listUsageSince`**
   - Goal: list queries for labeling, the real-label eval and the cost report; real-mail lists never include synthetic mail.
   - Files: change `apps/server/src/modules/triage/repo.ts`, `apps/server/src/modules/triage/index.ts`; extend `apps/server/test/integration/triage-repo.test.ts`.
   - Interfaces (all take `db: Db | Transaction<DB>, ctx: TenantContext` first):

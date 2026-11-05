@@ -1,9 +1,12 @@
 import { categorySchema, type Category, type FeedbackSource } from "@ea/core";
-import type { Transaction } from "kysely";
+import { expressionBuilder, type Expression, type NotNull, type SqlBool, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
+import { SYNTHETIC_MESSAGE_ID_LIKE } from "../mail";
 
 type DbOrTrx = Db | Transaction<DB>;
+
+export type MailKind = "real" | "synthetic";
 
 export interface TriageResultInput {
   emailId: string;
@@ -27,6 +30,36 @@ export interface LatestTriageResult {
   reason_code: string;
   model: string | null;
   fields: unknown;
+}
+
+export interface UnlabeledResult {
+  email_id: string;
+  received_at: Date;
+  from_address: string | null;
+  subject: string | null;
+  category: Category;
+  confidence: number;
+  reason_code: string;
+  fields: unknown;
+}
+
+export interface LabeledResult {
+  email_id: string;
+  category: Category;
+  confidence: number;
+  reason_code: string;
+  model: string | null;
+  fields: unknown;
+  verdict: "right" | "wrong";
+  true_category: Category | null;
+}
+
+export interface UsageRow {
+  model: string;
+  tokens_in: number | null;
+  tokens_out: number | null;
+  latency_ms: number | null;
+  created_at: Date;
 }
 
 export interface FeedbackInput {
@@ -96,4 +129,170 @@ export async function insertFeedback(db: DbOrTrx, ctx: TenantContext, row: Feedb
     .returning("id")
     .executeTakeFirstOrThrow();
   return inserted.id;
+}
+
+// Filter on the joined `emails` row: real mail is every row without a synthetic Message-ID (also NULL).
+function mailFilter(mail: MailKind): Expression<SqlBool> {
+  const eb = expressionBuilder<DB, "emails">();
+  if (mail === "synthetic") {
+    return eb("emails.message_id_header", "ilike", SYNTHETIC_MESSAGE_ID_LIKE);
+  }
+  return eb.or([
+    eb("emails.message_id_header", "is", null),
+    eb("emails.message_id_header", "not ilike", SYNTHETIC_MESSAGE_ID_LIKE),
+  ]);
+}
+
+function parseVerdict(verdict: string): "right" | "wrong" {
+  if (verdict === "right" || verdict === "wrong") {
+    return verdict;
+  }
+  throw new Error(`unknown feedback verdict: ${verdict}`);
+}
+
+// The latest result per email with no feedback row, newest mail first.
+export async function listUnlabeled(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { limit: number; mail: MailKind }
+): Promise<UnlabeledResult[]> {
+  const rows = await db
+    .selectFrom((qb) =>
+      qb
+        .selectFrom("triage_results")
+        .innerJoin("emails", (join) =>
+          join.onRef("emails.id", "=", "triage_results.email_id").onRef("emails.org_id", "=", "triage_results.org_id")
+        )
+        .distinctOn("triage_results.email_id")
+        .select([
+          "triage_results.email_id",
+          "emails.received_at",
+          "emails.from_address",
+          "emails.subject",
+          "triage_results.category",
+          "triage_results.confidence",
+          "triage_results.reason_code",
+          "triage_results.fields",
+        ])
+        .where("triage_results.org_id", "=", ctx.orgId)
+        .where("emails.org_id", "=", ctx.orgId)
+        .where("emails.mailbox_id", "=", mailboxId)
+        .where(mailFilter(opts.mail))
+        .where(({ not, exists, selectFrom }) =>
+          not(
+            exists(
+              selectFrom("triage_feedback")
+                .select("triage_feedback.id")
+                .whereRef("triage_feedback.email_id", "=", "triage_results.email_id")
+                .where("triage_feedback.org_id", "=", ctx.orgId)
+            )
+          )
+        )
+        .orderBy("triage_results.email_id")
+        .orderBy("triage_results.created_at", "desc")
+        .orderBy("triage_results.id", "desc")
+        .as("latest")
+    )
+    .selectAll()
+    .orderBy("received_at", "desc")
+    .orderBy("email_id", "desc")
+    .limit(opts.limit)
+    .execute();
+  return rows.map((row) => ({ ...row, category: categorySchema.parse(row.category) }));
+}
+
+// The latest result and the latest feedback per email, for emails that have both.
+export async function listLabeledResults(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { mail: MailKind }
+): Promise<LabeledResult[]> {
+  const rows = await db
+    .with("latest_result", (qb) =>
+      qb
+        .selectFrom("triage_results")
+        .innerJoin("emails", (join) =>
+          join.onRef("emails.id", "=", "triage_results.email_id").onRef("emails.org_id", "=", "triage_results.org_id")
+        )
+        .distinctOn("triage_results.email_id")
+        .select([
+          "triage_results.email_id",
+          "triage_results.category",
+          "triage_results.confidence",
+          "triage_results.reason_code",
+          "triage_results.model",
+          "triage_results.fields",
+        ])
+        .where("triage_results.org_id", "=", ctx.orgId)
+        .where("emails.org_id", "=", ctx.orgId)
+        .where("emails.mailbox_id", "=", mailboxId)
+        .where(mailFilter(opts.mail))
+        .orderBy("triage_results.email_id")
+        .orderBy("triage_results.created_at", "desc")
+        .orderBy("triage_results.id", "desc")
+    )
+    .with("latest_feedback", (qb) =>
+      qb
+        .selectFrom("triage_feedback")
+        .distinctOn("triage_feedback.email_id")
+        .select(["triage_feedback.email_id", "triage_feedback.verdict", "triage_feedback.true_category"])
+        .where("triage_feedback.org_id", "=", ctx.orgId)
+        .orderBy("triage_feedback.email_id")
+        .orderBy("triage_feedback.created_at", "desc")
+        .orderBy("triage_feedback.id", "desc")
+    )
+    .selectFrom("latest_result")
+    .innerJoin("latest_feedback", "latest_feedback.email_id", "latest_result.email_id")
+    .select([
+      "latest_result.email_id",
+      "latest_result.category",
+      "latest_result.confidence",
+      "latest_result.reason_code",
+      "latest_result.model",
+      "latest_result.fields",
+      "latest_feedback.verdict",
+      "latest_feedback.true_category",
+    ])
+    .orderBy("latest_result.email_id")
+    .execute();
+  return rows.map((row) => ({
+    ...row,
+    category: categorySchema.parse(row.category),
+    verdict: parseVerdict(row.verdict),
+    true_category: row.true_category === null ? null : categorySchema.parse(row.true_category),
+  }));
+}
+
+// Rows with a model (LLM results) created at or after `since`, oldest first.
+export async function listUsageSince(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  since: Date,
+  opts: { mail: MailKind }
+): Promise<UsageRow[]> {
+  return db
+    .selectFrom("triage_results")
+    .innerJoin("emails", (join) =>
+      join.onRef("emails.id", "=", "triage_results.email_id").onRef("emails.org_id", "=", "triage_results.org_id")
+    )
+    .select([
+      "triage_results.model",
+      "triage_results.tokens_in",
+      "triage_results.tokens_out",
+      "triage_results.latency_ms",
+      "triage_results.created_at",
+    ])
+    .where("triage_results.org_id", "=", ctx.orgId)
+    .where("emails.org_id", "=", ctx.orgId)
+    .where("emails.mailbox_id", "=", mailboxId)
+    .where("triage_results.model", "is not", null)
+    .where("triage_results.created_at", ">=", since)
+    .where(mailFilter(opts.mail))
+    .orderBy("triage_results.created_at")
+    .orderBy("triage_results.id")
+    .$narrowType<{ model: NotNull }>()
+    .execute();
 }
