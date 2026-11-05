@@ -1,0 +1,159 @@
+import { categories, type Category } from "./categories";
+
+export interface Prediction {
+  expected: Category | null;
+  predicted: Category;
+  modelCategory: Category;
+  confidence: number;
+  source: "llm" | "rule" | "error";
+  // Feedback said "wrong" with no true category.
+  wrongOnly?: boolean;
+}
+
+export interface CategoryMetrics {
+  tp: number;
+  fp: number;
+  fn: number;
+  support: number;
+  precision: number | null;
+  recall: number | null;
+}
+
+export const THRESHOLDS = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95];
+
+export const barCategories = ["urgent", "needs_reply", "info", "notification", "spam"] as const;
+export type BarCategory = (typeof barCategories)[number];
+
+export interface SweepPoint {
+  threshold: number;
+  precision: number | null;
+  recall: number | null;
+  kept: number;
+}
+
+export type GoDecision = "go" | "no-go" | "no-go: too few";
+
+export interface GoNoGoRow {
+  threshold: number | null;
+  precision: number | null;
+  recall: number | null;
+  kept: number;
+  decision: GoDecision;
+}
+
+const DEFAULT_BAR = 0.98;
+const DEFAULT_MIN_KEPT = 30;
+
+const ratio = (part: number, whole: number): number | null => (whole === 0 ? null : part / whole);
+
+const llmRows = (rows: Prediction[]): Prediction[] => rows.filter((row) => row.source === "llm");
+
+// A row whose true category is unknown and that has no "wrong" verdict says nothing about quality.
+const hasTruth = (row: Prediction): boolean => row.expected !== null || row.wrongOnly === true;
+
+export function computeMetrics(rows: Prediction[]): Record<Category, CategoryMetrics> {
+  const result = {} as Record<Category, CategoryMetrics>;
+  const known = llmRows(rows).filter(hasTruth);
+  for (const category of categories) {
+    let tp = 0;
+    let fp = 0;
+    let fn = 0;
+    let support = 0;
+    for (const row of known) {
+      if (row.expected === category) {
+        support += 1;
+        if (row.predicted === category) tp += 1;
+        else fn += 1;
+      } else if (row.predicted === category && category !== "unsure") {
+        fp += 1;
+      }
+    }
+    result[category] = { tp, fp, fn, support, precision: ratio(tp, tp + fp), recall: ratio(tp, tp + fn) };
+  }
+  return result;
+}
+
+export function confusionMatrix(rows: Prediction[]): Record<Category, Record<Category, number>> {
+  const matrix = {} as Record<Category, Record<Category, number>>;
+  for (const expected of categories) {
+    matrix[expected] = {} as Record<Category, number>;
+    for (const predicted of categories) matrix[expected][predicted] = 0;
+  }
+  for (const row of llmRows(rows)) {
+    if (row.expected !== null) matrix[row.expected][row.predicted] += 1;
+  }
+  return matrix;
+}
+
+export function thresholdSweep(rows: Prediction[], category: Category, thresholds = THRESHOLDS): SweepPoint[] {
+  const llm = llmRows(rows);
+  const expectedCount = llm.filter((row) => row.expected === category).length;
+  return thresholds.map((threshold) => {
+    const kept = llm.filter((row) => row.modelCategory === category && row.confidence >= threshold && hasTruth(row));
+    const tp = kept.filter((row) => row.expected === category).length;
+    return { threshold, precision: ratio(tp, kept.length), recall: ratio(tp, expectedCount), kept: kept.length };
+  });
+}
+
+export function goNoGo(
+  rows: Prediction[],
+  opts: { bar?: number; minKept?: number } = {}
+): Record<BarCategory, GoNoGoRow> {
+  const bar = opts.bar ?? DEFAULT_BAR;
+  const minKept = opts.minKept ?? DEFAULT_MIN_KEPT;
+  const result = {} as Record<BarCategory, GoNoGoRow>;
+  for (const category of barCategories) {
+    const sweep = thresholdSweep(rows, category);
+    const eligible = sweep.filter((point) => point.kept >= minKept);
+    const first = eligible[0];
+    if (!first) {
+      const lowest = sweep[0] as SweepPoint;
+      result[category] = { ...lowest, threshold: null, decision: "no-go: too few" };
+      continue;
+    }
+    const passing = eligible.find((point) => point.precision !== null && point.precision >= bar);
+    if (passing) {
+      result[category] = { ...passing, decision: "go" };
+    } else {
+      result[category] = { ...first, threshold: null, decision: "no-go" };
+    }
+  }
+  return result;
+}
+
+export function ruleSummary(rows: Prediction[]): {
+  rule: { total: number; right: number; wrong: number };
+  error: { total: number };
+} {
+  const rule = { total: 0, right: 0, wrong: 0 };
+  let errors = 0;
+  for (const row of rows) {
+    if (row.source === "error") errors += 1;
+    if (row.source !== "rule") continue;
+    rule.total += 1;
+    if (row.expected !== null && row.expected === row.predicted) rule.right += 1;
+    else if (row.wrongOnly === true || (row.expected !== null && row.expected !== row.predicted)) rule.wrong += 1;
+  }
+  return { rule, error: { total: errors } };
+}
+
+const bucketLabels = ["0.00–0.49", "0.50–0.59", "0.60–0.69", "0.70–0.79", "0.80–0.89", "0.90–0.94", "0.95–1.00"];
+const bucketStarts = [0, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95];
+
+export function confidenceHistogram(
+  rows: Prediction[],
+  category: Category
+): { bucket: string; total: number; correct: number }[] {
+  const buckets = bucketLabels.map((bucket) => ({ bucket, total: 0, correct: 0 }));
+  for (const row of llmRows(rows)) {
+    if (row.modelCategory !== category) continue;
+    let index = 0;
+    bucketStarts.forEach((start, i) => {
+      if (row.confidence >= start) index = i;
+    });
+    const entry = buckets[index] as { bucket: string; total: number; correct: number };
+    entry.total += 1;
+    if (row.expected === category) entry.correct += 1;
+  }
+  return buckets;
+}

@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 16 — Eval metrics and go/no-go [risky]
 
-- [ ] **16.1 Pure metrics, threshold sweep, go/no-go with minimum support, histogram and cost**
+- [x] **16.1 Pure metrics, threshold sweep, go/no-go with minimum support, histogram and cost**
   - Goal: pure functions that turn predictions into precision, recall, thresholds, a go/no-go decision, a confidence histogram and a cost per mail.
   - Files: create `packages/core/src/triage/metrics.ts`, `packages/core/src/triage/cost.ts` and their `*.test.ts`; export from the triage index.
   - Interfaces:
