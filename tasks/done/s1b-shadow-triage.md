@@ -1,4 +1,4 @@
-> **Status 2026-11-05 — in progress: stages 0–35 done, stage 36 day 1 done, checkpoint 4 group review passed; waiting for the user at checkpoint 4.** 41 stages (0–40), one file per stage in `s1b-shadow-triage/`. Left: stage 36 (3.8 Flash comparison on later Pacific days), stages 37–40. Stages 37–40 (VPS) are blocked until 2026-11-05T23:30Z, the S1a 48-hour audit check and the user's checkpoint 4 answers.
+> **Status 2026-11-05 — done (code).** Stages 0–35 and the local fix stage are done and pushed. The real-mail part (stages 36–40, the real-mail done-when items) moved to `tasks/planned/s1b-shadow-run.md` (user decision 2026-11-05). S3 waits for that task.
 
 # S1b Shadow triage
 
@@ -155,11 +155,11 @@ The main session ticks the step boxes in the stage file and the stage box here.
 - [x] [Stage 33](s1b-shadow-triage/stage-33-re-queue-too-old-mail-in-the-backfill-window.md) — Re-queue `too_old` mail in the backfill window [risky]
 - [x] [Stage 34](s1b-shadow-triage/stage-34-full-flash-lite-eval-run.md) — Full Flash-Lite eval run [risky]
 - [x] [Stage 35](s1b-shadow-triage/stage-35-docs-and-notes.md) — Docs and notes
-- [ ] [Stage 36](s1b-shadow-triage/stage-36-model-comparison-with-gemini-3-8-flash.md) — Model comparison with `gemini-3.8-flash` [risky]
-- [ ] [Stage 37](s1b-shadow-triage/stage-37-vps-deploy-synthetic-smoke-run-real-mail-count.md) — VPS: deploy, synthetic smoke run, real-mail count [risky]
-- [ ] [Stage 38](s1b-shadow-triage/stage-38-vps-real-mail-shadow-week.md) — VPS: real-mail shadow week [risky]
-- [ ] [Stage 39](s1b-shadow-triage/stage-39-vps-backfill-of-older-inbox-mail.md) — VPS: backfill of older INBOX mail [risky]
-- [ ] [Stage 40](s1b-shadow-triage/stage-40-vps-final-real-mail-eval-cost-go-no-go.md) — VPS: final real-mail eval, cost, go/no-go [risky]
+- [Stage 36](../planned/s1b-shadow-run/stage-36-model-comparison-with-gemini-3-8-flash.md) — Model comparison with `gemini-3.8-flash` [risky]
+- [Stage 37](../planned/s1b-shadow-run/stage-37-vps-deploy-synthetic-smoke-run-real-mail-count.md) — VPS: deploy, synthetic smoke run, real-mail count [risky]
+- [Stage 38](../planned/s1b-shadow-run/stage-38-vps-real-mail-shadow-week.md) — VPS: real-mail shadow week [risky]
+- [Stage 39](../planned/s1b-shadow-run/stage-39-vps-backfill-of-older-inbox-mail.md) — VPS: backfill of older INBOX mail [risky]
+- [Stage 40](../planned/s1b-shadow-run/stage-40-vps-final-real-mail-eval-cost-go-no-go.md) — VPS: final real-mail eval, cost, go/no-go [risky]
 
 ### Results (filled in stages 34, 36 and 40)
 
@@ -249,10 +249,10 @@ None open (Q26–Q29 answered 2026-11-04).
 
 ## Done-checklist
 
-- [ ] Done-when checks pass (name the command and its output in the log).
-- [ ] `docs/` describe what was built (architecture, modules, roadmap); related ADRs set to accepted or superseded.
-- [ ] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
-- [ ] Follow-up ideas are in `planned/`.
+- [x] Done-when checks pass for the code items (log 2026-11-05, local fix stage: `lint`, `typecheck` OK; `test:unit` 416 pass; `test:int` 210 pass). The real-mail items moved to `tasks/planned/s1b-shadow-run.md`.
+- [x] `docs/` describe what was built (architecture, modules, roadmap; stage 35); ADR 0013 accepted.
+- [x] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
+- [x] Follow-up ideas are in `planned/` (`s1b-shadow-run`, `s1b-claim-index`, `gemini-billing-budget-alert`).
 
 ## Log
 
@@ -307,3 +307,4 @@ None open (Q26–Q29 answered 2026-11-04).
 - 2026-11-05: Stage 36 day 1 (not complete): `gemini-3.8-flash` subset run exit 2, `http_503` on 3 of 3 tried cases (day 1 of 3 for "not comparable: 503"); `gemini-3.5-flash-lite` subset run exit 0 after 2 resumes (17 of 18, 1 `http_503`; whitelist 4/4, injection 3/3). About 43 Flash-Lite and 6 Flash requests. Model choice unchanged (provisional Flash-Lite). Next: run the 3.8 command again on the next Pacific days. Reviewed: PASS (Sonnet; round 1 FAIL for usage numbers from a partial run, fixed).
 - 2026-11-05: Checkpoint 4 group review (stages 26–36, Opus): PASS, 1 question, 6 minors. Fixed in this commit: scripted `--right` / `--wrong` on an `unsure` row is refused (`recordFeedback`, tests); `PROMPT_VERSION` exported from `triage/index.ts`. Written into stage 37, 40 and `vps-shared.md`: TTY check of `triage:label`, `stop_grace_period` before 37.1.4, `triage:cost` timing, case evals only on the Mac. Questions for the user: network errors (soft or hard), `classifier-v1` for the real week, restarts and `stop_grace_period`, the 20 seeded mails in the pilot INBOX, bar 98% / support 30, the stage 40 cost figure. Unit 412 pass, int 209 pass. Reviewed: PASS (Sonnet).
 - 2026-11-05: Local fix stage (before stage 37): a network failure (status-less `Error` with a socket or DNS code, e.g. `ECONNREFUSED`, `ENOTFOUND`) is now a soft LLM error `network` (pause, no count); a plain `TypeError` stays hard. `stop_grace_period: 45s` on the `server` service. `bun run lint`, `typecheck` OK; `test:unit` 416 pass; `test:int` 210 pass (2 runs). Reviewed: PASS.
+- 2026-11-05: Closed as done (code), user decision. Stages 36–40 and `vps-shared.md` moved with `git mv` to `tasks/planned/s1b-shadow-run/`; the real-mail done-when items (100 labels, one week, cost, go/no-go table, model comparison) are tracked in `tasks/planned/s1b-shadow-run.md`. The "Done when" list above stays as it was, for history.

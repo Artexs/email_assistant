@@ -1,6 +1,6 @@
 # s1b-shadow-triage — VPS stages 37–40: shared setup
 
-Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md).
+Part of [`../s1b-shadow-run.md`](../s1b-shadow-run.md) (moved from S1b on 2026-11-05; "this task file" means that file). "Input" and "Rules for every step" are in [`../../done/s1b-shadow-triage.md`](../../done/s1b-shadow-triage.md).
 
 ## Stages 37–40 — Pilot shadow run on the VPS (blocked until 2026-11-05T23:30Z and the S1a audit check)
 

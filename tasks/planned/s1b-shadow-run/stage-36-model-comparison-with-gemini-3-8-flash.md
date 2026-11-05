@@ -1,6 +1,6 @@
 # s1b-shadow-triage — Stage 36
 
-Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "Input" and "Rules for every step" first.
+Part of [`../s1b-shadow-run.md`](../s1b-shadow-run.md) (moved from S1b on 2026-11-05; "this task file" means that file). "Input" and "Rules for every step" are in [`../../done/s1b-shadow-triage.md`](../../done/s1b-shadow-triage.md). Read them first.
 
 ## Stage 36 — Model comparison with `gemini-3.8-flash` [risky] (runs in parallel with stages 37–40)
 

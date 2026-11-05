@@ -1,6 +1,6 @@
 # s1b-shadow-triage — Stage 39
 
-Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "Input" and "Rules for every step" first.
+Part of [`../s1b-shadow-run.md`](../s1b-shadow-run.md) (moved from S1b on 2026-11-05; "this task file" means that file). "Input" and "Rules for every step" are in [`../../done/s1b-shadow-triage.md`](../../done/s1b-shadow-triage.md). Read them first.
 Shell setup, preconditions and the SQL queries (Q1–QH) are in [`vps-shared.md`](vps-shared.md).
 
 ## Stage 39 — VPS: backfill of older INBOX mail [risky] (only when the week brought fewer than 100 real mails)

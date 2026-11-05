@@ -2,7 +2,7 @@
 
 # Gemini Cloud Billing budget alert
 
-Scope: ADR 0012 ("A Cloud Billing budget alert"), ADR 0013 (pilot on the free tier, user 2026-11-04). Moved out of `tasks/active/s1b-shadow-triage.md` (user answer 3, 2026-11-04): a budget alert cannot exist without billing. Needs: Cloud Billing on for the Google Cloud project of `GEMINI_API_KEY`.
+Scope: ADR 0012 ("A Cloud Billing budget alert"), ADR 0013 (pilot on the free tier, user 2026-11-04). Moved out of `tasks/done/s1b-shadow-triage.md` (user answer 3, 2026-11-04): a budget alert cannot exist without billing. Needs: Cloud Billing on for the Google Cloud project of `GEMINI_API_KEY`.
 
 ## Goal
 

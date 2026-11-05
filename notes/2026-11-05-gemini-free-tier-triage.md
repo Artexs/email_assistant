@@ -1,6 +1,6 @@
 # Gemini free tier for triage (S1b)
 
-Facts for later agents. Sources: ADR 0013, `tasks/active/s1b-shadow-triage.md` (step 0.2, stage 18 and stage 34 logs).
+Facts for later agents. Sources: ADR 0013, `tasks/done/s1b-shadow-triage.md` (step 0.2, stage 18 and stage 34 logs).
 VPS facts (stages 37–40) are not here yet. Append them later.
 
 ## Models tried
