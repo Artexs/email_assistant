@@ -172,6 +172,7 @@ describe("renderEvalReport", () => {
     expect(md99).toContain("fewer than 100 real labels");
     expect(renderEvalReport(realReport({ labeled: 100 }))).not.toContain("fewer than 100 real labels");
     expect(renderEvalReport(realReport({ mail: "synthetic" }))).toContain("synthetic mail, dev check");
+    expect(renderEvalReport(realReport({ labeled: 7, mail: "synthetic" }))).toContain("7 labeled synthetic mails");
     expect(md99).toContain("## Go/no-go");
     expect(md99).toContain("## Confidence histogram");
     expect(md99).toContain("Rule results (blocklist");

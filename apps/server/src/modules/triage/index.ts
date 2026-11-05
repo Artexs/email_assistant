@@ -23,6 +23,7 @@ export type {
 } from "./repo";
 export { runEval, toClassifierInput } from "./eval";
 export type { CaseResult, CasesEvalReport, EvalReport, EvalReportBase, RealEvalReport } from "./eval";
+export { buildRealPredictions, buildRealReport } from "./eval-real";
 export { evalExitCode, renderEvalReport } from "./eval-report";
 export { createLlmPause } from "./pause";
 export type { LlmPause } from "./pause";

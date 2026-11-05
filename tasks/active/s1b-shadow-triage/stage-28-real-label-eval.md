@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 28 — Real-label eval [risky]
 
-- [ ] **28.1 `bun run eval --real`**
+- [x] **28.1 `bun run eval --real`**
   - Goal: precision and recall per category from real labels in the DB, without an LLM call.
   - Files: create `apps/server/src/modules/triage/eval-real.ts`; export from `triage/index.ts`; change `apps/server/src/scripts/eval.ts`; create `apps/server/test/integration/triage-eval-real.test.ts`. `eval-report.ts` needs no change: `renderEvalReport` and `evalExitCode` handle `kind: "real"` since step 18.1.
   - Interfaces:

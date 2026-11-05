@@ -38,7 +38,7 @@ function header(report: EvalReport): string[] {
     case "real":
       return [
         `- date: ${date}`,
-        `- ${report.labeled} labeled real mails`,
+        `- ${report.labeled} labeled ${report.mail === "synthetic" ? "synthetic" : "real"} mails`,
         ...(report.mail === "synthetic" ? ["- synthetic mail, dev check"] : []),
         `- rule results: ${report.ruleSummary.rule.total}`,
         `- errors: ${report.errors}`,
