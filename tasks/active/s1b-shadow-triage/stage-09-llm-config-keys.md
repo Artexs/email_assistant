@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 9 — LLM config keys [risky]
 
-- [ ] **9.1 Config keys and the LLM switch**
+- [x] **9.1 Config keys and the LLM switch**
   - Goal: the server reads the LLM keys and the real-mail switch from env, checked with Zod.
   - Files: change `apps/server/src/platform/config.ts`, `apps/server/src/platform/config.test.ts`, `.env.example`.
   - Interfaces (new keys in `configSchema`):

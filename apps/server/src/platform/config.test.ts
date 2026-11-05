@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 
 import { describe, expect, test } from "bun:test";
 
-import { ConfigError, loadConfig } from "./config";
+import { classifierModel, ConfigError, loadConfig } from "./config";
 
 const fullEnv = {
   DATABASE_URL: "postgres://app:pw@127.0.0.1:5433/email_assistant",
@@ -105,5 +105,82 @@ describe("loadConfig", () => {
       "test@interia.pl"
     );
     expect(configError({ ...fullEnv, TEST_MAILBOX_ADDRESS: "nope" }).keys).toContain("TEST_MAILBOX_ADDRESS");
+  });
+
+  test("sets the LLM defaults with only the S1a keys", () => {
+    const config = loadConfig(fullEnv);
+    expect(config.GEMINI_API_KEY).toBeUndefined();
+    expect(config.GEMINI_MODEL).toBe("gemini-3.8-flash");
+    expect(config.GEMINI_MODEL_CLASSIFIER).toBe("gemini-3.5-flash-lite");
+    expect(classifierModel(config)).toBe("gemini-3.5-flash-lite");
+    expect(config.GEMINI_TIMEOUT_MS).toBe(30000);
+    expect(config.GEMINI_RPM).toBe(12);
+    expect(config.LLM_DAILY_CAP).toBe(300);
+    expect(config.TRIAGE_LLM_SCOPE).toBe("off");
+  });
+
+  test("treats an empty GEMINI_API_KEY as missing", () => {
+    expect(loadConfig({ ...fullEnv, GEMINI_API_KEY: "" }).GEMINI_API_KEY).toBeUndefined();
+  });
+
+  test("throws ConfigError when TRIAGE_LLM_SCOPE=synthetic has no GEMINI_API_KEY", () => {
+    expect(configError({ ...fullEnv, TRIAGE_LLM_SCOPE: "synthetic" }).keys).toContain("GEMINI_API_KEY");
+    expect(configError({ ...fullEnv, TRIAGE_LLM_SCOPE: "synthetic", GEMINI_API_KEY: "" }).keys).toContain(
+      "GEMINI_API_KEY"
+    );
+  });
+
+  test("accepts TRIAGE_LLM_SCOPE=synthetic with a GEMINI_API_KEY", () => {
+    const config = loadConfig({ ...fullEnv, TRIAGE_LLM_SCOPE: "synthetic", GEMINI_API_KEY: "test-key" });
+    expect(config.TRIAGE_LLM_SCOPE).toBe("synthetic");
+    expect(config.GEMINI_API_KEY).toBe("test-key");
+  });
+
+  test("throws ConfigError when TRIAGE_LLM_SCOPE=all has no TEST_MAILBOX_ADDRESS", () => {
+    const error = configError({ ...fullEnv, TRIAGE_LLM_SCOPE: "all", GEMINI_API_KEY: "test-key" });
+    expect(error.keys).toContain("TEST_MAILBOX_ADDRESS");
+    expect(error.keys).not.toContain("GEMINI_API_KEY");
+    expect(error.message).not.toContain("test-key");
+  });
+
+  test("throws ConfigError with both keys when TRIAGE_LLM_SCOPE=all has neither", () => {
+    const error = configError({ ...fullEnv, TRIAGE_LLM_SCOPE: "all" });
+    expect(error.keys).toContain("GEMINI_API_KEY");
+    expect(error.keys).toContain("TEST_MAILBOX_ADDRESS");
+  });
+
+  test("accepts TRIAGE_LLM_SCOPE=all with a GEMINI_API_KEY and a TEST_MAILBOX_ADDRESS", () => {
+    const config = loadConfig({
+      ...fullEnv,
+      TRIAGE_LLM_SCOPE: "all",
+      GEMINI_API_KEY: "test-key",
+      TEST_MAILBOX_ADDRESS: "test@interia.pl",
+    });
+    expect(config.TRIAGE_LLM_SCOPE).toBe("all");
+  });
+
+  test("throws ConfigError when TRIAGE_LLM_SCOPE is bad", () => {
+    expect(configError({ ...fullEnv, TRIAGE_LLM_SCOPE: "real" }).keys).toContain("TRIAGE_LLM_SCOPE");
+  });
+
+  test("treats an empty GEMINI_MODEL_CLASSIFIER as the default", () => {
+    expect(loadConfig({ ...fullEnv, GEMINI_MODEL_CLASSIFIER: "" }).GEMINI_MODEL_CLASSIFIER).toBe(
+      "gemini-3.5-flash-lite"
+    );
+  });
+
+  test("classifierModel returns the set GEMINI_MODEL_CLASSIFIER", () => {
+    const config = loadConfig({ ...fullEnv, GEMINI_MODEL_CLASSIFIER: "gemini-3.1-flash-lite" });
+    expect(classifierModel(config)).toBe("gemini-3.1-flash-lite");
+  });
+
+  test("reads the LLM numbers and rejects bad ones", () => {
+    const config = loadConfig({ ...fullEnv, GEMINI_TIMEOUT_MS: "5000", GEMINI_RPM: "3", LLM_DAILY_CAP: "50" });
+    expect(config.GEMINI_TIMEOUT_MS).toBe(5000);
+    expect(config.GEMINI_RPM).toBe(3);
+    expect(config.LLM_DAILY_CAP).toBe(50);
+    expect(configError({ ...fullEnv, GEMINI_RPM: "0" }).keys).toContain("GEMINI_RPM");
+    expect(configError({ ...fullEnv, LLM_DAILY_CAP: "0" }).keys).toContain("LLM_DAILY_CAP");
+    expect(configError({ ...fullEnv, GEMINI_TIMEOUT_MS: "1.5" }).keys).toContain("GEMINI_TIMEOUT_MS");
   });
 });
