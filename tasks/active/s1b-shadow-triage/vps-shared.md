@@ -22,3 +22,7 @@ SQL used below (replace `<MB>`; `<START>` and `<BF_START>` are UTC times from th
 - **QF cursor:** `SELECT uidvalidity, last_uid FROM mailboxes WHERE id = '<MB>';`
 - **QG backfilled rows:** `SELECT status, count(*), min(received_at), max(received_at), count(*) FILTER (WHERE message_id_header IS NULL OR message_id_header NOT ILIKE '%@ea-seed.test>') AS real FROM emails WHERE mailbox_id = '<MB>' AND backfilled_at IS NOT NULL GROUP BY status;`
 - **QH real INBOX mail of the window, by status and label (review finding 12):** `SELECT e.status, (EXISTS (SELECT 1 FROM triage_feedback f WHERE f.email_id = e.id AND f.org_id = e.org_id)) AS labeled, count(*) FROM emails e WHERE e.mailbox_id = '<MB>' AND e.folder = 'INBOX' AND e.received_at >= timestamptz '<BF_START>' - interval '30 days' AND (e.message_id_header IS NULL OR e.message_id_header NOT ILIKE '%@ea-seed.test>') GROUP BY 1, 2 ORDER BY 1, 2;`
+
+## Evals on the VPS (checkpoint 4 group review, 2026-11-05)
+
+- Case evals (`bun run eval --set …`) run only on the Mac. In the container, `/app` belongs to root (`USER bun`), so `evals/.runs/` and `--out` most likely fail with EACCES [not verified], and `--rm` loses the state file. On the VPS use only `eval --real` with stdout, no `--out`.

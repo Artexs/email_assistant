@@ -27,3 +27,8 @@ Shell setup, preconditions and the SQL queries (Q1–QH) are in [`vps-shared.md`
 - Add `stop_grace_period: 45s` to the `server` service in `deploy/compose.yaml` before the deploy. `main.ts` waits up to 30 s for a running batch on SIGTERM, but Docker kills after 10 s by default; each deploy during a batch then adds one attempt to up to 5 mails.
 - `main.ts`: after SIGTERM, a running `triage.run()` still claims the next mailboxes. Scope `all` has one mailbox, so this is low risk; a `stop()` flag in the job is optional.
 - Tell the user at checkpoint 4: a mail whose LLM call is in flight during 3 restarts ends as `unsure` / `triage_error` (a stale take-back counts an attempt).
+
+## Follow-ups from the checkpoint 4 group review (2026-11-05)
+
+- Bun `prompt()` in `$C run --rm server` is not verified. In step 37.1, after the smoke run, run `$C run --rm server bun run triage:label --org-id <ORG> --mailbox-id <MB> --synthetic --limit 1` (no `-T`), check that the item and the prompt show, then type `q`. This writes no row. Its first real use is the user's labeling in stage 38.
+- `stop_grace_period: 45s` (checkpoint 3 follow-up above) is not in `deploy/compose.yaml` yet. It needs a reviewed commit before step 37.1.4 (`git pull` on the VPS); user decision at checkpoint 4.

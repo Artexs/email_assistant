@@ -10,10 +10,10 @@ import {
   evalExitCode,
   listLabeledResults,
   parseCaseResults,
+  PROMPT_VERSION,
   renderEvalReport,
   runEval,
 } from "../modules/triage";
-import { PROMPT_VERSION } from "../modules/triage/prompts/classifier-v1";
 import { classifierModel, loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { createLlmClient, LlmConfigError } from "../platform/llm";

@@ -19,3 +19,7 @@ Shell setup, preconditions and the SQL queries (Q1–QH) are in [`vps-shared.md`
   - Check: the report header N equals QB; `eval --real` exits 0; `triage:cost` prints a figure per model.
   - Done when: the real-mail done-when items pass (labels as above, one week, tokens and latency stored, cost per mailbox per month computed).
   - Out of scope: changes to `mailbox_settings` (thresholds and automatic moves belong to S3), a prompt change.
+
+## Follow-ups from the checkpoint 4 group review (2026-11-05)
+
+- `triage:cost --days 7` after stage 39 counts the backfilled and re-queued mail and the stage 38 start backlog in "LLM results per day (observed)", so the monthly cost at the observed rate comes out too high. The cost per mail and the figure at 200 mails per day stay right. Run `triage:cost --days 7` at the end of stage 38 (before 39) and record it, or record only the cost per mail and the figure at 200 per day with a note. User decision at checkpoint 4.

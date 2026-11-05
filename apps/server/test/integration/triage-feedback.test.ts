@@ -18,7 +18,7 @@ afterAll(async () => {
 async function createTriagedEmail(
   trx: Transaction<DB>,
   tenant: { orgId: string; mailboxId: string },
-  overrides?: { category?: "info" | "spam"; messageId?: string | null; fields?: Record<string, unknown> }
+  overrides?: { category?: "info" | "spam" | "unsure"; messageId?: string | null; fields?: Record<string, unknown> }
 ): Promise<string> {
   const emailId = await insertTestEmail(trx, { orgId: tenant.orgId }, tenant.mailboxId, {
     message_id_header: overrides?.messageId === undefined ? "<r@x.test>" : overrides.messageId,
@@ -86,6 +86,33 @@ describe("recordFeedback", () => {
       expect(await feedbackRows(trx, emailId)).toMatchObject([
         { verdict: "wrong", true_category: null, source: "telegram" },
       ]);
+    });
+  });
+
+  test("a verdict alone on an unsure result is an error and writes no row", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId };
+      const emailId = await createTriagedEmail(trx, a, { category: "unsure" });
+
+      for (const verdict of ["right", "wrong"] as const) {
+        await expect(recordFeedback(trx, ctx, { emailId, verdict, source: "cli" })).rejects.toThrow(
+          "unsure is not a label: give a true category"
+        );
+      }
+      expect(await feedbackRows(trx, emailId)).toEqual([]);
+    });
+  });
+
+  test("a true category on an unsure result is stored as wrong", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const emailId = await createTriagedEmail(trx, a, { category: "unsure" });
+
+      const result = await recordFeedback(trx, { orgId: a.orgId }, { emailId, trueCategory: "info", source: "cli" });
+
+      expect(result.verdict).toBe("wrong");
+      expect(await feedbackRows(trx, emailId)).toMatchObject([{ verdict: "wrong", true_category: "info" }]);
     });
   });
 

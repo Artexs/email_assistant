@@ -38,6 +38,9 @@ export async function recordFeedback(
   if (!latest) {
     throw new HardError("email has no triage result");
   }
+  if (input.trueCategory === undefined && latest.category === "unsure") {
+    throw new HardError("unsure is not a label: give a true category");
+  }
   const verdict: FeedbackVerdict =
     input.trueCategory === undefined
       ? (input.verdict as FeedbackVerdict)
