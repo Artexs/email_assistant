@@ -1,8 +1,12 @@
+import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 
+import { type EvalCase, evalCaseSchema, selectCases, splitAddress } from "@ea/core";
 import { z } from "zod";
 
-import { seedMailbox } from "../modules/mail";
+import { SYNTHETIC_MESSAGE_ID_DOMAIN, seedMailbox, type SeedMessage } from "../modules/mail";
 import { loadConfig } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
@@ -10,8 +14,12 @@ import { createLog } from "../platform/log";
 
 const log = createLog("mailbox-seed");
 
+const casesDir = resolve(import.meta.dir, "../../../../evals/cases");
+const evalSets = ["synthetic", "injection", "all"] as const;
+
 const usage = [
   "usage: bun run mailbox:seed --org-id <uuid> --mailbox-id <uuid> [--count 1]",
+  "       bun run mailbox:seed --org-id <uuid> --mailbox-id <uuid> --eval-cases synthetic|injection|all [--per-category n]",
   "  It refuses every mailbox except the one in TEST_MAILBOX_ADDRESS.",
 ].join("\n");
 
@@ -23,6 +31,8 @@ function readOptions() {
         "org-id": { type: "string" },
         "mailbox-id": { type: "string" },
         count: { type: "string", default: "1" },
+        "eval-cases": { type: "string" },
+        "per-category": { type: "string" },
       },
       strict: true,
     });
@@ -32,10 +42,32 @@ function readOptions() {
     if (!z.uuid().safeParse(orgId).success || !z.uuid().safeParse(mailboxId).success) return undefined;
     const count = z.coerce.number().int().min(1).max(1000).safeParse(values.count);
     if (!count.success) return undefined;
-    return { orgId, mailboxId, count: count.data };
+    const evalSet = z.enum(evalSets).optional().safeParse(values["eval-cases"]);
+    if (!evalSet.success) return undefined;
+    const perCategory = z.coerce.number().int().min(1).optional().safeParse(values["per-category"]);
+    if (!perCategory.success) return undefined;
+    if (evalSet.data === undefined && perCategory.data !== undefined) return undefined;
+    return { orgId, mailboxId, count: count.data, evalSet: evalSet.data, perCategory: perCategory.data };
   } catch {
     return undefined;
   }
+}
+
+function loadCases(file: string): EvalCase[] {
+  return z.array(evalCaseSchema).parse(JSON.parse(readFileSync(resolve(casesDir, file), "utf8")));
+}
+
+function toSeedMessage(evalCase: EvalCase, to: string): SeedMessage {
+  const { name, address } = splitAddress(evalCase.from);
+  return {
+    messageId: `<eval-${evalCase.id}-${randomUUID()}@${SYNTHETIC_MESSAGE_ID_DOMAIN}>`,
+    from: name === null ? address : `${name} <${address}>`,
+    to: [to],
+    subject: evalCase.subject,
+    date: new Date(),
+    text: evalCase.body,
+    headers: { "X-EA-Seed": "1" },
+  };
 }
 
 async function main(): Promise<number> {
@@ -50,9 +82,21 @@ async function main(): Promise<number> {
   try {
     await assertAppRole(db);
     const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
+    // The message list needs the mailbox address; seedMailbox checks the guard before any connection.
+    const testAddress = config.TEST_MAILBOX_ADDRESS;
+    let messages: SeedMessage[] | undefined;
+    if (options.evalSet !== undefined) {
+      const files = options.evalSet === "all" ? ["synthetic", "injection"] : [options.evalSet];
+      const cases = selectCases(
+        files.flatMap((file) => loadCases(`${file}.json`)),
+        { perCategory: options.perCategory }
+      );
+      messages = cases.map((evalCase) => toSeedMessage(evalCase, testAddress ?? ""));
+    }
     const appended = await seedMailbox({ db, secrets }, { orgId: options.orgId }, options.mailboxId, {
       count: options.count,
-      testAddress: config.TEST_MAILBOX_ADDRESS,
+      testAddress,
+      messages,
     });
     log.info(`appended ${appended}`);
     return 0;

@@ -114,6 +114,20 @@ describe("seedMailbox", () => {
     });
   });
 
+  test("refuses the messages path with a wrong address, and appends nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId } = await createOrg(trx);
+      const ctx = { orgId };
+      const { mailboxId, address, imap } = await connectGreenmail(trx, ctx);
+      const messages = [{ from: address, to: [address], subject: "Seed", date: new Date(), text: "Seed" }];
+
+      await expect(
+        seedMailbox({ db: trx, secrets }, ctx, mailboxId, { count: 0, testAddress: "other@localhost", messages })
+      ).rejects.toThrow("not the test mailbox");
+      expect(await inboxMessageIds(imap)).toEqual([]);
+    });
+  });
+
   test("with the right address (any letter case) it appends the mails with distinct Message-IDs", async () => {
     await withRollback(db, async (trx) => {
       const { orgId } = await createOrg(trx);

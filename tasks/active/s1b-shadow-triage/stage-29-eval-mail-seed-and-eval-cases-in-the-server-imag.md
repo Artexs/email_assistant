@@ -4,7 +4,7 @@ Part of [`../s1b-shadow-triage.md`](../s1b-shadow-triage.md). Read that file's "
 
 ## Stage 29 — Eval mail seed and eval cases in the server image [risky]
 
-- [ ] **29.1 `mailbox:seed --eval-cases`, RFC 2047 headers, eval cases in the server image**
+- [x] **29.1 `mailbox:seed --eval-cases`, RFC 2047 headers, eval cases in the server image**
   - Goal: put a fixed subset of the synthetic eval cases into the test mailbox INBOX, so the whole pipeline runs on synthetic mail, also on the VPS.
   - Why [risky]: this is the only S1b code path that writes into a mailbox (IMAP APPEND into the INBOX of the test mailbox, behind the `TEST_MAILBOX_ADDRESS` guard), and it changes the server image (`deploy/Dockerfile`).
   - Files: change `apps/server/src/modules/mail/seed.ts` (RFC 2047 encoding), `apps/server/src/modules/mail/seed.test.ts`, `apps/server/src/modules/mail/tools.ts` (`seedMailbox` takes optional messages), `apps/server/src/scripts/mailbox-seed.ts` (`--eval-cases synthetic|injection|all`, `--per-category n`), `deploy/Dockerfile` (add `COPY evals/cases evals/cases`).

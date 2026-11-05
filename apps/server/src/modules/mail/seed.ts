@@ -29,6 +29,35 @@ function isAscii(text: string): boolean {
   return true;
 }
 
+// RFC 2047: a value with non-ASCII text becomes encoded words of at most 45 UTF-8 bytes each (a word stays under 75 characters).
+function encodeWords(value: string): string {
+  if (/[\r\n]/.test(value)) throw new Error("Header value contains a line break");
+  if (isAscii(value)) return value;
+  const words: string[] = [];
+  let chunk = "";
+  for (const char of value) {
+    if (chunk !== "" && Buffer.byteLength(chunk + char) > 45) {
+      words.push(chunk);
+      chunk = "";
+    }
+    chunk += char;
+  }
+  words.push(chunk);
+  return words.map((word) => `=?UTF-8?B?${Buffer.from(word).toString("base64")}?=`).join(" ");
+}
+
+// Encodes the display name of `Name <addr>`. The address itself is never encoded: a non-ASCII address then throws in header().
+function encodeAddress(value: string): string {
+  const match = /^(.*?)\s*(<[^<>]*>)\s*$/.exec(value);
+  if (!match) {
+    if (/[<>]/.test(value)) throw new Error("Malformed address field");
+    return value;
+  }
+  const name = match[1] ?? "";
+  if (/[<>]/.test(name)) throw new Error("Malformed address field");
+  return name === "" ? (match[2] ?? value) : `${encodeWords(name)} ${match[2]}`;
+}
+
 function header(name: string, value: string): string {
   if (!isAscii(name) || !isAscii(value)) {
     throw new Error(`Header ${name.replace(/[^\x20-\x7e]/g, "?")} contains non-ASCII text`);
@@ -47,10 +76,10 @@ function crlf(body: string): string {
 export function renderSeedMessage(msg: SeedMessage): string {
   const lines: string[] = [];
   if (msg.messageId) lines.push(header("Message-ID", msg.messageId));
-  lines.push(header("From", msg.from));
-  lines.push(header("To", msg.to.join(", ")));
-  if (msg.cc && msg.cc.length > 0) lines.push(header("Cc", msg.cc.join(", ")));
-  lines.push(header("Subject", msg.subject));
+  lines.push(header("From", encodeAddress(msg.from)));
+  lines.push(header("To", msg.to.map(encodeAddress).join(", ")));
+  if (msg.cc && msg.cc.length > 0) lines.push(header("Cc", msg.cc.map(encodeAddress).join(", ")));
+  lines.push(header("Subject", encodeWords(msg.subject)));
   lines.push(header("Date", msg.date.toUTCString()));
   if (msg.inReplyTo) lines.push(header("In-Reply-To", msg.inReplyTo));
   if (msg.references && msg.references.length > 0) {

@@ -11,7 +11,7 @@ import { openImapProvider, type ImapConnectOptions } from "./imap/client";
 import { appendRaw } from "./imap/tools";
 import { INBOX } from "./port";
 import { getCredentials, getMailbox, listInboxEmailKeys, type MailboxRow } from "./repo";
-import { renderSeedMessage, SYNTHETIC_MESSAGE_ID_DOMAIN } from "./seed";
+import { renderSeedMessage, SYNTHETIC_MESSAGE_ID_DOMAIN, type SeedMessage } from "./seed";
 import { fetchSince } from "./sync";
 import { contentHash, normalizeMessageId } from "./sync-rules";
 
@@ -44,14 +44,14 @@ async function loadImapOptions(
 }
 
 /**
- * APPENDs `count` synthetic mails into INBOX. It refuses, before any connection, unless `testAddress`
+ * APPENDs `count` synthetic mails into INBOX (or, with `messages`, each message once; `count` is then ignored). It refuses, before any connection, unless `testAddress`
  * is set and equals the mailbox address (case-insensitive), so it never writes into a real mailbox.
  */
 export async function seedMailbox(
   deps: ToolDeps,
   ctx: TenantContext,
   mailboxId: string,
-  opts: { count: number; testAddress: string | undefined }
+  opts: { count: number; testAddress: string | undefined; messages?: SeedMessage[] }
 ): Promise<number> {
   const mailbox = await getMailboxOrThrow(deps, ctx, mailboxId);
   const address = mailbox.address;
@@ -60,6 +60,10 @@ export async function seedMailbox(
     throw new HardError("the mailbox is not the test mailbox (TEST_MAILBOX_ADDRESS): seed refused");
   }
   const imap = await loadImapOptions(deps, ctx, mailboxId, mailbox);
+  if (opts.messages !== undefined) {
+    for (const message of opts.messages) await appendRaw(imap, INBOX, renderSeedMessage(message));
+    return opts.messages.length;
+  }
   for (let n = 0; n < opts.count; n += 1) {
     const now = new Date();
     const raw = renderSeedMessage({

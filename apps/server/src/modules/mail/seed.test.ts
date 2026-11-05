@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { simpleParser } from "mailparser";
 
 import { isSyntheticMessageId, renderSeedMessage, type SeedMessage } from "./seed";
 
@@ -67,8 +68,46 @@ describe("renderSeedMessage", () => {
   });
 
   test("non-ASCII in a header name or value throws", () => {
-    expect(() => renderSeedMessage({ ...base, subject: "Zażółć" })).toThrow(Error);
     expect(() => renderSeedMessage({ ...base, headers: { "X-Zażółć": "a" } })).toThrow(Error);
+    expect(() => renderSeedMessage({ ...base, headers: { "X-A": "Zażółć" } })).toThrow(Error);
+  });
+
+  test("a Polish subject is an encoded word and mailparser reads it back", async () => {
+    const subject = "Zażółć gęślą jaźń — pilne: serwer produkcyjny nie odpowiada, proszę o telefon";
+    const raw = renderSeedMessage({ ...base, subject });
+    expect(raw).toContain("Subject: =?UTF-8?B?");
+    expect(raw.split("\r\n\r\n")[0]).not.toMatch(/[\u0080-\uffff]/);
+    expect((await simpleParser(raw)).subject).toBe(subject);
+  });
+
+  test("a non-ASCII display name is encoded, the address stays raw", async () => {
+    const raw = renderSeedMessage({ ...base, from: "Łukasz Nowak <lukasz@firma.test>" });
+    expect(raw).toMatch(/^From: =\?UTF-8\?B\?[A-Za-z0-9+/=]+\?= <lukasz@firma\.test>\r$/m);
+    const from = (await simpleParser(raw)).from?.value[0];
+    expect(from?.address).toBe("lukasz@firma.test");
+    expect(from?.name).toBe("Łukasz Nowak");
+  });
+
+  test("an ASCII display name and a bare address stay as they are", () => {
+    const raw = renderSeedMessage({ ...base, from: "Marek Z <marek@firma.test>", to: ["me@example.test"] });
+    expect(raw).toContain("From: Marek Z <marek@firma.test>\r\n");
+    expect(raw).toContain("To: me@example.test\r\n");
+  });
+
+  test("a non-ASCII subject or display name with a line break throws", () => {
+    expect(() => renderSeedMessage({ ...base, subject: "Zażółć\r\nBcc: evil@x.test" })).toThrow(Error);
+    expect(() => renderSeedMessage({ ...base, from: "Zażółć\r\nBcc: evil@x.test <a@firma.test>" })).toThrow(Error);
+  });
+
+  test("an address field with more than one <...> pair or stray brackets throws", () => {
+    expect(() => renderSeedMessage({ ...base, from: "Name <a@x.test> <b@x.test>" })).toThrow(Error);
+    expect(() => renderSeedMessage({ ...base, from: "Na<me <a@x.test>" })).toThrow(Error);
+    expect(() => renderSeedMessage({ ...base, from: "a@x.test>" })).toThrow(Error);
+  });
+
+  test("a non-ASCII address part throws", () => {
+    expect(() => renderSeedMessage({ ...base, from: "Łukasz <łukasz@firma.test>" })).toThrow(Error);
+    expect(() => renderSeedMessage({ ...base, from: "łukasz@firma.test" })).toThrow(Error);
   });
 });
 

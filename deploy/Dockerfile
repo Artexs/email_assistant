@@ -12,6 +12,7 @@ RUN bun install --frozen-lockfile
 COPY apps/server apps/server
 COPY packages/core packages/core
 COPY db db
+COPY evals/cases evals/cases
 COPY tsconfig.base.json ./
 
 USER bun
