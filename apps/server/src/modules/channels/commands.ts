@@ -15,13 +15,15 @@ import type { Transaction } from "kysely";
 
 import type { DB, Db } from "../../platform/db";
 import { HardError } from "../../platform/errors";
-import { countLlmCallsSince } from "../audit";
+import { createLog } from "../../platform/log";
+import { auditEvents, countLlmCallsSince, recordAudit } from "../audit";
 import { getMailboxSettings } from "../config";
-import { countWaiting, listMailboxes, type MailboxSummary } from "../mail";
+import { changeMailboxStatus, countWaiting, listMailboxes, type MailboxSummary } from "../mail";
 import { buildDigestMessage, digestPeriodStart, WAITING_WINDOW_MS } from "../reports";
 import { getMembership, getOrganization } from "../tenancy";
 
-import type { LinkedChat } from "./port";
+import { handleCallback } from "./callbacks";
+import type { CommandName, LinkedChat, UpdateHandlers } from "./port";
 import { helpText } from "./texts";
 
 export interface CommandDeps {
@@ -30,6 +32,8 @@ export interface CommandDeps {
   llmDailyCap: number;
   triageScope: "off" | "synthetic" | "all";
 }
+
+const log = createLog("channels");
 
 const SYNC_LATE_MS = 30 * 60_000;
 const ADDRESS_MAX = 60;
@@ -100,4 +104,107 @@ export async function digestNowMessage(deps: CommandDeps, link: LinkedChat): Pro
   const ctx = { orgId: link.orgId, userId: link.userId };
   const periodStart = await digestPeriodStart(deps.db, ctx, { userId: link.userId, linkedAt: link.linkedAt }, now);
   return buildDigestMessage(deps.db, ctx, { kind: "on_demand", periodStart, periodEnd: now, slot: null, now });
+}
+
+const OWNER_ONLY_TEXT = "Only the owner can pause or resume the mailboxes.";
+
+interface StatusSwitch {
+  from: "active" | "paused";
+  to: "active" | "paused";
+  event: string;
+  verb: string;
+  already: string;
+}
+
+// One transaction per mailbox: the conditional update and its audit row. `auth_error` never matches `from`.
+async function switchMailboxes(deps: CommandDeps, link: LinkedChat, change: StatusSwitch): Promise<OutMessage> {
+  if (link.role !== "owner") return { text: OWNER_ONLY_TEXT, buttons: [] };
+  const now = deps.now();
+  const ctx = { orgId: link.orgId, userId: link.userId };
+  const changed: string[] = [];
+  const extra: string[] = [];
+  for (const mailbox of await listMailboxes(deps.db, ctx)) {
+    const address = cutText(mailbox.address, ADDRESS_MAX);
+    if (mailbox.status === "auth_error") {
+      extra.push(`❌ ${address} has a login error: run mailbox:password first.`);
+      continue;
+    }
+    const run = async (trx: Transaction<DB>): Promise<boolean> => {
+      const done = await changeMailboxStatus(trx, ctx, mailbox.id, { from: change.from, to: change.to, at: now });
+      if (done) {
+        await recordAudit(trx, ctx, {
+          actor: link.userId,
+          event: change.event,
+          data: { mailbox_id: mailbox.id, via: "telegram" },
+          at: now,
+        });
+      }
+      return done;
+    };
+    const done = await (deps.db.isTransaction ? run(deps.db as Transaction<DB>) : deps.db.transaction().execute(run));
+    if (done) {
+      changed.push(address);
+      log.info(`mailbox ${mailbox.id} ${change.verb} by user ${link.userId}`);
+    } else {
+      extra.push(`${address} ${change.already}`);
+    }
+  }
+  return { text: [...changeLines(change.to, changed), ...extra].join("\n") || "No mailbox connected.", buttons: [] };
+}
+
+function changeLines(to: "active" | "paused", changed: string[]): string[] {
+  if (changed.length === 0) return [];
+  const list = changed.join(", ");
+  return to === "paused"
+    ? [
+        `⏸ Paused: ${list}`,
+        "The system does not read or triage these mailboxes now and sends no urgent notice for them. Digests still come.",
+        "/resume starts them again.",
+      ]
+    : [
+        `▶️ Resumed: ${list}`,
+        "The next sync runs within 5 minutes. Mail that came during the pause is read then; mail older than 7 days is not triaged.",
+      ];
+}
+
+export function pauseMailboxes(deps: CommandDeps, link: LinkedChat): Promise<OutMessage> {
+  return switchMailboxes(deps, link, {
+    from: "active",
+    to: "paused",
+    event: auditEvents.mailboxPaused,
+    verb: "paused",
+    already: "was paused already.",
+  });
+}
+
+export function resumeMailboxes(deps: CommandDeps, link: LinkedChat): Promise<OutMessage> {
+  return switchMailboxes(deps, link, {
+    from: "paused",
+    to: "active",
+    event: auditEvents.mailboxResumed,
+    verb: "resumed",
+    already: "was active already.",
+  });
+}
+
+export function runCommand(deps: CommandDeps, link: LinkedChat, name: CommandName): Promise<OutMessage> {
+  switch (name) {
+    case "help":
+      return Promise.resolve(helpMessage());
+    case "status":
+      return statusMessage(deps, link);
+    case "digest":
+      return digestNowMessage(deps, link);
+    case "pause":
+      return pauseMailboxes(deps, link);
+    case "resume":
+      return resumeMailboxes(deps, link);
+  }
+}
+
+export function createUpdateHandlers(deps: CommandDeps): UpdateHandlers {
+  return {
+    command: (link, name) => runCommand(deps, link, name),
+    callback: (link, data) => handleCallback({ db: deps.db, now: deps.now }, link, data),
+  };
 }

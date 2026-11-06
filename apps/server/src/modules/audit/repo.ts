@@ -15,6 +15,8 @@ export const auditEvents = {
   emailRequeued: "email.requeued",
   chatLinked: "chat.linked",
   chatUnlinked: "chat.unlinked",
+  mailboxPaused: "mailbox.paused",
+  mailboxResumed: "mailbox.resumed",
 } as const;
 
 export interface AuditEvent {

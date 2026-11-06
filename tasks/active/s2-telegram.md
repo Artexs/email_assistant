@@ -1,4 +1,4 @@
-> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open, deferred by the user until stage 21. Stages 1–10 done; checkpoint 2 passed (user go). Stages 11–17 done. Left: stages 18–23, then the done-checklist.
+> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open, deferred by the user until stage 21. Stages 1–10 done; checkpoint 2 passed (user go). Stages 11–18 done. Left: stages 19–23, then the done-checklist.
 
 # S2 Telegram
 
@@ -134,7 +134,7 @@ Each stage lives in its own file in [`s2-telegram/`](s2-telegram/). An implement
 - [x] [Stage 15](s2-telegram/stage-15-polling-and-bot-commands.md) — Polling and the bot command list
 - [x] [Stage 16](s2-telegram/stage-16-feedback-buttons.md) — Feedback buttons [risky]
 - [x] [Stage 17](s2-telegram/stage-17-help-status-and-digest-commands.md) — Commands: `/help`, `/status`, `/digest`
-- [ ] [Stage 18](s2-telegram/stage-18-pause-and-resume.md) — Commands: `/pause`, `/resume` [risky]
+- [x] [Stage 18](s2-telegram/stage-18-pause-and-resume.md) — Commands: `/pause`, `/resume` [risky]
 - [ ] [Stage 19](s2-telegram/stage-19-mailbox-password.md) — `mailbox:password`: leave `auth_error` [risky]
 - [ ] [Stage 20](s2-telegram/stage-20-server-wiring-and-log-test.md) — Server wiring, shutdown and the log test [risky] — user checkpoint 3 after it
 - [ ] [Stage 21](s2-telegram/stage-21-dev-run-with-the-dev-bot.md) — Dev run with the dev bot: the user tries it on the phone [risky]
@@ -190,3 +190,4 @@ Answered 2026-11-05: the user approved the plan as written, so each question kee
 - 2026-11-06: Stage 15 built (`channels/telegram/polling.ts` `startPolling`, `BOT_COMMANDS`; 8 tests on a fake Bot API), reviewer PASS (Sonnet). Deviation: the 409 retry count resets after a good `getUpdates` (API transformer), not in `onStart` (it fires before the first `getUpdates`, so the delay would stay at 1 min). Minors fixed: tests for the reset and for a failing `bot.stop()`; a dead `onStart` guard removed.
 - 2026-11-06: Stage 16 built (`channels/callbacks.ts` `handleCallback`, `pickerMessage`; `latestFeedback`, `getLabelTarget`; `recordFeedback` `skipIfSame`; 8 tests), reviewer PASS (Opus, high). Stage 18 wires `handleCallback` into the router. Main session fixed the tie-break comment in `latestFeedback` (minor).
 - 2026-11-06: Stage 17 built (`channels/commands.ts`: `helpMessage`, `statusMessage`, `digestNowMessage`; the digest maps no settings row to `none`, checkpoint 2 decision), reviewer PASS (Sonnet). Incident: the implementer ran `bun run format` (whole repo). It reverted the tracked files; the main session restored the two untracked user files (`notes/2026-11-04-subagent-usage.md` from an earlier session log, `docs/diagrams/code-map.html` rebuilt from its source; both prove equal after Prettier). Rule for later calls: never `bun run format` or `prettier --write` outside the step's files.
+- 2026-11-06: Stage 18 built (`pauseMailboxes`, `resumeMailboxes`, `runCommand`, `createUpdateHandlers` in `channels/commands.ts`; audit `mailbox.paused` / `mailbox.resumed`; 9 tests), reviewer PASS (Sonnet). Minors for later: a reply can say "was paused already" when the sync sets `auth_error` in the same instant (state stays right); stage 22 also adds the two new events to the audit event list in `docs/architecture.md` (about line 330).

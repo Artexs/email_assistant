@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 18 — Commands: `/pause`, `/resume` [risky]
 
-- [ ] **18.1 `/pause`, `/resume` (owner only, never over `auth_error`), the command dispatcher**
+- [x] **18.1 `/pause`, `/resume` (owner only, never over `auth_error`), the command dispatcher**
   - Goal: the owner stops and starts the reading and triage of the organization's mailboxes from Telegram (P6), and the update handlers of stage 14 get their real implementation.
   - Files: change `apps/server/src/modules/channels/commands.ts`, `apps/server/src/modules/channels/index.ts`, `apps/server/src/modules/audit/repo.ts` (two event names), `apps/server/test/integration/channels-commands.test.ts`.
   - Interfaces:
