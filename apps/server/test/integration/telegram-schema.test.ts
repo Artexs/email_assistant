@@ -5,7 +5,7 @@ import { sql, type Transaction } from "kysely";
 
 import type { DB } from "../../src/platform/db";
 
-import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
+import { addMember, createOrgWithMailbox, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -22,16 +22,6 @@ async function expectCode(trx: Transaction<DB>, name: string, run: () => Promise
   await sql`savepoint ${sql.id(name)}`.execute(trx);
   await expect(run()).rejects.toMatchObject({ code });
   await sql`rollback to savepoint ${sql.id(name)}`.execute(trx);
-}
-
-async function addMember(trx: Transaction<DB>, orgId: string): Promise<string> {
-  const user = await trx
-    .insertInto("users")
-    .values({ email: `member-${randomUUID()}@x.test`, display_name: "Member" })
-    .returning("id")
-    .executeTakeFirstOrThrow();
-  await trx.insertInto("memberships").values({ org_id: orgId, user_id: user.id, role: "assistant" }).execute();
-  return user.id;
 }
 
 async function addUserOutsideOrg(trx: Transaction<DB>): Promise<string> {

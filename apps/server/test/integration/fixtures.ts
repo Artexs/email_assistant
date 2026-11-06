@@ -1,11 +1,13 @@
 import { randomUUID } from "node:crypto";
 
+import type { MembershipRole } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { MailCapabilities, NewEmail } from "../../src/modules/mail";
 import { insertMailbox } from "../../src/modules/mail/repo";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
-import type { DB } from "../../src/platform/db";
+import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
+import type { DB, TenantContext } from "../../src/platform/db";
 
 export const testCapabilities: MailCapabilities = {
   idle: true,
@@ -78,4 +80,33 @@ export async function insertTestEmail(
 // Other tests and dev data leave active mailboxes in the DB; the job tests want only their own. The rollback undoes it.
 export async function pauseOtherMailboxes(trx: Transaction<DB>): Promise<void> {
   await trx.updateTable("mailboxes").set({ status: "paused" }).where("status", "=", "active").execute();
+}
+
+// A new user with a membership in the org; returns the user id.
+export async function addMember(
+  trx: Transaction<DB>,
+  orgId: string,
+  role: MembershipRole = "assistant"
+): Promise<string> {
+  const user = await insertUser(trx, { email: `member-${randomUUID()}@x.test`, displayName: "Member" });
+  await insertMembership(trx, { orgId }, { userId: user.id, role });
+  return user.id;
+}
+
+export async function linkChat(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  userId: string,
+  chatId: number,
+  linkedAt: Date
+): Promise<void> {
+  await trx
+    .insertInto("chat_links")
+    .values({ org_id: ctx.orgId, user_id: userId, channel: "telegram", external_chat_id: chatId, linked_at: linkedAt })
+    .execute();
+}
+
+// Between 10^9 and 10^12, so a test never collides with a real chat id in the dev DB.
+export function randomChatId(): number {
+  return 1_000_000_000 + Math.floor(Math.random() * (1_000_000_000_000 - 1_000_000_000));
 }

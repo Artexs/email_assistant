@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 6 — Chat linking: links and one-time tokens [risky]
 
-- [ ] **6.1 Link tokens (15 min, one-time, one user) and chat links**
+- [x] **6.1 Link tokens (15 min, one-time, one user) and chat links**
   - Goal: a one-time token binds one Telegram private chat to one member of one organization (ADR 0005, architecture §6.2); a used, expired, unknown or malformed token links nothing.
   - Files: create `apps/server/src/modules/channels/repo.ts` (link and token part), `apps/server/src/modules/channels/linking.ts`, `apps/server/test/integration/channels-linking.test.ts`; change `apps/server/src/modules/channels/port.ts` (type `LinkedChat`), `apps/server/src/modules/channels/index.ts`, `apps/server/src/modules/tenancy/repo.ts` and `tenancy/index.ts` (`getMembership`), `apps/server/src/modules/audit/repo.ts` (two event names), `apps/server/test/integration/fixtures.ts` (`addMember`, `linkChat`, `randomChatId`).
   - Interfaces:

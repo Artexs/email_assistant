@@ -42,6 +42,29 @@ export async function listMemberships(db: Db | Transaction<DB>, ctx: TenantConte
   return rows.map((row) => ({ ...row, role: membershipRoleSchema.parse(row.role) }));
 }
 
+export async function getMembership(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  userId: string
+): Promise<MembershipWithUser | undefined> {
+  const row = await db
+    .selectFrom("memberships")
+    .innerJoin("users", "users.id", "memberships.user_id")
+    .select([
+      "memberships.org_id",
+      "memberships.user_id",
+      "memberships.role",
+      "memberships.digest_times",
+      "memberships.created_at",
+      "users.email",
+      "users.display_name",
+    ])
+    .where("memberships.org_id", "=", ctx.orgId)
+    .where("memberships.user_id", "=", userId)
+    .executeTakeFirst();
+  return row ? { ...row, role: membershipRoleSchema.parse(row.role) } : undefined;
+}
+
 export async function insertMembership(
   db: Db | Transaction<DB>,
   ctx: TenantContext,

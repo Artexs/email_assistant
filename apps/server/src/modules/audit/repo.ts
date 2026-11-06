@@ -13,6 +13,8 @@ export const auditEvents = {
   actionPlanned: "action.planned",
   llmCall: "llm.call",
   emailRequeued: "email.requeued",
+  chatLinked: "chat.linked",
+  chatUnlinked: "chat.unlinked",
 } as const;
 
 export interface AuditEvent {

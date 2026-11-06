@@ -1,4 +1,4 @@
-import type { OutMessage } from "@ea/core";
+import type { MembershipRole, OutMessage } from "@ea/core";
 
 export type ChannelErrorKind = "soft" | "rate_limited" | "config" | "blocked" | "bad_request" | "other";
 
@@ -17,4 +17,13 @@ export class ChannelError extends Error {
 export interface ChatChannel {
   send(chatId: number, message: OutMessage): Promise<{ messageId: number }>;
   edit(chatId: number, messageId: number, message: OutMessage): Promise<void>;
+}
+
+/** A private chat bound to one member of one organization. */
+export interface LinkedChat {
+  orgId: string;
+  userId: string;
+  role: MembershipRole;
+  chatId: number;
+  linkedAt: Date;
 }
