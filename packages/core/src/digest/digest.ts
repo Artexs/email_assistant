@@ -28,7 +28,7 @@ export interface DigestMailbox {
   status: "active" | "auth_error" | "paused";
   lastSyncedAt: Date | null;
   statusChangedAt: Date;
-  mode: MailboxMode;
+  mode: MailboxMode | "none";
 }
 
 // No body field: the digest never gets mail bodies (ADR 0005).

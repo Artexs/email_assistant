@@ -212,6 +212,13 @@ describe("renderDigest", () => {
     expect(message.text).not.toContain("Shadow mode");
   });
 
+  test("no shadow line for a mailbox without settings", () => {
+    const message = renderDigest(
+      input({ mailboxes: [{ ...mailbox, mode: "none" }], items: [item(1, "info")], counts: { info: 1 } })
+    );
+    expect(message.text).not.toContain("Shadow mode");
+  });
+
   test("no shadow line without a mailbox", () => {
     const message = renderDigest(input({ mailboxes: [], items: [item(1, "info")], counts: { info: 1 } }));
     expect(message.text).not.toContain("Shadow mode");

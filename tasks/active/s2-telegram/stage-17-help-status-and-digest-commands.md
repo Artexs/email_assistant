@@ -6,7 +6,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 Stage 18 adds `/pause`, `/resume` and the dispatcher (`runCommand`, `createUpdateHandlers`). This stage builds the three read-only replies as separate functions, so no stage has placeholder code.
 
-- [ ] **17.1 `/help` and `/status` replies**
+- [x] **17.1 `/help` and `/status` replies**
   - Goal: the member sees the state of the organization's mailboxes in one message (P6).
   - Files: create `apps/server/src/modules/channels/commands.ts`, `apps/server/test/integration/channels-commands.test.ts`; change `apps/server/src/modules/channels/index.ts`.
   - Interfaces:
@@ -45,7 +45,7 @@ Stage 18 adds `/pause`, `/resume` and the dispatcher (`runCommand`, `createUpdat
   - Done when: the tests pass.
   - Out of scope: changing state (stage 18).
 
-- [ ] **17.2 `/digest` reply**
+- [x] **17.2 `/digest` reply**
   - Goal: the member gets the digest of the current period now (P2, P6), with the same buttons; the scheduled period does not move.
   - Files: change `apps/server/src/modules/channels/commands.ts`, `apps/server/test/integration/channels-commands.test.ts`.
   - Interfaces: `digestNowMessage(deps: CommandDeps, link: LinkedChat): Promise<OutMessage>`.

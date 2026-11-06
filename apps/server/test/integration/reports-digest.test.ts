@@ -220,7 +220,7 @@ describe("buildDigestMessage", () => {
     });
   });
 
-  test("a mailbox without settings counts as shadow", async () => {
+  test("a mailbox without settings is mode none: no shadow line", async () => {
     await withRollback(db, async (trx) => {
       const a = await createOrgWithMailbox(trx);
       await insertTriaged(trx, { orgId: a.orgId }, a.mailboxId, {
@@ -229,7 +229,7 @@ describe("buildDigestMessage", () => {
         subject: "Seed",
       });
       const message = await buildDigestMessage(trx, { orgId: a.orgId }, request);
-      expect(message.text).toContain("Shadow mode: the system changed nothing in your mailbox.");
+      expect(message.text).not.toContain("Shadow mode");
     });
   });
 });

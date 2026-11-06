@@ -63,7 +63,7 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
       status: row.status,
       lastSyncedAt: row.last_synced_at,
       statusChangedAt: row.status_changed_at,
-      mode: settings === undefined ? "shadow" : modeSchema.parse(settings.mode),
+      mode: settings === undefined ? "none" : modeSchema.parse(settings.mode),
     });
   }
 
