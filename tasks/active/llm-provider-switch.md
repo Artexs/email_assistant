@@ -144,7 +144,7 @@ Checks for every code stage: `bun run typecheck`, `bun run lint`, `bun run test:
 
 ### Stage 0 — OpenAI setup and API spike [risky: security, LLM]
 
-- [ ] **0.1 (user) OpenAI project, project key, budget (Q7)**
+- [x] **0.1 (user) OpenAI project, project key, budget (Q7)**
   - Plan text: Create the OpenAI project, the project key and the budget (Q7). Put `OPENAI_API_KEY=` in the Mac `.env`.
     The agent never reads or prints the key. Check: `grep -c '^OPENAI_API_KEY=.' .env` → `1`.
   - Goal: the Mac has a project key with a monthly budget and an alert.
@@ -155,7 +155,7 @@ Checks for every code stage: `bun run typecheck`, `bun run lint`, `bun run test:
   - Done when: both checks are true. The main session writes the budget value in the log.
   - Out of scope: the agent never runs `cat .env`, `grep OPENAI_API_KEY .env` without `-c`, or any command that prints the key.
 
-- [ ] **0.2 `openai` dependency and API spike**
+- [x] **0.2 `openai` dependency and API spike**
   - Plan text: Add `openai` (exact version) to `apps/server/package.json`. A throwaway spike script (outside git) calls `gpt-6-luna` with the real
     triage schema: strict mode, `store: false`, effort `none`. Record: schema accepted or the rejected keywords; the error shape (class, status,
     `code`, `type`) of a bad key, an unknown model, a bad schema, and a refusal if one can be made with test text; the usage fields.
@@ -842,6 +842,7 @@ Added by the planner on 2026-11-06. Questions 1 and 2 are the open Q6 and Q7. Qu
 
 ## Log
 
+- 2026-11-06: Stage 0 done, reviewer PASS. Budget: $3 per month (user; lower than the $10 proposal; the plan needs under $0.10). Spike facts in `notes/2026-11-06-openai-api-facts.md`: D6 removes only the root `$schema` (`maxLength`, `pattern`, `anyOf` null accepted); strict schema 400 = `invalid_json_schema`, param `text.format.schema`; no credit = 429 `credit_balance_exhausted`, type `insufficient_quota` (seen live); effort values `none, minimal, low, medium, high, xhigh, max`; `AbortSignal.timeout` gives `APIUserAbortError`, request `timeout` gives `APIConnectionTimeoutError`; `incomplete` still carries `output_text`; no refusal seen; usage `output_tokens_details.reasoning_tokens`.
 - 2026-11-06: User approved the plan with all recommendations: Q6a yes, Q6b both options in `s6-pre-sale.md`, Q7 $10 per month with alert at 80%, `OPENAI_MODEL` default `gpt-6.1-terra`, `eval --real --model` drops rows without a model and shows their count as `none`, stage 3 split into 3 and 3b.
 - 2026-11-06: Planner added the step detail for stages 0–8 (stage 9 stays optional). Five questions under "Questions for the user" (Q6, Q7, `OPENAI_MODEL` default, `eval --real --model` rows, stage 3 size).
 - 2026-11-06: The user put `OPENAI_API_KEY` in the Mac `.env` (count check → 1).
