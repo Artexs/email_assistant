@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 2 — Core: local time and the digest schedule
 
-- [ ] **2.1 Local time, clock texts and quiet hours (`packages/core/src/digest/local-time.ts`)**
+- [x] **2.1 Local time, clock texts and quiet hours (`packages/core/src/digest/local-time.ts`)**
   - Goal: pure time-zone helpers for the digest schedule, the quiet hours (P4) and the "HH:MM" texts.
   - Files: create `packages/core/src/digest/local-time.ts`, `packages/core/src/digest/local-time.test.ts`, `packages/core/src/digest/index.ts` (re-exports of the digest folder); change `packages/core/src/index.ts` (add `export * from "./digest";`).
   - Interfaces:
@@ -36,7 +36,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
   - Done when: the tests pass.
   - Out of scope: the digest slot logic (step 2.2), any I/O.
 
-- [ ] **2.2 Digest times and the due slot (`packages/core/src/digest/schedule.ts`)**
+- [x] **2.2 Digest times and the due slot (`packages/core/src/digest/schedule.ts`)**
   - Goal: pure rules for "which digest is due now" (P1, D15), safe across daylight-saving changes and restarts.
   - Files: create `packages/core/src/digest/schedule.ts`, `packages/core/src/digest/schedule.test.ts`; export from `packages/core/src/digest/index.ts`.
   - Interfaces:
