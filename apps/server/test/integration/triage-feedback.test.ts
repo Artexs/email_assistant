@@ -75,6 +75,36 @@ describe("recordFeedback", () => {
     });
   });
 
+  test("skipIfSame writes nothing for a repeated answer; without it every label is a row", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId };
+      const plain = await createTriagedEmail(trx, a, { messageId: "<p@x.test>" });
+      const skipped = await createTriagedEmail(trx, a, { messageId: "<s@x.test>" });
+
+      const one = await recordFeedback(trx, ctx, { emailId: plain, trueCategory: "info", source: "cli" });
+      const two = await recordFeedback(trx, ctx, { emailId: plain, trueCategory: "info", source: "cli" });
+      expect([one.saved, two.saved]).toEqual([true, true]);
+      expect(await feedbackRows(trx, plain)).toHaveLength(2);
+
+      const first = await recordFeedback(trx, ctx, {
+        emailId: skipped,
+        trueCategory: "info",
+        source: "telegram",
+        skipIfSame: true,
+      });
+      const repeat = await recordFeedback(trx, ctx, {
+        emailId: skipped,
+        trueCategory: "info",
+        source: "telegram",
+        skipIfSame: true,
+      });
+      expect(first.saved).toBe(true);
+      expect(repeat).toEqual({ id: first.id, verdict: "right", saved: false });
+      expect(await feedbackRows(trx, skipped)).toHaveLength(1);
+    });
+  });
+
   test("a verdict alone is stored with a NULL true category", async () => {
     await withRollback(db, async (trx) => {
       const a = await createOrgWithMailbox(trx);

@@ -41,3 +41,4 @@ export { telegramErrorLabel } from "./telegram/errors";
 export { createOutboxSender, type SenderDeps } from "./sender";
 export { detectNotices, type NoticeDeps } from "./notices";
 export { scheduleDigests, type DigestJobDeps } from "./digest-job";
+export { handleCallback, pickerMessage, type CallbackDeps } from "./callbacks";

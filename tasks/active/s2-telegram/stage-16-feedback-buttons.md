@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 16 — Feedback buttons [risky]
 
-- [ ] **16.1 ✅ / ✏️ taps write `triage_feedback` after the tenant check**
+- [x] **16.1 ✅ / ✏️ taps write `triage_feedback` after the tenant check**
   - Goal: a tap writes one `triage_feedback` row through `triage.recordFeedback()` (architecture §4.4) for a mail of the member's own organization only (P5); a repeat tap with the same answer writes nothing.
   - Files: create `apps/server/src/modules/channels/callbacks.ts`, `apps/server/test/integration/channels-callbacks.test.ts`; change `apps/server/src/modules/triage/feedback.ts`, `triage/repo.ts`, `triage/index.ts`, `apps/server/test/integration/triage-feedback.test.ts`, `apps/server/src/modules/channels/index.ts`.
   - Interfaces:

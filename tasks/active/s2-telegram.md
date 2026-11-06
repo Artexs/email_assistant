@@ -1,4 +1,4 @@
-> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open, deferred by the user until stage 21. Stages 1–10 done; checkpoint 2 passed (user go). Stages 11–15 done. Left: stages 16–23, then the done-checklist.
+> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open, deferred by the user until stage 21. Stages 1–10 done; checkpoint 2 passed (user go). Stages 11–16 done. Left: stages 17–23, then the done-checklist.
 
 # S2 Telegram
 
@@ -132,7 +132,7 @@ Each stage lives in its own file in [`s2-telegram/`](s2-telegram/). An implement
 - [x] [Stage 13](s2-telegram/stage-13-digest-job.md) — Digest job [risky]
 - [x] [Stage 14](s2-telegram/stage-14-update-router.md) — Update router [risky]
 - [x] [Stage 15](s2-telegram/stage-15-polling-and-bot-commands.md) — Polling and the bot command list
-- [ ] [Stage 16](s2-telegram/stage-16-feedback-buttons.md) — Feedback buttons [risky]
+- [x] [Stage 16](s2-telegram/stage-16-feedback-buttons.md) — Feedback buttons [risky]
 - [ ] [Stage 17](s2-telegram/stage-17-help-status-and-digest-commands.md) — Commands: `/help`, `/status`, `/digest`
 - [ ] [Stage 18](s2-telegram/stage-18-pause-and-resume.md) — Commands: `/pause`, `/resume` [risky]
 - [ ] [Stage 19](s2-telegram/stage-19-mailbox-password.md) — `mailbox:password`: leave `auth_error` [risky]
@@ -188,3 +188,4 @@ Answered 2026-11-05: the user approved the plan as written, so each question kee
 - 2026-11-06: Stage 13 built (`channels/digest-job.ts` `scheduleDigests`: digest row and outbox row in one transaction, late slots, per-link errors; 12 tests), reviewer PASS (Sonnet; `test:int` 2 runs). Optional minor not done: no test for the rollback path when the outbox row already exists (the test transaction cannot show the rollback).
 - 2026-11-06: Stage 14 built (`channels/telegram/bot.ts` router, `channels/texts.ts`, test helpers `telegram-helpers.ts`; 12 router tests), reviewer PASS (Opus, high). Minors fixed: one shared `isNotModified` in `telegram/errors.ts`; a test for the button answer / edit error branches. Fact: `bot.handleUpdate` rethrows as `BotError`; `bot.catch` runs only in `bot.start` (stage 15 uses it). Question for the user: a linked chat that sends its used `/start <token>` again gets "ask for a new link" (plan D3).
 - 2026-11-06: Stage 15 built (`channels/telegram/polling.ts` `startPolling`, `BOT_COMMANDS`; 8 tests on a fake Bot API), reviewer PASS (Sonnet). Deviation: the 409 retry count resets after a good `getUpdates` (API transformer), not in `onStart` (it fires before the first `getUpdates`, so the delay would stay at 1 min). Minors fixed: tests for the reset and for a failing `bot.stop()`; a dead `onStart` guard removed.
+- 2026-11-06: Stage 16 built (`channels/callbacks.ts` `handleCallback`, `pickerMessage`; `latestFeedback`, `getLabelTarget`; `recordFeedback` `skipIfSame`; 8 tests), reviewer PASS (Opus, high). Stage 18 wires `handleCallback` into the router. Main session fixed the tie-break comment in `latestFeedback` (minor).

@@ -4,7 +4,7 @@ import type { Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 import { listSummaries } from "../actions";
 
-import { insertFeedback, latestTriageResult, listUnlabeled, type MailKind } from "./repo";
+import { insertFeedback, latestFeedback, latestTriageResult, listUnlabeled, type MailKind } from "./repo";
 
 export interface RecordFeedbackInput {
   emailId: string;
@@ -12,6 +12,8 @@ export interface RecordFeedbackInput {
   verdict?: FeedbackVerdict;
   source: FeedbackSource;
   userId?: string;
+  // The latest row of the mail already holds this answer: write nothing.
+  skipIfSame?: boolean;
 }
 
 export interface LabelItem {
@@ -30,7 +32,7 @@ export async function recordFeedback(
   db: Db,
   ctx: TenantContext,
   input: RecordFeedbackInput
-): Promise<{ id: string; verdict: FeedbackVerdict }> {
+): Promise<{ id: string; verdict: FeedbackVerdict; saved: boolean }> {
   if (input.trueCategory === undefined && input.verdict === undefined) {
     throw new HardError("feedback needs a true category or a verdict");
   }
@@ -47,6 +49,12 @@ export async function recordFeedback(
       : input.trueCategory === latest.category
         ? "right"
         : "wrong";
+  if (input.skipIfSame) {
+    const previous = await latestFeedback(db, ctx, input.emailId);
+    if (previous && previous.verdict === verdict && previous.true_category === (input.trueCategory ?? null)) {
+      return { id: previous.id, verdict, saved: false };
+    }
+  }
   const id = await insertFeedback(db, ctx, {
     emailId: input.emailId,
     verdict,
@@ -54,7 +62,7 @@ export async function recordFeedback(
     source: input.source,
     userId: input.userId ?? null,
   });
-  return { id, verdict };
+  return { id, verdict, saved: true };
 }
 
 function readModelCategory(fields: unknown): Category | null {

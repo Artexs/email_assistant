@@ -110,7 +110,7 @@ export async function insertTriageResult(db: DbOrTrx, ctx: TenantContext, row: T
   return inserted.id;
 }
 
-// Newest first; `id` breaks a tie of `created_at` (rows of one transaction share `now()`).
+// Newest first; on a `created_at` tie `id` gives a stable order, the same as `listLabeledResults`.
 export async function latestTriageResult(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -148,6 +148,56 @@ export async function insertFeedback(db: DbOrTrx, ctx: TenantContext, row: Feedb
 }
 
 const verdictSchema = z.enum(feedbackVerdicts);
+
+// Newest first; on a `created_at` tie `id` gives a stable order, the same as `listLabeledResults`.
+export async function latestFeedback(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailId: string
+): Promise<{ id: string; verdict: FeedbackVerdict; true_category: Category | null } | undefined> {
+  const row = await db
+    .selectFrom("triage_feedback")
+    .select(["id", "verdict", "true_category"])
+    .where("org_id", "=", ctx.orgId)
+    .where("email_id", "=", emailId)
+    .orderBy("created_at", "desc")
+    .orderBy("id", "desc")
+    .limit(1)
+    .executeTakeFirst();
+  if (!row) {
+    return undefined;
+  }
+  return {
+    id: row.id,
+    verdict: verdictSchema.parse(row.verdict),
+    true_category: row.true_category === null ? null : categorySchema.parse(row.true_category),
+  };
+}
+
+// The latest triage result of an e-mail and its subject; undefined for an unknown e-mail or one of another org.
+export async function getLabelTarget(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailId: string
+): Promise<{ category: Category; subject: string | null } | undefined> {
+  const row = await db
+    .selectFrom("triage_results")
+    .innerJoin("emails", (join) =>
+      join.onRef("emails.id", "=", "triage_results.email_id").onRef("emails.org_id", "=", "triage_results.org_id")
+    )
+    .select(["triage_results.category", "emails.subject"])
+    .where("triage_results.org_id", "=", ctx.orgId)
+    .where("emails.org_id", "=", ctx.orgId)
+    .where("triage_results.email_id", "=", emailId)
+    .orderBy("triage_results.created_at", "desc")
+    .orderBy("triage_results.id", "desc")
+    .limit(1)
+    .executeTakeFirst();
+  if (!row) {
+    return undefined;
+  }
+  return { category: categorySchema.parse(row.category), subject: row.subject };
+}
 
 // The latest result per email with no feedback row, newest mail first.
 export async function listUnlabeled(

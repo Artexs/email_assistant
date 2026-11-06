@@ -7,7 +7,9 @@ export type { ClassifierEmail, SenderContext } from "./classifier";
 export {
   countTriagedBetween,
   insertFeedback,
+  getLabelTarget,
   insertTriageResult,
+  latestFeedback,
   latestTriageResult,
   listLabeledResults,
   listTriagedBetween,
