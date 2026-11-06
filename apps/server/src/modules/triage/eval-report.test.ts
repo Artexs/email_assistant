@@ -102,7 +102,15 @@ function casesReport(over: Partial<CasesEvalReport> = {}): CasesEvalReport {
 }
 
 function realReport(over: Partial<RealEvalReport> = {}): RealEvalReport {
-  return { ...base(predictions()), kind: "real", mail: "real", labeled: 99, ...over };
+  return {
+    ...base(predictions()),
+    kind: "real",
+    mail: "real",
+    labeled: 99,
+    modelFilter: null,
+    modelCounts: {},
+    ...over,
+  };
 }
 
 function decisionOf(md: string, category: Category): string {
@@ -203,6 +211,14 @@ describe("renderEvalReport", () => {
     expect(md99).toContain("Rule results (blocklist");
     expect(md99).not.toMatch(/whitelist|injection|usage/i);
     expect(decisionOf(md99, "urgent")).toBe("no-go: too few");
+  });
+
+  test("real: model filter and rows per model", () => {
+    const counts = { none: 1, "gpt-6-luna": 2, "gemini-3.5-flash-lite": 3 };
+    const md = renderEvalReport(realReport({ modelFilter: "gpt-6-luna", modelCounts: counts }));
+    expect(md).toContain("- model filter: gpt-6-luna");
+    expect(md).toContain("- rows per model: gemini-3.5-flash-lite 3, gpt-6-luna 2, none 1");
+    expect(renderEvalReport(realReport({ modelCounts: counts }))).not.toContain("model filter");
   });
 
   test("no case body in the output", async () => {

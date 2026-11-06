@@ -103,9 +103,24 @@ export interface RealEvalReport extends EvalReportBase {
   kind: "real";
   mail: MailKind;
   labeled: number;
+  modelFilter: string | null;
+  modelCounts: Record<string, number>;
 }
 
 export type EvalReport = CasesEvalReport | RealEvalReport;
+
+// The state file of one run. Gemini has no effort, so its names stay as before.
+export function evalStateFileName(opts: {
+  model: string;
+  reasoningEffort: string | null;
+  promptVersion: string;
+  set: string;
+  perCategory?: number;
+}): string {
+  const effort = opts.reasoningEffort === null ? "" : `-${opts.reasoningEffort}`;
+  const perCategory = opts.perCategory === undefined ? "" : `-pc${opts.perCategory}`;
+  return `${opts.model.replace(/[^\w.-]/g, "_")}${effort}-${opts.promptVersion}-${opts.set}${perCategory}.jsonl`;
+}
 
 export function toClassifierInput(c: EvalCase): ClassifierEmail {
   const n = c.thread.length;

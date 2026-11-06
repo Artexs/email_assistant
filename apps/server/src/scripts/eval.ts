@@ -8,15 +8,16 @@ import { z } from "zod";
 import {
   buildRealReport,
   evalExitCode,
+  evalStateFileName,
   listLabeledResults,
   parseCaseResults,
   PROMPT_VERSION,
   renderEvalReport,
   runEval,
 } from "../modules/triage";
-import { llmSettings, loadConfig } from "../platform/config";
+import { llmSettings, loadConfig, openAiReasoningEfforts } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
-import { createLlmClient, LlmConfigError } from "../platform/llm";
+import { createLlmClient, LlmConfigError, llmProviderIds } from "../platform/llm";
 import { createLog } from "../platform/log";
 
 const log = createLog("eval");
@@ -26,15 +27,17 @@ const runsDir = resolve(import.meta.dir, "../../../../evals/.runs");
 const sets = ["synthetic", "injection", "all"] as const;
 
 const usage = [
-  "usage: bun run eval [--model <id>] [--set synthetic|injection|all] [--bar 0.98] [--min-kept 30]",
+  "usage: bun run eval [--provider gemini|openai] [--model <id>] [--reasoning-effort <value>] [--set synthetic|injection|all] [--bar 0.98] [--min-kept 30]",
   "                    [--retries 4] [--limit n] [--per-category n] [--state <file.jsonl>] [--fresh]",
   "                    [--out <file.md>]",
-  "       bun run eval --real --org-id <uuid> --mailbox-id <uuid> [--synthetic] [--bar 0.98] [--min-kept 30]",
+  "       bun run eval --real --org-id <uuid> --mailbox-id <uuid> [--synthetic] [--model <id>] [--bar 0.98] [--min-kept 30]",
   "                    [--out <file.md>]",
 ].join("\n");
 
 const optionsSchema = z.object({
+  provider: z.enum(llmProviderIds).optional(),
   model: z.string().min(1).optional(),
+  "reasoning-effort": z.enum(openAiReasoningEfforts).optional(),
   set: z.enum(sets).default("all"),
   bar: z.coerce.number().min(0).max(1).default(0.98),
   "min-kept": z.coerce.number().int().positive().default(30),
@@ -52,14 +55,25 @@ const optionsSchema = z.object({
 
 // --real reads labels from the DB and takes no case-run options; the case run takes no DB options.
 const realOnly = ["org-id", "mailbox-id", "synthetic"] as const;
-const casesOnly = ["model", "set", "retries", "limit", "per-category", "state", "fresh"] as const;
+const casesOnly = [
+  "provider",
+  "reasoning-effort",
+  "set",
+  "retries",
+  "limit",
+  "per-category",
+  "state",
+  "fresh",
+] as const;
 
 function readOptions() {
   try {
     const { values } = parseArgs({
       args: process.argv.slice(2),
       options: {
+        provider: { type: "string" },
         model: { type: "string" },
+        "reasoning-effort": { type: "string" },
         set: { type: "string" },
         bar: { type: "string" },
         "min-kept": { type: "string" },
@@ -114,8 +128,11 @@ async function runReal(
       minKept: options["min-kept"],
       mail,
       now: new Date(),
+      model: options.model,
     });
-    const markdown = renderEvalReport(report, { title: `Eval report: ${mail} labels` });
+    const markdown = renderEvalReport(report, {
+      title: `Eval report: ${mail} labels${options.model === undefined ? "" : `, model ${options.model}`}`,
+    });
     out(markdown);
     if (options.out !== undefined) writeFileSync(options.out, markdown);
     return evalExitCode(report);
@@ -133,19 +150,25 @@ async function main(): Promise<number> {
   if (options.real) return runReal(options, options["org-id"] as string, options["mailbox-id"] as string);
 
   const config = loadConfig();
-  const settings = llmSettings(config);
+  const settings = llmSettings(config, options.provider ?? config.LLM_PROVIDER);
+  const effort = options["reasoning-effort"] ?? settings.reasoningEffort;
+  if (options["reasoning-effort"] !== undefined && settings.reasoningEffort === null) {
+    log.error(usage);
+    return 1;
+  }
   if (settings.apiKey === undefined) {
     log.error(`${settings.apiKeyName} is missing`);
     return 1;
   }
   const model = options.model ?? settings.classifierModel;
+  log.info(`provider=${settings.provider} model=${model} effort=${effort ?? "-"}`);
   const llm = createLlmClient({
     provider: settings.provider,
     apiKey: settings.apiKey,
     classifierModel: settings.classifierModel,
     timeoutMs: settings.timeoutMs,
     rpm: settings.rpm,
-    reasoningEffort: settings.reasoningEffort,
+    reasoningEffort: effort,
   });
 
   const selected = selectCases(
@@ -158,10 +181,18 @@ async function main(): Promise<number> {
   const cases = options.limit === undefined ? selected : selected.slice(0, options.limit);
 
   // The state file holds per-case results (ids, categories, numbers), no mail text. It lives outside git.
-  const perCategory = options["per-category"] === undefined ? "" : `-pc${options["per-category"]}`;
   const stateFile =
     options.state ??
-    resolve(runsDir, `${model.replace(/[^\w.-]/g, "_")}-${PROMPT_VERSION}-${options.set}${perCategory}.jsonl`);
+    resolve(
+      runsDir,
+      evalStateFileName({
+        model,
+        reasoningEffort: effort,
+        promptVersion: PROMPT_VERSION,
+        set: options.set,
+        perCategory: options["per-category"],
+      })
+    );
   if (options.fresh) rmSync(stateFile, { force: true });
   mkdirSync(dirname(stateFile), { recursive: true });
   const done = existsSync(stateFile) ? parseCaseResults(readFileSync(stateFile, "utf8")) : [];
@@ -179,7 +210,7 @@ async function main(): Promise<number> {
         cases,
         model,
         provider: settings.provider,
-        reasoningEffort: settings.reasoningEffort,
+        reasoningEffort: effort,
         bar: options.bar,
         minKept: options["min-kept"],
         retries: options.retries,

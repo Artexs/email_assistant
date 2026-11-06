@@ -45,6 +45,8 @@ function header(report: EvalReport): string[] {
       return [
         `- date: ${date}`,
         `- ${report.labeled} labeled ${report.mail === "synthetic" ? "synthetic" : "real"} mails`,
+        ...(report.modelFilter === null ? [] : [`- model filter: ${report.modelFilter}`]),
+        `- rows per model: ${rowsPerModel(report.modelCounts)}`,
         ...(report.mail === "synthetic" ? ["- synthetic mail, dev check"] : []),
         `- rule results: ${report.ruleSummary.rule.total}`,
         `- errors: ${report.errors}`,
@@ -58,6 +60,14 @@ function header(report: EvalReport): string[] {
         "",
       ];
   }
+}
+
+function rowsPerModel(counts: Record<string, number>): string {
+  const ids = Object.keys(counts)
+    .filter((id) => id !== "none")
+    .sort();
+  if (counts.none !== undefined) ids.push("none");
+  return ids.length === 0 ? "-" : ids.map((id) => `${id} ${counts[id]}`).join(", ");
 }
 
 function sharedParts(report: EvalReport): string[] {

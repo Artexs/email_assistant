@@ -49,9 +49,16 @@ export function buildRealPredictions(rows: LabeledRows): Prediction[] {
 
 export function buildRealReport(
   rows: LabeledRows,
-  opts: { bar: number; minKept: number; mail: MailKind; now: Date }
+  opts: { bar: number; minKept: number; mail: MailKind; now: Date; model?: string }
 ): RealEvalReport {
-  const predictions = buildRealPredictions(rows);
+  // Rows without a model (rules, errors, blocked calls) count as "none" and drop out under a model filter.
+  const modelCounts: Record<string, number> = {};
+  for (const row of rows) {
+    const key = row.model ?? "none";
+    modelCounts[key] = (modelCounts[key] ?? 0) + 1;
+  }
+  const kept = opts.model === undefined ? rows : rows.filter((row) => row.model === opts.model);
+  const predictions = buildRealPredictions(kept);
   const sweep = {} as RealEvalReport["sweep"];
   const histogram = {} as RealEvalReport["histogram"];
   for (const category of categories) {
@@ -62,7 +69,9 @@ export function buildRealReport(
   return {
     kind: "real",
     mail: opts.mail,
-    labeled: rows.length,
+    labeled: kept.length,
+    modelFilter: opts.model ?? null,
+    modelCounts,
     bar: opts.bar,
     minKept: opts.minKept,
     startedAt: opts.now,

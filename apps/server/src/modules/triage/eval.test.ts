@@ -7,8 +7,9 @@ import { z } from "zod";
 
 import { LlmBlockedError, LlmConfigError, type LlmClient, LlmSoftError, type LlmUsage } from "../../platform/llm";
 
-import { type CaseResult, parseCaseResults, runEval, toClassifierInput, toPrediction } from "./eval";
+import { type CaseResult, evalStateFileName, parseCaseResults, runEval, toClassifierInput, toPrediction } from "./eval";
 import { evalExitCode } from "./eval-report";
+import { PROMPT_VERSION } from "./prompts/classifier-v1";
 
 const usage: LlmUsage = { model: "gemini-3.5-flash-lite", tokensIn: 100, tokensOut: 20, latencyMs: 50 };
 
@@ -379,5 +380,25 @@ describe("runEval", () => {
       const picked = selectCases([...load("synthetic.json"), ...load("injection.json")], { perCategory: 3 });
       expect(picked).toHaveLength(18);
     });
+  });
+});
+
+describe("evalStateFileName", () => {
+  const base = { reasoningEffort: null, promptVersion: PROMPT_VERSION, set: "all" };
+
+  test("Gemini name has no effort part", () => {
+    expect(evalStateFileName({ ...base, model: "gemini-3.5-flash-lite" })).toBe(
+      "gemini-3.5-flash-lite-classifier-v1-all.jsonl"
+    );
+  });
+
+  test("OpenAI name holds the effort", () => {
+    expect(evalStateFileName({ ...base, model: "gpt-6-luna", reasoningEffort: "none" })).toBe(
+      "gpt-6-luna-none-classifier-v1-all.jsonl"
+    );
+  });
+
+  test("subset suffix and unsafe characters", () => {
+    expect(evalStateFileName({ ...base, model: "a/b c", perCategory: 3 })).toBe("a_b_c-classifier-v1-all-pc3.jsonl");
   });
 });

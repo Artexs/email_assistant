@@ -180,6 +180,33 @@ describe("buildRealPredictions", () => {
 });
 
 describe("buildRealReport", () => {
+  test("a model filter keeps one model's rows and the counts show all rows", async () => {
+    await withRollback(db, async (trx) => {
+      const tenant = await createOrgWithMailbox(trx);
+      const { labeled } = await predictionsFor(trx, tenant, [
+        { category: "info", verdict: "right", model: "gemini-3.5-flash-lite" },
+        { category: "info", verdict: "right", model: "gemini-3.5-flash-lite" },
+        { category: "urgent", verdict: "right", model: "gpt-6-luna" },
+        { category: "spam", verdict: "right", reasonCode: "blocklist", model: null, confidence: 1 },
+      ]);
+      const opts = { bar: 0.98, minKept: 30, mail: "real" as const, now: new Date("2026-11-06T12:00:00Z") };
+      const counts = { "gemini-3.5-flash-lite": 2, "gpt-6-luna": 1, none: 1 };
+
+      const all = buildRealReport(labeled, opts);
+      expect(all.modelFilter).toBeNull();
+      expect(all.labeled).toBe(4);
+      expect(all.predictions).toHaveLength(4);
+      expect(all.modelCounts).toEqual(counts);
+
+      const filtered = buildRealReport(labeled, { ...opts, model: "gpt-6-luna" });
+      expect(filtered.modelFilter).toBe("gpt-6-luna");
+      expect(filtered.labeled).toBe(1);
+      expect(filtered.predictions).toHaveLength(1);
+      expect(filtered.modelCounts).toEqual(counts);
+      expect(renderEvalReport(filtered)).toContain("- rows per model: gemini-3.5-flash-lite 2, gpt-6-luna 1, none 1");
+    });
+  });
+
   test("gives kind real, labeled = N, the error counts, and a warning under 100 labels", async () => {
     await withRollback(db, async (trx) => {
       const tenant = await createOrgWithMailbox(trx);

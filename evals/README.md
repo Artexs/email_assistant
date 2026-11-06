@@ -37,7 +37,9 @@ The LLM call sends no generation settings (step 10.1), so results can change bet
 
 Flags (all optional):
 
-- `--model <id>`: classifier model. Default: `GEMINI_MODEL_CLASSIFIER`.
+- `--provider gemini|openai`: LLM provider. Default: `LLM_PROVIDER`.
+- `--model <id>`: classifier model. Default: the classifier model of the provider (`GEMINI_MODEL_CLASSIFIER` or `OPENAI_MODEL_CLASSIFIER`).
+- `--reasoning-effort <value>`: reasoning effort (OpenAI only). Default: `OPENAI_REASONING_EFFORT`. With Gemini the command prints the usage and exits 1.
 - `--set synthetic|injection|all`: which case files. Default `all`.
 - `--per-category <n>`: fixed subset through `selectCases` (see "Subset rule").
 - `--limit <n>`: keep only the first `n` cases after the subset.
@@ -45,10 +47,10 @@ Flags (all optional):
 - `--bar <0..1>`: precision bar for "go". Default 0.98.
 - `--min-kept <n>`: minimum kept rows per category for "go". Default 30.
 - `--out <file.md>`: also write the report to a file.
-- `--state <file.jsonl>`: state file. Default `evals/.runs/<model>-<prompt-version>-<set>[-pc<n>].jsonl`.
+- `--state <file.jsonl>`: state file. Default `evals/.runs/<model>[-<effort>]-<prompt-version>-<set>[-pc<n>].jsonl`.
 - `--fresh`: delete the state file first.
 
-`bun run eval --real --org-id <uuid> --mailbox-id <uuid> [--synthetic]` reads the labels from `triage_feedback`. It makes no LLM call.
+`bun run eval --real --org-id <uuid> --mailbox-id <uuid> [--synthetic] [--model <id>]` reads the labels from `triage_feedback`. It makes no LLM call. With `--model` the report uses only the rows of that model; rows without a model (rules, errors, blocked calls) drop out. The header always shows the rows per model, with `none` for rows without a model.
 
 ### Resume
 
@@ -57,12 +59,12 @@ A line holds ids, categories, numbers and codes only, no mail text.
 
 - On start, cases with a result and no error are skipped (no LLM call). A case blocked by Google counts as done.
 - Cases that ended in an error run again. The report shows "N error cases: run again with the same command to retry them".
-- The default state file name holds the model, the prompt version and the set. After a change of the expected labels in `evals/cases`, use `--fresh`.
+- The default state file name holds the model, the effort (OpenAI), the prompt version and the set. After a change of the expected labels in `evals/cases`, use `--fresh`.
 - After 3 cases in a row end in an error (retries used up), the run stops. The report says "run not complete" and the exit code is 2.
   Run the same command again later (for example after the daily quota reset at midnight Pacific time).
 - Exit codes: 0 = pass, 1 = a check failed (whitelist below 100%, an injection case failed, or more than 10% errors in a complete run), 2 = run not complete.
 
-### Quota
+### Quota (Gemini)
 
 The runner and the worker share one Gemini project quota (free tier).
 
@@ -70,6 +72,8 @@ The runner and the worker share one Gemini project quota (free tier).
 - `--set all --per-category 3` is 18 cases (15 synthetic and 3 injection): 18 requests, at most 36 with `--retries 1`.
 - The `gemini-3.8-flash` comparison uses `--per-category 3 --retries 1`, 18 to 36 requests per model. The free tier allows about 20 requests per day for this model [not verified], so the run can need two days.
 - With `TRIAGE_LLM_SCOPE=all` on the VPS, check the quota left for the day before you start a run.
+
+OpenAI has no free daily quota. The project budget and the rate limit apply. A 92-case run with `gpt-6-luna` costs about $0.01.
 
 ## Subset rule
 
