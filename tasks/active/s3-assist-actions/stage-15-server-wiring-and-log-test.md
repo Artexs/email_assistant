@@ -6,8 +6,8 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 
 - [ ] **15.1 Config key, jobs in `main.ts`, shutdown**
   - Goal: the server runs the committer and the returned job every 15 s under the configured scope, passes the scope to Telegram, and stops cleanly.
-  - Files: change `apps/server/src/platform/config.ts`, `apps/server/src/platform/config.test.ts` (if present; else `apps/server/test/integration/config.test.ts`), `.env.example`, `apps/server/src/main.ts`, `apps/server/src/modules/channels/telegram/runtime.ts` (stage 13 added `actionsScope`; `main.ts` passes `config.ACTIONS_SCOPE`).
-  - Interfaces: `configSchema` gets `ACTIONS_SCOPE: z.enum(["off", "synthetic", "all"]).default("off")`; `superRefine`: `all` without `TEST_MAILBOX_ADDRESS` → issue on `TEST_MAILBOX_ADDRESS`. `.env.example`:
+  - Files: change `apps/server/src/platform/config.ts`, `apps/server/src/platform/config.test.ts`, `.env.example`, `apps/server/src/main.ts`, `apps/server/src/modules/channels/telegram/runtime.ts` (stage 13 added `actionsScope: ActionsScope`; `main.ts` passes the `actionsScope(config)` result).
+  - Interfaces: `config.ts` has the shape of the llm-provider-switch commits (`baseSchema = z.object({…})`, `configSchema = baseSchema.superRefine(…)`, `llmSettings()`). Add `ACTIONS_SCOPE: z.enum(["off", "synthetic", "all"]).default("off")` to `baseSchema`, and add one check to the existing `superRefine` (do not add a second one): `ACTIONS_SCOPE === "all"` without `TEST_MAILBOX_ADDRESS` → issue on `TEST_MAILBOX_ADDRESS` (`message: "needed when ACTIONS_SCOPE is all"`). Read `git log --oneline -5 -- apps/server/src/platform/config.ts apps/server/src/main.ts` first: the parallel task may have changed them again. `.env.example`:
 
     ```
     # off = the committer changes nothing in any mailbox (summaries are still saved). synthetic = mailbox changes only for synthetic mail
@@ -16,7 +16,7 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
     ```
 
   - Decisions:
-    - `actionsScope(config): ActionsScope` in `main.ts` like `triageScope`: `off` → info line `actions committer: mailbox changes are off (ACTIONS_SCOPE=off)`; `synthetic` → info `actions committer applies mailbox changes to synthetic mail only`; `all` → warn `actions committer applies mailbox changes to the real mail of the TEST_MAILBOX_ADDRESS mailbox (ACTIONS_SCOPE=all)`.
+    - `actionsScope(config): ActionsScope` in `main.ts` like `triageScope` (`all` → `{ kind: "all", mailboxAddress: config.TEST_MAILBOX_ADDRESS }`; the one value goes to the committer and to the Telegram runtime): `off` → info line `actions committer: mailbox changes are off (ACTIONS_SCOPE=off)`; `synthetic` → info `actions committer applies mailbox changes to synthetic mail only`; `all` → warn `actions committer applies mailbox changes to the real mail of the TEST_MAILBOX_ADDRESS mailbox (ACTIONS_SCOPE=all)`.
     - Jobs: `scheduler.add("actions.committer", "*/15 * * * * *", …)` and `scheduler.add("triage.returned", "*/15 * * * * *", …)` with `committerRun` / `returnedRun` promises that `shutdown()` adds to the `allSettled` list (the 30 s wait covers them: one mailbox batch of 20 actions takes seconds). The committer job is always built (the scope decides what it claims): `save_summary` rows are applied under every scope.
     - The committer's `secrets` is the `createSecretBox` of `main.ts`; `openProvider` is `openImapProvider`.
     - `GET /health` is unchanged.

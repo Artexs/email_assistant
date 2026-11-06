@@ -6,7 +6,7 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 
 - [ ] **3.1 Port methods and the fake provider (D1)**
   - Goal: `MailProvider` can read and write in any folder; the fake behaves like a server with or without MOVE and UIDPLUS, and like Interia (UID kept on a copy) on request.
-  - Files: change `apps/server/src/modules/mail/port.ts`, `apps/server/src/modules/mail/fake/index.ts`, `apps/server/src/modules/mail/fake/fake.test.ts`, `apps/server/test/contract/mail-provider.ts`, `apps/server/src/modules/mail/index.ts`.
+  - Files: change `apps/server/src/modules/mail/port.ts`, `apps/server/src/modules/mail/fake/index.ts`, `apps/server/src/modules/mail/fake/fake.test.ts`, `apps/server/test/contract/mail-provider.ts`, `apps/server/src/modules/mail/index.ts`, `apps/server/src/modules/mail/imap/client.ts` (stub methods only, see Decisions).
   - Interfaces (`port.ts`; every folder argument is a real folder path; `INBOX` is the constant):
 
     ```ts
@@ -17,7 +17,13 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
       // The UID in the target folder when the server reports it (COPYUID / MOVE with UIDPLUS); else null.
       newUid: number | null;
     }
-    export class MailNotFoundError extends HardError {} // name "MailNotFoundError": the UID is not in the folder
+    // The UID is not in the folder. Set the name like MailAuthError: the HardError constructor sets "HardError", and describeError prints the name.
+    export class MailNotFoundError extends HardError {
+      constructor(message: string, options?: { cause?: unknown }) {
+        super(message, options);
+        this.name = "MailNotFoundError";
+      }
+    }
     export interface MailProvider {
       // … the S1a read methods stay, except findByMessageId (removed in stage 5) …
       /** Creates the folder when it is missing. Returns the path as the server lists it. */
@@ -45,9 +51,10 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
     - Fake `moveMessage`: with `capabilities.move` true it moves in one step; else it copies, then deletes the source (the same end state; the two-step shape matters only for the crash cases of stage 9, which the tests build by hand with `deliver` and `remove`). Both paths record the call name `moveMessage` in `calls`. `deleteMessage` throws `HardError("no UIDPLUS")` when `capabilities.uidplus` is false. `ensureFolder` creates the folder and returns the name unchanged. `setFlags` keeps a `Set<string>` of flags per stored message; `fetchMetaIn` returns them sorted. `failOn` works for every new method.
     - The fake's `userMove` (test helper) keeps its S1a behaviour (new UID in the target) unless `keepUidOnCopy` is set.
     - The S1a fake test file gets cases for the new methods; the contract suite gets the cases below, so stage 4 runs them on GreenMail without a change.
+    - So that this stage compiles and commits alone: `ImapMailProvider` (`imap/client.ts`) gets the seven new methods as stubs that throw `new HardError("not built until stage 4")`. In `mail-provider.ts` every new contract case is wrapped in `test.skipIf(name.startsWith("imap"))` (the suite's `name` argument), so the GreenMail run skips them until stage 4 removes the flag.
   - Test:
-    - `fake.test.ts`: `keepUidOnCopy` true → `moveMessage` gives `newUid` = the source UID; false → a new UID; `copyUidMap` false → `newUid` null; `deleteMessage` without UIDPLUS throws `HardError` and leaves the message; `setFlags` on a missing UID throws `MailNotFoundError`; `failOn("moveMessage", …)` throws once.
+    - `fake.test.ts`: `new MailNotFoundError("x").name` is `"MailNotFoundError"` and `describeError` prints `MailNotFoundError`; `keepUidOnCopy` true → `moveMessage` gives `newUid` = the source UID; false → a new UID; `copyUidMap` false → `newUid` null; `deleteMessage` without UIDPLUS throws `HardError` and leaves the message; `setFlags` on a missing UID throws `MailNotFoundError`; `failOn("moveMessage", …)` throws once.
     - `mail-provider.ts` (runs on the fake now, on GreenMail in stage 4): (1) `ensureFolder("AI/Contract-<uuid>")` creates it and returns a path that `serverInfo().folders` lists; a second call returns the same path and creates nothing new; (2) `fetchMetaIn(INBOX, uid)` of a seeded mail has the same `messageId`, `from`, `subject`, `size` and `internalDate` (same millisecond) as `fetchAbove(0)`, and `flags` without `\\Seen`; `fetchMetaIn(INBOX, 999999)` → null; `fetchMetaIn("No-such-folder", 1)` → null; (3) `setFlags(INBOX, uid, { add: ["\\Seen", "\\Flagged"] })` → `fetchMetaIn` flags contain both; `{ remove: ["\\Flagged"] }` → only `\\Seen`; (4) `moveMessage(INBOX, uid, folder)` → the mail is gone from INBOX (`fetchMetaIn` null) and `fetchByUidsIn(folder, [newUid ?? …])` or `searchSinceIn(folder, yesterday)` + `fetchByUidsIn` finds it with the same `messageId`, `size`, `internalDate` and flags; (5) `moveMessage(INBOX, 999999, folder)` throws `MailNotFoundError`; (6) `searchSinceIn(folder, yesterday)` contains the moved UID; `searchSinceIn("No-such-folder", yesterday)` → `[]`; (7) `deleteMessage(folder, uid)` → true, then `fetchMetaIn` → null; `deleteMessage(folder, uid)` again → false; the other mail in the folder stays; (8) after a move the INBOX cursor rule still holds: `fetchAbove(lastUid)` returns no UID ≤ `lastUid` (the `*` quirk is filtered by the caller; this case checks only that the moved UID is not returned as new).
-  - Check: `bun run lint && bun run typecheck && bun run test:unit` (the fake and the pure tests); `bun run dev:up && bun run test:int` must still pass for the fake contract run (`fake.test.ts` or the contract file that runs on the fake; the GreenMail contract test fails to compile until stage 4 implements the adapter: stage 4 follows at once, and the main session commits stages 3 and 4 together if the typecheck of stage 3 alone cannot pass).
-  - Done when: the fake passes the new contract cases and the unit tests pass.
+  - Check: `bun run lint && bun run typecheck && bun run test:unit` (the fake and the pure tests); `bun run dev:up && bun run test:int` passes: the fake contract run has the new cases, the GreenMail run skips them (`skipIf`).
+  - Done when: the fake passes the new contract cases, the unit and integration tests pass, and the stage commits on its own.
   - Out of scope: the IMAP adapter (stage 4), `locateMessage` (stage 5), removing `findByMessageId` (stage 5).
