@@ -139,6 +139,7 @@ async function main(): Promise<number> {
   }
   const model = options.model ?? classifierModel(config);
   const llm = createLlmClient({
+    provider: "gemini",
     apiKey: config.GEMINI_API_KEY,
     classifierModel: classifierModel(config),
     timeoutMs: config.GEMINI_TIMEOUT_MS,

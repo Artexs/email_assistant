@@ -77,6 +77,7 @@ let triageRun: Promise<void> = Promise.resolve();
 const scope = triageScope(config);
 if (scope !== null) {
   const llm = createLlmClient({
+    provider: "gemini",
     apiKey: config.GEMINI_API_KEY ?? "",
     classifierModel: classifierModel(config),
     timeoutMs: config.GEMINI_TIMEOUT_MS,

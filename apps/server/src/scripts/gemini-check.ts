@@ -15,7 +15,7 @@ async function main() {
     process.exit(1);
   }
 
-  const llm = createLlmClient({ apiKey, classifierModel: model, timeoutMs: 30_000, rpm: 12 });
+  const llm = createLlmClient({ provider: "gemini", apiKey, classifierModel: model, timeoutMs: 30_000, rpm: 12 });
   const { data, usage } = await llm.classify({
     schema: z.object({ greeting: z.string() }),
     system: "Answer with a JSON object.",

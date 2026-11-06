@@ -73,8 +73,9 @@ describe("triage logs", () => {
                 summary: MARKERS.summary,
                 fields: { due_date: null, language: "pl" },
               }),
-              promptTokens: 10,
-              outputTokens: 5,
+              tokensIn: 10,
+              tokensOut: 5,
+              blocked: false,
             }),
         ];
         let calls = 0;
@@ -89,6 +90,7 @@ describe("triage logs", () => {
         const triage = createTriageJob({
           db: trx,
           llm: createLlmClient({
+            provider: "gemini",
             apiKey: MARKERS.key,
             classifierModel: "fake-model",
             timeoutMs: 1000,

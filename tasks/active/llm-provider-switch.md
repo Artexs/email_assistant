@@ -208,7 +208,7 @@ Checks for every code stage: `bun run typecheck`, `bun run lint`, `bun run test:
 
 ### Stage 1 — Provider seam, Gemini only, no behaviour change
 
-- [ ] **1.1 Move `platform/llm.ts` to the folder `platform/llm/`**
+- [x] **1.1 Move `platform/llm.ts` to the folder `platform/llm/`**
   - Plan text: Move `platform/llm.ts` to `platform/llm/` (`index.ts`, `client.ts`, `errors.ts`, `providers/gemini.ts`, `providers/index.ts`).
     Callers keep the import path `platform/llm`. The Gemini adapter returns the normalized result (D4). Move the tests with the code;
     every current test keeps its meaning. Check: `bun run test:unit`, then `bun run gemini:test` (live, one call).
@@ -300,7 +300,7 @@ Checks for every code stage: `bun run typecheck`, `bun run lint`, `bun run test:
   - Done when: all checks pass; `grep -rn '@google/genai' apps/server/src` shows only `platform/llm/providers/gemini.ts` (and `bun.lock`/`package.json` outside `src`).
   - Out of scope: no config change, no OpenAI code, no change of a log text, no change of `pause.ts`, no ESLint change.
 
-- [ ] **1.2 ESLint: only the adapter files import the LLM SDKs**
+- [x] **1.2 ESLint: only the adapter files import the LLM SDKs**
   - Plan text: ESLint `no-restricted-imports` for `@google/genai` and `openai` outside their adapter files. Check: a test import in another file fails lint.
   - Goal: a new import of `@google/genai` or `openai` outside its adapter fails `bun run lint`.
   - Files: `eslint.config.js`.
@@ -842,6 +842,7 @@ Added by the planner on 2026-11-06. Questions 1 and 2 are the open Q6 and Q7. Qu
 
 ## Log
 
+- 2026-11-06: Stage 1 done, reviewer PASS. `platform/llm.ts` → `platform/llm/{index,client,errors}.ts` + `providers/{index,gemini}.ts`; tests: `llm.test.ts` → `client.test.ts` (classify output, classify errors, rate limit and model, logs) and `providers/gemini.test.ts` (toGenerateParams, 401–404/400/418 config, timeout/abort names, network codes, toGeminiResult). 28 old test lines → 37 new. ESLint: one block per file group. Checks: typecheck, lint, test:unit 555 pass, test:int 348 pass. Live `gemini:test` NOT verified: 4 attempts gave `http_429`/`http_503`/`timeout` (Gemini side; the soft-error path works). Re-run it in stage 4 (`llm:check`).
 - 2026-11-06: Stage 0 done, reviewer PASS. Budget: $3 per month (user; lower than the $10 proposal; the plan needs under $0.10). Spike facts in `notes/2026-11-06-openai-api-facts.md`: D6 removes only the root `$schema` (`maxLength`, `pattern`, `anyOf` null accepted); strict schema 400 = `invalid_json_schema`, param `text.format.schema`; no credit = 429 `credit_balance_exhausted`, type `insufficient_quota` (seen live); effort values `none, minimal, low, medium, high, xhigh, max`; `AbortSignal.timeout` gives `APIUserAbortError`, request `timeout` gives `APIConnectionTimeoutError`; `incomplete` still carries `output_text`; no refusal seen; usage `output_tokens_details.reasoning_tokens`.
 - 2026-11-06: User approved the plan with all recommendations: Q6a yes, Q6b both options in `s6-pre-sale.md`, Q7 $10 per month with alert at 80%, `OPENAI_MODEL` default `gpt-6.1-terra`, `eval --real --model` drops rows without a model and shows their count as `none`, stage 3 split into 3 and 3b.
 - 2026-11-06: Planner added the step detail for stages 0–8 (stage 9 stays optional). Five questions under "Questions for the user" (Q6, Q7, `OPENAI_MODEL` default, `eval --real --model` rows, stage 3 size).
