@@ -1,4 +1,4 @@
-> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open, deferred by the user until stage 21. Stages 1–10 done; checkpoint 2 passed (user go). Stages 11–12 done. Left: stages 13–23, then the done-checklist.
+> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open, deferred by the user until stage 21. Stages 1–10 done; checkpoint 2 passed (user go). Stages 11–13 done. Left: stages 14–23, then the done-checklist.
 
 # S2 Telegram
 
@@ -129,7 +129,7 @@ Each stage lives in its own file in [`s2-telegram/`](s2-telegram/). An implement
 - [x] [Stage 10](s2-telegram/stage-10-outbox-repository.md) — Outbox repository [risky] — user checkpoint 2 after it
 - [x] [Stage 11](s2-telegram/stage-11-outbox-sender.md) — Outbox sender [risky]
 - [x] [Stage 12](s2-telegram/stage-12-notice-detection.md) — Notice detection [risky]
-- [ ] [Stage 13](s2-telegram/stage-13-digest-job.md) — Digest job [risky]
+- [x] [Stage 13](s2-telegram/stage-13-digest-job.md) — Digest job [risky]
 - [ ] [Stage 14](s2-telegram/stage-14-update-router.md) — Update router [risky]
 - [ ] [Stage 15](s2-telegram/stage-15-polling-and-bot-commands.md) — Polling and the bot command list
 - [ ] [Stage 16](s2-telegram/stage-16-feedback-buttons.md) — Feedback buttons [risky]
@@ -185,3 +185,4 @@ Answered 2026-11-05: the user approved the plan as written, so each question kee
 - 2026-11-06: Checkpoint 2: the user said go and accepted the three proposals: the outbox `email_id` / `digest_id` indexes go to the retention follow-up (stage 22.3); the digest race is accepted and noted (stage 22.2); the digest maps "no settings row" to `none` like `/status` (stage 17.1, test 6).
 - 2026-11-06: Stage 11 built (`channels/sender.ts` `createOutboxSender`; fake channel `onSend` hook; 15 tests), reviewer PASS (Opus, high). Added after the review: tests that prove the in-memory send pause after 429 / 401 (a mutation check proves them). Accepted deviations: `markDigestSent` runs only when `markOutboxSent` returns true; `warn` lines for `expired` / `no_chat` (row id only); a 429 without `retry_after` waits 30 s.
 - 2026-11-06: Stage 12 built (`channels/notices.ts` `detectNotices`: urgent, `auth_error`, sync late, sync works again; 12 tests), reviewer PASS (Sonnet; `test:int` 3 runs, the file alone 6 runs). Learned: rows inserted in one transaction share `created_at`, so tests must not rely on the outbox insert order (find rows by `dedup_key`).
+- 2026-11-06: Stage 13 built (`channels/digest-job.ts` `scheduleDigests`: digest row and outbox row in one transaction, late slots, per-link errors; 12 tests), reviewer PASS (Sonnet; `test:int` 2 runs). Optional minor not done: no test for the rollback path when the outbox row already exists (the test transaction cannot show the rollback).

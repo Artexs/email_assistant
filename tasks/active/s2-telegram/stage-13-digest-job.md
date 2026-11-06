@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 13 — Digest job [risky]
 
-- [ ] **13.1 `scheduleDigests`: one digest per member per slot**
+- [x] **13.1 `scheduleDigests`: one digest per member per slot**
   - Goal: at each member's digest times (organization timezone) exactly one digest row and one outbox row are made (P1, P2, D15); the sender of stage 11 sends it.
   - Files: create `apps/server/src/modules/channels/digest-job.ts`, `apps/server/test/integration/channels-digest-job.test.ts`; change `apps/server/src/modules/channels/index.ts`.
   - Interfaces:
