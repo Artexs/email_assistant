@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 10 — Outbox repository [risky]
 
-- [ ] **10.1 Outbox rows: insert with dedup, claim, sent, release, fail, cancel**
+- [x] **10.1 Outbox rows: insert with dedup, claim, sent, release, fail, cancel**
   - Goal: exactly one outbox row per event (D4), claimed with `FOR UPDATE SKIP LOCKED`, and every status change guarded by the claim token (`locked_at`), as the S1b e-mail claim does.
   - Files: change `apps/server/src/modules/channels/repo.ts` (outbox part), `apps/server/src/modules/channels/index.ts`, `apps/server/test/integration/fixtures.ts` (`isolateChannels`); create `apps/server/test/integration/channels-outbox.test.ts`.
   - Interfaces (`channels/repo.ts`):

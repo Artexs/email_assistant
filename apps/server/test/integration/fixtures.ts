@@ -151,3 +151,14 @@ export async function insertTriaged(
     .execute();
   return emailId;
 }
+
+// The dev DB can hold chat links and outbox rows from manual runs; jobs that read all organizations want only their own.
+// The rollback undoes it.
+export async function isolateChannels(trx: Transaction<DB>): Promise<void> {
+  await trx.deleteFrom("chat_links").execute();
+  await trx
+    .updateTable("outbox")
+    .set({ status: "failed", error_code: "outdated", locked_at: null })
+    .where("status", "in", ["pending", "sending"])
+    .execute();
+}

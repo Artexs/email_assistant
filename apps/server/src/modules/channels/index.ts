@@ -1,5 +1,21 @@
 export { ChannelError, type ChannelErrorKind, type ChatChannel, type LinkedChat } from "./port";
-export { findChatLink, listLinkedChats } from "./repo";
+export {
+  cancelPendingOutbox,
+  claimDueOutbox,
+  failOutbox,
+  findChatLink,
+  insertOutbox,
+  listLinkedChats,
+  listSentStaleEpisodes,
+  markOutboxSent,
+  outboxFailCodes,
+  outboxKinds,
+  releaseOutbox,
+  type ClaimedOutbox,
+  type NewOutboxRow,
+  type OutboxFailCode,
+  type OutboxKind,
+} from "./repo";
 export {
   consumeLinkToken,
   createLinkToken,

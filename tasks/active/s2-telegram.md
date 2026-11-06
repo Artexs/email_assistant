@@ -1,4 +1,4 @@
-> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open, deferred by the user until stage 21. Stages 1–9 done. Left: stages 10–23, then the done-checklist.
+> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open, deferred by the user until stage 21. Stages 1–10 done; checkpoint 2 group review next. Left: stages 11–23, then the done-checklist.
 
 # S2 Telegram
 
@@ -126,7 +126,7 @@ Each stage lives in its own file in [`s2-telegram/`](s2-telegram/). An implement
 - [x] [Stage 7](s2-telegram/stage-07-link-and-digest-times-clis.md) — CLIs: `telegram:link`, `telegram:unlink`, `digest:times`
 - [x] [Stage 8](s2-telegram/stage-08-read-queries-and-mailbox-status.md) — Read queries and the mailbox status time [risky]
 - [x] [Stage 9](s2-telegram/stage-09-reports-digests-and-digest-message.md) — Reports: digests table and the digest message [risky]
-- [ ] [Stage 10](s2-telegram/stage-10-outbox-repository.md) — Outbox repository [risky] — user checkpoint 2 after it
+- [x] [Stage 10](s2-telegram/stage-10-outbox-repository.md) — Outbox repository [risky] — user checkpoint 2 after it
 - [ ] [Stage 11](s2-telegram/stage-11-outbox-sender.md) — Outbox sender [risky]
 - [ ] [Stage 12](s2-telegram/stage-12-notice-detection.md) — Notice detection [risky]
 - [ ] [Stage 13](s2-telegram/stage-13-digest-job.md) — Digest job [risky]
@@ -180,3 +180,4 @@ Answered 2026-11-05: the user approved the plan as written, so each question kee
 - 2026-11-06: Stage 7 built (CLIs `telegram:link`, `telegram:unlink`, `digest:times`; `setDigestTimes`; shared `scripts/pick-member.ts` for the member choice of 7.1 and 7.3), reviewer PASS (Sonnet). The manual `telegram:link` run with a real bot moves to stage 21 (no token yet). The manual `digest:times` run set the dev owner's times to `{08:00,16:00}`.
 - 2026-11-06: Stage 8 built (`setMailboxStatus` moves `status_changed_at` only on a real change; `changeMailboxStatus`, `listMailboxes`, `countWaiting`, `listTriagedBetween` / `countTriagedBetween` (raw `sql`, bound parameters, `org_id` on both tables), `listActionsForEmails`, `countEventsBetween`, fixture `insertTriaged`; 8 tests), reviewer PASS (Sonnet). Kept: `categories: []` returns no rows. Two optional minors not fixed (a redundant `FolderKey` cast, a double `MailboxStatus` declaration).
 - 2026-11-06: Stage 9 built (`reports` module: digest rows, `digestPeriodStart`, `buildDigestMessage`; 8 tests), reviewer PASS (Sonnet). Main session added the missing test of the 7-day cap on a sent digest end (minor finding).
+- 2026-11-06: Stage 10 built (outbox in `channels/repo.ts`: insert with dedup, claim with `FOR UPDATE SKIP LOCKED` and stale reclaim, sent / release / fail with the lock check, cancel, `listSentStaleEpisodes`; fixture `isolateChannels`; 9 tests). Review round 1 FAIL (Opus, high): test 7 did not test the mailbox filter of the cancel; fixed with a second mailbox in the same org (a mutation check proves it). Round 2 PASS. `claimDueOutbox` with `orgIds: []` returns no rows.
