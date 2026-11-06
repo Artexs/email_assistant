@@ -1,4 +1,4 @@
-> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open, deferred by the user until stage 21. Stages 1–10 done; checkpoint 2 passed (user go). Stages 11–20 done; checkpoint 3 group review done (fixes committed), waiting for the user. Left: stages 21–23 (21 needs the dev bot token, step 0.1), then the done-checklist.
+> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0 done (bots: dev `@Email_assistant_local_bot`, pilot `@Email_assistant_vps_bot`). Stages 1–10 done; checkpoint 2 passed (user go). Stages 11–20 done; checkpoint 3 group review done (fixes committed), waiting for the user. Left: stages 21–23 (21 needs the dev bot token, step 0.1), then the done-checklist.
 
 # S2 Telegram
 
@@ -116,7 +116,7 @@ As in S1b (user decision 2026-11-04): stage reviews run on Sonnet, high, also fo
 
 Each stage lives in its own file in [`s2-telegram/`](s2-telegram/). An implementer or reviewer reads this file (Input, Rules, checkpoints) and only the stage file of its step. The main session ticks the step boxes in the stage file and the stage box here.
 
-- [ ] [Stage 0](s2-telegram/stage-00-bots-grammy-config-and-check.md) — Setup: bots (user step), grammY, config key, `telegram:check` — user checkpoint 1 after it
+- [x] [Stage 0](s2-telegram/stage-00-bots-grammy-config-and-check.md) — Setup: bots (user step), grammY, config key, `telegram:check` — user checkpoint 1 after it
 - [x] [Stage 1](s2-telegram/stage-01-s2-tables-migration.md) — S2 tables migration [risky]
 - [x] [Stage 2](s2-telegram/stage-02-core-local-time-and-digest-schedule.md) — Core: local time and the digest schedule
 - [x] [Stage 3](s2-telegram/stage-03-core-message-texts-buttons-and-notices.md) — Core: message model, text helpers, button data, notice texts
@@ -194,3 +194,4 @@ Answered 2026-11-05: the user approved the plan as written, so each question kee
 - 2026-11-06: Stage 19 built (`updateMailboxPassword` in `mail/connect.ts`, `updateCredentials`, CLI `mailbox:password` (password on stdin only), audit `mailbox.password_changed`, runbook section in `deploy/README.md`; 8 tests; manual GreenMail run by the implementer: `auth_error` → `active`), reviewer PASS (Opus, high). `deploy/README.md` also gets the old Prettier indent fix (backup section). Known race, accepted: a sync with the old password that ends after the CLI commit can set `auth_error` again; the user runs the CLI again.
 - 2026-11-06: Stage 20 built (`channels/telegram/runtime.ts`, `main.ts` jobs `channels.notifier` / `channels.digest` and shutdown 10 s + 30 s under the 45 s grace, scheduler logs `describeError`, end-to-end log test on a fake Bot API), reviewer PASS (Sonnet). Minor fixed: the log test also proves the summary, reason and sender markers are in the sent texts. Manual start with an empty token: `telegram is off`, exit 0. The run with a real token waits for stage 21.
 - 2026-11-06: Checkpoint 3 group review (Opus, high, `f9a2cba..7f927d6`): FAIL, 1 major: a false "sync is late" right after `/resume` or `mailbox:password`. Fixed (D12 and stage 12 updated, test 13), plus: a failing command handler replies `ERROR_TEXT` and a failing reply is only a `warn`; one `SYNC_LATE_MS`; `mailbox:password` and `telegram:check` print the `ConfigError` key names (closes the stage 0 minor). Fix review PASS (Opus, high; 2 rounds). Open for the user: the D3 change for a linked chat that sends its used `/start <token>` again (the reviewer also says yes); the stage 21 run notes (07:00–22:00 local, no file edits during `bun run dev`).
+- 2026-11-06: Step 0.1 done by the user: dev bot `@Email_assistant_local_bot`, pilot bot `@Email_assistant_vps_bot` (user names only; the tokens are not in the chat). `grep -c '^TELEGRAM_BOT_TOKEN=.' .env` → `1`; `bun run telegram:check` → `[telegram-check] bot @Email_assistant_local_bot (id 9088924109)`. Checkpoint 1 passed.

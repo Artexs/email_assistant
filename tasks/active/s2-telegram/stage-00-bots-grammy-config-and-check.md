@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 0 — Setup: bots, grammY, config key, `telegram:check`
 
-- [ ] **0.1 User step: create the dev bot and the pilot bot (BotFather)**
+- [x] **0.1 User step: create the dev bot and the pilot bot (BotFather)**
   - Goal: two different bots exist; the dev token is in the Mac `.env`; the agent never sees a token.
   - Files: this task file (log line with the two bot user names; user names are not secret).
   - Interfaces: none.
