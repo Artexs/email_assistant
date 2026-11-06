@@ -126,12 +126,12 @@ describe("backfillInbox", () => {
     });
   });
 
-  test("a since more than 30 days back gives HardError before any call", async () => {
+  test("a since more than 180 days back gives HardError before any call", async () => {
     await withRollback(db, async (trx) => {
       const s = await syncedMailbox(trx);
       s.fake.calls.length = 0;
       await expect(
-        backfillInbox(deps(trx, s.fake), s.ctx, s.mailboxId, { since: ago(31 * DAY_MS) })
+        backfillInbox(deps(trx, s.fake), s.ctx, s.mailboxId, { since: ago(181 * DAY_MS) })
       ).rejects.toBeInstanceOf(HardError);
       expect(s.fake.calls).toEqual([]);
     });

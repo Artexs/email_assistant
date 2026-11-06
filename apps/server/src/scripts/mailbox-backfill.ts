@@ -14,7 +14,7 @@ const log = createLog("mailbox-backfill");
 
 const usage = [
   "usage: bun run mailbox:backfill --org-id <uuid> --mailbox-id <uuid> [--days 30]",
-  "  One-off, read-only on the mailbox. Stores INBOX mail of the last 1-30 days that the sync missed.",
+  "  One-off, read-only on the mailbox. Stores INBOX mail of the last 1-180 days that the sync missed.",
   "  Then re-queues stored real mail of that window that the worker skipped as too old.",
   "  Exit 0: done. Exit 1: usage error or failure.",
 ].join("\n");
@@ -38,7 +38,7 @@ function readOptions() {
       .string()
       .regex(/^\d+$/)
       .transform(Number)
-      .pipe(z.number().int().min(1).max(30))
+      .pipe(z.number().int().min(1).max(180))
       .safeParse(values.days ?? "30");
     if (!days.success) return undefined;
     return { orgId, mailboxId, days: days.data };

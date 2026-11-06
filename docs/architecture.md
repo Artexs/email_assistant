@@ -226,7 +226,7 @@ The policy returns one of three values per action: `apply`, `await_approval`, `l
 - **Feedback rows:** `verdict` (`right` / `wrong`) and an optional `true_category`. A row with a `true_category` counts for precision and recall.
   A row with only `wrong` counts only against the precision of the predicted category.
 - **Eval on real mail:** the eval runner reads the labels from `triage_feedback` in the DB. Real labels never go to git.
-  Real-mail evals use mail younger than 30 days (the body is cleared after that, §7).
+  Real-mail evals use mail younger than 30 days (the body is cleared after that, §7). Pilot exception: backfilled mail up to 180 days (§6.1).
 - **Success metric** ("share of mail handled without the user", target 80–90%):
   handled = mail in `spam`, `notification`, `info`, or `delegation` sent after one tap, with an applied plan
   that the user did not undo or correct within 7 days. Share = handled ÷ all triaged mail. One line in the weekly digest.
@@ -366,11 +366,13 @@ Tenancy:
   If `emails.folder` = INBOX, update `uid` silently. In shadow mode the system moves nothing, so no flag is set. Never triage a known mail again.
 - **First connect:** only INBOX mail from the last 24 hours.
 - **After an outage:** the next sync takes all UIDs above the cursor (IMAP keeps them). Mail older than 7 days is stored but not sent to the LLM.
-- **Backfill (S1b, one-off):** `bun run mailbox:backfill --org-id <uuid> --mailbox-id <uuid> [--days 1-30]` reads INBOX mail of the last days.
+- **Backfill (S1b, one-off):** `bun run mailbox:backfill --org-id <uuid> --mailbox-id <uuid> [--days 1-180]` reads INBOX mail of the last days.
   It stores the missing mail with `emails.backfilled_at` set and never moves the cursor. It changes nothing in the mailbox.
-  It refuses a window of more than 30 days (the body is cleared after 30 days, §7). Then it re-queues real mail of the window that the worker
+  It refuses a window of more than 180 days. Then it re-queues real mail of the window that the worker
   skipped as `too_old` (`skipped → pending`, one `email.requeued` audit row for each mail).
   The re-queue sets `backfilled_at` = now, so re-queued mail skips the 7-day rule.
+  Pilot exception (user, 2026-11-06): a window above 30 days keeps mail bodies longer than the 30-day retention (§7).
+  The retention cleanup clears them when it exists.
 - **UIDVALIDITY change:** rescan INBOX mail of the last 7 days; the dedup key stops duplicates; known mail only gets its new `uid`.
 - **Threads:** `thread_key` = the first `Message-ID` in `References`, else `In-Reply-To`, else the mail's own `Message-ID`.
   The LLM gets the last 3 mails with the same `thread_key` from the DB as context.

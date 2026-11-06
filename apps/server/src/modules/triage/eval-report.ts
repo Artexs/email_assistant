@@ -54,7 +54,7 @@ function header(report: EvalReport): string[] {
         `- ${support}`,
         ...(report.labeled < MIN_REAL_LABELS
           ? [
-              "- fewer than 100 real labels: the done-when accepts this only when all real pilot INBOX mail of the last 30 days is labeled (user decision 2026-11-04)",
+              "- fewer than 100 real labels: the done-when accepts this only when all real pilot INBOX mail of the backfill window is labeled (user decisions 2026-11-04, 2026-11-06)",
             ]
           : []),
         "",

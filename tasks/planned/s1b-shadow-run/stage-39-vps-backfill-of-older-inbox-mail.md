@@ -3,6 +3,8 @@
 Part of [`../s1b-shadow-run.md`](../s1b-shadow-run.md) (moved from S1b on 2026-11-05; "this task file" means that file). "Input" and "Rules for every step" are in [`../../done/s1b-shadow-triage.md`](../../done/s1b-shadow-triage.md). Read them first.
 Shell setup, preconditions and the SQL queries (Q1–QH) are in [`vps-shared.md`](vps-shared.md).
 
+> **Change 2026-11-06 (user):** the window is 180 days, not 30 (only 32 real mails in 30 days). Read `30 days` below as `180 days` (`--days 180`, audit `--since <now − 180 days>`, QG/QH `interval '180 days'`). Second backfill run allowed for this change.
+
 ## Stage 39 — VPS: backfill of older INBOX mail [risky] (only when the week brought fewer than 100 real mails)
 
 - [ ] **39.1 One-off backfill up to 30 days, re-queue, then label**

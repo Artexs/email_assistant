@@ -36,7 +36,8 @@ const HOUR_MS = 3_600_000;
 const DAY_MS = 24 * HOUR_MS;
 const INITIAL_WINDOW_MS = DAY_MS;
 const RESCAN_WINDOW_MS = 7 * DAY_MS;
-const BODY_RETENTION_MS = 30 * DAY_MS;
+// Pilot exception (user, 2026-11-06): the backfill may go back 180 days, past the 30-day body retention (architecture §7).
+const BACKFILL_MAX_MS = 180 * DAY_MS;
 
 export interface SyncDeps {
   db: Db | Transaction<DB>;
@@ -299,8 +300,8 @@ export async function backfillInbox(
   mailboxId: string,
   opts: { since: Date }
 ): Promise<SyncResult> {
-  if (opts.since.getTime() < deps.now().getTime() - BODY_RETENTION_MS) {
-    throw new HardError("backfill since is more than 30 days back");
+  if (opts.since.getTime() < deps.now().getTime() - BACKFILL_MAX_MS) {
+    throw new HardError("backfill since is more than 180 days back");
   }
   const mailbox = await getMailbox(deps.db, ctx, mailboxId);
   if (!mailbox) throw new HardError(`mailbox ${mailboxId} not found`);
