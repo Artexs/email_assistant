@@ -1,0 +1,92 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`toStrictJsonSchema snapshot of the triage schema 1`] = `
+{
+  "additionalProperties": false,
+  "properties": {
+    "category": {
+      "enum": [
+        "urgent",
+        "needs_reply",
+        "info",
+        "notification",
+        "spam",
+      ],
+      "type": "string",
+    },
+    "confidence": {
+      "maximum": 1,
+      "minimum": 0,
+      "type": "number",
+    },
+    "fields": {
+      "additionalProperties": false,
+      "properties": {
+        "due_date": {
+          "anyOf": [
+            {
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "language": {
+          "enum": [
+            "pl",
+            "en",
+            "other",
+          ],
+          "type": "string",
+        },
+      },
+      "required": [
+        "due_date",
+        "language",
+      ],
+      "type": "object",
+    },
+    "reason": {
+      "maxLength": 300,
+      "type": "string",
+    },
+    "reason_code": {
+      "enum": [
+        "deadline_today",
+        "direct_request",
+        "question",
+        "meeting_request",
+        "automated_system",
+        "newsletter",
+        "marketing",
+        "phishing_or_scam",
+        "fyi",
+        "other",
+      ],
+      "type": "string",
+    },
+    "summary": {
+      "anyOf": [
+        {
+          "maxLength": 600,
+          "type": "string",
+        },
+        {
+          "type": "null",
+        },
+      ],
+    },
+  },
+  "required": [
+    "category",
+    "confidence",
+    "reason_code",
+    "reason",
+    "summary",
+    "fields",
+  ],
+  "type": "object",
+}
+`;
