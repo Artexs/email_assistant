@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 9 — Reports: digests table and the digest message [risky]
 
-- [ ] **9.1 `reports` module: digest rows, the period start, `buildDigestMessage`**
+- [x] **9.1 `reports` module: digest rows, the period start, `buildDigestMessage`**
   - Goal: the `reports` module owns `digests` (D16) and builds the digest message of one organization for one period from the stage 8 reads and the stage 4 renderer, with no data of another organization.
   - Files: create `apps/server/src/modules/reports/index.ts`, `apps/server/src/modules/reports/repo.ts`, `apps/server/src/modules/reports/digest.ts`, `apps/server/test/integration/reports-digest.test.ts`.
   - Interfaces:

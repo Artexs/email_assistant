@@ -1,0 +1,235 @@
+import { afterAll, describe, expect, test } from "bun:test";
+
+import { createPlanned } from "../../src/modules/actions";
+import { auditEvents, recordAudit } from "../../src/modules/audit";
+import { insertDefaultSettings } from "../../src/modules/config";
+import { markSynced } from "../../src/modules/mail/repo";
+import {
+  buildDigestMessage,
+  digestPeriodStart,
+  insertDigest,
+  lastDigestSlotKey,
+  lastSentDigestEnd,
+  markDigestSent,
+} from "../../src/modules/reports";
+
+import { createOrgWithMailbox, insertTestEmail, insertTriaged } from "./fixtures";
+import { testDb, withRollback } from "./helpers";
+
+const db = testDb();
+
+afterAll(async () => {
+  await db.destroy();
+});
+
+const T = new Date("2026-11-06T07:00:00Z");
+const MIN = 60_000;
+const HOUR = 3_600_000;
+const DAY = 24 * HOUR;
+const at = (offset: number) => new Date(T.getTime() + offset);
+
+describe("digest rows", () => {
+  test("insert, slot keys, sent end, tenant scope", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const b = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId };
+      const row = { userId: a.userId, periodStart: at(-15 * HOUR), periodEnd: T };
+      const id = await insertDigest(trx, ctx, { ...row, slotKey: "2026-11-06T08:00" });
+      expect(id).toBeString();
+      expect(await insertDigest(trx, ctx, { ...row, slotKey: "2026-11-06T08:00" })).toBeNull();
+      await insertDigest(trx, ctx, { ...row, slotKey: "2026-11-05T16:00" });
+      expect(await lastDigestSlotKey(trx, ctx, a.userId)).toBe("2026-11-06T08:00");
+
+      expect(await lastSentDigestEnd(trx, ctx, a.userId)).toBeNull();
+      expect(await markDigestSent(trx, ctx, id as string, at(MIN))).toBe(true);
+      expect(await lastSentDigestEnd(trx, ctx, a.userId)).toEqual(T);
+      expect(await markDigestSent(trx, ctx, id as string, at(2 * MIN))).toBe(false);
+
+      const other = { orgId: b.orgId };
+      expect(await lastDigestSlotKey(trx, other, a.userId)).toBeNull();
+      expect(await lastSentDigestEnd(trx, other, a.userId)).toBeNull();
+      expect(await markDigestSent(trx, other, id as string, at(MIN))).toBe(false);
+    });
+  });
+});
+
+describe("digestPeriodStart", () => {
+  test("first digest, last sent end, and the 7-day cap", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId };
+      const member = { userId: a.userId, linkedAt: at(-2 * HOUR) };
+      expect(await digestPeriodStart(trx, ctx, member, T)).toEqual(at(-26 * HOUR));
+
+      const id = await insertDigest(trx, ctx, {
+        userId: a.userId,
+        slotKey: "2026-11-05T16:00",
+        periodStart: at(-20 * HOUR),
+        periodEnd: at(-8 * HOUR),
+      });
+      // A digest that was never sent does not move the start.
+      expect(await digestPeriodStart(trx, ctx, member, T)).toEqual(at(-26 * HOUR));
+      await markDigestSent(trx, ctx, id as string, at(-8 * HOUR));
+      expect(await digestPeriodStart(trx, ctx, member, T)).toEqual(at(-8 * HOUR));
+
+      // An older period end does not win over the greatest one.
+      const old = await insertDigest(trx, ctx, {
+        userId: a.userId,
+        slotKey: "2026-11-07T08:00",
+        periodStart: at(-11 * DAY),
+        periodEnd: at(-10 * DAY),
+      });
+      await markDigestSent(trx, ctx, old as string, at(-10 * DAY));
+      expect(await digestPeriodStart(trx, ctx, member, T)).toEqual(at(-8 * HOUR));
+    });
+  });
+
+  test("the cap and a clock jump", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId };
+      const member = { userId: a.userId, linkedAt: at(-30 * DAY) };
+      expect(await digestPeriodStart(trx, ctx, member, T)).toEqual(at(-7 * DAY));
+      const future = { userId: a.userId, linkedAt: at(5 * DAY) };
+      expect(await digestPeriodStart(trx, ctx, future, T)).toEqual(T);
+
+      // A sent digest that ended 10 days ago: the start is still at most 7 days back.
+      const old = await insertDigest(trx, ctx, {
+        userId: a.userId,
+        slotKey: "2026-10-27T08:00",
+        periodStart: at(-11 * DAY),
+        periodEnd: at(-10 * DAY),
+      });
+      await markDigestSent(trx, ctx, old as string, at(-10 * DAY));
+      expect(await digestPeriodStart(trx, ctx, member, T)).toEqual(at(-7 * DAY));
+    });
+  });
+});
+
+describe("buildDigestMessage", () => {
+  const request = {
+    kind: "scheduled" as const,
+    periodStart: at(-15 * HOUR),
+    periodEnd: T,
+    slot: { date: "2026-11-06", time: "08:00", late: false },
+    now: T,
+  };
+
+  test("lines, buttons, sync time, no data of another org", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const b = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId };
+      await insertDefaultSettings(trx, ctx, a.mailboxId);
+      await markSynced(trx, ctx, a.mailboxId, at(-5 * MIN));
+
+      const urgentId = await insertTriaged(trx, ctx, a.mailboxId, {
+        category: "urgent",
+        createdAt: at(-2 * HOUR),
+        subject: "MARKER-SUBJECT-A",
+        from: "boss@x.test",
+        reason: "MARKER-REASON",
+      });
+      await createPlanned(trx, ctx, urgentId, [
+        { type: "flag", status: "logged", idempotencyKey: `flag:${urgentId}`, payload: {} },
+      ]);
+      const infoId = await insertTriaged(trx, ctx, a.mailboxId, {
+        category: "info",
+        createdAt: at(-3 * HOUR),
+        subject: "News",
+        from: "news@x.test",
+      });
+      await createPlanned(trx, ctx, infoId, [
+        {
+          type: "save_summary",
+          status: "ready",
+          idempotencyKey: `sum:${infoId}`,
+          payload: { summary: "MARKER-SUMMARY" },
+        },
+        { type: "move", status: "logged", idempotencyKey: `move:${infoId}`, payload: { folder: "ai_info" } },
+      ]);
+      await insertTriaged(trx, { orgId: b.orgId }, b.mailboxId, {
+        category: "urgent",
+        createdAt: at(-2 * HOUR),
+        subject: "MARKER-SUBJECT-B",
+      });
+
+      const message = await buildDigestMessage(trx, ctx, request);
+      expect(message.text).toContain("1. 🔴 Urgent ·");
+      expect(message.text).toContain("MARKER-SUBJECT-A");
+      expect(message.text).toContain("💬 MARKER-REASON");
+      expect(message.text).toContain("→ would flag");
+      expect(message.text).toContain("💬 MARKER-SUMMARY");
+      expect(message.text).toContain("→ would move to AI/Info");
+      expect(message.text).toContain("🔄 Last sync 07:55");
+      expect(message.text).not.toContain("MARKER-SUBJECT-B");
+      const firstRow = message.buttons[0]?.map((button) => button.data);
+      expect(firstRow).toContain(`fr:u:${urgentId}`);
+      expect(firstRow).toContain(`fe:${urgentId}`);
+    });
+  });
+
+  test("a result before the period does not show and is not counted", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId };
+      await insertDefaultSettings(trx, ctx, a.mailboxId);
+      await markSynced(trx, ctx, a.mailboxId, at(-5 * MIN));
+      await insertTriaged(trx, ctx, a.mailboxId, {
+        category: "urgent",
+        createdAt: at(-16 * HOUR),
+        subject: "MARKER-SUBJECT-A",
+      });
+      const message = await buildDigestMessage(trx, ctx, request);
+      expect(message.text).not.toContain("MARKER-SUBJECT-A");
+      expect(message.text).toContain("No new mail since");
+      expect(message.text).toContain("🔄 Last sync 07:55");
+      expect(message.buttons).toEqual([]);
+    });
+  });
+
+  test("not processed and waiting counts", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId };
+      await recordAudit(trx, ctx, {
+        actor: "system",
+        event: auditEvents.emailSkipped,
+        reasonCode: "too_old",
+        at: at(-HOUR),
+      });
+      await insertTestEmail(trx, ctx, a.mailboxId, { status: "pending", received_at: at(-DAY) });
+      const message = await buildDigestMessage(trx, ctx, request);
+      expect(message.text).toContain("📭 Not processed (older than 7 days): 1");
+      expect(message.text).toContain("⏳ Waiting for triage: 1");
+    });
+  });
+
+  test("a synthetic message shows the test mark", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      await insertTriaged(trx, { orgId: a.orgId }, a.mailboxId, {
+        category: "info",
+        createdAt: at(-HOUR),
+        subject: "Seed",
+        messageId: "<x@ea-seed.test>",
+      });
+      const message = await buildDigestMessage(trx, { orgId: a.orgId }, request);
+      expect(message.text).toContain("🧪 test");
+    });
+  });
+
+  test("a mailbox without settings counts as shadow", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      await insertTriaged(trx, { orgId: a.orgId }, a.mailboxId, {
+        category: "info",
+        createdAt: at(-HOUR),
+        subject: "Seed",
+      });
+      const message = await buildDigestMessage(trx, { orgId: a.orgId }, request);
+      expect(message.text).toContain("Shadow mode: the system changed nothing in your mailbox.");
+    });
+  });
+});
