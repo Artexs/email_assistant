@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 19 — `mailbox:password`: leave `auth_error` [risky]
 
-- [ ] **19.1 `updateMailboxPassword` and `bun run mailbox:password`**
+- [x] **19.1 `updateMailboxPassword` and `bun run mailbox:password`**
   - Goal: after an `auth_error` notice the user can store a new password; the system tests the login first, stores the password only encrypted, and sets `auth_error → active` (D7). Today `mailbox:connect` refuses an existing address, so there is no other way back.
   - Files: change `apps/server/src/modules/mail/connect.ts`, `mail/repo.ts`, `mail/index.ts`, `apps/server/src/modules/audit/repo.ts` (one event name); create `apps/server/src/scripts/mailbox-password.ts`, `apps/server/test/integration/mail-password.test.ts`; change root `package.json` (`"mailbox:password": "bun apps/server/src/scripts/mailbox-password.ts"`); change `deploy/README.md` (a short section "Login error (`auth_error`)").
   - Interfaces:

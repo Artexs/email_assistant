@@ -250,6 +250,22 @@ export async function insertCredentials(
     .execute();
 }
 
+// Replaces the stored secret of a mailbox. False when the credentials row is missing.
+export async function updateCredentials(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  row: { encryptedSecret: string; secretKind: "password" | "app_password"; keyVersion: number }
+): Promise<boolean> {
+  const result = await db
+    .updateTable("mailbox_credentials")
+    .set({ encrypted_secret: row.encryptedSecret, secret_kind: row.secretKind, key_version: row.keyVersion })
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .executeTakeFirst();
+  return result.numUpdatedRows === 1n;
+}
+
 export async function getCredentials(
   db: DbOrTrx,
   ctx: TenantContext,

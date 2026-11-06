@@ -30,6 +30,7 @@
     "telegram:unlink": "bun apps/server/src/scripts/telegram-unlink.ts",
     "digest:times": "bun apps/server/src/scripts/digest-times.ts",
     "mailbox:connect": "bun apps/server/src/scripts/mailbox-connect.ts",
+    "mailbox:password": "bun apps/server/src/scripts/mailbox-password.ts",
     "mailbox:check": "bun apps/server/src/scripts/mailbox-check.ts",
     "mailbox:seed": "bun apps/server/src/scripts/mailbox-seed.ts",
     "mailbox:rescan": "bun apps/server/src/scripts/mailbox-rescan.ts",

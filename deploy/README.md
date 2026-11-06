@@ -53,6 +53,18 @@ $C logs --since 1h server
 
 A good start shows `listening on port 8080`. Each sync log line has the form `sync <mailbox id> <mode>: fetched …`.
 
+## Login error (`auth_error`)
+
+An `auth_error` notice means the mail server refused the stored password. The sync for that mailbox stops until you store a new password.
+
+1. Check the password in the webmail. For Interia, check the "mail program" switch (see `notes/2026-11-03-interia-imap-capabilities.md`).
+2. Store the new password. The CLI tests the IMAP and SMTP login first and saves nothing if the login fails:
+   `read -rsp 'New password: ' P && printf '%s' "$P" | $C run --rm -T server bun run mailbox:password --org-id <uuid> --mailbox-id <uuid>; unset P`
+   Add `--secret-kind app_password` if the password is an app password.
+3. The mailbox is `active` again. The next sync comes within 5 minutes.
+
+A `paused` mailbox stays paused. Use `/resume` in Telegram.
+
 ## Reboot
 
 Run once: `sudo systemctl enable docker`.
@@ -114,7 +126,7 @@ If somebody steals the VPS, they cannot read or delete old backups.
    - `BACKUP_REMOTE`: `<rclone remote>:<bucket>/<path>`, for example `b2:ea-backups/pilot`.
    - `KEEP_DAYS`: days to keep local files (default 7).
    - `COMPOSE`: default `docker compose`.
-   `deploy/backup.env` is in `.gitignore`.
+     `deploy/backup.env` is in `.gitignore`.
 4. Run one backup by hand: `deploy/backup.sh`. The last line is `backup ok <name> <bytes>`.
    `backup.sh` calls `rclone copyto --no-check-dest`, because the write-only key cannot read the target (HTTP 401). For an `s3` remote, also add `--s3-no-check-bucket`.
    If you put rclone in `~/bin`, run it as `PATH=$HOME/bin:$PATH deploy/backup.sh`.

@@ -17,6 +17,7 @@ export const auditEvents = {
   chatUnlinked: "chat.unlinked",
   mailboxPaused: "mailbox.paused",
   mailboxResumed: "mailbox.resumed",
+  mailboxPasswordChanged: "mailbox.password_changed",
 } as const;
 
 export interface AuditEvent {

@@ -6,12 +6,23 @@ import { z } from "zod";
 
 import type { SecretBox } from "../../platform/crypto";
 import type { DB, Db, TenantContext } from "../../platform/db";
+import { HardError } from "../../platform/errors";
+import { auditEvents, recordAudit } from "../audit";
 import { insertDefaultSettings } from "../config";
 
 import type { ImapConnectOptions } from "./imap/client";
 import type { SmtpConnectOptions } from "./imap/smtp";
 import type { MailFolder, MailProvider, MailServerInfo } from "./port";
-import { insertCredentials, insertMailbox } from "./repo";
+import {
+  getCredentials,
+  getMailbox,
+  insertCredentials,
+  insertMailbox,
+  lockMailbox,
+  setMailboxStatus,
+  updateCredentials,
+  type MailboxStatus,
+} from "./repo";
 
 const SPECIAL_USE_KEYS: Record<string, string> = {
   "\\Drafts": "drafts",
@@ -115,4 +126,52 @@ export async function connectMailbox(
 
   await (deps.db.isTransaction ? run(deps.db) : deps.db.transaction().execute(run));
   return { mailboxId, info };
+}
+
+// Tests the IMAP and SMTP login with the new password first: a login error stores nothing.
+// An `auth_error` mailbox becomes `active`; a `paused` one stays paused.
+export async function updateMailboxPassword(
+  deps: ConnectDeps,
+  ctx: TenantContext,
+  input: { mailboxId: string; password: string; secretKind?: "password" | "app_password"; now: Date }
+): Promise<{ status: MailboxStatus; reactivated: boolean }> {
+  const { mailboxId, password, now } = input;
+  const mailbox = await getMailbox(deps.db, ctx, mailboxId);
+  if (!mailbox) throw new HardError("mailbox not found");
+
+  const provider = await deps.openProvider({
+    host: mailbox.imap_host,
+    port: mailbox.imap_port,
+    user: mailbox.address,
+    password,
+  });
+  await provider.close();
+  await deps.verifySmtp({ host: mailbox.smtp_host, port: mailbox.smtp_port, user: mailbox.address, password });
+
+  const secret = deps.secrets.encrypt(password, `mailbox:${mailboxId}`);
+
+  const run = async (trx: Transaction<DB>) => {
+    const locked = await lockMailbox(trx, ctx, mailboxId);
+    if (!locked) throw new HardError("mailbox not found");
+    const current = await getCredentials(trx, ctx, mailboxId);
+    if (!current) throw new HardError("credentials row missing");
+    const stored = await updateCredentials(trx, ctx, mailboxId, {
+      encryptedSecret: secret.ciphertext,
+      secretKind: input.secretKind ?? (current.secret_kind as "password" | "app_password"),
+      keyVersion: secret.keyVersion,
+    });
+    if (!stored) throw new HardError("credentials row missing");
+
+    const reactivated = locked.status === "auth_error";
+    if (reactivated) await setMailboxStatus(trx, ctx, mailboxId, "active", now);
+    await recordAudit(trx, ctx, {
+      actor: "system",
+      event: auditEvents.mailboxPasswordChanged,
+      data: { mailbox_id: mailboxId, reactivated },
+      at: now,
+    });
+    return { status: reactivated ? ("active" as const) : (locked.status as MailboxStatus), reactivated };
+  };
+
+  return deps.db.isTransaction ? run(deps.db as Transaction<DB>) : deps.db.transaction().execute(run);
 }
