@@ -246,4 +246,26 @@ describe("loadConfig", () => {
       reasoningEffort: null,
     });
   });
+
+  test("LLM_PROVIDER=openai needs OPENAI_API_KEY when the scope is not off", () => {
+    const env = { ...fullEnv, LLM_PROVIDER: "openai", TRIAGE_LLM_SCOPE: "synthetic", GEMINI_API_KEY: "g-key" };
+    expect(configError({ ...env, OPENAI_API_KEY: "" }).keys).toEqual(["OPENAI_API_KEY"]);
+    expect(() => loadConfig({ ...env, GEMINI_API_KEY: "", OPENAI_API_KEY: "o-key" })).not.toThrow();
+  });
+
+  test("llmSettings returns the OpenAI settings", () => {
+    const env = { ...fullEnv, OPENAI_API_KEY: "o-key" };
+    const expected = {
+      provider: "openai" as const,
+      apiKeyName: "OPENAI_API_KEY",
+      apiKey: "o-key",
+      classifierModel: "gpt-6-luna",
+      writerModel: "gpt-6.1-terra",
+      timeoutMs: 30000,
+      rpm: 60,
+      reasoningEffort: "none",
+    };
+    expect(llmSettings(loadConfig({ ...env, LLM_PROVIDER: "openai" }))).toEqual(expected);
+    expect(llmSettings(loadConfig(env), "openai")).toEqual(expected);
+  });
 });

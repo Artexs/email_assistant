@@ -87,6 +87,15 @@ const providerBlocks: Record<LlmProviderId, (config: BaseConfig) => Omit<LlmSett
     rpm: c.GEMINI_RPM,
     reasoningEffort: null,
   }),
+  openai: (c) => ({
+    apiKeyName: "OPENAI_API_KEY",
+    apiKey: c.OPENAI_API_KEY,
+    classifierModel: c.OPENAI_MODEL_CLASSIFIER,
+    writerModel: c.OPENAI_MODEL,
+    timeoutMs: c.OPENAI_TIMEOUT_MS,
+    rpm: c.OPENAI_RPM,
+    reasoningEffort: c.OPENAI_REASONING_EFFORT,
+  }),
 };
 
 export const configSchema = baseSchema.superRefine((config, ctx) => {

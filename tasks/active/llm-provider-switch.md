@@ -430,7 +430,7 @@ Checks for every code stage: `bun run typecheck`, `bun run lint`, `bun run test:
 
 > User decision 2026-11-06 (question 5): split. Stage 3 = part A (pure functions and tests). Stage 3b = part B (error map, `createOpenAiGenerate`, registry row, config block). Each part gets its own review and its own commit (`stage 3`, `stage 3b`). Step 3.1 lists the parts in build order.
 
-- [ ] **3.1 `providers/openai.ts`: call, strict schema, result, error map, registry row, config block**
+- [x] **3.1 `providers/openai.ts`: call, strict schema, result, error map, registry row, config block**
   - Plan text: `providers/openai.ts`: the call (D5), the strict schema adapter (D6), the result normalization and the error map (D7), registry row.
     Unit tests with a fake SDK client: request shape (`store: false`, strict, effort, no extra settings), schema snapshot for each allowed-category
     set, refusal, `incomplete`, token counts, every error class, the 30 s guard, and "no error message holds the prompt, the key or the body".
@@ -842,6 +842,7 @@ Added by the planner on 2026-11-06. Questions 1 and 2 are the open Q6 and Q7. Qu
 
 ## Log
 
+- 2026-11-06: Stage 3b (part B of step 3.1) done, reviewer PASS: `classifyOpenAiError` (D7; quota matches `type` or `code`), `createOpenAiGenerate`, `openaiProvider`, registry row, config block; new codes `http_429_quota`, `http_400_schema`, `http_5xx`. ESLint: `!./openai` so the registry can import the adapter. `LLM_PROVIDER=openai` is now valid. Checks: typecheck, lint, test:unit 614 pass.
 - 2026-11-06: Stage 3 (part A of step 3.1) done, reviewer PASS: `providers/openai.ts` with `toStrictJsonSchema`, `toResponseParams`, `toOpenAiResult` + 17 tests + snapshot; `ConfigCode` + `schema_not_strict`. Step 3.1 box stays open until stage 3b. Checks: typecheck, lint, test:unit 579 pass. Reviewer minors for 3b: `strictNode` shares non-walked arrays by reference (use `structuredClone`); add a test for a loose object inside `anyOf`/`items`; effort cast is safe because config limits `OPENAI_REASONING_EFFORT`.
 - 2026-11-06: Stage 2 done, reviewer PASS. `LLM_PROVIDER` (default gemini), `OPENAI_*` keys (`OPENAI_MODEL` default `gpt-6.1-terra`), `llmSettings()`, key check per provider, start log `llm provider=<id> classifier=<model>`, `configHint` in the pause. Checks: typecheck, lint, test:unit 562 pass, test:int 348 pass; local start log shows `llm provider=gemini classifier=gemini-3.5-flash-lite`, key grep count 0 (that start also sent one pending synthetic mail to Gemini).
 - 2026-11-06: Stage 1 done, reviewer PASS. `platform/llm.ts` → `platform/llm/{index,client,errors}.ts` + `providers/{index,gemini}.ts`; tests: `llm.test.ts` → `client.test.ts` (classify output, classify errors, rate limit and model, logs) and `providers/gemini.test.ts` (toGenerateParams, 401–404/400/418 config, timeout/abort names, network codes, toGeminiResult). 28 old test lines → 37 new. ESLint: one block per file group. Checks: typecheck, lint, test:unit 555 pass, test:int 348 pass. Live `gemini:test` NOT verified: 4 attempts gave `http_429`/`http_503`/`timeout` (Gemini side; the soft-error path works). Re-run it in stage 4 (`llm:check`).

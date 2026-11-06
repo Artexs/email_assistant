@@ -106,7 +106,8 @@ const geminiImports = {
   message: "Only apps/server/src/platform/llm/providers/gemini.ts imports @google/genai (ADR 0014).",
 };
 const openaiImports = {
-  group: ["openai", "openai/*"],
+  // "!./openai" lets providers/index.ts import its sibling file.
+  group: ["openai", "openai/*", "!./openai"],
   message: "Only apps/server/src/platform/llm/providers/openai.ts imports openai (ADR 0014).",
 };
 // Flat config: a later block replaces the rule options, so each file group lists all its patterns.

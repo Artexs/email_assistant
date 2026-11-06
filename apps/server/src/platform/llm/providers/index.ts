@@ -2,6 +2,7 @@ import type { GenerateFn } from "../client";
 import type { LlmConfigError, LlmHardError, LlmSoftError } from "../errors";
 
 import { geminiProvider } from "./gemini";
+import { openaiProvider } from "./openai";
 
 export interface LlmProvider {
   /** Name in log texts, for example "Gemini". */
@@ -12,7 +13,7 @@ export interface LlmProvider {
   classifyError(error: unknown, model: string): LlmSoftError | LlmConfigError | LlmHardError;
 }
 
-export const llmProviders = { gemini: geminiProvider } satisfies Record<string, LlmProvider>;
+export const llmProviders = { gemini: geminiProvider, openai: openaiProvider } satisfies Record<string, LlmProvider>;
 
 export type LlmProviderId = keyof typeof llmProviders;
 

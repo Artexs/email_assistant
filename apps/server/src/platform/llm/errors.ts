@@ -3,7 +3,15 @@ import { HardError, SoftError } from "../errors";
 // Error messages hold only the code and the model: never the prompt, the answer, the error body or the key.
 const errorMessage = (code: string, model: string): string => `LLM error ${code} (${model})`;
 
-export type SoftCode = "http_429" | "http_500" | "http_502" | "http_503" | "http_504" | "timeout" | "network";
+export type SoftCode =
+  | "http_429"
+  | "http_500"
+  | "http_502"
+  | "http_503"
+  | "http_504"
+  | "http_5xx"
+  | "timeout"
+  | "network";
 export type ConfigCode =
   | "http_401"
   | "http_402"
@@ -11,6 +19,8 @@ export type ConfigCode =
   | "http_404"
   | "http_400_key"
   | "http_400_precondition"
+  | "http_429_quota"
+  | "http_400_schema"
   | "schema_not_strict";
 
 /** Timeout, 429 or 5xx: the quota or the service, not the mail. */
