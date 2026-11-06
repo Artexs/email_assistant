@@ -1,4 +1,4 @@
-> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open. Left: stages 1–23, then the done-checklist.
+> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open, deferred by the user until stage 21. Stage 1 done. Left: stages 2–23, then the done-checklist.
 
 # S2 Telegram
 
@@ -117,7 +117,7 @@ As in S1b (user decision 2026-11-04): stage reviews run on Sonnet, high, also fo
 Each stage lives in its own file in [`s2-telegram/`](s2-telegram/). An implementer or reviewer reads this file (Input, Rules, checkpoints) and only the stage file of its step. The main session ticks the step boxes in the stage file and the stage box here.
 
 - [ ] [Stage 0](s2-telegram/stage-00-bots-grammy-config-and-check.md) — Setup: bots (user step), grammY, config key, `telegram:check` — user checkpoint 1 after it
-- [ ] [Stage 1](s2-telegram/stage-01-s2-tables-migration.md) — S2 tables migration [risky]
+- [x] [Stage 1](s2-telegram/stage-01-s2-tables-migration.md) — S2 tables migration [risky]
 - [ ] [Stage 2](s2-telegram/stage-02-core-local-time-and-digest-schedule.md) — Core: local time and the digest schedule
 - [ ] [Stage 3](s2-telegram/stage-03-core-message-texts-buttons-and-notices.md) — Core: message model, text helpers, button data, notice texts
 - [ ] [Stage 4](s2-telegram/stage-04-core-digest-renderer.md) — Core: digest renderer [risky]
@@ -171,3 +171,4 @@ Answered 2026-11-05: the user approved the plan as written, so each question kee
 - 2026-11-05: The user approved the plan ("Okay"). The 5 questions keep the defaults (see "Questions for the user"). Next: a build session with `/skill:run-task tasks/active/s2-telegram.md`, starting at stage 0.
 - 2026-11-06: Handoff for the build: `~/.pi/agent/notes/2026-11-06-handoff-s2-telegram-build.md` (start at stage 0, step 0.1 is the user's BotFather step).
 - 2026-11-06: Stage 0 partly built: steps 0.2 and 0.3 done, reviewer PASS (Sonnet). Step 0.1 (BotFather, dev token in `.env`) and the manual `bun run telegram:check` run stay open for the user (checkpoint 1). Minor review finding, not fixed: `telegram-check.ts` prints `failed: ConfigError` without the key names.
+- 2026-11-06: The user asked to go on without the bot tokens: step 0.1 waits until stage 21 (the dev run); stages 1–20 use a fake Telegram. Stage 1 built (migration `20261106000001_telegram.sql`, schema types, 7 schema tests), reviewer PASS (Opus, high). Minor finding for stage 6: `telegram-schema.test.ts` has a local `addMember`; replace it with the `fixtures.ts` helper.

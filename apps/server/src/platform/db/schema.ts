@@ -62,6 +62,35 @@ export interface AuditLog {
   reason_code: string | null;
 }
 
+export interface ChatLinks {
+  channel: string;
+  external_chat_id: Int8;
+  id: Generated<string>;
+  linked_at: Generated<Timestamp>;
+  org_id: string;
+  user_id: string;
+}
+
+export interface ChatLinkTokens {
+  created_at: Generated<Timestamp>;
+  expires_at: Timestamp;
+  org_id: string;
+  token_hash: string;
+  used_at: Timestamp | null;
+  user_id: string;
+}
+
+export interface Digests {
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  org_id: string;
+  period_end: Timestamp;
+  period_start: Timestamp;
+  sent_at: Timestamp | null;
+  slot_key: string;
+  user_id: string;
+}
+
 export interface Emails {
   attempts: Generated<number>;
   backfilled_at: Timestamp | null;
@@ -114,6 +143,7 @@ export interface Mailboxes {
   smtp_host: string;
   smtp_port: number;
   status: Generated<string>;
+  status_changed_at: Generated<Timestamp>;
   uidvalidity: Int8 | null;
 }
 
@@ -141,6 +171,27 @@ export interface Organizations {
   name: string;
   style_text: string | null;
   timezone: string;
+}
+
+export interface Outbox {
+  attempts: Generated<number>;
+  buttons: Generated<Json>;
+  created_at: Timestamp;
+  dedup_key: string;
+  digest_id: string | null;
+  email_id: string | null;
+  error_code: string | null;
+  external_message_id: Int8 | null;
+  id: Generated<string>;
+  kind: string;
+  locked_at: Timestamp | null;
+  mailbox_id: string | null;
+  next_attempt_at: Timestamp;
+  org_id: string;
+  sent_at: Timestamp | null;
+  status: Generated<string>;
+  text: string;
+  user_id: string;
 }
 
 export interface SenderRules {
@@ -191,12 +242,16 @@ export interface Users {
 export interface DB {
   actions: Actions;
   audit_log: AuditLog;
+  chat_link_tokens: ChatLinkTokens;
+  chat_links: ChatLinks;
+  digests: Digests;
   emails: Emails;
   mailbox_credentials: MailboxCredentials;
   mailbox_settings: MailboxSettings;
   mailboxes: Mailboxes;
   memberships: Memberships;
   organizations: Organizations;
+  outbox: Outbox;
   sender_rules: SenderRules;
   triage_feedback: TriageFeedback;
   triage_results: TriageResults;

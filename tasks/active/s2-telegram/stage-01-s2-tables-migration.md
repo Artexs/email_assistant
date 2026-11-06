@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 1 — S2 tables migration [risky]
 
-- [ ] **1.1 Migration `20261106000001_telegram.sql`: `chat_links`, `chat_link_tokens`, `digests`, `outbox`, `mailboxes.status_changed_at`, digest times default**
+- [x] **1.1 Migration `20261106000001_telegram.sql`: `chat_links`, `chat_link_tokens`, `digests`, `outbox`, `mailboxes.status_changed_at`, digest times default**
   - Goal: the schema for chat linking, digests and all scheduled messages, with the guards in the database.
   - Files: create `db/migrations/20261106000001_telegram.sql`; regenerate `apps/server/src/platform/db/schema.ts` (`bun run db:types`, never by hand); create `apps/server/test/integration/telegram-schema.test.ts`.
   - Interfaces: the SQL below. After `db:types` the Kysely types `ChatLinks`, `ChatLinkTokens`, `Digests`, `Outbox` exist; `external_chat_id` and `external_message_id` are `Int8` (a string on select, a number on insert).
