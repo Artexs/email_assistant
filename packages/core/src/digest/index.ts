@@ -7,3 +7,4 @@ export * from "./message";
 export * from "./notices";
 export * from "./text";
 export * from "./would-do";
+export * from "./digest";

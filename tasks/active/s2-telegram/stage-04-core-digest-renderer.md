@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 4 — Core: digest renderer [risky]
 
-- [ ] **4.1 `renderDigest`: sections, lines, counts, "last sync", buttons, the 4096 limit**
+- [x] **4.1 `renderDigest`: sections, lines, counts, "last sync", buttons, the 4096 limit**
   - Goal: one pure function turns the digest data into one message with at most 15 lines and their ✅ / ✏️ buttons (P2, P3); "last sync" is always there, also when the digest is empty.
   - Files: create `packages/core/src/digest/digest.ts`, `packages/core/src/digest/digest.test.ts`; export from `packages/core/src/digest/index.ts`.
   - Interfaces:

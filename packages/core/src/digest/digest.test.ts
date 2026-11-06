@@ -1,0 +1,233 @@
+import { describe, expect, test } from "bun:test";
+
+import type { Category } from "../triage/categories";
+
+import { parseCallback } from "./callback";
+import { DIGEST_MAX_LINES, renderDigest, type DigestInput, type DigestItem, type DigestMailbox } from "./digest";
+import { MESSAGE_MAX_CHARS } from "./message";
+
+const timeZone = "Europe/Warsaw";
+const now = new Date("2026-11-06T07:00:00Z");
+const slot = { date: "2026-11-06", time: "08:00", late: false };
+const mailbox: DigestMailbox = {
+  id: "m1",
+  address: "boss@firma.test",
+  status: "active",
+  lastSyncedAt: new Date("2026-11-06T06:55:00Z"),
+  statusChangedAt: new Date("2026-11-01T00:00:00Z"),
+  mode: "shadow",
+};
+
+function uuid(n: number): string {
+  return `0190a1b2-c3d4-7e5f-8a9b-${n.toString(16).padStart(12, "0")}`;
+}
+
+function item(n: number, category: Category, extra: Partial<DigestItem> = {}): DigestItem {
+  return {
+    emailId: uuid(n),
+    category,
+    from: `Ann${n} <ann${n}@firma.test>`,
+    subject: `Subject ${n}`,
+    receivedAt: new Date(Date.UTC(2026, 10, 6, 5, n)),
+    synthetic: false,
+    aiText: `AI text ${n}`,
+    wouldDo: "would flag",
+    ...extra,
+  };
+}
+
+function input(extra: Partial<DigestInput> = {}): DigestInput {
+  return {
+    kind: "scheduled",
+    now,
+    timeZone,
+    slot,
+    periodStart: new Date("2026-11-05T15:00:00Z"),
+    mailboxes: [mailbox],
+    counts: {},
+    items: [],
+    skippedTooOld: 0,
+    waiting: 0,
+    ...extra,
+  };
+}
+
+const blockStarts = (text: string): string[] => text.split("\n").filter((line) => /^\d+\. /.test(line));
+
+describe("renderDigest", () => {
+  test("empty digest still shows the last sync", () => {
+    const message = renderDigest(input());
+    expect(message.text).toBe("📬 Digest 08:00 · Fri 6 Nov\nNo new mail since 5 Nov 16:00.\n🔄 Last sync 07:55");
+    expect(message.buttons).toEqual([]);
+  });
+
+  test("orders sections and categories, unsure has only edit", () => {
+    const items = [
+      item(1, "spam"),
+      item(2, "notification"),
+      item(3, "info"),
+      item(4, "unsure"),
+      item(5, "needs_reply"),
+      item(6, "urgent"),
+    ];
+    const counts = { urgent: 1, needs_reply: 1, unsure: 1, info: 1, notification: 1, spam: 1 };
+    const message = renderDigest(input({ items, counts }));
+    const starts = blockStarts(message.text);
+    expect(starts.map((line) => line.split(" ")[1])).toEqual(["🔴", "✉️", "❓", "ℹ️", "🔔", "🚫"]);
+    expect(starts.map((line) => line.slice(0, 2))).toEqual(["1.", "2.", "3.", "4.", "5.", "6."]);
+    expect(message.text).toContain("NEEDS ACTION · 3");
+    expect(message.text).toContain("OTHER MAIL · 3");
+    expect(message.text).toContain("Since 5 Nov 16:00: 6 mails, 3 need action");
+    expect(message.text).toContain("Shadow mode: the system changed nothing in your mailbox.");
+    expect(message.buttons[1]?.map((b) => b.text)).toEqual(["✏️ 3", "✅ 4", "✏️ 4"]);
+  });
+
+  test("lists 15 of 20 items with +N more and button rows", () => {
+    const categories: Category[] = ["urgent", "needs_reply", "info", "notification"];
+    const items = Array.from({ length: 20 }, (_, i) => item(i + 1, categories[i % 4] as Category));
+    const counts = { urgent: 5, needs_reply: 5, info: 5, notification: 5 };
+    const message = renderDigest(input({ items, counts }));
+    expect(blockStarts(message.text)).toHaveLength(DIGEST_MAX_LINES);
+    expect(message.text).toContain("+5 more: 5 notification");
+    expect(message.buttons).toHaveLength(8);
+    expect(message.buttons[7]?.map((b) => b.text)).toEqual(["✅ 15", "✏️ 15"]);
+  });
+
+  test("+N more lists every overflowing category in order", () => {
+    const categories: Category[] = ["urgent", "needs_reply", "unsure", "info", "notification", "spam"];
+    const items = Array.from({ length: 30 }, (_, i) => item(i + 1, categories[i % 6] as Category));
+    const counts = { urgent: 5, needs_reply: 5, unsure: 5, info: 5, notification: 5, spam: 5 };
+    const message = renderDigest(input({ items, counts }));
+    expect(blockStarts(message.text)).toHaveLength(DIGEST_MAX_LINES);
+    expect(message.text).toContain("+15 more: 5 info, 5 notification, 5 spam");
+  });
+
+  test("+N more subtracts only the listed items from the counts", () => {
+    const items = [item(1, "urgent"), item(2, "urgent"), item(3, "info")];
+    const message = renderDigest(input({ items, counts: { urgent: 10, info: 4 } }));
+    expect(blockStarts(message.text)).toHaveLength(3);
+    expect(message.text).toContain("+11 more: 8 urgent, 3 info");
+  });
+
+  test("worst case stays within 4096 and drops items into +N more", () => {
+    const long = "😀".repeat(1000);
+    const items = Array.from({ length: 15 }, (_, i) =>
+      item(i + 1, "urgent", {
+        from: "f".repeat(300),
+        subject: long,
+        aiText: "a".repeat(2000),
+        wouldDo: "would mark read, move to AI/Notifications",
+      })
+    );
+    const mailboxes = Array.from({ length: 10 }, (_, i) => ({
+      ...mailbox,
+      id: `m${i}`,
+      address: `${String(i).repeat(60)}`,
+    }));
+    const message = renderDigest(input({ items, counts: { urgent: 15 }, mailboxes }));
+    expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
+    const shown = blockStarts(message.text).length;
+    expect(shown).toBeLessThan(15);
+    expect(message.buttons.flat()).toHaveLength(shown * 2);
+    expect(message.text).toContain(`+${15 - shown} more: ${15 - shown} urgent`);
+    for (const button of message.buttons.flat()) {
+      const parsed = parseCallback(button.data);
+      expect(items.some((i) => i.emailId === parsed?.emailId)).toBe(true);
+      expect(Number.parseInt(button.text.split(" ")[1] as string, 10)).toBeLessThanOrEqual(shown);
+    }
+  });
+
+  test("cuts the text when even no item fits", () => {
+    const mailboxes = Array.from({ length: 100 }, (_, i) => ({ ...mailbox, id: `m${i}`, address: "x".repeat(60) }));
+    const message = renderDigest(input({ mailboxes }));
+    expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
+    expect(message.text.endsWith("…")).toBe(true);
+    expect(message.buttons).toEqual([]);
+  });
+
+  test("maxLines limits the blocks", () => {
+    const items = Array.from({ length: 6 }, (_, i) => item(i + 1, "info"));
+    const message = renderDigest(input({ items, counts: { info: 6 }, maxLines: 3 }));
+    expect(blockStarts(message.text)).toHaveLength(3);
+    expect(message.text).toContain("+3 more: 3 info");
+  });
+
+  test("headers", () => {
+    expect(renderDigest(input({ slot: { ...slot, late: true } })).text.split("\n")[0]).toBe(
+      "📬 Digest 08:00 · Fri 6 Nov (late)"
+    );
+    const lateNight = renderDigest(
+      input({ slot: { date: "2026-11-06", time: "23:30", late: true }, now: new Date("2026-11-06T23:10:00Z") })
+    );
+    expect(lateNight.text.split("\n")[0]).toBe("📬 Digest 23:30 · Fri 6 Nov (late)");
+    const onDemand = renderDigest(input({ kind: "on_demand", slot: null, now: new Date("2026-11-06T13:05:00Z") }));
+    expect(onDemand.text.split("\n")[0]).toBe("📬 Digest now · Fri 6 Nov 14:05");
+  });
+
+  test("mailbox lines", () => {
+    const line = (box: Partial<DigestMailbox>): string =>
+      renderDigest(input({ mailboxes: [{ ...mailbox, ...box }] })).text.split("\n")[2] as string;
+    expect(line({ lastSyncedAt: new Date("2026-11-06T06:20:00Z") })).toBe("⚠️ Last sync 07:20 (late)");
+    expect(line({ lastSyncedAt: null })).toBe("⚠️ Last sync: never");
+    expect(
+      line({
+        status: "paused",
+        statusChangedAt: new Date("2026-11-05T13:00:00Z"),
+        lastSyncedAt: new Date("2026-11-05T12:55:00Z"),
+      })
+    ).toBe("⏸ Paused since 5 Nov 14:00 · last sync 5 Nov 13:55");
+    expect(
+      line({
+        status: "auth_error",
+        statusChangedAt: new Date("2026-11-06T06:40:00Z"),
+        lastSyncedAt: new Date("2026-11-06T06:35:00Z"),
+      })
+    ).toBe("❌ Login error since 07:40 · last sync 07:35");
+    const two = renderDigest(
+      input({ mailboxes: [mailbox, { ...mailbox, id: "m2", address: "other@firma.test" }] })
+    ).text.split("\n");
+    expect(two[2]).toBe("🔄 Last sync 07:55 · boss@firma.test");
+    expect(two[3]).toBe("🔄 Last sync 07:55 · other@firma.test");
+    expect(renderDigest(input({ mailboxes: [] })).text).toContain("Last sync: no mailbox connected");
+  });
+
+  test("synthetic item is marked", () => {
+    const message = renderDigest(input({ items: [item(1, "info", { synthetic: true })], counts: { info: 1 } }));
+    expect(blockStarts(message.text)[0]?.endsWith("· 🧪 test")).toBe(true);
+  });
+
+  test("footer lines for skipped and waiting mail", () => {
+    const some = renderDigest(input({ skippedTooOld: 1, waiting: 2 })).text;
+    expect(some).toContain("📭 Not processed (older than 7 days): 1");
+    expect(some).toContain("⏳ Waiting for triage: 2");
+    const none = renderDigest(input()).text;
+    expect(none).not.toContain("📭");
+    expect(none).not.toContain("⏳");
+  });
+
+  test("no shadow line in assist mode", () => {
+    const message = renderDigest(
+      input({ mailboxes: [{ ...mailbox, mode: "assist" }], items: [item(1, "info")], counts: { info: 1 } })
+    );
+    expect(message.text).not.toContain("Shadow mode");
+  });
+
+  test("no shadow line without a mailbox", () => {
+    const message = renderDigest(input({ mailboxes: [], items: [item(1, "info")], counts: { info: 1 } }));
+    expect(message.text).not.toContain("Shadow mode");
+  });
+
+  test("button data is short and parses to the e-mail id", () => {
+    const items = [item(1, "urgent"), item(2, "unsure"), item(3, "spam")];
+    const message = renderDigest(input({ items, counts: { urgent: 1, unsure: 1, spam: 1 } }));
+    for (const button of message.buttons.flat()) {
+      expect(Buffer.byteLength(button.data)).toBeLessThanOrEqual(64);
+      expect(items.map((i) => i.emailId)).toContain(parseCallback(button.data)?.emailId as string);
+    }
+  });
+
+  test("no 💬 line when aiText is null", () => {
+    const message = renderDigest(input({ items: [item(1, "info", { aiText: null })], counts: { info: 1 } }));
+    expect(message.text).not.toContain("💬");
+  });
+});
