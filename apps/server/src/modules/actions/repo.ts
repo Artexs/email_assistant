@@ -1,4 +1,4 @@
-import { actionTypes, type ActionType } from "@ea/core";
+import { actionTypes, folderKeys, type ActionType, type ActionView, type FolderKey } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 import { z } from "zod";
 
@@ -83,4 +83,40 @@ export async function listSummaries(db: DbOrTrx, ctx: TenantContext, emailIds: s
     .where(sql<string>`payload->>'summary'`, "is not", null)
     .execute();
   return new Map(rows.map((row) => [row.email_id, row.summary]));
+}
+
+const folderKeySchema = z.enum(folderKeys);
+
+// Oldest first per email. A row with an unknown type is left out; an unknown folder gives `null`.
+export async function listActionsForEmails(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailIds: readonly string[]
+): Promise<Map<string, ActionView[]>> {
+  const result = new Map<string, ActionView[]>();
+  if (emailIds.length === 0) {
+    return result;
+  }
+  const rows = await db
+    .selectFrom("actions")
+    .select(["email_id", "type", "status", sql<string | null>`payload->>'folder'`.as("folder")])
+    .where("org_id", "=", ctx.orgId)
+    .where("email_id", "in", [...emailIds])
+    .orderBy("created_at")
+    .orderBy("id")
+    .execute();
+  for (const row of rows) {
+    const type = actionTypeSchema.safeParse(row.type);
+    if (!type.success) {
+      continue;
+    }
+    const folder = folderKeySchema.safeParse(row.folder);
+    const view: ActionView = {
+      type: type.data,
+      status: row.status,
+      folder: folder.success ? (folder.data as FolderKey) : null,
+    };
+    result.set(row.email_id, [...(result.get(row.email_id) ?? []), view]);
+  }
+  return result;
 }

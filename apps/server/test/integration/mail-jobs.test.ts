@@ -92,7 +92,7 @@ function jobFor(trx: Transaction<DB>, o: Opened) {
 async function mailboxRow(trx: Transaction<DB>, id: string) {
   return trx
     .selectFrom("mailboxes")
-    .select(["status", "last_synced_at"])
+    .select(["status", "last_synced_at", "status_changed_at"])
     .where("id", "=", id)
     .executeTakeFirstOrThrow();
 }
@@ -151,6 +151,7 @@ describe("mail sync job", () => {
 
       expect(attempts).toEqual([bad.address, good.address]);
       expect((await mailboxRow(trx, bad.mailboxId)).status).toBe("auth_error");
+      expect((await mailboxRow(trx, bad.mailboxId)).status_changed_at).toEqual(NOW);
       expect((await mailboxRow(trx, bad.mailboxId)).last_synced_at).toBeNull();
       expect((await mailboxRow(trx, good.mailboxId)).status).toBe("active");
       expect(await emailCount(trx, good.mailboxId)).toBe(1);

@@ -7,6 +7,7 @@ import {
   type SqlBool,
   type Transaction,
 } from "kysely";
+import { z } from "zod";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 
@@ -160,18 +161,76 @@ export async function markSynced(db: DbOrTrx, ctx: TenantContext, mailboxId: str
     .execute();
 }
 
+export type MailboxStatus = "active" | "auth_error" | "paused";
+
+const mailboxStatusSchema = z.enum(["active", "auth_error", "paused"]);
+
+// The update is unconditional (an `auth_error` from the sync job wins over a pause). `status_changed_at` moves only when the status really changes.
 export async function setMailboxStatus(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
-  status: "active" | "auth_error" | "paused"
+  status: MailboxStatus,
+  at?: Date
 ): Promise<void> {
   await db
     .updateTable("mailboxes")
-    .set({ status })
+    .set({
+      status,
+      status_changed_at: sql<Date>`CASE WHEN status IS DISTINCT FROM ${status} THEN ${at ?? sql`now()`} ELSE status_changed_at END`,
+    })
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", mailboxId)
     .execute();
+}
+
+// Conditional update: it changes the row only while the status is still `change.from`.
+export async function changeMailboxStatus(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  change: { from: "active" | "paused"; to: "active" | "paused"; at: Date }
+): Promise<boolean> {
+  const result = await db
+    .updateTable("mailboxes")
+    .set({ status: change.to, status_changed_at: change.at })
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", mailboxId)
+    .where("status", "=", change.from)
+    .executeTakeFirst();
+  return result.numUpdatedRows === 1n;
+}
+
+export interface MailboxSummary {
+  id: string;
+  address: string;
+  status: MailboxStatus;
+  last_synced_at: Date | null;
+  status_changed_at: Date;
+  created_at: Date;
+}
+
+export async function listMailboxes(db: DbOrTrx, ctx: TenantContext): Promise<MailboxSummary[]> {
+  const rows = await db
+    .selectFrom("mailboxes")
+    .select(["id", "address", "status", "last_synced_at", "status_changed_at", "created_at"])
+    .where("org_id", "=", ctx.orgId)
+    .orderBy("created_at")
+    .orderBy("id")
+    .execute();
+  return rows.map((row) => ({ ...row, status: mailboxStatusSchema.parse(row.status) }));
+}
+
+// Mail that waits for triage in all mailboxes of the org.
+export async function countWaiting(db: DbOrTrx, ctx: TenantContext, opts: { receivedSince: Date }): Promise<number> {
+  const row = await db
+    .selectFrom("emails")
+    .select((eb) => eb.fn.countAll<string>().as("count"))
+    .where("org_id", "=", ctx.orgId)
+    .where("status", "in", ["pending", "processing"])
+    .where("received_at", ">=", opts.receivedSince)
+    .executeTakeFirstOrThrow();
+  return Number(row.count);
 }
 
 export async function insertCredentials(

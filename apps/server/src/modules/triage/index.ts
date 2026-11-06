@@ -5,10 +5,12 @@ export type { LabelInput } from "./label-input";
 export { classifyEmail } from "./classifier";
 export type { ClassifierEmail, SenderContext } from "./classifier";
 export {
+  countTriagedBetween,
   insertFeedback,
   insertTriageResult,
   latestTriageResult,
   listLabeledResults,
+  listTriagedBetween,
   listUnlabeled,
   listUsageSince,
 } from "./repo";
@@ -18,6 +20,7 @@ export type {
   LatestTriageResult,
   MailKind,
   TriageResultInput,
+  TriagedItemRow,
   UnlabeledResult,
   UsageRow,
 } from "./repo";

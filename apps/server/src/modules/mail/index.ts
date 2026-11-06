@@ -15,10 +15,13 @@ export {
   type MessageMeta,
 } from "./port";
 export {
+  changeMailboxStatus,
   claimEmails,
+  countWaiting,
   finishEmail,
   forceRescan,
   getMailbox,
+  listMailboxes,
   listSyncTargets,
   listThreadContext,
   mailKindFilter,
@@ -26,7 +29,7 @@ export {
   requeueTooOld,
 } from "./repo";
 export type { MailKind } from "./repo";
-export type { ClaimedEmail, Cursor, MailboxRow, NewEmail } from "./repo";
+export type { ClaimedEmail, Cursor, MailboxRow, MailboxStatus, MailboxSummary, NewEmail } from "./repo";
 export {
   isSyntheticMessageId,
   renderSeedMessage,

@@ -1,5 +1,5 @@
 import { categorySchema, feedbackVerdicts, type Category, type FeedbackSource, type FeedbackVerdict } from "@ea/core";
-import type { NotNull, Transaction } from "kysely";
+import { sql, type NotNull, type Transaction } from "kysely";
 import { z } from "zod";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -53,6 +53,21 @@ export interface LabeledResult {
   fields: unknown;
   verdict: FeedbackVerdict;
   true_category: Category | null;
+}
+
+export interface TriagedItemRow {
+  email_id: string;
+  mailbox_id: string;
+  category: Category;
+  confidence: number;
+  reason_code: string;
+  reason: string | null;
+  model_category: Category | null;
+  triaged_at: Date;
+  received_at: Date;
+  from_address: string | null;
+  subject: string | null;
+  message_id_header: string | null;
 }
 
 export interface UsageRow {
@@ -279,4 +294,83 @@ export async function listUsageSince(
     .orderBy("triage_results.id")
     .$narrowType<{ model: NotNull }>()
     .execute();
+}
+
+// The latest result per email, created in the window `after < created_at <= until` (index triage_results_org_created_idx).
+function latestInWindow(orgId: string, range: { after: Date; until: Date }) {
+  return sql`
+    SELECT DISTINCT ON (tr.email_id) tr.email_id, tr.category, tr.confidence, tr.reason_code, tr.reason, tr.fields, tr.created_at
+    FROM triage_results tr
+    WHERE tr.org_id = ${orgId} AND tr.created_at > ${range.after} AND tr.created_at <= ${range.until}
+    ORDER BY tr.email_id, tr.created_at DESC, tr.id DESC
+  `;
+}
+
+function readModelCategory(value: string | null): Category | null {
+  const parsed = categorySchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
+
+// Most urgent category first, then the newest mail.
+export async function listTriagedBetween(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  range: { after: Date; until: Date },
+  opts: { limit: number; categories?: readonly Category[] }
+): Promise<TriagedItemRow[]> {
+  const categoryFilter =
+    opts.categories === undefined
+      ? sql``
+      : opts.categories.length === 0
+        ? sql`WHERE false`
+        : sql`WHERE latest.category IN (${sql.join(opts.categories)})`;
+  const { rows } = await sql<{
+    email_id: string;
+    mailbox_id: string;
+    category: string;
+    confidence: number;
+    reason_code: string;
+    reason: string | null;
+    model_category: string | null;
+    created_at: Date;
+    received_at: Date;
+    from_address: string | null;
+    subject: string | null;
+    message_id_header: string | null;
+  }>`
+    WITH latest AS (${latestInWindow(ctx.orgId, range)})
+    SELECT latest.email_id, latest.category, latest.confidence, latest.reason_code, latest.reason,
+           latest.fields->>'model_category' AS model_category, latest.created_at,
+           e.mailbox_id, e.received_at, e.from_address, e.subject, e.message_id_header
+    FROM latest JOIN emails e ON e.id = latest.email_id AND e.org_id = ${ctx.orgId}
+    ${categoryFilter}
+    ORDER BY CASE latest.category WHEN 'urgent' THEN 1 WHEN 'needs_reply' THEN 2 WHEN 'delegation' THEN 3
+               WHEN 'unsure' THEN 4 WHEN 'info' THEN 5 WHEN 'notification' THEN 6 ELSE 7 END,
+             e.received_at DESC, latest.email_id
+    LIMIT ${opts.limit}
+  `.execute(db);
+  return rows.map(({ created_at, ...row }) => ({
+    ...row,
+    category: categorySchema.parse(row.category),
+    model_category: readModelCategory(row.model_category),
+    triaged_at: created_at,
+  }));
+}
+
+export async function countTriagedBetween(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  range: { after: Date; until: Date }
+): Promise<Partial<Record<Category, number>>> {
+  const { rows } = await sql<{ category: string; count: string }>`
+    WITH latest AS (${latestInWindow(ctx.orgId, range)})
+    SELECT latest.category, count(*) AS count
+    FROM latest JOIN emails e ON e.id = latest.email_id AND e.org_id = ${ctx.orgId}
+    GROUP BY latest.category
+  `.execute(db);
+  const counts: Partial<Record<Category, number>> = {};
+  for (const row of rows) {
+    counts[categorySchema.parse(row.category)] = Number(row.count);
+  }
+  return counts;
 }

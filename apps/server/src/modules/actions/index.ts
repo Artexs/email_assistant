@@ -1,2 +1,2 @@
-export { createPlanned, listActionsForEmail, listSummaries } from "./repo";
+export { createPlanned, listActionsForEmail, listActionsForEmails, listSummaries } from "./repo";
 export type { ActionRow, CreatedAction, PlannedActionInput } from "./repo";

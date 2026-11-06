@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import type { MembershipRole } from "@ea/core";
+import type { Category, MembershipRole } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { MailCapabilities, NewEmail } from "../../src/modules/mail";
@@ -109,4 +109,45 @@ export async function linkChat(
 // Between 10^9 and 10^12, so a test never collides with a real chat id in the dev DB.
 export function randomChatId(): number {
   return 1_000_000_000 + Math.floor(Math.random() * (1_000_000_000_000 - 1_000_000_000));
+}
+
+// An `emails` row (status `triaged`) and a `triage_results` row with the given `created_at`; returns the e-mail id.
+export async function insertTriaged(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: {
+    category: Category;
+    createdAt: Date;
+    receivedAt?: Date;
+    reason?: string | null;
+    reasonCode?: string;
+    confidence?: number;
+    fields?: Record<string, unknown>;
+    subject?: string | null;
+    from?: string | null;
+    messageId?: string | null;
+  }
+): Promise<string> {
+  const emailId = await insertTestEmail(trx, ctx, mailboxId, {
+    status: "triaged",
+    received_at: opts.receivedAt ?? opts.createdAt,
+    subject: opts.subject ?? null,
+    from_address: opts.from ?? null,
+    message_id_header: opts.messageId ?? null,
+  });
+  await trx
+    .insertInto("triage_results")
+    .values({
+      org_id: ctx.orgId,
+      email_id: emailId,
+      category: opts.category,
+      confidence: opts.confidence ?? 0.9,
+      reason_code: opts.reasonCode ?? "direct_request",
+      reason: opts.reason ?? null,
+      fields: JSON.stringify(opts.fields ?? {}),
+      created_at: opts.createdAt,
+    })
+    .execute();
+  return emailId;
 }

@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 8 — Read queries and the mailbox status time [risky]
 
-- [ ] **8.1 Mail, triage, actions and audit queries for digests and notices; `status_changed_at`**
+- [x] **8.1 Mail, triage, actions and audit queries for digests and notices; `status_changed_at`**
   - Goal: the owning modules give the reads that `reports` and `channels` need (D16: no module reads another module's tables), each filtered by `org_id`; the mailbox status keeps the time of its last real change (D6).
   - Files: change `apps/server/src/modules/mail/repo.ts`, `mail/jobs.ts`, `mail/index.ts`; `apps/server/src/modules/triage/repo.ts`, `triage/index.ts`; `apps/server/src/modules/actions/repo.ts`, `actions/index.ts`; `apps/server/src/modules/audit/repo.ts`, `audit/index.ts`; `apps/server/test/integration/fixtures.ts` (`insertTriaged`); `apps/server/test/integration/mail-jobs.test.ts` (one more assertion); create `apps/server/test/integration/s2-read-queries.test.ts`.
   - Interfaces:
