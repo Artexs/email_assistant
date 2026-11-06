@@ -25,6 +25,14 @@ export const configSchema = z
         .optional()
     ),
     GEMINI_API_KEY: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+    // Empty or missing = Telegram off. Secret: never print or log it.
+    TELEGRAM_BOT_TOKEN: z.preprocess(
+      (v) => (v === "" ? undefined : v),
+      z
+        .string()
+        .regex(/^\d+:[A-Za-z0-9_-]{20,}$/)
+        .optional()
+    ),
     // Writer role (S4) and fallback.
     GEMINI_MODEL: z.preprocess((v) => (v === "" ? undefined : v), z.string().default("gemini-3.8-flash")),
     GEMINI_MODEL_CLASSIFIER: z.preprocess(

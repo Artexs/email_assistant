@@ -1,4 +1,4 @@
-> **Status 2026-11-05 — in progress.** The plan is approved by the user (commit 6773a42). Left: the build of stages 0–23 (stage 0 starts with the user's BotFather step), then the done-checklist.
+> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open. Left: stages 1–23, then the done-checklist.
 
 # S2 Telegram
 
@@ -170,3 +170,4 @@ Answered 2026-11-05: the user approved the plan as written, so each question kee
 - 2026-11-05: Plan written: 24 stages (0–23), one file per stage in `s2-telegram/`; 17 stages `[risky]`. Facts checked: grammY 1.46.0 source and a local probe (Bun 1.4.4, fake Bot API), Bot API pages, `pg` types of `time[]` and `bigint`. Product defaults P1–P6 and design decisions D1–D19 are under "Input"; 5 questions for the user. `bunx prettier --check` passes on all plan files.
 - 2026-11-05: The user approved the plan ("Okay"). The 5 questions keep the defaults (see "Questions for the user"). Next: a build session with `/skill:run-task tasks/active/s2-telegram.md`, starting at stage 0.
 - 2026-11-06: Handoff for the build: `~/.pi/agent/notes/2026-11-06-handoff-s2-telegram-build.md` (start at stage 0, step 0.1 is the user's BotFather step).
+- 2026-11-06: Stage 0 partly built: steps 0.2 and 0.3 done, reviewer PASS (Sonnet). Step 0.1 (BotFather, dev token in `.env`) and the manual `bun run telegram:check` run stay open for the user (checkpoint 1). Minor review finding, not fixed: `telegram-check.ts` prints `failed: ConfigError` without the key names.

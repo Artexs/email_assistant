@@ -106,6 +106,23 @@ export default tseslint.config(
   ...astroConfig,
   nodeConfig,
   {
+    files: ["apps/server/src/**/*.ts", "packages/**/*.ts"],
+    ignores: ["apps/server/src/modules/channels/telegram/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["grammy", "grammy/*"],
+              message: "Only apps/server/src/modules/channels/telegram/ imports grammy (D17, ADR 0005).",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["apps/web/src/env.d.ts"],
     rules: { "@typescript-eslint/no-empty-object-type": "off" },
   },

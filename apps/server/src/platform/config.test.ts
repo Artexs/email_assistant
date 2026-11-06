@@ -178,6 +178,19 @@ describe("loadConfig", () => {
     expect(classifierModel(config)).toBe("gemini-3.1-flash-lite");
   });
 
+  test("accepts a TELEGRAM_BOT_TOKEN and treats an empty one as missing", () => {
+    const token = "123456:ABCdefGhIJKlmNoPQRstuVWxyZ_-12345";
+    expect(loadConfig({ ...fullEnv, TELEGRAM_BOT_TOKEN: token }).TELEGRAM_BOT_TOKEN).toBe(token);
+    expect(loadConfig({ ...fullEnv, TELEGRAM_BOT_TOKEN: "" }).TELEGRAM_BOT_TOKEN).toBeUndefined();
+    expect(loadConfig(fullEnv).TELEGRAM_BOT_TOKEN).toBeUndefined();
+  });
+
+  test("throws ConfigError when TELEGRAM_BOT_TOKEN is bad, with no value in the message", () => {
+    const error = configError({ ...fullEnv, TELEGRAM_BOT_TOKEN: "abc" });
+    expect(error.keys).toEqual(["TELEGRAM_BOT_TOKEN"]);
+    expect(error.message).not.toContain("abc");
+  });
+
   test("reads the LLM numbers and rejects bad ones", () => {
     const config = loadConfig({ ...fullEnv, GEMINI_TIMEOUT_MS: "5000", GEMINI_RPM: "3", LLM_DAILY_CAP: "50" });
     expect(config.GEMINI_TIMEOUT_MS).toBe(5000);

@@ -9,6 +9,7 @@
     "@ea/core": "workspace:*",
     "@google/genai": "^2.32.0",
     "croner": "^11.0.0",
+    "grammy": "^1.46.0",
     "hono": "^4.13.16",
     "html-to-text": "^10.0.1",
     "imapflow": "^1.1.1",

@@ -22,7 +22,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
   - Done when: the user says done and the grep prints `1`.
   - Out of scope: the pilot token on the VPS (stage 23), webhook setup (never: long polling only).
 
-- [ ] **0.2 grammY dependency, `TELEGRAM_BOT_TOKEN` config key, ESLint border**
+- [x] **0.2 grammY dependency, `TELEGRAM_BOT_TOKEN` config key, ESLint border**
   - Goal: the server can import grammY; the config reads the token; only the Telegram adapter folder may import grammY.
   - Files: change `apps/server/package.json` (dependency `"grammy": "^1.46.0"`), `bun.lock` (by `bun install`), `apps/server/src/platform/config.ts`, `apps/server/src/platform/config.test.ts`, `.env.example`, `eslint.config.js`.
   - Interfaces: `Config["TELEGRAM_BOT_TOKEN"]: string | undefined`.
@@ -54,7 +54,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
   - Done when: the checks pass and the manual border check failed and then passed as described.
   - Out of scope: any use of the token (step 0.3 and later).
 
-- [ ] **0.3 `bun run telegram:check` and the first error label**
+- [x] **0.3 `bun run telegram:check` and the first error label**
   - Goal: the user and the agent can see which bot a token belongs to, without printing the token.
   - Files: create `apps/server/src/modules/channels/index.ts`, `apps/server/src/modules/channels/telegram/check.ts`, `apps/server/src/modules/channels/telegram/errors.ts`, `apps/server/src/modules/channels/telegram/check.test.ts`, `apps/server/src/scripts/telegram-check.ts`; change root `package.json` (script `"telegram:check": "bun apps/server/src/scripts/telegram-check.ts"`).
   - Interfaces:
