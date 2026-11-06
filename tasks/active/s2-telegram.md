@@ -1,4 +1,4 @@
-> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0 done (bots: dev `@Email_assistant_local_bot`, pilot `@Email_assistant_vps_bot`). Stages 1–10 done; checkpoint 2 passed (user go). Stages 11–20 done; checkpoint 3 group review done (fixes committed). Left: stage 21 (the user's phone test, 07:00–22:00 local), stage 22 (docs), stage 23 (VPS; S1b shadow run is done, needs the user's go and the pilot token in the VPS `.env`), then the done-checklist.
+> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0 done (bots: dev `@Email_assistant_local_bot`, pilot `@Email_assistant_vps_bot`). Stages 1–10 done; checkpoint 2 passed (user go). Stages 11–20 done; checkpoint 3 group review done (fixes committed). Left: stage 21 (the user's phone test, 07:00–22:00 local), stage 23 (VPS; S1b shadow run is done, needs the user's go and the pilot token in the VPS `.env`), then the done-checklist.
 
 # S2 Telegram
 
@@ -138,7 +138,7 @@ Each stage lives in its own file in [`s2-telegram/`](s2-telegram/). An implement
 - [x] [Stage 19](s2-telegram/stage-19-mailbox-password.md) — `mailbox:password`: leave `auth_error` [risky]
 - [x] [Stage 20](s2-telegram/stage-20-server-wiring-and-log-test.md) — Server wiring, shutdown and the log test [risky] — user checkpoint 3 after it
 - [ ] [Stage 21](s2-telegram/stage-21-dev-run-with-the-dev-bot.md) — Dev run with the dev bot: the user tries it on the phone [risky]
-- [ ] [Stage 22](s2-telegram/stage-22-docs-and-notes.md) — Docs, notes, known alerts
+- [x] [Stage 22](s2-telegram/stage-22-docs-and-notes.md) — Docs, notes, known alerts
 - [ ] [Stage 23](s2-telegram/stage-23-vps-deploy-with-the-pilot-bot.md) — VPS deploy with the pilot bot [risky] — user checkpoint 4 before it
 
 ### Results (filled in stages 21 and 23)
@@ -195,3 +195,4 @@ Answered 2026-11-05: the user approved the plan as written, so each question kee
 - 2026-11-06: Stage 20 built (`channels/telegram/runtime.ts`, `main.ts` jobs `channels.notifier` / `channels.digest` and shutdown 10 s + 30 s under the 45 s grace, scheduler logs `describeError`, end-to-end log test on a fake Bot API), reviewer PASS (Sonnet). Minor fixed: the log test also proves the summary, reason and sender markers are in the sent texts. Manual start with an empty token: `telegram is off`, exit 0. The run with a real token waits for stage 21.
 - 2026-11-06: Checkpoint 3 group review (Opus, high, `f9a2cba..7f927d6`): FAIL, 1 major: a false "sync is late" right after `/resume` or `mailbox:password`. Fixed (D12 and stage 12 updated, test 13), plus: a failing command handler replies `ERROR_TEXT` and a failing reply is only a `warn`; one `SYNC_LATE_MS`; `mailbox:password` and `telegram:check` print the `ConfigError` key names (closes the stage 0 minor). Fix review PASS (Opus, high; 2 rounds). Open for the user: the D3 change for a linked chat that sends its used `/start <token>` again (the reviewer also says yes); the stage 21 run notes (07:00–22:00 local, no file edits during `bun run dev`).
 - 2026-11-06: Step 0.1 done by the user: dev bot `@Email_assistant_local_bot`, pilot bot `@Email_assistant_vps_bot` (user names only; the tokens are not in the chat). `grep -c '^TELEGRAM_BOT_TOKEN=.' .env` → `1`; `bun run telegram:check` → `[telegram-check] bot @Email_assistant_local_bot (id 9088924109)`. Checkpoint 1 passed.
+- 2026-11-06: The user said go for stages 22 and 23 before stage 21 ("I will just verify both Telegram bots tomorrow"); the pilot token is in the VPS `.env` (user). Stage 22 built (docs, `notes/2026-11-06-telegram-bot-facts.md`, 13 known alerts, `tasks/planned/retention-job.md`, `tasks/planned/telegram-review-command.md`; no `llm-pause-notice.md`, question 4 = no), reviewer PASS (Sonnet). Stage 21 / 23 results are marked "pending" in the roadmap, the note and the alerts.

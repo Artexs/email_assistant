@@ -20,7 +20,10 @@
 ## Data access
 - Typed repositories with Kysely. One repository function = one clear query. Column names are snake_case in TypeScript.
 - Generated DB types live in `apps/server/src/platform/db/schema.ts`. Never edit this file by hand. Run `bun run db:types` after each migration.
-- Every repository function takes a `TenantContext` and filters by `org_id`. A test checks each new function for the filter. Only `insertOrganization`, `insertUser` and `listSyncTargets` (`mail/repo.ts`: the sync job lists the active mailboxes of all organizations) take no `TenantContext`.
+- Every repository function takes a `TenantContext` and filters by `org_id`. A test checks each new function for the filter. Only these take no `TenantContext`:
+  - `insertOrganization`, `insertUser`.
+  - `listSyncTargets` (`mail/repo.ts`): the sync job lists the active mailboxes of all organizations.
+  - S2, `channels/repo.ts`: `findChatLink` (the chat id gives the tenant), `listLinkedChats` (the notifier and digest jobs read all organizations), `useLinkToken` and `findLinkToken` (the token gives the tenant), `replaceChatLink` (it deletes the old link of a chat across organizations), `claimDueOutbox` (the sender claims rows of all organizations).
 - Status changes and their `audit_log` row go in one transaction.
 - Work items are claimed with `FOR UPDATE SKIP LOCKED`. Conditional updates (`WHERE status = …`) guard every status change.
 - Schema changes only through a new dbmate file `db/migrations/YYYYMMDDHHMMSS_<name>.sql` with `-- migrate:up` and `-- migrate:down`. Never edit an applied migration.
@@ -42,6 +45,7 @@
 - TypeScript strict. `const` / `let` only, never `var`.
 - Template literals for strings with variables, never `+` concatenation.
 - Use the `log` util (`platform/log`) with a `[module]` prefix, never `console.log`. No mail bodies or secrets in logs.
+- Telegram errors: log only `telegramErrorLabel(error)`. Never log `error.message` of an inner error, `payload` or `description` (they can hold the bot token or message text). Other errors: `describeError(error)`.
 - Errors: throw typed errors (`SoftError` for timeout / 429 / 503 / lost connection, `HardError` for the rest); the job runner decides the retry.
 
 ## Tests

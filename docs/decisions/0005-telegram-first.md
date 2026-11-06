@@ -20,3 +20,4 @@ The user chose Telegram first and maybe a dedicated mobile app later (product br
 - Fast start, no business verification.
 - Telegram bot chats are not end-to-end encrypted: keep sensitive content out of messages.
 - WhatsApp or a mobile app is a new adapter, not a redesign.
+- Implementation (S2): long polling with grammY, an outbox table for scheduled messages (digests and notices), private chats only, plain-text messages.

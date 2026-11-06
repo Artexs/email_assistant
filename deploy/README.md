@@ -65,6 +65,22 @@ An `auth_error` notice means the mail server refused the stored password. The sy
 
 A `paused` mailbox stays paused. Use `/resume` in Telegram.
 
+## Telegram
+
+The server uses long polling (no inbound port). The VPS uses the pilot bot `@Email_assistant_vps_bot`. The dev bot `@Email_assistant_local_bot` stays on the Mac: one bot token allows one poller.
+
+1. Put the pilot bot token in `TELEGRAM_BOT_TOKEN` in the VPS `.env`. Only the user edits this file. Never print the token, never paste it in a chat or a log. An empty value switches Telegram off (the log says `telegram is off`).
+2. Check the token: `$C run --rm server bun run telegram:check`. The output is `bot @Email_assistant_vps_bot (id …)`.
+3. Restart the server so that it reads the new `.env`: `$C up -d server`. The log shows `telegram: polling as @Email_assistant_vps_bot`.
+4. Make a link for a member: `$C run --rm server bun run telegram:link --org-id <uuid> [--user-id <uuid>]`.
+   The output is a `https://t.me/<bot>?start=<token>` link. It is a one-time secret that is valid for 15 minutes. Open it on the phone of the member. Do not share it. A used or expired link needs a new `telegram:link` run.
+5. Set the digest times if needed: `$C run --rm server bun run digest:times --org-id <uuid> --times 08:00,16:00` (`--times none` switches the digests off). New members get `08:00,16:00` by default.
+6. Remove a link: `$C run --rm server bun run telegram:unlink --org-id <uuid> --user-id <uuid>`.
+
+A `409` in the log (`another process polls this bot token`) means that a second process uses the same token, for example the Mac with the pilot token. Stop the other process. The server tries again after 1, 2, 4 … at most 30 minutes. A `401` means that the token is wrong or revoked: fix `.env`, then run `$C up -d server`.
+
+For a mailbox in `auth_error` the owner gets a Telegram notice. Fix it as in the section "Login error (`auth_error`)". Alert texts and fixes: `docs/known-alerts.md`.
+
 ## Reboot
 
 Run once: `sudo systemctl enable docker`.

@@ -6,7 +6,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 Prettier rule for this stage: `bunx prettier --check` must pass on every new Markdown file. `docs/architecture.md`, `docs/modules.md` and `docs/roadmap.md` already fail `--check` at HEAD (S1b stage 35 log): for them, the edits must not add new problems (compare `bunx prettier --check` output before and after; the main-session bar of S1b).
 
-- [ ] **22.1 Architecture, modules, code patterns, roadmap, ADR 0005, runbook**
+- [x] **22.1 Architecture, modules, code patterns, roadmap, ADR 0005, runbook**
   - Goal: `docs/` describe S2 as built (one source per fact, `tasks/README.md`).
   - Files: change `docs/architecture.md`, `docs/modules.md`, `docs/code-patterns.md`, `docs/roadmap.md`, `docs/decisions/0005-telegram-first.md`, `deploy/README.md`.
   - Interfaces: none (docs).
@@ -22,7 +22,7 @@ Prettier rule for this stage: `bunx prettier --check` must pass on every new Mar
   - Done when: the files say what the code does, and the prettier rule holds.
   - Out of scope: changing decisions (only describe what was built).
 
-- [ ] **22.2 Note with the Telegram facts, known alerts**
+- [x] **22.2 Note with the Telegram facts, known alerts**
   - Goal: a later agent finds the verified Telegram and grammY facts and the meaning of each new log line.
   - Files: create `notes/<build date>-telegram-bot-facts.md`; change `docs/known-alerts.md`.
   - Interfaces: none.
@@ -35,7 +35,7 @@ Prettier rule for this stage: `bunx prettier --check` must pass on every new Mar
   - Done when: the check passes.
   - Out of scope: alerts that did not happen in S2.
 
-- [ ] **22.3 Follow-ups in `tasks/planned/`**
+- [x] **22.3 Follow-ups in `tasks/planned/`**
   - Goal: ideas that S2 found but did not build are not lost.
   - Files: create `tasks/planned/retention-job.md`, `tasks/planned/telegram-review-command.md` (template of `tasks/README.md`, status `planned`).
   - Decisions:

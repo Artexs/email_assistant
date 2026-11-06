@@ -36,7 +36,7 @@ flowchart LR
         J2[triage.worker<br/>every 15 s]
         J3[actions.committer<br/>every 15 s]
         J4[channels.notifier<br/>every 15 s]
-        J5[reports.digest<br/>member times]
+        J5[channels.digest<br/>every minute]
         J6[delegation.chaser<br/>daily, S4]
     end
 
@@ -92,15 +92,20 @@ graph TD
     channels --> triage
     channels --> tenancy
     channels --> mail
+    channels --> config
+    channels --> audit
     config --> tenancy
     reports --> tenancy
     reports --> actions
     reports --> triage
     reports --> delegation
     reports --> audit
+    reports --> mail
+    reports --> config
     reports --> core
     delegation --> actions
     delegation --> mail
+    mail --> audit
     mail --> platform
     triage --> platform
     actions --> platform
@@ -114,6 +119,9 @@ graph TD
 `triage → actions`: the triage worker writes the action rows through `actions.createPlanned()` in its transaction.
 `triage → audit`: the triage worker and `triage/backfill.ts` write audit rows through `audit.recordAudit()` in their transactions.
 `channels → triage`: the ✅ / ✏️ buttons and the Undo button write feedback through `triage.recordFeedback()`.
+`channels → config`, `channels → audit`: the digest and `/status` read the mailbox mode; `/pause` and `/resume` write `mailbox.paused` / `mailbox.resumed` audit rows.
+`reports → mail`, `reports → config`: the digest reads the mailboxes (status, last sync, waiting mail) and their mode. `channels → reports`; `reports` never imports `channels` (no cycle).
+`mail → audit`: a status change (`updateMailboxPassword`) and its audit row go in one transaction.
 `actions` never calls `triage`, and `mail` never calls `triage`: they set columns that the triage worker reads (no import cycles).
 
 ## 3. Modules in `apps/server`
@@ -139,6 +147,7 @@ Code rules: `docs/code-patterns.md`.
 
 - **Owns:** `organizations`, `users`, `memberships`.
 - **Does:** creates the pilot organization and user (CLI `bun run org:create`, S0); owns style text and digest times; resolves `TenantContext` from a session (web) or a linked chat (Telegram); checks roles.
+- **Built in S2:** `getMembership` (a member's role by `org_id` and `user_id`) and `setDigestTimes` (CLI `bun run digest:times`; the new default of `digest_times` is `{08:00,16:00}`).
 - **Later:** login (S5), self sign-up (S6), invite assistant (Phase 2).
 
 ### 3.2 `mail` — access to mailboxes (S1a)
@@ -160,6 +169,9 @@ Code rules: `docs/code-patterns.md`.
 | `fake/` | In-memory `MailProvider` for tests; `test/contract/` runs the same suite on fake and GreenMail |
 
 - **Owns:** `mailboxes`, `mailbox_credentials`, `emails`.
+- **Built in S2:** `listMailboxes` (id, address, status, `last_synced_at`, `status_changed_at`, `created_at`), `countWaiting` (mail that waits for triage in all mailboxes),
+  `changeMailboxStatus` (conditional `active` ↔ `paused`; never touches `auth_error`) and the column `mailboxes.status_changed_at` (moves only when the status really changes).
+  `updateMailboxPassword` (in `connect.ts`): IMAP and SMTP login test, new encrypted secret, `auth_error` → `active`, audit row `mailbox.password_changed` in one transaction; CLI `bun run mailbox:password` (password on stdin only).
 - **Rules:** `docs/architecture.md` §6.1.
 - **Later:** `gmail/` and `graph/` (Microsoft 365) adapters with OAuth (Phase 2); IMAP IDLE.
 
@@ -185,6 +197,7 @@ Code rules: `docs/code-patterns.md`.
 | `worker` (job) | Claims `pending` emails (`SKIP LOCKED`), runs rules → classifier → planner → policy, saves `triage_results` + `actions` in one transaction, sets email `triaged` |
 
 - **Owns:** `triage_results`, `triage_feedback`.
+- **Built in S2:** read queries for the digest and the buttons: `listTriagedBetween` and `countTriagedBetween` (triaged mail in a period, by category), `latestFeedback` and `getLabelTarget` (the latest label of a mail; the mail behind a button, filtered by organization). `recordFeedback` takes `skipIfSame`: the same answer as the latest row writes nothing.
 - **Built in S1b** (`apps/server/src/modules/triage/`; `packages/core` has the rules, planners, policy and metrics):
   - `service.ts`: `triageOne` (age rule, hard rules, daily cap, classifier, save), `saveTriage` (result, actions and audit rows in one transaction; a lost claim writes nothing), `finishTriageError`.
   - `jobs.ts`: `createTriageJob`, started by `main.ts` as `triage.worker` every 15 s. It follows `TRIAGE_LLM_SCOPE` (`off` builds no worker). Per mailbox: settings, rules, claim, loop. One mailbox error never stops the others.
@@ -206,6 +219,7 @@ Built in S1b: `createPlanned`, `listActionsForEmail`, `listSummaries`. The triag
 | `retry` | Backoff for soft errors (no count); hard errors count; after 3 → `failed` + notice |
 
 - **Owns:** `actions`.
+- **Built in S2:** `listActionsForEmails` (the plans of many mails in one query, for "what the system would do" in digest lines and notices).
 - **Rule:** a `send` action is applied only with an approval record (ADR 0003).
 
 ### 3.6 `audit` — what happened and why (S1b)
@@ -213,29 +227,38 @@ Built in S1b: `createPlanned`, `listActionsForEmail`, `listSummaries`. The triag
 - **Owns:** `audit_log` (append-only; the DB role `app` has only INSERT and SELECT).
 - **Does:** `record(event)` inside other modules' transactions; queries for the digest and the web activity view. No mail text in `data`.
 - **Built in S1b:** `recordAudit`, `countLlmCallsSince` (the daily cap), the event names in `auditEvents`: `email.triaged`, `email.skipped`, `action.planned`, `llm.call`, `email.requeued`.
+- **Built in S2:** the events `chat.linked`, `chat.unlinked`, `mailbox.paused`, `mailbox.resumed`, `mailbox.password_changed`; `countEventsBetween` (for the digest).
 
 ### 3.7 `reports` — digest and metrics (S2)
 
 | Sub-module | Does |
 |---|---|
-| `builder` (in `core`) | From actions and audit since the last digest: URGENT → NEEDS ACTION → DONE AUTOMATICALLY → REMINDERS; "last sync"; "not processed" items; weekly handled share (`docs/architecture.md` §4.4) |
-| `renderers` | Telegram text (short lines with ✅ / ✏️ buttons), web view (S5) |
-| `digest` (job) | At each member's digest times (organization timezone); also on demand (`/digest`) |
+| `renderDigest` (in `core/digest/`) | Pure: the digest text and buttons from items, counts and mailbox state: NEEDS ACTION first, then OTHER MAIL, at most 15 lines with buttons, at most 4096 characters, "+N more", "last sync HH:MM" (also when empty). Weekly handled share and reminders come later (S3, S4) |
+| `digest` (job, in `channels`) | At each member's digest times (organization timezone); also on demand (`/digest`). It lives in `channels` (§3.8), because `reports` never imports `channels` |
 
 - **Owns:** `digests`.
+- **Built in S2** (`apps/server/src/modules/reports/`):
+  - `repo.ts`: `insertDigest` (slot key unique per member), `lastDigestSlotKey`, `lastSentDigestEnd`, `markDigestSent`. A digest row holds the slot key, the period and `sent_at`; the text is in `outbox.text`.
+  - `digest.ts`: `digestPeriodStart` (since the last sent digest of the member; the first digest: link time − 24 h; never more than 7 days back) and `buildDigestMessage` (reads triaged mail, actions, mailboxes, settings and the audit count, then calls `renderDigest`).
 
 ### 3.8 `channels` — talk to the user (S2)
 
 | Sub-module | Does |
 |---|---|
-| `port.ts` | `ChatChannel` interface: `send`, `sendApproval(action)`, `edit`, handlers for commands and button taps |
-| `telegram/bot` | grammY bot client, long polling (webhook with secret token only with a public HTTPS address) |
-| `telegram/linking` | One-time token (15 min, one user) → `t.me/<bot>?start=<token>` → saves `chat_links` |
-| `telegram/commands` | `/start`, `/help`, `/digest`, `/pause`, `/resume`, `/status` |
-| `telegram/callbacks` | Button tap → check chat → user → org → `actions.approve / reject / undo` or `triage.recordFeedback` → answer → edit message |
-| `notifier` (job) | Sends approval requests, urgent and `auth_error` notices, result edits ("✅ Sent"); sets `notified_at` |
+| `port.ts` | `ChatChannel` interface (`send`, `edit`), `ChannelError` kinds, `LinkedChat`, `UpdateHandlers`, the command names. `sendApproval(action)` comes in S4 |
+| `telegram/` | The only place that imports `grammy`: `bot.ts` (the update router), `polling.ts` (long polling, `setMyCommands`), `api.ts` (send, edit, plain text, no link preview), `errors.ts` (`telegramErrorLabel`, `toChannelError`), `check.ts` (`checkBot` for `telegram:check`), `runtime.ts` (bot + notifier + digest job for `main.ts`). A webhook comes only with a public HTTPS address |
+| `linking.ts` | One-time token (15 min, one member, only its SHA-256 hash is stored) → `t.me/<bot>?start=<token>` → `chat_links`; `unlinkUser` |
+| `commands.ts` | `/help`, `/status`, `/digest`, `/pause`, `/resume` (`/pause` and `/resume` only for the role `owner`); `createUpdateHandlers` |
+| `callbacks.ts` | Button tap → chat link → `triage.recordFeedback` (✅ / ✏️ picker, `skipIfSame`) → answer → edit message. A mail of another organization gets the same answer as an unknown id. `actions.approve / reject / undo` come in S3 and S4 |
+| `notices.ts` | `detectNotices`: urgent, `auth_error`, sync late and sync works again → `outbox` rows |
+| `digest-job.ts` | `scheduleDigests`: a digest row and an outbox row in one transaction for each due slot (a missed slot is sent within 6 hours) |
+| `sender.ts` | `createOutboxSender`: claims due `outbox` rows, sends them, handles 429, 401, 403, 400 and network errors; quiet hours for notices |
+| `repo.ts` | `chat_links`, `chat_link_tokens`, `outbox` queries |
+| `texts.ts`, `fake/channel.ts` | Fixed reply texts; the fake `ChatChannel` for tests |
 
-- **Owns:** `chat_links`, `chat_link_tokens`.
+- **Owns:** `chat_links`, `chat_link_tokens`, `outbox`.
+- **Jobs (started by `main.ts`):** `channels.notifier` every 15 s (`detectNotices`, then the sender) and `channels.digest` every minute (`scheduleDigests`). Without `TELEGRAM_BOT_TOKEN` neither job and no polling runs (`telegram is off`).
+- **Entry points without a `TenantContext`:** listed in `docs/code-patterns.md`.
 - **Later:** `mobile/` (push to the app), `whatsapp/`, and the `assistant` module (intents, chat state, voice).
 
 ### 3.9 `delegation` — hand work to people and follow up (S4)
@@ -288,7 +311,14 @@ Before S5, the CLI scripts call the module services directly (no HTTP).
 | Delegation | Delegates and open delegations | Phase 2 web |
 | Account | Delete mailbox / account and data | S6 |
 
-Until S5 the user works through Telegram and CLI scripts (`org:create`, `mailbox:connect`, `triage:label`, `telegram:link`, `delegates:add`).
+Until S5 the user works through Telegram and CLI scripts (`org:create`, `mailbox:connect`, `triage:label`, `delegates:add`, and the S2 scripts below).
+
+S2 scripts (`package.json`):
+- `telegram:check` — calls `getMe` with the token from env and prints the bot user name.
+- `telegram:link` — prints a one-time link `t.me/<bot>?start=<token>` for a member (valid 15 minutes).
+- `telegram:unlink` — removes the chat link of a member.
+- `digest:times` — sets the digest times of a member (`--times 08:00,16:00` or `none`).
+- `mailbox:password` — new mailbox password on stdin; tests the login and leaves `auth_error`.
 
 ## 5. `packages/core` — shared pure logic
 

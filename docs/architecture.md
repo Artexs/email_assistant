@@ -223,6 +223,10 @@ The policy returns one of three values per action: `apply`, `await_approval`, `l
 - **Undo:** the tap creates a reverse action (`reverses_action_id`) with status `ready`. The committer applies it (move back to INBOX,
   mark unread, remove the flag), then sets `emails.folder` = INBOX and the original action to `undone` in the same transaction.
   The caller (Telegram handler or API route) writes the feedback row (verdict `wrong`, source `undo`).
+- **Buttons under a digest line (S2):** ✅ means "the shown category is right": it writes `true_category` = the shown category (verdict `right`).
+  ✏️ opens a picker with five categories (Urgent, Reply, Info, Notification, Spam) and Cancel; a pick writes `true_category` = the pick
+  (verdict `right` or `wrong`). The latest row of a mail wins (as in `listLabeledResults`). The same answer twice writes nothing
+  (the bot answers "Already saved"). An `unsure` line has only ✏️, because a verdict without a category is not valid for `unsure`.
 - **Feedback rows:** `verdict` (`right` / `wrong`) and an optional `true_category`. A row with a `true_category` counts for precision and recall.
   A row with only `wrong` counts only against the precision of the predicted category.
 - **Eval on real mail:** the eval runner reads the labels from `triage_feedback` in the DB. Real labels never go to git.
@@ -307,9 +311,13 @@ erDiagram
     emails ||--o{ triage_feedback : "user labels"
     emails ||--o{ actions : plans
     actions ||--o{ audit_log : records
-    users ||--o{ chat_links : "Telegram chat"
-    users ||--o{ chat_link_tokens : "one-time link"
-    organizations ||--o{ digests : "sent reports"
+    memberships ||--o| chat_links : "Telegram chat"
+    memberships ||--o{ chat_link_tokens : "one-time link"
+    memberships ||--o{ digests : "sent reports"
+    memberships ||--o{ outbox : "messages to send"
+    digests ||--o| outbox : "digest message"
+    emails ||--o{ outbox : "urgent notice"
+    mailboxes ||--o{ outbox : "sync and login notices"
     organizations ||--o{ delegates : "S4"
     emails ||--o{ delegations : "S4"
 ```
@@ -318,8 +326,8 @@ erDiagram
 |---|---|---|
 | `organizations` | id, name, timezone, data_retention_days (default 30), style_text | S0 |
 | `users` | id, email, display_name (login method decided in S5, ADR 0011) | S0 |
-| `memberships` | org_id, user_id, role (`owner` / `assistant`), digest_times | S0 |
-| `mailboxes` | id, org_id, protocol (`imap`), address, imap_host, imap_port, smtp_host, smtp_port, status (`active` / `auth_error` / `paused`), uidvalidity, last_uid, last_synced_at, capabilities jsonb, folder_map jsonb | S1a |
+| `memberships` | org_id, user_id, role (`owner` / `assistant`), digest_times (default `{08:00,16:00}` since S2; existing rows keep their value) | S0 |
+| `mailboxes` | id, org_id, protocol (`imap`), address, imap_host, imap_port, smtp_host, smtp_port, status (`active` / `auth_error` / `paused`), status_changed_at (S2; moves only when the status really changes), uidvalidity, last_uid, last_synced_at, capabilities jsonb, folder_map jsonb | S1a |
 | `mailbox_credentials` | mailbox_id, encrypted_secret, secret_kind (`password` / `app_password`), key_version — server only (ADR 0009) | S1a |
 | `mailbox_settings` | mailbox_id, mode, tool_switches jsonb, category_policy jsonb (auto on/off + threshold per category) | S1a |
 | `sender_rules` | org_id, mailbox_id (null = all mailboxes), pattern (address or domain), kind (`whitelist` / `blocklist` / `vip`) | S1b |
@@ -327,10 +335,11 @@ erDiagram
 | `triage_results` | email_id, org_id, category, vip, confidence, reason_code, reason, fields jsonb, model, prompt_version, tokens_in, tokens_out, latency_ms, created_at | S1b |
 | `triage_feedback` | org_id, email_id, verdict (`right` / `wrong`), true_category (nullable), source (`cli` / `telegram` / `undo` / `imap_move` / `web`), user_id, created_at | S1b |
 | `actions` | id, org_id, email_id, type, payload jsonb, status (§4.6), status_reason, attempts, next_attempt_at, locked_at, last_error (no mail text), provider_result jsonb, idempotency_key, outgoing_message_id, depends_on_action_id, reverses_action_id, notified_at, approved_by, approved_at, approved_via | S1b |
-| `audit_log` | id, org_id, email_id, action_id, actor (`system` / user id), event, reason_code, data jsonb (ids, codes, numbers only), created_at — append-only. S1b events: `email.triaged`, `email.skipped`, `action.planned`, `llm.call` (`reason_code` = outcome: `ok` or the error code), `email.requeued` | S1b |
-| `chat_links` | user_id, channel (`telegram`), external_chat_id, linked_at | S2 |
-| `chat_link_tokens` | token_hash, user_id, expires_at (15 min), used_at | S2 |
-| `digests` | org_id, user_id, period_start, period_end, content (retention), sent_at | S2 |
+| `audit_log` | id, org_id, email_id, action_id, actor (`system` / user id), event, reason_code, data jsonb (ids, codes, numbers only), created_at — append-only. S1b events: `email.triaged`, `email.skipped`, `action.planned`, `llm.call` (`reason_code` = outcome: `ok` or the error code), `email.requeued`. S2 events: `chat.linked`, `chat.unlinked`, `mailbox.paused`, `mailbox.resumed`, `mailbox.password_changed` | S1b |
+| `chat_links` | id, org_id, user_id (FK to `memberships`, cascade), channel (`telegram`), external_chat_id (private chat ids only, > 0), linked_at. Unique: `(channel, external_chat_id)` (one user per chat) and `(org_id, user_id, channel)` (one chat per member); a new link replaces the old one | S2 |
+| `chat_link_tokens` | token_hash (SHA-256 hex, the token itself is never stored), org_id, user_id, expires_at (15 min), used_at, created_at | S2 |
+| `digests` | id, org_id, user_id, slot_key (local wall-clock `YYYY-MM-DDTHH:MM`, unique per member), period_start, period_end, sent_at, created_at. No text: the text is in `outbox.text` | S2 |
+| `outbox` | id, org_id, user_id, kind (`digest` / `urgent` / `auth_error` / `sync_stale` / `sync_ok`), dedup_key (unique per `(org_id, user_id)`: one row per event), email_id, mailbox_id, digest_id, text, buttons jsonb, status (`pending` / `sending` / `sent` / `failed`), attempts, next_attempt_at, locked_at, sent_at, external_message_id, error_code (`blocked` / `bad_request` / `expired` / `no_chat` / `outdated` / `too_many_errors`), created_at. Dedup keys: `digest:<slot>`, `urgent:<email id>`, `auth_error:<mailbox id>:<status_changed_at ms>`, `sync_stale:<mailbox id>:<last_synced_at ms or never>`, `sync_ok:<mailbox id>:<episode>` | S2 |
 | `delegates` | id, org_id, name, email, competence_tags, active | S4 |
 | `delegations` | id, org_id, email_id, delegate_id, action_id, task_summary, due_at, status (`drafted` → `sent` → `answered` / `overdue` → `done`), sent_message_id, last_reminder_at, answered_email_id | S4 |
 
@@ -398,10 +407,22 @@ Tenancy:
 
 ### 6.2 Telegram (ADR 0005)
 - One bot per environment: a dev bot and a pilot bot. Telegram allows only one update consumer per bot token.
-- Long polling on the dev machine and on the home VPS. A webhook with the `X-Telegram-Bot-Api-Secret-Token` header only when the server has a public HTTPS address.
-- Linking: the web panel (or a CLI before S5) creates a one-time token bound to one user, valid for 15 minutes.
-  The user opens `t.me/<bot>?start=<token>`. The server stores the `chat_id` for that user.
-- The server accepts updates only from linked chats. Inline buttons carry only the action id (`callback_data` is max 64 bytes).
+- Long polling (grammY `bot.start`, `allowed_updates` = `message` and `callback_query`) on the dev machine and on the home VPS.
+  A webhook with the `X-Telegram-Bot-Api-Secret-Token` header only when the server has a public HTTPS address.
+  A 401 stops polling with one `error` line. A 409 (another process polls this token) logs one `error` line and starts again after 1, 2, 4 … at most 30 minutes.
+  Any other polling failure retries on the same schedule. The command list is set with `setMyCommands` at each start.
+- Linking: the CLI `telegram:link` (the web panel in S5) creates a one-time token bound to one member, valid for 15 minutes.
+  The user opens `t.me/<bot>?start=<token>`. The server stores the `chat_id` for that member (table `chat_links`, §5).
+- Private chats only: updates from groups, channels and bots get no reply. The server accepts updates only from linked chats:
+  an unlinked chat gets no reply. Exception (D3): `/start <token>` where the token exists but is used or expired gets one short reply
+  ("ask for a new link"). An unknown token gets no reply. Inline buttons carry only a kind and ids (`callback_data` is max 64 bytes).
+- Messages are plain text (no `parse_mode`) with link previews off (`link_preview_options.is_disabled`). Subjects lose links, control characters and bidi marks.
+  One digest is one message of at most 4096 characters with at most 15 lines. No silent sends.
+- Two bots: the dev bot (`@Email_assistant_local_bot`) and the pilot bot (`@Email_assistant_vps_bot`). Each environment has its own token.
+- Token handling (D8): `TELEGRAM_BOT_TOKEN` comes only from env; an empty value switches Telegram off (`telegram is off`). No log line, error text or DB row holds it.
+  Telegram errors are logged only as `telegramErrorLabel(error)` (`GrammyError <method> <code>` or `HttpError <method>`), never as `error.message`, `payload` or `description`.
+- Messages to the user are rows in the `outbox` table (§5). Delivery is at least once: a duplicate is possible only when the process dies
+  or the network breaks between the Telegram answer and the DB commit. Command replies and button answers go out at once, not through the outbox.
 - Content on Telegram: notices, digest lines (sender, subject, AI summary), draft text for approval. No raw mail bodies.
   Bot chats are not end-to-end encrypted; the user accepts this content on Telegram servers.
 
@@ -434,7 +455,7 @@ Tenancy:
 ## 7. Security and privacy
 
 - **Credentials (ADR 0009):** AES-256-GCM in the server, key `CREDENTIALS_KEY` from env with a key version. The secret is decrypted only in memory.
-  It never goes to logs, to the web app or to Telegram. Prefer an app password: the stored secret opens the whole mailbox.
+  It never goes to logs, to the web app or to Telegram. The Telegram bot token (`TELEGRAM_BOT_TOKEN`) is also a secret: env only, never in a log line, error text or DB row (§6.2). Prefer an app password: the stored secret opens the whole mailbox.
 - **TLS:** IMAP and SMTP always check certificates.
 - **Tenant isolation:** `TenantContext` in every server query; DB role `app` without superuser rights; tests for the filters (ADR 0011).
 - **Untrusted text in and out.** Mail text is untrusted, and so is text that the LLM writes from it.
@@ -453,12 +474,12 @@ Tenancy:
   | Summaries, draft text, reasons, extracted fields | `actions.payload`, `triage_results.reason`, `triage_results.fields` | 90 days |
   | Task text | `delegations.task_summary` | 90 days after the delegation is `done`, or 90 days after its last change |
   | Error text | `actions.last_error` | 90 days (and no mail text in it) |
-  | Digest text | `digests.content` | 90 days |
+  | Message text | `outbox.text` (digests and notices) | 90 days (the retention job does not exist yet: follow-up `tasks/planned/retention-job.md`) |
   | Audit events (ids, codes, numbers) | `audit_log` | until the mailbox or organization is removed |
   | Labels (no mail text) | `triage_feedback` | until the mailbox or organization is removed |
 
 - **Delete:** removing a mailbox deletes the mailbox, its credentials, settings, mailbox-scoped sender rules, emails, results, feedback,
-  actions, delegations and audit rows, and clears `digests.content` of the organization (digests mix mailboxes) — one privileged function.
+  actions, delegations and audit rows, and clears the text of the digest rows in `outbox` of the organization (digests mix mailboxes) — one privileged function.
   Then it tells the user to change the mailbox password.
   Removing an organization deletes everything.
 - **Privacy by stage:**
@@ -472,10 +493,19 @@ Tenancy:
 ## 8. Reliability and operations
 
 - **Scheduler** (in the server process, `croner`, one tick never overlaps the next): mail sync every 5 min per mailbox;
-  triage worker, committer and notifier every 15 s; digest at each member's times (organization timezone); approval expiry hourly;
-  retention cleanup daily; chaser daily (S4).
+  triage worker and committer every 15 s; approval expiry hourly; retention cleanup daily; chaser daily (S4).
+  S2 jobs: `channels.notifier` every 15 s (notice detection, then the outbox sender; at most 3 messages per user per tick;
+  a 429 waits `retry_after`, a network error or HTTP 5xx backs off from 30 s to 15 min, a 401 pauses sending for 10 min,
+  a 403 marks the row `failed` / `blocked`, a row older than 24 h becomes `failed` / `expired`) and `channels.digest` every minute
+  (the digest at each member's times in the organization timezone; a missed slot is sent if the server is back within 6 hours).
 - **Work queue:** `emails` and `actions` rows with `status`, `attempts`, `next_attempt_at`, `locked_at`, claimed with `FOR UPDATE SKIP LOCKED`.
-- **Mailbox errors:** IMAP/SMTP login error → mailbox `auth_error`, a Telegram notice, other mailboxes continue. Connection errors → backoff.
+- **Mailbox errors:** IMAP/SMTP login error → mailbox `auth_error`, a Telegram notice to the linked owners (one per `status_changed_at`), other mailboxes continue.
+  The way out is `bun run mailbox:password` (new password on stdin, login test, `auth_error` → `active`). Connection errors → backoff.
+- **Notices (S2):** urgent mail goes to every linked member (24 h look-back, one notice per mail). `auth_error`, sync late and sync works again go to linked owners only.
+  Notices never go out in quiet hours (22:00–07:00 in the organization timezone); they wait until 07:00. Digests go out at their times.
+  Sync late: an `active` mailbox whose last good sync is older than 30 min, not within 30 min after the mailbox became `active` again,
+  and only 10 min after the process started. One notice per episode (the episode is the `last_synced_at` value). When the sync is fresh again, a sent
+  "late" notice gets one "sync works again" notice. An unsent notice that is out of date becomes `failed` / `outdated`. A paused mailbox gets no urgent or sync notice.
 - **Liveness:** the server sends a heartbeat every 5 min to Healthchecks.io (`HEARTBEAT_URL`, outbound only; period 5 min, grace 10 min, email alert). The service alerts when heartbeats stop.
   A Telegram admin notice goes out when the last good sync is older than 30 min. Every digest shows "last sync HH:MM", also when it is empty.
 - **`GET /health`:** DB reachable, last good sync per mailbox.
