@@ -5,6 +5,8 @@ import type { ChannelError, ChatChannel } from "../port";
 export interface FakeChannel extends ChatChannel {
   sent: { chatId: number; message: OutMessage; messageId: number }[];
   edited: { chatId: number; messageId: number; message: OutMessage }[];
+  /** Runs inside `send` before it returns; tests change the DB here. */
+  onSend?: (chatId: number, message: OutMessage) => Promise<void>;
   /** The next `times` calls throw `error`; without `times` every call throws until `failWith(null)`. */
   failWith(error: ChannelError | null, times?: number): void;
 }
@@ -33,6 +35,7 @@ export function createFakeChannel(): FakeChannel {
       const messageId = nextId;
       nextId += 1;
       channel.sent.push({ chatId, message, messageId });
+      await channel.onSend?.(chatId, message);
       return { messageId };
     },
     async edit(chatId, messageId, message) {

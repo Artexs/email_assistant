@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 11 — Outbox sender [risky]
 
-- [ ] **11.1 `createOutboxSender`: send due rows with the quiet hours, limits and error rules**
+- [x] **11.1 `createOutboxSender`: send due rows with the quiet hours, limits and error rules**
   - Goal: every due outbox row goes to its member's chat once (D4: at least once, a duplicate only after a crash or a lost answer), never in quiet hours for notices (P4), with the Telegram limits and error kinds of D14.
   - Files: create `apps/server/src/modules/channels/sender.ts`, `apps/server/test/integration/channels-sender.test.ts`; change `apps/server/src/modules/channels/index.ts`, `apps/server/src/modules/channels/fake/channel.ts` (an `onSend` hook).
   - Interfaces:

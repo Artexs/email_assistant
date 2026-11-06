@@ -27,3 +27,4 @@ export {
 export { createTelegramApi, createTelegramChannel } from "./telegram/api";
 export { checkBot } from "./telegram/check";
 export { telegramErrorLabel } from "./telegram/errors";
+export { createOutboxSender, type SenderDeps } from "./sender";
