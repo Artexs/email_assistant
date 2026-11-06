@@ -38,8 +38,9 @@ Stage 18 adds `/pause`, `/resume` and the dispatcher (`runCommand`, `createUpdat
     3. Times `[]` → `No digest times set (bun run digest:times)`; scope `off` → `Triage: off`; at `15:30Z` → `Next digest: 7 Nov 08:00`.
     4. Org B's `llm.call` rows and B's mailbox never show in A's text.
     5. No settings row → `Mode: none (no settings row: not triaged)`.
-    6. 10 mailboxes with 60-character addresses → `text.length ≤ 4096`.
-    7. `helpMessage()` equals `{ text: helpText(), buttons: [] }`.
+    6. Checkpoint 2 decision (user, 2026-11-06): the digest agrees with `/status`. `DigestMailbox.mode` in `packages/core/src/digest/digest.ts` becomes `MailboxMode | "none"`; `buildDigestMessage` (`reports/digest.ts`) maps no settings row to `none` (not `shadow`). A `none` mailbox gives no shadow line. Tests: one core test (a `none` mailbox → no shadow line) and the stage 9 integration test for a mailbox without settings.
+    7. 10 mailboxes with 60-character addresses → `text.length ≤ 4096`.
+    8. `helpMessage()` equals `{ text: helpText(), buttons: [] }`.
   - Check: `bun run dev:up && bun run db:migrate && bun run lint && bun run typecheck && bun run test:int`
   - Done when: the tests pass.
   - Out of scope: changing state (stage 18).

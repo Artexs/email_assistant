@@ -27,6 +27,7 @@ Prettier rule for this stage: `bunx prettier --check` must pass on every new Mar
   - Files: create `notes/<build date>-telegram-bot-facts.md`; change `docs/known-alerts.md`.
   - Interfaces: none.
   - Decisions:
+    - Checkpoint 2 decision (user, 2026-11-06), write it in the note: a triage result whose transaction starts before a digest's `periodEnd` but commits after the digest read is in no digest (the next period starts after `periodEnd`). The window is milliseconds (the LLM call is outside the save transaction); urgent notices are not affected (24 h look-back with dedup). Accepted, no code change.
     - The note: the "Facts checked on 2026-11-05" and "Not verified" lists of the task file, plus what stages 21 and 23 showed (the real error texts if seen, the urgent notice time, grammY under Bun 1.3.14 in the image). Each fact with its source and date.
     - `known-alerts.md`, one entry per new log line (template of the file, newest first): `telegram: the bot token was rejected (401): check TELEGRAM_BOT_TOKEN; polling stopped`; `telegram: another process polls this bot token (409); …`; `telegram: polling failed: <label>; next try in <n> min`; `telegram: setMyCommands failed: <label>`; `telegram token rejected (401): check TELEGRAM_BOT_TOKEN; sending paused for 10 min`; `outbox <id>: <code>; sending paused for <s> s`; `outbox <id>: the user blocked the bot (403)`; `outbox <id>: Telegram refused the message (<code>)`; `outbox <id>: sent again after a stale send (a duplicate is possible)`; `outbox <id>: lost the claim after the send`; `notices for org <id> failed: <label>`; `digest for org <id> user <id> failed: <label>`; `callback failed: <label>`. Each with the cause and what to do.
   - Test: none (docs).
@@ -38,7 +39,7 @@ Prettier rule for this stage: `bunx prettier --check` must pass on every new Mar
   - Goal: ideas that S2 found but did not build are not lost.
   - Files: create `tasks/planned/retention-job.md`, `tasks/planned/telegram-review-command.md` (template of `tasks/README.md`, status `planned`).
   - Decisions:
-    - `retention-job.md`: the daily `platform.retention` job of architecture §7/§8 does not exist. It must clear `emails.body_text` after 30 days, subjects and addresses after 90, `outbox.text` after 90 (S2), old `chat_link_tokens` rows, and the other §7 rows. Needs: S2.
+    - `retention-job.md`: the daily `platform.retention` job of architecture §7/§8 does not exist. It must clear `emails.body_text` after 30 days, subjects and addresses after 90, `outbox.text` after 90 (S2), old `chat_link_tokens` rows, and the other §7 rows. Needs: S2. Checkpoint 2 decision (user, 2026-11-06): the job's migration adds `CREATE INDEX outbox_email_idx ON outbox (email_id) WHERE email_id IS NOT NULL` and the same for `digest_id`, so the cascade deletes do not scan the whole outbox.
     - `telegram-review-command.md`: a `/review` command that shows more unlabeled mail with ✅ / ✏️ than the 15 digest lines (more labels for the S1b and S3 go/no-go tables).
     - If the user answered "yes" to the open question about an admin notice for the LLM pause and the daily cap, add `tasks/planned/llm-pause-notice.md` too; else leave it out.
   - Test: none.
