@@ -1,4 +1,4 @@
-> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open, deferred by the user until stage 21. Stages 1–6 done. Left: stages 7–23, then the done-checklist.
+> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open, deferred by the user until stage 21. Stages 1–7 done. Left: stages 8–23, then the done-checklist.
 
 # S2 Telegram
 
@@ -123,7 +123,7 @@ Each stage lives in its own file in [`s2-telegram/`](s2-telegram/). An implement
 - [x] [Stage 4](s2-telegram/stage-04-core-digest-renderer.md) — Core: digest renderer [risky]
 - [x] [Stage 5](s2-telegram/stage-05-telegram-errors-and-send.md) — Telegram adapter: error labels and send [risky]
 - [x] [Stage 6](s2-telegram/stage-06-chat-linking.md) — Chat linking: links and one-time tokens [risky]
-- [ ] [Stage 7](s2-telegram/stage-07-link-and-digest-times-clis.md) — CLIs: `telegram:link`, `telegram:unlink`, `digest:times`
+- [x] [Stage 7](s2-telegram/stage-07-link-and-digest-times-clis.md) — CLIs: `telegram:link`, `telegram:unlink`, `digest:times`
 - [ ] [Stage 8](s2-telegram/stage-08-read-queries-and-mailbox-status.md) — Read queries and the mailbox status time [risky]
 - [ ] [Stage 9](s2-telegram/stage-09-reports-digests-and-digest-message.md) — Reports: digests table and the digest message [risky]
 - [ ] [Stage 10](s2-telegram/stage-10-outbox-repository.md) — Outbox repository [risky] — user checkpoint 2 after it
@@ -177,3 +177,4 @@ Answered 2026-11-05: the user approved the plan as written, so each question kee
 - 2026-11-06: Stage 4 built (`renderDigest` in `packages/core/src/digest/digest.ts`, 16 tests). Review round 1 FAIL (no mixed-category "+N more" test); fixed with 3 tests; round 2 PASS (Sonnet). Kept: no shadow line when there is no mailbox (tested).
 - 2026-11-06: Stage 5 built (`ChatChannel` port, Telegram adapter `telegram/api.ts`, `toChannelError`, fake channel in `channels/fake/channel.ts`; 10 tests), reviewer PASS (Sonnet). Main session removed the fake from `channels/index.ts` (minor finding): tests import `channels/fake/channel` directly, as in `mail`.
 - 2026-11-06: Stage 6 built (`channels/repo.ts`, `channels/linking.ts`, `getMembership`, audit `chat.linked` / `chat.unlinked`, fixtures `addMember` / `linkChat` / `randomChatId`; 12 tests; the stage 1 local `addMember` is gone), reviewer PASS (Opus, high). Main session added the missing chat C assertion (minor). Open for the checkpoint 2 group review: a chat that moves to another org leaves no `chat.unlinked` audit row in the old org. Two parallel consumes for one chat: the second fails on a unique key and rolls back; `bot.catch` (stage 14) logs it with `describeError`.
+- 2026-11-06: Stage 7 built (CLIs `telegram:link`, `telegram:unlink`, `digest:times`; `setDigestTimes`; shared `scripts/pick-member.ts` for the member choice of 7.1 and 7.3), reviewer PASS (Sonnet). The manual `telegram:link` run with a real bot moves to stage 21 (no token yet). The manual `digest:times` run set the dev owner's times to `{08:00,16:00}`.

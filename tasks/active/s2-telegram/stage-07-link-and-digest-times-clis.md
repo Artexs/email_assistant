@@ -6,7 +6,7 @@ Dev DB shell for the manual checks of this stage: `D="docker compose -f deploy/c
 
 ## Stage 7 — CLIs: `telegram:link`, `telegram:unlink`, `digest:times`
 
-- [ ] **7.1 `bun run telegram:link`**
+- [x] **7.1 `bun run telegram:link`**
   - Goal: the admin makes a one-time link for one member (modules §4: CLI before S5).
   - Files: create `apps/server/src/scripts/telegram-link.ts`; change root `package.json` (`"telegram:link": "bun apps/server/src/scripts/telegram-link.ts"`); export `createLinkToken`, `LINK_TOKEN_TTL_MS` from `channels/index.ts` if not yet.
   - Interfaces: `bun run telegram:link --org-id <uuid> [--user-id <uuid>]`.
@@ -23,7 +23,7 @@ Dev DB shell for the manual checks of this stage: `D="docker compose -f deploy/c
   - Done when: the manual checks give these results.
   - Out of scope: the `/start` handler (stage 14).
 
-- [ ] **7.2 `bun run telegram:unlink`**
+- [x] **7.2 `bun run telegram:unlink`**
   - Goal: the admin can cut a chat off (for example a lost phone).
   - Files: create `apps/server/src/scripts/telegram-unlink.ts`; change root `package.json` (`"telegram:unlink": "bun apps/server/src/scripts/telegram-unlink.ts"`); export `unlinkUser` from `channels/index.ts`.
   - Interfaces: `bun run telegram:unlink --org-id <uuid> --user-id <uuid>`.
@@ -33,7 +33,7 @@ Dev DB shell for the manual checks of this stage: `D="docker compose -f deploy/c
   - Done when: the manual run prints the line and exits 0.
   - Out of scope: a `/stop` command.
 
-- [ ] **7.3 `bun run digest:times` and `setDigestTimes`**
+- [x] **7.3 `bun run digest:times` and `setDigestTimes`**
   - Goal: the admin sets a member's digest times (P1); the pilot member gets 08:00 and 16:00 in stage 23.
   - Files: change `apps/server/src/modules/tenancy/repo.ts` and `tenancy/index.ts` (`setDigestTimes`); create `apps/server/src/scripts/digest-times.ts`, `apps/server/test/integration/tenancy-digest-times.test.ts`; change root `package.json` (`"digest:times": "bun apps/server/src/scripts/digest-times.ts"`).
   - Interfaces:

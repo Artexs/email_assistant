@@ -96,3 +96,18 @@ export async function insertUser(
     .returning("id")
     .executeTakeFirstOrThrow();
 }
+
+export async function setDigestTimes(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  userId: string,
+  times: readonly string[]
+): Promise<boolean> {
+  const result = await db
+    .updateTable("memberships")
+    .set({ digest_times: [...times] })
+    .where("org_id", "=", ctx.orgId)
+    .where("user_id", "=", userId)
+    .executeTakeFirst();
+  return result.numUpdatedRows === 1n;
+}
