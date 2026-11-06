@@ -792,6 +792,58 @@ Checks for every code stage: `bun run typecheck`, `bun run lint`, `bun run test:
 
 - [ ] 9.1 `bun run eval --real --reclassify --model <id>`: classifies the labeled real mails again, writes nothing to the DB, prints to stdout only.
 
+## Eval results (stage 6)
+
+Same 92 cases (80 synthetic, 12 injection), same prompt `classifier-v1`, same bar (precision ≥ 98%, minimum support 30 kept rows per category).
+Sources:
+- Gemini: `evals/results/2026-11-05-gemini-3.5-flash-lite.md` (model `gemini-3.5-flash-lite`).
+- luna `none`: `evals/results/2026-11-06-gpt-6-luna-none.md` (provider `openai`, model `gpt-6-luna`, effort `none`).
+- luna `low`: `evals/results/2026-11-06-gpt-6-luna-low.md` (same model, effort `low`).
+
+The cells show precision / recall. Go/no-go is the decision of the report for every category.
+
+| Row | Gemini 3.5 Flash-Lite | luna `none` | luna `low` |
+| --- | --- | --- | --- |
+| Cases done | 91 of 92 | 92 of 92 | 92 of 92 |
+| urgent | 100.0% / 100.0% | 100.0% / 100.0% | 100.0% / 100.0% |
+| needs_reply | 95.0% / 100.0% | 95.0% / 100.0% | 94.7% / 94.7% |
+| info | 76.5% / 81.3% | 69.2% / 56.3% | 69.2% / 56.3% |
+| notification | 100.0% / 82.4% | 87.5% / 82.4% | 93.3% / 82.4% |
+| spam | 84.2% / 88.9% | 76.2% / 88.9% | 69.6% / 88.9% |
+| Kept rows (urgent, needs_reply, info, notification, spam) | 15, 20, 17, 14, 19 | 16, 20, 13, 16, 21 | 16, 19, 13, 15, 23 |
+| Go/no-go (all 5 categories) | no-go: too few | no-go: too few | no-go: too few |
+| Injection passed / total | 12 / 12 | 12 / 12 | 12 / 12 |
+| Whitelist passed / total | 12 / 12 | 12 / 12 | 12 / 12 |
+| Errors | 1 (`http_503` 1) | 0 | 0 |
+| Latency p50 / p95 | 1010 ms / 8614 ms | 1386 ms / 1911 ms | 1366 ms / 2133 ms |
+| Average tokens in / out | 698 / 88 | 774 / 61 | 773 / 79 |
+| Cost per mail | $0.000429 | $0.000108 | $0.000117 |
+| Cost per month at 200 mails per day | $2.571028 | $0.648516 | $0.701540 |
+
+Notes on the numbers:
+- The Gemini run has 1 case with an error (`http_503`). The report asks for a re-run of that case. The other two runs are complete.
+- In the Gemini report, the `info` row shows 16 cases in the metrics table and 17 kept rows in the go/no-go table. The same holds for the other runs: kept rows count predictions, support counts expected labels.
+- `delegation` and `unsure` have no expected case in any run (support 0), so they have no precision or recall.
+- Prices come from the pricing pages named in each report (Gemini checked 2026-11-05, OpenAI checked 2026-11-06).
+- The runs use no generation settings, so results can change between runs.
+
+### ADR 0012 rule applied
+
+ADR 0012 says: pick the cheapest model that passes the go/no-go bar.
+
+- **No run passes.** All three runs show `no-go: too few` in every category. The reason is the minimum support:
+  no category reaches 30 kept rows in a run (the most is 23). The set has 80 synthetic cases, so this cannot change with the same set.
+- Look at precision alone (bar 98%), and only one category reaches it in every run: `urgent` (100%, with 15 or 16 rows).
+  `notification` reaches it only for Gemini (100%). `needs_reply`, `info` and `spam` miss the bar in all three runs.
+- So the rule gives no winner. The task has no model that passes, and the cheapest-that-passes step has nothing to choose from.
+  The Gemini run also had no category at the bar (architecture §6.3).
+- Facts for the pick, without a ranking by the rule:
+  - Precision: Gemini is equal or higher than both luna runs in `info`, `notification` and `spam`. luna `none` equals Gemini in `urgent` and `needs_reply`.
+  - luna `low` is not better than luna `none` in `needs_reply`, `info` and `spam`; it is better only in `notification` precision.
+  - Cost: both luna runs cost about a quarter of Gemini per mail ($0.000108 and $0.000117 against $0.000429).
+  - Speed and errors: both luna runs have a p95 of about 2 s and no errors. Gemini has a p95 of 8.6 s and one `http_503`.
+- The user picks provider, model and effort (see the open step 6.2 pick). No default is chosen here, and no code default changed.
+
 ## Questions for the user
 
 Added by the planner on 2026-11-06. Questions 1 and 2 are the open Q6 and Q7. Questions 3–5 came up in the step detail.
