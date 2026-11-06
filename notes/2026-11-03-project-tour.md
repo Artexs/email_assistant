@@ -65,3 +65,6 @@ Known gap: `org:create` rejects an owner email without a dot in the domain (`x@l
 
 ## 5. On the VPS (`ssh home_vm`, repo `~/email_assistant`)
 `db` + `server` run in Docker with `restart: unless-stopped`, no open port except SSH. Runbook: `deploy/README.md`. Logs: `docker compose -f deploy/compose.yaml --env-file .env logs -f server`.
+
+## 6. Architecture diagram (added 2026-11-04)
+`docs/diagrams/code-map.html` (source `docs/diagrams/code-map.md`, explainer skill): system map, one sync tick as a sequence, the `MailProvider` types, the error classes, and the mail tables. Rebuild: `bun ~/.pi/agent/skills/explainer/scripts/explainer.ts build docs/diagrams/code-map.md -o docs/diagrams/code-map.html`. Audit needs `CHROME_PATH` set to Brave on this Mac.
