@@ -1,4 +1,4 @@
-> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open, deferred by the user until stage 21. Stages 1–10 done; checkpoint 2 passed (user go). Stages 11–19 done. Left: stages 20–23, then the done-checklist.
+> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open, deferred by the user until stage 21. Stages 1–10 done; checkpoint 2 passed (user go). Stages 11–20 done; checkpoint 3 group review next. Left: stages 21–23 (21 needs the dev bot token, step 0.1), then the done-checklist.
 
 # S2 Telegram
 
@@ -136,7 +136,7 @@ Each stage lives in its own file in [`s2-telegram/`](s2-telegram/). An implement
 - [x] [Stage 17](s2-telegram/stage-17-help-status-and-digest-commands.md) — Commands: `/help`, `/status`, `/digest`
 - [x] [Stage 18](s2-telegram/stage-18-pause-and-resume.md) — Commands: `/pause`, `/resume` [risky]
 - [x] [Stage 19](s2-telegram/stage-19-mailbox-password.md) — `mailbox:password`: leave `auth_error` [risky]
-- [ ] [Stage 20](s2-telegram/stage-20-server-wiring-and-log-test.md) — Server wiring, shutdown and the log test [risky] — user checkpoint 3 after it
+- [x] [Stage 20](s2-telegram/stage-20-server-wiring-and-log-test.md) — Server wiring, shutdown and the log test [risky] — user checkpoint 3 after it
 - [ ] [Stage 21](s2-telegram/stage-21-dev-run-with-the-dev-bot.md) — Dev run with the dev bot: the user tries it on the phone [risky]
 - [ ] [Stage 22](s2-telegram/stage-22-docs-and-notes.md) — Docs, notes, known alerts
 - [ ] [Stage 23](s2-telegram/stage-23-vps-deploy-with-the-pilot-bot.md) — VPS deploy with the pilot bot [risky] — user checkpoint 4 before it
@@ -192,3 +192,4 @@ Answered 2026-11-05: the user approved the plan as written, so each question kee
 - 2026-11-06: Stage 17 built (`channels/commands.ts`: `helpMessage`, `statusMessage`, `digestNowMessage`; the digest maps no settings row to `none`, checkpoint 2 decision), reviewer PASS (Sonnet). Incident: the implementer ran `bun run format` (whole repo). It reverted the tracked files; the main session restored the two untracked user files (`notes/2026-11-04-subagent-usage.md` from an earlier session log, `docs/diagrams/code-map.html` rebuilt from its source; both prove equal after Prettier). Rule for later calls: never `bun run format` or `prettier --write` outside the step's files.
 - 2026-11-06: Stage 18 built (`pauseMailboxes`, `resumeMailboxes`, `runCommand`, `createUpdateHandlers` in `channels/commands.ts`; audit `mailbox.paused` / `mailbox.resumed`; 9 tests), reviewer PASS (Sonnet). Minors for later: a reply can say "was paused already" when the sync sets `auth_error` in the same instant (state stays right); stage 22 also adds the two new events to the audit event list in `docs/architecture.md` (about line 330).
 - 2026-11-06: Stage 19 built (`updateMailboxPassword` in `mail/connect.ts`, `updateCredentials`, CLI `mailbox:password` (password on stdin only), audit `mailbox.password_changed`, runbook section in `deploy/README.md`; 8 tests; manual GreenMail run by the implementer: `auth_error` → `active`), reviewer PASS (Opus, high). `deploy/README.md` also gets the old Prettier indent fix (backup section). Known race, accepted: a sync with the old password that ends after the CLI commit can set `auth_error` again; the user runs the CLI again.
+- 2026-11-06: Stage 20 built (`channels/telegram/runtime.ts`, `main.ts` jobs `channels.notifier` / `channels.digest` and shutdown 10 s + 30 s under the 45 s grace, scheduler logs `describeError`, end-to-end log test on a fake Bot API), reviewer PASS (Sonnet). Minor fixed: the log test also proves the summary, reason and sender markers are in the sent texts. Manual start with an empty token: `telegram is off`, exit 0. The run with a real token waits for stage 21.

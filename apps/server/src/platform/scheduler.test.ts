@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 
 import { createScheduler } from "./scheduler";
 
@@ -38,6 +38,21 @@ describe("scheduler", () => {
     scheduler.stop();
 
     expect(runs).toBeGreaterThanOrEqual(2);
+  }, 10_000);
+
+  test("a failed job logs its error label and not its message", async () => {
+    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    const scheduler = createScheduler();
+    scheduler.add("throws", EVERY_SECOND, async () => {
+      throw new Error("MARKER-SCHED");
+    });
+    await sleep(1500);
+    scheduler.stop();
+    const output = errorSpy.mock.calls.map((call: unknown[]) => call.map(String).join(" ")).join("\n");
+    errorSpy.mockRestore();
+
+    expect(output).toContain("throws failed: Error");
+    expect(output).not.toContain("MARKER-SCHED");
   }, 10_000);
 
   test("stop() stops all jobs", async () => {

@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 20 — Server wiring, shutdown and the log test [risky]
 
-- [ ] **20.1 `createTelegramRuntime`, `main.ts` jobs and shutdown, scheduler log line, end-to-end log test**
+- [x] **20.1 `createTelegramRuntime`, `main.ts` jobs and shutdown, scheduler log line, end-to-end log test**
   - Goal: the server runs the bot, the notifier (detection + sender) every 15 s and the digest job every minute when `TELEGRAM_BOT_TOKEN` is set, and nothing of it when it is empty; the shutdown stays inside the 45-second `stop_grace_period`; one test runs the whole path against a fake Bot API and proves that no log line holds a secret or mail data.
   - Files: create `apps/server/src/modules/channels/telegram/runtime.ts`, `apps/server/test/integration/telegram-logs.test.ts`; change `apps/server/src/modules/channels/index.ts`, `apps/server/src/main.ts`, `apps/server/src/main.test.ts`, `apps/server/src/platform/scheduler.ts`, `apps/server/src/platform/scheduler.test.ts`.
   - Interfaces:

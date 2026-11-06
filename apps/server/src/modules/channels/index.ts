@@ -37,6 +37,7 @@ export { createTelegramApi, createTelegramChannel } from "./telegram/api";
 export { checkBot } from "./telegram/check";
 export { createTelegramBot, type BotDeps } from "./telegram/bot";
 export { BOT_COMMANDS, startPolling, type Polling, type PollingDeps } from "./telegram/polling";
+export { createTelegramRuntime, type TelegramRuntime, type TelegramRuntimeDeps } from "./telegram/runtime";
 export { telegramErrorLabel } from "./telegram/errors";
 export { createOutboxSender, type SenderDeps } from "./sender";
 export { detectNotices, type NoticeDeps } from "./notices";

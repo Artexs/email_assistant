@@ -1,5 +1,6 @@
 import { Cron } from "croner";
 
+import { describeError } from "./errors";
 import { createLog } from "./log";
 
 const log = createLog("scheduler");
@@ -20,7 +21,7 @@ export function createScheduler(): Scheduler {
           pattern,
           {
             protect: () => log.debug(`${name} skipped: the previous run is still going`),
-            catch: (error) => log.error(`${name} failed:`, error instanceof Error ? error.message : String(error)),
+            catch: (error) => log.error(`${name} failed: ${describeError(error)}`),
           },
           fn
         )

@@ -1,3 +1,4 @@
+import { createTelegramRuntime } from "./modules/channels";
 import { createMailSyncJob, openImapProvider } from "./modules/mail";
 import { createLlmPause, createTriageJob, type TriageScope } from "./modules/triage";
 import { classifierModel, ConfigError, loadConfig, type Config } from "./platform/config";
@@ -10,6 +11,7 @@ import { createLog, setLogLevel } from "./platform/log";
 import { createScheduler } from "./platform/scheduler";
 
 const log = createLog("main");
+const startedAt = new Date();
 
 function loadConfigOrExit() {
   try {
@@ -94,9 +96,40 @@ if (scope !== null) {
     return triageRun;
   });
 }
+
+// The runs of the notifier and the digest job that are going now. Shutdown waits for them.
+let channelRun: Promise<void> = Promise.resolve();
+let digestRun: Promise<void> = Promise.resolve();
+let telegram: ReturnType<typeof createTelegramRuntime> | null = null;
+if (config.TELEGRAM_BOT_TOKEN === undefined) {
+  log.info("telegram is off (TELEGRAM_BOT_TOKEN is empty)");
+} else {
+  const runtime = createTelegramRuntime({
+    db,
+    token: config.TELEGRAM_BOT_TOKEN,
+    now: () => new Date(),
+    startedAt,
+    llmDailyCap: config.LLM_DAILY_CAP,
+    triageScope: config.TRIAGE_LLM_SCOPE,
+  });
+  telegram = runtime;
+  scheduler.add("channels.notifier", "*/15 * * * * *", () => {
+    channelRun = runtime.notify();
+    return channelRun;
+  });
+  scheduler.add("channels.digest", "5 * * * * *", () => {
+    digestRun = runtime.scheduleDigests();
+    return digestRun;
+  });
+  runtime.startPolling();
+}
 void heartbeat.tick();
 
 const SHUTDOWN_WAIT_MS = 30_000;
+// bot.stop() can wait for the network.
+const TELEGRAM_STOP_WAIT_MS = 10_000;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 let stopping = false;
 
@@ -104,11 +137,12 @@ async function shutdown(): Promise<void> {
   if (stopping) return;
   stopping = true;
   scheduler.stop();
+  // Together with the wait below the sum stays under stop_grace_period (45 s).
+  if (telegram !== null) {
+    await Promise.race([telegram.stop().catch(() => undefined), sleep(TELEGRAM_STOP_WAIT_MS)]);
+  }
   // A kill in the middle of a batch makes the next start count an attempt for each claimed mail. Wait for the batch, but not for ever.
-  await Promise.race([
-    triageRun.catch(() => undefined),
-    new Promise<void>((resolve) => setTimeout(resolve, SHUTDOWN_WAIT_MS)),
-  ]);
+  await Promise.race([Promise.allSettled([triageRun, channelRun, digestRun]), sleep(SHUTDOWN_WAIT_MS)]);
   await server.stop();
   await db.destroy();
   process.exit(0);
