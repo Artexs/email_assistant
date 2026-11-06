@@ -28,4 +28,5 @@ Preconditions (user checkpoint 4): stages 0–22 are committed and pushed; S1b s
   - Test: none (operations).
   - Check: steps 3–8 give the results above.
   - Done when: the checks pass and the user confirms the digest on the phone. The labels from the pilot bot also count for S1b stage 40 (`eval --real` reads every feedback source).
+  - Progress 2026-11-06 (main session): steps 1–5 and 7 done (see the task log); steps 6 (link the chat) and 8 (digest + ✅ tap) wait for the user on 2026-11-07.
   - Out of scope: real mail of another person (ADR 0013 gate), a webhook, a change of `TRIAGE_LLM_SCOPE` (S1b decides it).
