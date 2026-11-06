@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 15 — Polling and the bot command list
 
-- [ ] **15.1 `startPolling`: long polling with the 401 / 409 rules, `setMyCommands`, a clean stop**
+- [x] **15.1 `startPolling`: long polling with the 401 / 409 rules, `setMyCommands`, a clean stop**
   - Goal: the server receives updates by long polling (ADR 0005, no inbound port); a wrong token stops polling with one clear line; a second consumer of the same token (409) shows up in the log and does not end in a tight loop (D9).
   - Files: create `apps/server/src/modules/channels/telegram/polling.ts`, `apps/server/src/modules/channels/telegram/polling.test.ts`; change `apps/server/src/modules/channels/index.ts`.
   - Interfaces:
