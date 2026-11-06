@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 3 — Core: message model, text helpers, button data, notice texts
 
-- [ ] **3.1 Message model, text helpers, category labels, AI folder names**
+- [x] **3.1 Message model, text helpers, category labels, AI folder names**
   - Goal: one channel-neutral message shape and safe, short texts from untrusted mail fields (D1).
   - Files: create `packages/core/src/digest/message.ts`, `packages/core/src/digest/text.ts`, `packages/core/src/digest/text.test.ts`, `packages/core/src/digest/labels.ts`; change `packages/core/src/digest/index.ts`, `packages/core/src/triage/untrusted-text.ts` (+ its test), `packages/core/src/triage/planners.ts` (+ its test), `apps/server/src/modules/mail/connect.ts`.
   - Interfaces:
@@ -28,7 +28,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
   - Done when: the tests pass.
   - Out of scope: the digest layout (stage 4).
 
-- [ ] **3.2 Button data, "would do" text, AI text**
+- [x] **3.2 Button data, "would do" text, AI text**
   - Goal: pure rules for the ✅ / ✏️ button data (≤ 64 bytes), the "what the system would do" line, and the AI text of a line (P5, D10).
   - Files: create `packages/core/src/digest/callback.ts`, `packages/core/src/digest/callback.test.ts`, `packages/core/src/digest/would-do.ts`, `packages/core/src/digest/would-do.test.ts`, `packages/core/src/digest/ai-text.ts`, `packages/core/src/digest/ai-text.test.ts`; export from `packages/core/src/digest/index.ts`.
   - Interfaces:
@@ -50,7 +50,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
   - Done when: the tests pass.
   - Out of scope: writing feedback (stage 16).
 
-- [ ] **3.3 Notice texts**
+- [x] **3.3 Notice texts**
   - Goal: the exact texts and buttons of the four notice kinds (urgent, `auth_error`, sync late, sync works again).
   - Files: create `packages/core/src/digest/notices.ts`, `packages/core/src/digest/notices.test.ts`; export from `packages/core/src/digest/index.ts`.
   - Interfaces:

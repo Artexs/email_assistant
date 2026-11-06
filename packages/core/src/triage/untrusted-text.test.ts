@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { markUntrustedText } from "./untrusted-text";
+import { markUntrustedText, removeLinks } from "./untrusted-text";
 
 describe("markUntrustedText", () => {
   test("replaces email addresses", () => {
@@ -65,5 +65,11 @@ describe("markUntrustedText", () => {
   test("replaces a link glued to a word", () => {
     expect(markUntrustedText("foohttps://evil.test/x")).toBe("foo[link]");
     expect(markUntrustedText("xwww.evil.test")).toBe("x[link]");
+  });
+});
+
+describe("removeLinks", () => {
+  test("replaces every link and keeps the rest", () => {
+    expect(removeLinks("see www.a.pl and http://b.pl/c")).toBe("see [link] and [link]");
   });
 });

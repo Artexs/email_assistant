@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { AI_FOLDER_NAMES } from "@ea/core";
 import type { Transaction } from "kysely";
 import { z } from "zod";
 
@@ -17,13 +18,6 @@ const SPECIAL_USE_KEYS: Record<string, string> = {
   "\\Sent": "sent",
   "\\Trash": "trash",
   "\\Junk": "junk",
-};
-// S3 creates these folders before the first move; connect does not change the mailbox.
-const AI_FOLDERS = {
-  ai_spam: "AI/Spam",
-  ai_info: "AI/Info",
-  ai_notifications: "AI/Notifications",
-  ai_manual: "AI/Manual",
 };
 
 const port = z.number().int().min(1).max(65535);
@@ -62,7 +56,8 @@ export function buildFolderMap(folders: MailFolder[]): Record<string, string> {
     const key = folder.specialUse === null ? undefined : SPECIAL_USE_KEYS[folder.specialUse];
     if (key !== undefined && map[key] === undefined) map[key] = folder.path;
   }
-  return { ...map, ...AI_FOLDERS };
+  // S3 creates the AI folders before the first move; connect does not change the mailbox.
+  return { ...map, ...AI_FOLDER_NAMES };
 }
 
 async function readServerInfo(deps: ConnectDeps, opts: ImapConnectOptions): Promise<MailServerInfo> {

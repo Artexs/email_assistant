@@ -4,10 +4,17 @@ import type { Category } from "./categories";
 export const actionTypes = ["move", "mark_read", "flag", "save_summary"] as const;
 export type ActionType = (typeof actionTypes)[number];
 
-// The keys of `AI_FOLDERS` in `apps/server/src/modules/mail/connect.ts`. The committer turns a key into a folder
-// name through `mailboxes.folder_map`.
+// The committer turns a key into a folder name through `mailboxes.folder_map`.
 export const folderKeys = ["ai_info", "ai_notifications", "ai_spam", "ai_manual"] as const;
 export type FolderKey = (typeof folderKeys)[number];
+
+// The default folder names: `mailbox:connect` writes them into `folder_map`; the digest texts show them.
+export const AI_FOLDER_NAMES: Record<FolderKey, string> = {
+  ai_info: "AI/Info",
+  ai_notifications: "AI/Notifications",
+  ai_spam: "AI/Spam",
+  ai_manual: "AI/Manual",
+};
 
 // Payloads hold only folder keys and the summary: never an address, a recipient or a folder name from the LLM.
 export type PlannedAction =

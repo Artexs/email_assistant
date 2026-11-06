@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { categories, type Category } from "./categories";
-import { planActions } from "./planners";
+import { AI_FOLDER_NAMES, folderKeys, planActions } from "./planners";
 import { markUntrustedText } from "./untrusted-text";
 
 const plannable = categories.filter((category) => category !== "delegation");
@@ -54,5 +54,11 @@ describe("planActions", () => {
         }
       }
     }
+  });
+});
+
+describe("AI_FOLDER_NAMES", () => {
+  test("has one name for every folder key", () => {
+    expect(Object.keys(AI_FOLDER_NAMES).sort()).toEqual([...folderKeys].sort());
   });
 });

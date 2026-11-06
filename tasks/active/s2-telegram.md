@@ -1,4 +1,4 @@
-> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open, deferred by the user until stage 21. Stages 1–2 done. Left: stages 3–23, then the done-checklist.
+> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open, deferred by the user until stage 21. Stages 1–3 done. Left: stages 4–23, then the done-checklist.
 
 # S2 Telegram
 
@@ -119,7 +119,7 @@ Each stage lives in its own file in [`s2-telegram/`](s2-telegram/). An implement
 - [ ] [Stage 0](s2-telegram/stage-00-bots-grammy-config-and-check.md) — Setup: bots (user step), grammY, config key, `telegram:check` — user checkpoint 1 after it
 - [x] [Stage 1](s2-telegram/stage-01-s2-tables-migration.md) — S2 tables migration [risky]
 - [x] [Stage 2](s2-telegram/stage-02-core-local-time-and-digest-schedule.md) — Core: local time and the digest schedule
-- [ ] [Stage 3](s2-telegram/stage-03-core-message-texts-buttons-and-notices.md) — Core: message model, text helpers, button data, notice texts
+- [x] [Stage 3](s2-telegram/stage-03-core-message-texts-buttons-and-notices.md) — Core: message model, text helpers, button data, notice texts
 - [ ] [Stage 4](s2-telegram/stage-04-core-digest-renderer.md) — Core: digest renderer [risky]
 - [ ] [Stage 5](s2-telegram/stage-05-telegram-errors-and-send.md) — Telegram adapter: error labels and send [risky]
 - [ ] [Stage 6](s2-telegram/stage-06-chat-linking.md) — Chat linking: links and one-time tokens [risky]
@@ -173,3 +173,4 @@ Answered 2026-11-05: the user approved the plan as written, so each question kee
 - 2026-11-06: Stage 0 partly built: steps 0.2 and 0.3 done, reviewer PASS (Sonnet). Step 0.1 (BotFather, dev token in `.env`) and the manual `bun run telegram:check` run stay open for the user (checkpoint 1). Minor review finding, not fixed: `telegram-check.ts` prints `failed: ConfigError` without the key names.
 - 2026-11-06: The user asked to go on without the bot tokens: step 0.1 waits until stage 21 (the dev run); stages 1–20 use a fake Telegram. Stage 1 built (migration `20261106000001_telegram.sql`, schema types, 7 schema tests), reviewer PASS (Opus, high). Minor finding for stage 6: `telegram-schema.test.ts` has a local `addMember`; replace it with the `fixtures.ts` helper.
 - 2026-11-06: Stage 2 built (`packages/core/src/digest/`: local time, quiet hours, digest schedule; 33 tests), reviewer PASS (Sonnet). Extra export `nextLocalDate` (shared next-date rule of 2.1 and 2.2), accepted by the reviewer.
+- 2026-11-06: Stage 3 built (`packages/core/src/digest/`: message model, text helpers, labels, button data, would-do text, AI text, notice texts; `removeLinks`, `AI_FOLDER_NAMES` in core, used by `mail/connect.ts`), reviewer PASS (Sonnet). Accepted: one `eslint-disable no-control-regex` with a reason in `text.ts`. Main session moved the stray folder comment in `connect.ts` (minor finding).
