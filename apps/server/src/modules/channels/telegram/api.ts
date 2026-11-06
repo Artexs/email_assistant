@@ -1,10 +1,10 @@
 import { CALLBACK_MAX_BYTES, MESSAGE_MAX_CHARS, type OutButton, type OutMessage } from "@ea/core";
-import { Api, GrammyError } from "grammy";
+import { Api } from "grammy";
 import type { InlineKeyboardMarkup } from "grammy/types";
 
 import { ChannelError, type ChatChannel } from "../port";
 
-import { toChannelError } from "./errors";
+import { isNotModified, toChannelError } from "./errors";
 
 export function createTelegramApi(token: string, opts?: { apiRoot?: string }): Api {
   return new Api(token, opts?.apiRoot === undefined ? undefined : { apiRoot: opts.apiRoot });
@@ -39,13 +39,6 @@ function guard(message: OutMessage): void {
       }
     }
   }
-}
-
-// The description is read only for this check and never logged.
-function isNotModified(error: unknown): boolean {
-  return (
-    error instanceof GrammyError && error.error_code === 400 && error.description.includes("message is not modified")
-  );
 }
 
 export function createTelegramChannel(api: Api): ChatChannel {

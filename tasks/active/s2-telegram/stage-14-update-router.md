@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 14 — Update router [risky]
 
-- [ ] **14.1 `createTelegramBot`: private chats only, `/start` linking, linked chats only, commands and buttons to handlers**
+- [x] **14.1 `createTelegramBot`: private chats only, `/start` linking, linked chats only, commands and buttons to handlers**
   - Goal: every update first passes the chat checks (D2, D3); only `/start <token>` works in an unlinked chat; every other update of a linked chat goes to a channel-neutral handler with the member's `LinkedChat` (the tenant comes from the link, never from the update).
   - Files: create `apps/server/src/modules/channels/telegram/bot.ts`, `apps/server/src/modules/channels/texts.ts`, `apps/server/src/modules/channels/texts.test.ts`, `apps/server/test/integration/telegram-helpers.ts`, `apps/server/test/integration/telegram-router.test.ts`; change `apps/server/src/modules/channels/port.ts`, `apps/server/src/modules/channels/index.ts`.
   - Interfaces:

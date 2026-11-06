@@ -1,4 +1,13 @@
-export { ChannelError, type ChannelErrorKind, type ChatChannel, type LinkedChat } from "./port";
+export {
+  ChannelError,
+  commandNames,
+  type CallbackResult,
+  type ChannelErrorKind,
+  type ChatChannel,
+  type CommandName,
+  type LinkedChat,
+  type UpdateHandlers,
+} from "./port";
 export {
   cancelPendingOutbox,
   claimDueOutbox,
@@ -26,6 +35,7 @@ export {
 } from "./linking";
 export { createTelegramApi, createTelegramChannel } from "./telegram/api";
 export { checkBot } from "./telegram/check";
+export { createTelegramBot, type BotDeps } from "./telegram/bot";
 export { telegramErrorLabel } from "./telegram/errors";
 export { createOutboxSender, type SenderDeps } from "./sender";
 export { detectNotices, type NoticeDeps } from "./notices";

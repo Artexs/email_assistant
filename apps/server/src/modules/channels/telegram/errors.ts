@@ -18,6 +18,13 @@ export function telegramErrorLabel(error: unknown): string {
   return describeError(error);
 }
 
+/** A GrammyError 400 "message is not modified" is not a failure. The description is read only for this check and never logged. */
+export function isNotModified(error: unknown): boolean {
+  return (
+    error instanceof GrammyError && error.error_code === 400 && error.description.includes("message is not modified")
+  );
+}
+
 /** Maps any error of the Telegram client to a `ChannelError`. Copies no message, description, payload or inner error. */
 export function toChannelError(error: unknown): ChannelError {
   if (error instanceof ChannelError) {
