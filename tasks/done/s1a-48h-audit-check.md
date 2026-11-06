@@ -1,4 +1,4 @@
-> **Status 2026-11-04 — blocked until 2026-11-05T23:30Z.** Left: everything. Do not start before that time (UTC).
+> **Status 2026-11-06 — done.** The audit shows 2 rows only in the DB (mails deleted from the mailbox); the user accepted it as a pass.
 
 > **Blocked until:** 2026-11-05T23:30Z (UTC). Check the time first: `date -u`.
 > **Why:** the 48-hour test runs on the VPS until 2026-11-05T23:12Z; the cron end script runs the audit at 23:17Z and writes `~/ea-logs/audit.log`.
@@ -35,8 +35,20 @@ Prove 48 hours of sync on the pilot mailbox with no lost and no duplicate mail, 
 6. Log the results in this file and in the S1a log (`tasks/done/s1a-imap-read-pilot-host.md`), then `git mv` this file to `tasks/done/`.
 
 ## Done-checklist
-- [ ] Done-when checks pass (name the command and its output in the log).
-- [ ] New alerts in `docs/known-alerts.md`, if any.
+- [x] Done-when checks pass (name the command and its output in the log).
+- [x] New alerts in `docs/known-alerts.md`, if any.
 
 ## Log
 - 2026-11-04: Created at the S1a close (user request).
+- 2026-11-06 15:10Z: Checks on `home_vm`:
+  - `cat ~/ea-logs/audit.log`: `inbox=53 stored=55 missing=0 duplicates=2`, `audit exit 2`, `test cron lines removed` (2026-11-05T23:17:01Z).
+  - Audit again by hand: `inbox=54 stored=56 missing=0 duplicates=2`, exit 2 (one new real mail after the test).
+  - SQL: no `(message_id_header, content_hash)` pair is stored twice. A one-off read-only script listed the 2 rows that are only in the DB:
+    `<193c9961-…@interia.pl>` (received 2026-11-03 23:26Z) and `<20261105151058.52AA710000719@fmx205.krk.prod.pf.iadm>` (received 2026-11-05 15:10Z).
+    Both are real mails that left INBOX after the sync stored them. The audit counts such rows as "duplicates". No mail is lost and no mail is stored twice.
+  - `rescan.log`: `rescan forced`; server log: `sync 8bc7f572-… rescan: fetched 22, stored 7, uid updated 15, returned 0`.
+  - `grep -c 'appended 1' seed.log`: 48; `grep -iE 'error|fail' seed.log`: no lines.
+  - `crontab -l`: only the `PATH` line and the 03:30 backup line.
+  - `backup.log`: `backup ok` on 2026-11-04, 11-05 and 11-06.
+  - IMAP search for both Message-IDs in all 9 folders (read-only script): not found. The mails are deleted from the mailbox.
+- 2026-11-06: The user accepted the result as a pass (no lost mail, no double row). `rm ~/ea-48h-end.sh` done (`ls`: no such file). Task moved to `done/`.

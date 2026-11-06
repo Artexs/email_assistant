@@ -586,3 +586,4 @@ None. The user answered Questions 1–8 on 2026-11-03; the answers are in "Decis
   Not a problem in S1a (nothing moves mail); input written into `tasks/planned/s3-assist-actions.md`.
 - 2026-11-04: `bun run gemini:test` on the Mac: still `503 UNAVAILABLE` (known alert). Input for S1b.
 - 2026-11-04: S1a closed by the user before the 48-hour test ended. The test keeps running on the VPS; check: `tasks/planned/s1a-48h-audit-check.md`. Task moved to `done/`.
+- 2026-11-06: 48-hour test result: `missing=0 duplicates=2`. The 2 extra rows are real mails that were deleted from the mailbox after the sync stored them (not a double store). The user accepted it as a pass. Details: `tasks/done/s1a-48h-audit-check.md`.

@@ -1,4 +1,4 @@
-> **Status 2026-11-05 — blocked until 2026-11-05T23:30Z and `tasks/planned/s1a-48h-audit-check.md` done (stages 37–40); stage 36 opens on 2026-11-06T08:00Z (next Pacific day).** Left: stages 36–40 (model comparison, VPS deploy, shadow run, labels, final eval, go/no-go table). No code is left: S1b code is done (`tasks/done/s1b-shadow-triage.md`).
+> **Status 2026-11-06 — in progress.** The S1a audit check is done. Left: stage 36 (day 2 and 3), stage 37 (waits for the user: `TRIAGE_LLM_SCOPE=synthetic`), stage 39 backfill, labels, stage 40. Faster option chosen (no shadow week).
 
 > **Blocked until:** stages 37–40: after 2026-11-05T23:30Z (UTC) AND after the S1a audit check is in `tasks/done/`. Why: the S1a 48-hour sync test runs on the same VPS until 23:12Z, and its end script runs the audit at 23:17Z. A deploy restarts the server and can spoil the test. Stage 36: on a Pacific quota day after 2026-11-05 (check `TZ=America/Los_Angeles date`).
 > **Before that time, an agent may only:** read the VPS logs (`tail ~/ea-logs/seed.log`), run `bun run gemini:test` once on the Mac. Never touch the VPS cron, the audit, `~/ea-48h-end.sh` or any `.env`.
@@ -31,7 +31,12 @@ Check only with `ssh home_vm 'cd ~/email_assistant && grep -n "^TRIAGE_LLM_SCOPE
 4. Stage 40: the user confirms the result and tries it.
 5. To stop all LLM calls at any time: the user sets `TRIAGE_LLM_SCOPE=off` and restarts the server.
 
-## Open decision (ask the user when stage 38 starts)
+## Decision (user, 2026-11-06): faster option chosen
+
+The user chose the faster option below. Stage 38 is not a full week: after stage 37, deploy with `all`, run the stage 39 backfill right away, label about 100 mails, then stage 40. The "one week" done-when item drops; the cost comes from the 200-mails-per-day figure.
+The user set `TRIAGE_LLM_SCOPE=all` early on 2026-11-06 (the running server had the old S1a code, so it had no effect). The user accepted the agent's proposal to set it back to `synthetic` for the stage 37 smoke run.
+
+## Former open decision
 
 Faster option (proposed 2026-11-05, not chosen yet): drop "one week" from "Done when", run the stage 39 backfill (30 days of INBOX) right after stage 37, label about 100 mails, then stage 40. About 1–2 days (cap 300 LLM calls per Los Angeles day) instead of 7. Cost: no multi-day stability proof, old mail can skew the results, the cost comes from the 200-mails-per-day figure only. Default without an answer: the plan as written (one week).
 
@@ -75,3 +80,4 @@ Provisional results (stage 34 full run, stage 36 subset, 3.8 Flash availability)
 ## Log
 
 - 2026-11-05: Created from S1b stages 36–40 (user decision: close the S1b code, start S2, finish the real-mail results in a few days). `gemini-setup` check merged here: `bun run gemini:test` → `LlmSoftError http_503` (15:15Z). S1a test on track at 15:15Z: `seed.log` 40 × `appended 1`, 0 errors; end script still in the crontab for 23:17Z.
+- 2026-11-06: S1a audit check done (`tasks/done/s1a-48h-audit-check.md`). VPS still on commit `e5a32eb` (S1a); `grep '^TRIAGE_LLM_SCOPE=' .env` → `all` (user, early); `grep -c '^GEMINI_API_KEY=.' .env` → 1. User decisions: scope back to `synthetic` for stage 37, faster option. Stage 36 day 2 run aborted at the start (no result); rerun open.
