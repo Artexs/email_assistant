@@ -175,7 +175,16 @@ async function main(): Promise<number> {
         now: () => new Date(),
         onResult: async (result) => appendFileSync(stateFile, `${JSON.stringify(result)}\n`),
       },
-      { cases, model, bar: options.bar, minKept: options["min-kept"], retries: options.retries, done }
+      {
+        cases,
+        model,
+        provider: settings.provider,
+        reasoningEffort: settings.reasoningEffort,
+        bar: options.bar,
+        minKept: options["min-kept"],
+        retries: options.retries,
+        done,
+      }
     );
     const markdown = renderEvalReport(report, { title: `Eval report: ${options.set} set` });
     out(markdown);

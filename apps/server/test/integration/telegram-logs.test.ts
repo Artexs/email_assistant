@@ -129,6 +129,7 @@ describe("telegram logs", () => {
           startedAt: at(-HOUR),
           llmDailyCap: 300,
           triageScope: "synthetic",
+          llm: { provider: "gemini", classifierModel: "gemini-3.5-flash-lite" },
           apiRoot: fake.apiRoot,
           botInfo: testBotInfo,
         });

@@ -15,6 +15,10 @@ describe("costPerMail", () => {
     expect(costPerMail("gemini-3.5-flash-lite", 2000, 100, new Date("2026-11-05T00:00:00Z"))).toBeCloseTo(0.00085);
   });
 
+  test("prices a gpt-6-luna mail", () => {
+    expect(costPerMail("gpt-6-luna", 700, 90, new Date("2026-11-06T00:00:00Z"))).toBeCloseTo(0.000115);
+  });
+
   test("an unknown model has no price", () => {
     expect(costPerMail("gemini-unknown", 100, 100, new Date("2026-11-05T00:00:00Z"))).toBeNull();
   });

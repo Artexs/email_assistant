@@ -80,7 +80,7 @@ function harness() {
   };
 }
 
-const opts = { model: "gemini-3.5-flash-lite", bar: 0.98, minKept: 30, retries: 4 };
+const opts = { model: "gemini-3.5-flash-lite", provider: "gemini" as const, bar: 0.98, minKept: 30, retries: 4 };
 const soft = () => new LlmSoftError("http_503", "m");
 
 describe("runEval", () => {
@@ -107,6 +107,8 @@ describe("runEval", () => {
     expect(report.metrics.notification.recall).toBe(0.5);
     expect(report.kind).toBe("cases");
     expect(report.model).toBe("gemini-3.5-flash-lite");
+    expect(report.provider).toBe("gemini");
+    expect(report.reasoningEffort).toBeNull();
     expect(report.errors).toBe(0);
     expect(report.usage.avgTokensIn).toBe(100);
     expect(report.usage.latencyP50).toBe(50);

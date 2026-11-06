@@ -22,7 +22,14 @@ import {
 import { z } from "zod";
 
 import { SoftError } from "../../platform/errors";
-import { LlmBlockedError, type LlmClient, LlmConfigError, llmErrorCode, type LlmUsage } from "../../platform/llm";
+import {
+  LlmBlockedError,
+  type LlmClient,
+  LlmConfigError,
+  llmErrorCode,
+  type LlmProviderId,
+  type LlmUsage,
+} from "../../platform/llm";
 import { createLog } from "../../platform/log";
 
 import { type ClassifierEmail, classifyEmail } from "./classifier";
@@ -71,6 +78,8 @@ export interface EvalReportBase {
 export interface CasesEvalReport extends EvalReportBase {
   kind: "cases";
   model: string;
+  provider: LlmProviderId;
+  reasoningEffort: string | null;
   promptVersion: string;
   cases: CaseResult[];
   complete: boolean;
@@ -297,6 +306,8 @@ export async function runEval(
   input: {
     cases: EvalCase[];
     model: string;
+    provider: LlmProviderId;
+    reasoningEffort?: string | null;
     bar: number;
     minKept: number;
     retries: number;
@@ -374,6 +385,8 @@ export async function runEval(
     errors: cases.filter((r) => r.errorCode !== null).length,
     errorCodes,
     model: input.model,
+    provider: input.provider,
+    reasoningEffort: input.reasoningEffort ?? null,
     promptVersion: PROMPT_VERSION,
     cases,
     complete: stoppedReason === null,

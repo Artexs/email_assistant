@@ -523,7 +523,7 @@ Checks for every code stage: `bun run typecheck`, `bun run lint`, `bun run test:
 
 ### Stage 4 — Check script, prices, texts
 
-- [ ] **4.1 `scripts/llm-check.ts --provider <id>`**
+- [x] **4.1 `scripts/llm-check.ts --provider <id>`**
   - Plan text: `scripts/llm-check.ts --provider <id>` (default `LLM_PROVIDER`): one greeting call, then one call with the triage schema.
     Root scripts: `llm:check`; `gemini:test` = `llm:check --provider gemini`. Check: both providers live on the Mac.
   - Goal: one command checks the key, the model and the real triage schema of a provider.
@@ -551,7 +551,7 @@ Checks for every code stage: `bun run typecheck`, `bun run lint`, `bun run test:
   - Done when: the three live commands exit 0.
   - Out of scope: no change of the README (stage 7); no DB access.
 
-- [ ] **4.2 Price, eval report texts, `/status`**
+- [x] **4.2 Price, eval report texts, `/status`**
   - Plan text: `cost.ts`: the `gpt-6-luna` price (Q3), with source and date. `eval-report.ts`: "Blocked by the provider", header with provider
     and effort. `/status` in Telegram: provider and classifier model. Tests updated.
   - Goal: cost, the report and `/status` name the provider and the model.
@@ -842,6 +842,7 @@ Added by the planner on 2026-11-06. Questions 1 and 2 are the open Q6 and Q7. Qu
 
 ## Log
 
+- 2026-11-06: Stage 4 done, reviewer PASS. `scripts/llm-check.ts --provider` replaces `gemini-check.ts` (`gemini:test` = alias); `gpt-6-luna` price; eval report "Blocked by the provider" + provider/effort header; `/status` shows `LLM: <provider> · <model>`. Live: `llm:check --provider openai` → gpt-6-luna triage 723 in / 53 out, 1.8 s, needs_reply; `--provider gemini` → gemini-3.5-flash-lite 648 in / 87 out, 0.8 s (this also closes the open live Gemini check of stage 1). Checks: typecheck, lint, test:unit 616, test:int 348. For stage 7: docs/architecture.md:551, docs/known-alerts.md:134 (append, do not rewrite), docs/roadmap.md:116 and README line 51 still name `gemini-check.ts`/`gemini:test` text.
 - 2026-11-06: Stage 3b (part B of step 3.1) done, reviewer PASS: `classifyOpenAiError` (D7; quota matches `type` or `code`), `createOpenAiGenerate`, `openaiProvider`, registry row, config block; new codes `http_429_quota`, `http_400_schema`, `http_5xx`. ESLint: `!./openai` so the registry can import the adapter. `LLM_PROVIDER=openai` is now valid. Checks: typecheck, lint, test:unit 614 pass.
 - 2026-11-06: Stage 3 (part A of step 3.1) done, reviewer PASS: `providers/openai.ts` with `toStrictJsonSchema`, `toResponseParams`, `toOpenAiResult` + 17 tests + snapshot; `ConfigCode` + `schema_not_strict`. Step 3.1 box stays open until stage 3b. Checks: typecheck, lint, test:unit 579 pass. Reviewer minors for 3b: `strictNode` shares non-walked arrays by reference (use `structuredClone`); add a test for a loose object inside `anyOf`/`items`; effort cast is safe because config limits `OPENAI_REASONING_EFFORT`.
 - 2026-11-06: Stage 2 done, reviewer PASS. `LLM_PROVIDER` (default gemini), `OPENAI_*` keys (`OPENAI_MODEL` default `gpt-6.1-terra`), `llmSettings()`, key check per provider, start log `llm provider=<id> classifier=<model>`, `configHint` in the pause. Checks: typecheck, lint, test:unit 562 pass, test:int 348 pass; local start log shows `llm provider=gemini classifier=gemini-3.5-flash-lite`, key grep count 0 (that start also sent one pending synthetic mail to Gemini).

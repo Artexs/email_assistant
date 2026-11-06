@@ -78,6 +78,8 @@ function casesReport(over: Partial<CasesEvalReport> = {}): CasesEvalReport {
     ...base(predictions()),
     kind: "cases",
     model: "gemini-3.5-flash-lite",
+    provider: "gemini",
+    reasoningEffort: null,
     promptVersion: "classifier-v1",
     cases: Array.from({ length: 10 }, (_, i) => caseResult(`c${i}`)),
     complete: true,
@@ -109,9 +111,17 @@ function decisionOf(md: string, category: Category): string {
 }
 
 describe("renderEvalReport", () => {
+  test("cases: the effort line shows when set", () => {
+    const md = renderEvalReport(casesReport({ provider: "openai", reasoningEffort: "low" }));
+    expect(md).toContain("- provider: openai");
+    expect(md).toContain("- reasoning effort: low");
+  });
+
   test("cases: header, go/no-go rows, histogram and rule line", () => {
     const md = renderEvalReport(casesReport());
     expect(md).toContain("model: gemini-3.5-flash-lite");
+    expect(md).toContain("- provider: gemini");
+    expect(md).not.toContain("reasoning effort");
     expect(md).toContain("prompt version: classifier-v1");
     expect(md).toContain("bar: 98.0%");
     expect(md).toContain("minimum support: 30 kept rows per category");
@@ -157,7 +167,7 @@ describe("renderEvalReport", () => {
         cases: [caseResult("i1", { kind: "injection", errorCode: "http_503" }), caseResult("c1")],
       })
     );
-    expect(md).toContain("Blocked by Google (llm_blocked): 2 (b1, b2), counted as predicted unsure.");
+    expect(md).toContain("Blocked by the provider (llm_blocked): 2 (b1, b2), counted as predicted unsure.");
     expect(md).toContain("Injection cases: 3 of 3 passed, errors 1");
     expect(md).toContain("Errors: 1 (http_503 1)");
     expect(md).toContain("Whitelist rule: 10 of 10 correct, errors 0");
@@ -226,7 +236,7 @@ describe("renderEvalReport", () => {
     };
     const report = await runEval(
       { llm, sleep: () => Promise.resolve(), now: () => new Date("2026-11-05T12:00:00Z") },
-      { cases: [evalCase], model: "gemini-3.5-flash-lite", bar: 0.98, minKept: 30, retries: 0 }
+      { cases: [evalCase], model: "gemini-3.5-flash-lite", provider: "gemini", bar: 0.98, minKept: 30, retries: 0 }
     );
     const md = renderEvalReport(report);
     expect(md).not.toContain(BODY_MARKER);

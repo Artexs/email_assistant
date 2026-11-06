@@ -32,6 +32,7 @@ export interface CommandDeps {
   now(): Date;
   llmDailyCap: number;
   triageScope: "off" | "synthetic" | "all";
+  llm: { provider: string; classifierModel: string };
 }
 
 const log = createLog("channels");
@@ -78,6 +79,7 @@ export async function statusMessage(deps: CommandDeps, link: LinkedChat): Promis
 
   const waiting = await countWaiting(db, ctx, { receivedSince: new Date(now.getTime() - WAITING_WINDOW_MS) });
   lines.push(`Waiting for triage: ${waiting}`, `Triage: ${SCOPE_TEXTS[deps.triageScope]}`);
+  lines.push(`LLM: ${deps.llm.provider} · ${deps.llm.classifierModel}`);
 
   const member = await getMembership(db, ctx, link.userId);
   const times = parseDigestTimes(member?.digest_times ?? []);

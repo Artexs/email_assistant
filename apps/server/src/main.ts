@@ -116,6 +116,7 @@ if (config.TELEGRAM_BOT_TOKEN === undefined) {
     startedAt,
     llmDailyCap: config.LLM_DAILY_CAP,
     triageScope: config.TRIAGE_LLM_SCOPE,
+    llm: { provider: settings.provider, classifierModel: settings.classifierModel },
   });
   telegram = runtime;
   scheduler.add("channels.notifier", "*/15 * * * * *", () => {

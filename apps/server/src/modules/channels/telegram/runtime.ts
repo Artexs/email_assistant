@@ -18,6 +18,7 @@ export interface TelegramRuntimeDeps {
   startedAt: Date;
   llmDailyCap: number;
   triageScope: "off" | "synthetic" | "all";
+  llm: { provider: string; classifierModel: string };
   // Only for tests.
   apiRoot?: string;
   botInfo?: UserFromGetMe;
@@ -38,7 +39,13 @@ export function createTelegramRuntime(deps: TelegramRuntimeDeps): TelegramRuntim
     {
       db,
       now,
-      handlers: createUpdateHandlers({ db, now, llmDailyCap: deps.llmDailyCap, triageScope: deps.triageScope }),
+      handlers: createUpdateHandlers({
+        db,
+        now,
+        llmDailyCap: deps.llmDailyCap,
+        triageScope: deps.triageScope,
+        llm: deps.llm,
+      }),
     },
     { botInfo: deps.botInfo, apiRoot: deps.apiRoot }
   );

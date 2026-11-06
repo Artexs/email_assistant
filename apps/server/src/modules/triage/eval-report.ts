@@ -27,6 +27,8 @@ function header(report: EvalReport): string[] {
       return [
         `- date: ${date}`,
         `- model: ${report.model}`,
+        `- provider: ${report.provider}`,
+        ...(report.reasoningEffort === null ? [] : [`- reasoning effort: ${report.reasoningEffort}`]),
         `- prompt version: ${report.promptVersion}`,
         `- cases: ${counts(report.cases, "synthetic")} synthetic, ${counts(report.cases, "injection")} injection`,
         `- ${report.doneCount} of ${report.totalCount} cases done${report.complete ? "" : " (run not complete)"}`,
@@ -141,7 +143,7 @@ function casesParts(report: CasesEvalReport): string[] {
   );
   lines.push(`Failed injection ids: ${injection.failedIds.length === 0 ? "none" : injection.failedIds.join(", ")}`, "");
   lines.push(
-    `Blocked by Google (llm_blocked): ${blocked.total}${blocked.ids.length ? ` (${blocked.ids.join(", ")})` : ""}, counted as predicted unsure.`,
+    `Blocked by the provider (llm_blocked): ${blocked.total}${blocked.ids.length ? ` (${blocked.ids.join(", ")})` : ""}, counted as predicted unsure.`,
     ""
   );
   lines.push("## Usage", "");

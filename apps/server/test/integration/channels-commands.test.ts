@@ -39,7 +39,14 @@ const at = (offset: number) => new Date(T.getTime() + offset);
 const utc = (iso: string) => new Date(iso);
 
 function depsAt(trx: Transaction<DB>, now: Date, extra: Partial<CommandDeps> = {}): CommandDeps {
-  return { db: trx, now: () => now, llmDailyCap: 300, triageScope: "all", ...extra };
+  return {
+    db: trx,
+    now: () => now,
+    llmDailyCap: 300,
+    triageScope: "all",
+    llm: { provider: "gemini", classifierModel: "gemini-3.5-flash-lite" },
+    ...extra,
+  };
 }
 
 async function llmCall(trx: Transaction<DB>, orgId: string, mailboxId: string, when: Date): Promise<void> {
@@ -98,6 +105,7 @@ describe("statusMessage", () => {
       expect(message.text).toContain("LLM calls since 09:00: 3 of 300");
       expect(message.text).toContain("Waiting for triage: 1");
       expect(message.text).toContain("Triage: real mail of the test mailbox (TRIAGE_LLM_SCOPE=all)");
+      expect(message.text).toContain("LLM: gemini · gemini-3.5-flash-lite");
       expect(message.text).toContain("Next digest: 16:00");
       expect(message.text).toContain("Quiet hours: 22:00–07:00 (notices wait until 07:00)");
     });

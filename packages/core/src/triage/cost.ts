@@ -8,14 +8,16 @@ export interface LlmPrice {
 }
 
 const PRICING_URL = "https://ai.google.dev/gemini-api/docs/pricing";
+const OPENAI_PRICING_URL = "https://developers.openai.com/api/docs/pricing";
 
-// Paid-tier prices per 1M tokens in USD. The pilot runs on the free tier; these show what billing would cost.
+// Paid prices per 1M tokens in USD. The Gemini pilot runs on the free tier; OpenAI has no free tier.
 export const llmPrices: Record<string, LlmPrice[]> = {
   "gemini-3.8-flash": [
     { inputPerM: 0.75, outputPerM: 3.75, source: PRICING_URL, checked: "2026-11-05" },
     { inputPerM: 1.5, outputPerM: 7.5, from: "2027-01-01", source: PRICING_URL, checked: "2026-11-05" },
   ],
   "gemini-3.5-flash-lite": [{ inputPerM: 0.3, outputPerM: 2.5, source: PRICING_URL, checked: "2026-11-05" }],
+  "gpt-6-luna": [{ inputPerM: 0.1, outputPerM: 0.5, source: OPENAI_PRICING_URL, checked: "2026-11-06" }],
 };
 
 const DAYS_PER_MONTH = 30;
