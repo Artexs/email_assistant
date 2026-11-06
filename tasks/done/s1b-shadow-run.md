@@ -1,4 +1,4 @@
-> **Status 2026-11-06 — in progress.** The S1a audit check is done. Left: stage 36 (day 2 and 3), stage 37 (waits for the user: `TRIAGE_LLM_SCOPE=synthetic`), stage 39 backfill, labels, stage 40. Faster option chosen (no shadow week).
+> **Status 2026-11-06 — done.** Final go/no-go table in "Results": every category is no-go (notification 96.2%, spam 83.6%, bar 98%). Classifier on the VPS: OpenAI `gpt-6-luna`. Stage 36 superseded by the OpenAI switch.
 
 > **Blocked until:** stages 37–40: after 2026-11-05T23:30Z (UTC) AND after the S1a audit check is in `tasks/done/`. Why: the S1a 48-hour sync test runs on the same VPS until 23:12Z, and its end script runs the audit at 23:17Z. A deploy restarts the server and can spoil the test. Stage 36: on a Pacific quota day after 2026-11-05 (check `TZ=America/Los_Angeles date`).
 > **Before that time, an agent may only:** read the VPS logs (`tail ~/ea-logs/seed.log`), run `bun run gemini:test` once on the Mac. Never touch the VPS cron, the audit, `~/ea-48h-end.sh` or any `.env`.
@@ -44,11 +44,11 @@ Faster option (proposed 2026-11-05, not chosen yet): drop "one week" from "Done 
 
 Loop: skill `run-task` (implementer → checks → reviewer → commit), plan already approved. Reviewer: Sonnet; Opus (high) only for the final group review. Commit format: `<area>: S1b stage N — <what>`. Shell setup, preconditions and SQL Q1–QH: [`s1b-shadow-run/vps-shared.md`](s1b-shadow-run/vps-shared.md).
 
-- [ ] [Stage 36](s1b-shadow-run/stage-36-model-comparison-with-gemini-3-8-flash.md) — Model comparison with `gemini-3.8-flash` [risky] (day 1 of 3 done: 503 on 2026-11-05)
-- [ ] [Stage 37](s1b-shadow-run/stage-37-vps-deploy-synthetic-smoke-run-real-mail-count.md) — VPS: deploy, synthetic smoke run, real-mail count [risky]
-- [ ] [Stage 38](s1b-shadow-run/stage-38-vps-real-mail-shadow-week.md) — VPS: real-mail shadow week [risky]
-- [ ] [Stage 39](s1b-shadow-run/stage-39-vps-backfill-of-older-inbox-mail.md) — VPS: backfill of older INBOX mail [risky] (only when the week brings fewer than 100 real mails)
-- [ ] [Stage 40](s1b-shadow-run/stage-40-vps-final-real-mail-eval-cost-go-no-go.md) — VPS: final real-mail eval, cost, go/no-go [risky]
+- [x] [Stage 36] (superseded by the OpenAI switch, 2026-11-06)(s1b-shadow-run/stage-36-model-comparison-with-gemini-3-8-flash.md) — Model comparison with `gemini-3.8-flash` [risky] (day 1 of 3 done: 503 on 2026-11-05)
+- [x] [Stage 37](s1b-shadow-run/stage-37-vps-deploy-synthetic-smoke-run-real-mail-count.md) — VPS: deploy, synthetic smoke run, real-mail count [risky]
+- [x] [Stage 38](s1b-shadow-run/stage-38-vps-real-mail-shadow-week.md) — VPS: real-mail shadow week [risky]
+- [x] [Stage 39](s1b-shadow-run/stage-39-vps-backfill-of-older-inbox-mail.md) — VPS: backfill of older INBOX mail [risky] (only when the week brings fewer than 100 real mails)
+- [x] [Stage 40](s1b-shadow-run/stage-40-vps-final-real-mail-eval-cost-go-no-go.md) — VPS: final real-mail eval, cost, go/no-go [risky]
 
 Order: stage 36 runs on its own Pacific days (Mac only). Stage 37 first needs the S1a audit check. Suggested session after 23:30Z: S1a audit check → stage 37 → notify point 2 → stage 38 start.
 
@@ -68,14 +68,56 @@ Stage 40 cost (user decision 2026-11-05): record the cost per mail and the figur
 
 ## Results
 
-Provisional results (stage 34 full run, stage 36 subset, 3.8 Flash availability) are in `tasks/done/s1b-shadow-triage.md` "Results". Stage 36 and stage 40 write the final tables here.
+Provisional results (stage 34 full run, stage 36 subset, 3.8 Flash availability) are in `tasks/done/s1b-shadow-triage.md` "Results".
+
+### Final real-mail eval (stage 40, 2026-11-06, VPS, `eval --real`, exit 0)
+
+123 labeled real mails (QB = 123): `gemini-3.5-flash-lite` 36 (2026-10-08 … 11-06), `gpt-6-luna` 87 (180-day backfill, 2026-05-11 … 10-07).
+Label rule: fewer real mails than 100 in 30 days, so the window is 180 days (user 2026-11-06); all real INBOX mail of the window is labeled except 1 agent test mail ("EA probe").
+Labels: the user decided per group in chat; the agent wrote them with `triage:label --email-id`. Rule results 0, errors 0.
+
+All models together (bar 98%, minimum 30 kept rows):
+
+| category | threshold | precision | recall | kept | decision |
+| --- | --- | --- | --- | --- | --- |
+| urgent | none | 0.0% | 0.0% | 1 | no-go: too few |
+| needs_reply | none | 0.0% | n/a | 1 | no-go: too few |
+| info | none | 0.0% | n/a | 1 | no-go: too few |
+| notification | none | 96.2% | 80.6% | 52 | no-go |
+| spam | none | 83.6% | 93.3% | 67 | no-go |
+
+Per model (`--model`):
+
+| model | rows | notification P / R / kept | spam P / R / kept |
+| --- | --- | --- | --- |
+| gpt-6-luna | 87 | 97.5% / 76.5% / 40 → no-go | 75.0% / 91.7% / 44 → no-go |
+| gemini-3.5-flash-lite | 36 | 91.7% / 100.0% / 12 → no-go: too few | 100.0% / 95.8% / 23 → no-go: too few |
+
+No threshold from 0.50 to 0.95 lifts notification or spam to 98% (sweep in the report). Confidence: most rows are in 0.95–1.00 (notification 49 of 51 correct, spam 52 of 61 correct), so confidence does not split right from wrong.
+
+Main errors:
+- 11 × `notification` labeled, `spam` predicted (gpt-6-luna): Instagram "see X, Y and more" follow suggestions. The user labels them `notification`. Decision for S3: say in the prompt that social-network suggestions are notifications, or accept them as spam.
+- 4 × `spam` labeled, `unsure` predicted (gpt-6-luna): scam mails from random domains with low confidence (0.36–0.66).
+- 1 × `urgent` labeled, `notification` predicted (Gemini): Google "Pilne: zaloguj się…".
+- Only 3 real mails in `urgent`, `needs_reply`, `info`: the pilot mailbox has almost no personal mail. These categories need another mailbox.
+
+Cost (`triage:cost --days 7`, real mail; the observed rate includes the backfill, so use the per-mail and 200-per-day figures):
+
+| model | avg tokens in / out | latency p50 / p95 | per mail | per mailbox per month at 200 mails/day | price source |
+| --- | --- | --- | --- | --- | --- |
+| gemini-3.5-flash-lite | 1503 / 78 | 906 / 1349 ms | $0.0006 | $3.88 | ai.google.dev/gemini-api/docs/pricing, read 2026-11-05 |
+| gpt-6-luna | 2073 / 56 | 1414 / 2687 ms | $0.0002 | $1.41 | developers.openai.com/api/docs/pricing, read 2026-11-06 |
+
+### Model choice
+
+Classifier on the VPS since 2026-11-06 21:48Z: OpenAI `gpt-6-luna` (user decision, LLM provider switch task). Stage 36 (`gemini-3.8-flash`): not done; superseded by the switch (user accepted 2026-11-06). Day 1 of 3: `http_503` on 2026-11-05.
 
 ## Done-checklist
 
-- [ ] Done-when checks pass (name the command and its output in the log).
-- [ ] `docs/roadmap.md` S1b state and `docs/architecture.md` §6.3 updated (final model, go/no-go result).
-- [ ] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
-- [ ] The user confirmed the result.
+- [x] Done-when checks pass (name the command and its output in the log). Changed by the user: 180-day window instead of one week; stage 36 superseded.
+- [x] `docs/roadmap.md` S1b state and `docs/architecture.md` §6.3 updated (final model, go/no-go result).
+- [x] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md` (audit duplicates after a delete).
+- [x] The user confirmed the result (labels 2026-11-06).
 
 ## Log
 
@@ -88,3 +130,7 @@ Provisional results (stage 34 full run, stage 36 subset, 3.8 Flash availability)
 - 2026-11-06 19:00Z: QH: real INBOX mail of the window = 32 (27 triaged, 5 pending behind `http_503` pauses). Q4: `ok 57`, `http_503 1`. Only 32 real mails exist in 30 days, so the 100-label target cannot be met: rule of step 39.8 applies (label all 32).
 - 2026-11-06: Labels (user decided in chat, agent wrote them with `triage:label --email-id … --right | --category`): 36 of 37 real mails; AI right on 34; #3 Archicada newsletter `info` → `spam`; #27 Google "Pilne: zaloguj się…" `notification` → `urgent`; #23 "EA probe" (agent test mail) left out. Result: `ok=36 fail=0`.
 - 2026-11-06: User decision: too few real mails in 30 days; go back about half a year to reach 100–200 mails. IMAP count (audit `inbox=`, includes about 49 seed mails): 90 days 128, 180 days 171, 365 days 564. Chosen: 180 days (about 122 real). Code change: backfill max 30 → 180 days (pilot exception to the 30-day body retention, architecture §6.1). Reviewer PASS (minors fixed).
+- 2026-11-06 21:48Z: User decision: switch the VPS to OpenAI now (accepts the OpenAI paid API terms for the pilot mail, Q6a of `llm-provider-switch`). Backup `ea-20261106T214847Z.dump.age`. Deploy `6934089`: log `llm provider=openai classifier=gpt-6-luna`; `llm:check --provider openai` exit 0.
+- 2026-11-06 21:52Z: Backfill `--days 180`: QF before `1 / 38912`; audit before `inbox=171 stored=86 missing=87 duplicates=2`; `fetched 171, stored 87, uid updated 84, returned 0`, `re-queued 0`, exit 0; QF after `1 / 38912`; audit after `inbox=171 stored=173 missing=0 duplicates=2`. All 87 triaged by `gpt-6-luna`, `llm.call` `ok 87`.
+- 2026-11-06: 87 labels (user accepted the agent's grouped proposal): 70 right; 11 Instagram follow suggestions + 1 Google security alert → `notification`; 4 `unsure` + 1 dating scam → `spam`; no-ip.pl → `notification`. `ok=87 fail=0`. QB = 123.
+- 2026-11-06: Stage 40: `eval --real` (all, `--model gpt-6-luna`, `--model gemini-3.5-flash-lite`) exit 0; `triage:cost --days 7`. Results in "Results". Task done, moved to `done/`.

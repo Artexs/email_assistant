@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 23 — VPS deploy with the pilot bot [risky]
 
-Preconditions (user checkpoint 4): stages 0–22 are committed and pushed; S1b stage 37 is done (`tasks/planned/s1b-shadow-run.md` shows it ticked); the user says go. Shell on the VPS: `ssh home_vm`, `cd ~/email_assistant`, bash, `C="docker compose -f deploy/compose.yaml --env-file .env"`. Pilot ids: org `<ORG>` = `ac6ed6a2-ee37-461f-9632-cc08cf549e40`, mailbox `<MB>` = `8bc7f572-a7f5-4fa5-aaab-db16dc663e96` (`notes/2026-11-03-pilot-vps.md`). The agent never prints or edits `.env`; the user edits it.
+Preconditions (user checkpoint 4): stages 0–22 are committed and pushed; S1b stage 37 is done (`tasks/done/s1b-shadow-run.md` shows it ticked); the user says go. Shell on the VPS: `ssh home_vm`, `cd ~/email_assistant`, bash, `C="docker compose -f deploy/compose.yaml --env-file .env"`. Pilot ids: org `<ORG>` = `ac6ed6a2-ee37-461f-9632-cc08cf549e40`, mailbox `<MB>` = `8bc7f572-a7f5-4fa5-aaab-db16dc663e96` (`notes/2026-11-03-pilot-vps.md`). The agent never prints or edits `.env`; the user edits it.
 
 **Risk (name it to the user before the go):** if the S1b shadow week (stage 38) runs, this deploy restarts the server in that week. A restart costs about one minute of triage, and each mail in a running LLM call gets one attempt (the 30-second batch wait and `stop_grace_period: 45s` make this rare). A crash loop of the new code would stop the triage of the week: step 23.1 watches for it, and the rollback below needs no DB change, because the S2 migration only adds tables, one column and one default.
 

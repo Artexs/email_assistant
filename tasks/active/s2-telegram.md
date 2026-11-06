@@ -2,7 +2,7 @@
 
 # S2 Telegram
 
-Scope: `docs/roadmap.md` §2, row S2. Modules: `docs/modules.md`. Needs: S1b (code done). The S1b shadow run (`tasks/planned/s1b-shadow-run.md`) limits only the VPS stage 23.
+Scope: `docs/roadmap.md` §2, row S2. Modules: `docs/modules.md`. Needs: S1b (code done). The S1b shadow run (`tasks/done/s1b-shadow-run.md`) limits only the VPS stage 23.
 
 ## Goal
 
@@ -106,7 +106,7 @@ The main session stops after the commit of the named stage and gives the user a 
 1. After stage 0 — the user created both bots; `bun run telegram:check` shows the dev bot (the build cannot go on without the dev token).
 2. After stage 10 — tables and repositories (schema errors are the most expensive to fix later). Group review of stages 1, 6, 8, 9, 10.
 3. After stage 20 — all code is built and wired. Group review of stages 11–20. Then stage 21 is the user's own run on the phone.
-4. Before stage 23 — VPS deploy: needs S1b stage 37 done (`tasks/planned/s1b-shadow-run.md`) and the user's go. A deploy in the S1b shadow week restarts the server: stage 23 names the risk.
+4. Before stage 23 — VPS deploy: needs S1b stage 37 done (`tasks/done/s1b-shadow-run.md`) and the user's go. A deploy in the S1b shadow week restarts the server: stage 23 names the risk.
 
 ### Review model
 
