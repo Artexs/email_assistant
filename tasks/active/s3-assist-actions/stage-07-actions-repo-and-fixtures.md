@@ -8,7 +8,7 @@ Step 7.1 of the first plan was too big for one implementer step (cold review m1)
 
 - [ ] **7.1a Claim queue, status changes and the action fixtures**
   - Goal: the committer has typed, tenant-filtered queries with conditional updates (`locked_at` as the token, as in `claimEmails`); tests can build triaged mail with actions in one call.
-  - Files: change `apps/server/src/modules/actions/repo.ts`, `apps/server/src/modules/actions/index.ts`, `apps/server/src/modules/mail/repo.ts` (`mailKindFilter` gets an optional table alias, see Decisions), `apps/server/test/integration/actions-repo.test.ts`, `apps/server/test/integration/fixtures.ts` (`insertAction`, `insertTriagedWithActions`: the interfaces are in 7.2; they move here because the 7.1a tests use them); change `packages/core/src/digest/would-do.ts` (`ActionView`), `packages/core/src/digest/would-do.test.ts`.
+  - Files: change `apps/server/src/modules/actions/repo.ts`, `apps/server/src/modules/actions/index.ts`, `apps/server/src/modules/mail/repo.ts` (`mailKindFilter` gets an optional table alias, see Decisions), `apps/server/test/integration/actions-repo.test.ts`, `apps/server/test/integration/fixtures.ts` (`insertAction`, `insertTriagedWithActions`: the interfaces are in 7.2; they move here because the 7.1a tests use them); change `packages/core/src/digest/would-do.ts` (`ActionView`), `packages/core/src/digest/would-do.test.ts`, `packages/core/src/triage/planners.ts` (`MAILBOX_ACTION_TYPES`, `MailboxActionType`, next to `actionTypes`; the core barrel exports the file already).
   - Interfaces:
 
     ```ts
@@ -24,9 +24,11 @@ Step 7.1 of the first plan was too big for one implementer step (cold review m1)
     }
     // describeActions skips rows with reverse === true (D14)
 
-    // actions/repo.ts
+    // packages/core/src/triage/planners.ts (pure, next to actionTypes; the actions index re-exports both, and config imports them from @ea/core: no config → actions edge, D16)
     export const MAILBOX_ACTION_TYPES = ["move", "mark_read", "flag"] as const; // the types that change the mailbox
     export type MailboxActionType = (typeof MAILBOX_ACTION_TYPES)[number];
+
+    // actions/repo.ts
     export type ClaimFilter = { kind: "none" } | { kind: "synthetic" } | { kind: "all" }; // none = save_summary only
     export interface ClaimedAction {
       id: string;
@@ -140,7 +142,7 @@ Step 7.1 of the first plan was too big for one implementer step (cold review m1)
       from_address: string | null;
       message_id_header: string | null;
     }
-    export async function listFailedUnnotified(db, ctx, opts: { limit: number }): Promise<FailedAction[]>; // status failed, notified_at null, (status_reason <> 'mail_not_found' OR reverses_action_id IS NOT NULL); oldest updated_at first; no time filter (M11)
+    export async function listFailedUnnotified(db, ctx, opts: { limit: number }): Promise<FailedAction[]>; // status failed, notified_at null, (status_reason IS DISTINCT FROM 'mail_not_found' OR reverses_action_id IS NOT NULL); oldest updated_at first; no time filter (M11)
     export async function markNotified(db, ctx, id: string, at: Date): Promise<boolean>; // WHERE notified_at IS NULL
     export async function countActionsSince(
       db,
@@ -167,7 +169,7 @@ Step 7.1 of the first plan was too big for one implementer step (cold review m1)
     - `listFailedUnnotified` joins `emails` for `subject`, `mailbox_id`, `from_address`, `message_id_header` (the notice text needs the subject and the synthetic marker; the log never prints them). It has no `since` filter: every listed row gets `notified_at` (stage 12 marks rows older than its lookback without a notice), so the list stays short (M11). Reverse rows with `mail_not_found` are listed: the user tapped Undo and must learn that nothing moved (Q1 default, D7).
     - `expireReadyOriginals` matches the category with the newest `triage_results` row of the mail (`ORDER BY created_at DESC, id DESC LIMIT 1`, as `latestTriageResult`). A row that a committer run holds now (`locked_at` ≥ `staleBefore`) is left alone: it finishes as `applied` within seconds and keeps its Undo.
     - Every function takes a `TenantContext` and filters by `org_id` on `actions` (and on `emails` in the joins).
-  - Test (`actions-repo.test.ts`, `withRollback`; fixtures from 7.1a): (6) `markUndone` only from `applied` (false from `ready`); (7) `insertReverse` twice → the second returns null and only one reverse row exists; (8) `lockActionsForUndo` returns the originals with their reverse; (9) `lockLatestOriginalMove` picks the newest original move and its reverse status; (9b) two connections (own org, D20): connection 1 holds `lockActionsForUndo` in an open transaction; connection 2's `lockLatestOriginalMove` waits until connection 1 commits (`SET lock_timeout = '200ms'` in connection 2 → error `55P03` while connection 1 is open); (10) `listFailedUnnotified` leaves out an original `mail_not_found` row and notified rows, lists a reverse `mail_not_found` row, and lists a failed row whose `updated_at` is 3 days old; `markNotified` twice → true, then false; (10c) `countActionsSince` counts an applied `flag` and an undone `move`, not an applied `save_summary` and not a reverse row; (10d) `expireReadyOriginals`: filter `types: ["move", "mark_read"], category: { is: "info" }` expires the `ready` move and mark_read of an `info` mail, not its `flag`, not the rows of a `spam` mail, not a reverse row, not a row with a fresh `locked_at`; `emailId` limits it to one mail; `category: { not: "unsure" }` leaves the `unsure` mail's move; each expired row has `status_reason` = the reason; (11) tenant: every function of this step with org B's ctx sees nothing of org A (one assertion per function).
+  - Test (`actions-repo.test.ts`, `withRollback`; fixtures from 7.1a): (6) `markUndone` only from `applied` (false from `ready`); (7) `insertReverse` twice → the second returns null and only one reverse row exists; (8) `lockActionsForUndo` returns the originals with their reverse; (9) `lockLatestOriginalMove` picks the newest original move and its reverse status; (9b) two connections (own org, D20; the pattern of `mail-claim.test.ts:144`: the org is created and committed first, `trx1` = an open `db.transaction()`, `db` is the second connection, the `organizations` and `users` rows are deleted in `finally`): `trx1` runs `lockActionsForUndo` and stays open; inside it, a second transaction `trx2` on `db` runs `SET LOCAL lock_timeout = '200ms'` (a Kysely `sql` template) and then `lockLatestOriginalMove(trx2, …)`, which rejects with the Postgres error `55P03` (`LOCAL`: a plain `SET` would stay on the pooled connection and change later tests); after `trx1` commits, the same call returns the move; (10) `listFailedUnnotified` leaves out an original `mail_not_found` row and notified rows, lists a reverse `mail_not_found` row, and lists a failed row whose `updated_at` is 3 days old; `markNotified` twice → true, then false; (10c) `countActionsSince` counts an applied `flag` and an undone `move`, not an applied `save_summary` and not a reverse row; (10d) `expireReadyOriginals`: filter `types: ["move", "mark_read"], category: { is: "info" }` expires the `ready` move and mark_read of an `info` mail, not its `flag`, not the rows of a `spam` mail, not a reverse row, not a row with a fresh `locked_at`; `emailId` limits it to one mail; `category: { not: "unsure" }` leaves the `unsure` mail's move; each expired row has `status_reason` = the reason; (11) tenant: every function of this step with org B's ctx sees nothing of org A (one assertion per function).
   - Check: `bun run dev:up && bun run db:migrate && bun run lint && bun run typecheck && bun run test:unit && bun run test:int`.
   - Done when: the tests pass.
   - Out of scope: the Undo service (stage 10), the returned job (stage 11), the notice (stage 12), the settings service (stage 14).
