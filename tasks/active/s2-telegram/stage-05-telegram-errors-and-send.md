@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 5 — Telegram adapter: error labels and send [risky]
 
-- [ ] **5.1 `ChatChannel` port, the Telegram adapter, error kinds, the fake channel**
+- [x] **5.1 `ChatChannel` port, the Telegram adapter, error kinds, the fake channel**
   - Goal: one channel-neutral send and edit (ADR 0005 `ChatChannel` port) with log-safe error kinds; the bot token and the message text never reach a log line or an error message (D1, D8).
   - Files: create `apps/server/src/modules/channels/port.ts`, `apps/server/src/modules/channels/telegram/api.ts`, `apps/server/src/modules/channels/telegram/api.test.ts`, `apps/server/src/modules/channels/fake/channel.ts`; change `apps/server/src/modules/channels/telegram/errors.ts`, `apps/server/src/modules/channels/index.ts`.
   - Interfaces:

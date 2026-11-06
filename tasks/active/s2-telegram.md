@@ -1,4 +1,4 @@
-> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open, deferred by the user until stage 21. Stages 1–4 done. Left: stages 5–23, then the done-checklist.
+> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open, deferred by the user until stage 21. Stages 1–5 done. Left: stages 6–23, then the done-checklist.
 
 # S2 Telegram
 
@@ -121,7 +121,7 @@ Each stage lives in its own file in [`s2-telegram/`](s2-telegram/). An implement
 - [x] [Stage 2](s2-telegram/stage-02-core-local-time-and-digest-schedule.md) — Core: local time and the digest schedule
 - [x] [Stage 3](s2-telegram/stage-03-core-message-texts-buttons-and-notices.md) — Core: message model, text helpers, button data, notice texts
 - [x] [Stage 4](s2-telegram/stage-04-core-digest-renderer.md) — Core: digest renderer [risky]
-- [ ] [Stage 5](s2-telegram/stage-05-telegram-errors-and-send.md) — Telegram adapter: error labels and send [risky]
+- [x] [Stage 5](s2-telegram/stage-05-telegram-errors-and-send.md) — Telegram adapter: error labels and send [risky]
 - [ ] [Stage 6](s2-telegram/stage-06-chat-linking.md) — Chat linking: links and one-time tokens [risky]
 - [ ] [Stage 7](s2-telegram/stage-07-link-and-digest-times-clis.md) — CLIs: `telegram:link`, `telegram:unlink`, `digest:times`
 - [ ] [Stage 8](s2-telegram/stage-08-read-queries-and-mailbox-status.md) — Read queries and the mailbox status time [risky]
@@ -175,3 +175,4 @@ Answered 2026-11-05: the user approved the plan as written, so each question kee
 - 2026-11-06: Stage 2 built (`packages/core/src/digest/`: local time, quiet hours, digest schedule; 33 tests), reviewer PASS (Sonnet). Extra export `nextLocalDate` (shared next-date rule of 2.1 and 2.2), accepted by the reviewer.
 - 2026-11-06: Stage 3 built (`packages/core/src/digest/`: message model, text helpers, labels, button data, would-do text, AI text, notice texts; `removeLinks`, `AI_FOLDER_NAMES` in core, used by `mail/connect.ts`), reviewer PASS (Sonnet). Accepted: one `eslint-disable no-control-regex` with a reason in `text.ts`. Main session moved the stray folder comment in `connect.ts` (minor finding).
 - 2026-11-06: Stage 4 built (`renderDigest` in `packages/core/src/digest/digest.ts`, 16 tests). Review round 1 FAIL (no mixed-category "+N more" test); fixed with 3 tests; round 2 PASS (Sonnet). Kept: no shadow line when there is no mailbox (tested).
+- 2026-11-06: Stage 5 built (`ChatChannel` port, Telegram adapter `telegram/api.ts`, `toChannelError`, fake channel in `channels/fake/channel.ts`; 10 tests), reviewer PASS (Sonnet). Main session removed the fake from `channels/index.ts` (minor finding): tests import `channels/fake/channel` directly, as in `mail`.
