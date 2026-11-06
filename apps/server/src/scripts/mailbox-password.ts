@@ -3,7 +3,7 @@ import { parseArgs } from "node:util";
 import { z } from "zod";
 
 import { MailAuthError, openImapProvider, updateMailboxPassword, verifySmtpLogin } from "../modules/mail";
-import { loadConfig } from "../platform/config";
+import { ConfigError, loadConfig, type Config } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError, HardError } from "../platform/errors";
@@ -48,6 +48,19 @@ async function readPassword(): Promise<string | undefined> {
   return password === "" ? undefined : password;
 }
 
+function readConfig(): Config | undefined {
+  try {
+    return loadConfig();
+  } catch (error) {
+    if (error instanceof ConfigError) {
+      log.error(`config error: missing or bad keys: ${error.keys.join(", ")}`);
+    } else {
+      log.error("config error");
+    }
+    return undefined;
+  }
+}
+
 async function main(): Promise<number> {
   const options = readOptions();
   const password = options && (await readPassword());
@@ -56,7 +69,8 @@ async function main(): Promise<number> {
     return 1;
   }
 
-  const config = loadConfig();
+  const config = readConfig();
+  if (config === undefined) return 1;
   const db = createDb(config.DATABASE_URL);
   try {
     await assertAppRole(db);

@@ -98,8 +98,18 @@ export function createTelegramBot(
   // 4. Commands.
   for (const name of commandNames) {
     bot.command(name, async (ctx) => {
-      const message = await handlers.command(linkOf(ctx), name);
-      await ctx.reply(message.text, messageOptions(message.buttons, { clearKeyboard: false }));
+      let message: { text: string; buttons: Parameters<typeof messageOptions>[0] };
+      try {
+        message = await handlers.command(linkOf(ctx), name);
+      } catch (error) {
+        log.error(`command failed: ${telegramErrorLabel(error)}`);
+        message = { text: ERROR_TEXT, buttons: [] };
+      }
+      try {
+        await ctx.reply(message.text, messageOptions(message.buttons, { clearKeyboard: false }));
+      } catch (error) {
+        log.warn(`replying to a command failed: ${telegramErrorLabel(error)}`);
+      }
     });
   }
 

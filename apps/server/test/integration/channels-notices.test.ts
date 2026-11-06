@@ -55,6 +55,11 @@ async function org(trx: Transaction<DB>): Promise<Org> {
   await linkChat(trx, ctx, created.userId, randomChatId(), at(-HOUR));
   await linkChat(trx, ctx, assistantId, randomChatId(), at(-HOUR));
   await markSynced(trx, ctx, created.mailboxId, at(-5 * MINUTE));
+  await trx
+    .updateTable("mailboxes")
+    .set({ status_changed_at: at(-HOUR) })
+    .where("id", "=", created.mailboxId)
+    .execute();
   return { ctx, orgId: created.orgId, ownerId: created.userId, assistantId, mailboxId: created.mailboxId };
 }
 
@@ -284,6 +289,40 @@ describe("sync notices", () => {
       expect(stale[0]?.status).toBe("failed");
       expect(stale[0]?.error_code).toBe("outdated");
       expect(await rows(trx, o.orgId, "sync_ok")).toHaveLength(0);
+    });
+  });
+
+  test("a mailbox that became active again gets no late notice and no sync_ok until a fresh sync", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      await markSynced(trx, o.ctx, o.mailboxId, at(-2 * HOUR));
+      await setStatus(trx, o, "active", at(-MINUTE));
+
+      await run(trx);
+      expect(await rows(trx, o.orgId, "sync_stale")).toHaveLength(0);
+    });
+
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      await markSynced(trx, o.ctx, o.mailboxId, at(-2 * HOUR));
+      await run(trx);
+      await trx
+        .updateTable("outbox")
+        .set({ status: "sent", sent_at: at(-10 * MINUTE) })
+        .where("org_id", "=", o.orgId)
+        .where("kind", "=", "sync_stale")
+        .execute();
+      expect(await rows(trx, o.orgId, "sync_stale")).toHaveLength(1);
+
+      await setStatus(trx, o, "active", at(-MINUTE));
+      await run(trx);
+      expect(await rows(trx, o.orgId, "sync_ok")).toHaveLength(0);
+
+      await markSynced(trx, o.ctx, o.mailboxId, T);
+      await run(trx);
+      expect(await rows(trx, o.orgId, "sync_ok")).toHaveLength(1);
     });
   });
 

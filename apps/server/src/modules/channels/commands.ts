@@ -23,6 +23,7 @@ import { buildDigestMessage, digestPeriodStart, WAITING_WINDOW_MS } from "../rep
 import { getMembership, getOrganization } from "../tenancy";
 
 import { handleCallback } from "./callbacks";
+import { SYNC_LATE_MS } from "./notices";
 import type { CommandName, LinkedChat, UpdateHandlers } from "./port";
 import { helpText } from "./texts";
 
@@ -35,7 +36,6 @@ export interface CommandDeps {
 
 const log = createLog("channels");
 
-const SYNC_LATE_MS = 30 * 60_000;
 const ADDRESS_MAX = 60;
 
 const SCOPE_TEXTS: Record<CommandDeps["triageScope"], string> = {

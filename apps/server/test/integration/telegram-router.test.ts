@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
-import { BotError, GrammyError } from "grammy";
+import { GrammyError } from "grammy";
 import type { Transaction } from "kysely";
 
 import { createLinkToken, createTelegramBot, type CommandName, type LinkedChat } from "../../src/modules/channels";
@@ -282,20 +282,39 @@ describe("telegram router", () => {
     });
   });
 
-  test("a handler error is logged by label only", async () => {
+  test("a failing command handler replies ERROR_TEXT and logs by label only", async () => {
     await withRollback(db, async (trx) => {
-      const { fake, bot, calls, send } = setup(trx);
+      const { fake, calls, send } = setup(trx);
       const linked = await linkedMember(trx);
       fake.handlers.command = () => Promise.reject(new Error("MARKER-CMD"));
-      // `handleUpdate` throws; the polling loop passes the error to the handler that `bot.catch` set.
-      const error = await send(linked.chatId, "/status").catch((e: unknown) => e);
-      expect(error).toBeInstanceOf(BotError);
-      await bot.errorHandler(error as BotError);
-      expect(calls).toHaveLength(0);
+      await send(linked.chatId, "/status");
+      expect(calls).toHaveLength(1);
+      expect(calls[0]?.method).toBe("sendMessage");
+      expect(calls[0]?.payload.text).toBe(ERROR_TEXT);
       const errors = lines.filter((line) => line.level === "error");
       expect(errors).toHaveLength(1);
-      expect(errors[0]?.text).toContain("failed: Error");
+      expect(errors[0]?.text).toContain("command failed");
       expect(lines.some((line) => line.text.includes("MARKER-CMD"))).toBe(false);
+    });
+  });
+
+  test("a failing reply after a good command is a warn, not a second ERROR_TEXT", async () => {
+    await withRollback(db, async (trx) => {
+      const { bot, calls, send } = setup(trx);
+      const linked = await linkedMember(trx);
+      bot.api.config.use(async (prev, method, payload) => {
+        if (method === "sendMessage") {
+          await prev(method, payload);
+          throw new GrammyError("x", { ok: false, error_code: 500, description: "MARKER-SEND" }, method, payload);
+        }
+        return prev(method, payload);
+      });
+      await send(linked.chatId, "/status");
+      expect(calls.filter((call) => call.payload.text === ERROR_TEXT)).toHaveLength(0);
+      expect(calls.filter((call) => call.method === "sendMessage")).toHaveLength(1);
+      expect(lines.filter((line) => line.text.includes("replying to a command failed"))).toHaveLength(1);
+      expect(lines.filter((line) => line.text.includes("command failed"))).toHaveLength(1);
+      expect(lines.some((line) => line.text.includes("MARKER"))).toBe(false);
     });
   });
 

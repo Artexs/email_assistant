@@ -158,10 +158,16 @@ async function detectSync(
     await cancelPendingOutbox(db, ctx, { kind: "sync_stale", mailboxId: mailbox.id });
     return;
   }
-  const lastGood = mailbox.last_synced_at ?? mailbox.created_at;
-  const late = now.getTime() - lastGood.getTime() > SYNC_LATE_MS;
+  const within = (at: Date) => now.getTime() - at.getTime() <= SYNC_LATE_MS;
+  const fresh = mailbox.last_synced_at !== null && within(mailbox.last_synced_at);
+  // The mailbox became active again (resume, new password) or is new: give the sync time to run.
+  const grace = within(mailbox.status_changed_at) || (mailbox.last_synced_at === null && within(mailbox.created_at));
 
-  if (late) {
+  if (!fresh) {
+    if (grace) {
+      await cancelPendingOutbox(db, ctx, { kind: "sync_stale", mailboxId: mailbox.id });
+      return;
+    }
     if (now.getTime() - deps.startedAt.getTime() < STALE_GRACE_AFTER_START_MS) return;
     const key = `sync_stale:${mailbox.id}:${mailbox.last_synced_at?.getTime() ?? "never"}`;
     for (const owner of owners) {

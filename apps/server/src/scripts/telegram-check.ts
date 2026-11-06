@@ -1,11 +1,25 @@
 import { checkBot, telegramErrorLabel } from "../modules/channels";
-import { loadConfig } from "../platform/config";
+import { ConfigError, loadConfig, type Config } from "../platform/config";
 import { createLog } from "../platform/log";
 
 const log = createLog("telegram-check");
 
+function readConfig(): Config | undefined {
+  try {
+    return loadConfig();
+  } catch (error) {
+    if (error instanceof ConfigError) {
+      log.error(`config error: missing or bad keys: ${error.keys.join(", ")}`);
+    } else {
+      log.error("config error");
+    }
+    return undefined;
+  }
+}
+
 async function main(): Promise<number> {
-  const config = loadConfig();
+  const config = readConfig();
+  if (config === undefined) return 1;
   if (config.TELEGRAM_BOT_TOKEN === undefined) {
     log.error("TELEGRAM_BOT_TOKEN is not set");
     return 1;

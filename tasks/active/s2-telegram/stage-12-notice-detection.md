@@ -18,7 +18,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
     - **`auth_error`** (owners only): for each mailbox with status `auth_error`: `` key = `auth_error:${id}:${status_changed_at.getTime()}` ``; for each owner `insertOutbox(kind "auth_error", mailboxId, renderAuthErrorNotice({ address, mailboxId, since: status_changed_at, now, timeZone }))`; then `cancelPendingOutbox({ kind: "auth_error", mailboxId, exceptDedupKey: key })` (older episodes). For each mailbox with another status: `cancelPendingOutbox({ kind: "auth_error", mailboxId })`.
     - **Sync late / works again** (owners only), per mailbox:
       - status not `active` → `cancelPendingOutbox({ kind: "sync_stale", mailboxId })`; nothing else (a paused or `auth_error` mailbox gets no late notice).
-      - `lastGood = last_synced_at ?? created_at`; late = `now − lastGood > SYNC_LATE_MS`.
+      - Checkpoint 3 fix (2026-11-06): `fresh` = `last_synced_at` is set and `now − last_synced_at ≤ SYNC_LATE_MS`; `grace` = `now − status_changed_at ≤ SYNC_LATE_MS`, or never synced and `now − created_at ≤ SYNC_LATE_MS`. Not `fresh` and `grace` → `cancelPendingOutbox({ kind: "sync_stale", mailboxId })`, nothing else (no false "late" right after `/resume` or `mailbox:password`, and no `sync_ok` before a real sync). Not `fresh` and not `grace` = late. `fresh` = the "not late" branch below. (Original rule: `lastGood = last_synced_at ?? created_at`; late = `now − lastGood > SYNC_LATE_MS`.)
       - late and `now − startedAt ≥ STALE_GRACE_AFTER_START_MS` → `` key = `sync_stale:${id}:${last_synced_at?.getTime() ?? "never"}` ``; for each owner `insertOutbox(kind "sync_stale", mailboxId, renderSyncStaleNotice({ address, lastSyncedAt: last_synced_at, now, timeZone }))`; `cancelPendingOutbox({ kind: "sync_stale", mailboxId, exceptDedupKey: key })`. Late but inside the grace time → nothing.
       - not late → `cancelPendingOutbox({ kind: "sync_stale", mailboxId })`; then, only when `last_synced_at` is set, for each `{ userId, episode }` of `listSentStaleEpisodes(mailboxId)` whose `userId` is still a linked member: ``insertOutbox(kind "sync_ok", dedupKey `sync_ok:${id}:${episode}`, mailboxId, renderSyncOkNotice({ address, lastSyncedAt: last_synced_at, now, timeZone }))``.
     - When `insertOutbox` returns an id: ``log.info(`notice ${kind} queued: outbox ${id}`)``. No other log line per row.
@@ -36,6 +36,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
     10. A `paused` mailbox synced at `T − 2 h` → no `sync_stale` row; an `auth_error` mailbox → no `sync_stale` row.
     11. Org B with its own linked owner and an `urgent` result → B's owner gets B's row; no row of A's members has B's e-mail id.
     12. Org A's `timezone` set to `Mars/Base` (direct update) → org B still gets its rows; one `error` line names org A's id.
+    13. Checkpoint 3 fix: synced at `T − 2 h`, `active` with `status_changed_at` = `T − 1 min` → no `sync_stale` row; the same mailbox with a sent `sync_stale` row → no `sync_ok` until `markSynced(T)` and a next run.
   - Check: `bun run dev:up && bun run db:migrate && bun run lint && bun run typecheck && bun run test:int`
   - Done when: the tests pass.
   - Out of scope: sending (stage 11), digests (stage 13), an admin notice for the LLM pause or the daily cap (open question for the user, not in S2).
