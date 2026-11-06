@@ -1,0 +1,40 @@
+# s3-assist-actions — Stage 19
+
+Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "Input" and "Rules for every step" first.
+
+## Stage 19 — VPS deploy, `assist` on seed mail, real-mailbox checks [risky]
+
+Preconditions (user checkpoint 4): stages 1–18 are committed and pushed; S2 stage 23 is done (the pilot bot is linked); the user says go. Shell on the VPS: `ssh home_vm`, `cd ~/email_assistant`, bash, `C="docker compose -f deploy/compose.yaml --env-file .env"`. Pilot ids: org `<ORG>` = `ac6ed6a2-ee37-461f-9632-cc08cf549e40`, mailbox `<MB>` = `8bc7f572-a7f5-4fa5-aaab-db16dc663e96`. SQL read-only through `$C exec -T db psql -U postgres -d email_assistant -c "<SQL>"`. The agent never prints or edits `.env`; the user edits it.
+
+**Risk (name it to the user before the go):** the deploy restarts the server. If the S1b shadow week (stage 38) runs, the restart costs about one minute of triage and one attempt for each mail in a running LLM call. After this stage the pilot mailbox runs in mode `assist` with `ACTIONS_SCOPE=synthetic`: real mail gets `ready` rows that the committer never claims (D8), and they expire after 24 h (D21). Nothing moves real mail in this stage. Rollback: `git rev-parse --short HEAD` before the update gives `<OLD>`; if the server does not start or restarts again and again: `git checkout <OLD> && $C up -d --build --wait`, tell the user, later `git checkout master`. The S3 migration adds columns, indexes and a check; the old code ignores them, so no DB rollback is needed. Before the rollback set the mode back to `shadow` with the new image if possible (`$C run --rm -T server bun run mailbox:settings mode …`), else by SQL `update mailbox_settings set mode = 'shadow' where mailbox_id = '<MB>'`.
+
+- [ ] **19.1 Deploy S3 and switch the pilot mailbox to `assist` with the seed-mail scope**
+  - Goal: the pilot server runs the S3 code; the mode is `assist`; mailbox changes are limited to synthetic mail.
+  - Files: this task file ("Results", log line); `notes/2026-11-03-pilot-vps.md` (append: the S3 deploy date, the new `.env` key name `ACTIONS_SCOPE` without a value comment beyond `synthetic`).
+  - Steps:
+    1. `date -u`; check the preconditions; write `<OLD>` in the log. SQL `select status, count(*) from actions group by 1;` → no `applied` or `undone` rows (the stage 2 check holds on the VPS); `select count(*) from emails where folder <> 'INBOX';` (expect 0 or the S1a `EA-test` row).
+    2. The user adds `ACTIONS_SCOPE=synthetic` to the VPS `.env` (mode 600) before the update, so one restart serves both. Check without values: `grep -c '^ACTIONS_SCOPE=synthetic$' .env` → `1`.
+    3. Update as in `deploy/README.md`: `git pull`, `$C up -d --wait db`, `$C run --build --rm server bun run db:migrate`, `$C up -d --build --wait`. `$C logs --since 5m server` shows `listening on port 8080`, `actions committer applies mailbox changes to synthetic mail only`, the two scheduler jobs, and no `error` line.
+    4. `$C run --rm -T server bun run mailbox:settings show --org-id <ORG> --mailbox-id <MB>` → mode `shadow`, `movesSupported` true (UIDPLUS). Then `mode --mode assist` → the table shows `assist`, switches move/mark_read/flag ON. Then `auto --category info --value on --force`, the same for `notification` and `spam` (real labels may exist from the S1b week: the gate line prints the real decision; `--force` keeps the run independent of it; the stage 20 start repeats `auto` without `--force` per the go/no-go table).
+    5. `/status` on the phone: `Mode: assist`, `Actions: test mail only (ACTIONS_SCOPE=synthetic) · last 24 h: applied 0, undone 0, failed 0`.
+  - Test: none (operations).
+  - Check: steps 3–5 give the results above.
+  - Done when: the checks pass.
+  - Out of scope: real mail (scope `all` is stage 20).
+
+- [ ] **19.2 Seed-mail run on the real Interia mailbox: moves, Undo, user move back**
+  - Goal: the done-when items on real IMAP (Interia): moves land in `AI/*`, Undo brings a mail back, a user move back gives one `imap_move` row, the audit rows exist, and the logs stay clean.
+  - Files: this task file ("Results"), `notes/2026-11-03-interia-imap-capabilities.md` (the real `AI/*` paths, the UID behaviour the committer saw: `provider_result` of the applied moves).
+  - Steps:
+    1. Write `t0` (UTC). `$C run --rm -T server bun run mailbox:seed --org-id <ORG> --mailbox-id <MB> --eval-cases synthetic --per-category 1` (about 5 mails; the triage needs `TRIAGE_LLM_SCOPE` `synthetic` or `all` on the VPS: check with `grep -n '^TRIAGE_LLM_SCOPE' .env` (prints no secret) and tell the user if it is `off`).
+    2. Within 7 minutes: the stage 16 step 4 SQL → `info`, `notification`, `spam` moved (folder = the real path, `moved_at` set, `uid` and `inbox_uid` as Interia reports: write both), `urgent` flagged; `select provider_result from actions where status = 'applied' and type = 'move';` → `moved_now` true; `select folder_map from mailboxes where id = '<MB>';` → the real paths (if Interia's delimiter is not `/`, they differ from `AI/Info` and a `mailbox.folder_created` audit row exists). The user looks in webmail: the three folders exist with one mail each; the `urgent` seed mail is flagged in INBOX.
+    3. Phone: `/digest` → the lines show `done: …` and `↩️ n`. Tap ↩️ on the `info` line → toast; within a minute the mail is back in INBOX (webmail) and SQL shows the originals `undone` / `undo`, the reverses `applied`, `emails.folder` INBOX, `uid` = `inbox_uid` (Interia keeps the UID: write what it is); feedback row `wrong` / `undo`.
+    4. User move back: in webmail the user moves the `notification` seed mail from `AI/Notifications` back to INBOX. Within 6 minutes (one sync + the returned job): the server log has `sync <MB> returned below cursor: checked 2, returned 1` and `returned <MB>: processed 1`; SQL: `returned_at` null, `folder` INBOX, the move `undone` / `user_moved_back`, one `imap_move` feedback row; `select count(*) from emails where message_id_header = '<that id>';` → 1 (no new row).
+    5. Move it out and back once more in webmail → after 6 minutes still one `imap_move` row for that mail; `email.returned` audit rows: 2.
+    6. Logs: `$C logs --since 30m server | grep -E "\[(actions|mail|triage|channels)"` has no `error` line, no subject, no address.
+    7. `mailbox:audit --since <t0>`: `missing=0 duplicates=1` is expected (the `spam` seed mail left INBOX by a system move: not counted; the user's manual move of step 5 is a user move: counted as 1 only while it is out of INBOX) — write the actual output and its explanation (D18).
+    8. Cleanup: leave the seed mails where they are (the user deletes them by hand when they want; the `spam` one stays in `AI/Spam`).
+  - Test: none (operations).
+  - Check: steps 2–7 give the results above; the facts are in "Results" and the Interia note.
+  - Done when: the user confirms steps 2–5 in webmail and on the phone.
+  - Out of scope: scope `all` (stage 20).

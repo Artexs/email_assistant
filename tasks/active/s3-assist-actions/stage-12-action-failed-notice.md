@@ -1,0 +1,36 @@
+# s3-assist-actions — Stage 12
+
+Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "Input" and "Rules for every step" first.
+
+## Stage 12 — Notice `action_failed` [risky]
+
+- [ ] **12.1 Text, outbox kind and detection (D11)**
+  - Goal: after 3 hard errors the owners get one notice per failed action through the S2 outbox; `mail_not_found` gives none; a second run makes no second row.
+  - Files: change `packages/core/src/digest/notices.ts`, `packages/core/src/digest/notices.test.ts` (`renderActionFailedNotice`), `apps/server/src/modules/channels/repo.ts` (`outboxKinds` + `"action_failed"`), `apps/server/src/modules/channels/notices.ts` (`detectActionFailed`), `apps/server/test/integration/channels-notices.test.ts`, `apps/server/test/integration/channels-outbox.test.ts` (one case: the new kind inserts with `emailId` and fails without).
+  - Interfaces:
+
+    ```ts
+    // core
+    export function renderActionFailedNotice(input: {
+      actionType: "move" | "flag" | "mark_read";
+      reverse: boolean;
+      folderName: string | null /* AI_FOLDER_NAMES[key] for a move */;
+      from: string | null;
+      subject: string | null;
+      synthetic: boolean;
+      attempts: number;
+    }): OutMessage;
+    // channels/notices.ts
+    export const ACTION_FAILED_LOOKBACK_MS = 24 * 3_600_000;
+    export const ACTION_FAILED_LIMIT = 50;
+    ```
+
+  - Decisions:
+    - Texts (plain text, no buttons): original move → `⚠️ Could not move a mail to <folder>` / `From: <senderLabel>` / `Subject: <cleanSubject>` / `Tried <attempts> times. The mail stays in INBOX. /status shows the mailbox state.`; original flag → `⚠️ Could not flag a mail`; original mark read → `⚠️ Could not mark a mail read`; reverse move → `⚠️ Undo failed: could not move a mail back to INBOX` … `The mail stays in <folder>: move it by hand.`; reverse flag → `⚠️ Undo failed: could not remove the flag` …; reverse mark read → `⚠️ Undo failed: could not mark a mail unread` …; `🧪 test` after the first line for synthetic mail. The sender, subject and folder name go through the S2 text helpers (`senderLabel`, `cleanSubject`, `cutText`).
+    - `detectActionFailed(db, ctx, owners, now)`: `listFailedUnnotified({ since: now − ACTION_FAILED_LOOKBACK_MS, limit: ACTION_FAILED_LIMIT })`; for each action, one transaction: `insertOutbox` per owner (`kind: "action_failed"`, `dedupKey: action_failed:<actionId>`, `emailId`), then `markNotified(actionId, now)`; a dedup conflict (null id) still marks. No owners linked → mark anyway (the notice has nobody to go to; D13 of S2: owners only). `status_reason = mail_not_found` rows are not listed (repo filter, stage 7).
+    - Call site: `detectForOrg` after `detectUrgent` (the same `owners` list). Quiet hours apply through the sender (S2 P4).
+    - `/status` (stage 13) shows the failed count of the last 24 h, so a user who missed the notice still sees it.
+  - Test: `notices.test.ts` (core): the six text shapes contain the verb, the folder, the subject and `Tried 3 times`; the subject is cleaned (links → `[link]`); `🧪 test` only for synthetic. `channels-notices.test.ts` (`isolateChannels`, an owner and an assistant linked): (1) a `failed` / `hard_error` move with `notified_at` null → one outbox row for the owner, none for the assistant, `kind` `action_failed`, `email_id` set, text with the subject marker; `actions.notified_at` set; (2) a second `detectNotices` run → no new row; (3) `mail_not_found` → no row, `notified_at` stays null; (4) a failed action older than 24 h → no row but `notified_at` set [decision: mark it, so the list stays short; the test asserts this]; (5) a reverse failed move → the Undo text; (6) org B's failed action gives org A nothing. `channels-outbox.test.ts`: kind `action_failed` without `email_id` → `23514`.
+  - Check: `bun run dev:up && bun run db:migrate && bun run lint && bun run typecheck && bun run test:unit && bun run test:int`.
+  - Done when: the tests pass.
+  - Out of scope: a notice per applied move (P4: none), the digest.

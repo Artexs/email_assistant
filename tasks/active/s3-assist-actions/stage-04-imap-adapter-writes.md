@@ -1,0 +1,25 @@
+# s3-assist-actions — Stage 4
+
+Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "Input" and "Rules for every step" first.
+
+## Stage 4 — IMAP adapter writes (MOVE and COPY paths) on GreenMail [risky]
+
+- [ ] **4.1 `ImapMailProvider`: folders, folder reads, flags, move, delete**
+  - Goal: the IMAP adapter implements the stage 3 port on a server with MOVE (GreenMail) and on one without MOVE but with UIDPLUS (Interia), and the GreenMail contract suite passes on both paths.
+  - Files: change `apps/server/src/modules/mail/imap/client.ts`, `apps/server/src/modules/mail/imap/mapper.ts` (`toFolderMessageMeta` adds `flags` from `msg.flags`), `apps/server/src/modules/mail/imap/client.test.ts`, `apps/server/test/integration/imap-contract.test.ts`.
+  - Interfaces: `ImapConnectOptions` gets `forceCopyMove?: boolean` (default false; true = ignore the MOVE capability and use the COPY path: for the GreenMail test of the Interia path). `openImapProvider(opts)` passes it to the adapter.
+  - Decisions:
+    - `ensureFolder(name)`: `list()`; a folder whose `path` equals `name`, or whose path parts (split on its `delimiter`) equal `name.split("/")`, is the match → return its `path`. Else `mailboxCreate(name.split("/"))`, then `list()` again and return the path of the new entry (the server's spelling with its delimiter). Not found after the create → `HardError("folder create failed")`. Any Soft/Hard mapping goes through `guard`.
+    - `fetchMetaIn(folder, uid)`: `getMailboxLock(folder)` (the S1a pattern of `findByMessageId`: a missing folder gives null, another SELECT error throws); `fetchOne(String(uid), { …META_QUERY, flags: true }, { uid: true })`; false → null; else `toFolderMessageMeta`. Trap: imapflow `fetchOne` with a UID that is not in the folder returns `false`; a UID above the highest can make some servers return the highest message (the `*` rule applies to ranges only; a single UID is safe). Keep the result only when `msg.uid === uid`.
+    - `searchSinceIn(folder, since)`: lock; `search({ since }, { uid: true })`; `false` → `[]`; missing folder → `[]`. `fetchByUidsIn(folder, uids)`: lock; `[]` for an empty list; `fetch(uids.join(","), { …META_QUERY, flags: true }, { uid: true })`; keep only metas whose `uid` is in the asked set; ascending.
+    - `setFlags(folder, uid, change)`: lock; `fetchOne` first (false → `MailNotFoundError`); `messageFlagsAdd(String(uid), add, { uid: true })` when `add` is not empty; `messageFlagsRemove` likewise. A `false` return from imapflow is a `HardError("flag store refused")`.
+    - `moveMessage(from, uid, to)`: lock `from`; `fetchOne` first (false → `MailNotFoundError`). With MOVE and not `forceCopyMove`: `messageMove(String(uid), to, { uid: true })` → `newUid` = `uidMap?.get(uid) ?? null`. Else: `messageCopy(String(uid), to, { uid: true })` (false → `HardError("copy refused")`) → `newUid` from `uidMap`; then `messageFlagsAdd(String(uid), ["\\Deleted"], { uid: true })`; then `messageDelete(String(uid), { uid: true })` (UID EXPUNGE). The COPY path refuses to start without UIDPLUS (`HardError("no UIDPLUS")`): the policy makes such moves `log only`, so this is a guard, not a path. Order matters for the crash cases of stage 9: COPY first, EXPUNGE last; a crash after the COPY leaves two copies, which D5 cleans up.
+    - `deleteMessage(folder, uid)`: no UIDPLUS → `HardError("no UIDPLUS")`; lock; `fetchOne` false → return false; `messageFlagsAdd(\Deleted)` + `messageDelete({ uid: true })` → true. Never a plain `EXPUNGE`.
+    - `findByMessageId` stays in this stage (stage 5 removes it with its callers).
+    - Errors keep the S1a mapping (`toMailError`): connection codes → `SoftError`; `authenticationFailed` → `MailAuthError`; else `HardError` with the imapflow `code` when there is one. The `message` of a mapped error never holds a folder path from mail data (the folder names are ours).
+  - Test:
+    - `client.test.ts` (unit, no server): `imapFlowOptions` unchanged; a small test of the folder matcher (`matchFolder(entries, name)` as an exported pure helper: path equal, parts equal with `.` delimiter, none).
+    - `imap-contract.test.ts`: run `describeMailProviderContract` twice: `"imap-greenmail"` (as today) and `"imap-greenmail-copy-path"` with `forceCopyMove: true`. Both must pass all stage 3 cases. Extra cases on GreenMail: (1) after `moveMessage` on the COPY path, the source folder has no `\\Deleted` leftovers (`search({ deleted: true })` in INBOX is empty); (2) `ensureFolder("AI/Info")` then `serverInfo().folders` lists a path that ends with `Info` (GreenMail delimiter `.` [not verified: the test accepts `AI/Info` or `AI.Info`] and `ensureFolder` returns that path); (3) `moveMessage` with `forceCopyMove` on a server without UIDPLUS is not testable here (GreenMail has UIDPLUS): the fake covers it.
+  - Check: `bun run dev:up && bun run lint && bun run typecheck && bun run test:unit && bun run test:int`.
+  - Done when: both GreenMail contract runs pass.
+  - Out of scope: Interia itself (stage 1 proved the primitives; stage 19 runs the adapter there), `locateMessage` (stage 5).
