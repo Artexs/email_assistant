@@ -1,4 +1,4 @@
-> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open, deferred by the user until stage 21. Stages 1–10 done; checkpoint 2 passed (user go). Stage 11 done. Left: stages 12–23, then the done-checklist.
+> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0: steps 0.2 and 0.3 done; step 0.1 (user, BotFather) open, deferred by the user until stage 21. Stages 1–10 done; checkpoint 2 passed (user go). Stages 11–12 done. Left: stages 13–23, then the done-checklist.
 
 # S2 Telegram
 
@@ -128,7 +128,7 @@ Each stage lives in its own file in [`s2-telegram/`](s2-telegram/). An implement
 - [x] [Stage 9](s2-telegram/stage-09-reports-digests-and-digest-message.md) — Reports: digests table and the digest message [risky]
 - [x] [Stage 10](s2-telegram/stage-10-outbox-repository.md) — Outbox repository [risky] — user checkpoint 2 after it
 - [x] [Stage 11](s2-telegram/stage-11-outbox-sender.md) — Outbox sender [risky]
-- [ ] [Stage 12](s2-telegram/stage-12-notice-detection.md) — Notice detection [risky]
+- [x] [Stage 12](s2-telegram/stage-12-notice-detection.md) — Notice detection [risky]
 - [ ] [Stage 13](s2-telegram/stage-13-digest-job.md) — Digest job [risky]
 - [ ] [Stage 14](s2-telegram/stage-14-update-router.md) — Update router [risky]
 - [ ] [Stage 15](s2-telegram/stage-15-polling-and-bot-commands.md) — Polling and the bot command list
@@ -184,3 +184,4 @@ Answered 2026-11-05: the user approved the plan as written, so each question kee
 - 2026-11-06: Checkpoint 2 group review (Opus, high, `6b453aa..1932119`): PASS with minors. Fixed in one commit (review PASS, Opus, high): a moved chat writes `chat.unlinked` (`chat_moved`) in the old member's org (closes the stage 6 open point; stage 6 file updated); `unlinkUser` audit data has `user_id`; `insertOutbox` checks the buttons, so a bad row cannot block the claim. Left for the user: an outbox index on `email_id` / `digest_id` (for the retention job), the digest visibility race at `periodEnd` (milliseconds), the "no settings row" text of the digest (`shadow`) vs `/status` (stage 17).
 - 2026-11-06: Checkpoint 2: the user said go and accepted the three proposals: the outbox `email_id` / `digest_id` indexes go to the retention follow-up (stage 22.3); the digest race is accepted and noted (stage 22.2); the digest maps "no settings row" to `none` like `/status` (stage 17.1, test 6).
 - 2026-11-06: Stage 11 built (`channels/sender.ts` `createOutboxSender`; fake channel `onSend` hook; 15 tests), reviewer PASS (Opus, high). Added after the review: tests that prove the in-memory send pause after 429 / 401 (a mutation check proves them). Accepted deviations: `markDigestSent` runs only when `markOutboxSent` returns true; `warn` lines for `expired` / `no_chat` (row id only); a 429 without `retry_after` waits 30 s.
+- 2026-11-06: Stage 12 built (`channels/notices.ts` `detectNotices`: urgent, `auth_error`, sync late, sync works again; 12 tests), reviewer PASS (Sonnet; `test:int` 3 runs, the file alone 6 runs). Learned: rows inserted in one transaction share `created_at`, so tests must not rely on the outbox insert order (find rows by `dedup_key`).

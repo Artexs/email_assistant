@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 12 — Notice detection [risky]
 
-- [ ] **12.1 `detectNotices`: urgent, `auth_error`, sync late, sync works again**
+- [x] **12.1 `detectNotices`: urgent, `auth_error`, sync late, sync works again**
   - Goal: each event gives exactly one outbox row per member who must get it (D4, D12, D13); a notice that is out of date before it was sent is cancelled.
   - Files: create `apps/server/src/modules/channels/notices.ts`, `apps/server/test/integration/channels-notices.test.ts`; change `apps/server/src/modules/channels/index.ts`.
   - Interfaces:
