@@ -69,7 +69,25 @@ export async function consumeLinkToken(
     const used = await useLinkToken(trx, tokenHash, input.now);
     if (used) {
       const ctx = { orgId: used.orgId };
-      await replaceChatLink(trx, ctx, { userId: used.userId, chatId: input.chatId, linkedAt: input.now });
+      const removed = await replaceChatLink(trx, ctx, {
+        userId: used.userId,
+        chatId: input.chatId,
+        linkedAt: input.now,
+      });
+      // The old member's organization gets its own row; it holds nothing about the new member or the chat.
+      for (const row of removed) {
+        await recordAudit(
+          trx,
+          { orgId: row.orgId },
+          {
+            actor: "system",
+            event: auditEvents.chatUnlinked,
+            reasonCode: "chat_moved",
+            data: { channel: "telegram", user_id: row.userId },
+            at: input.now,
+          }
+        );
+      }
       await recordAudit(trx, ctx, {
         actor: used.userId,
         event: auditEvents.chatLinked,
@@ -93,7 +111,7 @@ export async function unlinkUser(db: Db, ctx: TenantContext, userId: string, now
       await recordAudit(trx, ctx, {
         actor: "system",
         event: auditEvents.chatUnlinked,
-        data: { channel: "telegram", links: deleted },
+        data: { channel: "telegram", user_id: userId, links: deleted },
         at: now,
       });
     }

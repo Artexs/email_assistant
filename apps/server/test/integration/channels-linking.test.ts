@@ -140,6 +140,10 @@ describe("chat linking", () => {
       expect((await consumeLinkToken(trx, { token, chatId: chatC, now })).kind).toBe("linked");
       expect((await findChatLink(trx, chatC))?.userId).toBe(b);
       expect(await getChatLinkForUser(trx, { orgId }, a)).toBeUndefined();
+      const moved = await auditRows(trx, orgId, "chat.unlinked");
+      expect(moved).toHaveLength(1);
+      expect(moved[0]?.reason_code).toBe("chat_moved");
+      expect(moved[0]?.data).toEqual({ channel: "telegram", user_id: a });
 
       // A links again from chat D: chat C's row (now B's) stays, A's only link is D.
       const chatD = randomChatId();
@@ -162,6 +166,18 @@ describe("chat linking", () => {
       expect(links).toHaveLength(1);
       expect(Number(links[0]?.external_chat_id)).toBe(chatD);
       expect(await findChatLink(trx, chatC)).toBeUndefined();
+    });
+  });
+
+  test("a member who links the same chat again gets no chat_moved row", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId, userId } = await createOrgWithMailbox(trx);
+      const chatC = randomChatId();
+      await linkChat(trx, { orgId }, userId, chatC, now);
+      const { token } = await createLinkToken(trx, { orgId }, userId, now);
+      expect((await consumeLinkToken(trx, { token, chatId: chatC, now })).kind).toBe("linked");
+      expect((await findChatLink(trx, chatC))?.userId).toBe(userId);
+      expect(await auditRows(trx, orgId, "chat.unlinked")).toHaveLength(0);
     });
   });
 
@@ -197,7 +213,9 @@ describe("chat linking", () => {
 
       expect(await unlinkUser(trx, { orgId }, userId, now)).toBe(1);
       expect(await findChatLink(trx, chatId)).toBeUndefined();
-      expect(await auditRows(trx, orgId, "chat.unlinked")).toHaveLength(1);
+      const unlinked = await auditRows(trx, orgId, "chat.unlinked");
+      expect(unlinked).toHaveLength(1);
+      expect(unlinked[0]?.data).toEqual({ channel: "telegram", user_id: userId, links: 1 });
 
       expect(await unlinkUser(trx, { orgId }, userId, now)).toBe(0);
       expect(await auditRows(trx, orgId, "chat.unlinked")).toHaveLength(1);
@@ -215,6 +233,10 @@ describe("chat linking", () => {
       expect((await consumeLinkToken(trx, { token, chatId: chatE, now })).kind).toBe("linked");
       expect((await findChatLink(trx, chatE))?.orgId).toBe(q.orgId);
       expect(await getChatLinkForUser(trx, { orgId: p.orgId }, p.userId)).toBeUndefined();
+      const moved = await auditRows(trx, p.orgId, "chat.unlinked");
+      expect(moved).toHaveLength(1);
+      expect(moved[0]?.data).toEqual({ channel: "telegram", user_id: p.userId });
+      expect(await auditRows(trx, q.orgId, "chat.unlinked")).toHaveLength(0);
     });
   });
 

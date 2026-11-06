@@ -107,15 +107,17 @@ export async function findLinkToken(
 }
 
 // D18: the chat moves to the token's member, so the link of this chat in any organization goes first.
+// Returns the links of other members that this call removed, so the caller can audit them.
 export async function replaceChatLink(
   trx: Transaction<DB>,
   ctx: TenantContext,
   row: { userId: string; chatId: number; linkedAt: Date }
-): Promise<void> {
-  await trx
+): Promise<{ orgId: string; userId: string }[]> {
+  const moved = await trx
     .deleteFrom("chat_links")
     .where("channel", "=", CHANNEL)
     .where("external_chat_id", "=", String(row.chatId))
+    .returning(["org_id", "user_id"])
     .execute();
   await trx
     .deleteFrom("chat_links")
@@ -133,6 +135,9 @@ export async function replaceChatLink(
       linked_at: row.linkedAt,
     })
     .execute();
+  return moved
+    .filter((link) => link.org_id !== ctx.orgId || link.user_id !== row.userId)
+    .map((link) => ({ orgId: link.org_id, userId: link.user_id }));
 }
 
 // Entry point (D18): an update brings only the chat id.
@@ -190,6 +195,8 @@ export interface NewOutboxRow {
 
 // null = the event has a row already (D4: exactly one row per event).
 export async function insertOutbox(db: DbOrTrx, ctx: TenantContext, row: NewOutboxRow): Promise<string | null> {
+  // A row with bad buttons must not enter the outbox: claimDueOutbox parses them and would fail on it every run.
+  const buttons = outButtonsSchema.parse(row.message.buttons);
   const inserted = await db
     .insertInto("outbox")
     .values({
@@ -201,7 +208,7 @@ export async function insertOutbox(db: DbOrTrx, ctx: TenantContext, row: NewOutb
       mailbox_id: row.mailboxId ?? null,
       digest_id: row.digestId ?? null,
       text: row.message.text,
-      buttons: JSON.stringify(row.message.buttons),
+      buttons: JSON.stringify(buttons),
       status: "pending",
       attempts: 0,
       created_at: row.createdAt,

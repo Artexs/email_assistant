@@ -99,6 +99,17 @@ describe("insertOutbox", () => {
       expect(saved.next_attempt_at).toEqual(row.nextAttemptAt);
     });
   });
+
+  test("rejects bad buttons and inserts no row", async () => {
+    await withRollback(db, async (trx) => {
+      const t = await tenant(trx);
+      const message = { text: "hello", buttons: [[{ text: "", data: "ok" }]] };
+      const row = rowFor(t.userId, { mailboxId: t.mailboxId, message });
+      await expect(insertOutbox(trx, t.ctx, row)).rejects.toThrow();
+      const rows = await trx.selectFrom("outbox").select("id").where("org_id", "=", t.orgId).execute();
+      expect(rows).toHaveLength(0);
+    });
+  });
 });
 
 describe("claimDueOutbox", () => {
