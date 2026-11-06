@@ -1,4 +1,4 @@
-> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0 done (bots: dev `@Email_assistant_local_bot`, pilot `@Email_assistant_vps_bot`). Stages 1–10 done; checkpoint 2 passed (user go). Stages 11–20 done; checkpoint 3 group review done (fixes committed), waiting for the user. Left: stages 21–23 (21 needs the dev bot token, step 0.1), then the done-checklist.
+> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0 done (bots: dev `@Email_assistant_local_bot`, pilot `@Email_assistant_vps_bot`). Stages 1–10 done; checkpoint 2 passed (user go). Stages 11–20 done; checkpoint 3 group review done (fixes committed). Left: stage 21 (the user's phone test, 07:00–22:00 local), stage 22 (docs), stage 23 (VPS; S1b shadow run is done, needs the user's go and the pilot token in the VPS `.env`), then the done-checklist.
 
 # S2 Telegram
 
