@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
+import { llmProviders } from "../../platform/llm";
+
 import { createLlmPause } from "./pause";
 
 const t0 = new Date("2026-11-05T12:00:00Z");
@@ -46,7 +48,7 @@ describe("createLlmPause", () => {
   });
 
   test("a soft trip writes one warn line, a config trip one error line", () => {
-    const pause = createLlmPause();
+    const pause = createLlmPause({ configHint: llmProviders.gemini.configHint });
     const until = pause.trip("soft", "http_429", t0);
     expect(errorSpy).toHaveBeenCalledTimes(1);
     expect(errorSpy.mock.calls[0]?.[1]).toBe(
@@ -59,6 +61,22 @@ describe("createLlmPause", () => {
     expect(errorSpy).toHaveBeenCalledTimes(1);
     expect(errorSpy.mock.calls[0]?.[1]).toBe(
       `LLM config error http_404: check GEMINI_API_KEY, GEMINI_MODEL_CLASSIFIER and the Google project (billing, region); triage paused for 5 min, until ${configUntil.toISOString()}`
+    );
+  });
+
+  test("a config trip holds the hint of the provider", () => {
+    const pause = createLlmPause({ configHint: "HINT" });
+    const until = pause.trip("config", "http_401", t0);
+    expect(errorSpy.mock.calls[0]?.[1]).toBe(
+      `LLM config error http_401: HINT; triage paused for 5 min, until ${until.toISOString()}`
+    );
+  });
+
+  test("a config trip without a hint holds the default text", () => {
+    const pause = createLlmPause();
+    pause.trip("config", "http_401", t0);
+    expect(errorSpy.mock.calls[0]?.[1]).toContain(
+      "LLM config error http_401: check the LLM API key, the classifier model and the provider project;"
     );
   });
 });

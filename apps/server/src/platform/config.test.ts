@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 
 import { describe, expect, test } from "bun:test";
 
-import { classifierModel, ConfigError, loadConfig } from "./config";
+import { classifierModel, ConfigError, llmSettings, loadConfig } from "./config";
 
 const fullEnv = {
   DATABASE_URL: "postgres://app:pw@127.0.0.1:5433/email_assistant",
@@ -199,5 +199,51 @@ describe("loadConfig", () => {
     expect(configError({ ...fullEnv, GEMINI_RPM: "0" }).keys).toContain("GEMINI_RPM");
     expect(configError({ ...fullEnv, LLM_DAILY_CAP: "0" }).keys).toContain("LLM_DAILY_CAP");
     expect(configError({ ...fullEnv, GEMINI_TIMEOUT_MS: "1.5" }).keys).toContain("GEMINI_TIMEOUT_MS");
+  });
+
+  test("sets LLM_PROVIDER to gemini when unset or empty, and rejects an unknown one", () => {
+    expect(loadConfig(fullEnv).LLM_PROVIDER).toBe("gemini");
+    expect(loadConfig({ ...fullEnv, LLM_PROVIDER: "" }).LLM_PROVIDER).toBe("gemini");
+    const error = configError({ ...fullEnv, LLM_PROVIDER: "foo" });
+    expect(error.keys).toEqual(["LLM_PROVIDER"]);
+    expect(error.message).not.toContain("foo");
+  });
+
+  test("sets the OpenAI defaults with only the S1a keys", () => {
+    const config = loadConfig({ ...fullEnv, OPENAI_API_KEY: "", OPENAI_MODEL: "" });
+    expect(config.OPENAI_API_KEY).toBeUndefined();
+    expect(config.OPENAI_MODEL).toBe("gpt-6.1-terra");
+    expect(config.OPENAI_MODEL_CLASSIFIER).toBe("gpt-6-luna");
+    expect(config.OPENAI_TIMEOUT_MS).toBe(30000);
+    expect(config.OPENAI_RPM).toBe(60);
+    expect(config.OPENAI_REASONING_EFFORT).toBe("none");
+  });
+
+  test("rejects a bad OPENAI_RPM and a bad OPENAI_REASONING_EFFORT, with no value in the message", () => {
+    expect(configError({ ...fullEnv, OPENAI_RPM: "0" }).keys).toContain("OPENAI_RPM");
+    const error = configError({ ...fullEnv, OPENAI_REASONING_EFFORT: "bogus" });
+    expect(error.keys).toContain("OPENAI_REASONING_EFFORT");
+    expect(error.message).not.toContain("bogus");
+    expect(loadConfig({ ...fullEnv, OPENAI_REASONING_EFFORT: "xhigh" }).OPENAI_REASONING_EFFORT).toBe("xhigh");
+  });
+
+  test("accepts TRIAGE_LLM_SCOPE=synthetic with a GEMINI_API_KEY and no OPENAI_API_KEY", () => {
+    expect(() =>
+      loadConfig({ ...fullEnv, TRIAGE_LLM_SCOPE: "synthetic", GEMINI_API_KEY: "test-key", OPENAI_API_KEY: "" })
+    ).not.toThrow();
+  });
+
+  test("llmSettings returns the Gemini settings by default", () => {
+    const config = loadConfig({ ...fullEnv, GEMINI_API_KEY: "test-key" });
+    expect(llmSettings(config)).toEqual({
+      provider: "gemini",
+      apiKeyName: "GEMINI_API_KEY",
+      apiKey: "test-key",
+      classifierModel: "gemini-3.5-flash-lite",
+      writerModel: "gemini-3.8-flash",
+      timeoutMs: 30000,
+      rpm: 12,
+      reasoningEffort: null,
+    });
   });
 });

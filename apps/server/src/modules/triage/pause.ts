@@ -11,9 +11,10 @@ export interface LlmPause {
   reset(): void;
 }
 
-export function createLlmPause(opts: { baseMs?: number; maxMs?: number } = {}): LlmPause {
+export function createLlmPause(opts: { baseMs?: number; maxMs?: number; configHint?: string } = {}): LlmPause {
   const baseMs = opts.baseMs ?? 5 * 60_000;
   const maxMs = opts.maxMs ?? 60 * 60_000;
+  const configHint = opts.configHint ?? "check the LLM API key, the classifier model and the provider project";
   let trips = 0;
   let until: Date | null = null;
 
@@ -27,7 +28,7 @@ export function createLlmPause(opts: { baseMs?: number; maxMs?: number } = {}): 
         log.warn(`LLM soft error ${code}: triage paused for ${minutes} min, until ${until.toISOString()}`);
       } else {
         log.error(
-          `LLM config error ${code}: check GEMINI_API_KEY, GEMINI_MODEL_CLASSIFIER and the Google project (billing, region); triage paused for ${minutes} min, until ${until.toISOString()}`
+          `LLM config error ${code}: ${configHint}; triage paused for ${minutes} min, until ${until.toISOString()}`
         );
       }
       return until;

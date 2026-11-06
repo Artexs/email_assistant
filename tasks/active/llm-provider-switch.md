@@ -332,7 +332,7 @@ Checks for every code stage: `bun run typecheck`, `bun run lint`, `bun run test:
 
 ### Stage 2 — Config and wiring
 
-- [ ] **2.1 Config: `LLM_PROVIDER`, `OPENAI_*` keys, key check per provider, `llmSettings()`**
+- [x] **2.1 Config: `LLM_PROVIDER`, `OPENAI_*` keys, key check per provider, `llmSettings()`**
   - Plan text: `config.ts`: `LLM_PROVIDER` (values from the registry, default `gemini`), the `OPENAI_*` keys (D2), the key check for the selected
     provider only, `llmSettings(config)` (provider, key, classifier model, writer model, timeout, rpm, effort). Tests in `config.test.ts`.
   - Goal: one config value selects the provider; the settings of the selected provider come from one function.
@@ -384,7 +384,7 @@ Checks for every code stage: `bun run typecheck`, `bun run lint`, `bun run test:
   - Done when: the new tests and all old config tests pass.
   - Out of scope: no change of the callers (step 2.2); no `openai` registry row or config block (stage 3).
 
-- [ ] **2.2 Wiring: `main.ts`, eval script, pause text, `.env.example`**
+- [x] **2.2 Wiring: `main.ts`, eval script, pause text, `.env.example`**
   - Plan text: `main.ts` and `scripts/eval.ts` use `llmSettings`. Start log: `llm provider=<id> classifier=<model>` (no key). The `scope=all` warning
     names the provider. `pause.ts` uses the `configHint` of the provider. `.env.example`: an OpenAI block, `LLM_PROVIDER`.
     Check: the log test (`apps/server/test/integration/triage-logs.test.ts`) and a local start with `LLM_PROVIDER` unset.
@@ -842,6 +842,7 @@ Added by the planner on 2026-11-06. Questions 1 and 2 are the open Q6 and Q7. Qu
 
 ## Log
 
+- 2026-11-06: Stage 2 done, reviewer PASS. `LLM_PROVIDER` (default gemini), `OPENAI_*` keys (`OPENAI_MODEL` default `gpt-6.1-terra`), `llmSettings()`, key check per provider, start log `llm provider=<id> classifier=<model>`, `configHint` in the pause. Checks: typecheck, lint, test:unit 562 pass, test:int 348 pass; local start log shows `llm provider=gemini classifier=gemini-3.5-flash-lite`, key grep count 0 (that start also sent one pending synthetic mail to Gemini).
 - 2026-11-06: Stage 1 done, reviewer PASS. `platform/llm.ts` → `platform/llm/{index,client,errors}.ts` + `providers/{index,gemini}.ts`; tests: `llm.test.ts` → `client.test.ts` (classify output, classify errors, rate limit and model, logs) and `providers/gemini.test.ts` (toGenerateParams, 401–404/400/418 config, timeout/abort names, network codes, toGeminiResult). 28 old test lines → 37 new. ESLint: one block per file group. Checks: typecheck, lint, test:unit 555 pass, test:int 348 pass. Live `gemini:test` NOT verified: 4 attempts gave `http_429`/`http_503`/`timeout` (Gemini side; the soft-error path works). Re-run it in stage 4 (`llm:check`).
 - 2026-11-06: Stage 0 done, reviewer PASS. Budget: $3 per month (user; lower than the $10 proposal; the plan needs under $0.10). Spike facts in `notes/2026-11-06-openai-api-facts.md`: D6 removes only the root `$schema` (`maxLength`, `pattern`, `anyOf` null accepted); strict schema 400 = `invalid_json_schema`, param `text.format.schema`; no credit = 429 `credit_balance_exhausted`, type `insufficient_quota` (seen live); effort values `none, minimal, low, medium, high, xhigh, max`; `AbortSignal.timeout` gives `APIUserAbortError`, request `timeout` gives `APIConnectionTimeoutError`; `incomplete` still carries `output_text`; no refusal seen; usage `output_tokens_details.reasoning_tokens`.
 - 2026-11-06: User approved the plan with all recommendations: Q6a yes, Q6b both options in `s6-pre-sale.md`, Q7 $10 per month with alert at 80%, `OPENAI_MODEL` default `gpt-6.1-terra`, `eval --real --model` drops rows without a model and shows their count as `none`, stage 3 split into 3 and 3b.

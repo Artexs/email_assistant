@@ -14,7 +14,7 @@ import {
   renderEvalReport,
   runEval,
 } from "../modules/triage";
-import { classifierModel, loadConfig } from "../platform/config";
+import { llmSettings, loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { createLlmClient, LlmConfigError } from "../platform/llm";
 import { createLog } from "../platform/log";
@@ -133,17 +133,19 @@ async function main(): Promise<number> {
   if (options.real) return runReal(options, options["org-id"] as string, options["mailbox-id"] as string);
 
   const config = loadConfig();
-  if (config.GEMINI_API_KEY === undefined) {
-    log.error("GEMINI_API_KEY is missing");
+  const settings = llmSettings(config);
+  if (settings.apiKey === undefined) {
+    log.error(`${settings.apiKeyName} is missing`);
     return 1;
   }
-  const model = options.model ?? classifierModel(config);
+  const model = options.model ?? settings.classifierModel;
   const llm = createLlmClient({
-    provider: "gemini",
-    apiKey: config.GEMINI_API_KEY,
-    classifierModel: classifierModel(config),
-    timeoutMs: config.GEMINI_TIMEOUT_MS,
-    rpm: config.GEMINI_RPM,
+    provider: settings.provider,
+    apiKey: settings.apiKey,
+    classifierModel: settings.classifierModel,
+    timeoutMs: settings.timeoutMs,
+    rpm: settings.rpm,
+    reasoningEffort: settings.reasoningEffort,
   });
 
   const selected = selectCases(
