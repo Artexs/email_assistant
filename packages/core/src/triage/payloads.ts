@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { CLARIFICATION_MAX_CHARS, TASK_MAX_CHARS } from "./analysis";
+
 // One strict rule for every recipient in a payload (D2): no space, comma, angle bracket, quote or line break.
 export const ADDRESS_PATTERN = /^[^\s@<>,;"'\r\n]+@[^\s@<>,;"'\r\n]+$/;
 export const addressSchema = z.string().regex(ADDRESS_PATTERN);
@@ -15,14 +17,14 @@ export const draftPayloadSchema = z.discriminatedUnion("kind", [
     delegate_id: z.string().uuid(),
     delegate_name: z.string().min(1),
     to: recipientSchema,
-    task: z.string().min(1).max(300),
+    task: z.string().min(1).max(TASK_MAX_CHARS),
     due_date: dueDateSchema,
     language: draftLanguageSchema,
   }),
   z.object({
     kind: z.literal("clarification"),
     to: recipientSchema,
-    question: z.string().min(1).max(200),
+    question: z.string().min(1).max(CLARIFICATION_MAX_CHARS),
     language: draftLanguageSchema,
   }),
   z.object({
@@ -30,7 +32,7 @@ export const draftPayloadSchema = z.discriminatedUnion("kind", [
     delegate_id: z.string().uuid(),
     delegate_name: z.string().min(1),
     to: recipientSchema,
-    task: z.string().min(1).max(300),
+    task: z.string().min(1).max(TASK_MAX_CHARS),
     due_date: dueDateSchema,
     language: draftLanguageSchema,
     delegation_id: z.string().uuid(),

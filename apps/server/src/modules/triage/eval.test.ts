@@ -27,7 +27,7 @@ function answer(category: string, confidence = 0.9): Record<string, unknown> {
     reason_code: "other",
     reason: "Because.",
     summary: category === "info" ? "Short summary." : null,
-    fields: { due_date: null, language: "en" },
+    fields: { due_date: null, language: "en", delegate_id: null, task: null, clarification: null },
   };
 }
 

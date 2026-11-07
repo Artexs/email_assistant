@@ -1,3 +1,4 @@
+import { CLARIFICATION_MAX_CHARS, TASK_MAX_CHARS } from "./analysis";
 import type { Category } from "./categories";
 import { ADDRESS_PATTERN, sendPayloadFor, type DraftPayload, type SendPayload } from "./payloads";
 import { isNoreplyAddress } from "./rules";
@@ -45,9 +46,6 @@ export type PlannedAction =
   | { type: "create_draft"; draft: DraftPayload }
   | { type: "send"; send: SendPayload; dependsOn: "create_draft" };
 
-const TASK_LIMIT = 300;
-const QUESTION_LIMIT = 200;
-
 function draftAndSend(draft: DraftPayload): PlannedAction[] {
   return [
     { type: "create_draft", draft },
@@ -65,7 +63,7 @@ function planDelegation(input: DelegationInput | undefined): PlannedAction[] {
       delegate_id: delegateId,
       delegate_name: delegateName,
       to: [to],
-      task: task.slice(0, TASK_LIMIT),
+      task: task.slice(0, TASK_MAX_CHARS),
       due_date: input.dueDate ?? "",
       language,
     });
@@ -74,7 +72,7 @@ function planDelegation(input: DelegationInput | undefined): PlannedAction[] {
     return draftAndSend({
       kind: "clarification",
       to: [senderAddress],
-      question: clarification.slice(0, QUESTION_LIMIT),
+      question: clarification.slice(0, CLARIFICATION_MAX_CHARS),
       language,
     });
   }

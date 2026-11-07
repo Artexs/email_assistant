@@ -232,7 +232,7 @@ describe("renderEvalReport", () => {
           reason_code: "other",
           reason: "Because.",
           summary: BODY_MARKER,
-          fields: { due_date: null, language: "en" },
+          fields: { due_date: null, language: "en", delegate_id: null, task: null, clarification: null },
         };
         return { data: data as T, usage };
       },
