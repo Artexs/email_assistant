@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 
 import { describe, expect, test } from "bun:test";
 
-import { classifierModel, ConfigError, llmSettings, loadConfig } from "./config";
+import { classifierModel, ConfigError, isLoopbackApiRoot, llmSettings, loadConfig } from "./config";
 
 const fullEnv = {
   DATABASE_URL: "postgres://app:pw@127.0.0.1:5433/email_assistant",
@@ -280,5 +280,41 @@ describe("loadConfig", () => {
     };
     expect(llmSettings(loadConfig({ ...env, LLM_PROVIDER: "openai" }))).toEqual(expected);
     expect(llmSettings(loadConfig(env), "openai")).toEqual(expected);
+  });
+});
+
+describe("TELEGRAM_API_ROOT", () => {
+  test.each(["http://127.0.0.1:8090", "http://localhost:8090", "http://[::1]:8090", "https://127.0.0.1"])(
+    "accepts %s",
+    (value) => {
+      expect(isLoopbackApiRoot(value)).toBe(true);
+      expect(loadConfig({ ...fullEnv, TELEGRAM_API_ROOT: value }).TELEGRAM_API_ROOT).toBe(value);
+    }
+  );
+
+  test("empty or missing is undefined", () => {
+    expect(loadConfig({ ...fullEnv, TELEGRAM_API_ROOT: "" }).TELEGRAM_API_ROOT).toBeUndefined();
+    expect(loadConfig(fullEnv).TELEGRAM_API_ROOT).toBeUndefined();
+  });
+
+  test.each([
+    "https://api.telegram.org",
+    "http://10.0.0.5:8090",
+    "http://127.0.0.1.example.test",
+    "http://localhost.example.test",
+    "http://127.0.0.1@evil.test",
+    "http://user:pw@127.0.0.1:8090",
+    "http://127.0.0.1:8090/",
+    "http://127.0.0.1:8090/bot",
+    "http://127.0.0.1:8090?",
+    "http://127.0.0.1:8090#",
+    "ftp://127.0.0.1",
+    "127.0.0.1:8090",
+    "http://0.0.0.0:8090",
+  ])("rejects %s, with no value in the message", (value) => {
+    expect(isLoopbackApiRoot(value)).toBe(false);
+    const error = configError({ ...fullEnv, TELEGRAM_API_ROOT: value });
+    expect(error.keys).toEqual(["TELEGRAM_API_ROOT"]);
+    expect(error.message).not.toContain(value);
   });
 });

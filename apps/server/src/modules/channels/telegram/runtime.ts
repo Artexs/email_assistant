@@ -21,8 +21,9 @@ export interface TelegramRuntimeDeps {
   triageScope: "off" | "synthetic" | "all";
   actionsScope: ActionsScope;
   llm: { provider: string; classifierModel: string };
-  // Only for tests.
+  // Tests, and TELEGRAM_API_ROOT (loopback only, platform/config).
   apiRoot?: string;
+  // Only for tests.
   botInfo?: UserFromGetMe;
 }
 

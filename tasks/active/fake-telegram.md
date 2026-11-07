@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress — stages 1–3 done (PASS).** Left: stages 4–6; the 1.1 Docker image check (the daemon refuses this shell user; CI does not build the image). Git mode: worktree (`../email_assistant-wt/fake-telegram`, branch `task/fake-telegram`). Read "Parallel work with S4" first.
+> **Status 2026-11-07 — in progress — stages 1–4 done (PASS).** Left: stages 5–6; the 1.1 Docker image check (the daemon refuses this shell user; CI does not build the image). Git mode: worktree (`../email_assistant-wt/fake-telegram`, branch `task/fake-telegram`). Read "Parallel work with S4" first.
 
 # Fake Telegram: a local Bot API emulator for agent-run dev tests
 
@@ -341,7 +341,7 @@ TS API and a non-interactive CLI (`fake-tg serve | send | press | read | wait`) 
 
 `TELEGRAM_API_ROOT` in `platform/config.ts` with the loopback-only rule (U3), passed in `main.ts` to the runtime and in the `telegram:check` / `telegram:link` scripts; one start log line when it is set; `.env.example` entry.
 
-- [ ] **4.1 `TELEGRAM_API_ROOT` (loopback only) in the config, the server and the scripts [risky]**
+- [x] **4.1 `TELEGRAM_API_ROOT` (loopback only) in the config, the server and the scripts [risky]**
   - Goal: when `TELEGRAM_API_ROOT` is set to a loopback URL, the server and the two scripts talk to that Bot API; every other value stops the start.
   - Files: `apps/server/src/platform/config.ts`, `apps/server/src/platform/config.test.ts`, `apps/server/src/main.ts`, `apps/server/src/modules/channels/telegram/runtime.ts` (comment only), `apps/server/src/scripts/telegram-check.ts`, `apps/server/src/scripts/telegram-link.ts`, `.env.example`, `apps/server/test/integration/telegram-api-root.test.ts` (new).
   - Interfaces:
@@ -483,3 +483,4 @@ Answered by the user on 2026-11-07: (a) for all 4 (the recommendations). The liv
 - 2026-11-07: Build session (Claude Code). Worktree created from `origin/master` `29ecf9f`. Stage 1 built (1.2 fix: R6 constants moved to `state.ts`). Review PASS with 2 minors (`hasChat` only after a user message; a non-finite `getUpdates` offset is ignored), fixed, re-review PASS. Checks: `bun run lint` exit 0, `bun run typecheck` all exit 0, `bun run test:unit` 950 pass 0 fail. Image check not run: `docker info` → permission denied for this user.
 - 2026-11-07: Stage 2 built and reviewed: PASS with 2 minors (2 missing tests added; a harmless `?? ""` kept). User: run the whole plan without stops; use the recommendations when unsure. Checks: lint exit 0, typecheck all exit 0, `test:unit` 970 pass 0 fail.
 - 2026-11-07: Stage 3 built and reviewed: PASS with 7 minors; 6 fixed (driver `read` gets `strict` for the CLI, so `fake-tg read` of an unknown chat exits 1; `waitFor` keeps polling), negative `--chat` left for later. Checks: lint exit 0, typecheck all exit 0, `test:unit` 993 pass 0 fail.
+- 2026-11-07: `origin/master` merged into the branch before stage 4 (`51ca1ac`, no conflicts). Stage 4 built and reviewed: PASS, 1 minor (an explicit default port is refused; safe, no fix). Checks: lint exit 0, typecheck all exit 0, `test:unit` 1021 pass 0 fail, `telegram-api-root.test.ts` 2 pass.
