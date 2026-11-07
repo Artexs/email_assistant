@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress, plan being written.** Decisions D1–D33 and all 23 stage files written; cold review round 1 fixed; round 2 done (FAIL: 0 blockers, 4 majors, 19 minors, 3 questions, 8 round-1 items partly open: the list is under "Open review findings"). Session 2 (2026-11-07) applied part of the round-2 fixes in the stage files and stopped on the user's request: see "Fix progress (session 2)" under "Open review findings". All round-2 and round-3 findings are applied (2026-11-07). Left: the user's approval of the end summary (changes go into a follow-up commit). Then the build starts with stage 1 (`run-task`, no planner). Nothing of S4 is committed yet (the `git mv` to `active/` is in commit `56d9158`).
+> **Status 2026-11-07 — planned and approved; build not started.** The user approved the plan with every default (questions 1–12) on 2026-11-07. Next: the build with `run-task` (no planner), stage 1 first, after S3 is built and deployed (S3 stages 19–20 on the VPS). Do not build S4 in the same working tree while the S3 build runs.
 
 # S4 Drafts, approvals, delegation
 
@@ -38,7 +38,7 @@ The resumed session reads this file, then continues at the first unticked item.
 - [x] Fix the open findings (session 2, 2026-11-07: see "Fix progress (session 2)").
 - [x] A round-3 check by the `reviewer` subagent (2026-11-07; its findings are applied: "Round 3" under the findings).
 - [x] Run `bunx prettier --write` on the S4 files after the fixes and `--check` (passes, 2026-11-07).
-- [ ] End summary to the user (plan-task step 8), commit `tasks: S4 plan — 23 stages, one file per stage`, push.
+- [x] End summary to the user (plan-task step 8), commit `tasks: S4 plan — 23 stages, one file per stage` (`c251528`), push; the user approved every default (2026-11-07).
 
 ### Input
 
@@ -225,7 +225,7 @@ _Not yet._
 
 ## Questions for the user
 
-Answered 2026-11-07 with the plan defaults (P1–P8). Open for the approval of this plan (each keeps the plan default without an answer):
+Answered 2026-11-07 with the plan defaults (P1–P8). Questions 1–12 below: **the user took every default on 2026-11-07** ("go with your recommendation"); the defaults are decisions now.
 
 1. **D19:** the approval message shows the new text in full and the quoted original cut to 1500 characters. Keep, or send the quote as a second message?
 2. **D20:** a send refused by the server (5xx) keeps its draft in Drafts and cancels the delegation; no "Send again" button for it (the address is wrong). Keep?
@@ -258,3 +258,4 @@ Answered 2026-11-07 with the plan defaults (P1–P8). Open for the approval of t
 - 2026-11-07 (session 2, Claude Code, Opus 5.5): checked the handoff: the `git mv` is already in commit `56d9158` (not staged), the task file is 89 KB, S3 stages 1–4 are committed. Copied the probes to `notes/2026-11-07-s4-probes/`. Applied the round-2 fixes listed under "Fix progress (session 2)"; the user asked to stop before the rest.
 - 2026-11-07 (session 2, continued): applied the rest of the round-2 findings and the D-line updates; added questions 9–12.
 - 2026-11-07 (session 2): cold review round 3 (`reviewer`, Opus, high): all round-2 items fixed; new 0 blockers, 1 major, 10 minors, 1 question; all applied (see "Round 3" under the findings).
+- 2026-11-07: end summary given; the user approved the plan with every default ("go with your recommendation"). Status: planned and approved; the build waits for S3.
