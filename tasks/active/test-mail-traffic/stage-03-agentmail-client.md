@@ -6,7 +6,7 @@ Part of [`../test-mail-traffic.md`](../test-mail-traffic.md). Read that file's "
 
 Why risky: security (the API key) and sending to people (the send call). The client is the only code that talks to AgentMail.
 
-- [ ] **3.1 Config keys and the AgentMail client**
+- [x] **3.1 Config keys and the AgentMail client**
   - Goal: a small typed REST client over `fetch` for the 5 calls the tool needs, with typed errors that never hold the key or mail text.
   - Files: create `apps/server/src/modules/testmail/agentmail/client.ts`, `apps/server/src/modules/testmail/index.ts`; change `apps/server/src/platform/config.ts`
     (add `testmailConfigSchema`, `loadTestmailConfig`), `apps/server/src/platform/config.test.ts`, `.env.example`.

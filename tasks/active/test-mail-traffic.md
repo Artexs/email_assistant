@@ -1,4 +1,4 @@
-> **Status 2026-11-08 — in progress — build in the worktree `../email_assistant-wt/test-mail-traffic` (branch `task/test-mail-traffic`); stages 1–2 done.** Left: see the stage list (handoff `~/.pi/agent/notes/2026-11-08-handoff-test-mail-traffic-build.md`).
+> **Status 2026-11-08 — in progress — build in the worktree `../email_assistant-wt/test-mail-traffic` (branch `task/test-mail-traffic`); stages 1–2 and 3.1 done.** Left: see the stage list (handoff `~/.pi/agent/notes/2026-11-08-handoff-test-mail-traffic-build.md`).
 
 # Test mail traffic: AgentMail synthetic mail utility
 
@@ -359,3 +359,4 @@ Not yet (stage 9 writes the compare report here).
 - 2026-11-08: Build started in the worktree (own DB `email_assistant_test_mail_traffic`). Stage 1 built (1.1 fix round: a typecheck error in a test), review (Sonnet, high): PASS, 3 minors not fixed (detail without match count, no subject test for the data rule, duplicate unknown ids in `applyBlindLabels`).
 - 2026-11-08: Stage 2.1 built, review (Opus, high): PASS with 2 minors (partial-line rule of `parseSendLog`), both fixed.
 - 2026-11-08: Stage 2.2 built, review (Opus, high): PASS with 3 minors (order-dependent test 9, two untested child branches, a redundant check), all fixed. Stage 2 done.
+- 2026-11-08: Stage 3.1 built, review (Opus, high): PASS with 2 minors, fixed. Deviation accepted: a 2xx body that is not JSON (or cannot be read) is a `SoftError` (a cut body can hide a sent mail; safe by D3, same-key repeat).
