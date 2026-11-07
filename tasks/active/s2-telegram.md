@@ -47,7 +47,7 @@ Main-session design decisions (2026-11-05; why in each line):
 
 - **D1 Plain text.** No `parse_mode`: subjects and AI text need no escaping, and a bad character cannot break a send with HTTP 400. Every send and edit has `link_preview_options: { is_disabled: true }` (no link preview fetch). Subjects: links become `[link]`; control characters and bidi override characters are removed; whitespace collapses to one space.
 - **D2 Private chats only.** A link works only in a private chat (`chat.type = "private"`, chat id > 0). Updates from groups, channels and bots get no reply. One chat per user per organization and one user per chat: a new link replaces the old one.
-- **D3 Unlinked chats get no reply.** Exception: `/start <token>` where the token row exists but is used or expired gets one short reply, so the real user knows to ask for a new link. An unknown or malformed token gets no reply. A stranger cannot find an existing token (256 random bits).
+- **D3 Unlinked chats get no reply.** Exception: `/start <token>` where the token row exists but is used or expired gets one short reply, so the real user knows to ask for a new link. Change 2026-11-07 (user yes, stage 24): a chat that is linked already and sends a used token gets `✅ This chat is linked already.` plus the help, not "ask for a new link". An unknown or malformed token gets no reply. A stranger cannot find an existing token (256 random bits).
 - **D4 Outbox.** Digests and notices are rows in a new `outbox` table with a unique dedup key per event `(org_id, user_id, dedup_key)`. Exactly one row per event; delivery is at least once: a duplicate message is possible only when the process dies or the network breaks between the Telegram answer and the DB commit. Command replies and button answers go out at once, not through the outbox.
 - **D5 Digest text in the outbox.** `digests` keeps the period (slot, start, end, sent time); the text lives in `outbox.text`. Retention (90 days, like digest text in architecture §7) needs the retention job, which does not exist yet: a follow-up in `tasks/planned/` (stage 22).
 - **D6 `mailboxes.status_changed_at`** (new column, set only when the status really changes). It separates `auth_error` episodes for the notice dedup key and gives "paused since".
@@ -140,6 +140,7 @@ Each stage lives in its own file in [`s2-telegram/`](s2-telegram/). An implement
 - [x] [Stage 21](s2-telegram/stage-21-dev-run-with-the-dev-bot.md) — Dev run with the dev bot: the user tries it on the phone [risky]
 - [x] [Stage 22](s2-telegram/stage-22-docs-and-notes.md) — Docs, notes, known alerts
 - [x] [Stage 23](s2-telegram/stage-23-vps-deploy-with-the-pilot-bot.md) — VPS deploy with the pilot bot [risky] — user checkpoint 4 before it
+- [ ] [Stage 24](s2-telegram/stage-24-linked-chat-sends-a-used-link-again.md) — A linked chat that sends a used link again (D3 change, user yes 2026-11-07)
 
 ### Results (filled in stages 21 and 23)
 
@@ -228,3 +229,4 @@ Answered 2026-11-05: the user approved the plan as written, so each question kee
 - 2026-11-07: Stage 23 step 6: the user linked the chat with the pilot bot (log `chat linked for user 8fb22cd6-…`, `chat_links` count 1) and says it works. Not yet seen: a `triage_feedback` row with source `telegram` (step 8) and the scheduled 08:00 digest. Next session: stage 21 (dev bot) after 07:00 local, then step 8, the Results, the done-checklist and `git mv` to `done/`.
 - 2026-11-07: The pilot 08:00 digest was sent (`digests` slot `2026-11-07T08:00`, outbox `sent` at 07:00:15Z). Log: `a used link token was tried` (the D3 case). Handoff for the finish: `~/.pi/agent/notes/2026-11-07-handoff-s2-telegram-finish.md`.
 - 2026-11-07: Stage 21 done with the user (dev bot, all steps except the optional 10 and 12 pass; urgent notice 3 min 54 s). Stage 23 step 8 done (two `telegram` ✅ rows on the pilot). "Results" filled; the "pending (stage 21/23)" marks in `docs/roadmap.md`, `docs/known-alerts.md`, `notes/2026-11-06-telegram-bot-facts.md` and `notes/2026-11-03-pilot-vps.md` replaced. The user said yes to the D3 change and to the other proposals.
+- 2026-11-07: Stage 24.1 built (D3 change: a linked chat that sends a used token gets `ALREADY_LINKED_TEXT`; 2 router tests), reviewer PASS (Sonnet). Checks: lint, typecheck, `test:unit` 725 pass, `test:int` 480 pass (implementer); router file 15 pass (reviewer).

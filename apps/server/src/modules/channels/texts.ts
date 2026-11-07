@@ -11,6 +11,7 @@ export function helpText(): string {
 }
 
 export const LINKED_TEXT = `✅ This chat is linked. Digests and urgent notices come here.\n${helpText()}`;
+export const ALREADY_LINKED_TEXT = `✅ This chat is linked already.\n${helpText()}`;
 export const LINK_USED_TEXT = "This link was used already. Ask for a new link.";
 export const LINK_EXPIRED_TEXT = "This link has expired (a link works for 15 minutes). Ask for a new link.";
 export const ERROR_TEXT = "Something went wrong. Try again later.";

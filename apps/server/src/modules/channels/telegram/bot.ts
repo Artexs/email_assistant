@@ -8,7 +8,7 @@ import { createLog } from "../../../platform/log";
 import { consumeLinkToken } from "../linking";
 import { commandNames, type LinkedChat, type UpdateHandlers } from "../port";
 import { findChatLink } from "../repo";
-import { ERROR_TEXT, helpText, LINK_EXPIRED_TEXT, LINK_USED_TEXT, LINKED_TEXT } from "../texts";
+import { ALREADY_LINKED_TEXT, ERROR_TEXT, helpText, LINK_EXPIRED_TEXT, LINK_USED_TEXT, LINKED_TEXT } from "../texts";
 
 import { messageOptions } from "./api";
 import { isNotModified, telegramErrorLabel } from "./errors";
@@ -65,7 +65,7 @@ export function createTelegramBot(
       await reply(ctx, LINKED_TEXT);
     } else if (result.kind === "used") {
       log.info("a used link token was tried");
-      await reply(ctx, LINK_USED_TEXT);
+      await reply(ctx, (await findChatLink(db, chatId)) ? ALREADY_LINKED_TEXT : LINK_USED_TEXT);
     } else if (result.kind === "expired") {
       log.info("an expired link token was tried");
       await reply(ctx, LINK_EXPIRED_TEXT);
