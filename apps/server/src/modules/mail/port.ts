@@ -78,7 +78,7 @@ export interface MailProvider {
   deleteMessage(folder: string, uid: number): Promise<boolean>;
   /** Adds and removes IMAP flags of one message. Throws MailNotFoundError when `uid` is not in `folder`. */
   setFlags(folder: string, uid: number, change: { add?: string[]; remove?: string[] }): Promise<void>;
-  /** APPEND of a raw RFC 5322 message. `uid` is null when the server has no UIDPLUS. Creates nothing: the caller runs ensureFolder first. */
+  /** APPEND of a raw RFC 5322 message. `uid` is null when the message is stored but the server gives no APPENDUID; a skipped APPEND throws SoftError. Creates nothing: the caller runs ensureFolder first. */
   appendMessage(folder: string, raw: Buffer, flags: string[], internalDate: Date): Promise<{ uid: number | null }>;
   close(): Promise<void>;
 }
