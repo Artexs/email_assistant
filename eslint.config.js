@@ -67,7 +67,7 @@ const astroConfig = eslintPluginAstro.configs["flat/recommended"].map((config) =
 }));
 
 const nodeConfig = tseslint.config({
-  files: ["apps/server/**/*.ts", "packages/**/*.ts"],
+  files: ["apps/server/**/*.ts", "packages/**/*.ts", "tools/**/*.ts"],
   plugins: {
     import: eslintPluginImport,
   },
@@ -79,7 +79,7 @@ const nodeConfig = tseslint.config({
   settings: {
     "import/resolver": {
       typescript: {
-        project: ["apps/server/tsconfig.json", "packages/*/tsconfig.json"],
+        project: ["apps/server/tsconfig.json", "packages/*/tsconfig.json", "tools/*/tsconfig.json"],
       },
     },
   },

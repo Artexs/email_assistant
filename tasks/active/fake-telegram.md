@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress — plan approved, ready for the build.** Left: stages 1–6. Start in pi: `/skill:run-task tasks/active/fake-telegram.md`. Git mode: worktree (`../email_assistant-wt/fake-telegram`, branch `task/fake-telegram`). Read "Parallel work with S4" first.
+> **Status 2026-11-07 — in progress — stage 1 done (PASS).** Left: stages 2–6; the 1.1 Docker image check (the daemon refuses this shell user; CI does not build the image). Git mode: worktree (`../email_assistant-wt/fake-telegram`, branch `task/fake-telegram`). Read "Parallel work with S4" first.
 
 # Fake Telegram: a local Bot API emulator for agent-run dev tests
 
@@ -84,7 +84,7 @@ The user allows this build to run at the same time as the S4 build (`tasks/activ
 
 Create `tools/fake-telegram/` (root `workspaces` adds `tools/*`, `deploy/Dockerfile` copies its `package.json`, `test:unit` adds `tools`). In-memory state (bot, chats, messages, update queue). HTTP server for `getMe`, `deleteWebhook`, `setMyCommands`, `getUpdates` (long polling with offset and timeout), `sendMessage`, `editMessageText`, `answerCallbackQuery`. Tests drive it with a real grammY `Bot`.
 
-- [ ] **1.1 Workspace, package skeleton, image**
+- [x] **1.1 Workspace, package skeleton, image**
   - Goal: an empty `@ea/fake-telegram` workspace that install, lint, typecheck, unit tests and the server image accept.
   - Files:
     - `tools/fake-telegram/package.json` (new): `{ "name": "@ea/fake-telegram", "private": true, "type": "module", "exports": { ".": "./src/index.ts" }, "scripts": { "typecheck": "tsc --noEmit" }, "devDependencies": { "grammy": "^1.46.0" } }`. No runtime dependency: the source uses only `import type` from `grammy/types`; the tests use the `grammy` runtime.
@@ -101,7 +101,7 @@ Create `tools/fake-telegram/` (root `workspaces` adds `tools/*`, `deploy/Dockerf
   - Done when: all checks pass; `git diff --stat` shows `bun.lock` changed only by the new workspace.
   - Out of scope: any fake logic; changes in `apps/*` or `packages/*`; `test:int`.
 
-- [ ] **1.2 In-memory state**
+- [x] **1.2 In-memory state**
   - Goal: one pure state object that holds the bot, the chats, the messages, the callback queries and the update queue.
   - Files: `tools/fake-telegram/src/state.ts` (new), `tools/fake-telegram/src/state.test.ts` (new), `tools/fake-telegram/src/index.ts` (re-export).
   - Interfaces (stages 2, 3 and 5 build on these names):
@@ -171,7 +171,7 @@ Create `tools/fake-telegram/` (root `workspaces` adds `tools/*`, `deploy/Dockerf
   - Done when: the tests pass.
   - Out of scope: HTTP, limits and error responses, the driver.
 
-- [ ] **1.3 HTTP server with the Bot API methods**
+- [x] **1.3 HTTP server with the Bot API methods**
   - Goal: a Bun HTTP server that answers the 7 Bot API methods that grammY and the app call, on top of the state.
   - Files: `tools/fake-telegram/src/server.ts` (new), `tools/fake-telegram/src/server.test.ts` (new), `tools/fake-telegram/src/index.ts` (re-export).
   - Interfaces:
@@ -480,3 +480,4 @@ Answered by the user on 2026-11-07: (a) for all 4 (the recommendations). The liv
 - 2026-11-07: Moved to `active/`. User: the build may run in parallel with S4; rules in "Parallel work with S4". Plan commit `059178c` is local: the push waits for the S4 commits below it (review pending), and this shell had no SSH key.
 - 2026-11-07: Plan review (reviewer subagent, Opus, high): FAIL with 1 blocker and 15 minor findings, plus 1 question. All fixed in this file. Blocker: in 5.2 step 1, `linked_at` is set back to `startedAt`, because inside one transaction `now()` is older than the JS link time, so `detectUrgent` would skip the mail. Minor fixes: real import paths, the exact undo rows, the `Int8` chat id, the `origin` rule for `isLoopbackApiRoot`, 415 for non-JSON control POSTs, the real script flags in 6.2, the shared-files list, and broken code spans. Question 17 (localhost): the docs recommend `127.0.0.1` only, and the config still accepts `localhost` and `[::1]`.
 - 2026-11-07: User: tasks with stages use worktrees by default. This task: `Git mode: worktree`; the "Parallel work with S4" rules are updated for the branch.
+- 2026-11-07: Build session (Claude Code). Worktree created from `origin/master` `29ecf9f`. Stage 1 built (1.2 fix: R6 constants moved to `state.ts`). Review PASS with 2 minors (`hasChat` only after a user message; a non-finite `getUpdates` offset is ignored), fixed, re-review PASS. Checks: `bun run lint` exit 0, `bun run typecheck` all exit 0, `bun run test:unit` 950 pass 0 fail. Image check not run: `docker info` → permission denied for this user.
