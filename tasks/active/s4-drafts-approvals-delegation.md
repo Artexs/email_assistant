@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — planned and approved; build not started.** The user approved the plan with every default (questions 1–12) on 2026-11-07. Next: the build with `run-task` (no planner), stage 1 first, after S3 is built and deployed (S3 stages 19–20 on the VPS). Do not build S4 in the same working tree while the S3 build runs.
+> **Status 2026-11-07 — planned and approved; build not started.** The user approved the plan with every default (questions 1–12) on 2026-11-07. Next: the build with `run-task` (no planner), stage 1 first, after S3 is built and deployed (S3 stages 19–20 on the VPS). Do not build S4 in the same working tree while the S3 build runs. Build handoff: `notes/2026-11-07-handoff-s4-build.md`.
 
 # S4 Drafts, approvals, delegation
 
