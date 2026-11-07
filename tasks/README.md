@@ -82,6 +82,19 @@ This mode replaces steps 2–4 above when the task file says `Run mode: pipeline
 6. **Limit: 2 stages ahead.** The implementer of stage N+2 starts only after stage N has PASS. Example: stages 10 and 11 are built, and the stage 10 review is not done → the main session waits for it before it starts stage 12. Why: a review can change stage N, and the stages after it build on it. The limit keeps the redo small.
 7. **Never** rewrite a commit, force-push, or push a stage before its PASS. A group review at a checkpoint runs after all stages of its range have PASS.
 
+### Git mode (user decision 2026-11-07)
+
+A task file names its mode in a line `Git mode: master` or `Git mode: worktree`. No line = `master`. Rules in `CLAUDE.md`.
+
+- **`master`:** commit in the main checkout and push to `master` with a standard `git push`.
+- **`worktree`:**
+  1. Create: `git worktree add ../email_assistant-wt/<name> -b task/<name> origin/master`. Copy `.env` from the main checkout (never commit it), then run `bun install`.
+  2. Work: commit the stages on the branch, and push with `git push -u origin task/<name>`. To get new `master` work, run `git merge origin/master` in the branch. Never rebase a pushed branch.
+  3. Merge: at the end of the task (or at a user checkpoint), run `git merge origin/master` in the branch, and the checks must pass. Then the main checkout runs `git merge --no-ff task/<name>` on `master` and pushes.
+  4. Clean up: `git worktree remove ../email_assistant-wt/<name>`, `git branch -d task/<name>`, `git push origin --delete task/<name>`.
+- **Both modes:** stage only your own files by explicit path. Worktrees share the runtime: the dev DB, GreenMail and the ports in `.env`. Only one checkout runs `bun run test:int`, `db:migrate` or a dev server at a time. Only one task at a time adds a DB migration or changes `bun.lock`.
+- The detached review copies in `~/.cache/ea-review/` (§ "Pipeline mode") are not task worktrees: they never commit.
+
 ## Template
 
 ```markdown
