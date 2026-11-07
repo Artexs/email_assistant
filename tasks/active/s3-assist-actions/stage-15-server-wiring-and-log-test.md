@@ -4,7 +4,7 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 
 ## Stage 15 — Server wiring, `ACTIONS_SCOPE`, shutdown, the log test [risky]
 
-- [ ] **15.1 Config key, jobs in `main.ts`, shutdown**
+- [x] **15.1 Config key, jobs in `main.ts`, shutdown**
   - Goal: the server runs the committer and the returned job every 15 s under the configured scope, passes the scope to Telegram, and stops cleanly.
   - Files: change `apps/server/src/platform/config.ts`, `apps/server/src/platform/config.test.ts`, `.env.example`, `apps/server/src/main.ts`, `apps/server/src/modules/channels/telegram/runtime.ts` (stage 13 added `actionsScope: ActionsScope`; `main.ts` passes the `actionsScope(config)` result).
   - Interfaces: `config.ts` has the shape of the llm-provider-switch commits (`baseSchema = z.object({…})`, `configSchema = baseSchema.superRefine(…)`, `llmSettings()`). Add `ACTIONS_SCOPE: z.enum(["off", "synthetic", "all"]).default("off")` to `baseSchema`, and add one check to the existing `superRefine` (do not add a second one): `ACTIONS_SCOPE === "all"` without `TEST_MAILBOX_ADDRESS` → issue on `TEST_MAILBOX_ADDRESS` (`message: "needed when ACTIONS_SCOPE is all"`). Read `git log --oneline -5 -- apps/server/src/platform/config.ts apps/server/src/main.ts` first: the parallel task may have changed them again. `.env.example`:
@@ -25,7 +25,7 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
   - Done when: the tests pass and the manual start shows the lines.
   - Out of scope: the VPS `.env` (stage 19).
 
-- [ ] **15.2 Log test: no mail data in the S3 log lines (D17)**
+- [x] **15.2 Log test: no mail data in the S3 log lines (D17)**
   - Goal: a test proves that the committer, the returned job, the Undo tap and the failed-notice detector log no subject, address, summary or folder path from mail data, and that the expected lines appear.
   - Files: create `apps/server/test/integration/actions-logs.test.ts` (the pattern of `triage-logs.test.ts` and `telegram-logs.test.ts`: capture the `log` output for the test's duration).
   - Decisions:

@@ -58,6 +58,8 @@ const baseSchema = z.object({
   LLM_DAILY_CAP: z.coerce.number().int().positive().default(defaultLlmDailyCap),
   // off = no triage worker; synthetic = only synthetic mail; all = also real mail, only of TEST_MAILBOX_ADDRESS (ADR 0013).
   TRIAGE_LLM_SCOPE: z.enum(["off", "synthetic", "all"]).default("off"),
+  // off = the committer changes nothing in any mailbox; synthetic = only synthetic mail; all = also real mail, only of TEST_MAILBOX_ADDRESS.
+  ACTIONS_SCOPE: z.enum(["off", "synthetic", "all"]).default("off"),
 });
 
 type BaseConfig = z.infer<typeof baseSchema>;
@@ -105,6 +107,9 @@ export const configSchema = baseSchema.superRefine((config, ctx) => {
   }
   if (config.TRIAGE_LLM_SCOPE === "all" && config.TEST_MAILBOX_ADDRESS === undefined) {
     ctx.addIssue({ code: "custom", path: ["TEST_MAILBOX_ADDRESS"], message: "needed when TRIAGE_LLM_SCOPE is all" });
+  }
+  if (config.ACTIONS_SCOPE === "all" && config.TEST_MAILBOX_ADDRESS === undefined) {
+    ctx.addIssue({ code: "custom", path: ["TEST_MAILBOX_ADDRESS"], message: "needed when ACTIONS_SCOPE is all" });
   }
 });
 

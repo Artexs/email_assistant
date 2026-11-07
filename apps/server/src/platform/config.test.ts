@@ -143,6 +143,19 @@ describe("loadConfig", () => {
     expect(error.message).not.toContain("test-key");
   });
 
+  test("defaults ACTIONS_SCOPE to off and accepts the other two values", () => {
+    expect(loadConfig(fullEnv).ACTIONS_SCOPE).toBe("off");
+    expect(loadConfig({ ...fullEnv, ACTIONS_SCOPE: "synthetic" }).ACTIONS_SCOPE).toBe("synthetic");
+  });
+
+  test("throws ConfigError when ACTIONS_SCOPE=all has no TEST_MAILBOX_ADDRESS", () => {
+    expect(configError({ ...fullEnv, ACTIONS_SCOPE: "all" }).keys).toContain("TEST_MAILBOX_ADDRESS");
+  });
+
+  test("throws ConfigError when ACTIONS_SCOPE has a bad value", () => {
+    expect(configError({ ...fullEnv, ACTIONS_SCOPE: "maybe" }).keys).toContain("ACTIONS_SCOPE");
+  });
+
   test("throws ConfigError with both keys when TRIAGE_LLM_SCOPE=all has neither", () => {
     const error = configError({ ...fullEnv, TRIAGE_LLM_SCOPE: "all" });
     expect(error.keys).toContain("GEMINI_API_KEY");
