@@ -6,7 +6,14 @@ import type { Transaction } from "kysely";
 
 import { createLinkToken, createTelegramBot, type CommandName, type LinkedChat } from "../../src/modules/channels";
 import type { CallbackResult, UpdateHandlers } from "../../src/modules/channels/port";
-import { ERROR_TEXT, helpText, LINK_EXPIRED_TEXT, LINK_USED_TEXT, LINKED_TEXT } from "../../src/modules/channels/texts";
+import {
+  ALREADY_LINKED_TEXT,
+  ERROR_TEXT,
+  helpText,
+  LINK_EXPIRED_TEXT,
+  LINK_USED_TEXT,
+  LINKED_TEXT,
+} from "../../src/modules/channels/texts";
 import type { DB } from "../../src/platform/db";
 
 import { addMember, createOrgWithMailbox, linkChat, randomChatId } from "./fixtures";
@@ -146,6 +153,38 @@ describe("telegram router", () => {
       expect(calls).toHaveLength(1);
       expect(calls[0]?.payload.text).toBe(LINK_USED_TEXT);
       expect(await linkCount(trx, second)).toBe(0);
+    });
+  });
+
+  test("a linked chat that sends its used token again gets ALREADY_LINKED_TEXT", async () => {
+    await withRollback(db, async (trx) => {
+      const { calls, send } = setup(trx);
+      const { orgId, userId } = await createOrgWithMailbox(trx);
+      const chatId = randomChatId();
+      const { token } = await createLinkToken(trx, { orgId }, userId, T);
+      await send(chatId, `/start ${token}`);
+      calls.length = 0;
+      await send(chatId, `/start ${token}`);
+      expect(calls).toHaveLength(1);
+      expect(calls[0]?.method).toBe("sendMessage");
+      expect(calls[0]?.payload.text).toBe(ALREADY_LINKED_TEXT);
+      expect(await linkCount(trx, chatId)).toBe(1);
+    });
+  });
+
+  test("a linked chat that sends an expired token gets LINK_EXPIRED_TEXT", async () => {
+    await withRollback(db, async (trx) => {
+      const { calls, send } = setup(trx);
+      const linked = await linkedMember(trx);
+      const { token } = await createLinkToken(
+        trx,
+        { orgId: linked.orgId },
+        linked.userId,
+        new Date(T.getTime() - 16 * 60_000)
+      );
+      await send(linked.chatId, `/start ${token}`);
+      expect(calls).toHaveLength(1);
+      expect(calls[0]?.payload.text).toBe(LINK_EXPIRED_TEXT);
     });
   });
 
