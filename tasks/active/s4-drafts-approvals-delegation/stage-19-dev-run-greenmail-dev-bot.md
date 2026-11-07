@@ -34,3 +34,7 @@ Part of [`../s4-drafts-approvals-delegation.md`](../s4-drafts-approvals-delegati
   - Check: steps 4–14 give the results above; `t0`, the approval message length, the LLM call count (`select reason_code, count(*) from audit_log where event = 'llm.call' and created_at > '<t0>' group by 1;`) and the sizes go into "Results".
   - Done when: the user confirms steps 5, 6, 8, 9, 10, 12 on the phone and the checks pass.
   - Out of scope: the VPS (stage 22); real mail; Interia.
+
+### Result (agent run with the fake Telegram, 2026-11-07)
+
+Steps 1–15 passed on GreenMail with `fake-tg` as phone, own test database `email_assistant_s19` (dropped), no code bug found. The details (ids, statuses, counts, sizes) are in the task file, Results, block "Stage 19 (dev run with fake Telegram)". Step 19.1 stays unticked: its Done-when asks the user to confirm steps 5, 6, 8, 9, 10, 12 on a real phone. Two cosmetic points are in the Results block.
