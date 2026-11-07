@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import type { ActionType, Category, MembershipRole } from "@ea/core";
+import { sendPayloadFor, type ActionType, type Category, type DraftPayload, type MembershipRole } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { MailCapabilities, NewEmail } from "../../src/modules/mail";
@@ -324,4 +324,115 @@ export async function insertDelegation(
     .returning("id")
     .executeTakeFirstOrThrow();
   return row.id;
+}
+
+// A triaged delegation mail with its `create_draft` and `send` rows, linked by `depends_on_action_id` (D2, D17).
+// Default statuses: the draft `applied`, the send `awaiting_approval`.
+export async function insertDraftAndSend(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: {
+    kind?: "delegation" | "clarification" | "reminder";
+    draftStatus?: string;
+    sendStatus?: string;
+    to?: string;
+    delegateId?: string;
+    delegateName?: string;
+    task?: string;
+    dueDate?: string;
+    language?: "pl" | "en";
+    approved?: { userId: string; at: Date };
+    notifiedAt?: Date | null;
+    createdAt?: Date;
+    lockedAt?: Date | null;
+    draftProviderResult?: Record<string, unknown>;
+    outgoingMessageId?: string | null;
+    messageId?: string | null;
+    subject?: string;
+    from?: string;
+    bodyText?: string;
+    inReplyTo?: string | null;
+    referencesHeader?: string | null;
+    toAddresses?: string[];
+    setId?: string;
+    delegationId?: string;
+    reminder?: 1 | 2;
+  }
+): Promise<{ emailId: string; draftId: string; sendId: string }> {
+  const createdAt = opts.createdAt ?? new Date();
+  const kind = opts.kind ?? (opts.reminder === undefined ? "delegation" : "reminder");
+  const to = opts.to ?? `delegate-${randomUUID()}@x.test`;
+  const language = opts.language ?? "en";
+  const task = opts.task ?? "Prepare the offer";
+  const delegate = {
+    delegate_id: opts.delegateId ?? randomUUID(),
+    delegate_name: opts.delegateName ?? "Delegate",
+    to: [to],
+    task,
+    due_date: opts.dueDate ?? "",
+    language,
+  };
+  const draft: DraftPayload =
+    kind === "clarification"
+      ? { kind, to: [to], question: task, language }
+      : kind === "reminder"
+        ? {
+            kind,
+            ...delegate,
+            delegation_id: opts.delegationId ?? randomUUID(),
+            reminder: opts.reminder ?? 1,
+            thread: { in_reply_to: null, references: [] },
+          }
+        : { kind, ...delegate };
+  const draftPayload: Record<string, unknown> = { ...draft };
+  if (opts.delegationId !== undefined) draftPayload.delegation_id = opts.delegationId;
+  const sendPayload: Record<string, unknown> = { ...sendPayloadFor(draft) };
+  if (opts.delegationId !== undefined) sendPayload.delegation_id = opts.delegationId;
+  if (opts.setId !== undefined) sendPayload.set_id = opts.setId;
+
+  const emailId = await insertTriaged(trx, ctx, mailboxId, {
+    category: kind === "clarification" ? "needs_reply" : "delegation",
+    createdAt,
+    subject: opts.subject,
+    from: opts.from,
+    messageId: opts.messageId,
+  });
+  await trx
+    .updateTable("emails")
+    .set({
+      body_text: opts.bodyText ?? null,
+      in_reply_to: opts.inReplyTo ?? null,
+      references_header: opts.referencesHeader ?? null,
+      to_addresses: opts.toAddresses ?? [],
+    })
+    .where("id", "=", emailId)
+    .where("org_id", "=", ctx.orgId)
+    .execute();
+
+  const day = createdAt.toISOString().slice(0, 10);
+  const suffix = kind === "reminder" ? `:reminder:${day}` : "";
+  const draftId = await insertAction(trx, ctx, emailId, {
+    type: "create_draft",
+    status: opts.draftStatus ?? "applied",
+    payload: draftPayload,
+    idempotencyKey: `${emailId}:create_draft${suffix}`,
+    providerResult: opts.draftProviderResult ?? null,
+    createdAt,
+  });
+  const sendId = await insertAction(trx, ctx, emailId, {
+    type: "send",
+    status: opts.sendStatus ?? "awaiting_approval",
+    payload: sendPayload,
+    idempotencyKey: `${emailId}:send${suffix}`,
+    dependsOnActionId: draftId,
+    notifiedAt: opts.notifiedAt ?? null,
+    approvedBy: opts.approved?.userId ?? null,
+    approvedAt: opts.approved?.at ?? null,
+    approvedVia: opts.approved === undefined ? null : "telegram",
+    outgoingMessageId: opts.outgoingMessageId ?? null,
+    lockedAt: opts.lockedAt ?? null,
+    createdAt,
+  });
+  return { emailId, draftId, sendId };
 }

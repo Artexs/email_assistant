@@ -14,6 +14,8 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 import { mailKindFilter } from "../mail";
 
+import { APPROVAL_TTL_MS } from "./constants";
+
 type DbOrTrx = Db | Transaction<DB>;
 
 const actionTypeSchema = z.enum(actionTypes);
@@ -210,17 +212,31 @@ export async function listActionsForEmails(
   return result;
 }
 
-// none = save_summary only; synthetic = save_summary and synthetic mail; all = everything.
-export type ClaimFilter = { kind: "none" } | { kind: "synthetic" } | { kind: "all" };
+// `mailbox` gates the mailbox changes and the drafts: none = save_summary only; synthetic = save_summary and synthetic mail;
+// all = everything. `send` gates the sends (D16): none = no send; self = only to the listed (lower-case) addresses; all = every send.
+export type MailboxClaimFilter = { kind: "none" } | { kind: "synthetic" } | { kind: "all" };
+export type SendClaimFilter = { kind: "none" } | { kind: "self"; addresses: string[] } | { kind: "all" };
+export interface ClaimFilter {
+  mailbox: MailboxClaimFilter;
+  send: SendClaimFilter;
+}
 
 export interface ClaimedAction {
   id: string;
   email_id: string;
   type: ActionType;
-  payload: Record<string, string>;
+  status: "ready" | "approved" | "applying";
+  payload: Record<string, unknown>;
   attempts: number;
   locked_at: Date;
+  created_at: Date;
   reverses_action_id: string | null;
+  // The `created_at` of the reversed row (reverse rows only): the locate window of a reverse draft.
+  original_created_at: Date | null;
+  depends_on_action_id: string | null;
+  outgoing_message_id: string | null;
+  approved_at: Date | null;
+  provider_result: Record<string, unknown> | null;
   email: {
     id: string;
     mailbox_id: string;
@@ -230,8 +246,13 @@ export interface ClaimedAction {
     message_id_header: string | null;
     content_hash: string;
     from_address: string | null;
-    received_at: Date;
+    to_addresses: string[];
     subject: string | null;
+    received_at: Date;
+    body_text: string | null;
+    in_reply_to: string | null;
+    references_header: string | null;
+    thread_key: string;
   };
 }
 
@@ -239,7 +260,7 @@ export interface ClaimedAction {
 export const CLAIM_MAX_AGE_MS = 24 * 3_600_000;
 export const CLAIM_MAX_MAIL_AGE_MS = 7 * 24 * 3_600_000;
 
-// D6: save_summary first, the move last (a move can change the UID).
+// D6: save_summary first, the move last (a move can change the UID); a draft before its send.
 const TYPE_RANK: Record<ActionType, number> = {
   save_summary: 0,
   flag: 1,
@@ -257,14 +278,45 @@ interface ClaimWindow {
   filter: ClaimFilter;
 }
 
+const sqlTrue = sql<SqlBool>`true`;
+const sqlFalse = sql<SqlBool>`false`;
+
+function mailboxFilterExpr(filter: MailboxClaimFilter): Expression<SqlBool> {
+  if (filter.kind === "none") return sqlFalse;
+  if (filter.kind === "synthetic") return mailKindFilter("synthetic");
+  return sqlTrue;
+}
+
+// `payload.to` is a JSON array (D2). The CASE keeps a malformed payload from raising: it is simply not admitted.
+function sendFilterExpr(filter: SendClaimFilter): Expression<SqlBool> {
+  if (filter.kind === "none") return sqlFalse;
+  if (filter.kind === "all") return sqlTrue;
+  const addresses = filter.addresses.map((address) => address.toLowerCase());
+  return sql<SqlBool>`(CASE WHEN jsonb_typeof(actions.payload->'to') = 'array' THEN
+      jsonb_array_length(actions.payload->'to') > 0 AND NOT EXISTS (
+        SELECT 1 FROM jsonb_array_elements_text(actions.payload->'to') r WHERE lower(r) <> ALL(${addresses}::text[])
+      )
+    ELSE false END)`;
+}
+
+// The draft of the send (`depends_on_action_id`) is `applied` (same org).
+const draftApplied = sql<SqlBool>`EXISTS (
+  SELECT 1 FROM actions d
+  WHERE d.id = actions.depends_on_action_id AND d.org_id = actions.org_id AND d.status = 'applied'
+)`;
+
+// A send of the draft waits for approval (same org).
+const sendWaits = sql<SqlBool>`EXISTS (
+  SELECT 1 FROM actions s
+  WHERE s.depends_on_action_id = actions.id AND s.org_id = actions.org_id AND s.status = 'awaiting_approval'
+)`;
+
+// D17. The lock and retry rules apply to every branch; the branches are the S3 mailbox actions, the drafts and the sends.
 function claimableWhere(eb: ClaimEb, ctx: TenantContext, mailboxId: string, opts: ClaimWindow): Expression<SqlBool> {
-  const parts: Expression<SqlBool>[] = [
-    eb("actions.org_id", "=", ctx.orgId),
-    eb("emails.org_id", "=", ctx.orgId),
-    eb("emails.mailbox_id", "=", mailboxId),
+  const { mailbox, send } = opts.filter;
+  const mailboxChanges = eb.and([
     eb("actions.status", "=", "ready"),
-    eb.or([eb("actions.next_attempt_at", "is", null), eb("actions.next_attempt_at", "<=", opts.now)]),
-    eb.or([eb("actions.locked_at", "is", null), eb("actions.locked_at", "<", opts.staleBefore)]),
+    eb("actions.type", "in", [...MAILBOX_ACTION_TYPES, "save_summary"]),
     eb.or([
       eb("actions.type", "=", "save_summary"),
       eb("actions.reverses_action_id", "is not", null),
@@ -273,12 +325,43 @@ function claimableWhere(eb: ClaimEb, ctx: TenantContext, mailboxId: string, opts
         eb("emails.received_at", ">=", new Date(opts.now.getTime() - CLAIM_MAX_MAIL_AGE_MS)),
       ]),
     ]),
-  ];
-  if (opts.filter.kind === "none") parts.push(eb("actions.type", "=", "save_summary"));
-  if (opts.filter.kind === "synthetic") {
-    parts.push(eb.or([eb("actions.type", "=", "save_summary"), mailKindFilter("synthetic")]));
-  }
-  return eb.and(parts);
+    mailbox.kind === "none"
+      ? eb("actions.type", "=", "save_summary")
+      : mailbox.kind === "synthetic"
+        ? eb.or([eb("actions.type", "=", "save_summary"), mailKindFilter("synthetic")])
+        : sqlTrue,
+  ]);
+  // A draft is made only while its send waits; an `applying` one is the recovery (D12) and stays behind the mailbox filter.
+  const drafts = eb.and([
+    eb("actions.type", "=", "create_draft"),
+    mailboxFilterExpr(mailbox),
+    eb.or([
+      eb.and([eb("actions.status", "=", "ready"), eb("actions.reverses_action_id", "is not", null)]),
+      eb.and([eb("actions.status", "=", "ready"), eb("actions.reverses_action_id", "is", null), sendWaits]),
+      eb.and([eb("actions.status", "=", "applying"), eb("actions.reverses_action_id", "is", null)]),
+    ]),
+  ]);
+  // The `applying` recovery sends nothing: the send filter does not apply (D16).
+  const sends = eb.and([
+    eb("actions.type", "=", "send"),
+    draftApplied,
+    eb.or([
+      eb.and([
+        eb("actions.status", "=", "approved"),
+        eb("actions.approved_at", ">=", new Date(opts.now.getTime() - APPROVAL_TTL_MS)),
+        sendFilterExpr(send),
+      ]),
+      eb("actions.status", "=", "applying"),
+    ]),
+  ]);
+  return eb.and([
+    eb("actions.org_id", "=", ctx.orgId),
+    eb("emails.org_id", "=", ctx.orgId),
+    eb("emails.mailbox_id", "=", mailboxId),
+    eb.or([eb("actions.next_attempt_at", "is", null), eb("actions.next_attempt_at", "<=", opts.now)]),
+    eb.or([eb("actions.locked_at", "is", null), eb("actions.locked_at", "<", opts.staleBefore)]),
+    eb.or([mailboxChanges, drafts, sends]),
+  ]);
 }
 
 export async function countClaimable(
@@ -286,7 +369,7 @@ export async function countClaimable(
   ctx: TenantContext,
   mailboxId: string,
   opts: { now: Date; staleBefore: Date; filter: ClaimFilter }
-): Promise<{ total: number; mailboxChanging: number }> {
+): Promise<{ total: number; mailboxChanging: number; sending: number }> {
   const row = await db
     .selectFrom("actions")
     .innerJoin("emails", (join) =>
@@ -294,16 +377,42 @@ export async function countClaimable(
     )
     .select([
       sql<string>`count(*)`.as("total"),
-      sql<string>`count(*) FILTER (WHERE actions.type IN (${sql.join([...MAILBOX_ACTION_TYPES])}))`.as(
+      sql<string>`count(*) FILTER (WHERE actions.type IN (${sql.join([...MAILBOX_ACTION_TYPES, "create_draft"])}))`.as(
         "mailbox_changing"
       ),
+      sql<string>`count(*) FILTER (WHERE actions.type = 'send')`.as("sending"),
     ])
     .where((eb) => claimableWhere(eb, ctx, mailboxId, opts))
     .executeTakeFirstOrThrow();
-  return { total: Number(row.total), mailboxChanging: Number(row.mailbox_changing) };
+  return { total: Number(row.total), mailboxChanging: Number(row.mailbox_changing), sending: Number(row.sending) };
 }
 
-// `locked_at` = `now` is the token for finishAction and releaseAction. The claim does not change `attempts` (D7).
+// D16: `approved` sends of the mailbox with an applied draft that the send filter does not admit (no lock rule).
+export async function countHeldSends(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { send: SendClaimFilter }
+): Promise<number> {
+  const row = await db
+    .selectFrom("actions")
+    .innerJoin("emails", (join) =>
+      join.onRef("emails.id", "=", "actions.email_id").onRef("emails.org_id", "=", "actions.org_id")
+    )
+    .select(sql<string>`count(*)`.as("count"))
+    .where("actions.org_id", "=", ctx.orgId)
+    .where("emails.org_id", "=", ctx.orgId)
+    .where("emails.mailbox_id", "=", mailboxId)
+    .where("actions.type", "=", "send")
+    .where("actions.status", "=", "approved")
+    .where(draftApplied)
+    .where((eb) => eb.not(sendFilterExpr(opts.send)))
+    .executeTakeFirstOrThrow();
+  return Number(row.count);
+}
+
+// `locked_at` = `now` is the token for markApplying, finishAction and releaseAction (also on an `approved` row).
+// The claim does not change `attempts` or the status (D7).
 export async function claimActions(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -322,7 +431,7 @@ export async function claimActions(
         .orderBy("emails.received_at")
         .orderBy("emails.id")
         .orderBy(
-          sql`CASE actions.type WHEN 'save_summary' THEN 0 WHEN 'flag' THEN 1 WHEN 'mark_read' THEN 2 WHEN 'move' THEN 3 END`
+          sql`CASE actions.type WHEN 'save_summary' THEN 0 WHEN 'flag' THEN 1 WHEN 'mark_read' THEN 2 WHEN 'move' THEN 3 WHEN 'create_draft' THEN 4 WHEN 'send' THEN 5 END`
         )
         .limit(opts.limit)
         .forUpdate("actions")
@@ -339,9 +448,18 @@ export async function claimActions(
       "actions.id",
       "actions.email_id",
       "actions.type",
+      "actions.status",
       "actions.payload",
       "actions.attempts",
+      "actions.created_at",
       "actions.reverses_action_id",
+      "actions.depends_on_action_id",
+      "actions.outgoing_message_id",
+      "actions.approved_at",
+      "actions.provider_result",
+      sql<Date | null>`(SELECT o.created_at FROM actions o WHERE o.id = actions.reverses_action_id AND o.org_id = actions.org_id)`.as(
+        "original_created_at"
+      ),
       "emails.mailbox_id",
       "emails.folder",
       "emails.uid",
@@ -349,8 +467,13 @@ export async function claimActions(
       "emails.message_id_header",
       "emails.content_hash",
       "emails.from_address",
+      "emails.to_addresses",
       "emails.received_at",
       "emails.subject",
+      "emails.body_text",
+      "emails.in_reply_to",
+      "emails.references_header",
+      "emails.thread_key",
     ])
     .execute();
   return rows
@@ -359,10 +482,17 @@ export async function claimActions(
         id: row.id,
         email_id: row.email_id,
         type: actionTypeSchema.parse(row.type),
-        payload: row.payload as Record<string, string>,
+        status: row.status as ClaimedAction["status"],
+        payload: row.payload as Record<string, unknown>,
         attempts: row.attempts,
         locked_at: opts.now,
+        created_at: row.created_at,
         reverses_action_id: row.reverses_action_id,
+        original_created_at: row.original_created_at,
+        depends_on_action_id: row.depends_on_action_id,
+        outgoing_message_id: row.outgoing_message_id,
+        approved_at: row.approved_at,
+        provider_result: row.provider_result as Record<string, unknown> | null,
         email: {
           id: row.email_id,
           mailbox_id: row.mailbox_id,
@@ -372,8 +502,13 @@ export async function claimActions(
           message_id_header: row.message_id_header,
           content_hash: row.content_hash,
           from_address: row.from_address,
-          received_at: row.received_at,
+          to_addresses: row.to_addresses,
           subject: row.subject,
+          received_at: row.received_at,
+          body_text: row.body_text,
+          in_reply_to: row.in_reply_to,
+          references_header: row.references_header,
+          thread_key: row.thread_key,
         },
       })
     )
@@ -385,30 +520,77 @@ export async function claimActions(
     );
 }
 
+// The first step of the apply step for a draft or a send: it commits before any APPEND or SMTP call (D17).
+// `locked_at` stays: the claim token is valid through the step.
+export async function markApplying(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  id: string,
+  lockedAt: Date,
+  opts?: { outgoingMessageId?: string }
+): Promise<boolean> {
+  const result = await db
+    .updateTable("actions")
+    .set((eb) => ({
+      status: "applying",
+      outgoing_message_id: opts?.outgoingMessageId ?? eb.ref("outgoing_message_id"),
+      updated_at: sql<Date>`now()`,
+    }))
+    .where("id", "=", id)
+    .where("org_id", "=", ctx.orgId)
+    .where("status", "in", ["ready", "approved"])
+    .where("locked_at", "=", lockedAt)
+    .executeTakeFirst();
+  return result.numUpdatedRows > 0n;
+}
+
+type ProviderResult = Record<string, string | number | boolean | null>;
+
 export type FinishNext =
-  | { status: "applied"; at: Date; providerResult?: Record<string, string | number | boolean | null> }
-  | { status: "failed"; at: Date; reason: string; lastError?: string; countAttempt?: true };
+  | { status: "applied"; at: Date; providerResult?: ProviderResult }
+  | {
+      status: "failed";
+      at: Date;
+      reason: string;
+      lastError?: string;
+      countAttempt?: true;
+      // S4: a send failure stores { stage, response_code, code } for the result notice (D20).
+      providerResult?: ProviderResult;
+    }
+  // S4: an `applying` draft whose send ended before the APPEND (N12).
+  | { status: "expired"; at: Date; reason: "send_closed" };
 
 // `lockedAt` is the claim token: a stale run that lost its claim changes nothing.
-// `next.at` is the run clock: it sets `updated_at` (and `applied_at`).
+// `next.at` is the run clock: it sets `updated_at` (and `applied_at`). `from` lists the statuses that may finish.
 // `countAttempt` on a failure counts the try that failed (the third hard error leaves `attempts` = 3).
 export async function finishAction(
   trx: DbOrTrx,
   ctx: TenantContext,
   id: string,
   lockedAt: Date,
-  next: FinishNext
+  next: FinishNext,
+  opts?: { from?: readonly ("ready" | "approved" | "applying")[] }
 ): Promise<boolean> {
   const common = { locked_at: null, next_attempt_at: null, updated_at: next.at };
-  const values =
-    next.status === "applied"
-      ? {
-          ...common,
-          status: "applied",
-          applied_at: next.at,
-          provider_result: next.providerResult === undefined ? null : JSON.stringify(next.providerResult),
-        }
-      : { ...common, status: "failed", status_reason: next.reason };
+  let values: Record<string, unknown>;
+  if (next.status === "applied") {
+    values = {
+      ...common,
+      status: "applied",
+      applied_at: next.at,
+      last_error: null,
+      provider_result: next.providerResult === undefined ? null : JSON.stringify(next.providerResult),
+    };
+  } else if (next.status === "failed") {
+    values = {
+      ...common,
+      status: "failed",
+      status_reason: next.reason,
+      ...(next.providerResult === undefined ? {} : { provider_result: JSON.stringify(next.providerResult) }),
+    };
+  } else {
+    values = { ...common, status: "expired", status_reason: next.reason };
+  }
   const result = await trx
     .updateTable("actions")
     .set((eb) => ({
@@ -422,22 +604,31 @@ export async function finishAction(
     }))
     .where("id", "=", id)
     .where("org_id", "=", ctx.orgId)
-    .where("status", "=", "ready")
+    .where("status", "in", [...(opts?.from ?? ["ready", "applying"])])
     .where("locked_at", "=", lockedAt)
     .executeTakeFirst();
   return result.numUpdatedRows > 0n;
 }
 
+// Puts the row back in `toStatus` with the lock cleared: an `applying` send whose SMTP call never started goes back to
+// `approved`; a draft that could not start goes back to `ready`.
 export async function releaseAction(
   db: DbOrTrx,
   ctx: TenantContext,
   id: string,
   lockedAt: Date,
-  opts: { nextAttemptAt: Date | null; countAttempt: boolean; now: Date; lastError?: string }
+  opts: {
+    toStatus: "ready" | "approved" | "applying";
+    nextAttemptAt: Date | null;
+    countAttempt: boolean;
+    now: Date;
+    lastError?: string;
+  }
 ): Promise<boolean> {
   const result = await db
     .updateTable("actions")
     .set((eb) => ({
+      status: opts.toStatus,
       locked_at: null,
       next_attempt_at: opts.nextAttemptAt,
       attempts: opts.countAttempt ? eb("attempts", "+", 1) : eb.ref("attempts"),
@@ -446,13 +637,14 @@ export async function releaseAction(
     }))
     .where("id", "=", id)
     .where("org_id", "=", ctx.orgId)
-    .where("status", "=", "ready")
+    .where("status", "in", ["ready", "approved", "applying"])
     .where("locked_at", "=", lockedAt)
     .executeTakeFirst();
   return result.numUpdatedRows > 0n;
 }
 
-// No attempt count, `next_attempt_at` unchanged: the rows of a batch that did not run.
+// No attempt count, `next_attempt_at` and status unchanged: the rows of a batch that did not run stay in their pre-claim
+// status (`markApplying` is the first thing the apply step does for a row).
 export async function releaseActions(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -466,10 +658,26 @@ export async function releaseActions(
     .set({ locked_at: null, updated_at: now })
     .where("id", "in", [...ids])
     .where("org_id", "=", ctx.orgId)
-    .where("status", "=", "ready")
+    .where("status", "in", ["ready", "approved", "applying"])
     .where("locked_at", "=", lockedAt)
     .executeTakeFirst();
   return Number(result.numUpdatedRows);
+}
+
+// jsonb merge (`provider_result || patch`), e.g. the Sent copy outcome after `applied`.
+export async function updateProviderResult(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  id: string,
+  patch: Record<string, unknown>
+): Promise<boolean> {
+  const result = await db
+    .updateTable("actions")
+    .set({ provider_result: sql`coalesce(provider_result, '{}'::jsonb) || ${JSON.stringify(patch)}::jsonb` })
+    .where("id", "=", id)
+    .where("org_id", "=", ctx.orgId)
+    .executeTakeFirst();
+  return result.numUpdatedRows > 0n;
 }
 
 // D21. The caller writes the `action.expired` audit rows.
@@ -618,7 +826,7 @@ export interface FailedAction {
   type: ActionType;
   reverse: boolean;
   status_reason: string | null;
-  payload: Record<string, string>;
+  payload: Record<string, unknown>;
   attempts: number;
   updated_at: Date;
   subject: string | null;
@@ -663,6 +871,9 @@ export async function listFailedUnnotified(
         eb("actions.reverses_action_id", "is not", null),
       ])
     )
+    // One notice per failure (D20): a send and an original draft end in a `send_result` notice.
+    .where("actions.type", "<>", "send")
+    .where((eb) => eb.or([eb("actions.type", "<>", "create_draft"), eb("actions.reverses_action_id", "is not", null)]))
     .orderBy("actions.updated_at")
     .orderBy("actions.id")
     .limit(opts.limit)
@@ -673,7 +884,7 @@ export async function listFailedUnnotified(
     type: actionTypeSchema.parse(row.type),
     reverse: row.reverses_action_id !== null,
     status_reason: row.status_reason,
-    payload: row.payload as Record<string, string>,
+    payload: row.payload as Record<string, unknown>,
     attempts: row.attempts,
     updated_at: row.updated_at,
     subject: row.subject,
@@ -813,7 +1024,7 @@ export interface SendRow {
   };
 }
 
-function sendQuery(db: DbOrTrx, ctx: TenantContext, id: string) {
+function sendBase(db: DbOrTrx, ctx: TenantContext) {
   return db
     .selectFrom("actions")
     .innerJoin("emails", (join) =>
@@ -849,8 +1060,11 @@ function sendQuery(db: DbOrTrx, ctx: TenantContext, id: string) {
     ])
     .where("actions.org_id", "=", ctx.orgId)
     .where("emails.org_id", "=", ctx.orgId)
-    .where("actions.type", "=", "send")
-    .where("actions.id", "=", id);
+    .where("actions.type", "=", "send");
+}
+
+function sendQuery(db: DbOrTrx, ctx: TenantContext, id: string) {
+  return sendBase(db, ctx).where("actions.id", "=", id);
 }
 
 type SendQueryRow = NonNullable<Awaited<ReturnType<ReturnType<typeof sendQuery>["executeTakeFirst"]>>>;
@@ -1027,4 +1241,259 @@ export async function listOpenReminderSends(
     .forUpdate()
     .execute();
   return rows.map((row) => row.id);
+}
+
+export async function setApproved(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  id: string,
+  input: { userId: string; via: string; at: Date }
+): Promise<boolean> {
+  const result = await trx
+    .updateTable("actions")
+    .set({
+      status: "approved",
+      approved_by: input.userId,
+      approved_at: input.at,
+      approved_via: input.via,
+      updated_at: input.at,
+    })
+    .where("id", "=", id)
+    .where("org_id", "=", ctx.orgId)
+    .where("type", "=", "send")
+    .where("status", "=", "awaiting_approval")
+    .executeTakeFirst();
+  return result.numUpdatedRows > 0n;
+}
+
+// An `approved` row that a run holds (`locked_at` at or after `staleBefore`) finishes: it is not rejected.
+// The caller writes the audit row. `result_notified_at` stays null (D20).
+export async function setRejected(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  id: string,
+  opts: { at: Date; staleBefore: Date }
+): Promise<boolean> {
+  const result = await trx
+    .updateTable("actions")
+    .set({ status: "rejected", status_reason: "rejected", locked_at: null, next_attempt_at: null, updated_at: opts.at })
+    .where("id", "=", id)
+    .where("org_id", "=", ctx.orgId)
+    .where("type", "=", "send")
+    .where((eb) =>
+      eb.or([
+        eb("status", "=", "awaiting_approval"),
+        eb.and([
+          eb("status", "=", "approved"),
+          eb.or([eb("locked_at", "is", null), eb("locked_at", "<", opts.staleBefore)]),
+        ]),
+      ])
+    )
+    .executeTakeFirst();
+  return result.numUpdatedRows > 0n;
+}
+
+// The sends of one reminder set, locked FOR UPDATE (the action rows only).
+export async function listSetSends(trx: Transaction<DB>, ctx: TenantContext, setId: string): Promise<SendRow[]> {
+  const rows = await sendBase(trx, ctx)
+    .where(sql<string>`actions.payload->>'set_id'`, "=", setId)
+    .orderBy("actions.created_at")
+    .orderBy("actions.id")
+    .forUpdate("actions")
+    .execute();
+  return rows.map(toSendRow);
+}
+
+// "Send again" (D18): one new `approved` send per failed row, same draft. Null when the key exists.
+export async function insertSendAgain(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  previous: SendRow,
+  input: { userId: string; via: string; at: Date }
+): Promise<string | null> {
+  const row = await trx
+    .insertInto("actions")
+    .values({
+      org_id: ctx.orgId,
+      email_id: previous.email_id,
+      type: "send",
+      status: "approved",
+      payload: JSON.stringify(previous.payload),
+      idempotency_key: `${previous.id}:again`,
+      depends_on_action_id: previous.depends_on_action_id,
+      approved_by: input.userId,
+      approved_at: input.at,
+      approved_via: input.via,
+    })
+    .onConflict((oc) => oc.columns(["org_id", "idempotency_key"]).doNothing())
+    .returning("id")
+    .executeTakeFirst();
+  return row?.id ?? null;
+}
+
+// Sends the notifier can show: the draft is `applied` and the mailbox is `active`.
+function notifiableSends(db: DbOrTrx, ctx: TenantContext) {
+  return sendBase(db, ctx)
+    .innerJoin("actions as draft", (join) =>
+      join.onRef("draft.id", "=", "actions.depends_on_action_id").onRef("draft.org_id", "=", "actions.org_id")
+    )
+    .innerJoin("mailboxes", (join) =>
+      join.onRef("mailboxes.id", "=", "emails.mailbox_id").onRef("mailboxes.org_id", "=", "actions.org_id")
+    )
+    .where("draft.org_id", "=", ctx.orgId)
+    .where("mailboxes.org_id", "=", ctx.orgId)
+    .where("draft.status", "=", "applied")
+    .where("mailboxes.status", "=", "active")
+    .where("actions.status", "=", "awaiting_approval")
+    .where("actions.notified_at", "is", null);
+}
+
+export async function listSendsToNotify(db: DbOrTrx, ctx: TenantContext, opts: { limit: number }): Promise<SendRow[]> {
+  const rows = await notifiableSends(db, ctx)
+    .where(sql<boolean>`actions.payload->>'set_id' is null`)
+    .orderBy("actions.created_at")
+    .orderBy("actions.id")
+    .limit(opts.limit)
+    .execute();
+  return rows.map(toSendRow);
+}
+
+// A set is listed whole, and only when none of its sends waits for a draft (D21).
+export async function listSetsToNotify(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { limit: number }
+): Promise<Map<string, SendRow[]>> {
+  const setIdOf = sql<string>`actions.payload->>'set_id'`;
+  const candidates = () =>
+    notifiableSends(db, ctx).where(sql<boolean>`actions.payload->>'set_id' is not null`).where(sql<boolean>`not exists (
+        select 1 from actions s2
+        join actions d2 on d2.id = s2.depends_on_action_id and d2.org_id = s2.org_id
+        where s2.org_id = actions.org_id and s2.type = 'send'
+          and s2.payload->>'set_id' = actions.payload->>'set_id'
+          and d2.status in ('ready', 'applying')
+      )`);
+  const setIds = await candidates()
+    .clearSelect()
+    .select(setIdOf.as("set_id"))
+    .groupBy(setIdOf)
+    .orderBy(sql`min(actions.created_at)`)
+    .orderBy(setIdOf)
+    .limit(opts.limit)
+    .execute();
+  const grouped = new Map<string, SendRow[]>();
+  if (setIds.length === 0) return grouped;
+  const rows = await candidates()
+    .where(
+      setIdOf,
+      "in",
+      setIds.map((r) => r.set_id)
+    )
+    .orderBy("actions.created_at")
+    .orderBy("actions.id")
+    .execute();
+  for (const { set_id } of setIds) grouped.set(set_id, []);
+  for (const row of rows) {
+    const setId = (row.payload as Record<string, unknown>).set_id as string;
+    grouped.get(setId)?.push(toSendRow(row));
+  }
+  return grouped;
+}
+
+// D20: an `applied` send waits for its Sent copy outcome; a copy still `pending` after `pendingCopyMaxAgeMs` counts as lost.
+export async function listSendResultsToNotify(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { limit: number; now: Date; pendingCopyMaxAgeMs: number }
+): Promise<SendRow[]> {
+  const pendingBefore = new Date(opts.now.getTime() - opts.pendingCopyMaxAgeMs);
+  const rows = await sendBase(db, ctx)
+    .where("actions.result_notified_at", "is", null)
+    .where((eb) =>
+      eb.or([
+        eb("actions.status", "in", ["failed", "expired", "rejected"]),
+        eb.and([
+          eb("actions.status", "=", "applied"),
+          eb.or([
+            eb(sql<string | null>`actions.provider_result->>'sent_copy'`, "is distinct from", "pending"),
+            eb("actions.applied_at", "<", pendingBefore),
+          ]),
+        ]),
+      ])
+    )
+    .orderBy("actions.updated_at")
+    .orderBy("actions.id")
+    .limit(opts.limit)
+    .execute();
+  return rows.map(toSendRow);
+}
+
+export async function markResultNotified(db: DbOrTrx, ctx: TenantContext, id: string, at: Date): Promise<boolean> {
+  const result = await db
+    .updateTable("actions")
+    .set({ result_notified_at: at })
+    .where("id", "=", id)
+    .where("org_id", "=", ctx.orgId)
+    .where("type", "=", "send")
+    .where("result_notified_at", "is", null)
+    .executeTakeFirst();
+  return result.numUpdatedRows > 0n;
+}
+
+const NOT_NOTIFIED_AFTER_MS = 7 * 24 * 3_600_000;
+
+type ExpiredReason = "timeout" | "draft_missing" | "not_notified" | "held_timeout";
+
+// D22: the sends of one mailbox that the expiry job closes, each with the first reason that applies.
+export async function listExpiredApprovals(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { now: Date; limit: number; staleBefore: Date }
+): Promise<{ id: string; reason: ExpiredReason }[]> {
+  const ttlBefore = new Date(opts.now.getTime() - APPROVAL_TTL_MS);
+  const createdBefore = new Date(opts.now.getTime() - NOT_NOTIFIED_AFTER_MS);
+  const result = await sql<{ id: string; reason: ExpiredReason }>`
+    select id, reason from (
+      select a.id, a.created_at,
+        case
+          when a.status = 'awaiting_approval' and a.notified_at < ${ttlBefore} then 'timeout'
+          when a.status = 'awaiting_approval' and d.status in ('failed', 'undone') then 'draft_missing'
+          when a.status = 'awaiting_approval' and a.notified_at is null and a.created_at < ${createdBefore}
+            then 'not_notified'
+          when a.status = 'approved' and a.approved_at < ${ttlBefore}
+            and (a.locked_at is null or a.locked_at < ${opts.staleBefore}) then 'held_timeout'
+        end as reason
+      from actions a
+      join emails e on e.id = a.email_id and e.org_id = a.org_id
+      left join actions d on d.id = a.depends_on_action_id and d.org_id = a.org_id
+      where a.org_id = ${ctx.orgId} and e.org_id = ${ctx.orgId} and e.mailbox_id = ${mailboxId}
+        and a.type = 'send' and a.status in ('awaiting_approval', 'approved')
+    ) x
+    where reason is not null
+    order by created_at, id
+    limit ${opts.limit}
+  `.execute(db);
+  return result.rows;
+}
+
+// For /status and the held-send warning (D16): the whole organization.
+export async function countApprovals(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { staleBefore: Date }
+): Promise<{ waiting: number; oldestNotifiedAt: Date | null; approvedHeld: number }> {
+  const row = await db
+    .selectFrom("actions")
+    .select([
+      sql<string>`count(*) filter (where status = 'awaiting_approval')`.as("waiting"),
+      sql<Date | null>`min(notified_at) filter (where status = 'awaiting_approval')`.as("oldest"),
+      sql<string>`count(*) filter (where status = 'approved' and (locked_at is null or locked_at < ${opts.staleBefore}))`.as(
+        "held"
+      ),
+    ])
+    .where("org_id", "=", ctx.orgId)
+    .where("type", "=", "send")
+    .executeTakeFirstOrThrow();
+  return { waiting: Number(row.waiting), oldestNotifiedAt: row.oldest, approvedHeld: Number(row.held) };
 }

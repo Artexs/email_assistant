@@ -126,7 +126,7 @@ async function detectActionFailed(db: DbOrTrx, ctx: TenantContext, owners: Linke
         isMailboxActionType(action.type) &&
         action.updated_at.getTime() >= now.getTime() - ACTION_FAILED_LOOKBACK_MS
       ) {
-        const key = action.payload.folder;
+        const key = typeof action.payload.folder === "string" ? action.payload.folder : undefined;
         const folderName =
           action.type === "move" && key !== undefined && Object.hasOwn(AI_FOLDER_NAMES, key)
             ? AI_FOLDER_NAMES[key as keyof typeof AI_FOLDER_NAMES]

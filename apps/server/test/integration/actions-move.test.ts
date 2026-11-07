@@ -114,7 +114,7 @@ async function claim(trx: Transaction<DB>, s: Setup, at: Date = NOW): Promise<Cl
     now: at,
     limit: 20,
     staleBefore: new Date(at.getTime() - 10 * 60_000),
-    filter: { kind: "all" },
+    filter: { mailbox: { kind: "all" }, send: { kind: "none" } },
   });
 }
 
@@ -647,8 +647,13 @@ describe("ensureMoved", () => {
     message_id_header: MESSAGE_ID,
     content_hash: hash,
     from_address: "sender@x.test",
+    to_addresses: [],
     received_at: RECEIVED,
     subject: "s",
+    body_text: null,
+    in_reply_to: null,
+    references_header: null,
+    thread_key: "t1",
   });
   const none = { from: new Set<number>(), to: new Set<number>() };
 

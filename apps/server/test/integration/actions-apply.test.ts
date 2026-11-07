@@ -113,7 +113,7 @@ async function claim(trx: Transaction<DB>, s: Setup, at: Date = NOW): Promise<Cl
     now: at,
     limit: 20,
     staleBefore: new Date(at.getTime() - 10 * 60_000),
-    filter: { kind: "all" },
+    filter: { mailbox: { kind: "all" }, send: { kind: "none" } },
   });
 }
 

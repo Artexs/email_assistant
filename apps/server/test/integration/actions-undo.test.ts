@@ -447,7 +447,7 @@ describe("undo: a reverse move in flight (D22)", () => {
       now: at,
       limit: 20,
       staleBefore: new Date(at.getTime() - 10 * 60_000),
-      filter: { kind: "all" },
+      filter: { mailbox: { kind: "all" }, send: { kind: "none" } },
     });
   }
 

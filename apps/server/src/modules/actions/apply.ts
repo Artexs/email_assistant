@@ -94,6 +94,7 @@ async function mapProviderError(
   if (error instanceof SoftError) {
     log.warn(`action ${action.id}: ${label}, try ${action.attempts + 1} of ${HARD_ERROR_TRIES}`);
     await releaseAction(deps.db, ctx, action.id, action.locked_at, {
+      toStatus: "ready",
       nextAttemptAt: new Date(now.getTime() + RETRY_WAIT_MS),
       countAttempt: false,
       now,
@@ -131,6 +132,7 @@ async function mapProviderError(
   }
   log.warn(`action ${action.id}: ${label}, try ${action.attempts + 1} of ${HARD_ERROR_TRIES}`);
   await releaseAction(deps.db, ctx, action.id, action.locked_at, {
+    toStatus: "ready",
     nextAttemptAt: new Date(now.getTime() + RETRY_WAIT_MS),
     countAttempt: true,
     now,
@@ -260,7 +262,7 @@ async function applyMove(
 ): Promise<ApplyOutcome> {
   const { email } = action;
   const reverseOf = action.reverses_action_id;
-  const folderKey = action.payload.folder;
+  const folderKey = typeof action.payload.folder === "string" ? action.payload.folder : undefined;
   if (reverseOf === null && !isFolderKey(folderKey)) {
     return failAction(deps, ctx, action, "bad_payload");
   }
@@ -360,6 +362,7 @@ export async function applyAction(
     log.error(`action ${action.id}: no provider for ${action.type}`);
     const now = deps.now();
     await releaseAction(deps.db, ctx, action.id, action.locked_at, {
+      toStatus: "ready",
       nextAttemptAt: new Date(now.getTime() + RETRY_WAIT_MS),
       countAttempt: false,
       now,

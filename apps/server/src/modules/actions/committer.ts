@@ -125,7 +125,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     const held = await countClaimable(deps.db, ctx, mailboxId, {
       now,
       staleBefore: new Date(now.getTime() - STALE_AFTER_MS),
-      filter: { kind: "all" },
+      filter: { mailbox: { kind: "all" }, send: { kind: "none" } },
     });
     if (held.mailboxChanging > 0) {
       warnedOff.add(mailboxId);
@@ -205,7 +205,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     const expired = await expireStale(deps, ctx, mailboxId, now);
     if (expired > 0) log.warn(`committer ${mailboxId}: expired ${expired} stale actions`);
 
-    const filter = claimFilterFor(deps.scope, mailbox.address);
+    const filter = { mailbox: claimFilterFor(deps.scope, mailbox.address), send: { kind: "none" } } as const;
     await warnWhenHeldBack(ctx, mailboxId, now);
     const { total } = await countClaimable(deps.db, ctx, mailboxId, { now, staleBefore, filter });
     if (total === 0) return;

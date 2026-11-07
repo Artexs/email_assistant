@@ -6,7 +6,7 @@ Part of [`../s4-drafts-approvals-delegation.md`](../s4-drafts-approvals-delegati
 
 Why risky: the claim query is the gate between an approval row and an SMTP call; the approval functions are the only way a send becomes `approved`. Every update here is conditional and tenant-filtered.
 
-- [ ] **10.1 Claims for drafts and sends, the scope filters, `markApplying`, the fixtures (D16, D17, D33)**
+- [x] **10.1 Claims for drafts and sends, the scope filters, `markApplying`, the fixtures (D16, D17, D33)**
   - Goal: the committer claims drafts (`ready`, only while their send waits), approved sends whose draft is applied, and released or stale `applying` rows for recovery (an `applying` draft also after its send ended: the apply step then removes or expires it, D12); the scopes hold rows back in SQL; no row is stuck for ever; the committer can count the sends the scope holds; tests can build a draft-and-send pair in one call.
   - Files: change `apps/server/src/modules/actions/repo.ts`, `actions/index.ts`, `actions/scope.ts` (S3 stage 8.2), `actions/scope.test.ts`, `actions/undo.ts` (`scopeAdmits` call, `undo.ts:45`), `actions/committer.ts` (the filter build at `:208` and `warnWhenHeldBack` at `:123-133`), `actions/apply.ts` (`apply.ts:263` reads `action.payload.folder` into `isFolderKey(value: string | undefined)`, `apply.ts:251`: M4), `apps/server/src/modules/channels/notices.ts` (`:121` reads `FailedAction.payload.folder` into `Object.hasOwn(AI_FOLDER_NAMES, key)`: M4), `apps/server/test/integration/actions-repo.test.ts`, the S3 tests that build a `ClaimFilter` (`actions-repo.test.ts:174` `ALL` and the `claimOpts` calls at `:268`, `:273`; `actions-apply.test.ts:116`; `actions-move.test.ts:117`; `actions-undo.test.ts:450`), `apps/server/test/integration/fixtures.ts`.
   - Interfaces:
@@ -175,7 +175,7 @@ Why risky: the claim query is the gate between an approval row and an SMTP call;
   - Done when: the tests pass; the S3 committer, apply, move and undo tests still pass with the `mailbox` / `send` filter shape (the S3 call sites pass `{ mailbox: <old filter>, send: { kind: "none" } }`).
   - Out of scope: the apply branches (stages 11, 12).
 
-- [ ] **10.2 Approvals, send-again, the expiry and notice queries (D18, D20, D22)**
+- [x] **10.2 Approvals, send-again, the expiry and notice queries (D18, D20, D22)**
   - Goal: a send becomes `approved` only through `approve`; `reject`, the sets and "send again" are conditional, audited and tap-proof; the notifier and the expiry job have their queries.
   - Files: create `apps/server/src/modules/actions/approvals.ts`, `apps/server/test/integration/actions-approvals.test.ts`; change `actions/repo.ts` (also the S3 `listFailedUnnotified` filter, D33), `actions/index.ts`, `apps/server/src/modules/audit/repo.ts` (`auditEvents`: `actionApplying: "action.applying"`, `actionApproved: "action.approved"`, `actionRejected: "action.rejected"`, `actionSendAgain: "action.send_again"`, `actionSentCopyFailed: "action.sent_copy_failed"`), `apps/server/test/integration/actions-repo.test.ts`.
   - Interfaces:

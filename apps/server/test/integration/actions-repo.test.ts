@@ -7,6 +7,7 @@ import {
   countActionsSince,
   countReadyOriginals,
   countClaimable,
+  countHeldSends,
   createPlanned,
   expireReadyOriginals,
   expireStaleReady,
@@ -18,13 +19,18 @@ import {
   listSummaries,
   lockActionsForUndo,
   lockLatestOriginalMove,
+  markApplying,
   markNotified,
   mergeActionPayload,
   markUndone,
   releaseAction,
   releaseActions,
+  updateProviderResult,
+  APPROVAL_TTL_MS,
   type ClaimFilter,
+  type MailboxClaimFilter,
   type PlannedActionInput,
+  type SendClaimFilter,
 } from "../../src/modules/actions";
 import { insertMailbox } from "../../src/modules/mail/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
@@ -32,6 +38,7 @@ import type { DB, TenantContext } from "../../src/platform/db";
 import {
   createOrgWithMailbox,
   insertAction,
+  insertDraftAndSend,
   insertTestEmail,
   insertTriagedWithActions,
   testCapabilities,
@@ -172,18 +179,23 @@ const NOW = new Date("2026-11-07T12:00:00.000Z");
 const STALE_BEFORE = new Date(NOW.getTime() - 10 * 60_000);
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
-const ALL: ClaimFilter = { kind: "all" };
+const ALL: MailboxClaimFilter = { kind: "all" };
+const SEND_ALL: SendClaimFilter = { kind: "all" };
 
 function ago(ms: number): Date {
   return new Date(NOW.getTime() - ms);
 }
 
-function claimOpts(filter: ClaimFilter = ALL, limit = 50) {
-  return { now: NOW, limit, staleBefore: STALE_BEFORE, filter };
+function filterOf(mailbox: MailboxClaimFilter, send: SendClaimFilter): ClaimFilter {
+  return { mailbox, send };
 }
 
-function countOpts(filter: ClaimFilter = ALL) {
-  return { now: NOW, staleBefore: STALE_BEFORE, filter };
+function claimOpts(mailbox: MailboxClaimFilter = ALL, limit = 50, send: SendClaimFilter = SEND_ALL) {
+  return { now: NOW, limit, staleBefore: STALE_BEFORE, filter: filterOf(mailbox, send) };
+}
+
+function countOpts(mailbox: MailboxClaimFilter = ALL, send: SendClaimFilter = SEND_ALL) {
+  return { now: NOW, staleBefore: STALE_BEFORE, filter: filterOf(mailbox, send) };
 }
 
 async function actionState(trx: Transaction<DB>, id: string) {
@@ -316,7 +328,11 @@ describe("claimActions", () => {
         createdAt: ago(HOUR),
       });
 
-      expect(await countClaimable(trx, a.ctx, a.mailboxId, countOpts())).toEqual({ total: 2, mailboxChanging: 1 });
+      expect(await countClaimable(trx, a.ctx, a.mailboxId, countOpts())).toEqual({
+        total: 2,
+        mailboxChanging: 1,
+        sending: 0,
+      });
       const claimed = await claimActions(trx, a.ctx, a.mailboxId, claimOpts());
       expect(claimed.map((row) => row.id).sort()).toEqual([stale, due].sort());
       expect(claimed.map((row) => row.id)).not.toContain(waiting);
@@ -346,7 +362,11 @@ describe("claimActions", () => {
         createdAt: ago(3 * DAY),
       });
 
-      expect(await countClaimable(trx, a.ctx, a.mailboxId, countOpts())).toEqual({ total: 2, mailboxChanging: 1 });
+      expect(await countClaimable(trx, a.ctx, a.mailboxId, countOpts())).toEqual({
+        total: 2,
+        mailboxChanging: 1,
+        sending: 0,
+      });
       const claimed = await claimActions(trx, a.ctx, a.mailboxId, claimOpts());
       expect(claimed.map((row) => row.id).sort()).toEqual([summary, reverse].sort());
     });
@@ -362,7 +382,11 @@ describe("claimActions", () => {
       });
       await insertAction(trx, a.ctx, mail.emailId, { ...ready("move"), createdAt: ago(CLAIM_MAX_AGE_MS + HOUR) });
       expect(await claimActions(trx, a.ctx, a.mailboxId, claimOpts())).toEqual([]);
-      expect(await countClaimable(trx, a.ctx, a.mailboxId, countOpts())).toEqual({ total: 0, mailboxChanging: 0 });
+      expect(await countClaimable(trx, a.ctx, a.mailboxId, countOpts())).toEqual({
+        total: 0,
+        mailboxChanging: 0,
+        sending: 0,
+      });
     });
   });
 });
@@ -435,6 +459,7 @@ describe("releaseAction and releaseActions", () => {
 
       expect(
         await releaseAction(trx, a.ctx, id, new Date(NOW.getTime() + 1), {
+          toStatus: "ready",
           nextAttemptAt: next,
           countAttempt: true,
           now: NOW,
@@ -442,6 +467,7 @@ describe("releaseAction and releaseActions", () => {
       ).toBe(false);
       expect(
         await releaseAction(trx, a.ctx, id, NOW, {
+          toStatus: "ready",
           nextAttemptAt: next,
           countAttempt: true,
           now: NOW,
@@ -533,16 +559,25 @@ describe("tenant filter", () => {
       await insertAction(trx, a.ctx, mail.emailId, { ...ready("move"), createdAt: ago(25 * HOUR) });
 
       // org B asks for org A's mailbox
-      expect(await countClaimable(trx, b.ctx, a.mailboxId, countOpts())).toEqual({ total: 0, mailboxChanging: 0 });
+      expect(await countClaimable(trx, b.ctx, a.mailboxId, countOpts())).toEqual({
+        total: 0,
+        mailboxChanging: 0,
+        sending: 0,
+      });
       expect(await claimActions(trx, b.ctx, a.mailboxId, claimOpts())).toEqual([]);
       expect(await expireStaleReady(trx, b.ctx, a.mailboxId, { now: NOW, staleBefore: STALE_BEFORE })).toEqual([]);
       expect((await listActionsForEmails(trx, b.ctx, [mail.emailId])).size).toBe(0);
 
       await trx.updateTable("actions").set({ locked_at: NOW }).where("id", "in", [flag, move]).execute();
       expect(await finishAction(trx, b.ctx, flag, NOW, { status: "applied", at: NOW })).toBe(false);
-      expect(await releaseAction(trx, b.ctx, flag, NOW, { nextAttemptAt: null, countAttempt: true, now: NOW })).toBe(
-        false
-      );
+      expect(
+        await releaseAction(trx, b.ctx, flag, NOW, {
+          toStatus: "ready",
+          nextAttemptAt: null,
+          countAttempt: true,
+          now: NOW,
+        })
+      ).toBe(false);
       expect(await releaseActions(trx, b.ctx, [flag, move], NOW, NOW)).toBe(0);
       expect(await actionState(trx, flag)).toMatchObject({ status: "ready", attempts: 0 });
       expect((await actionState(trx, flag)).locked_at?.getTime()).toBe(NOW.getTime());
@@ -865,6 +900,35 @@ describe("listFailedUnnotified and markNotified", () => {
   });
 });
 
+describe("listFailedUnnotified: sends and drafts", () => {
+  test("leaves out a failed send and a failed original draft; lists a failed reverse draft and a failed move", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      const failedPair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        draftStatus: "failed",
+        sendStatus: "failed",
+        createdAt: ago(HOUR),
+      });
+      const reverse = await insertAction(trx, a.ctx, failedPair.emailId, {
+        type: "create_draft",
+        status: "failed",
+        reversesActionId: failedPair.draftId,
+        payload: { kind: "delegation", folder: "Drafts", uid: 7, reason: "rejected" },
+        createdAt: ago(HOUR),
+      });
+      const move = await insertAction(trx, a.ctx, failedPair.emailId, {
+        type: "move",
+        status: "failed",
+        payload: { folder: "ai_info" },
+        createdAt: ago(HOUR),
+      });
+
+      const listed = await listFailedUnnotified(trx, a.ctx, { limit: 10 });
+      expect(listed.map((row) => row.id).sort()).toEqual([reverse, move].sort());
+    });
+  });
+});
+
 describe("countActionsSince", () => {
   test("counts originals of mailbox types: applied flag, undone move; not summary, not reverse", async () => {
     await withRollback(db, async (trx) => {
@@ -1178,6 +1242,635 @@ describe("createPlanned with dependsOn and mergeActionPayload", () => {
       const rows = await actionRows(trx, a.ctx.orgId);
       for (const row of rows) expect(row.payload).toEqual({ kind: "delegation", delegation_id: "x" });
       expect(await mergeActionPayload(trx, a.ctx, [], { delegation_id: "y" })).toBe(0);
+    });
+  });
+});
+
+describe("claimActions: drafts and sends (D16, D17)", () => {
+  const MIN = 60_000;
+  const approvedNow = (userId: string) => ({ userId, at: ago(MIN) });
+  const ids = (rows: { id: string }[]) => rows.map((row) => row.id).sort();
+
+  async function setup(trx: Transaction<DB>) {
+    const first = await createOrgWithMailbox(trx);
+    const second = await createOrgWithMailbox(trx);
+    return {
+      a: { ctx: { orgId: first.orgId }, mailboxId: first.mailboxId },
+      b: { ctx: { orgId: second.orgId }, mailboxId: second.mailboxId },
+      userId: first.userId,
+    };
+  }
+
+  test("1: a ready draft is claimed while its send waits; the send is not", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await setup(trx);
+      const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        draftStatus: "ready",
+        createdAt: ago(HOUR),
+      });
+      const claimed = await claimActions(trx, a.ctx, a.mailboxId, claimOpts());
+      expect(claimed.map((row) => row.id)).toEqual([pair.draftId]);
+      expect(claimed[0]).toMatchObject({ type: "create_draft", status: "ready", depends_on_action_id: null });
+    });
+  });
+
+  test("2: an approved send with an applied draft is claimed with the mail fields", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, userId } = await setup(trx);
+      const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "approved",
+        approved: approvedNow(userId),
+        createdAt: ago(HOUR),
+        bodyText: "Hello body",
+        inReplyTo: "<in@x.test>",
+        referencesHeader: "<r1@x.test> <in@x.test>",
+        toAddresses: ["me@x.test", "you@x.test"],
+        to: "d@x.test",
+        draftProviderResult: { uid: 5 },
+      });
+      const claimed = await claimActions(trx, a.ctx, a.mailboxId, claimOpts());
+      expect(claimed.map((row) => row.id)).toEqual([pair.sendId]);
+      const [send] = claimed;
+      expect(send).toMatchObject({
+        type: "send",
+        status: "approved",
+        depends_on_action_id: pair.draftId,
+        outgoing_message_id: null,
+        provider_result: null,
+        payload: { kind: "delegation", to: ["d@x.test"] },
+      });
+      expect(send?.approved_at?.getTime()).toBe(ago(MIN).getTime());
+      expect(send?.created_at.getTime()).toBe(ago(HOUR).getTime());
+      expect(send?.original_created_at).toBeNull();
+      expect(send?.email).toMatchObject({
+        body_text: "Hello body",
+        in_reply_to: "<in@x.test>",
+        references_header: "<r1@x.test> <in@x.test>",
+        to_addresses: ["me@x.test", "you@x.test"],
+      });
+      expect(typeof send?.email.thread_key).toBe("string");
+    });
+  });
+
+  test("3: a draft waits for its send to wait too: ready draft + approved send claims nothing, + awaiting claims the draft", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, userId } = await setup(trx);
+      const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        draftStatus: "ready",
+        sendStatus: "approved",
+        approved: approvedNow(userId),
+        createdAt: ago(HOUR),
+      });
+      // A draft is made only while its send waits: with the send `approved` the draft is not claimed either.
+      expect(await claimActions(trx, a.ctx, a.mailboxId, claimOpts())).toEqual([]);
+      await trx.updateTable("actions").set({ status: "awaiting_approval" }).where("id", "=", pair.sendId).execute();
+      expect((await claimActions(trx, a.ctx, a.mailboxId, claimOpts())).map((row) => row.id)).toEqual([pair.draftId]);
+    });
+  });
+
+  test("3b: a ready draft whose send ended is not claimed or counted; an applying one is (recovery)", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await setup(trx);
+      const rejected = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        draftStatus: "ready",
+        sendStatus: "rejected",
+        createdAt: ago(HOUR),
+      });
+      await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        draftStatus: "ready",
+        sendStatus: "expired",
+        createdAt: ago(HOUR),
+      });
+      expect(await claimActions(trx, a.ctx, a.mailboxId, claimOpts())).toEqual([]);
+      expect(await countClaimable(trx, a.ctx, a.mailboxId, countOpts())).toEqual({
+        total: 0,
+        mailboxChanging: 0,
+        sending: 0,
+      });
+
+      await trx.updateTable("actions").set({ status: "applying" }).where("id", "=", rejected.draftId).execute();
+      expect((await claimActions(trx, a.ctx, a.mailboxId, claimOpts())).map((row) => row.id)).toEqual([
+        rejected.draftId,
+      ]);
+    });
+  });
+
+  test("4: the send filter: none holds back, self matches in SQL; the recovery ignores it", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, userId } = await setup(trx);
+      const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "approved",
+        approved: approvedNow(userId),
+        to: "B@x.test",
+        createdAt: ago(HOUR),
+      });
+      const none: SendClaimFilter = { kind: "none" };
+      expect(await claimActions(trx, a.ctx, a.mailboxId, claimOpts(ALL, 50, none))).toEqual([]);
+      expect(await countClaimable(trx, a.ctx, a.mailboxId, countOpts(ALL, none))).toEqual({
+        total: 0,
+        mailboxChanging: 0,
+        sending: 0,
+      });
+      const other: SendClaimFilter = { kind: "self", addresses: ["c@x.test"] };
+      expect(await claimActions(trx, a.ctx, a.mailboxId, claimOpts(ALL, 50, other))).toEqual([]);
+      const self: SendClaimFilter = { kind: "self", addresses: ["b@x.test"] };
+      expect(await countClaimable(trx, a.ctx, a.mailboxId, countOpts(ALL, self))).toEqual({
+        total: 1,
+        mailboxChanging: 0,
+        sending: 1,
+      });
+      expect(ids(await claimActions(trx, a.ctx, a.mailboxId, claimOpts(ALL, 50, self)))).toEqual([pair.sendId]);
+    });
+  });
+
+  test("4: self needs every recipient in the list and a non-empty list of recipients", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, userId } = await setup(trx);
+      const two = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "approved",
+        approved: approvedNow(userId),
+        createdAt: ago(HOUR),
+      });
+      await trx
+        .updateTable("actions")
+        .set({ payload: JSON.stringify({ kind: "delegation", to: ["b@x.test", "c@x.test"] }) })
+        .where("id", "=", two.sendId)
+        .execute();
+      const empty = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "approved",
+        approved: approvedNow(userId),
+        createdAt: ago(HOUR),
+      });
+      await trx
+        .updateTable("actions")
+        .set({ payload: JSON.stringify({ kind: "delegation", to: [] }) })
+        .where("id", "=", empty.sendId)
+        .execute();
+      const broken = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "approved",
+        approved: approvedNow(userId),
+        createdAt: ago(HOUR),
+      });
+      await trx
+        .updateTable("actions")
+        .set({ payload: JSON.stringify({ kind: "delegation", to: "b@x.test" }) })
+        .where("id", "=", broken.sendId)
+        .execute();
+      const self: SendClaimFilter = { kind: "self", addresses: ["b@x.test"] };
+      expect(await claimActions(trx, a.ctx, a.mailboxId, claimOpts(ALL, 50, self))).toEqual([]);
+      self.addresses.push("c@x.test");
+      expect(ids(await claimActions(trx, a.ctx, a.mailboxId, claimOpts(ALL, 50, self)))).toEqual([two.sendId]);
+    });
+  });
+
+  test("4b: an applying send with locked_at null is claimed under send none", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, userId } = await setup(trx);
+      const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "applying",
+        approved: approvedNow(userId),
+        outgoingMessageId: "<out@x.test>",
+        createdAt: ago(HOUR),
+      });
+      const claimed = await claimActions(trx, a.ctx, a.mailboxId, claimOpts(ALL, 50, { kind: "none" }));
+      expect(claimed.map((row) => row.id)).toEqual([pair.sendId]);
+      expect(claimed[0]).toMatchObject({ status: "applying", outgoing_message_id: "<out@x.test>" });
+    });
+  });
+
+  test("5: the mailbox filter gates drafts: none, synthetic, all", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await setup(trx);
+      const synthetic = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        draftStatus: "ready",
+        messageId: "<seed-1@ea-seed.test>",
+        createdAt: ago(2 * HOUR),
+      });
+      const real = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        draftStatus: "ready",
+        messageId: "<real-1@example.com>",
+        createdAt: ago(HOUR),
+      });
+      expect(await claimActions(trx, a.ctx, a.mailboxId, claimOpts({ kind: "none" }))).toEqual([]);
+      expect(ids(await claimActions(trx, a.ctx, a.mailboxId, claimOpts({ kind: "synthetic" })))).toEqual([
+        synthetic.draftId,
+      ]);
+      await trx.updateTable("actions").set({ locked_at: null }).execute();
+      expect(ids(await claimActions(trx, a.ctx, a.mailboxId, claimOpts(ALL)))).toEqual(
+        [synthetic.draftId, real.draftId].sort()
+      );
+    });
+  });
+
+  test("6: next_attempt_at and the lock rule apply to drafts and sends", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, userId } = await setup(trx);
+      const approved = approvedNow(userId);
+      const draftDue = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        draftStatus: "applying",
+        createdAt: ago(HOUR),
+      });
+      const draftWait = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        draftStatus: "applying",
+        createdAt: ago(HOUR),
+      });
+      await trx
+        .updateTable("actions")
+        .set({ next_attempt_at: ago(MIN) })
+        .where("id", "=", draftDue.draftId)
+        .execute();
+      await trx
+        .updateTable("actions")
+        .set({ next_attempt_at: new Date(NOW.getTime() + MIN) })
+        .where("id", "=", draftWait.draftId)
+        .execute();
+      const sendStale = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "applying",
+        approved,
+        lockedAt: ago(11 * MIN),
+        createdAt: ago(HOUR),
+      });
+      const sendFresh = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "applying",
+        approved,
+        lockedAt: ago(MIN),
+        createdAt: ago(HOUR),
+      });
+      const approvedStale = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "approved",
+        approved,
+        lockedAt: ago(11 * MIN),
+        createdAt: ago(HOUR),
+      });
+      const approvedFresh = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "approved",
+        approved,
+        lockedAt: ago(MIN),
+        createdAt: ago(HOUR),
+      });
+      const claimed = ids(await claimActions(trx, a.ctx, a.mailboxId, claimOpts()));
+      expect(claimed).toEqual([draftDue.draftId, sendStale.sendId, approvedStale.sendId].sort());
+      expect(claimed).not.toContain(draftWait.draftId);
+      expect(claimed).not.toContain(sendFresh.sendId);
+      expect(claimed).not.toContain(approvedFresh.sendId);
+    });
+  });
+
+  test("7: markApplying needs the token and the status approved or ready", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, userId } = await setup(trx);
+      const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "approved",
+        approved: approvedNow(userId),
+        createdAt: ago(HOUR),
+      });
+      const [send] = await claimActions(trx, a.ctx, a.mailboxId, claimOpts());
+      expect(send?.id).toBe(pair.sendId);
+      expect(await markApplying(trx, a.ctx, pair.sendId, new Date(NOW.getTime() + 1))).toBe(false);
+      expect(await actionState(trx, pair.sendId)).toMatchObject({ status: "approved", outgoing_message_id: null });
+      expect(await markApplying(trx, a.ctx, pair.sendId, NOW, { outgoingMessageId: "<out-1@x.test>" })).toBe(true);
+      const state = await actionState(trx, pair.sendId);
+      expect(state).toMatchObject({ status: "applying", outgoing_message_id: "<out-1@x.test>" });
+      expect(state.locked_at?.getTime()).toBe(NOW.getTime());
+      // applying -> applying is not a start
+      expect(await markApplying(trx, a.ctx, pair.sendId, NOW)).toBe(false);
+      // applied -> false
+      expect(await markApplying(trx, a.ctx, pair.draftId, NOW)).toBe(false);
+    });
+  });
+
+  test("7: markApplying moves a claimed ready draft and keeps the outgoing id when none is given", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await setup(trx);
+      const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { draftStatus: "ready", createdAt: ago(HOUR) });
+      await claimActions(trx, a.ctx, a.mailboxId, claimOpts());
+      expect(await markApplying(trx, a.ctx, pair.draftId, NOW)).toBe(true);
+      expect(await actionState(trx, pair.draftId)).toMatchObject({ status: "applying", outgoing_message_id: null });
+    });
+  });
+
+  test("8: finishAction from applying: applied, failed with provider_result, expired, and the from list", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, userId } = await setup(trx);
+      const mk = (status: string) =>
+        insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+          sendStatus: status,
+          approved: approvedNow(userId),
+          lockedAt: NOW,
+          createdAt: ago(HOUR),
+        });
+      const one = await mk("applying");
+      expect(await finishAction(trx, a.ctx, one.sendId, NOW, { status: "applied", at: NOW })).toBe(true);
+      expect(await actionState(trx, one.sendId)).toMatchObject({
+        status: "applied",
+        locked_at: null,
+        last_error: null,
+      });
+
+      const two = await mk("applying");
+      await trx.updateTable("actions").set({ last_error: "old" }).where("id", "=", two.sendId).execute();
+      expect(
+        await finishAction(trx, a.ctx, two.sendId, NOW, {
+          status: "failed",
+          at: NOW,
+          reason: "smtp_rejected",
+          lastError: "smtp_550",
+          providerResult: { stage: "rcpt", response_code: 550 },
+        })
+      ).toBe(true);
+      const failed = await actionState(trx, two.sendId);
+      expect(failed).toMatchObject({
+        status: "failed",
+        status_reason: "smtp_rejected",
+        last_error: "smtp_550",
+        provider_result: { stage: "rcpt", response_code: 550 },
+        locked_at: null,
+      });
+
+      // the default from list is ready and applying: an approved row needs the explicit list
+      const three = await mk("approved");
+      const failNext = { status: "failed", at: NOW, reason: "smtp_error" } as const;
+      expect(await finishAction(trx, a.ctx, three.sendId, NOW, failNext)).toBe(false);
+      expect(await finishAction(trx, a.ctx, three.sendId, NOW, failNext, { from: ["approved"] })).toBe(true);
+
+      const four = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        draftStatus: "applying",
+        createdAt: ago(HOUR),
+      });
+      await trx.updateTable("actions").set({ locked_at: NOW }).where("id", "=", four.draftId).execute();
+      expect(
+        await finishAction(trx, a.ctx, four.draftId, NOW, { status: "expired", at: NOW, reason: "send_closed" })
+      ).toBe(true);
+      expect(await actionState(trx, four.draftId)).toMatchObject({
+        status: "expired",
+        status_reason: "send_closed",
+        locked_at: null,
+      });
+    });
+  });
+
+  test("9: releaseAction sets toStatus; releaseActions keeps the statuses", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, userId } = await setup(trx);
+      const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "applying",
+        approved: approvedNow(userId),
+        lockedAt: NOW,
+        createdAt: ago(HOUR),
+      });
+      expect(
+        await releaseAction(trx, a.ctx, pair.sendId, NOW, {
+          toStatus: "approved",
+          nextAttemptAt: null,
+          countAttempt: true,
+          now: NOW,
+        })
+      ).toBe(true);
+      expect(await actionState(trx, pair.sendId)).toMatchObject({ status: "approved", attempts: 1, locked_at: null });
+
+      const approved = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "approved",
+        approved: approvedNow(userId),
+        lockedAt: NOW,
+        createdAt: ago(HOUR),
+      });
+      const applying = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "applying",
+        approved: approvedNow(userId),
+        lockedAt: NOW,
+        createdAt: ago(HOUR),
+      });
+      expect(await releaseActions(trx, a.ctx, [approved.sendId, applying.sendId], NOW, NOW)).toBe(2);
+      expect(await actionState(trx, approved.sendId)).toMatchObject({ status: "approved", locked_at: null });
+      expect(await actionState(trx, applying.sendId)).toMatchObject({ status: "applying", locked_at: null });
+    });
+  });
+
+  test("10: updateProviderResult merges into an existing object", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await setup(trx);
+      const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { createdAt: ago(HOUR) });
+      await trx
+        .updateTable("actions")
+        .set({ provider_result: JSON.stringify({ response: "250 ok", sent_copy: "pending" }) })
+        .where("id", "=", pair.sendId)
+        .execute();
+      expect(await updateProviderResult(trx, b.ctx, pair.sendId, { sent_copy: "failed" })).toBe(false);
+      expect(await updateProviderResult(trx, a.ctx, pair.sendId, { sent_copy: "failed" })).toBe(true);
+      expect((await actionState(trx, pair.sendId)).provider_result).toEqual({
+        response: "250 ok",
+        sent_copy: "failed",
+      });
+      // a null provider_result becomes the patch
+      expect(await updateProviderResult(trx, a.ctx, pair.draftId, { uid: 3 })).toBe(true);
+      expect((await actionState(trx, pair.draftId)).provider_result).toEqual({ uid: 3 });
+    });
+  });
+
+  test("11: the order for one mail is move, create_draft, send", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, userId } = await setup(trx);
+      const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "approved",
+        approved: approvedNow(userId),
+        createdAt: ago(HOUR),
+      });
+      // a second draft (reminder) of the same mail is ready with a waiting send; the order is by type rank
+      const move = await insertAction(trx, a.ctx, pair.emailId, { ...ready("move"), createdAt: ago(HOUR) });
+      const second = await insertAction(trx, a.ctx, pair.emailId, {
+        type: "create_draft",
+        status: "ready",
+        payload: { kind: "reminder" },
+        createdAt: ago(HOUR),
+      });
+      const secondSend = await insertAction(trx, a.ctx, pair.emailId, {
+        type: "send",
+        status: "awaiting_approval",
+        payload: { kind: "reminder", to: ["d@x.test"] },
+        dependsOnActionId: second,
+        createdAt: ago(HOUR),
+      });
+      const claimed = await claimActions(trx, a.ctx, a.mailboxId, claimOpts());
+      expect(claimed.map((row) => [row.id, row.type])).toEqual([
+        [move, "move"],
+        [second, "create_draft"],
+        [pair.sendId, "send"],
+      ]);
+      expect(claimed.map((row) => row.id)).not.toContain(secondSend);
+    });
+  });
+
+  test("12: a draft of mail received 8 days ago is claimed; a move of it is not", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await setup(trx);
+      const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { draftStatus: "ready", createdAt: ago(HOUR) });
+      await trx
+        .updateTable("emails")
+        .set({ received_at: ago(8 * DAY) })
+        .where("id", "=", pair.emailId)
+        .execute();
+      await insertAction(trx, a.ctx, pair.emailId, { ...ready("move"), createdAt: ago(HOUR) });
+      const claimed = await claimActions(trx, a.ctx, a.mailboxId, claimOpts());
+      expect(claimed.map((row) => row.type)).toEqual(["create_draft"]);
+    });
+  });
+
+  test("13: org B's context claims and counts nothing of org A", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b, userId } = await setup(trx);
+      await insertDraftAndSend(trx, a.ctx, a.mailboxId, { draftStatus: "ready", createdAt: ago(HOUR) });
+      await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "approved",
+        approved: approvedNow(userId),
+        createdAt: ago(HOUR),
+      });
+      expect(await claimActions(trx, b.ctx, a.mailboxId, claimOpts())).toEqual([]);
+      expect(await countClaimable(trx, b.ctx, a.mailboxId, countOpts())).toEqual({
+        total: 0,
+        mailboxChanging: 0,
+        sending: 0,
+      });
+      expect(await countHeldSends(trx, b.ctx, a.mailboxId, { send: { kind: "none" } })).toBe(0);
+      expect(await countHeldSends(trx, a.ctx, a.mailboxId, { send: { kind: "none" } })).toBe(1);
+    });
+  });
+
+  test("14: two connections: a send claimed in an open transaction is skipped by the other", async () => {
+    const created = await db.transaction().execute((trx) => createOrgWithMailbox(trx));
+    const ctx = { orgId: created.orgId };
+    try {
+      const pair = await db.transaction().execute((trx) =>
+        insertDraftAndSend(trx, ctx, created.mailboxId, {
+          sendStatus: "approved",
+          approved: { userId: created.userId, at: ago(60_000) },
+          createdAt: ago(HOUR),
+        })
+      );
+      let first: { id: string }[] = [];
+      let second: { id: string }[] = [];
+      await db.transaction().execute(async (trx1) => {
+        first = await claimActions(trx1, ctx, created.mailboxId, claimOpts());
+        second = await claimActions(db, ctx, created.mailboxId, claimOpts());
+      });
+      expect(first.map((row) => row.id)).toEqual([pair.sendId]);
+      expect(second).toEqual([]);
+    } finally {
+      await db.deleteFrom("organizations").where("id", "=", created.orgId).execute();
+      await db.deleteFrom("users").where("id", "=", created.userId).execute();
+    }
+  });
+
+  test("15: a reverse draft row carries original_created_at", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await setup(trx);
+      const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        draftStatus: "applied",
+        sendStatus: "rejected",
+        createdAt: ago(3 * HOUR),
+      });
+      const reverse = await insertAction(trx, a.ctx, pair.emailId, {
+        type: "create_draft",
+        status: "ready",
+        payload: { kind: "delegation", folder: "Drafts", uid: 4, reason: "rejected" },
+        reversesActionId: pair.draftId,
+        idempotencyKey: `${pair.draftId}:undo`,
+        createdAt: ago(HOUR),
+      });
+      const claimed = await claimActions(trx, a.ctx, a.mailboxId, claimOpts());
+      expect(claimed.map((row) => row.id)).toEqual([reverse]);
+      expect(claimed[0]?.reverses_action_id).toBe(pair.draftId);
+      expect(claimed[0]?.original_created_at?.getTime()).toBe(ago(3 * HOUR).getTime());
+      expect(claimed[0]?.created_at.getTime()).toBe(ago(HOUR).getTime());
+    });
+  });
+
+  test("15b: an approved send older than 48 h after the tap is not claimed or counted; recovery has no age rule", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, userId } = await setup(trx);
+      const old = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "approved",
+        approved: { userId, at: ago(APPROVAL_TTL_MS + HOUR) },
+        createdAt: ago(3 * DAY),
+      });
+      expect(await claimActions(trx, a.ctx, a.mailboxId, claimOpts())).toEqual([]);
+      expect(await countClaimable(trx, a.ctx, a.mailboxId, countOpts())).toEqual({
+        total: 0,
+        mailboxChanging: 0,
+        sending: 0,
+      });
+
+      const young = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "approved",
+        approved: { userId, at: ago(APPROVAL_TTL_MS - HOUR) },
+        createdAt: ago(3 * DAY),
+      });
+      expect(ids(await claimActions(trx, a.ctx, a.mailboxId, claimOpts()))).toEqual([young.sendId]);
+
+      await trx
+        .updateTable("actions")
+        .set({ status: "applying", locked_at: null })
+        .where("id", "=", old.sendId)
+        .execute();
+      expect(ids(await claimActions(trx, a.ctx, a.mailboxId, claimOpts()))).toEqual([old.sendId]);
+    });
+  });
+
+  test("16: countHeldSends counts approved sends with an applied draft that the send filter does not admit", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, userId } = await setup(trx);
+      await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "approved",
+        approved: approvedNow(userId),
+        to: "b@x.test",
+        createdAt: ago(HOUR),
+      });
+      await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        draftStatus: "ready",
+        sendStatus: "approved",
+        approved: approvedNow(userId),
+        createdAt: ago(HOUR),
+      });
+      // an applying send and an awaiting one are not "held approved" sends
+      await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "applying",
+        approved: approvedNow(userId),
+        createdAt: ago(HOUR),
+      });
+      await insertDraftAndSend(trx, a.ctx, a.mailboxId, { createdAt: ago(HOUR) });
+      expect(await countHeldSends(trx, a.ctx, a.mailboxId, { send: { kind: "none" } })).toBe(1);
+      expect(await countHeldSends(trx, a.ctx, a.mailboxId, { send: { kind: "self", addresses: ["b@x.test"] } })).toBe(
+        0
+      );
+      expect(await countHeldSends(trx, a.ctx, a.mailboxId, { send: { kind: "self", addresses: ["c@x.test"] } })).toBe(
+        1
+      );
+      expect(await countHeldSends(trx, a.ctx, a.mailboxId, { send: { kind: "all" } })).toBe(0);
+    });
+  });
+});
+
+describe("countClaimable: drafts and sends", () => {
+  test("mailboxChanging counts drafts; sending counts sends", async () => {
+    await withRollback(db, async (trx) => {
+      const created = await createOrgWithMailbox(trx);
+      const a = { ctx: { orgId: created.orgId }, mailboxId: created.mailboxId };
+      const owner = { id: created.userId };
+      await insertDraftAndSend(trx, a.ctx, a.mailboxId, { draftStatus: "ready", createdAt: ago(HOUR) });
+      await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "approved",
+        approved: { userId: owner.id, at: ago(60_000) },
+        createdAt: ago(HOUR),
+      });
+      await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
+        category: "info",
+        createdAt: ago(HOUR),
+        actions: [ready("move"), ready("save_summary")],
+      });
+      expect(await countClaimable(trx, a.ctx, a.mailboxId, countOpts())).toEqual({
+        total: 4,
+        mailboxChanging: 2,
+        sending: 1,
+      });
     });
   });
 });
