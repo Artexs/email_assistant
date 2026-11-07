@@ -23,7 +23,7 @@ import { insertCredentials, updateCursor } from "../../src/modules/mail/repo";
 import { contentHash } from "../../src/modules/mail/sync-rules";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { DB, TenantContext } from "../../src/platform/db";
-import { SoftError } from "../../src/platform/errors";
+import { HardError, SoftError } from "../../src/platform/errors";
 
 import { createOrgWithMailbox, insertAction, insertTriagedWithActions, pauseOtherMailboxes } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -538,6 +538,26 @@ describe("undo: a reverse move in flight (D22)", () => {
         reason: "mail_not_found",
       });
 
+      expect((await emailState(trx, mail.emailId)).undo_pending_at).toBeNull();
+    });
+  });
+
+  test("(13) a reverse that fails hard 3 times ends failed and clears the flag", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx, { ...INTERIA, uidValidity: 7 });
+      const mail = await movedMail(trx, s);
+      await undo(trx, s.ctx, mail.emailId, opts(s));
+      s.fake.failOn("deleteMessage", new HardError("boom"), 3);
+
+      const outcomes = [];
+      for (const attempt of [0, 1, 2]) {
+        const at = new Date(NOW.getTime() + attempt * 10 * 60_000);
+        const [reverse] = await claim(trx, s, at);
+        outcomes.push(await applyAction(depsOf(s, trx, at), s.ctx, reverse as ClaimedAction, s.fake));
+      }
+
+      expect(outcomes.at(-1)).toEqual({ kind: "failed", reason: "hard_error" });
+      expect(await reverseRows(trx, s)).toMatchObject([{ status: "failed", status_reason: "hard_error" }]);
       expect((await emailState(trx, mail.emailId)).undo_pending_at).toBeNull();
     });
   });

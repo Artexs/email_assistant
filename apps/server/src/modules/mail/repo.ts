@@ -478,7 +478,7 @@ export async function getEmailMailbox(
   return {
     mailboxId: row.mailbox_id,
     mailboxAddress: row.address,
-    mailboxStatus: row.status as MailboxStatus,
+    mailboxStatus: mailboxStatusSchema.parse(row.status),
     messageIdHeader: row.message_id_header,
   };
 }
