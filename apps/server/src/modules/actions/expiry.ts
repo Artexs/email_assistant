@@ -1,12 +1,22 @@
 import type { Transaction } from "kysely";
 
-import type { DB, TenantContext } from "../../platform/db";
+import type { Db, DB, TenantContext } from "../../platform/db";
+import { describeError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
+import { listMailboxTargets } from "../mail";
 
-import { STALE_AFTER_MS } from "./constants";
+import { APPROVAL_TTL_MS, STALE_AFTER_MS, UNNOTIFIED_TTL_MS } from "./constants";
 import { noDelegationHooks, type DelegationHooks } from "./hooks";
-import { expireReadyDraft, insertReverse, listOpenReminderSends, lockDraft, lockSend, setExpired } from "./repo";
+import {
+  expireReadyDraft,
+  insertReverse,
+  listExpiredApprovals,
+  listOpenReminderSends,
+  lockDraft,
+  lockSend,
+  setExpired,
+} from "./repo";
 
 const log = createLog("actions");
 
@@ -136,4 +146,62 @@ export async function expireReminderActions(
     if (closed) sends += 1;
   }
   return { sends };
+}
+
+export { APPROVAL_TTL_MS, UNNOTIFIED_TTL_MS };
+export const EXPIRY_BATCH = 200;
+
+export interface ExpiryDeps {
+  db: Db | Transaction<DB>;
+  now(): Date;
+  hooks: DelegationHooks;
+  uidplus(ctx: TenantContext, mailboxId: string): Promise<boolean>;
+  // Test seam: replaces `listExpiredApprovals`.
+  listExpired?: typeof listExpiredApprovals;
+}
+
+function inTransaction<T>(db: Db | Transaction<DB>, run: (trx: Transaction<DB>) => Promise<T>): Promise<T> {
+  return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
+}
+
+// D22: every hour. Time passes for paused mailboxes too, so the job walks them as well.
+export function createExpiryJob(deps: ExpiryDeps): { run(): Promise<void> } {
+  const list = deps.listExpired ?? listExpiredApprovals;
+
+  async function expireMailbox(ctx: TenantContext, mailboxId: string): Promise<void> {
+    const now = deps.now();
+    const rows = await list(deps.db, ctx, mailboxId, {
+      now,
+      limit: EXPIRY_BATCH,
+      staleBefore: new Date(now.getTime() - STALE_AFTER_MS),
+    });
+    if (rows.length === 0) return;
+    const uidplus = await deps.uidplus(ctx, mailboxId);
+    const counts = { timeout: 0, draft_missing: 0, not_notified: 0, held_timeout: 0 };
+    for (const row of rows) {
+      const closed = await inTransaction(deps.db, (trx) =>
+        expireSend(trx, ctx, row.id, { reason: row.reason, now, actor: "system", hooks: deps.hooks, uidplus })
+      );
+      if (closed) counts[row.reason] += 1;
+    }
+    const total = counts.timeout + counts.draft_missing + counts.not_notified + counts.held_timeout;
+    if (total > 0) {
+      log.info(
+        `expiry ${mailboxId}: expired ${total} (timeout ${counts.timeout}, draft_missing ${counts.draft_missing}, not_notified ${counts.not_notified}, held_timeout ${counts.held_timeout})`
+      );
+    }
+  }
+
+  return {
+    async run() {
+      const targets = await listMailboxTargets(deps.db, { statuses: ["active", "paused", "auth_error"] });
+      for (const { orgId, mailboxId } of targets) {
+        try {
+          await expireMailbox({ orgId }, mailboxId);
+        } catch (error) {
+          log.error(`expiry ${mailboxId} failed: ${describeError(error)}`);
+        }
+      }
+    },
+  };
 }

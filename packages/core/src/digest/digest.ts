@@ -55,6 +55,7 @@ export interface DigestInput {
   items: readonly DigestItem[];
   skippedTooOld: number;
   waiting: number;
+  delegations?: { open: number; overdue: number };
   maxLines?: number;
 }
 
@@ -145,6 +146,9 @@ function renderListed(input: DigestInput, listed: readonly DigestItem[]): OutMes
   if (more > 0) footer.push(`+${more} more: ${parts.map((part) => `${part.rest} ${part.name}`).join(", ")}`);
   if (input.skippedTooOld > 0) footer.push(`📭 Not processed (older than 7 days): ${input.skippedTooOld}`);
   if (input.waiting > 0) footer.push(`⏳ Waiting for triage: ${input.waiting}`);
+  if (input.delegations !== undefined && input.delegations.open + input.delegations.overdue > 0) {
+    footer.push(`👥 Delegations: ${input.delegations.open} waiting for a reply, ${input.delegations.overdue} overdue`);
+  }
   if (total > 0 && input.mailboxes.length > 0 && input.mailboxes.every((mailbox) => mailbox.mode === "shadow")) {
     footer.push("Shadow mode: the system changed nothing in your mailbox.");
   }

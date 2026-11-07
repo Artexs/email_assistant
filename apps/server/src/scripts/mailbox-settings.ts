@@ -9,6 +9,8 @@ import {
   type SettingsChange,
   type SettingsDeps,
 } from "../modules/config";
+import { delegationHooks } from "../modules/delegation";
+import { mailboxHasUidplus } from "../modules/mail";
 import { buildRealReport, listLabeledResults } from "../modules/triage";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb, type Db } from "../platform/db";
@@ -47,12 +49,21 @@ function printChange(result: SettingsChange): void {
     log.info("no change");
   }
   if (result.expired > 0 || result.closedGate) {
-    log.info(`expired ${result.expired} ready actions`);
+    log.info(`expired ${result.expired} ready actions and sends`);
   }
 }
 
 async function run(command: SettingsCommand, db: Db, now: Date): Promise<number> {
-  const deps: SettingsDeps = { db, now: () => now, expireReady };
+  const hooks = delegationHooks({ db });
+  const deps: SettingsDeps = {
+    db,
+    now: () => now,
+    expireReady: async (trx, trxCtx, filter, opts) =>
+      expireReady(trx, trxCtx, filter, {
+        ...opts,
+        sendClose: { hooks, uidplus: await mailboxHasUidplus(trx, trxCtx, filter.mailboxId) },
+      }),
+  };
   const ctx = { orgId: command.orgId };
   const { mailboxId } = command;
   switch (command.kind) {

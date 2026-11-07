@@ -15,6 +15,8 @@ function view(id: string, over: Partial<ActionView> = {}): ActionView {
     reverse: false,
     reversesActionId: null,
     appliedAt: new Date(NOW.getTime() - HOUR),
+    kind: null,
+    delegateId: null,
     ...over,
   };
 }

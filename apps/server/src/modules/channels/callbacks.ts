@@ -3,6 +3,7 @@ import {
   categoryTag,
   cleanSubject,
   encodeCallback,
+  isFeedbackCallback,
   labelCategories,
   parseCallback,
   type Category,
@@ -52,7 +53,8 @@ export function pickerMessage(emailId: string, subject: string | null, current: 
 // The tenant comes from the link. An unknown mail id and a mail of another organization give the same answer.
 export async function handleCallback(deps: CallbackDeps, link: LinkedChat, data: string): Promise<CallbackResult> {
   const callback = parseCallback(data);
-  if (callback === null) {
+  // The approval kinds get their handlers in S4 stage 16.
+  if (callback === null || !isFeedbackCallback(callback)) {
     return { answer: "This button is not valid any more." };
   }
   if (callback.kind === "cancel") {

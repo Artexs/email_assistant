@@ -1,18 +1,32 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { afterAll, describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import { createCommitterJob, type ActionsScope } from "../../src/modules/actions";
-import { MailAuthError, type ImapConnectOptions } from "../../src/modules/mail";
+import {
+  MailAuthError,
+  type ImapConnectOptions,
+  type MailSender,
+  type SmtpConnectOptions,
+} from "../../src/modules/mail";
 import { createFakeMailProvider, type FakeMailProvider } from "../../src/modules/mail/fake";
+import { createFakeMailSender } from "../../src/modules/mail/fake/sender";
 import { insertCredentials, insertMailbox } from "../../src/modules/mail/repo";
 import { contentHash } from "../../src/modules/mail/sync-rules";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { DB } from "../../src/platform/db";
 import { SoftError } from "../../src/platform/errors";
+import { setLogLevel } from "../../src/platform/log";
 
-import { createOrgWithMailbox, insertTriagedWithActions, pauseOtherMailboxes, testCapabilities } from "./fixtures";
+import {
+  createOrgWithMailbox,
+  insertAction,
+  insertDraftAndSend,
+  insertTriagedWithActions,
+  pauseOtherMailboxes,
+  testCapabilities,
+} from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -28,6 +42,7 @@ const RECEIVED = new Date(NOW.getTime() - HOUR);
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
 
 interface Box {
+  userId?: string;
   orgId: string;
   mailboxId: string;
   address: string;
@@ -38,6 +53,7 @@ async function addBox(trx: Transaction<DB>, sameOrgAs?: Box): Promise<Box> {
   const address = `box-${randomUUID()}@x.test`;
   let orgId: string;
   let mailboxId: string;
+  let userId: string | undefined;
   if (sameOrgAs) {
     orgId = sameOrgAs.orgId;
     mailboxId = randomUUID();
@@ -56,7 +72,7 @@ async function addBox(trx: Transaction<DB>, sameOrgAs?: Box): Promise<Box> {
       }
     );
   } else {
-    ({ orgId, mailboxId } = await createOrgWithMailbox(trx, { address }));
+    ({ orgId, mailboxId, userId } = await createOrgWithMailbox(trx, { address }));
   }
   const secret = secrets.encrypt("pw", `mailbox:${mailboxId}`);
   await insertCredentials(
@@ -64,7 +80,7 @@ async function addBox(trx: Transaction<DB>, sameOrgAs?: Box): Promise<Box> {
     { orgId },
     { mailboxId, encryptedSecret: secret.ciphertext, secretKind: "password", keyVersion: secret.keyVersion }
   );
-  return { orgId, mailboxId, address, fake: createFakeMailProvider() };
+  return { userId, orgId, mailboxId, address, fake: createFakeMailProvider() };
 }
 
 interface Mail {
@@ -450,5 +466,202 @@ describe("createCommitterJob", () => {
       ]);
       expect(box.fake.calls.filter((call) => call === "moveMessage")).toEqual([]);
     });
+  });
+});
+
+// S4 stage 12: sends in the committer job.
+interface SendOpener {
+  calls: string[];
+  failure: Error | null;
+  sender: ReturnType<typeof createFakeMailSender>;
+  openSender(opts: SmtpConnectOptions): Promise<MailSender>;
+}
+
+function senderOpener(): SendOpener {
+  const sender = createFakeMailSender();
+  const opener: SendOpener = {
+    calls: [],
+    failure: null,
+    sender,
+    async openSender(opts) {
+      opener.calls.push(opts.user);
+      if (opener.failure) throw opener.failure;
+      return sender;
+    },
+  };
+  return opener;
+}
+
+function sendJob(
+  trx: Transaction<DB>,
+  opener: Opener,
+  smtp: SendOpener,
+  box: Box,
+  sendScope: Parameters<typeof createCommitterJob>[0]["sendScope"] = { kind: "all", mailboxAddress: box.address }
+) {
+  return createCommitterJob({
+    db: trx,
+    secrets,
+    openProvider: opener.openProvider,
+    openSender: smtp.openSender,
+    scope: { kind: "all", mailboxAddress: box.address },
+    sendScope,
+    now: () => NOW,
+  });
+}
+
+function pairOf(trx: Transaction<DB>, box: Box, opts: Parameters<typeof insertDraftAndSend>[3] = {}) {
+  return insertDraftAndSend(trx, { orgId: box.orgId }, box.mailboxId, {
+    createdAt: new Date(NOW.getTime() - 30 * MINUTE),
+    draftStatus: "applied",
+    draftProviderResult: { uid: 1, folder: "Drafts" },
+    sendStatus: "approved",
+    approved: { userId: box.userId as string, at: new Date(NOW.getTime() - MINUTE) },
+    ...opts,
+  });
+}
+
+describe("createCommitterJob with sends", () => {
+  test("(24) a batch with only a send opens the provider and the sender once and saves the Sent copy", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const box = await addBox(trx);
+      const opener = openerFor([box]);
+      const smtp = senderOpener();
+      const p = await pairOf(trx, box);
+
+      await sendJob(trx, opener, smtp, box).run();
+
+      expect(opener.calls).toEqual([box.address]);
+      expect(smtp.calls).toEqual([box.address]);
+      expect(smtp.sender.sent).toHaveLength(1);
+      expect((await actionState(trx, p.sendId)).status).toBe("applied");
+      expect(await box.fake.searchSinceIn("Sent", new Date(NOW.getTime() - 2 * 24 * 60 * MINUTE))).toHaveLength(1);
+      expect(smtp.sender.closed).toBe(true);
+      expect(box.fake.closed).toBe(true);
+    });
+  });
+
+  test("(25) a batch with only a reverse draft opens the provider and no sender", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const box = await addBox(trx);
+      const opener = openerFor([box]);
+      const smtp = senderOpener();
+      const p = await pairOf(trx, box, { sendStatus: "applied" });
+      await insertAction(trx, { orgId: box.orgId }, p.emailId, {
+        type: "create_draft",
+        status: "ready",
+        payload: { kind: "delegation", folder: "Drafts", uid: 1, reason: "sent" },
+        reversesActionId: p.draftId,
+        idempotencyKey: `${p.draftId}:undo`,
+      });
+      await box.fake.ensureFolder("Drafts");
+
+      await sendJob(trx, opener, smtp, box).run();
+
+      expect(opener.calls).toEqual([box.address]);
+      expect(smtp.calls).toEqual([]);
+    });
+  });
+
+  test("(25b) a batch with only an applying send (the recovery) opens no sender", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const box = await addBox(trx);
+      const opener = openerFor([box]);
+      const smtp = senderOpener();
+      const p = await pairOf(trx, box, { sendStatus: "applying" });
+
+      await sendJob(trx, opener, smtp, box).run();
+
+      expect(opener.calls).toEqual([box.address]);
+      expect(smtp.calls).toEqual([]);
+      expect(smtp.sender.calls).toEqual([]);
+      expect(await actionState(trx, p.sendId)).toMatchObject({ status: "failed", status_reason: "outcome_unknown" });
+    });
+  });
+
+  test("(20) a sender that cannot open releases the draft and the send, no count", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const box = await addBox(trx);
+      const opener = openerFor([box]);
+      const smtp = senderOpener();
+      smtp.failure = new SoftError("smtp down");
+      const waiting = await pairOf(trx, box, {
+        draftStatus: "ready",
+        sendStatus: "awaiting_approval",
+        approved: undefined,
+      });
+      const ready = await pairOf(trx, box);
+
+      await sendJob(trx, opener, smtp, box).run();
+
+      expect(await actionState(trx, waiting.draftId)).toMatchObject({ status: "ready", locked_at: null, attempts: 0 });
+      expect(await actionState(trx, ready.sendId)).toMatchObject({ status: "approved", locked_at: null, attempts: 0 });
+      expect(box.fake.closed).toBe(true);
+    });
+  });
+
+  test("(21) a soft error on an earlier row releases a later send as approved", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const box = await addBox(trx);
+      const opener = openerFor([box]);
+      const smtp = senderOpener();
+      const mail = await addMail(trx, box, { messageId: "<f1@x.test>", actions: [{ type: "flag" }] });
+      const p = await pairOf(trx, box);
+      box.fake.failOn("setFlags", new SoftError("slow"));
+
+      await sendJob(trx, opener, smtp, box).run();
+
+      expect(await actionState(trx, mail.actionIds[0] as string)).toMatchObject({ status: "ready", locked_at: null });
+      expect(await actionState(trx, p.sendId)).toMatchObject({ status: "approved", locked_at: null, attempts: 0 });
+      expect(smtp.sender.calls).not.toContain("send");
+    });
+  });
+
+  test("(22) the info line counts sent 1", async () => {
+    const logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
+    setLogLevel("info");
+    try {
+      await withRollback(db, async (trx) => {
+        await pauseOtherMailboxes(trx);
+        const box = await addBox(trx);
+        await pairOf(trx, box);
+
+        await sendJob(trx, openerFor([box]), senderOpener(), box).run();
+
+        const output = logSpy.mock.calls.map((call: unknown[]) => call.map(String).join(" ")).join("\n");
+        expect(output).toContain(`committer ${box.mailboxId}: applied 1, failed 0, retry 0, sent 1`);
+      });
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
+  test("(22b) a mailbox with only a held send logs the held line once over two runs", async () => {
+    const logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
+    setLogLevel("info");
+    try {
+      await withRollback(db, async (trx) => {
+        await pauseOtherMailboxes(trx);
+        const box = await addBox(trx);
+        const smtp = senderOpener();
+        await pairOf(trx, box);
+        const job = sendJob(trx, openerFor([box]), smtp, box, { kind: "off" });
+
+        await job.run();
+        await job.run();
+
+        const output = logSpy.mock.calls.map((call: unknown[]) => call.map(String).join(" ")).join("\n");
+        const line = `committer ${box.mailboxId}: SEND_SCOPE=off, 1 approved sends wait`;
+        expect(output.split(line)).toHaveLength(2);
+        expect(smtp.calls).toEqual([]);
+      });
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 });

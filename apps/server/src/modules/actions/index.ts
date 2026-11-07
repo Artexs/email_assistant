@@ -9,6 +9,14 @@ export {
 } from "./apply";
 export { applyDraft, buildDraftMessage } from "./drafts";
 export {
+  applySend,
+  SEND_HARD_TRIES,
+  SEND_RETRY_WAIT_MS,
+  SENT_COPY_PENDING_MAX_AGE_MS,
+  sendOutcomeOf,
+  type SendOutcome,
+} from "./send";
+export {
   approve,
   approveSet,
   reject,
@@ -39,8 +47,10 @@ export {
   getSend,
   insertReverse,
   isOwnActionId,
+  listAwaitingSendIds,
   listActionsForEmail,
   listActionsForEmails,
+  listDraftTasks,
   listFailedUnnotified,
   listExpiredApprovals,
   listSendResultsToNotify,
@@ -88,6 +98,15 @@ export {
   type SendScope,
 } from "./scope";
 export { expireReady } from "./expire";
-export { closeDraftOfSend, expireReminderActions, expireSend, type SendCloseReason } from "./expiry";
+export {
+  closeDraftOfSend,
+  createExpiryJob,
+  EXPIRY_BATCH,
+  expireReminderActions,
+  expireSend,
+  UNNOTIFIED_TTL_MS,
+  type ExpiryDeps,
+  type SendCloseReason,
+} from "./expiry";
 export { noDelegationHooks, type DelegationHooks } from "./hooks";
 export { undo, type UndoResult } from "./undo";

@@ -6,7 +6,7 @@ Part of [`../s4-drafts-approvals-delegation.md`](../s4-drafts-approvals-delegati
 
 Why risky: an expired approval must never send later, a send held after the tap must not go out days later without a new tap, and a missed expiry leaves a draft in the user's real Drafts folder for ever.
 
-- [ ] **13.1 `createExpiryJob` (D22, D13, D6)**
+- [x] **13.1 `createExpiryJob` (D22, D13, D6)**
   - Goal: every hour, approvals that timed out, lost their draft, or never reached an owner, and approved sends that were held for 48 h, become `expired`; their drafts get a removal row (or are expired before they land), their delegations are cancelled, and the result notice follows.
   - Files: change `apps/server/src/modules/actions/expiry.ts` (stage 7.1 created it with `expireSend` and `closeDraftOfSend`; this step adds the job), `apps/server/test/integration/actions-expiry.test.ts` (create), `apps/server/src/modules/actions/index.ts`, `apps/server/src/modules/mail/repo.ts` and `mail/index.ts` (`listMailboxTargets(db, opts: { statuses: readonly MailboxStatus[] })`, a scheduler entry point like `listSyncTargets`, which becomes `listMailboxTargets(db, { statuses: ["active"] })`); `docs/code-patterns.md` is updated in stage 21 (the entry-point list).
   - Interfaces:
@@ -37,7 +37,7 @@ Why risky: an expired approval must never send later, a send held after the tap 
   - Done when: the tests pass.
   - Out of scope: the schedule in `main.ts` (stage 18), the notice text (stage 14).
 
-- [ ] **13.2 Gate close for drafts and sends (S3 D13, D33)**
+- [x] **13.2 Gate close for drafts and sends (S3 D13, D33)**
   - Goal: when the user turns the `create_draft` switch off or sets the mode to `shadow`, the sends that wait for approval are closed (with their drafts) in the same transaction, so nothing planned under the old setting lands or asks for a tap later (the S3 rule B3 for mailbox actions, extended to S4).
   - Files: change `apps/server/src/modules/config/service.ts` (S3 stage 14: `closedBy`), `apps/server/src/modules/actions/expire.ts` (S3 stage 10: `expireReady`), `actions/repo.ts` (`ExpireFilter`), `apps/server/src/scripts/mailbox-settings.ts` (S3 stage 14.2: the composition root of `SettingsDeps.expireReady`), `apps/server/test/integration/config-settings.test.ts`, `apps/server/test/integration/actions-undo.test.ts` (the S3 `expireReady` cases still pass).
   - Interfaces:

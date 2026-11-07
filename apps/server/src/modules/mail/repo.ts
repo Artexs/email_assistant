@@ -561,15 +561,23 @@ export async function setFolderMapEntry(
 }
 
 // Scheduler entry point: lists work across tenants, so it takes no TenantContext. Callers build a TenantContext from orgId for every later call.
-export async function listSyncTargets(db: DbOrTrx): Promise<{ orgId: string; mailboxId: string }[]> {
+export async function listMailboxTargets(
+  db: DbOrTrx,
+  opts: { statuses: readonly MailboxStatus[] }
+): Promise<{ orgId: string; mailboxId: string }[]> {
+  if (opts.statuses.length === 0) return [];
   const rows = await db
     .selectFrom("mailboxes")
     .select(["org_id", "id"])
-    .where("status", "=", "active")
+    .where("status", "in", opts.statuses)
     .orderBy("created_at")
     .orderBy("id")
     .execute();
   return rows.map((row) => ({ orgId: row.org_id, mailboxId: row.id }));
+}
+
+export function listSyncTargets(db: DbOrTrx): Promise<{ orgId: string; mailboxId: string }[]> {
+  return listMailboxTargets(db, { statuses: ["active"] });
 }
 
 // Forces the next sync to rescan: a real server never has UIDVALIDITY 0, so the sync sees a change.

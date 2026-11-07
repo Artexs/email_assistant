@@ -23,6 +23,7 @@ import { applyDraft, removeDraft } from "./drafts";
 import type { DelegationHooks } from "./hooks";
 import { ensureMoved, type EnsureResult } from "./move";
 import { finishAction, markUndone, releaseAction, type ClaimedAction } from "./repo";
+import { applySend } from "./send";
 
 const log = createLog("actions");
 
@@ -45,7 +46,6 @@ export type ApplyOutcome =
   | { kind: "expired"; reason: "send_closed" }
   | { kind: "retry"; soft: boolean }
   | { kind: "auth_error" }
-  | { kind: "not_handled" }
   | { kind: "lost" };
 
 // Gives the real path of a folder key. `ensureFolder` runs once per key per run; a path that differs from `folder_map` is stored.
@@ -68,6 +68,10 @@ export interface ApplyDeps {
   hooks: DelegationHooks;
   /** Test hook: runs after the IMAP change, before the DB transaction. */
   beforeCommit?: () => void | Promise<void>;
+  /** Test hooks of the send (D11): before the SMTP call, after the 250, before the Sent copy. A throw is a crash. */
+  beforeSend?: () => void | Promise<void>;
+  afterSend?: () => void | Promise<void>;
+  beforeSentCopy?: () => void | Promise<void>;
 }
 
 const FLAG_OF_TYPE: Record<string, string> = { flag: "\\Flagged", mark_read: "\\Seen" };
@@ -382,10 +386,8 @@ export async function applyAction(
   if (action.type === "save_summary") {
     return applySummary(deps, ctx, action);
   }
-  // Until the send handler (stage 12) exists: give the row back in its status, no count, wait 5 min so the rows do
-  // not fill each batch. Never apply it as a flag.
-  if (action.type === "send") {
-    log.warn(`committer: ${action.id} type ${action.type} not handled yet`);
+  if (provider === null) {
+    log.error(`action ${action.id}: no provider for ${action.type}`);
     const now = deps.now();
     await releaseAction(deps.db, ctx, action.id, action.locked_at, {
       toStatus: action.status,
@@ -393,18 +395,10 @@ export async function applyAction(
       countAttempt: false,
       now,
     });
-    return { kind: "not_handled" };
-  }
-  if (provider === null) {
-    log.error(`action ${action.id}: no provider for ${action.type}`);
-    const now = deps.now();
-    await releaseAction(deps.db, ctx, action.id, action.locked_at, {
-      toStatus: action.status === "applying" ? "applying" : "ready",
-      nextAttemptAt: new Date(now.getTime() + RETRY_WAIT_MS),
-      countAttempt: false,
-      now,
-    });
     return { kind: "retry", soft: true };
+  }
+  if (action.type === "send") {
+    return applySend(deps, ctx, action, provider);
   }
   if (action.type === "create_draft") {
     if (action.reverses_action_id !== null) return removeDraft(deps, ctx, action, provider);

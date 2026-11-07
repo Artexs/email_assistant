@@ -14,7 +14,7 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 import { mailKindFilter } from "../mail";
 
-import { APPROVAL_TTL_MS } from "./constants";
+import { APPROVAL_TTL_MS, UNNOTIFIED_TTL_MS } from "./constants";
 
 type DbOrTrx = Db | Transaction<DB>;
 
@@ -188,6 +188,7 @@ export async function listSummaries(db: DbOrTrx, ctx: TenantContext, emailIds: s
 }
 
 const folderKeySchema = z.enum(folderKeys);
+const sendKindSchema = z.enum(["delegation", "clarification", "reminder"]);
 
 // Oldest first per email. A row with an unknown type is left out; an unknown folder gives `null`.
 export async function listActionsForEmails(
@@ -209,6 +210,8 @@ export async function listActionsForEmails(
       "reverses_action_id",
       "applied_at",
       sql<string | null>`payload->>'folder'`.as("folder"),
+      sql<string | null>`payload->>'kind'`.as("kind"),
+      sql<string | null>`payload->>'delegate_id'`.as("delegate_id"),
     ])
     .where("org_id", "=", ctx.orgId)
     .where("email_id", "in", [...emailIds])
@@ -221,6 +224,7 @@ export async function listActionsForEmails(
       continue;
     }
     const folder = folderKeySchema.safeParse(row.folder);
+    const kind = sendKindSchema.safeParse(row.kind);
     const view: ActionView = {
       id: row.id,
       type: type.data,
@@ -229,10 +233,41 @@ export async function listActionsForEmails(
       reverse: row.reverses_action_id !== null,
       reversesActionId: row.reverses_action_id,
       appliedAt: row.applied_at,
+      kind: kind.success ? kind.data : null,
+      delegateId: row.delegate_id,
     };
     result.set(row.email_id, [...(result.get(row.email_id) ?? []), view]);
   }
   return result;
+}
+
+// The task of the original `create_draft` row per mail (a delegation or reminder draft); reverse rows are left out.
+export async function listDraftTasks(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailIds: readonly string[]
+): Promise<Map<string, string>> {
+  if (emailIds.length === 0) {
+    return new Map();
+  }
+  const rows = await db
+    .selectFrom("actions")
+    .select(["email_id", sql<string | null>`payload->>'task'`.as("task")])
+    .where("org_id", "=", ctx.orgId)
+    .where("email_id", "in", [...emailIds])
+    .where("type", "=", "create_draft")
+    .where("reverses_action_id", "is", null)
+    .where(sql<boolean>`payload->>'task' is not null`)
+    .orderBy("created_at")
+    .orderBy("id")
+    .execute();
+  const tasks = new Map<string, string>();
+  for (const row of rows) {
+    if (row.task !== null && !tasks.has(row.email_id)) {
+      tasks.set(row.email_id, row.task);
+    }
+  }
+  return tasks;
 }
 
 // `mailbox` gates the mailbox changes and the drafts: none = save_summary only; synthetic = save_summary and synthetic mail;
@@ -545,6 +580,7 @@ export async function claimActions(
 
 // The first step of the apply step for a draft or a send: it commits before any APPEND or SMTP call (D17).
 // `locked_at` stays: the claim token is valid through the step.
+// A send starts only from `approved` with `approved_at` set; a draft from `ready` or `approved`.
 export async function markApplying(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -561,7 +597,12 @@ export async function markApplying(
     }))
     .where("id", "=", id)
     .where("org_id", "=", ctx.orgId)
-    .where("status", "in", ["ready", "approved"])
+    .where((eb) =>
+      eb.or([
+        eb.and([eb("type", "=", "send"), eb("status", "=", "approved"), eb("approved_at", "is not", null)]),
+        eb.and([eb("type", "<>", "send"), eb("status", "in", ["ready", "approved"])]),
+      ])
+    )
     .where("locked_at", "=", lockedAt)
     .executeTakeFirst();
   return result.numUpdatedRows > 0n;
@@ -974,6 +1015,8 @@ export interface ExpireFilter {
   types: readonly MailboxActionType[];
   // The category of the newest triage_results row of the mail.
   category?: { is: string } | { not: string };
+  // Also close the `awaiting_approval` sends of the mailbox (and their drafts): `expireReady` does it (S4 D13, D33).
+  sends?: true;
 }
 
 // A row that a committer run holds now (`locked_at` >= `staleBefore`) stays: it ends as `applied` and keeps its Undo.
@@ -1463,8 +1506,6 @@ export async function markResultNotified(db: DbOrTrx, ctx: TenantContext, id: st
   return result.numUpdatedRows > 0n;
 }
 
-const NOT_NOTIFIED_AFTER_MS = 7 * 24 * 3_600_000;
-
 type ExpiredReason = "timeout" | "draft_missing" | "not_notified" | "held_timeout";
 
 // D22: the sends of one mailbox that the expiry job closes, each with the first reason that applies.
@@ -1475,7 +1516,7 @@ export async function listExpiredApprovals(
   opts: { now: Date; limit: number; staleBefore: Date }
 ): Promise<{ id: string; reason: ExpiredReason }[]> {
   const ttlBefore = new Date(opts.now.getTime() - APPROVAL_TTL_MS);
-  const createdBefore = new Date(opts.now.getTime() - NOT_NOTIFIED_AFTER_MS);
+  const createdBefore = new Date(opts.now.getTime() - UNNOTIFIED_TTL_MS);
   const result = await sql<{ id: string; reason: ExpiredReason }>`
     select id, reason from (
       select a.id, a.created_at,
@@ -1498,6 +1539,30 @@ export async function listExpiredApprovals(
     limit ${opts.limit}
   `.execute(db);
   return result.rows;
+}
+
+// The `awaiting_approval` sends of one mailbox, oldest first. The caller locks each one (`expireSend`).
+export async function listAwaitingSendIds(
+  trx: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { emailId?: string } = {}
+): Promise<{ id: string; emailId: string }[]> {
+  const { emailId } = opts;
+  const rows = await trx
+    .selectFrom("actions")
+    .select(["id", "email_id"])
+    .where("org_id", "=", ctx.orgId)
+    .where("type", "=", "send")
+    .where("status", "=", "awaiting_approval")
+    .where("email_id", "in", (eb) =>
+      eb.selectFrom("emails").select("id").where("org_id", "=", ctx.orgId).where("mailbox_id", "=", mailboxId)
+    )
+    .$if(emailId !== undefined, (qb) => qb.where("email_id", "=", emailId as string))
+    .orderBy("created_at")
+    .orderBy("id")
+    .execute();
+  return rows.map((row) => ({ id: row.id, emailId: row.email_id }));
 }
 
 // For /status and the held-send warning (D16): the whole organization.
