@@ -4,6 +4,7 @@ import type { Transaction } from "kysely";
 import {
   applyAction,
   claimActions,
+  createFolderResolver,
   RETRY_WAIT_MS,
   type ApplyDeps,
   type ClaimedAction,
@@ -40,7 +41,11 @@ async function setup(trx: Transaction<DB>): Promise<Setup> {
 }
 
 function depsAt(s: Setup, trx: Transaction<DB>, at: Date = NOW): ApplyDeps {
-  return { db: trx, now: () => at, folderMap: {}, mailboxId: s.mailboxId };
+  const folders = createFolderResolver(
+    { db: trx, now: () => at, provider: s.fake, mailboxId: s.mailboxId, folderMap: {} },
+    s.ctx
+  );
+  return { db: trx, now: () => at, mailboxId: s.mailboxId, folders };
 }
 
 // Delivers `messageId` to `folder` so that it gets `uid`; filler mails with other ids fill the gap.

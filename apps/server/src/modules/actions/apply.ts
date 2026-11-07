@@ -1,7 +1,8 @@
+import { folderKeys, type FolderKey } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { describeError, HardError, SoftError } from "../../platform/errors";
+import { describeError, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 import {
@@ -15,6 +16,7 @@ import {
   type MailProvider,
 } from "../mail";
 
+import { ensureMoved, type EnsureResult } from "./move";
 import { finishAction, markUndone, releaseAction, type ClaimedAction } from "./repo";
 
 const log = createLog("actions");
@@ -24,16 +26,23 @@ export const RETRY_WAIT_MS = 5 * 60_000;
 
 export type ApplyOutcome =
   | { kind: "applied" }
-  | { kind: "failed"; reason: "mail_not_found" | "hard_error" | "no_provider" }
+  | { kind: "failed"; reason: "mail_not_found" | "hard_error" | "no_provider" | "bad_payload" }
   | { kind: "retry"; soft: boolean }
   | { kind: "auth_error" }
   | { kind: "lost" };
 
+// Gives the real path of a folder key. `ensureFolder` runs once per key per run; a path that differs from `folder_map` is stored.
+export interface FolderResolver {
+  resolve(key: FolderKey): Promise<string>;
+}
+
 export interface ApplyDeps {
   db: Db | Transaction<DB>;
   now(): Date;
-  folderMap: Record<string, string>;
   mailboxId: string;
+  folders: FolderResolver;
+  /** Test hook: runs after the IMAP change, before the DB transaction. */
+  beforeCommit?: () => void;
 }
 
 const FLAG_OF_TYPE: Record<string, string> = { flag: "\\Flagged", mark_read: "\\Seen" };
@@ -121,14 +130,19 @@ async function mapProviderError(
   return { kind: "retry", soft: false };
 }
 
-async function failNotFound(deps: ApplyDeps, ctx: TenantContext, action: ClaimedAction): Promise<ApplyOutcome> {
+async function failAction(
+  deps: ApplyDeps,
+  ctx: TenantContext,
+  action: ClaimedAction,
+  reason: "mail_not_found" | "bad_payload"
+): Promise<ApplyOutcome> {
   const now = deps.now();
   const done = await inTransaction(deps.db, async (trx) => {
     if (
       !(await finishAction(trx, ctx, action.id, action.locked_at, {
         status: "failed",
         at: now,
-        reason: "mail_not_found",
+        reason,
       }))
     ) {
       return false;
@@ -138,7 +152,7 @@ async function failNotFound(deps: ApplyDeps, ctx: TenantContext, action: Claimed
       actionId: action.id,
       actor: "system",
       event: auditEvents.actionFailed,
-      reasonCode: "mail_not_found",
+      reasonCode: reason,
       data: {
         action_type: action.type,
         mailbox_id: deps.mailboxId,
@@ -148,8 +162,8 @@ async function failNotFound(deps: ApplyDeps, ctx: TenantContext, action: Claimed
     return true;
   });
   if (!done) return { kind: "lost" };
-  log.warn(`action ${action.id}: failed mail_not_found`);
-  return { kind: "failed", reason: "mail_not_found" };
+  log.warn(`action ${action.id}: failed ${reason}`);
+  return { kind: "failed", reason };
 }
 
 async function applyFlag(
@@ -177,7 +191,7 @@ async function applyFlag(
     return mapProviderError(deps, ctx, action, error);
   }
   if (meta === null) {
-    return failNotFound(deps, ctx, action);
+    return failAction(deps, ctx, action, "mail_not_found");
   }
 
   const uid = meta.uid;
@@ -222,6 +236,100 @@ async function applyFlag(
   return { kind: "applied" };
 }
 
+const isFolderKey = (value: string | undefined): value is FolderKey =>
+  (folderKeys as readonly string[]).includes(value as string);
+
+// A move (D5): the ensure puts the mail in the target whatever happened before. A reverse brings it back to INBOX.
+async function applyMove(
+  deps: ApplyDeps,
+  ctx: TenantContext,
+  action: ClaimedAction,
+  provider: MailProvider
+): Promise<ApplyOutcome> {
+  const { email } = action;
+  const reverseOf = action.reverses_action_id;
+  const folderKey = action.payload.folder;
+  if (reverseOf === null && !isFolderKey(folderKey)) {
+    return failAction(deps, ctx, action, "bad_payload");
+  }
+
+  let to = INBOX;
+  try {
+    if (reverseOf === null) to = await deps.folders.resolve(folderKey as FolderKey);
+  } catch (error) {
+    return mapProviderError(deps, ctx, action, error);
+  }
+  // When the sync marked the mail returned, `from` is INBOX too and the ensure only locates (rule 1).
+  const from = email.folder;
+  const hints = { fromUid: email.uid, toUid: reverseOf === null ? email.uid : email.inbox_uid };
+  const keyOf = { exceptEmailId: email.id, messageId: email.message_id_header, contentHash: email.content_hash };
+  const exclude = {
+    from: await listFolderUids(deps.db, ctx, deps.mailboxId, from, keyOf),
+    to: await listFolderUids(deps.db, ctx, deps.mailboxId, to, keyOf),
+  };
+
+  let ensured: EnsureResult | null;
+  try {
+    ensured = await ensureMoved(provider, email, from, to, hints, exclude);
+  } catch (error) {
+    return mapProviderError(deps, ctx, action, error);
+  }
+  if (ensured === null) {
+    return failAction(deps, ctx, action, "mail_not_found");
+  }
+
+  deps.beforeCommit?.();
+  const { uid, movedNow, leftoverDeleted } = ensured;
+  const now = deps.now();
+  const done = await inTransaction(deps.db, async (trx) => {
+    if (
+      !(await finishAction(trx, ctx, action.id, action.locked_at, {
+        status: "applied",
+        at: now,
+        providerResult: { uid, moved_now: movedNow, leftover_deleted: leftoverDeleted },
+      }))
+    ) {
+      return false;
+    }
+    await updateEmailLocation(trx, ctx, email.id, {
+      folder: to,
+      uid,
+      ...(to === INBOX ? { inboxUid: uid } : {}),
+      movedAt: to === INBOX ? null : now,
+    });
+    await recordAudit(trx, ctx, {
+      emailId: email.id,
+      actionId: action.id,
+      actor: "system",
+      event: auditEvents.actionApplied,
+      data: {
+        action_type: "move",
+        mailbox_id: deps.mailboxId,
+        ...(reverseOf === null ? { folder_key: folderKey } : {}),
+        reverse: reverseOf !== null,
+        moved_now: movedNow,
+        leftover_deleted: leftoverDeleted,
+      },
+    });
+    // `markUndone` false: the original is `undone` (user_moved_back) already. Not an error.
+    if (reverseOf !== null && (await markUndone(trx, ctx, reverseOf, { at: now, reason: "undo" }))) {
+      await recordAudit(trx, ctx, {
+        emailId: email.id,
+        actionId: reverseOf,
+        actor: "system",
+        event: auditEvents.actionUndone,
+        data: { reverse_action_id: action.id },
+      });
+    }
+    // Stage 10 (D22): the finish of a reverse also clears `emails.undo_pending_at` here.
+    return true;
+  });
+  // `lost`: the IMAP change stays. The next claimer locates the mail in the target.
+  if (!done) return { kind: "lost" };
+  log.debug(`action ${action.id}: applied move`);
+  return { kind: "applied" };
+}
+
 // Applies one claimed action and writes the result, the mail location and the audit row in one transaction.
 // The job handles `auth_error` (mailbox status) and the release of the rest of the batch.
 export async function applyAction(
@@ -233,9 +341,6 @@ export async function applyAction(
   if (action.type === "save_summary") {
     return applySummary(deps, ctx, action);
   }
-  if (action.type === "move") {
-    throw new HardError("move not built");
-  }
   if (provider === null) {
     log.error(`action ${action.id}: no provider for ${action.type}`);
     const now = deps.now();
@@ -245,6 +350,9 @@ export async function applyAction(
       now,
     });
     return { kind: "retry", soft: true };
+  }
+  if (action.type === "move") {
+    return applyMove(deps, ctx, action, provider);
   }
   return applyFlag(deps, ctx, action, provider);
 }

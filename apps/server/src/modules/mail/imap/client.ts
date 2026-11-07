@@ -134,16 +134,24 @@ export interface FolderEntry {
   delimiter: string;
 }
 
-/** Returns the listed path of the folder `name` ("A/B"), or null. `prefix` is the personal namespace prefix of the server. */
+/**
+ * Returns the listed path of the folder `name` ("A/B"), or null. `prefix` is the personal namespace prefix of the server.
+ * The exact path or parts win; else a match that differs only in case (a user folder `ai` is used, not created again).
+ */
 export function matchFolder(entries: FolderEntry[], name: string, prefix: string): string | null {
   const wanted = name.split("/");
-  for (const entry of entries) {
-    if (entry.path === name) return entry.path;
-    const rest = prefix !== "" && entry.path.startsWith(prefix) ? entry.path.slice(prefix.length) : entry.path;
-    const parts = rest.split(entry.delimiter);
-    if (parts.length === wanted.length && parts.every((part, index) => part === wanted[index])) return entry.path;
-  }
-  return null;
+  const find = (same: (a: string, b: string) => boolean): string | null => {
+    for (const entry of entries) {
+      if (same(entry.path, name)) return entry.path;
+      const rest = prefix !== "" && entry.path.startsWith(prefix) ? entry.path.slice(prefix.length) : entry.path;
+      const parts = rest.split(entry.delimiter);
+      if (parts.length === wanted.length && parts.every((part, index) => same(part, wanted[index] as string))) {
+        return entry.path;
+      }
+    }
+    return null;
+  };
+  return find((a, b) => a === b) ?? find((a, b) => a.toLowerCase() === b.toLowerCase());
 }
 
 class ImapMailProvider implements MailProvider {
@@ -295,12 +303,21 @@ class ImapMailProvider implements MailProvider {
       const found = matchFolder(await this.listFolders(), name, prefix);
       if (found !== null) return found;
       // Parent first: Interia refuses a nested CREATE while the parent is missing.
+      // A parent that matches in another case (user folder `ai`) is used with its real spelling.
       const parts = name.split("/");
+      const real: string[] = [];
       for (let depth = 1; depth <= parts.length; depth++) {
-        const level = parts.slice(0, depth);
-        if (matchFolder(await this.listFolders(), level.join("/"), prefix) === null) {
-          await this.client.mailboxCreate(level);
+        const entries = await this.listFolders();
+        const wanted = [...real, parts[depth - 1] as string];
+        const level = matchFolder(entries, wanted.join("/"), prefix);
+        if (level === null) {
+          await this.client.mailboxCreate(wanted);
+          real.push(parts[depth - 1] as string);
+          continue;
         }
+        const entry = entries.find((candidate) => candidate.path === level) as FolderEntry;
+        const rest = prefix !== "" && level.startsWith(prefix) ? level.slice(prefix.length) : level;
+        real.splice(0, real.length, ...rest.split(entry.delimiter));
       }
       const created = matchFolder(await this.listFolders(), name, prefix);
       if (created === null) throw new HardError("folder create failed");

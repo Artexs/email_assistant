@@ -29,6 +29,17 @@ describeMailProviderContract("fake", async () => {
   };
 });
 
+describeMailProviderContract("fake-copy-path", async () => {
+  const provider = createFakeMailProvider({ capabilities: { move: false, uidplus: true } });
+  return {
+    provider,
+    seed: async (folder, msg) => {
+      provider.deliver(folder, msg);
+    },
+    cleanup: () => Promise.resolve(),
+  };
+});
+
 describe("fake provider", () => {
   test("userMove gives a new uid in the target folder and removes the source", async () => {
     const fake = createFakeMailProvider();
@@ -157,8 +168,33 @@ describe("fake provider", () => {
     expect(await fake.fetchMetaIn(INBOX, uid)).not.toBeNull();
   });
 
-  test("userMove back to INBOX with keepUidOnCopy keeps the old uid and uidNext", async () => {
-    const fake = createFakeMailProvider({ keepUidOnCopy: true });
+  test("keepUidOnCopy and keepUidOnUserMove are separate (Interia: copy false, user move true)", async () => {
+    const fake = createFakeMailProvider({ keepUidOnUserMove: true });
+    fake.deliver("Target", mail(8));
+    fake.deliver("Target", mail(9));
+    const uid = fake.deliver(INBOX, mail(1));
+    expect(fake.userMove(INBOX, uid, "Other")).toBe(uid);
+    const second = fake.deliver(INBOX, mail(2));
+    expect((await fake.moveMessage(INBOX, second, "Target")).newUid).not.toBe(second);
+  });
+
+  test("ensureFolder uses the exact path, then a case-insensitive match, and applies pathDelimiter", async () => {
+    const fake = createFakeMailProvider();
+    fake.deliver("ai/info", mail(1));
+    expect(await fake.ensureFolder("AI/Info")).toBe("ai/info");
+    // The user's parent `ai` is used for a new child.
+    expect(await fake.ensureFolder("AI/New")).toBe("ai/New");
+    expect(await fake.ensureFolder("Other/New")).toBe("Other/New");
+    fake.deliver("AI/Exact", mail(2));
+    fake.deliver("ai/exact", mail(3));
+    expect(await fake.ensureFolder("AI/Exact")).toBe("AI/Exact");
+    const dotted = createFakeMailProvider({ pathDelimiter: "." });
+    expect(await dotted.ensureFolder("AI/Info")).toBe("AI.Info");
+    expect(await dotted.ensureFolder("AI/Info")).toBe("AI.Info");
+  });
+
+  test("userMove back to INBOX with keepUidOnUserMove keeps the old uid and uidNext", async () => {
+    const fake = createFakeMailProvider({ keepUidOnUserMove: true });
     const uid = fake.deliver(INBOX, mail(1));
     fake.deliver(INBOX, mail(2));
     const before = await fake.inboxStatus();

@@ -1,4 +1,12 @@
-export { applyAction, HARD_ERROR_TRIES, RETRY_WAIT_MS, type ApplyDeps, type ApplyOutcome } from "./apply";
+export {
+  applyAction,
+  HARD_ERROR_TRIES,
+  RETRY_WAIT_MS,
+  type ApplyDeps,
+  type ApplyOutcome,
+  type FolderResolver,
+} from "./apply";
+export { ensureMoved, type EnsureExclude, type EnsureResult } from "./move";
 export { MAILBOX_ACTION_TYPES, type MailboxActionType } from "@ea/core";
 export {
   CLAIM_MAX_AGE_MS,
@@ -33,5 +41,5 @@ export type {
   PlannedActionInput,
   UndoCandidate,
 } from "./repo";
-export { createCommitterJob, STALE_AFTER_MS, type CommitterDeps } from "./committer";
+export { createCommitterJob, createFolderResolver, STALE_AFTER_MS, type CommitterDeps } from "./committer";
 export { claimFilterFor, type ActionsScope } from "./scope";

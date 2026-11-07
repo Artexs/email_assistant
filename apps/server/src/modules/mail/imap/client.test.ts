@@ -102,6 +102,16 @@ describe("matchFolder", () => {
     expect(matchFolder([{ path: "INBOX", delimiter: "." }], "INBOX", "INBOX.")).toBe("INBOX");
   });
 
+  test("uses a folder that differs only in case; the exact path wins", () => {
+    expect(matchFolder([{ path: "ai/spam", delimiter: "/" }], "AI/Spam", "")).toBe("ai/spam");
+    expect(matchFolder([{ path: "Ai.Spam", delimiter: "." }], "AI/Spam", "")).toBe("Ai.Spam");
+    const both = [
+      { path: "ai/spam", delimiter: "/" },
+      { path: "AI/Spam", delimiter: "/" },
+    ];
+    expect(matchFolder(both, "AI/Spam", "")).toBe("AI/Spam");
+  });
+
   test("gives null when no entry matches", () => {
     expect(matchFolder([{ path: "AI", delimiter: "/" }], "AI/Spam", "")).toBeNull();
     expect(matchFolder([{ path: "AI.Spam.Old", delimiter: "." }], "AI/Spam", "")).toBeNull();
@@ -177,6 +187,12 @@ describe("IMAP adapter writes (stub client)", () => {
     const { provider, calls } = stubProvider({ folders: ["INBOX", "AI"] });
     await provider.ensureFolder("AI/Spam");
     expect(calls).toEqual(["create:AI/Spam"]);
+  });
+
+  test("ensureFolder builds the child from the real parent path when the case differs", async () => {
+    const { provider, calls } = stubProvider({ folders: ["INBOX", "ai"] });
+    expect(await provider.ensureFolder("AI/Spam")).toBe("ai/Spam");
+    expect(calls).toEqual(["create:ai/Spam"]);
   });
 
   test("deleteMessage throws expunge refused when messageDelete gives false", async () => {

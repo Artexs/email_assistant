@@ -1,9 +1,9 @@
-import { MAILBOX_ACTION_TYPES } from "@ea/core";
+import { AI_FOLDER_NAMES, MAILBOX_ACTION_TYPES, type FolderKey } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { SecretBox } from "../../platform/crypto";
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { describeError, SoftError } from "../../platform/errors";
+import { describeError, HardError, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 import {
@@ -11,12 +11,13 @@ import {
   listSyncTargets,
   MailAuthError,
   openMailboxProvider,
+  setFolderMapEntry,
   setMailboxStatus,
   type ImapConnectOptions,
   type MailProvider,
 } from "../mail";
 
-import { applyAction } from "./apply";
+import { applyAction, type FolderResolver } from "./apply";
 import { claimActions, countClaimable, expireStaleReady, releaseActions, type ClaimedAction } from "./repo";
 import { claimFilterFor, type ActionsScope } from "./scope";
 
@@ -32,6 +33,52 @@ export interface CommitterDeps {
   scope: ActionsScope;
   now(): Date;
   batchSize?: number;
+}
+
+// D9: `ensureFolder` once per key per run. A real path that differs from `folder_map` is stored (audit: the key, not the path).
+export function createFolderResolver(
+  deps: {
+    db: Db | Transaction<DB>;
+    now(): Date;
+    provider: MailProvider;
+    mailboxId: string;
+    folderMap: Record<string, string>;
+  },
+  ctx: TenantContext
+): FolderResolver {
+  const map = { ...deps.folderMap };
+  const cache = new Map<FolderKey, Promise<string>>();
+
+  async function ensure(key: FolderKey): Promise<string> {
+    const path = await deps.provider.ensureFolder(map[key] ?? AI_FOLDER_NAMES[key]);
+    if (path !== map[key]) {
+      const run = async (trx: Transaction<DB>): Promise<void> => {
+        await setFolderMapEntry(trx, ctx, deps.mailboxId, key, path);
+        await recordAudit(trx, ctx, {
+          actor: "system",
+          event: auditEvents.mailboxFolderCreated,
+          at: deps.now(),
+          data: { mailbox_id: deps.mailboxId, folder_key: key },
+        });
+      };
+      await (deps.db.isTransaction ? run(deps.db as Transaction<DB>) : deps.db.transaction().execute(run));
+      map[key] = path;
+    }
+    return path;
+  }
+
+  return {
+    resolve(key) {
+      let pending = cache.get(key);
+      if (pending === undefined) {
+        pending = ensure(key);
+        cache.set(key, pending);
+        // A failed try must not stick: the next action of the batch tries again.
+        pending.catch(() => cache.delete(key));
+      }
+      return pending;
+    },
+  };
 }
 
 const isMailboxChanging = (action: ClaimedAction): boolean =>
@@ -112,11 +159,15 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     now: Date
   ): Promise<void> {
     const counts = { applied: 0, failed: 0, retry: 0 };
+    const folders: FolderResolver =
+      provider === null
+        ? { resolve: () => Promise.reject(new HardError("no provider")) }
+        : createFolderResolver({ db: deps.db, now: () => now, provider, mailboxId, folderMap }, ctx);
     let index = 0;
     try {
       for (; index < batch.length; index += 1) {
         const action = batch[index] as ClaimedAction;
-        const outcome = await applyAction({ db: deps.db, now: () => now, folderMap, mailboxId }, ctx, action, provider);
+        const outcome = await applyAction({ db: deps.db, now: () => now, mailboxId, folders }, ctx, action, provider);
         if (outcome.kind === "applied") counts.applied += 1;
         else if (outcome.kind === "failed") counts.failed += 1;
         else if (outcome.kind === "retry") counts.retry += 1;

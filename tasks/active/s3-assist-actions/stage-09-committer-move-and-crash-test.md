@@ -18,7 +18,7 @@ Checkpoint 1 result (Interia, 2026-11-07): `COPYUID` comes back; the target UID 
 
 Step 9.1 of the first plan was too big for one implementer step (cold review m2). It is now 9.1a (`ensureMoved`, the folder resolver and the original move) and 9.1b (the reverse move, the crash test and the stability runs). Build 9.1a first.
 
-- [ ] **9.1a `ensureMoved`, the folder resolver and the original `move` branch of `applyAction` (D5, D9)**
+- [x] **9.1a `ensureMoved`, the folder resolver and the original `move` branch of `applyAction` (D5, D9)**
   - Goal: an original `move` action ends with the mail in exactly one folder, the target, whatever happened before (a crash after the COPY, a user who moved it already), never deletes a copy that another `emails` row holds, and writes one audit row per applied action.
   - Files: create `apps/server/src/modules/actions/move.ts`, `apps/server/test/integration/actions-move.test.ts`; change `apps/server/src/modules/actions/apply.ts`, `apps/server/src/modules/actions/committer.ts`, `apps/server/src/modules/actions/index.ts`, `apps/server/src/modules/mail/fake/index.ts` (option `pathDelimiter`).
   - Interfaces:
@@ -51,7 +51,7 @@ Step 9.1 of the first plan was too big for one implementer step (cold review m2)
   - Done when: the tests pass.
   - Out of scope: the reverse move and the crash test (9.1b), the Undo service that creates reverse rows (stage 10), the notice (stage 12).
 
-- [ ] **9.1b The reverse `move`, the crash test and the stability runs (D5, D10)**
+- [x] **9.1b The reverse `move`, the crash test and the stability runs (D5, D10)**
   - Goal: a reverse `move` brings the mail back to INBOX without a second IMAP change after a crash or a user move back, never expunges the only copy, and the done-when crash test passes.
   - Files: change `apps/server/src/modules/actions/apply.ts`, `apps/server/src/modules/actions/move.ts` (only if a test needs it), `apps/server/test/integration/actions-move.test.ts`.
   - Decisions:

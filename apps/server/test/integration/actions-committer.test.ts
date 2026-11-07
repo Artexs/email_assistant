@@ -127,8 +127,8 @@ function openerFor(boxes: Box[]): Opener {
   };
 }
 
-function jobFor(trx: Transaction<DB>, opener: Opener, scope: ActionsScope) {
-  return createCommitterJob({ db: trx, secrets, openProvider: opener.openProvider, scope, now: () => NOW });
+function jobFor(trx: Transaction<DB>, opener: Opener, scope: ActionsScope, db: Transaction<DB> = trx) {
+  return createCommitterJob({ db, secrets, openProvider: opener.openProvider, scope, now: () => NOW });
 }
 
 async function actionState(trx: Transaction<DB>, id: string) {
@@ -276,6 +276,12 @@ describe("createCommitterJob", () => {
     await withRollback(db, async (trx) => {
       await pauseOtherMailboxes(trx);
       const bad = await addBox(trx);
+      // The mailboxes are listed by `created_at`: the bad one comes first.
+      await trx
+        .updateTable("mailboxes")
+        .set({ created_at: new Date(NOW.getTime() - HOUR) })
+        .where("id", "=", bad.mailboxId)
+        .execute();
       const good = await addBox(trx, bad);
       const badMail = await addMail(trx, bad, { messageId: "<r7a@ea-seed.test>", actions: [{ type: "flag" }] });
       const mail = await addMail(trx, good, { messageId: "<r7b@ea-seed.test>", actions: [{ type: "flag" }] });
@@ -337,7 +343,7 @@ describe("createCommitterJob", () => {
     });
   });
 
-  // A `move` still throws in applyAction (stage 9 replaces that); it stands in for any unexpected throw.
+  // A provider error never escapes applyAction (it is mapped), so the throw comes from the DB write after the IMAP call.
   test("when applyAction throws, the throwing row stays locked and the untried rows are released", async () => {
     await withRollback(db, async (trx) => {
       await pauseOtherMailboxes(trx);
@@ -345,12 +351,31 @@ describe("createCommitterJob", () => {
       const throwing = await addMail(trx, box, {
         messageId: "<r12a@x.test>",
         receivedAt: new Date(RECEIVED.getTime() - MINUTE),
-        actions: [{ type: "move" }],
+        actions: [{ type: "flag" }],
       });
       const untried = await addMail(trx, box, { messageId: "<r12b@x.test>", actions: [{ type: "flag" }] });
       const opener = openerFor([box]);
+      // After the first IMAP flag change, the next write to `actions` fails once.
+      let armed = false;
+      const failing = new Proxy(trx, {
+        get(target, prop) {
+          if (prop === "updateTable" && armed) {
+            armed = false;
+            throw new Error("db write failed");
+          }
+          const value = Reflect.get(target, prop, target) as unknown;
+          return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+        },
+      });
+      const setFlags = box.fake.setFlags.bind(box.fake);
+      box.fake.setFlags = async (...args) => {
+        await setFlags(...args);
+        armed = true;
+      };
 
-      await jobFor(trx, opener, { kind: "all", mailboxAddress: box.address }).run();
+      await expect(
+        jobFor(trx, opener, { kind: "all", mailboxAddress: box.address }, failing).run()
+      ).resolves.toBeUndefined();
 
       const held = await actionState(trx, throwing.actionIds[0] as string);
       expect(held).toMatchObject({ status: "ready", attempts: 0 });

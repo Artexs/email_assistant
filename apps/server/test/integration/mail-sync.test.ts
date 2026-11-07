@@ -293,7 +293,7 @@ describe("syncMailbox: incremental", () => {
   test("Interia shape: the copy in the folder keeps the INBOX uid and a new identical INBOX copy is stored with #2", async () => {
     await withRollback(db, async (trx) => {
       const base = await setup(trx);
-      const s = { ...base, fake: createFakeMailProvider({ uidValidity: UID_VALIDITY, keepUidOnCopy: true }) };
+      const s = { ...base, fake: createFakeMailProvider({ uidValidity: UID_VALIDITY, keepUidOnUserMove: true }) };
       const uid = s.fake.deliver("INBOX", seed(1));
       await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
       await trx.updateTable("emails").set({ folder: "AI/Info" }).where("mailbox_id", "=", s.mailboxId).execute();
@@ -334,7 +334,7 @@ describe("syncMailbox: incremental", () => {
   test("two rows of one identity in AI/Spam and only the copy of #2 there: a new INBOX copy marks #1 returned", async () => {
     await withRollback(db, async (trx) => {
       const base = await setup(trx);
-      const s = { ...base, fake: createFakeMailProvider({ uidValidity: UID_VALIDITY, keepUidOnCopy: true }) };
+      const s = { ...base, fake: createFakeMailProvider({ uidValidity: UID_VALIDITY, keepUidOnUserMove: true }) };
       s.fake.deliver("INBOX", seed(1));
       const second = s.fake.deliver("INBOX", seed(1));
       await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
@@ -842,7 +842,7 @@ async function movedRowOf(trx: Db | Transaction<DB>, mailboxId: string) {
 
 describe("syncMailbox: returned mail below the cursor", () => {
   const interia = (): FakeMailProvider =>
-    createFakeMailProvider({ uidValidity: UID_VALIDITY, keepUidOnCopy: true, capabilities: { move: false } });
+    createFakeMailProvider({ uidValidity: UID_VALIDITY, keepUidOnUserMove: true, capabilities: { move: false } });
 
   // A stored mail (INBOX uid `uid`) that the system "moved" to AI/Info an hour ago.
   async function storeAndMark(trx: Transaction<DB>, s: Setup, movedAt: Date = hoursAgo(1)): Promise<number> {

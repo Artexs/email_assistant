@@ -33,8 +33,12 @@ export interface FakeMailProviderOptions {
   bodyLimitBytes?: number;
   /** Mimic the RFC 3501 `n:*` rule (default true). */
   starQuirk?: boolean;
-  /** A copied message keeps its UID in the target when that UID is free there (default false). */
+  /** A message that `moveMessage` copies keeps its UID in the target when that UID is free there (default false). */
   keepUidOnCopy?: boolean;
+  /** Same for the `userMove` test helper, a move in a webmail (default false). Interia: copy false, user move true. */
+  keepUidOnUserMove?: boolean;
+  /** The delimiter of folder paths: `ensureFolder` replaces `/` in a name with it (default `/`). */
+  pathDelimiter?: string;
   /** `moveMessage` returns `newUid`; false mimics a server without COPYUID (default true). */
   copyUidMap?: boolean;
 }
@@ -98,6 +102,8 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
   const bodyLimitBytes = opts.bodyLimitBytes ?? 5_000_000;
   const starQuirk = opts.starQuirk ?? true;
   const keepUidOnCopy = opts.keepUidOnCopy ?? false;
+  const keepUidOnUserMove = opts.keepUidOnUserMove ?? false;
+  const pathDelimiter = opts.pathDelimiter ?? "/";
   const copyUidMap = opts.copyUidMap ?? true;
   const capabilities: MailCapabilities = {
     idle: true,
@@ -148,14 +154,14 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
   }
 
   /** Copies the message to `toFolder`, then removes the source. */
-  function relocate(stored: StoredMessage, fromFolder: string, toFolder: string): number {
+  function relocate(stored: StoredMessage, fromFolder: string, toFolder: string, keepUid: boolean): number {
     const newUid = store(
       toFolder,
       stored.msg,
       stored.internalDate,
       stored.size,
       stored.flags,
-      keepUidOnCopy ? stored.uid : undefined
+      keepUid ? stored.uid : undefined
     );
     provider.remove(fromFolder, stored.uid);
     return newUid;
@@ -177,7 +183,7 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
     userMove(fromFolder, uid, toFolder) {
       const stored = find(fromFolder, uid);
       if (!stored) throw new HardError(`No message ${uid} in ${fromFolder}`);
-      return relocate(stored, fromFolder, toFolder);
+      return relocate(stored, fromFolder, toFolder, keepUidOnUserMove);
     },
 
     remove(folder, uid) {
@@ -253,8 +259,26 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
 
     async ensureFolder(name) {
       enter("ensureFolder");
-      folderOf(name);
-      return name;
+      const parts = name.split("/");
+      // A parent that differs only in case is the user's folder: build the child from its real spelling.
+      const real: string[] = [];
+      for (let depth = 1; depth <= parts.length; depth++) {
+        const wanted = [...real, parts[depth - 1] as string].join(pathDelimiter).toLowerCase();
+        const match = [...folders.keys()].find(
+          (key) => key.toLowerCase() === wanted || key.toLowerCase().startsWith(`${wanted}${pathDelimiter}`)
+        );
+        const level = match === undefined ? undefined : match.split(pathDelimiter).slice(0, depth);
+        real.splice(0, real.length, ...(level ?? [...real, parts[depth - 1] as string]));
+      }
+      const path = real.join(pathDelimiter);
+      if (folders.has(path)) return path;
+      // A folder that differs only in case is the user's folder: use it, do not create a second one.
+      const lower = path.toLowerCase();
+      for (const existing of folders.keys()) {
+        if (existing.toLowerCase() === lower) return existing;
+      }
+      folderOf(path);
+      return path;
     },
 
     async fetchMetaIn(folder, uid) {
@@ -289,7 +313,7 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
       if (!capabilities.move && !capabilities.uidplus) throw new HardError("no UIDPLUS");
       if (!folders.has(toFolder)) throw new HardError("NO [TRYCREATE]");
       // Both paths end in the same state; without MOVE a real server copies, then deletes.
-      const newUid = relocate(stored, fromFolder, toFolder);
+      const newUid = relocate(stored, fromFolder, toFolder, keepUidOnCopy);
       return { newUid: copyUidMap && capabilities.uidplus ? newUid : null };
     },
 

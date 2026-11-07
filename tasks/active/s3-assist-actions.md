@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress: stages 1–8 done; stage 9 (committer move) is next.** The user said (2026-11-07): build to the end without stops; take the defaults or the proposed values for questions. Q1 and Q5 keep their defaults.
+> **Status 2026-11-07 — in progress: stages 1–9 done; stage 10 (Undo service, D22) is next.** Paused by the user after stage 9; handoff `notes/2026-11-07-handoff-s3-build-stage10.md`. The user said: build to the end without stops; take the defaults or the proposed values for questions. Q1 and Q5 keep their defaults.
 
 # S3 Assist actions
 
@@ -136,7 +136,7 @@ Each stage lives in its own file in [`s3-assist-actions/`](s3-assist-actions/). 
 - [x] [Stage 6](s3-assist-actions/stage-06-returned-below-cursor.md) — Returned mail below the UID cursor [risky]
 - [x] [Stage 7](s3-assist-actions/stage-07-actions-repo-and-fixtures.md) — Actions repository: claim, finish, release, fail; email location; fixtures (steps 7.1a, 7.1b, 7.2) [risky] — user checkpoint 2 after it
 - [x] [Stage 8](s3-assist-actions/stage-08-committer-flags-summary-errors-job.md) — Committer: flags, summaries, error rules, scope, the job [risky]
-- [ ] [Stage 9](s3-assist-actions/stage-09-committer-move-and-crash-test.md) — Committer: move as an ensure, folders, the crash test (steps 9.1a, 9.1b) [risky]
+- [x] [Stage 9](s3-assist-actions/stage-09-committer-move-and-crash-test.md) — Committer: move as an ensure, folders, the crash test (steps 9.1a, 9.1b) [risky]
 - [ ] [Stage 10](s3-assist-actions/stage-10-undo-service-and-reverse-actions.md) — Undo service and reverse actions [risky]
 - [ ] [Stage 11](s3-assist-actions/stage-11-returned-feedback-job.md) — `triage.returned`: a user move back becomes feedback [risky]
 - [ ] [Stage 12](s3-assist-actions/stage-12-action-failed-notice.md) — Notice `action_failed` [risky]
@@ -248,3 +248,4 @@ Answered 2026-11-06 with the plan defaults (P1–P7). Questions 1–4 of the fir
 - 2026-11-07: Stage 7 built (7.1a claim queue and fixtures, `MAILBOX_ACTION_TYPES` in core; 7.1b undo, returned, notice and expiry queries; 7.2 `updateEmailLocation`, `setFolderMapEntry`, `openMailboxProvider`; `syncOne` throws `HardError` on a missing mailbox, logged by the job loop). Review round 1 (Opus, high) FAIL (major: test 10d did not prove `category: { not }`; minor: clock source, `last_error` kept, `countClaimable` in SQL), fixed; round 2 PASS (minor: no test for the kept `last_error`; left).
 - 2026-11-07: Checkpoint 2 group review of stages 2–7 (Opus, high): FAIL on a design gap (finding 1: a reverse move stopped between COPY and expunge makes the sync store a `#2` and the retry copy again); the code of stages 2–7 has no bug. Main session decisions (the user: use the defaults, no stops): D22 `emails.undo_pending_at` (stage 10), stage 8 one clock for `updated_at`, stage 9 fake `keepUidOnUserMove` + fake copy-path contract + case-insensitive folder match; addenda in the stage 8, 9 and 10 files.
 - 2026-11-07: Stage 8 built (8.1 `applyAction` for summary, flag, mark_read and the error rules, one clock per the addendum; 8.2 `createCommitterJob`, `claimFilterFor`). Review round 1 (Opus, high) FAIL (major: the failed row kept `attempts = 2` after 3 hard errors; plus release and test gaps), fixed; round 2 PASS. Two test notes moved to the stage 9 addendum.
+- 2026-11-07: Stage 9 built (9.1a `ensureMoved`, folder resolver, original move, fake `keepUidOnCopy`/`keepUidOnUserMove`, fake copy-path contract, case-insensitive folder match; 9.1b reverse move, crash test, stability runs 3× 19 pass; `ensureFolder` keeps a real parent spelling). Review (Opus, high): PASS; two minors moved to the stage 10 addendum. The user paused the build after stage 9 (to continue on another machine).

@@ -311,7 +311,7 @@ export async function claimActions(
 }
 
 export type FinishNext =
-  | { status: "applied"; at: Date; providerResult?: Record<string, string | number | null> }
+  | { status: "applied"; at: Date; providerResult?: Record<string, string | number | boolean | null> }
   | { status: "failed"; at: Date; reason: string; lastError?: string; countAttempt?: true };
 
 // `lockedAt` is the claim token: a stale run that lost its claim changes nothing.
