@@ -16,6 +16,7 @@ The user chose Google Gemini, free tier for development.
   Nothing else imports the SDK. Structured output: JSON response with a JSON schema made from the Zod schema; the result is checked with Zod again.
 - Two model roles in config (`classifier`, `writer`); both use `GEMINI_MODEL` until a reason appears to split them.
 - No Langfuse at the start. `triage_results` stores model, prompt version, tokens and latency.
+- S4 does not use the writer role: drafts are templates filled from the classifier output (`classifier-v2`: delegate id, task, due date, question). The model keys for the writer role stay for Phase 2 (style learning, free-text drafts).
 - `evals/` holds labeled cases (synthetic or anonymized, never real mail in git).
 
 ## Data rules (from https://ai.google.dev/gemini-api/terms, given by the user)

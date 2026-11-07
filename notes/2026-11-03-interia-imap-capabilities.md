@@ -77,6 +77,7 @@ The probe mail `EA probe 6a8a502f-…` stayed in INBOX; the user deletes it by h
 - Own mail back in INBOX: found after 1 s with the `X-EA-Action-Id` header intact (uid 38941); deleted.
 - UIDs are consecutive across folders (38939 Drafts, 38940 Sent, 38941 INBOX): one UID counter for the mailbox (as in the S3 probe).
 - Run 1 (uids 38936 draft, 38937 Sent copy) printed up to the Sent copy step only in the user's paste; its INBOX mail (subject `EA probe send …`) may still be in INBOX if that run did not end: check by hand.
+- Open (S4 stage 22, VPS self-send, not done): how the draft looks in the webmail, whether `Wysłane` stays as the probe showed after a real system send, how many own mails the sync skips, and whether `MAIL FROM` with a display name in `From:` is accepted. The facts of the stage 1 probe and the nodemailer error table: `notes/2026-11-07-send-approval-facts.md`.
 
 ## S3 stage 19 facts (2026-11-07, the committer on the real mailbox)
 

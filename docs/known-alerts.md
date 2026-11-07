@@ -18,6 +18,115 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `job:run: TELEGRAM_BOT_TOKEN is empty`
+
+- **First seen:** 2026-11-07 (S4 code; not seen live)
+- **Source:** `apps/server/src/scripts/job-run.ts` (`[job-run]`, level `error`, exit code 1).
+- **Cause:** `bun run job:run --name channels.notifier` ran with no `TELEGRAM_BOT_TOKEN` in the environment. The notifier cannot send without the bot token.
+- **Fix:** Set `TELEGRAM_BOT_TOKEN` in the `.env` of that environment (only the user edits `.env`), then run the command again. The other jobs (`actions.expiry`, `delegation.chaser`) need no token.
+- **Status:** won't fix (expected behaviour)
+
+### `notice send_result queued: outbox <id>`
+
+- **First seen:** 2026-11-07 (S4 code; not seen live, the dev run (stage 19) and the VPS runs (stages 22, 23) are open)
+- **Source:** `apps/server/src/modules/channels/notices.ts` (`[channels]`, level `info`).
+- **Cause:** A send ended (`applied`, `failed`, `expired` or `rejected`) and the notice job queued one result message for each linked owner. The dedup key is `send_result:<action id>`, and `actions.result_notified_at` is set in the same transaction.
+- **Fix:** No action for the line. Read the message in Telegram; the meaning of each text is in `deploy/README.md`, "Approvals and sends". The same line exists for the kinds `approval_set` and `delegation_answered`.
+- **Status:** won't fix (expected behaviour)
+
+### `notice approval queued: outbox <id>`
+
+- **First seen:** 2026-11-07 (S4 code; not seen live, the dev run (stage 19) and the VPS runs (stages 22, 23) are open)
+- **Source:** `apps/server/src/modules/channels/notices.ts` (`[channels]`, level `info`).
+- **Cause:** A send is `awaiting_approval`, its draft is `applied` and the mailbox is `active`, so the notice job queued one approval request for each linked owner. The dedup key is `approval:<action id>`; `actions.notified_at` is set in the same transaction. The 48-hour approval time counts from `notified_at`.
+- **Fix:** No action. If no request arrives in Telegram, check that an owner is linked (`telegram:link`) and that the draft is `applied`.
+- **Status:** won't fix (expected behaviour)
+
+### `chaser <mailboxId>: skipped settings`
+
+- **First seen:** 2026-11-07 (S4 code; not seen live)
+- **Source:** `apps/server/src/modules/delegation/chaser.ts` (`[delegation]`, level `info`; once per mailbox and process start). The same file writes `chaser <mailboxId>: skipped gate` once, when the first tick comes before 07:30 local time or after the run of the day.
+- **Cause:** The mailbox is not in mode `assist`, or its switch `create_draft` is off, or the settings changed during the run (the chaser compares the settings version). The chaser makes no reminder for this mailbox.
+- **Fix:** No action if you want no reminders. To get them: `mailbox:settings mode --mode assist` and `mailbox:settings switch --name create_draft --value on` (`deploy/README.md`, "Assist mode"). `skipped gate` is normal.
+- **Status:** won't fix (expected behaviour)
+
+### `chaser <mailboxId>: due <n>, overdue <o>, reminders <r>`
+
+- **First seen:** 2026-11-07 (S4 code; not seen live)
+- **Source:** `apps/server/src/modules/delegation/chaser.ts` (`[delegation]`, level `info`; once per mailbox and day, only when `<n>` > 0).
+- **Cause:** The daily chaser run found `<n>` delegations past their due date. It marked `<o>` of them `overdue` and planned `<r>` reminders (draft + send, `awaiting_approval`). The owners get one approval message for the set.
+- **Fix:** No action. Tap 📤 Send all or ✖️ Skip all in Telegram. A reminder never goes out without a tap.
+- **Status:** won't fix (expected behaviour)
+
+### `notice <kind> <id>: skipped: <error>`
+
+- **First seen:** 2026-11-07 (S4 code; not seen live)
+- **Source:** `apps/server/src/modules/channels/notices.ts` (`[channels]`, level `warn`; `<kind>` is `approval`, `approval_set`, `send_result` or `delegation_answered`). Once per process and row.
+- **Cause:** The notice job could not build the message for one row (for example a draft payload that does not parse, a missing mailbox, or a missing organization). It skips that row and goes on with the others. The row keeps failing on every tick until someone fixes it, and the owner gets no message for it.
+- **Fix:** Find the row with a read-only query (`$C exec db psql -U postgres -d email_assistant -c "<sql>"`):
+  `approval`: `select id, status, notified_at, payload->>'kind' from actions where id = '<id>';`
+  `approval_set`: `select id, status, notified_at from actions where payload->>'set_id' = '<id>';`
+  `send_result`: `select id, status, status_reason, result_notified_at from actions where id = '<id>';`
+  `delegation_answered`: `select id, status, answered_notified_at from delegations where id = '<id>';`
+  Read `<error>` and the row, and fix the cause (a bug: file it with the action type, never with the payload). To stop the retries you can set `notified_at` (approval), `result_notified_at` (send_result) or `answered_notified_at` (delegation_answered) by hand: this writes to the database, so do it only after the user says go.
+- **Status:** investigating
+
+### `expiry <mailboxId>: expired <n> (timeout <t>, draft_missing <d>, not_notified <u>, held_timeout <h>)`
+
+- **First seen:** 2026-11-07 (S4 code; not seen live: the hourly timing is checked in the dev run, stage 19, which is open)
+- **Source:** `apps/server/src/modules/actions/expiry.ts` (`[actions]`, level `info`; job `actions.expiry`, every hour).
+- **Cause:** The job closed `<n>` sends as `expired`: `timeout` (48 h after the approval request), `draft_missing` (its draft failed or was removed), `not_notified` (no request went out within 7 days) and `held_timeout` (approved, but held for 48 h after the tap). Each gives the owners a result notice.
+- **Fix:** No action for `timeout`. A high `held_timeout` means sends were held: check `SEND_SCOPE`, a paused mailbox or a login error. A high `not_notified` means no owner is linked. The line `expiry <mailboxId> failed: <label>` (level `error`) means one mailbox failed; the next hour tries again.
+- **Status:** won't fix (expected behaviour)
+
+### `committer <mailboxId>: SEND_SCOPE=<kind>, <n> approved sends wait`
+
+- **First seen:** 2026-11-07 (S4 code; not seen live)
+- **Source:** `apps/server/src/modules/actions/committer.ts` (`[actions]`, level `info`; once per mailbox and process start).
+- **Cause:** `SEND_SCOPE` is `off` (the default), or `self` with recipients that are not in `SEND_TEST_ADDRESSES`, or `all` for another mailbox. `<n>` sends are `approved` with an applied draft, and the scope does not admit them. They stay `approved`.
+- **Fix:** No action if you want no sends. To send: set `SEND_SCOPE` (and `SEND_TEST_ADDRESSES`) in the `.env` and restart the server (`deploy/README.md`, "Approvals and sends"). Held sends expire 48 h after the tap (`held_timeout`).
+- **Status:** won't fix (expected behaviour)
+
+### `action <id>: failed hard_error` (a `create_draft` row)
+
+- **First seen:** 2026-11-07 (S4 code; not seen live)
+- **Source:** `apps/server/src/modules/actions/drafts.ts` (`[actions]`, level `warn`). A draft with a bad payload gives `action <id>: failed bad_payload` from the same file.
+- **Cause:** The draft APPEND (or its recovery, or the removal of a draft) failed with a hard error three times. The draft is `failed`, its open sends expire (`draft_missing`) and the owners get a notice. For a reverse row (draft removal) the notice says that the draft stays in Drafts.
+- **Fix:** Read the audit row `action.failed` (`attempts`, `error`) and run `bun run mailbox:check`. Check that the Drafts folder exists and the mailbox is not full. For a reverse row, delete the draft by hand in the mail client. For `bad_payload`, file a bug with the action type (never with the payload).
+- **Status:** investigating
+
+### `action <id>: sent copy failed: <Class code>`
+
+- **First seen:** 2026-11-07 (S4 code; not seen live)
+- **Source:** `apps/server/src/modules/actions/send.ts` (`[actions]`, level `warn`).
+- **Cause:** The mail went out (the send is `applied`), but the copy to `Wysłane` failed: the locate or the APPEND gave an error. `provider_result.sent_copy` is `failed`, and the audit row `action.sent_copy_failed` holds the error label. The owners read "No copy in Sent".
+- **Fix:** No action for the mail: it was sent. Add the copy by hand if you need it. If it repeats, check the `Sent` folder with `bun run mailbox:check`.
+- **Status:** investigating
+
+### `action <id>: failed outcome_unknown (stage <s>, code <c>)`
+
+- **First seen:** 2026-11-07 (S4 code; not seen live)
+- **Source:** `apps/server/src/modules/actions/send.ts` (`[actions]`, level `warn`).
+- **Cause:** The system cannot tell if the mail went out. Either the SMTP error had stage `unknown` (a connection that broke during or after the content, or an error that is not a typed SMTP error), or the process stopped while the send was `applying` and the recovery found no copy in `Wysłane`. The row is `failed`, the delegation is `cancelled` (`outcome_unknown`), and the system does not send again by itself.
+- **Fix:** Look in `Wysłane` and ask the recipient. If the mail did not go out, tap 📤 Send again in the result notice. If it went out, do nothing (the delegation stays `cancelled`: follow-up `tasks/planned/delegation-went-out-button.md`).
+- **Status:** investigating
+
+### `action <id>: failed smtp_error (stage <s>, code <c>)`
+
+- **First seen:** 2026-11-07 (S4 code; not seen live)
+- **Source:** `apps/server/src/modules/actions/send.ts` (`[actions]`, level `warn`).
+- **Cause:** One of three: a hard error before the content (`connect`, `login` or `envelope`) three times; a 4xx or another non-5xx error after the content (`content`: the server may have the mail, so the system does not retry); or the mail could not be built three times (`compose`). The row is `failed` and the owners get a notice with 📤 Send again.
+- **Fix:** For `content`, look in `Wysłane` and ask the recipient before you tap Send again. Otherwise check `/status` and `bun run mailbox:check`, fix the cause, then tap Send again. The line `action <id>: send retry (stage <s>, code <c>)` (level `warn`) is a try that will repeat in 5 minutes; a soft error does not count.
+- **Status:** investigating
+
+### `action <id>: failed smtp_rejected (stage <s>, code <n>)`
+
+- **First seen:** 2026-11-07 (S4 code; not seen live)
+- **Source:** `apps/server/src/modules/actions/send.ts` (`[actions]`, level `warn`).
+- **Cause:** The mail server refused the mail with a 5xx reply, at the envelope (`MAIL FROM`, `RCPT TO`) or after the content. `<s>` is `envelope` or `content`, `<n>` is the reply code. The row is `failed`. The draft stays in Drafts and the delegation is `cancelled`. There is no Send again button, because the address or the mail is wrong.
+- **Fix:** Check the delegate address (`delegates:list`). Replace it with `delegates:disable` and `delegates:add`. The system does not plan the mail again; send it by hand from the draft if you need it.
+- **Status:** investigating
+
 ### `mailbox:settings: refused: <category> did not pass go/no-go (use --force to set auto on anyway)`
 
 - **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
@@ -78,7 +187,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 - **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
 - **Source:** `apps/server/src/modules/actions/committer.ts` (`[actions]`, level `warn`).
-- **Cause:** The mailbox refused the login. The committer set the mailbox status to `auth_error`; the sync notice tells the user. The claimed actions go back to `ready`.
+- **Cause:** The mailbox refused the login (IMAP, or since S4 the SMTP login of a send). The committer set the mailbox status to `auth_error`; the sync notice tells the user. The claimed actions go back to `ready`; an approved send goes back to `approved` with no count and no mail sent.
 - **Fix:** Fix the secret (password or app password) with `bun run mailbox:password` and set the mailbox to `active` again. Actions wait and apply later if they are younger than 24 h and the mail is younger than 7 days; older ones expire.
 - **Status:** investigating
 
@@ -118,7 +227,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 - **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
 - **Source:** `apps/server/src/modules/actions/committer.ts` (`[actions]`, level `info`; once per mailbox and process start).
-- **Cause:** `ACTIONS_SCOPE` is `off` (the default), so the committer applies no mailbox change. <n> mailbox actions are `ready` and wait. The count has `move`, `mark_read` and `flag` actions. `save_summary` is not counted.
+- **Cause:** `ACTIONS_SCOPE` is `off` (the default), so the committer applies no mailbox change. <n> mailbox actions are `ready` and wait. The count has `move`, `mark_read` and `flag` actions, and since S4 (M10) also `create_draft` rows (drafts wait for the same scope). `save_summary` is not counted.
 - **Fix:** No action if you want no changes. To apply them: set `ACTIONS_SCOPE=synthetic` or `all` in the `.env`, run `expire-ready` first when the rows are old (`deploy/README.md`, "Assist mode"), and restart the server.
 - **Status:** won't fix (expected behaviour)
 

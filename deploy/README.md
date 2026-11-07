@@ -26,7 +26,7 @@ The server has no inbound port. The `db` service has no host port.
    - `CREDENTIALS_KEY`: `openssl rand -base64 32`. Keep a copy in a password manager. If you lose the key, you lose all stored mailbox passwords.
    - `CREDENTIALS_KEY_VERSION=1`
    - `HEARTBEAT_URL` (see Heartbeat), `TEST_MAILBOX_ADDRESS` (test mailbox only), `LOG_LEVEL=info`.
-   - `SEND_SCOPE=off` (default) and `SEND_TEST_ADDRESSES` (comma-separated, needed with `SEND_SCOPE=self`). The full section comes with stage 21 of the S4 task.
+   - `SEND_SCOPE=off` (default) and `SEND_TEST_ADDRESSES` (comma-separated, needed with `SEND_SCOPE=self`). See the section "Approvals and sends".
    - Compose sets `DATABASE_URL`, `MIGRATOR_DATABASE_URL` and `PORT` by itself. Their values in `.env` do not count for `server`.
 4. Start the database: `$C up -d --wait db`
 5. Build the image and migrate: `$C run --build --rm server bun run db:migrate`
@@ -150,6 +150,78 @@ A delegate is a person who gets tasks by mail. Manage delegates and delegations 
 
 Rule: a delegate address is never a mailbox address of the organization. `delegates:add` refuses it (exit 2).
 The audit rows have the actor `cli`.
+
+On the VPS run each command as `$C run --rm server bun run …`. A mail can be delegated only to an active delegate: with no active delegate the classifier does not use the category `delegation`.
+A disabled delegate gets no new delegation and no reminder; a send that is already waiting for a tap still shows the name with `(inactive)`.
+Close a delegation by hand with `delegations:done` or with the ✅ Done button of the "answered" notice.
+
+## Approvals and sends
+
+State of this section: written from the code of the S4 task. The dev run (stage 19) and the VPS runs (stage 22: self-send, stage 23: the first real delegation) are not done. Only the Interia probe of stage 1 sent a real mail.
+
+How a delegation goes (details: `docs/architecture.md` §4.5):
+
+1. The triage worker plans a draft and a send. The committer puts the draft in the Drafts folder (it needs `ACTIONS_SCOPE` other than `off`, the mailbox mode `assist` and the switch `create_draft` on).
+2. The owner gets a Telegram message with the full draft, the recipient and the original sender, and the buttons 📤 Send and ✖️ Reject. Only an owner can tap them.
+3. After the tap, the committer sends the mail by SMTP, but only if `SEND_SCOPE` allows it. Then it copies the mail to `Wysłane` and removes the draft.
+4. The owner gets a new message with the result.
+
+### `SEND_SCOPE`
+
+`SEND_SCOPE` and `SEND_TEST_ADDRESSES` are in the VPS `.env`. Only the user edits `.env`. Restart the server after a change: `$C up -d server`.
+
+- `off` (default): no mail goes out. A tap still works, and the approved send waits. `/status` says `approved, held by SEND_SCOPE=off`. It expires 48 hours after the tap (`held_timeout`).
+- `self`: a mail goes out only when every recipient is in `SEND_TEST_ADDRESSES` (your own addresses, comma-separated). The server refuses to start with `self` and no valid list.
+- `all`: every approved send of the mailbox `TEST_MAILBOX_ADDRESS` goes out: delegations and reminders to real delegates, and also clarification questions to the original sender of a mail. No other mailbox sends. The server refuses to start with `all` and no `TEST_MAILBOX_ADDRESS`. Each mail still needs your tap.
+
+### Result notices
+
+Each notice says what happened. The left part is the start of the text.
+
+- `✅ Sent to …`: the mail went out. "No copy in Sent" means the copy to `Wysłane` failed; the mail was sent anyway. "The draft stays in Drafts" means the server has no UIDPLUS: delete the draft by hand.
+- `❌ Not sent … The mail server refused it` (`smtp_rejected`): the server refused the address or the mail (a 5xx reply). No button. Fix the address (`delegates:disable`, then `delegates:add` with the right address). The draft stays in Drafts. The system does not plan this mail again.
+- `❌ Not sent … The send failed 3 times` (`smtp_error`): the connection or the login failed three times. Check `/status` and the mailbox (`mailbox:check`), fix it, then tap 📤 Send again.
+- `❌ Not sent … refused the content for now`: the server gave a 4xx reply after the content. The system never retries after the content. Look in `Wysłane` and ask the recipient first, then tap 📤 Send again if the mail did not go out.
+- `⚠️ Unknown whether the mail … went out` (`outcome_unknown`): the connection broke after the content, or the server stopped during the send. Check `Wysłane` and ask the recipient. Tap 📤 Send again only if the mail did not go out. A delegation stays `cancelled` in the system even when the mail went out (follow-up `tasks/planned/delegation-went-out-button.md`).
+- `⌛ Not sent: the approval expired (48 h)` (`expired`, `timeout`): nobody tapped within 48 hours. The draft was removed (or the notice says it stays).
+- `⌛ Not sent: it waited 48 h after your approval` (`held_timeout`): a held approval. Read the scope: `SEND_SCOPE`, a paused mailbox (`/resume`) or a login error (`mailbox:password`). The system does not plan it again; send the task by hand from the draft, which stays in Drafts.
+- `⌛ Not sent: no approval request could go out within 7 days` (`not_notified`): no owner was linked, or the draft was not created. Link an owner with `telegram:link`.
+- `⌛ Not sent: the draft could not be created` (`draft_missing`): the draft failed three times. Read `docs/known-alerts.md` (`action <id>: failed hard_error`).
+- `⌛ Not sent: the setting was changed` (`policy_changed`): `mode shadow` or `switch create_draft off` closed the gate.
+- `⌛ Not sent: the delegation was closed`: a reminder that waited for a tap while the delegate answered or you closed the delegation.
+
+Log lines and what to do: `docs/known-alerts.md`.
+
+### Delegation chaser and expiry
+
+- The chaser job ticks every 15 minutes. It acts once per local day for each mailbox, from 07:30 in the organization timezone, only in mode `assist` with the switch `create_draft` on. A delegation is overdue after its due date (3 days after the send when the mail named no date).
+  It plans a reminder for each overdue delegation: at most 2 reminders, 3 days apart, at most 10 per run, shown as one message with 📤 Send all and ✖️ Skip all. A reminder never goes out without a tap.
+- The expiry job runs every hour. It closes sends that nobody answered (48 hours after the request), sends that were never announced (7 days), sends whose draft failed, and approved sends that stayed held for 48 hours after the tap.
+
+### Jobs on demand
+
+Run one job once, with the same settings as the server. Add `--force` only to the chaser: it skips the 07:30 and once-per-day gate.
+
+```sh
+$C run --rm server bun run job:run --name actions.expiry
+$C run --rm server bun run job:run --name delegation.chaser [--force]
+$C run --rm server bun run job:run --name channels.notifier
+```
+
+`channels.notifier` needs `TELEGRAM_BOT_TOKEN`. Do not run `--name actions.committer` while the server runs on the same database: the log lines double.
+
+### What the system never does
+
+- It never sends a mail without your tap on 📤 Send (or 📤 Send again, 📤 Send all).
+- It never sends outside `SEND_SCOPE`.
+- It never sends the same mail again after the content went to the server. After a crash or an unknown result, it looks in `Wysłane`; it does not send.
+- It never takes a recipient from mail or LLM text: only from the delegates list, or the sender address of the mail for a clarification question.
+- It never sends a draft that you edited in the mail client. Do not send the draft yourself: the system sends the stored text and removes the draft.
+- It removes only drafts that it made, found by its header `X-EA-Action-Id`.
+
+### Roll back
+
+Roll back the code, not the migration. A `db:rollback` of `20261108000001_delegation` deletes all `create_draft` and `send` rows, all delegations and all delegates.
 
 ## Reboot
 

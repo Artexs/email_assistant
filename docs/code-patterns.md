@@ -26,7 +26,7 @@
 - Generated DB types live in `apps/server/src/platform/db/schema.ts`. Never edit this file by hand. Run `bun run db:types` after each migration.
 - Every repository function takes a `TenantContext` and filters by `org_id`. A test checks each new function for the filter. Only these take no `TenantContext`:
   - `insertOrganization`, `insertUser`.
-  - `listSyncTargets` (`mail/repo.ts`): the sync job lists the active mailboxes of all organizations.
+  - `listSyncTargets` and `listMailboxTargets` (`mail/repo.ts`): the sync job lists the active mailboxes of all organizations; the S4 expiry job lists mailboxes of several statuses with `listMailboxTargets`.
   - S2, `channels/repo.ts`: `findChatLink` (the chat id gives the tenant), `listLinkedChats` (the notifier and digest jobs read all organizations), `useLinkToken` and `findLinkToken` (the token gives the tenant), `replaceChatLink` (it deletes the old link of a chat across organizations), `claimDueOutbox` (the sender claims rows of all organizations).
 - Status changes and their `audit_log` row go in one transaction.
 - Work items are claimed with `FOR UPDATE SKIP LOCKED`. Conditional updates (`WHERE status = …`) guard every status change.
@@ -36,11 +36,16 @@
 ## Side effects
 
 - Only `actions.committer` changes a mailbox or sends mail. Planners and the policy are pure functions in `packages/core`.
-  The exceptions are the test tools that refuse every address except `TEST_MAILBOX_ADDRESS` (`mailbox:seed`, `mailbox:probe-move`).
+  The exceptions are the test tools that refuse every address except `TEST_MAILBOX_ADDRESS` (`mailbox:seed`, `mailbox:probe-move`, `mailbox:probe-send`).
   The committer finds its mailboxes with `listSyncTargets`; it adds no new entry point without a `TenantContext`.
 - A mail is located by identity (`locateMessage`), never by `SEARCH HEADER`: Interia finds nothing by `Message-ID`.
 - Non-idempotent provider calls (`create_draft`, `send`): commit status `applying` first; add the header `X-EA-Action-Id`.
 - `send` is at-most-once: never retry it by itself after SMTP DATA starts (`docs/architecture.md` §4.1 rule 6).
+- SMTP errors are classified by stage (`SmtpSendError.stage`: `connect`, `login`, `envelope`, `content`, `unknown`). The committer never retries after `content` or `unknown`.
+- A recipient comes only from a `delegates` row or from `emails.from_address` (a clarification). Never use LLM text as a recipient.
+  The raw message is built only by `buildOutgoingMessage` (`packages/core`) and `composeMessage` (`mail`): the draft and the send share the bytes.
+- `actions.payload` is parsed with the core payload schemas (`draftPayloadSchema`, `sendPayloadSchema`), never read as loose JSON.
+- A module that `actions` must call back (a delegation changes with a send) gets a hooks interface in `actions` (`DelegationHooks`); `main.ts` wires the implementation. `actions` never imports `delegation`.
 - No import cycles between modules: a module sets a column that another module's worker reads (`docs/modules.md` §2).
 - The LLM returns data that a Zod schema checks. LLM text is untrusted: never use it as a recipient, a folder name or a command.
 

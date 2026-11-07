@@ -6,7 +6,7 @@ Part of [`../s4-drafts-approvals-delegation.md`](../s4-drafts-approvals-delegati
 
 Prettier rule: `bunx prettier --check` must pass on every new Markdown file; `docs/architecture.md`, `docs/modules.md` and `docs/roadmap.md` may already fail at HEAD (S1b stage 35 log): the edits must not add new problems (compare the output before and after).
 
-- [ ] **21.1 Architecture, modules, code patterns, roadmap, ADRs, runbook**
+- [x] **21.1 Architecture, modules, code patterns, roadmap, ADRs, runbook**
   - Goal: `docs/` describe S4 as built (one source per fact, `tasks/README.md`).
   - Files: change `docs/architecture.md`, `docs/modules.md`, `docs/code-patterns.md`, `docs/roadmap.md`, `docs/decisions/0003-plan-policy-commit.md`, `docs/decisions/0007-llm-gemini.md`, `docs/decisions/0010-imap-first.md`, `deploy/README.md`.
   - Interfaces: none (docs).
@@ -22,7 +22,7 @@ Prettier rule: `bunx prettier --check` must pass on every new Markdown file; `do
   - Done when: the files say what the code does, and the prettier rule holds.
   - Out of scope: changing decisions (only describe what was built).
 
-- [ ] **21.2 Note with the S4 facts, known alerts**
+- [x] **21.2 Note with the S4 facts, known alerts**
   - Goal: a later agent finds the verified SMTP and Interia facts, the dev-run results and the meaning of each new log line.
   - Files: create `notes/<build date>-send-approval-facts.md`; change `docs/known-alerts.md`, `notes/2026-11-03-interia-imap-capabilities.md` (the stage 1 and stage 22 facts: Drafts and Sent behaviour, the SMTP reply, the own mail).
   - Decisions:
@@ -33,7 +33,7 @@ Prettier rule: `bunx prettier --check` must pass on every new Markdown file; `do
   - Done when: the check passes.
   - Out of scope: alerts that did not happen in S4.
 
-- [ ] **21.3 Follow-ups in `tasks/planned/`**
+- [x] **21.3 Follow-ups in `tasks/planned/`**
   - Goal: ideas that S4 found but did not build are not lost.
   - Files: create `tasks/planned/send-retry-cap.md`, `tasks/planned/approval-edit-in-place.md`, `tasks/planned/delegation-reply-other-address.md`, `tasks/planned/handled-share-delegations.md`, `tasks/planned/send-draft-edits.md`, `tasks/planned/delegation-went-out-button.md` (template of `tasks/README.md`, status `planned`).
   - Decisions:

@@ -37,7 +37,7 @@ flowchart LR
         J3[actions.committer<br/>every 15 s]
         J4[channels.notifier<br/>every 15 s]
         J5[channels.digest<br/>every minute]
-        J6[delegation.chaser<br/>daily, S4]
+        J6[delegation.chaser<br/>every 15 min, acts daily]
         J7[triage.returned<br/>every 15 s]
     end
 
@@ -55,7 +55,7 @@ flowchart LR
     A3 --> J5
 ```
 
-Small jobs (not in the picture): `actions.expiry` (hourly), `platform.retention` (daily), `platform.heartbeat` (every 5 min).
+Small jobs (not in the picture): `actions.expiry` (hourly, S4), `platform.retention` (daily, not built), `platform.heartbeat` (every 5 min).
 
 Why:
 - **Crash safety.** If the process stops, no work is lost. On restart each worker continues from the DB state.
@@ -90,6 +90,7 @@ graph TD
     actions --> audit
     actions --> core
     channels --> actions
+    channels --> delegation
     channels --> reports
     channels --> triage
     channels --> tenancy
@@ -109,6 +110,9 @@ graph TD
     reports --> core
     delegation --> actions
     delegation --> mail
+    delegation --> config
+    delegation --> tenancy
+    delegation --> audit
     mail --> audit
     mail --> platform
     triage --> platform
@@ -119,7 +123,11 @@ graph TD
     platform[platform<br/>db, llm, crypto, log, http, scheduler]
 ```
 
-`triage → delegation`: the hard rule "reply in a delegation thread" reads open delegations (S4).
+`triage → delegation`: the triage worker reads the active delegates (`listDelegates`), builds the draft plan from them, creates the `delegations` row (`createDelegation`) and detects a delegate's reply (`detectReply`, `markAnswered`) in its transaction (S4).
+`channels → delegation`: the Done tap calls `closeDelegation`; the notifier reads answered delegations and delegate names; `/status` counts open delegations (S4).
+`reports → delegation`: the digest reads the delegate names and the open delegations (S4).
+`delegation → actions | mail | config | tenancy | audit`: the service closes the reminder sends (`expireReminderActions`); the chaser plans reminders with `createPlanned` and reads the settings, the organization timezone and the audit count (S4).
+**Hooks pattern (S4):** `actions` must not import `delegation` (`delegation → actions` already exists, so the reverse edge would be a cycle). `actions` defines the interface `DelegationHooks` (`actions/hooks.ts`: `onSent`, `onReminderSent`, `onCancelled`, `isOpen`); `delegation` implements it (`delegationHooks`); `main.ts` and `scripts/job-run.ts` wire it into the committer, the expiry job and the Telegram handlers. There is no `actions → delegation` edge.
 `triage → actions`: the triage worker writes the action rows through `actions.createPlanned()` in its transaction. The returned job (`triage/returned.ts`, S3) locks and updates the original move through `lockLatestOriginalMove` and `markUndone`.
 `triage → audit`: the triage worker and `triage/backfill.ts` write audit rows through `audit.recordAudit()` in their transactions.
 `channels → triage`: the ✅ / ✏️ buttons and the Undo button write feedback through `triage.recordFeedback()`.
@@ -164,13 +172,15 @@ Code rules: `docs/code-patterns.md`.
 
 | Sub-module | Does |
 |---|---|
-| `port.ts` | `MailProvider` port. Read: `serverInfo`, `inboxStatus`, `fetchAbove`, `searchInboxSince`, `fetchByUids`, `fetchBodyText`, `close`. S3 folder-aware read: `fetchMetaIn`, `searchSinceIn`, `fetchByUidsIn`. S3 write: `ensureFolder`, `moveMessage`, `deleteMessage`, `setFlags`. `findByMessageId` is removed (it never works at Interia). `MailAuthError`, `MailNotFoundError`. Draft and send come in S4 |
+| `port.ts` | `MailProvider` port. Read: `serverInfo`, `inboxStatus`, `fetchAbove`, `searchInboxSince`, `fetchByUids`, `fetchBodyText`, `close`. S3 folder-aware read: `fetchMetaIn`, `searchSinceIn`, `fetchByUidsIn`. S3 write: `ensureFolder`, `moveMessage`, `deleteMessage`, `setFlags`. S4: `appendMessage` (returns the UID when the server has UIDPLUS), the `MailSender` port (`send`, `close`) and `SmtpSendError` with `SmtpStage`. `findByMessageId` is removed (it never works at Interia). `MailAuthError`, `MailNotFoundError` |
 | `imap/client.ts` | `ImapMailProvider` over TLS (`imapflow`): INBOX status (STATUS / highest UID fallback for `UIDNEXT`), UID fetch, search, body text; S3: the write methods (own `UID COPY` + `UID EXPUNGE` when the server has no MOVE; every imapflow `false` is a `HardError`), the option `forceCopyMove` for tests |
 | `imap/mapper.ts` | IMAP message → `MessageMeta` / body text (`mailparser`, `html-to-text`), size limit |
-| `imap/smtp.ts` | SMTP login check (`nodemailer`); send comes in S4 |
+| `imap/smtp.ts` | SMTP login check (`nodemailer`); S4: `openSmtpSender` (own `SMTPConnection`, one connection per send, the logger hook that marks the content phase) and `classifySmtpError` (the stage rule, architecture §4.1 rule 6) |
+| `imap/compose.ts` | S4: `composeMessage`: the raw bytes of an `OutgoingMessage` (nodemailer `MailComposer`); the draft APPEND and the SMTP send use the same bytes |
 | `imap/probe.ts`, `imap/tools.ts` | Write probes for `mailbox:check --probe`; APPEND for the seed tool (test only) |
 | `imap/probe-move.ts` | S3 spike (`assertTestAddress`, `probeMove`): checks the move facts on the test mailbox with one synthetic mail (CLI `mailbox:probe-move`) |
-| `locate.ts` | `locateMessage`, `locateKeyOf`: finds a known mail in a folder by identity, with no header search; skips `\Deleted` and the UIDs of `excludeUids` (architecture §6.1) |
+| `imap/probe-send.ts` | S4 spike (`probeSend`, `isAllowedRecipient`): one synthetic mail through the draft, SMTP, Sent and INBOX paths on the test mailbox (CLI `mailbox:probe-send`) |
+| `locate.ts` | `locateMessage`, `locateKeyOf`: finds a known mail in a folder by identity, with no header search; skips `\Deleted` and the UIDs of `excludeUids` (architecture §6.1). S4: `locateByActionId`: finds the system's own draft or sent mail by the header `X-EA-Action-Id` (UID hint, then `SEARCH SINCE` and a header FETCH) |
 | `open.ts` | `openMailboxProvider`: decrypts the secret in memory and opens a provider; the committer opens its connection with it |
 | `connect.ts` | `connectMailbox`: IMAP + SMTP login check, capabilities, folder map, encrypted secret, default settings (CLI `mailbox:connect`) |
 | `check.ts` | `checkMailbox`: read-only capability report, optional write probes (CLI `mailbox:check`) |
@@ -179,7 +189,7 @@ Code rules: `docs/code-patterns.md`.
 | `jobs.ts` | `createMailSyncJob`: every 5 min for each active mailbox (`listSyncTargets`); one mailbox error never stops the others |
 | `repo.ts` | `mailboxes`, `mailbox_credentials`, `emails` queries; guarded cursor update; `forceRescan`; S3: `listRecentlyMoved`, `listFolderUids`, `listReturned`, `clearReturned`, `updateEmailLocation`, `setFolderMapEntry`, `setUndoPending`, `getEmailMailbox` |
 | `seed.ts`, `audit.ts`, `tools.ts` | 48-hour test tools: `mailbox:seed` (test address only; S1b: `--eval-cases synthetic\|injection\|all` seeds the eval cases), `mailbox:rescan`, `mailbox:audit`; S1b: `backfillMailbox` (backfill only); the script `mailbox:backfill` then calls `triage.requeueBackfillWindow` |
-| `fake/` | In-memory `MailProvider` for tests; `test/contract/` runs the same suite on fake and GreenMail |
+| `fake/` | In-memory `MailProvider` (and, S4, `fake/sender.ts`: a `MailSender` with scripted outcomes) for tests; `test/contract/` runs the same suite on fake and GreenMail |
 
 - **Owns:** `mailboxes`, `mailbox_credentials`, `emails`.
 - **Built in S2:** `listMailboxes` (id, address, status, `last_synced_at`, `status_changed_at`, `created_at`), `countWaiting` (mail that waits for triage in all mailboxes),
@@ -188,6 +198,8 @@ Code rules: `docs/code-patterns.md`.
 - **Built in S3:** the write port and the identity locate (above); `listRecentlyMoved` (moves of the last 7 days, for the below-cursor check); `updateEmailLocation` (`folder`, `uid`, `inbox_uid`, `moved_at`, `undo_pending_at` in the committer's transaction);
   `setFolderMapEntry` (the real folder path after `ensureFolder`); `listReturned` and `clearReturned` (the returned job); `listFolderUids` (the `excludeUids` of the locate); the columns `inbox_uid`, `moved_at`, `undo_pending_at`.
   `findByMessageId` is removed. CLI `bun run mailbox:probe-move` (test address only).
+- **Built in S4:** `appendMessage` (port, IMAP adapter and fake); `MailSender`, `openSmtpSender`, `SmtpSendError` and the stage rule; `composeMessage`; `locateByActionId`; `listMailboxTargets` (active, paused and auth_error mailboxes for the expiry job; `listSyncTargets` stays as a wrapper for active ones); `mailboxHasUidplus`;
+  the own-mail skip wired (`isOwnActionId` from `actions`, passed by `main.ts` to the sync and to `backfillMailbox`). CLI `bun run mailbox:probe-send` (test address only). Facts: `notes/2026-11-07-send-approval-facts.md`.
 - **Rules:** `docs/architecture.md` §6.1.
 - **Later:** `gmail/` and `graph/` (Microsoft 365) adapters with OAuth (Phase 2); IMAP IDLE.
 
@@ -206,10 +218,10 @@ Code rules: `docs/code-patterns.md`.
 
 | Sub-module | Does |
 |---|---|
-| `rules` (in `core`) | Hard rules before AI: blocklist → spam; whitelist / VIP → no `spam` in the allowed list; `noreply` detection; reply in a delegation thread (S4) |
+| `rules` (in `core`) | Hard rules before AI: blocklist → spam; whitelist / VIP → no `spam` in the allowed list; `noreply` detection; reply in a delegation thread (S4: `detectReply` in `delegation`, run by the triage transaction on every save path) |
 | `classifier` | Builds the prompt (email in a marked data block + sender context + last 3 thread mails), calls `llm.classifier`, validates `TriageAnalysis` (category, confidence, reason, fields, summary for `info`) |
-| `prompts/` | Versioned prompt texts; the version id goes to `triage_results` |
-| `planners` (in `core`) | One per category: `urgent`, `needs_reply`, `info`, `notification`, `spam`, `unsure`; `delegation` in S4. Each returns an `ExecutionPlan` |
+| `prompts/` | Versioned prompt texts; the version id goes to `triage_results`. S4: `classifier-v2` (the category `delegation`, the `Delegates` block, the fields `delegate_id`, `task`, `clarification`) |
+| `planners` (in `core`) | One per category: `urgent`, `needs_reply`, `info`, `notification`, `spam`, `unsure`; `delegation` in S4 (`delegationInputOf`, `planDelegation`: a delegation draft + send, or a clarification draft + send, or nothing). Each returns an `ExecutionPlan` |
 | `policy` (in `core`) | Pure truth table (`docs/architecture.md` §4.3): `apply` / `await_approval` / `log_only` per action |
 | `feedback` | `recordFeedback()` (verdict, optional true category) from CLI, Telegram, Undo, web; turns `emails.returned_at` into feedback; labeling CLI `bun run triage:label` |
 | `worker` (job) | Claims `pending` emails (`SKIP LOCKED`), runs rules → classifier → planner → policy, saves `triage_results` + `actions` in one transaction, sets email `triaged` |
@@ -222,6 +234,7 @@ Code rules: `docs/code-patterns.md`.
   - `pause.ts`: `createLlmPause`, the LLM client pause (5 min, doubling to 60 min). Error rules: `docs/architecture.md` §4.1 rule 7. Shutdown waits up to 30 s for a batch.
   - `feedback.ts`, `label-input.ts`: `recordFeedback`, `listForLabeling`, `parseLabelInput`; CLI `bun run triage:label` (interactive, or one label with flags; Enter or `w` on an `unsure` row asks again, because a true category is needed). Rows get source `cli`.
   - `returned.ts` (S3): `processReturned` and `createReturnedJob`, started by `main.ts` as `triage.returned` every 15 s (always on, no LLM). One transaction per mail: it locks the latest original move (the Undo lock), sets it `undone` (`user_moved_back`), writes the `imap_move` feedback row when the rules of architecture §4.4 allow, clears `returned_at` and writes `email.returned`. One mail's error never stops the others.
+  - **Built in S4:** `jobs.ts` reads the active delegates once per mailbox run (debug line `triage <mailboxId>: delegates <n>`) and passes them to the classifier and the planner; with no delegate the category `delegation` is not allowed. `service.ts`: `createPlanned` writes the draft and the send with `dependsOn`; `createDelegationRow` makes the `delegations` row and merges its id into both payloads; `markReply` marks the delegation `answered` when the mail comes from the delegate in the thread of the sent mail. `classifier-v2` is the prompt. `eval*.ts`: `delegation.json` (12 cases), `inj-13` to `inj-16`, the check `injectionHolds`.
   - `backfill.ts`: `requeueBackfillWindow` (`skipped / too_old` real mail of the window → `pending`, one `email.requeued` audit row for each mail, one transaction).
   - `eval*.ts`: `runEval`, `buildRealReport`, `renderEvalReport`; CLI `bun run eval`. `bun run triage:cost` prints tokens, latency and cost per mail and per mailbox per month from stored results.
 
@@ -241,12 +254,22 @@ Built in S1b: `createPlanned`, `listActionsForEmail`, `listSummaries`. The triag
 | `expire.ts` | `expireReady`: sets `ready` originals to `expired` with audit rows; used by Undo, `mailbox:settings expire-ready` and the settings setters |
 | `undo.ts` | `undo()`: the reverse rows of one mail (architecture §4.4). The caller writes the feedback row |
 
-Planned for S4: `approvals` (`approve`, `reject`: conditional update on `awaiting_approval`), the `applying` status for `create_draft` and `send` with recovery by `X-EA-Action-Id` (send: at-most-once, architecture §4.1 rule 6), and the `expiry` job (`awaiting_approval` 48 h after `notified_at` → `expired`; a send whose draft is `failed` or `undone` → `expired`, `draft_missing`).
+**Built in S4** (same folder; the draft and send rules are in `docs/architecture.md` §4.1 rule 6, the flows in §4.5 and §4.6):
+
+- `drafts.ts`: `applyDraft` (`applying`, build, locate by action id, APPEND, recovery, `send_closed`), `buildDraftMessage`, `removeDraft` (the reverse `create_draft` row: locate, delete, original `undone`).
+- `send.ts`: `applySend` (`applying` in its own commit, one SMTP call, `applied` at once, the Sent copy, the recovery by the Sent search), `sendOutcomeOf` (the table of §4.1 rule 6).
+- `approvals.ts`: `approve`, `reject`, `approveSet`, `rejectSet`, `sendAgain`. Each locks the send row first and changes the status with a conditional update. The role check is the caller's (the Telegram handler).
+- `expiry.ts`: `expireSend` (the cascade: send, draft, delegation), `closeDraftOfSend`, `expireReminderActions`, and `createExpiryJob` (`actions.expiry`, hourly). It sits beside the S3 `expire.ts`.
+- `hooks.ts`: `DelegationHooks` and `noDelegationHooks` (the hooks pattern, §2). `scope.ts` also has `sendFilterFor` and `sendScopeAdmits` for `SEND_SCOPE`.
+- `constants.ts`: `STALE_AFTER_MS` (moved from `committer.ts`, so that `expiry.ts` never imports the committer: build step 0, S3 feature 6), `APPROVAL_TTL_MS`, `UNNOTIFIED_TTL_MS`, `HARD_ERROR_TRIES`, `RETRY_WAIT_MS`.
+- `repo.ts` adds the claims for drafts and sends (`SendClaimFilter`), `countHeldSends`, `markApplying`, `lockSend` / `lockDraft`, `insertSendAgain`, `listExpiredApprovals`, the notice queries (`listSendsToNotify`, `listSetsToNotify`, `listSendResultsToNotify`, `markResultNotified`), `countApprovals`, `setDelegationId`, `isOwnActionId`.
+- `apply.ts` and `committer.ts` dispatch `create_draft` and `send` to these files; the committer opens the SMTP sender only when it claims a send.
 
 - **Owns:** `actions`.
 - **Built in S2:** `listActionsForEmails` (the plans of many mails in one query, for "what the system would do" in digest lines and notices).
 - **ACTIONS_SCOPE:** the committer reads `ACTIONS_SCOPE` (`off`, `synthetic`, `all`; architecture §4.3) and reads no mailbox settings: the policy decided at triage time.
-- **Rule:** a `send` action is applied only with an approval record (ADR 0003).
+- **Rule:** a `send` action is applied only with an approval record (ADR 0003): the committer claims only `approved` sends with `approved_at` set, and the database refuses a `send` in `approved`, `applying` or `applied` without it.
+- **SEND_SCOPE:** the committer reads `SEND_SCOPE` (`off`, `self`, `all`; architecture §4.3) for the send only. A draft is made under `ACTIONS_SCOPE`.
 
 ### 3.6 `audit` — what happened and why (S1b)
 
@@ -255,6 +278,7 @@ Planned for S4: `approvals` (`approve`, `reject`: conditional update on `awaitin
 - **Built in S1b:** `recordAudit`, `countLlmCallsSince` (the daily cap), the event names in `auditEvents`: `email.triaged`, `email.skipped`, `action.planned`, `llm.call`, `email.requeued`.
 - **Built in S2:** the events `chat.linked`, `chat.unlinked`, `mailbox.paused`, `mailbox.resumed`, `mailbox.password_changed`; `countEventsBetween` (for the digest).
 - **Built in S3:** the events `action.applied`, `action.failed`, `action.expired`, `action.undo_requested`, `action.undone`, `email.returned`, `mailbox.folder_created`, `mailbox.mode_changed`, `mailbox.policy_changed`, `mailbox.switch_changed`. `data` holds ids, action types, folder keys, attempts, codes and booleans.
+- **Built in S4:** the events `action.applying`, `action.approved`, `action.rejected`, `action.send_again`, `action.sent_copy_failed`, `delegate.added`, `delegate.changed`, `delegation.created`, `delegation.sent`, `delegation.answered`, `delegation.overdue`, `delegation.cancelled`, `delegation.done`, `delegation.chaser_run`; `countMailboxEventsBetween` (the chaser's once-per-day gate).
 
 ### 3.7 `reports` — digest and metrics (S2)
 
@@ -266,18 +290,19 @@ Planned for S4: `approvals` (`approve`, `reject`: conditional update on `awaitin
 - **Owns:** `digests`.
 - **Built in S2** (`apps/server/src/modules/reports/`):
   - `repo.ts`: `insertDigest` (slot key unique per member), `lastDigestSlotKey`, `lastSentDigestEnd`, `markDigestSent`. A digest row holds the slot key, the period and `sent_at`; the text is in `outbox.text`.
+  - **Built in S4:** the digest reads the delegate names (so a line says `draft a delegation to <name>`), the draft task per mail and the open delegations. A `logged` send reads "would ask you to send it". The footer shows `Delegations: <n> waiting for a reply, <m> overdue`. The weekly handled-share line is still open (`tasks/planned/handled-share-delegations.md`).
   - `digest.ts`: `digestPeriodStart` (since the last sent digest of the member; the first digest: link time − 24 h; never more than 7 days back) and `buildDigestMessage` (reads triaged mail, actions, mailboxes, settings and the audit count, then calls `renderDigest`).
 
 ### 3.8 `channels` — talk to the user (S2)
 
 | Sub-module | Does |
 |---|---|
-| `port.ts` | `ChatChannel` interface (`send`, `edit`), `ChannelError` kinds, `LinkedChat`, `UpdateHandlers`, the command names. `sendApproval(action)` comes in S4 |
+| `port.ts` | `ChatChannel` interface (`send`, `edit`), `ChannelError` kinds, `LinkedChat`, `UpdateHandlers`, the command names. Approval messages go through the outbox like every notice (no `sendApproval` method) |
 | `telegram/` | The only place that imports `grammy`: `bot.ts` (the update router), `polling.ts` (long polling, `setMyCommands`), `api.ts` (send, edit, plain text, no link preview), `errors.ts` (`telegramErrorLabel`, `toChannelError`), `check.ts` (`checkBot` for `telegram:check`), `runtime.ts` (bot + notifier + digest job for `main.ts`). A webhook comes only with a public HTTPS address |
 | `linking.ts` | One-time token (15 min, one member, only its SHA-256 hash is stored) → `t.me/<bot>?start=<token>` → `chat_links`; `unlinkUser` |
 | `commands.ts` | `/help`, `/status`, `/digest`, `/pause`, `/resume` (`/pause` and `/resume` only for the role `owner`); `createUpdateHandlers` |
-| `callbacks.ts` | Button tap → chat link → `triage.recordFeedback` (✅ / ✏️ picker, `skipIfSame`) → answer → edit message. A mail of another organization gets the same answer as an unknown id. S3: the Undo tap (`fu:<emailId>`): `actions.undo()` and, when a reverse row was created, the `undo` feedback row in the same transaction; the answer is a toast. `actions.approve / reject` come in S4 |
-| `notices.ts` | `detectNotices`: urgent, `auth_error`, sync late and sync works again → `outbox` rows; S3: `action_failed` (one notice per failed action (not for `save_summary`) to the linked owners, `actions.notified_at` set in the same transaction) |
+| `callbacks.ts` | Button tap → chat link → `triage.recordFeedback` (✅ / ✏️ picker, `skipIfSame`) → answer → edit message. A mail of another organization gets the same answer as an unknown id. S3: the Undo tap (`fu:<emailId>`): `actions.undo()` and, when a reverse row was created, the `undo` feedback row in the same transaction; the answer is a toast. S4: the taps `ap:` `ar:` `as:` `rs:` `ag:` `dd:` (approve, reject, send all, skip all, send again, done): the owner role is checked first (`dd:` is open to every linked member), then `approve`, `reject`, `approveSet`, `rejectSet`, `sendAgain` or `closeDelegation`; the answer is a toast and the original message gets one line |
+| `notices.ts` | `detectNotices`: urgent, `auth_error`, sync late and sync works again → `outbox` rows; S3: `action_failed` (one notice per failed action (not for `save_summary`) to the linked owners, `actions.notified_at` set in the same transaction); S4: `approval`, `approval_set`, `send_result` (owners) and `delegation_answered` (every linked member); a broken row is skipped with one `warn` line per process |
 | `digest-job.ts` | `scheduleDigests`: a digest row and an outbox row in one transaction for each due slot (a missed slot is sent within 6 hours) |
 | `sender.ts` | `createOutboxSender`: claims due `outbox` rows, sends them, handles 429, 401, 403, 400 and network errors; quiet hours for notices |
 | `repo.ts` | `chat_links`, `chat_link_tokens`, `outbox` queries |
@@ -285,6 +310,7 @@ Planned for S4: `approvals` (`approve`, `reject`: conditional update on `awaitin
 
 - **Owns:** `chat_links`, `chat_link_tokens`, `outbox`.
 - **Built in S3:** the digest keyboard gets a third button ↩️ per line whose mail has an applied move, mark read or flag (`isUndoable` in `core/digest/undo.ts`); `/status` shows the `ACTIONS_SCOPE` and the applied, undone and failed counts of the last 24 hours; the outbox kind `action_failed`.
+- **Built in S4:** the four notice kinds `approval`, `approval_set`, `send_result`, `delegation_answered` (texts from `packages/core/src/digest/approvals.ts`: `renderApprovalRequest`, `renderApprovalSetRequest`, `renderSendResult`, `renderDelegationAnswered`, `approvalEdit`); the six taps above; `/status` lines `Approvals: <n> waiting for your tap`, `Send: <scope>`, `Delegations: <n> waiting for a reply, <m> overdue`; `/help` lines for the buttons. `CallbackDeps` carries `hooks`, `uidplus` and `sendScope`.
 - **Jobs (started by `main.ts`):** `channels.notifier` every 15 s (`detectNotices`, then the sender) and `channels.digest` every minute (`scheduleDigests`). Without `TELEGRAM_BOT_TOKEN` neither job and no polling runs (`telegram is off`).
 - **Entry points without a `TenantContext`:** listed in `docs/code-patterns.md`.
 - **Later:** `mobile/` (push to the app), `whatsapp/`, and the `assistant` module (intents, chat state, voice).
@@ -295,10 +321,15 @@ Planned for S4: `approvals` (`approve`, `reject`: conditional update on `awaitin
 |---|---|
 | `delegates` | CRUD; competence tags; active flag |
 | `planner` (in `core`) | Delegation plan: delegate id from the list, task summary, due date; missing data → clarification draft. The draft quotes the original mail |
-| `tracking` | `delegations` statuses: `drafted` → `sent` → `answered` / `overdue` → `done`; reply detection by `In-Reply-To` / `References` |
-| `chaser` (job) | Daily: overdue items without a reply → reminder draft → approval request ("send all" = one approval for the list) |
+| `tracking` | `delegations` statuses: `drafted` → `sent` → `answered` / `overdue` → `done`, and `cancelled`; reply detection by `In-Reply-To` / `References` |
+| `chaser` (job) | Every 15 min, acts once a day from 07:30: overdue items without a reply → reminder draft → approval request ("send all" = one approval for the list) |
 
 - **Owns:** `delegates`, `delegations`.
+- **Built in S4** (`apps/server/src/modules/delegation/`):
+  - `repo.ts`: the queries of both tables (`insertDelegate`, `listDelegates`, `insertDelegation`, `lockDelegation`, `findOpenDelegationByMessageIds`, `listDueDelegations`, the conditional status setters, `countOpenDelegations`, `listAnsweredUnnotified`, `markAnsweredNotified`). The index exports only the service, the read functions and the state functions, no raw writers.
+  - `service.ts`: `addDelegate` (refuses a mailbox address of the organization), `setDelegateState`, `createDelegation`, `detectReply`, `markAnswered`, `cancelDelegation`, `closeDelegation`, and `delegationHooks` (the implementation of `DelegationHooks`). Each closing function locks the delegation first, then its reminder sends.
+  - `chaser.ts`: `createChaserJob`, `runChaserForMailbox`, `reminderDecision`. Rules: architecture §8.
+  - CLIs: `delegates:add|list|disable|enable`, `delegations:list|done` (§4; runbook `deploy/README.md` "Delegates").
 
 ### 3.10 HTTP API (routes from each module, composed in `platform/http`)
 
@@ -353,11 +384,19 @@ S3 scripts (`package.json`):
 - `mailbox:settings` — `show`, `mode`, `auto`, `switch`, `expire-ready` for one mailbox (go/no-go gate, audit rows; runbook: `deploy/README.md` "Assist mode").
 - `mailbox:probe-move` — checks the Interia move facts with one synthetic mail on the test mailbox (`TEST_MAILBOX_ADDRESS` only).
 
+S4 scripts (`package.json`):
+
+- `delegates:add` / `delegates:list` / `delegates:disable` / `delegates:enable` — manage the delegates of an organization (`--org-id`; `add` takes `--name`, `--email`, `--tags`; `list --all` shows disabled ones).
+- `delegations:list` (`--status`, `--limit`) / `delegations:done` — list delegations, close an answered or overdue one.
+- `job:run --name actions.expiry|delegation.chaser|actions.committer|channels.notifier [--force]` — runs one job once with the deps of `main.ts`. `--force` is only for the chaser and skips its time gate. Do not run the committer while the server runs on the same database.
+- `mailbox:probe-send` — checks the Interia draft, SMTP, Sent and own-mail facts with one synthetic mail on the test mailbox (`TEST_MAILBOX_ADDRESS` only; the password on stdin).
+
 ## 5. `packages/core` — shared pure logic
 
 - `types/`: `Email`, `Category`, `TriageAnalysis`, `ExecutionPlan`, `Action`, `ActionStatus`, `MailboxMode`.
 - `schemas/`: Zod schemas for LLM output, API input and output.
 - `rules/`, `policy/`, `planners/`, `digest/`, `metrics/`: pure functions with unit tests.
+- S4 pieces: `triage/payloads.ts` (the draft and send payload schemas), `triage/planners.ts` (`planDelegation`, `delegationInputOf`), `triage/untrusted-text.ts` (`markUntrustedText`), `outgoing/` (`buildOutgoingMessage`, the templates, the quote, `isExternalSender`, `approvalViewOf`), `digest/approvals.ts` (the approval, set, result and answered texts), `digest/callback.ts` (the six new taps).
 - No imports from `apps/*`, no DB, no network.
 
 ## 6. Status flows
