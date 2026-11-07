@@ -415,7 +415,7 @@ Tenancy:
   The user opens `t.me/<bot>?start=<token>`. The server stores the `chat_id` for that member (table `chat_links`, §5).
 - Private chats only: updates from groups, channels and bots get no reply. The server accepts updates only from linked chats:
   an unlinked chat gets no reply. Exception (D3): `/start <token>` where the token exists but is used or expired gets one short reply
-  ("ask for a new link"). An unknown token gets no reply. Inline buttons carry only a kind and ids (`callback_data` is max 64 bytes).
+  ("ask for a new link"). A chat that is linked already and sends a used token gets "This chat is linked already" and the help. An unknown token gets no reply. Inline buttons carry only a kind and ids (`callback_data` is max 64 bytes).
 - Messages are plain text (no `parse_mode`) with link previews off (`link_preview_options.is_disabled`). Subjects lose links, control characters and bidi marks.
   One digest is one message of at most 4096 characters with at most 15 lines. No silent sends.
 - Two bots: the dev bot (`@Email_assistant_local_bot`) and the pilot bot (`@Email_assistant_vps_bot`). Each environment has its own token.

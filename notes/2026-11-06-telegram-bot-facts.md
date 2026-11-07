@@ -1,6 +1,6 @@
 # Telegram bot facts (S2)
 
-Verified Telegram Bot API and grammY facts for S2. Task: `tasks/active/s2-telegram.md`. Alert texts: `docs/known-alerts.md`.
+Verified Telegram Bot API and grammY facts for S2. Task: `tasks/done/s2-telegram.md`. Alert texts: `docs/known-alerts.md`.
 Each fact has its source and date. The table at the end has the results of the live runs (stages 21 and 23, 2026-11-07).
 
 ## Facts checked on 2026-11-05 (planning, no real token)
