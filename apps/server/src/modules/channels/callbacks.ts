@@ -64,23 +64,28 @@ export async function handleCallback(deps: CallbackDeps, link: LinkedChat, data:
     return { answer: NOT_FOUND_TEXT };
   }
   if (callback.kind === "undo") {
-    const result = await undo(deps.db, ctx, callback.emailId, {
-      now: deps.now(),
-      userId: link.userId,
-      scope: deps.actionsScope,
-    });
-    if (result.kind === "not_found") return { answer: NOT_FOUND_TEXT };
-    // keepLabel: a ✏️ label with a true category stays the latest feedback row. An unsure mail has no wrong category to record.
-    if (result.kind === "started" && target.category !== "unsure") {
-      await recordFeedback(deps.db, ctx, {
-        emailId: callback.emailId,
-        verdict: "wrong",
-        source: "undo",
+    // One transaction: a feedback failure rolls back the reverse rows, so the user can tap again.
+    const run = async (trx: Transaction<DB>) => {
+      const undone = await undo(trx, ctx, callback.emailId, {
+        now: deps.now(),
         userId: link.userId,
-        skipIfSame: true,
-        keepLabel: true,
+        scope: deps.actionsScope,
       });
-    }
+      // keepLabel: a ✏️ label with a true category stays the latest feedback row. An unsure mail has no wrong category to record.
+      if (undone.kind === "started" && target.category !== "unsure") {
+        await recordFeedback(trx, ctx, {
+          emailId: callback.emailId,
+          verdict: "wrong",
+          source: "undo",
+          userId: link.userId,
+          skipIfSame: true,
+          keepLabel: true,
+        });
+      }
+      return undone;
+    };
+    const result = await (deps.db.isTransaction ? run(deps.db as Transaction<DB>) : deps.db.transaction().execute(run));
+    if (result.kind === "not_found") return { answer: NOT_FOUND_TEXT };
     return { answer: UNDO_TEXTS[result.kind] };
   }
   if (callback.kind === "edit") {
