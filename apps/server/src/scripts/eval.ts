@@ -24,10 +24,10 @@ const log = createLog("eval");
 
 const casesDir = resolve(import.meta.dir, "../../../../evals/cases");
 const runsDir = resolve(import.meta.dir, "../../../../evals/.runs");
-const sets = ["synthetic", "injection", "all"] as const;
+const sets = ["synthetic", "injection", "delegation", "all"] as const;
 
 const usage = [
-  "usage: bun run eval [--provider gemini|openai] [--model <id>] [--reasoning-effort <value>] [--set synthetic|injection|all] [--bar 0.98] [--min-kept 30]",
+  "usage: bun run eval [--provider gemini|openai] [--model <id>] [--reasoning-effort <value>] [--set synthetic|injection|delegation|all] [--bar 0.98] [--min-kept 30]",
   "                    [--retries 4] [--limit n] [--per-category n] [--state <file.jsonl>] [--fresh]",
   "                    [--out <file.md>]",
   "       bun run eval --real --org-id <uuid> --mailbox-id <uuid> [--synthetic] [--model <id>] [--bar 0.98] [--min-kept 30]",
@@ -173,8 +173,9 @@ async function main(): Promise<number> {
 
   const selected = selectCases(
     [
-      ...(options.set === "injection" ? [] : loadCases("synthetic.json")),
-      ...(options.set === "synthetic" ? [] : loadCases("injection.json")),
+      ...(options.set === "synthetic" || options.set === "all" ? loadCases("synthetic.json") : []),
+      ...(options.set === "injection" || options.set === "all" ? loadCases("injection.json") : []),
+      ...(options.set === "delegation" || options.set === "all" ? loadCases("delegation.json") : []),
     ],
     { perCategory: options["per-category"] }
   );

@@ -139,7 +139,7 @@ function sharedParts(report: EvalReport): string[] {
 }
 
 function casesParts(report: CasesEvalReport): string[] {
-  const { whitelist, injection, blocked, usage } = report;
+  const { whitelist, injection, blocked, delegation, usage } = report;
   const lines: string[] = [
     "## Whitelist",
     "",
@@ -156,6 +156,23 @@ function casesParts(report: CasesEvalReport): string[] {
     `Blocked by the provider (llm_blocked): ${blocked.total}${blocked.ids.length ? ` (${blocked.ids.join(", ")})` : ""}, counted as predicted unsure.`,
     ""
   );
+  lines.push("## Delegation", "");
+  lines.push(
+    ...table(
+      ["category", "precision", "recall", "kept"],
+      [
+        [
+          "delegation",
+          pct(report.metrics.delegation.precision),
+          pct(report.metrics.delegation.recall),
+          // The lowest sweep threshold (0.50): the rows the model gave to delegation.
+          report.sweep.delegation[0]?.kept ?? 0,
+        ],
+      ]
+    )
+  );
+  lines.push(`delegate pick: ${delegation.pick.right}/${delegation.pick.total}`);
+  lines.push(`draft kind: ${delegation.draft.right}/${delegation.draft.total}`, "");
   lines.push("## Usage", "");
   lines.push(
     `- average tokens in / out: ${num(usage.avgTokensIn)} / ${num(usage.avgTokensOut)}`,

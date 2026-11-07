@@ -4,7 +4,7 @@ import { buildTriageAnalysisSchema, type Category, markUntrustedText, type Triag
 
 import { type LlmClient, LlmOutputError, type LlmUsage } from "../../platform/llm";
 
-import { buildSystemPrompt, buildUserPrompt, PROMPT_VERSION } from "./prompts/classifier-v1";
+import { buildSystemPrompt, buildUserPrompt, type ClassifierDelegate, PROMPT_VERSION } from "./prompts/classifier-v2";
 
 export interface ClassifierEmail {
   from: string | null;
@@ -22,21 +22,42 @@ export interface SenderContext {
   noreply: boolean;
 }
 
+function markedOrNull(text: string | null): string | null {
+  const marked = text === null ? "" : markUntrustedText(text).trim();
+  return marked === "" ? null : marked;
+}
+
 // One LLM call per mail. LLM errors go to the caller unchanged.
 export async function classifyEmail(
   llm: LlmClient,
-  input: { email: ClassifierEmail; sender: SenderContext; allowed: readonly Category[]; model?: string }
+  input: {
+    email: ClassifierEmail;
+    sender: SenderContext;
+    allowed: readonly Category[];
+    delegates: readonly ClassifierDelegate[];
+    model?: string;
+  }
 ): Promise<{ analysis: TriageAnalysis; usage: LlmUsage; promptVersion: string }> {
   const nonce = randomBytes(16).toString("hex");
   const { data, usage } = await llm.classify({
-    schema: buildTriageAnalysisSchema(input.allowed),
+    schema: buildTriageAnalysisSchema(
+      input.allowed,
+      input.delegates.map((d) => d.id)
+    ),
     system: buildSystemPrompt(input.allowed),
-    prompt: buildUserPrompt(input.email, input.sender, nonce),
+    prompt: buildUserPrompt(input.email, input.sender, input.delegates, nonce),
     model: input.model,
   });
   if (!input.allowed.includes(data.category)) throw new LlmOutputError(input.model ?? llm.classifierModel);
 
   const summary = data.category === "info" && data.summary !== null ? markUntrustedText(data.summary) : null;
-  const analysis: TriageAnalysis = { ...data, reason: markUntrustedText(data.reason), summary };
+  const delegateId = data.fields.delegate_id;
+  const fields = {
+    ...data.fields,
+    delegate_id: delegateId !== null && input.delegates.some((d) => d.id === delegateId) ? delegateId : null,
+    task: markedOrNull(data.fields.task),
+    clarification: markedOrNull(data.fields.clarification),
+  };
+  const analysis: TriageAnalysis = { ...data, reason: markUntrustedText(data.reason), summary, fields };
   return { analysis, usage, promptVersion: PROMPT_VERSION };
 }

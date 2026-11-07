@@ -28,7 +28,7 @@ import { finishEmail, isSyntheticMessageId, listThreadContext, releaseEmail, typ
 
 import { classifyEmail, type ClassifierEmail } from "./classifier";
 import type { LlmPause } from "./pause";
-import { PROMPT_VERSION } from "./prompts/classifier-v1";
+import { PROMPT_VERSION } from "./prompts/classifier-v2";
 import { insertTriageResult } from "./repo";
 
 const log = createLog("triage");
@@ -360,6 +360,7 @@ export async function triageOne(
       email: classifierEmail,
       sender: { whitelisted: rules.whitelisted, vip: rules.vip, noreply: rules.noreply },
       allowed: rules.allowed,
+      delegates: [],
     });
   } catch (error) {
     // A failed audit write must not hide the LLM error from the rules below.

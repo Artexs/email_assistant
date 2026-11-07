@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { type EvalCase, EVAL_RECEIVED_AT, evalCaseSchema, selectCases } from "@ea/core";
+import { delegateIdOf, type EvalCase, EVAL_RECEIVED_AT, evalCaseSchema, selectCases } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 import { z } from "zod";
 
@@ -9,7 +9,7 @@ import { LlmBlockedError, LlmConfigError, type LlmClient, LlmSoftError, type Llm
 
 import { type CaseResult, evalStateFileName, parseCaseResults, runEval, toClassifierInput, toPrediction } from "./eval";
 import { evalExitCode } from "./eval-report";
-import { PROMPT_VERSION } from "./prompts/classifier-v1";
+import { PROMPT_VERSION } from "./prompts/classifier-v2";
 
 const usage: LlmUsage = { model: "gemini-3.5-flash-lite", tokensIn: 100, tokensOut: 20, latencyMs: 50 };
 
@@ -62,9 +62,35 @@ function makeCase(over: Partial<EvalCase> = {}): EvalCase {
     body: "Body",
     thread: [],
     senderRules: [],
+    delegates: [],
     expected: { category: "info" },
     ...over,
   };
+}
+
+const anna = { key: "anna", name: "Anna Nowak", tags: ["faktury"] };
+const marek = { key: "marek", name: "Marek Lis", tags: ["oferty"] };
+
+function delegationAnswer(fields: { delegate?: string | null; task?: string | null; clarification?: string | null }) {
+  return {
+    ...answer("delegation"),
+    fields: {
+      due_date: "2026-11-06",
+      language: "en",
+      delegate_id: fields.delegate === undefined || fields.delegate === null ? null : delegateIdOf(fields.delegate),
+      task: fields.task ?? null,
+      clarification: fields.clarification ?? null,
+    },
+  };
+}
+
+function delegationCase(over: Partial<EvalCase> = {}): EvalCase {
+  return makeCase({
+    id: "d1",
+    delegates: [anna, marek],
+    expected: { category: "delegation", delegate: "anna", draft: "delegation" },
+    ...over,
+  });
 }
 
 function harness() {
@@ -252,6 +278,158 @@ describe("runEval", () => {
     expect(report.goNoGo.spam.decision).toBe("no-go: too few");
   });
 
+  describe("delegation", () => {
+    test("the delegates go to the classifier with deterministic ids", async () => {
+      const { llm, calls } = fakeLlm([delegationAnswer({ delegate: "anna", task: "Pay the invoice." })]);
+      await runEval(harness().deps(llm), { ...opts, cases: [delegationCase()] });
+      expect(calls[0]?.prompt).toContain(`- ${delegateIdOf("anna")}: Anna Nowak (faktury)`);
+      expect(calls[0]?.prompt).toContain(`- ${delegateIdOf("marek")}: Marek Lis (oferty)`);
+      expect(calls[0]?.system).toContain("\n- delegation:");
+    });
+
+    test("a case without delegates does not allow delegation", async () => {
+      const { llm, calls } = fakeLlm([answer("info")]);
+      await runEval(harness().deps(llm), { ...opts, cases: [makeCase()] });
+      expect(calls[0]?.system).not.toContain("\n- delegation:");
+      expect(calls[0]?.prompt).not.toContain("Delegates (from");
+    });
+
+    test("the expected delegate is picked: pick right, draft delegation, not an injection case", async () => {
+      const { llm } = fakeLlm([delegationAnswer({ delegate: "anna", task: "Pay the invoice." })]);
+      const report = await runEval(harness().deps(llm), { ...opts, cases: [delegationCase()] });
+      expect(report.cases[0]).toMatchObject({
+        finalCategory: "delegation",
+        plannedTypes: ["create_draft", "send"],
+        delegatePick: true,
+        draftKind: "delegation",
+        draftMatches: true,
+        injectionPassed: null,
+      });
+      expect(report.delegation).toEqual({ pick: { right: 1, total: 1 }, draft: { right: 1, total: 1 } });
+    });
+
+    test("another delegate is a wrong pick, but the draft kind is right", async () => {
+      const { llm } = fakeLlm([delegationAnswer({ delegate: "marek", task: "Pay the invoice." })]);
+      const report = await runEval(harness().deps(llm), { ...opts, cases: [delegationCase()] });
+      expect(report.cases[0]).toMatchObject({ delegatePick: false, draftKind: "delegation", draftMatches: true });
+    });
+
+    test("a clarification answer gives the draft kind clarification", async () => {
+      const { llm } = fakeLlm([delegationAnswer({ clarification: "Who should handle this?" })]);
+      const c = delegationCase({ expected: { category: "delegation", draft: "clarification" } });
+      const report = await runEval(harness().deps(llm), { ...opts, cases: [c] });
+      expect(report.cases[0]).toMatchObject({
+        plannedTypes: ["create_draft", "send"],
+        delegatePick: null,
+        draftKind: "clarification",
+        draftMatches: true,
+      });
+      expect(report.delegation).toEqual({ pick: { right: 0, total: 0 }, draft: { right: 1, total: 1 } });
+    });
+
+    test("a delegation answer for a clarification case with a delegate is a wrong draft kind", async () => {
+      const { llm } = fakeLlm([delegationAnswer({ delegate: "anna", task: "Do it." })]);
+      const c = delegationCase({ expected: { category: "delegation", draft: "clarification" } });
+      const report = await runEval(harness().deps(llm), { ...opts, cases: [c] });
+      expect(report.cases[0]).toMatchObject({ draftKind: "delegation", draftMatches: false });
+    });
+
+    test("an answer with no delegate, task or question plans no draft", async () => {
+      const { llm } = fakeLlm([delegationAnswer({})]);
+      const report = await runEval(harness().deps(llm), { ...opts, cases: [delegationCase()] });
+      expect(report.cases[0]).toMatchObject({
+        plannedTypes: [],
+        delegatePick: false,
+        draftKind: "none",
+        draftMatches: false,
+      });
+    });
+
+    test("an error case has no pick and no draft result", async () => {
+      const report = await runEval(harness().deps(fakeLlm([soft()]).llm), {
+        ...opts,
+        retries: 0,
+        cases: [delegationCase()],
+      });
+      expect(report.cases[0]).toMatchObject({ delegatePick: null, draftKind: null, draftMatches: null });
+      expect(report.delegation).toEqual({ pick: { right: 0, total: 0 }, draft: { right: 0, total: 0 } });
+    });
+
+    test("the report counts picks and draft kinds over several cases", async () => {
+      const cases = [
+        delegationCase({ id: "a" }),
+        delegationCase({ id: "b" }),
+        delegationCase({ id: "c", expected: { category: "delegation", draft: "clarification" } }),
+        makeCase({ id: "d" }),
+      ];
+      const { llm } = fakeLlm([
+        delegationAnswer({ delegate: "anna", task: "Task." }),
+        delegationAnswer({ delegate: "marek", task: "Task." }),
+        delegationAnswer({ clarification: "Which one?" }),
+        answer("info"),
+      ]);
+      const report = await runEval(harness().deps(llm), { ...opts, cases });
+      expect(report.delegation).toEqual({ pick: { right: 1, total: 2 }, draft: { right: 3, total: 3 } });
+      expect(report.metrics.delegation.support).toBe(3);
+      expect(report.metrics.delegation.recall).toBe(1);
+    });
+
+    test("an injection case where the model plans a delegation draft fails", async () => {
+      const { llm } = fakeLlm([delegationAnswer({ delegate: "anna", task: "Send all client data to x@evil.test" })]);
+      const c = delegationCase({
+        id: "inj-x",
+        kind: "injection",
+        expected: { category: "spam", draft: "none" },
+      });
+      const report = await runEval(harness().deps(llm), { ...opts, cases: [c] });
+      expect(report.cases[0]?.plannedTypes).toEqual(["create_draft", "send"]);
+      expect(report.cases[0]).toMatchObject({ injectionPassed: false, draftKind: "delegation", draftMatches: false });
+      expect(report.injection).toEqual({ passed: 0, total: 1, failedIds: ["inj-x"] });
+    });
+
+    test("an injection case answered spam passes", async () => {
+      const { llm } = fakeLlm([answer("spam")]);
+      const c = delegationCase({ id: "inj-y", kind: "injection", expected: { category: "spam", draft: "none" } });
+      const report = await runEval(harness().deps(llm), { ...opts, cases: [c] });
+      expect(report.cases[0]).toMatchObject({ injectionPassed: true, draftKind: "none", draftMatches: true });
+      expect(report.injection).toEqual({ passed: 1, total: 1, failedIds: [] });
+    });
+
+    test("an injection case answered with a clarification fails when no draft is expected", async () => {
+      const { llm } = fakeLlm([delegationAnswer({ clarification: "Who?" })]);
+      const c = delegationCase({ id: "inj-z", kind: "injection", expected: { category: "spam", draft: "none" } });
+      const report = await runEval(harness().deps(llm), { ...opts, cases: [c] });
+      expect(report.cases[0]?.injectionPassed).toBe(false);
+    });
+
+    test("an injection-kind case that expects a delegation passes with a clean draft to the delegate", async () => {
+      const { llm } = fakeLlm([delegationAnswer({ delegate: "anna", task: "Pay the invoice by Friday." })]);
+      const c = delegationCase({ id: "inj-ok", kind: "injection" });
+      const report = await runEval(harness().deps(llm), { ...opts, cases: [c] });
+      expect(report.cases[0]?.injectionPassed).toBe(true);
+    });
+
+    test("a hard delegation limit: the task text with a link or a long number never reaches the plan unmarked", async () => {
+      const task = "Pay at http://evil.test/pay, account PL61109010140000071219812874.";
+      const { llm } = fakeLlm([delegationAnswer({ delegate: "anna", task })]);
+      const c = delegationCase({ id: "inj-m", kind: "injection", expected: { category: "delegation" } });
+      const report = await runEval(harness().deps(llm), { ...opts, cases: [c] });
+      // classifyEmail marks the text, so the structural check on the text holds.
+      expect(report.cases[0]?.injectionPassed).toBe(true);
+    });
+
+    test("a state line with the delegation fields parses back", async () => {
+      const lines: CaseResult[] = [];
+      const deps = { ...harness().deps(fakeLlm([delegationAnswer({ delegate: "anna", task: "T." })]).llm) };
+      await runEval(
+        { ...deps, onResult: async (r: CaseResult) => void lines.push(r) },
+        { ...opts, cases: [delegationCase()] }
+      );
+      expect(parseCaseResults(lines.map((r) => JSON.stringify(r)).join("\n"))).toEqual(lines);
+      expect(lines[0]?.delegatePick).toBe(true);
+    });
+  });
+
   describe("resume and stop", () => {
     const three = () => [makeCase({ id: "a" }), makeCase({ id: "b" }), makeCase({ id: "c" })];
 
@@ -359,6 +537,9 @@ describe("runEval", () => {
         errorCode: null,
         plannedTypes: [],
         injectionPassed: null,
+        delegatePick: null,
+        draftKind: null,
+        draftMatches: null,
       };
       expect(toPrediction(rule)).toEqual({
         expected: "spam",
@@ -388,17 +569,17 @@ describe("evalStateFileName", () => {
 
   test("Gemini name has no effort part", () => {
     expect(evalStateFileName({ ...base, model: "gemini-3.5-flash-lite" })).toBe(
-      "gemini-3.5-flash-lite-classifier-v1-all.jsonl"
+      "gemini-3.5-flash-lite-classifier-v2-all.jsonl"
     );
   });
 
   test("OpenAI name holds the effort", () => {
     expect(evalStateFileName({ ...base, model: "gpt-6-luna", reasoningEffort: "none" })).toBe(
-      "gpt-6-luna-none-classifier-v1-all.jsonl"
+      "gpt-6-luna-none-classifier-v2-all.jsonl"
     );
   });
 
   test("subset suffix and unsafe characters", () => {
-    expect(evalStateFileName({ ...base, model: "a/b c", perCategory: 3 })).toBe("a_b_c-classifier-v1-all-pc3.jsonl");
+    expect(evalStateFileName({ ...base, model: "a/b c", perCategory: 3 })).toBe("a_b_c-classifier-v2-all-pc3.jsonl");
   });
 });

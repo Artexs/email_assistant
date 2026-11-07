@@ -315,7 +315,7 @@ describe("triageOne", () => {
         category: "info",
         reason_code: "newsletter",
         model: "fake-model",
-        prompt_version: "classifier-v1",
+        prompt_version: "classifier-v2",
         tokens_in: 100,
         tokens_out: 20,
       });
@@ -325,7 +325,7 @@ describe("triageOne", () => {
       expect(calls[0]?.data).toEqual({
         mailbox_id: mailbox.id,
         model: "fake-model",
-        prompt_version: "classifier-v1",
+        prompt_version: "classifier-v2",
         tokens_in: 100,
         tokens_out: 20,
         latency_ms: 300,

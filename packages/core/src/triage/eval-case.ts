@@ -1,9 +1,16 @@
+import { createHash } from "node:crypto";
+
 import { z } from "zod";
 
 import { senderRuleKinds } from "./rules";
 
 // The receivedAt of every eval case. "Today" in a case text is 2026-11-02 (a Monday).
 export const EVAL_RECEIVED_AT = new Date("2026-11-02T09:00:00Z");
+
+// A deterministic uuid per delegate key: the payload schemas need a uuid (D2) and a mail cannot know it.
+export function delegateIdOf(key: string): string {
+  return `00000000-0000-4000-8000-${createHash("sha256").update(key).digest("hex").slice(0, 12)}`;
+}
 
 export const evalCaseSchema = z.object({
   id: z.string().regex(/^[a-z0-9-]+$/),
@@ -16,7 +23,20 @@ export const evalCaseSchema = z.object({
   body: z.string(),
   thread: z.array(z.object({ from: z.string(), subject: z.string(), body: z.string() })).default([]),
   senderRules: z.array(z.object({ pattern: z.string(), kind: z.enum(senderRuleKinds) })).default([]),
-  expected: z.object({ category: z.enum(["urgent", "needs_reply", "info", "notification", "spam"]) }),
+  delegates: z
+    .array(
+      z.object({
+        key: z.string().regex(/^[a-z0-9-]+$/),
+        name: z.string().min(1),
+        tags: z.array(z.string()).default([]),
+      })
+    )
+    .default([]),
+  expected: z.object({
+    category: z.enum(["urgent", "needs_reply", "info", "notification", "spam", "delegation"]),
+    delegate: z.string().optional(),
+    draft: z.enum(["delegation", "clarification", "none"]).optional(),
+  }),
   note: z.string().optional(),
 });
 

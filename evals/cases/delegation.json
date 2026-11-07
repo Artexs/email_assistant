@@ -1,0 +1,378 @@
+[
+  {
+    "id": "delegation-01",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Krzysztof Wrona <k.wrona@dostawca-biuro.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Faktura FV/11/2026 do zaksięgowania",
+    "body": "Dzień dobry,\nw załączeniu faktura FV/11/2026 za usługi z października. Proszę, żeby ktoś z Państwa księgowości ją zaksięgował i potwierdził mi to krótką wiadomością.\nPozdrawiam,\nKrzysztof Wrona",
+    "thread": [],
+    "senderRules": [],
+    "delegates": [
+      {
+        "key": "anna",
+        "name": "Anna Nowak",
+        "tags": ["faktury", "księgowość"]
+      },
+      {
+        "key": "marek",
+        "name": "Marek Lis",
+        "tags": ["oferty", "sprzedaż"]
+      }
+    ],
+    "expected": {
+      "category": "delegation",
+      "delegate": "anna",
+      "draft": "delegation"
+    },
+    "note": "clear task, no deadline"
+  },
+  {
+    "id": "delegation-02",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Ewa Zając <ewa.zajac@klient-hurt.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Zapytanie ofertowe na 40 licencji",
+    "body": "Dzień dobry,\nprosimy o przygotowanie oferty na 40 licencji wraz z rabatem wolumenowym. Potrzebujemy jej do piątku 6 listopada, bo w poniedziałek mamy komitet zakupowy.\nZ poważaniem,\nEwa Zając",
+    "thread": [],
+    "senderRules": [],
+    "delegates": [
+      {
+        "key": "marek",
+        "name": "Marek Lis",
+        "tags": ["oferty", "sprzedaż"]
+      },
+      {
+        "key": "ola",
+        "name": "Ola Bąk",
+        "tags": ["hr", "rekrutacja"]
+      }
+    ],
+    "expected": {
+      "category": "delegation",
+      "delegate": "marek",
+      "draft": "delegation"
+    },
+    "note": "clear task, deadline Friday 2026-11-06"
+  },
+  {
+    "id": "delegation-03",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Paweł Dąbek <pawel.dabek@kandydaci-it.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Kandydat na stanowisko analityka, termin rozmowy",
+    "body": "Dzień dobry,\njestem pośrednikiem i mam kandydata na stanowisko analityka. Proszę o umówienie rozmowy kwalifikacyjnej i odesłanie terminów, najlepiej do środy.\nPozdrawiam,\nPaweł Dąbek",
+    "thread": [],
+    "senderRules": [],
+    "delegates": [
+      {
+        "key": "anna",
+        "name": "Anna Nowak",
+        "tags": ["faktury", "księgowość"]
+      },
+      {
+        "key": "marek",
+        "name": "Marek Lis",
+        "tags": ["oferty", "sprzedaż"]
+      },
+      {
+        "key": "ola",
+        "name": "Ola Bąk",
+        "tags": ["hr", "rekrutacja"]
+      }
+    ],
+    "expected": {
+      "category": "delegation",
+      "delegate": "ola",
+      "draft": "delegation"
+    },
+    "note": "clear task, deadline Wednesday 2026-11-04"
+  },
+  {
+    "id": "delegation-04",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Iwona Grabarz <i.grabarz@kontrahent-a.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Faktura korygująca do FV/10/2026",
+    "body": "Dzień dobry,\nw fakturze FV/10/2026 jest błędna stawka VAT. Proszę o wystawienie faktury korygującej do 10 listopada, żebyśmy zdążyli z rozliczeniem miesiąca.\nIwona Grabarz",
+    "thread": [],
+    "senderRules": [],
+    "delegates": [
+      {
+        "key": "anna",
+        "name": "Anna Nowak",
+        "tags": ["faktury", "księgowość"]
+      },
+      {
+        "key": "ola",
+        "name": "Ola Bąk",
+        "tags": ["hr", "rekrutacja"]
+      }
+    ],
+    "expected": {
+      "category": "delegation",
+      "delegate": "anna",
+      "draft": "delegation"
+    },
+    "note": "clear task, deadline 2026-11-10"
+  },
+  {
+    "id": "delegation-05",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Tomasz Kruk <tomasz.kruk@partner-b.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Sprawa z zeszłego tygodnia",
+    "body": "Dzień dobry,\nw tej sprawie, o której rozmawialiśmy, ktoś powinien się tym zająć po Państwa stronie. Daję znać, żeby temat nie umknął.\nTomasz Kruk",
+    "thread": [],
+    "senderRules": [],
+    "delegates": [
+      {
+        "key": "anna",
+        "name": "Anna Nowak",
+        "tags": ["faktury", "księgowość"]
+      },
+      {
+        "key": "marek",
+        "name": "Marek Lis",
+        "tags": ["oferty", "sprzedaż"]
+      }
+    ],
+    "expected": {
+      "category": "delegation",
+      "draft": "clarification"
+    },
+    "note": "clarification: no task detail"
+  },
+  {
+    "id": "delegation-06",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Barbara Sowa <barbara.sowa@usluga-c.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Do załatwienia",
+    "body": "Dzień dobry,\nto wymaga załatwienia, im szybciej, tym lepiej. Proszę poruszyć temat u siebie w firmie i dać mi znać, kto się tym zajmie.\nBarbara Sowa",
+    "thread": [],
+    "senderRules": [],
+    "delegates": [
+      {
+        "key": "marek",
+        "name": "Marek Lis",
+        "tags": ["oferty", "sprzedaż"]
+      },
+      {
+        "key": "ola",
+        "name": "Ola Bąk",
+        "tags": ["hr", "rekrutacja"]
+      },
+      {
+        "key": "anna",
+        "name": "Anna Nowak",
+        "tags": ["faktury", "księgowość"]
+      }
+    ],
+    "expected": {
+      "category": "delegation",
+      "draft": "clarification"
+    },
+    "note": "clarification: no task detail, no delegate fits"
+  },
+  {
+    "id": "delegation-07",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Olivia Hart <olivia.hart@supplier-one.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Invoice 2026-118 shows the wrong amount",
+    "body": "Hello,\ninvoice 2026-118 shows 4,800 instead of 4,200. Please have someone in your accounting team issue a credit note by Thursday, so that we can close the quarter.\nThanks,\nOlivia Hart",
+    "thread": [],
+    "senderRules": [],
+    "delegates": [
+      {
+        "key": "anna",
+        "name": "Anna Nowak",
+        "tags": ["faktury", "księgowość"]
+      },
+      {
+        "key": "marek",
+        "name": "Marek Lis",
+        "tags": ["oferty", "sprzedaż"]
+      }
+    ],
+    "expected": {
+      "category": "delegation",
+      "delegate": "anna",
+      "draft": "delegation"
+    },
+    "note": "clear task, deadline Thursday 2026-11-05"
+  },
+  {
+    "id": "delegation-08",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Daniel Fox <daniel.fox@buyer-two.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Quote for the spring order",
+    "body": "Hello,\nwe plan a spring order of about 300 units. Could your sales side send us a quote with delivery times? No rush on this one.\nBest,\nDaniel Fox",
+    "thread": [],
+    "senderRules": [],
+    "delegates": [
+      {
+        "key": "marek",
+        "name": "Marek Lis",
+        "tags": ["oferty", "sprzedaż"]
+      },
+      {
+        "key": "anna",
+        "name": "Anna Nowak",
+        "tags": ["faktury", "księgowość"]
+      }
+    ],
+    "expected": {
+      "category": "delegation",
+      "delegate": "marek",
+      "draft": "delegation"
+    },
+    "note": "clear task, no deadline"
+  },
+  {
+    "id": "delegation-09",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Grace Miller <grace.miller@talent-bureau.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Two candidates for the support role",
+    "body": "Hello,\nI have two candidates for the support role. Please let your HR person set up first interviews and send me the slots by Thursday.\nRegards,\nGrace Miller",
+    "thread": [],
+    "senderRules": [],
+    "delegates": [
+      {
+        "key": "ola",
+        "name": "Ola Bąk",
+        "tags": ["hr", "rekrutacja"]
+      },
+      {
+        "key": "anna",
+        "name": "Anna Nowak",
+        "tags": ["faktury", "księgowość"]
+      },
+      {
+        "key": "marek",
+        "name": "Marek Lis",
+        "tags": ["oferty", "sprzedaż"]
+      }
+    ],
+    "expected": {
+      "category": "delegation",
+      "delegate": "ola",
+      "draft": "delegation"
+    },
+    "note": "clear task, deadline Thursday 2026-11-05"
+  },
+  {
+    "id": "delegation-10",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Henry Ward <henry.ward@client-three.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Updated price list for the new year",
+    "body": "Hello,\nwe need your updated price list for next year, with the discount tiers for resellers. Someone from sales should send it over when it is ready.\nHenry Ward",
+    "thread": [],
+    "senderRules": [],
+    "delegates": [
+      {
+        "key": "marek",
+        "name": "Marek Lis",
+        "tags": ["oferty", "sprzedaż"]
+      },
+      {
+        "key": "ola",
+        "name": "Ola Bąk",
+        "tags": ["hr", "rekrutacja"]
+      }
+    ],
+    "expected": {
+      "category": "delegation",
+      "delegate": "marek",
+      "draft": "delegation"
+    },
+    "note": "clear task, no deadline"
+  },
+  {
+    "id": "delegation-11",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Nina Brooks <nina.brooks@partner-four.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Following up",
+    "body": "Hello,\nsomeone on your side should look at this. You know what I mean, we talked about it last time. Please have it handled.\nNina Brooks",
+    "thread": [],
+    "senderRules": [],
+    "delegates": [
+      {
+        "key": "anna",
+        "name": "Anna Nowak",
+        "tags": ["faktury", "księgowość"]
+      },
+      {
+        "key": "marek",
+        "name": "Marek Lis",
+        "tags": ["oferty", "sprzedaż"]
+      }
+    ],
+    "expected": {
+      "category": "delegation",
+      "draft": "clarification"
+    },
+    "note": "clarification: no task detail"
+  },
+  {
+    "id": "delegation-12",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Samuel Reed <samuel.reed@vendor-five.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "The thing we discussed",
+    "body": "Hello,\ncan your team take care of the thing we discussed? I would like it done soon.\nSamuel Reed",
+    "thread": [],
+    "senderRules": [],
+    "delegates": [
+      {
+        "key": "marek",
+        "name": "Marek Lis",
+        "tags": ["oferty", "sprzedaż"]
+      },
+      {
+        "key": "ola",
+        "name": "Ola Bąk",
+        "tags": ["hr", "rekrutacja"]
+      },
+      {
+        "key": "anna",
+        "name": "Anna Nowak",
+        "tags": ["faktury", "księgowość"]
+      }
+    ],
+    "expected": {
+      "category": "delegation",
+      "draft": "clarification"
+    },
+    "note": "clarification: no task, no delegate, no deadline"
+  }
+]

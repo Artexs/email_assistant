@@ -69,6 +69,9 @@ function caseResult(id: string, over: Partial<CaseResult> = {}): CaseResult {
     errorCode: null,
     plannedTypes: [],
     injectionPassed: null,
+    delegatePick: null,
+    draftKind: null,
+    draftMatches: null,
     ...over,
   };
 }
@@ -80,7 +83,7 @@ function casesReport(over: Partial<CasesEvalReport> = {}): CasesEvalReport {
     model: "gemini-3.5-flash-lite",
     provider: "gemini",
     reasoningEffort: null,
-    promptVersion: "classifier-v1",
+    promptVersion: "classifier-v2",
     cases: Array.from({ length: 10 }, (_, i) => caseResult(`c${i}`)),
     complete: true,
     stoppedReason: null,
@@ -89,6 +92,7 @@ function casesReport(over: Partial<CasesEvalReport> = {}): CasesEvalReport {
     whitelist: { passed: 10, total: 10, errors: 0 },
     injection: { passed: 3, total: 3, failedIds: [] },
     blocked: { total: 0, ids: [] },
+    delegation: { pick: { right: 0, total: 0 }, draft: { right: 0, total: 0 } },
     usage: {
       avgTokensIn: 500,
       avgTokensOut: 40,
@@ -130,7 +134,7 @@ describe("renderEvalReport", () => {
     expect(md).toContain("model: gemini-3.5-flash-lite");
     expect(md).toContain("- provider: gemini");
     expect(md).not.toContain("reasoning effort");
-    expect(md).toContain("prompt version: classifier-v1");
+    expect(md).toContain("prompt version: classifier-v2");
     expect(md).toContain("bar: 98.0%");
     expect(md).toContain("minimum support: 30 kept rows per category");
     expect(md).toContain("no generation settings: results can change between runs");
@@ -142,6 +146,32 @@ describe("renderEvalReport", () => {
     expect(decisionOf(md, "info")).toBe("no-go");
     expect(decisionOf(md, "urgent")).toBe("no-go: too few");
     expect(md).toContain("Minimum support: 30 kept rows per category (user 2026-11-04).");
+  });
+
+  test("cases: the delegation row and the two delegation lines", () => {
+    const rows: Prediction[] = [
+      { expected: "delegation", predicted: "delegation", modelCategory: "delegation", confidence: 0.9, source: "llm" },
+      { expected: "delegation", predicted: "info", modelCategory: "info", confidence: 0.9, source: "llm" },
+      { expected: "info", predicted: "delegation", modelCategory: "delegation", confidence: 0.8, source: "llm" },
+      { expected: "delegation", predicted: "delegation", modelCategory: "delegation", confidence: 0.4, source: "llm" },
+    ];
+    const md = renderEvalReport(
+      casesReport({
+        ...base(rows),
+        delegation: { pick: { right: 9, total: 12 }, draft: { right: 11, total: 12 } },
+      })
+    );
+    expect(md).toContain("## Delegation");
+    // tp 2, fp 1, fn 1; kept at the lowest threshold 0.50: the rows with confidence 0.9 and 0.8
+    expect(md).toContain("| delegation | 66.7% | 66.7% | 2 |");
+    expect(md).toContain("delegate pick: 9/12");
+    expect(md).toContain("draft kind: 11/12");
+  });
+
+  test("cases: the delegation lines show with zero cases", () => {
+    const md = renderEvalReport(casesReport());
+    expect(md).toContain("delegate pick: 0/0");
+    expect(md).toContain("draft kind: 0/0");
   });
 
   test("cases: done count, stop reason and error line", () => {
@@ -248,6 +278,7 @@ describe("renderEvalReport", () => {
       body: BODY_MARKER,
       thread: [],
       senderRules: [],
+      delegates: [],
       expected: { category: "info" },
     };
     const report = await runEval(

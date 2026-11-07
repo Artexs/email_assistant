@@ -14,7 +14,16 @@ function load(file: string) {
 
 const synthetic = load("synthetic.json");
 const injection = load("injection.json");
+const delegation = load("delegation.json");
 const all = [...synthetic, ...injection];
+const everything = [...all, ...delegation];
+
+// The made-up delegate pool of evals/README.md. A case may use only these entries.
+const delegatePool: Record<string, { name: string; tags: string[] }> = {
+  anna: { name: "Anna Nowak", tags: ["faktury", "księgowość"] },
+  marek: { name: "Marek Lis", tags: ["oferty", "sprzedaż"] },
+  ola: { name: "Ola Bąk", tags: ["hr", "rekrutacja"] },
+};
 
 function trustedCases(cases: EvalCase[]): EvalCase[] {
   return cases.filter((c) => c.senderRules.some((r) => r.kind === "whitelist" || r.kind === "vip"));
@@ -35,17 +44,18 @@ function isReservedDomain(domain: string): boolean {
 
 describe("eval case files", () => {
   test("ids are unique across files", () => {
-    const ids = all.map((c) => c.id);
+    const ids = everything.map((c) => c.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
   test("each file holds its own kind", () => {
     expect(synthetic.every((c) => c.kind === "synthetic")).toBe(true);
     expect(injection.every((c) => c.kind === "injection")).toBe(true);
+    expect(delegation.every((c) => c.kind === "synthetic")).toBe(true);
   });
 
   test("every address is ASCII and uses a reserved domain", () => {
-    for (const evalCase of all) {
+    for (const evalCase of everything) {
       const values = [evalCase.from, ...evalCase.to, ...evalCase.cc, ...evalCase.thread.map((message) => message.from)];
       for (const value of values) {
         const { address } = splitAddress(value);
@@ -58,7 +68,7 @@ describe("eval case files", () => {
   });
 
   test("every sender rule pattern is lower case", () => {
-    for (const evalCase of all) {
+    for (const evalCase of everything) {
       for (const rule of evalCase.senderRules) expect(rule.pattern).toBe(rule.pattern.toLowerCase());
     }
   });
@@ -162,6 +172,67 @@ describe("eval case files", () => {
       expect(trustedCases(subset).length).toBeGreaterThanOrEqual(1);
       expect(subset.filter((c) => c.senderRules.some((r) => r.kind === "blocklist")).length).toBeGreaterThanOrEqual(1);
       expect(selectCases(synthetic, { perCategory: 4 })).toHaveLength(20);
+    });
+  });
+
+  describe("delegation coverage", () => {
+    const withDelegates = [...delegation, ...injection.filter((c) => c.delegates.length > 0)];
+
+    test("every expected delegate is a key of the case's delegates, and keys are unique per case", () => {
+      for (const evalCase of withDelegates) {
+        const keys = evalCase.delegates.map((d) => d.key);
+        expect(new Set(keys).size).toBe(keys.length);
+        if (evalCase.expected.delegate !== undefined) expect(keys).toContain(evalCase.expected.delegate);
+      }
+    });
+
+    test("delegation cases have 2 or 3 delegates and expect the category delegation", () => {
+      for (const evalCase of delegation) {
+        expect(evalCase.expected.category).toBe("delegation");
+        expect(evalCase.delegates.length).toBeGreaterThanOrEqual(2);
+        expect(evalCase.delegates.length).toBeLessThanOrEqual(3);
+      }
+    });
+
+    test("12 delegation cases: 6 Polish, 6 English, 8 with a delegate, 4 that need a question", () => {
+      expect(delegation).toHaveLength(12);
+      expect(delegation.filter((c) => c.lang === "pl")).toHaveLength(6);
+      expect(delegation.filter((c) => c.lang === "en")).toHaveLength(6);
+      expect(delegation.filter((c) => c.expected.draft === "delegation" && c.expected.delegate)).toHaveLength(8);
+      expect(delegation.filter((c) => c.expected.draft === "clarification")).toHaveLength(4);
+    });
+
+    test("delegates come from the made-up pool", () => {
+      for (const evalCase of withDelegates) {
+        for (const delegate of evalCase.delegates) {
+          expect(delegatePool[delegate.key]).toEqual({ name: delegate.name, tags: delegate.tags });
+        }
+      }
+    });
+
+    test("injection cases inj-13 to inj-16 have delegates, expect spam and no draft", () => {
+      for (const id of ["inj-13", "inj-14", "inj-15", "inj-16"]) {
+        const evalCase = injection.find((c) => c.id === id);
+        expect(evalCase).toBeDefined();
+        expect(evalCase?.delegates.length).toBeGreaterThan(0);
+        expect(evalCase?.expected).toEqual({ category: "spam", draft: "none" });
+        expect(evalCase?.note?.startsWith("attack:")).toBe(true);
+      }
+    });
+
+    test("case texts never hold a delegate id", () => {
+      for (const evalCase of withDelegates) {
+        const text = [evalCase.subject, evalCase.body, ...evalCase.thread.map((m) => m.body)].join("\n");
+        expect(text).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/);
+      }
+    });
+
+    test("a delegation case is allowed the category delegation", () => {
+      for (const evalCase of delegation) {
+        const result = applyHardRules(splitAddress(evalCase.from).address, evalCase.senderRules, { delegation: true });
+        expect(result.kind).toBe("classify");
+        if (result.kind === "classify") expect(result.allowed).toContain("delegation");
+      }
     });
   });
 });

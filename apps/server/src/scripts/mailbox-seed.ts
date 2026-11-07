@@ -15,11 +15,11 @@ import { createLog } from "../platform/log";
 const log = createLog("mailbox-seed");
 
 const casesDir = resolve(import.meta.dir, "../../../../evals/cases");
-const evalSets = ["synthetic", "injection", "all"] as const;
+const evalSets = ["synthetic", "injection", "delegation", "all"] as const;
 
 const usage = [
   "usage: bun run mailbox:seed --org-id <uuid> --mailbox-id <uuid> [--count 1]",
-  "       bun run mailbox:seed --org-id <uuid> --mailbox-id <uuid> --eval-cases synthetic|injection|all [--per-category n]",
+  "       bun run mailbox:seed --org-id <uuid> --mailbox-id <uuid> --eval-cases synthetic|injection|delegation|all [--per-category n]",
   "  It refuses every mailbox except the one in TEST_MAILBOX_ADDRESS.",
 ].join("\n");
 
@@ -86,7 +86,7 @@ async function main(): Promise<number> {
     const testAddress = config.TEST_MAILBOX_ADDRESS;
     let messages: SeedMessage[] | undefined;
     if (options.evalSet !== undefined) {
-      const files = options.evalSet === "all" ? ["synthetic", "injection"] : [options.evalSet];
+      const files = options.evalSet === "all" ? ["synthetic", "injection", "delegation"] : [options.evalSet];
       const cases = selectCases(
         files.flatMap((file) => loadCases(`${file}.json`)),
         { perCategory: options.perCategory }

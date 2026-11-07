@@ -6,7 +6,7 @@ Part of [`../s4-drafts-approvals-delegation.md`](../s4-drafts-approvals-delegati
 
 Why risky: the prompt decides which mail becomes a draft and to whom; the eval cases are the only proof against injection before real mail.
 
-- [ ] **8.1 Prompt `classifier-v2` and the classifier input (D3)**
+- [x] **8.1 Prompt `classifier-v2` and the classifier input (D3)**
   - Goal: the classifier sends the delegates list and gets back a delegate id from that list, a task and a clarification; the prompt version is `classifier-v2`.
   - Files: create `apps/server/src/modules/triage/prompts/classifier-v2.ts`; change `apps/server/src/modules/triage/classifier.ts`, `classifier.test.ts`; the five v1 `PROMPT_VERSION` imports move to `./prompts/classifier-v2` (M20): `classifier.ts:7` (with `buildSystemPrompt`, `buildUserPrompt`), `eval.ts:36` (with `EXCERPT_CHARS`: v2 exports the same constant), `triage/index.ts:33` (the re-export), `service.ts:31` (one import, used at `:251` and `:370`), `eval.test.ts:12`; `apps/server/src/scripts/llm-check.ts` (option `--delegates`: the v2 schema with a sample list of two ids; if the script does not exist yet because `llm-provider-switch` stage 4 is not built, do the same with `bun run eval --set delegation --limit 2 --provider <id>` after 8.2 and write it in the log).
   - Interfaces:
@@ -47,7 +47,7 @@ Why risky: the prompt decides which mail becomes a draft and to whom; the eval c
   - Done when: the tests pass and both providers accepted the v2 schema.
   - Out of scope: the planner input and the delegates load in the job (stage 9).
 
-- [ ] **8.2 Eval case schema, the new cases, the injection check (D32)**
+- [x] **8.2 Eval case schema, the new cases, the injection check (D32)**
   - Goal: the eval runner can run `delegation` cases with a delegates list, measure the delegate pick, and prove that an injected mail never plans a draft to an address of its choosing.
   - Files: change `packages/core/src/triage/eval-case.ts`, `eval-case.test.ts`; create `evals/cases/delegation.json`; change `evals/cases/injection.json`, `evals/README.md`, `apps/server/src/modules/triage/eval.ts`, `eval.test.ts`, `eval-report.ts`, `eval-report.test.ts`, `eval-cases.test.ts`, `apps/server/src/scripts/eval.ts` (`--set synthetic|injection|delegation|all`), `apps/server/src/scripts/mailbox-seed.ts` (`--eval-cases … delegation|all`).
   - Interfaces:

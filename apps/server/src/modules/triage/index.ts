@@ -30,7 +30,8 @@ export { evalStateFileName, parseCaseResults, runEval, toClassifierInput, toPred
 export type { CaseResult, CasesEvalReport, EvalReport, EvalReportBase, RealEvalReport } from "./eval";
 export { buildRealPredictions, buildRealReport } from "./eval-real";
 export { evalExitCode, renderEvalReport } from "./eval-report";
-export { PROMPT_VERSION } from "./prompts/classifier-v1";
+export { PROMPT_VERSION } from "./prompts/classifier-v2";
+export type { ClassifierDelegate } from "./prompts/classifier-v2";
 export { createLlmPause } from "./pause";
 export type { LlmPause } from "./pause";
 export { finishTriageError, HARD_ERROR_TRIES, saveTriage, triageOne } from "./service";
