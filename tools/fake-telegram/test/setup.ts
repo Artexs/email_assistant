@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { parseToolSwitches } from "@ea/core";
+import { isQuietTime, parseToolSwitches } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import {
@@ -38,6 +38,12 @@ function greenmailUser(): ImapConnectOptions {
   };
 }
 
+// The channel sender holds notices in quiet hours (22:00-07:00 org time). Etc/UTC and Etc/GMT-12
+// are 12 h apart, so one of them is always outside the 9 h quiet window.
+export function timeZoneOutsideQuietHours(at: Date): string {
+  return isQuietTime(at, "Etc/UTC") ? "Etc/GMT-12" : "Etc/UTC";
+}
+
 // An org with an owner and a mailbox on a new GreenMail user, in assist mode with the flag switch on.
 export async function createGreenmailMailbox(trx: Transaction<DB>): Promise<E2eMailbox> {
   await pauseOtherMailboxes(trx);
@@ -45,6 +51,12 @@ export async function createGreenmailMailbox(trx: Transaction<DB>): Promise<E2eM
   const imap = greenmailUser();
   const { orgId, userId, mailboxId } = await createOrgWithMailbox(trx, { address: imap.user });
   const ctx = { orgId };
+  // The test sends its notice at the real "now": keep the org out of quiet hours at any run time.
+  await trx
+    .updateTable("organizations")
+    .set({ timezone: timeZoneOutsideQuietHours(new Date()) })
+    .where("id", "=", orgId)
+    .execute();
   await trx
     .updateTable("mailboxes")
     .set({
