@@ -4,7 +4,7 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 
 ## Stage 17 — Backup restore test on the Mac (P6)
 
-- [ ] **17.1 Restore one VPS backup into a throwaway container and log the counts**
+- [x] **17.1 Restore one VPS backup into a throwaway container and log the counts**
   - Goal: the done-when item "backups run and one restore test is logged" holds, with a backup made after the S2 tables exist.
   - Files: this task file ("Results": date, backup file name, counts; one log line); `notes/2026-11-03-pilot-vps.md` (append the restore-test date and counts).
   - Interfaces: none (operations). Runbook: `deploy/README.md` § Backups → "Restore test".
