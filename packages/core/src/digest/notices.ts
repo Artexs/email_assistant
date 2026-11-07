@@ -84,3 +84,45 @@ export function renderSyncOkNotice(input: {
   const last = formatClock(input.lastSyncedAt, input.timeZone, input.now);
   return { text: `✅ Mail sync works again for ${cutText(input.address, 60)}. Last sync ${last}.`, buttons: [] };
 }
+
+const FAILED_FIRST_LINE = {
+  move: { original: "Could not move a mail", reverse: "Undo failed: could not move a mail back to INBOX" },
+  flag: { original: "Could not flag a mail", reverse: "Undo failed: could not remove the flag" },
+  mark_read: { original: "Could not mark a mail read", reverse: "Undo failed: could not mark a mail unread" },
+} as const;
+
+// Plain text, no buttons. The action's mail stays where it was (an original) or where the system put it (a reverse).
+export function renderActionFailedNotice(input: {
+  actionType: "move" | "flag" | "mark_read";
+  reverse: boolean;
+  reason: "mail_not_found" | "bad_payload" | "other";
+  folderName: string | null;
+  from: string | null;
+  subject: string | null;
+  synthetic: boolean;
+  attempts: number;
+}): OutMessage {
+  const folder = input.folderName === null ? null : cutText(input.folderName, 60);
+  let first = `⚠️ ${FAILED_FIRST_LINE[input.actionType][input.reverse ? "reverse" : "original"]}`;
+  if (!input.reverse && input.actionType === "move" && folder !== null && input.reason !== "bad_payload") {
+    first = `${first} to ${folder}`;
+  }
+  const tried = `Tried ${input.attempts} ${input.attempts === 1 ? "time" : "times"}.`;
+  let last: string;
+  if (input.reverse && input.reason === "mail_not_found") {
+    last = "The mail was not found: it was moved or deleted in the mail client.";
+  } else if (input.reason === "bad_payload") {
+    last = "The plan had an unknown folder. The mail stays in INBOX.";
+  } else if (input.reverse) {
+    const where =
+      input.actionType === "move" ? ` The mail stays in ${folder ?? "its AI folder"}: move it by hand.` : "";
+    last = `${tried}${where} /status shows the mailbox state.`;
+  } else {
+    const where = input.actionType === "move" ? " The mail stays in INBOX." : "";
+    last = `${tried}${where} /status shows the mailbox state.`;
+  }
+  const lines = [first];
+  if (input.synthetic) lines.push("🧪 test");
+  lines.push(`From: ${senderLabel(input.from)}`, `Subject: ${cleanSubject(input.subject)}`, last);
+  return { text: lines.join("\n"), buttons: [] };
+}

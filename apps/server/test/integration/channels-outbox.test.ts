@@ -16,7 +16,7 @@ import {
 import { insertMailbox } from "../../src/modules/mail/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
 
-import { addMember, createOrgWithMailbox, isolateChannels, testCapabilities } from "./fixtures";
+import { addMember, createOrgWithMailbox, insertTestEmail, isolateChannels, testCapabilities } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -97,6 +97,25 @@ describe("insertOutbox", () => {
       expect(saved.status).toBe("pending");
       expect(saved.attempts).toBe(0);
       expect(saved.next_attempt_at).toEqual(row.nextAttemptAt);
+    });
+  });
+
+  test("kind action_failed inserts with an email id and fails without", async () => {
+    await withRollback(db, async (trx) => {
+      const t = await tenant(trx);
+      const emailId = await insertTestEmail(trx, t.ctx, t.mailboxId);
+      const id = await insertOutbox(
+        trx,
+        t.ctx,
+        rowFor(t.userId, { mailboxId: t.mailboxId, kind: "action_failed", emailId })
+      );
+      expect(id).toBeString();
+      const error = await insertOutbox(
+        trx,
+        t.ctx,
+        rowFor(t.userId, { mailboxId: t.mailboxId, kind: "action_failed" })
+      ).catch((caught: unknown) => caught);
+      expect((error as { code?: string }).code).toBe("23514");
     });
   });
 

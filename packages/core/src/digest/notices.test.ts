@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { MESSAGE_MAX_CHARS } from "./message";
 import {
   feedbackButtons,
+  renderActionFailedNotice,
   renderAuthErrorNotice,
   renderSyncOkNotice,
   renderSyncStaleNotice,
@@ -96,5 +97,70 @@ describe("other notices", () => {
       timeZone,
     });
     expect(message.text).toContain("Last sync 07:55");
+  });
+});
+
+describe("renderActionFailedNotice", () => {
+  const base = {
+    actionType: "move" as const,
+    reverse: false,
+    reason: "other" as const,
+    folderName: "AI/Info",
+    from: "Ann <ann@firma.test>",
+    subject: "Offer, see https://evil.test/x",
+    synthetic: false,
+    attempts: 3,
+  };
+  const lines = (input: Parameters<typeof renderActionFailedNotice>[0]) =>
+    renderActionFailedNotice(input).text.split("\n");
+
+  test("original move names the folder and cleans the subject", () => {
+    expect(lines(base)).toEqual([
+      "⚠️ Could not move a mail to AI/Info",
+      "From: Ann <ann@firma.test>",
+      "Subject: Offer, see [link]",
+      "Tried 3 times. The mail stays in INBOX. /status shows the mailbox state.",
+    ]);
+    expect(renderActionFailedNotice(base).buttons).toEqual([]);
+  });
+
+  test("the six shapes carry the verb, the subject and the tries", () => {
+    const cases = [
+      { actionType: "move", reverse: false, verb: "Could not move a mail to AI/Info" },
+      { actionType: "flag", reverse: false, verb: "Could not flag a mail" },
+      { actionType: "mark_read", reverse: false, verb: "Could not mark a mail read" },
+      { actionType: "move", reverse: true, verb: "Undo failed: could not move a mail back to INBOX" },
+      { actionType: "flag", reverse: true, verb: "Undo failed: could not remove the flag" },
+      { actionType: "mark_read", reverse: true, verb: "Undo failed: could not mark a mail unread" },
+    ] as const;
+    for (const { verb, ...shape } of cases) {
+      const out = lines({ ...base, ...shape });
+      expect(out[0]).toBe(`⚠️ ${verb}`);
+      expect(out[2]).toBe("Subject: Offer, see [link]");
+      expect(out[3]).toContain("Tried 3 times");
+    }
+    expect(lines({ ...base, reverse: true })[3]).toContain("The mail stays in AI/Info: move it by hand.");
+  });
+
+  test("a reverse mail_not_found has the not-found line and no Tried line", () => {
+    const out = lines({ ...base, reverse: true, reason: "mail_not_found" });
+    expect(out[3]).toBe("The mail was not found: it was moved or deleted in the mail client.");
+    expect(out.join("\n")).not.toContain("Tried");
+  });
+
+  test("bad_payload has no folder and no Tried line", () => {
+    const out = lines({ ...base, reason: "bad_payload", folderName: null, attempts: 0 });
+    expect(out[0]).toBe("⚠️ Could not move a mail");
+    expect(out[3]).toBe("The plan had an unknown folder. The mail stays in INBOX.");
+    expect(out.join("\n")).not.toContain("Tried");
+  });
+
+  test("a null folder name ends the first line after 'a mail'", () => {
+    expect(lines({ ...base, folderName: null })[0]).toBe("⚠️ Could not move a mail");
+  });
+
+  test("marks a test mail after the first line only", () => {
+    expect(lines({ ...base, synthetic: true })[1]).toBe("🧪 test");
+    expect(renderActionFailedNotice(base).text).not.toContain("🧪");
   });
 });

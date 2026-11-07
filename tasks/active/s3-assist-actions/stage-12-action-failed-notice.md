@@ -4,7 +4,7 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 
 ## Stage 12 — Notice `action_failed` [risky]
 
-- [ ] **12.1 Text, outbox kind and detection (D11)**
+- [x] **12.1 Text, outbox kind and detection (D11)**
   - Goal: after 3 hard errors the owners get one notice per failed action through the S2 outbox; an original `mail_not_found` gives none, a reverse (Undo) `mail_not_found` gives one (Q1 default); a second run makes no second row.
   - Files: change `packages/core/src/digest/notices.ts`, `packages/core/src/digest/notices.test.ts` (`renderActionFailedNotice`), `apps/server/src/modules/channels/repo.ts` (`outboxKinds` + `"action_failed"`), `apps/server/src/modules/channels/notices.ts` (`detectActionFailed`), `apps/server/test/integration/channels-notices.test.ts`, `apps/server/test/integration/channels-outbox.test.ts` (one case: the new kind inserts with `emailId` and fails without).
   - Interfaces:

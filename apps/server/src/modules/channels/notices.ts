@@ -1,6 +1,8 @@
 import {
+  AI_FOLDER_NAMES,
   aiTextFor,
   describeActions,
+  renderActionFailedNotice,
   renderAuthErrorNotice,
   renderSyncOkNotice,
   renderSyncStaleNotice,
@@ -11,7 +13,7 @@ import type { Transaction } from "kysely";
 import type { DB, Db, TenantContext } from "../../platform/db";
 import { describeError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
-import { listActionsForEmails } from "../actions";
+import { listActionsForEmails, listFailedUnnotified, markNotified } from "../actions";
 import { isSyntheticMessageId, listMailboxes, type MailboxSummary } from "../mail";
 import { getOrganization } from "../tenancy";
 import { listTriagedBetween } from "../triage";
@@ -23,6 +25,8 @@ const log = createLog("channels");
 
 export const URGENT_LOOKBACK_MS = 24 * 3_600_000;
 export const URGENT_LIMIT = 200;
+export const ACTION_FAILED_LOOKBACK_MS = 24 * 3_600_000;
+export const ACTION_FAILED_LIMIT = 50;
 export const SYNC_LATE_MS = 30 * 60_000;
 export const STALE_GRACE_AFTER_START_MS = 10 * 60_000;
 
@@ -105,6 +109,52 @@ async function detectUrgent(
         now
       );
     }
+  }
+}
+
+// D11: owners get one notice per failed action; the dedup key and `notified_at` keep it single.
+async function detectActionFailed(db: DbOrTrx, ctx: TenantContext, owners: LinkedChat[], now: Date): Promise<void> {
+  const failed = await listFailedUnnotified(db, ctx, { limit: ACTION_FAILED_LIMIT });
+  for (const action of failed) {
+    const run = async (trx: DbOrTrx) => {
+      if (action.type !== "save_summary" && action.updated_at.getTime() >= now.getTime() - ACTION_FAILED_LOOKBACK_MS) {
+        const key = action.payload.folder;
+        const folderName =
+          action.type === "move" && key !== undefined && Object.hasOwn(AI_FOLDER_NAMES, key)
+            ? AI_FOLDER_NAMES[key as keyof typeof AI_FOLDER_NAMES]
+            : null;
+        const reason =
+          action.status_reason === "mail_not_found" || action.status_reason === "bad_payload"
+            ? action.status_reason
+            : "other";
+        const message = renderActionFailedNotice({
+          actionType: action.type,
+          reverse: action.reverse,
+          reason,
+          folderName,
+          from: action.from_address,
+          subject: action.subject,
+          synthetic: isSyntheticMessageId(action.message_id_header),
+          attempts: action.attempts,
+        });
+        for (const owner of owners) {
+          await queue(
+            trx,
+            ctx,
+            {
+              userId: owner.userId,
+              kind: "action_failed",
+              dedupKey: `action_failed:${action.id}`,
+              emailId: action.email_id,
+              message,
+            },
+            now
+          );
+        }
+      }
+      await markNotified(trx, ctx, action.id, now);
+    };
+    await (db.isTransaction ? run(db) : (db as Db).transaction().execute(run));
   }
 }
 
@@ -229,6 +279,7 @@ async function detectForOrg(deps: NoticeDeps, orgId: string, members: LinkedChat
 
   const pausedIds = new Set(mailboxes.filter((mailbox) => mailbox.status === "paused").map((mailbox) => mailbox.id));
   await detectUrgent(db, ctx, members, pausedIds, timeZone, now);
+  await detectActionFailed(db, ctx, owners, now);
   for (const mailbox of mailboxes) {
     await detectAuthError(db, ctx, owners, mailbox, timeZone, now);
     await detectSync(deps, ctx, members, owners, mailbox, timeZone, now);

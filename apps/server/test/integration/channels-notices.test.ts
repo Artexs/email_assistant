@@ -5,7 +5,15 @@ import { detectNotices } from "../../src/modules/channels";
 import { markSynced, type MailboxStatus } from "../../src/modules/mail/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
 
-import { addMember, createOrgWithMailbox, insertTriaged, isolateChannels, linkChat, randomChatId } from "./fixtures";
+import {
+  addMember,
+  createOrgWithMailbox,
+  insertAction,
+  insertTriaged,
+  isolateChannels,
+  linkChat,
+  randomChatId,
+} from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -375,6 +383,143 @@ describe("organizations", () => {
       const failed = errorLines.filter((line) => line.includes(a.orgId));
       expect(failed).toHaveLength(1);
       expect(errorLines.filter((line) => line.includes(b.orgId))).toHaveLength(0);
+    });
+  });
+});
+
+describe("action_failed notices", () => {
+  async function failedMove(
+    trx: Transaction<DB>,
+    o: Org,
+    opts: { statusReason?: string; reverse?: boolean; updatedAt?: Date; subject?: string } = {}
+  ): Promise<{ emailId: string; actionId: string }> {
+    const emailId = await insertTriaged(trx, o.ctx, o.mailboxId, {
+      category: "info",
+      createdAt: at(-2 * HOUR),
+      subject: opts.subject ?? "Marker subject",
+      from: "Ann <ann@firma.test>",
+    });
+    const original = await insertAction(trx, o.ctx, emailId, {
+      type: "move",
+      status: opts.reverse === true ? "undone" : "failed",
+      payload: { folder: "ai_info" },
+    });
+    let actionId = original;
+    if (opts.reverse === true) {
+      actionId = await insertAction(trx, o.ctx, emailId, {
+        type: "move",
+        status: "failed",
+        payload: { folder: "ai_info" },
+        reversesActionId: original,
+        statusReason: opts.statusReason ?? "hard_error",
+        attempts: 3,
+      });
+    } else {
+      await trx
+        .updateTable("actions")
+        .set({ status_reason: opts.statusReason ?? "hard_error", attempts: 3 })
+        .where("id", "=", original)
+        .execute();
+    }
+    if (opts.updatedAt !== undefined) {
+      await trx.updateTable("actions").set({ updated_at: opts.updatedAt }).where("id", "=", actionId).execute();
+    }
+    return { emailId, actionId };
+  }
+
+  async function notifiedAt(trx: Transaction<DB>, actionId: string): Promise<Date | null> {
+    const row = await trx
+      .selectFrom("actions")
+      .select("notified_at")
+      .where("id", "=", actionId)
+      .executeTakeFirstOrThrow();
+    return row.notified_at;
+  }
+
+  test("a hard-failed move gives the owner one row, marks the action, and a second run adds none", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      const { emailId, actionId } = await failedMove(trx, o, { updatedAt: at(-MINUTE) });
+
+      await run(trx);
+      const found = await rows(trx, o.orgId, "action_failed");
+      expect(found).toHaveLength(1);
+      expect(found[0]?.user_id).toBe(o.ownerId);
+      expect(found[0]?.email_id).toBe(emailId);
+      expect(found[0]?.dedup_key).toBe(`action_failed:${actionId}`);
+      expect(found[0]?.text).toContain("Marker subject");
+      expect(found[0]?.text).toContain("Could not move a mail to AI/Info");
+      expect(await notifiedAt(trx, actionId)).toEqual(T);
+
+      await run(trx);
+      expect(await rows(trx, o.orgId, "action_failed")).toHaveLength(1);
+    });
+  });
+
+  test("an original mail_not_found gives no row and stays unmarked", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      const { actionId } = await failedMove(trx, o, { statusReason: "mail_not_found", updatedAt: at(-MINUTE) });
+      await run(trx);
+      expect(await rows(trx, o.orgId, "action_failed")).toHaveLength(0);
+      expect(await notifiedAt(trx, actionId)).toBeNull();
+    });
+  });
+
+  test("a reverse mail_not_found gives a not-found notice", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      const { actionId } = await failedMove(trx, o, {
+        reverse: true,
+        statusReason: "mail_not_found",
+        updatedAt: at(-MINUTE),
+      });
+      await run(trx);
+      const found = await rows(trx, o.orgId, "action_failed");
+      expect(found).toHaveLength(1);
+      expect(found[0]?.text).toContain("Undo failed: could not move a mail back to INBOX");
+      expect(found[0]?.text).toContain("The mail was not found");
+      expect(await notifiedAt(trx, actionId)).toEqual(T);
+    });
+  });
+
+  test("a failed action older than 24 h is marked without a row", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      const { actionId } = await failedMove(trx, o, { updatedAt: at(-30 * HOUR) });
+      await run(trx);
+      expect(await rows(trx, o.orgId, "action_failed")).toHaveLength(0);
+      expect(await notifiedAt(trx, actionId)).toEqual(T);
+    });
+  });
+
+  test("a hard-failed reverse move gives the Undo text", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      await failedMove(trx, o, { reverse: true, updatedAt: at(-MINUTE) });
+      await run(trx);
+      const found = await rows(trx, o.orgId, "action_failed");
+      expect(found).toHaveLength(1);
+      expect(found[0]?.text).toContain("Undo failed: could not move a mail back to INBOX");
+      expect(found[0]?.text).toContain("Tried 3 times");
+    });
+  });
+
+  test("another organization's failed action gives nothing", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const a = await org(trx);
+      const b = await org(trx);
+      const { actionId } = await failedMove(trx, b, { updatedAt: at(-MINUTE) });
+      await run(trx);
+      expect(await rows(trx, a.orgId, "action_failed")).toHaveLength(0);
+      expect(await rows(trx, b.orgId, "action_failed")).toHaveLength(1);
+      expect(await notifiedAt(trx, actionId)).toEqual(T);
     });
   });
 });
