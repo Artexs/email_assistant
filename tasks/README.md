@@ -84,11 +84,13 @@ This mode replaces steps 2–4 above when the task file says `Run mode: pipeline
 
 ### Git mode (user decision 2026-11-07)
 
-A task file names its mode in a line `Git mode: master` or `Git mode: worktree`. No line = `master`. Rules in `CLAUDE.md`.
+A task file names its mode in a line `Git mode: worktree` or `Git mode: master`. No line: `worktree` for a task with stages (the `run-task` loop), `master` for a small change (docs, notes, task files). Exception: the tasks that were already in progress on `master` when this rule came (S3, S4, `test-mail-traffic`, 2026-11-07) stay on `master`. Rules in `CLAUDE.md`.
+
+A worktree is a second folder of the same repository with its own branch. Its commits go into the same `.git` store at once, so the main checkout sees the branch too. The folder and the branch stay on disk after a crash or the end of a session. To resume, open the folder again. Uncommitted changes exist only in that folder until a commit and a push.
 
 - **`master`:** commit in the main checkout and push to `master` with a standard `git push`.
 - **`worktree`:**
-  1. Create: `git worktree add ../email_assistant-wt/<name> -b task/<name> origin/master`. Copy `.env` from the main checkout (never commit it), then run `bun install`.
+  1. Create (or, to resume, reuse the folder if `git worktree list` shows it): `git worktree add ../email_assistant-wt/<name> -b task/<name> origin/master`. Copy `.env` from the main checkout (never commit it), then run `bun install`.
   2. Work: commit the stages on the branch, and push with `git push -u origin task/<name>`. To get new `master` work, run `git merge origin/master` in the branch. Never rebase a pushed branch.
   3. Merge: at the end of the task (or at a user checkpoint), run `git merge origin/master` in the branch, and the checks must pass. Then the main checkout runs `git merge --no-ff task/<name>` on `master` and pushes.
   4. Clean up: `git worktree remove ../email_assistant-wt/<name>`, `git branch -d task/<name>`, `git push origin --delete task/<name>`.

@@ -16,7 +16,7 @@ Before you diagnose an alert, grep docs/known-alerts.md.
 - Template literals for strings with variables, never `+` concatenation.
 - `const` / `let` only, no `var`.
 - Before each commit, review the staged changes (`git diff --staged`). Look for bugs, secrets, debug code, and changes that are not part of the task. Fix all problems, then commit.
-- Git mode per task, named in the task file: `Git mode: master` (default) or `Git mode: worktree`. Steps: `tasks/README.md` § "Git mode".
+- Git mode per task, named in the task file: `Git mode: worktree` or `Git mode: master`. No line: `worktree` for a task with stages (run with `run-task`), `master` for a small change (docs, notes, task files). Steps: `tasks/README.md` § "Git mode".
   - `master`: push to `master`, create no branch. `worktree`: own worktree and branch `task/<name>`, merged into `master` with `git merge --no-ff` at the end of the task.
   - Never force-push (`--force`, `-f`, `--force-with-lease`). Never rewrite pushed history.
 - Plan stages (the plan → build → review loop in `tasks/README.md` § "How to run a slice"):

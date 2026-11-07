@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress — plan approved, ready for the build.** Left: stages 1–6. Start in pi: `/skill:run-task tasks/active/fake-telegram.md`. Read "Parallel work with S4" first.
+> **Status 2026-11-07 — in progress — plan approved, ready for the build.** Left: stages 1–6. Start in pi: `/skill:run-task tasks/active/fake-telegram.md`. Git mode: worktree (`../email_assistant-wt/fake-telegram`, branch `task/fake-telegram`). Read "Parallel work with S4" first.
 
 # Fake Telegram: a local Bot API emulator for agent-run dev tests
 
@@ -56,16 +56,16 @@ Webhooks, media, groups, payments, other API methods; real rate limits; how mess
 - Root `test:unit` is `bun test packages/core apps/server/src`: it must add `tools`. `typecheck` runs `bun run --filter '*' typecheck`, so the new package needs a `typecheck` script. `lint` is `eslint .` (covers `tools/`).
 - Telegram limits and error shapes: `notes/2026-11-06-telegram-bot-facts.md`.
 
-### Parallel work with S4 (user decision 2026-11-07)
+### Parallel work with S4 (user decisions 2026-11-07)
 
-The user allows this build to run at the same time as the S4 build (`tasks/active/s4-drafts-approvals-delegation.md`, pipeline mode) in the same checkout. Rules:
+The user allows this build to run at the same time as the S4 build (`tasks/active/s4-drafts-approvals-delegation.md`, pipeline mode, on `master`). This task uses its own worktree. Rules:
 
-- **Run mode: normal** (one stage at a time: build → review → commit). The subagents never commit or push.
-- **Stage by explicit path only.** Never `git add -A` or `git add .`. Never stage, change, format or revert a file of S4 or of another chat (check `git status` before each commit).
-- **Checks and other work.** If `lint`, `typecheck` or a test fails only in files that this task did not change, do not fix them. Run the check again after the S4 session commits, or wait. Write the case in the log.
-- **Shared files.** Steps 1.1, 3.3 and 5.1 change root `package.json` (1.1 also `bun.lock`, `deploy/Dockerfile`, `eslint.config.js`). Stage 4 changes `platform/config.ts`, `config.test.ts`, `main.ts`, `channels/telegram/runtime.ts` and `.env.example`; S4 stages 16 and 18 change the same files. Before these steps, run `git status` and `git diff` on those files. If they have uncommitted S4 changes, wait until S4 commits them. Never commit a hunk of S4.
-- **Push.** Pipeline mode (`tasks/README.md`) pushes a commit only after its review PASS, and S4 commits can sit unpushed below ours. Push a fake-telegram commit only when `git log origin/master..HEAD` holds no S4 commit with `Review: pending`. Else leave it local and write "push pending" in the log. Never reorder or rewrite commits.
-- **Integration tests.** `test:int` uses the shared dev DB. Do not run it while the S4 session runs it (ask the user if you are not sure).
+- **Git mode: worktree.** Folder `../email_assistant-wt/fake-telegram`, branch `task/fake-telegram` (steps: `tasks/README.md` § "Git mode"). All builds, checks, commits and pushes run in that folder, never in the main checkout.
+- **Run mode: normal** (one stage at a time: build → review → commit → push the branch). The subagents never commit or push.
+- **Stage by explicit path only.** Never `git add -A` or `git add .`.
+- **Shared files.** Steps 1.1, 3.3 and 5.1 change root `package.json` (1.1 also `bun.lock`, `deploy/Dockerfile`, `eslint.config.js`). Stage 4 changes `platform/config.ts`, `config.test.ts`, `main.ts`, `channels/telegram/runtime.ts` and `.env.example`; S4 stages 16 and 18 change the same files. Before stage 4, run `git merge origin/master` in the branch, so the step builds on the newest S4 code. At the merge into `master`, keep both sides of each conflict (S4 and this task) and run all checks again.
+- **Shared runtime.** The worktree uses the same dev DB, GreenMail and ports as the main checkout. Do not run `test:int`, `db:migrate` or a dev server while the S4 session runs them (ask the user if you are not sure). Stage 6.2 runs the dev server: check first that no other dev server runs (`PORT` in `.env`).
+- **Merge.** After stage 6 and the user's try: `git merge origin/master` in the branch, all checks pass, then `git merge --no-ff task/fake-telegram` on `master` in the main checkout, push, and clean up (`tasks/README.md` § "Git mode").
 
 ### Rules for all stages (planner, 2026-11-07)
 
@@ -479,3 +479,4 @@ Answered by the user on 2026-11-07: (a) for all 4 (the recommendations). The liv
 - 2026-11-07: Planner added the step detail. User answered questions 1–4: (a), the recommendations. User: the real LLM in 6.2 is fine, "Don't modify the LLM". Plan approved.
 - 2026-11-07: Moved to `active/`. User: the build may run in parallel with S4; rules in "Parallel work with S4". Plan commit `059178c` is local: the push waits for the S4 commits below it (review pending), and this shell had no SSH key.
 - 2026-11-07: Plan review (reviewer subagent, Opus, high): FAIL with 1 blocker and 15 minor findings, plus 1 question. All fixed in this file. Blocker: in 5.2 step 1, `linked_at` is set back to `startedAt`, because inside one transaction `now()` is older than the JS link time, so `detectUrgent` would skip the mail. Minor fixes: real import paths, the exact undo rows, the `Int8` chat id, the `origin` rule for `isLoopbackApiRoot`, 415 for non-JSON control POSTs, the real script flags in 6.2, the shared-files list, and broken code spans. Question 17 (localhost): the docs recommend `127.0.0.1` only, and the config still accepts `localhost` and `[::1]`.
+- 2026-11-07: User: tasks with stages use worktrees by default. This task: `Git mode: worktree`; the "Parallel work with S4" rules are updated for the branch.
