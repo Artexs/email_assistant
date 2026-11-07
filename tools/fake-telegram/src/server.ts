@@ -1,3 +1,4 @@
+import { handleControl } from "./control";
 import { BotApiError, CALLBACK_DATA_MAX_BYTES, DESCRIPTIONS, errorResponse, TEXT_MAX_CHARS } from "./errors";
 import {
   createFakeState,
@@ -161,7 +162,9 @@ export function startFakeTelegram(opts: FakeTelegramOptions = {}): FakeTelegram 
     port: opts.port ?? 0,
     idleTimeout: 30,
     async fetch(request) {
-      const match = /^\/bot([^/]+)\/([A-Za-z0-9_]+)$/.exec(new URL(request.url).pathname);
+      const { pathname } = new URL(request.url);
+      if (pathname.startsWith("/_fake/")) return handleControl(request, state);
+      const match = /^\/bot([^/]+)\/([A-Za-z0-9_]+)$/.exec(pathname);
       if (!match) return errorResponse(new BotApiError(404, DESCRIPTIONS.notFound));
       if (match[1] !== token) return errorResponse(new BotApiError(401, DESCRIPTIONS.unauthorized));
       const payload = await readPayload(request);

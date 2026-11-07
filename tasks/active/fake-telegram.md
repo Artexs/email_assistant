@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress — stages 1–2 done (PASS).** Left: stages 3–6; the 1.1 Docker image check (the daemon refuses this shell user; CI does not build the image). Git mode: worktree (`../email_assistant-wt/fake-telegram`, branch `task/fake-telegram`). Read "Parallel work with S4" first.
+> **Status 2026-11-07 — in progress — stages 1–3 done (PASS).** Left: stages 4–6; the 1.1 Docker image check (the daemon refuses this shell user; CI does not build the image). Git mode: worktree (`../email_assistant-wt/fake-telegram`, branch `task/fake-telegram`). Read "Parallel work with S4" first.
 
 # Fake Telegram: a local Bot API emulator for agent-run dev tests
 
@@ -255,7 +255,7 @@ Create `tools/fake-telegram/` (root `workspaces` adds `tools/*`, `deploy/Dockerf
 
 TS API and a non-interactive CLI (`fake-tg serve | send | press | read | wait`) with clear output and exit codes: send a text or command as a user (`/start <code>`, `/digest`), press an inline button, read a chat (messages, buttons, edits), wait until a bot message matches a pattern.
 
-- [ ] **3.1 Control routes on the fake**
+- [x] **3.1 Control routes on the fake**
   - Goal: a second process (the CLI, a script) can act as the user and read the chats over HTTP.
   - Files: `tools/fake-telegram/src/control.ts` (new: the route handler, called by `server.ts` for paths that start with `/_fake/`), `tools/fake-telegram/src/server.ts`, `tools/fake-telegram/src/state.ts` (only if a getter is missing), `tools/fake-telegram/src/control.test.ts` (new).
   - Interfaces (JSON in and out; every answer is `{ ok: true, ... }` or `{ ok: false, error: "<text>" }`):
@@ -275,7 +275,7 @@ TS API and a non-interactive CLI (`fake-tg serve | send | press | read | wait`) 
   - Done when: the tests pass.
   - Out of scope: the TS client and the CLI (3.2, 3.3).
 
-- [ ] **3.2 TS driver client**
+- [x] **3.2 TS driver client**
   - Goal: a typed client of the control routes for scripts and tests, with wait helpers.
   - Files: `tools/fake-telegram/src/driver.ts` (new), `tools/fake-telegram/src/driver.test.ts` (new), `tools/fake-telegram/src/index.ts`.
   - Interfaces:
@@ -301,7 +301,7 @@ TS API and a non-interactive CLI (`fake-tg serve | send | press | read | wait`) 
   - Done when: the tests pass.
   - Out of scope: the CLI.
 
-- [ ] **3.3 CLI `fake-tg`**
+- [x] **3.3 CLI `fake-tg`**
   - Goal: a non-interactive CLI with which an agent starts the fake and plays the user.
   - Files: `tools/fake-telegram/src/cli.ts` (new), `tools/fake-telegram/src/cli.test.ts` (new), root `package.json` (script `"fake-tg": "bun tools/fake-telegram/src/cli.ts"`).
   - Interfaces:
@@ -482,3 +482,4 @@ Answered by the user on 2026-11-07: (a) for all 4 (the recommendations). The liv
 - 2026-11-07: User: tasks with stages use worktrees by default. This task: `Git mode: worktree`; the "Parallel work with S4" rules are updated for the branch.
 - 2026-11-07: Build session (Claude Code). Worktree created from `origin/master` `29ecf9f`. Stage 1 built (1.2 fix: R6 constants moved to `state.ts`). Review PASS with 2 minors (`hasChat` only after a user message; a non-finite `getUpdates` offset is ignored), fixed, re-review PASS. Checks: `bun run lint` exit 0, `bun run typecheck` all exit 0, `bun run test:unit` 950 pass 0 fail. Image check not run: `docker info` → permission denied for this user.
 - 2026-11-07: Stage 2 built and reviewed: PASS with 2 minors (2 missing tests added; a harmless `?? ""` kept). User: run the whole plan without stops; use the recommendations when unsure. Checks: lint exit 0, typecheck all exit 0, `test:unit` 970 pass 0 fail.
+- 2026-11-07: Stage 3 built and reviewed: PASS with 7 minors; 6 fixed (driver `read` gets `strict` for the CLI, so `fake-tg read` of an unknown chat exits 1; `waitFor` keeps polling), negative `--chat` left for later. Checks: lint exit 0, typecheck all exit 0, `test:unit` 993 pass 0 fail.

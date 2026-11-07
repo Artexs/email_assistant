@@ -17,6 +17,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
+    "fake-tg": "bun tools/fake-telegram/src/cli.ts",
     "web:dev": "bun run --filter @ea/web dev",
     "web:build": "bun run --filter @ea/web build",
     "rules:add": "bun apps/server/src/scripts/rules.ts add",
