@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress — stage 1 done (PASS).** Left: stages 2–6; the 1.1 Docker image check (the daemon refuses this shell user; CI does not build the image). Git mode: worktree (`../email_assistant-wt/fake-telegram`, branch `task/fake-telegram`). Read "Parallel work with S4" first.
+> **Status 2026-11-07 — in progress — stages 1–2 done (PASS).** Left: stages 3–6; the 1.1 Docker image check (the daemon refuses this shell user; CI does not build the image). Git mode: worktree (`../email_assistant-wt/fake-telegram`, branch `task/fake-telegram`). Read "Parallel work with S4" first.
 
 # Fake Telegram: a local Bot API emulator for agent-run dev tests
 
@@ -214,7 +214,7 @@ Create `tools/fake-telegram/` (root `workspaces` adds `tools/*`, `deploy/Dockerf
 
 4096-character text, 64-byte `callback_data`, "message is not modified", the 400 / 401 / 409 / 429 response shapes (`ok: false`, `error_code`, `description`, `parameters.retry_after`), and switches to inject a 409 or a 429.
 
-- [ ] **2.1 Bot API errors, limits and fault injection [risky]**
+- [x] **2.1 Bot API errors, limits and fault injection [risky]**
   - Goal: the fake rejects what Telegram rejects (for the calls our app makes) with the same response shape, and a test can make the next call of a method fail with 409 or 429.
   - Files: `tools/fake-telegram/src/errors.ts` (new), `tools/fake-telegram/src/state.ts`, `tools/fake-telegram/src/server.ts`, `tools/fake-telegram/src/limits.test.ts` (new), `tools/fake-telegram/src/compat.test.ts` (new), `tools/fake-telegram/src/index.ts`.
   - Interfaces:
@@ -481,3 +481,4 @@ Answered by the user on 2026-11-07: (a) for all 4 (the recommendations). The liv
 - 2026-11-07: Plan review (reviewer subagent, Opus, high): FAIL with 1 blocker and 15 minor findings, plus 1 question. All fixed in this file. Blocker: in 5.2 step 1, `linked_at` is set back to `startedAt`, because inside one transaction `now()` is older than the JS link time, so `detectUrgent` would skip the mail. Minor fixes: real import paths, the exact undo rows, the `Int8` chat id, the `origin` rule for `isLoopbackApiRoot`, 415 for non-JSON control POSTs, the real script flags in 6.2, the shared-files list, and broken code spans. Question 17 (localhost): the docs recommend `127.0.0.1` only, and the config still accepts `localhost` and `[::1]`.
 - 2026-11-07: User: tasks with stages use worktrees by default. This task: `Git mode: worktree`; the "Parallel work with S4" rules are updated for the branch.
 - 2026-11-07: Build session (Claude Code). Worktree created from `origin/master` `29ecf9f`. Stage 1 built (1.2 fix: R6 constants moved to `state.ts`). Review PASS with 2 minors (`hasChat` only after a user message; a non-finite `getUpdates` offset is ignored), fixed, re-review PASS. Checks: `bun run lint` exit 0, `bun run typecheck` all exit 0, `bun run test:unit` 950 pass 0 fail. Image check not run: `docker info` → permission denied for this user.
+- 2026-11-07: Stage 2 built and reviewed: PASS with 2 minors (2 missing tests added; a harmless `?? ""` kept). User: run the whole plan without stops; use the recommendations when unsure. Checks: lint exit 0, typecheck all exit 0, `test:unit` 970 pass 0 fail.

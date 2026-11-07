@@ -1,5 +1,7 @@
 import type { Message, Update } from "grammy/types";
 
+import { BotApiError, DESCRIPTIONS } from "./errors";
+
 // Test values only: the token is not a secret. It passes the config regex ^\d+:[A-Za-z0-9_-]{20,}$.
 export const FAKE_TOKEN = "1000001:fake-telegram-token-local-tests-only";
 
@@ -71,6 +73,14 @@ export interface FakeState {
 
 const COMMAND_PATTERN = /^\/[A-Za-z0-9_]+(@[A-Za-z0-9_]+)?/;
 const DEFAULT_FIRST_NAME = "Tester";
+
+const sameButtons = (a: FakeButton[][], b: FakeButton[][]) =>
+  a.length === b.length &&
+  a.every(
+    (row, i) =>
+      row.length === b[i]?.length &&
+      row.every((button, j) => button.text === b[i]?.[j]?.text && button.data === b[i]?.[j]?.data)
+  );
 
 export function toBotApiMessage(message: FakeMessage, bot: FakeBotInfo): Message {
   return {
@@ -196,7 +206,10 @@ export function createFakeState(opts: { bot?: FakeBotInfo; now?: () => Date } = 
 
     botEdit({ chatId, messageId, text, buttons }) {
       const message = findMessage(chatId, messageId);
-      if (!message) throw new Error("no such message");
+      if (!message || message.from !== "bot") throw new BotApiError(400, DESCRIPTIONS.editNotFound);
+      if (message.text === text && sameButtons(message.buttons, buttons)) {
+        throw new BotApiError(400, DESCRIPTIONS.notModified);
+      }
       message.edits.push(message.text);
       message.text = text;
       message.buttons = buttons;
@@ -205,7 +218,7 @@ export function createFakeState(opts: { bot?: FakeBotInfo; now?: () => Date } = 
 
     answerCallback({ id, text }) {
       const callback = callbacksById.get(id);
-      if (!callback) throw new Error("no such callback");
+      if (!callback || callback.answered) throw new BotApiError(400, DESCRIPTIONS.queryInvalid);
       callback.answered = true;
       callback.answerText = text ?? null;
       return callback;
