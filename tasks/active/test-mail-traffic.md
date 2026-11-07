@@ -262,7 +262,7 @@ All with source in `notes/2026-11-07-agentmail-test-mail.md` (§3 docs, §7–8 
   it wants unset to `""` (Bun does not overwrite a key that exists, even when empty). A test that could reach `api.agentmail.to` or `home_vm` is a review FAIL.
 - **Real systems:** only stage 9 contacts the real AgentMail account, the VPS and Interia. In stages 1–8 no code path under test starts a real `ssh`/`scp` process
   or a real AgentMail call (tests inject a fake `spawn` and the fake server). Never print or edit any `.env`; a test may compare `.env` values in memory and print key names only.
-- **VPS access** (P8) is an exception to the S3 rule "do not touch the VPS before stage 19" (`tasks/active/s3-assist-actions.md`): this task runs read-only SQL and one-off
+- **VPS access** (P8) is an exception to the S3 rule "do not touch the VPS before stage 19" (`tasks/done/s3-assist-actions.md`): this task runs read-only SQL and one-off
   `docker compose run --rm` containers of the test tool; never `up`, `restart`, `build`, deploy, cron or `.env` changes.
 - Do not commit (the main session commits each stage after the review). Never run `bun run format` or `prettier --write` outside the step's files (S2 incident).
 - Checks after each step (the step names which ones):

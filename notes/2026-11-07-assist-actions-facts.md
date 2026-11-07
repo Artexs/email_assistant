@@ -1,6 +1,6 @@
 # S3 assist actions: facts and their outcomes
 
-Written 2026-11-07 (stage 18.2 of `tasks/active/s3-assist-actions.md`).
+Written 2026-11-07 (stage 18.2 of `tasks/done/s3-assist-actions.md`).
 Sources: the stage 1 probe, the GreenMail tests, the dev mailbox connect and the code.
 Stages 16, 17, 19 and 20 are not done on this date. Their facts are marked `open`. Nobody invented a result.
 

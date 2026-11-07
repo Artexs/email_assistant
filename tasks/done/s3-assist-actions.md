@@ -1,5 +1,4 @@
-> **Status 2026-11-07 — blocked until 2026-11-14T20:00Z: stages 1–19 and step 20.1 done; the one-week `assist` run on real mail started at `<START>` = 2026-11-07T19:55:16Z. Left: step 20.2 (the week's queries, N ≤ 3, the done-checklist, move to `tasks/done/`).**
-> **Blocked until:** 2026-11-14T20:00Z (7 × 24 h after `<START>`). Reason: stage 20 measures one full week of real mail. Before then an agent may only watch (`/status`, the server log, read-only SQL) and help the user with an Undo or a stop (`/pause`, `mode --mode shadow`). After then: run the step 20.2 queries with `<START>` above, write the tables in § Results, and close the task. The VPS runs the detached commit `00588d7` (no S4 code); the S4 deploy must `git checkout master` first.
+> **Status 2026-11-07 — done.** All code, the dev run, the restore test, the VPS deploy and the seed-mail run are done; `assist` runs on real mail since 2026-11-07T19:55:16Z. The one-week result (done-when item 1, step 20.2) moved to `tasks/planned/s3-assist-week-result.md` (blocked until 2026-11-14T20:00Z).
 
 # S3 Assist actions
 
@@ -11,7 +10,7 @@ In mode `assist` the system changes the mailbox for real (folder moves, mark rea
 
 ## Done when
 
-- One week of `assist` mode with at most N = 3 wrong moves, found by Undo or feedback (user decision P2, 2026-11-06).
+- One week of `assist` mode with at most N = 3 wrong moves, found by Undo or feedback (user decision P2, 2026-11-06). → measured in `tasks/planned/s3-assist-week-result.md` (the week started 2026-11-07T19:55:16Z).
 - The Undo button restores the mail (folder, read state, flag) and writes feedback (test).
 - A user move back to INBOX after a system move gives exactly one `imap_move` feedback row; after an Undo it gives none; a second identical copy of a moved mail is stored and triaged as a new mail (tests).
 - Every applied action has an audit row.
@@ -172,10 +171,10 @@ Answered 2026-11-06 with the plan defaults (P1–P7). Questions 1–4 of the fir
 
 ## Done-checklist
 
-- [ ] Done-when checks pass (name the command and its output in the log).
-- [ ] `docs/` describe what was built (architecture, modules, roadmap, code patterns); ADR 0003 and ADR 0010 stay accepted (implementation notes added).
-- [ ] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
-- [ ] Follow-up ideas are in `planned/`.
+- [x] Done-when checks pass (name the command and its output in the log): Undo, user move back, `#2` copy, audit rows, crash test and error rules by `bun run test:int` (553 pass, 0 fail) and the stage 16 and 19 runs; restore test logged (stage 17). The one-week item moved to `tasks/planned/s3-assist-week-result.md`.
+- [x] `docs/` describe what was built (architecture, modules, roadmap, code patterns); ADR 0003 and ADR 0010 stay accepted (implementation notes added).
+- [x] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
+- [x] Follow-up ideas are in `planned/`.
 
 ## Log
 
@@ -282,3 +281,4 @@ Answered 2026-11-06 with the plan defaults (P1–P7). Questions 1–4 of the fir
 - 2026-11-07: Stage 19.1 (user go at 19:22Z). Preconditions: VPS HEAD `<OLD>` = `5803981`; the S3 migrations `20261107000001` and `20261107000002` were already applied (the S2 stage 24 deploy at `5803981` carried S3 stages 10 code and migrations; the `outbox_check1` name check is moot, `outbox_email_kind_check` exists); actions: `logged` move 180, mark_read 98, flag 1, `ready` save_summary 13, no `applied`/`undone`; emails outside INBOX 0; `TRIAGE_LLM_SCOPE=all`; `grep -c '^ACTIONS_SCOPE=synthetic$' .env` → 0 (the user had not added the line). Main session defaults (the user: "go until you finish, use defaults"): (1) `origin/master` holds S4 code in progress (stages 1–10, migration `20261108000001_delegation.sql`, classifier v2), so the VPS got the detached commit `00588d7` (all reviewed S3 code, no S4 code), not `master`; the S4 deploy moves the VPS back to `master` later; (2) no `.env` edit by the agent: deployed with `ACTIONS_SCOPE` unset = `off`. Deploy: `git checkout --detach 00588d7`, `db:migrate` (nothing new), `up -d --build --wait` → `listening on port 8080`, `actions committer: mailbox changes are off (ACTIONS_SCOPE=off)`, `telegram: polling as @Email_assistant_vps_bot`, `committer 8bc7f572…: applied 13, failed 0, retry 0` (the waiting summaries). Mode stays `shadow` until the scope is `synthetic` (with `off`, `assist` would only make `ready` rows that expire).
 - 2026-11-07: Stage 19 done (results in § Results). The user added `ACTIONS_SCOPE=synthetic` to the VPS `.env`; restart `up -d --wait` → `actions committer applies mailbox changes to synthetic mail only`. Step 19.2.5 (the second return) skipped: it only confirms a by-design blind spot (D12).
 - 2026-11-07: Step 20.1 done; the week runs from 2026-11-07T19:55:16Z. Task blocked until 2026-11-14T20:00Z (status line).
+- 2026-11-07: S3 closed on the user's request: the implementation and every test run are done; only the one-week measurement is left, in its own blocked task `tasks/planned/s3-assist-week-result.md`. Task moved to `tasks/done/`.

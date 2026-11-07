@@ -4,7 +4,7 @@
 
 # S4 Drafts, approvals, delegation
 
-Scope: `docs/roadmap.md` §2, row S4. Modules: `docs/modules.md`. Needs: S3 built (plan `tasks/active/s3-assist-actions.md`, commit `ea4a4be`, D1–D21). On 2026-11-07 S3 stages 1–15 and 18 are committed, plus the checkpoint 3 fixes `4376875`, `9f9f166`, `e85e304`, `268ac14`, `958d749`, `12f683e`; S3 stages 16–17 are blocked; stages 19–20 wait. D33 and the stage files were checked against the S3 code at `279387b` on 2026-11-07 (build step 0: `notes/2026-11-07-s4-plan-vs-s3-code.md`, M27). S4 names the S3 decision it uses in each line; a change of S3 at its approval is re-checked in those lines (P1).
+Scope: `docs/roadmap.md` §2, row S4. Modules: `docs/modules.md`. Needs: S3 built (plan `tasks/done/s3-assist-actions.md`, commit `ea4a4be`, D1–D21). On 2026-11-07 S3 stages 1–15 and 18 are committed, plus the checkpoint 3 fixes `4376875`, `9f9f166`, `e85e304`, `268ac14`, `958d749`, `12f683e`; S3 stages 16–17 are blocked; stages 19–20 wait. D33 and the stage files were checked against the S3 code at `279387b` on 2026-11-07 (build step 0: `notes/2026-11-07-s4-plan-vs-s3-code.md`, M27). S4 names the S3 decision it uses in each line; a change of S3 at its approval is re-checked in those lines (P1).
 
 ## Goal
 
