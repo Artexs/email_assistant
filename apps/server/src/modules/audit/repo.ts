@@ -108,6 +108,26 @@ export async function countEventsBetween(
   return Number(row.count);
 }
 
+// As `countEventsBetween`, for the rows of one mailbox (`data.mailbox_id`).
+export async function countMailboxEventsBetween(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  event: string,
+  mailboxId: string,
+  range: { after: Date; until: Date }
+): Promise<number> {
+  const row = await db
+    .selectFrom("audit_log")
+    .select((eb) => eb.fn.countAll<string>().as("count"))
+    .where("org_id", "=", ctx.orgId)
+    .where("event", "=", event)
+    .where(sql<string>`data->>'mailbox_id'`, "=", mailboxId)
+    .where("created_at", ">", range.after)
+    .where("created_at", "<=", range.until)
+    .executeTakeFirstOrThrow();
+  return Number(row.count);
+}
+
 // The actor of the newest row of one event on one action; undefined when there is none.
 export async function findActionActor(
   db: DbOrTrx,

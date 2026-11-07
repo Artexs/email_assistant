@@ -2,6 +2,7 @@ export {
   auditEvents,
   countEventsBetween,
   countLlmCallsSince,
+  countMailboxEventsBetween,
   findActionActor,
   recordAudit,
   type AuditData,
