@@ -120,6 +120,8 @@ interface Computed {
   event: string;
   data: AuditData;
   close: Change | null;
+  // More gates that the change closes, for example a switch that `mode assist` turns off.
+  alsoClose?: Change[];
   warnings: string[];
 }
 
@@ -148,11 +150,19 @@ async function applyChange(
       data: { mailbox_id: mailboxId, ...result.data },
     });
     const after: SettingsView = { ...before, ...result.patch };
-    const filter = result.close ? closedBy(result.close) : null;
-    const expired = filter
-      ? await deps.expireReady(trx, ctx, { mailboxId, ...filter }, { now: deps.now(), reason: "policy_changed", actor })
-      : [];
-    return { changed: true, before, after, warnings: result.warnings, expired: expired.length };
+    let expired = 0;
+    for (const change of [...(result.close ? [result.close] : []), ...(result.alsoClose ?? [])]) {
+      const filter = closedBy(change);
+      if (!filter) continue;
+      const rows = await deps.expireReady(
+        trx,
+        ctx,
+        { mailboxId, ...filter },
+        { now: deps.now(), reason: "policy_changed", actor }
+      );
+      expired += rows.length;
+    }
+    return { changed: true, before, after, warnings: result.warnings, expired };
   });
 }
 
@@ -168,6 +178,9 @@ export async function setMode(
       ? { ...before.toolSwitches, ...ASSIST_DEFAULT_SWITCHES }
       : before.toolSwitches;
     const switchesChanged = JSON.stringify(toolSwitches) !== JSON.stringify(before.toolSwitches);
+    const switchesOff = (Object.keys(before.toolSwitches) as (keyof ToolSwitches)[]).filter(
+      (name) => before.toolSwitches[name] && !toolSwitches[name]
+    );
     const warnings =
       input.mode === "assist" && !before.movesSupported ? ["moves not supported: moves stay log only"] : [];
     return {
@@ -181,6 +194,7 @@ export async function setMode(
         ...(setSwitches ? { switches_set: true } : {}),
       },
       close: { field: "mode", to: input.mode },
+      alsoClose: switchesOff.map((name) => ({ field: "switch", name, to: false })),
       warnings,
     };
   });

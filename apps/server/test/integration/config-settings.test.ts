@@ -295,6 +295,21 @@ describe("gate close (B3)", () => {
     });
   });
 
+  test("mode assist without keepSwitches expires the rows of a switch that it turns off", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      await setMode(s.deps, s.ctx, s.mailboxId, { mode: "assist", keepSwitches: false, actor: "cli" });
+      await setToolSwitch(s.deps, s.ctx, s.mailboxId, { name: "move_unsure", value: true, actor: "cli" });
+      const unsure = await readyMail(trx, s, "unsure", ["move"]);
+      const result = await setMode(s.deps, s.ctx, s.mailboxId, { mode: "assist", keepSwitches: false, actor: "cli" });
+      expect(result).toMatchObject({ changed: true, expired: 1 });
+      expect(result.after.toolSwitches.move_unsure).toBe(false);
+      expect(await statuses(trx, unsure.emailId)).toMatchObject({ move: "expired" });
+      const rows = await auditRows(trx, s, "action.expired");
+      expect(rows.some((row) => row.reason_code === "policy_changed")).toBe(true);
+    });
+  });
+
   test("a row that a committer run holds stays ready", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);

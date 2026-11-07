@@ -114,12 +114,12 @@ export function resolveFolderCheck(input: {
   stillInFolder: boolean;
   baseKey: string;
   copyCount: number;
-  undoPendingAt?: Date | null;
-  now?: Date;
+  undoPendingAt: Date | null;
+  now: Date;
 }): FolderCheckResult {
   if (input.stillInFolder) {
     const { undoPendingAt, now } = input;
-    if (undoPendingAt && now && now.getTime() - undoPendingAt.getTime() < UNDO_PENDING_MAX_AGE_MS) {
+    if (undoPendingAt && now.getTime() - undoPendingAt.getTime() < UNDO_PENDING_MAX_AGE_MS) {
       return { kind: "undo_in_flight", emailId: input.emailId };
     }
     return { kind: "new", dedupKey: copyDedupKey(input.baseKey, input.copyCount + 1) };

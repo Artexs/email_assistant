@@ -254,7 +254,10 @@ describe("decideIncoming", () => {
 
 describe("resolveFolderCheck", () => {
   test("still in its folder gives new with the next copy key", () => {
-    expect(resolveFolderCheck({ emailId: "e1", stillInFolder: true, baseKey: BASE, copyCount: 1 })).toEqual({
+    const now = new Date("2026-11-07T12:00:00Z");
+    expect(
+      resolveFolderCheck({ emailId: "e1", stillInFolder: true, baseKey: BASE, copyCount: 1, undoPendingAt: null, now })
+    ).toEqual({
       kind: "new",
       dedupKey: `${BASE}#2`,
     });
@@ -286,10 +289,10 @@ describe("resolveFolderCheck", () => {
   });
 
   test("gone from its folder gives returned", () => {
-    expect(resolveFolderCheck({ emailId: "e1", stillInFolder: false, baseKey: BASE, copyCount: 1 })).toEqual({
-      kind: "returned",
-      emailId: "e1",
-    });
+    const now = new Date("2026-11-07T12:00:00Z");
+    expect(
+      resolveFolderCheck({ emailId: "e1", stillInFolder: false, baseKey: BASE, copyCount: 1, undoPendingAt: null, now })
+    ).toEqual({ kind: "returned", emailId: "e1" });
   });
 });
 

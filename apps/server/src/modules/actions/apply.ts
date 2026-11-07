@@ -216,6 +216,8 @@ async function applyFlag(
     ) {
       return false;
     }
+    // Lock order: the original before `emails`, as in undo and processReturned.
+    const undone = reverseOf !== null && (await markUndone(trx, ctx, reverseOf, { at: now, reason: "undo" }));
     if (uid !== email.uid) {
       await updateEmailLocation(trx, ctx, email.id, {
         folder: email.folder,
@@ -230,7 +232,7 @@ async function applyFlag(
       event: auditEvents.actionApplied,
       data: { action_type: action.type, mailbox_id: deps.mailboxId, reverse: reverseOf !== null },
     });
-    if (reverseOf !== null && (await markUndone(trx, ctx, reverseOf, { at: now, reason: "undo" }))) {
+    if (undone && reverseOf !== null) {
       await recordAudit(trx, ctx, {
         emailId: email.id,
         actionId: reverseOf,
@@ -301,6 +303,9 @@ async function applyMove(
     ) {
       return false;
     }
+    // Lock order: the original before `emails`, as in undo and processReturned.
+    // `markUndone` false: the original is `undone` (user_moved_back) already. Not an error.
+    const undone = reverseOf !== null && (await markUndone(trx, ctx, reverseOf, { at: now, reason: "undo" }));
     await updateEmailLocation(trx, ctx, email.id, {
       folder: to,
       uid,
@@ -323,8 +328,7 @@ async function applyMove(
         leftover_deleted: leftoverDeleted,
       },
     });
-    // `markUndone` false: the original is `undone` (user_moved_back) already. Not an error.
-    if (reverseOf !== null && (await markUndone(trx, ctx, reverseOf, { at: now, reason: "undo" }))) {
+    if (undone && reverseOf !== null) {
       await recordAudit(trx, ctx, {
         emailId: email.id,
         actionId: reverseOf,
