@@ -439,7 +439,7 @@ async function insertMoved(
   const reverseId = await insertAction(trx, s.ctx, mail.emailId, {
     type: "move",
     status: "ready",
-    payload: {},
+    payload: { folder: opts.key },
     reversesActionId: originalId,
     createdAt: REVERSE_AT,
   });
@@ -510,6 +510,10 @@ describe("reverse move", () => {
       expect([Number(email.uid), Number(email.inbox_uid)]).toEqual([inbox[0] as number, inbox[0] as number]);
       expect(await actionState(trx, mail.reverseId)).toMatchObject({ status: "applied" });
       expect(await actionState(trx, mail.originalId)).toMatchObject({ status: "undone", status_reason: "undo" });
+      const reverseApplied = (await auditEvents(trx, s)).filter(
+        (row) => row.event === "action.applied" && row.action_id === mail.reverseId
+      );
+      expect(reverseApplied[0]?.data).toMatchObject({ reverse: true, folder_key: "ai_info" });
       const undone = (await auditEvents(trx, s)).filter((row) => row.event === "action.undone");
       expect(undone).toHaveLength(1);
       expect(undone[0]).toMatchObject({ action_id: mail.originalId, email_id: mail.emailId });

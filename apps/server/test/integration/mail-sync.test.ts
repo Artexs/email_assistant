@@ -426,6 +426,7 @@ describe("syncMailbox: incremental", () => {
         returned: 0,
         returnedBelowCursor: 0,
         copiesBelowCursor: 0,
+        undoInFlight: 0,
         skippedOwn: 0,
         ignoredBelowCursor: 0,
       });

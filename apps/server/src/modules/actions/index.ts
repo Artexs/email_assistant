@@ -42,4 +42,6 @@ export type {
   UndoCandidate,
 } from "./repo";
 export { createCommitterJob, createFolderResolver, STALE_AFTER_MS, type CommitterDeps } from "./committer";
-export { claimFilterFor, type ActionsScope } from "./scope";
+export { claimFilterFor, scopeAdmits, type ActionsScope } from "./scope";
+export { expireReady } from "./expire";
+export { undo, type UndoResult } from "./undo";

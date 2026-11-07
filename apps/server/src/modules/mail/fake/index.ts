@@ -20,7 +20,7 @@ export interface FakeMailProvider extends MailProvider {
   remove(folder: string, uid: number): void;
   /** INBOX: new UIDVALIDITY, uids renumbered from 1 in the old order. */
   resetUidValidity(next: number): void;
-  /** The next call(s) of `method` throw `error`. */
+  /** The next call(s) of `method` throw `error`. For `deleteMessage` this also stops the delete step of a copy-path `moveMessage`. */
   failOn(method: keyof MailProvider, error: Error, times?: number): void;
   /** Method names in call order. */
   readonly calls: string[];
@@ -129,13 +129,17 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
 
   folderOf(INBOX).uidValidity = opts.uidValidity ?? 1;
 
-  function enter(method: keyof MailProvider): void {
-    calls.push(method);
+  function failIfSet(method: keyof MailProvider): void {
     const failure = failures.get(method);
     if (!failure) return;
     failure.times -= 1;
     if (failure.times <= 0) failures.delete(method);
     throw failure.error;
+  }
+
+  function enter(method: keyof MailProvider): void {
+    calls.push(method);
+    failIfSet(method);
   }
 
   function store(
@@ -263,10 +267,13 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
       // A parent that differs only in case is the user's folder: build the child from its real spelling.
       const real: string[] = [];
       for (let depth = 1; depth <= parts.length; depth++) {
-        const wanted = [...real, parts[depth - 1] as string].join(pathDelimiter).toLowerCase();
-        const match = [...folders.keys()].find(
-          (key) => key.toLowerCase() === wanted || key.toLowerCase().startsWith(`${wanted}${pathDelimiter}`)
-        );
+        const exact = [...real, parts[depth - 1] as string].join(pathDelimiter);
+        const lower = exact.toLowerCase();
+        const keys = [...folders.keys()];
+        // The exact spelling first, then the case-insensitive walk.
+        const match =
+          keys.find((key) => key === exact || key.startsWith(`${exact}${pathDelimiter}`)) ??
+          keys.find((key) => key.toLowerCase() === lower || key.toLowerCase().startsWith(`${lower}${pathDelimiter}`));
         const level = match === undefined ? undefined : match.split(pathDelimiter).slice(0, depth);
         real.splice(0, real.length, ...(level ?? [...real, parts[depth - 1] as string]));
       }
@@ -313,7 +320,22 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
       if (!capabilities.move && !capabilities.uidplus) throw new HardError("no UIDPLUS");
       if (!folders.has(toFolder)) throw new HardError("NO [TRYCREATE]");
       // Both paths end in the same state; without MOVE a real server copies, then deletes.
-      const newUid = relocate(stored, fromFolder, toFolder, keepUidOnCopy);
+      let newUid: number;
+      if (capabilities.move) {
+        newUid = relocate(stored, fromFolder, toFolder, keepUidOnCopy);
+      } else {
+        newUid = store(
+          toFolder,
+          stored.msg,
+          stored.internalDate,
+          stored.size,
+          stored.flags,
+          keepUidOnCopy ? stored.uid : undefined
+        );
+        // `failOn("deleteMessage")` stops the delete step of the copy path: the mail sits in both folders.
+        failIfSet("deleteMessage");
+        provider.remove(fromFolder, stored.uid);
+      }
       return { newUid: copyUidMap && capabilities.uidplus ? newUid : null };
     },
 

@@ -65,6 +65,8 @@ export interface SyncResult {
   returned: number;
   returnedBelowCursor: number;
   copiesBelowCursor: number;
+  /** D22: INBOX copies that are the target of a reverse move in flight (not stored). */
+  undoInFlight: number;
   skippedOwn: number;
   ignoredBelowCursor: number;
 }
@@ -144,6 +146,7 @@ async function planChunk(
       contentHash: hash,
       from: meta.from,
       receivedAt: meta.internalDate,
+      undoPendingAt: null,
     }));
     for (const copy of runCopies) state.matched.add(copy.id);
     const fromDb = await findCopies(deps.db, ctx, mailboxId, { messageId, contentHash: hash });
@@ -167,8 +170,18 @@ async function planChunk(
       };
       const excludeUids = otherCopyUids(copies, copy.id, decision.folder);
       const stillInFolder = (await locateMessage(deps.provider, decision.folder, key, { excludeUids })) !== null;
-      const check = resolveFolderCheck({ emailId: decision.emailId, stillInFolder, baseKey, copyCount: copies.length });
-      if (check.kind === "returned") {
+      const check = resolveFolderCheck({
+        emailId: decision.emailId,
+        stillInFolder,
+        baseKey,
+        copyCount: copies.length,
+        undoPendingAt: copy.undoPendingAt,
+        now: deps.now(),
+      });
+      if (check.kind === "undo_in_flight") {
+        result.undoInFlight += 1;
+        log.debug(`sync ${mailboxId}: INBOX copy of mail ${check.emailId} is the target of a reverse move, not stored`);
+      } else if (check.kind === "returned") {
         writes.push({ kind: "returned", emailId: check.emailId, uid: meta.uid });
       } else {
         dedupKey = check.dedupKey;
@@ -354,6 +367,7 @@ export async function syncMailbox(deps: SyncDeps, ctx: TenantContext, mailboxId:
     returned: 0,
     returnedBelowCursor: 0,
     copiesBelowCursor: 0,
+    undoInFlight: 0,
     skippedOwn: 0,
     ignoredBelowCursor: 0,
   };
@@ -432,6 +446,7 @@ export async function backfillInbox(
     returned: 0,
     returnedBelowCursor: 0,
     copiesBelowCursor: 0,
+    undoInFlight: 0,
     skippedOwn: 0,
     ignoredBelowCursor: 0,
   };

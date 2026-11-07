@@ -288,7 +288,7 @@ export async function findCopies(
 ): Promise<KnownCopy[]> {
   const rows = await db
     .selectFrom("emails")
-    .select(["id", "dedup_key", "folder", "uid", "content_hash", "from_address", "received_at"])
+    .select(["id", "dedup_key", "folder", "uid", "content_hash", "from_address", "received_at", "undo_pending_at"])
     .where("org_id", "=", ctx.orgId)
     .where("mailbox_id", "=", mailboxId)
     .where("message_id_header", key.messageId === null ? "is" : "=", key.messageId)
@@ -302,6 +302,7 @@ export async function findCopies(
     contentHash: row.content_hash,
     from: row.from_address,
     receivedAt: row.received_at,
+    undoPendingAt: row.undo_pending_at,
   }));
 }
 
@@ -410,12 +411,53 @@ export async function markEmailReturned(
   return result.numUpdatedRows === 1n;
 }
 
-// `undefined` keeps the column (M7). `movedAt: null` clears `moved_at` (an Undo back to INBOX). Never touches `status` or `returned_at`.
+// D22: `at` marks a reverse move in flight (the sync stores no INBOX copy of the mail); `null` clears it.
+export async function setUndoPending(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailId: string,
+  at: Date | null
+): Promise<boolean> {
+  const result = await db
+    .updateTable("emails")
+    .set({ undo_pending_at: at })
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", emailId)
+    .executeTakeFirst();
+  return result.numUpdatedRows === 1n;
+}
+
+// The mailbox facts of one mail for the Undo service. `undefined` = no such mail in this organization.
+export async function getEmailMailbox(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailId: string
+): Promise<
+  | { mailboxId: string; mailboxAddress: string; mailboxStatus: MailboxStatus; messageIdHeader: string | null }
+  | undefined
+> {
+  const row = await db
+    .selectFrom("emails")
+    .innerJoin("mailboxes", "mailboxes.id", "emails.mailbox_id")
+    .select(["emails.mailbox_id", "mailboxes.address", "mailboxes.status", "emails.message_id_header"])
+    .where("emails.org_id", "=", ctx.orgId)
+    .where("emails.id", "=", emailId)
+    .executeTakeFirst();
+  if (row === undefined) return undefined;
+  return {
+    mailboxId: row.mailbox_id,
+    mailboxAddress: row.address,
+    mailboxStatus: row.status as MailboxStatus,
+    messageIdHeader: row.message_id_header,
+  };
+}
+
+// `undefined` keeps the column (M7). `movedAt: null` clears `moved_at` (an Undo back to INBOX). `undoPendingAt: null` clears the D22 flag. Never touches `status` or `returned_at`.
 export async function updateEmailLocation(
   db: DbOrTrx,
   ctx: TenantContext,
   emailId: string,
-  next: { folder: string; uid: number; inboxUid?: number; movedAt?: Date | null }
+  next: { folder: string; uid: number; inboxUid?: number; movedAt?: Date | null; undoPendingAt?: null }
 ): Promise<boolean> {
   const result = await db
     .updateTable("emails")
@@ -424,6 +466,7 @@ export async function updateEmailLocation(
       uid: next.uid,
       ...(next.inboxUid === undefined ? {} : { inbox_uid: next.inboxUid }),
       ...(next.movedAt === undefined ? {} : { moved_at: next.movedAt }),
+      ...(next.undoPendingAt === undefined ? {} : { undo_pending_at: null }),
     })
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", emailId)
