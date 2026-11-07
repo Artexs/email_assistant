@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress: stage 1 built and the Interia probe ran; checkpoint 1 (the user's go) is next, then stage 2.** The probe facts are in the Results and in stages 4, 5, 6 and 9. Q1 and Q5 keep their defaults until the user answers.
+> **Status 2026-11-07 — in progress: stages 1–2 done; stage 3 (mail write port and fake) is next.** Q1 and Q5 keep their defaults until the user answers.
 
 # S3 Assist actions
 
@@ -127,8 +127,8 @@ Implementers run on default Sonnet. Stage reviews of `[risky]` stages run on Opu
 
 Each stage lives in its own file in [`s3-assist-actions/`](s3-assist-actions/). An implementer or reviewer reads this file (Input, Rules, checkpoints) and only the stage file of its step. The main session ticks the step boxes in the stage file and the stage box here.
 
-- [ ] [Stage 1](s3-assist-actions/stage-01-interia-move-spike.md) — Interia move spike: `mailbox:probe-move` on the real mailbox [risky] — user checkpoint 1 after it
-- [ ] [Stage 2](s3-assist-actions/stage-02-s3-migration.md) — S3 migration: `applied_at`, `inbox_uid`, `moved_at`, indexes, outbox kind [risky]
+- [x] [Stage 1](s3-assist-actions/stage-01-interia-move-spike.md) — Interia move spike: `mailbox:probe-move` on the real mailbox [risky] — user checkpoint 1 after it
+- [x] [Stage 2](s3-assist-actions/stage-02-s3-migration.md) — S3 migration: `applied_at`, `inbox_uid`, `moved_at`, indexes, outbox kind [risky]
 - [ ] [Stage 3](s3-assist-actions/stage-03-mail-write-port-and-fake.md) — Mail write port, fake provider, contract cases [risky]
 - [ ] [Stage 4](s3-assist-actions/stage-04-imap-adapter-writes.md) — IMAP adapter writes (MOVE and COPY paths) on GreenMail [risky]
 - [ ] [Stage 5](s3-assist-actions/stage-05-locate-message-and-sync.md) — `locateMessage`, identity rules, sync without `findByMessageId` [risky]
@@ -237,3 +237,5 @@ Answered 2026-11-06 with the plan defaults (P1–P7). Questions 1–4 of the fir
   - RQ1: no change; Q1 and Q5 stay open for the user with their defaults.
 - 2026-11-07: Build started (new session, claude-sonnet-5-5). Checked the handoff "Current state": no difference (HEAD `b91ba4b`; lint 0, typecheck 0, 620 unit pass). Stage 1 step 1.1 built (`mailbox:probe-move`, GreenMail only): review round 1 FAIL (1 major: `otherDeletedKept` was not proven; 5 minor), fixed; round 2 PASS with 4 minor fixes (case-insensitive parent check, `created: false` throws, parent notes, stage file). Step 1.2 (the user runs the probe on Interia) is next; checkpoint 1 follows.
 - 2026-11-07: Stage 1 step 1.2: the first Interia runs failed at the folder create (`NO [ALERT]` on a nested CREATE without the parent); the probe got step names in errors and a parent-first create with a flat fallback; the third run passed (no stop rule fired). Checkpoint 1 facts written into stages 4 (`ensureFolder` creates the parent first), 5 (`strict`), 6 and 9. The user stored the pilot password in the macOS Keychain and allowed the agent to pipe it into Mac probe runs (changes the S2 rule for this case). Review of the follow-up: FAIL (status line, stage 9 hint text, stage 4 test place, fallback untested, old texts), fixed. Step 1.2 and stage 1 get ticked at the user's go. Round 2: PASS; its minor findings fixed in the text (stage 9 fallback hint, D9, stages 1, 3, 6 and 19 wording); the duplicate `sanitizeAlertText` case in the integration test stays.
+- 2026-11-07: Checkpoint 1: the user said go. Step 1.2 and stage 1 ticked.
+- 2026-11-07: Stage 2 built: migration `20261107000001_assist_actions.sql` (real constraint names `outbox_kind_check`, `outbox_check1`), `schema.ts` regenerated, `actions-schema.test.ts`; round trip with an `action_failed` row OK. Review (Opus, high): PASS; minor fixes (savepoint helper, `urgent` case); its questions added to stage 19 step 1 (conname check) and stage 18.1 (rollback runbook line). `tasks/planned/s1b-claim-index.md` done by S3 stage 2.

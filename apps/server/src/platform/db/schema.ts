@@ -26,6 +26,7 @@ export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
 export interface Actions {
+  applied_at: Timestamp | null;
   approved_at: Timestamp | null;
   approved_by: string | null;
   approved_via: string | null;
@@ -103,9 +104,11 @@ export interface Emails {
   from_address: string | null;
   id: Generated<string>;
   in_reply_to: string | null;
+  inbox_uid: Int8 | null;
   locked_at: Timestamp | null;
   mailbox_id: string;
   message_id_header: string | null;
+  moved_at: Timestamp | null;
   next_attempt_at: Timestamp | null;
   org_id: string;
   received_at: Timestamp;

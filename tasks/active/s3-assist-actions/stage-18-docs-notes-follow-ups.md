@@ -7,6 +7,7 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 Prettier rule for this stage: `bunx prettier --check` must pass on every new Markdown file. `docs/architecture.md`, `docs/modules.md` and `docs/roadmap.md` may already fail `--check` at HEAD (S1b stage 35 log): for them, the edits must not add new problems (compare the `bunx prettier --check` output before and after).
 
 - [ ] **18.1 Architecture, modules, code patterns, roadmap, ADRs, runbook**
+  - Runbook line (stage 2 review): a `db:rollback` of `20261107000001_assist_actions` after live use drops `actions.applied_at`; a later re-up then fails on `actions_applied_at_check` for the `applied`/`undone` rows. Roll back the code, not the migration.
   - Goal: `docs/` describe S3 as built (one source per fact, `tasks/README.md`).
   - Files: change `docs/architecture.md`, `docs/modules.md`, `docs/code-patterns.md`, `docs/roadmap.md`, `docs/decisions/0003-plan-policy-commit.md`, `docs/decisions/0010-imap-first.md`, `deploy/README.md`.
   - Interfaces: none (docs).

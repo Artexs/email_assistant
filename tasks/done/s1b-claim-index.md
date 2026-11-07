@@ -1,4 +1,4 @@
-> **Status 2026-11-05 — planned.** Idea from the S1b checkpoint 1 group review.
+> **Status 2026-11-07 — done.** Done by S3 stage 2: migration `20261107000001_assist_actions.sql` adds `emails_claim_idx (mailbox_id, status, received_at)`.
 
 # Index for the email claim query
 

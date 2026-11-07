@@ -4,7 +4,7 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 
 ## Stage 2 — S3 migration: `applied_at`, `inbox_uid`, `moved_at`, indexes, outbox kind [risky]
 
-- [ ] **2.1 Migration `<next free version>_assist_actions.sql`**
+- [x] **2.1 Migration `<next free version>_assist_actions.sql`**
   - Goal: the schema for the committer, Undo, the returned check and the failed-action notice, with the guards in the database (D2, D19).
   - Files: create `db/migrations/<version>_assist_actions.sql` (`<version>` = the next free version after the highest file in `db/migrations/`: today `20261106000001_telegram.sql`, so `20261106000002` on 2026-11-06, or `<build date>000001` on a later day; never a version that exists); regenerate `apps/server/src/platform/db/schema.ts` (`bun run db:types`, never by hand); create `apps/server/test/integration/actions-schema.test.ts`.
   - Interfaces: the SQL below. After `db:types`: `Actions.applied_at: Timestamp | null`, `Emails.inbox_uid: Int8 | null`, `Emails.moved_at: Timestamp | null`.
