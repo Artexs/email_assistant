@@ -16,7 +16,13 @@ Before you diagnose an alert, grep docs/known-alerts.md.
 - Template literals for strings with variables, never `+` concatenation.
 - `const` / `let` only, no `var`.
 - Before each commit, review the staged changes (`git diff --staged`). Look for bugs, secrets, debug code, and changes that are not part of the task. Fix all problems, then commit.
-- Commit and push all work to `master` only, with a standard `git push`. Never create other branches. Never force-push (`--force`, `-f`, `--force-with-lease`).
+- Git mode: each task works in one of two modes. The task file names it (`Git mode: master` or `Git mode: worktree`). No line = `master`.
+  - `master`: commit in the main checkout and push to `master` with a standard `git push`. Create no branch.
+  - `worktree`: use one worktree and one branch per task, `task/<name>`: `git worktree add ../email_assistant-wt/<name> -b task/<name> origin/master`. Then copy `.env` from the main checkout (never commit it) and run `bun install`. Commit the stages on the branch, and push it with `git push -u origin task/<name>`. To get new `master` work, run `git merge origin/master` in the branch. Never rebase a pushed branch.
+  - Merge of a `worktree` task: at the end of the task (or at a user checkpoint), its checks must pass on the branch after `git merge origin/master`. Then the main checkout runs `git merge --no-ff task/<name>` on `master` and pushes. Then remove the worktree and delete the branch (local and remote).
+  - Both modes: never force-push (`--force`, `-f`, `--force-with-lease`), never rewrite pushed history, and stage only your own files by explicit path.
+  - Worktrees share the runtime: the dev DB, GreenMail and the ports in `.env`. Only one checkout runs `bun run test:int`, `db:migrate` or a dev server at a time. Only one task at a time adds a DB migration or changes `bun.lock`.
+  - The detached review copies in `~/.cache/ea-review/` (`tasks/README.md` § "Pipeline mode") are not task worktrees: they never commit.
 - Plan stages (the plan → build → review loop in `tasks/README.md` § "How to run a slice"):
   - Subagents (`planner`, `implementer`, `reviewer`) never commit or push. The main session commits and pushes.
   - One commit per stage, only after the reviewer gives PASS. The commit holds the code and the task file update (ticked steps, log line).
