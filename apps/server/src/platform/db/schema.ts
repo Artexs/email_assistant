@@ -120,6 +120,7 @@ export interface Emails {
   thread_key: string;
   to_addresses: Generated<string[]>;
   uid: Int8;
+  undo_pending_at: Timestamp | null;
 }
 
 export interface MailboxCredentials {

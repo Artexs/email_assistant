@@ -14,7 +14,7 @@ Checkpoint 2 addendum (group review 2026-11-07, finding 1; D22; main session dec
 - Stage 9 review minors (do them first in 10.1): the fake `ensureFolder` returns the exact path first, then the case-insensitive walk (test: deliver `ai/exact` before `AI/Exact`); the reverse `action.applied` audit writes `folder_key` from the payload (the payload is the original's, D10), and `insertMoved` in `actions-move.test.ts` writes the original payload, not `{}`.
 - A reverse that ends `failed` clears the flag; the INBOX copy of a stopped COPY then stays unstored (the failed notice says the mail stays in `AI/…`; known edge, runbook line in stage 18).
 
-- [ ] **10.1 `undo(emailId)` creates the reverse rows (D10)**
+- [x] **10.1 `undo(emailId)` creates the reverse rows (D10)**
   - Goal: one call turns every undoable action of a mail into a reverse action that the committer applies; a second call does nothing; the window is 7 days; a tap that the scope or a pause would hold back creates nothing; a `ready` original of the mail never runs after the Undo.
   - Files: create `apps/server/src/modules/actions/undo.ts`, `apps/server/src/modules/actions/expire.ts`, `apps/server/test/integration/actions-undo.test.ts`; change `apps/server/src/modules/actions/index.ts`, `apps/server/src/modules/actions/scope.ts` (`scopeAdmits`), `apps/server/src/modules/actions/scope.test.ts`, `apps/server/src/modules/mail/repo.ts` (`getEmailMailbox`), `apps/server/src/modules/mail/index.ts`; create `packages/core/src/digest/undo.ts` (`UNDO_WINDOW_MS = 7 * 24 * 3_600_000`, `isUndoable(actions: readonly ActionView[], now: Date): boolean`), `packages/core/src/digest/undo.test.ts`; change `packages/core/src/digest/index.ts`.
   - Interfaces:

@@ -142,6 +142,17 @@ describe("fake provider", () => {
     expect(fake.calls).toEqual(["ensureFolder", "setFlags", "moveMessage", "fetchMetaIn", "fetchMetaIn"]);
   });
 
+  test("failOn deleteMessage stops the copy path after the copy", async () => {
+    const fake = createFakeMailProvider({ capabilities: { move: false, uidplus: true } });
+    const uid = fake.deliver(INBOX, mail(1));
+    await fake.ensureFolder("Target");
+    fake.failOn("deleteMessage", new SoftError("lost"));
+    await expect(fake.moveMessage(INBOX, uid, "Target")).rejects.toBeInstanceOf(SoftError);
+    expect(await fake.fetchMetaIn(INBOX, uid)).not.toBeNull();
+    expect(await fake.searchSinceIn("Target", new Date("2026-01-01T00:00:00Z"))).toHaveLength(1);
+    expect(fake.calls).not.toContain("deleteMessage");
+  });
+
   test("moveMessage with move false and uidplus false throws HardError and keeps the mail in the source", async () => {
     const fake = createFakeMailProvider({ capabilities: { move: false, uidplus: false } });
     const uid = fake.deliver(INBOX, mail(1));
@@ -188,6 +199,10 @@ describe("fake provider", () => {
     fake.deliver("AI/Exact", mail(2));
     fake.deliver("ai/exact", mail(3));
     expect(await fake.ensureFolder("AI/Exact")).toBe("AI/Exact");
+    // The exact spelling wins also when the other spelling was delivered first.
+    fake.deliver("ai/second", mail(4));
+    fake.deliver("AI/Second", mail(5));
+    expect(await fake.ensureFolder("AI/Second")).toBe("AI/Second");
     const dotted = createFakeMailProvider({ pathDelimiter: "." });
     expect(await dotted.ensureFolder("AI/Info")).toBe("AI.Info");
     expect(await dotted.ensureFolder("AI/Info")).toBe("AI.Info");

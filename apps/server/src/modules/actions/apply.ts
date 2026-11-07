@@ -11,6 +11,7 @@ import {
   locateKeyOf,
   locateMessage,
   MailAuthError,
+  setUndoPending,
   updateEmailLocation,
   type FolderMessageMeta,
   type MailProvider,
@@ -49,6 +50,13 @@ const FLAG_OF_TYPE: Record<string, string> = { flag: "\\Flagged", mark_read: "\\
 
 async function inTransaction<T>(db: ApplyDeps["db"], run: (trx: Transaction<DB>) => Promise<T>): Promise<T> {
   return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
+}
+
+// D22: a reverse move that ends (applied or failed) clears the in-flight flag of the mail.
+async function clearUndoPending(trx: Transaction<DB>, ctx: TenantContext, action: ClaimedAction): Promise<void> {
+  if (action.type === "move" && action.reverses_action_id !== null) {
+    await setUndoPending(trx, ctx, action.email_id, null);
+  }
 }
 
 async function applySummary(deps: ApplyDeps, ctx: TenantContext, action: ClaimedAction): Promise<ApplyOutcome> {
@@ -106,6 +114,7 @@ async function mapProviderError(
       ) {
         return false;
       }
+      await clearUndoPending(trx, ctx, action);
       await recordAudit(trx, ctx, {
         emailId: action.email_id,
         actionId: action.id,
@@ -147,6 +156,7 @@ async function failAction(
     ) {
       return false;
     }
+    await clearUndoPending(trx, ctx, action);
     await recordAudit(trx, ctx, {
       emailId: action.email_id,
       actionId: action.id,
@@ -296,6 +306,7 @@ async function applyMove(
       uid,
       ...(to === INBOX ? { inboxUid: uid } : {}),
       movedAt: to === INBOX ? null : now,
+      ...(reverseOf === null ? {} : { undoPendingAt: null }),
     });
     await recordAudit(trx, ctx, {
       emailId: email.id,
@@ -305,7 +316,8 @@ async function applyMove(
       data: {
         action_type: "move",
         mailbox_id: deps.mailboxId,
-        ...(reverseOf === null ? { folder_key: folderKey } : {}),
+        // The payload of a reverse is the original's (D10).
+        ...(isFolderKey(folderKey) ? { folder_key: folderKey } : {}),
         reverse: reverseOf !== null,
         moved_now: movedNow,
         leftover_deleted: leftoverDeleted,
@@ -321,7 +333,6 @@ async function applyMove(
         data: { reverse_action_id: action.id },
       });
     }
-    // Stage 10 (D22): the finish of a reverse also clears `emails.undo_pending_at` here.
     return true;
   });
   // `lost`: the IMAP change stays. The next claimer locates the mail in the target.

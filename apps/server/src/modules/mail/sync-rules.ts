@@ -55,6 +55,8 @@ export interface KnownCopy {
   contentHash: string;
   from: string | null;
   receivedAt: Date;
+  /** D22: set while a reverse move of the mail is in flight. */
+  undoPendingAt: Date | null;
 }
 
 /** UIDs that the other rows of the same identity hold in `folder`: they are never the copy of row `exceptId`. */
@@ -94,10 +96,17 @@ export function decideIncoming(input: {
   return { kind: "new", dedupKey: copyDedupKey(input.baseKey, input.copies.length + 1) };
 }
 
-export type FolderCheckResult = { kind: "returned"; emailId: string } | { kind: "new"; dedupKey: string };
+export type FolderCheckResult =
+  | { kind: "returned"; emailId: string }
+  | { kind: "new"; dedupKey: string }
+  | { kind: "undo_in_flight"; emailId: string };
+
+/** D22: an `undo_pending_at` older than this is a leftover; the old rule applies. */
+export const UNDO_PENDING_MAX_AGE_MS = 24 * 3_600_000;
 
 /**
- * Still in its folder → a second identical copy (store and triage it).
+ * Still in its folder → a second identical copy (store and triage it), unless a reverse move of the
+ * known copy is in flight (D22): then the incoming mail is its target, store nothing.
  * Gone → the user moved it back (the caller sets `returned_at` and `folder = INBOX`).
  */
 export function resolveFolderCheck(input: {
@@ -105,8 +114,14 @@ export function resolveFolderCheck(input: {
   stillInFolder: boolean;
   baseKey: string;
   copyCount: number;
+  undoPendingAt?: Date | null;
+  now?: Date;
 }): FolderCheckResult {
   if (input.stillInFolder) {
+    const { undoPendingAt, now } = input;
+    if (undoPendingAt && now && now.getTime() - undoPendingAt.getTime() < UNDO_PENDING_MAX_AGE_MS) {
+      return { kind: "undo_in_flight", emailId: input.emailId };
+    }
     return { kind: "new", dedupKey: copyDedupKey(input.baseKey, input.copyCount + 1) };
   }
   return { kind: "returned", emailId: input.emailId };

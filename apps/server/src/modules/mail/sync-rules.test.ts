@@ -162,6 +162,7 @@ function copy(id: string, dedupKey: string, folder: string, uid = 1): KnownCopy 
     contentHash: HASH,
     from: "boss@example.test",
     receivedAt: new Date("2026-11-03T10:05:00Z"),
+    undoPendingAt: null,
   };
 }
 
@@ -257,6 +258,31 @@ describe("resolveFolderCheck", () => {
       kind: "new",
       dedupKey: `${BASE}#2`,
     });
+  });
+
+  test("still in its folder with a fresh undo_pending_at gives undo_in_flight", () => {
+    const now = new Date("2026-11-07T12:00:00Z");
+    const input = { emailId: "e1", stillInFolder: true, baseKey: BASE, copyCount: 1, now };
+    expect(resolveFolderCheck({ ...input, undoPendingAt: new Date(now.getTime() - 3_600_000) })).toEqual({
+      kind: "undo_in_flight",
+      emailId: "e1",
+    });
+  });
+
+  test("an undo_pending_at older than 1 day gives the old rule", () => {
+    const now = new Date("2026-11-07T12:00:00Z");
+    const input = { emailId: "e1", stillInFolder: true, baseKey: BASE, copyCount: 1, now };
+    expect(resolveFolderCheck({ ...input, undoPendingAt: new Date(now.getTime() - 25 * 3_600_000) })).toEqual({
+      kind: "new",
+      dedupKey: `${BASE}#2`,
+    });
+  });
+
+  test("an undo_pending_at does not stop a return", () => {
+    const now = new Date("2026-11-07T12:00:00Z");
+    expect(
+      resolveFolderCheck({ emailId: "e1", stillInFolder: false, baseKey: BASE, copyCount: 1, undoPendingAt: now, now })
+    ).toEqual({ kind: "returned", emailId: "e1" });
   });
 
   test("gone from its folder gives returned", () => {

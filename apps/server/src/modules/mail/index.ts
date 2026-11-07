@@ -25,6 +25,7 @@ export {
   countWaiting,
   finishEmail,
   forceRescan,
+  getEmailMailbox,
   getMailbox,
   listFolderUids,
   listMailboxes,
@@ -35,6 +36,7 @@ export {
   setMailboxStatus,
   requeueTooOld,
   setFolderMapEntry,
+  setUndoPending,
   updateEmailLocation,
 } from "./repo";
 export type { MailKind } from "./repo";
