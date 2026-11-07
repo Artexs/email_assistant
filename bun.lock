@@ -89,7 +89,9 @@
     "tools/fake-telegram": {
       "name": "@ea/fake-telegram",
       "devDependencies": {
+        "@ea/core": "workspace:*",
         "grammy": "^1.46.0",
+        "kysely": "^0.29.8",
       },
     },
   },

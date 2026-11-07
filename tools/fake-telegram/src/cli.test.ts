@@ -76,6 +76,30 @@ describe("fake-tg cli", () => {
     expect(result.err).toContain("no such chat");
   });
 
+  test("--chat takes a negative id", async () => {
+    const url = start();
+    expect((await run(["send", "hello", "--chat", "-1001234"], url)).code).toBe(0);
+    const split = await run(["read", "--chat", "-1001234"], url);
+    expect(split.code).toBe(0);
+    expect(split.out).toContain("hello");
+    const joined = await run(["read", "--chat=-1001234"], url);
+    expect(joined.code).toBe(0);
+    expect(joined.out).toContain("hello");
+    expect((await run(["send", "/start x", "--chat", "-1001234"], url)).code).toBe(0);
+    expect((await run(["wait", "hi x", "--chat", "-1001234", "--timeout", "5"], url)).code).toBe(0);
+  });
+
+  test("only --chat takes a negative number", async () => {
+    const url = "http://127.0.0.1:1"; // usage errors come before any request
+    const last = await run(["read", "--chat", "-5", "--last=-1"], url);
+    expect(last.code).toBe(2);
+    expect(last.err).toContain('--last needs a whole number, got "-1"');
+    const joined = await run(["read", "--chat=-1.5"], url);
+    expect(joined.code).toBe(2);
+    expect(joined.err).toContain("--chat needs a whole number");
+    expect((await run(["read", "--chat", "-1.5"], url)).code).toBe(2);
+  });
+
   test("serve on a busy port prints one error line and exits 1", async () => {
     const busy = startFakeTelegram({ port: 0 });
     try {

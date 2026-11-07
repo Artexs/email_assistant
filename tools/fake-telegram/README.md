@@ -75,6 +75,8 @@ Global options (not for `serve`): `--url <base>` (default `http://127.0.0.1:8090
 
 Defaults: chat `5550001`; `press` timeout 10 s; `wait` timeout 30 s.
 
+`--chat` takes a negative id too (for example `--chat -1001234`), but the fake has only private chats.
+
 ### send
 
 ```sh

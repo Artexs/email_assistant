@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress.** Plan written (5 stages), Opus plan review PASS; stages 1–2 done (stage 1 CI proof on PR #1 pending); left: stages 3–5, merge.
+> **Status 2026-11-07 — in progress.** Plan written (5 stages), Opus plan review PASS; stages 1–3 done (stage 1 CI proof: PR #1, job `image` green); left: stages 4–5, merge.
 
 Git mode: worktree (`../email_assistant-wt/fake-telegram-followups`, branch `task/fake-telegram-followups`).
 
@@ -177,7 +177,7 @@ Close the small gaps that the fake Telegram build found and did not fix.
 
 ### Stage 3 — Small items
 
-- [ ] **3.1 Declare `@ea/core` and `kysely` in `tools/fake-telegram/package.json` `devDependencies`** (changes `bun.lock`; check S4 first).
+- [x] **3.1 Declare `@ea/core` and `kysely` in `tools/fake-telegram/package.json` `devDependencies`** (changes `bun.lock`; check S4 first).
   - Goal: `tools/fake-telegram` declares every package that its code imports, so it does not depend on workspace hoisting.
   - Files: `tools/fake-telegram/package.json`, `bun.lock` (both change).
   - Interfaces: `devDependencies` becomes (sorted by name):
@@ -199,7 +199,7 @@ Close the small gaps that the fake Telegram build found and did not fix.
   - Check: `bun install --frozen-lockfile` (exit 0); `bun run typecheck` (exit 0); `bun test tools/fake-telegram/src` (0 fail); `bun test tools/fake-telegram/test/setup.test.ts` (0 fail; needs no DB); `bun run lint` (exit 0); `git diff --stat` lists only the two files; `git diff bun.lock` shows no header change.
   - Done when: the two deps are in `devDependencies`, the lock diff is limited to the workspace entry, and the checks pass.
   - Out of scope: other dependency changes, version bumps, `bun update`.
-- [ ] **3.2 `fake-tg --chat` accepts negative ids** (for example `--chat -1001234`), with a CLI test and the README usage line.
+- [x] **3.2 `fake-tg --chat` accepts negative ids** (for example `--chat -1001234`), with a CLI test and the README usage line.
   - Goal: `bun run fake-tg <command> --chat -1001234` and `--chat=-1001234` work for `send`, `press`, `read` and `wait`.
   - Files: `tools/fake-telegram/src/cli.ts`, `tools/fake-telegram/src/cli.test.ts`, `tools/fake-telegram/README.md` (changes).
   - Interfaces:
@@ -300,3 +300,6 @@ Resolved by the Opus plan review (2026-11-07), now facts in the steps:
 - 2026-11-07: Opus plan review round 1: FAIL, 16 findings (1 major, 11 minor, 4 questions), all put into the step detail. Stage 4 split into stage 4 (format) and stage 5 (`TELEGRAM_API_ROOT` line). Round 2: PASS, 4 minors fixed by the main session.
 - 2026-11-07: Stage 1 built (job `image` in `ci.yml`), review PASS. CI proof follows on the PR.
 - 2026-11-07: Stage 2 built (`db:worktree` script, docs), review PASS; live run on throwaway DBs only. Reviewer minor fixed: the manual SQL in the README sets the `db:worktree` mark.
+- 2026-11-07: Stage 1 CI proof: PR #1 (https://github.com/Artexs/email_assistant/pull/1), run 42417992866: jobs `image` and `ci` green. The first run (42417654598) had `image` green and `ci` red from a flaky test (see the next line).
+- 2026-11-07: Flaky CI test found (not part of this task): `mailbox:seed and mailbox:audit CLI > seed exits 1 …` times out at 5000 ms in `test:int` (runs 42414616787 on `master` and 42417654598 on PR #1); it passed on the re-run. Recorded in `docs/known-alerts.md`.
+- 2026-11-07: Stage 3 built (`@ea/core` + `kysely` devDependencies, `bun.lock` +2 lines; `fake-tg --chat` takes negative ids), review PASS. Deviation accepted by the reviewer: the second CLI test does not call `start()` (url `http://127.0.0.1:1`), because every case fails with a usage error before any request, and `start()` + stop raced grammy `getMe`.
