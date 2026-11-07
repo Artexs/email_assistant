@@ -1,6 +1,7 @@
 import { categories, type Category, type FeedbackSource, type FeedbackVerdict } from "@ea/core";
+import type { Transaction } from "kysely";
 
-import type { Db, TenantContext } from "../../platform/db";
+import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 import { listSummaries } from "../actions";
 
@@ -14,6 +15,8 @@ export interface RecordFeedbackInput {
   userId?: string;
   // The latest row of the mail already holds this answer: write nothing.
   skipIfSame?: boolean;
+  // The mail already has a label with a true category (m14): write nothing, so the label stays the latest row.
+  keepLabel?: boolean;
 }
 
 export interface LabelItem {
@@ -29,7 +32,7 @@ export interface LabelItem {
 
 // Every feedback source writes through this function. It never queues the mail for a new triage.
 export async function recordFeedback(
-  db: Db,
+  db: Db | Transaction<DB>,
   ctx: TenantContext,
   input: RecordFeedbackInput
 ): Promise<{ id: string; verdict: FeedbackVerdict; saved: boolean }> {
@@ -49,6 +52,12 @@ export async function recordFeedback(
       : input.trueCategory === latest.category
         ? "right"
         : "wrong";
+  if (input.keepLabel) {
+    const previous = await latestFeedback(db, ctx, input.emailId);
+    if (previous && previous.true_category !== null) {
+      return { id: previous.id, verdict, saved: false };
+    }
+  }
   if (input.skipIfSame) {
     const previous = await latestFeedback(db, ctx, input.emailId);
     if (previous && previous.verdict === verdict && previous.true_category === (input.trueCategory ?? null)) {

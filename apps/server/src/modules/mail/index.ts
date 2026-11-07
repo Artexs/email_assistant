@@ -22,6 +22,7 @@ export {
 export {
   changeMailboxStatus,
   claimEmails,
+  clearReturned,
   countWaiting,
   finishEmail,
   forceRescan,
@@ -29,6 +30,7 @@ export {
   getMailbox,
   listFolderUids,
   listMailboxes,
+  listReturned,
   listSyncTargets,
   listThreadContext,
   mailKindFilter,

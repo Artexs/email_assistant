@@ -38,3 +38,5 @@ export type { TriageDecision, TriageDeps, TriageMailbox, TriageOutcome } from ".
 export { createTriageJob } from "./jobs";
 export type { TriageJobDeps, TriageScope } from "./jobs";
 export { requeueBackfillWindow } from "./backfill";
+export { createReturnedJob, processReturned } from "./returned";
+export type { ReturnedJobDeps } from "./returned";

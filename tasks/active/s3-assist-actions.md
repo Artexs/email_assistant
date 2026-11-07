@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress: stages 1–9 done; stage 10 (Undo service, D22) built and committed locally, review pending.** Run mode: pipeline from stage 10 (`tasks/README.md` § "Pipeline mode"). Handoff `notes/2026-11-07-handoff-s3-pipeline.md`. The user said: build to the end without stops; take the defaults or the proposed values for questions. Q1 and Q5 keep their defaults.
+> **Status 2026-11-07 — in progress: stages 1–10 done; stage 11 (returned job) committed locally, review pending.** Run mode: pipeline from stage 10 (`tasks/README.md` § "Pipeline mode"). Handoff `notes/2026-11-07-handoff-s3-pipeline.md`. The user said: build to the end without stops; take the defaults or the proposed values for questions. Q1 and Q5 keep their defaults.
 
 # S3 Assist actions
 
@@ -141,7 +141,7 @@ Each stage lives in its own file in [`s3-assist-actions/`](s3-assist-actions/). 
 - [x] [Stage 7](s3-assist-actions/stage-07-actions-repo-and-fixtures.md) — Actions repository: claim, finish, release, fail; email location; fixtures (steps 7.1a, 7.1b, 7.2) [risky] — user checkpoint 2 after it
 - [x] [Stage 8](s3-assist-actions/stage-08-committer-flags-summary-errors-job.md) — Committer: flags, summaries, error rules, scope, the job [risky]
 - [x] [Stage 9](s3-assist-actions/stage-09-committer-move-and-crash-test.md) — Committer: move as an ensure, folders, the crash test (steps 9.1a, 9.1b) [risky]
-- [ ] [Stage 10](s3-assist-actions/stage-10-undo-service-and-reverse-actions.md) — Undo service and reverse actions [risky]
+- [x] [Stage 10](s3-assist-actions/stage-10-undo-service-and-reverse-actions.md) — Undo service and reverse actions [risky]
 - [ ] [Stage 11](s3-assist-actions/stage-11-returned-feedback-job.md) — `triage.returned`: a user move back becomes feedback [risky]
 - [ ] [Stage 12](s3-assist-actions/stage-12-action-failed-notice.md) — Notice `action_failed` [risky]
 - [ ] [Stage 13](s3-assist-actions/stage-13-digest-undo-button-and-status.md) — Digest ↩️ button, the Undo tap, `/status` lines [risky]
@@ -255,3 +255,5 @@ Answered 2026-11-06 with the plan defaults (P1–P7). Questions 1–4 of the fir
 - 2026-11-07: Stage 9 built (9.1a `ensureMoved`, folder resolver, original move, fake `keepUidOnCopy`/`keepUidOnUserMove`, fake copy-path contract, case-insensitive folder match; 9.1b reverse move, crash test, stability runs 3× 19 pass; `ensureFolder` keeps a real parent spelling). Review (Opus, high): PASS; two minors moved to the stage 10 addendum. The user paused the build after stage 9 (to continue on another machine).
 - 2026-11-07: The user changed the run mode to pipeline from stage 10: implementers do not wait for the reviews; local commit before the review, push after PASS, fixes in own commits, limit 2 stages ahead (`tasks/README.md` § "Pipeline mode", `CLAUDE.md`).
 - 2026-11-07: Stage 10 built, review pending (pipeline). New session (claude-opus-5-5) checked the handoff: no code difference. Checks in the main checkout: lint 0, typecheck 0, 739 unit pass, 493 int pass, 0 fail. Implementer decisions for the review: the fake copy path honors `failOn("deleteMessage")`; `resolveFolderCheck` takes optional `undoPendingAt`/`now`; `undo` sets `undo_pending_at` only for a reverse `move`; inserts all lost to a race → `already`; a `failed` reverse clears the flag.
+- 2026-11-07: Stage 10 review (Opus, high, background worktree): PASS, pushed (`604921c`, merged with S2 task commits in `030d083`). 4 minors; main session default: fix minor 1 (`getEmailMailbox` parses the status with `mailboxStatusSchema`) and minor 2 (test: a reverse move with 3 hard errors → `failed`, `undo_pending_at` null) in an own fix commit; minor 3 (fake store duplication) and question 4 (`now` optional) stay as they are.
+- 2026-11-07: Stage 11 built, review pending. Checks: lint 0, typecheck 0, 739 unit pass, 505 int pass, 0 fail. Implementer deviations for the review: `processReturned` returns `{ false, false }` and writes nothing when the mail is not in the caller's org (`getEmailMailbox`); `feedback` only when `markUndone` updated a row.

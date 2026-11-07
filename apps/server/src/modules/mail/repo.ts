@@ -411,6 +411,37 @@ export async function markEmailReturned(
   return result.numUpdatedRows === 1n;
 }
 
+// Rows that the sync flagged as returned (D12), oldest flag first.
+export async function listReturned(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { limit: number }
+): Promise<{ id: string }[]> {
+  return db
+    .selectFrom("emails")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("returned_at", "is not", null)
+    .orderBy("returned_at")
+    .orderBy("id")
+    .limit(opts.limit)
+    .execute();
+}
+
+// False when the flag was clear already.
+export async function clearReturned(trx: DbOrTrx, ctx: TenantContext, emailId: string): Promise<boolean> {
+  const result = await trx
+    .updateTable("emails")
+    .set({ returned_at: null })
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", emailId)
+    .where("returned_at", "is not", null)
+    .executeTakeFirst();
+  return result.numUpdatedRows > 0n;
+}
+
 // D22: `at` marks a reverse move in flight (the sync stores no INBOX copy of the mail); `null` clears it.
 export async function setUndoPending(
   db: DbOrTrx,
