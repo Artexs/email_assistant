@@ -78,6 +78,16 @@ export const APPROVAL_TEXTS = {
   rejected_now: "✖️ Rejected. The draft will be removed.",
   not_found: "This mail is not in your account.", // the S2 text
   send_again: "⏳ A new send was approved. Sending within a minute.",
+  send_again_held: {
+    scope: "A new send was approved. Sending is held by SEND_SCOPE on the server; /status shows it.",
+    paused: "A new send was approved. The mailbox is paused, so the send waits; /status shows it.",
+    auth_error: "A new send was approved. The mailbox login fails, so the send waits; /status shows it.",
+  },
+  held_notes: {
+    scope: "Sending is held by SEND_SCOPE on the server",
+    paused: "The mailbox is paused, so the sends wait",
+    auth_error: "The mailbox login fails, so the sends wait",
+  },
   send_again_already: "A resend was already approved for this mail.",
   send_again_not_failed: "This send is not in a failed state.",
   send_again_draft_gone: "The draft is gone: the mail must be triaged again.",
@@ -228,7 +238,11 @@ async function handleApprovalCallback(
         case "already_approved":
           return { answer: APPROVAL_TEXTS.already_approved(formatClock(result.at, timeZone, now)) };
         case "expired":
-          return { answer: APPROVAL_TEXTS.expired, edit: await edit(`approval:${callback.actionId}`, "expired") };
+          // Only the tap that expired the row edits the message; a later tap on an expired row only answers.
+          return {
+            answer: APPROVAL_TEXTS.expired,
+            edit: result.byThisTap ? await edit(`approval:${callback.actionId}`, "expired") : undefined,
+          };
         case "sending":
           return { answer: APPROVAL_TEXTS.sending };
         case "sent":
@@ -258,8 +272,12 @@ async function handleApprovalCallback(
     case "approve_set": {
       const result = await approveSet(approvals, ctx, callback.setId, input);
       if (result.approved === 0) return { answer: APPROVAL_TEXTS.set_nothing };
+      const heldBy = await heldReasonOfAny(deps, ctx, result.approvedIds);
       return {
-        answer: `⏳ ${result.approved} reminders go out within a minute, ${result.skipped} skipped.`,
+        answer:
+          heldBy === undefined
+            ? `⏳ ${result.approved} reminders go out within a minute, ${result.skipped} skipped.`
+            : `⏳ ${result.approved} reminders approved, ${result.skipped} skipped. ${APPROVAL_TEXTS.held_notes[heldBy]}; /status shows it.`,
         edit: await edit(`approval_set:${callback.setId}`, "approved_set", {
           counts: { done: result.approved, skipped: result.skipped },
         }),
@@ -278,11 +296,13 @@ async function handleApprovalCallback(
     case "send_again": {
       const result = await sendAgain(approvals, ctx, callback.actionId, input);
       switch (result.kind) {
-        case "created":
+        case "created": {
+          const heldBy = await heldReason(deps, ctx, result.actionId);
           return {
-            answer: APPROVAL_TEXTS.send_again,
+            answer: heldBy === undefined ? APPROVAL_TEXTS.send_again : APPROVAL_TEXTS.send_again_held[heldBy],
             edit: await edit(`send_result:${callback.actionId}`, "approved"),
           };
+        }
         case "already":
           return { answer: APPROVAL_TEXTS.send_again_already };
         case "not_failed":
@@ -338,5 +358,18 @@ async function heldReason(
   if (!sendScopeAdmits(sendFilterFor(deps.sendScope, mailbox.address), to)) return "scope";
   if (mailbox.status === "paused") return "paused";
   if (mailbox.status === "auth_error") return "auth_error";
+  return undefined;
+}
+
+// A set holds the first cause found among its approved sends: the mailbox is the same, the recipients can differ.
+async function heldReasonOfAny(
+  deps: CallbackDeps,
+  ctx: TenantContext,
+  actionIds: string[]
+): Promise<"scope" | "paused" | "auth_error" | undefined> {
+  for (const actionId of actionIds) {
+    const reason = await heldReason(deps, ctx, actionId);
+    if (reason !== undefined) return reason;
+  }
   return undefined;
 }

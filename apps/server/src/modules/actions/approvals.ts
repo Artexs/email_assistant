@@ -28,7 +28,7 @@ export type ApproveResult =
   | { kind: "sent" }
   | { kind: "sending" }
   | { kind: "rejected" }
-  | { kind: "expired" }
+  | { kind: "expired"; byThisTap: boolean }
   | { kind: "failed"; reason: string | null }
   | { kind: "draft_not_ready" }
   | { kind: "not_found" };
@@ -70,7 +70,7 @@ async function approveRow(
           hooks: deps.hooks,
           uidplus: await deps.uidplus(ctx, send.email.mailbox_id),
         });
-        return { kind: "expired" };
+        return { kind: "expired", byThisTap: true };
       }
       // A send whose draft is not in Drafts yet (or never will be) must not go out: the tap changes nothing.
       const draft =
@@ -99,7 +99,7 @@ async function approveRow(
     case "rejected":
       return { kind: "rejected" };
     case "expired":
-      return { kind: "expired" };
+      return { kind: "expired", byThisTap: false };
     case "failed":
       return { kind: "failed", reason: send.status_reason };
     default:
@@ -177,16 +177,19 @@ export async function approveSet(
   ctx: TenantContext,
   setId: string,
   input: ApprovalInput
-): Promise<{ approved: number; skipped: number }> {
+): Promise<{ approved: number; skipped: number; approvedIds: string[] }> {
   return inTransaction(deps.db, async (trx) => {
+    const approvedIds: string[] = [];
     let approved = 0;
     let skipped = 0;
     for (const send of await listSetSends(trx, ctx, setId)) {
       const result = inSetMessage(send) ? await approveRow(trx, deps, ctx, send, input) : undefined;
-      if (result?.kind === "approved") approved += 1;
-      else skipped += 1;
+      if (result?.kind === "approved") {
+        approved += 1;
+        approvedIds.push(send.id);
+      } else skipped += 1;
     }
-    return { approved, skipped };
+    return { approved, skipped, approvedIds };
   });
 }
 

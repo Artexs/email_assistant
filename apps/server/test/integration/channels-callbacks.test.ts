@@ -711,6 +711,114 @@ describe("approval taps", () => {
     });
   });
 
+  test("(5c) a tap on an already expired send only answers; the message is not edited again", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const { sendId, emailId } = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, {
+        sendStatus: "expired",
+        notifiedAt: new Date(T.getTime() - 49 * HOUR),
+        createdAt: T,
+      });
+      await queueFor(trx, s.ctx, s.o1, "approval", sendId, emailId);
+
+      const tap = await handleCallback(s.deps, s.owner1, `ap:${sendId}`);
+      expect(tap).toEqual({ answer: APPROVAL_TEXTS.expired });
+    });
+  });
+
+  test("(5d) a draft that is not in Drafts yet: the tap answers and changes nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const { sendId, emailId } = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, {
+        draftStatus: "ready",
+        notifiedAt: T,
+        createdAt: T,
+      });
+      await queueFor(trx, s.ctx, s.o1, "approval", sendId, emailId);
+
+      const tap = await handleCallback(s.deps, s.owner1, `ap:${sendId}`);
+      expect(tap).toEqual({ answer: APPROVAL_TEXTS.draft_not_ready });
+      expect(await sendRow(trx, sendId)).toMatchObject({ status: "awaiting_approval", approved_by: null });
+    });
+  });
+
+  test("(7c) another organization's set id: nothing happens, the rows stay", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const setId = randomUUID();
+      const other = await insertDraftAndSend(trx, { orgId: s.b.orgId }, s.b.mailboxId, {
+        reminder: 1,
+        setId,
+        notifiedAt: T,
+        createdAt: T,
+      });
+      for (const kind of ["as", "rs"]) {
+        const result = await handleCallback(s.deps, s.owner1, `${kind}:${setId}`);
+        expect(result).toEqual({ answer: APPROVAL_TEXTS.set_nothing });
+      }
+      expect(await sendRow(trx, other.sendId)).toMatchObject({ status: "awaiting_approval", approved_by: null });
+    });
+  });
+
+  test("(9b) another organization's delegation id gives the not-found text; the delegation stays", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const ctxB = { orgId: s.b.orgId };
+      const delegateId = await insertDelegate(trx, ctxB);
+      const sent = await insertDraftAndSend(trx, ctxB, s.b.mailboxId, {
+        sendStatus: "applied",
+        approved: { userId: s.b.userId, at: T },
+        createdAt: T,
+      });
+      const delegationId = await insertDelegation(trx, ctxB, {
+        mailboxId: s.b.mailboxId,
+        emailId: sent.emailId,
+        delegateId,
+        draftActionId: sent.draftId,
+        sendActionId: sent.sendId,
+        status: "answered",
+        answeredAt: T,
+      });
+      const tap = await handleCallback(s.deps, s.assistantLink, `dd:${delegationId}`);
+      expect(tap).toEqual({ answer: NOT_FOUND });
+      const row = await trx
+        .selectFrom("delegations")
+        .select("status")
+        .where("id", "=", delegationId)
+        .executeTakeFirstOrThrow();
+      expect(row.status).toBe("answered");
+    });
+  });
+
+  test("(8b) send again and the set taps name the cause when the new sends are held", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx, { sendScope: () => ({ kind: "off" }) });
+      const failed = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, {
+        sendStatus: "failed",
+        notifiedAt: T,
+        createdAt: T,
+      });
+      await trx.updateTable("actions").set({ status_reason: "smtp_error" }).where("id", "=", failed.sendId).execute();
+      const again = await handleCallback(s.deps, s.owner1, `ag:${failed.sendId}`);
+      expect(again.answer).toBe(APPROVAL_TEXTS.send_again_held.scope);
+
+      const setId = randomUUID();
+      const sent = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, {
+        reminder: 1,
+        setId,
+        notifiedAt: T,
+        createdAt: T,
+      });
+      await trx.updateTable("mailboxes").set({ status: "paused" }).where("id", "=", s.a.mailboxId).execute();
+      const set = await handleCallback(s.deps, s.owner1, `as:${setId}`);
+      expect(set.answer).toBe(
+        `⏳ 1 reminders approved, 0 skipped. ${APPROVAL_TEXTS.held_notes.scope}; /status shows it.`
+      );
+      expect(set.answer).toContain("SEND_SCOPE");
+      expect(await sendRow(trx, sent.sendId)).toMatchObject({ status: "approved" });
+    });
+  });
+
   test("(10) forged data is not valid", async () => {
     await withRollback(db, async (trx) => {
       const s = await approvalSetup(trx);
