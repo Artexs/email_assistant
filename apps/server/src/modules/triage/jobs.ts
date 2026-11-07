@@ -107,6 +107,11 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
                 }
                 continue;
               }
+              if (outcome.kind === "settings_changed") {
+                // The snapshot is old: more mail of this batch would cost LLM calls for nothing. The next run reloads it.
+                await releaseUntried(ctx, claimed.slice(index + 1));
+                break;
+              }
               if (outcome.kind === "paused" || deps.pause.isPaused(deps.now())) {
                 // The quota is per project: stop all mailboxes. Untried mail keeps its old `next_attempt_at`.
                 await releaseUntried(ctx, claimed.slice(index + 1));

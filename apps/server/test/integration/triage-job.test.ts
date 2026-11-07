@@ -459,6 +459,38 @@ describe("createTriageJob: pause and errors", () => {
     });
   });
 
+  test("changed settings on mail 1: mail 2 and 3 go back untouched with no LLM call", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const { ctx, mailboxId } = await mailboxWithSettings(trx);
+      const [, second, third] = await threeMails(trx, ctx, mailboxId);
+      const llm = fakeLlm();
+      let calls = 0;
+      await clockJob(
+        trx,
+        llm,
+        { at: now },
+        {
+          triageOne: async () => {
+            calls += 1;
+            return { kind: "settings_changed" };
+          },
+        }
+      ).run();
+
+      expect(calls).toBe(1);
+      expect(llm.prompts).toHaveLength(0);
+      for (const id of [second, third]) {
+        expect(await fullRow(trx, id)).toEqual({
+          status: "pending",
+          attempts: 0,
+          next_attempt_at: null,
+          locked_at: null,
+        });
+      }
+    });
+  });
+
   test("an unexpected error on a mail at its last try ends as triage_error", async () => {
     await withRollback(db, async (trx) => {
       await pauseOtherMailboxes(trx);

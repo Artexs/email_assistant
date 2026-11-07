@@ -74,6 +74,8 @@ export type TriageOutcome =
   | { kind: "triaged" }
   | { kind: "lost" }
   | { kind: "retry_later" }
+  // The settings changed after the snapshot: the mail went back without a count; the job drops its snapshot.
+  | { kind: "settings_changed" }
   | { kind: "skipped" }
   | { kind: "capped"; until: Date; dayStart: Date }
   | { kind: "paused"; until: Date };
@@ -99,7 +101,7 @@ function payloadOf(action: PlannedAction): Record<string, string> {
 // A lost claim (another run took the mail) returns `lost` and writes nothing; it does not throw.
 // The settings row is share-locked first, then the email row: a setter (FOR UPDATE on settings, then the action rows)
 // cannot commit between the check and the action inserts. Changed settings: the mail goes back without a count
-// (`retry_later`) and the next run triages it with the new settings.
+// (`settings_changed`) and the next run triages it with the new settings.
 export async function saveTriage(
   db: Db | Transaction<DB>,
   ctx: TenantContext,
@@ -131,7 +133,7 @@ export async function saveTriage(
         nextAttemptAt: null,
         countAttempt: false,
       });
-      return released ? { kind: "retry_later" } : { kind: "lost" };
+      return released ? { kind: "settings_changed" } : { kind: "lost" };
     }
     if (!(await finishEmail(trx, ctx, email.id, email.locked_at, { status: "triaged" }))) {
       log.warn(`triage ${email.id}: lost the claim`);

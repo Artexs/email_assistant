@@ -1,7 +1,14 @@
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { expireReady, listActionsForEmail } from "../../src/modules/actions";
-import { getMailboxSettings, insertDefaultSettings, setToolSwitch, type SettingsDeps } from "../../src/modules/config";
+import {
+  getMailboxSettings,
+  insertDefaultSettings,
+  lockMailboxSettings,
+  setToolSwitch,
+  updateMailboxSettings,
+  type SettingsDeps,
+} from "../../src/modules/config";
 import { claimEmails } from "../../src/modules/mail";
 import { saveTriage, type TriageDecision, type TriageMailbox } from "../../src/modules/triage";
 
@@ -80,7 +87,7 @@ describe("saveTriage with changed settings", () => {
       const deps: SettingsDeps = { db, now: () => now, expireReady };
       await setToolSwitch(deps, s.ctx, s.created.mailboxId, { name: "move", value: false, actor: "test" });
 
-      expect(await saveTriage(db, s.ctx, s.mailbox, s.email, decision)).toEqual({ kind: "retry_later" });
+      expect(await saveTriage(db, s.ctx, s.mailbox, s.email, decision)).toEqual({ kind: "settings_changed" });
 
       expect(await listActionsForEmail(db, s.ctx, s.emailId)).toEqual([]);
       const results = await db.selectFrom("triage_results").select("id").where("email_id", "=", s.emailId).execute();
@@ -102,6 +109,60 @@ describe("saveTriage with changed settings", () => {
       expect(await saveTriage(db, s.ctx, s.mailbox, s.email, decision)).toEqual({ kind: "triaged" });
       const actions = await listActionsForEmail(db, s.ctx, s.emailId);
       expect(actions.map((a) => a.type).sort()).toEqual(["move", "save_summary"]);
+    } finally {
+      await cleanup(s.created);
+    }
+  });
+});
+
+describe("saveTriage and a setter on two connections", () => {
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  test("triage holds the share lock: the setter waits, then expires the move row", async () => {
+    const s = await committedSetup();
+    try {
+      const deps: SettingsDeps = { db, now: () => now, expireReady };
+      let setter: ReturnType<typeof setToolSwitch> | undefined;
+      let setterDone = false;
+      await db.transaction().execute(async (trx) => {
+        expect(await saveTriage(trx, s.ctx, s.mailbox, s.email, decision)).toEqual({ kind: "triaged" });
+        setter = setToolSwitch(deps, s.ctx, s.created.mailboxId, { name: "move", value: false, actor: "test" });
+        void setter.then(() => {
+          setterDone = true;
+        });
+        await sleep(200);
+        expect(setterDone).toBe(false);
+      });
+
+      const change = await setter;
+      expect(change?.expired).toBeGreaterThanOrEqual(1);
+      const actions = await listActionsForEmail(db, s.ctx, s.emailId);
+      expect(actions.find((a) => a.type === "move")?.status).toBe("expired");
+    } finally {
+      await cleanup(s.created);
+    }
+  });
+
+  test("an open setter holds the lock: triage waits, then sees the new version and writes nothing", async () => {
+    const s = await committedSetup();
+    try {
+      let writer: ReturnType<typeof saveTriage> | undefined;
+      let writerDone = false;
+      await db.transaction().execute(async (trx) => {
+        await lockMailboxSettings(trx, s.ctx, s.created.mailboxId);
+        await updateMailboxSettings(trx, s.ctx, s.created.mailboxId, {
+          toolSwitches: { ...s.mailbox.toolSwitches, move: false },
+        });
+        writer = saveTriage(db, s.ctx, s.mailbox, s.email, decision);
+        void writer.then(() => {
+          writerDone = true;
+        });
+        await sleep(200);
+        expect(writerDone).toBe(false);
+      });
+
+      expect(await writer).toEqual({ kind: "settings_changed" });
+      expect(await listActionsForEmail(db, s.ctx, s.emailId)).toEqual([]);
     } finally {
       await cleanup(s.created);
     }
