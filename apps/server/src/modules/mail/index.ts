@@ -32,12 +32,14 @@ export {
   finishEmail,
   forceRescan,
   getEmailMailbox,
+  getEmailMeta,
   getMailbox,
   listFolderUids,
   listMailboxes,
   listReturned,
   listSyncTargets,
   listThreadContext,
+  mailboxHasUidplus,
   mailKindFilter,
   releaseEmail,
   setMailboxStatus,
@@ -46,7 +48,7 @@ export {
   setUndoPending,
   updateEmailLocation,
 } from "./repo";
-export type { MailKind } from "./repo";
+export type { EmailMeta, MailKind } from "./repo";
 export type { ClaimedEmail, Cursor, MailboxRow, MailboxStatus, MailboxSummary, NewEmail } from "./repo";
 export {
   isSyntheticMessageId,
@@ -58,4 +60,11 @@ export {
 export { backfillInbox, CursorMovedError, syncMailbox, type SyncDeps, type SyncResult } from "./sync";
 export { auditMailbox, backfillMailbox, seedMailbox, type ToolDeps } from "./tools";
 export { locateKeyOf, locateMessage, LOCATE_CHUNK, type LocateKey } from "./locate";
-export { IDENTITY_MODE, isDeleted, sameMailIdentity, type IdentityMode, type MailIdentity } from "./sync-rules";
+export {
+  IDENTITY_MODE,
+  isDeleted,
+  normalizeMessageId,
+  sameMailIdentity,
+  type IdentityMode,
+  type MailIdentity,
+} from "./sync-rules";

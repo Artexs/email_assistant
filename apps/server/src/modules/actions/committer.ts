@@ -18,12 +18,12 @@ import {
 } from "../mail";
 
 import { applyAction, type FolderResolver } from "./apply";
+import { STALE_AFTER_MS } from "./constants";
 import { claimActions, countClaimable, expireStaleReady, releaseActions, type ClaimedAction } from "./repo";
 import { claimFilterFor, type ActionsScope } from "./scope";
 
 const log = createLog("actions");
 
-export const STALE_AFTER_MS = 10 * 60_000;
 const DEFAULT_BATCH_SIZE = 20;
 
 export interface CommitterDeps {

@@ -19,13 +19,18 @@ export {
   expireReadyOriginals,
   expireStaleReady,
   finishAction,
+  getDraft,
+  getSend,
   insertReverse,
   listActionsForEmail,
   listActionsForEmails,
   listFailedUnnotified,
+  listSendsOfDraft,
   listSummaries,
   lockActionsForUndo,
+  lockDraft,
   lockLatestOriginalMove,
+  lockSend,
   markNotified,
   markUndone,
   releaseAction,
@@ -38,11 +43,16 @@ export type {
   CreatedAction,
   ExpireFilter,
   FailedAction,
+  DraftRow,
   FinishNext,
   PlannedActionInput,
+  SendRow,
   UndoCandidate,
 } from "./repo";
-export { createCommitterJob, createFolderResolver, STALE_AFTER_MS, type CommitterDeps } from "./committer";
+export { createCommitterJob, createFolderResolver, type CommitterDeps } from "./committer";
+export { STALE_AFTER_MS } from "./constants";
 export { claimFilterFor, scopeAdmits, type ActionsScope } from "./scope";
 export { expireReady } from "./expire";
+export { closeDraftOfSend, expireReminderActions, expireSend, type SendCloseReason } from "./expiry";
+export { noDelegationHooks, type DelegationHooks } from "./hooks";
 export { undo, type UndoResult } from "./undo";

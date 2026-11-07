@@ -483,6 +483,42 @@ export async function getEmailMailbox(
   };
 }
 
+export interface EmailMeta {
+  id: string;
+  mailbox_id: string;
+  subject: string | null;
+  from_address: string | null;
+  message_id_header: string | null;
+  in_reply_to: string | null;
+  references_header: string | null;
+  received_at: Date;
+}
+
+// Header facts of one mail, for other modules (the reminder thread). `undefined` = no such mail in this organization.
+export async function getEmailMeta(db: DbOrTrx, ctx: TenantContext, emailId: string): Promise<EmailMeta | undefined> {
+  return db
+    .selectFrom("emails")
+    .select([
+      "id",
+      "mailbox_id",
+      "subject",
+      "from_address",
+      "message_id_header",
+      "in_reply_to",
+      "references_header",
+      "received_at",
+    ])
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", emailId)
+    .executeTakeFirst();
+}
+
+// The draft removal needs UIDPLUS (D13). An unknown mailbox counts as no UIDPLUS.
+export async function mailboxHasUidplus(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<boolean> {
+  const mailbox = await getMailbox(db, ctx, mailboxId);
+  return (mailbox?.capabilities as Partial<MailCapabilities> | undefined)?.uidplus === true;
+}
+
 // `undefined` keeps the column (M7). `movedAt: null` clears `moved_at` (an Undo back to INBOX). `undoPendingAt: null` clears the D22 flag. Never touches `status` or `returned_at`.
 export async function updateEmailLocation(
   db: DbOrTrx,

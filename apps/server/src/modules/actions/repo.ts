@@ -495,7 +495,7 @@ export async function lockActionsForUndo(trx: DbOrTrx, ctx: TenantContext, email
 export async function insertReverse(
   trx: DbOrTrx,
   ctx: TenantContext,
-  original: { id: string; emailId: string; type: ActionType; payload: Record<string, string> }
+  original: { id: string; emailId: string; type: ActionType; payload: Record<string, string | number | null> }
 ): Promise<string | null> {
   const row = await trx
     .insertInto("actions")
@@ -712,4 +712,251 @@ export async function expireReadyOriginals(
     .returning(["id", "email_id", "type"])
     .execute();
   return rows.map((row) => ({ id: row.id, emailId: row.email_id, type: actionTypeSchema.parse(row.type) }));
+}
+
+export interface SendRow {
+  id: string;
+  email_id: string;
+  status: string;
+  status_reason: string | null;
+  payload: Record<string, unknown>;
+  depends_on_action_id: string | null;
+  notified_at: Date | null;
+  approved_by: string | null;
+  approved_at: Date | null;
+  approved_via: string | null;
+  outgoing_message_id: string | null;
+  provider_result: Record<string, unknown> | null;
+  applied_at: Date | null;
+  created_at: Date;
+  updated_at: Date;
+  attempts: number;
+  last_error: string | null;
+  locked_at: Date | null;
+  email: {
+    mailbox_id: string;
+    subject: string | null;
+    from_address: string | null;
+    message_id_header: string | null;
+    received_at: Date;
+    references_header: string | null;
+    in_reply_to: string | null;
+    body_text: string | null;
+  };
+}
+
+function sendQuery(db: DbOrTrx, ctx: TenantContext, id: string) {
+  return db
+    .selectFrom("actions")
+    .innerJoin("emails", (join) =>
+      join.onRef("emails.id", "=", "actions.email_id").onRef("emails.org_id", "=", "actions.org_id")
+    )
+    .select([
+      "actions.id",
+      "actions.email_id",
+      "actions.status",
+      "actions.status_reason",
+      "actions.payload",
+      "actions.depends_on_action_id",
+      "actions.notified_at",
+      "actions.approved_by",
+      "actions.approved_at",
+      "actions.approved_via",
+      "actions.outgoing_message_id",
+      "actions.provider_result",
+      "actions.applied_at",
+      "actions.created_at",
+      "actions.updated_at",
+      "actions.attempts",
+      "actions.last_error",
+      "actions.locked_at",
+      "emails.mailbox_id",
+      "emails.subject",
+      "emails.from_address",
+      "emails.message_id_header",
+      "emails.received_at",
+      "emails.references_header",
+      "emails.in_reply_to",
+      "emails.body_text",
+    ])
+    .where("actions.org_id", "=", ctx.orgId)
+    .where("emails.org_id", "=", ctx.orgId)
+    .where("actions.type", "=", "send")
+    .where("actions.id", "=", id);
+}
+
+type SendQueryRow = NonNullable<Awaited<ReturnType<ReturnType<typeof sendQuery>["executeTakeFirst"]>>>;
+
+function toSendRow(row: SendQueryRow): SendRow {
+  const {
+    mailbox_id,
+    subject,
+    from_address,
+    message_id_header,
+    received_at,
+    references_header,
+    in_reply_to,
+    body_text,
+  } = row;
+  return {
+    id: row.id,
+    email_id: row.email_id,
+    status: row.status,
+    status_reason: row.status_reason,
+    payload: row.payload as Record<string, unknown>,
+    depends_on_action_id: row.depends_on_action_id,
+    notified_at: row.notified_at,
+    approved_by: row.approved_by,
+    approved_at: row.approved_at,
+    approved_via: row.approved_via,
+    outgoing_message_id: row.outgoing_message_id,
+    provider_result: row.provider_result as Record<string, unknown> | null,
+    applied_at: row.applied_at,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    attempts: row.attempts,
+    last_error: row.last_error,
+    locked_at: row.locked_at,
+    email: {
+      mailbox_id,
+      subject,
+      from_address,
+      message_id_header,
+      received_at,
+      references_header,
+      in_reply_to,
+      body_text,
+    },
+  };
+}
+
+// FOR UPDATE of the action row only (the mail row stays unlocked: the lock order of S3, D6).
+export async function lockSend(trx: Transaction<DB>, ctx: TenantContext, id: string): Promise<SendRow | undefined> {
+  const row = await sendQuery(trx, ctx, id).forUpdate("actions").executeTakeFirst();
+  return row && toSendRow(row);
+}
+
+export async function getSend(db: DbOrTrx, ctx: TenantContext, id: string): Promise<SendRow | undefined> {
+  const row = await sendQuery(db, ctx, id).executeTakeFirst();
+  return row && toSendRow(row);
+}
+
+export interface DraftRow {
+  id: string;
+  email_id: string;
+  status: string;
+  payload: Record<string, unknown>;
+  provider_result: Record<string, unknown> | null;
+  created_at: Date;
+  locked_at: Date | null;
+}
+
+function draftQuery(db: DbOrTrx, ctx: TenantContext, id: string) {
+  return db
+    .selectFrom("actions")
+    .select(["id", "email_id", "status", "payload", "provider_result", "created_at", "locked_at"])
+    .where("org_id", "=", ctx.orgId)
+    .where("type", "=", "create_draft")
+    .where("reverses_action_id", "is", null)
+    .where("id", "=", id);
+}
+
+function toDraftRow(row: Awaited<ReturnType<ReturnType<typeof draftQuery>["executeTakeFirstOrThrow"]>>): DraftRow {
+  return {
+    ...row,
+    payload: row.payload as Record<string, unknown>,
+    provider_result: row.provider_result as Record<string, unknown> | null,
+  };
+}
+
+export async function lockDraft(trx: Transaction<DB>, ctx: TenantContext, id: string): Promise<DraftRow | undefined> {
+  const row = await draftQuery(trx, ctx, id).forUpdate().executeTakeFirst();
+  return row && toDraftRow(row);
+}
+
+export async function getDraft(db: DbOrTrx, ctx: TenantContext, id: string): Promise<DraftRow | undefined> {
+  const row = await draftQuery(db, ctx, id).executeTakeFirst();
+  return row && toDraftRow(row);
+}
+
+// A resend shares the draft of the failed send (D18).
+export async function listSendsOfDraft(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  draftId: string
+): Promise<{ id: string; status: string }[]> {
+  return db
+    .selectFrom("actions")
+    .select(["id", "status"])
+    .where("org_id", "=", ctx.orgId)
+    .where("type", "=", "send")
+    .where("depends_on_action_id", "=", draftId)
+    .orderBy("created_at")
+    .orderBy("id")
+    .execute();
+}
+
+// `from` guards the change. An `approved` send closes only when no run holds it (`locked_at` null or before `staleBefore`).
+// `result_notified_at` stays null: the notifier sends the result (D20). The caller writes the audit row.
+export async function setExpired(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  id: string,
+  opts: { reason: string; at: Date; from: "awaiting_approval" | "approved"; staleBefore: Date }
+): Promise<boolean> {
+  const result = await trx
+    .updateTable("actions")
+    .set({ status: "expired", status_reason: opts.reason, locked_at: null, next_attempt_at: null, updated_at: opts.at })
+    .where("id", "=", id)
+    .where("org_id", "=", ctx.orgId)
+    .where("type", "=", "send")
+    .where("status", "=", opts.from)
+    .$if(opts.from === "approved", (qb) =>
+      qb.where((eb) => eb.or([eb("locked_at", "is", null), eb("locked_at", "<", opts.staleBefore)]))
+    )
+    .executeTakeFirst();
+  return result.numUpdatedRows > 0n;
+}
+
+// A `ready` original draft whose send is dead: no draft is created for it (D13). The caller writes the audit row.
+export async function expireReadyDraft(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  id: string,
+  at: Date
+): Promise<boolean> {
+  const result = await trx
+    .updateTable("actions")
+    .set({ status: "expired", status_reason: "send_closed", locked_at: null, updated_at: at })
+    .where("id", "=", id)
+    .where("org_id", "=", ctx.orgId)
+    .where("type", "=", "create_draft")
+    .where("reverses_action_id", "is", null)
+    .where("status", "=", "ready")
+    .executeTakeFirst();
+  return result.numUpdatedRows > 0n;
+}
+
+// Ids of the reminder sends of a delegation that can still be closed, locked FOR UPDATE.
+// Lock order (D6): the caller holds the delegation lock. Only `awaiting_approval` and `approved` rows are selected on purpose:
+// a reminder in flight is `applying`, and the committer holds that row while it waits for the delegation lock.
+// Selecting `applying` rows here would close the cycle and deadlock.
+export async function listOpenReminderSends(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  delegationId: string
+): Promise<string[]> {
+  const rows = await trx
+    .selectFrom("actions")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where("type", "=", "send")
+    .where("status", "in", ["awaiting_approval", "approved"])
+    .where(sql<string>`payload->>'delegation_id'`, "=", delegationId)
+    .where(sql<boolean>`jsonb_exists(payload, 'reminder')`)
+    .orderBy("created_at")
+    .orderBy("id")
+    .forUpdate()
+    .execute();
+  return rows.map((row) => row.id);
 }

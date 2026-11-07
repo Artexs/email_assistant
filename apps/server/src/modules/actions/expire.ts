@@ -4,7 +4,7 @@ import type { Transaction } from "kysely";
 import type { DB, TenantContext } from "../../platform/db";
 import { auditEvents, recordAudit } from "../audit";
 
-import { STALE_AFTER_MS } from "./committer";
+import { STALE_AFTER_MS } from "./constants";
 import { expireReadyOriginals, type ExpireFilter } from "./repo";
 
 // Shared by Undo, the expire-ready CLI and the settings setters (stage 14, as `SettingsDeps.expireReady`).

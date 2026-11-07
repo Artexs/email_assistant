@@ -171,7 +171,7 @@ export async function insertAction(
   opts: {
     type: ActionType;
     status: string;
-    payload?: Record<string, string>;
+    payload?: Record<string, unknown>;
     idempotencyKey?: string;
     appliedAt?: Date | null;
     reversesActionId?: string | null;
@@ -180,6 +180,13 @@ export async function insertAction(
     lockedAt?: Date | null;
     statusReason?: string | null;
     createdAt?: Date;
+    dependsOnActionId?: string | null;
+    providerResult?: Record<string, unknown> | null;
+    approvedAt?: Date | null;
+    approvedBy?: string | null;
+    approvedVia?: string | null;
+    notifiedAt?: Date | null;
+    outgoingMessageId?: string | null;
   }
 ): Promise<string> {
   const createdAt = opts.createdAt ?? new Date();
@@ -200,6 +207,13 @@ export async function insertAction(
       locked_at: opts.lockedAt ?? null,
       status_reason: opts.statusReason ?? null,
       created_at: createdAt,
+      depends_on_action_id: opts.dependsOnActionId ?? null,
+      provider_result: opts.providerResult ? JSON.stringify(opts.providerResult) : null,
+      approved_at: opts.approvedAt ?? null,
+      approved_by: opts.approvedBy ?? null,
+      approved_via: opts.approvedVia ?? null,
+      notified_at: opts.notifiedAt ?? null,
+      outgoing_message_id: opts.outgoingMessageId ?? null,
     })
     .returning("id")
     .executeTakeFirstOrThrow();
@@ -217,7 +231,7 @@ export async function insertTriagedWithActions(
     inboxUid?: number | null;
     contentHash?: string;
     movedAt?: Date | null;
-    actions: { type: ActionType; status: string; payload?: Record<string, string>; appliedAt?: Date | null }[];
+    actions: Omit<Parameters<typeof insertAction>[3], "createdAt">[];
   }
 ): Promise<{ emailId: string; actionIds: string[] }> {
   const { folder, uid, inboxUid, contentHash, movedAt, actions, ...triaged } = opts;
@@ -240,4 +254,74 @@ export async function insertTriagedWithActions(
     actionIds.push(await insertAction(trx, ctx, emailId, { ...action, createdAt: triaged.createdAt }));
   }
   return { emailId, actionIds };
+}
+
+// One `delegates` row; the email is lower case. Returns the id.
+export async function insertDelegate(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  opts?: { name?: string; email?: string; tags?: string[]; active?: boolean }
+): Promise<string> {
+  const row = await trx
+    .insertInto("delegates")
+    .values({
+      org_id: ctx.orgId,
+      name: opts?.name ?? "Delegate",
+      email: opts?.email ?? `delegate-${randomUUID()}@x.test`,
+      competence_tags: opts?.tags ?? [],
+      active: opts?.active ?? true,
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  return row.id;
+}
+
+// One `delegations` row. The states `sent`, `answered` and `overdue` need `sent_message_id` and `sent_at`: they get defaults.
+export async function insertDelegation(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  opts: {
+    mailboxId: string;
+    emailId: string;
+    delegateId: string;
+    draftActionId: string;
+    sendActionId: string;
+    status?: string;
+    taskSummary?: string;
+    dueAt?: Date | null;
+    sentMessageId?: string | null;
+    sentAt?: Date | null;
+    lastReminderAt?: Date | null;
+    remindersSent?: number;
+    answeredAt?: Date | null;
+    answeredNotifiedAt?: Date | null;
+    createdAt?: Date;
+  }
+): Promise<string> {
+  const status = opts.status ?? "drafted";
+  const sentStatus = status === "sent" || status === "answered" || status === "overdue";
+  const row = await trx
+    .insertInto("delegations")
+    .values({
+      org_id: ctx.orgId,
+      mailbox_id: opts.mailboxId,
+      email_id: opts.emailId,
+      delegate_id: opts.delegateId,
+      draft_action_id: opts.draftActionId,
+      send_action_id: opts.sendActionId,
+      status,
+      task_summary: opts.taskSummary ?? "Prepare the offer",
+      due_at: opts.dueAt ?? null,
+      sent_message_id:
+        opts.sentMessageId === undefined ? (sentStatus ? `<sent-${randomUUID()}@x.test>` : null) : opts.sentMessageId,
+      sent_at: opts.sentAt === undefined ? (sentStatus ? new Date("2026-11-05T09:00:00Z") : null) : opts.sentAt,
+      last_reminder_at: opts.lastReminderAt ?? null,
+      reminders_sent: opts.remindersSent ?? 0,
+      answered_at: opts.answeredAt ?? null,
+      answered_notified_at: opts.answeredNotifiedAt ?? null,
+      ...(opts.createdAt ? { created_at: opts.createdAt } : {}),
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  return row.id;
 }

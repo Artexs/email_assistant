@@ -28,6 +28,15 @@ export const auditEvents = {
   mailboxModeChanged: "mailbox.mode_changed",
   mailboxPolicyChanged: "mailbox.policy_changed",
   mailboxSwitchChanged: "mailbox.switch_changed",
+  delegateAdded: "delegate.added",
+  delegateChanged: "delegate.changed",
+  delegationCreated: "delegation.created",
+  delegationSent: "delegation.sent",
+  delegationAnswered: "delegation.answered",
+  delegationOverdue: "delegation.overdue",
+  delegationCancelled: "delegation.cancelled",
+  delegationDone: "delegation.done",
+  delegationChaserRun: "delegation.chaser_run",
 } as const;
 
 export interface AuditEvent {
