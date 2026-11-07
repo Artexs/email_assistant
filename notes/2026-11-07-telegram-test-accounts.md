@@ -55,3 +55,11 @@ After these ~15 minutes, the agent can do everything else alone: session string,
 - iPhone available (fallback if Desktop sign-up fails)?
 - OK to use their own number for the test-DC account and `api_id`?
 - Where the session string lives (`.env` key, for example `TELEGRAM_TEST_SESSION`), and that the tester runs only from dev, never on the pilot VPS.
+
+## Probe results (2026-11-07, scratch probe `~/scratch/tg-probe/`, mtcute 0.32.7, Bun 1.4.4, Linux)
+- PASS: connect to the test DC with the user's `api_id` over plain TCP, no RSA key needed (`help.getConfig` → `testMode=true thisDc=2`).
+- BLOCKED: `auth.sendCode` for the user's real number → `type=app next=none timeout=0`. The number already has a test-DC account with a live session on an unknown device. No SMS fallback for a third-party `api_id`.
+- macOS app (13.2): "click Settings 10 times" opened nothing for the user. Same report: tdesktop#27662 (2024), no fix.
+- Telegram Web A: the source (`SettingsHeader.tsx`, `SettingsExperimental.tsx`) has Settings title × 5 clicks → Experimental → "Login on Test Server". The user did not see it in Web A 12.0.48.
+- Android Play Store app: no test DC (levlam, 2025).
+- Assessment: the test environment is niche, badly documented, and access paths differ per app. Recommendation to the user: stop this route; use a local fake Telegram (Bot API emulator driven by the agent) for autonomous runs, and a dedicated prepaid SIM on production only if real-Telegram checks become necessary.
