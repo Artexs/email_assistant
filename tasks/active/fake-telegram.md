@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — planned.** Plan approved by the user (2026-11-07). Left: the build (stages 1–6), started with `/skill:run-task tasks/planned/fake-telegram.md`.
+> **Status 2026-11-07 — in progress — plan approved, ready for the build.** Left: stages 1–6. Start in pi: `/skill:run-task tasks/active/fake-telegram.md`. Read "Parallel work with S4" first.
 
 # Fake Telegram: a local Bot API emulator for agent-run dev tests
 
@@ -55,6 +55,17 @@ Webhooks, media, groups, payments, other API methods; real rate limits; how mess
 - `deploy/Dockerfile` copies a fixed list of `package.json` files, then runs `bun install --frozen-lockfile`. A new workspace changes `bun.lock`, so the Dockerfile must also copy `tools/fake-telegram/package.json` (only that file, never the code), or the image build fails.
 - Root `test:unit` is `bun test packages/core apps/server/src`: it must add `tools`. `typecheck` runs `bun run --filter '*' typecheck`, so the new package needs a `typecheck` script. `lint` is `eslint .` (covers `tools/`).
 - Telegram limits and error shapes: `notes/2026-11-06-telegram-bot-facts.md`.
+
+### Parallel work with S4 (user decision 2026-11-07)
+
+The user allows this build to run at the same time as the S4 build (`tasks/active/s4-drafts-approvals-delegation.md`, pipeline mode) in the same checkout. Rules:
+
+- **Run mode: normal** (one stage at a time: build → review → commit). The subagents never commit or push.
+- **Stage by explicit path only.** Never `git add -A` or `git add .`. Never stage, change, format or revert a file of S4 or of another chat (check `git status` before each commit).
+- **Checks and other work.** If `lint`, `typecheck` or a test fails only in files that this task did not change, do not fix them. Run the check again after the S4 session commits, or wait. Write the case in the log.
+- **Shared files.** Stage 1 changes root `package.json`, `bun.lock`, `deploy/Dockerfile` and `eslint.config.js`. Stage 4 changes `platform/config.ts`, `config.test.ts`, `main.ts` and `.env.example`; S4 stage 18 changes the same files. Before these stages, run `git status` and `git diff` on those files. If they have uncommitted S4 changes, wait until S4 commits them. Never commit a hunk of S4.
+- **Push.** Pipeline mode (`tasks/README.md`) pushes a commit only after its review PASS, and S4 commits can sit unpushed below ours. Push a fake-telegram commit only when `git log origin/master..HEAD` holds no S4 commit with `Review: pending`. Else leave it local and write "push pending" in the log. Never reorder or rewrite commits.
+- **Integration tests.** `test:int` uses the shared dev DB. Do not run it while the S4 session runs it (ask the user if you are not sure).
 
 ### Rules for all stages (planner, 2026-11-07)
 
@@ -466,3 +477,4 @@ Answered by the user on 2026-11-07: (a) for all 4 (the recommendations). The liv
 - 2026-11-07: test-DC route probed and dropped; fake Telegram scope agreed with the user; placement outside the app decided.
 - 2026-11-07: Plan session. Handoff claims checked against the code (differences: `deleteWebhook`, no dev marker in the config, Dockerfile lockfile, test-mail tool lives in the app). User approved the 6 stages and the recommendations U3–U5.
 - 2026-11-07: Planner added the step detail. User answered questions 1–4: (a), the recommendations. User: the real LLM in 6.2 is fine, "Don't modify the LLM". Plan approved.
+- 2026-11-07: Moved to `active/`. User: the build may run in parallel with S4; rules in "Parallel work with S4". Plan commit `059178c` is local: the push waits for the S4 commits below it (review pending), and this shell had no SSH key.
