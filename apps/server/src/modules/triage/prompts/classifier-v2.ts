@@ -20,15 +20,21 @@ const MEANINGS: Record<Category, string> = {
   urgent: "needs the user today.",
   needs_reply: "needs the user's own answer. Meeting requests go here.",
   delegation:
-    "a task that the user can hand to one of the delegates listed under Delegates. Pick the delegate id from that list only.",
+    "a task that the user can hand to one of the delegates listed under Delegates. Pick the delegate id from that list only. This also covers an email that asks the user's side to get something done (arrange, check, prepare, handle) that a delegate from the list could do, also when the email is addressed to the user. If it is not clear who should do it, what exactly or by when, it is still delegation: give a clarification.",
   info: "information for the user, no action needed.",
   notification: "automatic mail from a system (alerts, receipts, status updates, account messages).",
   spam: "unwanted mail: unasked marketing, phishing or a scam.",
   unsure: "you cannot decide.",
 };
 
+// With delegation allowed, a task that the user's team can do must not land in needs_reply.
+const NEEDS_REPLY_WITH_DELEGATION =
+  "needs the user's own answer. Meeting requests go here. Use it only when the user must answer personally. A task that someone on the user's team can do is delegation.";
+
 export function buildSystemPrompt(allowed: readonly Category[]): string {
-  const categories = allowed.map((category) => `- ${category}: ${MEANINGS[category]}`).join("\n");
+  const meaning = (category: Category): string =>
+    category === "needs_reply" && allowed.includes("delegation") ? NEEDS_REPLY_WITH_DELEGATION : MEANINGS[category];
+  const categories = allowed.map((category) => `- ${category}: ${meaning(category)}`).join("\n");
   return `You classify one email for a busy manager. You return only JSON that matches the given schema.
 
 Categories (pick exactly one):

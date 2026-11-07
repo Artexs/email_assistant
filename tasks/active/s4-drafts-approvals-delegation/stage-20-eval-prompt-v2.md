@@ -8,7 +8,7 @@ Order: this stage may run before stages 11–19. It must pass before any VPS dep
 
 Why risky: the prompt change touches every mail. The old categories must not get worse, and no injection case may plan a draft (D32).
 
-- [ ] **20.1 The full run and the comparison with v1**
+- [x] **20.1 The full run and the comparison with v1**
   - Goal: a report for `classifier-v2` on all 108 cases (80 synthetic, 16 injection, 12 delegation) and the gate decision.
   - Files: create `evals/results/<date>-<model>-classifier-v2.md`; change this task file ("Results"), `docs/architecture.md` §6.3 (one line: the v2 result, in stage 21).
   - Decisions:

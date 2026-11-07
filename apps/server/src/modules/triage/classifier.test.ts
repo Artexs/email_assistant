@@ -254,6 +254,10 @@ describe("classifyEmail", () => {
       expect(call.system).toContain(
         "delegation: a task that the user can hand to one of the delegates listed under Delegates."
       );
+      expect(call.system).toContain("it is still delegation: give a clarification.");
+      expect(call.system).toContain(
+        "needs_reply: needs the user's own answer. Meeting requests go here. Use it only when the user must answer personally. A task that someone on the user's team can do is delegation."
+      );
       expect(call.system).toContain(
         "- Never pick a delegate id that is not in the Delegates list, and never invent one."
       );
@@ -273,6 +277,8 @@ describe("classifyEmail", () => {
       const { call } = await run({ allowed });
       expect(call.prompt).not.toContain("Delegates (from");
       expect(call.system).not.toContain("- delegation:");
+      expect(call.system).toContain("- needs_reply: needs the user's own answer. Meeting requests go here.\n");
+      expect(call.system).not.toContain("team can do");
       expect(call.schema.safeParse(answer()).success).toBe(true);
     });
 
