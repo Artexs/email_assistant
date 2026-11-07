@@ -1,0 +1,81 @@
+// S4 plan probe 3 (2026-11-07): imapflow 1.7.8 APPEND on GreenMail: uid, flags, INTERNALDATE, header fetch, SEARCH SINCE, delete.
+import { randomUUID } from "node:crypto";
+
+import { ImapFlow } from "imapflow";
+
+const user = `u-${randomUUID()}@localhost`;
+const client = new ImapFlow({
+  host: "127.0.0.1",
+  port: 3143,
+  secure: false,
+  doSTARTTLS: false,
+  auth: { user, pass: "x" },
+  logger: false,
+  disableAutoIdle: true,
+});
+await client.connect();
+const actionId = randomUUID();
+const raw = [
+  `Message-ID: <ea-${actionId}@localhost>`,
+  "From: owner@localhost",
+  "To: delegate@localhost",
+  "Subject: =?UTF-8?Q?Zadanie=3A_=C4=85=C4=87?=",
+  "Date: Fri, 06 Nov 2026 10:00:00 +0000",
+  `X-Ea-Action-ID: ${actionId}`,
+  "MIME-Version: 1.0",
+  "Content-Type: text/plain; charset=utf-8",
+  "Content-Transfer-Encoding: quoted-printable",
+  "",
+  "Dzie=C5=84 dobry,",
+  "",
+  "> cytat",
+  "",
+].join("\r\n");
+const idate = new Date("2026-11-06T10:05:00Z");
+const out: Record<string, unknown> = { capabilities: [...client.capabilities.keys()] };
+const list = await client.list();
+out.folders = list.map((f) => `${f.path}${f.specialUse ? ` (${f.specialUse})` : ""}`);
+const drafts = list.find((f) => f.specialUse === "\\Drafts")?.path ?? "Drafts";
+const sent = list.find((f) => f.specialUse === "\\Sent")?.path ?? "Sent";
+for (const path of [drafts, sent]) {
+  if (!list.some((f) => f.path === path)) out[`created_${path}`] = await client.mailboxCreate(path);
+}
+out.foldersAfter = (await client.list()).map((f) => `${f.path}${f.specialUse ? ` (${f.specialUse})` : ""}`);
+const appended = await client.append(drafts, raw, ["\\Draft"], idate);
+out.appendDraft = appended;
+const lock = await client.getMailboxLock(drafts);
+try {
+  const uid = appended === false ? undefined : appended.uid;
+  const msg = uid === undefined ? false : await client.fetchOne(String(uid), { uid: true, size: true, internalDate: true, envelope: true, flags: true, headers: ["x-ea-action-id", "references"] }, { uid: true });
+  out.fetched = msg === false ? false : {
+    uid: msg.uid,
+    size: msg.size,
+    rawBytes: Buffer.byteLength(raw),
+    internalDate: msg.internalDate,
+    internalDateEqualsIdate: msg.internalDate?.getTime() === idate.getTime(),
+    envelopeMessageId: msg.envelope?.messageId,
+    envelopeDate: msg.envelope?.date,
+    subject: msg.envelope?.subject,
+    flags: msg.flags ? [...msg.flags] : null,
+    headers: msg.headers?.toString("utf8"),
+  };
+  const since = await client.search({ since: new Date("2026-11-05T00:00:00Z") }, { uid: true });
+  out.searchSince = since;
+  const byHeader = await client.search({ header: { "x-ea-action-id": actionId } }, { uid: true });
+  out.searchHeader = byHeader;
+} finally {
+  lock.release();
+}
+const appendedSent = await client.append(sent, raw, ["\\Seen"], new Date());
+out.appendSent = appendedSent;
+const lock2 = await client.getMailboxLock(drafts);
+try {
+  const uid = appended === false ? undefined : appended.uid;
+  out.deleted = uid === undefined ? null : await client.messageDelete(String(uid), { uid: true });
+  out.deletedAgain = uid === undefined ? null : await client.messageDelete(String(uid), { uid: true });
+  out.afterDelete = await client.search({ all: true }, { uid: true });
+} finally {
+  lock2.release();
+}
+await client.logout();
+console.log(JSON.stringify(out, (_k, v) => (typeof v === "bigint" ? Number(v) : v), 1));

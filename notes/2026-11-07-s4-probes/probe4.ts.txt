@@ -1,0 +1,114 @@
+// S4 plan probe 4 (2026-11-07): can a custom logger on SMTPConnection tell that the DATA reply arrived (content phase began),
+// also when the server answers DATA with 250 instead of 354, and without seeing the message content?
+import { createServer, type Server, type Socket } from "node:net";
+
+import SMTPConnection from "nodemailer/lib/smtp-connection";
+
+type Scenario = "data_250_then_drop" | "data_354_ok" | "drop_on_data_cmd";
+
+function startServer(scenario: Scenario): Promise<{ server: Server; port: number }> {
+  return new Promise((resolve) => {
+    const server = createServer((socket: Socket) => {
+      let buffer = "";
+      let dataMode = false;
+      const write = (line: string) => socket.write(`${line}\r\n`);
+      socket.write("220 fake ESMTP\r\n");
+      socket.on("data", (chunk) => {
+        buffer += chunk.toString("binary");
+        if (dataMode) {
+          const end = buffer.indexOf("\r\n.\r\n");
+          if (end === -1) return;
+          buffer = buffer.slice(end + 5);
+          dataMode = false;
+          if (scenario === "data_250_then_drop") socket.destroy();
+          else write("250 2.0.0 Ok: queued as ABC123");
+          return;
+        }
+        let nl = buffer.indexOf("\r\n");
+        while (nl !== -1 && !dataMode) {
+          const line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 2);
+          const upper = line.toUpperCase();
+          if (upper.startsWith("EHLO")) socket.write("250-fake\r\n250-AUTH PLAIN LOGIN\r\n250 8BITMIME\r\n");
+          else if (upper.startsWith("AUTH")) write("235 2.7.0 ok");
+          else if (upper.startsWith("MAIL FROM")) write("250 2.1.0 ok");
+          else if (upper.startsWith("RCPT TO")) write("250 2.1.5 ok");
+          else if (upper === "DATA") {
+            if (scenario === "drop_on_data_cmd") socket.destroy();
+            else {
+              dataMode = true;
+              write(scenario === "data_250_then_drop" ? "250 go ahead (non-standard)" : "354 go");
+            }
+          } else if (upper === "QUIT") {
+            write("221 bye");
+            socket.end();
+          } else write("250 ok");
+          nl = buffer.indexOf("\r\n");
+        }
+      });
+      socket.on("error", () => undefined);
+    });
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      resolve({ server, port: typeof address === "object" && address ? address.port : 0 });
+    });
+  });
+}
+
+const RAW = "Message-ID: <x@ea.local>\r\nFrom: owner@x.test\r\nTo: delegate@x.test\r\nSubject: p\r\n\r\nSECRET-BODY-MARKER hello\r\n";
+
+async function run(scenario: Scenario): Promise<void> {
+  const { server, port } = await startServer(scenario);
+  const events: { tnx: unknown; text: string }[] = [];
+  const noop = () => undefined;
+  const capture = (entry: Record<string, unknown>, message: unknown, ...args: unknown[]) => {
+    const text = [message, ...args].map(String).join(" ");
+    events.push({ tnx: entry?.tnx, text });
+  };
+  const logger = { trace: noop, debug: capture, info: capture, warn: capture, error: capture, fatal: capture, level: noop };
+  const connection = new SMTPConnection({
+    host: "127.0.0.1",
+    port,
+    secure: false,
+    ignoreTLS: true,
+    connectionTimeout: 1500,
+    greetingTimeout: 1500,
+    socketTimeout: 1500,
+    logger,
+    transactionLog: true,
+  });
+  let onError: (error: Error) => void = () => undefined;
+  const errorEvent = new Promise<never>((_, reject) => {
+    onError = reject;
+  });
+  connection.on("error", (error: Error) => onError(error));
+  const timeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error("probe timeout")), 8000));
+  const stage = <T>(work: Promise<T>): Promise<T> => Promise.race([work, errorEvent, timeout]);
+  const out: Record<string, unknown> = { scenario };
+  try {
+    await stage(new Promise<void>((resolve, reject) => connection.connect((err?: Error) => (err ? reject(err) : resolve()))));
+    await stage(new Promise<void>((resolve, reject) => connection.login({ user: "owner@x.test", pass: "secret" }, (err?: Error) => (err ? reject(err) : resolve()))));
+    const info = await stage(new Promise<unknown>((resolve, reject) =>
+      connection.send({ from: "owner@x.test", to: ["delegate@x.test"] }, RAW, (err: Error | null, result: unknown) => (err ? reject(err) : resolve(result)))
+    ));
+    out.sent = info;
+  } catch (error) {
+    const e = error as Record<string, unknown>;
+    out.error = { code: e.code, command: e.command, lastServerResponse: connection.lastServerResponse };
+  } finally {
+    connection.close();
+    server.close();
+  }
+  const client = events.filter((e) => e.tnx === "client").map((e) => e.text);
+  const serverReplies = events.filter((e) => e.tnx === "server").map((e) => e.text);
+  const dataIndex = client.findIndex((t) => t.trim().toUpperCase() === "DATA");
+  out.clientLines = client;
+  out.serverReplies = serverReplies;
+  out.dataClientLineSeen = dataIndex >= 0;
+  out.contentLeaked = events.some((e) => e.text.includes("SECRET-BODY-MARKER"));
+  out.passwordLeaked = events.some((e) => e.text.includes("secret") || e.text.includes(Buffer.from("\0owner@x.test\0secret").toString("base64")));
+  out.tnxKinds = [...new Set(events.map((e) => String(e.tnx)))];
+  console.log(JSON.stringify(out));
+}
+
+for (const scenario of ["data_354_ok", "data_250_then_drop", "drop_on_data_cmd"] as Scenario[]) await run(scenario);

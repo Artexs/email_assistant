@@ -1,0 +1,266 @@
+// S4 plan probe (2026-11-07): how nodemailer 10.3.1 reports SMTP errors per stage, and when it reads the message stream.
+import { createServer, type Server, type Socket } from "node:net";
+import { Readable } from "node:stream";
+
+import MailComposer from "nodemailer/lib/mail-composer";
+import { createTransport } from "nodemailer";
+
+type Scenario =
+  | "ok"
+  | "refused"
+  | "close_after_greeting"
+  | "ehlo_421"
+  | "auth_535"
+  | "mail_from_550"
+  | "rcpt_550"
+  | "rcpt_450"
+  | "data_cmd_554"
+  | "content_552"
+  | "content_451"
+  | "close_during_content"
+  | "close_after_content"
+  | "timeout_after_content";
+
+interface Received {
+  raw: string;
+  commands: string[];
+}
+
+function startServer(scenario: Scenario, received: Received): Promise<{ server: Server; port: number }> {
+  return new Promise((resolve) => {
+    const server = createServer((socket: Socket) => {
+      let buffer = "";
+      let dataMode = false;
+      const write = (line: string) => socket.write(`${line}\r\n`);
+      socket.write("220 fake ESMTP\r\n");
+      if (scenario === "close_after_greeting") {
+        socket.destroy();
+        return;
+      }
+      socket.on("data", (chunk) => {
+        buffer += chunk.toString("binary");
+        if (dataMode) {
+          if (scenario === "close_during_content") {
+            socket.destroy();
+            return;
+          }
+          const end = buffer.indexOf("\r\n.\r\n");
+          if (end === -1) return;
+          received.raw = buffer.slice(0, end);
+          buffer = buffer.slice(end + 5);
+          dataMode = false;
+          switch (scenario) {
+            case "content_552":
+              write("552 5.3.4 message too big");
+              return;
+            case "content_451":
+              write("451 4.3.0 try again later");
+              return;
+            case "close_after_content":
+              socket.destroy();
+              return;
+            case "timeout_after_content":
+              return;
+            default:
+              write("250 2.0.0 Ok: queued as ABC123");
+              return;
+          }
+        }
+        let nl = buffer.indexOf("\r\n");
+        while (nl !== -1 && !dataMode) {
+          const line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 2);
+          received.commands.push(line.replace(/^(AUTH PLAIN) .*/, "$1 ***"));
+          const upper = line.toUpperCase();
+          if (upper.startsWith("EHLO") || upper.startsWith("HELO")) {
+            if (scenario === "ehlo_421") {
+              write("421 4.3.2 service shutting down");
+              socket.end();
+            } else {
+              socket.write("250-fake\r\n250-AUTH PLAIN LOGIN\r\n250 8BITMIME\r\n");
+            }
+          } else if (upper.startsWith("AUTH")) {
+            write(scenario === "auth_535" ? "535 5.7.8 Authentication failed" : "235 2.7.0 ok");
+          } else if (upper.startsWith("MAIL FROM")) {
+            write(scenario === "mail_from_550" ? "550 5.1.0 sender refused" : "250 2.1.0 ok");
+          } else if (upper.startsWith("RCPT TO")) {
+            write(
+              scenario === "rcpt_550"
+                ? "550 5.1.1 user unknown"
+                : scenario === "rcpt_450"
+                  ? "450 4.2.1 try later"
+                  : "250 2.1.5 ok"
+            );
+          } else if (upper === "DATA") {
+            if (scenario === "data_cmd_554") write("554 5.3.4 no");
+            else {
+              dataMode = true;
+              write("354 go");
+            }
+          } else if (upper === "QUIT") {
+            write("221 bye");
+            socket.end();
+          } else if (upper === "RSET" || upper === "NOOP") {
+            write("250 ok");
+          } else {
+            write("500 unknown");
+          }
+          nl = buffer.indexOf("\r\n");
+        }
+      });
+      socket.on("error", () => undefined);
+    });
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      resolve({ server, port: typeof address === "object" && address ? address.port : 0 });
+    });
+  });
+}
+
+const RAW = [
+  "Message-ID: <ea-action-11111111-2222-3333-4444-555555555555@ea.local>",
+  "From: owner@x.test",
+  "To: delegate@x.test",
+  "Subject: probe",
+  "Date: Fri, 07 Nov 2026 10:00:00 +0000",
+  "X-EA-Action-Id: 11111111-2222-3333-4444-555555555555",
+  "MIME-Version: 1.0",
+  "Content-Type: text/plain; charset=utf-8",
+  "",
+  "hello",
+  "",
+].join("\r\n");
+
+async function runScenario(scenario: Scenario): Promise<void> {
+  const received: Received = { raw: "", commands: [] };
+  let port = 1;
+  let server: Server | undefined;
+  if (scenario !== "refused") ({ server, port } = await startServer(scenario, received));
+  const transport = createTransport({
+    host: "127.0.0.1",
+    port,
+    secure: false,
+    ignoreTLS: true,
+    auth: { user: "owner@x.test", pass: "secret" },
+    connectionTimeout: 1500,
+    greetingTimeout: 1500,
+    socketTimeout: 1500,
+  });
+  const marks = { dataStarted: false, dataEnded: false };
+  const stream = new Readable({
+    read() {
+      marks.dataStarted = true;
+      this.push(RAW);
+      this.push(null);
+    },
+  });
+  stream.on("end", () => {
+    marks.dataEnded = true;
+  });
+  try {
+    const info = await transport.sendMail({
+      envelope: { from: "owner@x.test", to: ["delegate@x.test"] },
+      raw: stream,
+    });
+    console.log(
+      JSON.stringify({
+        scenario,
+        ok: true,
+        response: info.response,
+        accepted: info.accepted,
+        rejected: info.rejected,
+        messageId: info.messageId,
+        envelope: info.envelope,
+        ...marks,
+        rawHasActionHeader: received.raw.includes("X-EA-Action-Id"),
+        rawHasMessageId: received.raw.includes("ea-action-11111111"),
+      })
+    );
+  } catch (error) {
+    const e = error as Record<string, unknown>;
+    console.log(
+      JSON.stringify({
+        scenario,
+        ok: false,
+        name: (error as Error).name,
+        code: e.code,
+        originalCode: e.originalCode,
+        command: e.command,
+        responseCode: e.responseCode,
+        permanent: e.permanent,
+        response: e.response,
+        message: (error as Error).message,
+        ...marks,
+        commands: received.commands,
+      })
+    );
+  } finally {
+    transport.close();
+    server?.close();
+  }
+}
+
+const scenarios: Scenario[] = [
+  "ok",
+  "refused",
+  "close_after_greeting",
+  "ehlo_421",
+  "auth_535",
+  "mail_from_550",
+  "rcpt_550",
+  "rcpt_450",
+  "data_cmd_554",
+  "content_552",
+  "content_451",
+  "close_during_content",
+  "close_after_content",
+  "timeout_after_content",
+];
+for (const scenario of scenarios) await runScenario(scenario);
+
+// MailComposer: is the built message byte-stable with a fixed messageId and date? What does it put in?
+const mail = {
+  from: "Owner <owner@x.test>",
+  to: "Delegate <delegate@x.test>",
+  subject: "Zadanie: Oferta — ąćęłńóśźż",
+  text: "Dzień dobry,\n\nproszę o wycenę.\n\n> cytat\n",
+  messageId: "<ea-action-11111111-2222-3333-4444-555555555555@ea.local>",
+  date: new Date("2026-11-07T10:00:00Z"),
+  inReplyTo: "<orig@sender.test>",
+  references: ["<root@sender.test>", "<orig@sender.test>"],
+  headers: { "X-EA-Action-Id": "11111111-2222-3333-4444-555555555555" },
+};
+const build = async () => (await new MailComposer(mail).compile().build()).toString("utf8");
+const a = await build();
+const b = await build();
+console.log(JSON.stringify({ composerStable: a === b, length: a.length }));
+console.log(a.split("\r\n\r\n")[0]);
+console.log("---body---");
+console.log(JSON.stringify(a.split("\r\n\r\n").slice(1).join("\r\n\r\n")));
+
+// With a mail object: does sendMail put the given Message-ID and Date on the wire, and what is info.messageId?
+{
+  const received: Received = { raw: "", commands: [] };
+  const { server, port } = await startServer("ok", received);
+  const transport = createTransport({
+    host: "127.0.0.1",
+    port,
+    secure: false,
+    ignoreTLS: true,
+    auth: { user: "owner@x.test", pass: "secret" },
+  });
+  const info = await transport.sendMail(mail);
+  console.log(
+    JSON.stringify({
+      objectSend: true,
+      infoMessageId: info.messageId,
+      wireHasGivenMessageId: received.raw.includes("ea-action-11111111"),
+      wireHasGivenDate: received.raw.includes("Date: Sat, 07 Nov 2026 10:00:00 +0000"),
+      wireHasActionHeader: received.raw.includes("X-EA-Action-Id: 11111111"),
+      wireEqualsComposer: received.raw === a.replace(/\r\n$/, ""),
+      envelope: info.envelope,
+    })
+  );
+  transport.close();
+  server.close();
+}
