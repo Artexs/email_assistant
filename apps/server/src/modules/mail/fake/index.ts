@@ -12,6 +12,8 @@ import {
 } from "../port";
 import { renderSeedMessage, type SeedMessage } from "../seed";
 
+import { parseRawHeaders } from "./raw";
+
 export interface FakeMailProvider extends MailProvider {
   /** Returns the new uid. Creates the folder. */
   deliver(folder: string, msg: SeedMessage, opts?: { internalDate?: Date; size?: number }): number;
@@ -49,6 +51,8 @@ interface StoredMessage {
   internalDate: Date;
   msg: SeedMessage;
   flags: Set<string>;
+  /** Set by `appendMessage`: the bytes as appended. */
+  raw?: Buffer;
 }
 
 interface Folder {
@@ -63,6 +67,11 @@ function findHeader(msg: SeedMessage, name: string): string | null {
     if (key.toLowerCase() === wanted) return value;
   }
   return null;
+}
+
+/** `Name <a@b>` or `a@b` → `a@b`. */
+function bareAddress(value: string): string {
+  return /<([^<>]*)>/.exec(value)?.[1] ?? value.trim();
 }
 
 function toMeta(stored: StoredMessage): MessageMeta {
@@ -353,6 +362,31 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
       if (!stored) throw new MailNotFoundError(`No message ${uid} in the folder`);
       for (const flag of change.add ?? []) stored.flags.add(flag);
       for (const flag of change.remove ?? []) stored.flags.delete(flag);
+    },
+
+    async appendMessage(folder, raw, flags, internalDate) {
+      enter("appendMessage");
+      // Like a server: no folder, no APPEND (imapflow reports TRYCREATE).
+      if (!folders.has(folder)) throw new HardError("NO [TRYCREATE]");
+      const headers = parseRawHeaders(raw);
+      const date = new Date(headers.get("date") ?? "");
+      const actionId = headers.get("x-ea-action-id");
+      const msg: SeedMessage = {
+        messageId: headers.get("message-id") ?? "",
+        from: bareAddress(headers.get("from") ?? ""),
+        to: (headers.get("to") ?? "")
+          .split(",")
+          .map(bareAddress)
+          .filter((part) => part !== ""),
+        subject: headers.get("subject") ?? "",
+        date: Number.isNaN(date.getTime()) ? internalDate : date,
+        ...(headers.has("in-reply-to") ? { inReplyTo: headers.get("in-reply-to") as string } : {}),
+        references: (headers.get("references") ?? "").split(/\s+/).filter((id) => id !== ""),
+        ...(actionId === undefined ? {} : { headers: { "X-EA-Action-Id": actionId } }),
+      };
+      const uid = store(folder, msg, internalDate, raw.byteLength, flags);
+      (find(folder, uid) as StoredMessage).raw = Buffer.from(raw);
+      return { uid: capabilities.uidplus ? uid : null };
     },
 
     async close() {

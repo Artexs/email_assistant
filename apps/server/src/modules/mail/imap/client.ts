@@ -414,6 +414,14 @@ class ImapMailProvider implements MailProvider {
     });
   }
 
+  appendMessage(folder: string, raw: Buffer, flags: string[], internalDate: Date): Promise<{ uid: number | null }> {
+    return guard("appendMessage", async () => {
+      const result = await this.client.append(folder, raw, flags, internalDate);
+      // `false` when the server refuses; no `uid` without APPENDUID.
+      return { uid: result === false ? null : (result.uid ?? null) };
+    });
+  }
+
   async close(): Promise<void> {
     try {
       await this.client.logout();

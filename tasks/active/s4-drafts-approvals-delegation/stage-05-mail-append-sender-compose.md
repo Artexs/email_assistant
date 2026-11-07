@@ -6,7 +6,7 @@ Part of [`../s4-drafts-approvals-delegation.md`](../s4-drafts-approvals-delegati
 
 Why risky: the adapter is the only code that sends mail. The stage rule decides whether a failed send may run again; a wrong "before DATA" answer sends a mail twice.
 
-- [ ] **5.1 `composeMessage` and `appendMessage` (D9, S3 D1)**
+- [x] **5.1 `composeMessage` and `appendMessage` (D9, S3 D1)**
   - Goal: the MIME bytes of an outgoing message are built once, the same every time; the write port can append a raw message to any folder with flags and an INTERNALDATE.
   - Files: create `apps/server/src/modules/mail/imap/compose.ts`, `compose.test.ts`, `apps/server/src/modules/mail/fake/raw.ts` (test-only header parser for the fake); change `apps/server/src/modules/mail/port.ts`, `mail/imap/client.ts`, `mail/fake/index.ts`, `mail/fake/fake.test.ts`, `mail/index.ts`, `apps/server/test/contract/mail-provider.ts`.
   - Interfaces:
@@ -34,7 +34,7 @@ Why risky: the adapter is the only code that sends mail. The stage rule decides 
   - Done when: the contract cases pass on the fake and on GreenMail; the unit tests pass.
   - Out of scope: the sender (5.2), the locate (stage 6).
 
-- [ ] **5.2 `MailSender` port, the SMTP adapter with the stage rule, the fake sender (D10)**
+- [x] **5.2 `MailSender` port, the SMTP adapter with the stage rule, the fake sender (D10)**
   - Goal: a send either reports success with the server's reply, or an error whose `stage` tells whether the content phase began, so the committer can decide between a retry and `outcome_unknown` without guessing.
   - Files: change `apps/server/src/modules/mail/port.ts`, `mail/imap/smtp.ts`, `mail/imap/smtp.test.ts`, `mail/index.ts`; create `apps/server/src/modules/mail/fake/sender.ts`, `sender.test.ts`, `apps/server/test/integration/smtp-send.test.ts`.
   - Interfaces:

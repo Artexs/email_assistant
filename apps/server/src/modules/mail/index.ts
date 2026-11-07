@@ -5,7 +5,8 @@ export { openMailboxProvider, type OpenDeps } from "./open";
 export { createMailSyncJob, type MailSyncJobDeps } from "./jobs";
 export { openImapProvider, type ImapConnectOptions } from "./imap/client";
 export { assertTestAddress, probeMove, type ProbeMoveReport } from "./imap/probe-move";
-export { verifySmtpLogin, type SmtpConnectOptions } from "./imap/smtp";
+export { composeMessage } from "./imap/compose";
+export { openSmtpSender, verifySmtpLogin, type SmtpConnectOptions } from "./imap/smtp";
 export {
   INBOX,
   MailAuthError,
@@ -18,6 +19,10 @@ export {
   type MailServerInfo,
   type MessageMeta,
   type MoveResult,
+  type SendResult,
+  type SmtpStage,
+  SmtpSendError,
+  type MailSender,
 } from "./port";
 export {
   changeMailboxStatus,

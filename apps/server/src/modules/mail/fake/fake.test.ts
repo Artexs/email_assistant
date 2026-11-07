@@ -238,4 +238,55 @@ describe("fake provider", () => {
     await expect(fake.moveMessage(INBOX, uid, "Target")).rejects.toBeInstanceOf(SoftError);
     expect((await fake.moveMessage(INBOX, uid, "Target")).newUid).toBe(1);
   });
+
+  test("appendMessage stores the headers and the raw bytes", async () => {
+    const fake = createFakeMailProvider();
+    await fake.ensureFolder("Drafts");
+    const raw = Buffer.from(
+      [
+        "Message-ID: <ea-1@example.test>",
+        "From: Artek <me@example.test>",
+        "To: Jan <jan@example.test>",
+        "Subject: Fwd: Test",
+        "Date: Sat, 07 Nov 2026 08:00:00 +0000",
+        "In-Reply-To: <a@example.test>",
+        "References: <a@example.test>",
+        " <b@example.test>",
+        "X-Ea-Action-ID: act-1",
+        "",
+        "Body",
+      ].join("\r\n")
+    );
+    const date = new Date("2026-11-07T08:00:01Z");
+    const { uid } = await fake.appendMessage("Drafts", raw, ["\\Draft"], date);
+    const meta = await fake.fetchMetaIn("Drafts", uid ?? 0);
+    expect(meta?.actionId).toBe("act-1");
+    expect(meta?.messageId).toBe("<ea-1@example.test>");
+    expect(meta?.from).toBe("me@example.test");
+    expect(meta?.to).toEqual(["jan@example.test"]);
+    expect(meta?.inReplyTo).toBe("<a@example.test>");
+    expect(meta?.references).toEqual(["<a@example.test>", "<b@example.test>"]);
+    expect(meta?.date).toEqual(new Date("2026-11-07T08:00:00Z"));
+    expect(meta?.internalDate).toEqual(date);
+    expect(meta?.size).toBe(raw.byteLength);
+    expect(meta?.flags).toEqual(["\\Draft"]);
+    expect(fake.calls).toContain("appendMessage");
+  });
+
+  test("appendMessage gives uid null without UIDPLUS and refuses a missing folder", async () => {
+    const fake = createFakeMailProvider({ capabilities: { uidplus: false } });
+    await fake.ensureFolder("Drafts");
+    const raw = Buffer.from("Message-ID: <x@example.test>\r\n\r\nBody");
+    expect(await fake.appendMessage("Drafts", raw, [], new Date())).toEqual({ uid: null });
+    await expect(fake.appendMessage("Nope", raw, [], new Date())).rejects.toBeInstanceOf(HardError);
+  });
+
+  test("failOn(appendMessage) throws once", async () => {
+    const fake = createFakeMailProvider();
+    await fake.ensureFolder("Drafts");
+    fake.failOn("appendMessage", new SoftError("boom"));
+    const raw = Buffer.from("Message-ID: <x@example.test>\r\n\r\nBody");
+    await expect(fake.appendMessage("Drafts", raw, [], new Date())).rejects.toBeInstanceOf(SoftError);
+    expect((await fake.appendMessage("Drafts", raw, [], new Date())).uid).toBe(1);
+  });
 });

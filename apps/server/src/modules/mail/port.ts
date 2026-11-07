@@ -78,6 +78,8 @@ export interface MailProvider {
   deleteMessage(folder: string, uid: number): Promise<boolean>;
   /** Adds and removes IMAP flags of one message. Throws MailNotFoundError when `uid` is not in `folder`. */
   setFlags(folder: string, uid: number, change: { add?: string[]; remove?: string[] }): Promise<void>;
+  /** APPEND of a raw RFC 5322 message. `uid` is null when the server has no UIDPLUS. Creates nothing: the caller runs ensureFolder first. */
+  appendMessage(folder: string, raw: Buffer, flags: string[], internalDate: Date): Promise<{ uid: number | null }>;
   close(): Promise<void>;
 }
 
@@ -95,4 +97,37 @@ export class MailNotFoundError extends HardError {
     super(message, options);
     this.name = "MailNotFoundError";
   }
+}
+
+export interface SendResult {
+  response: string;
+  accepted: string[];
+  rejected: string[];
+}
+
+/** Where an SMTP send stopped. `content` and `unknown` mean the server may have the mail: no resend. */
+export type SmtpStage = "connect" | "login" | "envelope" | "content" | "unknown";
+
+export class SmtpSendError extends Error {
+  override name = "SmtpSendError";
+
+  constructor(
+    readonly stage: SmtpStage,
+    /** The nodemailer code: ECONNECTION, ETIMEDOUT, ESOCKET, EDNS, ETLS, EENVELOPE, EMESSAGE, EPROTOCOL, … */
+    readonly code: string,
+    readonly responseCode: number | null,
+    /** A 5xx reply. */
+    readonly permanent: boolean,
+    /** A lost connection, a timeout, DNS, or a 4xx reply: the job may retry when the stage allows it. */
+    readonly soft: boolean,
+    options?: { cause?: unknown }
+  ) {
+    super(`SMTP send failed: stage ${stage}, code ${code}, response ${responseCode ?? "none"}`, options);
+  }
+}
+
+export interface MailSender {
+  /** Sends the raw message with the given envelope. The caller decides on a retry from `SmtpSendError.stage`. */
+  send(input: { envelope: { from: string; to: string[] }; raw: Buffer }): Promise<SendResult>;
+  close(): Promise<void>;
 }

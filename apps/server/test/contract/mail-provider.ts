@@ -7,9 +7,11 @@ import {
   type MailIdentity,
   type MailProvider,
   type MessageMeta,
+  renderSeedMessage,
   type SeedMessage,
 } from "../../src/modules/mail";
 import { contentHash, normalizeMessageId } from "../../src/modules/mail/sync-rules";
+import { HardError } from "../../src/platform/errors";
 
 export interface ContractEnv {
   provider: MailProvider;
@@ -284,6 +286,54 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
       const metas = await provider.fetchAbove(lastUid);
       expect(metas.filter((m) => m.uid > lastUid)).toHaveLength(0);
       expect(metas.map((m) => m.uid)).not.toContain(first?.uid ?? 0);
+    });
+
+    function outgoing(n: number, date: Date): { raw: Buffer; messageId: string; actionId: string } {
+      const messageId = `<ea-append-${n}-${crypto.randomUUID()}@example.test>`;
+      const actionId = crypto.randomUUID();
+      const text = renderSeedMessage({
+        messageId,
+        from: "me@example.test",
+        to: ["jan@example.test"],
+        subject: `Append ${n}`,
+        date,
+        text: "Body",
+        headers: { "X-EA-Action-Id": actionId },
+      });
+      return { raw: Buffer.from(text), messageId, actionId };
+    }
+
+    test("appendMessage stores the raw with its flags, date, size and action id", async () => {
+      const { provider } = await freshEnv();
+      const folder = await provider.ensureFolder(`Drafts-${crypto.randomUUID()}`);
+      const date = new Date(Math.floor(Date.now() / 1000) * 1000);
+      const { raw, messageId, actionId } = outgoing(1, date);
+      const { uid } = await provider.appendMessage(folder, raw, ["\\Draft"], date);
+      expect(uid).toBeGreaterThan(0);
+      const meta = await provider.fetchMetaIn(folder, uid ?? 0);
+      expect(meta?.actionId).toBe(actionId);
+      expect(meta?.messageId).toBe(messageId);
+      expect(meta?.internalDate.getTime()).toBe(date.getTime());
+      expect(meta?.size).toBe(raw.byteLength);
+      expect(meta?.flags).toContain("\\Draft");
+      expect(await provider.searchSinceIn(folder, new Date(date.getTime() - DAY_MS))).toContain(uid ?? 0);
+    });
+
+    test("appendMessage then deleteMessage removes the appended mail", async () => {
+      const { provider } = await freshEnv();
+      const folder = await provider.ensureFolder(`Sent-${crypto.randomUUID()}`);
+      const date = new Date(Math.floor(Date.now() / 1000) * 1000);
+      const { uid } = await provider.appendMessage(folder, outgoing(2, date).raw, ["\\Seen"], date);
+      expect(await provider.deleteMessage(folder, uid ?? 0)).toBe(true);
+      expect(await provider.fetchMetaIn(folder, uid ?? 0)).toBeNull();
+    });
+
+    test("appendMessage to a missing folder throws a HardError", async () => {
+      const { provider } = await freshEnv();
+      const date = new Date();
+      await expect(
+        provider.appendMessage(`No-such-folder-${crypto.randomUUID()}`, outgoing(3, date).raw, [], date)
+      ).rejects.toBeInstanceOf(HardError);
     });
 
     test("serverInfo lists INBOX", async () => {
