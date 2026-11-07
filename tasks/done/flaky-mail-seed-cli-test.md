@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — planned.** Nothing started.
+> **Status 2026-11-07 — done.** The test has an own 30 s timeout. Git mode: worktree (`task/flaky-mail-seed-cli-test`).
 
 # Flaky CI test: mailbox:seed and mailbox:audit CLI
 
@@ -26,3 +26,4 @@ Stop the CI timeout of `mailbox:seed and mailbox:audit CLI > seed exits 1 for a 
 ## Log
 
 - 2026-11-07: Created by the fake-telegram-followups task (found in its CI run).
+- 2026-11-07: The test failed in 4 of 6 CI runs (also on `master` after the fake-telegram-followups merge, run 42418989926, and its re-run). Fix: `}, 30_000)` on the test in `apps/server/test/integration/mail-seed.test.ts`. Local run on an own DB (`db:worktree flakyseed`): 5 pass, the test 3865 ms.

@@ -186,6 +186,7 @@ describe("auditMailbox", () => {
 });
 
 describe("mailbox:seed and mailbox:audit CLI", () => {
+  // Six CLI processes start one after the other; on a CI runner they take more than the 5 s default.
   test("seed exits 1 for a wrong or missing test address, and 0 with the right one; audit exits 2, then 0", async () => {
     const { orgId, userId } = await createOrg(db);
     try {
@@ -232,5 +233,5 @@ describe("mailbox:seed and mailbox:audit CLI", () => {
       await db.deleteFrom("organizations").where("id", "=", orgId).execute();
       await db.deleteFrom("users").where("id", "=", userId).execute();
     }
-  });
+  }, 30_000);
 });
