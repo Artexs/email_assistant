@@ -187,6 +187,16 @@ export async function lockDelegation(
   return row && toDelegationRow(row);
 }
 
+export async function isDelegateActive(db: DbOrTrx, ctx: TenantContext, delegateId: string): Promise<boolean> {
+  const row = await db
+    .selectFrom("delegates")
+    .select("active")
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", delegateId)
+    .executeTakeFirst();
+  return row?.active === true;
+}
+
 export async function findDelegationBySendAction(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -346,7 +356,7 @@ export async function bumpReminder(trx: Transaction<DB>, ctx: TenantContext, id:
   return result.numUpdatedRows > 0n;
 }
 
-// `sent` and `overdue` rows past `due_at`, oldest due first.
+// `sent` and `overdue` rows past `due_at`, oldest due first. `overdue` rows with 2 reminders sent are left out.
 export async function listDueDelegations(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -362,6 +372,8 @@ export async function listDueDelegations(
     .where("g.org_id", "=", ctx.orgId)
     .where("d.mailbox_id", "=", mailboxId)
     .where("d.status", "in", ["sent", "overdue"])
+    // An overdue row with both reminders sent gets no more (D23): it would only fill the batch.
+    .where((eb) => eb.not(eb.and([eb("d.status", "=", "overdue"), eb("d.reminders_sent", ">=", 2)])))
     .where("d.due_at", "<", opts.now)
     .orderBy("d.due_at")
     .orderBy("d.id")

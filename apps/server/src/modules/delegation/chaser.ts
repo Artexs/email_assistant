@@ -22,6 +22,7 @@ import { getOrganization } from "../tenancy";
 
 import {
   countPendingReminderSends,
+  isDelegateActive,
   listDueDelegations,
   lockDelegation,
   markDelegationOverdue,
@@ -112,9 +113,11 @@ export async function runChaserForMailbox(
       // Lock order (D6): the delegation first, then its reminder sends.
       const locked = await lockDelegation(trx, ctx, row.id);
       if (locked === undefined || (locked.status !== "sent" && locked.status !== "overdue")) continue;
+      // The listing may be old: a delegate deactivated since then gets no reminder.
+      const delegateActive = await isDelegateActive(trx, ctx, row.delegate_id);
       const pending = await countPendingReminderSends(trx, ctx, row.id);
       const decision = reminderDecision(
-        { ...locked, status: locked.status, delegate_active: row.delegate_active },
+        { ...locked, status: locked.status, delegate_active: delegateActive },
         pending,
         now
       );

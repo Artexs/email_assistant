@@ -184,6 +184,57 @@ describe("runChaserForMailbox", () => {
     });
   });
 
+  test("(1b) a pending reminder send alone blocks a new pair", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const d = await openDelegation(trx, s, { status: "overdue", remindersSent: 0, lastReminderAt: null });
+      await insertDraftAndSend(trx, s.ctx, s.mailboxId, {
+        delegateId: d.delegateId,
+        delegationId: d.id,
+        reminder: 1,
+        sendStatus: "awaiting_approval",
+        createdAt: new Date("2026-11-01T08:00:00Z"),
+      });
+      expect(await run(s, at0730)).toEqual({ overdue: 0, reminders: 0, skipped: null });
+      expect((await getDelegation(trx, s.ctx, d.id))?.last_reminder_at).toBeNull();
+      expect(await reminderRows(trx, s.ctx, d.emailId)).toEqual([]);
+    });
+  });
+
+  test("(2b) a missing or invalid language in the original draft falls back to en", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const missing = await openDelegation(trx, s);
+      const invalid = await openDelegation(trx, s);
+      await trx
+        .updateTable("actions")
+        .set({ payload: sql`payload - 'language'` })
+        .where("id", "=", missing.draftId)
+        .execute();
+      await trx
+        .updateTable("actions")
+        .set({ payload: sql`jsonb_set(payload, '{language}', '"xx"')` })
+        .where("id", "=", invalid.draftId)
+        .execute();
+      expect(await run(s, at0730)).toMatchObject({ reminders: 2 });
+      for (const d of [missing, invalid]) {
+        const [draft] = await reminderRows(trx, s.ctx, d.emailId);
+        expect(draft?.payload).toMatchObject({ language: "en" });
+      }
+    });
+  });
+
+  test("(5c) an overdue delegation with 2 reminders sent is not listed", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      await openDelegation(trx, s, { status: "overdue", remindersSent: 2 });
+      await openDelegation(trx, s, { status: "overdue", remindersSent: 1, lastReminderAt: new Date(0) });
+      expect(await run(s, at0730)).toEqual({ overdue: 0, reminders: 1, skipped: null });
+      const [marker] = await auditRows(trx, s.ctx, "delegation.chaser_run");
+      expect(marker?.data).toMatchObject({ due: 1 });
+    });
+  });
+
   test("(2) at 07:30: overdue, a reminder pair, the day marker", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
@@ -506,6 +557,32 @@ describe("two connections", () => {
           .select("id")
           .where("org_id", "=", s.ctx.orgId)
           .where("event", "=", "delegation.chaser_run")
+          .execute()
+      ).toEqual([]);
+    } finally {
+      await cleanup(s.created);
+    }
+  });
+
+  test("(6b) the delegate deactivated after the listing: overdue, no reminder", async () => {
+    const s = await committedSetup();
+    try {
+      let chaser: ReturnType<typeof runChaserForMailbox> | undefined;
+      await db.transaction().execute(async (trx) => {
+        await trx.selectFrom("delegations").select("id").where("id", "=", s.created.delegationId).forUpdate().execute();
+        chaser = runChaserForMailbox({ db, now: () => at0730 }, s.ctx, s.mailbox, at0730);
+        await sleep(200);
+        await trx.updateTable("delegates").set({ active: false }).where("org_id", "=", s.ctx.orgId).execute();
+      });
+
+      expect(await chaser).toEqual({ overdue: 1, reminders: 0, skipped: null });
+      expect((await getDelegation(db, s.ctx, s.created.delegationId))?.status).toBe("overdue");
+      expect(
+        await db
+          .selectFrom("actions")
+          .select("id")
+          .where("org_id", "=", s.ctx.orgId)
+          .where(sql<boolean>`idempotency_key LIKE '%:reminder:%'`)
           .execute()
       ).toEqual([]);
     } finally {
