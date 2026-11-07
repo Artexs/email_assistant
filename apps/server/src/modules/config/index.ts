@@ -1,7 +1,20 @@
 export {
   getMailboxSettings,
+  getMovesSupported,
   insertDefaultSettings,
   insertSenderRule,
   listSenderRules,
+  lockMailboxSettings,
   type MailboxSettingsRow,
+  updateMailboxSettings,
 } from "./repo";
+export {
+  closedBy,
+  getSettingsView,
+  setCategoryAuto,
+  setMode,
+  setToolSwitch,
+  type SettingsChange,
+  type SettingsDeps,
+  type SettingsView,
+} from "./service";

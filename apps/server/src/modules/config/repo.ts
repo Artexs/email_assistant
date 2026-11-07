@@ -1,5 +1,12 @@
-import { senderRuleKinds, type SenderRule, type SenderRuleKind } from "@ea/core";
-import type { Selectable, Transaction } from "kysely";
+import {
+  senderRuleKinds,
+  type CategoryPolicy,
+  type MailboxMode,
+  type SenderRule,
+  type SenderRuleKind,
+  type ToolSwitches,
+} from "@ea/core";
+import { sql, type Selectable, type Transaction } from "kysely";
 import { z } from "zod";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -26,6 +33,53 @@ export async function getMailboxSettings(
     .where("org_id", "=", ctx.orgId)
     .where("mailbox_id", "=", mailboxId)
     .executeTakeFirst();
+}
+
+// Locks the row until the end of the transaction: one setter at a time.
+export async function lockMailboxSettings(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string
+): Promise<MailboxSettingsRow | undefined> {
+  return trx
+    .selectFrom("mailbox_settings")
+    .selectAll()
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .forUpdate()
+    .executeTakeFirst();
+}
+
+export async function updateMailboxSettings(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  patch: { mode?: MailboxMode; toolSwitches?: ToolSwitches; categoryPolicy?: CategoryPolicy }
+): Promise<boolean> {
+  const result = await trx
+    .updateTable("mailbox_settings")
+    .set({
+      ...(patch.mode === undefined ? {} : { mode: patch.mode }),
+      ...(patch.toolSwitches === undefined ? {} : { tool_switches: JSON.stringify(patch.toolSwitches) }),
+      ...(patch.categoryPolicy === undefined ? {} : { category_policy: JSON.stringify(patch.categoryPolicy) }),
+      updated_at: sql`now()`,
+    })
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .executeTakeFirst();
+  return (result.numUpdatedRows ?? 0n) > 0n;
+}
+
+// Moves work with MOVE, or with COPY + EXPUNGE through UIDPLUS (D1). Read here, because `mail` imports `config`.
+export async function getMovesSupported(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<boolean> {
+  const row = await db
+    .selectFrom("mailboxes")
+    .select("capabilities")
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", mailboxId)
+    .executeTakeFirst();
+  const capabilities = (row?.capabilities ?? {}) as { move?: unknown; uidplus?: unknown };
+  return capabilities.move === true || capabilities.uidplus === true;
 }
 
 // Org-wide rules (mailbox_id NULL) and the rules of this mailbox.

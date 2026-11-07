@@ -81,6 +81,22 @@ A `409` in the log (`another process polls this bot token`) means that a second 
 
 For a mailbox in `auth_error` the owner gets a Telegram notice. Fix it as in the section "Login error (`auth_error`)". Alert texts and fixes: `docs/known-alerts.md`.
 
+## Assist mode
+
+Change the mode, the `auto` flags and the switches of a mailbox with `mailbox:settings`. Every change is locked and audited. The command prints the settings table with `before -> after` for the changed field.
+
+```sh
+$C run --rm server bun run mailbox:settings show --org-id <uuid> --mailbox-id <uuid>
+$C run --rm server bun run mailbox:settings mode --org-id <uuid> --mailbox-id <uuid> --mode assist
+$C run --rm server bun run mailbox:settings auto --org-id <uuid> --mailbox-id <uuid> --category info --value on
+```
+
+- `mode --mode assist` sets the switches `move`, `mark_read` and `flag` on. Add `--keep-switches` to keep the old values.
+- `auto --value on` needs a go/no-go `go` for the category on real labeled mail (bar 0.98, at least 30 kept). If the gate says no-go, the command exits with code 2. `--force` sets `auto` on anyway and records `forced` in the audit log.
+- `switch --name <name> --value on|off` changes one switch. `create_draft` has no effect yet (S4).
+- A change that closes a gate expires the `ready` actions it closes. The command prints `expired <n> ready actions`.
+- Before you set `ACTIONS_SCOPE=all`, run `mailbox:settings expire-ready`. Real mail of the shadow-scope days then does not move when the scope opens. If `ready mailbox actions left` is above 0, a committer run holds a row: run the command again after 15 seconds.
+
 ## Reboot
 
 Run once: `sudo systemctl enable docker`.

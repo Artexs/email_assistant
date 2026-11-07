@@ -643,6 +643,22 @@ export async function countActionsSince(
   return { applied: count("applied"), failed: count("failed"), undone: count("undone") };
 }
 
+// `ready` originals of the mailbox-changing types. Above 0 after an expire only while a committer run holds a row.
+export async function countReadyOriginals(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<number> {
+  const row = await db
+    .selectFrom("actions")
+    .select(sql<string>`count(*)`.as("count"))
+    .where("org_id", "=", ctx.orgId)
+    .where("status", "=", "ready")
+    .where("reverses_action_id", "is", null)
+    .where("type", "in", [...MAILBOX_ACTION_TYPES])
+    .where("email_id", "in", (eb) =>
+      eb.selectFrom("emails").select("id").where("org_id", "=", ctx.orgId).where("mailbox_id", "=", mailboxId)
+    )
+    .executeTakeFirstOrThrow();
+  return Number(row.count);
+}
+
 export interface ExpireFilter {
   mailboxId: string;
   emailId?: string;

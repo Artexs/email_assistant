@@ -25,6 +25,9 @@ export const auditEvents = {
   actionExpired: "action.expired",
   emailReturned: "email.returned",
   mailboxFolderCreated: "mailbox.folder_created",
+  mailboxModeChanged: "mailbox.mode_changed",
+  mailboxPolicyChanged: "mailbox.policy_changed",
+  mailboxSwitchChanged: "mailbox.switch_changed",
 } as const;
 
 export interface AuditEvent {

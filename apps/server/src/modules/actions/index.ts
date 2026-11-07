@@ -14,6 +14,7 @@ export {
   claimActions,
   countActionsSince,
   countClaimable,
+  countReadyOriginals,
   createPlanned,
   expireReadyOriginals,
   expireStaleReady,

@@ -6,7 +6,7 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 
 Why risky: these settings are the policy gate. A wrong `auto` or mode moves real mail. Every change is a locked, audited update with a printed before/after table.
 
-- [ ] **14.1 Settings service in `config` (D13, P3)**
+- [x] **14.1 Settings service in `config` (D13, P3)**
   - Goal: typed, audited functions change `mailbox_settings` one field at a time; the mode switch to `assist` sets the P3 switches; a change that closes a gate expires the `ready` rows it closes, in the same transaction (B3).
   - Files: create `apps/server/src/modules/config/service.ts`, `apps/server/test/integration/config-settings.test.ts`; change `apps/server/src/modules/config/repo.ts`, `apps/server/src/modules/config/index.ts`, `apps/server/src/modules/audit/repo.ts` (`auditEvents`: `mailboxModeChanged: "mailbox.mode_changed"`, `mailboxPolicyChanged: "mailbox.policy_changed"`, `mailboxSwitchChanged: "mailbox.switch_changed"`); `packages/core/src/triage/settings.ts` (`ASSIST_DEFAULT_SWITCHES: Partial<ToolSwitches> = { move: true, mark_read: true, flag: true, move_unsure: false }`, `toolSwitchNames`, `describeSettings(settings): string[]` pure lines for the table). Module edges (D16, M13, re-review RM1): one new edge, `config/service.ts` imports the `audit` index (`recordAudit`, `auditEvents`). `config` never imports the `actions` index at run time: the cycle `config → actions → mail → config` would follow, because `mail/connect.ts` imports `insertDefaultSettings` from `config`. The expiry comes in as the required dependency `SettingsDeps.expireReady`; `config/service.ts` imports only types from `actions` (`import type { ExpireFilter }`, erased at build time) and `MAILBOX_ACTION_TYPES` / `MailboxActionType` from `@ea/core` (stage 7.1a).
   - Interfaces:
@@ -84,7 +84,7 @@ Why risky: these settings are the policy gate. A wrong `auto` or mode moves real
   - Done when: the tests pass.
   - Out of scope: the CLI (14.2), the S5 settings page.
 
-- [ ] **14.2 The script `bun run mailbox:settings`**
+- [x] **14.2 The script `bun run mailbox:settings`**
   - Goal: the user can see and change the mode, the `auto` flags and the switches of a mailbox from the terminal, with the go/no-go gate enforced.
   - Files: create `apps/server/src/scripts/mailbox-settings.ts`, `apps/server/src/scripts/mailbox-settings-args.ts` (pure argument parsing, unit-tested), `apps/server/src/scripts/mailbox-settings-args.test.ts`; change `package.json` (`"mailbox:settings": "bun apps/server/src/scripts/mailbox-settings.ts"`), `deploy/README.md` (a short "Assist mode" section: the three commands, the gate, `ACTIONS_SCOPE`).
   - Interfaces (usage text):
