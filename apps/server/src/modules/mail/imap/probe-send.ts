@@ -201,6 +201,7 @@ async function runDraft(ctx: Ctx, drafts: string): Promise<void> {
   ctx.step = "append draft";
   let uid = await appendUid(client, drafts, raw, ["\\Draft"], now);
   draft.appendUid = uid;
+  const uidFromSearch = uid === null;
 
   ctx.step = "search and fetch draft";
   const message = await inFolder(client, drafts, async () => {
@@ -229,11 +230,15 @@ async function runDraft(ctx: Ctx, drafts: string): Promise<void> {
 
   ctx.step = "delete draft";
   if (uid === null) return;
+  // A uid from SEARCH alone is a guess: delete it only when it carries the probe's own marks. Else the note stays.
+  if (uidFromSearch && !draft.envelopeMessageId && !draft.headerFetched) {
+    ctx.say("draft not deleted: the SEARCH uid is not proven to be the probe draft");
+    return;
+  }
   const result = await deleteUid(client, drafts, uid);
   draft.deleted = result.deleted;
   draft.goneAfterDelete = client.capabilities.has("UIDPLUS") ? result.gone : null;
   if (draft.deleted) forget();
-  else report.notes.push("the draft was not deleted: delete it by hand");
   ctx.say(`draft deleted ${draft.deleted}, gone ${draft.goneAfterDelete}`);
 }
 
@@ -371,7 +376,6 @@ async function runSentCopy(ctx: Ctx, sent: string): Promise<void> {
   ctx.step = "delete Sent copy";
   if (uid !== null) copy.deleted = (await deleteUid(client, sent, uid)).deleted;
   if (copy.deleted) forget();
-  else report.notes.push("the Sent copy was not deleted: delete it by hand");
   ctx.say(
     `sent copy: uid ${uid ?? "none"}, header ${copy.headerFetched}, since ${copy.searchSinceFound}, deleted ${copy.deleted}`
   );
@@ -415,20 +419,21 @@ async function pollForProbeMail(
 
 async function runSentAutosave(ctx: Ctx, sent: string, opts: { timeoutMs: number; pollMs: number }): Promise<void> {
   ctx.step = "poll Sent";
-  const hit = await pollForProbeMail(ctx, sent, { ...opts, ignore: [] });
+  const hit = await pollForProbeMail(ctx, sent, {
+    ...opts,
+    ignore: ctx.report.sentCopy.appendUid === null ? [] : [ctx.report.sentCopy.appendUid],
+  });
   ctx.report.sentAutosave = { foundInSent: hit.uid !== null, polledSeconds: hit.seconds };
   if (hit.uid !== null) {
-    ctx.track(`a saved copy of the probe mail "${ctx.subject}" is in ${sent}; delete it by hand`);
-    ctx.report.notes.push("the server saved a sent copy by itself: delete it by hand");
+    ctx.track(`the server saved a copy of the probe mail "${ctx.subject}" in ${sent} by itself; delete it by hand`);
   }
   ctx.say(`sent autosave: ${ctx.report.sentAutosave.foundInSent}, polled ${hit.seconds} s`);
 }
 
-async function runInbox(ctx: Ctx, opts: { timeoutMs: number; pollMs: number }): Promise<void> {
+async function runInbox(ctx: Ctx, opts: { timeoutMs: number; pollMs: number }, forget: () => void): Promise<void> {
   const { client, report } = ctx;
   const inbox = report.inbox;
   inbox.checked = true;
-  const forget = ctx.track(`the probe mail "${ctx.subject}" may be in INBOX; delete it by hand`);
   ctx.step = "poll INBOX";
   const hit = await pollForProbeMail(ctx, INBOX_PATH, { ...opts, ignore: [] });
   inbox.polledSeconds = hit.seconds;
@@ -436,12 +441,7 @@ async function runInbox(ctx: Ctx, opts: { timeoutMs: number; pollMs: number }): 
   inbox.headerIntact = hit.headerIntact;
   inbox.uid = hit.uid;
   ctx.say(`inbox: found ${inbox.ownMailFound}, header ${inbox.headerIntact}, polled ${hit.seconds} s`);
-  if (hit.uid === null) {
-    report.notes.push(
-      `the probe mail was not seen in INBOX within ${hit.seconds} s; if it arrives later, delete it by hand`
-    );
-    return;
-  }
+  if (hit.uid === null) return;
   const uid = hit.uid;
   ctx.step = "delete INBOX mail";
   // The INBOX expunge rule (S3): delete only when no other mail of the user is marked \Deleted.
@@ -452,12 +452,11 @@ async function runInbox(ctx: Ctx, opts: { timeoutMs: number; pollMs: number }): 
     })
   ).filter((other) => other !== uid);
   if (others.length > 0) {
-    report.notes.push("INBOX holds other \\Deleted mail: the probe mail stays; delete the probe mail by hand");
+    ctx.say("inbox mail not deleted: INBOX holds other \\Deleted mail");
     return;
   }
   inbox.deleted = (await deleteUid(client, INBOX_PATH, uid)).deleted;
   if (inbox.deleted) forget();
-  else report.notes.push("the probe mail in INBOX was not deleted: delete the probe mail by hand");
   ctx.say(`inbox mail deleted ${inbox.deleted}`);
 }
 
@@ -516,11 +515,14 @@ export async function probeSend(
       await runDraft(ctx, folders.drafts);
       await runSend(ctx, smtp, opts.smtpConnection ?? defaultConnection);
       if (report.send.ok) {
-        // From here on the mail may be in INBOX of the recipient.
+        // From here on the mail may be in INBOX or at the recipient; only a deleted INBOX copy clears the note.
+        const forgetMail = ctx.track(
+          `the probe mail "${ctx.subject}" may be in INBOX or at the recipient (${to}); delete it by hand`
+        );
         await runSentCopy(ctx, folders.sent);
         await runSentAutosave(ctx, folders.sent, { timeoutMs: opts.sentTimeoutMs ?? DEFAULT_SENT_TIMEOUT_MS, pollMs });
         if (to.trim().toLowerCase() === address.trim().toLowerCase()) {
-          await runInbox(ctx, { timeoutMs: opts.inboxTimeoutMs ?? DEFAULT_INBOX_TIMEOUT_MS, pollMs });
+          await runInbox(ctx, { timeoutMs: opts.inboxTimeoutMs ?? DEFAULT_INBOX_TIMEOUT_MS, pollMs }, forgetMail);
         } else {
           report.notes.push("the recipient is not the probe address: INBOX was not checked");
         }

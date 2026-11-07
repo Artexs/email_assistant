@@ -6,6 +6,7 @@ import { probeSend, type ImapConnectOptions, type SmtpConnectOptions } from "../
 import { connectImapClient } from "../../src/modules/mail/imap/client";
 import { isAllowedRecipient } from "../../src/modules/mail/imap/probe-send";
 import type { SmtpConnectionLike } from "../../src/modules/mail/imap/smtp";
+import { renderSeedMessage } from "../../src/modules/mail/seed";
 
 // Local GreenMail (bun run dev:up). Auth is off: a login with a new user creates the mailbox.
 const host = process.env.TEST_IMAP_HOST ?? "127.0.0.1";
@@ -125,4 +126,85 @@ test("probeSend: a refused recipient stops before the Sent copy and the INBOX ch
   expect(report.sentCopy.appendUid).toBeNull();
   expect(report.inbox.checked).toBe(false);
   expect(report.capabilities.pipelining).toBeNull();
+});
+
+function okStub(beforeOk: () => Promise<void>): SmtpConnectionLike {
+  return {
+    connect: (callback) => callback(),
+    login: (_auth, callback) => callback(null),
+    send: (_envelope, _message, callback) => {
+      beforeOk().then(
+        () => callback(null, { response: "250 OK", accepted: [], rejected: [] }),
+        (error: Error) => callback(error)
+      );
+    },
+    quit: () => undefined,
+    close: () => undefined,
+    on: () => undefined,
+  };
+}
+
+test("probeSend: an error after a successful send names the sent mail", async () => {
+  const { imap, smtp, address } = greenmailUser();
+  const probeId = randomUUID();
+  // The stub removes the Sent folder, so the Sent copy APPEND fails.
+  const stub = okStub(async () => {
+    const client = await connectImapClient(imap);
+    try {
+      await client.mailboxDelete("Sent");
+    } finally {
+      await client.logout().catch(() => client.close());
+    }
+  });
+
+  const failure = await probeSend(imap, smtp, {
+    address,
+    to: address,
+    probeId,
+    now: NOW,
+    pollMs: 200,
+    inboxTimeoutMs: 1000,
+    sentTimeoutMs: 500,
+    smtpConnection: () => stub,
+  }).catch((error: Error) => error);
+
+  expect(failure).toBeInstanceOf(Error);
+  expect((failure as Error).message).toContain(`the probe mail "EA probe send ${probeId}" may be in INBOX`);
+});
+
+test("probeSend: an own Sent copy by the server is reported once and the recipient note stays", async () => {
+  const { imap, smtp, address } = greenmailUser();
+  const probeId = randomUUID();
+  const stub = okStub(async () => {
+    const client = await connectImapClient(imap);
+    try {
+      const raw = renderSeedMessage({
+        messageId: `<autosave-${probeId}@localhost>`,
+        from: address,
+        to: [address],
+        subject: `EA probe send ${probeId}`,
+        date: NOW,
+        text: "autosaved",
+        headers: { "X-EA-Action-Id": probeId },
+      });
+      await client.append("Sent", raw, ["\\Seen"], NOW);
+    } finally {
+      await client.logout().catch(() => client.close());
+    }
+  });
+
+  const report = await probeSend(imap, smtp, {
+    address,
+    to: address,
+    probeId,
+    now: NOW,
+    pollMs: 200,
+    inboxTimeoutMs: 1000,
+    sentTimeoutMs: 2000,
+    smtpConnection: () => stub,
+  });
+
+  expect(report.sentAutosave.foundInSent).toBe(true);
+  expect(report.notes.filter((note) => note.includes("by itself"))).toHaveLength(1);
+  expect(report.notes.some((note) => note.includes("by hand") && note.includes("may be in INBOX"))).toBe(true);
 });
