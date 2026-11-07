@@ -131,6 +131,21 @@ describe("approve", () => {
     });
   });
 
+  test("a send whose draft is not applied is refused, with no change and no audit row", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const { hooks } = recordingHooks();
+      for (const draftStatus of ["ready", "applying", "failed", "undone"]) {
+        const p = await pair(trx, s, { draftStatus });
+        expect(await approve(depsOf(trx, hooks), s.ctx, p.sendId, input(s.userId))).toEqual({
+          kind: "draft_not_ready",
+        });
+        expect(await row(trx, p.sendId)).toMatchObject({ status: "awaiting_approval", approved_by: null });
+      }
+      expect(await auditRows(trx, s.ctx, "action.approved")).toHaveLength(0);
+    });
+  });
+
   test("the other states, and not_found for a random id and for another organization", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
@@ -269,6 +284,20 @@ describe("approveSet and rejectSet", () => {
       expect((await row(trx, gone.sendId)).status).toBe("rejected");
       expect((await row(trx, unnotified.sendId)).status).toBe("awaiting_approval");
       expect(await auditRows(trx, s.ctx, "action.approved")).toHaveLength(2);
+    });
+  });
+
+  test("approveSet skips a row whose draft is not applied", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const { hooks } = recordingHooks();
+      const setId = randomUUID();
+      const ready = await pair(trx, s, { setId, reminder: 1, delegationId: randomUUID() });
+      const waiting = await pair(trx, s, { setId, reminder: 1, delegationId: randomUUID(), draftStatus: "ready" });
+
+      expect(await approveSet(depsOf(trx, hooks), s.ctx, setId, input(s.userId))).toEqual({ approved: 1, skipped: 1 });
+      expect((await row(trx, ready.sendId)).status).toBe("approved");
+      expect((await row(trx, waiting.sendId)).status).toBe("awaiting_approval");
     });
   });
 
@@ -434,6 +463,8 @@ describe("notice queries", () => {
       const pendingFresh = await pair(trx, s, { sendStatus: "applied", approved });
       const pendingOld = await pair(trx, s, { sendStatus: "applied", approved });
       const notified = await pair(trx, s, { sendStatus: "failed" });
+      const noResult = await pair(trx, s, { sendStatus: "applied", approved });
+      const recovered = await pair(trx, s, { sendStatus: "applied", approved });
       const set = (id: string, patch: Record<string, unknown>) =>
         trx.updateTable("actions").set(patch).where("id", "=", id).execute();
       await set(appended.sendId, {
@@ -449,8 +480,10 @@ describe("notice queries", () => {
         applied_at: ago(11 * MINUTE),
       });
       await set(notified.sendId, { result_notified_at: ago(MINUTE) });
-      for (const [index, id] of [failed, expired, rejected, appended, pendingOld, pendingFresh].entries()) {
-        await set(id.sendId, { updated_at: ago((10 - index) * MINUTE) });
+      await set(noResult.sendId, { provider_result: null, applied_at: ago(MINUTE) });
+      await set(recovered.sendId, { provider_result: JSON.stringify({ recovered: true }), applied_at: ago(MINUTE) });
+      for (const [index, id] of [failed, expired, rejected, appended, noResult, recovered, pendingOld].entries()) {
+        await set(id.sendId, { updated_at: ago((20 - index) * MINUTE) });
       }
 
       const rows = await listSendResultsToNotify(trx, s.ctx, { limit: 50, now: NOW, pendingCopyMaxAgeMs: 10 * MINUTE });
@@ -459,8 +492,11 @@ describe("notice queries", () => {
         expired.sendId,
         rejected.sendId,
         appended.sendId,
+        noResult.sendId,
+        recovered.sendId,
         pendingOld.sendId,
       ]);
+      expect(rows.map((r) => r.id)).not.toContain(pendingFresh.sendId);
       expect(rows.map((r) => r.id)).not.toContain(awaiting.sendId);
 
       expect(await markResultNotified(trx, s.ctx, failed.sendId, NOW)).toBe(true);

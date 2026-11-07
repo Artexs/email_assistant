@@ -221,6 +221,7 @@ Why risky: the claim query is the gate between an approval row and an SMTP call;
       | { kind: "rejected" }
       | { kind: "expired" }
       | { kind: "failed"; reason: string | null }
+      | { kind: "draft_not_ready" } // checkpoint 2: the draft of the send is not `applied`; no change, no audit
       | { kind: "not_found" };
     export interface ApprovalDeps {
       db;

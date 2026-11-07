@@ -18,7 +18,7 @@ import {
 } from "../mail";
 
 import { ensureMoved, type EnsureResult } from "./move";
-import { finishAction, markUndone, releaseAction, type ClaimedAction } from "./repo";
+import { finishAction, markUndone, releaseAction, releaseActions, type ClaimedAction } from "./repo";
 
 const log = createLog("actions");
 
@@ -30,6 +30,7 @@ export type ApplyOutcome =
   | { kind: "failed"; reason: "mail_not_found" | "hard_error" | "no_provider" | "bad_payload" }
   | { kind: "retry"; soft: boolean }
   | { kind: "auth_error" }
+  | { kind: "not_handled" }
   | { kind: "lost" };
 
 // Gives the real path of a folder key. `ensureFolder` runs once per key per run; a path that differs from `folder_map` is stored.
@@ -357,6 +358,12 @@ export async function applyAction(
 ): Promise<ApplyOutcome> {
   if (action.type === "save_summary") {
     return applySummary(deps, ctx, action);
+  }
+  // Until the draft and send handlers exist: give the row back, no count, never apply it as a flag.
+  if (action.type === "create_draft" || action.type === "send") {
+    log.warn(`committer: ${action.id} type ${action.type} not handled yet`);
+    await releaseActions(deps.db, ctx, [action.id], action.locked_at, deps.now());
+    return { kind: "not_handled" };
   }
   if (provider === null) {
     log.error(`action ${action.id}: no provider for ${action.type}`);

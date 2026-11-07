@@ -143,6 +143,30 @@ async function auditRows(trx: Transaction<DB>, s: Setup) {
 }
 
 describe("applyAction", () => {
+  test("a type with no handler yet is released with no count and no change", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const uid = deliverAt(s, "INBOX", 1);
+      const mail = await insertMail(trx, s, {
+        fakeUid: uid,
+        rowUid: uid,
+        actions: [{ type: "flag", status: "ready" }],
+      });
+      const [claimed] = await claim(trx, s);
+      const action = { ...(claimed as ClaimedAction), type: "create_draft" } as ClaimedAction;
+      expect(action.locked_at).not.toBeNull();
+
+      expect(await applyAction(depsAt(s, trx), s.ctx, action, s.fake)).toEqual({ kind: "not_handled" });
+      expect(await flagsAt(s, "INBOX", uid)).toEqual([]);
+      expect(await actionState(trx, mail.actionIds[0] as string)).toMatchObject({
+        status: "ready",
+        locked_at: null,
+        attempts: 0,
+      });
+      expect(await auditRows(trx, s)).toHaveLength(0);
+    });
+  });
+
   test("save_summary is applied without a provider call", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);

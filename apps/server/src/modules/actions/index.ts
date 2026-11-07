@@ -36,7 +36,6 @@ export {
   getDraft,
   getSend,
   insertReverse,
-  insertSendAgain,
   listActionsForEmail,
   listActionsForEmails,
   listFailedUnnotified,
@@ -58,8 +57,6 @@ export {
   mergeActionPayload,
   releaseAction,
   releaseActions,
-  setApproved,
-  setRejected,
   updateProviderResult,
 } from "./repo";
 export type {

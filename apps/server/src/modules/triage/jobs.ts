@@ -39,6 +39,7 @@ export interface TriageJobDeps {
 // The log lines carry the mailbox id only: never the address.
 export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
   const warnedNoSettings = new Set<string>();
+  const warnedNoOrganization = new Set<string>();
   // The quota day (ISO start) for which a mailbox already got the cap warning.
   const warnedCap = new Map<string, string>();
   const triage = deps.triageOne ?? triageOne;
@@ -77,7 +78,13 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
             let timezone = timezones.get(orgId);
             if (timezone === undefined) {
               const organization = await getOrganization(deps.db, ctx);
-              if (organization === undefined) continue;
+              if (organization === undefined) {
+                if (!warnedNoOrganization.has(mailboxId)) {
+                  warnedNoOrganization.add(mailboxId);
+                  log.warn(`triage ${mailboxId}: no organization row, mailbox skipped`);
+                }
+                continue;
+              }
               timezone = organization.timezone;
               timezones.set(orgId, timezone);
             }

@@ -30,6 +30,7 @@ export type ApproveResult =
   | { kind: "rejected" }
   | { kind: "expired" }
   | { kind: "failed"; reason: string | null }
+  | { kind: "draft_not_ready" }
   | { kind: "not_found" };
 
 export type RejectResult = { kind: "rejected" } | { kind: "already"; status: string } | { kind: "not_found" };
@@ -70,6 +71,10 @@ async function approveRow(
         });
         return { kind: "expired" };
       }
+      // A send whose draft is not in Drafts yet (or never will be) must not go out: the tap changes nothing.
+      const draft =
+        send.depends_on_action_id === null ? undefined : await getDraft(trx, ctx, send.depends_on_action_id);
+      if (draft?.status !== "applied") return { kind: "draft_not_ready" };
       const changed = await setApproved(trx, ctx, send.id, { userId: input.userId, via: input.via, at: input.now });
       if (!changed) throw new HardError("a locked awaiting_approval send did not change");
       await recordAudit(trx, ctx, {
