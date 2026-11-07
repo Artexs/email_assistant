@@ -58,3 +58,15 @@ extension (`--tools`), the agent files. Live check (read-only): `git ls-remote o
 - Stage 5 (deliver deleted the only copy of a test mail) → fixed by finding 3.
 - Stage 6 (a testmail report read as real-label gate evidence) → fixed by finding 12; the feedback mix (finding 15) stays a user default.
 - Stage 9 (the user gets about 5 urgent Telegram notices and every mail in the digest per batch) → an open user default, not a defect.
+
+## Live checks after the review (user asked, 2026-11-07)
+
+Read-only, no mail sent, no VPS change. Script files in `/tmp/ea-review-check/` (not in git); output shows no key or mail text.
+
+- Label filter: `GET …/messages?labels=ea-case-probe-75wd-p2` → `count` 1 (the right mail); unknown label → 0. **Verified.**
+- Inbox: `GET /inboxes/{id}` has no `status` (docs: omitted when active); `status_until` moved from `14:40:11Z` to `15:47:05.928Z` (not documented; looks like
+  30 days after the last activity). Recorded; the item stays in "Not verified".
+- VPS config: the `origin/master` `platform/config.ts` bundle loads with the VPS `.env` (`loadConfig()` OK). **Verified for today**; the `ConfigError` rule stays for later commits.
+- Not checkable without a real send or a full plan change, and the design does not depend on them: the name of the 409 for a request still in progress
+  (every 409 that is not `IdempotencyKeyConflictError` is soft); `POST /inboxes` at 3 of 3 inboxes (setup now calls `GET` first); the 100/day day boundary
+  (cap 50 of 100); Interia's future sorting (D10 checks all sort folders; `--check-only`).

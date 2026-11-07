@@ -26,7 +26,7 @@ On this PC every `git push` and every `bun run testmail:remote …` (it runs `gi
        then commit and push the batch (`testmail: batch <id>`).
     3. `TEST_MAILBOX_ADDRESS=artekstryszowski@interia.pl bun run testmail:send --batch <id> --interval-sec 10` → exit 0, 3 sent.
     4. One live call of `listByLabel` for the first case's label (a 5-line `bun -e` from the repo root that imports `createAgentMailClient` and `loadTestmailConfig`
-       and prints only the count) → expect 1. Record it (the "Not verified" label filter item).
+       and prints only the count) → expect 1. The raw API filter is checked (task file "Facts checked"); this step checks our client against the real API.
     5. After 60 s: `bun run testmail:remote deliver --batch <id> --dry-run` (prints `bundled origin/master <sha>` and the commands), then without `--dry-run` →
        expect `moved 3` (or `in inbox` if Interia changed its sorting). Record the folder keys and the bundled sha.
     6. Wait for the VPS sync (check `docker compose … logs --since 10m server | grep '\[mail\] sync'`, read-only), then `bun run testmail:remote deliver --batch <id>` again → `synced 3`.

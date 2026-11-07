@@ -120,15 +120,22 @@ All with source in `notes/2026-11-07-agentmail-test-mail.md` (§3 docs, §7–8 
   The VPS runs an older image (v1). `triage_results.prompt_version` stores the version per result. `categories.ts` also has `delegation` (only with active
   delegates) and `unsure` (rules, blocked calls).
 
+- Checked live 2026-11-07 (review session 2, read-only): `GET /inboxes/{id}/messages?labels=ea-case-probe-75wd-p2&limit=20` → 200, `count` 1, the one probe mail
+  with that label (the inbox has 8 messages); an unknown label → `count` 0. `GET /inboxes/{id}` → 200 with no `status` field (docs: `status` is omitted when the
+  inbox is active; `deactivated` stops send and receive; the documented schedule field is `deactivate_at`, https://docs.agentmail.to/api-reference/inboxes/update.md).
+- Checked live 2026-11-07 (review session 2): a `bun build --target bun` bundle of `platform/config.ts` from `origin/master` (`1921dad`; no env value in it) ran in
+  the VPS server image with `docker compose run --rm -T`: `loadConfig()` OK, `TRIAGE_LLM_SCOPE=all`, `ACTIONS_SCOPE=synthetic`, `TEST_MAILBOX_ADDRESS` set.
+  `schema_migrations` on the VPS: up to `20261107000002` (unchanged).
+
 ### Not verified (and the stage that checks it)
 
-- `GET /inboxes/{id}/messages?labels=<label>` returns exactly the messages with that label (docs say it filters). Stage 3 builds it (and keeps only items that really carry the label); stage 9 step 9.1.4 checks it live (one call).
 - The name of the 409 for "a retry while the first request is still in progress" (docs give no name). Stage 3 treats every 409 that is not `IdempotencyKeyConflictError` as soft.
 - The day boundary of the AgentMail 100/day limit. D8 uses a rolling 24 h with a cap of 50, far below the limit.
-- Whether `loadConfig()` of the `origin/master` bundle accepts the S2-era VPS `.env` (a later slice can add a required key). A `ConfigError` fails safe (exit 1,
-  key names only); stage 9 step 9.1.5 meets it first. Then stop and ask the user: no `.env` change is allowed (P8).
+- Whether a later `origin/master` config still accepts the VPS `.env` (checked OK on 2026-11-07, see "Facts checked"; a later slice can add a required key).
+  A `ConfigError` fails safe (exit 1, key names only); stage 9 step 9.1.5 meets it first. Then stop and ask the user: no `.env` change is allowed (P8).
 - Whether `POST /inboxes` with a known `client_id` still answers 200 when the Free plan has 3 of 3 inboxes. Stage 4.2 `setup` calls `GET` first and `POST` only on 404.
-- The meaning of the inbox field `status_until` (`2026-12-07T14:40:11Z`, 30 days after create; maybe a Free-plan deactivation). Stage 4 `setup` prints it; stage 9 records it.
+- The meaning of the inbox field `status_until` (not in the docs; it moved from `2026-12-07T14:40:11Z` to `2026-12-07T15:47:05.928Z` after the later probe sends, so it looks like
+  30 days after the last activity). Stage 4 `setup` prints it; stage 9 records it. When the inbox shows `status: deactivated`, stop and tell the user.
 - Whether Interia keeps sorting this sender into `Oferty`, or later into `Wiadomości-śmieci` or another sort folder. D10 handles all sort folders.
 
 ### Design decisions
@@ -335,3 +342,4 @@ Not yet (stage 9 writes the compare report here).
 - 2026-11-07: Plan session (plan-task skill). User: defaults for all open questions; subagents with one approval at the end; S4 delegate persona later. Live probe: 1 inbox created (`ea-testmail-75wd@agentmail.to`, the only free slot), 6 + 2 mails sent to the pilot address. Findings: SES replaces `Message-ID`; `From` override and plus tags dropped; display name by PATCH works; idempotency key works; Interia sorts the mail into `Oferty`. The user's webmail sender rule did not stick; user: the tool moves its own mail into INBOX. Task moved to `active/`.
 - 2026-11-07: Plan written (9 stages, 6 `[risky]`). Cold review (Opus, high): FAIL, 3 blockers (unreviewed bundle on the VPS, send log damage → resend, free-text recipient), 12 majors, 22 minors; all fixed. Re-review (Opus, high): PASS with 13 minors, fixed. Waiting for the user's approval.
 - 2026-11-07: Independent review in a separate session (Claude Code, Opus; record `test-mail-traffic/review-2026-11-07-session2.md`): 0 blockers, 4 majors (git fetch fails with the default SSH key, `[risky]` stages with 2 steps, deliver could delete the only copy of a synced mail, no push check of foreign commits), 12 minors. All fixed in the plan files, except one accepted minor. Waiting for the user's approval.
+- 2026-11-07: Review session 2, live checks (read-only): the AgentMail label filter works; `status_until` is not documented and moves with activity; the `origin/master` config loads on the VPS. Moved from "Not verified" to "Facts checked".
