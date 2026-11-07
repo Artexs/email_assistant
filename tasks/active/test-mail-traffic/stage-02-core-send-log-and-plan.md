@@ -6,7 +6,7 @@ Part of [`../test-mail-traffic.md`](../test-mail-traffic.md). Read that file's "
 
 Why risky: this logic decides whether a mail goes out once, twice or never (exactly-once, sending to people). Pure code: every rule has a unit test with fixed times.
 
-- [ ] **2.1 Send log lines, parser, case states, send request**
+- [x] **2.1 Send log lines, parser, case states, send request**
   - Goal: the JSONL send log format (D6), a tolerant parser, the state of each case, and the AgentMail send request of a case.
   - Files: create `packages/core/src/testmail/send-log.ts`, `packages/core/src/testmail/send-log.test.ts`, `packages/core/src/testmail/request.ts`,
     `packages/core/src/testmail/request.test.ts`; change `packages/core/src/testmail/index.ts`.
