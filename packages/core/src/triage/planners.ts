@@ -1,7 +1,8 @@
 import type { Category } from "./categories";
+import { ADDRESS_PATTERN, sendPayloadFor, type DraftPayload, type SendPayload } from "./payloads";
+import { isNoreplyAddress } from "./rules";
 
-// S3/S4 add more types with their own migration.
-export const actionTypes = ["move", "mark_read", "flag", "save_summary"] as const;
+export const actionTypes = ["move", "mark_read", "flag", "save_summary", "create_draft", "send"] as const;
 export type ActionType = (typeof actionTypes)[number];
 
 // The types that change the mailbox (`save_summary` is DB only).
@@ -20,15 +21,68 @@ export const AI_FOLDER_NAMES: Record<FolderKey, string> = {
   ai_manual: "AI/Manual",
 };
 
-// Payloads hold only folder keys and the summary: never an address, a recipient or a folder name from the LLM.
+// What the classifier and the delegates list give the planner for a `delegation` mail (D4).
+export interface DelegationInput {
+  delegateId: string | null;
+  delegateName: string | null;
+  // The delegate's address from the delegates row.
+  to: string | null;
+  task: string | null;
+  clarification: string | null;
+  // YYYY-MM-DD
+  dueDate: string | null;
+  language: "pl" | "en" | "other";
+  senderAddress: string | null;
+}
+
+// Move payloads hold only folder keys. Draft and send payloads hold the delegate's address from the delegates row
+// or the sender's address, never an address from the LLM text.
 export type PlannedAction =
   | { type: "move"; folder: FolderKey }
   | { type: "mark_read" }
   | { type: "flag" }
-  | { type: "save_summary"; summary: string };
+  | { type: "save_summary"; summary: string }
+  | { type: "create_draft"; draft: DraftPayload }
+  | { type: "send"; send: SendPayload; dependsOn: "create_draft" };
+
+const TASK_LIMIT = 300;
+const QUESTION_LIMIT = 200;
+
+function draftAndSend(draft: DraftPayload): PlannedAction[] {
+  return [
+    { type: "create_draft", draft },
+    { type: "send", send: sendPayloadFor(draft), dependsOn: "create_draft" },
+  ];
+}
+
+function planDelegation(input: DelegationInput | undefined): PlannedAction[] {
+  if (input === undefined) return [];
+  const language = input.language === "other" ? "en" : input.language;
+  const { delegateId, delegateName, to, task, clarification, senderAddress } = input;
+  if (delegateId && delegateName && to && task) {
+    return draftAndSend({
+      kind: "delegation",
+      delegate_id: delegateId,
+      delegate_name: delegateName,
+      to: [to],
+      task: task.slice(0, TASK_LIMIT),
+      due_date: input.dueDate ?? "",
+      language,
+    });
+  }
+  if (clarification && senderAddress && ADDRESS_PATTERN.test(senderAddress) && !isNoreplyAddress(senderAddress)) {
+    return draftAndSend({
+      kind: "clarification",
+      to: [senderAddress],
+      question: clarification.slice(0, QUESTION_LIMIT),
+      language,
+    });
+  }
+  return [];
+}
 
 // The plan in `assist` mode (architecture §4.2). The caller marks the summary with `markUntrustedText` first.
-export function planActions(category: Category, summary: string | null): PlannedAction[] {
+export function planActions(category: Category, summary: string | null, delegation?: DelegationInput): PlannedAction[] {
   switch (category) {
     case "urgent":
       return [{ type: "flag" }];
@@ -46,7 +100,7 @@ export function planActions(category: Category, summary: string | null): Planned
     case "unsure":
       return [{ type: "move", folder: "ai_manual" }];
     case "delegation":
-      throw new Error("no planner for delegation before S4");
+      return planDelegation(delegation);
     default: {
       const unknown: never = category;
       throw new Error(`unknown category: ${String(unknown)}`);

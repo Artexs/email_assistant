@@ -1,4 +1,4 @@
-import { classifierCategories, type Category } from "./categories";
+import { classifierCategories, DELEGATION_CATEGORY, type Category } from "./categories";
 
 export const senderRuleKinds = ["whitelist", "blocklist", "vip"] as const;
 export type SenderRuleKind = (typeof senderRuleKinds)[number];
@@ -60,12 +60,21 @@ export function isNoreplyAddress(fromAddress: string | null): boolean {
   return NOREPLY_LOCAL_PARTS.has(address.slice(0, at).replace(/\+.*$/, ""));
 }
 
-export function applyHardRules(fromAddress: string | null, rules: readonly SenderRule[]): HardRuleResult {
+export interface HardRuleOptions {
+  delegation?: boolean; // true = the organization has at least one active delegate
+}
+
+export function applyHardRules(
+  fromAddress: string | null,
+  rules: readonly SenderRule[],
+  opts: HardRuleOptions = {}
+): HardRuleResult {
   const { whitelisted, blocklisted, vip } = matchSender(fromAddress, rules);
   if (blocklisted && !whitelisted) return { kind: "spam", reasonCode: "blocklist" };
 
   const allowed = whitelisted
     ? classifierCategories.filter((category) => category !== "spam")
     : [...classifierCategories];
+  if (opts.delegation) allowed.push(DELEGATION_CATEGORY);
   return { kind: "classify", allowed, vip, whitelisted, noreply: isNoreplyAddress(fromAddress) };
 }

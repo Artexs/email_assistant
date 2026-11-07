@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { categories, type Category } from "./categories";
-import { AI_FOLDER_NAMES, folderKeys, planActions } from "./planners";
+import { AI_FOLDER_NAMES, folderKeys, planActions, type DelegationInput } from "./planners";
 import { markUntrustedText } from "./untrusted-text";
 
 const plannable = categories.filter((category) => category !== "delegation");
@@ -31,8 +31,101 @@ describe("planActions", () => {
     ]);
   });
 
-  test("delegation throws", () => {
-    expect(() => planActions("delegation", null)).toThrow();
+  describe("delegation", () => {
+    const ID = "5b1f3c2e-0a4d-4e8b-9c6f-1d2e3f4a5b6c";
+    function delegationInput(overrides: Partial<DelegationInput> = {}): DelegationInput {
+      return {
+        delegateId: ID,
+        delegateName: "Anna",
+        to: "anna@firma.test",
+        task: "Prepare the offer.",
+        clarification: null,
+        dueDate: null,
+        language: "en",
+        senderAddress: "jan@klient.test",
+        ...overrides,
+      };
+    }
+
+    test("a delegate and a task give a draft and a send", () => {
+      expect(planActions("delegation", null, delegationInput())).toEqual([
+        {
+          type: "create_draft",
+          draft: {
+            kind: "delegation",
+            delegate_id: ID,
+            delegate_name: "Anna",
+            to: ["anna@firma.test"],
+            task: "Prepare the offer.",
+            due_date: "",
+            language: "en",
+          },
+        },
+        {
+          type: "send",
+          send: { kind: "delegation", to: ["anna@firma.test"], delegate_id: ID },
+          dependsOn: "create_draft",
+        },
+      ]);
+    });
+
+    test("a due date is copied", () => {
+      const [draft] = planActions("delegation", null, delegationInput({ dueDate: "2026-11-10" }));
+      expect(draft).toMatchObject({ type: "create_draft", draft: { due_date: "2026-11-10" } });
+    });
+
+    test("no delegate but a clarification gives the clarification pair", () => {
+      const input = delegationInput({
+        delegateId: null,
+        task: null,
+        clarification: "Who should do this?",
+        language: "pl",
+      });
+      expect(planActions("delegation", null, input)).toEqual([
+        {
+          type: "create_draft",
+          draft: { kind: "clarification", to: ["jan@klient.test"], question: "Who should do this?", language: "pl" },
+        },
+        { type: "send", send: { kind: "clarification", to: ["jan@klient.test"] }, dependsOn: "create_draft" },
+      ]);
+    });
+
+    test("a clarification to a noreply sender gives no plan", () => {
+      const input = delegationInput({
+        delegateId: null,
+        clarification: "Who?",
+        senderAddress: "noreply@klient.test",
+      });
+      expect(planActions("delegation", null, input)).toEqual([]);
+    });
+
+    test("a clarification to a sender that is not one address gives no plan", () => {
+      for (const senderAddress of ["x@y.test, evil@z.test", "<x@y.test>", "x y@z.test", "x@y.test\nBcc: a@b.test"]) {
+        const input = delegationInput({ delegateId: null, clarification: "Who?", senderAddress });
+        expect(planActions("delegation", null, input)).toEqual([]);
+      }
+    });
+
+    test("no delegate and no clarification gives no plan", () => {
+      expect(planActions("delegation", null, delegationInput({ delegateId: null }))).toEqual([]);
+      expect(planActions("delegation", null, delegationInput({ to: null }))).toEqual([]);
+    });
+
+    test("no input gives no plan", () => {
+      expect(planActions("delegation", null)).toEqual([]);
+    });
+
+    test("language other becomes en", () => {
+      const [draft] = planActions("delegation", null, delegationInput({ language: "other" }));
+      expect(draft).toMatchObject({ draft: { language: "en" } });
+    });
+
+    test("a long task and question are cut to the schema limits", () => {
+      const [task] = planActions("delegation", null, delegationInput({ task: "t".repeat(400) }));
+      expect(task).toMatchObject({ draft: { task: "t".repeat(300) } });
+      const input = delegationInput({ delegateId: null, clarification: "q".repeat(300) });
+      expect(planActions("delegation", null, input)[0]).toMatchObject({ draft: { question: "q".repeat(200) } });
+    });
   });
 
   test("no payload value holds an @ after markUntrustedText", () => {

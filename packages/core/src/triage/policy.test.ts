@@ -25,6 +25,15 @@ const manualMove: PlannedAction = { type: "move", folder: "ai_manual" };
 const markRead: PlannedAction = { type: "mark_read" };
 const flag: PlannedAction = { type: "flag" };
 const saveSummary: PlannedAction = { type: "save_summary", summary: "Short summary." };
+const createDraft: PlannedAction = {
+  type: "create_draft",
+  draft: { kind: "clarification", to: ["a@b.test"], question: "Who?", language: "en" },
+};
+const send: PlannedAction = {
+  type: "send",
+  send: { kind: "clarification", to: ["a@b.test"] },
+  dependsOn: "create_draft",
+};
 
 const allActions: PlannedAction[] = [
   { type: "move", folder: "ai_info" },
@@ -101,6 +110,19 @@ describe("decidePolicy: the §4.3 table", () => {
     ["flag vip, switch on", flag, { vip: true }, "apply"],
     ["flag vip, switch off", flag, { vip: true, toolSwitches: { ...allOn, flag: false } }, "log_only"],
     ["flag vip shadow", flag, { vip: true, mode: "shadow" }, "log_only"],
+
+    // Create draft: assist and the switch; VIP does not matter.
+    ["create_draft assist, switch on", createDraft, {}, "apply"],
+    ["create_draft assist, switch off", createDraft, { toolSwitches: { ...allOn, create_draft: false } }, "log_only"],
+    ["create_draft shadow", createDraft, { mode: "shadow" }, "log_only"],
+    ["create_draft vip, switch on", createDraft, { vip: true }, "apply"],
+    ["create_draft assist, no move support", createDraft, { movesSupported: false }, "apply"],
+
+    // Send: waits for approval when its draft applies.
+    ["send, draft applies", send, {}, "await_approval"],
+    ["send, draft switch off", send, { toolSwitches: { ...allOn, create_draft: false } }, "log_only"],
+    ["send shadow", send, { mode: "shadow" }, "log_only"],
+    ["send vip, switch on", send, { vip: true }, "await_approval"],
   ])("%s", (_name, action, overrides, expected) => {
     expect(decidePolicy(action, input(overrides))).toBe(expected);
   });

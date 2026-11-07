@@ -2,6 +2,7 @@ import {
   AI_FOLDER_NAMES,
   aiTextFor,
   describeActions,
+  MAILBOX_ACTION_TYPES,
   renderActionFailedNotice,
   renderAuthErrorNotice,
   renderSyncOkNotice,
@@ -112,12 +113,19 @@ async function detectUrgent(
   }
 }
 
+function isMailboxActionType(type: string): type is (typeof MAILBOX_ACTION_TYPES)[number] {
+  return (MAILBOX_ACTION_TYPES as readonly string[]).includes(type);
+}
+
 // D11: owners get one notice per failed action; the dedup key and `notified_at` keep it single.
 async function detectActionFailed(db: DbOrTrx, ctx: TenantContext, owners: LinkedChat[], now: Date): Promise<void> {
   const failed = await listFailedUnnotified(db, ctx, { limit: ACTION_FAILED_LIMIT });
   for (const action of failed) {
     const run = async (trx: DbOrTrx) => {
-      if (action.type !== "save_summary" && action.updated_at.getTime() >= now.getTime() - ACTION_FAILED_LOOKBACK_MS) {
+      if (
+        isMailboxActionType(action.type) &&
+        action.updated_at.getTime() >= now.getTime() - ACTION_FAILED_LOOKBACK_MS
+      ) {
         const key = action.payload.folder;
         const folderName =
           action.type === "move" && key !== undefined && Object.hasOwn(AI_FOLDER_NAMES, key)

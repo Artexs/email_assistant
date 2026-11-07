@@ -86,12 +86,16 @@ const HARD_ERROR_WAIT_MS = 5 * 60_000;
 // Mail older than this is not triaged, unless the backfill stored it (architecture §4.1 rule 8).
 const MAX_AGE_MS = 7 * 24 * 3_600_000;
 
-function payloadOf(action: PlannedAction): Record<string, string> {
+function payloadOf(action: PlannedAction): Record<string, unknown> {
   switch (action.type) {
     case "move":
       return { folder: action.folder };
     case "save_summary":
       return { summary: action.summary };
+    case "create_draft":
+      return action.draft;
+    case "send":
+      return action.send;
     default:
       return {};
   }
@@ -123,6 +127,7 @@ export async function saveTriage(
         movesSupported: mailbox.movesSupported,
       })
     ),
+    // TODO stage 9: pass `dependsOn` of a send to `createPlanned`.
     idempotencyKey: `${email.id}:${action.type}`,
   }));
 

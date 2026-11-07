@@ -19,7 +19,7 @@ const actionTypeSchema = z.enum(actionTypes);
 
 export interface PlannedActionInput {
   type: ActionType;
-  payload: Record<string, string>;
+  payload: Record<string, unknown>;
   status: "ready" | "awaiting_approval" | "logged";
   idempotencyKey: string;
 }
@@ -172,7 +172,14 @@ export const CLAIM_MAX_AGE_MS = 24 * 3_600_000;
 export const CLAIM_MAX_MAIL_AGE_MS = 7 * 24 * 3_600_000;
 
 // D6: save_summary first, the move last (a move can change the UID).
-const TYPE_RANK: Record<ActionType, number> = { save_summary: 0, flag: 1, mark_read: 2, move: 3 };
+const TYPE_RANK: Record<ActionType, number> = {
+  save_summary: 0,
+  flag: 1,
+  mark_read: 2,
+  move: 3,
+  create_draft: 4,
+  send: 5,
+};
 
 type ClaimEb = ExpressionBuilder<DB, "actions" | "emails">;
 

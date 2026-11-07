@@ -235,7 +235,7 @@ describe("through the shared client", () => {
       reason_code: reasonCodes[0],
       reason: "x".repeat(301),
       summary: null,
-      fields: { due_date: null, language: "en" },
+      fields: { due_date: null, language: "en", delegate_id: null, task: null, clarification: null },
     });
     await expect(classify({ status: "completed", output_text: text })).rejects.toMatchObject({ code: "bad_output" });
   });

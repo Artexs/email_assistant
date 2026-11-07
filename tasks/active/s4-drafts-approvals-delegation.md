@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress: build step 0 done (plan checked against the S3 code). Next: stages 2–5 in pipeline mode; stage 1 (Interia probe) runs when the user is free (password on stdin, `/pause`); stage 6 waits for checkpoint 1.** Run mode: pipeline (`tasks/README.md` § "Pipeline mode"), user decision 2026-11-07. The user said S3 counts as built (they test S3 stage 16 in a separate checkout, `~/ea-s3-test`). Build handoff: `notes/2026-11-07-handoff-s4-build.md`.
+> **Status 2026-11-07 — in progress: build step 0 done (plan checked against the S3 code). Stage 2 PASS (pushed); stage 3 built, review pending; next: stages 4–5 in pipeline mode; stage 1 (Interia probe) runs when the user is free (password on stdin, `/pause`); stage 6 waits for checkpoint 1.** Run mode: pipeline (`tasks/README.md` § "Pipeline mode"), user decision 2026-11-07. The user said S3 counts as built (they test S3 stage 16 in a separate checkout, `~/ea-s3-test`). Build handoff: `notes/2026-11-07-handoff-s4-build.md`.
 
 # S4 Drafts, approvals, delegation
 
@@ -153,7 +153,7 @@ Each stage lives in its own file in [`s4-drafts-approvals-delegation/`](s4-draft
 
 - [ ] [Stage 1](s4-drafts-approvals-delegation/stage-01-interia-send-spike.md) — Interia send spike: `mailbox:probe-send` on the real mailbox [risky] [written] — user checkpoint 1 after it
 - [x] [Stage 2](s4-drafts-approvals-delegation/stage-02-s4-migration.md) — S4 migration: `delegates`, `delegations`, action types and checks, outbox kinds [risky] [written]
-- [ ] [Stage 3](s4-drafts-approvals-delegation/stage-03-core-triage-delegation.md) — Core: `delegation` in the rules, the analysis schema, the planner, the policy [risky] [written]
+- [x] [Stage 3](s4-drafts-approvals-delegation/stage-03-core-triage-delegation.md) — Core: `delegation` in the rules, the analysis schema, the planner, the policy [risky] [written]
 - [ ] [Stage 4](s4-drafts-approvals-delegation/stage-04-core-outgoing-messages.md) — Core: outgoing message builder, templates, quote, external-sender rule [risky] [written]
 - [ ] [Stage 5](s4-drafts-approvals-delegation/stage-05-mail-append-sender-compose.md) — Mail: `appendMessage`, the `MailSender` port, the SMTP adapter with the stage rule, the fake sender, `composeMessage` [risky] [written]
 - [ ] [Stage 6](s4-drafts-approvals-delegation/stage-06-locate-by-action-id-and-own-mail.md) — Mail: `locateByActionId`; the own-mail skip wired into the sync [risky] [written]
@@ -262,3 +262,5 @@ Answered 2026-11-07 with the plan defaults (P1–P8). Questions 1–12 below: **
 - 2026-11-07: the user chose pipeline mode, S3 counts as built; order 2 → 5, then 1 with the user, then 6 on. Stage 1 facts feed stages 6, 11, 12 only.
 - 2026-11-07: build step 0 — plan checked against the S3 code (notes/2026-11-07-s4-plan-vs-s3-code.md): 5 majors, 22 minors, 8 S3 features applied to the D-lines and stages 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 21; the 3 plan-internal items fixed (D31 `openSmtpSender`, D7 with `fromAddress`, D17 `original_created_at` and `provider_result`). Main session decisions: M6 widens `insertAction` / `insertTriagedWithActions` in stage 7.1 (`insertDraftAndSend` stays in 10.1); S3 feature 6 moves `STALE_AFTER_MS` to the new `actions/constants.ts` in stage 7.1; M22 adds the debug line `triage <mailboxId>: delegates <n>`. Every code reference was checked at HEAD `279387b`. No user decision (P1–P8, questions 1–12) and no scope changed. Scope line updated (M27).
 - 2026-11-07: stage 2 built, review pending (migration `20261108000001_delegation.sql`, `delegation-schema.test.ts`; lint 0, typecheck 0, unit 758 pass, int 563 pass, 0 fail).
+- 2026-11-07: stage 2 review PASS (Opus, high; 1 minor: the status line, fixed here). Commit `f324481` was pushed by another session's push of `6d00f95` after the PASS.
+- 2026-11-07: stage 3 built, review pending (3.1 rules and analysis schema, 3.2 payload schemas, planner, policy; M16 sites; lint 0, typecheck 0, unit 796 pass, int 563 pass, 0 fail). Gap until stage 8: the schema requires `delegate_id`, `task`, `clarification` but the v1 prompt does not name them; no real LLM runs before stage 8.

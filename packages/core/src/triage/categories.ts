@@ -4,8 +4,9 @@ export const categories = ["urgent", "needs_reply", "delegation", "info", "notif
 export type Category = (typeof categories)[number];
 export const categorySchema = z.enum(categories);
 
-// The categories the LLM may pick in S1b. `delegation` waits for S4; `unsure` never comes from the LLM.
+// The categories the LLM may always pick. `delegation` is added by the hard rules only when the organization has active delegates; `unsure` never comes from the LLM.
 export const classifierCategories: readonly Category[] = ["urgent", "needs_reply", "info", "notification", "spam"];
+export const DELEGATION_CATEGORY: Category = "delegation";
 
 export const mailboxModes = ["shadow", "assist"] as const;
 export type MailboxMode = (typeof mailboxModes)[number];

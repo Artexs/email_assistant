@@ -22,6 +22,20 @@ exports[`toStrictJsonSchema snapshot of the triage schema 1`] = `
     "fields": {
       "additionalProperties": false,
       "properties": {
+        "clarification": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "delegate_id": {
+          "type": "null",
+        },
         "due_date": {
           "anyOf": [
             {
@@ -41,10 +55,24 @@ exports[`toStrictJsonSchema snapshot of the triage schema 1`] = `
           ],
           "type": "string",
         },
+        "task": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
       },
       "required": [
         "due_date",
         "language",
+        "delegate_id",
+        "task",
+        "clarification",
       ],
       "type": "object",
     },

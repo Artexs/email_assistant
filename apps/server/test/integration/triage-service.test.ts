@@ -250,7 +250,7 @@ const analysis =
     reason_code: "newsletter",
     reason: "a newsletter",
     summary: "short summary",
-    fields: { due_date: null, language: "pl" },
+    fields: { due_date: null, language: "pl", delegate_id: null, task: null, clarification: null },
     ...overrides,
   });
 

@@ -6,7 +6,7 @@ Part of [`../s4-drafts-approvals-delegation.md`](../s4-drafts-approvals-delegati
 
 Why risky: these pure functions decide which mail becomes a draft to a person and under which gate. A wrong `allowed` list lets the LLM pick `delegation` without delegates; a wrong policy branch sends without approval.
 
-- [ ] **3.1 Hard rules and the analysis schema (D3)**
+- [x] **3.1 Hard rules and the analysis schema (D3)**
   - Goal: `delegation` is an allowed category only when the organization has active delegates; the LLM output schema carries the delegate id (from a given list), the task and the clarification.
   - Files: change `packages/core/src/triage/rules.ts`, `rules.test.ts`, `analysis.ts`, `analysis.test.ts`, `categories.ts`.
   - Interfaces:
@@ -41,7 +41,7 @@ Why risky: these pure functions decide which mail becomes a draft to a person an
   - Done when: the tests pass; `apps/server` still compiles (the classifier passes no `delegateIds` yet: stage 8).
   - Out of scope: the prompt text (stage 8), the server's delegates list (stage 9).
 
-- [ ] **3.2 Planner and policy for `create_draft` and `send` (D2, D4, D5)**
+- [x] **3.2 Planner and policy for `create_draft` and `send` (D2, D4, D5)**
   - Goal: a `delegation` mail plans a draft and a send (or a clarification pair, or nothing); the policy gives `apply` to a draft only in `assist` with the switch, and `await_approval` to a send only when its draft applies.
   - Files: change `packages/core/src/triage/planners.ts`, `planners.test.ts`, `policy.ts`, `policy.test.ts`; create `packages/core/src/triage/payloads.ts`, `payloads.test.ts`; change `packages/core/src/triage/index.ts` (export the new file); change `apps/server/src/modules/actions/repo.ts` (`PlannedActionInput.payload` widens from `Record<string, string>` (`repo.ts:22`) to `Record<string, unknown>`: D2; `ActionRow.payload` is `unknown` already (`repo.ts:37`): leave it, M17; `TYPE_RANK: Record<ActionType, number>` (`repo.ts:175`) gets `create_draft: 4, send: 5`, D17, M16) and `apps/server/src/modules/triage/service.ts` (`payloadOf`, `service.ts:89`, returns `Record<string, unknown>` with the two new cases); change `packages/core/src/digest/would-do.ts` (`phrase()`, `:24-35`, is a switch on `ActionType` with no default and returns `string | null`: add `case "create_draft":` and `case "send":` that return `null` until stage 14 writes the phrases; M16) and `apps/server/src/modules/channels/notices.ts` (`detectActionFailed` passes `actionType: action.type` (`:130`) to `renderActionFailedNotice`, whose `actionType` is `"move" | "flag" | "mark_read"`, narrowed today only by `action.type !== "save_summary"` (`:120`): narrow with `MAILBOX_ACTION_TYPES` instead, so a row of another type is only marked notified, with no notice, as `save_summary` is today; M16). The three sites break under `strict` as soon as `actionTypes` has the two new types.
   - Interfaces:

@@ -2,7 +2,7 @@ import type { Category, MailboxMode } from "./categories";
 import type { PlannedAction } from "./planners";
 import type { ToolSwitches } from "./settings";
 
-// S1b never returns `await_approval` (no send and no draft yet). S4 uses it.
+// Only a `send` gets `await_approval`.
 export type PolicyDecision = "apply" | "await_approval" | "log_only";
 
 export interface PolicyInput {
@@ -14,6 +14,10 @@ export interface PolicyInput {
   vip: boolean;
   // The mailbox has MOVE or UIDPLUS (architecture §6.1). The caller computes it.
   movesSupported: boolean;
+}
+
+function draftDecision({ mode, toolSwitches }: PolicyInput): PolicyDecision {
+  return mode === "assist" && toolSwitches.create_draft ? "apply" : "log_only";
 }
 
 // The policy table of architecture §4.3. Each `apply` needs its own conditions; there is no default `apply`.
@@ -36,6 +40,11 @@ export function decidePolicy(action: PlannedAction, input: PolicyInput): PolicyD
     case "flag":
       if (mode !== "assist") return "log_only";
       return toolSwitches.flag ? "apply" : "log_only";
+    case "create_draft":
+      return draftDecision(input);
+    // The send never applies on its own: it waits for approval when the draft of the same input applies.
+    case "send":
+      return draftDecision(input) === "apply" ? "await_approval" : "log_only";
     default: {
       const unknown: never = action;
       throw new Error(`unknown action type: ${String((unknown as { type: unknown }).type)}`);

@@ -102,3 +102,38 @@ describe("isNoreplyAddress", () => {
     expect(isNoreplyAddress("")).toBe(false);
   });
 });
+
+describe("applyHardRules delegation option", () => {
+  const allowedOf = (result: ReturnType<typeof applyHardRules>) => (result.kind === "classify" ? result.allowed : []);
+
+  test("without options allowed has the 5 classifier categories", () => {
+    expect(allowedOf(applyHardRules("a@x.test", []))).toEqual([...classifierCategories]);
+    expect(allowedOf(applyHardRules("a@x.test", []))).toHaveLength(5);
+  });
+
+  test("delegation: true adds delegation last", () => {
+    const allowed = allowedOf(applyHardRules("a@x.test", [], { delegation: true }));
+    expect(allowed).toHaveLength(6);
+    expect(allowed[5]).toBe("delegation");
+  });
+
+  test("delegation: false adds nothing", () => {
+    expect(allowedOf(applyHardRules("a@x.test", [], { delegation: false }))).toHaveLength(5);
+  });
+
+  test("whitelisted sender has no spam but has delegation", () => {
+    const rules: SenderRule[] = [{ pattern: "a@x.test", kind: "whitelist" }];
+    const allowed = allowedOf(applyHardRules("a@x.test", rules, { delegation: true }));
+    expect(allowed).not.toContain("spam");
+    expect(allowed.at(-1)).toBe("delegation");
+  });
+
+  test("blocklisted sender is spam whatever the option", () => {
+    const rules: SenderRule[] = [{ pattern: "a@x.test", kind: "blocklist" }];
+    expect(applyHardRules("a@x.test", rules, { delegation: true })).toEqual({ kind: "spam", reasonCode: "blocklist" });
+  });
+
+  test("noreply sender keeps delegation", () => {
+    expect(allowedOf(applyHardRules("noreply@x.test", [], { delegation: true }))).toContain("delegation");
+  });
+});

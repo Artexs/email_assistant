@@ -29,7 +29,10 @@ function phrase(action: ActionView): string | null {
       return "mark read";
     case "move":
       return action.folder === null ? "move" : `move to ${AI_FOLDER_NAMES[action.folder]}`;
+    // Stage 14 writes the phrases for drafts and sends.
     case "save_summary":
+    case "create_draft":
+    case "send":
       return null;
   }
 }

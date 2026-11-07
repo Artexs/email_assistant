@@ -34,7 +34,7 @@ const answer = (over: Record<string, unknown> = {}) => ({
   reason_code: "fyi",
   reason: "Plain information.",
   summary: "Spotkanie przeniesione na piątek.",
-  fields: { due_date: null, language: "pl" },
+  fields: { due_date: null, language: "pl", delegate_id: null, task: null, clarification: null },
   ...over,
 });
 

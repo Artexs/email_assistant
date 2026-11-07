@@ -71,7 +71,7 @@ describe("triage logs", () => {
                 reason_code: "newsletter",
                 reason: MARKERS.reason,
                 summary: MARKERS.summary,
-                fields: { due_date: null, language: "pl" },
+                fields: { due_date: null, language: "pl", delegate_id: null, task: null, clarification: null },
               }),
               tokensIn: 10,
               tokensOut: 5,
