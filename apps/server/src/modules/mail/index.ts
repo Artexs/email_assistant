@@ -60,7 +60,15 @@ export {
 } from "./seed";
 export { backfillInbox, CursorMovedError, syncMailbox, type SyncDeps, type SyncResult } from "./sync";
 export { auditMailbox, backfillMailbox, seedMailbox, type ToolDeps } from "./tools";
-export { locateKeyOf, locateMessage, LOCATE_CHUNK, type LocateKey } from "./locate";
+export {
+  locateByActionId,
+  locateKeyOf,
+  locateMessage,
+  LOCATE_CHUNK,
+  LOCATE_NEWEST_FIRST_CHUNK,
+  type ActionLocateKey,
+  type LocateKey,
+} from "./locate";
 export {
   IDENTITY_MODE,
   isDeleted,

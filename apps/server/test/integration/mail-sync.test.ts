@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
+import { isOwnActionId } from "../../src/modules/actions";
 import {
   CursorMovedError,
   syncMailbox,
@@ -14,7 +15,7 @@ import { RETURN_CHECK_LIMIT } from "../../src/modules/mail/sync";
 import type { DB, Db, TenantContext } from "../../src/platform/db";
 import { SoftError } from "../../src/platform/errors";
 
-import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
+import { createOrgWithMailbox, insertAction, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -408,6 +409,24 @@ describe("syncMailbox: incremental", () => {
       expect(result.stored).toBe(0);
       expect(await emails(trx, s.mailboxId)).toHaveLength(0);
       expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY, lastUid: 1 });
+    });
+  });
+
+  test("the real isOwnActionId skips the mail of a draft of this mailbox and stores a random uuid", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const emailId = await insertTestEmail(trx, s.ctx, s.mailboxId);
+      const draftId = await insertAction(trx, s.ctx, emailId, { type: "create_draft", status: "ready" });
+      s.fake.deliver("INBOX", seed(1, { headers: { "X-EA-Action-Id": draftId } }));
+      s.fake.deliver("INBOX", seed(2, { headers: { "X-EA-Action-Id": crypto.randomUUID() } }));
+      const own = (ctx: TenantContext, mailboxId: string, id: string) => isOwnActionId(trx, ctx, mailboxId, id);
+
+      const result = await syncMailbox(deps(trx, s.fake, { isOwnActionId: own }), s.ctx, s.mailboxId);
+      expect(result.skippedOwn).toBe(1);
+      expect(result.stored).toBe(1);
+      const stored = (await emails(trx, s.mailboxId)).filter((row) => row.message_id_header?.startsWith("<m"));
+      expect(stored.map((row) => row.message_id_header)).toEqual(["<m2@x.test>"]);
+      expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY, lastUid: 2 });
     });
   });
 

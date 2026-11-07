@@ -13,6 +13,7 @@ import {
   expireStaleReady,
   finishAction,
   insertReverse,
+  isOwnActionId,
   listActionsForEmail,
   listActionsForEmails,
   listFailedUnnotified,
@@ -1880,5 +1881,47 @@ describe("countClaimable: drafts and sends", () => {
         sending: 1,
       });
     });
+  });
+});
+
+describe("isOwnActionId", () => {
+  test("is true for a draft or send of an email of this mailbox and org only", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      const otherMailboxId = crypto.randomUUID();
+      await insertMailbox(trx, a.ctx, {
+        id: otherMailboxId,
+        address: `other-${otherMailboxId}@x.test`,
+        imapHost: "imap.x.test",
+        imapPort: 993,
+        smtpHost: "smtp.x.test",
+        smtpPort: 465,
+        capabilities: testCapabilities,
+        folderMap: { drafts: "Drafts" },
+      });
+      const email = await insertTestEmail(trx, a.ctx, a.mailboxId);
+      const draftId = await insertAction(trx, a.ctx, email, { type: "create_draft", status: "ready" });
+      const sendId = await insertAction(trx, a.ctx, email, {
+        type: "send",
+        status: "awaiting_approval",
+        dependsOnActionId: draftId,
+      });
+      const moveId = await insertAction(trx, a.ctx, email, { type: "move", status: "ready" });
+
+      expect(await isOwnActionId(trx, a.ctx, a.mailboxId, draftId)).toBe(true);
+      expect(await isOwnActionId(trx, a.ctx, a.mailboxId, sendId)).toBe(true);
+      expect(await isOwnActionId(trx, a.ctx, otherMailboxId, draftId)).toBe(false);
+      expect(await isOwnActionId(trx, b.ctx, b.mailboxId, draftId)).toBe(false);
+      expect(await isOwnActionId(trx, b.ctx, a.mailboxId, draftId)).toBe(false);
+      expect(await isOwnActionId(trx, a.ctx, a.mailboxId, moveId)).toBe(false);
+      expect(await isOwnActionId(trx, a.ctx, a.mailboxId, crypto.randomUUID())).toBe(false);
+    });
+  });
+
+  test("a value that is not a uuid is false and sends no query", async () => {
+    const queries: string[] = [];
+    const fake = new Proxy({}, { get: () => () => queries.push("query") }) as never;
+    expect(await isOwnActionId(fake, { orgId: crypto.randomUUID() }, crypto.randomUUID(), "not-a-uuid")).toBe(false);
+    expect(queries).toEqual([]);
   });
 });

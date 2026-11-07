@@ -36,6 +36,7 @@ export {
   getDraft,
   getSend,
   insertReverse,
+  isOwnActionId,
   listActionsForEmail,
   listActionsForEmails,
   listFailedUnnotified,

@@ -6,7 +6,7 @@ Part of [`../s4-drafts-approvals-delegation.md`](../s4-drafts-approvals-delegati
 
 Checkpoint 1 input: stage 1 settled whether a FETCH of an appended draft returns the `x-ea-action-id` header at Interia (`draft.headerFetched`) and whether `SEARCH SINCE` works in Drafts and Sent. If `headerFetched` was false, the main session changes 6.1 before the build: the match uses the ENVELOPE `Message-ID` (`outgoingMessageId(actionId, address)`) instead of the header. If `searchSinceFound` was false, 6.1 gets the fallback `search({ all: true })` limited to the newest 500 UIDs.
 
-- [ ] **6.1 `locateByActionId` (D14)**
+- [x] **6.1 `locateByActionId` (D14)**
   - Goal: the system finds its own draft or Sent copy in a folder without a header search, by the action id in the fetched header, with the APPEND uid as a hint.
   - Files: change `apps/server/src/modules/mail/locate.ts` (S3 stage 5), `locate.test.ts`, `mail/index.ts`.
   - Interfaces:
@@ -33,7 +33,7 @@ Checkpoint 1 input: stage 1 settled whether a FETCH of an appended draft returns
   - Done when: the tests pass.
   - Out of scope: callers (stages 11, 12).
 
-- [ ] **6.2 Own-mail skip: `actions.isOwnActionId` wired into the sync (D15)**
+- [x] **6.2 Own-mail skip: `actions.isOwnActionId` wired into the sync (D15)**
   - Goal: a mail that carries the `X-EA-Action-Id` of a real draft of this mailbox is never stored or triaged (architecture §6.1 "which mail is new"); the stub in `main.ts` goes away.
   - Files: change `apps/server/src/modules/actions/repo.ts`, `actions/index.ts`, `apps/server/src/main.ts` (the stub `isOwnActionId: async () => false` at `main.ts:82`), `apps/server/src/modules/mail/tools.ts` (the second stub, `isOwnActionId: async () => false` at `tools.ts:116` inside `backfillMailbox`), `apps/server/src/scripts/mailbox-backfill.ts` (passes the real function), `apps/server/test/integration/mail-backfill.test.ts` (its `backfillMailbox` calls at `:259`, `:276`, `:289` pass the new dependency), `apps/server/test/integration/actions-repo.test.ts`, `apps/server/test/integration/mail-sync.test.ts`. Not `scripts/mailbox-rescan.ts`: it only calls `forceRescan` (`mailbox-rescan.ts:45`) and has no sync dependency (M18).
   - Interfaces:
