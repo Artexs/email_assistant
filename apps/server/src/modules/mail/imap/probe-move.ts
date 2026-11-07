@@ -1,7 +1,7 @@
 // Write probe for the S3 move rules: one synthetic mail, every IMAP write the committer will use. Test account only.
 import type { FetchMessageObject, ImapFlow } from "imapflow";
 
-import { HardError } from "../../../platform/errors";
+import { HardError, SoftError } from "../../../platform/errors";
 import { renderSeedMessage, SYNTHETIC_MESSAGE_ID_DOMAIN } from "../seed";
 
 import { connectImapClient, toMailError, type ImapConnectOptions } from "./client";
@@ -16,6 +16,8 @@ export interface ProbeMoveReport {
   namespace: { prefix: string; delimiter: string | null };
   capabilities: { move: boolean; uidplus: boolean };
   probeFolder: string;
+  /** `null` = not tried. */
+  folders: { nested: boolean | null; parentCreateOk: boolean | null };
   append: { uid: number | null };
   copy: { uidMapReturned: boolean; targetUid: number | null; sameUidAsSource: boolean | null };
   targetMeta: {
@@ -62,6 +64,7 @@ function newReport(): ProbeMoveReport {
     namespace: { prefix: "", delimiter: null },
     capabilities: { move: false, uidplus: false },
     probeFolder: "",
+    folders: { nested: null, parentCreateOk: null },
     append: { uid: null },
     copy: { uidMapReturned: false, targetUid: null, sameUidAsSource: null },
     targetMeta: { found: false, sameSize: null, sameInternalDate: null, sameEnvelopeDate: null, sameMessageId: null },
@@ -129,12 +132,13 @@ export async function probeMove(
   const subject = `EA probe move ${probeId}`;
   const build = messageBuilder(probeId, imap.user, now);
   const notes: string[] = [];
+  const ctx: ProbeContext = { probeId, subject, build, now, say, cleanupNotes: notes, step: "connect" };
   const client = await connectImapClient(imap);
   try {
     try {
-      await runProbe(client, report, { probeId, subject, build, now, say, cleanupNotes: notes });
+      await runProbe(client, report, ctx);
     } catch (error) {
-      throw withCleanupNotes(error, notes);
+      throw withCleanupNotes(describeFailure(error, ctx.step), notes);
     }
   } finally {
     await client.logout().catch(() => client.close());
@@ -149,6 +153,120 @@ interface ProbeContext {
   now: Date;
   say: (line: string) => void;
   cleanupNotes: string[];
+  /** The step that runs now; it goes into the error message. */
+  step: string;
+}
+
+/** Keeps only [A-Z0-9-] of an imapflow error field, so no server text reaches the message. */
+function safeToken(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const token = value.replace(/[^A-Z0-9-]/g, "");
+  return token === "" ? null : token;
+}
+
+/**
+ * Server text of an ALERT: printable characters only, whitespace collapsed, cut to 200 code points. An ALERT is a
+ * message of the server to the user, not mail data. Returns the text in quotes, or null when it is empty.
+ */
+export function sanitizeAlertText(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const collapsed = value
+    .replace(/[^\P{C}]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const text = Array.from(collapsed).slice(0, 200).join("").trim();
+  return text === "" ? null : `"${text}"`;
+}
+
+/** The quoted alert text of an imapflow error, only when its response code is ALERT (never for other codes). */
+function alertTextOf(error: unknown): string | null {
+  const fields = (typeof error === "object" && error !== null ? error : {}) as {
+    serverResponseCode?: unknown;
+    responseText?: unknown;
+  };
+  return fields.serverResponseCode === "ALERT" ? sanitizeAlertText(fields.responseText) : null;
+}
+
+function isNoResponse(error: unknown): boolean {
+  return typeof error === "object" && error !== null && (error as { responseStatus?: unknown }).responseStatus === "NO";
+}
+
+/**
+ * Names the failed step and the imapflow status fields that hold no mail data. `responseText` is added only for
+ * an ALERT, sanitized. Errors that are already Soft/HardError (the probe's own checks) stay as they are.
+ */
+export function describeFailure(error: unknown, step: string): Error {
+  if (error instanceof SoftError || error instanceof HardError) return error;
+  const fields = (typeof error === "object" && error !== null ? error : {}) as {
+    code?: unknown;
+    responseStatus?: unknown;
+    serverResponseCode?: unknown;
+  };
+  const mapped = toMailError(error, "probe");
+  if (mapped instanceof SoftError) return new SoftError(`${mapped.message} at step ${step}`, { cause: error });
+  const details = [safeToken(fields.responseStatus), safeToken(fields.serverResponseCode)].filter(
+    (token) => token !== null
+  );
+  const codeText = typeof fields.code === "string" ? ` (${fields.code})` : "";
+  const detailText = details.length === 0 ? "" : ` [${details.join(" ")}]`;
+  const alert = alertTextOf(error);
+  const alertText = alert === null ? "" : ` ${alert}`;
+  return new HardError(`IMAP probe failed at step ${step}${codeText}${detailText}${alertText}`, { cause: error });
+}
+
+/**
+ * Creates the probe folder, which tests D9: the real path of an `AI/*` folder. A server that refuses nested folders
+ * (Interia) gets a flat top-level folder `AI-Probe-…` instead; `folders.nested` records which one worked.
+ * Returns the folder path and the parent `AI` when the probe created it.
+ */
+export async function createProbeFolder(
+  client: ImapFlow,
+  probeName: string,
+  report: ProbeMoveReport,
+  ctx: Pick<ProbeContext, "step" | "cleanupNotes">
+): Promise<{ folder: string; parentFolder: string | null }> {
+  ctx.step = "list before create";
+  const parentBefore = new Set((await client.list()).map((entry) => entry.path.toLowerCase()));
+  ctx.step = "create folder";
+  let parentFolder: string | null = null;
+  let nestedPossible = true;
+  if (!parentBefore.has(`${report.namespace.prefix}AI`.toLowerCase())) {
+    try {
+      const parent = await client.mailboxCreate("AI");
+      report.folders.parentCreateOk = true;
+      if (parent.created) {
+        parentFolder = parent.path;
+        report.cleanup.parentFolderCreated = true;
+        ctx.cleanupNotes.push(`the folder "${parent.path}" was created by the probe; delete it by hand if empty`);
+      }
+    } catch (error) {
+      if (!isNoResponse(error)) throw error;
+      report.folders.parentCreateOk = false;
+      nestedPossible = false;
+      report.notes.push(`creating the folder "AI" failed ${alertTextOf(error) ?? "(no alert text)"}`);
+    }
+  }
+  let created: Awaited<ReturnType<ImapFlow["mailboxCreate"]>> | null = null;
+  if (nestedPossible) {
+    try {
+      created = await client.mailboxCreate(["AI", `Probe-${probeName}`]);
+      report.folders.nested = true;
+    } catch (error) {
+      if (!isNoResponse(error)) throw error;
+      report.notes.push(`creating a nested folder under "AI" failed ${alertTextOf(error) ?? "(no alert text)"}`);
+    }
+  }
+  if (created === null) {
+    created = await client.mailboxCreate(`AI-Probe-${probeName}`);
+    report.folders.nested = false;
+  }
+  if (!created.created) {
+    throw new HardError(`the probe folder "${created.path}" already exists: probe refused, nothing was written`);
+  }
+  const folder = created.path;
+  report.probeFolder = folder;
+  ctx.cleanupNotes.push(`the probe folder "${folder}" may exist; delete it by hand`);
+  return { folder, parentFolder };
 }
 
 async function runProbe(client: ImapFlow, report: ProbeMoveReport, ctx: ProbeContext): Promise<void> {
@@ -156,6 +274,7 @@ async function runProbe(client: ImapFlow, report: ProbeMoveReport, ctx: ProbeCon
   const messageId = (tag: string) => `<probe-${probeId}${tag}@${SYNTHETIC_MESSAGE_ID_DOMAIN}>`;
   const hasUidplus = client.capabilities.has("UIDPLUS");
 
+  ctx.step = "list";
   const inbox = (await client.list()).find((entry) => entry.path.toUpperCase() === INBOX_PATH);
   report.delimiter = inbox?.delimiter ?? null;
   const namespace = (client as unknown as { namespace?: { prefix?: string; delimiter?: string } }).namespace;
@@ -163,26 +282,13 @@ async function runProbe(client: ImapFlow, report: ProbeMoveReport, ctx: ProbeCon
   report.capabilities = { move: client.capabilities.has("MOVE"), uidplus: hasUidplus };
   say(`delimiter ${report.delimiter ?? "none"}, prefix "${report.namespace.prefix}"`);
 
-  // The probe folder tests D9: the real path of an `AI/*` folder.
-  const parentBefore = new Set((await client.list()).map((entry) => entry.path.toLowerCase()));
-  const created = await client.mailboxCreate(["AI", `Probe-${probeId.slice(0, 8)}`]);
-  if (!created.created) {
-    throw new HardError(`the probe folder "${created.path}" already exists: probe refused, nothing was written`);
-  }
-  const folder = created.path;
+  const { folder, parentFolder } = await createProbeFolder(client, probeId.slice(0, 8), report, ctx);
   const folderDelimiter = report.namespace.delimiter ?? report.delimiter;
-  const parentEnd = folderDelimiter === null ? -1 : folder.lastIndexOf(folderDelimiter);
-  const parentFolder = parentEnd > 0 ? folder.slice(0, parentEnd) : null;
-  report.cleanup.parentFolderCreated = parentFolder !== null && !parentBefore.has(parentFolder.toLowerCase());
-  report.probeFolder = folder;
-  ctx.cleanupNotes.push(`the probe folder "${folder}" may exist; delete it by hand`);
-  if (report.cleanup.parentFolderCreated) {
-    ctx.cleanupNotes.push(`the folder "${parentFolder}" was created by the probe; delete it by hand if empty`);
-  }
-  say(`probe folder ${folder}`);
+  say(`probe folder ${folder}, nested ${report.folders.nested}`);
 
   // APPEND into INBOX; the uid comes from UIDPLUS, else from SEARCH SUBJECT.
   ctx.cleanupNotes.push(`the probe mail "${subject}" may be in INBOX; delete it by hand`);
+  ctx.step = "append to INBOX";
   const appended = await client.append(INBOX_PATH, build(subject, messageId("")), []);
   let uid = appended === false ? undefined : appended.uid;
   if (uid === undefined) {
@@ -194,6 +300,7 @@ async function runProbe(client: ImapFlow, report: ProbeMoveReport, ctx: ProbeCon
   say(`appended uid ${originalUid}`);
 
   // (1) FETCH the original, (2) flags.
+  ctx.step = "fetch and flags in INBOX";
   const original = await inFolder(client, INBOX_PATH, () => fetchUid(client, originalUid));
   if (!original) throw new HardError("the probe mail could not be fetched in INBOX");
   await inFolder(client, INBOX_PATH, async () => {
@@ -207,6 +314,7 @@ async function runProbe(client: ImapFlow, report: ProbeMoveReport, ctx: ProbeCon
   say(`flags: flagged ${report.flags.flaggedKept}, seen ${report.flags.seenKept}`);
 
   // (3) COPY into the probe folder.
+  ctx.step = "copy to probe folder";
   const copied = await inFolder(client, INBOX_PATH, () =>
     client.messageCopy(String(originalUid), folder, { uid: true })
   );
@@ -218,6 +326,7 @@ async function runProbe(client: ImapFlow, report: ProbeMoveReport, ctx: ProbeCon
   say(`copy: uidMap ${report.copy.uidMapReturned}, same uid ${report.copy.sameUidAsSource}`);
 
   // (4) compare the copy with the original, (5) SEARCH SINCE in the probe folder.
+  ctx.step = "compare copy and search since";
   const copyInfo = await inFolder(client, folder, async () => {
     if (targetUid === null) {
       const all = await searchUids(client, { all: true });
@@ -246,6 +355,7 @@ async function runProbe(client: ImapFlow, report: ProbeMoveReport, ctx: ProbeCon
   // (6a) UID EXPUNGE test in the probe folder only: A is expunged, B must stay.
   // `otherDeletedKept` is true only when every part is proven; a failed part leaves it false and adds a note.
   let uidB: number | null = null;
+  ctx.step = "expunge test";
   if (hasUidplus) {
     const subjectA = `${subject} A`;
     const subjectB = `${subject} B`;
@@ -300,6 +410,7 @@ async function runProbe(client: ImapFlow, report: ProbeMoveReport, ctx: ProbeCon
   };
 
   // (6b) expunge the original in INBOX.
+  ctx.step = "expunge original in INBOX";
   let originalGone = false;
   if (await inboxExpungeAllowed([originalUid])) {
     await inFolder(client, INBOX_PATH, async () => {
@@ -313,6 +424,7 @@ async function runProbe(client: ImapFlow, report: ProbeMoveReport, ctx: ProbeCon
   say(`inbox expunge: skipped ${report.expunge.inboxExpungeSkipped}, source gone ${report.expunge.sourceGone}`);
 
   // (7) COPY back to INBOX.
+  ctx.step = "copy back to INBOX";
   const uidNextBefore = (await client.status(INBOX_PATH, { uidNext: true })).uidNext ?? null;
   const back = await inFolder(client, folder, () => client.messageCopy(String(copyUid), INBOX_PATH, { uid: true }));
   if (back === false) throw new HardError("COPY back into INBOX failed");
@@ -334,6 +446,7 @@ async function runProbe(client: ImapFlow, report: ProbeMoveReport, ctx: ProbeCon
   say(`move back: uidMap ${report.moveBack.uidMapReturned}, same as original ${report.moveBack.sameAsOriginal}`);
 
   // (8) remove the flags in INBOX.
+  ctx.step = "remove flags in INBOX";
   const backUid: number = inboxUid;
   await inFolder(client, INBOX_PATH, async () => {
     if (!(await client.messageFlagsRemove(String(backUid), ["\\Flagged", "\\Seen"], { uid: true }))) {
@@ -346,6 +459,7 @@ async function runProbe(client: ImapFlow, report: ProbeMoveReport, ctx: ProbeCon
   say(`flags removed: flagged ${report.flags.flaggedRemoved}, seen ${report.flags.seenRemoved}`);
 
   // (9) cleanup. INBOX probe mails go under the INBOX expunge rule; what stays is read back from INBOX.
+  ctx.step = "cleanup";
   const inboxProbeUids = originalGone ? [backUid] : [originalUid, backUid];
   for (const own of inboxProbeUids) {
     if (await inboxExpungeAllowed(inboxProbeUids)) {
@@ -389,7 +503,7 @@ async function runProbe(client: ImapFlow, report: ProbeMoveReport, ctx: ProbeCon
 }
 
 /** Deletes the parent folder only when the probe created it, it has no children and no mail (best effort). */
-async function cleanupParent(
+export async function cleanupParent(
   client: ImapFlow,
   report: ProbeMoveReport,
   parent: string | null,

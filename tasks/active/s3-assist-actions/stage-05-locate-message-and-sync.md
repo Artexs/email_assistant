@@ -6,6 +6,8 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 
 Checkpoint 1 input: if stage 1 found `targetMeta.sameSize` false and `targetMeta.sameInternalDate` true at Interia, the identity mode below is `no_size`; both false → the build stopped at checkpoint 1; else `strict`. If `searchSinceInFolder.found` was false, the main session adds the fallback decided at checkpoint 1 to 5.1 before the build.
 
+Checkpoint 1 result (Interia, 2026-11-07): a COPY keeps RFC822.SIZE, INTERNALDATE, the ENVELOPE date and `Message-ID` → `IDENTITY_MODE = "strict"`. `SEARCH SINCE` works in a folder other than INBOX → no fallback.
+
 - [ ] **5.1 Pure identity rules and `locateMessage` (D3)**
   - Goal: the system finds a known mail in any folder without a header search, and tells a second identical copy from a returned mail with the same rule as S1a.
   - Files: change `apps/server/src/modules/mail/sync-rules.ts`, `apps/server/src/modules/mail/sync-rules.test.ts`; create `apps/server/src/modules/mail/locate.ts`, `apps/server/src/modules/mail/locate.test.ts`; change `apps/server/src/modules/mail/index.ts`.

@@ -34,7 +34,7 @@ Preconditions: stage 19 is done; `tasks/done/s1b-shadow-run.md` stage 40 is done
        - **Returns:** `select source, count(*) from triage_feedback where org_id = '<ORG>' and created_at >= '<START>' group by 1;`
        - `mailbox:audit --since <START>` with the D18 reading; `triage:cost --days 7` (unchanged by S3; the figure goes to the S1b results if stage 40 is still open).
     4. Write the tables in "Results" (counts only). N > 3 → the user decides: a category goes back to `auto off` and the week starts again, or S3 closes with the number and a follow-up task.
-    5. Done-checklist of the task file: tick each item with its command and output in the log; the main session updates `docs/roadmap.md` (S3 state) and `git mv`s the task file and its folder to `tasks/done/` after the user's confirmation.
+    5. Done-checklist of the task file: tick each item with its command and output in the log; the main session updates `docs/roadmap.md` (S3 state) and `git mv`s the task file and its folder to `tasks/done/` after the user's confirmation. Remind the user to delete the Keychain entry: `security delete-generic-password -s ea-interia-imap`.
   - Test: none (operations).
   - Check: the queries of step 3 give the results above; N ≤ 3.
   - Done when: the user confirms the result and the task is in `tasks/done/`.

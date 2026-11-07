@@ -4,6 +4,7 @@ import { expect, test } from "bun:test";
 
 import { assertTestAddress, probeMove, renderSeedMessage, type ImapConnectOptions } from "../../src/modules/mail";
 import { connectImapClient } from "../../src/modules/mail/imap/client";
+import { sanitizeAlertText } from "../../src/modules/mail/imap/probe-move";
 import { appendRaw } from "../../src/modules/mail/imap/tools";
 
 // Local GreenMail (bun run dev:up). Auth is off: a login with a new user creates the mailbox.
@@ -56,6 +57,7 @@ test("probeMove: runs every write on GreenMail and cleans up", async () => {
   expect(report.expunge.sourceGone).toBe(true);
   expect(report.moveBack.inboxUid).toBeGreaterThan(0);
   expect(report.flags).toEqual({ flaggedKept: true, seenKept: true, flaggedRemoved: true, seenRemoved: true });
+  expect(report.folders).toEqual({ nested: true, parentCreateOk: true });
   expect(report.cleanup).toEqual({
     probeMailDeleted: true,
     folderDeleted: true,
@@ -80,6 +82,7 @@ test("probeMove: an AI folder of the user stays", async () => {
 
   const report = await probeMove(opts, { probeId: randomUUID(), now: NOW });
 
+  expect(report.folders).toEqual({ nested: true, parentCreateOk: null });
   expect(report.cleanup.parentFolderCreated).toBe(false);
   expect(report.cleanup.parentFolderDeleted).toBe(false);
   expect(report.cleanup.folderDeleted).toBe(true);
@@ -137,4 +140,11 @@ test("probeMove: a \\Deleted mail of the user in INBOX makes the probe skip ever
   } finally {
     await client.logout().catch(() => client.close());
   }
+});
+
+test("sanitizeAlertText: printable characters only, collapsed, cut to 200, quoted", () => {
+  expect(sanitizeAlertText("Folder\u0000 creation\r\n  not   allowed")).toBe('"Folder creation not allowed"');
+  expect(sanitizeAlertText(`${"x".repeat(300)}`)).toBe(`"${"x".repeat(200)}"`);
+  expect(sanitizeAlertText(" \u0007 ")).toBeNull();
+  expect(sanitizeAlertText(undefined)).toBeNull();
 });

@@ -5,7 +5,7 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 ## Stage 3 — Mail write port, fake provider, contract cases [risky]
 
 - [ ] **3.1 Port methods and the fake provider (D1)**
-  - Goal: `MailProvider` can read and write in any folder; the fake behaves like a server with or without MOVE and UIDPLUS, and like Interia (UID kept on a copy) on request.
+  - Goal: `MailProvider` can read and write in any folder; the fake behaves like a server with or without MOVE and UIDPLUS, and like a server that keeps the UID on a copy on request (checkpoint 1: an Interia protocol COPY gets a new UID; only an Interia webmail move keeps it; the option stays as the harder case for the tests).
   - Files: change `apps/server/src/modules/mail/port.ts`, `apps/server/src/modules/mail/fake/index.ts`, `apps/server/src/modules/mail/fake/fake.test.ts`, `apps/server/test/contract/mail-provider.ts`, `apps/server/src/modules/mail/index.ts`, `apps/server/src/modules/mail/imap/client.ts` (stub methods only, see Decisions).
   - Interfaces (`port.ts`; every folder argument is a real folder path; `INBOX` is the constant):
 
@@ -47,7 +47,7 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 
   - Decisions:
     - `fetchByUids(uids)` and `fetchBodyText(uid)` stay INBOX-only (the sync uses them); `fetchByUidsIn` is the general one. No method takes a sequence number: every range is a UID range.
-    - Fake options: `FakeMailProviderOptions` gets `keepUidOnCopy?: boolean` (default false; true mimics Interia: a copied message keeps its UID in the target, when that UID is free there; else it gets the next UID) and `copyUidMap?: boolean` (default true: `moveMessage` returns `newUid`; false mimics a server without `COPYUID`: `newUid` null).
+    - Fake options: `FakeMailProviderOptions` gets `keepUidOnCopy?: boolean` (default false; true mimics a UID-keeping server, as an Interia webmail move: a copied message keeps its UID in the target, when that UID is free there; else it gets the next UID) and `copyUidMap?: boolean` (default true: `moveMessage` returns `newUid`; false mimics a server without `COPYUID`: `newUid` null).
     - Fake `moveMessage`: with `capabilities.move` true it moves in one step; else it copies, then deletes the source (the same end state; the two-step shape matters only for the crash cases of stage 9, which the tests build by hand with `deliver` and `remove`). Both paths record the call name `moveMessage` in `calls`. `deleteMessage` throws `HardError("no UIDPLUS")` when `capabilities.uidplus` is false. `ensureFolder` creates the folder and returns the name unchanged. `setFlags` keeps a `Set<string>` of flags per stored message; `fetchMetaIn` returns them sorted. `failOn` works for every new method.
     - The fake's `userMove` (test helper) keeps its S1a behaviour (new UID in the target) unless `keepUidOnCopy` is set.
     - The S1a fake test file gets cases for the new methods; the contract suite gets the cases below, so stage 4 runs them on GreenMail without a change.

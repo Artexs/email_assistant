@@ -10,7 +10,8 @@ const log = createLog("mailbox-probe-move");
 
 const usage = [
   "usage: printf '%s' \"$PASSWORD\" | TEST_MAILBOX_ADDRESS=<address> bun run mailbox:probe-move --host <imap host> --port <port> --address <address>",
-  "  It changes the mailbox: one synthetic mail and one folder AI/Probe-…, deleted again at the end.",
+  "  It changes the mailbox: it adds one synthetic mail and creates the folder AI/Probe-… (and the parent AI, if missing).",
+  "  If the server refuses nested folders, it creates a flat folder AI-Probe-… instead. It removes all of them at the end.",
   "  It refuses unless TEST_MAILBOX_ADDRESS equals --address. The password comes only from stdin.",
 ].join("\n");
 

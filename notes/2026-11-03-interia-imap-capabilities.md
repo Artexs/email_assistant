@@ -49,3 +49,19 @@ The probe mail `EA probe 6a8a502f-…` stayed in INBOX; the user deletes it by h
   This breaks the RFC 3501 rule that UIDs only grow. The sync cursor never sees a mail that comes back to INBOX. S3 input: `tasks/planned/s3-assist-actions.md`.
 - **SMTP does not save sent mail.** After a send (S4), the committer must APPEND a copy to `Wysłane`.
 - **IDLE works.** Push sync can come later.
+
+## Move probe (S3 stage 1, 2026-11-07)
+
+`bun run mailbox:probe-move` on the pilot mailbox (Mac, direct to `poczta.interia.pl:993`). One synthetic probe mail, cleaned up; notes empty.
+
+- delimiter `/`; namespace prefix `""`, namespace delimiter `/`; MOVE no, UIDPLUS yes.
+- **Nested folders need the parent first.** `mailboxCreate(["AI", "Probe-…"])` with no `AI` → `NO [ALERT]`. After `mailboxCreate("AI")` the nested create works (`folders.nested` true, `parentCreateOk` true). `ensureFolder` creates each level, parent first.
+- `copy.uidMapReturned` true (COPYUID); `copy.sameUidAsSource` false (38914 → 38915): a protocol COPY gets a new UID, unlike a webmail move (2026-11-04: UID kept).
+- After a COPY: `sameSize`, `sameInternalDate`, `sameEnvelopeDate`, `sameMessageId` all true → identity mode `strict`.
+- `searchSinceInFolder.found` true.
+- `expunge.otherDeletedKept` true (UID EXPUNGE removes only the given UID); `inboxOtherDeleted` 0; `inboxExpungeSkipped` false; `sourceGone` true.
+- `moveBack.uidMapReturned` true; `moveBack.sameAsOriginal` false; `aboveUidNext` true (38918): a COPY back to INBOX lands above the cursor.
+- The probe UIDs were consecutive across folders (38914 INBOX, 38915 probe folder, 38916/38917 mails A and B, 38918 INBOX): Interia likely has one UID counter for the whole mailbox, which explains why a webmail move keeps the UID.
+- Flags: `flaggedKept`, `seenKept`, `flaggedRemoved`, `seenRemoved` all true.
+- Cleanup: probe mail deleted, probe folder and the created `AI` parent deleted.
+- The pilot password for Mac runs is in the macOS Keychain (service `ea-interia-imap`, account = pilot address); the user allowed the agent to pipe it into the probe (2026-11-07). Never print it. Remove after S3: `security delete-generic-password -s ea-interia-imap`.
