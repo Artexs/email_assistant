@@ -4,7 +4,7 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 
 ## Stage 11 — `triage.returned`: a user move back becomes feedback [risky]
 
-- [ ] **11.1 `createReturnedJob` (D12, architecture §4.4)**
+- [x] **11.1 `createReturnedJob` (D12, architecture §4.4)**
   - Goal: a mail that the user put back into INBOX after a system move gives exactly one `imap_move` feedback row and marks the move `undone`; after an Undo it gives none; the flag is cleared in every case.
   - Files: create `apps/server/src/modules/triage/returned.ts`, `apps/server/test/integration/triage-returned.test.ts`; change `apps/server/src/modules/triage/index.ts`, `apps/server/src/modules/triage/feedback.ts` (`recordFeedback(db: Db | Transaction<DB>, …)`: the type widens; `RecordFeedbackInput` gets `keepLabel?: boolean`: when the latest feedback row of the mail has a `true_category`, write nothing and return `saved: false`, m14), `apps/server/src/modules/mail/repo.ts` (`listReturned(db, ctx, mailboxId, opts: { limit }): Promise<{ id: string }[]>` ordered by `returned_at`, `id`; `clearReturned(trx, ctx, emailId): Promise<boolean>` sets `returned_at = NULL WHERE returned_at IS NOT NULL`), `apps/server/src/modules/mail/index.ts`.
   - Interfaces:
