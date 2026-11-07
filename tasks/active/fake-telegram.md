@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — code done, merge left — stages 1–6 done (PASS).** Left: the full `test:int` run, the done-checklist, the 1.1 Docker image check (the daemon refuses this shell user; CI does not build the image), the user try, the merge into `master`. Git mode: worktree (`../email_assistant-wt/fake-telegram`, branch `task/fake-telegram`). Read "Parallel work with S4" first.
+> **Status 2026-11-07 — code done, merge left.** Stages 1–6 done (PASS), done-when checks pass locally (`test:int` 757 pass). Left: the user try; the Docker image check of 1.1 (the daemon refuses the agent shell user; CI does not build the image); the merge into `master` and CI green there; then `git mv` to `tasks/done/`. Git mode: worktree (`../email_assistant-wt/fake-telegram`, branch `task/fake-telegram`).
 
 # Fake Telegram: a local Bot API emulator for agent-run dev tests
 
@@ -500,6 +500,14 @@ Answered by the user on 2026-11-07: (a) for all 4 (the recommendations). The liv
 - ~~Bun gives env keys of the shell priority over the `.env` file.~~ Confirmed 2026-11-07: the stage 4 integration test and the stage 6 live run (overrides of `DATABASE_URL`, `PORT`, `TELEGRAM_API_ROOT` worked).
 - The exact deps names of `createMailSyncJob`, `createTriageJob`, `createCommitterJob`, `createLlmPause` and the classifier schema fields for the stub LLM (stage 5 reads them in the code).
 
+## Done-checklist
+
+- [x] Done-when checks pass, except two that wait: CI runs only on `master` (after the merge), and the image build needs Docker access (see the log of 2026-11-07, end of build).
+- [x] `docs/` describe what was built: `docs/code-patterns.md` (test tools line), `deploy/README.md` (no `TELEGRAM_API_ROOT` on the VPS), `.env.example`. The `docs/architecture.md` line moved to `tasks/planned/fake-telegram-followups.md` (prettier reason). No ADR.
+- [x] Learned facts are in `notes/2026-11-07-fake-telegram.md`; no new alerts.
+- [x] Follow-up ideas are in `tasks/planned/fake-telegram-followups.md`.
+- [ ] User try, then the merge into `master` (`tasks/README.md` § "Git mode"), CI green on `master`, `git mv` to `tasks/done/`, clean up the worktree and the branch.
+
 ## Log
 
 - 2026-11-07: test-DC route probed and dropped; fake Telegram scope agreed with the user; placement outside the app decided.
@@ -514,3 +522,4 @@ Answered by the user on 2026-11-07: (a) for all 4 (the recommendations). The liv
 - 2026-11-07: `origin/master` merged into the branch before stage 4 (`51ca1ac`, no conflicts). Stage 4 built and reviewed: PASS, 1 minor (an explicit default port is refused; safe, no fix). Checks: lint exit 0, typecheck all exit 0, `test:unit` 1021 pass 0 fail, `telegram-api-root.test.ts` 2 pass.
 - 2026-11-07: Stage 5 built and reviewed: PASS, no findings. `e2e.test.ts` 1 pass (16 expects, about 2 s); it fails when the `flag` switch is off (implementer negative check). Full `test:int` not run yet (shared runtime with S4).
 - 2026-11-07: Stage 6 built. Live run 6.2 PASS on an own DB (reason: S4 ran `test:int` on the shared DB). Review FAIL (major: the README did not cover seed and check); fix: `seed-urgent.ts`, `check-undo.ts`, README steps; second run from the README PASS; re-review PASS. The `docs/architecture.md` line was dropped: lint-staged would reformat 238 lines of that file and conflict with S4.
+- 2026-11-07: End of build. `git merge origin/master` (`f93043f`, no conflicts). Done-when checks: `bun run lint` exit 0; `bun run typecheck` all exit 0; `bun run test:unit` 1101 pass, 0 fail; `bun run test:int` 757 pass, 0 fail, 62 files, on an own DB `email_assistant_faketg_int` (dropped after), so the S4 test runs on the shared DB were not touched. Not run: the image build (`docker info` → permission denied; `sudo` needs a password) and CI (it runs only on `master`). Follow-ups: `tasks/planned/fake-telegram-followups.md`.
