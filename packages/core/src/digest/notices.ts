@@ -90,11 +90,12 @@ const FAILED_FIRST_LINE = {
   move: { original: "Could not move a mail", reverse: "Undo failed: could not move a mail back to INBOX" },
   flag: { original: "Could not flag a mail", reverse: "Undo failed: could not remove the flag" },
   mark_read: { original: "Could not mark a mail read", reverse: "Undo failed: could not mark a mail unread" },
+  create_draft: { original: "Could not create a draft", reverse: "Could not remove the draft for a mail" },
 } as const;
 
 // Plain text, no buttons. The action's mail stays where it was (an original) or where the system put it (a reverse).
 export function renderActionFailedNotice(input: {
-  actionType: "move" | "flag" | "mark_read";
+  actionType: "move" | "flag" | "mark_read" | "create_draft";
   reverse: boolean;
   reason: "mail_not_found" | "bad_payload" | "other";
   folderName: string | null;
@@ -115,8 +116,9 @@ export function renderActionFailedNotice(input: {
   } else if (input.reason === "bad_payload") {
     last = "The plan had an unknown folder. The mail stays in INBOX.";
   } else if (input.reverse) {
-    const where =
-      input.actionType === "move" ? ` The mail stays in ${folder ?? "its AI folder"}: move it by hand.` : "";
+    let where = "";
+    if (input.actionType === "move") where = ` The mail stays in ${folder ?? "its AI folder"}: move it by hand.`;
+    if (input.actionType === "create_draft") where = " The draft stays in Drafts: delete it by hand.";
     last = `${tried}${where} /status shows the mailbox state.`;
   } else {
     const where = input.actionType === "move" ? " The mail stays in INBOX." : "";

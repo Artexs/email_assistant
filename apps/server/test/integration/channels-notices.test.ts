@@ -457,6 +457,45 @@ describe("action_failed notices", () => {
     });
   });
 
+  test("a hard-failed reverse create_draft gives the owner one row with the draft text", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      const emailId = await insertTriaged(trx, o.ctx, o.mailboxId, {
+        category: "delegation",
+        createdAt: at(-2 * HOUR),
+        subject: "Marker subject",
+        from: "Ann <ann@firma.test>",
+      });
+      const original = await insertAction(trx, o.ctx, emailId, {
+        type: "create_draft",
+        status: "applied",
+        payload: { kind: "delegation" },
+      });
+      const reverse = await insertAction(trx, o.ctx, emailId, {
+        type: "create_draft",
+        status: "failed",
+        payload: { kind: "delegation", folder: "Drafts", uid: 4, reason: "sent" },
+        reversesActionId: original,
+        statusReason: "hard_error",
+        attempts: 3,
+      });
+      await trx
+        .updateTable("actions")
+        .set({ updated_at: at(-MINUTE) })
+        .where("id", "=", reverse)
+        .execute();
+
+      await run(trx);
+
+      const found = await rows(trx, o.orgId, "action_failed");
+      expect(found).toHaveLength(1);
+      expect(found[0]?.text).toContain("Could not remove the draft for a mail");
+      expect(found[0]?.text).toContain("The draft stays in Drafts: delete it by hand.");
+      expect(await notifiedAt(trx, reverse)).toEqual(T);
+    });
+  });
+
   test("an original mail_not_found gives no row and stays unmarked", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);

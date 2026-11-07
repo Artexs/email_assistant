@@ -1,4 +1,4 @@
-import { AI_FOLDER_NAMES, MAILBOX_ACTION_TYPES, type FolderKey } from "@ea/core";
+import { AI_FOLDER_NAMES, MAILBOX_ACTION_TYPES, type OutgoingMessage } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { SecretBox } from "../../platform/crypto";
@@ -7,6 +7,7 @@ import { describeError, HardError, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 import {
+  composeMessage,
   getMailbox,
   listSyncTargets,
   MailAuthError,
@@ -14,11 +15,15 @@ import {
   setFolderMapEntry,
   setMailboxStatus,
   type ImapConnectOptions,
+  type MailboxRow,
+  type MailCapabilities,
   type MailProvider,
 } from "../mail";
+import { getOrganization, listMemberships } from "../tenancy";
 
-import { applyAction, type FolderResolver } from "./apply";
+import { applyAction, type ApplyDeps, type FolderResolver, type ResolvableFolderKey } from "./apply";
 import { STALE_AFTER_MS } from "./constants";
+import { noDelegationHooks, type DelegationHooks } from "./hooks";
 import { claimActions, countClaimable, expireStaleReady, releaseActions, type ClaimedAction } from "./repo";
 import { claimFilterFor, type ActionsScope } from "./scope";
 
@@ -33,7 +38,18 @@ export interface CommitterDeps {
   scope: ActionsScope;
   now(): Date;
   batchSize?: number;
+  // S4 (D33): the delegation callbacks and the composer. The defaults serve the tests of S3; `main.ts` wires them (stage 18).
+  hooks?: DelegationHooks;
+  compose?(message: OutgoingMessage): Promise<Buffer>;
 }
+
+// The owner and the organization of one tenant, read once per run (D12).
+interface TenantFacts {
+  owner: ApplyDeps["owner"];
+  organization: ApplyDeps["organization"];
+}
+
+const DEFAULT_PATHS: Record<ResolvableFolderKey, string> = { ...AI_FOLDER_NAMES, drafts: "Drafts", sent: "Sent" };
 
 // D9: `ensureFolder` once per key per run. A real path that differs from `folder_map` is stored (audit: the key, not the path).
 export function createFolderResolver(
@@ -47,10 +63,10 @@ export function createFolderResolver(
   ctx: TenantContext
 ): FolderResolver {
   const map = { ...deps.folderMap };
-  const cache = new Map<FolderKey, Promise<string>>();
+  const cache = new Map<ResolvableFolderKey, Promise<string>>();
 
-  async function ensure(key: FolderKey): Promise<string> {
-    const path = await deps.provider.ensureFolder(map[key] ?? AI_FOLDER_NAMES[key]);
+  async function ensure(key: ResolvableFolderKey): Promise<string> {
+    const path = await deps.provider.ensureFolder(map[key] ?? DEFAULT_PATHS[key]);
     if (path !== map[key]) {
       const run = async (trx: Transaction<DB>): Promise<void> => {
         await setFolderMapEntry(trx, ctx, deps.mailboxId, key, path);
@@ -81,8 +97,11 @@ export function createFolderResolver(
   };
 }
 
+// D17: a draft and its reverse need IMAP; a send needs it for the Sent copy and the recovery.
 const isMailboxChanging = (action: ClaimedAction): boolean =>
-  (MAILBOX_ACTION_TYPES as readonly string[]).includes(action.type);
+  (MAILBOX_ACTION_TYPES as readonly string[]).includes(action.type) ||
+  action.type === "create_draft" ||
+  action.type === "send";
 
 // D21: a ready original older than 24 h is never applied. One audit row per row, in one transaction.
 async function expireStale(deps: CommitterDeps, ctx: TenantContext, mailboxId: string, now: Date): Promise<number> {
@@ -150,25 +169,68 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     }
   }
 
+  // The owner and the organization are read once per tenant and run, and only for a batch with a draft (D12).
+  async function loadFacts(
+    ctx: TenantContext,
+    mailbox: MailboxRow,
+    facts: Map<string, TenantFacts>
+  ): Promise<TenantFacts> {
+    const known = facts.get(ctx.orgId);
+    if (known !== undefined) return known;
+    const [organization, memberships] = await Promise.all([
+      getOrganization(deps.db, ctx),
+      listMemberships(deps.db, ctx),
+    ]);
+    if (organization === undefined) throw new HardError("organization not found");
+    const owner = memberships.find((member) => member.role === "owner");
+    const loaded: TenantFacts = {
+      owner: { displayName: owner?.display_name ?? mailbox.address },
+      organization: { styleText: organization.style_text, timezone: organization.timezone },
+    };
+    facts.set(ctx.orgId, loaded);
+    return loaded;
+  }
+
   async function applyBatch(
     ctx: TenantContext,
-    mailboxId: string,
-    folderMap: Record<string, string>,
+    mailbox: MailboxRow,
     batch: ClaimedAction[],
     provider: MailProvider | null,
-    now: Date
+    now: Date,
+    facts: TenantFacts
   ): Promise<void> {
-    const counts = { applied: 0, failed: 0, retry: 0 };
+    const mailboxId = mailbox.id;
+    const counts = { applied: 0, failed: 0, retry: 0, closed: 0 };
     const folders: FolderResolver =
       provider === null
         ? { resolve: () => Promise.reject(new HardError("no provider")) }
-        : createFolderResolver({ db: deps.db, now: () => now, provider, mailboxId, folderMap }, ctx);
+        : createFolderResolver(
+            { db: deps.db, now: () => now, provider, mailboxId, folderMap: mailbox.folder_map },
+            ctx
+          );
+    const applyDeps: ApplyDeps = {
+      db: deps.db,
+      now: () => now,
+      mailboxId,
+      folders,
+      mailbox: {
+        address: mailbox.address,
+        capabilities: { uidplus: (mailbox.capabilities as Partial<MailCapabilities>).uidplus === true },
+        folderMap: mailbox.folder_map,
+      },
+      owner: facts.owner,
+      organization: facts.organization,
+      compose: deps.compose ?? composeMessage,
+      sender: null,
+      hooks: deps.hooks ?? noDelegationHooks,
+    };
     let index = 0;
     try {
       for (; index < batch.length; index += 1) {
         const action = batch[index] as ClaimedAction;
-        const outcome = await applyAction({ db: deps.db, now: () => now, mailboxId, folders }, ctx, action, provider);
+        const outcome = await applyAction(applyDeps, ctx, action, provider);
         if (outcome.kind === "applied") counts.applied += 1;
+        else if (outcome.kind === "expired") counts.closed += 1;
         else if (outcome.kind === "failed") counts.failed += 1;
         else if (outcome.kind === "retry") counts.retry += 1;
         if (outcome.kind === "auth_error") {
@@ -190,13 +252,16 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
       }
       throw error;
     } finally {
-      if (counts.applied + counts.failed + counts.retry > 0) {
-        log.info(`committer ${mailboxId}: applied ${counts.applied}, failed ${counts.failed}, retry ${counts.retry}`);
+      if (counts.applied + counts.failed + counts.retry + counts.closed > 0) {
+        const closed = counts.closed > 0 ? `, closed ${counts.closed}` : "";
+        log.info(
+          `committer ${mailboxId}: applied ${counts.applied}, failed ${counts.failed}, retry ${counts.retry}${closed}`
+        );
       }
     }
   }
 
-  async function processMailbox(ctx: TenantContext, mailboxId: string): Promise<void> {
+  async function processMailbox(ctx: TenantContext, mailboxId: string, facts: Map<string, TenantFacts>): Promise<void> {
     const mailbox = await getMailbox(deps.db, ctx, mailboxId);
     if (mailbox === undefined) return;
     const now = deps.now();
@@ -220,7 +285,8 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
       provider = opened.provider;
     }
     try {
-      await applyBatch(ctx, mailboxId, mailbox.folder_map, batch, provider, now);
+      const tenantFacts = await loadFacts(ctx, mailbox, facts);
+      await applyBatch(ctx, mailbox, batch, provider, now, tenantFacts);
     } finally {
       await provider?.close().catch((error: unknown) => {
         log.warn(`committer ${mailboxId}: close failed: ${describeError(error)}`);
@@ -231,9 +297,10 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
   return {
     async run() {
       const targets = await listSyncTargets(deps.db);
+      const facts = new Map<string, TenantFacts>();
       for (const { orgId, mailboxId } of targets) {
         try {
-          await processMailbox({ orgId }, mailboxId);
+          await processMailbox({ orgId }, mailboxId, facts);
         } catch (error) {
           log.error(`committer ${mailboxId} failed: ${describeError(error)}`);
         }

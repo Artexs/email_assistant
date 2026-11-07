@@ -6,7 +6,7 @@ Part of [`../s4-drafts-approvals-delegation.md`](../s4-drafts-approvals-delegati
 
 Checkpoint 1 input: stage 1 settled the Interia draft facts. If `draft.headerFetched` was false, stage 6 changed the locate to the ENVELOPE id; this stage does not change. If `draft.deleted` or `goneAfterDelete` was false at Interia, the reverse rows of 11.2 are never inserted for that mailbox (the `uidplus` dependency returns false), and the result texts say "the draft stays".
 
-- [ ] **11.1 `applyAction` for an original `create_draft`: compose, resolve, locate, APPEND, recovery (D8, D9, D12, D14, D33)**
+- [x] **11.1 `applyAction` for an original `create_draft`: compose, resolve, locate, APPEND, recovery (D8, D9, D12, D14, D33)**
   - Goal: a `ready` draft ends as exactly one message in the Drafts folder with the system's header, whatever happened before (a crash after the APPEND, a retry after an error), and the row carries the uid for the later removal.
   - Files: create `apps/server/src/modules/actions/drafts.ts`, `apps/server/test/integration/actions-drafts.test.ts` (`expireSend` and `closeDraftOfSend` exist since stage 7.1: this stage only calls them); change `apps/server/src/modules/actions/apply.ts` (S3 stage 8), `actions/committer.ts` (S3 stage 8.2: `createFolderResolver` for `drafts` / `sent`; the owner, the organization and `compose` in the deps; `isMailboxChanging` (`committer.ts:84`) extended, so the IMAP provider opens for a batch with a draft, D17, M9), `actions/index.ts`, `apps/server/src/modules/mail/repo.ts` (`setFolderMapEntry(db, ctx, mailboxId, key: FolderKey, path)`, `repo.ts:509-514`: `key` widens to `FolderKey | "drafts" | "sent"`; M8) and `mail/index.ts` (export `composeMessage`).
   - Interfaces:
@@ -79,7 +79,7 @@ Checkpoint 1 input: stage 1 settled the Interia draft facts. If `draft.headerFet
   - Done when: the tests pass, including the crash test.
   - Out of scope: the send (stage 12), the removal (11.2).
 
-- [ ] **11.2 The draft removal: the reverse `create_draft` row (D13)**
+- [x] **11.2 The draft removal: the reverse `create_draft` row (D13)**
   - Goal: a reverse row removes the system's draft from the Drafts folder once, marks the original `undone` with the reason, and never touches another message.
   - Files: change `apps/server/src/modules/actions/drafts.ts`, `apps/server/test/integration/actions-drafts.test.ts`, `packages/core/src/digest/notices.ts` (the `action_failed` text for a reverse `create_draft`: `⚠️ Could not remove the draft for a mail` / `The draft stays in Drafts: delete it by hand.`; `renderActionFailedNotice`'s `actionType` widens to `"move" | "flag" | "mark_read" | "create_draft"`), `packages/core/src/digest/notices.test.ts`, `apps/server/src/modules/channels/notices.ts` (`detectActionFailed`: stage 3.2 narrowed it to `MAILBOX_ACTION_TYPES`; let a reverse `create_draft` row through too, so its notice goes out; M16).
   - Decisions:

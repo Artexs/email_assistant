@@ -732,7 +732,7 @@ export async function markUndone(
   trx: DbOrTrx,
   ctx: TenantContext,
   originalId: string,
-  opts: { at: Date; reason: "undo" | "user_moved_back" }
+  opts: { at: Date; reason: "undo" | "user_moved_back" | "sent" | "rejected" | "expired" }
 ): Promise<boolean> {
   const result = await trx
     .updateTable("actions")

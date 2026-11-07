@@ -5,7 +5,9 @@ export {
   type ApplyDeps,
   type ApplyOutcome,
   type FolderResolver,
+  type ResolvableFolderKey,
 } from "./apply";
+export { applyDraft, buildDraftMessage } from "./drafts";
 export {
   approve,
   approveSet,

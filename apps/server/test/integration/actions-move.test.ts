@@ -21,7 +21,13 @@ import { contentHash } from "../../src/modules/mail/sync-rules";
 import type { DB, TenantContext } from "../../src/platform/db";
 import { SoftError } from "../../src/platform/errors";
 
-import { createOrgWithMailbox, insertAction, insertTestEmail, insertTriagedWithActions } from "./fixtures";
+import {
+  applyDepsDefaults,
+  createOrgWithMailbox,
+  insertAction,
+  insertTestEmail,
+  insertTriagedWithActions,
+} from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -68,7 +74,14 @@ function depsOf(
     },
     s.ctx
   );
-  return { db: trx, now: () => NOW, mailboxId: s.mailboxId, folders, beforeCommit: extra.beforeCommit };
+  return {
+    db: trx,
+    now: () => NOW,
+    mailboxId: s.mailboxId,
+    folders,
+    beforeCommit: extra.beforeCommit,
+    ...applyDepsDefaults(),
+  };
 }
 
 function message(id: string) {

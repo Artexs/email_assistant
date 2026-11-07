@@ -548,7 +548,7 @@ export async function setFolderMapEntry(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
-  key: FolderKey,
+  key: FolderKey | "drafts" | "sent",
   path: string
 ): Promise<boolean> {
   const result = await db
