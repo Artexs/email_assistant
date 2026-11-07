@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress.** Plan written (5 stages), Opus plan review PASS; stages 1–3 done (stage 1 CI proof: PR #1, job `image` green); left: stages 4–5, merge.
+> **Status 2026-11-07 — in progress.** Plan written (5 stages), Opus plan review PASS; stages 1–4 done (stage 1 CI proof: PR #1, job `image` green); left: stage 5, merge.
 
 Git mode: worktree (`../email_assistant-wt/fake-telegram-followups`, branch `task/fake-telegram-followups`).
 
@@ -224,7 +224,7 @@ Close the small gaps that the fake Telegram build found and did not fix.
 
 ### Stage 4 — Format `docs/architecture.md`
 
-- [ ] **4.1 Prettier format of `docs/architecture.md` alone** (no content change).
+- [x] **4.1 Prettier format of `docs/architecture.md` alone** (no content change).
   - Goal: `docs/architecture.md` is prettier-clean, so later small edits do not reformat the whole file.
   - Files: `docs/architecture.md` only.
   - Interfaces: none.
@@ -303,3 +303,4 @@ Resolved by the Opus plan review (2026-11-07), now facts in the steps:
 - 2026-11-07: Stage 1 CI proof: PR #1 (https://github.com/Artexs/email_assistant/pull/1), run 42417992866: jobs `image` and `ci` green. The first run (42417654598) had `image` green and `ci` red from a flaky test (see the next line).
 - 2026-11-07: Flaky CI test found (not part of this task): `mailbox:seed and mailbox:audit CLI > seed exits 1 …` times out at 5000 ms in `test:int` (runs 42414616787 on `master` and 42417654598 on PR #1); it passed on the re-run. Recorded in `docs/known-alerts.md`.
 - 2026-11-07: Stage 3 built (`@ea/core` + `kysely` devDependencies, `bun.lock` +2 lines; `fake-tg --chat` takes negative ids), review PASS. Deviation accepted by the reviewer: the second CLI test does not call `start()` (url `http://127.0.0.1:1`), because every case fails with a usage error before any request, and `start()` + stop raced grammy `getMe`.
+- 2026-11-07: Stage 4 built (prettier format of `docs/architecture.md` only, 106+/101−, no content change), review PASS. `origin/master` merged first (`3286e8d`).
