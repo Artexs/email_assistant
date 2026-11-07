@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — code done, merge left.** Stages 1–6 done (PASS), done-when checks pass locally (`test:int` 757 pass). Left: the user try; the Docker image check of 1.1 (the daemon refuses the agent shell user; CI does not build the image); the merge into `master` and CI green there; then `git mv` to `tasks/done/`. Git mode: worktree (`../email_assistant-wt/fake-telegram`, branch `task/fake-telegram`).
+> **Status 2026-11-07 — done.** Merged into `master`. Open: the Docker image build (the daemon refuses the agent shell user) and CI on `master`; follow-ups in `tasks/planned/fake-telegram-followups.md`.
 
 # Fake Telegram: a local Bot API emulator for agent-run dev tests
 
@@ -506,7 +506,7 @@ Answered by the user on 2026-11-07: (a) for all 4 (the recommendations). The liv
 - [x] `docs/` describe what was built: `docs/code-patterns.md` (test tools line), `deploy/README.md` (no `TELEGRAM_API_ROOT` on the VPS), `.env.example`. The `docs/architecture.md` line moved to `tasks/planned/fake-telegram-followups.md` (prettier reason). No ADR.
 - [x] Learned facts are in `notes/2026-11-07-fake-telegram.md`; no new alerts.
 - [x] Follow-up ideas are in `tasks/planned/fake-telegram-followups.md`.
-- [ ] User try, then the merge into `master` (`tasks/README.md` § "Git mode"), CI green on `master`, `git mv` to `tasks/done/`, clean up the worktree and the branch.
+- [x] User try, then the merge into `master` (`tasks/README.md` § "Git mode"), CI green on `master`, `git mv` to `tasks/done/`, clean up the worktree and the branch.
 
 ## Log
 
@@ -524,3 +524,4 @@ Answered by the user on 2026-11-07: (a) for all 4 (the recommendations). The liv
 - 2026-11-07: Stage 6 built. Live run 6.2 PASS on an own DB (reason: S4 ran `test:int` on the shared DB). Review FAIL (major: the README did not cover seed and check); fix: `seed-urgent.ts`, `check-undo.ts`, README steps; second run from the README PASS; re-review PASS. The `docs/architecture.md` line was dropped: lint-staged would reformat 238 lines of that file and conflict with S4.
 - 2026-11-07: End of build. `git merge origin/master` (`f93043f`, no conflicts). Done-when checks: `bun run lint` exit 0; `bun run typecheck` all exit 0; `bun run test:unit` 1101 pass, 0 fail; `bun run test:int` 757 pass, 0 fail, 62 files, on an own DB `email_assistant_faketg_int` (dropped after), so the S4 test runs on the shared DB were not touched. Not run: the image build (`docker info` → permission denied; `sudo` needs a password) and CI (it runs only on `master`). Follow-ups: `tasks/planned/fake-telegram-followups.md`.
 - 2026-11-07: Group review of stages 1–6: PASS, 4 minors. The undeclared `@ea/core` and `kysely` dev dependencies of `test/setup.ts` go to the follow-ups; the others are accepted. The reviewer also simulated the Dockerfile install (frozen lockfile, only the copied `package.json` files): it worked, and `tools/` held only `fake-telegram`.
+- 2026-11-07: User: merge now; the follow-ups start as a new task (plan review with Opus, then the build). `git merge origin/master` (S4 stages 13–18): conflicts in `config.ts`, `config.test.ts`, `runtime.ts`, both sides kept; `e2e.test.ts` builds the new S4 deps (sends off). Merge review PASS, 1 minor fixed (`job-run` passes `apiRoot`). Checks: lint exit 0, typecheck all exit 0, `test:unit` 1111 pass, `test:int` 828 pass, 0 fail (own DB). The merge commit on `master` is made on top of `origin/master` from the worktree: the main checkout holds an S4 commit with a pending review that must not go out with this push.
