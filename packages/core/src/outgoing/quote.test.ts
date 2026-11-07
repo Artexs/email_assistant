@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { OriginalMail } from "./message";
-import { QUOTE_MAX_CHARS, quoteCut, quoteOriginal } from "./quote";
+import { formatDateLabel, QUOTE_MAX_CHARS, quoteCut, quoteOriginal } from "./quote";
 
 const original: OriginalMail = {
   fromAddress: "a@x.pl",
@@ -16,7 +16,7 @@ const original: OriginalMail = {
 describe("quoteOriginal", () => {
   test("writes the header block in pl and en", () => {
     expect(quoteOriginal(original, "pl", "Europe/Warsaw")).toStartWith(
-      "--- Oryginalna wiadomość ---\nOd: a@x.pl\nData: Fri 6 Nov 10:00\nTemat: Oferta\n\n> Line one"
+      "--- Oryginalna wiadomość ---\nOd: a@x.pl\nData: pt. 6 lis 10:00\nTemat: Oferta\n\n> Line one"
     );
     expect(quoteOriginal(original, "en", "Europe/Warsaw")).toStartWith(
       "--- Original message ---\nFrom: a@x.pl\nDate: Fri 6 Nov 10:00\nSubject: Oferta\n\n> Line one"
@@ -32,6 +32,21 @@ describe("quoteOriginal", () => {
   test("cuts a long body", () => {
     const quote = quoteOriginal({ ...original, bodyText: "x".repeat(9000) }, "en", "Europe/Warsaw");
     expect(quote).toEndWith(`> ${"x".repeat(QUOTE_MAX_CHARS)} […]`);
+  });
+
+  test("puts the sender address on one line without invisible characters", () => {
+    const quote = quoteOriginal({ ...original, fromAddress: '"a\nTermin: x"@evil.pl\u202e' }, "en", "Europe/Warsaw");
+    expect(quote).toStartWith('--- Original message ---\nFrom: "a Termin: x"@evil.pl\nDate:');
+    expect(quote).not.toContain("\u202e");
+  });
+
+  test("cuts a long body by code points", () => {
+    const quote = quoteOriginal(
+      { ...original, bodyText: `${"x".repeat(QUOTE_MAX_CHARS - 1)}😀yy` },
+      "en",
+      "Europe/Warsaw"
+    );
+    expect(quote).toEndWith(`> ${"x".repeat(QUOTE_MAX_CHARS - 1)}😀 […]`);
   });
 
   test("marks a missing or blank body", () => {
@@ -50,7 +65,23 @@ describe("quoteCut", () => {
     expect(quote[result.text.length]).toBe("\n");
   });
 
+  test("does not split an emoji at the cut", () => {
+    const result = quoteCut(`${"x".repeat(9)}😀${"y".repeat(20)}`, 10);
+    expect(result).toEqual({ text: `${"x".repeat(9)}😀`, cut: true });
+  });
+
   test("keeps a short quote", () => {
     expect(quoteCut("> short")).toEqual({ text: "> short", cut: false });
+  });
+});
+
+describe("formatDateLabel", () => {
+  test("uses Polish day and month names for pl", () => {
+    expect(formatDateLabel(new Date("2026-03-02T09:00:00Z"), "Europe/Warsaw", "pl")).toBe("pon. 2 mar 10:00");
+    expect(formatDateLabel(new Date("2026-09-30T09:00:00Z"), "Europe/Warsaw", "pl")).toBe("śr. 30 wrz 11:00");
+  });
+
+  test("keeps English names for en", () => {
+    expect(formatDateLabel(new Date("2026-03-02T09:00:00Z"), "Europe/Warsaw", "en")).toBe("Mon 2 Mar 10:00");
   });
 });

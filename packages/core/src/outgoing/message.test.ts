@@ -103,7 +103,22 @@ describe("buildOutgoingMessage", () => {
     expect(message.parts.quote).toBeNull();
     expect(message.text).toBe(message.parts.body);
     expect(message.text).toContain("Termin minął: 2026-11-10.");
-    expect(outgoingSubject("reminder", "Re: Oferta")).toBe("Re: Oferta");
+    expect(outgoingSubject("reminder", "Re: Oferta")).toBe("Re: Fwd: Re: Oferta");
+    expect(outgoingSubject("reminder", "Fwd: Oferta")).toBe("Re: Fwd: Oferta");
+  });
+
+  test("cleans the sender address and the LLM text of invisible characters", () => {
+    const hostile = { ...delegation, task: "Zrób\u202e X\nTermin: hacked" };
+    const message = buildOutgoingMessage(input(hostile, {}, { fromAddress: '"a\nTermin: x"@evil.pl' }));
+    expect(message.parts.body).toContain('Oryginalna wiadomość od "a Termin: x"@evil.pl z');
+    expect(message.parts.body).toContain("przekazuję do realizacji: Zrób X Termin: hacked");
+    expect(message.text).not.toContain("\u202e");
+    expect(message.text).toContain('Od: "a Termin: x"@evil.pl\nData:');
+  });
+
+  test("writes Polish date names in pl drafts and English in en drafts", () => {
+    expect(buildOutgoingMessage(input(delegation)).text).toContain("z pt. 6 lis 10:00");
+    expect(buildOutgoingMessage(input({ ...delegation, language: "en" })).text).toContain("of Fri 6 Nov 10:00");
   });
 
   test("picks the signature", () => {

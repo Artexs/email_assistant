@@ -2,7 +2,7 @@ import { cutText } from "../digest/text";
 import type { DraftPayload } from "../triage/payloads";
 import { markUntrustedText } from "../triage/untrusted-text";
 
-import { formatDateLabel, quoteOriginal } from "./quote";
+import { cleanFromAddress, formatDateLabel, quoteOriginal } from "./quote";
 import { renderTemplate } from "./templates";
 
 export interface OutgoingAddress {
@@ -58,12 +58,13 @@ export function outgoingSubject(kind: DraftPayload["kind"], originalSubject: str
   if (kind === "clarification") {
     return lower.startsWith("re:") || lower.startsWith("odp:") ? subject : `Re: ${subject}`;
   }
-  return lower.startsWith("re:") ? subject : `Re: ${outgoingSubject("delegation", originalSubject)}`;
+  return `Re: ${outgoingSubject("delegation", originalSubject)}`;
 }
 
-// LLM text goes through the marker once more and loses its line breaks: it cannot start a header-like line.
+// LLM text goes through the marker once more and loses its line breaks and its control and bidi characters:
+// it cannot start a header-like line. It is cleaned before the marker, so no hidden character splits a pattern.
 function oneLine(text: string): string {
-  return markUntrustedText(text).replace(/\s+/g, " ").trim();
+  return cutText(markUntrustedText(cutText(text, Infinity)), Infinity);
 }
 
 function uniqueIds(ids: (string | null)[]): string[] {
@@ -81,8 +82,8 @@ export function buildOutgoingMessage(input: BuildInput): OutgoingMessage {
     task: "task" in draft ? oneLine(draft.task) : undefined,
     question: "question" in draft ? oneLine(draft.question) : undefined,
     dueDate,
-    senderLabel: original.fromAddress ?? "(unknown sender)",
-    dateLabel: formatDateLabel(original.receivedAt, organization.timezone),
+    senderLabel: cleanFromAddress(original.fromAddress),
+    dateLabel: formatDateLabel(original.receivedAt, organization.timezone, draft.language),
     signature,
   });
   const quote = draft.kind === "reminder" ? null : quoteOriginal(original, draft.language, organization.timezone);
