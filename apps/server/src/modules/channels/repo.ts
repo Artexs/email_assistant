@@ -231,6 +231,22 @@ export async function insertOutbox(db: DbOrTrx, ctx: TenantContext, row: NewOutb
   return inserted?.id ?? null;
 }
 
+// The text of the message that was queued for this user; the tap handlers edit it. Tenant and user filter the row.
+export async function findOutboxByDedup(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  userId: string,
+  dedupKey: string
+): Promise<{ id: string; text: string } | undefined> {
+  return db
+    .selectFrom("outbox")
+    .select(["id", "text"])
+    .where("org_id", "=", ctx.orgId)
+    .where("user_id", "=", userId)
+    .where("dedup_key", "=", dedupKey)
+    .executeTakeFirst();
+}
+
 export interface ClaimedOutbox {
   id: string;
   orgId: string;

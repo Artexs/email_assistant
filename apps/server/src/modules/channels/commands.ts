@@ -13,12 +13,21 @@ import {
 } from "@ea/core";
 import type { Transaction } from "kysely";
 
-import type { DB, Db } from "../../platform/db";
+import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
-import { countActionsSince, type ActionsScope } from "../actions";
+import {
+  countActionsSince,
+  countApprovals,
+  sendFilterFor,
+  STALE_AFTER_MS,
+  type ActionsScope,
+  type DelegationHooks,
+  type SendScope,
+} from "../actions";
 import { auditEvents, countLlmCallsSince, recordAudit } from "../audit";
 import { getMailboxSettings } from "../config";
+import { countOpenDelegations } from "../delegation";
 import { changeMailboxStatus, countWaiting, listMailboxes, type MailboxSummary } from "../mail";
 import { buildDigestMessage, digestPeriodStart, WAITING_WINDOW_MS } from "../reports";
 import { getMembership, getOrganization } from "../tenancy";
@@ -35,6 +44,9 @@ export interface CommandDeps {
   triageScope: "off" | "synthetic" | "all";
   actionsScope: ActionsScope;
   llm: { provider: string; classifierModel: string };
+  hooks: DelegationHooks;
+  uidplus(ctx: TenantContext, mailboxId: string): Promise<boolean>;
+  sendScope: SendScope;
 }
 
 const log = createLog("channels");
@@ -51,6 +63,12 @@ const ACTIONS_SCOPE_TEXTS: Record<ActionsScope["kind"], string> = {
   off: "off",
   synthetic: "test mail only (ACTIONS_SCOPE=synthetic)",
   all: "real mail of the test mailbox (ACTIONS_SCOPE=all)",
+};
+
+const SEND_SCOPE_TEXTS: Record<SendScope["kind"], string> = {
+  off: "off",
+  self: "only to your test addresses (SEND_SCOPE=self)",
+  all: "real delegates of the test mailbox (SEND_SCOPE=all)",
 };
 
 const ACTIONS_WINDOW_MS = 24 * 3_600_000;
@@ -93,6 +111,10 @@ export async function statusMessage(deps: CommandDeps, link: LinkedChat): Promis
   lines.push(
     `Actions: ${ACTIONS_SCOPE_TEXTS[deps.actionsScope.kind]} · last 24 h: applied ${actions.applied}, undone ${actions.undone}, failed ${actions.failed}`
   );
+  lines.push(...(await approvalLines(deps, ctx, mailboxes, now, clock)));
+  lines.push(`Send: ${SEND_SCOPE_TEXTS[deps.sendScope.kind]}`);
+  const delegations = await countOpenDelegations(db, ctx);
+  lines.push(`Delegations: ${delegations.open} waiting for a reply, ${delegations.overdue} overdue`);
   lines.push(`LLM: ${deps.llm.provider} · ${deps.llm.classifierModel}`);
 
   const member = await getMembership(db, ctx, link.userId);
@@ -105,6 +127,40 @@ export async function statusMessage(deps: CommandDeps, link: LinkedChat): Promis
     `Quiet hours: ${QUIET_HOURS.start}–${QUIET_HOURS.end} (notices wait until ${QUIET_HOURS.end})`
   );
   return { text: lines.join("\n"), buttons: [] };
+}
+
+// The cause of a held send, in the order of the tap toast (S4 16.1): the mailbox, then the scope, else a retry wait.
+function heldText(deps: CommandDeps, mailbox: MailboxSummary | undefined, held: number): string {
+  if (mailbox?.status === "paused") return `${held} approved, held: the mailbox is paused`;
+  if (mailbox?.status === "auth_error") return `${held} approved, held: the mailbox login fails`;
+  const admitsAll = mailbox !== undefined && sendFilterFor(deps.sendScope, mailbox.address).kind === "all";
+  if (!admitsAll) return `${held} approved, held by SEND_SCOPE=${deps.sendScope.kind}`;
+  return `${held} approved, in a retry wait`;
+}
+
+// One line for the organization; one line per mailbox when it has more than one.
+async function approvalLines(
+  deps: CommandDeps,
+  ctx: TenantContext,
+  mailboxes: MailboxSummary[],
+  now: Date,
+  clock: (at: Date) => string
+): Promise<string[]> {
+  const staleBefore = new Date(now.getTime() - STALE_AFTER_MS);
+  const line = (prefix: string, count: Awaited<ReturnType<typeof countApprovals>>, mailbox?: MailboxSummary) => {
+    const oldest = count.oldestNotifiedAt === null ? "" : ` (oldest ${clock(count.oldestNotifiedAt)})`;
+    const held = count.approvedHeld > 0 ? ` · ${heldText(deps, mailbox, count.approvedHeld)}` : "";
+    return `${prefix}: ${count.waiting} waiting for your tap${oldest}${held}`;
+  };
+  if (mailboxes.length <= 1) {
+    return [line("Approvals", await countApprovals(deps.db, ctx, { staleBefore }), mailboxes[0])];
+  }
+  const lines: string[] = [];
+  for (const mailbox of mailboxes) {
+    const count = await countApprovals(deps.db, ctx, { staleBefore, mailboxId: mailbox.id });
+    lines.push(line(`Approvals ${cutText(mailbox.address, ADDRESS_MAX)}`, count, mailbox));
+  }
+  return lines;
 }
 
 function statusText(mailbox: MailboxSummary, clock: (at: Date) => string): string {
@@ -222,6 +278,17 @@ export function createUpdateHandlers(deps: CommandDeps): UpdateHandlers {
   return {
     command: (link, name) => runCommand(deps, link, name),
     callback: (link, data) =>
-      handleCallback({ db: deps.db, now: deps.now, actionsScope: deps.actionsScope }, link, data),
+      handleCallback(
+        {
+          db: deps.db,
+          now: deps.now,
+          actionsScope: deps.actionsScope,
+          hooks: deps.hooks,
+          uidplus: deps.uidplus,
+          sendScope: deps.sendScope,
+        },
+        link,
+        data
+      ),
   };
 }

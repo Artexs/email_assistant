@@ -1,6 +1,7 @@
 import { createCommitterJob, isOwnActionId, type ActionsScope } from "./modules/actions";
 import { createTelegramRuntime } from "./modules/channels";
-import { createMailSyncJob, openImapProvider } from "./modules/mail";
+import { delegationHooks } from "./modules/delegation";
+import { createMailSyncJob, mailboxHasUidplus, openImapProvider } from "./modules/mail";
 import { createLlmPause, createReturnedJob, createTriageJob, type TriageScope } from "./modules/triage";
 import { ConfigError, llmSettings, loadConfig, type Config } from "./platform/config";
 import { createSecretBox } from "./platform/crypto";
@@ -156,6 +157,10 @@ if (config.TELEGRAM_BOT_TOKEN === undefined) {
     triageScope: config.TRIAGE_LLM_SCOPE,
     actionsScope: scopeOfActions,
     llm: { provider: settings.provider, classifierModel: settings.classifierModel },
+    hooks: delegationHooks({ db }),
+    uidplus: (ctx, mailboxId) => mailboxHasUidplus(db, ctx, mailboxId),
+    // Stage 18 reads SEND_SCOPE; until then no send is admitted.
+    sendScope: { kind: "off" },
   });
   telegram = runtime;
   scheduler.add("channels.notifier", "*/15 * * * * *", () => {

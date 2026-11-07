@@ -6,7 +6,7 @@ Part of [`../s4-drafts-approvals-delegation.md`](../s4-drafts-approvals-delegati
 
 Why risky: a tap is the approval record of ADR 0003. The handler must check the owner role and the tenant, answer the same for an unknown id and another organization's id, and never leak state across organizations.
 
-- [ ] **16.1 The tap handlers (D18, D26)**
+- [x] **16.1 The tap handlers (D18, D26)**
   - Goal: an owner's tap approves or rejects a send (or a set), asks for a resend, or closes a delegation; the tapped message shows the outcome; every other case gets a short, honest answer.
   - Files: change `apps/server/src/modules/channels/callbacks.ts`, `channels/repo.ts` (`findOutboxByDedup(db, ctx, userId, dedupKey): Promise<{ id; text } | undefined>`), `channels/texts.ts`, `channels/telegram/runtime.ts` and `channels/commands.ts` (`CallbackDeps` and `CommandDeps` gain `hooks: DelegationHooks`, `uidplus(ctx, mailboxId)`, `sendScope: SendScope`; `createUpdateHandlers` (`commands.ts:222-226`) builds `CallbackDeps` field by field today, `{ db: deps.db, now: deps.now, actionsScope: deps.actionsScope }`, so it passes the three new fields too: M12), `apps/server/test/integration/channels-callbacks.test.ts`.
   - Interfaces:
@@ -62,7 +62,7 @@ Why risky: a tap is the approval record of ADR 0003. The handler must check the 
   - Done when: the tests pass.
   - Out of scope: `/status` (16.2), the runtime wiring (stage 18).
 
-- [ ] **16.2 `/status` and `/help` lines (D16, D25)**
+- [x] **16.2 `/status` and `/help` lines (D16, D25)**
   - Goal: `/status` shows the approvals that wait, the sends held by the scope, the send scope and the open delegations.
   - Files: change `apps/server/src/modules/channels/commands.ts`, `channels/texts.ts`, `apps/server/test/integration/channels-commands.test.ts`.
   - Decisions:

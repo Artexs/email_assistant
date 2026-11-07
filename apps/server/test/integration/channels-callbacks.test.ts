@@ -3,13 +3,24 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
-import { handleCallback, type CallbackDeps } from "../../src/modules/channels";
+import { noDelegationHooks, type DelegationHooks, type SendScope } from "../../src/modules/actions";
+import { auditEvents } from "../../src/modules/audit";
+import { handleCallback, insertOutbox, type CallbackDeps } from "../../src/modules/channels";
 import type { LinkedChat } from "../../src/modules/channels";
-import { UNDO_TEXTS } from "../../src/modules/channels/callbacks";
+import { APPROVAL_TEXTS, UNDO_TEXTS } from "../../src/modules/channels/callbacks";
 import { listLabeledResults } from "../../src/modules/triage";
 import type { DB } from "../../src/platform/db";
 
-import { createOrgWithMailbox, insertAction, insertTriaged, insertTriagedWithActions } from "./fixtures";
+import {
+  addMember,
+  createOrgWithMailbox,
+  insertAction,
+  insertDelegate,
+  insertDelegation,
+  insertDraftAndSend,
+  insertTriaged,
+  insertTriagedWithActions,
+} from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -48,7 +59,14 @@ async function setup(trx: Transaction<DB>) {
   const unsure = await insertTriaged(trx, ctxA, a.mailboxId, { category: "unsure", createdAt: T });
   const other = await insertTriaged(trx, { orgId: b.orgId }, b.mailboxId, { category: "info", createdAt: T });
   const link: LinkedChat = { orgId: a.orgId, userId: a.userId, role: "owner", chatId: 1, linkedAt: T };
-  const deps: CallbackDeps = { db: trx, now: () => T, actionsScope: { kind: "all", mailboxAddress: address } };
+  const deps: CallbackDeps = {
+    db: trx,
+    now: () => T,
+    actionsScope: { kind: "all", mailboxAddress: address },
+    hooks: noDelegationHooks,
+    uidplus: async () => true,
+    sendScope: { kind: "all", mailboxAddress: address },
+  };
   return { a, ctxA, info, unsure, other, link, deps };
 }
 
@@ -310,6 +328,402 @@ describe("handleCallback", () => {
         expect(await reverseRows(trx, s.a.orgId)).toEqual([]);
         expect(await reverseRows(trx, otherOrgId)).toEqual([]);
       });
+    });
+  });
+});
+
+describe("approval taps", () => {
+  const ORIGINAL = "📤 Send? Delegation to Delegate\n\nDraft:\nHello";
+
+  async function approvalSetup(trx: Transaction<DB>, opts?: { sendScope?: (address: string) => SendScope }) {
+    const address = `box-${randomUUID()}@x.test`;
+    const a = await createOrgWithMailbox(trx, { address });
+    const b = await createOrgWithMailbox(trx);
+    const ctx = { orgId: a.orgId };
+    const o1 = a.userId;
+    const o2 = await addMember(trx, a.orgId, "owner");
+    const assistant = await addMember(trx, a.orgId, "assistant");
+    const link = (userId: string, role: LinkedChat["role"]): LinkedChat => ({
+      orgId: a.orgId,
+      userId,
+      role,
+      chatId: 1,
+      linkedAt: T,
+    });
+    const cancelled: string[] = [];
+    const hooks: DelegationHooks = {
+      ...noDelegationHooks,
+      onCancelled: async (_trx, _ctx, input) => {
+        cancelled.push(input.reason);
+        return true;
+      },
+    };
+    const deps: CallbackDeps = {
+      db: trx,
+      now: () => T,
+      actionsScope: { kind: "off" },
+      hooks,
+      uidplus: async () => true,
+      sendScope: opts?.sendScope?.(address) ?? { kind: "all", mailboxAddress: address },
+    };
+    return {
+      a,
+      b,
+      ctx,
+      o1,
+      o2,
+      assistant,
+      address,
+      cancelled,
+      deps,
+      owner1: link(o1, "owner"),
+      owner2: link(o2, "owner"),
+      assistantLink: link(assistant, "assistant"),
+    };
+  }
+
+  async function queueFor(
+    trx: Transaction<DB>,
+    ctx: { orgId: string },
+    userId: string,
+    kind: "approval" | "approval_set" | "send_result" | "delegation_answered",
+    key: string,
+    emailId: string,
+    text = ORIGINAL
+  ): Promise<void> {
+    await insertOutbox(trx, ctx, {
+      userId,
+      kind,
+      dedupKey: `${kind}:${key}`,
+      emailId,
+      message: { text, buttons: [] },
+      createdAt: T,
+      nextAttemptAt: T,
+    });
+  }
+
+  async function sendRow(trx: Transaction<DB>, id: string) {
+    return trx.selectFrom("actions").selectAll().where("id", "=", id).executeTakeFirstOrThrow();
+  }
+
+  test("(1)(2) an owner approves; the second owner sees already approved", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const { sendId, emailId } = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, { notifiedAt: T, createdAt: T });
+      await queueFor(trx, s.ctx, s.o1, "approval", sendId, emailId);
+
+      const first = await handleCallback(s.deps, s.owner1, `ap:${sendId}`);
+      expect(first.answer).toBe(APPROVAL_TEXTS.approved);
+      expect(first.edit).toEqual({ text: `${ORIGINAL}\n\n⏳ Approved 11:00, sending.`, buttons: [] });
+      expect(await sendRow(trx, sendId)).toMatchObject({
+        status: "approved",
+        approved_by: s.o1,
+        approved_via: "telegram",
+      });
+
+      const second = await handleCallback(s.deps, s.owner2, `ap:${sendId}`);
+      expect(second.answer).toBe("Already approved 11:00.");
+      expect(second.edit).toBeUndefined();
+    });
+  });
+
+  test("(3) an assistant cannot approve, reject or resend; the row is unchanged", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const { sendId } = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, { notifiedAt: T, createdAt: T });
+      for (const kind of ["ap", "ar", "as", "rs", "ag"]) {
+        const result = await handleCallback(s.deps, s.assistantLink, `${kind}:${sendId}`);
+        expect(result).toEqual({ answer: APPROVAL_TEXTS.owner_only });
+      }
+      expect(await sendRow(trx, sendId)).toMatchObject({ status: "awaiting_approval", approved_by: null });
+    });
+  });
+
+  test("(4) another organization's send and an unknown id give the not-found text", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const other = await insertDraftAndSend(trx, { orgId: s.b.orgId }, s.b.mailboxId, { notifiedAt: T, createdAt: T });
+      for (const id of [other.sendId, randomUUID()]) {
+        for (const kind of ["ap", "ar", "ag"]) {
+          const result = await handleCallback(s.deps, s.owner1, `${kind}:${id}`);
+          expect(result).toEqual({ answer: NOT_FOUND });
+        }
+      }
+      expect(await sendRow(trx, other.sendId)).toMatchObject({ status: "awaiting_approval" });
+    });
+  });
+
+  test("(5) scope off: approved but held; the edit keeps Reject; Reject then works", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx, { sendScope: () => ({ kind: "off" }) });
+      const { sendId, emailId } = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, { notifiedAt: T, createdAt: T });
+      await queueFor(trx, s.ctx, s.o1, "approval", sendId, emailId);
+
+      const tap = await handleCallback(s.deps, s.owner1, `ap:${sendId}`);
+      expect(tap.answer).toBe(APPROVAL_TEXTS.approved_held);
+      expect(tap.edit?.buttons).toEqual([[{ text: "✖️ Reject", data: `ar:${sendId}` }]]);
+      expect(tap.edit?.text).toContain("Sending is held by SEND_SCOPE");
+      expect(await sendRow(trx, sendId)).toMatchObject({ status: "approved" });
+
+      const rejected = await handleCallback(s.deps, s.owner1, `ar:${sendId}`);
+      expect(rejected.answer).toBe(APPROVAL_TEXTS.rejected_now);
+      expect(await sendRow(trx, sendId)).toMatchObject({ status: "rejected" });
+    });
+  });
+
+  test("(5a) a paused or auth_error mailbox holds the send and names the cause", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const one = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, { notifiedAt: T, createdAt: T });
+      const two = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, { notifiedAt: T, createdAt: T });
+      for (const id of [one, two]) await queueFor(trx, s.ctx, s.o1, "approval", id.sendId, id.emailId);
+
+      await trx.updateTable("mailboxes").set({ status: "paused" }).where("id", "=", s.a.mailboxId).execute();
+      const paused = await handleCallback(s.deps, s.owner1, `ap:${one.sendId}`);
+      expect(paused.answer).toBe(APPROVAL_TEXTS.approved_paused);
+      expect(paused.edit?.text).toContain("The mailbox is paused, so the send waits");
+      expect(paused.edit?.buttons).toEqual([[{ text: "✖️ Reject", data: `ar:${one.sendId}` }]]);
+
+      await trx.updateTable("mailboxes").set({ status: "auth_error" }).where("id", "=", s.a.mailboxId).execute();
+      const broken = await handleCallback(s.deps, s.owner1, `ap:${two.sendId}`);
+      expect(broken.answer).toBe(APPROVAL_TEXTS.approved_auth_error);
+    });
+  });
+
+  test("(5b) a tap after 48 h expires the send; nobody approved it", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const { sendId, emailId } = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, {
+        notifiedAt: new Date(T.getTime() - 49 * HOUR),
+        createdAt: T,
+      });
+      await queueFor(trx, s.ctx, s.o1, "approval", sendId, emailId);
+
+      const tap = await handleCallback(s.deps, s.owner1, `ap:${sendId}`);
+      expect(tap.answer).toBe(APPROVAL_TEXTS.expired);
+      expect(tap.edit).toEqual({ text: `${ORIGINAL}\n\n⌛ Expired 11:00. The mail was not sent.`, buttons: [] });
+      expect(await sendRow(trx, sendId)).toMatchObject({
+        status: "expired",
+        status_reason: "timeout",
+        approved_by: null,
+      });
+    });
+  });
+
+  test("(6) reject removes the draft and cancels the delegation; a later approve says rejected", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const { sendId, draftId, emailId } = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, {
+        notifiedAt: T,
+        createdAt: T,
+        delegationId: randomUUID(),
+        draftProviderResult: { uid: 5, folder: "Drafts" },
+      });
+      await queueFor(trx, s.ctx, s.o1, "approval", sendId, emailId);
+
+      const tap = await handleCallback(s.deps, s.owner1, `ar:${sendId}`);
+      expect(tap.answer).toBe(APPROVAL_TEXTS.rejected_now);
+      expect(tap.edit).toEqual({ text: `${ORIGINAL}\n\n✖️ Rejected 11:00.`, buttons: [] });
+      expect(await sendRow(trx, sendId)).toMatchObject({ status: "rejected" });
+      const reverse = await trx.selectFrom("actions").selectAll().where("reverses_action_id", "=", draftId).execute();
+      expect(reverse).toHaveLength(1);
+      expect(s.cancelled).toEqual(["rejected"]);
+
+      const again = await handleCallback(s.deps, s.owner2, `ap:${sendId}`);
+      expect(again).toEqual({ answer: APPROVAL_TEXTS.rejected });
+    });
+  });
+
+  test("(7) approve set approves both; reject set then finds nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const setId = randomUUID();
+      const sends = [];
+      for (const reminder of [1, 2] as const) {
+        sends.push(
+          await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, { reminder, setId, notifiedAt: T, createdAt: T })
+        );
+      }
+      await queueFor(
+        trx,
+        s.ctx,
+        s.o1,
+        "approval_set",
+        setId,
+        (sends[0] as { emailId: string }).emailId,
+        "📤 Send 2 reminders?"
+      );
+
+      const tap = await handleCallback(s.deps, s.owner1, `as:${setId}`);
+      expect(tap.answer).toBe("⏳ 2 reminders go out within a minute, 0 skipped.");
+      expect(tap.edit).toEqual({
+        text: "📤 Send 2 reminders?\n\n⏳ Approved 11:00: 2 sending, 0 skipped.",
+        buttons: [],
+      });
+      for (const send of sends) expect(await sendRow(trx, send.sendId)).toMatchObject({ status: "approved" });
+
+      const skip = await handleCallback(s.deps, s.owner2, `rs:${setId}`);
+      expect(skip).toEqual({ answer: APPROVAL_TEXTS.set_nothing });
+    });
+  });
+
+  test("(7b) reject set skips the waiting reminders", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const setId = randomUUID();
+      const send = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, {
+        reminder: 1,
+        setId,
+        notifiedAt: T,
+        createdAt: T,
+      });
+      await queueFor(trx, s.ctx, s.o1, "approval_set", setId, send.emailId, "📤 Send 1 reminder?");
+
+      const tap = await handleCallback(s.deps, s.owner1, `rs:${setId}`);
+      expect(tap.answer).toBe("✖️ 1 reminders skipped.");
+      expect(tap.edit?.text).toBe("📤 Send 1 reminder?\n\n✖️ Skipped 11:00: 1 rejected, 0 skipped.");
+      expect(await sendRow(trx, send.sendId)).toMatchObject({ status: "rejected" });
+    });
+  });
+
+  test("(8) send again on a failed send creates one approved row; repeats and an applied row do not", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const failed = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, {
+        sendStatus: "failed",
+        notifiedAt: T,
+        createdAt: T,
+      });
+      await trx
+        .updateTable("actions")
+        .set({ status_reason: "outcome_unknown" })
+        .where("id", "=", failed.sendId)
+        .execute();
+      await queueFor(
+        trx,
+        s.ctx,
+        s.o1,
+        "send_result",
+        failed.sendId,
+        failed.emailId,
+        "⚠️ Unknown whether the mail went out"
+      );
+
+      const tap = await handleCallback(s.deps, s.owner1, `ag:${failed.sendId}`);
+      expect(tap.answer).toBe(APPROVAL_TEXTS.send_again);
+      expect(tap.edit).toEqual({
+        text: "⚠️ Unknown whether the mail went out\n\n⏳ Approved 11:00, sending.",
+        buttons: [],
+      });
+      const rows = await trx
+        .selectFrom("actions")
+        .select(["status", "approved_by"])
+        .where("idempotency_key", "=", `${failed.sendId}:again`)
+        .execute();
+      expect(rows).toEqual([{ status: "approved", approved_by: s.o1 }]);
+
+      for (const link of [s.owner1, s.owner2]) {
+        const again = await handleCallback(s.deps, link, `ag:${failed.sendId}`);
+        expect(again).toEqual({ answer: APPROVAL_TEXTS.send_again_already });
+      }
+      const count = await trx
+        .selectFrom("actions")
+        .select("id")
+        .where("idempotency_key", "=", `${failed.sendId}:again`)
+        .execute();
+      expect(count).toHaveLength(1);
+
+      const applied = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, {
+        sendStatus: "applied",
+        approved: { userId: s.o1, at: T },
+        createdAt: T,
+      });
+      const notFailed = await handleCallback(s.deps, s.owner1, `ag:${applied.sendId}`);
+      expect(notFailed).toEqual({ answer: APPROVAL_TEXTS.send_again_not_failed });
+    });
+  });
+
+  test("(9) a delegation is closed by an assistant; the second tap says already done", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const delegateId = await insertDelegate(trx, s.ctx);
+      const sent = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, {
+        sendStatus: "applied",
+        approved: { userId: s.o1, at: T },
+        createdAt: T,
+      });
+      const delegationId = await insertDelegation(trx, s.ctx, {
+        mailboxId: s.a.mailboxId,
+        emailId: sent.emailId,
+        delegateId,
+        draftActionId: sent.draftId,
+        sendActionId: sent.sendId,
+        status: "answered",
+        answeredAt: T,
+      });
+      await queueFor(
+        trx,
+        s.ctx,
+        s.assistant,
+        "delegation_answered",
+        delegationId,
+        sent.emailId,
+        "📩 Delegate answered"
+      );
+
+      const tap = await handleCallback(s.deps, s.assistantLink, `dd:${delegationId}`);
+      expect(tap.answer).toBe(APPROVAL_TEXTS.done);
+      expect(tap.edit).toEqual({ text: "📩 Delegate answered\n\n✅ Done 11:00.", buttons: [] });
+      const row = await trx
+        .selectFrom("delegations")
+        .select("status")
+        .where("id", "=", delegationId)
+        .executeTakeFirstOrThrow();
+      expect(row.status).toBe("done");
+      const audit = await trx
+        .selectFrom("audit_log")
+        .select("actor")
+        .where("org_id", "=", s.a.orgId)
+        .where("event", "=", auditEvents.delegationDone)
+        .execute();
+      expect(audit).toEqual([{ actor: s.assistant }]);
+
+      const again = await handleCallback(s.deps, s.assistantLink, `dd:${delegationId}`);
+      expect(again).toEqual({ answer: APPROVAL_TEXTS.done_already });
+
+      const second = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, {
+        sendStatus: "applied",
+        approved: { userId: s.o1, at: T },
+        createdAt: T,
+      });
+      const waiting = await insertDelegation(trx, s.ctx, {
+        mailboxId: s.a.mailboxId,
+        emailId: second.emailId,
+        delegateId,
+        draftActionId: second.draftId,
+        sendActionId: second.sendId,
+        status: "sent",
+      });
+      const notClosable = await handleCallback(s.deps, s.assistantLink, `dd:${waiting}`);
+      expect(notClosable).toEqual({ answer: APPROVAL_TEXTS.done_not_closable });
+      const missing = await handleCallback(s.deps, s.assistantLink, `dd:${randomUUID()}`);
+      expect(missing).toEqual({ answer: NOT_FOUND });
+    });
+  });
+
+  test("(10) forged data is not valid", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const result = await handleCallback(s.deps, s.owner1, "ap:nope");
+      expect(result).toEqual({ answer: "This button is not valid any more." });
+    });
+  });
+
+  test("(11) the S2 and S3 taps still work", async () => {
+    await withRollback(db, async (trx) => {
+      const { info, link, deps } = await setup(trx);
+      expect((await handleCallback(deps, link, `fr:i:${info}`)).answer).toBe("✅ Saved: Info is right.");
+      expect((await handleCallback(deps, link, `fu:${info}`)).answer).toBe(UNDO_TEXTS.nothing);
     });
   });
 });

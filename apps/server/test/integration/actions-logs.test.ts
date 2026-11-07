@@ -3,7 +3,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { encodeCallback } from "@ea/core";
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 
-import { createCommitterJob } from "../../src/modules/actions";
+import { createCommitterJob, noDelegationHooks } from "../../src/modules/actions";
 import { detectNotices, handleCallback, type LinkedChat } from "../../src/modules/channels";
 import { createFakeMailProvider, type FakeMailProvider } from "../../src/modules/mail/fake";
 import { insertCredentials, markSynced } from "../../src/modules/mail/repo";
@@ -145,7 +145,14 @@ describe("actions logs", () => {
         // The Undo tap on the mail with applied changes.
         const link: LinkedChat = { orgId, userId, role: "owner", chatId: 1, linkedAt: new Date(T0.getTime() - HOUR) };
         const tap = await handleCallback(
-          { db: trx, now: () => clock, actionsScope: { kind: "synthetic" } },
+          {
+            db: trx,
+            now: () => clock,
+            actionsScope: { kind: "synthetic" },
+            hooks: noDelegationHooks,
+            uidplus: async () => true,
+            sendScope: { kind: "off" },
+          },
           link,
           encodeCallback({ kind: "undo", emailId: applied.emailId })
         );

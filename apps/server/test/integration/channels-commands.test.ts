@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
+import { noDelegationHooks } from "../../src/modules/actions";
 import { auditEvents, recordAudit } from "../../src/modules/audit";
 import {
   createUpdateHandlers,
@@ -22,7 +23,16 @@ import { insertDigest, markDigestSent } from "../../src/modules/reports";
 import { setDigestTimes } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
 
-import { createOrgWithMailbox, insertAction, insertTestEmail, insertTriaged, testCapabilities } from "./fixtures";
+import {
+  createOrgWithMailbox,
+  insertAction,
+  insertDelegate,
+  insertDelegation,
+  insertDraftAndSend,
+  insertTestEmail,
+  insertTriaged,
+  testCapabilities,
+} from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -46,6 +56,9 @@ function depsAt(trx: Transaction<DB>, now: Date, extra: Partial<CommandDeps> = {
     triageScope: "all",
     actionsScope: { kind: "off" },
     llm: { provider: "gemini", classifierModel: "gemini-3.5-flash-lite" },
+    hooks: noDelegationHooks,
+    uidplus: async () => true,
+    sendScope: { kind: "off" },
     ...extra,
   };
 }
@@ -86,6 +99,8 @@ describe("helpMessage", () => {
 
   test("has the Undo line", () => {
     expect(helpText()).toContain("↩️ under a digest line undoes what the system did to that mail (7 days).");
+    expect(helpText()).toContain("📤 under an approval sends the draft; ✖️ rejects it (the draft is removed).");
+    expect(helpText()).toContain("✅ Done under an answered delegation closes it.");
   });
 });
 
@@ -135,6 +150,90 @@ describe("statusMessage", () => {
       );
       const synthetic = await statusMessage(depsAt(trx, T, { actionsScope: { kind: "synthetic" } }), link);
       expect(synthetic.text).toContain("Actions: test mail only (ACTIONS_SCOPE=synthetic) · last 24 h: applied 2");
+    });
+  });
+
+  test("status shows approvals, the send scope and the delegations", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, link, a, address } = await setup(trx);
+      const empty = await statusMessage(depsAt(trx, T), link);
+      expect(empty.text).toContain("Approvals: 0 waiting for your tap");
+      expect(empty.text).toContain("Send: off");
+      expect(empty.text).toContain("Delegations: 0 waiting for a reply, 0 overdue");
+
+      await insertDraftAndSend(trx, ctx, a.mailboxId, { notifiedAt: at(-2 * HOUR), createdAt: at(-3 * HOUR) });
+      await insertDraftAndSend(trx, ctx, a.mailboxId, {
+        sendStatus: "approved",
+        approved: { userId: a.userId, at: at(-HOUR) },
+        createdAt: at(-3 * HOUR),
+      });
+      const off = await statusMessage(depsAt(trx, T), link);
+      expect(off.text).toContain(
+        "Approvals: 1 waiting for your tap (oldest 09:00) · 1 approved, held by SEND_SCOPE=off"
+      );
+
+      const self = await statusMessage(depsAt(trx, T, { sendScope: { kind: "self", addresses: ["me@x.test"] } }), link);
+      expect(self.text).toContain("Send: only to your test addresses (SEND_SCOPE=self)");
+      expect(self.text).toContain("1 approved, held by SEND_SCOPE=self");
+
+      const all = await statusMessage(depsAt(trx, T, { sendScope: { kind: "all", mailboxAddress: address } }), link);
+      expect(all.text).toContain("Send: real delegates of the test mailbox (SEND_SCOPE=all)");
+      expect(all.text).toContain("1 approved, in a retry wait");
+
+      await trx.updateTable("mailboxes").set({ status: "paused" }).where("id", "=", a.mailboxId).execute();
+      const paused = await statusMessage(depsAt(trx, T, { sendScope: { kind: "all", mailboxAddress: address } }), link);
+      expect(paused.text).toContain("1 approved, held: the mailbox is paused");
+      await trx.updateTable("mailboxes").set({ status: "auth_error" }).where("id", "=", a.mailboxId).execute();
+      const broken = await statusMessage(depsAt(trx, T), link);
+      expect(broken.text).toContain("1 approved, held: the mailbox login fails");
+    });
+  });
+
+  test("status counts the open delegations", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, link, a } = await setup(trx);
+      const delegateId = await insertDelegate(trx, ctx);
+      for (const status of ["sent", "sent", "overdue", "done"]) {
+        const row = await insertDraftAndSend(trx, ctx, a.mailboxId, {
+          sendStatus: "applied",
+          approved: { userId: a.userId, at: at(-HOUR) },
+          createdAt: at(-3 * HOUR),
+        });
+        await insertDelegation(trx, ctx, {
+          mailboxId: a.mailboxId,
+          emailId: row.emailId,
+          delegateId,
+          draftActionId: row.draftId,
+          sendActionId: row.sendId,
+          status,
+        });
+      }
+      const text = (await statusMessage(depsAt(trx, T), link)).text;
+      expect(text).toContain("Delegations: 2 waiting for a reply, 1 overdue");
+    });
+  });
+
+  test("status shows one approvals line per mailbox when there are two", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, link, a } = await setup(trx);
+      const second = randomUUID();
+      await insertMailbox(trx, ctx, {
+        id: second,
+        address: `second-${second}@x.test`,
+        imapHost: "imap.x.test",
+        imapPort: 993,
+        smtpHost: "smtp.x.test",
+        smtpPort: 465,
+        capabilities: testCapabilities,
+        folderMap: {},
+      });
+      await insertDraftAndSend(trx, ctx, a.mailboxId, { notifiedAt: at(-2 * HOUR), createdAt: at(-3 * HOUR) });
+      const lines = (await statusMessage(depsAt(trx, T), link)).text
+        .split("\n")
+        .filter((line) => line.startsWith("Approvals"));
+      expect(lines).toHaveLength(2);
+      expect(lines.filter((line) => line.includes("1 waiting for your tap"))).toHaveLength(1);
+      expect(lines.filter((line) => line.includes("0 waiting for your tap"))).toHaveLength(1);
     });
   });
 

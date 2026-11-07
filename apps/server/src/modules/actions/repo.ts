@@ -1582,19 +1582,27 @@ export async function listAwaitingSendIds(
 export async function countApprovals(
   db: DbOrTrx,
   ctx: TenantContext,
-  opts: { staleBefore: Date }
+  opts: { staleBefore: Date; mailboxId?: string }
 ): Promise<{ waiting: number; oldestNotifiedAt: Date | null; approvedHeld: number }> {
-  const row = await db
+  let query = db
     .selectFrom("actions")
     .select([
-      sql<string>`count(*) filter (where status = 'awaiting_approval')`.as("waiting"),
-      sql<Date | null>`min(notified_at) filter (where status = 'awaiting_approval')`.as("oldest"),
-      sql<string>`count(*) filter (where status = 'approved' and (locked_at is null or locked_at < ${opts.staleBefore}))`.as(
+      sql<string>`count(*) filter (where actions.status = 'awaiting_approval')`.as("waiting"),
+      sql<Date | null>`min(actions.notified_at) filter (where actions.status = 'awaiting_approval')`.as("oldest"),
+      sql<string>`count(*) filter (where actions.status = 'approved' and (actions.locked_at is null or actions.locked_at < ${opts.staleBefore}))`.as(
         "held"
       ),
     ])
-    .where("org_id", "=", ctx.orgId)
-    .where("type", "=", "send")
-    .executeTakeFirstOrThrow();
+    .where("actions.org_id", "=", ctx.orgId)
+    .where("actions.type", "=", "send");
+  if (opts.mailboxId !== undefined) {
+    const mailboxId = opts.mailboxId;
+    query = query
+      .innerJoin("emails", (join) =>
+        join.onRef("emails.id", "=", "actions.email_id").onRef("emails.org_id", "=", "actions.org_id")
+      )
+      .where("emails.mailbox_id", "=", mailboxId);
+  }
+  const row = await query.executeTakeFirstOrThrow();
   return { waiting: Number(row.waiting), oldestNotifiedAt: row.oldest, approvedHeld: Number(row.held) };
 }
