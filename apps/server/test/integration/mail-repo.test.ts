@@ -15,6 +15,7 @@ import {
   insertMailbox,
   listFolderUids,
   listInboxEmailKeys,
+  listRecentlyMoved,
   listSyncTargets,
   lockMailbox,
   markEmailReturned,
@@ -344,6 +345,48 @@ describe("mail repository: emails", () => {
     });
   });
 
+  test("listRecentlyMoved filters by org, mailbox, folder, inbox_uid and window, newest moved_at first, and limits", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      const at = (hour: number) => new Date(Date.UTC(2026, 10, 3, hour));
+      const add = async (tenant: Tenant, n: number, overrides: Partial<NewEmail>, movedAt: Date | null) => {
+        await insertEmail(
+          trx,
+          tenant.ctx,
+          newEmail(tenant.mailboxId, { dedup_key: `mid:<${n}@x.test>:h`, uid: n, ...overrides })
+        );
+        await trx
+          .updateTable("emails")
+          .set({ moved_at: movedAt })
+          .where("mailbox_id", "=", tenant.mailboxId)
+          .where("dedup_key", "=", `mid:<${n}@x.test>:h`)
+          .execute();
+      };
+      await add(a, 1, { folder: "AI/Info" }, at(8));
+      await add(a, 2, { folder: "AI/Info" }, at(10));
+      await add(a, 3, { folder: "AI/Spam" }, at(9));
+      await add(a, 4, { folder: "AI/Info" }, at(5)); // before the window
+      await add(a, 5, { folder: "INBOX" }, at(11)); // in INBOX
+      await add(a, 6, { folder: "AI/Info" }, null); // never moved
+      await add(b, 7, { folder: "AI/Info" }, at(11)); // other tenant
+      await trx
+        .updateTable("emails")
+        .set({ inbox_uid: null })
+        .where("mailbox_id", "=", a.mailboxId)
+        .where("dedup_key", "=", "mid:<3@x.test>:h")
+        .execute();
+      await add(a, 8, { folder: "AI/Info" }, at(7));
+
+      const all = await listRecentlyMoved(trx, a.ctx, a.mailboxId, { movedAfter: at(6), limit: 10 });
+      expect(all.map((row) => row.uid)).toEqual([2, 1, 8]);
+      expect(all[0]).toMatchObject({ folder: "AI/Info", inbox_uid: 2, moved_at: at(10) });
+      const limited = await listRecentlyMoved(trx, a.ctx, a.mailboxId, { movedAfter: at(6), limit: 2 });
+      expect(limited.map((row) => row.uid)).toEqual([2, 1]);
+      expect(await listRecentlyMoved(trx, b.ctx, a.mailboxId, { movedAfter: at(6), limit: 10 })).toEqual([]);
+      expect(await listRecentlyMoved(trx, a.ctx, b.mailboxId, { movedAfter: at(6), limit: 10 })).toEqual([]);
+    });
+  });
+
   test("updateEmailUid changes 0 rows of another organization", async () => {
     await withRollback(db, async (trx) => {
       const { a, b } = await createTwoTenants(trx);
@@ -366,7 +409,7 @@ describe("mail repository: emails", () => {
       const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
       const at = new Date("2026-11-03T13:00:00Z");
 
-      await markEmailReturned(trx, b.ctx, id, 60, at);
+      expect(await markEmailReturned(trx, b.ctx, id, 60, at)).toBe(false);
       let row = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
       expect({ folder: row.folder, uid: Number(row.uid), returnedAt: row.returned_at }).toEqual({
         folder: "AI/Info",
@@ -374,7 +417,7 @@ describe("mail repository: emails", () => {
         returnedAt: null,
       });
 
-      await markEmailReturned(trx, a.ctx, id, 60, at);
+      expect(await markEmailReturned(trx, a.ctx, id, 60, at)).toBe(true);
       row = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
       expect({ folder: row.folder, uid: Number(row.uid), returnedAt: row.returned_at, status: row.status }).toEqual({
         folder: "INBOX",
@@ -383,6 +426,12 @@ describe("mail repository: emails", () => {
         status: "pending",
       });
       expect(Number(await inboxUidOf(trx, id))).toBe(60);
+
+      // onlyOutsideInbox: a row that is already in INBOX stays as it is.
+      const later = new Date("2026-11-03T14:00:00Z");
+      expect(await markEmailReturned(trx, a.ctx, id, 70, later, { onlyOutsideInbox: true })).toBe(false);
+      row = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
+      expect({ uid: Number(row.uid), returnedAt: row.returned_at }).toEqual({ uid: 60, returnedAt: at });
     });
   });
 });

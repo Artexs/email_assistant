@@ -121,6 +121,8 @@ interface StubOptions {
   survivesDelete?: boolean;
   /** The UID that fetchOne reports, instead of the asked one. */
   fetchedUid?: number;
+  /** What `search` gives (default: no match). */
+  search?: number[] | false;
 }
 
 function stubProvider(options: StubOptions, forceCopyMove = false) {
@@ -138,6 +140,7 @@ function stubProvider(options: StubOptions, forceCopyMove = false) {
       return { path, created: true };
     },
     getMailboxLock: async () => ({ release: () => undefined }),
+    search: async () => options.search ?? [],
     fetchOne: async (range: string) =>
       removed ? false : { uid: options.fetchedUid ?? Number(range), flags: new Set<string>() },
     messageCopy: async () => {
@@ -267,6 +270,12 @@ describe("IMAP adapter writes (stub client)", () => {
   test("fetchMetaIn drops a meta whose uid is not the asked uid", async () => {
     const { provider } = stubProvider({ fetchedUid: 7 });
     expect(await provider.fetchMetaIn("INBOX", 5)).toBeNull();
+  });
+
+  test("searchSinceIn: a failed SEARCH is a SoftError, not an empty list", async () => {
+    const failed = stubProvider({ search: false });
+    await expect(failed.provider.searchSinceIn("INBOX", new Date())).rejects.toBeInstanceOf(SoftError);
+    expect(await stubProvider({ search: [3, 4] }).provider.searchSinceIn("INBOX", new Date())).toEqual([3, 4]);
   });
 
   test("setFlags: a false store is flag store refused", async () => {

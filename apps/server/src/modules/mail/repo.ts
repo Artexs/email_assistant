@@ -316,6 +316,62 @@ export async function listFolderUids(
   return otherCopyUids(copies, key.exceptEmailId, folder);
 }
 
+export interface MovedRow {
+  id: string;
+  /** The UID in `folder` (the hint of the folder check). */
+  uid: number;
+  inbox_uid: number | null;
+  folder: string;
+  message_id_header: string | null;
+  content_hash: string;
+  from_address: string | null;
+  received_at: Date;
+  moved_at: Date;
+}
+
+// Mail that the system moved out of INBOX lately: the candidates for a return below the UID cursor (D4).
+export async function listRecentlyMoved(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { movedAfter: Date; limit: number }
+): Promise<MovedRow[]> {
+  const rows = await db
+    .selectFrom("emails")
+    .select([
+      "id",
+      "uid",
+      "inbox_uid",
+      "folder",
+      "message_id_header",
+      "content_hash",
+      "from_address",
+      "received_at",
+      "moved_at",
+    ])
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("folder", "<>", INBOX)
+    .where("inbox_uid", "is not", null)
+    .where("moved_at", ">=", opts.movedAfter)
+    .orderBy("moved_at", "desc")
+    .orderBy("id")
+    .limit(opts.limit)
+    .execute();
+  return rows.flatMap((row) =>
+    row.moved_at === null
+      ? []
+      : [
+          {
+            ...row,
+            uid: Number(row.uid),
+            inbox_uid: row.inbox_uid === null ? null : Number(row.inbox_uid),
+            moved_at: row.moved_at,
+          },
+        ]
+  );
+}
+
 export async function insertEmail(db: DbOrTrx, ctx: TenantContext, row: NewEmail): Promise<boolean> {
   const result = await db
     .insertInto("emails")
@@ -339,14 +395,18 @@ export async function markEmailReturned(
   ctx: TenantContext,
   emailId: string,
   uid: number,
-  at: Date
-): Promise<void> {
-  await db
+  at: Date,
+  opts: { onlyOutsideInbox?: boolean } = {}
+): Promise<boolean> {
+  let query = db
     .updateTable("emails")
     .set({ returned_at: at, folder: INBOX, uid, inbox_uid: uid })
     .where("org_id", "=", ctx.orgId)
-    .where("id", "=", emailId)
-    .execute();
+    .where("id", "=", emailId);
+  // The below-cursor check must not touch a row that the normal path already moved back.
+  if (opts.onlyOutsideInbox === true) query = query.where("folder", "<>", INBOX);
+  const result = await query.executeTakeFirst();
+  return result.numUpdatedRows === 1n;
 }
 
 // Scheduler entry point: lists work across tenants, so it takes no TenantContext. Callers build a TenantContext from orgId for every later call.

@@ -4,9 +4,11 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 
 ## Stage 6 — Returned mail below the UID cursor [risky]
 
+Build fix (stage 6 review, 2026-11-07, the user approved): at Interia a system move (COPY + UID EXPUNGE) gives the mail a new UID in the folder (`emails.uid`), and a webmail move back keeps that folder UID. So the check fetches INBOX at both `inbox_uid` and `uid` of each row (at most 200 UIDs per chunk of 100 rows); `matchReturned` accepts a meta whose UID equals the row's `inbox_uid` or its `uid` (identity match, not `\Deleted`); `markEmailReturned` takes `meta.uid`. Extra test: the system COPY shape (folder `uid` ≠ `inbox_uid`), new INBOX mail moves the cursor past `uid`, then `userMove` back with `keepUidOnCopy` → `returnedBelowCursor` 1 and the row's `uid` = `inbox_uid` = the folder UID. Also: `searchSinceIn` throws `SoftError` when imapflow returns `false` (a failed SEARCH must not look like "gone → returned"); `markEmailReturned` on this path updates only a row with `folder <> 'INBOX'` and counts only changed rows; tests for the limit warn and the `CursorMovedError` branch where cheap.
+
 Checkpoint 1 result (Interia, 2026-11-07): a `UID COPY` back to INBOX gets a new UID above `UIDNEXT` (`moveBack.sameAsOriginal` false, `aboveUidNext` true), so a system Undo returns above the cursor. A user move in webmail keeps the UID (2026-11-04 note), so the below-cursor check and the folder check on each hit stay as planned.
 
-- [ ] **6.1 `checkReturnedBelowCursor` in the incremental sync (D4)**
+- [x] **6.1 `checkReturnedBelowCursor` in the incremental sync (D4)**
   - Goal: at Interia (UID kept on a move) a mail that the user puts back into INBOX is marked `returned_at` within one sync, although it is below the cursor; on an RFC server the check does no harm.
   - Files: change `apps/server/src/modules/mail/sync.ts`, `apps/server/src/modules/mail/sync-rules.ts`, `apps/server/src/modules/mail/sync-rules.test.ts`, `apps/server/src/modules/mail/repo.ts`, `apps/server/test/integration/mail-sync.test.ts`, `apps/server/test/integration/mail-repo.test.ts`.
   - Interfaces:

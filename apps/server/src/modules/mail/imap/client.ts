@@ -322,7 +322,9 @@ class ImapMailProvider implements MailProvider {
     return guard("searchSinceIn", () =>
       this.withFolder<number[]>(folder, [], async () => {
         const uids = await this.client.search({ since }, { uid: true });
-        return uids === false ? [] : uids;
+        // A failed SEARCH must not look like "no mail": the caller would read it as "gone".
+        if (uids === false) throw new SoftError("IMAP searchSinceIn: search failed");
+        return uids;
       })
     );
   }

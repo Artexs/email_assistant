@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { INBOX, type FolderMessageMeta, type MessageMeta } from "./port";
+import type { MovedRow } from "./repo";
 
 // Pure dedup and "is this mail new" rules (docs/architecture.md §6.1).
 // A known mail is never triaged again: `update_uid` and `returned` never change `status`.
@@ -149,4 +150,39 @@ export function sameMailIdentity(meta: MessageMeta, key: MailIdentity, mode: Ide
 /** Another client's delete, or an expunge that failed. */
 export function isDeleted(meta: FolderMessageMeta): boolean {
   return meta.flags.includes("\\Deleted");
+}
+
+/**
+ * D4: the metas of INBOX at the `inbox_uid` and the `uid` of moved rows (a system move gives the mail a new folder
+ * UID; a webmail move back keeps it). A meta that is not `\Deleted` and has the identity of the row at one of its
+ * UIDs is a mail that came back to INBOX below the cursor.
+ */
+export function matchReturned(
+  metas: readonly FolderMessageMeta[],
+  rows: readonly MovedRow[],
+  mode: IdentityMode = IDENTITY_MODE
+): { emailId: string; uid: number }[] {
+  const hits = new Map<string, { emailId: string; uid: number }>();
+  for (const meta of metas) {
+    if (isDeleted(meta)) continue;
+    const matches = rows.filter(
+      (candidate) =>
+        !hits.has(candidate.id) &&
+        (candidate.inbox_uid === meta.uid || candidate.uid === meta.uid) &&
+        sameMailIdentity(
+          meta,
+          {
+            messageId: candidate.message_id_header,
+            contentHash: candidate.content_hash,
+            from: candidate.from_address,
+            receivedAt: candidate.received_at,
+          },
+          mode
+        )
+    );
+    // A row whose `inbox_uid` is the meta UID wins over a row whose folder `uid` is.
+    const row = matches.find((candidate) => candidate.inbox_uid === meta.uid) ?? matches[0];
+    if (row !== undefined) hits.set(row.id, { emailId: row.id, uid: meta.uid });
+  }
+  return [...hits.values()];
 }

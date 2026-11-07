@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { FolderMessageMeta, MessageMeta } from "./port";
+import type { MovedRow } from "./repo";
 import {
   baseDedupKey,
   contentHash,
@@ -8,6 +9,7 @@ import {
   decideIncoming,
   filterAboveCursor,
   isDeleted,
+  matchReturned,
   type MailIdentity,
   type KnownCopy,
   normalizeMessageId,
@@ -324,5 +326,69 @@ describe("isDeleted", () => {
     expect(isDeleted(withFlags(["\\Seen", "\\Deleted"]))).toBe(true);
     expect(isDeleted(withFlags(["\\Seen", "\\Flagged"]))).toBe(false);
     expect(isDeleted(withFlags([]))).toBe(false);
+  });
+});
+
+describe("matchReturned", () => {
+  const withFlags = (overrides: Partial<FolderMessageMeta>): FolderMessageMeta => ({
+    ...meta(),
+    flags: [],
+    ...overrides,
+  });
+  const movedRow = (id: string, inboxUid: number, overrides: Partial<MovedRow> = {}): MovedRow => ({
+    id,
+    uid: 3,
+    inbox_uid: inboxUid,
+    folder: "AI/Info",
+    message_id_header: "<a1@example.test>",
+    content_hash: contentHash(meta()),
+    from_address: "boss@example.test",
+    received_at: new Date("2026-11-03T10:05:00Z"),
+    moved_at: new Date("2026-11-03T11:00:00Z"),
+    ...overrides,
+  });
+
+  test("a meta at the inbox_uid of a row with the same identity is a hit", () => {
+    expect(matchReturned([withFlags({ uid: 10 })], [movedRow("e1", 10)])).toEqual([{ emailId: "e1", uid: 10 }]);
+  });
+
+  test("a meta at the folder uid of a row (inbox_uid differs) with the same identity is a hit", () => {
+    expect(matchReturned([withFlags({ uid: 4 })], [movedRow("e1", 1, { uid: 4 })])).toEqual([
+      { emailId: "e1", uid: 4 },
+    ]);
+  });
+
+  test("metas at both uids of one row give one hit", () => {
+    const metas = [withFlags({ uid: 1 }), withFlags({ uid: 4 })];
+    expect(matchReturned(metas, [movedRow("e1", 1, { uid: 4 })])).toEqual([{ emailId: "e1", uid: 1 }]);
+  });
+
+  test("the same meta with \\Deleted is no hit", () => {
+    expect(matchReturned([withFlags({ uid: 10, flags: ["\\Deleted"] })], [movedRow("e1", 10)])).toEqual([]);
+  });
+
+  test("the same uid with another identity is no hit", () => {
+    const other = withFlags({ uid: 10, messageId: "<other@example.test>" });
+    expect(matchReturned([other], [movedRow("e1", 10)])).toEqual([]);
+  });
+
+  test("a meta at the folder uid of a row with another identity is no hit", () => {
+    const other = withFlags({ uid: 4, messageId: "<other@example.test>" });
+    expect(matchReturned([other], [movedRow("e1", 1, { uid: 4 })])).toEqual([]);
+  });
+
+  test("one meta matching several rows prefers the row whose inbox_uid is the meta uid", () => {
+    const rows = [movedRow("e1", 1, { uid: 9 }), movedRow("e2", 9, { uid: 3 })];
+    expect(matchReturned([withFlags({ uid: 9 })], rows)).toEqual([{ emailId: "e2", uid: 9 }]);
+  });
+
+  test("a meta with the uid of no row is ignored", () => {
+    expect(matchReturned([withFlags({ uid: 11 })], [movedRow("e1", 10)])).toEqual([]);
+  });
+
+  test("two rows and one hit", () => {
+    const metas = [withFlags({ uid: 10 }), withFlags({ uid: 12, messageId: "<z@example.test>" })];
+    const rows = [movedRow("e1", 10), movedRow("e2", 12)];
+    expect(matchReturned(metas, rows)).toEqual([{ emailId: "e1", uid: 10 }]);
   });
 });
