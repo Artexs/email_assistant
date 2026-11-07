@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress.** Plan written (5 stages), Opus plan review PASS; stages 1–5 done (stage 1 CI proof: PR #1, job `image` green); left: CI on the PR, merge into `master`, CI on `master`, move to `done/`.
+> **Status 2026-11-07 — done.** All 5 ideas done (stages 1–5, reviews PASS, group review PASS). Merged into `master` with `git merge --no-ff`. Follow-up: `tasks/planned/flaky-mail-seed-cli-test.md`.
 
 Git mode: worktree (`../email_assistant-wt/fake-telegram-followups`, branch `task/fake-telegram-followups`).
 
@@ -307,3 +307,4 @@ Resolved by the Opus plan review (2026-11-07), now facts in the steps:
 - 2026-11-07: Stage 5 built (`TELEGRAM_API_ROOT` bullet after D8 in § 6.2), review PASS; 2 wording minors fixed by the main session (warn only when Telegram is on; only the Telegram jobs of `job:run`).
 - 2026-11-07: Stage 2 live run (implementer, throwaway DBs `plancheck`, `nomark`; no passwords recorded): create exit 0 with both env lines; reuse exit 0; `app` reads `organizations`, `migrator` reads `schema_migrations` (8); unmarked `nomark` create and `--drop` exit 1 (refusal); `--drop` exit 0, again exit 0 (`no database`); `Bad.Name` exit 2. After the run `pg_database` held `email_assistant` and `email_assistant_s19` untouched. The stage reviewer also checked `--drop` in use (exit 1), non-loopback and base-database refusals (exit 1), empty `POSTGRES_PASSWORD` (exit 2) and a wrong password (exit 1, log shows only `error 28P01`); by then S4 had dropped `email_assistant_s19` itself.
 - 2026-11-07: Group review of stages 1–5 (`0ed32df..5e87f00`): PASS, lint, typecheck, `test:unit` 1125 pass.
+- 2026-11-07: CI on PR #1 head `2129b61` green (run 42418697512: `ci` and `image`). All 5 ideas done, none dropped. Task moved to `done/` and merged into `master`.
