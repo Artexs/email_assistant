@@ -13,7 +13,7 @@
     "dev": "bun --watch apps/server/src/main.ts",
     "start": "bun apps/server/src/main.ts",
     "test:unit": "bun test packages/core apps/server/src tools/fake-telegram/src",
-    "test:int": "bun test apps/server/test",
+    "test:int": "bun test apps/server/test tools/fake-telegram/test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

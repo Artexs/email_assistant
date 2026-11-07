@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress — stages 1–4 done (PASS).** Left: stages 5–6; the 1.1 Docker image check (the daemon refuses this shell user; CI does not build the image). Git mode: worktree (`../email_assistant-wt/fake-telegram`, branch `task/fake-telegram`). Read "Parallel work with S4" first.
+> **Status 2026-11-07 — in progress — stages 1–5 done (PASS).** Left: stage 6 (README, live agent run), the full `test:int`, the done-checklist, the merge; the 1.1 Docker image check (the daemon refuses this shell user; CI does not build the image). Git mode: worktree (`../email_assistant-wt/fake-telegram`, branch `task/fake-telegram`). Read "Parallel work with S4" first.
 
 # Fake Telegram: a local Bot API emulator for agent-run dev tests
 
@@ -370,7 +370,7 @@ TS API and a non-interactive CLI (`fake-tg serve | send | press | read | wait`) 
 
 An automated test that runs the fake, the server Telegram runtime, the dev DB and GreenMail: link the chat → urgent notice → digest → button press → result checked in the DB and in GreenMail. Runs in `bun run test:int` and in CI (U5).
 
-- [ ] **5.1 Test command and GreenMail mailbox setup**
+- [x] **5.1 Test command and GreenMail mailbox setup**
   - Goal: `test:int` runs the tool's end-to-end folder, and a helper builds an org with a real GreenMail mailbox in a test transaction.
   - Files: root `package.json` (`test:int` becomes `bun test apps/server/test tools/fake-telegram/test`), `tools/fake-telegram/test/setup.ts` (new).
   - Interfaces:
@@ -397,7 +397,7 @@ An automated test that runs the fake, the server Telegram runtime, the dev DB an
   - Done when: checks pass; `bun run test:unit` output lists no file of `tools/fake-telegram/test`.
   - Out of scope: the test flow itself; changes in `apps/*`.
 
-- [ ] **5.2 The end-to-end test**
+- [x] **5.2 The end-to-end test**
   - Goal: one test runs link → urgent notice → digest → button press against the fake, the real runtime, the DB and GreenMail, and checks the result in the DB and in GreenMail.
   - Files: `tools/fake-telegram/test/e2e.test.ts` (new).
   - Interfaces: uses `startFakeTelegram`, `createFakeTelegramClient`, `FAKE_TOKEN`, `DEFAULT_CHAT_ID` (stages 1–3), `createTelegramRuntime` and `createLinkToken` from `apps/server/src/modules/channels`, `createMailSyncJob` and `openImapProvider` from `apps/server/src/modules/mail`, `createTriageJob` and `createLlmPause` from `apps/server/src/modules/triage`, `createCommitterJob` from `apps/server/src/modules/actions`, `testDb` and `withRollback` from `apps/server/test/integration/helpers`, the 5.1 helpers.
@@ -484,3 +484,4 @@ Answered by the user on 2026-11-07: (a) for all 4 (the recommendations). The liv
 - 2026-11-07: Stage 2 built and reviewed: PASS with 2 minors (2 missing tests added; a harmless `?? ""` kept). User: run the whole plan without stops; use the recommendations when unsure. Checks: lint exit 0, typecheck all exit 0, `test:unit` 970 pass 0 fail.
 - 2026-11-07: Stage 3 built and reviewed: PASS with 7 minors; 6 fixed (driver `read` gets `strict` for the CLI, so `fake-tg read` of an unknown chat exits 1; `waitFor` keeps polling), negative `--chat` left for later. Checks: lint exit 0, typecheck all exit 0, `test:unit` 993 pass 0 fail.
 - 2026-11-07: `origin/master` merged into the branch before stage 4 (`51ca1ac`, no conflicts). Stage 4 built and reviewed: PASS, 1 minor (an explicit default port is refused; safe, no fix). Checks: lint exit 0, typecheck all exit 0, `test:unit` 1021 pass 0 fail, `telegram-api-root.test.ts` 2 pass.
+- 2026-11-07: Stage 5 built and reviewed: PASS, no findings. `e2e.test.ts` 1 pass (16 expects, about 2 s); it fails when the `flag` switch is off (implementer negative check). Full `test:int` not run yet (shared runtime with S4).
