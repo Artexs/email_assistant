@@ -10,6 +10,7 @@ import {
   quotaDayStart,
   type Category,
   type CategoryPolicy,
+  type DelegationInput,
   type MailboxMode,
   type PlannedAction,
   type SenderRule,
@@ -21,9 +22,10 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { describeError, SoftError } from "../../platform/errors";
 import { LlmBlockedError, LlmConfigError, llmErrorCode, type LlmClient, type LlmUsage } from "../../platform/llm";
 import { createLog } from "../../platform/log";
-import { createPlanned, type PlannedActionInput } from "../actions";
+import { createPlanned, mergeActionPayload, type CreatedAction, type PlannedActionInput } from "../actions";
 import { auditEvents, countLlmCallsSince, recordAudit } from "../audit";
 import { lockSettingsForShare } from "../config";
+import { createDelegation, detectReply, markAnswered } from "../delegation";
 import { finishEmail, isSyntheticMessageId, listThreadContext, releaseEmail, type ClaimedEmail } from "../mail";
 
 import { classifyEmail, type ClassifierEmail } from "./classifier";
@@ -42,6 +44,10 @@ export interface TriageMailbox {
   policy: CategoryPolicy;
   rules: readonly SenderRule[];
   movesSupported: boolean;
+  // The active delegates of the organization, read once per mailbox run.
+  delegates: { id: string; name: string; email: string; tags: string[] }[];
+  // The IANA zone of the organization (due dates).
+  timezone: string;
 }
 
 export interface TriageDecision {
@@ -59,6 +65,8 @@ export interface TriageDecision {
   usage: LlmUsage | null;
   // The code of the `email.triaged` audit row.
   auditReasonCode: string;
+  // The delegation plan input: only for a mail that the model called `delegation`.
+  delegation: DelegationInput | null;
 }
 
 export interface TriageDeps {
@@ -101,6 +109,56 @@ function payloadOf(action: PlannedAction): Record<string, unknown> {
   }
 }
 
+// D7: a delegate's reply closes the open delegation. Runs in the triage transaction, after `finishEmail`.
+async function markReply(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  email: ClaimedEmail,
+  now: Date
+): Promise<string | null> {
+  const found = await detectReply(trx, ctx, mailboxId, {
+    fromAddress: email.from_address,
+    inReplyTo: email.in_reply_to,
+    referencesHeader: email.references_header,
+  });
+  if (found === null) return null;
+  return (await markAnswered(trx, ctx, found.delegationId, { emailId: email.id, at: now })) ? found.delegationId : null;
+}
+
+// D6: a `ready` delegation draft with its send gets the `delegations` row; both payloads get its id (D2).
+async function createDelegationRow(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  mailbox: TriageMailbox,
+  email: ClaimedEmail,
+  decision: TriageDecision,
+  items: readonly PlannedActionInput[],
+  created: readonly CreatedAction[],
+  now: Date
+): Promise<string | null> {
+  if (decision.finalCategory !== "delegation") return null;
+  const draft = created.find((action) => action.type === "create_draft");
+  const send = created.find((action) => action.type === "send");
+  const payload = items.find((item) => item.type === "create_draft")?.payload as
+    | { kind?: string; delegate_id: string; task: string; due_date: string }
+    | undefined;
+  if (!draft || !send || draft.status !== "ready" || payload?.kind !== "delegation") return null;
+  const delegationId = await createDelegation(trx, ctx, {
+    mailboxId: mailbox.id,
+    emailId: email.id,
+    delegateId: payload.delegate_id,
+    draftActionId: draft.id,
+    sendActionId: send.id,
+    task: payload.task,
+    dueDate: payload.due_date || null,
+    timezone: mailbox.timezone,
+    now,
+  });
+  await mergeActionPayload(trx, ctx, [draft.id, send.id], { delegation_id: delegationId });
+  return delegationId;
+}
+
 // One transaction: the email status, the result, the actions and the audit rows.
 // A lost claim (another run took the mail) returns `lost` and writes nothing; it does not throw.
 // The settings row is share-locked first, then the email row: a setter (FOR UPDATE on settings, then the action rows)
@@ -111,10 +169,15 @@ export async function saveTriage(
   ctx: TenantContext,
   mailbox: TriageMailbox,
   email: ClaimedEmail,
-  decision: TriageDecision
+  decision: TriageDecision,
+  now: Date
 ): Promise<TriageOutcome> {
   const categoryAuto = autoFor(mailbox.policy, decision.finalCategory);
-  const items: PlannedActionInput[] = planActions(decision.finalCategory, decision.summary).map((action) => ({
+  const items: PlannedActionInput[] = planActions(
+    decision.finalCategory,
+    decision.summary,
+    decision.delegation ?? undefined
+  ).map((action) => ({
     type: action.type,
     payload: payloadOf(action),
     status: actionStatusFor(
@@ -127,7 +190,7 @@ export async function saveTriage(
         movesSupported: mailbox.movesSupported,
       })
     ),
-    // TODO stage 9: pass `dependsOn` of a send to `createPlanned`.
+    ...(action.type === "send" ? { dependsOn: action.dependsOn } : {}),
     idempotencyKey: `${email.id}:${action.type}`,
   }));
 
@@ -144,6 +207,7 @@ export async function saveTriage(
       log.warn(`triage ${email.id}: lost the claim`);
       return { kind: "lost" };
     }
+    const answeredDelegationId = await markReply(trx, ctx, mailbox.id, email, now);
     await insertTriageResult(trx, ctx, {
       emailId: email.id,
       category: decision.finalCategory,
@@ -162,6 +226,7 @@ export async function saveTriage(
       latencyMs: decision.usage?.latencyMs ?? null,
     });
     const created = await createPlanned(trx, ctx, email.id, items);
+    const delegationId = await createDelegationRow(trx, ctx, mailbox, email, decision, items, created, now);
     await recordAudit(trx, ctx, {
       emailId: email.id,
       actor: "system",
@@ -174,6 +239,8 @@ export async function saveTriage(
         confidence: decision.confidence,
         prompt_version: decision.promptVersion,
         model: decision.model,
+        ...(delegationId === null ? {} : { delegation_id: delegationId }),
+        ...(answeredDelegationId === null ? {} : { answered_delegation_id: answeredDelegationId }),
       },
     });
     for (const action of created) {
@@ -205,20 +272,28 @@ export async function finishTriageError(
   email: ClaimedEmail
 ): Promise<TriageOutcome> {
   const rules = applyHardRules(email.from_address, mailbox.rules);
-  return saveTriage(deps.db, ctx, mailbox, email, {
-    finalCategory: "unsure",
-    modelCategory: null,
-    confidence: 0,
-    reasonCode: "triage_error",
-    reason: null,
-    summary: null,
-    fields: {},
-    vip: rules.kind === "spam" ? false : rules.vip,
-    model: null,
-    promptVersion: null,
-    usage: null,
-    auditReasonCode: "triage_error",
-  });
+  return saveTriage(
+    deps.db,
+    ctx,
+    mailbox,
+    email,
+    {
+      finalCategory: "unsure",
+      modelCategory: null,
+      confidence: 0,
+      reasonCode: "triage_error",
+      reason: null,
+      summary: null,
+      fields: {},
+      vip: rules.kind === "spam" ? false : rules.vip,
+      model: null,
+      promptVersion: null,
+      usage: null,
+      auditReasonCode: "triage_error",
+      delegation: null,
+    },
+    deps.now()
+  );
 }
 
 // The error rules for an error from `classifyEmail`; the `llm.call` row is already written.
@@ -243,20 +318,28 @@ async function handleClassifyError(
   }
   if (error instanceof LlmBlockedError) {
     deps.pause.reset();
-    return saveTriage(deps.db, ctx, mailbox, email, {
-      finalCategory: "unsure",
-      modelCategory: null,
-      confidence: 0,
-      reasonCode: "llm_blocked",
-      reason: null,
-      summary: null,
-      fields: {},
-      vip,
-      model: null,
-      promptVersion: PROMPT_VERSION,
-      usage: null,
-      auditReasonCode: "llm_blocked",
-    });
+    return saveTriage(
+      deps.db,
+      ctx,
+      mailbox,
+      email,
+      {
+        finalCategory: "unsure",
+        modelCategory: null,
+        confidence: 0,
+        reasonCode: "llm_blocked",
+        reason: null,
+        summary: null,
+        fields: {},
+        vip,
+        model: null,
+        promptVersion: PROMPT_VERSION,
+        usage: null,
+        auditReasonCode: "llm_blocked",
+        delegation: null,
+      },
+      now
+    );
   }
   if (email.attempts + 1 < HARD_ERROR_TRIES) {
     const released = await releaseEmail(deps.db, ctx, email.id, email.locked_at, {
@@ -282,6 +365,8 @@ async function skipTooOld(
       log.warn(`triage ${email.id}: lost the claim`);
       return { kind: "lost" };
     }
+    // A late reply still closes the loop.
+    await markReply(trx, ctx, mailbox.id, email, deps.now());
     await recordAudit(trx, ctx, {
       emailId: email.id,
       actor: "system",
@@ -305,22 +390,30 @@ export async function triageOne(
   if (email.backfilled_at === null && email.received_at.getTime() < deps.now().getTime() - MAX_AGE_MS) {
     return skipTooOld(deps, ctx, mailbox, email);
   }
-  const rules = applyHardRules(email.from_address, mailbox.rules);
+  const rules = applyHardRules(email.from_address, mailbox.rules, { delegation: mailbox.delegates.length > 0 });
   if (rules.kind === "spam") {
-    return saveTriage(deps.db, ctx, mailbox, email, {
-      finalCategory: "spam",
-      modelCategory: null,
-      confidence: 1,
-      reasonCode: "blocklist",
-      reason: null,
-      summary: null,
-      fields: {},
-      vip: false,
-      model: null,
-      promptVersion: null,
-      usage: null,
-      auditReasonCode: "blocklist",
-    });
+    return saveTriage(
+      deps.db,
+      ctx,
+      mailbox,
+      email,
+      {
+        finalCategory: "spam",
+        modelCategory: null,
+        confidence: 1,
+        reasonCode: "blocklist",
+        reason: null,
+        summary: null,
+        fields: {},
+        vip: false,
+        model: null,
+        promptVersion: null,
+        usage: null,
+        auditReasonCode: "blocklist",
+        delegation: null,
+      },
+      deps.now()
+    );
   }
 
   // Every call attempt counts, so the cap holds also when calls fail.
@@ -360,7 +453,7 @@ export async function triageOne(
       email: classifierEmail,
       sender: { whitelisted: rules.whitelisted, vip: rules.vip, noreply: rules.noreply },
       allowed: rules.allowed,
-      delegates: [],
+      delegates: mailbox.delegates.map(({ id, name, tags }) => ({ id, name, tags })),
     });
   } catch (error) {
     // A failed audit write must not hide the LLM error from the rules below.
@@ -404,18 +497,40 @@ export async function triageOne(
   });
 
   const { category, belowThreshold } = decideCategory(analysis, mailbox.policy);
-  return saveTriage(deps.db, ctx, mailbox, email, {
-    finalCategory: category,
-    modelCategory: analysis.category,
-    confidence: analysis.confidence,
-    reasonCode: analysis.reason_code,
-    reason: analysis.reason,
-    summary: analysis.summary,
-    fields: analysis.fields,
-    vip: rules.vip,
-    model: usage.model,
-    promptVersion,
-    usage,
-    auditReasonCode: belowThreshold ? "below_threshold" : analysis.reason_code,
-  });
+  const delegate = mailbox.delegates.find((candidate) => candidate.id === analysis.fields.delegate_id);
+  const delegation: DelegationInput | null =
+    analysis.category === "delegation"
+      ? {
+          delegateId: delegate?.id ?? null,
+          delegateName: delegate?.name ?? null,
+          to: delegate?.email ?? null,
+          task: analysis.fields.task,
+          clarification: analysis.fields.clarification,
+          dueDate: analysis.fields.due_date,
+          language: analysis.fields.language,
+          senderAddress: email.from_address,
+        }
+      : null;
+  return saveTriage(
+    deps.db,
+    ctx,
+    mailbox,
+    email,
+    {
+      finalCategory: category,
+      modelCategory: analysis.category,
+      confidence: analysis.confidence,
+      reasonCode: analysis.reason_code,
+      reason: analysis.reason,
+      summary: analysis.summary,
+      fields: analysis.fields,
+      vip: rules.vip,
+      model: usage.model,
+      promptVersion,
+      usage,
+      auditReasonCode: belowThreshold ? "below_threshold" : analysis.reason_code,
+      delegation,
+    },
+    deps.now()
+  );
 }

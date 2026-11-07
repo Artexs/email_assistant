@@ -62,6 +62,8 @@ export interface ClaimedEmail {
   body_text: string | null;
   thread_key: string;
   message_id_header: string | null;
+  in_reply_to: string | null;
+  references_header: string | null;
 }
 
 // Int8 columns compare as strings in Kysely `where`.
@@ -640,6 +642,8 @@ export async function claimEmails(
       "e.body_text",
       "e.thread_key",
       "e.message_id_header",
+      "e.in_reply_to",
+      "e.references_header",
     ])
     .execute();
   // RETURNING has no order.

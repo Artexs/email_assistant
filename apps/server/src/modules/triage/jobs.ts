@@ -7,7 +7,9 @@ import { describeError } from "../../platform/errors";
 import type { LlmClient } from "../../platform/llm";
 import { createLog } from "../../platform/log";
 import { getMailboxSettings, listSenderRules } from "../config";
+import { listDelegates } from "../delegation";
 import { claimEmails, getMailbox, listSyncTargets, releaseEmail, type ClaimedEmail } from "../mail";
+import { getOrganization } from "../tenancy";
 
 import type { LlmPause } from "./pause";
 import { finishTriageError, HARD_ERROR_TRIES, triageOne, type TriageMailbox } from "./service";
@@ -46,6 +48,8 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
     async run() {
       // The client is paused: no claim, no log line.
       if (deps.pause.isPaused(deps.now())) return;
+      // The zone of an organization, read once per run.
+      const timezones = new Map<string, string>();
       try {
         const targets = await listSyncTargets(deps.db);
         for (const { orgId, mailboxId } of targets) {
@@ -70,6 +74,20 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
               continue;
             }
 
+            let timezone = timezones.get(orgId);
+            if (timezone === undefined) {
+              const organization = await getOrganization(deps.db, ctx);
+              if (organization === undefined) continue;
+              timezone = organization.timezone;
+              timezones.set(orgId, timezone);
+            }
+            const delegates = (await listDelegates(deps.db, ctx, { activeOnly: true })).map((delegate) => ({
+              id: delegate.id,
+              name: delegate.name,
+              email: delegate.email,
+              tags: delegate.competence_tags,
+            }));
+
             const capabilities: { move?: boolean; uidplus?: boolean } = row.capabilities;
             mailbox = {
               id: mailboxId,
@@ -79,7 +97,10 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
               policy: parseCategoryPolicy(settings.category_policy),
               rules: await listSenderRules(deps.db, ctx, mailboxId),
               movesSupported: capabilities.move === true || capabilities.uidplus === true,
+              delegates,
+              timezone,
             };
+            log.debug(`triage ${mailboxId}: delegates ${delegates.length}`);
 
             const now = deps.now();
             claimed = await claimEmails(deps.db, ctx, mailboxId, {

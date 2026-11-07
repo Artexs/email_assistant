@@ -19,6 +19,7 @@ import {
   lockActionsForUndo,
   lockLatestOriginalMove,
   markNotified,
+  mergeActionPayload,
   markUndone,
   releaseAction,
   releaseActions,
@@ -1083,6 +1084,100 @@ describe("tenant filter (7.1b)", () => {
       await sql`rollback to savepoint cross_org`.execute(trx);
       expect((await actionState(trx, move)).status).toBe("applied");
       expect((await actionState(trx, flag)).notified_at).toBeNull();
+    });
+  });
+});
+
+describe("createPlanned with dependsOn and mergeActionPayload", () => {
+  const draftOf = (emailId: string, suffix = ""): PlannedActionInput => ({
+    type: "create_draft",
+    payload: { kind: "delegation" },
+    status: "ready",
+    idempotencyKey: `${emailId}:create_draft${suffix}`,
+  });
+  const sendOf = (emailId: string, suffix = ""): PlannedActionInput => ({
+    type: "send",
+    payload: { kind: "delegation" },
+    status: "awaiting_approval",
+    idempotencyKey: `${emailId}:send${suffix}`,
+    dependsOn: "create_draft",
+  });
+
+  test("the send links to the draft of the same call; the same call again inserts nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      const emailId = await insertTestEmail(trx, a.ctx, a.mailboxId);
+      const created = await createPlanned(trx, a.ctx, emailId, [draftOf(emailId), sendOf(emailId)]);
+      expect(created.map((row) => row.type)).toEqual(["create_draft", "send"]);
+      const rows = await actionRows(trx, a.ctx.orgId);
+      const draftRow = rows.find((row) => row.type === "create_draft");
+      const sendRow = rows.find((row) => row.type === "send");
+      const dependsOn = await trx
+        .selectFrom("actions")
+        .select("depends_on_action_id")
+        .where("id", "=", sendRow?.id ?? "")
+        .executeTakeFirstOrThrow();
+      expect(dependsOn.depends_on_action_id).toBe(draftRow?.id ?? null);
+
+      expect(await createPlanned(trx, a.ctx, emailId, [draftOf(emailId), sendOf(emailId)])).toEqual([]);
+      expect(await actionRows(trx, a.ctx.orgId)).toHaveLength(2);
+    });
+  });
+
+  test("a send alone links to the draft whose key exists", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      const emailId = await insertTestEmail(trx, a.ctx, a.mailboxId);
+      const [first] = await createPlanned(trx, a.ctx, emailId, [draftOf(emailId)]);
+      const created = await createPlanned(trx, a.ctx, emailId, [sendOf(emailId)]);
+      expect(created.map((row) => row.type)).toEqual(["send"]);
+      const row = await trx
+        .selectFrom("actions")
+        .select("depends_on_action_id")
+        .where("id", "=", created[0]?.id ?? "")
+        .executeTakeFirstOrThrow();
+      expect(row.depends_on_action_id).toBe(first?.id ?? null);
+    });
+  });
+
+  test("a lone reminder send links to the reminder draft, not the delegation draft", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      const emailId = await insertTestEmail(trx, a.ctx, a.mailboxId);
+      const reminder = ":reminder:2026-11-08";
+      const [delegationDraft] = await createPlanned(trx, a.ctx, emailId, [draftOf(emailId), sendOf(emailId)]);
+      const [reminderDraft] = await createPlanned(trx, a.ctx, emailId, [draftOf(emailId, reminder)]);
+      const created = await createPlanned(trx, a.ctx, emailId, [sendOf(emailId, reminder)]);
+      const row = await trx
+        .selectFrom("actions")
+        .select("depends_on_action_id")
+        .where("id", "=", created[0]?.id ?? "")
+        .executeTakeFirstOrThrow();
+      expect(row.depends_on_action_id).toBe(reminderDraft?.id ?? null);
+      expect(row.depends_on_action_id).not.toBe(delegationDraft?.id ?? null);
+    });
+  });
+
+  test("a send without a draft in the call and no existing key throws", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      const emailId = await insertTestEmail(trx, a.ctx, a.mailboxId);
+      await expect(createPlanned(trx, a.ctx, emailId, [sendOf(emailId)])).rejects.toThrow("send needs its draft");
+    });
+  });
+
+  test("mergeActionPayload adds a key, keeps the others and stays in the context org", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      const emailId = await insertTestEmail(trx, a.ctx, a.mailboxId);
+      const created = await createPlanned(trx, a.ctx, emailId, [draftOf(emailId), sendOf(emailId)]);
+      const ids = created.map((row) => row.id);
+
+      expect(await mergeActionPayload(trx, b.ctx, ids, { delegation_id: "x" })).toBe(0);
+      expect(await mergeActionPayload(trx, a.ctx, ids, { delegation_id: "x" })).toBe(2);
+      const rows = await actionRows(trx, a.ctx.orgId);
+      for (const row of rows) expect(row.payload).toEqual({ kind: "delegation", delegation_id: "x" });
+      expect(await mergeActionPayload(trx, a.ctx, [], { delegation_id: "y" })).toBe(0);
     });
   });
 });

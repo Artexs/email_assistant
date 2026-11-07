@@ -7,7 +7,7 @@ import { createLlmPause, createTriageJob, triageOne, type TriageScope } from "..
 import type { DB, TenantContext } from "../../src/platform/db";
 import { LlmConfigError, LlmSoftError, type LlmClient } from "../../src/platform/llm";
 
-import { createOrgWithMailbox, insertTestEmail, pauseOtherMailboxes } from "./fixtures";
+import { createOrgWithMailbox, insertDelegate, insertTestEmail, pauseOtherMailboxes } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -34,24 +34,31 @@ afterEach(() => {
 
 interface FakeLlm extends LlmClient {
   prompts: string[];
+  allowed: string[][];
 }
+
+const probeCategories = ["urgent", "needs_reply", "info", "notification", "spam", "unsure", "delegation"];
+const infoAnswer = {
+  category: "info",
+  confidence: 0.9,
+  reason_code: "newsletter",
+  reason: "a newsletter",
+  summary: "short summary",
+  fields: { due_date: null, language: "pl", delegate_id: null, task: null, clarification: null },
+};
 
 function fakeLlm(): FakeLlm {
   const prompts: string[] = [];
+  const allowed: string[][] = [];
   return {
     classifierModel: "fake-model",
     prompts,
+    allowed,
     async classify(req) {
       prompts.push(req.prompt);
+      allowed.push(probeCategories.filter((category) => req.schema.safeParse({ ...infoAnswer, category }).success));
       return {
-        data: req.schema.parse({
-          category: "info",
-          confidence: 0.9,
-          reason_code: "newsletter",
-          reason: "a newsletter",
-          summary: "short summary",
-          fields: { due_date: null, language: "pl", delegate_id: null, task: null, clarification: null },
-        }),
+        data: req.schema.parse(infoAnswer),
         usage: { model: "fake-model", tokensIn: 100, tokensOut: 20, latencyMs: 300 },
       };
     },
@@ -101,6 +108,41 @@ describe("createTriageJob", () => {
       expect(llm.prompts[1]).toContain("second");
       expect(llm.prompts[2]).toContain("third");
       for (const id of [oldest, middle, newest]) expect((await emailRow(trx, id)).status).toBe("triaged");
+    });
+  });
+
+  test("the classifier gets the active delegates and the delegation category only with delegates", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const { ctx, mailboxId } = await mailboxWithSettings(trx);
+      const anna = await insertDelegate(trx, ctx, { name: "Anna" });
+      const bob = await insertDelegate(trx, ctx, { name: "Bob" });
+      await insertDelegate(trx, ctx, { name: "Cat", active: false });
+      await insertTestEmail(trx, ctx, mailboxId);
+
+      const llm = fakeLlm();
+      await job(trx, llm, { kind: "all", mailboxAddress: await addressOf(trx, mailboxId) }).run();
+      expect(llm.allowed).toHaveLength(1);
+      expect(llm.allowed[0]).toHaveLength(6);
+      expect(llm.allowed[0]).toContain("delegation");
+      expect(llm.prompts[0]).toContain(anna);
+      expect(llm.prompts[0]).toContain(bob);
+      expect(llm.prompts[0]).toContain("Anna");
+      expect(llm.prompts[0]).not.toContain("Cat");
+    });
+  });
+
+  test("without delegates the classifier gets 5 categories and no delegate", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const { ctx, mailboxId } = await mailboxWithSettings(trx);
+      await insertDelegate(trx, ctx, { name: "Cat", active: false });
+      await insertTestEmail(trx, ctx, mailboxId);
+
+      const llm = fakeLlm();
+      await job(trx, llm, { kind: "all", mailboxAddress: await addressOf(trx, mailboxId) }).run();
+      expect(llm.allowed[0]).toHaveLength(5);
+      expect(llm.allowed[0]).not.toContain("delegation");
     });
   });
 

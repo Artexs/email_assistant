@@ -33,6 +33,7 @@ export {
   lockSend,
   markNotified,
   markUndone,
+  mergeActionPayload,
   releaseAction,
   releaseActions,
 } from "./repo";

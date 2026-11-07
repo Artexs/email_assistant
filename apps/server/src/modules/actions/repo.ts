@@ -11,6 +11,7 @@ import { sql, type Expression, type ExpressionBuilder, type SqlBool, type Transa
 import { z } from "zod";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
+import { HardError } from "../../platform/errors";
 import { mailKindFilter } from "../mail";
 
 type DbOrTrx = Db | Transaction<DB>;
@@ -22,6 +23,8 @@ export interface PlannedActionInput {
   payload: Record<string, unknown>;
   status: "ready" | "awaiting_approval" | "logged";
   idempotencyKey: string;
+  // The create_draft item of the same call.
+  dependsOn?: "create_draft";
 }
 
 export interface CreatedAction {
@@ -37,33 +40,98 @@ export interface ActionRow {
   payload: unknown;
 }
 
+// The draft key of a send key: the `:send` segment right after the email id becomes `:create_draft`
+// (`<email>:send` -> `<email>:create_draft`, `<email>:send:reminder:<day>` -> `<email>:create_draft:reminder:<day>`).
+function draftKeyOf(emailId: string, sendKey: string): string {
+  const prefix = `${emailId}:send`;
+  if (sendKey !== prefix && !sendKey.startsWith(`${prefix}:`)) {
+    throw new HardError("send needs its draft");
+  }
+  return `${emailId}:create_draft${sendKey.slice(prefix.length)}`;
+}
+
 // The status change of the email and these rows go in one transaction: the caller passes `trx`.
-// A key that exists in this org inserts nothing; the result holds only the inserted rows.
+// One insert per item in the given order: a send needs the id of its draft (`dependsOn`: the draft of the call, else
+// the draft of this org whose key is the send key with `:send` -> `:create_draft`; none throws). A key that exists in
+// this org inserts nothing; the result holds only the inserted rows.
 export async function createPlanned(
   db: DbOrTrx,
   ctx: TenantContext,
   emailId: string,
   items: PlannedActionInput[]
 ): Promise<CreatedAction[]> {
-  if (items.length === 0) {
-    return [];
-  }
-  const rows = await db
-    .insertInto("actions")
-    .values(
-      items.map((item) => ({
+  const created: CreatedAction[] = [];
+  let draftId: string | undefined;
+  for (const item of items) {
+    let dependsOnId: string | null = null;
+    if (item.dependsOn === "create_draft") {
+      // A call with the send alone (its draft exists from an earlier call) finds the draft by its key.
+      const existing =
+        draftId ??
+        (
+          await db
+            .selectFrom("actions")
+            .select("id")
+            .where("org_id", "=", ctx.orgId)
+            .where("idempotency_key", "=", draftKeyOf(emailId, item.idempotencyKey))
+            .where("type", "=", "create_draft")
+            .executeTakeFirst()
+        )?.id;
+      if (existing === undefined) {
+        throw new HardError("send needs its draft");
+      }
+      dependsOnId = existing;
+    }
+    const row = await db
+      .insertInto("actions")
+      .values({
         org_id: ctx.orgId,
         email_id: emailId,
         type: item.type,
         payload: JSON.stringify(item.payload),
         status: item.status,
         idempotency_key: item.idempotencyKey,
-      }))
-    )
-    .onConflict((oc) => oc.columns(["org_id", "idempotency_key"]).doNothing())
-    .returning(["id", "type", "status"])
-    .execute();
-  return rows.map((row) => ({ id: row.id, type: actionTypeSchema.parse(row.type), status: row.status }));
+        depends_on_action_id: dependsOnId,
+      })
+      .onConflict((oc) => oc.columns(["org_id", "idempotency_key"]).doNothing())
+      .returning(["id", "type", "status"])
+      .executeTakeFirst();
+    if (row !== undefined) {
+      created.push({ id: row.id, type: actionTypeSchema.parse(row.type), status: row.status });
+    }
+    if (item.type === "create_draft") {
+      draftId =
+        row?.id ??
+        (
+          await db
+            .selectFrom("actions")
+            .select("id")
+            .where("org_id", "=", ctx.orgId)
+            .where("idempotency_key", "=", item.idempotencyKey)
+            .executeTakeFirstOrThrow()
+        ).id;
+    }
+  }
+  return created;
+}
+
+// payload = payload || patch, in the context org. Returns the row count.
+export async function mergeActionPayload(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  ids: readonly string[],
+  patch: Record<string, unknown>
+): Promise<number> {
+  if (ids.length === 0) {
+    return 0;
+  }
+  const result = await db
+    .updateTable("actions")
+    .set({ payload: sql`payload || ${JSON.stringify(patch)}::jsonb` })
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "in", [...ids])
+    .executeTakeFirst();
+  return Number(result.numUpdatedRows);
 }
 
 // Oldest first.

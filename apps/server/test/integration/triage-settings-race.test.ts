@@ -36,6 +36,7 @@ const decision: TriageDecision = {
   promptVersion: "classifier-v1",
   usage: null,
   auditReasonCode: "newsletter",
+  delegation: null,
 };
 
 // Own org, committed: the setter and the writer run on separate connections. The caller cleans up.
@@ -67,6 +68,8 @@ async function committedSetup() {
       policy: { info: { auto: true } },
       rules: [],
       movesSupported: true,
+      delegates: [],
+      timezone: "Europe/Warsaw",
     };
     return { created, ctx, emailId, email, mailbox };
   } catch (error) {
@@ -87,7 +90,7 @@ describe("saveTriage with changed settings", () => {
       const deps: SettingsDeps = { db, now: () => now, expireReady };
       await setToolSwitch(deps, s.ctx, s.created.mailboxId, { name: "move", value: false, actor: "test" });
 
-      expect(await saveTriage(db, s.ctx, s.mailbox, s.email, decision)).toEqual({ kind: "settings_changed" });
+      expect(await saveTriage(db, s.ctx, s.mailbox, s.email, decision, now)).toEqual({ kind: "settings_changed" });
 
       expect(await listActionsForEmail(db, s.ctx, s.emailId)).toEqual([]);
       const results = await db.selectFrom("triage_results").select("id").where("email_id", "=", s.emailId).execute();
@@ -106,7 +109,7 @@ describe("saveTriage with changed settings", () => {
   test("unchanged settings: the rows are saved", async () => {
     const s = await committedSetup();
     try {
-      expect(await saveTriage(db, s.ctx, s.mailbox, s.email, decision)).toEqual({ kind: "triaged" });
+      expect(await saveTriage(db, s.ctx, s.mailbox, s.email, decision, now)).toEqual({ kind: "triaged" });
       const actions = await listActionsForEmail(db, s.ctx, s.emailId);
       expect(actions.map((a) => a.type).sort()).toEqual(["move", "save_summary"]);
     } finally {
@@ -125,7 +128,7 @@ describe("saveTriage and a setter on two connections", () => {
       let setter: ReturnType<typeof setToolSwitch> | undefined;
       let setterDone = false;
       await db.transaction().execute(async (trx) => {
-        expect(await saveTriage(trx, s.ctx, s.mailbox, s.email, decision)).toEqual({ kind: "triaged" });
+        expect(await saveTriage(trx, s.ctx, s.mailbox, s.email, decision, now)).toEqual({ kind: "triaged" });
         setter = setToolSwitch(deps, s.ctx, s.created.mailboxId, { name: "move", value: false, actor: "test" });
         void setter.then(() => {
           setterDone = true;
@@ -153,7 +156,7 @@ describe("saveTriage and a setter on two connections", () => {
         await updateMailboxSettings(trx, s.ctx, s.created.mailboxId, {
           toolSwitches: { ...s.mailbox.toolSwitches, move: false },
         });
-        writer = saveTriage(db, s.ctx, s.mailbox, s.email, decision);
+        writer = saveTriage(db, s.ctx, s.mailbox, s.email, decision, now);
         void writer.then(() => {
           writerDone = true;
         });

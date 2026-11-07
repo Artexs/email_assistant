@@ -107,6 +107,23 @@ describe("claimEmails", () => {
     });
   });
 
+  test("a claimed row carries in_reply_to and references_header", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, mailboxId } = await tenant(trx);
+      const withHeaders = await insertTestEmail(trx, ctx, mailboxId, {
+        received_at: minutesFromNow(-2),
+        in_reply_to: "<m1@x.test>",
+        references_header: "<m0@x.test> <m1@x.test>",
+      });
+      const without = await insertTestEmail(trx, ctx, mailboxId, { received_at: minutesFromNow(-1) });
+
+      const claimed = await claimEmails(trx, ctx, mailboxId, claimOpts());
+      expect(ids(claimed)).toEqual([withHeaders, without]);
+      expect(claimed[0]).toMatchObject({ in_reply_to: "<m1@x.test>", references_header: "<m0@x.test> <m1@x.test>" });
+      expect(claimed[1]).toMatchObject({ in_reply_to: null, references_header: null });
+    });
+  });
+
   test("syntheticOnly returns only @ea-seed.test> ids", async () => {
     await withRollback(db, async (trx) => {
       const { ctx, mailboxId } = await tenant(trx);

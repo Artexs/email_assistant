@@ -304,8 +304,11 @@ describe("handleCallback", () => {
           expect((await handleCallback(s.deps, s.link, `fu:${id}`)).answer).toBe(NOT_FOUND);
         }
         expect(await feedbackRows(trx, s.other)).toEqual([]);
-        const rows = await trx.selectFrom("actions").select("id").where("reverses_action_id", "is not", null).execute();
-        expect(rows).toEqual([]);
+        const otherOrgId = (
+          await trx.selectFrom("emails").select("org_id").where("id", "=", s.other).executeTakeFirstOrThrow()
+        ).org_id;
+        expect(await reverseRows(trx, s.a.orgId)).toEqual([]);
+        expect(await reverseRows(trx, otherOrgId)).toEqual([]);
       });
     });
   });
