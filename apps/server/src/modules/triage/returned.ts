@@ -33,6 +33,8 @@ export async function processReturned(
     if (mail === undefined) return { feedback: false, undone: false };
 
     const move = await lockLatestOriginalMove(trx, ctx, emailId);
+    // Another run cleared the flag already: it wrote the result. Nothing was written here yet.
+    if (!(await clearReturned(trx, ctx, emailId))) return { feedback: false, undone: false };
     const category = (await latestTriageResult(trx, ctx, emailId))?.category;
     const undoneNow = move?.status === "applied" && (move.reverseStatus === null || move.reverseStatus === "failed");
 
@@ -68,7 +70,6 @@ export async function processReturned(
       event: auditEvents.emailReturned,
       data: { mailbox_id: mail.mailboxId, feedback, move_action_id: move?.id ?? null },
     });
-    await clearReturned(trx, ctx, emailId);
     log.debug(`returned ${emailId}: feedback ${feedback}`);
     return { feedback, undone };
   };
@@ -86,8 +87,12 @@ export function createReturnedJob(deps: ReturnedJobDeps): { run(): Promise<void>
         try {
           const rows = await listReturned(deps.db, ctx, mailboxId, { limit });
           for (const row of rows) {
-            await processReturned(deps.db, ctx, row.id, deps.now());
-            processed += 1;
+            try {
+              await processReturned(deps.db, ctx, row.id, deps.now());
+              processed += 1;
+            } catch (error) {
+              log.error(`returned ${row.id}: ${describeError(error)}`);
+            }
           }
         } catch (error) {
           log.error(`returned ${mailboxId}: ${describeError(error)}`);

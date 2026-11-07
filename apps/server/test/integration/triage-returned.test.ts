@@ -265,6 +265,33 @@ describe("createReturnedJob", () => {
     });
   });
 
+  test("the job goes on after a row throws", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const a = await tenant(trx);
+      const first = await returnedMail(trx, a);
+      const second = await returnedMail(trx, a);
+      // The oldest flag is first in line.
+      await trx
+        .updateTable("emails")
+        .set({ returned_at: new Date(NOW.getTime() - HOUR) })
+        .where("id", "=", first.emailId)
+        .execute();
+      let calls = 0;
+      const now = () => {
+        calls += 1;
+        if (calls === 1) throw new Error("clock failed");
+        return NOW;
+      };
+
+      await createReturnedJob({ db: trx, now }).run();
+
+      expect(await returnedAt(trx, first.emailId)).not.toBeNull();
+      expect(await returnedAt(trx, second.emailId)).toBeNull();
+      expect(await feedbackRows(trx, second.emailId)).toHaveLength(1);
+    });
+  });
+
   test("org A's run does not touch org B's returned mail (active mailbox, other org)", async () => {
     await withRollback(db, async (trx) => {
       const a = await tenant(trx);
