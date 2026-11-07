@@ -105,4 +105,9 @@ describe("describeActions for drafts and sends", () => {
       "done: draft a delegation to Anna Nowak; sent"
     );
   });
+
+  test("two sends with the same phrase print it once", () => {
+    expect(describeActions([send("applied"), send("applied")], names)).toBe("sent");
+    expect(describeActions([draft("undone"), send("applied"), send("applied")], names)).toBe("sent");
+  });
 });

@@ -85,6 +85,7 @@ export function describeActions(
     if (tense === undefined || text === null) continue;
     groups.set(tense, [...(groups.get(tense) ?? []), text]);
   }
-  const parts = [...[...groups].map(([tense, phrases]) => `${tense} ${phrases.join(", ")}`), ...sends];
+  const all = [...[...groups].map(([tense, phrases]) => `${tense} ${phrases.join(", ")}`), ...sends];
+  const parts = all.filter((part, index) => part !== all[index - 1]); // the same phrase never twice in a row
   return parts.length === 0 ? "stays in INBOX" : parts.join("; ");
 }
