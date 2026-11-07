@@ -235,3 +235,4 @@ Answered 2026-11-06 with the plan defaults (P1–P7). Questions 1–4 of the fir
   - Rm10 fixed in the task file (Scope, Blockers, checkpoint 4) and stages 19 (risk text) and 20 (preconditions, step 1): the S1b run is done and every category is no-go.
   - Rm11 fixed in stage 7.1b (`status_reason IS DISTINCT FROM 'mail_not_found'`).
   - RQ1: no change; Q1 and Q5 stay open for the user with their defaults.
+- 2026-11-07: Build started (new session, claude-sonnet-5-5). Checked the handoff "Current state": no difference (HEAD `b91ba4b`; lint 0, typecheck 0, 620 unit pass). Stage 1 step 1.1 built (`mailbox:probe-move`, GreenMail only): review round 1 FAIL (1 major: `otherDeletedKept` was not proven; 5 minor), fixed; round 2 PASS with 4 minor fixes (case-insensitive parent check, `created: false` throws, parent notes, stage file). Step 1.2 (the user runs the probe on Interia) is next; checkpoint 1 follows.

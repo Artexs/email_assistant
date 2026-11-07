@@ -3,6 +3,7 @@ export { buildFolderMap, connectMailbox, updateMailboxPassword, type ConnectDeps
 export { compareInboxWithDb, type AuditCounts, type InboxKey } from "./audit";
 export { createMailSyncJob, type MailSyncJobDeps } from "./jobs";
 export { openImapProvider, type ImapConnectOptions } from "./imap/client";
+export { assertTestAddress, probeMove, type ProbeMoveReport } from "./imap/probe-move";
 export { verifySmtpLogin, type SmtpConnectOptions } from "./imap/smtp";
 export {
   INBOX,
