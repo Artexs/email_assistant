@@ -85,3 +85,5 @@ The probe mail `EA probe 6a8a502f-…` stayed in INBOX; the user deletes it by h
 - A system move (COPY + UID EXPUNGE, Interia has no MOVE) gives the mail a new UID in the target folder (INBOX 38942 → `AI/Spam` 38947).
 - The system COPY back to INBOX (Undo) gives a new INBOX UID (38951).
 - A webmail move back to INBOX keeps the folder UID (38948).
+
+- S4 stage 22.1 (2026-11-07 22:16Z): on the VPS, `select count(*) from emails where message_id_header ilike '<ea-probe-%'` → `1` (stage 1.2 expected `0`): one probe mail from the send probe was stored (and triaged) by the pilot server. Harmless; the user may delete the `EA probe send …` mail in INBOX by hand.
