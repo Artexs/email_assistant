@@ -20,7 +20,6 @@ import {
   countActionsSince,
   countApprovals,
   sendFilterFor,
-  STALE_AFTER_MS,
   type ActionsScope,
   type DelegationHooks,
   type SendScope,
@@ -129,13 +128,18 @@ export async function statusMessage(deps: CommandDeps, link: LinkedChat): Promis
   return { text: lines.join("\n"), buttons: [] };
 }
 
-// The cause of a held send, in the order of the tap toast (S4 16.1): the mailbox, then the scope, else a retry wait.
-function heldText(deps: CommandDeps, mailbox: MailboxSummary | undefined, held: number): string {
-  if (mailbox?.status === "paused") return `${held} approved, held: the mailbox is paused`;
-  if (mailbox?.status === "auth_error") return `${held} approved, held: the mailbox login fails`;
-  const admitsAll = mailbox !== undefined && sendFilterFor(deps.sendScope, mailbox.address).kind === "all";
-  if (!admitsAll) return `${held} approved, held by SEND_SCOPE=${deps.sendScope.kind}`;
-  return `${held} approved, in a retry wait`;
+// The cause of an approved send that waits, in the order of the tap toast (S4 16.1): the mailbox, then the scope.
+// `held` sends are not admitted by the scope; `sending` sends are admitted and go out on a tick.
+function approvedText(
+  deps: CommandDeps,
+  mailbox: MailboxSummary | undefined,
+  count: { held: number; sending: number }
+): string {
+  const total = count.held + count.sending;
+  if (mailbox?.status === "paused") return `${total} approved, held: the mailbox is paused`;
+  if (mailbox?.status === "auth_error") return `${total} approved, held: the mailbox login fails`;
+  if (count.held > 0) return `${count.held} approved, held by SEND_SCOPE=${deps.sendScope.kind}`;
+  return `${count.sending} approved, sending`;
 }
 
 // One line for the organization; one line per mailbox when it has more than one.
@@ -146,18 +150,24 @@ async function approvalLines(
   now: Date,
   clock: (at: Date) => string
 ): Promise<string[]> {
-  const staleBefore = new Date(now.getTime() - STALE_AFTER_MS);
   const line = (prefix: string, count: Awaited<ReturnType<typeof countApprovals>>, mailbox?: MailboxSummary) => {
     const oldest = count.oldestNotifiedAt === null ? "" : ` (oldest ${clock(count.oldestNotifiedAt)})`;
-    const held = count.approvedHeld > 0 ? ` · ${heldText(deps, mailbox, count.approvedHeld)}` : "";
+    const approved = count.approvedHeld + count.approvedSending;
+    const held =
+      approved > 0
+        ? ` · ${approvedText(deps, mailbox, { held: count.approvedHeld, sending: count.approvedSending })}`
+        : "";
     return `${prefix}: ${count.waiting} waiting for your tap${oldest}${held}`;
   };
   if (mailboxes.length <= 1) {
-    return [line("Approvals", await countApprovals(deps.db, ctx, { staleBefore }), mailboxes[0])];
+    const mailbox = mailboxes[0];
+    const send = mailbox === undefined ? { kind: "none" as const } : sendFilterFor(deps.sendScope, mailbox.address);
+    return [line("Approvals", await countApprovals(deps.db, ctx, { send }), mailbox)];
   }
   const lines: string[] = [];
   for (const mailbox of mailboxes) {
-    const count = await countApprovals(deps.db, ctx, { staleBefore, mailboxId: mailbox.id });
+    const send = sendFilterFor(deps.sendScope, mailbox.address);
+    const count = await countApprovals(deps.db, ctx, { send, mailboxId: mailbox.id });
     lines.push(line(`Approvals ${cutText(mailbox.address, ADDRESS_MAX)}`, count, mailbox));
   }
   return lines;

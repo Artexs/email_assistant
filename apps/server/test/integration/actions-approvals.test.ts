@@ -629,10 +629,19 @@ describe("expiry queries", () => {
       await pair(trx, s, { notifiedAt: ago(5 * HOUR) });
       await pair(trx, s, { notifiedAt: null });
 
-      expect(await countApprovals(trx, s.ctx, { staleBefore: STALE_BEFORE })).toEqual({
+      expect(await countApprovals(trx, s.ctx, { send: { kind: "all" } })).toEqual({
         waiting: 3,
         oldestNotifiedAt: ago(5 * HOUR),
-        approvedHeld: 2,
+        approvedHeld: 0,
+        approvedSending: 3,
+      });
+      expect(await countApprovals(trx, s.ctx, { send: { kind: "none" } })).toMatchObject({
+        approvedHeld: 3,
+        approvedSending: 0,
+      });
+      expect(await countApprovals(trx, s.ctx, { send: { kind: "none" }, mailboxId: s.mailboxId })).toMatchObject({
+        approvedHeld: 3,
+        approvedSending: 0,
       });
     });
   });
@@ -675,10 +684,11 @@ describe("tenant isolation", () => {
       expect(await markResultNotified(trx, b.ctx, failed.sendId, NOW)).toBe(false);
       const opts = { now: NOW, limit: 50, staleBefore: ago(10 * MINUTE) };
       expect(await listExpiredApprovals(trx, b.ctx, a.mailboxId, opts)).toEqual([]);
-      expect(await countApprovals(trx, b.ctx, { staleBefore: opts.staleBefore })).toEqual({
+      expect(await countApprovals(trx, b.ctx, { send: { kind: "all" } })).toEqual({
         waiting: 0,
         oldestNotifiedAt: null,
         approvedHeld: 0,
+        approvedSending: 0,
       });
       expect((await row(trx, old.sendId)).status).toBe("awaiting_approval");
       expect((await row(trx, set.sendId)).status).toBe("awaiting_approval");

@@ -1578,20 +1578,21 @@ export async function listAwaitingSendIds(
   return rows.map((row) => ({ id: row.id, emailId: row.email_id }));
 }
 
-// For /status and the held-send warning (D16): the whole organization.
+// For /status (D16): the whole organization, or one mailbox. `approvedHeld` is the approved sends that `send` does
+// not admit; `approvedSending` is the approved sends that it admits.
 export async function countApprovals(
   db: DbOrTrx,
   ctx: TenantContext,
-  opts: { staleBefore: Date; mailboxId?: string }
-): Promise<{ waiting: number; oldestNotifiedAt: Date | null; approvedHeld: number }> {
+  opts: { send: SendClaimFilter; mailboxId?: string }
+): Promise<{ waiting: number; oldestNotifiedAt: Date | null; approvedHeld: number; approvedSending: number }> {
+  const admitted = sendFilterExpr(opts.send);
   let query = db
     .selectFrom("actions")
     .select([
       sql<string>`count(*) filter (where actions.status = 'awaiting_approval')`.as("waiting"),
       sql<Date | null>`min(actions.notified_at) filter (where actions.status = 'awaiting_approval')`.as("oldest"),
-      sql<string>`count(*) filter (where actions.status = 'approved' and (actions.locked_at is null or actions.locked_at < ${opts.staleBefore}))`.as(
-        "held"
-      ),
+      sql<string>`count(*) filter (where actions.status = 'approved' and not ${admitted})`.as("held"),
+      sql<string>`count(*) filter (where actions.status = 'approved' and ${admitted})`.as("sending"),
     ])
     .where("actions.org_id", "=", ctx.orgId)
     .where("actions.type", "=", "send");
@@ -1604,5 +1605,10 @@ export async function countApprovals(
       .where("emails.mailbox_id", "=", mailboxId);
   }
   const row = await query.executeTakeFirstOrThrow();
-  return { waiting: Number(row.waiting), oldestNotifiedAt: row.oldest, approvedHeld: Number(row.held) };
+  return {
+    waiting: Number(row.waiting),
+    oldestNotifiedAt: row.oldest,
+    approvedHeld: Number(row.held),
+    approvedSending: Number(row.sending),
+  };
 }

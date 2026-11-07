@@ -197,6 +197,7 @@ export async function runChaserForMailbox(
 
 export function createChaserJob(deps: ChaserDeps): { run(opts?: { force?: boolean }): Promise<void> } {
   const warnedSettings = new Set<string>();
+  const warnedSkips = new Set<string>();
 
   return {
     async run(opts) {
@@ -217,7 +218,12 @@ export function createChaserJob(deps: ChaserDeps): { run(opts?: { force?: boolea
           if (!organization) continue;
           if (opts?.force === true) log.info(`chaser ${mailboxId}: forced`);
           const mailbox = { id: mailboxId, timezone: organization.timezone, settingsVersion: settings.version };
-          await runChaserForMailbox(deps, ctx, mailbox, deps.now(), opts);
+          const result = await runChaserForMailbox(deps, ctx, mailbox, deps.now(), opts);
+          // One line per mailbox and reason, not one per tick.
+          if (result.skipped !== null && !warnedSkips.has(`${mailboxId}:${result.skipped}`)) {
+            warnedSkips.add(`${mailboxId}:${result.skipped}`);
+            log.info(`chaser ${mailboxId}: skipped ${result.skipped}`);
+          }
         } catch (error) {
           log.error(`chaser ${mailboxId} failed: ${describeError(error)}`);
         }

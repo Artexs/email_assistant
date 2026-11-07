@@ -641,6 +641,42 @@ describe("createCommitterJob with sends", () => {
     }
   });
 
+  test("(26) facts that cannot load release the batch without a count and close the connections", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const box = await addBox(trx);
+      const smtp = senderOpener();
+      const ready = await pairOf(trx, box);
+      const failing = new Proxy(trx, {
+        get(target, prop) {
+          const value = Reflect.get(target, prop, target) as unknown;
+          if (prop === "selectFrom") {
+            return (table: string) => {
+              if (table === "organizations") throw new Error("db read failed");
+              return (value as (name: string) => unknown).call(target, table);
+            };
+          }
+          return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+        },
+      });
+      const job = createCommitterJob({
+        db: failing,
+        secrets,
+        openProvider: openerFor([box]).openProvider,
+        openSender: smtp.openSender,
+        scope: { kind: "all", mailboxAddress: box.address },
+        sendScope: { kind: "all", mailboxAddress: box.address },
+        now: () => NOW,
+      });
+
+      await expect(job.run()).resolves.toBeUndefined();
+
+      expect(await actionState(trx, ready.sendId)).toMatchObject({ status: "approved", locked_at: null, attempts: 0 });
+      expect(smtp.sender.sent).toEqual([]);
+      expect(box.fake.closed).toBe(true);
+    });
+  });
+
   test("(22b) a mailbox with only a held send logs the held line once over two runs", async () => {
     const logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
     setLogLevel("info");

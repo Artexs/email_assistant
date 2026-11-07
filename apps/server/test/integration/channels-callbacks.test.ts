@@ -799,8 +799,16 @@ describe("approval taps", () => {
         createdAt: T,
       });
       await trx.updateTable("actions").set({ status_reason: "smtp_error" }).where("id", "=", failed.sendId).execute();
+      await queueFor(trx, s.ctx, s.o1, "send_result", failed.sendId, failed.emailId);
       const again = await handleCallback(s.deps, s.owner1, `ag:${failed.sendId}`);
       expect(again.answer).toBe(APPROVAL_TEXTS.send_again_held.scope);
+      const newSend = await trx
+        .selectFrom("actions")
+        .select("id")
+        .where("idempotency_key", "=", `${failed.sendId}:again`)
+        .executeTakeFirstOrThrow();
+      expect(again.edit?.text).toContain("Sending is held by SEND_SCOPE");
+      expect(again.edit?.buttons).toEqual([[{ text: "✖️ Reject", data: `ar:${newSend.id}` }]]);
 
       const setId = randomUUID();
       const sent = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, {
@@ -809,12 +817,15 @@ describe("approval taps", () => {
         notifiedAt: T,
         createdAt: T,
       });
+      await queueFor(trx, s.ctx, s.o1, "approval_set", setId, sent.emailId, "📤 Send 1 reminder?");
       await trx.updateTable("mailboxes").set({ status: "paused" }).where("id", "=", s.a.mailboxId).execute();
       const set = await handleCallback(s.deps, s.owner1, `as:${setId}`);
+      // The mailbox state comes before the scope, as in /status.
       expect(set.answer).toBe(
-        `⏳ 1 reminders approved, 0 skipped. ${APPROVAL_TEXTS.held_notes.scope}; /status shows it.`
+        `⏳ 1 reminders approved, 0 skipped. ${APPROVAL_TEXTS.held_notes.paused}; /status shows it.`
       );
-      expect(set.answer).toContain("SEND_SCOPE");
+      expect(set.edit?.text).toContain("The mailbox is paused, so the send waits");
+      expect(set.edit?.buttons).toEqual([]);
       expect(await sendRow(trx, sent.sendId)).toMatchObject({ status: "approved" });
     });
   });

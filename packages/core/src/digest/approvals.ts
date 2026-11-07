@@ -357,11 +357,12 @@ export function approvalEdit(input: {
       line = `⏳ Approved ${time}, sending.`;
       break;
     case "approved_held": {
-      if (input.heldBy === undefined || input.actionId === undefined) {
-        throw new Error("approved_held needs heldBy and actionId");
-      }
+      if (input.heldBy === undefined) throw new Error("approved_held needs heldBy");
       line = `⏳ Approved ${time}. ${HELD_TEXTS[input.heldBy]}; /status shows it. It expires 48 h after the tap if it is still held.`;
-      buttons = [[{ text: "✖️ Reject", data: encodeCallback({ kind: "reject", actionId: input.actionId }) }]];
+      // A set has no single send to reject: no button.
+      if (input.actionId !== undefined) {
+        buttons = [[{ text: "✖️ Reject", data: encodeCallback({ kind: "reject", actionId: input.actionId }) }]];
+      }
       break;
     }
     case "rejected":

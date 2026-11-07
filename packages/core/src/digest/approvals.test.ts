@@ -435,6 +435,12 @@ describe("approvalEdit", () => {
     expect(texts[2]).toContain("The mailbox login fails, so the send waits; /status shows it.");
   });
 
+  test("approved_held without an action id has no button (a set)", () => {
+    const message = approvalEdit({ ...base, outcome: "approved_held", heldBy: "scope", actionId: undefined });
+    expect(message.buttons).toEqual([]);
+    expect(message.text).toContain("Sending is held by SEND_SCOPE on the server");
+  });
+
   test("a long original is cut from its end, never the new line", () => {
     const message = approvalEdit({ ...base, original: "o".repeat(4090), outcome: "approved" });
     expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);

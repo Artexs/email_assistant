@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { parseToolSwitches } from "@ea/core";
-import { afterAll, describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
 import { getDraft, getSend } from "../../src/modules/actions";
@@ -19,6 +19,7 @@ import {
   runChaserForMailbox,
 } from "../../src/modules/delegation";
 import type { DB, TenantContext } from "../../src/platform/db";
+import { setLogLevel } from "../../src/platform/log";
 
 import {
   createOrgWithMailbox,
@@ -495,6 +496,26 @@ describe("createChaserJob", () => {
       await job.run({ force: true });
       expect(await reminderRows(trx, s.ctx, d.emailId)).toHaveLength(2);
     });
+  });
+});
+
+describe("createChaserJob log", () => {
+  test("(8b) the gate skip logs one line per mailbox over two runs", async () => {
+    const logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
+    setLogLevel("info");
+    try {
+      await withRollback(db, async (trx) => {
+        const s = await setup(trx);
+        await openDelegation(trx, s);
+        const job = createChaserJob({ db: trx, now: () => at0729 });
+        await job.run();
+        await job.run();
+        const output = logSpy.mock.calls.map((call: unknown[]) => call.map(String).join(" ")).join("\n");
+        expect(output.split(`chaser ${s.mailboxId}: skipped gate`)).toHaveLength(2);
+      });
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 });
 

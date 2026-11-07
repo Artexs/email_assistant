@@ -178,7 +178,7 @@ describe("statusMessage", () => {
 
       const all = await statusMessage(depsAt(trx, T, { sendScope: { kind: "all", mailboxAddress: address } }), link);
       expect(all.text).toContain("Send: real delegates of the test mailbox (SEND_SCOPE=all)");
-      expect(all.text).toContain("1 approved, in a retry wait");
+      expect(all.text).toContain("1 approved, sending");
 
       await trx.updateTable("mailboxes").set({ status: "paused" }).where("id", "=", a.mailboxId).execute();
       const paused = await statusMessage(depsAt(trx, T, { sendScope: { kind: "all", mailboxAddress: address } }), link);
@@ -186,6 +186,8 @@ describe("statusMessage", () => {
       await trx.updateTable("mailboxes").set({ status: "auth_error" }).where("id", "=", a.mailboxId).execute();
       const broken = await statusMessage(depsAt(trx, T), link);
       expect(broken.text).toContain("1 approved, held: the mailbox login fails");
+      // The mailbox state comes before the scope: scope off and auth_error names the login.
+      expect(broken.text).not.toContain("SEND_SCOPE=off");
     });
   });
 

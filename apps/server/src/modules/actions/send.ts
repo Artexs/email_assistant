@@ -178,7 +178,7 @@ async function finishApplied(
       data: {
         action_type: "send",
         kind: payload.kind,
-        recipients: 1,
+        recipients: payload.to.length,
         delegation_id: payload.delegation_id ?? null,
         reminder: payload.reminder ?? null,
       },

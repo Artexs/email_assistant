@@ -278,9 +278,12 @@ async function handleApprovalCallback(
           heldBy === undefined
             ? `⏳ ${result.approved} reminders go out within a minute, ${result.skipped} skipped.`
             : `⏳ ${result.approved} reminders approved, ${result.skipped} skipped. ${APPROVAL_TEXTS.held_notes[heldBy]}; /status shows it.`,
-        edit: await edit(`approval_set:${callback.setId}`, "approved_set", {
-          counts: { done: result.approved, skipped: result.skipped },
-        }),
+        edit:
+          heldBy === undefined
+            ? await edit(`approval_set:${callback.setId}`, "approved_set", {
+                counts: { done: result.approved, skipped: result.skipped },
+              })
+            : await edit(`approval_set:${callback.setId}`, "approved_held", { heldBy }),
       };
     }
     case "reject_set": {
@@ -300,7 +303,13 @@ async function handleApprovalCallback(
           const heldBy = await heldReason(deps, ctx, result.actionId);
           return {
             answer: heldBy === undefined ? APPROVAL_TEXTS.send_again : APPROVAL_TEXTS.send_again_held[heldBy],
-            edit: await edit(`send_result:${callback.actionId}`, "approved"),
+            edit:
+              heldBy === undefined
+                ? await edit(`send_result:${callback.actionId}`, "approved")
+                : await edit(`send_result:${callback.actionId}`, "approved_held", {
+                    heldBy,
+                    actionId: result.actionId,
+                  }),
           };
         }
         case "already":
@@ -344,7 +353,7 @@ const HELD_ANSWERS = {
   auth_error: APPROVAL_TEXTS.approved_auth_error,
 };
 
-// Why the committer will not claim the send just approved: the scope first, then the state of the mailbox (S3 D10).
+// Why the committer will not claim the send just approved: the state of the mailbox first, then the scope (as /status).
 // A send or mailbox that cannot be read counts as held by the scope: the toast must not promise a send.
 async function heldReason(
   deps: CallbackDeps,
@@ -355,9 +364,9 @@ async function heldReason(
   const mailbox = send === undefined ? undefined : await getMailbox(deps.db, ctx, send.email.mailbox_id);
   if (send === undefined || mailbox === undefined) return "scope";
   const to = Array.isArray(send.payload.to) ? send.payload.to.filter((item) => typeof item === "string") : [];
-  if (!sendScopeAdmits(sendFilterFor(deps.sendScope, mailbox.address), to)) return "scope";
   if (mailbox.status === "paused") return "paused";
   if (mailbox.status === "auth_error") return "auth_error";
+  if (!sendScopeAdmits(sendFilterFor(deps.sendScope, mailbox.address), to)) return "scope";
   return undefined;
 }
 

@@ -334,7 +334,18 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     }
     try {
       const needsFacts = batch.some((action) => action.type === "create_draft" || action.type === "send");
-      const tenantFacts = needsFacts ? await loadFacts(ctx, mailbox, facts) : null;
+      let tenantFacts: TenantFacts | null = null;
+      if (needsFacts) {
+        try {
+          tenantFacts = await loadFacts(ctx, mailbox, facts);
+        } catch (error) {
+          log.error(`committer ${mailboxId}: facts failed: ${describeError(error)}`);
+          await release(ctx, batch, now).catch((releaseError: unknown) => {
+            log.error(`committer ${mailboxId}: release failed: ${describeError(releaseError)}`);
+          });
+          return;
+        }
+      }
       await applyBatch(ctx, mailbox, batch, provider, sender, now, tenantFacts);
     } finally {
       for (const connection of [provider, sender]) {
