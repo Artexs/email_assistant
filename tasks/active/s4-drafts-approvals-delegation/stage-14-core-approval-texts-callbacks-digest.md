@@ -6,7 +6,7 @@ Part of [`../s4-drafts-approvals-delegation.md`](../s4-drafts-approvals-delegati
 
 Why risky: the approval message is what the user approves. It must show the recipient, the original sender with the warning, and the draft text, within the Telegram limits, every time.
 
-- [ ] **14.1 Callback kinds (D26)**
+- [x] **14.1 Callback kinds (D26)**
   - Goal: six new button payloads parse and encode within 64 bytes; forged data gives null.
   - Files: change `packages/core/src/digest/callback.ts`, `callback.test.ts`.
   - Interfaces:
@@ -30,7 +30,7 @@ Why risky: the approval message is what the user approves. It must show the reci
   - Done when: the tests pass.
   - Out of scope: the handlers (stage 16).
 
-- [ ] **14.2 Approval, set, result and answered texts (D19, D20, D21, D24)**
+- [x] **14.2 Approval, set, result and answered texts (D19, D20, D21, D24)**
   - Goal: pure renderers for the four S4 notices and the edits after a tap, with the exact words below and the length limits; the texts tell the truth for every send kind and for a server without UIDPLUS.
   - Files: create `packages/core/src/digest/approvals.ts`, `approvals.test.ts`; change `packages/core/src/digest/index.ts`.
   - Interfaces:
@@ -132,7 +132,7 @@ Why risky: the approval message is what the user approves. It must show the reci
   - Done when: the tests pass.
   - Out of scope: the detectors (stage 15), the handlers (stage 16).
 
-- [ ] **14.3 Digest phrases, the delegations footer, the reports wiring (D25, D33)**
+- [x] **14.3 Digest phrases, the delegations footer, the reports wiring (D25, D33)**
   - Goal: a digest line tells what happens with a delegation mail (draft, approval, sent) and the footer counts open and overdue delegations.
   - Files: change `packages/core/src/digest/would-do.ts`, `would-do.test.ts`, `digest.ts`, `digest.test.ts`, `ai-text.ts`, `ai-text.test.ts`; change `apps/server/src/modules/actions/repo.ts` (`listActionsForEmails` selects `payload->>'kind'` and `payload->>'delegate_id'`; `listDraftTasks(db, ctx, emailIds)` returns `payload->>'task'` of `create_draft` originals), `apps/server/src/modules/reports/digest.ts`, `apps/server/test/integration/reports-digest.test.ts`; `docs/modules.md` is updated in stage 21.
   - Interfaces:

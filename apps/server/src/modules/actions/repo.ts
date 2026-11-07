@@ -188,6 +188,7 @@ export async function listSummaries(db: DbOrTrx, ctx: TenantContext, emailIds: s
 }
 
 const folderKeySchema = z.enum(folderKeys);
+const sendKindSchema = z.enum(["delegation", "clarification", "reminder"]);
 
 // Oldest first per email. A row with an unknown type is left out; an unknown folder gives `null`.
 export async function listActionsForEmails(
@@ -209,6 +210,8 @@ export async function listActionsForEmails(
       "reverses_action_id",
       "applied_at",
       sql<string | null>`payload->>'folder'`.as("folder"),
+      sql<string | null>`payload->>'kind'`.as("kind"),
+      sql<string | null>`payload->>'delegate_id'`.as("delegate_id"),
     ])
     .where("org_id", "=", ctx.orgId)
     .where("email_id", "in", [...emailIds])
@@ -221,6 +224,7 @@ export async function listActionsForEmails(
       continue;
     }
     const folder = folderKeySchema.safeParse(row.folder);
+    const kind = sendKindSchema.safeParse(row.kind);
     const view: ActionView = {
       id: row.id,
       type: type.data,
@@ -229,10 +233,41 @@ export async function listActionsForEmails(
       reverse: row.reverses_action_id !== null,
       reversesActionId: row.reverses_action_id,
       appliedAt: row.applied_at,
+      kind: kind.success ? kind.data : null,
+      delegateId: row.delegate_id,
     };
     result.set(row.email_id, [...(result.get(row.email_id) ?? []), view]);
   }
   return result;
+}
+
+// The task of the original `create_draft` row per mail (a delegation or reminder draft); reverse rows are left out.
+export async function listDraftTasks(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailIds: readonly string[]
+): Promise<Map<string, string>> {
+  if (emailIds.length === 0) {
+    return new Map();
+  }
+  const rows = await db
+    .selectFrom("actions")
+    .select(["email_id", sql<string | null>`payload->>'task'`.as("task")])
+    .where("org_id", "=", ctx.orgId)
+    .where("email_id", "in", [...emailIds])
+    .where("type", "=", "create_draft")
+    .where("reverses_action_id", "is", null)
+    .where(sql<boolean>`payload->>'task' is not null`)
+    .orderBy("created_at")
+    .orderBy("id")
+    .execute();
+  const tasks = new Map<string, string>();
+  for (const row of rows) {
+    if (row.task !== null && !tasks.has(row.email_id)) {
+      tasks.set(row.email_id, row.task);
+    }
+  }
+  return tasks;
 }
 
 // `mailbox` gates the mailbox changes and the drafts: none = save_summary only; synthetic = save_summary and synthetic mail;

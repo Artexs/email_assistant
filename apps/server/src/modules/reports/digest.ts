@@ -12,9 +12,10 @@ import { z } from "zod";
 
 import type { Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
-import { listActionsForEmails, listSummaries } from "../actions";
+import { listActionsForEmails, listDraftTasks, listSummaries } from "../actions";
 import { auditEvents, countEventsBetween } from "../audit";
 import { getMailboxSettings } from "../config";
+import { countOpenDelegations, listDelegateNames } from "../delegation";
 import { countWaiting, isSyntheticMessageId, listMailboxes } from "../mail";
 import { getOrganization } from "../tenancy";
 import { countTriagedBetween, listTriagedBetween } from "../triage";
@@ -83,6 +84,20 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
     rows.filter((row) => row.category === "info").map((row) => row.email_id)
   );
 
+  const delegateIds = new Set<string>();
+  for (const list of actions.values()) {
+    for (const action of list) {
+      if (action.delegateId !== null) delegateIds.add(action.delegateId);
+    }
+  }
+  const names = await listDelegateNames(db, ctx, [...delegateIds]);
+  const tasks = await listDraftTasks(
+    db,
+    ctx,
+    rows.filter((row) => row.category === "delegation").map((row) => row.email_id)
+  );
+  const delegations = await countOpenDelegations(db, ctx);
+
   const items: DigestItem[] = rows.map((row) => ({
     emailId: row.email_id,
     category: row.category,
@@ -97,8 +112,9 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
       summary: summaries.get(row.email_id) ?? null,
       modelCategory: row.model_category,
       confidence: row.confidence,
+      task: tasks.get(row.email_id) ?? null,
     }),
-    wouldDo: describeActions(actions.get(row.email_id) ?? []),
+    wouldDo: describeActions(actions.get(row.email_id) ?? [], names),
     undoable: isUndoable(actions.get(row.email_id) ?? [], request.now),
   }));
 
@@ -116,5 +132,6 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
     items,
     skippedTooOld,
     waiting,
+    delegations,
   });
 }

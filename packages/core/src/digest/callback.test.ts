@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { encodeCallback, type FeedbackCallback, labelCategories, parseCallback } from "./callback";
+import { type Callback, encodeCallback, type FeedbackCallback, labelCategories, parseCallback } from "./callback";
 import { CALLBACK_MAX_BYTES } from "./message";
 
 const ID = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b";
@@ -39,5 +39,34 @@ describe("callback data", () => {
 
   test("encode refuses a bad id", () => {
     expect(() => encodeCallback({ kind: "edit", emailId: "not-a-uuid" })).toThrow("bad email id");
+    expect(() => encodeCallback({ kind: "approve", actionId: "not-a-uuid" })).toThrow("bad id");
+  });
+});
+
+const approvals: [Callback, string][] = [
+  [{ kind: "approve", actionId: ID }, `ap:${ID}`],
+  [{ kind: "reject", actionId: ID }, `ar:${ID}`],
+  [{ kind: "approve_set", setId: ID }, `as:${ID}`],
+  [{ kind: "reject_set", setId: ID }, `rs:${ID}`],
+  [{ kind: "send_again", actionId: ID }, `ag:${ID}`],
+  [{ kind: "delegation_done", delegationId: ID }, `dd:${ID}`],
+];
+
+describe("approval callback data", () => {
+  test.each(approvals)("round trip %o", (callback, data) => {
+    expect(encodeCallback(callback)).toBe(data);
+    expect(Buffer.byteLength(data)).toBe(39);
+    expect(parseCallback(data)).toEqual(callback);
+  });
+
+  test.each(["ap:not-a-uuid", `ap:${ID.toUpperCase()}`, `ap:${ID}:x`, `xx:${ID}`, `ap:${ID.slice(1)}`])(
+    "rejects %p",
+    (data) => {
+      expect(parseCallback(data)).toBeNull();
+    }
+  );
+
+  test("the S2 and S3 kinds still parse", () => {
+    expect(parseCallback(`fu:${ID}`)).toEqual({ kind: "undo", emailId: ID });
   });
 });

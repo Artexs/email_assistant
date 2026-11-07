@@ -16,6 +16,7 @@ import {
   isOwnActionId,
   listActionsForEmail,
   listActionsForEmails,
+  listDraftTasks,
   listFailedUnnotified,
   listSummaries,
   lockActionsForUndo,
@@ -39,6 +40,7 @@ import type { DB, TenantContext } from "../../src/platform/db";
 import {
   createOrgWithMailbox,
   insertAction,
+  insertDelegate,
   insertDraftAndSend,
   insertTestEmail,
   insertTriagedWithActions,
@@ -648,6 +650,8 @@ describe("listActionsForEmails (grown view)", () => {
           reverse: false,
           reversesActionId: null,
           appliedAt: ago(HOUR),
+          kind: null,
+          delegateId: null,
         },
         {
           id: reverse,
@@ -657,8 +661,26 @@ describe("listActionsForEmails (grown view)", () => {
           reverse: true,
           reversesActionId: original,
           appliedAt: ago(1000),
+          kind: null,
+          delegateId: null,
         },
       ]);
+    });
+  });
+
+  test("a draft and a send give kind and delegate id; listDraftTasks gives the draft task per tenant", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      const delegateId = await insertDelegate(trx, a.ctx);
+      const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { delegateId, task: "Prepare the offer" });
+      const views = (await listActionsForEmails(trx, a.ctx, [pair.emailId])).get(pair.emailId);
+      expect(views?.map((view) => [view.type, view.kind, view.delegateId]).sort()).toEqual([
+        ["create_draft", "delegation", delegateId],
+        ["send", "delegation", delegateId],
+      ]);
+      expect((await listDraftTasks(trx, a.ctx, [pair.emailId])).get(pair.emailId)).toBe("Prepare the offer");
+      expect((await listDraftTasks(trx, b.ctx, [pair.emailId])).size).toBe(0);
+      expect((await listDraftTasks(trx, a.ctx, [])).size).toBe(0);
     });
   });
 });

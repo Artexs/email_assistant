@@ -50,6 +50,7 @@ export {
   listAwaitingSendIds,
   listActionsForEmail,
   listActionsForEmails,
+  listDraftTasks,
   listFailedUnnotified,
   listExpiredApprovals,
   listSendResultsToNotify,

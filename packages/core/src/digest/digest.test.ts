@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import type { Category } from "../triage/categories";
 
-import { parseCallback } from "./callback";
+import { isFeedbackCallback, parseCallback } from "./callback";
 import { DIGEST_MAX_LINES, renderDigest, type DigestInput, type DigestItem, type DigestMailbox } from "./digest";
 import { MESSAGE_MAX_CHARS } from "./message";
 
@@ -54,6 +54,11 @@ function input(extra: Partial<DigestInput> = {}): DigestInput {
 }
 
 const blockStarts = (text: string): string[] => text.split("\n").filter((line) => /^\d+\. /.test(line));
+
+function emailIdOf(data: string): string | undefined {
+  const parsed = parseCallback(data);
+  return parsed !== null && isFeedbackCallback(parsed) ? parsed.emailId : undefined;
+}
 
 describe("renderDigest", () => {
   test("empty digest still shows the last sync", () => {
@@ -152,8 +157,7 @@ describe("renderDigest", () => {
     expect(message.buttons.flat()).toHaveLength(shown * 2);
     expect(message.text).toContain(`+${15 - shown} more: ${15 - shown} urgent`);
     for (const button of message.buttons.flat()) {
-      const parsed = parseCallback(button.data);
-      expect(items.some((i) => i.emailId === parsed?.emailId)).toBe(true);
+      expect(items.some((i) => i.emailId === emailIdOf(button.data))).toBe(true);
       expect(Number.parseInt(button.text.split(" ")[1] as string, 10)).toBeLessThanOrEqual(shown);
     }
   });
@@ -250,12 +254,31 @@ describe("renderDigest", () => {
     const message = renderDigest(input({ items, counts: { urgent: 1, unsure: 1, spam: 1 } }));
     for (const button of message.buttons.flat()) {
       expect(Buffer.byteLength(button.data)).toBeLessThanOrEqual(64);
-      expect(items.map((i) => i.emailId)).toContain(parseCallback(button.data)?.emailId as string);
+      expect(items.map((i) => i.emailId)).toContain(emailIdOf(button.data) as string);
     }
   });
 
   test("no 💬 line when aiText is null", () => {
     const message = renderDigest(input({ items: [item(1, "info", { aiText: null })], counts: { info: 1 } }));
     expect(message.text).not.toContain("💬");
+  });
+});
+
+describe("delegations footer", () => {
+  test("shows the counts after the other footer lines and before the shadow line", () => {
+    const text = renderDigest(
+      input({ items: [item(1, "info")], counts: { info: 1 }, waiting: 2, delegations: { open: 3, overdue: 1 } })
+    ).text;
+    expect(text).toContain("👥 Delegations: 3 waiting for a reply, 1 overdue");
+    expect(text.indexOf("⏳ Waiting for triage: 2")).toBeLessThan(text.indexOf("👥 Delegations"));
+    expect(text.indexOf("👥 Delegations")).toBeLessThan(text.indexOf("Shadow mode"));
+  });
+
+  test("shows when only one count is above 0; absent when both are 0 or missing", () => {
+    expect(renderDigest(input({ delegations: { open: 0, overdue: 2 } })).text).toContain(
+      "👥 Delegations: 0 waiting for a reply, 2 overdue"
+    );
+    expect(renderDigest(input({ delegations: { open: 0, overdue: 0 } })).text).not.toContain("Delegations");
+    expect(renderDigest(input()).text).not.toContain("Delegations");
   });
 });

@@ -39,3 +39,20 @@ describe("aiTextFor", () => {
     expect(aiTextFor(base)).toBe("Asks a question.");
   });
 });
+
+describe("aiTextFor a delegation", () => {
+  const delegation = { ...base, category: "delegation" as const, reason: "Anna handles offers." };
+
+  test("prefers the task from the draft", () => {
+    expect(aiTextFor({ ...delegation, task: "Prepare the offer" })).toBe("Prepare the offer");
+  });
+
+  test("falls back to the reason without a task", () => {
+    expect(aiTextFor(delegation)).toBe("Anna handles offers.");
+    expect(aiTextFor({ ...delegation, task: null })).toBe("Anna handles offers.");
+  });
+
+  test("the task does not change other categories", () => {
+    expect(aiTextFor({ ...base, task: "Prepare the offer" })).toBe("Asks a question.");
+  });
+});

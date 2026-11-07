@@ -13,7 +13,15 @@ import {
   markDigestSent,
 } from "../../src/modules/reports";
 
-import { createOrgWithMailbox, insertAction, insertTestEmail, insertTriaged } from "./fixtures";
+import {
+  createOrgWithMailbox,
+  insertAction,
+  insertDelegate,
+  insertDelegation,
+  insertDraftAndSend,
+  insertTestEmail,
+  insertTriaged,
+} from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -257,6 +265,88 @@ describe("buildDigestMessage", () => {
       });
       const message = await buildDigestMessage(trx, { orgId: a.orgId }, request);
       expect(message.text).not.toContain("Shadow mode");
+    });
+  });
+});
+
+describe("buildDigestMessage with delegations", () => {
+  const request = {
+    kind: "scheduled" as const,
+    periodStart: at(-15 * HOUR),
+    periodEnd: T,
+    slot: { date: "2026-11-06", time: "08:00", late: false },
+    now: T,
+  };
+
+  test("a delegation line shows the draft, the approval and the task; the footer counts", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId };
+      await insertDefaultSettings(trx, ctx, a.mailboxId);
+      const anna = await insertDelegate(trx, ctx, { name: "Anna Nowak" });
+      const pending = await insertDraftAndSend(trx, ctx, a.mailboxId, {
+        delegateId: anna,
+        delegateName: "Anna Nowak",
+        task: "MARKER-TASK",
+        draftStatus: "ready",
+        sendStatus: "awaiting_approval",
+        createdAt: at(-2 * HOUR),
+        subject: "Offer",
+      });
+      await trx
+        .updateTable("triage_results")
+        .set({ reason: "MARKER-REASON" })
+        .where("email_id", "=", pending.emailId)
+        .execute();
+
+      const sentOne = await insertDraftAndSend(trx, ctx, a.mailboxId, { delegateId: anna, createdAt: at(-3 * HOUR) });
+      await insertDelegation(trx, ctx, {
+        mailboxId: a.mailboxId,
+        emailId: sentOne.emailId,
+        delegateId: anna,
+        draftActionId: sentOne.draftId,
+        sendActionId: sentOne.sendId,
+        status: "sent",
+      });
+      const overdueOne = await insertDraftAndSend(trx, ctx, a.mailboxId, {
+        delegateId: anna,
+        createdAt: at(-4 * HOUR),
+      });
+      await insertDelegation(trx, ctx, {
+        mailboxId: a.mailboxId,
+        emailId: overdueOne.emailId,
+        delegateId: anna,
+        draftActionId: overdueOne.draftId,
+        sendActionId: overdueOne.sendId,
+        status: "overdue",
+      });
+
+      const message = await buildDigestMessage(trx, ctx, request);
+      expect(message.text).toContain("will draft a delegation to Anna Nowak; waits for your approval");
+      expect(message.text).toContain("💬 MARKER-TASK");
+      expect(message.text).not.toContain("MARKER-REASON");
+      expect(message.text).toContain("👥 Delegations: 1 waiting for a reply, 1 overdue");
+    });
+  });
+
+  test("no delegations: no footer line; another organization does not count", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const b = await createOrgWithMailbox(trx);
+      const other = { orgId: b.orgId };
+      const delegate = await insertDelegate(trx, other);
+      const row = await insertDraftAndSend(trx, other, b.mailboxId, { delegateId: delegate });
+      await insertDelegation(trx, other, {
+        mailboxId: b.mailboxId,
+        emailId: row.emailId,
+        delegateId: delegate,
+        draftActionId: row.draftId,
+        sendActionId: row.sendId,
+        status: "sent",
+      });
+      await insertTriaged(trx, { orgId: a.orgId }, a.mailboxId, { category: "info", createdAt: at(-HOUR) });
+      const message = await buildDigestMessage(trx, { orgId: a.orgId }, request);
+      expect(message.text).not.toContain("Delegations");
     });
   });
 });
