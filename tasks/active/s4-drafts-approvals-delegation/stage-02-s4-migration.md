@@ -4,7 +4,7 @@ Part of [`../s4-drafts-approvals-delegation.md`](../s4-drafts-approvals-delegati
 
 ## Stage 2 — S4 migration: `delegates`, `delegations`, action types and checks, outbox kinds [risky]
 
-- [ ] **2.1 Migration `20261108000001_delegation.sql` (or the next free version)**
+- [x] **2.1 Migration `20261108000001_delegation.sql` (or the next free version)**
   - Goal: the schema of D1 with the guards in the database: a send on its way out always has an approval record; a send is never `ready`; a delegation in `sent` always has its message id.
   - Files: create `db/migrations/<version>_delegation.sql` (`<version>` = the next free version after the highest file in `db/migrations/`; at `279387b` the highest is the second S3 migration `20261107000002_undo_pending.sql` (`emails.undo_pending_at`), after `20261107000001_assist_actions.sql`, so for example `20261108000001`; never a version that exists; M15); regenerate `apps/server/src/platform/db/schema.ts` (`bun run db:types`, never by hand); create `apps/server/test/integration/delegation-schema.test.ts`.
   - Interfaces: the SQL below. After `db:types`: `Delegates`, `Delegations` interfaces; `Actions.result_notified_at: Timestamp | null`.

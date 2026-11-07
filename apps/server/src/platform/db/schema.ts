@@ -44,6 +44,7 @@ export interface Actions {
   outgoing_message_id: string | null;
   payload: Generated<Json>;
   provider_result: Json | null;
+  result_notified_at: Timestamp | null;
   reverses_action_id: string | null;
   status: string;
   status_reason: string | null;
@@ -79,6 +80,40 @@ export interface ChatLinkTokens {
   token_hash: string;
   used_at: Timestamp | null;
   user_id: string;
+}
+
+export interface Delegates {
+  active: Generated<boolean>;
+  competence_tags: Generated<string[]>;
+  created_at: Generated<Timestamp>;
+  email: string;
+  id: Generated<string>;
+  name: string;
+  org_id: string;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface Delegations {
+  answered_at: Timestamp | null;
+  answered_email_id: string | null;
+  answered_notified_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  delegate_id: string;
+  draft_action_id: string;
+  due_at: Timestamp | null;
+  email_id: string;
+  id: Generated<string>;
+  last_reminder_at: Timestamp | null;
+  mailbox_id: string;
+  org_id: string;
+  reminders_sent: Generated<number>;
+  send_action_id: string;
+  sent_at: Timestamp | null;
+  sent_message_id: string | null;
+  status: Generated<string>;
+  status_reason: string | null;
+  task_summary: string;
+  updated_at: Generated<Timestamp>;
 }
 
 export interface Digests {
@@ -248,6 +283,8 @@ export interface DB {
   audit_log: AuditLog;
   chat_link_tokens: ChatLinkTokens;
   chat_links: ChatLinks;
+  delegates: Delegates;
+  delegations: Delegations;
   digests: Digests;
   emails: Emails;
   mailbox_credentials: MailboxCredentials;
