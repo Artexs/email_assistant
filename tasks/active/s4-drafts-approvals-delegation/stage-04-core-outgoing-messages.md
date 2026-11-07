@@ -6,7 +6,7 @@ Part of [`../s4-drafts-approvals-delegation.md`](../s4-drafts-approvals-delegati
 
 Why risky: this text goes to a person outside the system. The builder is the only place that turns a payload into a mail; it must never place LLM text in a header or a recipient, and the approval message must show exactly what goes out.
 
-- [ ] **4.1 `buildOutgoingMessage`, the templates and the quote (D8)**
+- [x] **4.1 `buildOutgoingMessage`, the templates and the quote (D8)**
   - Goal: a pure function turns a draft payload plus the original mail into a complete outgoing message (headers and text), the same bytes every time for the same input.
   - Files: create `packages/core/src/outgoing/message.ts`, `message.test.ts`, `templates.ts`, `templates.test.ts`, `quote.ts`, `quote.test.ts`, `index.ts`; change `packages/core/src/index.ts` (`export * from "./outgoing"`).
   - Interfaces:
@@ -83,7 +83,7 @@ Why risky: this text goes to a person outside the system. The builder is the onl
   - Done when: the tests pass.
   - Out of scope: the MIME bytes (stage 5), the approval text (stage 14).
 
-- [ ] **4.2 External-sender rule and the approval text model (D8, D19)**
+- [x] **4.2 External-sender rule and the approval text model (D8, D19)**
   - Goal: a pure rule says when the original sender counts as external; a pure model holds what the approval message shows, so the notice renderer (stage 14) and the tests share it.
   - Files: create `packages/core/src/outgoing/sender.ts`, `sender.test.ts`; change `packages/core/src/outgoing/index.ts`.
   - Interfaces:

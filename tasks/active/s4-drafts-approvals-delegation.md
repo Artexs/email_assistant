@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress: build step 0 done (plan checked against the S3 code). Stage 2 PASS (pushed); stage 3 built, review pending; next: stages 4–5 in pipeline mode; stage 1 (Interia probe) runs when the user is free (password on stdin, `/pause`); stage 6 waits for checkpoint 1.** Run mode: pipeline (`tasks/README.md` § "Pipeline mode"), user decision 2026-11-07. The user said S3 counts as built (they test S3 stage 16 in a separate checkout, `~/ea-s3-test`). Build handoff: `notes/2026-11-07-handoff-s4-build.md`.
+> **Status 2026-11-07 — in progress: build step 0 done (plan checked against the S3 code). Stage 2 PASS (pushed); stages 3–4 built, review pending; next: stage 5 in pipeline mode; stage 1 (Interia probe) runs when the user is free (password on stdin, `/pause`); stage 6 waits for checkpoint 1.** Run mode: pipeline (`tasks/README.md` § "Pipeline mode"), user decision 2026-11-07. The user said S3 counts as built (they test S3 stage 16 in a separate checkout, `~/ea-s3-test`). Build handoff: `notes/2026-11-07-handoff-s4-build.md`.
 
 # S4 Drafts, approvals, delegation
 
@@ -154,7 +154,7 @@ Each stage lives in its own file in [`s4-drafts-approvals-delegation/`](s4-draft
 - [ ] [Stage 1](s4-drafts-approvals-delegation/stage-01-interia-send-spike.md) — Interia send spike: `mailbox:probe-send` on the real mailbox [risky] [written] — user checkpoint 1 after it
 - [x] [Stage 2](s4-drafts-approvals-delegation/stage-02-s4-migration.md) — S4 migration: `delegates`, `delegations`, action types and checks, outbox kinds [risky] [written]
 - [x] [Stage 3](s4-drafts-approvals-delegation/stage-03-core-triage-delegation.md) — Core: `delegation` in the rules, the analysis schema, the planner, the policy [risky] [written]
-- [ ] [Stage 4](s4-drafts-approvals-delegation/stage-04-core-outgoing-messages.md) — Core: outgoing message builder, templates, quote, external-sender rule [risky] [written]
+- [x] [Stage 4](s4-drafts-approvals-delegation/stage-04-core-outgoing-messages.md) — Core: outgoing message builder, templates, quote, external-sender rule [risky] [written]
 - [ ] [Stage 5](s4-drafts-approvals-delegation/stage-05-mail-append-sender-compose.md) — Mail: `appendMessage`, the `MailSender` port, the SMTP adapter with the stage rule, the fake sender, `composeMessage` [risky] [written]
 - [ ] [Stage 6](s4-drafts-approvals-delegation/stage-06-locate-by-action-id-and-own-mail.md) — Mail: `locateByActionId`; the own-mail skip wired into the sync [risky] [written]
 - [ ] [Stage 7](s4-drafts-approvals-delegation/stage-07-delegation-repos-service-clis.md) — Delegation module: repositories, service, CLIs `delegates:*` and `delegations:*` [risky] [written]
@@ -264,3 +264,4 @@ Answered 2026-11-07 with the plan defaults (P1–P8). Questions 1–12 below: **
 - 2026-11-07: stage 2 built, review pending (migration `20261108000001_delegation.sql`, `delegation-schema.test.ts`; lint 0, typecheck 0, unit 758 pass, int 563 pass, 0 fail).
 - 2026-11-07: stage 2 review PASS (Opus, high; 1 minor: the status line, fixed here). Commit `f324481` was pushed by another session's push of `6d00f95` after the PASS.
 - 2026-11-07: stage 3 built, review pending (3.1 rules and analysis schema, 3.2 payload schemas, planner, policy; M16 sites; lint 0, typecheck 0, unit 796 pass, int 563 pass, 0 fail). Gap until stage 8: the schema requires `delegate_id`, `task`, `clarification` but the v1 prompt does not name them; no real LLM runs before stage 8.
+- 2026-11-07: stage 4 built, review pending (4.1 `buildOutgoingMessage`, templates, quote; 4.2 `isExternalSender`, `approvalViewOf`; new export `formatDateLabel`; lint 0, typecheck 0, unit 820 pass; no server code, so no int run).
