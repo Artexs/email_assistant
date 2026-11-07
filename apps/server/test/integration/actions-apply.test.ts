@@ -143,7 +143,7 @@ async function auditRows(trx: Transaction<DB>, s: Setup) {
 }
 
 describe("applyAction", () => {
-  test("a type with no handler yet is released with no count and no change", async () => {
+  test("a type with no handler yet is released in its status with no count and waits 5 min", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       const uid = deliverAt(s, "INBOX", 1);
@@ -163,6 +163,9 @@ describe("applyAction", () => {
         locked_at: null,
         attempts: 0,
       });
+      expect((await actionState(trx, mail.actionIds[0] as string)).next_attempt_at?.getTime()).toBe(
+        NOW.getTime() + RETRY_WAIT_MS
+      );
       expect(await auditRows(trx, s)).toHaveLength(0);
     });
   });

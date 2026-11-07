@@ -39,6 +39,7 @@ export type SendAgainResult =
   | { kind: "created"; actionId: string }
   | { kind: "already" }
   | { kind: "draft_gone" }
+  | { kind: "delegation_closed" }
   | { kind: "not_failed" }
   | { kind: "not_found" };
 
@@ -208,13 +209,14 @@ export async function rejectSet(
 }
 
 // D18: one resend per failed row (`:again` key). The delegation stays `cancelled` until the new send is `applied` (D6).
+// A delegation or reminder send whose delegation is closed gets `delegation_closed` and no row.
 export async function sendAgain(
-  db: Db | Transaction<DB>,
+  deps: ApprovalDeps,
   ctx: TenantContext,
   failedActionId: string,
   input: ApprovalInput
 ): Promise<SendAgainResult> {
-  return inTransaction(db, async (trx) => {
+  return inTransaction(deps.db, async (trx) => {
     const failed = await lockSend(trx, ctx, failedActionId);
     if (failed === undefined) return { kind: "not_found" };
     if (
@@ -226,6 +228,12 @@ export async function sendAgain(
     const draft =
       failed.depends_on_action_id === null ? undefined : await getDraft(trx, ctx, failed.depends_on_action_id);
     if (draft === undefined || draft.status !== "applied") return { kind: "draft_gone" };
+    // A resend of a delegation or reminder send needs its delegation in a state that takes the send (lock order: send, then delegation).
+    const delegationId = failed.payload.delegation_id;
+    const kind = failed.payload.kind;
+    if (typeof delegationId === "string" && (kind === "reminder" || kind === "delegation")) {
+      if (!(await deps.hooks.isOpen(trx, ctx, delegationId, kind))) return { kind: "delegation_closed" };
+    }
     const actionId = await insertSendAgain(trx, ctx, failed, { userId: input.userId, via: input.via, at: input.now });
     if (actionId === null) return { kind: "already" };
     await recordAudit(trx, ctx, {

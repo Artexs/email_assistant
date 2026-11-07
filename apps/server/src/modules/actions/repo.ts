@@ -117,21 +117,23 @@ export async function createPlanned(
   return created;
 }
 
-// payload = payload || patch, in the context org. Returns the row count.
-export async function mergeActionPayload(
+// Writes only the `delegation_id` key of the payload (D2), on `create_draft` and `send` rows of the context org.
+// Returns the row count.
+export async function setDelegationId(
   db: DbOrTrx,
   ctx: TenantContext,
-  ids: readonly string[],
-  patch: Record<string, unknown>
+  actionIds: readonly string[],
+  delegationId: string
 ): Promise<number> {
-  if (ids.length === 0) {
+  if (actionIds.length === 0) {
     return 0;
   }
   const result = await db
     .updateTable("actions")
-    .set({ payload: sql`payload || ${JSON.stringify(patch)}::jsonb` })
+    .set({ payload: sql`payload || ${JSON.stringify({ delegation_id: delegationId })}::jsonb` })
     .where("org_id", "=", ctx.orgId)
-    .where("id", "in", [...ids])
+    .where("type", "in", ["create_draft", "send"])
+    .where("id", "in", [...actionIds])
     .executeTakeFirst();
   return Number(result.numUpdatedRows);
 }

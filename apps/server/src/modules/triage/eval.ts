@@ -11,6 +11,7 @@ import {
   decideCategory,
   decidePolicy,
   delegateIdOf,
+  delegationInputOf,
   EVAL_RECEIVED_AT,
   type DelegationInput,
   type EvalCase,
@@ -172,18 +173,9 @@ function delegateAddress(key: string): string {
   return `${key}@${DELEGATE_ADDRESS_DOMAIN}`;
 }
 
-function planDelegationInput(c: EvalCase, analysis: TriageAnalysis): DelegationInput {
-  const delegate = c.delegates.find((d) => delegateIdOf(d.key) === analysis.fields.delegate_id);
-  return {
-    delegateId: delegate ? delegateIdOf(delegate.key) : null,
-    delegateName: delegate?.name ?? null,
-    to: delegate ? delegateAddress(delegate.key) : null,
-    task: analysis.fields.task,
-    clarification: analysis.fields.clarification,
-    dueDate: analysis.fields.due_date,
-    language: analysis.fields.language,
-    senderAddress: splitAddress(c.from).address,
-  };
+function planDelegationInput(c: EvalCase, analysis: TriageAnalysis): DelegationInput | null {
+  const delegates = c.delegates.map((d) => ({ id: delegateIdOf(d.key), name: d.name, email: delegateAddress(d.key) }));
+  return delegationInputOf(analysis, delegates, splitAddress(c.from).address);
 }
 
 function draftKindOf(actions: PlannedAction[]): DraftKind {
@@ -418,7 +410,7 @@ async function runCase(deps: Deps, c: EvalCase, input: { model: string; retries:
   const actions = planActions(
     finalCategory,
     analysis?.summary ?? null,
-    analysis && finalCategory === "delegation" ? planDelegationInput(c, analysis) : undefined
+    analysis && finalCategory === "delegation" ? (planDelegationInput(c, analysis) ?? undefined) : undefined
   );
   return {
     ...base,

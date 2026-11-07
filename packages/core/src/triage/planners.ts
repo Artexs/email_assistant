@@ -1,4 +1,4 @@
-import { CLARIFICATION_MAX_CHARS, TASK_MAX_CHARS } from "./analysis";
+import { CLARIFICATION_MAX_CHARS, TASK_MAX_CHARS, type TriageAnalysis } from "./analysis";
 import type { Category } from "./categories";
 import { ADDRESS_PATTERN, sendPayloadFor, type DraftPayload, type SendPayload } from "./payloads";
 import { isNoreplyAddress } from "./rules";
@@ -51,6 +51,27 @@ function draftAndSend(draft: DraftPayload): PlannedAction[] {
     { type: "create_draft", draft },
     { type: "send", send: sendPayloadFor(draft), dependsOn: "create_draft" },
   ];
+}
+
+// The planner input of a mail that the model called `delegation`; null for any other category. The service and the eval
+// build it here, so both plan from the same fields. `delegates` holds the delegates rows (the address of the row).
+export function delegationInputOf(
+  analysis: Pick<TriageAnalysis, "category" | "fields">,
+  delegates: readonly { id: string; name: string; email: string }[],
+  senderAddress: string | null
+): DelegationInput | null {
+  if (analysis.category !== "delegation") return null;
+  const delegate = delegates.find((candidate) => candidate.id === analysis.fields.delegate_id);
+  return {
+    delegateId: delegate?.id ?? null,
+    delegateName: delegate?.name ?? null,
+    to: delegate?.email ?? null,
+    task: analysis.fields.task,
+    clarification: analysis.fields.clarification,
+    dueDate: analysis.fields.due_date,
+    language: analysis.fields.language,
+    senderAddress,
+  };
 }
 
 function planDelegation(input: DelegationInput | undefined): PlannedAction[] {

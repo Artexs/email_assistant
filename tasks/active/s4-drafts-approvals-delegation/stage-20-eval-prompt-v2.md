@@ -4,6 +4,8 @@ Part of [`../s4-drafts-approvals-delegation.md`](../s4-drafts-approvals-delegati
 
 ## Stage 20 — Eval of `classifier-v2` on the Mac: synthetic, injection, delegation cases; the gate [risky]
 
+Order: this stage may run before stages 11–19. It must pass before any VPS deploy of a commit after `c0340b4` (S3 stage 19 holds the same precondition).
+
 Why risky: the prompt change touches every mail. The old categories must not get worse, and no injection case may plan a draft (D32).
 
 - [ ] **20.1 The full run and the comparison with v1**

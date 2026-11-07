@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { categories, type Category } from "./categories";
-import { AI_FOLDER_NAMES, folderKeys, planActions, type DelegationInput } from "./planners";
+import { AI_FOLDER_NAMES, delegationInputOf, folderKeys, planActions, type DelegationInput } from "./planners";
 import { markUntrustedText } from "./untrusted-text";
 
 const plannable = categories.filter((category) => category !== "delegation");
@@ -153,5 +153,50 @@ describe("planActions", () => {
 describe("AI_FOLDER_NAMES", () => {
   test("has one name for every folder key", () => {
     expect(Object.keys(AI_FOLDER_NAMES).sort()).toEqual([...folderKeys].sort());
+  });
+});
+
+describe("delegationInputOf", () => {
+  const delegates = [
+    { id: "d1", name: "Anna", email: "anna@x.test" },
+    { id: "d2", name: "Marek", email: "marek@x.test" },
+  ];
+  const analysis = (delegateId: string | null, category: Category = "delegation") => ({
+    category,
+    fields: {
+      delegate_id: delegateId,
+      task: "Prepare the offer",
+      clarification: null,
+      due_date: "2026-11-20",
+      language: "en" as const,
+    },
+  });
+
+  test("a delegation mail gets the picked delegate's row data and the sender", () => {
+    expect(delegationInputOf(analysis("d2"), delegates, "boss@x.test")).toEqual({
+      delegateId: "d2",
+      delegateName: "Marek",
+      to: "marek@x.test",
+      task: "Prepare the offer",
+      clarification: null,
+      dueDate: "2026-11-20",
+      language: "en",
+      senderAddress: "boss@x.test",
+    });
+  });
+
+  test("no pick or an unknown id gives null delegate fields; a null sender stays null", () => {
+    for (const id of [null, "gone"]) {
+      expect(delegationInputOf(analysis(id), delegates, null)).toMatchObject({
+        delegateId: null,
+        delegateName: null,
+        to: null,
+        senderAddress: null,
+      });
+    }
+  });
+
+  test("another category gives null", () => {
+    expect(delegationInputOf(analysis("d1", "info"), delegates, "boss@x.test")).toBeNull();
   });
 });

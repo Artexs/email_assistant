@@ -263,19 +263,27 @@ describe("closing a delegation closes its reminders", () => {
     });
   });
 
-  test("closeDelegation: done, then already; unknown id: not_found", async () => {
+  test("closeDelegation: done, then already; unknown id: not_found; drafted, sent, cancelled: not_closable", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       const d = await delegationWithPair(trx, s.ctx, s.mailboxId, "overdue");
       const r = await reminderPair(trx, s.ctx, d.emailId, d.id);
 
-      expect(await closeDelegation(trx, s.ctx, d.id, { actor: "cli", at: now })).toBe("done");
+      expect(await closeDelegation(trx, s.ctx, d.id, { actor: "cli", at: now })).toEqual({ kind: "done" });
       expect((await getDelegation(trx, s.ctx, d.id))?.status).toBe("done");
       expect((await getSend(trx, s.ctx, r.sendId))?.status).toBe("expired");
       expect((await auditRows(trx, s.ctx, "delegation.done"))[0]).toMatchObject({ actor: "cli" });
       expect((await auditRows(trx, s.ctx, "action.expired"))[0]).toMatchObject({ actor: "cli" });
-      expect(await closeDelegation(trx, s.ctx, d.id, { actor: "cli", at: now })).toBe("already");
-      expect(await closeDelegation(trx, s.ctx, randomUUID(), { actor: "cli", at: now })).toBe("not_found");
+      expect(await closeDelegation(trx, s.ctx, d.id, { actor: "cli", at: now })).toEqual({ kind: "already" });
+      expect(await closeDelegation(trx, s.ctx, randomUUID(), { actor: "cli", at: now })).toEqual({ kind: "not_found" });
+      for (const status of ["drafted", "sent", "cancelled"] as const) {
+        const open = await delegationWithPair(trx, s.ctx, s.mailboxId, status);
+        expect(await closeDelegation(trx, s.ctx, open.id, { actor: "cli", at: now })).toEqual({
+          kind: "not_closable",
+          status,
+        });
+        expect((await getDelegation(trx, s.ctx, open.id))?.status).toBe(status);
+      }
     });
   });
 
@@ -324,6 +332,31 @@ describe("delegationHooks", () => {
         status: "cancelled",
         status_reason: "expired",
       });
+    });
+  });
+
+  test("isOpen: a reminder needs sent | overdue; a delegation send needs drafted or cancelled by a failed send", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const hooks = delegationHooks({ db });
+      const open = async (status: string, reason: string | null, kind: "reminder" | "delegation") => {
+        const d = await delegationWithPair(trx, s.ctx, s.mailboxId, status);
+        await trx.updateTable("delegations").set({ status_reason: reason }).where("id", "=", d.id).execute();
+        return hooks.isOpen(trx, s.ctx, d.id, kind);
+      };
+
+      expect(await open("sent", null, "reminder")).toBe(true);
+      expect(await open("overdue", null, "reminder")).toBe(true);
+      expect(await open("answered", null, "reminder")).toBe(false);
+      expect(await open("done", null, "reminder")).toBe(false);
+      expect(await open("cancelled", "outcome_unknown", "reminder")).toBe(false);
+      expect(await open("drafted", null, "delegation")).toBe(true);
+      expect(await open("cancelled", "outcome_unknown", "delegation")).toBe(true);
+      expect(await open("cancelled", "send_failed", "delegation")).toBe(true);
+      expect(await open("cancelled", "rejected", "delegation")).toBe(false);
+      expect(await open("cancelled", "expired", "delegation")).toBe(false);
+      expect(await open("sent", null, "delegation")).toBe(false);
+      expect(await hooks.isOpen(trx, s.ctx, randomUUID(), "reminder")).toBe(false);
     });
   });
 });

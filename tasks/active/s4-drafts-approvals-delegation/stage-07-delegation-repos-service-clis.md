@@ -29,6 +29,7 @@ Why risky: a delegate row is a recipient of real mail; tenant filters and the "n
         input: { delegationId: string; sentMessageId: string; sentAt: Date; dueAtWhenNull: Date }
       ): Promise<boolean>;
       onReminderSent(trx, ctx, input: { delegationId: string; at: Date }): Promise<boolean>;
+      isOpen(trx, ctx, delegationId: string, kind: "reminder" | "delegation"): Promise<boolean>; // checkpoint 2: for sendAgain, D18
       onCancelled(trx, ctx, input: { delegationId: string; reason: string; at: Date }): Promise<boolean>;
     }
     export const noDelegationHooks: DelegationHooks; // every call returns false (tests, composition roots that need none)
@@ -273,7 +274,8 @@ Why risky: a delegate row is a recipient of real mail; tenant filters and the "n
       ctx,
       delegationId,
       input: { actor: string; at: Date }
-    ): Promise<"done" | "already" | "not_found">;
+    ): Promise<CloseResult>;
+    // { kind: "done" } | { kind: "already" } (status done) | { kind: "not_closable"; status } (drafted, sent, cancelled) | { kind: "not_found" }
     export function delegationHooks(deps: { db }): DelegationHooks; // binds onSent, onReminderSent, onCancelled to the service functions
     ```
 

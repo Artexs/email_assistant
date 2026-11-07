@@ -54,9 +54,9 @@ export {
   markResultNotified,
   markNotified,
   markUndone,
-  mergeActionPayload,
   releaseAction,
   releaseActions,
+  setDelegationId,
   updateProviderResult,
 } from "./repo";
 export type {

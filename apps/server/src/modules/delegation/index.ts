@@ -8,6 +8,7 @@ export {
   markAnswered,
   setDelegateState,
   type AddDelegateResult,
+  type CloseResult,
 } from "./service";
 export {
   bumpReminder,
@@ -26,8 +27,6 @@ export {
   listDueDelegations,
   lockDelegation,
   markAnsweredNotified,
-  markDelegationCancelled,
-  markDelegationDone,
   markDelegationOverdue,
   markDelegationSent,
   markReminderPlanned,

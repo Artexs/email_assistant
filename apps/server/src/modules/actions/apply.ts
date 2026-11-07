@@ -18,7 +18,7 @@ import {
 } from "../mail";
 
 import { ensureMoved, type EnsureResult } from "./move";
-import { finishAction, markUndone, releaseAction, releaseActions, type ClaimedAction } from "./repo";
+import { finishAction, markUndone, releaseAction, type ClaimedAction } from "./repo";
 
 const log = createLog("actions");
 
@@ -359,10 +359,17 @@ export async function applyAction(
   if (action.type === "save_summary") {
     return applySummary(deps, ctx, action);
   }
-  // Until the draft and send handlers exist: give the row back, no count, never apply it as a flag.
+  // Until the draft and send handlers exist: give the row back in its status, no count, wait 5 min so the rows do not
+  // fill each batch. Never apply it as a flag.
   if (action.type === "create_draft" || action.type === "send") {
     log.warn(`committer: ${action.id} type ${action.type} not handled yet`);
-    await releaseActions(deps.db, ctx, [action.id], action.locked_at, deps.now());
+    const now = deps.now();
+    await releaseAction(deps.db, ctx, action.id, action.locked_at, {
+      toStatus: action.status,
+      nextAttemptAt: new Date(now.getTime() + RETRY_WAIT_MS),
+      countAttempt: false,
+      now,
+    });
     return { kind: "not_handled" };
   }
   if (provider === null) {

@@ -65,8 +65,11 @@ async function main(): Promise<number> {
     const result = await db
       .transaction()
       .execute((trx) => closeDelegation(trx, ctx, command.id, { actor: ACTOR, at: new Date() }));
-    out(result === "done" ? `done ${command.id}` : result === "already" ? "already done" : "not found");
-    return result === "not_found" ? 1 : 0;
+    if (result.kind === "done") out(`done ${command.id}`);
+    else if (result.kind === "already") out("already done");
+    else if (result.kind === "not_closable") out(`not closable: status ${result.status}`);
+    else out("not found");
+    return result.kind === "not_found" || result.kind === "not_closable" ? 1 : 0;
   } catch (error) {
     log.error("failed:", describeError(error));
     return 1;

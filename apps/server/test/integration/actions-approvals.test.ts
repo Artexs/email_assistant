@@ -51,6 +51,9 @@ function recordingHooks() {
   return { hooks, calls };
 }
 
+// The delegation of the test rows is open.
+const openHooks: DelegationHooks = { ...noDelegationHooks, isOpen: async () => true };
+
 function depsOf(trx: Transaction<DB>, hooks: DelegationHooks, uidplus = true): ApprovalDeps {
   return { db: trx, hooks, uidplus: async () => uidplus };
 }
@@ -361,7 +364,7 @@ describe("sendAgain", () => {
       const p = await failedPair(trx, s, "outcome_unknown");
       const old = await row(trx, p.sendId);
 
-      const result = await sendAgain(trx, s.ctx, p.sendId, input(s.userId));
+      const result = await sendAgain(depsOf(trx, openHooks), s.ctx, p.sendId, input(s.userId));
       expect(result.kind).toBe("created");
       const created = await row(trx, (result as { actionId: string }).actionId);
       expect(created).toMatchObject({
@@ -382,7 +385,7 @@ describe("sendAgain", () => {
       expect(audit).toHaveLength(1);
       expect(audit[0]).toMatchObject({ action_id: created.id, data: { previous_action_id: p.sendId } });
 
-      expect(await sendAgain(trx, s.ctx, p.sendId, input(other))).toEqual({ kind: "already" });
+      expect(await sendAgain(depsOf(trx, openHooks), s.ctx, p.sendId, input(other))).toEqual({ kind: "already" });
       const sends = await trx
         .selectFrom("actions")
         .select("id")
@@ -393,19 +396,72 @@ describe("sendAgain", () => {
     });
   });
 
+  test("delegation_closed: a reminder or delegation send of a closed delegation gets no row; a clarification is not checked", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const seen: { delegationId: string; kind: string }[] = [];
+      const closed: DelegationHooks = {
+        ...noDelegationHooks,
+        isOpen: async (_trx, _ctx, delegationId, kind) => {
+          seen.push({ delegationId, kind });
+          return false;
+        },
+      };
+      for (const kind of ["delegation", "reminder"] as const) {
+        const delegationId = randomUUID();
+        const p = await failedPair(trx, s, "outcome_unknown", { kind, delegationId });
+        expect(await sendAgain(depsOf(trx, closed), s.ctx, p.sendId, input(s.userId))).toEqual({
+          kind: "delegation_closed",
+        });
+        expect(seen.at(-1)).toEqual({ delegationId, kind });
+        const sends = await trx
+          .selectFrom("actions")
+          .select("id")
+          .where("depends_on_action_id", "=", p.draftId)
+          .where("type", "=", "send")
+          .execute();
+        expect(sends).toHaveLength(1);
+        expect(await auditRows(trx, s.ctx, "action.send_again")).toHaveLength(0);
+      }
+      const clarification = await pair(trx, s, {
+        kind: "clarification",
+        sendStatus: "failed",
+        approved: { userId: s.userId, at: ago(2 * HOUR) },
+      });
+      await trx
+        .updateTable("actions")
+        .set({ status_reason: "smtp_error" })
+        .where("id", "=", clarification.sendId)
+        .execute();
+      const result = await sendAgain(depsOf(trx, closed), s.ctx, clarification.sendId, input(s.userId));
+      expect(result.kind).toBe("created");
+      expect(seen).toHaveLength(2);
+    });
+  });
+
   test("not_failed, draft_gone and not_found", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       const rejectedByServer = await failedPair(trx, s, "smtp_rejected");
-      expect(await sendAgain(trx, s.ctx, rejectedByServer.sendId, input(s.userId))).toEqual({ kind: "not_failed" });
+      expect(await sendAgain(depsOf(trx, openHooks), s.ctx, rejectedByServer.sendId, input(s.userId))).toEqual({
+        kind: "not_failed",
+      });
       const awaiting = await pair(trx, s);
-      expect(await sendAgain(trx, s.ctx, awaiting.sendId, input(s.userId))).toEqual({ kind: "not_failed" });
+      expect(await sendAgain(depsOf(trx, openHooks), s.ctx, awaiting.sendId, input(s.userId))).toEqual({
+        kind: "not_failed",
+      });
       const smtpError = await failedPair(trx, s, "smtp_error", { draftStatus: "undone" });
-      expect(await sendAgain(trx, s.ctx, smtpError.sendId, input(s.userId))).toEqual({ kind: "draft_gone" });
-      expect(await sendAgain(trx, s.ctx, randomUUID(), input(s.userId))).toEqual({ kind: "not_found" });
+      expect(await sendAgain(depsOf(trx, openHooks), s.ctx, smtpError.sendId, input(s.userId))).toEqual({
+        kind: "draft_gone",
+      });
+      expect(await sendAgain(depsOf(trx, openHooks), s.ctx, randomUUID(), input(s.userId))).toEqual({
+        kind: "not_found",
+      });
       const b = await setup(trx);
       const mine = await failedPair(trx, s, "smtp_error");
-      expect(await sendAgain(trx, b.ctx, mine.sendId, input(s.userId))).toEqual({ kind: "not_found" });
+      expect(await sendAgain(depsOf(trx, openHooks), b.ctx, mine.sendId, input(s.userId))).toEqual({
+        kind: "not_found",
+      });
     });
   });
 });
@@ -590,7 +646,9 @@ describe("tenant isolation", () => {
       expect(await reject(depsOf(trx, hooks), b.ctx, old.sendId, input(b.userId))).toEqual({ kind: "not_found" });
       expect(await approveSet(depsOf(trx, hooks), b.ctx, setId, input(b.userId))).toEqual({ approved: 0, skipped: 0 });
       expect(await rejectSet(depsOf(trx, hooks), b.ctx, setId, input(b.userId))).toEqual({ rejected: 0, skipped: 0 });
-      expect(await sendAgain(trx, b.ctx, failed.sendId, input(b.userId))).toEqual({ kind: "not_found" });
+      expect(await sendAgain(depsOf(trx, openHooks), b.ctx, failed.sendId, input(b.userId))).toEqual({
+        kind: "not_found",
+      });
       expect(await listSendsToNotify(trx, b.ctx, { limit: 10 })).toEqual([]);
       expect((await listSetsToNotify(trx, b.ctx, { limit: 10 })).size).toBe(0);
       const results = await listSendResultsToNotify(trx, b.ctx, {

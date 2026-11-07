@@ -4,6 +4,7 @@ import {
   autoFor,
   decideCategory,
   decidePolicy,
+  delegationInputOf,
   nextQuotaDayStart,
   planActions,
   QUOTA_TIMEZONE,
@@ -22,7 +23,7 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { describeError, SoftError } from "../../platform/errors";
 import { LlmBlockedError, LlmConfigError, llmErrorCode, type LlmClient, type LlmUsage } from "../../platform/llm";
 import { createLog } from "../../platform/log";
-import { createPlanned, mergeActionPayload, type CreatedAction, type PlannedActionInput } from "../actions";
+import { createPlanned, setDelegationId, type CreatedAction, type PlannedActionInput } from "../actions";
 import { auditEvents, countLlmCallsSince, recordAudit } from "../audit";
 import { lockSettingsForShare } from "../config";
 import { createDelegation, detectReply, markAnswered } from "../delegation";
@@ -155,7 +156,7 @@ async function createDelegationRow(
     timezone: mailbox.timezone,
     now,
   });
-  await mergeActionPayload(trx, ctx, [draft.id, send.id], { delegation_id: delegationId });
+  await setDelegationId(trx, ctx, [draft.id, send.id], delegationId);
   return delegationId;
 }
 
@@ -497,20 +498,7 @@ export async function triageOne(
   });
 
   const { category, belowThreshold } = decideCategory(analysis, mailbox.policy);
-  const delegate = mailbox.delegates.find((candidate) => candidate.id === analysis.fields.delegate_id);
-  const delegation: DelegationInput | null =
-    analysis.category === "delegation"
-      ? {
-          delegateId: delegate?.id ?? null,
-          delegateName: delegate?.name ?? null,
-          to: delegate?.email ?? null,
-          task: analysis.fields.task,
-          clarification: analysis.fields.clarification,
-          dueDate: analysis.fields.due_date,
-          language: analysis.fields.language,
-          senderAddress: email.from_address,
-        }
-      : null;
+  const delegation = delegationInputOf(analysis, mailbox.delegates, email.from_address);
   return saveTriage(
     deps.db,
     ctx,

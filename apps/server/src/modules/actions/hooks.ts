@@ -17,10 +17,19 @@ export interface DelegationHooks {
     ctx: TenantContext,
     input: { delegationId: string; reason: string; at: Date }
   ): Promise<boolean>;
+  // Locks the delegation row (the caller holds the send lock: send, then delegation). A `reminder` send needs the delegation `sent` or `overdue`; a `delegation` send needs it `drafted`,
+  // or `cancelled` with the reason `outcome_unknown` or `send_failed` (D6: "Send again" after a failed send).
+  isOpen(
+    trx: Transaction<DB>,
+    ctx: TenantContext,
+    delegationId: string,
+    kind: "reminder" | "delegation"
+  ): Promise<boolean>;
 }
 
 export const noDelegationHooks: DelegationHooks = {
   onSent: async () => false,
   onReminderSent: async () => false,
   onCancelled: async () => false,
+  isOpen: async () => false,
 };

@@ -21,10 +21,10 @@ import {
   lockLatestOriginalMove,
   markApplying,
   markNotified,
-  mergeActionPayload,
   markUndone,
   releaseAction,
   releaseActions,
+  setDelegationId,
   updateProviderResult,
   APPROVAL_TTL_MS,
   type ClaimFilter,
@@ -1152,7 +1152,7 @@ describe("tenant filter (7.1b)", () => {
   });
 });
 
-describe("createPlanned with dependsOn and mergeActionPayload", () => {
+describe("createPlanned with dependsOn and setDelegationId", () => {
   const draftOf = (emailId: string, suffix = ""): PlannedActionInput => ({
     type: "create_draft",
     payload: { kind: "delegation" },
@@ -1230,18 +1230,26 @@ describe("createPlanned with dependsOn and mergeActionPayload", () => {
     });
   });
 
-  test("mergeActionPayload adds a key, keeps the others and stays in the context org", async () => {
+  test("setDelegationId writes only delegation_id, only on create_draft and send rows, in the context org", async () => {
     await withRollback(db, async (trx) => {
       const { a, b } = await createTwoTenants(trx);
       const emailId = await insertTestEmail(trx, a.ctx, a.mailboxId);
       const created = await createPlanned(trx, a.ctx, emailId, [draftOf(emailId), sendOf(emailId)]);
       const ids = created.map((row) => row.id);
+      const move = await insertAction(trx, a.ctx, emailId, {
+        type: "move",
+        status: "ready",
+        payload: { folder: "info" },
+      });
 
-      expect(await mergeActionPayload(trx, b.ctx, ids, { delegation_id: "x" })).toBe(0);
-      expect(await mergeActionPayload(trx, a.ctx, ids, { delegation_id: "x" })).toBe(2);
+      expect(await setDelegationId(trx, b.ctx, ids, "x")).toBe(0);
+      expect(await setDelegationId(trx, a.ctx, [...ids, move], "x")).toBe(2);
       const rows = await actionRows(trx, a.ctx.orgId);
-      for (const row of rows) expect(row.payload).toEqual({ kind: "delegation", delegation_id: "x" });
-      expect(await mergeActionPayload(trx, a.ctx, [], { delegation_id: "y" })).toBe(0);
+      for (const row of rows.filter((r) => ids.includes(r.id))) {
+        expect(row.payload).toEqual({ kind: "delegation", delegation_id: "x" });
+      }
+      expect(rows.find((r) => r.id === move)?.payload).toEqual({ folder: "info" });
+      expect(await setDelegationId(trx, a.ctx, [], "y")).toBe(0);
     });
   });
 });

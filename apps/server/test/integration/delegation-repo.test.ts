@@ -18,13 +18,17 @@ import {
   listDueDelegations,
   lockDelegation,
   markAnsweredNotified,
-  markDelegationCancelled,
-  markDelegationDone,
   markDelegationOverdue,
   markDelegationSent,
   markReminderPlanned,
 } from "../../src/modules/delegation";
-import { insertDelegate, setDelegateActive, markDelegationAnswered } from "../../src/modules/delegation/repo";
+import {
+  insertDelegate,
+  setDelegateActive,
+  markDelegationAnswered,
+  markDelegationCancelled,
+  markDelegationDone,
+} from "../../src/modules/delegation/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
 
 import {

@@ -18,6 +18,7 @@ import {
   markDelegationDone,
   markDelegationSent,
   setDelegateActive,
+  type DelegationStatus,
 } from "./repo";
 
 type DbOrTrx = Db | Transaction<DB>;
@@ -209,15 +210,25 @@ export async function cancelDelegation(
   return true;
 }
 
+// `done` only from `answered` or `overdue`; `already` for `done`; `not_closable` for `drafted`, `sent` and `cancelled`.
+export type CloseResult =
+  | { kind: "done" }
+  | { kind: "already" }
+  | { kind: "not_closable"; status: DelegationStatus }
+  | { kind: "not_found" };
+
 export async function closeDelegation(
   trx: Transaction<DB>,
   ctx: TenantContext,
   delegationId: string,
   input: { actor: string; at: Date }
-): Promise<"done" | "already" | "not_found"> {
+): Promise<CloseResult> {
   const delegation = await lockDelegation(trx, ctx, delegationId);
-  if (delegation === undefined) return "not_found";
-  if (!(await markDelegationDone(trx, ctx, delegationId, input.at))) return "already";
+  if (delegation === undefined) return { kind: "not_found" };
+  if (delegation.status === "done") return { kind: "already" };
+  if (!(await markDelegationDone(trx, ctx, delegationId, input.at))) {
+    return { kind: "not_closable", status: delegation.status };
+  }
   const expired = await closeReminders(trx, ctx, delegation, delegationId, { at: input.at, actor: input.actor });
   await recordAudit(trx, ctx, {
     emailId: delegation.email_id,
@@ -226,7 +237,7 @@ export async function closeDelegation(
     data: { delegation_id: delegationId, delegate_id: delegation.delegate_id, reminders_expired: expired },
     at: input.at,
   });
-  return "done";
+  return { kind: "done" };
 }
 
 // The callbacks that the committer, the approvals and the expiry job call (D29). `main.ts` wires them.
@@ -253,5 +264,15 @@ export function delegationHooks(_deps: { db: Db }): DelegationHooks {
     },
     onReminderSent: (trx, ctx, input) => bumpReminder(trx, ctx, input.delegationId, input.at),
     onCancelled: (trx, ctx, input) => cancelDelegation(trx, ctx, input.delegationId, input),
+    isOpen: async (trx, ctx, delegationId, kind) => {
+      const delegation = await lockDelegation(trx, ctx, delegationId);
+      if (delegation === undefined) return false;
+      if (kind === "reminder") return delegation.status === "sent" || delegation.status === "overdue";
+      if (delegation.status === "drafted") return true;
+      return (
+        delegation.status === "cancelled" &&
+        (delegation.status_reason === "outcome_unknown" || delegation.status_reason === "send_failed")
+      );
+    },
   };
 }
