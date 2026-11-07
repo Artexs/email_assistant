@@ -5,6 +5,7 @@ export { openMailboxProvider, type OpenDeps } from "./open";
 export { createMailSyncJob, type MailSyncJobDeps } from "./jobs";
 export { openImapProvider, type ImapConnectOptions } from "./imap/client";
 export { assertTestAddress, probeMove, type ProbeMoveReport } from "./imap/probe-move";
+export { isAllowedRecipient, probeSend, type ProbeSendReport } from "./imap/probe-send";
 export { composeMessage } from "./imap/compose";
 export { openSmtpSender, verifySmtpLogin, type SmtpConnectOptions } from "./imap/smtp";
 export {

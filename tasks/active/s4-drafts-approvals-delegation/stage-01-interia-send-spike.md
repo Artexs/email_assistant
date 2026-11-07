@@ -6,7 +6,7 @@ Part of [`../s4-drafts-approvals-delegation.md`](../s4-drafts-approvals-delegati
 
 Why first: the "Not verified" Interia items (drafts folder behaviour, the header fetch of an appended draft, `SEARCH SINCE` in Drafts and Sent, `UID EXPUNGE` of a draft, the SMTP reply, the Sent copy, the own mail back in INBOX) decide the rules of stages 6, 11 and 12. The probe writes one draft, sends one mail from the user's address to the user's own address, appends one copy to Sent, and cleans up. It runs on the Mac against Interia directly (no VPS, no DB): the user types the Interia password on stdin.
 
-- [ ] **1.1 CLI `mailbox:probe-send` (test address only)**
+- [x] **1.1 CLI `mailbox:probe-send` (test address only)**
   - Goal: one command that performs every IMAP and SMTP write that S4 will use, with one synthetic message, and prints facts only.
   - Files: create `apps/server/src/modules/mail/imap/probe-send.ts`, `apps/server/src/scripts/mailbox-probe-send.ts`, `apps/server/test/integration/imap-probe-send.test.ts`; change `package.json` (script `"mailbox:probe-send": "bun apps/server/src/scripts/mailbox-probe-send.ts"`), `apps/server/src/modules/mail/index.ts` (export `probeSend`, `type ProbeSendReport`).
   - Interfaces:

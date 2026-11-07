@@ -40,6 +40,7 @@
     "mailbox:password": "bun apps/server/src/scripts/mailbox-password.ts",
     "mailbox:check": "bun apps/server/src/scripts/mailbox-check.ts",
     "mailbox:probe-move": "bun apps/server/src/scripts/mailbox-probe-move.ts",
+    "mailbox:probe-send": "bun apps/server/src/scripts/mailbox-probe-send.ts",
     "mailbox:seed": "bun apps/server/src/scripts/mailbox-seed.ts",
     "mailbox:rescan": "bun apps/server/src/scripts/mailbox-rescan.ts",
     "mailbox:audit": "bun apps/server/src/scripts/mailbox-audit.ts",
