@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress: stages 1–9 done; stage 10 (Undo service, D22) is next.** Run mode: pipeline from stage 10 (`tasks/README.md` § "Pipeline mode"). Handoff `notes/2026-11-07-handoff-s3-build-stage10.md`. The user said: build to the end without stops; take the defaults or the proposed values for questions. Q1 and Q5 keep their defaults.
+> **Status 2026-11-07 — in progress: stages 1–9 done; stage 10 (Undo service, D22) built in the working tree, not committed, not reviewed.** Run mode: pipeline from stage 10 (`tasks/README.md` § "Pipeline mode"). Handoff `notes/2026-11-07-handoff-s3-pipeline.md`. The user said: build to the end without stops; take the defaults or the proposed values for questions. Q1 and Q5 keep their defaults.
 
 # S3 Assist actions
 
