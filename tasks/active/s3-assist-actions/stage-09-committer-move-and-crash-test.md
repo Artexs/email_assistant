@@ -4,6 +4,13 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 
 ## Stage 9 — Committer: move as an ensure, folders, the crash test [risky]
 
+Checkpoint 2 addendum (group review 2026-11-07; main session decisions under the user's "use the defaults"):
+
+- Finding 2: the fake splits `keepUidOnCopy` into `keepUidOnCopy` (protocol COPY/MOVE by `moveMessage`) and `keepUidOnUserMove` (the `userMove` test helper, webmail). Interia shape = `keepUidOnCopy: false, keepUidOnUserMove: true` (checkpoint 1: a protocol COPY gets a new UID; a webmail move keeps it). The stage 9 and 10 tests use the Interia shape unless a test says otherwise; test (1) of 9.1a must check that the row's `uid` becomes the new target UID. Update the stage 3 and 6 tests that use `keepUidOnCopy` for a user move. Build this as the first part of 9.1a.
+- Finding 4: `fake.test.ts` also runs `describeMailProviderContract("fake-copy-path", …)` with `capabilities: { move: false, uidplus: true }`.
+- Finding 5: `ensureFolder` (adapter and fake) matches the exact path first, then a case-insensitive match of the parts (a user folder `ai` or `Ai` is used, not created again); a unit case each.
+- Finding 1 (a reverse move stopped between the COPY and the expunge): see D22 in the task file; stage 10 builds it, 9.1b leaves a hook (`finish` of a reverse move clears `emails.undo_pending_at`, stage 10).
+
 Checkpoint 1 input: stage 1 settled whether `COPYUID` comes back at Interia and whether the UID is kept. The ensure below does not depend on it (it locates the mail in the target in every case); the main session adds a note here with the Interia facts so the reviewer can check the hint rule.
 
 Checkpoint 1 result (Interia, 2026-11-07): `COPYUID` comes back; the target UID is new (`sameUidAsSource` false, 38914 → 38915). After a system COPY the hint `toUid = email.uid` misses and the locate searches; after a webmail move (UID kept) it hits. No rule change. Real folder path of `AI/<x>` = `AI/<x>` (delimiter `/`, no prefix): no `folder_map` rewrite expected at Interia.

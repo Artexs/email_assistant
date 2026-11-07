@@ -4,6 +4,8 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 
 ## Stage 8 — Committer: flags, summaries, error rules, scope, the job [risky]
 
+Checkpoint 2 addendum (group review 2026-11-07, finding 3; main session decision under the user's "use the defaults"): `FinishNext` gets `at: Date` for every branch, and `finishAction` sets `updated_at` (and `applied_at` for `applied`) from it; `releaseAction` / `releaseActions` take `now: Date` and set `updated_at` from it. The committer passes its run `now`. Why: stages 12 and 13 compare `updated_at` with the job `now`; one clock in tests. Update the stage 7 callers and tests.
+
 - [ ] **8.1 `applyAction` for `save_summary`, `flag`, `mark_read` (original and reverse) and the error rules (D5, D7)**
   - Goal: one function applies one claimed action against a `MailProvider` and writes the result, the email location and the audit row in one transaction; errors map to the §4.1 rule 7 outcomes.
   - Files: create `apps/server/src/modules/actions/apply.ts`, `apps/server/test/integration/actions-apply.test.ts`; change `apps/server/src/modules/actions/index.ts`, `apps/server/src/modules/audit/repo.ts` (`auditEvents`: `actionApplied: "action.applied"`, `actionFailed: "action.failed"`, `actionUndone: "action.undone"`, `actionUndoRequested: "action.undo_requested"`, `actionExpired: "action.expired"`, `emailReturned: "email.returned"`, `mailboxFolderCreated: "mailbox.folder_created"`).

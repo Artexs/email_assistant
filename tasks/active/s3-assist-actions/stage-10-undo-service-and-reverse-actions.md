@@ -4,6 +4,15 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 
 ## Stage 10 — Undo service and reverse actions [risky]
 
+Checkpoint 2 addendum (group review 2026-11-07, finding 1; D22; main session decision under the user's "use the defaults"):
+
+- New migration `20261107000002_undo_pending.sql` (never edit `20261107000001`): `ALTER TABLE emails ADD COLUMN undo_pending_at timestamptz;` (down: drop it); `bun run db:types`.
+- `undo` sets `emails.undo_pending_at = now` in its transaction when it inserts at least one reverse `move` row (through a `mail` repo function `setUndoPending(db, ctx, emailId, at | null)`; `actions → mail` exists).
+- The committer clears it (`null`) in the transaction that finishes a reverse `move` (`applied` or `failed`), through `updateEmailLocation` (new optional field) or `setUndoPending`.
+- The sync `check_folder` branch: when the matched known copy has `undo_pending_at` set (within 1 day) and the locate still finds it in its folder, the incoming INBOX mail is the in-flight target of the reverse move: store nothing, log a debug line with the id, count it (`SyncResult.undoInFlight`). The reverse retry then finds the mail in both folders and deletes the source (D5 "both").
+- Test (stage 10, `actions-move.test.ts` or `actions-undo.test.ts`): a reverse move whose `deleteMessage` / expunge step throws `SoftError` once (fake `failOn`), then `syncMailbox` with the Interia-shape fake (new UID on COPY), then a committer retry → one INBOX copy, no `#2` row, the original `undone`, `undo_pending_at` null. Plus a unit/sync case: `undo_pending_at` older than 1 day → the old rule (`#2`).
+- A reverse that ends `failed` clears the flag; the INBOX copy of a stopped COPY then stays unstored (the failed notice says the mail stays in `AI/…`; known edge, runbook line in stage 18).
+
 - [ ] **10.1 `undo(emailId)` creates the reverse rows (D10)**
   - Goal: one call turns every undoable action of a mail into a reverse action that the committer applies; a second call does nothing; the window is 7 days; a tap that the scope or a pause would hold back creates nothing; a `ready` original of the mail never runs after the Undo.
   - Files: create `apps/server/src/modules/actions/undo.ts`, `apps/server/src/modules/actions/expire.ts`, `apps/server/test/integration/actions-undo.test.ts`; change `apps/server/src/modules/actions/index.ts`, `apps/server/src/modules/actions/scope.ts` (`scopeAdmits`), `apps/server/src/modules/actions/scope.test.ts`, `apps/server/src/modules/mail/repo.ts` (`getEmailMailbox`), `apps/server/src/modules/mail/index.ts`; create `packages/core/src/digest/undo.ts` (`UNDO_WINDOW_MS = 7 * 24 * 3_600_000`, `isUndoable(actions: readonly ActionView[], now: Date): boolean`), `packages/core/src/digest/undo.test.ts`; change `packages/core/src/digest/index.ts`.
