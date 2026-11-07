@@ -18,6 +18,13 @@ export const auditEvents = {
   mailboxPaused: "mailbox.paused",
   mailboxResumed: "mailbox.resumed",
   mailboxPasswordChanged: "mailbox.password_changed",
+  actionApplied: "action.applied",
+  actionFailed: "action.failed",
+  actionUndone: "action.undone",
+  actionUndoRequested: "action.undo_requested",
+  actionExpired: "action.expired",
+  emailReturned: "email.returned",
+  mailboxFolderCreated: "mailbox.folder_created",
 } as const;
 
 export interface AuditEvent {

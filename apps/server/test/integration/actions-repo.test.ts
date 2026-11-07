@@ -375,13 +375,13 @@ describe("finishAction", () => {
       await claimActions(trx, a.ctx, a.mailboxId, claimOpts());
 
       const wrong = new Date(NOW.getTime() + 1);
-      expect(await finishAction(trx, a.ctx, flag, wrong, { status: "applied", appliedAt: NOW })).toBe(false);
+      expect(await finishAction(trx, a.ctx, flag, wrong, { status: "applied", at: NOW })).toBe(false);
       expect(await actionState(trx, flag)).toMatchObject({ status: "ready", applied_at: null });
 
       expect(
         await finishAction(trx, a.ctx, flag, NOW, {
           status: "applied",
-          appliedAt: ago(1000),
+          at: ago(1000),
           providerResult: { uid: 7 },
         })
       ).toBe(true);
@@ -389,11 +389,12 @@ describe("finishAction", () => {
       expect(applied).toMatchObject({ status: "applied", locked_at: null, next_attempt_at: null });
       expect(applied.applied_at?.getTime()).toBe(ago(1000).getTime());
       expect(applied.provider_result).toEqual({ uid: 7 });
-      expect(await finishAction(trx, a.ctx, flag, NOW, { status: "applied", appliedAt: NOW })).toBe(false);
+      expect(await finishAction(trx, a.ctx, flag, NOW, { status: "applied", at: NOW })).toBe(false);
 
       expect(
         await finishAction(trx, a.ctx, move, NOW, {
           status: "failed",
+          at: NOW,
           reason: "mail_not_found",
           lastError: "HardError",
         })
@@ -424,10 +425,19 @@ describe("releaseAction and releaseActions", () => {
       const next = new Date(NOW.getTime() + 5 * 60_000);
 
       expect(
-        await releaseAction(trx, a.ctx, id, new Date(NOW.getTime() + 1), { nextAttemptAt: next, countAttempt: true })
+        await releaseAction(trx, a.ctx, id, new Date(NOW.getTime() + 1), {
+          nextAttemptAt: next,
+          countAttempt: true,
+          now: NOW,
+        })
       ).toBe(false);
       expect(
-        await releaseAction(trx, a.ctx, id, NOW, { nextAttemptAt: next, countAttempt: true, lastError: "HardError" })
+        await releaseAction(trx, a.ctx, id, NOW, {
+          nextAttemptAt: next,
+          countAttempt: true,
+          now: NOW,
+          lastError: "HardError",
+        })
       ).toBe(true);
       const state = await actionState(trx, id);
       expect(state).toMatchObject({ status: "ready", attempts: 1, locked_at: null, last_error: "HardError" });
@@ -450,9 +460,9 @@ describe("releaseAction and releaseActions", () => {
         .execute();
       await claimActions(trx, a.ctx, a.mailboxId, claimOpts());
 
-      expect(await releaseActions(trx, a.ctx, [], NOW)).toBe(0);
-      expect(await releaseActions(trx, a.ctx, [first, second], new Date(NOW.getTime() + 1))).toBe(0);
-      expect(await releaseActions(trx, a.ctx, [first, second], NOW)).toBe(2);
+      expect(await releaseActions(trx, a.ctx, [], NOW, NOW)).toBe(0);
+      expect(await releaseActions(trx, a.ctx, [first, second], new Date(NOW.getTime() + 1), NOW)).toBe(0);
+      expect(await releaseActions(trx, a.ctx, [first, second], NOW, NOW)).toBe(2);
       for (const id of [first, second]) {
         const state = await actionState(trx, id);
         expect(state).toMatchObject({ status: "ready", attempts: 2, locked_at: null });
@@ -520,9 +530,11 @@ describe("tenant filter", () => {
       expect((await listActionsForEmails(trx, b.ctx, [mail.emailId])).size).toBe(0);
 
       await trx.updateTable("actions").set({ locked_at: NOW }).where("id", "in", [flag, move]).execute();
-      expect(await finishAction(trx, b.ctx, flag, NOW, { status: "applied", appliedAt: NOW })).toBe(false);
-      expect(await releaseAction(trx, b.ctx, flag, NOW, { nextAttemptAt: null, countAttempt: true })).toBe(false);
-      expect(await releaseActions(trx, b.ctx, [flag, move], NOW)).toBe(0);
+      expect(await finishAction(trx, b.ctx, flag, NOW, { status: "applied", at: NOW })).toBe(false);
+      expect(await releaseAction(trx, b.ctx, flag, NOW, { nextAttemptAt: null, countAttempt: true, now: NOW })).toBe(
+        false
+      );
+      expect(await releaseActions(trx, b.ctx, [flag, move], NOW, NOW)).toBe(0);
       expect(await actionState(trx, flag)).toMatchObject({ status: "ready", attempts: 0 });
       expect((await actionState(trx, flag)).locked_at?.getTime()).toBe(NOW.getTime());
     });

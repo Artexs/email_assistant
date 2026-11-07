@@ -311,10 +311,12 @@ export async function claimActions(
 }
 
 export type FinishNext =
-  | { status: "applied"; appliedAt: Date; providerResult?: Record<string, string | number | null> }
-  | { status: "failed"; reason: string; lastError?: string };
+  | { status: "applied"; at: Date; providerResult?: Record<string, string | number | null> }
+  | { status: "failed"; at: Date; reason: string; lastError?: string; countAttempt?: true };
 
 // `lockedAt` is the claim token: a stale run that lost its claim changes nothing.
+// `next.at` is the run clock: it sets `updated_at` (and `applied_at`).
+// `countAttempt` on a failure counts the try that failed (the third hard error leaves `attempts` = 3).
 export async function finishAction(
   trx: DbOrTrx,
   ctx: TenantContext,
@@ -322,13 +324,13 @@ export async function finishAction(
   lockedAt: Date,
   next: FinishNext
 ): Promise<boolean> {
-  const common = { locked_at: null, next_attempt_at: null, updated_at: sql<Date>`now()` };
+  const common = { locked_at: null, next_attempt_at: null, updated_at: next.at };
   const values =
     next.status === "applied"
       ? {
           ...common,
           status: "applied",
-          applied_at: next.appliedAt,
+          applied_at: next.at,
           provider_result: next.providerResult === undefined ? null : JSON.stringify(next.providerResult),
         }
       : { ...common, status: "failed", status_reason: next.reason };
@@ -336,7 +338,12 @@ export async function finishAction(
     .updateTable("actions")
     .set((eb) => ({
       ...values,
-      ...(next.status === "failed" ? { last_error: next.lastError ?? eb.ref("last_error") } : {}),
+      ...(next.status === "failed"
+        ? {
+            last_error: next.lastError ?? eb.ref("last_error"),
+            ...(next.countAttempt ? { attempts: eb("attempts", "+", 1) } : {}),
+          }
+        : {}),
     }))
     .where("id", "=", id)
     .where("org_id", "=", ctx.orgId)
@@ -351,7 +358,7 @@ export async function releaseAction(
   ctx: TenantContext,
   id: string,
   lockedAt: Date,
-  opts: { nextAttemptAt: Date | null; countAttempt: boolean; lastError?: string }
+  opts: { nextAttemptAt: Date | null; countAttempt: boolean; now: Date; lastError?: string }
 ): Promise<boolean> {
   const result = await db
     .updateTable("actions")
@@ -360,7 +367,7 @@ export async function releaseAction(
       next_attempt_at: opts.nextAttemptAt,
       attempts: opts.countAttempt ? eb("attempts", "+", 1) : eb.ref("attempts"),
       last_error: opts.lastError ?? eb.ref("last_error"),
-      updated_at: sql<Date>`now()`,
+      updated_at: opts.now,
     }))
     .where("id", "=", id)
     .where("org_id", "=", ctx.orgId)
@@ -375,12 +382,13 @@ export async function releaseActions(
   db: DbOrTrx,
   ctx: TenantContext,
   ids: readonly string[],
-  lockedAt: Date
+  lockedAt: Date,
+  now: Date
 ): Promise<number> {
   if (ids.length === 0) return 0;
   const result = await db
     .updateTable("actions")
-    .set({ locked_at: null, updated_at: sql<Date>`now()` })
+    .set({ locked_at: null, updated_at: now })
     .where("id", "in", [...ids])
     .where("org_id", "=", ctx.orgId)
     .where("status", "=", "ready")

@@ -32,6 +32,7 @@ export {
   listThreadContext,
   mailKindFilter,
   releaseEmail,
+  setMailboxStatus,
   requeueTooOld,
   setFolderMapEntry,
   updateEmailLocation,
