@@ -13,7 +13,7 @@ export interface OpenDeps {
   db: Db | Transaction<DB>;
   secrets: SecretBox;
   openProvider(opts: ImapConnectOptions): Promise<MailProvider>;
-  // S4 (D33): only a caller that asks `withSender` needs it.
+  // S4 (D33): only a caller that asks `withSender` needs it. Without it the sender is null (applySend releases the send).
   openSender?(opts: SmtpConnectOptions): Promise<MailSender>;
 }
 
@@ -26,7 +26,6 @@ export async function openMailboxProvider(
 ): Promise<{ provider: MailProvider; sender: MailSender | null; mailbox: MailboxRow }> {
   const mailbox = await getMailbox(deps.db, ctx, mailboxId);
   if (mailbox === undefined) throw new HardError("mailbox not found");
-  if (opts.withSender === true && deps.openSender === undefined) throw new HardError("no sender opener");
   const credentials = await getCredentials(deps.db, ctx, mailboxId);
   if (credentials === undefined) throw new HardError("mailbox has no stored password");
   const password = deps.secrets.decrypt(

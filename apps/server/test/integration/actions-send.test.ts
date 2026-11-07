@@ -574,7 +574,35 @@ describe("applySend", () => {
       });
 
       expect(await row(trx, p.sendId)).toMatchObject({ status: "approved", attempts: 0, locked_at: null });
+      expect((await row(trx, p.sendId)).next_attempt_at).toEqual(at(5));
     });
+  });
+
+  test("the row is committed as applying with the outgoing id before the SMTP call", async () => {
+    const created = await db.transaction().execute((trx) => setup(trx));
+    try {
+      const p = await db.transaction().execute((trx) => pair(trx, created));
+      const claimed = await db.transaction().execute((trx) => claimOne(trx, created, p.sendId));
+      let seen: Awaited<ReturnType<typeof row>> | undefined;
+      const sender = {
+        ...created.sender,
+        send: async (input: Parameters<FakeMailSender["send"]>[0]) => {
+          seen = await row(db, p.sendId);
+          return created.sender.send(input);
+        },
+      };
+
+      expect(await applySend(depsOf(created, db, NOW, { sender }), created.ctx, claimed, created.fake)).toEqual({
+        kind: "applied",
+      });
+
+      expect(seen).toMatchObject({ status: "applying" });
+      expect(seen?.outgoing_message_id).toMatch(/^<.+>$/);
+      expect(created.sender.sent).toHaveLength(1);
+    } finally {
+      await db.deleteFrom("organizations").where("id", "=", created.ctx.orgId).execute();
+      await db.deleteFrom("users").where("id", "=", created.userId).execute();
+    }
   });
 
   test("(12) sendOutcomeOf maps every error", () => {

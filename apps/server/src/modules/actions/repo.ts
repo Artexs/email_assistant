@@ -545,6 +545,7 @@ export async function claimActions(
 
 // The first step of the apply step for a draft or a send: it commits before any APPEND or SMTP call (D17).
 // `locked_at` stays: the claim token is valid through the step.
+// A send starts only from `approved` with `approved_at` set; a draft from `ready` or `approved`.
 export async function markApplying(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -561,7 +562,12 @@ export async function markApplying(
     }))
     .where("id", "=", id)
     .where("org_id", "=", ctx.orgId)
-    .where("status", "in", ["ready", "approved"])
+    .where((eb) =>
+      eb.or([
+        eb.and([eb("type", "=", "send"), eb("status", "=", "approved"), eb("approved_at", "is not", null)]),
+        eb.and([eb("type", "<>", "send"), eb("status", "in", ["ready", "approved"])]),
+      ])
+    )
     .where("locked_at", "=", lockedAt)
     .executeTakeFirst();
   return result.numUpdatedRows > 0n;

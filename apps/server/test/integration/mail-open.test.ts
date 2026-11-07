@@ -88,6 +88,10 @@ describe("openMailboxProvider", () => {
         { host: mailbox.smtp_host, port: mailbox.smtp_port, user: address, password: "s3cret-pw" },
       ]);
 
+      const noOpener = { db: trx, secrets, openProvider: async () => fake };
+      const bare = await openMailboxProvider(noOpener, ctx, mailboxId, { withSender: true });
+      expect(bare.sender).toBeNull();
+
       const failing = {
         ...deps,
         openSender: async () => {

@@ -203,7 +203,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     }
   }
 
-  // The owner and the organization are read once per tenant and run, and only for a batch with a draft (D12).
+  // The owner and the organization are read once per tenant and run, and only for a batch with a draft or a send (D12).
   async function loadFacts(
     ctx: TenantContext,
     mailbox: MailboxRow,
@@ -232,7 +232,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     provider: MailProvider | null,
     sender: MailSender | null,
     now: Date,
-    facts: TenantFacts
+    facts: TenantFacts | null
   ): Promise<void> {
     const mailboxId = mailbox.id;
     const counts = { applied: 0, failed: 0, retry: 0, closed: 0, sent: 0 };
@@ -253,8 +253,9 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
         capabilities: { uidplus: (mailbox.capabilities as Partial<MailCapabilities>).uidplus === true },
         folderMap: mailbox.folder_map,
       },
-      owner: facts.owner,
-      organization: facts.organization,
+      // A batch without a draft or a send never reads these two.
+      owner: facts?.owner ?? { displayName: mailbox.address },
+      organization: facts?.organization ?? { styleText: null, timezone: "UTC" },
       compose: deps.compose ?? composeMessage,
       sender,
       hooks: deps.hooks ?? noDelegationHooks,
@@ -332,7 +333,8 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
       sender = opened.sender;
     }
     try {
-      const tenantFacts = await loadFacts(ctx, mailbox, facts);
+      const needsFacts = batch.some((action) => action.type === "create_draft" || action.type === "send");
+      const tenantFacts = needsFacts ? await loadFacts(ctx, mailbox, facts) : null;
       await applyBatch(ctx, mailbox, batch, provider, sender, now, tenantFacts);
     } finally {
       for (const connection of [provider, sender]) {
