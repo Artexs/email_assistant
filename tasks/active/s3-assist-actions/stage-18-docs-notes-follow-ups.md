@@ -6,7 +6,7 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 
 Prettier rule for this stage: `bunx prettier --check` must pass on every new Markdown file. `docs/architecture.md`, `docs/modules.md` and `docs/roadmap.md` may already fail `--check` at HEAD (S1b stage 35 log): for them, the edits must not add new problems (compare the `bunx prettier --check` output before and after).
 
-- [ ] **18.1 Architecture, modules, code patterns, roadmap, ADRs, runbook**
+- [x] **18.1 Architecture, modules, code patterns, roadmap, ADRs, runbook**
   - Runbook line (stage 2 review): a `db:rollback` of `20261107000001_assist_actions` after live use drops `actions.applied_at`; a later re-up then fails on `actions_applied_at_check` for the `applied`/`undone` rows. Roll back the code, not the migration.
   - Goal: `docs/` describe S3 as built (one source per fact, `tasks/README.md`).
   - Files: change `docs/architecture.md`, `docs/modules.md`, `docs/code-patterns.md`, `docs/roadmap.md`, `docs/decisions/0003-plan-policy-commit.md`, `docs/decisions/0010-imap-first.md`, `deploy/README.md`.
@@ -23,7 +23,7 @@ Prettier rule for this stage: `bunx prettier --check` must pass on every new Mar
   - Done when: the files say what the code does, and the prettier rule holds.
   - Out of scope: changing decisions (only describe what was built).
 
-- [ ] **18.2 Note with the S3 facts, known alerts**
+- [x] **18.2 Note with the S3 facts, known alerts**
   - Goal: a later agent finds the verified Interia move facts, the dev-run results and the meaning of each new log line.
   - Files: create `notes/<build date>-assist-actions-facts.md`; change `docs/known-alerts.md`, `notes/2026-11-03-interia-imap-capabilities.md` (stage 1 appended the probe section; add the stage 19 facts: the real paths of the `AI/*` folders, the UID behaviour seen by the committer).
   - Decisions:
@@ -34,7 +34,7 @@ Prettier rule for this stage: `bunx prettier --check` must pass on every new Mar
   - Done when: the check passes.
   - Out of scope: alerts that did not happen in S3.
 
-- [ ] **18.3 Follow-ups in `tasks/planned/`**
+- [x] **18.3 Follow-ups in `tasks/planned/`**
   - Goal: ideas that S3 found but did not build are not lost.
   - Files: create `tasks/planned/handled-share-metric.md`, `tasks/planned/actions-scope-removal.md`, `tasks/planned/own-mail-header-check.md`, `tasks/planned/copy-below-cursor.md` (template of `tasks/README.md`, status `planned`).
   - Decisions:

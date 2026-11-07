@@ -1,15 +1,18 @@
 # 0010 — IMAP + SMTP with a password first, behind a MailProvider port
+
 - Status: accepted (user, 2026-11-02)
 - Date: 2026-11-02
 - Supersedes: 0004
 
 ## Context
+
 The pilot mailbox is at Interia (`@poczta.interia.pl`), not Gmail (user, 2026-11-02).
 The user wants mail access through IMAP with the mailbox password for now. Google sign-in (OAuth / SSO) can come later.
 The Gmail API path (ADR 0004) needs Google verification and a yearly CASA assessment for every public app.
 That cost does not apply to IMAP at Interia. Many Polish business mailboxes are at IMAP hosts (Interia, Onet, WP, home.pl, OVH, nazwa.pl).
 
 ## Decision
+
 - Mail access: IMAP over TLS (port 993) to read and move mail, SMTP over TLS (port 465) to send. Login = address + password.
   Use an app password if the provider has one (check at Interia in S1a).
 - POP3 is not supported: it has no folders, no flags and no drafts, so the system cannot archive or move mail with it.
@@ -23,6 +26,7 @@ That cost does not apply to IMAP at Interia. Many Polish business mailboxes are 
 - The rules for sync, threads, moves, drafts and send are in `docs/architecture.md` §6.1.
 
 ## Consequences
+
 - No Google verification and no CASA for the pilot and for IMAP customers.
 - The stored secret is a full mailbox password, not a scoped token. It is encrypted (ADR 0009). An app password limits the damage.
 - IMAP has no thread ids and no labels: the system builds threads from headers and uses one folder per mail.
@@ -30,5 +34,6 @@ That cost does not apply to IMAP at Interia. Many Polish business mailboxes are 
 - 2026-11-03 (S1a check): Interia has IDLE and UIDPLUS; no MOVE, CONDSTORE, SPECIAL-USE capability or custom keywords; no `UIDNEXT` on SELECT;
   `SEARCH HEADER` finds nothing for `X-` headers and `Message-ID`; SMTP does not save sent mail; a move keeps the UID. App passwords: not checked yet; the pilot uses the normal password.
   Details: `notes/2026-11-03-interia-imap-capabilities.md`.
+- 2026-11-07 (S3 stage 1): the hierarchy delimiter is `/` and a nested folder needs its parent first; a protocol COPY gives a new UID and keeps size, INTERNALDATE and `Message-ID` (a webmail move keeps the UID). So S3 finds moved mail by identity (`locateMessage`), not by header search. Details: `notes/2026-11-03-interia-imap-capabilities.md`, "Move probe".
 - Microsoft 365 turned off password login for IMAP; Gmail needs OAuth or an app password. Adding them is a new adapter
   (Phase 2), and Gmail OAuth brings back Google verification.

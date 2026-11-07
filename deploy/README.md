@@ -96,6 +96,45 @@ $C run --rm server bun run mailbox:settings auto --org-id <uuid> --mailbox-id <u
 - `switch --name <name> --value on|off` changes one switch. `create_draft` has no effect yet (S4).
 - A change that closes a gate expires the `ready` actions it closes. The command prints `expired <n> ready actions`.
 - Before you set `ACTIONS_SCOPE=all`, run `mailbox:settings expire-ready`. Real mail of the shadow-scope days then does not move when the scope opens. If `ready mailbox actions left` is above 0, a committer run holds a row: run the command again after 15 seconds.
+- You can close a gate as an emergency stop (`mode shadow`, `auto … off` or `switch … off`). Then run `expire-ready` again after one triage batch (15 seconds plus the LLM time).
+  A triage batch that started before the change can still insert `ready` rows. It planned them under the old settings.
+
+### `ACTIONS_SCOPE`
+
+`ACTIONS_SCOPE` in the VPS `.env` is a second gate next to the mode. Only the user edits `.env`. Restart the server after a change: `$C up -d server`.
+
+- `off` (default): the committer changes no mailbox. `/status` says so. The `ready` actions wait and expire after 24 hours.
+- `synthetic`: the committer changes only seed mail (`@ea-seed.test` message ids), in every mailbox.
+- `all`: the committer changes every mail of the mailbox `TEST_MAILBOX_ADDRESS` and no other mailbox. The server refuses to start with `all` and no `TEST_MAILBOX_ADDRESS`.
+
+The go/no-go gate: on 2026-11-06 every category was no-go (`tasks/done/s1b-shadow-run.md`). Without an `auto` category, only `flag` actions apply. Use `auto … --force` only when you accept the precision of that category.
+
+### Undo and `mailbox:audit`
+
+- The ↩️ button under a digest line undoes the system changes of that mail for 7 days. After 7 days it answers "Too old to undo".
+- An Undo tap under `ACTIONS_SCOPE=off`, or for a paused mailbox, answers "not possible now" and changes nothing.
+- A move that a committer run holds at the second of the tap still finishes. The line then shows ↩️ again. Tap it again.
+- A second move back of the same mail at Interia is not seen. A mail that the user moves back after 7 days gives no feedback.
+- `mailbox:audit` counts only rows with `folder = 'INBOX'`. Mail that the system moved is not counted. After S3, a user move out of INBOX shows as a duplicate.
+
+### Notice `action_failed`
+
+The owners get one notice for each failed action. An action fails after 3 hard errors, or at once for an unknown folder. The notice names the action, the subject and where the mail is.
+
+1. Read the log: `$C logs --since 1h server | grep 'action '`. The line `action <id>: failed hard_error` has the reason. Alert texts: `docs/known-alerts.md`.
+2. Open `/status` in Telegram. Check that the mailbox is `active`.
+3. A failed move leaves the mail in INBOX. A failed Undo (reverse) leaves the mail in its `AI/…` folder. Move the mail by hand in the mail client.
+4. The notice names the default `AI/…` folder name. It does not name the real path of `folder_map`.
+5. If a reverse move ends `failed`, a stopped COPY can leave a copy in INBOX that the system does not store (no row, no triage). Delete the extra copy by hand.
+
+### Known effects
+
+- A deadlock is possible between two jobs. The returned job locks the original move, then `emails`. The committer's reverse apply locks `emails`, then the original move.
+  The returned job retries the row on the next run. The committer's ensure finds the mail moved. No action is needed, unless the deadlock repeats.
+
+### Roll back
+
+Roll back the code, not the migration. A `db:rollback` of `20261107000001_assist_actions` after live use drops `actions.applied_at`. A later migrate then fails on `actions_applied_at_check` for the `applied` and `undone` rows.
 
 ## Reboot
 
@@ -128,6 +167,7 @@ Start time `T0`. Use the test mailbox only.
 4. At the end (48 hours or more), right after a sync:
    `$C run --rm -T server bun run mailbox:audit --org-id <org> --mailbox-id <id> --since <T0 ISO time>`
    The output must be `missing=0 duplicates=0` with exit code 0.
+   After S3, a user move out of INBOX shows as a duplicate; a system move does not.
 5. Remove the cron line.
 
 ## Backups

@@ -65,3 +65,4 @@ The probe mail `EA probe 6a8a502f-…` stayed in INBOX; the user deletes it by h
 - Flags: `flaggedKept`, `seenKept`, `flaggedRemoved`, `seenRemoved` all true.
 - Cleanup: probe mail deleted, probe folder and the created `AI` parent deleted.
 - The pilot password for Mac runs is in the macOS Keychain (service `ea-interia-imap`, account = pilot address); the user allowed the agent to pipe it into the probe (2026-11-07). Never print it. Remove after S3: `security delete-generic-password -s ea-interia-imap`.
+- Open: stage 19 (S3 deploy) — the real paths of the `AI/*` folders and the UID behaviour seen by the committer. See `notes/2026-11-07-assist-actions-facts.md`.

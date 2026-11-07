@@ -18,6 +18,118 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `mailbox:settings: refused: <category> did not pass go/no-go (use --force to set auto on anyway)`
+
+- **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
+- **Source:** `apps/server/src/scripts/mailbox-settings.ts` (`[mailbox-settings]`, level `error`, exit code 2).
+- **Cause:** A command `auto <category> on` named a category whose S1b go/no-go row is not `go` (precision below 0.98 or fewer than 30 kept labels). The gate refuses the change.
+- **Fix:** No action if you did not want `auto` on. Read the line `go/no-go <category>: …` before it. To set `auto` anyway, run the command again with `--force`; the audit row records `forced`.
+- **Status:** won't fix (expected behaviour)
+
+### `notice action_failed queued: outbox <id>`
+
+- **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
+- **Source:** `apps/server/src/modules/channels/notices.ts` (`[channels]`, level `info`).
+- **Cause:** An action became `failed` and the notice job queued one `action_failed` message for the user. The text says which action failed and why. The dedup key is `action_failed:<action id>`, so one action gives one notice.
+- **Fix:** No action for the alert. Read the audit row `action.failed` of the action (`reason_code`). The user decides in the mailbox. See `deploy/README.md`, "Assist mode".
+- **Status:** won't fix (expected behaviour)
+
+### `returned <mailboxId>: processed <n>`
+
+- **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
+- **Source:** `apps/server/src/modules/triage/returned.ts` (`[triage]`, level `info`; job `triage.returned`, every 15 s).
+- **Cause:** The job wrote feedback for <n> mails that the sync marked as returned to INBOX (`emails.returned_at`): `imap_move` for a user move back, none after an Undo.
+- **Fix:** No action. A line `returned <id>: <label>` at level `error` means one row failed; read the label and check the DB.
+- **Status:** won't fix (expected behaviour)
+
+### `expired <n> ready actions`
+
+- **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
+- **Source:** `apps/server/src/scripts/mailbox-settings.ts` (`[mailbox-settings]`, level `info`; the commands `expire-ready` and every gate-closing setter).
+- **Cause:** The CLI closed <n> `ready` mailbox actions as `expired`. A gate change (`mode shadow`, `auto off`, `switch off`) does this in the same transaction. `expire-ready` does it on request.
+- **Fix:** No action. Run `expire-ready` before you set `ACTIONS_SCOPE=all`, so that old `ready` rows do not apply. The next line shows how many `ready` mailbox actions are left.
+- **Status:** won't fix (expected behaviour)
+
+### `sync <mailboxId> returned below cursor: list hit the limit <n>`
+
+- **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
+- **Source:** `apps/server/src/modules/mail/sync.ts` (`[mail]`, level `warn`).
+- **Cause:** The list of mails moved in the last 7 days has 500 rows (`RETURN_CHECK_LIMIT`). The check looks at the newest 500 only, so older moved mails are not checked for a return.
+- **Fix:** Check how many mails the system moved in 7 days. If the number is real, raise the limit in a task. No data is lost: the check only misses returns of the oldest rows.
+- **Status:** investigating
+
+### `sync <mailboxId> returned below cursor: checked <n>, returned <m>, copies <c>`
+
+- **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
+- **Source:** `apps/server/src/modules/mail/sync.ts` (`[mail]`, level `info`; one line per sync that has moved mails).
+- **Cause:** <n> mails moved in the last 7 days were looked up in INBOX below the UID cursor, <m> of them came back (Interia keeps the UID). `copies` > 0 means a copy of a moved mail sits below the cursor while the original is still in its folder. The same copy counts again on every sync for 7 days. The debug line `sync <mailboxId> copy below cursor: email <id>` names the row.
+- **Fix:** `returned` > 0 is normal after a user move back. `copies` > 0: no loss, but the system does not store or triage the copy. Switch the log level to debug to see the rows. Follow-up: `tasks/planned/copy-below-cursor.md`.
+- **Status:** investigating
+
+### `committer <mailboxId>: <Class code>; the next tick tries again`
+
+- **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
+- **Source:** `apps/server/src/modules/actions/committer.ts` (`[actions]`, level `warn`).
+- **Cause:** Opening the mailbox failed with a soft error (network, timeout, server busy). The claimed actions go back to `ready` and no try counts.
+- **Fix:** No action. The next tick (15 s) tries again. If it repeats for hours, run `bun run mailbox:check` and check the pilot mailbox and the network.
+- **Status:** won't fix (expected behaviour)
+
+### `committer <mailboxId>: login failed, status is now auth_error`
+
+- **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
+- **Source:** `apps/server/src/modules/actions/committer.ts` (`[actions]`, level `warn`).
+- **Cause:** The mailbox refused the login. The committer set the mailbox status to `auth_error`; the sync notice tells the user. The claimed actions go back to `ready`.
+- **Fix:** Fix the secret (password or app password) and set the mailbox to `active` again. Actions wait and apply later if they are younger than 24 h and the mail is younger than 7 days; older ones expire.
+- **Status:** investigating
+
+### `action <id>: <Class code>, try <n> of 3`
+
+- **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
+- **Source:** `apps/server/src/modules/actions/apply.ts` (`[actions]`, level `warn`).
+- **Cause:** An IMAP call failed. A soft error (network, timeout) waits 5 minutes and does not count as a try. A hard error waits 5 minutes and counts. After the third hard error the action is `failed` (`hard_error`).
+- **Fix:** No action for try 1 and 2. Read the `last_error` column of the action. For a repeat, check the mailbox with `bun run mailbox:check`.
+- **Status:** won't fix (expected behaviour)
+
+### `action <id>: failed bad_payload`
+
+- **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
+- **Source:** `apps/server/src/modules/actions/apply.ts` (`[actions]`, level `warn`).
+- **Cause:** The payload of the action row is wrong (for example a missing folder key or UID). This is a bug in the code that planned the action, not a mailbox problem. The action is `failed` at once.
+- **Fix:** Read the audit row `action.failed` and the `payload` of the action. File a bug with the action type. Never put the payload in the bug text if it holds mail data.
+- **Status:** investigating
+
+### `action <id>: failed hard_error`
+
+- **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
+- **Source:** `apps/server/src/modules/actions/apply.ts` (`[actions]`, level `warn`).
+- **Cause:** The third hard error in a row for the same action. The action is `failed`, the audit row `action.failed` has `reason_code` `hard_error` and the error label. The user gets an `action_failed` notice.
+- **Fix:** Read the audit data (`attempts`, `error`). Check the mailbox with `bun run mailbox:check`. The mail stays where it was; the user can move it by hand.
+- **Status:** investigating
+
+### `action <id>: failed mail_not_found`
+
+- **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
+- **Source:** `apps/server/src/modules/actions/apply.ts` (`[actions]`, level `warn`).
+- **Cause:** The locate did not find the mail in its folder (the user moved or deleted it). The action is `failed` at once, without retries. An original action sends no notice; a reverse (Undo) action does.
+- **Fix:** No action. The user changed the mailbox on their own. If it happens for mail that the user did not touch, check the identity locate (`locate.ts`) and the folder facts in `notes/2026-11-07-assist-actions-facts.md`.
+- **Status:** won't fix (expected behaviour)
+
+### `committer: ACTIONS_SCOPE=off, <n> mailbox actions wait in mailbox <id>`
+
+- **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
+- **Source:** `apps/server/src/modules/actions/committer.ts` (`[actions]`, level `info`; once per mailbox and process start).
+- **Cause:** `ACTIONS_SCOPE` is `off` (the default), so the committer applies no mailbox change. <n> mailbox actions are `ready` and wait. Flag-only and summary actions are not mailbox changes in this count.
+- **Fix:** No action if you want no changes. To apply them: set `ACTIONS_SCOPE=synthetic` or `all` in the `.env`, run `expire-ready` first when the rows are old (`deploy/README.md`, "Assist mode"), and restart the server.
+- **Status:** won't fix (expected behaviour)
+
+### `committer <mailboxId>: expired <n> stale actions`
+
+- **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
+- **Source:** `apps/server/src/modules/actions/committer.ts` (`[actions]`, level `warn`).
+- **Cause:** The committer found <n> `ready` actions that waited longer than 24 hours (D21) and closed them as `expired`. This happens after the scope was `off`, the mailbox had an `auth_error` or the server was down.
+- **Fix:** No action. The mail stays in INBOX. If it repeats, find why the committer did not apply the actions in time (scope, `auth_error`, a pause).
+- **Status:** won't fix (expected behaviour)
+
 ### `callback failed: <label>`
 
 - **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
