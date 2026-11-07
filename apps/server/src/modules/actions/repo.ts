@@ -1227,6 +1227,19 @@ export async function getDraft(db: DbOrTrx, ctx: TenantContext, id: string): Pro
   return row && toDraftRow(row);
 }
 
+// D20: a reverse row of the draft exists = the draft was removed (or its removal is queued).
+export async function draftHasReverse(db: DbOrTrx, ctx: TenantContext, draftId: string): Promise<boolean> {
+  const row = await db
+    .selectFrom("actions")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where("type", "=", "create_draft")
+    .where("reverses_action_id", "=", draftId)
+    .limit(1)
+    .executeTakeFirst();
+  return row !== undefined;
+}
+
 // A resend shares the draft of the failed send (D18).
 export async function listSendsOfDraft(
   db: DbOrTrx,

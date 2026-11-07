@@ -107,3 +107,23 @@ export async function countEventsBetween(
     .executeTakeFirstOrThrow();
   return Number(row.count);
 }
+
+// The actor of the newest row of one event on one action; undefined when there is none.
+export async function findActionActor(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  actionId: string,
+  event: string
+): Promise<string | undefined> {
+  const row = await db
+    .selectFrom("audit_log")
+    .select("actor")
+    .where("org_id", "=", ctx.orgId)
+    .where("action_id", "=", actionId)
+    .where("event", "=", event)
+    .orderBy("created_at", "desc")
+    .orderBy("id", "desc")
+    .limit(1)
+    .executeTakeFirst();
+  return row?.actor;
+}

@@ -174,7 +174,18 @@ export async function deleteChatLinks(db: DbOrTrx, ctx: TenantContext, userId: s
   return Number(result.numDeletedRows);
 }
 
-export const outboxKinds = ["digest", "urgent", "auth_error", "sync_stale", "sync_ok", "action_failed"] as const;
+export const outboxKinds = [
+  "digest",
+  "urgent",
+  "auth_error",
+  "sync_stale",
+  "sync_ok",
+  "action_failed",
+  "approval",
+  "approval_set",
+  "send_result",
+  "delegation_answered",
+] as const;
 export type OutboxKind = (typeof outboxKinds)[number];
 const outboxKindSchema = z.enum(outboxKinds);
 
