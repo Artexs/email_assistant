@@ -46,10 +46,15 @@ const options = {
   json: { type: "boolean" },
 } as const;
 
-function toNumber(name: string, value: string | undefined, integer: boolean): number | undefined {
+function toNumber(
+  name: string,
+  value: string | undefined,
+  integer: boolean,
+  allowNegative = false
+): number | undefined {
   if (value === undefined) return undefined;
   const n = Number(value);
-  if (value.trim() === "" || !Number.isFinite(n) || n < 0 || (integer && !Number.isInteger(n))) {
+  if (value.trim() === "" || !Number.isFinite(n) || (n < 0 && !allowNegative) || (integer && !Number.isInteger(n))) {
     throw new UsageError(`--${name} needs a ${integer ? "whole " : ""}number, got "${value}"`);
   }
   return n;
@@ -93,10 +98,25 @@ async function serve(values: { port?: string }, io: CliIo): Promise<number> {
   return EXIT_OK;
 }
 
+// parseArgs refuses "--chat -100…" as ambiguous, so join the pair into "--chat=-100…".
+function joinNegativeChat(argv: string[]): string[] {
+  const joined: string[] = [];
+  for (let i = 0; i < argv.length; i++) {
+    const next = argv[i + 1];
+    if (argv[i] === "--chat" && next !== undefined && /^-\d+$/.test(next)) {
+      joined.push(`--chat=${next}`);
+      i++;
+    } else {
+      joined.push(argv[i] as string);
+    }
+  }
+  return joined;
+}
+
 async function execute(argv: string[], io: CliIo): Promise<number> {
   let parsed;
   try {
-    parsed = parseArgs({ args: argv, options, allowPositionals: true, strict: true });
+    parsed = parseArgs({ args: joinNegativeChat(argv), options, allowPositionals: true, strict: true });
   } catch (error) {
     throw new UsageError((error as Error).message);
   }
@@ -110,7 +130,7 @@ async function execute(argv: string[], io: CliIo): Promise<number> {
   }
 
   const client = createFakeTelegramClient(values.url ?? io.env.FAKE_TG_URL ?? DEFAULT_URL);
-  const chatId = toNumber("chat", values.chat, true);
+  const chatId = toNumber("chat", values.chat, true, true);
   const json = values.json === true;
   const print = (data: object, text: string[]) => {
     if (json) io.out(JSON.stringify(data));

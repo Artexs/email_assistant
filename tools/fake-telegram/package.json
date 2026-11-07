@@ -9,6 +9,8 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "grammy": "^1.46.0"
+    "@ea/core": "workspace:*",
+    "grammy": "^1.46.0",
+    "kysely": "^0.29.8"
   }
 }

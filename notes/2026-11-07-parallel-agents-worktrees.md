@@ -35,6 +35,8 @@ Fix: one setup script per worktree. It copies `.env`, sets a port offset (exampl
 uses its own DB name (`email_assistant_<slot>`) or schema, and runs `bun install`.
 Alternative: one container (devcontainer / docker compose project) per agent. Stronger isolation, more setup.
 
+2026-11-07: the DB part of the fix exists now as `bun run db:worktree <name>` (`--drop` removes the database). Port offset, `.env` copy and GreenMail stay open.
+
 ## Conflict hot spots in this repo
 
 - `tasks/README.md`, `docs/roadmap.md`: only the coordinator edits them, on `master`.

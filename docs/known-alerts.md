@@ -18,6 +18,14 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `mailbox:seed and mailbox:audit CLI > seed exits 1 … ^ this test timed out after 5000ms.`
+
+- **First seen:** 2026-11-07
+- **Source:** CI `bun run test:int`, `apps/server/test/integration/mail-seed.test.ts` (runs 42414616787 on `master`, 42417654598 on PR #1).
+- **Cause:** not diagnosed. The test starts several CLI processes one after the other, and on a slow CI runner they can take more than the default 5 s test timeout. The re-run passed.
+- **Fix:** re-run CI. A durable fix (a longer timeout for this test) is in `tasks/planned/flaky-mail-seed-cli-test.md`.
+- **Status:** investigating
+
 ### `job:run: TELEGRAM_BOT_TOKEN is empty`
 
 - **First seen:** 2026-11-07 (S4 code; not seen live)

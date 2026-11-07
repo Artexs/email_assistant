@@ -94,7 +94,7 @@ A worktree is a second folder of the same repository with its own branch. Its co
   2. Work: commit the stages on the branch, and push with `git push -u origin task/<name>`. To get new `master` work, run `git merge origin/master` in the branch. Never rebase a pushed branch.
   3. Merge: at the end of the task (or at a user checkpoint), run `git merge origin/master` in the branch, and the checks must pass. Then the main checkout runs `git merge --no-ff task/<name>` on `master` and pushes.
   4. Clean up: `git worktree remove ../email_assistant-wt/<name>`, `git branch -d task/<name>`, `git push origin --delete task/<name>`.
-- **Both modes:** stage only your own files by explicit path. Worktrees share the runtime: the dev DB, GreenMail and the ports in `.env`. Only one checkout runs `bun run test:int`, `db:migrate` or a dev server at a time. Only one task at a time adds a DB migration or changes `bun.lock`.
+- **Both modes:** stage only your own files by explicit path. Worktrees share the runtime: the dev DB, GreenMail and the ports in `.env`. For an own database, run `bun run db:worktree <name>` and use the two printed env lines; drop it with `--drop` at the end. Only one checkout runs `bun run test:int`, `db:migrate` or a dev server at a time. Only one task at a time adds a DB migration or changes `bun.lock`.
 - The detached review copies in `~/.cache/ea-review/` (§ "Pipeline mode") are not task worktrees: they never commit.
 
 ## Template
