@@ -1,0 +1,144 @@
+// S4 plan probe 2 (2026-11-07): SMTPConnection used directly: connect / login / send as separate stages,
+// and `lastServerResponse` as the marker "did the server send 354 before the error".
+import { createServer, type Server, type Socket } from "node:net";
+
+import SMTPConnection from "nodemailer/lib/smtp-connection";
+
+type Scenario =
+  | "ok"
+  | "close_after_greeting"
+  | "auth_535"
+  | "rcpt_550"
+  | "close_on_data_cmd"
+  | "close_after_content"
+  | "timeout_after_content"
+  | "content_552";
+
+function startServer(scenario: Scenario): Promise<{ server: Server; port: number }> {
+  return new Promise((resolve) => {
+    const server = createServer((socket: Socket) => {
+      let buffer = "";
+      let dataMode = false;
+      const write = (line: string) => socket.write(`${line}\r\n`);
+      socket.write("220 fake ESMTP\r\n");
+      if (scenario === "close_after_greeting") {
+        socket.destroy();
+        return;
+      }
+      socket.on("data", (chunk) => {
+        buffer += chunk.toString("binary");
+        if (dataMode) {
+          const end = buffer.indexOf("\r\n.\r\n");
+          if (end === -1) return;
+          buffer = buffer.slice(end + 5);
+          dataMode = false;
+          if (scenario === "close_after_content") socket.destroy();
+          else if (scenario === "timeout_after_content") return;
+          else if (scenario === "content_552") write("552 5.3.4 message too big");
+          else write("250 2.0.0 Ok: queued as ABC123");
+          return;
+        }
+        let nl = buffer.indexOf("\r\n");
+        while (nl !== -1 && !dataMode) {
+          const line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 2);
+          const upper = line.toUpperCase();
+          if (upper.startsWith("EHLO")) socket.write("250-fake\r\n250-AUTH PLAIN LOGIN\r\n250 8BITMIME\r\n");
+          else if (upper.startsWith("AUTH")) write(scenario === "auth_535" ? "535 5.7.8 bad" : "235 2.7.0 ok");
+          else if (upper.startsWith("MAIL FROM")) write("250 2.1.0 ok");
+          else if (upper.startsWith("RCPT TO")) write(scenario === "rcpt_550" ? "550 5.1.1 unknown" : "250 2.1.5 ok");
+          else if (upper === "DATA") {
+            if (scenario === "close_on_data_cmd") socket.destroy();
+            else {
+              dataMode = true;
+              write("354 go");
+            }
+          } else if (upper === "QUIT") {
+            write("221 bye");
+            socket.end();
+          } else write("250 ok");
+          nl = buffer.indexOf("\r\n");
+        }
+      });
+      socket.on("error", () => undefined);
+    });
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      resolve({ server, port: typeof address === "object" && address ? address.port : 0 });
+    });
+  });
+}
+
+const RAW = "Message-ID: <x@ea.local>\r\nFrom: owner@x.test\r\nTo: delegate@x.test\r\nSubject: p\r\n\r\nhello\r\n";
+
+function describe(error: unknown, connection: SMTPConnection, stage: string) {
+  const e = error as Record<string, unknown>;
+  return {
+    stage,
+    code: e.code,
+    originalCode: e.originalCode,
+    command: e.command,
+    responseCode: e.responseCode,
+    permanent: e.permanent,
+    lastServerResponse: connection.lastServerResponse,
+  };
+}
+
+async function run(scenario: Scenario): Promise<void> {
+  const { server, port } = await startServer(scenario);
+  const connection = new SMTPConnection({
+    host: "127.0.0.1",
+    port,
+    secure: false,
+    ignoreTLS: true,
+    connectionTimeout: 1500,
+    greetingTimeout: 1500,
+    socketTimeout: 1500,
+    logger: false,
+  });
+  let onError: (error: Error) => void = () => undefined;
+  const errorEvent = new Promise<never>((_, reject) => {
+    onError = reject;
+  });
+  connection.on("error", (error: Error) => onError(error));
+  const timeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error("probe timeout")), 8000));
+  const stage = <T>(work: Promise<T>): Promise<T> => Promise.race([work, errorEvent, timeout]);
+  const out: Record<string, unknown> = { scenario };
+  try {
+    await stage(new Promise<void>((resolve, reject) => connection.connect((err?: Error) => (err ? reject(err) : resolve()))));
+    out.connected = true;
+    out.afterConnect = connection.lastServerResponse;
+    await stage(new Promise<void>((resolve, reject) =>
+      connection.login({ user: "owner@x.test", pass: "secret" }, (err?: Error) => (err ? reject(err) : resolve()))
+    ));
+    out.loggedIn = true;
+    out.afterLogin = connection.lastServerResponse;
+    const info = await stage(new Promise<unknown>((resolve, reject) =>
+      connection.send({ from: "owner@x.test", to: ["delegate@x.test"] }, RAW, (err: Error | null, result: unknown) =>
+        err ? reject(err) : resolve(result)
+      )
+    ));
+    out.sent = info;
+    out.afterSend = connection.lastServerResponse;
+  } catch (error) {
+    const stage = out.loggedIn ? "send" : out.connected ? "login" : "connect";
+    out.error = describe(error, connection, stage);
+  } finally {
+    connection.close();
+    server.close();
+  }
+  console.log(JSON.stringify(out));
+}
+
+for (const scenario of [
+  "ok",
+  "close_after_greeting",
+  "auth_535",
+  "rcpt_550",
+  "close_on_data_cmd",
+  "close_after_content",
+  "timeout_after_content",
+  "content_552",
+] as Scenario[]) {
+  await run(scenario);
+}
