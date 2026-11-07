@@ -142,6 +142,19 @@ describe("createExpiryJob", () => {
     });
   });
 
+  test("(3a) an undone draft: draft_missing too", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const { hooks, calls } = recordingHooks();
+      const p = await waiting(trx, s.ctx, s.mailboxId, { draftStatus: "undone" });
+
+      await jobFor(trx, hooks).run();
+
+      expect(await getSend(trx, s.ctx, p.sendId)).toMatchObject({ status: "expired", status_reason: "draft_missing" });
+      expect(calls.map((call) => call.reason)).toEqual(["draft_missing"]);
+    });
+  });
+
   test("(3b) an applying draft is not draft_missing", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
@@ -299,10 +312,42 @@ describe("createExpiryJob", () => {
     });
   });
 
+  test("(9b) held_timeout on an approved send with a fresh lock: false, nothing changes", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const { hooks, calls } = recordingHooks();
+      const p = await waiting(trx, s.ctx, s.mailboxId, {
+        sendStatus: "approved",
+        approved: { userId: s.userId, at: ago(72 * HOUR) },
+        lockedAt: ago(60_000),
+      });
+
+      const closed = await expireSend(trx, s.ctx, p.sendId, {
+        reason: "held_timeout",
+        now,
+        actor: "system",
+        hooks,
+        uidplus: true,
+      });
+
+      expect(closed).toBe(false);
+      expect((await getSend(trx, s.ctx, p.sendId))?.status).toBe("approved");
+      expect(await auditCount(trx, s.ctx, p.sendId)).toBe(0);
+      expect(await reverseRows(trx, s.ctx, p.draftId)).toEqual([]);
+      expect(calls).toEqual([]);
+    });
+  });
+
   test("(10) two organizations; an error on one mailbox does not stop the next", async () => {
     await withRollback(db, async (trx) => {
       const a = await setup(trx);
       const b = await createOrgWithMailbox(trx);
+      // The job walks mailboxes by `created_at`: A comes first, so its error comes before B.
+      await trx
+        .updateTable("mailboxes")
+        .set({ created_at: ago(DAY) })
+        .where("id", "=", a.mailboxId)
+        .execute();
       const { hooks } = recordingHooks();
       const pa = await waiting(trx, a.ctx, a.mailboxId, { notifiedAt: ago(49 * HOUR) });
       const pb = await waiting(trx, { orgId: b.orgId }, b.mailboxId, { notifiedAt: ago(49 * HOUR) });
