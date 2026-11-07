@@ -74,7 +74,7 @@ Why risky: security (the API key) and sending to people (the send call). The cli
   - Done when: tests 1–8 pass; `.env.example` lists the keys.
   - Out of scope: retries, logging, the send loop (stage 4).
 
-- [ ] **3.2 AgentMail fake server**
+- [x] **3.2 AgentMail fake server**
   - Goal: a local HTTP fake of the 5 calls for unit and integration tests, with the probe-verified idempotency rules (Facts checked).
   - Files: create `apps/server/src/modules/testmail/agentmail/fake.ts`, `apps/server/src/modules/testmail/agentmail/fake.test.ts`; change `apps/server/src/modules/testmail/index.ts` (no export of the fake from `index.ts`: tests import the file directly).
   - Interfaces:

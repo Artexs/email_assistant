@@ -1,4 +1,4 @@
-> **Status 2026-11-08 — in progress — build in the worktree `../email_assistant-wt/test-mail-traffic` (branch `task/test-mail-traffic`); stages 1–2 and 3.1 done.** Left: see the stage list (handoff `~/.pi/agent/notes/2026-11-08-handoff-test-mail-traffic-build.md`).
+> **Status 2026-11-08 — in progress — build in the worktree `../email_assistant-wt/test-mail-traffic` (branch `task/test-mail-traffic`); stages 1–3 done.** Left: see the stage list (handoff `~/.pi/agent/notes/2026-11-08-handoff-test-mail-traffic-build.md`).
 
 # Test mail traffic: AgentMail synthetic mail utility
 
@@ -328,7 +328,7 @@ Each stage lives in its own file in [`test-mail-traffic/`](test-mail-traffic/). 
 
 - [x] [Stage 1](test-mail-traffic/stage-01-core-batch-schema.md) [written] — Core: batch and persona schemas, validation, blind view
 - [x] [Stage 2](test-mail-traffic/stage-02-core-send-log-and-plan.md) [written] — Core: send log and send plan [risky]
-- [ ] [Stage 3](test-mail-traffic/stage-03-agentmail-client.md) [written] — AgentMail client, fake server, config keys [risky]
+- [x] [Stage 3](test-mail-traffic/stage-03-agentmail-client.md) [written] — AgentMail client, fake server, config keys [risky]
 - [ ] [Stage 4](test-mail-traffic/stage-04-send-service-and-cli.md) [written] — Send service and CLI `testmail` (setup, validate, blind, send, status) [risky]
 - [ ] [Stage 5](test-mail-traffic/stage-05-deliver.md) [written] — Deliver: move own test mail from the Interia sort folders into INBOX [risky]
 - [ ] [Stage 6](test-mail-traffic/stage-06-compare-and-target-cli.md) [written] — Compare: repository, report, CLI `testmail-target`
@@ -360,3 +360,4 @@ Not yet (stage 9 writes the compare report here).
 - 2026-11-08: Stage 2.1 built, review (Opus, high): PASS with 2 minors (partial-line rule of `parseSendLog`), both fixed.
 - 2026-11-08: Stage 2.2 built, review (Opus, high): PASS with 3 minors (order-dependent test 9, two untested child branches, a redundant check), all fixed. Stage 2 done.
 - 2026-11-08: Stage 3.1 built, review (Opus, high): PASS with 2 minors, fixed. Deviation accepted: a 2xx body that is not JSON (or cannot be read) is a `SoftError` (a cut body can hide a sent mail; safe by D3, same-key repeat).
+- 2026-11-08: Stage 3.2 built, review (Opus, high): PASS with 1 minor + 1 question, both fixed (fake: 409 `AlreadyExistsError` for a taken username; hold comment). Open point for stage 4: `isSoftAgentMailError` treats a 409 `AlreadyExistsError` on `ensureInbox` as soft (setup calls GET first). Stage 3 done.
