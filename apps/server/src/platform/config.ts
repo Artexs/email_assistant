@@ -31,6 +31,14 @@ export function isLoopbackApiRoot(value: string): boolean {
   );
 }
 
+const addressPattern = /^[^\s@]+@[^\s@]+$/;
+
+// Comma-separated, trimmed, lower-cased, unique. An empty entry is dropped.
+function parseAddressList(value: string | undefined): string[] {
+  const items = (value ?? "").split(",").map((item) => item.trim().toLowerCase());
+  return [...new Set(items.filter((item) => item !== ""))];
+}
+
 const baseSchema = z.object({
   DATABASE_URL: z.string().url(),
   PORT: z.coerce.number().int().positive().default(8080),
@@ -81,6 +89,10 @@ const baseSchema = z.object({
   TRIAGE_LLM_SCOPE: z.enum(["off", "synthetic", "all"]).default("off"),
   // off = the committer changes nothing in any mailbox; synthetic = only synthetic mail; all = also real mail, only of TEST_MAILBOX_ADDRESS.
   ACTIONS_SCOPE: z.enum(["off", "synthetic", "all"]).default("off"),
+  // off = no send goes out; self = only to SEND_TEST_ADDRESSES; all = real delegates, only for the TEST_MAILBOX_ADDRESS mailbox.
+  SEND_SCOPE: z.enum(["off", "self", "all"]).default("off"),
+  // Comma-separated; needed with SEND_SCOPE=self.
+  SEND_TEST_ADDRESSES: z.preprocess(emptyAsUndefined, z.string().optional()),
 });
 
 type BaseConfig = z.infer<typeof baseSchema>;
@@ -132,12 +144,29 @@ export const configSchema = baseSchema.superRefine((config, ctx) => {
   if (config.ACTIONS_SCOPE === "all" && config.TEST_MAILBOX_ADDRESS === undefined) {
     ctx.addIssue({ code: "custom", path: ["TEST_MAILBOX_ADDRESS"], message: "needed when ACTIONS_SCOPE is all" });
   }
+  if (config.SEND_SCOPE === "self") {
+    const raw = (config.SEND_TEST_ADDRESSES ?? "").split(",").filter((item) => item.trim() !== "");
+    if (raw.length === 0 || !raw.every((item) => addressPattern.test(item.trim()))) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["SEND_TEST_ADDRESSES"],
+        message: "needed when SEND_SCOPE is self: one or more valid addresses",
+      });
+    }
+  }
+  if (config.SEND_SCOPE === "all" && config.TEST_MAILBOX_ADDRESS === undefined) {
+    ctx.addIssue({ code: "custom", path: ["TEST_MAILBOX_ADDRESS"], message: "needed when SEND_SCOPE is all" });
+  }
 });
 
 export type Config = z.infer<typeof configSchema>;
 
 export function llmSettings(config: Config, provider: LlmProviderId = config.LLM_PROVIDER): LlmSettings {
   return { provider, ...providerBlocks[provider](config) };
+}
+
+export function sendTestAddresses(config: Config): string[] {
+  return parseAddressList(config.SEND_TEST_ADDRESSES);
 }
 
 export function classifierModel(config: Config): string {

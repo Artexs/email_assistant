@@ -32,3 +32,14 @@ export {
   markReminderPlanned,
 } from "./repo";
 export type { DelegateRow, DelegationRow, DelegationStatus } from "./repo";
+export {
+  CHASER_LOCAL_TIME,
+  CHASER_SET_LIMIT,
+  createChaserJob,
+  MAX_REMINDERS,
+  REMINDER_GAP_MS,
+  reminderDecision,
+  runChaserForMailbox,
+  type ChaserDeps,
+  type ChaserResult,
+} from "./chaser";

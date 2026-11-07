@@ -123,7 +123,10 @@ describe("approve", () => {
       const p = await pair(trx, s, { notifiedAt: ago(49 * HOUR), delegationId });
       const { hooks, calls } = recordingHooks();
 
-      expect(await approve(depsOf(trx, hooks), s.ctx, p.sendId, input(s.userId))).toEqual({ kind: "expired" });
+      expect(await approve(depsOf(trx, hooks), s.ctx, p.sendId, input(s.userId))).toEqual({
+        kind: "expired",
+        byThisTap: true,
+      });
       const send = await row(trx, p.sendId);
       expect(send).toMatchObject({ status: "expired", status_reason: "timeout", approved_by: null });
       const reverses = await reverseRows(trx, p.draftId);
@@ -168,7 +171,7 @@ describe("approve", () => {
       const rejected = await pair(trx, s, { sendStatus: "rejected" });
       expect(await run(rejected.sendId)).toEqual({ kind: "rejected" });
       const expired = await pair(trx, s, { sendStatus: "expired" });
-      expect(await run(expired.sendId)).toEqual({ kind: "expired" });
+      expect(await run(expired.sendId)).toEqual({ kind: "expired", byThisTap: false });
       const failed = await pair(trx, s, { sendStatus: "failed" });
       await trx
         .updateTable("actions")
@@ -281,7 +284,10 @@ describe("approveSet and rejectSet", () => {
         notifiedAt: null,
       });
 
-      expect(await approveSet(depsOf(trx, hooks), s.ctx, setId, input(s.userId))).toEqual({ approved: 2, skipped: 2 });
+      expect(await approveSet(depsOf(trx, hooks), s.ctx, setId, input(s.userId))).toMatchObject({
+        approved: 2,
+        skipped: 2,
+      });
       expect((await row(trx, one.sendId)).status).toBe("approved");
       expect((await row(trx, two.sendId)).status).toBe("approved");
       expect((await row(trx, gone.sendId)).status).toBe("rejected");
@@ -298,7 +304,10 @@ describe("approveSet and rejectSet", () => {
       const ready = await pair(trx, s, { setId, reminder: 1, delegationId: randomUUID() });
       const waiting = await pair(trx, s, { setId, reminder: 1, delegationId: randomUUID(), draftStatus: "ready" });
 
-      expect(await approveSet(depsOf(trx, hooks), s.ctx, setId, input(s.userId))).toEqual({ approved: 1, skipped: 1 });
+      expect(await approveSet(depsOf(trx, hooks), s.ctx, setId, input(s.userId))).toMatchObject({
+        approved: 1,
+        skipped: 1,
+      });
       expect((await row(trx, ready.sendId)).status).toBe("approved");
       expect((await row(trx, waiting.sendId)).status).toBe("awaiting_approval");
     });
@@ -338,7 +347,10 @@ describe("approveSet and rejectSet", () => {
       const old = await pair(trx, s, { setId, reminder: 1, delegationId: randomUUID(), notifiedAt: ago(49 * HOUR) });
       const fresh = await pair(trx, s, { setId, reminder: 1, delegationId: randomUUID() });
 
-      expect(await approveSet(depsOf(trx, hooks), s.ctx, setId, input(s.userId))).toEqual({ approved: 1, skipped: 1 });
+      expect(await approveSet(depsOf(trx, hooks), s.ctx, setId, input(s.userId))).toMatchObject({
+        approved: 1,
+        skipped: 1,
+      });
       expect((await row(trx, old.sendId)).status).toBe("expired");
       expect((await row(trx, fresh.sendId)).status).toBe("approved");
     });
@@ -644,7 +656,10 @@ describe("tenant isolation", () => {
 
       expect(await approve(depsOf(trx, hooks), b.ctx, old.sendId, input(b.userId))).toEqual({ kind: "not_found" });
       expect(await reject(depsOf(trx, hooks), b.ctx, old.sendId, input(b.userId))).toEqual({ kind: "not_found" });
-      expect(await approveSet(depsOf(trx, hooks), b.ctx, setId, input(b.userId))).toEqual({ approved: 0, skipped: 0 });
+      expect(await approveSet(depsOf(trx, hooks), b.ctx, setId, input(b.userId))).toMatchObject({
+        approved: 0,
+        skipped: 0,
+      });
       expect(await rejectSet(depsOf(trx, hooks), b.ctx, setId, input(b.userId))).toEqual({ rejected: 0, skipped: 0 });
       expect(await sendAgain(depsOf(trx, openHooks), b.ctx, failed.sendId, input(b.userId))).toEqual({
         kind: "not_found",

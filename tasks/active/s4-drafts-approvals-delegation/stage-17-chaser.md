@@ -6,7 +6,7 @@ Part of [`../s4-drafts-approvals-delegation.md`](../s4-drafts-approvals-delegati
 
 Why risky: the chaser plans mail to people on a clock. It must run once per day, never double a reminder, and never remind an inactive delegate or an answered delegation.
 
-- [ ] **17.1 `createChaserJob` (D21, D23, P4)**
+- [x] **17.1 `createChaserJob` (D21, D23, P4)**
   - Goal: once per mailbox per local day at or after 07:30, every due delegation becomes `overdue` and gets at most one new reminder pair, all reminders of the run in one approval set; a closed delegation never gets one.
   - Files: create `apps/server/src/modules/delegation/chaser.ts`, `apps/server/test/integration/delegation-chaser.test.ts`; change `apps/server/src/modules/delegation/index.ts`, `apps/server/src/modules/audit/repo.ts` (`countMailboxEventsBetween(db, ctx, event, mailboxId, range)`: as `countEventsBetween` with `data->>'mailbox_id' = mailboxId`), `audit/index.ts`.
   - Interfaces:

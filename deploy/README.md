@@ -26,6 +26,7 @@ The server has no inbound port. The `db` service has no host port.
    - `CREDENTIALS_KEY`: `openssl rand -base64 32`. Keep a copy in a password manager. If you lose the key, you lose all stored mailbox passwords.
    - `CREDENTIALS_KEY_VERSION=1`
    - `HEARTBEAT_URL` (see Heartbeat), `TEST_MAILBOX_ADDRESS` (test mailbox only), `LOG_LEVEL=info`.
+   - `SEND_SCOPE=off` (default) and `SEND_TEST_ADDRESSES` (comma-separated, needed with `SEND_SCOPE=self`). The full section comes with stage 21 of the S4 task.
    - Compose sets `DATABASE_URL`, `MIGRATOR_DATABASE_URL` and `PORT` by itself. Their values in `.env` do not count for `server`.
 4. Start the database: `$C up -d --wait db`
 5. Build the image and migrate: `$C run --build --rm server bun run db:migrate`
@@ -94,7 +95,7 @@ $C run --rm server bun run mailbox:settings auto --org-id <uuid> --mailbox-id <u
 
 - `mode --mode assist` sets the switches `move`, `mark_read` and `flag` on. Add `--keep-switches` to keep the old values. Without it, `mode --mode assist` also expires the `ready` rows of each switch it turns off.
 - `auto --value on` needs a go/no-go `go` for the category on real labeled mail (bar 0.98, at least 30 kept). If the gate says no-go, the command exits with code 2. `--force` sets `auto` on anyway and records `forced` in the audit log.
-- `switch --name <name> --value on|off` changes one switch. `create_draft` has no effect yet (S4).
+- `switch --name <name> --value on|off` changes one switch.
 - A change that closes a gate expires the `ready` actions it closes. The command prints `expired <n> ready actions`.
 - Before you set `ACTIONS_SCOPE=all`, run `mailbox:settings expire-ready`. Real mail of the shadow-scope days then does not move when the scope opens. If `ready mailbox actions left` is above 0, a committer run holds a row: run the command again after 15 seconds.
 - You can close a gate as an emergency stop (`mode shadow`, `auto … off` or `switch … off`). No second `expire-ready` is needed.

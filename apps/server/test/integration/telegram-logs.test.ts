@@ -1,7 +1,7 @@
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import type { Update } from "grammy/types";
 
-import { createPlanned } from "../../src/modules/actions";
+import { createPlanned, noDelegationHooks } from "../../src/modules/actions";
 import { createLinkToken, createTelegramRuntime } from "../../src/modules/channels";
 import { markSynced } from "../../src/modules/mail/repo";
 import { setDigestTimes } from "../../src/modules/tenancy";
@@ -131,6 +131,9 @@ describe("telegram logs", () => {
           triageScope: "synthetic",
           actionsScope: { kind: "off" },
           llm: { provider: "gemini", classifierModel: "gemini-3.5-flash-lite" },
+          hooks: noDelegationHooks,
+          uidplus: async () => true,
+          sendScope: { kind: "off" },
           apiRoot: fake.apiRoot,
           botInfo: testBotInfo,
         });

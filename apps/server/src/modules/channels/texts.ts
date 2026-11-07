@@ -8,6 +8,8 @@ export function helpText(): string {
     "/help – this list",
     "Tap ✅ when the AI category is right, ✏️ to correct it.",
     "↩️ under a digest line undoes what the system did to that mail (7 days).",
+    "📤 under an approval sends the draft; ✖️ rejects it (the draft is removed).",
+    "✅ Done under an answered delegation closes it.",
   ].join("\n");
 }
 

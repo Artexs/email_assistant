@@ -4,7 +4,14 @@ import { afterAll, expect, test } from "bun:test";
 
 import { createCommitterJob } from "../../../apps/server/src/modules/actions";
 import { createLinkToken, createTelegramRuntime } from "../../../apps/server/src/modules/channels";
-import { createMailSyncJob, openImapProvider } from "../../../apps/server/src/modules/mail";
+import { delegationHooks } from "../../../apps/server/src/modules/delegation";
+import {
+  composeMessage,
+  createMailSyncJob,
+  mailboxHasUidplus,
+  openImapProvider,
+  openSmtpSender,
+} from "../../../apps/server/src/modules/mail";
 import { createLlmPause, createTriageJob } from "../../../apps/server/src/modules/triage";
 import { testDb, withRollback } from "../../../apps/server/test/integration/helpers";
 import { createFakeTelegramClient, DEFAULT_CHAT_ID, FAKE_TOKEN, startFakeTelegram } from "../src";
@@ -28,6 +35,7 @@ test("link, urgent notice, digest and undo run against the fake, the DB and Gree
     const { ctx, secrets } = box;
     const fake = startFakeTelegram();
     const client = createFakeTelegramClient(fake.apiRoot);
+    const hooks = delegationHooks({ db: trx });
     const runtime = createTelegramRuntime({
       db: trx,
       token: FAKE_TOKEN,
@@ -37,13 +45,20 @@ test("link, urgent notice, digest and undo run against the fake, the DB and Gree
       triageScope: "synthetic",
       actionsScope: { kind: "synthetic" },
       llm: { provider: "gemini", classifierModel: "fake-model" },
+      hooks,
+      uidplus: (uidCtx, mailboxId) => mailboxHasUidplus(trx, uidCtx, mailboxId),
+      sendScope: { kind: "off" },
       apiRoot: fake.apiRoot,
     });
     const committer = createCommitterJob({
       db: trx,
       secrets,
       openProvider: openImapProvider,
+      openSender: openSmtpSender,
+      compose: composeMessage,
+      hooks,
       scope: { kind: "synthetic" },
+      sendScope: { kind: "off" },
       now,
     });
     try {

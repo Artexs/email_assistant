@@ -1,0 +1,63 @@
+import type { ActionsScope, CommitterDeps, SendScope } from "./modules/actions";
+import { delegationHooks } from "./modules/delegation";
+import { composeMessage, mailboxHasUidplus, openImapProvider, openSmtpSender } from "./modules/mail";
+import { sendTestAddresses, type Config } from "./platform/config";
+import type { SecretBox } from "./platform/crypto";
+import type { Db, TenantContext } from "./platform/db";
+import { createLog } from "./platform/log";
+
+// The parts that `main.ts` and `scripts/job-run.ts` build the same way.
+const log = createLog("main");
+
+// The one value goes to the committer and to the Telegram runtime. The config check guarantees the key that `all` needs.
+export function actionsScope(config: Config): ActionsScope {
+  if (config.ACTIONS_SCOPE === "off") {
+    log.info("actions committer: mailbox changes are off (ACTIONS_SCOPE=off)");
+    return { kind: "off" };
+  }
+  if (config.ACTIONS_SCOPE === "synthetic") {
+    log.info("actions committer applies mailbox changes to synthetic mail only");
+    return { kind: "synthetic" };
+  }
+  log.warn(
+    "actions committer applies mailbox changes to the real mail of the TEST_MAILBOX_ADDRESS mailbox (ACTIONS_SCOPE=all)"
+  );
+  return { kind: "all", mailboxAddress: config.TEST_MAILBOX_ADDRESS ?? "" };
+}
+
+// D16, D31. The config check guarantees the list for `self` and the key that `all` needs.
+export function sendScope(config: Config): SendScope {
+  if (config.SEND_SCOPE === "off") {
+    log.info("sends: off (SEND_SCOPE=off)");
+    return { kind: "off" };
+  }
+  if (config.SEND_SCOPE === "self") {
+    log.warn("sends go only to the SEND_TEST_ADDRESSES list (SEND_SCOPE=self)");
+    return { kind: "self", addresses: sendTestAddresses(config) };
+  }
+  log.warn("sends go to real delegates of the TEST_MAILBOX_ADDRESS mailbox (SEND_SCOPE=all)");
+  return { kind: "all", mailboxAddress: config.TEST_MAILBOX_ADDRESS ?? "" };
+}
+
+export function uidplusOf(db: Db): (ctx: TenantContext, mailboxId: string) => Promise<boolean> {
+  return (ctx, mailboxId) => mailboxHasUidplus(db, ctx, mailboxId);
+}
+
+export function committerDeps(input: {
+  db: Db;
+  secrets: SecretBox;
+  scope: ActionsScope;
+  sendScope: SendScope;
+}): CommitterDeps {
+  return {
+    db: input.db,
+    secrets: input.secrets,
+    openProvider: openImapProvider,
+    openSender: openSmtpSender,
+    compose: composeMessage,
+    hooks: delegationHooks({ db: input.db }),
+    scope: input.scope,
+    sendScope: input.sendScope,
+    now: () => new Date(),
+  };
+}

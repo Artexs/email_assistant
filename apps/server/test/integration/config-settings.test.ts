@@ -185,7 +185,7 @@ describe("settings setters", () => {
         value: true,
         actor: "cli",
       });
-      expect(draft.warnings).toHaveLength(1);
+      expect(draft.warnings).toEqual([]);
     });
   });
 

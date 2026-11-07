@@ -4,7 +4,7 @@ import { encodeCallback } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
-import { createCommitterJob } from "../../src/modules/actions";
+import { createCommitterJob, noDelegationHooks } from "../../src/modules/actions";
 import { handleCallback, type LinkedChat } from "../../src/modules/channels";
 import { INBOX, syncMailbox } from "../../src/modules/mail";
 import {
@@ -137,7 +137,14 @@ describe("actions end to end", () => {
       expect((await s.fake.fetchMetaIn("AI/Info", movedUid as number))?.flags).toContain("\\Flagged");
 
       const tap = await handleCallback(
-        { db: trx, now: () => NOW, actionsScope: { kind: "all", mailboxAddress: s.address } },
+        {
+          db: trx,
+          now: () => NOW,
+          actionsScope: { kind: "all", mailboxAddress: s.address },
+          hooks: noDelegationHooks,
+          uidplus: async () => true,
+          sendScope: { kind: "off" },
+        },
         s.link,
         encodeCallback({ kind: "undo", emailId: s.emailId })
       );

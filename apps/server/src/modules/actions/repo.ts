@@ -1227,6 +1227,19 @@ export async function getDraft(db: DbOrTrx, ctx: TenantContext, id: string): Pro
   return row && toDraftRow(row);
 }
 
+// D20: a reverse row of the draft exists = the draft was removed (or its removal is queued).
+export async function draftHasReverse(db: DbOrTrx, ctx: TenantContext, draftId: string): Promise<boolean> {
+  const row = await db
+    .selectFrom("actions")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where("type", "=", "create_draft")
+    .where("reverses_action_id", "=", draftId)
+    .limit(1)
+    .executeTakeFirst();
+  return row !== undefined;
+}
+
 // A resend shares the draft of the failed send (D18).
 export async function listSendsOfDraft(
   db: DbOrTrx,
@@ -1569,19 +1582,27 @@ export async function listAwaitingSendIds(
 export async function countApprovals(
   db: DbOrTrx,
   ctx: TenantContext,
-  opts: { staleBefore: Date }
+  opts: { staleBefore: Date; mailboxId?: string }
 ): Promise<{ waiting: number; oldestNotifiedAt: Date | null; approvedHeld: number }> {
-  const row = await db
+  let query = db
     .selectFrom("actions")
     .select([
-      sql<string>`count(*) filter (where status = 'awaiting_approval')`.as("waiting"),
-      sql<Date | null>`min(notified_at) filter (where status = 'awaiting_approval')`.as("oldest"),
-      sql<string>`count(*) filter (where status = 'approved' and (locked_at is null or locked_at < ${opts.staleBefore}))`.as(
+      sql<string>`count(*) filter (where actions.status = 'awaiting_approval')`.as("waiting"),
+      sql<Date | null>`min(actions.notified_at) filter (where actions.status = 'awaiting_approval')`.as("oldest"),
+      sql<string>`count(*) filter (where actions.status = 'approved' and (actions.locked_at is null or actions.locked_at < ${opts.staleBefore}))`.as(
         "held"
       ),
     ])
-    .where("org_id", "=", ctx.orgId)
-    .where("type", "=", "send")
-    .executeTakeFirstOrThrow();
+    .where("actions.org_id", "=", ctx.orgId)
+    .where("actions.type", "=", "send");
+  if (opts.mailboxId !== undefined) {
+    const mailboxId = opts.mailboxId;
+    query = query
+      .innerJoin("emails", (join) =>
+        join.onRef("emails.id", "=", "actions.email_id").onRef("emails.org_id", "=", "actions.org_id")
+      )
+      .where("emails.mailbox_id", "=", mailboxId);
+  }
+  const row = await query.executeTakeFirstOrThrow();
   return { waiting: Number(row.waiting), oldestNotifiedAt: row.oldest, approvedHeld: Number(row.held) };
 }

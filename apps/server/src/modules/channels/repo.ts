@@ -174,7 +174,18 @@ export async function deleteChatLinks(db: DbOrTrx, ctx: TenantContext, userId: s
   return Number(result.numDeletedRows);
 }
 
-export const outboxKinds = ["digest", "urgent", "auth_error", "sync_stale", "sync_ok", "action_failed"] as const;
+export const outboxKinds = [
+  "digest",
+  "urgent",
+  "auth_error",
+  "sync_stale",
+  "sync_ok",
+  "action_failed",
+  "approval",
+  "approval_set",
+  "send_result",
+  "delegation_answered",
+] as const;
 export type OutboxKind = (typeof outboxKinds)[number];
 const outboxKindSchema = z.enum(outboxKinds);
 
@@ -218,6 +229,22 @@ export async function insertOutbox(db: DbOrTrx, ctx: TenantContext, row: NewOutb
     .returning("id")
     .executeTakeFirst();
   return inserted?.id ?? null;
+}
+
+// The text of the message that was queued for this user; the tap handlers edit it. Tenant and user filter the row.
+export async function findOutboxByDedup(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  userId: string,
+  dedupKey: string
+): Promise<{ id: string; text: string } | undefined> {
+  return db
+    .selectFrom("outbox")
+    .select(["id", "text"])
+    .where("org_id", "=", ctx.orgId)
+    .where("user_id", "=", userId)
+    .where("dedup_key", "=", dedupKey)
+    .executeTakeFirst();
 }
 
 export interface ClaimedOutbox {

@@ -40,6 +40,7 @@ export {
   countApprovals,
   countReadyOriginals,
   createPlanned,
+  draftHasReverse,
   expireReadyOriginals,
   expireStaleReady,
   finishAction,

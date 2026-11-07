@@ -6,7 +6,7 @@ Part of [`../s4-drafts-approvals-delegation.md`](../s4-drafts-approvals-delegati
 
 Why risky: the approval request is the user's only view of what goes out; a wrong recipient or a missing warning here is the injection surface of S4. Exactly one request per send (dedup) and `notified_at` in the same transaction, and never a mark without a message.
 
-- [ ] **15.1 `detectApprovals` and `detectApprovalSets` (D19, D21)**
+- [x] **15.1 `detectApprovals` and `detectApprovalSets` (D19, D21)**
   - Goal: a send that waits for approval gets exactly one request per linked owner, only after its draft is applied, with the text the builder makes for the same draft; without a linked owner nothing is marked.
   - Files: change `apps/server/src/modules/channels/notices.ts`, `channels/repo.ts` (`outboxKinds` + `approval`, `approval_set`, `send_result`, `delegation_answered`), `apps/server/test/integration/channels-notices.test.ts`, `channels-outbox.test.ts` (the new kinds insert with `emailId` and fail without). **Where the detectors run (review round 2 N11):** in `detectForOrg` (`channels/notices.ts:271`; M11), which already has `members`, `owners` and the timezone per organization; after `detectUrgent` and the mailbox loop: `detectApprovals`, `detectApprovalSets`, `detectSendResults`, `detectDelegationAnswered`. `runtime.ts` does not change (its `notify()` calls `detectNotices` as today). Each S4 detector catches errors **per row** (per set): warn `notice <kind> <id>: skipped: <describeError>` and go on with the next row, so one bad row never stops the urgent notices or the other approvals; the row is retried on the next tick (nothing was marked), and the warn line is written once per process per row (a `Set` of `<kind>:<id>` in the module, as the S3 `warnedSettings` pattern), so a broken row does not fill the log every 15 s. Such a row needs a hand fix: stage 21 writes the known-alerts entry (the row keeps failing; the send expires after 7 days, and its result notice then fails the same way until the row is fixed or `result_notified_at` is set by hand).
   - Interfaces:
@@ -26,7 +26,7 @@ Why risky: the approval request is the user's only view of what goes out; a wron
   - Done when: the tests pass.
   - Out of scope: the taps (stage 16).
 
-- [ ] **15.2 `detectSendResults` and `detectDelegationAnswered` (D20, D24)**
+- [x] **15.2 `detectSendResults` and `detectDelegationAnswered` (D20, D24)**
   - Goal: every end state of a send and every answered delegation gives one notice per recipient group, once, and the "sent" notice never claims a copy before the copy step ended.
   - Files: change `apps/server/src/modules/channels/notices.ts`, `apps/server/test/integration/channels-notices.test.ts`.
   - Decisions:

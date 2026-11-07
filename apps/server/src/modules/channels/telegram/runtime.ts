@@ -1,8 +1,8 @@
 import type { UserFromGetMe } from "grammy/types";
 import type { Transaction } from "kysely";
 
-import type { DB, Db } from "../../../platform/db";
-import type { ActionsScope } from "../../actions";
+import type { DB, Db, TenantContext } from "../../../platform/db";
+import type { ActionsScope, DelegationHooks, SendScope } from "../../actions";
 import { createUpdateHandlers } from "../commands";
 import { scheduleDigests } from "../digest-job";
 import { detectNotices } from "../notices";
@@ -21,6 +21,9 @@ export interface TelegramRuntimeDeps {
   triageScope: "off" | "synthetic" | "all";
   actionsScope: ActionsScope;
   llm: { provider: string; classifierModel: string };
+  hooks: DelegationHooks;
+  uidplus(ctx: TenantContext, mailboxId: string): Promise<boolean>;
+  sendScope: SendScope;
   // Tests, and TELEGRAM_API_ROOT (loopback only, platform/config).
   apiRoot?: string;
   // Only for tests.
@@ -49,6 +52,9 @@ export function createTelegramRuntime(deps: TelegramRuntimeDeps): TelegramRuntim
         triageScope: deps.triageScope,
         actionsScope: deps.actionsScope,
         llm: deps.llm,
+        hooks: deps.hooks,
+        uidplus: deps.uidplus,
+        sendScope: deps.sendScope,
       }),
     },
     { botInfo: deps.botInfo, apiRoot: deps.apiRoot }

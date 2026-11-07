@@ -28,6 +28,7 @@
     "delegates:enable": "bun apps/server/src/scripts/delegates.ts enable",
     "delegations:list": "bun apps/server/src/scripts/delegations.ts list",
     "delegations:done": "bun apps/server/src/scripts/delegations.ts done",
+    "job:run": "bun apps/server/src/scripts/job-run.ts",
     "triage:cost": "bun apps/server/src/scripts/triage-cost.ts",
     "triage:label": "bun apps/server/src/scripts/triage-label.ts",
     "eval": "bun apps/server/src/scripts/eval.ts",

@@ -119,6 +119,22 @@ describe("insertOutbox", () => {
     });
   });
 
+  test.each(["approval", "approval_set", "send_result", "delegation_answered"] as const)(
+    "kind %s inserts with an email id and fails without",
+    async (kind) => {
+      await withRollback(db, async (trx) => {
+        const t = await tenant(trx);
+        const emailId = await insertTestEmail(trx, t.ctx, t.mailboxId);
+        const id = await insertOutbox(trx, t.ctx, rowFor(t.userId, { mailboxId: t.mailboxId, kind, emailId }));
+        expect(id).toBeString();
+        const error = await insertOutbox(trx, t.ctx, rowFor(t.userId, { mailboxId: t.mailboxId, kind })).catch(
+          (caught: unknown) => caught
+        );
+        expect((error as { code?: string }).code).toBe("23514");
+      });
+    }
+  );
+
   test("rejects bad buttons and inserts no row", async () => {
     await withRollback(db, async (trx) => {
       const t = await tenant(trx);

@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 
 import { describe, expect, test } from "bun:test";
 
-import { classifierModel, ConfigError, isLoopbackApiRoot, llmSettings, loadConfig } from "./config";
+import { classifierModel, ConfigError, isLoopbackApiRoot, llmSettings, loadConfig, sendTestAddresses } from "./config";
 
 const fullEnv = {
   DATABASE_URL: "postgres://app:pw@127.0.0.1:5433/email_assistant",
@@ -316,5 +316,45 @@ describe("TELEGRAM_API_ROOT", () => {
     const error = configError({ ...fullEnv, TELEGRAM_API_ROOT: value });
     expect(error.keys).toEqual(["TELEGRAM_API_ROOT"]);
     expect(error.message).not.toContain(value);
+  });
+});
+
+describe("SEND_SCOPE", () => {
+  test("defaults to off and needs no address list", () => {
+    const config = loadConfig(fullEnv);
+    expect(config.SEND_SCOPE).toBe("off");
+    expect(sendTestAddresses(config)).toEqual([]);
+  });
+
+  test("rejects a value that is not off, self or all", () => {
+    expect(configError({ ...fullEnv, SEND_SCOPE: "yes" }).keys).toEqual(["SEND_SCOPE"]);
+  });
+
+  test("self needs at least one address in SEND_TEST_ADDRESSES", () => {
+    expect(configError({ ...fullEnv, SEND_SCOPE: "self" }).keys).toEqual(["SEND_TEST_ADDRESSES"]);
+    expect(configError({ ...fullEnv, SEND_SCOPE: "self", SEND_TEST_ADDRESSES: " , " }).keys).toEqual([
+      "SEND_TEST_ADDRESSES",
+    ]);
+    expect(configError({ ...fullEnv, SEND_SCOPE: "self", SEND_TEST_ADDRESSES: "a@x.test, nope" }).keys).toEqual([
+      "SEND_TEST_ADDRESSES",
+    ]);
+  });
+
+  test("sendTestAddresses splits, trims, lower-cases and removes duplicates", () => {
+    const config = loadConfig({
+      ...fullEnv,
+      SEND_SCOPE: "self",
+      SEND_TEST_ADDRESSES: "A@x.test, b@x.test,a@X.test",
+    });
+    expect(sendTestAddresses(config)).toEqual(["a@x.test", "b@x.test"]);
+  });
+
+  test("all needs TEST_MAILBOX_ADDRESS", () => {
+    expect(configError({ ...fullEnv, SEND_SCOPE: "all" }).keys).toEqual(["TEST_MAILBOX_ADDRESS"]);
+    expect(loadConfig({ ...fullEnv, SEND_SCOPE: "all", TEST_MAILBOX_ADDRESS: "t@x.test" }).SEND_SCOPE).toBe("all");
+  });
+
+  test("an empty SEND_TEST_ADDRESSES counts as missing", () => {
+    expect(loadConfig({ ...fullEnv, SEND_TEST_ADDRESSES: "" }).SEND_TEST_ADDRESSES).toBeUndefined();
   });
 });
