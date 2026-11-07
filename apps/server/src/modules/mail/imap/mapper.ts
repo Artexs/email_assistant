@@ -3,7 +3,7 @@ import type { FetchMessageObject, MessageAddressObject } from "imapflow";
 import { simpleParser } from "mailparser";
 
 import { HardError } from "../../../platform/errors";
-import type { MessageMeta } from "../port";
+import type { FolderMessageMeta, MessageMeta } from "../port";
 
 const BODY_TEXT_LIMIT = 100_000;
 
@@ -71,6 +71,10 @@ export function toMessageMeta(msg: FetchMessageObject): MessageMeta {
     subject: envelope?.subject === undefined ? null : stripNul(envelope.subject),
     actionId: cleanOrNull(headers.get("x-ea-action-id")),
   };
+}
+
+export function toFolderMessageMeta(msg: FetchMessageObject): FolderMessageMeta {
+  return { ...toMessageMeta(msg), flags: [...(msg.flags ?? [])].sort() };
 }
 
 /** Plain text of a full RFC 822 source: the text part, else the html part as text. Null on a parse error or no text. */

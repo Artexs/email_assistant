@@ -138,11 +138,9 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
       expect(await provider.findByMessageId("No-such-folder", "<contract-7@example.test>")).toBeNull();
     });
 
-    // The write cases run on GreenMail from stage 4 on.
-    const writeTest = test.skipIf(name.startsWith("imap"));
     const yesterday = () => new Date(Date.now() - DAY_MS);
 
-    writeTest("ensureFolder creates the folder and a second call returns the same path", async () => {
+    test("ensureFolder creates the folder and a second call returns the same path", async () => {
       const { provider } = await freshEnv();
       const path = await provider.ensureFolder(`AI/Contract-${crypto.randomUUID()}`);
       const listed = (await provider.serverInfo()).folders.map((f) => f.path);
@@ -152,7 +150,7 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
       expect(after).toHaveLength(listed.length);
     });
 
-    writeTest("fetchMetaIn matches fetchAbove and has no \\Seen; null for unknown uid or folder", async () => {
+    test("fetchMetaIn matches fetchAbove and has no \\Seen; null for unknown uid or folder", async () => {
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(1));
       const [expected] = await provider.fetchAbove(0);
@@ -168,7 +166,7 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
       expect(await provider.fetchMetaIn("No-such-folder", 1)).toBeNull();
     });
 
-    writeTest("setFlags adds and removes flags", async () => {
+    test("setFlags adds and removes flags", async () => {
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(1));
       const uid = (await provider.fetchAbove(0))[0]?.uid ?? 0;
@@ -182,7 +180,7 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
       expect(one?.flags).not.toContain("\\Flagged");
     });
 
-    writeTest("moveMessage moves the mail with its fields and flags", async () => {
+    test("moveMessage moves the mail with its fields and flags", async () => {
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(1));
       const [source] = await provider.fetchAbove(0);
@@ -202,13 +200,13 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
       expect(found[0]?.flags).toContain("\\Seen");
     });
 
-    writeTest("moveMessage of an unknown uid throws MailNotFoundError", async () => {
+    test("moveMessage of an unknown uid throws MailNotFoundError", async () => {
       const { provider } = await freshEnv();
       const folder = await provider.ensureFolder(`AI/Contract-${crypto.randomUUID()}`);
       await expect(provider.moveMessage("INBOX", 999999, folder)).rejects.toBeInstanceOf(MailNotFoundError);
     });
 
-    writeTest("searchSinceIn lists the moved uid; [] for a missing folder", async () => {
+    test("searchSinceIn lists the moved uid; [] for a missing folder", async () => {
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(1));
       const uid = (await provider.fetchAbove(0))[0]?.uid ?? 0;
@@ -220,7 +218,7 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
       expect(await provider.searchSinceIn("No-such-folder", yesterday())).toEqual([]);
     });
 
-    writeTest("deleteMessage deletes one mail; a second call gives false", async () => {
+    test("deleteMessage deletes one mail; a second call gives false", async () => {
       const { provider, seed } = await freshEnv();
       const folder = await provider.ensureFolder(`AI/Contract-${crypto.randomUUID()}`);
       await seed(folder, mail(1));
@@ -233,7 +231,7 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
       expect((await provider.fetchMetaIn(folder, second?.uid ?? 0))?.messageId).toBe(second?.messageId ?? "missing");
     });
 
-    writeTest("after a move fetchAbove(lastUid) does not return the moved uid as new", async () => {
+    test("after a move fetchAbove(lastUid) does not return the moved uid as new", async () => {
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(1));
       await seed("INBOX", mail(2));

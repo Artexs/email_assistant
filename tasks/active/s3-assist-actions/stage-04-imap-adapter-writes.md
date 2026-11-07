@@ -6,7 +6,7 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 
 Checkpoint 1 result (Interia, 2026-11-07): delimiter `/`, namespace prefix `""`; MOVE no, UIDPLUS yes; `UID EXPUNGE` removes only the given UID (`otherDeletedKept` true); a nested CREATE needs the parent first (see `ensureFolder`).
 
-- [ ] **4.1 `ImapMailProvider`: folders, folder reads, flags, move, delete**
+- [x] **4.1 `ImapMailProvider`: folders, folder reads, flags, move, delete**
   - Goal: the IMAP adapter implements the stage 3 port on a server with MOVE (GreenMail) and on one without MOVE but with UIDPLUS (Interia), and the GreenMail contract suite passes on both paths.
   - Files: change `apps/server/src/modules/mail/imap/client.ts`, `apps/server/src/modules/mail/imap/mapper.ts` (`toFolderMessageMeta` adds `flags` from `msg.flags`), `apps/server/src/modules/mail/imap/client.test.ts`, `apps/server/test/integration/imap-contract.test.ts`.
   - Interfaces: `ImapConnectOptions` gets `forceCopyMove?: boolean` (default false; true = ignore the MOVE capability and use the COPY path: for the GreenMail test of the Interia path). `openImapProvider(opts)` passes it to the adapter. Export `createImapMailProvider(client: ImapFlow, opts: { bodyLimitBytes: number; forceCopyMove: boolean }): MailProvider` from `imap/client.ts` (not from `mail/index.ts`), so the unit test can pass a stub client; `openImapProvider` uses it.

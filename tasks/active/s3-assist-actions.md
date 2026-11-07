@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress: stages 1–3 done; stage 4 (IMAP adapter writes) is next.** Q1 and Q5 keep their defaults until the user answers.
+> **Status 2026-11-07 — in progress: stages 1–4 done; stage 5 (`locateMessage` and the sync) is next.** Q1 and Q5 keep their defaults until the user answers.
 
 # S3 Assist actions
 
@@ -130,7 +130,7 @@ Each stage lives in its own file in [`s3-assist-actions/`](s3-assist-actions/). 
 - [x] [Stage 1](s3-assist-actions/stage-01-interia-move-spike.md) — Interia move spike: `mailbox:probe-move` on the real mailbox [risky] — user checkpoint 1 after it
 - [x] [Stage 2](s3-assist-actions/stage-02-s3-migration.md) — S3 migration: `applied_at`, `inbox_uid`, `moved_at`, indexes, outbox kind [risky]
 - [x] [Stage 3](s3-assist-actions/stage-03-mail-write-port-and-fake.md) — Mail write port, fake provider, contract cases [risky]
-- [ ] [Stage 4](s3-assist-actions/stage-04-imap-adapter-writes.md) — IMAP adapter writes (MOVE and COPY paths) on GreenMail [risky]
+- [x] [Stage 4](s3-assist-actions/stage-04-imap-adapter-writes.md) — IMAP adapter writes (MOVE and COPY paths) on GreenMail [risky]
 - [ ] [Stage 5](s3-assist-actions/stage-05-locate-message-and-sync.md) — `locateMessage`, identity rules, sync without `findByMessageId` [risky]
 - [ ] [Stage 6](s3-assist-actions/stage-06-returned-below-cursor.md) — Returned mail below the UID cursor [risky]
 - [ ] [Stage 7](s3-assist-actions/stage-07-actions-repo-and-fixtures.md) — Actions repository: claim, finish, release, fail; email location; fixtures (steps 7.1a, 7.1b, 7.2) [risky] — user checkpoint 2 after it
@@ -240,3 +240,4 @@ Answered 2026-11-06 with the plan defaults (P1–P7). Questions 1–4 of the fir
 - 2026-11-07: Checkpoint 1: the user said go. Step 1.2 and stage 1 ticked.
 - 2026-11-07: Stage 2 built: migration `20261107000001_assist_actions.sql` (real constraint names `outbox_kind_check`, `outbox_check1`), `schema.ts` regenerated, `actions-schema.test.ts`; round trip with an `action_failed` row OK. Review (Opus, high): PASS; minor fixes (savepoint helper, `urgent` case); its questions added to stage 19 step 1 (conname check) and stage 18.1 (rollback runbook line). `tasks/planned/s1b-claim-index.md` done by S3 stage 2.
 - 2026-11-07: Stage 3 built: port methods, `MailNotFoundError`, fake writes (`keepUidOnCopy`, `copyUidMap`), 8 contract cases (`skipIf` on IMAP until stage 4), IMAP stubs; `...fake` in the two hand-built test wrappers. Review (Opus, high) round 1 FAIL (major: the fake moved mail without MOVE and UIDPLUS; minor: `newUid` without UIDPLUS, move to a missing folder, path test), fixed; round 2 PASS (minor: no folder path in the fake TRYCREATE error, fixed).
+- 2026-11-07: Stage 4 built: `ImapMailProvider` writes (`createImapMailProvider`, `matchFolder`, parent-first `ensureFolder`, own COPY + UID EXPUNGE path, `forceCopyMove`), contract on GreenMail twice (MOVE and COPY path). Review (Opus, high): PASS; hardening applied: `!copied` / `!moved` (imapflow can return undefined), a re-fetch after `messageDelete` (`expunge refused` when the UID stays), more stub tests. Not done (reviewer question): COPYUID is not required before the delete (stage 9 locates by identity).
