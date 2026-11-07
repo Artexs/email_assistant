@@ -6,7 +6,7 @@ Part of [`../test-mail-traffic.md`](../test-mail-traffic.md). Read that file's "
 
 Pure code in `packages/core`, no I/O. Later stages import it from `@ea/core`.
 
-- [ ] **1.1 Persona file and batch schemas, validation**
+- [x] **1.1 Persona file and batch schemas, validation**
   - Goal: one Zod schema for the persona file and one for a batch file; one pure function that lists every rule violation of a batch (D7).
   - Files: create `packages/core/src/testmail/batch.ts`, `packages/core/src/testmail/batch.test.ts`, `packages/core/src/testmail/index.ts`;
     change `packages/core/src/index.ts` (add `export * from "./testmail";`).
@@ -138,7 +138,7 @@ Pure code in `packages/core`, no I/O. Later stages import it from `@ea/core`.
   - Done when: tests 1–15 pass; `@ea/core` exports the schemas, types and `validateBatch`.
   - Out of scope: reading files (stage 4), the persona file content (stage 8), send logic.
 
-- [ ] **1.2 Blind view and blind apply**
+- [x] **1.2 Blind view and blind apply**
   - Goal: pure helpers for the blind labelling pass (D16).
   - Files: create `packages/core/src/testmail/blind.ts`, `packages/core/src/testmail/blind.test.ts`; change `packages/core/src/testmail/index.ts`.
   - Interfaces:
