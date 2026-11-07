@@ -157,11 +157,12 @@ export function classifySmtpError(
   const responseCode = typeof fields.responseCode === "number" ? fields.responseCode : null;
   const permanent = fields.permanent === true || (responseCode !== null && responseCode >= 500);
   const soft =
-    code === "ECONNECTION" ||
-    code === "ETIMEDOUT" ||
-    code === "EDNS" ||
-    (code === "ESOCKET" && originalCode !== null && SOFT_SOCKET_CODES.has(originalCode)) ||
-    (responseCode !== null && responseCode >= 400 && responseCode <= 499);
+    !permanent &&
+    (code === "ECONNECTION" ||
+      code === "ETIMEDOUT" ||
+      code === "EDNS" ||
+      (code === "ESOCKET" && originalCode !== null && SOFT_SOCKET_CODES.has(originalCode)) ||
+      (responseCode !== null && responseCode >= 400 && responseCode <= 499));
   let stage: SmtpStage;
   if (step !== "send") stage = step;
   else if (code === "EENVELOPE") stage = "envelope";
@@ -262,14 +263,21 @@ export async function openSmtpSender(
         await step<undefined>("connect", (done) => connection.connect((error) => done(error)));
         await step<undefined>("login", (done) => connection.login(credentials, (error) => done(error)));
         const info = await step<{ response: string; accepted: string[]; rejected: string[] }>("send", (done) =>
-          connection.send(input.envelope, input.raw, (error, result) => done(error, result))
+          connection.send({ from: input.envelope.from, to: [...input.envelope.to] }, input.raw, (error, result) =>
+            done(error, result)
+          )
         );
         return { response: info.response, accepted: info.accepted, rejected: info.rejected };
       } catch (error) {
         failed = true;
         throw error;
       } finally {
-        await closeConnection(connection, !failed);
+        // A close error must not replace the send result or the typed error.
+        try {
+          await closeConnection(connection, !failed);
+        } catch {
+          // ignored
+        }
       }
     },
     async close() {

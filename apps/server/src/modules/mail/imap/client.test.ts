@@ -133,6 +133,8 @@ interface StubOptions {
   fetchedUid?: number;
   /** What `search` gives (default: no match). */
   search?: number[] | false;
+  /** What `append` gives (default: stored with UID 7). */
+  append?: unknown;
 }
 
 function stubProvider(options: StubOptions, forceCopyMove = false) {
@@ -171,6 +173,7 @@ function stubProvider(options: StubOptions, forceCopyMove = false) {
       return options.flagsAdd ?? true;
     },
     messageFlagsRemove: async () => options.flagsRemove ?? true,
+    append: async () => ("append" in options ? options.append : { uid: 7 }),
   };
   const provider = createImapMailProvider(client as unknown as ImapFlow, { bodyLimitBytes: 1000, forceCopyMove });
   return { provider, calls };
@@ -193,6 +196,19 @@ describe("IMAP adapter writes (stub client)", () => {
     const { provider, calls } = stubProvider({ folders: ["INBOX", "ai"] });
     expect(await provider.ensureFolder("AI/Spam")).toBe("ai/Spam");
     expect(calls).toEqual(["create:ai/Spam"]);
+  });
+
+  test("appendMessage gives the APPENDUID uid, or null for a stored message without it", async () => {
+    const raw = Buffer.from("x");
+    expect(await stubProvider({}).provider.appendMessage("Drafts", raw, [], new Date())).toEqual({ uid: 7 });
+    expect(await stubProvider({ append: {} }).provider.appendMessage("Drafts", raw, [], new Date())).toEqual({
+      uid: null,
+    });
+  });
+
+  test("appendMessage: a skipped APPEND (false) is a SoftError, nothing was stored", async () => {
+    const { provider } = stubProvider({ append: false });
+    await expect(provider.appendMessage("Drafts", Buffer.from("x"), [], new Date())).rejects.toBeInstanceOf(SoftError);
   });
 
   test("deleteMessage throws expunge refused when messageDelete gives false", async () => {

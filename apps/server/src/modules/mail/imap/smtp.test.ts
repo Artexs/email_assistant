@@ -12,6 +12,7 @@ import {
   openSmtpSender,
   smtpTransportOptions,
   toSmtpError,
+  type SmtpConnectionLike,
   type SmtpConnectOptions,
   type SmtpMarks,
 } from "./smtp";
@@ -217,6 +218,50 @@ function expectSmtp(error: unknown): SmtpSendError {
   return error as SmtpSendError;
 }
 
+function stubConnection(opts: { sendError?: Error; closeThrows?: boolean; mutate?: boolean }): SmtpConnectionLike {
+  let onEnd: () => void = () => undefined;
+  return {
+    connect: (cb) => cb(),
+    login: (_auth, cb) => cb(null),
+    send: (envelope, _message, cb) => {
+      if (opts.mutate) Object.assign(envelope, { accepted: ["x"], rejected: [], rejectedErrors: [] });
+      if (opts.sendError) cb(opts.sendError);
+      else cb(null, { response: "250 ok", accepted: [...envelope.to], rejected: [] });
+    },
+    quit: () => onEnd(),
+    close: () => {
+      if (opts.closeThrows) throw new Error("close failed");
+    },
+    on: (event: string, listener: unknown) => {
+      if (event === "end") onEnd = listener as () => void;
+    },
+  } as SmtpConnectionLike;
+}
+
+describe("openSmtpSender with a stub connection", () => {
+  test("the caller's envelope object is unchanged after a send", async () => {
+    const sender = await openSmtpSender(connectOptions(1), { connection: () => stubConnection({ mutate: true }) });
+    const envelope = { from: "owner@x.test", to: ["delegate@x.test"] };
+    await sender.send({ envelope, raw: RAW });
+    expect(envelope).toEqual({ from: "owner@x.test", to: ["delegate@x.test"] });
+  });
+
+  test("a close error does not replace the send result", async () => {
+    const sender = await openSmtpSender(connectOptions(1), { connection: () => stubConnection({ closeThrows: true }) });
+    const result = await sender.send({ envelope: ENVELOPE, raw: RAW });
+    expect(result.response).toBe("250 ok");
+  });
+
+  test("a close error does not replace the typed SmtpSendError", async () => {
+    const sendError = Object.assign(new Error("x"), { code: "EENVELOPE", responseCode: 550 });
+    const sender = await openSmtpSender(connectOptions(1), {
+      connection: () => stubConnection({ closeThrows: true, sendError }),
+    });
+    const error = expectSmtp(await sender.send({ envelope: ENVELOPE, raw: RAW }).catch((e: unknown) => e));
+    expect(error).toMatchObject({ stage: "envelope", code: "EENVELOPE" });
+  });
+});
+
 describe("openSmtpSender against a scripted server", () => {
   test("(1) ok gives the 250 line and the accepted recipient", async () => {
     const port = await startServer({});
@@ -384,6 +429,17 @@ function nodemailerError(fields: Record<string, unknown>): Error {
 }
 
 describe("classifySmtpError", () => {
+  test("a permanent reply is never soft", () => {
+    const error = classifySmtpError(nodemailerError({ code: "ECONNECTION", responseCode: 554 }), "send", marks());
+    expect(error).toMatchObject({
+      stage: "envelope",
+      code: "ECONNECTION",
+      responseCode: 554,
+      permanent: true,
+      soft: false,
+    });
+  });
+
   test("EAUTH is a MailAuthError at every step", () => {
     for (const step of ["connect", "login", "send"] as const) {
       const error = classifySmtpError(nodemailerError({ code: "EAUTH" }), step, marks());
