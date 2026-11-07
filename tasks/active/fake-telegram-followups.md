@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress.** Plan written (5 stages), Opus plan review PASS (round 2); left: build of stages 1–5, merge.
+> **Status 2026-11-07 — in progress.** Plan written (5 stages), Opus plan review PASS; stage 1 done (CI proof on the PR pending); left: stages 2–5, merge.
 
 Git mode: worktree (`../email_assistant-wt/fake-telegram-followups`, branch `task/fake-telegram-followups`).
 
@@ -42,7 +42,7 @@ Close the small gaps that the fake Telegram build found and did not fix.
 
 ### Stage 1 — Image build in CI [risky]
 
-- [ ] **1.1 CI job that builds `deploy/Dockerfile` and checks `/app/tools`.** A separate job (no DB services) in `.github/workflows/ci.yml`: `docker build -f deploy/Dockerfile .`, then a check in the built image that `/app/tools` holds only `fake-telegram/package.json`. Proof: the job is green on the PR of the task branch.
+- [x] **1.1 CI job that builds `deploy/Dockerfile` and checks `/app/tools`.** A separate job (no DB services) in `.github/workflows/ci.yml`: `docker build -f deploy/Dockerfile .`, then a check in the built image that `/app/tools` holds only `fake-telegram/package.json`. Proof: the job is green on the PR of the task branch.
   - Goal: CI fails when `deploy/Dockerfile` does not build, or when the image holds more of `tools/` than `tools/fake-telegram/package.json`.
   - Files: `.github/workflows/ci.yml` (change). Nothing else.
   - Interfaces: a new job `image` under `jobs:`, next to the job `ci`. It has `runs-on: ubuntu-latest`, `timeout-minutes: 20`, no `services:`, no `needs:` (it runs in parallel with `ci`). Steps:
@@ -298,3 +298,4 @@ Resolved by the Opus plan review (2026-11-07), now facts in the steps:
 
 - 2026-11-07: Created at the end of the fake Telegram build.
 - 2026-11-07: Opus plan review round 1: FAIL, 16 findings (1 major, 11 minor, 4 questions), all put into the step detail. Stage 4 split into stage 4 (format) and stage 5 (`TELEGRAM_API_ROOT` line). Round 2: PASS, 4 minors fixed by the main session.
+- 2026-11-07: Stage 1 built (job `image` in `ci.yml`), review PASS. CI proof follows on the PR.

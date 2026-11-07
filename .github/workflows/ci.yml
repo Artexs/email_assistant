@@ -56,3 +56,15 @@ jobs:
       - run: bun run db:migrate
       - run: bun run test:int
       - run: bun run web:build
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the server image
+        run: docker build -f deploy/Dockerfile -t ea-server:ci .
+      - name: Check that the image holds only the package.json of the test tools
+        run: |
+          files="$(docker run --rm --entrypoint find ea-server:ci /app/tools -not -path '*/node_modules/*' -not -name node_modules -type f | sort)"
+          echo "$files"
+          test "$files" = "/app/tools/fake-telegram/package.json"
