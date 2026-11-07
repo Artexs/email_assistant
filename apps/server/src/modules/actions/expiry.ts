@@ -1,11 +1,14 @@
 import type { Transaction } from "kysely";
 
 import type { DB, TenantContext } from "../../platform/db";
+import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 
 import { STALE_AFTER_MS } from "./constants";
 import { noDelegationHooks, type DelegationHooks } from "./hooks";
 import { expireReadyDraft, insertReverse, listOpenReminderSends, lockDraft, lockSend, setExpired } from "./repo";
+
+const log = createLog("actions");
 
 export type SendCloseReason =
   | "timeout"
@@ -97,7 +100,10 @@ export async function closeDraftOfSend(
     const kind = draft.payload.kind;
     const folder = draft.provider_result?.folder;
     const uid = draft.provider_result?.uid;
-    if (typeof kind !== "string" || typeof folder !== "string") return "none";
+    if (typeof kind !== "string" || typeof folder !== "string") {
+      log.warn(`applied draft ${draftId} has no folder or kind: no reverse row`);
+      return "none";
+    }
     await insertReverse(trx, ctx, {
       id: draftId,
       emailId: draft.email_id,

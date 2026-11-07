@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { afterAll, describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
 import {
@@ -296,6 +296,23 @@ describe("closeDraftOfSend", () => {
       expect(await closeDraftOfSend(trx, s.ctx, noUid.draftId, { ...opts, uidplus: false })).toBe("none");
     });
   });
+
+  test("an applied draft without a folder: none, and a warning with the draft id only", async () => {
+    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    try {
+      await withRollback(db, async (trx) => {
+        const s = await setup(trx);
+        const p = await pair(trx, s.ctx, s.mailboxId, { draft: { providerResult: { uid: 7 } } });
+        const opts = { reason: "sent" as const, now, uidplus: true };
+        expect(await closeDraftOfSend(trx, s.ctx, p.draftId, opts)).toBe("none");
+        expect(await reverseRows(trx, s.ctx, p.draftId)).toEqual([]);
+        expect(errorSpy).toHaveBeenCalledTimes(1);
+        expect(errorSpy.mock.calls[0]?.join(" ")).toContain(p.draftId);
+      });
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
 });
 
 describe("expireReminderActions", () => {
@@ -385,6 +402,15 @@ describe("lock order (S3 feature 4)", () => {
   test("markAnswered does not wait for an applying reminder send that another connection holds", async () => {
     const created = await db.transaction().execute((trx) => setup(trx));
     const ctx = created.ctx;
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let locked: () => void = () => undefined;
+    const lockedPromise = new Promise<void>((resolve) => {
+      locked = resolve;
+    });
+    let holder: Promise<void> = Promise.resolve();
     try {
       const fixture = await db.transaction().execute(async (trx) => {
         const delegateId = await insertDelegate(trx, ctx);
@@ -405,16 +431,8 @@ describe("lock order (S3 feature 4)", () => {
         return { id, reminderSendId: reminder.sendId, answerId };
       });
 
-      let release: () => void = () => undefined;
-      const gate = new Promise<void>((resolve) => {
-        release = resolve;
-      });
-      let locked: () => void = () => undefined;
-      const lockedPromise = new Promise<void>((resolve) => {
-        locked = resolve;
-      });
       // connection 1: the committer's finishAction holds the applying send
-      const holder = db.transaction().execute(async (trx) => {
+      holder = db.transaction().execute(async (trx) => {
         await sql`SELECT id FROM actions WHERE id = ${fixture.reminderSendId} FOR UPDATE`.execute(trx);
         locked();
         await gate;
@@ -426,8 +444,6 @@ describe("lock order (S3 feature 4)", () => {
         await sql`SET LOCAL lock_timeout = '2s'`.execute(trx);
         return markAnswered(trx, ctx, fixture.id, { emailId: fixture.answerId, at: now });
       });
-      release();
-      await holder;
 
       expect(answered).toBe(true);
       const row = await db
@@ -446,6 +462,8 @@ describe("lock order (S3 feature 4)", () => {
       expect(audit).toHaveLength(1);
       expect(audit[0]?.data).toMatchObject({ delegation_id: fixture.id, reminders_expired: 0 });
     } finally {
+      release();
+      await holder;
       await db.deleteFrom("organizations").where("id", "=", created.orgId).execute();
       await db.deleteFrom("users").where("id", "=", created.userId).execute();
     }

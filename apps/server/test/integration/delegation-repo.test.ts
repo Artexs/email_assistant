@@ -9,7 +9,6 @@ import {
   findOpenDelegationByMessageIds,
   getDelegate,
   getDelegation,
-  insertDelegate,
   insertDelegation,
   listAnsweredUnnotified,
   listDelegateAddresses,
@@ -19,14 +18,13 @@ import {
   listDueDelegations,
   lockDelegation,
   markAnsweredNotified,
-  markDelegationAnswered,
   markDelegationCancelled,
   markDelegationDone,
   markDelegationOverdue,
   markDelegationSent,
   markReminderPlanned,
-  setDelegateActive,
 } from "../../src/modules/delegation";
+import { insertDelegate, setDelegateActive, markDelegationAnswered } from "../../src/modules/delegation/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
 
 import {

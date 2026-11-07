@@ -17,7 +17,6 @@ export {
   findOpenDelegationByMessageIds,
   getDelegate,
   getDelegation,
-  insertDelegate,
   insertDelegation,
   listAnsweredUnnotified,
   listDelegateAddresses,
@@ -27,12 +26,10 @@ export {
   listDueDelegations,
   lockDelegation,
   markAnsweredNotified,
-  markDelegationAnswered,
   markDelegationCancelled,
   markDelegationDone,
   markDelegationOverdue,
   markDelegationSent,
   markReminderPlanned,
-  setDelegateActive,
 } from "./repo";
 export type { DelegateRow, DelegationRow, DelegationStatus } from "./repo";

@@ -1,6 +1,7 @@
-import { cleanSubject } from "@ea/core";
+import { cleanSubject, localDateTime } from "@ea/core";
 
 import { closeDelegation, listDelegations } from "../modules/delegation";
+import { getOrganization } from "../modules/tenancy";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
@@ -17,8 +18,8 @@ function out(line: string): void {
   process.stdout.write(`${line}\n`);
 }
 
-function day(date: Date | null): string {
-  return date === null ? "-" : date.toISOString().slice(0, 10);
+function day(date: Date | null, timeZone: string): string {
+  return date === null ? "-" : localDateTime(date, timeZone).date;
 }
 
 async function main(): Promise<number> {
@@ -35,6 +36,11 @@ async function main(): Promise<number> {
     const ctx = { orgId: command.orgId };
 
     if (command.kind === "list") {
+      const org = await getOrganization(db, ctx);
+      if (!org) {
+        out("not found");
+        return 1;
+      }
       const rows = await listDelegations(db, ctx, {
         limit: command.limit,
         ...(command.status === undefined ? {} : { status: command.status }),
@@ -47,8 +53,8 @@ async function main(): Promise<number> {
             row.status,
             row.delegate_name,
             cleanSubject(row.subject),
-            `due ${day(row.due_at)}`,
-            `sent ${day(row.sent_at)}`,
+            `due ${day(row.due_at, org.timezone)}`,
+            `sent ${day(row.sent_at, org.timezone)}`,
             `reminders ${row.reminders_sent}`,
           ].join("\t")
         );
