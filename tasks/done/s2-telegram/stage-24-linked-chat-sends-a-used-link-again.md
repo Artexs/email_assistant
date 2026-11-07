@@ -26,7 +26,7 @@ Why: in the stage 23 pilot run the user opened the used link again in the alread
   - Done when: the tests pass and the reply texts match the decisions.
   - Out of scope: the picker "Already saved" text (`tasks/planned/telegram-picker-already-saved.md`); any other `/start` change.
 
-- [ ] **24.2 Deploy to the VPS (main session)**
+- [x] **24.2 Deploy to the VPS (main session)**
   - Steps (as in `deploy/README.md` "Update"; `ssh home_vm`, `cd ~/email_assistant`, `C="docker compose -f deploy/compose.yaml --env-file .env"`): `git rev-parse --short HEAD` → `<OLD>`; `git pull`; `$C up -d --wait db`; `$C run --build --rm server bun run db:migrate`; `$C up -d --build --wait`; `$C logs --since 5m server` has `listening on port 8080` and `telegram: polling as @Email_assistant_vps_bot`, no `409`.
   - Rollback: `git checkout <OLD> && $C up -d --build --wait`.
   - Done when: the server is healthy with the new commit and polls as the pilot bot.

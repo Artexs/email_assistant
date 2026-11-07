@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress.** Stages 0–23 done (stage 21 dev run and stage 23 pilot checks passed on 2026-11-07; see "Results"). Left: the D3 change (user said yes on 2026-11-07: a linked chat that sends its used `/start <token>` again gets "This chat is linked already"), its VPS update, the final checks, the done-checklist and the move to `done/`.
+> **Status 2026-11-07 — done.** Stages 0–24 done. Dev bot run (stage 21) and pilot checks (stage 23) passed; the D3 change (stage 24) runs on the VPS since 2026-11-07 11:47Z. Nothing left; follow-ups are in `tasks/planned/` (`retention-job.md`, `telegram-review-command.md`, `telegram-picker-already-saved.md`).
 
 # S2 Telegram
 
@@ -140,7 +140,7 @@ Each stage lives in its own file in [`s2-telegram/`](s2-telegram/). An implement
 - [x] [Stage 21](s2-telegram/stage-21-dev-run-with-the-dev-bot.md) — Dev run with the dev bot: the user tries it on the phone [risky]
 - [x] [Stage 22](s2-telegram/stage-22-docs-and-notes.md) — Docs, notes, known alerts
 - [x] [Stage 23](s2-telegram/stage-23-vps-deploy-with-the-pilot-bot.md) — VPS deploy with the pilot bot [risky] — user checkpoint 4 before it
-- [ ] [Stage 24](s2-telegram/stage-24-linked-chat-sends-a-used-link-again.md) — A linked chat that sends a used link again (D3 change, user yes 2026-11-07)
+- [x] [Stage 24](s2-telegram/stage-24-linked-chat-sends-a-used-link-again.md) — A linked chat that sends a used link again (D3 change, user yes 2026-11-07)
 
 ### Results (filled in stages 21 and 23)
 
@@ -186,10 +186,10 @@ Answered 2026-11-05: the user approved the plan as written, so each question kee
 
 ## Done-checklist
 
-- [ ] Done-when checks pass (name the command and its output in the log).
-- [ ] `docs/` describe what was built (architecture, modules, roadmap, code patterns); ADR 0005 stays accepted (implementation notes added).
-- [ ] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
-- [ ] Follow-up ideas are in `planned/`.
+- [x] Done-when checks pass (name the command and its output in the log).
+- [x] `docs/` describe what was built (architecture, modules, roadmap, code patterns); ADR 0005 stays accepted (implementation notes added).
+- [x] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
+- [x] Follow-up ideas are in `planned/`.
 
 ## Log
 
@@ -230,3 +230,5 @@ Answered 2026-11-05: the user approved the plan as written, so each question kee
 - 2026-11-07: The pilot 08:00 digest was sent (`digests` slot `2026-11-07T08:00`, outbox `sent` at 07:00:15Z). Log: `a used link token was tried` (the D3 case). Handoff for the finish: `~/.pi/agent/notes/2026-11-07-handoff-s2-telegram-finish.md`.
 - 2026-11-07: Stage 21 done with the user (dev bot, all steps except the optional 10 and 12 pass; urgent notice 3 min 54 s). Stage 23 step 8 done (two `telegram` ✅ rows on the pilot). "Results" filled; the "pending (stage 21/23)" marks in `docs/roadmap.md`, `docs/known-alerts.md`, `notes/2026-11-06-telegram-bot-facts.md` and `notes/2026-11-03-pilot-vps.md` replaced. The user said yes to the D3 change and to the other proposals.
 - 2026-11-07: Stage 24.1 built (D3 change: a linked chat that sends a used token gets `ALREADY_LINKED_TEXT`; 2 router tests), reviewer PASS (Sonnet). Checks: lint, typecheck, `test:unit` 725 pass, `test:int` 480 pass (implementer); router file 15 pass (reviewer).
+- 2026-11-07: Stage 24.2: VPS update (user go "deploy the changes"; it also applied the S3 migrations `20261107000001_assist_actions`, `20261107000002_undo_pending`, additive; S3 code is not wired into `main.ts`). Backup before: `backup ok ea-20261107T114641Z.dump.age 241883`. `<OLD>` = `a6c281d`, new `5803981`; server healthy, `telegram: polling as @Email_assistant_vps_bot`, 6 minutes of logs: syncs run, 0 `error` / `warn` lines.
+- 2026-11-07: Done-checklist. Done-when: digests at set times with ✅ / ✏️ writing `triage_feedback` (pilot 08:00, dev 12:00), urgent notice 3 min 54 s, `auth_error` notice, "Last sync" line, `/digest` `/pause` `/resume` `/status` work, tests for unlinked chats and used / expired tokens (`telegram-router.test.ts`), two bots. Checks: `bun run lint && bun run typecheck` → exit 0; `bun run test:unit` → 739 pass, 0 fail; `bun run test:int` → 495 pass, 0 fail (after `bun run db:migrate` applied the S3 migration to the dev DB). Docs: `docs/architecture.md` D3 line updated; ADR 0005 has the implementation note. Moved to `done/`.
