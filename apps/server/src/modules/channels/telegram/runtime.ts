@@ -24,8 +24,9 @@ export interface TelegramRuntimeDeps {
   hooks: DelegationHooks;
   uidplus(ctx: TenantContext, mailboxId: string): Promise<boolean>;
   sendScope: SendScope;
-  // Only for tests.
+  // Tests, and TELEGRAM_API_ROOT (loopback only, platform/config).
   apiRoot?: string;
+  // Only for tests.
   botInfo?: UserFromGetMe;
 }
 

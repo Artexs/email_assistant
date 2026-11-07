@@ -25,7 +25,7 @@ async function main(): Promise<number> {
     return 1;
   }
   try {
-    const { id, username } = await checkBot(config.TELEGRAM_BOT_TOKEN);
+    const { id, username } = await checkBot(config.TELEGRAM_BOT_TOKEN, { apiRoot: config.TELEGRAM_API_ROOT });
     log.info(`bot @${username} (id ${id})`);
     return 0;
   } catch (error) {

@@ -45,6 +45,7 @@ async function main(): Promise<number> {
       const runtime = createTelegramRuntime({
         db,
         token: config.TELEGRAM_BOT_TOKEN ?? "",
+        apiRoot: config.TELEGRAM_API_ROOT,
         now,
         startedAt: now(),
         llmDailyCap: config.LLM_DAILY_CAP,

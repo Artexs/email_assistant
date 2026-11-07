@@ -15,6 +15,22 @@ export const openAiReasoningEfforts = ["none", "minimal", "low", "medium", "high
 
 const emptyAsUndefined = (v: unknown): unknown => (v === "" ? undefined : v);
 
+// Dev only: a loopback root never reaches a real or remote server. `origin` drops userinfo, path, query and hash.
+// A trailing "/" is refused too: grammY throws on an apiRoot that ends with "/".
+export function isLoopbackApiRoot(value: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  return (
+    (url.protocol === "http:" || url.protocol === "https:") &&
+    ["127.0.0.1", "localhost", "[::1]"].includes(url.hostname) &&
+    url.origin === value
+  );
+}
+
 const addressPattern = /^[^\s@]+@[^\s@]+$/;
 
 // Comma-separated, trimmed, lower-cased, unique. An empty entry is dropped.
@@ -48,6 +64,11 @@ const baseSchema = z.object({
       .string()
       .regex(/^\d+:[A-Za-z0-9_-]{20,}$/)
       .optional()
+  ),
+  // Dev only: a local fake Bot API (tools/fake-telegram). Empty = the real Telegram.
+  TELEGRAM_API_ROOT: z.preprocess(
+    emptyAsUndefined,
+    z.string().refine(isLoopbackApiRoot, "must be http(s)://127.0.0.1, ::1 or localhost, with no path").optional()
   ),
   // Writer role (S4) and fallback.
   GEMINI_MODEL: z.preprocess((v) => (v === "" ? undefined : v), z.string().default("gemini-3.8-flash")),

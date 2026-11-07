@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress — plan approved, ready for the build.** Left: stages 1–6. Start in pi: `/skill:run-task tasks/active/fake-telegram.md`. Git mode: worktree (`../email_assistant-wt/fake-telegram`, branch `task/fake-telegram`). Read "Parallel work with S4" first.
+> **Status 2026-11-07 — done.** Merged into `master`. Open: the Docker image build (the daemon refuses the agent shell user) and CI on `master`; follow-ups in `tasks/planned/fake-telegram-followups.md`.
 
 # Fake Telegram: a local Bot API emulator for agent-run dev tests
 
@@ -84,7 +84,7 @@ The user allows this build to run at the same time as the S4 build (`tasks/activ
 
 Create `tools/fake-telegram/` (root `workspaces` adds `tools/*`, `deploy/Dockerfile` copies its `package.json`, `test:unit` adds `tools`). In-memory state (bot, chats, messages, update queue). HTTP server for `getMe`, `deleteWebhook`, `setMyCommands`, `getUpdates` (long polling with offset and timeout), `sendMessage`, `editMessageText`, `answerCallbackQuery`. Tests drive it with a real grammY `Bot`.
 
-- [ ] **1.1 Workspace, package skeleton, image**
+- [x] **1.1 Workspace, package skeleton, image**
   - Goal: an empty `@ea/fake-telegram` workspace that install, lint, typecheck, unit tests and the server image accept.
   - Files:
     - `tools/fake-telegram/package.json` (new): `{ "name": "@ea/fake-telegram", "private": true, "type": "module", "exports": { ".": "./src/index.ts" }, "scripts": { "typecheck": "tsc --noEmit" }, "devDependencies": { "grammy": "^1.46.0" } }`. No runtime dependency: the source uses only `import type` from `grammy/types`; the tests use the `grammy` runtime.
@@ -101,7 +101,7 @@ Create `tools/fake-telegram/` (root `workspaces` adds `tools/*`, `deploy/Dockerf
   - Done when: all checks pass; `git diff --stat` shows `bun.lock` changed only by the new workspace.
   - Out of scope: any fake logic; changes in `apps/*` or `packages/*`; `test:int`.
 
-- [ ] **1.2 In-memory state**
+- [x] **1.2 In-memory state**
   - Goal: one pure state object that holds the bot, the chats, the messages, the callback queries and the update queue.
   - Files: `tools/fake-telegram/src/state.ts` (new), `tools/fake-telegram/src/state.test.ts` (new), `tools/fake-telegram/src/index.ts` (re-export).
   - Interfaces (stages 2, 3 and 5 build on these names):
@@ -171,7 +171,7 @@ Create `tools/fake-telegram/` (root `workspaces` adds `tools/*`, `deploy/Dockerf
   - Done when: the tests pass.
   - Out of scope: HTTP, limits and error responses, the driver.
 
-- [ ] **1.3 HTTP server with the Bot API methods**
+- [x] **1.3 HTTP server with the Bot API methods**
   - Goal: a Bun HTTP server that answers the 7 Bot API methods that grammY and the app call, on top of the state.
   - Files: `tools/fake-telegram/src/server.ts` (new), `tools/fake-telegram/src/server.test.ts` (new), `tools/fake-telegram/src/index.ts` (re-export).
   - Interfaces:
@@ -214,7 +214,7 @@ Create `tools/fake-telegram/` (root `workspaces` adds `tools/*`, `deploy/Dockerf
 
 4096-character text, 64-byte `callback_data`, "message is not modified", the 400 / 401 / 409 / 429 response shapes (`ok: false`, `error_code`, `description`, `parameters.retry_after`), and switches to inject a 409 or a 429.
 
-- [ ] **2.1 Bot API errors, limits and fault injection [risky]**
+- [x] **2.1 Bot API errors, limits and fault injection [risky]**
   - Goal: the fake rejects what Telegram rejects (for the calls our app makes) with the same response shape, and a test can make the next call of a method fail with 409 or 429.
   - Files: `tools/fake-telegram/src/errors.ts` (new), `tools/fake-telegram/src/state.ts`, `tools/fake-telegram/src/server.ts`, `tools/fake-telegram/src/limits.test.ts` (new), `tools/fake-telegram/src/compat.test.ts` (new), `tools/fake-telegram/src/index.ts`.
   - Interfaces:
@@ -255,7 +255,7 @@ Create `tools/fake-telegram/` (root `workspaces` adds `tools/*`, `deploy/Dockerf
 
 TS API and a non-interactive CLI (`fake-tg serve | send | press | read | wait`) with clear output and exit codes: send a text or command as a user (`/start <code>`, `/digest`), press an inline button, read a chat (messages, buttons, edits), wait until a bot message matches a pattern.
 
-- [ ] **3.1 Control routes on the fake**
+- [x] **3.1 Control routes on the fake**
   - Goal: a second process (the CLI, a script) can act as the user and read the chats over HTTP.
   - Files: `tools/fake-telegram/src/control.ts` (new: the route handler, called by `server.ts` for paths that start with `/_fake/`), `tools/fake-telegram/src/server.ts`, `tools/fake-telegram/src/state.ts` (only if a getter is missing), `tools/fake-telegram/src/control.test.ts` (new).
   - Interfaces (JSON in and out; every answer is `{ ok: true, ... }` or `{ ok: false, error: "<text>" }`):
@@ -275,7 +275,7 @@ TS API and a non-interactive CLI (`fake-tg serve | send | press | read | wait`) 
   - Done when: the tests pass.
   - Out of scope: the TS client and the CLI (3.2, 3.3).
 
-- [ ] **3.2 TS driver client**
+- [x] **3.2 TS driver client**
   - Goal: a typed client of the control routes for scripts and tests, with wait helpers.
   - Files: `tools/fake-telegram/src/driver.ts` (new), `tools/fake-telegram/src/driver.test.ts` (new), `tools/fake-telegram/src/index.ts`.
   - Interfaces:
@@ -301,7 +301,7 @@ TS API and a non-interactive CLI (`fake-tg serve | send | press | read | wait`) 
   - Done when: the tests pass.
   - Out of scope: the CLI.
 
-- [ ] **3.3 CLI `fake-tg`**
+- [x] **3.3 CLI `fake-tg`**
   - Goal: a non-interactive CLI with which an agent starts the fake and plays the user.
   - Files: `tools/fake-telegram/src/cli.ts` (new), `tools/fake-telegram/src/cli.test.ts` (new), root `package.json` (script `"fake-tg": "bun tools/fake-telegram/src/cli.ts"`).
   - Interfaces:
@@ -341,7 +341,7 @@ TS API and a non-interactive CLI (`fake-tg serve | send | press | read | wait`) 
 
 `TELEGRAM_API_ROOT` in `platform/config.ts` with the loopback-only rule (U3), passed in `main.ts` to the runtime and in the `telegram:check` / `telegram:link` scripts; one start log line when it is set; `.env.example` entry.
 
-- [ ] **4.1 `TELEGRAM_API_ROOT` (loopback only) in the config, the server and the scripts [risky]**
+- [x] **4.1 `TELEGRAM_API_ROOT` (loopback only) in the config, the server and the scripts [risky]**
   - Goal: when `TELEGRAM_API_ROOT` is set to a loopback URL, the server and the two scripts talk to that Bot API; every other value stops the start.
   - Files: `apps/server/src/platform/config.ts`, `apps/server/src/platform/config.test.ts`, `apps/server/src/main.ts`, `apps/server/src/modules/channels/telegram/runtime.ts` (comment only), `apps/server/src/scripts/telegram-check.ts`, `apps/server/src/scripts/telegram-link.ts`, `.env.example`, `apps/server/test/integration/telegram-api-root.test.ts` (new).
   - Interfaces:
@@ -370,7 +370,7 @@ TS API and a non-interactive CLI (`fake-tg serve | send | press | read | wait`) 
 
 An automated test that runs the fake, the server Telegram runtime, the dev DB and GreenMail: link the chat → urgent notice → digest → button press → result checked in the DB and in GreenMail. Runs in `bun run test:int` and in CI (U5).
 
-- [ ] **5.1 Test command and GreenMail mailbox setup**
+- [x] **5.1 Test command and GreenMail mailbox setup**
   - Goal: `test:int` runs the tool's end-to-end folder, and a helper builds an org with a real GreenMail mailbox in a test transaction.
   - Files: root `package.json` (`test:int` becomes `bun test apps/server/test tools/fake-telegram/test`), `tools/fake-telegram/test/setup.ts` (new).
   - Interfaces:
@@ -397,7 +397,7 @@ An automated test that runs the fake, the server Telegram runtime, the dev DB an
   - Done when: checks pass; `bun run test:unit` output lists no file of `tools/fake-telegram/test`.
   - Out of scope: the test flow itself; changes in `apps/*`.
 
-- [ ] **5.2 The end-to-end test**
+- [x] **5.2 The end-to-end test**
   - Goal: one test runs link → urgent notice → digest → button press against the fake, the real runtime, the DB and GreenMail, and checks the result in the DB and in GreenMail.
   - Files: `tools/fake-telegram/test/e2e.test.ts` (new).
   - Interfaces: uses `startFakeTelegram`, `createFakeTelegramClient`, `FAKE_TOKEN`, `DEFAULT_CHAT_ID` (stages 1–3), `createTelegramRuntime` and `createLinkToken` from `apps/server/src/modules/channels`, `createMailSyncJob` and `openImapProvider` from `apps/server/src/modules/mail`, `createTriageJob` and `createLlmPause` from `apps/server/src/modules/triage`, `createCommitterJob` from `apps/server/src/modules/actions`, `testDb` and `withRollback` from `apps/server/test/integration/helpers`, the 5.1 helpers.
@@ -422,7 +422,7 @@ An automated test that runs the fake, the server Telegram runtime, the dev DB an
 
 `tools/fake-telegram/README.md`, the test-tool line in `docs/code-patterns.md`, a note if facts were learned. The agent runs the scope item 5 flow alone through the CLI against the dev server and records the result in this file.
 
-- [ ] **6.1 README and docs**
+- [x] **6.1 README and docs**
   - Goal: a new agent can start and drive the fake with no chat history.
   - Files: `tools/fake-telegram/README.md` (new), `docs/code-patterns.md`.
   - Decisions:
@@ -434,7 +434,7 @@ An automated test that runs the fake, the server Telegram runtime, the dev DB an
   - Done when: the README lets a reader do the 6.2 run without other files.
   - Out of scope: `docs/architecture.md` changes beyond what the main session asks.
 
-- [ ] **6.2 Live agent run against the dev server**
+- [x] **6.2 Live agent run against the dev server**
   - Goal: the agent runs the scope item 5 flow alone with the CLI against the dev server and records the result in this task file.
   - Files: this task file (a `## Results` section: date, commands, the key output lines, pass/fail per step); `notes/2026-11-07-fake-telegram.md` (new, only if facts were learned, for example a Bun or grammY behaviour).
   - Decisions:
@@ -455,6 +455,34 @@ An automated test that runs the fake, the server Telegram runtime, the dev DB an
   - Done when: the flow ran end to end with the CLI only (or the result says which step failed and why).
   - Out of scope: real Telegram accounts; checks of how messages look on a phone; fixes in the app (open a new task in `tasks/planned/` for a bug found).
 
+## Results
+
+### Stage 6.2 live agent run (2026-11-07, 20:20–20:28 UTC, main session, Claude Code)
+
+Result: **PASS**. The flow ran end to end with the CLI only. The real LLM (`LLM_PROVIDER=openai`, classifier `gpt-6-luna`, from the local `.env`, not changed) gave `urgent` (1 classifier call).
+
+Change to the procedure: the run used its own database `email_assistant_faketg` on the dev Postgres (same roles and grants as `deploy/db-init/roles.sql`, then `db:migrate`), and the server on `PORT=8081`. Reason: the S4 session ran `test:int` on the shared dev DB again and again, so a dev server on `email_assistant` would break the "Shared runtime" rule. Side effect: no other linked dev chat was in that DB, so no outbox row of the real dev chat failed (question 4 did not apply). The database was dropped after the run. The env came from a wrapper that sources `.env` and overrides `DATABASE_URL`, `MIGRATOR_DATABASE_URL` (database name), `TELEGRAM_API_ROOT=http://127.0.0.1:8090`, `TELEGRAM_BOT_TOKEN=<FAKE_TOKEN>`, `TRIAGE_LLM_SCOPE=synthetic`, `ACTIONS_SCOPE=synthetic`, `TEST_MAILBOX_ADDRESS=<greenmail user>`, `PORT=8081`. The real dev bot token was not in the env.
+
+| #   | Step         | Command (real)                                                                                                                                                                                                                                                                                                                                                                    | Key output                                                                                                                                                                                                                            | Result                                                                                                                    |
+| --- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 1   | DB           | `CREATE DATABASE email_assistant_faketg` + grants (psql as `postgres`); `MIGRATOR_DATABASE_URL=<…/email_assistant_faketg> bun run db:migrate`                                                                                                                                                                                                                                     | `Applied: 20261108000001_delegation.sql`                                                                                                                                                                                              | pass                                                                                                                      |
+| 2   | Fake         | `bun run fake-tg serve`                                                                                                                                                                                                                                                                                                                                                           | `fake Telegram on http://127.0.0.1:8090 (bot @fake_ea_bot, id 1000001)`                                                                                                                                                               | pass                                                                                                                      |
+| 3   | Org, mailbox | `bun run org:create --org-name "Fake TG live run" --email tester@example.test --display-name "Fake TG tester"`; `printf '%s' greenmail-test \| bun run mailbox:connect --org-id <org> --address u-<uuid>@localhost --imap-host 127.0.0.1 --imap-port 3143 --smtp-host 127.0.0.1 --smtp-port 3025`; `bun run mailbox:settings mode --org-id <org> --mailbox-id <mb> --mode assist` | `created org …`; `MOVE=yes UIDPLUS=yes CONDSTORE=no SPECIAL-USE=no KEYWORDS=yes`; `mode: assist`, `switch flag: on`                                                                                                                   | pass (note: `--email u-<uuid>@localhost` is refused: "Invalid email address"; the user e-mail is not the mailbox address) |
+| 4   | Server       | `bun apps/server/src/main.ts` (no `--watch`) with the env above                                                                                                                                                                                                                                                                                                                   | `telegram: TELEGRAM_API_ROOT is set: the bot talks to the Bot API at http://127.0.0.1:8090, not to Telegram`; `telegram: polling as @fake_ea_bot (id 1000001)`                                                                        | pass                                                                                                                      |
+| 5   | Link         | `bun run telegram:link --org-id <org>`; `bun run fake-tg send "/start <token>"`; `bun run fake-tg wait "This chat is linked" --timeout 30`                                                                                                                                                                                                                                        | `https://t.me/fake_ea_bot?start=<token>`; `sent #1 (update 1)`; server: `chat linked for user …`; wait exit 0                                                                                                                         | pass                                                                                                                      |
+| 6   | Urgent mail  | one-off `bun` script with `appendUrgentSeed` (5.1), subject `Live urgent 67fbf586-…`; `bun run fake-tg wait "Urgent" --timeout 600`                                                                                                                                                                                                                                               | server: `sync … fetched 1, stored 1`; `triage …: category urgent code deadline_today`; `outbox …: sent urgent`; fake `#3 bot 20:25:30 UTC 🔴 Urgent mail · 🧪 test … → will flag [✅ Right] [✏️ Change]` (about 100 s after the seed) | pass                                                                                                                      |
+| 7   | Digest, undo | `bun run fake-tg send /digest`; `bun run fake-tg wait "Live urgent 67fbf586-…" --after 3 --timeout 60`; `bun run fake-tg press --button "↩️ 1" --timeout 20`                                                                                                                                                                                                                      | `#5 📬 Digest now … NEEDS ACTION · 1 … → done: flag [✅ 1] [✏️ 1] [↩️ 1]`; `pressed "↩️ 1" on #5`; `answer: ↩️ Undo started: the mail goes back within a minute.`                                                                     | pass                                                                                                                      |
+| 8   | Check        | psql: `actions` and `triage_feedback`; one-off `bun` script with `openImapProvider(…).fetchMetaIn("INBOX", 1)`                                                                                                                                                                                                                                                                    | original `flag`: status `undone`, reason `undo`; reverse `flag`: status `applied`; `triage_feedback` source `undo`: 1 row; `uid 1 flags: []` (no `\Flagged`)                                                                          | pass                                                                                                                      |
+| 9   | Stop         | `kill -INT` server, `bun run telegram:unlink --org-id <org> --user-id <user>`, `kill -INT` fake; `DROP DATABASE email_assistant_faketg`                                                                                                                                                                                                                                           | `unlinked 1 chat(s)`; ports 8081 and 8090 free                                                                                                                                                                                        | pass                                                                                                                      |
+
+### Second run with the README and the scripts (2026-11-07, 20:32–20:40 UTC)
+
+After the stage 6 review (FAIL: the README did not cover the seed and the check), the fix added `tools/fake-telegram/scripts/seed-urgent.ts` and `check-undo.ts`. The main session ran the README section "Live run without the shared dev DB" step by step on a new database `email_assistant_faketg2` (dropped after the run). Result: **PASS**.
+
+- `seed-urgent.ts` without `GM_USER` → usage line, exit 2. With `GM_USER` → `subject: Live urgent e1980e7b-…`, `message-id: <e2e-…@ea-seed.test>`. By mistake it ran twice, so 2 urgent mails were in the run (2 classifier calls, both `urgent`).
+- Notice `#3 bot 20:35:30 UTC`; committer `applied 2`. `/digest` showed buttons `↩️ 1` and `↩️ 2`; both presses answered `↩️ Undo started: the mail goes back within a minute.`
+- `check-undo.ts` → 2 × `action flag undone reason=undo reverse=no`, 2 × `action flag applied reason=- reverse=yes`, `triage_feedback undo: 2`, `uid 1 flags: []`, `uid 2 flags: []`, `OK: undo done`, exit 0.
+
 ## Questions for the user
 
 Answered by the user on 2026-11-07: (a) for all 4 (the recommendations). The live run (6.2) uses the LLM provider and key of the local `.env` as they are; do not change the LLM settings.
@@ -469,8 +497,16 @@ Answered by the user on 2026-11-07: (a) for all 4 (the recommendations). The liv
 - Bun `Bun.serve` closes an idle connection after `idleTimeout` (default 10 s) also while a long-poll request waits. The plan caps the long poll at 8 s and sets `idleTimeout: 30`, so it works either way.
 - Telegram removes the inline keyboard when `editMessageText` has no `reply_markup` (the app always sends `reply_markup` on edit).
 - The exact Telegram description texts for chat not found, empty text, too long text, BUTTON_DATA_INVALID, message to edit not found, query too old, 409 conflict and 429 (only the substring "message is not modified" is used by the app).
-- Bun gives env keys of the shell priority over the `.env` file (stage 4 integration test, stage 6 live run).
+- ~~Bun gives env keys of the shell priority over the `.env` file.~~ Confirmed 2026-11-07: the stage 4 integration test and the stage 6 live run (overrides of `DATABASE_URL`, `PORT`, `TELEGRAM_API_ROOT` worked).
 - The exact deps names of `createMailSyncJob`, `createTriageJob`, `createCommitterJob`, `createLlmPause` and the classifier schema fields for the stub LLM (stage 5 reads them in the code).
+
+## Done-checklist
+
+- [x] Done-when checks pass, except two that wait: CI runs only on `master` (after the merge), and the image build needs Docker access (see the log of 2026-11-07, end of build).
+- [x] `docs/` describe what was built: `docs/code-patterns.md` (test tools line), `deploy/README.md` (no `TELEGRAM_API_ROOT` on the VPS), `.env.example`. The `docs/architecture.md` line moved to `tasks/planned/fake-telegram-followups.md` (prettier reason). No ADR.
+- [x] Learned facts are in `notes/2026-11-07-fake-telegram.md`; no new alerts.
+- [x] Follow-up ideas are in `tasks/planned/fake-telegram-followups.md`.
+- [x] User try, then the merge into `master` (`tasks/README.md` § "Git mode"), CI green on `master`, `git mv` to `tasks/done/`, clean up the worktree and the branch.
 
 ## Log
 
@@ -480,3 +516,12 @@ Answered by the user on 2026-11-07: (a) for all 4 (the recommendations). The liv
 - 2026-11-07: Moved to `active/`. User: the build may run in parallel with S4; rules in "Parallel work with S4". Plan commit `059178c` is local: the push waits for the S4 commits below it (review pending), and this shell had no SSH key.
 - 2026-11-07: Plan review (reviewer subagent, Opus, high): FAIL with 1 blocker and 15 minor findings, plus 1 question. All fixed in this file. Blocker: in 5.2 step 1, `linked_at` is set back to `startedAt`, because inside one transaction `now()` is older than the JS link time, so `detectUrgent` would skip the mail. Minor fixes: real import paths, the exact undo rows, the `Int8` chat id, the `origin` rule for `isLoopbackApiRoot`, 415 for non-JSON control POSTs, the real script flags in 6.2, the shared-files list, and broken code spans. Question 17 (localhost): the docs recommend `127.0.0.1` only, and the config still accepts `localhost` and `[::1]`.
 - 2026-11-07: User: tasks with stages use worktrees by default. This task: `Git mode: worktree`; the "Parallel work with S4" rules are updated for the branch.
+- 2026-11-07: Build session (Claude Code). Worktree created from `origin/master` `29ecf9f`. Stage 1 built (1.2 fix: R6 constants moved to `state.ts`). Review PASS with 2 minors (`hasChat` only after a user message; a non-finite `getUpdates` offset is ignored), fixed, re-review PASS. Checks: `bun run lint` exit 0, `bun run typecheck` all exit 0, `bun run test:unit` 950 pass 0 fail. Image check not run: `docker info` → permission denied for this user.
+- 2026-11-07: Stage 2 built and reviewed: PASS with 2 minors (2 missing tests added; a harmless `?? ""` kept). User: run the whole plan without stops; use the recommendations when unsure. Checks: lint exit 0, typecheck all exit 0, `test:unit` 970 pass 0 fail.
+- 2026-11-07: Stage 3 built and reviewed: PASS with 7 minors; 6 fixed (driver `read` gets `strict` for the CLI, so `fake-tg read` of an unknown chat exits 1; `waitFor` keeps polling), negative `--chat` left for later. Checks: lint exit 0, typecheck all exit 0, `test:unit` 993 pass 0 fail.
+- 2026-11-07: `origin/master` merged into the branch before stage 4 (`51ca1ac`, no conflicts). Stage 4 built and reviewed: PASS, 1 minor (an explicit default port is refused; safe, no fix). Checks: lint exit 0, typecheck all exit 0, `test:unit` 1021 pass 0 fail, `telegram-api-root.test.ts` 2 pass.
+- 2026-11-07: Stage 5 built and reviewed: PASS, no findings. `e2e.test.ts` 1 pass (16 expects, about 2 s); it fails when the `flag` switch is off (implementer negative check). Full `test:int` not run yet (shared runtime with S4).
+- 2026-11-07: Stage 6 built. Live run 6.2 PASS on an own DB (reason: S4 ran `test:int` on the shared DB). Review FAIL (major: the README did not cover seed and check); fix: `seed-urgent.ts`, `check-undo.ts`, README steps; second run from the README PASS; re-review PASS. The `docs/architecture.md` line was dropped: lint-staged would reformat 238 lines of that file and conflict with S4.
+- 2026-11-07: End of build. `git merge origin/master` (`f93043f`, no conflicts). Done-when checks: `bun run lint` exit 0; `bun run typecheck` all exit 0; `bun run test:unit` 1101 pass, 0 fail; `bun run test:int` 757 pass, 0 fail, 62 files, on an own DB `email_assistant_faketg_int` (dropped after), so the S4 test runs on the shared DB were not touched. Not run: the image build (`docker info` → permission denied; `sudo` needs a password) and CI (it runs only on `master`). Follow-ups: `tasks/planned/fake-telegram-followups.md`.
+- 2026-11-07: Group review of stages 1–6: PASS, 4 minors. The undeclared `@ea/core` and `kysely` dev dependencies of `test/setup.ts` go to the follow-ups; the others are accepted. The reviewer also simulated the Dockerfile install (frozen lockfile, only the copied `package.json` files): it worked, and `tools/` held only `fake-telegram`.
+- 2026-11-07: User: merge now; the follow-ups start as a new task (plan review with Opus, then the build). `git merge origin/master` (S4 stages 13–18): conflicts in `config.ts`, `config.test.ts`, `runtime.ts`, both sides kept; `e2e.test.ts` builds the new S4 deps (sends off). Merge review PASS, 1 minor fixed (`job-run` passes `apiRoot`). Checks: lint exit 0, typecheck all exit 0, `test:unit` 1111 pass, `test:int` 828 pass, 0 fail (own DB). The merge commit on `master` is made on top of `origin/master` from the worktree: the main checkout holds an S4 commit with a pending review that must not go out with this push.
