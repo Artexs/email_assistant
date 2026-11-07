@@ -1,4 +1,4 @@
-> **Status 2026-11-08 — in progress — build in the worktree `../email_assistant-wt/test-mail-traffic` (branch `task/test-mail-traffic`); stage 2.1 done.** Left: see the stage list (handoff `~/.pi/agent/notes/2026-11-08-handoff-test-mail-traffic-build.md`).
+> **Status 2026-11-08 — in progress — build in the worktree `../email_assistant-wt/test-mail-traffic` (branch `task/test-mail-traffic`); stages 1–2 done.** Left: see the stage list (handoff `~/.pi/agent/notes/2026-11-08-handoff-test-mail-traffic-build.md`).
 
 # Test mail traffic: AgentMail synthetic mail utility
 
@@ -327,7 +327,7 @@ Review units (`tasks/README.md` plan shape: a `[risky]` stage has 1 step): in th
 Each stage lives in its own file in [`test-mail-traffic/`](test-mail-traffic/). An implementer or reviewer reads this file (Input, Rules) and only the stage file of its step.
 
 - [x] [Stage 1](test-mail-traffic/stage-01-core-batch-schema.md) [written] — Core: batch and persona schemas, validation, blind view
-- [ ] [Stage 2](test-mail-traffic/stage-02-core-send-log-and-plan.md) [written] — Core: send log and send plan [risky]
+- [x] [Stage 2](test-mail-traffic/stage-02-core-send-log-and-plan.md) [written] — Core: send log and send plan [risky]
 - [ ] [Stage 3](test-mail-traffic/stage-03-agentmail-client.md) [written] — AgentMail client, fake server, config keys [risky]
 - [ ] [Stage 4](test-mail-traffic/stage-04-send-service-and-cli.md) [written] — Send service and CLI `testmail` (setup, validate, blind, send, status) [risky]
 - [ ] [Stage 5](test-mail-traffic/stage-05-deliver.md) [written] — Deliver: move own test mail from the Interia sort folders into INBOX [risky]
@@ -358,3 +358,4 @@ Not yet (stage 9 writes the compare report here).
 - 2026-11-08: The user approved the plan and chose a separate worktree for the build. Plan changes for it: Git mode worktree, rule "Worktree", send logs and lock in `~/.local/state/ea-testmail/` (D6), merge into `master` at checkpoint 1 (D1 bundles from `origin/master`). Noted that S4 is now deployed on the VPS (stale facts marked). Build handoff written.
 - 2026-11-08: Build started in the worktree (own DB `email_assistant_test_mail_traffic`). Stage 1 built (1.1 fix round: a typecheck error in a test), review (Sonnet, high): PASS, 3 minors not fixed (detail without match count, no subject test for the data rule, duplicate unknown ids in `applyBlindLabels`).
 - 2026-11-08: Stage 2.1 built, review (Opus, high): PASS with 2 minors (partial-line rule of `parseSendLog`), both fixed.
+- 2026-11-08: Stage 2.2 built, review (Opus, high): PASS with 3 minors (order-dependent test 9, two untested child branches, a redundant check), all fixed. Stage 2 done.

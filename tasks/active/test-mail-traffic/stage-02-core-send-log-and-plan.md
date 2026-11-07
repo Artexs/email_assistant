@@ -117,7 +117,7 @@ Why risky: this logic decides whether a mail goes out once, twice or never (exac
   - Done when: tests 1–6 pass.
   - Out of scope: file I/O, hashing (stage 4), HTTP (stage 3).
 
-- [ ] **2.2 Send plan**
+- [x] **2.2 Send plan**
   - Goal: one pure function that says, for the current log, what the sender does next for each case (D3, D8, D9).
   - Files: create `packages/core/src/testmail/plan.ts`, `packages/core/src/testmail/plan.test.ts`; change `packages/core/src/testmail/index.ts`.
   - Interfaces:
