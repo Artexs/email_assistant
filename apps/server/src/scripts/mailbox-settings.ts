@@ -30,7 +30,11 @@ function printTable(before: SettingsSnapshot, after: SettingsSnapshot): void {
   const beforeLines = describeSettings(before);
   describeSettings(after).forEach((line, index) => {
     const old = beforeLines[index];
-    log.info(old === line ? line : `${old} -> ${line}`);
+    if (old === line) {
+      log.info(line);
+      return;
+    }
+    log.info(`${old} -> ${line.slice(line.indexOf(":") + 2)}`);
   });
 }
 
@@ -42,7 +46,7 @@ function printChange(result: SettingsChange): void {
   if (!result.changed) {
     log.info("no change");
   }
-  if (result.expired > 0 || result.changed) {
+  if (result.expired > 0 || result.closedGate) {
     log.info(`expired ${result.expired} ready actions`);
   }
 }
@@ -73,9 +77,6 @@ async function run(command: SettingsCommand, db: Db, now: Date): Promise<number>
         actor: ACTOR,
       });
       printChange(result);
-      if (command.name === "create_draft") {
-        log.info("create_draft (S4: no effect yet)");
-      }
       return 0;
     }
     case "auto": {

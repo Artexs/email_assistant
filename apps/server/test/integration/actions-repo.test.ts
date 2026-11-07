@@ -5,6 +5,7 @@ import {
   CLAIM_MAX_AGE_MS,
   claimActions,
   countActionsSince,
+  countReadyOriginals,
   countClaimable,
   createPlanned,
   expireReadyOriginals,
@@ -24,9 +25,16 @@ import {
   type ClaimFilter,
   type PlannedActionInput,
 } from "../../src/modules/actions";
+import { insertMailbox } from "../../src/modules/mail/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
 
-import { createOrgWithMailbox, insertAction, insertTestEmail, insertTriagedWithActions } from "./fixtures";
+import {
+  createOrgWithMailbox,
+  insertAction,
+  insertTestEmail,
+  insertTriagedWithActions,
+  testCapabilities,
+} from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -890,6 +898,55 @@ describe("countActionsSince", () => {
         failed: 1,
         undone: 1,
       });
+    });
+  });
+});
+
+describe("countReadyOriginals", () => {
+  test("counts the ready originals of the mailbox: not reverse, summary, other statuses, other mailboxes, org B", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      const mail = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
+        category: "info",
+        createdAt: ago(HOUR),
+        actions: [
+          { type: "flag", status: "ready" },
+          { type: "move", status: "ready", payload: { folder: "ai_info" } },
+          { type: "mark_read", status: "applied" },
+          { type: "mark_read", status: "failed" },
+          { type: "save_summary", status: "ready", payload: { summary: "s" } },
+        ],
+      });
+      await insertAction(trx, a.ctx, mail.emailId, {
+        type: "flag",
+        status: "ready",
+        reversesActionId: mail.actionIds[0] as string,
+      });
+      const otherMailboxId = crypto.randomUUID();
+      await insertMailbox(trx, a.ctx, {
+        id: otherMailboxId,
+        address: `other-${otherMailboxId}@x.test`,
+        imapHost: "imap.x.test",
+        imapPort: 993,
+        smtpHost: "smtp.x.test",
+        smtpPort: 465,
+        capabilities: testCapabilities,
+        folderMap: { drafts: "Drafts" },
+      });
+      await insertTriagedWithActions(trx, a.ctx, otherMailboxId, {
+        category: "info",
+        createdAt: ago(HOUR),
+        actions: [{ type: "flag", status: "ready" }],
+      });
+      await insertTriagedWithActions(trx, b.ctx, b.mailboxId, {
+        category: "info",
+        createdAt: ago(HOUR),
+        actions: [{ type: "flag", status: "ready" }],
+      });
+
+      expect(await countReadyOriginals(trx, a.ctx, a.mailboxId)).toBe(2);
+      expect(await countReadyOriginals(trx, b.ctx, a.mailboxId)).toBe(0);
+      expect(await countReadyOriginals(trx, b.ctx, b.mailboxId)).toBe(1);
     });
   });
 });

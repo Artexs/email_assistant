@@ -133,6 +133,15 @@ describe("actions logs", () => {
           status_reason: "mail_not_found",
         });
 
+        // The first run moved the mail with applied changes to AI/Info.
+        const movedRow = await trx
+          .selectFrom("emails")
+          .select("folder")
+          .where("id", "=", applied.emailId)
+          .executeTakeFirstOrThrow();
+        expect(movedRow.folder).toBe("AI/Info");
+        expect(await fake.searchSinceIn("AI/Info", new Date(RECEIVED.getTime() - HOUR))).toHaveLength(1);
+
         // The Undo tap on the mail with applied changes.
         const link: LinkedChat = { orgId, userId, role: "owner", chatId: 1, linkedAt: new Date(T0.getTime() - HOUR) };
         const tap = await handleCallback(
@@ -141,6 +150,14 @@ describe("actions logs", () => {
           encodeCallback({ kind: "undo", emailId: applied.emailId })
         );
         expect(tap.answer).toContain("Undo started");
+        await committer.run();
+        const reverseRows = await trx
+          .selectFrom("actions")
+          .select(["id", "type", "status"])
+          .where("email_id", "=", applied.emailId)
+          .where("reverses_action_id", "is not", null)
+          .execute();
+        expect(reverseRows.map((row) => row.status)).toEqual(["applied", "applied"]);
 
         // One returned mail: a user move back after a system move.
         const returned = await addMail(3, ["move"], false);
@@ -190,6 +207,9 @@ describe("actions logs", () => {
         expect(output).toContain(`action ${missing.actionIds[0]}: failed mail_not_found`);
         expect(output).toContain(`action ${flagFails.actionIds[0]}: HardError, try 1 of 3`);
         expect(output).toContain(`action ${flagFails.actionIds[0]}: failed hard_error`);
+        for (const reverse of reverseRows) {
+          expect(output).toContain(`action ${reverse.id}: applied ${reverse.type}`);
+        }
         expect(output).toContain(`returned ${mailboxId}: processed 1`);
         expect(output).toContain(`notice action_failed queued: outbox ${outbox[0]?.id}`);
       });

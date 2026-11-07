@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { Category, MailboxMode } from "./categories";
+import { barCategories } from "./metrics";
 
 export const DEFAULT_THRESHOLD = 0.7;
 
@@ -63,15 +64,13 @@ export interface SettingsSnapshot {
   movesSupported: boolean;
 }
 
-const POLICY_CATEGORIES = ["urgent", "needs_reply", "info", "notification", "spam"] as const;
-
 // Plain lines for the CLI table. Ids, booleans and numbers only.
 export function describeSettings(settings: SettingsSnapshot): string[] {
   const onOff = (value: boolean) => (value ? "on" : "off");
   return [
     `mode: ${settings.mode}`,
     ...toolSwitchNames.map((name) => `switch ${name}: ${onOff(settings.toolSwitches[name])}`),
-    ...POLICY_CATEGORIES.map(
+    ...barCategories.map(
       (category) =>
         `auto ${category}: ${onOff(autoFor(settings.categoryPolicy, category))}, threshold ${thresholdFor(settings.categoryPolicy, category)}`
     ),

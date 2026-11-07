@@ -4,11 +4,13 @@ import type { Transaction } from "kysely";
 import { expireReady } from "../../src/modules/actions";
 import {
   closedBy,
+  getMovesSupported,
   getSettingsView,
   insertDefaultSettings,
   setCategoryAuto,
   setMode,
   setToolSwitch,
+  updateMailboxSettings,
   type SettingsDeps,
 } from "../../src/modules/config";
 import type { DB, TenantContext } from "../../src/platform/db";
@@ -175,6 +177,19 @@ describe("settings setters", () => {
         setMode(foreign, b.ctx, a.mailboxId, { mode: "assist", keepSwitches: false, actor: "cli" })
       ).rejects.toBeInstanceOf(HardError);
       await expect(getSettingsView(foreign, b.ctx, a.mailboxId)).rejects.toBeInstanceOf(HardError);
+      expect((await settingsRow(trx, a)).mode).toBe("shadow");
+    });
+  });
+
+  test("the repository calls of org B change and read nothing of org A", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await setup(trx);
+      const b = await setup(trx);
+      expect(await getMovesSupported(trx, a.ctx, a.mailboxId)).toBe(true);
+
+      expect(await updateMailboxSettings(trx, b.ctx, a.mailboxId, { mode: "assist" })).toBe(false);
+      expect(await getMovesSupported(trx, b.ctx, a.mailboxId)).toBe(false);
+
       expect((await settingsRow(trx, a)).mode).toBe("shadow");
     });
   });

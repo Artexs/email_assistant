@@ -47,6 +47,8 @@ export interface SettingsChange {
   warnings: string[];
   // Rows that this change expired.
   expired: number;
+  // The change closes a gate (it may expire rows).
+  closedGate: boolean;
 }
 
 type Change =
@@ -141,7 +143,7 @@ async function applyChange(
     const before = toView(row, await getMovesSupported(trx, ctx, mailboxId));
     const result = compute(before);
     if (!result.changed) {
-      return { changed: false, before, after: before, warnings: result.warnings, expired: 0 };
+      return { changed: false, before, after: before, warnings: result.warnings, expired: 0, closedGate: false };
     }
     await updateMailboxSettings(trx, ctx, mailboxId, result.patch);
     await recordAudit(trx, ctx, {
@@ -151,9 +153,11 @@ async function applyChange(
     });
     const after: SettingsView = { ...before, ...result.patch };
     let expired = 0;
+    let closedGate = false;
     for (const change of [...(result.close ? [result.close] : []), ...(result.alsoClose ?? [])]) {
       const filter = closedBy(change);
       if (!filter) continue;
+      closedGate = true;
       const rows = await deps.expireReady(
         trx,
         ctx,
@@ -162,7 +166,7 @@ async function applyChange(
       );
       expired += rows.length;
     }
-    return { changed: true, before, after, warnings: result.warnings, expired };
+    return { changed: true, before, after, warnings: result.warnings, expired, closedGate };
   });
 }
 

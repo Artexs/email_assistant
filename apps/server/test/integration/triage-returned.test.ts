@@ -135,6 +135,19 @@ describe("processReturned", () => {
     });
   });
 
+  test("a mail whose returned_at is already null: nothing happens", async () => {
+    await withRollback(db, async (trx) => {
+      const t = await tenant(trx);
+      const mail = await returnedMail(trx, t, { returned: false });
+
+      expect(await processReturned(trx, t.ctx, mail.emailId, NOW)).toEqual({ feedback: false, undone: false });
+
+      expect(await feedbackRows(trx, mail.emailId)).toHaveLength(0);
+      expect(await audit(trx, mail.emailId, "email.returned")).toHaveLength(0);
+      expect(await actionState(trx, mail.actionIds[0] as string)).toMatchObject({ status: "applied" });
+    });
+  });
+
   test("after an Undo (reverse applied) no feedback row is written and the flag is cleared", async () => {
     await withRollback(db, async (trx) => {
       const t = await tenant(trx);

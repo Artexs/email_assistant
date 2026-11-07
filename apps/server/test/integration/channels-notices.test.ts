@@ -510,6 +510,30 @@ describe("action_failed notices", () => {
     });
   });
 
+  test("no owner is linked, only an assistant: the action is marked, no row", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const created = await createOrgWithMailbox(trx);
+      const ctx = { orgId: created.orgId };
+      const assistantId = await addMember(trx, created.orgId);
+      await linkChat(trx, ctx, assistantId, randomChatId(), at(-HOUR));
+      await markSynced(trx, ctx, created.mailboxId, at(-5 * MINUTE));
+      const o: Org = {
+        ctx,
+        orgId: created.orgId,
+        ownerId: created.userId,
+        assistantId,
+        mailboxId: created.mailboxId,
+      };
+      const { actionId } = await failedMove(trx, o, { updatedAt: at(-MINUTE) });
+
+      await run(trx);
+
+      expect(await rows(trx, o.orgId, "action_failed")).toHaveLength(0);
+      expect(await notifiedAt(trx, actionId)).toEqual(T);
+    });
+  });
+
   test("another organization's failed action gives nothing", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
