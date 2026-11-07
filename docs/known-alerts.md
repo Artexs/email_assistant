@@ -22,9 +22,9 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 - **First seen:** 2026-11-07
 - **Source:** CI `bun run test:int`, `apps/server/test/integration/mail-seed.test.ts` (runs 42414616787 on `master`, 42417654598 on PR #1).
-- **Cause:** not diagnosed. The test starts several CLI processes one after the other, and on a slow CI runner they can take more than the default 5 s test timeout. The re-run passed.
-- **Fix:** re-run CI. A durable fix (a longer timeout for this test) is in `tasks/planned/flaky-mail-seed-cli-test.md`.
-- **Status:** investigating
+- **Cause:** the test starts six CLI processes one after the other. Their sum is near the 5 s default test timeout (3.9 s locally) and above it on a CI runner.
+- **Fix:** the test has its own timeout of 30 s (`tasks/done/flaky-mail-seed-cli-test.md`). Local run: 3.9 s. It failed in 4 of 6 CI runs on 2026-11-07, so a re-run is not a fix.
+- **Status:** fixed
 
 ### `job:run: TELEGRAM_BOT_TOKEN is empty`
 
