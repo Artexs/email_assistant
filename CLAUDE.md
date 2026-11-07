@@ -20,7 +20,8 @@ Before you diagnose an alert, grep docs/known-alerts.md.
 - Plan stages (the plan → build → review loop in `tasks/README.md` § "How to run a slice"):
   - Subagents (`planner`, `implementer`, `reviewer`) never commit or push. The main session commits and pushes.
   - One commit per stage, only after the reviewer gives PASS. The commit holds the code and the task file update (ticked steps, log line).
-  - Commit message: `<area>: <slice> stage N — <what>`. Body: the steps, the check command and its result, `Reviewed: PASS`.
+  - Exception, pipeline mode (`tasks/README.md` § "Pipeline mode", user decision 2026-11-07): the main session commits a stage locally when its checks pass, before the review, and pushes it only after PASS. Fixes get their own commits. Push the commits in stage order.
+  - Commit message: `<area>: <slice> stage N — <what>`. Body: the steps, the check command and its result, `Reviewed: PASS` (pipeline mode: `Review: pending`; the fix commit or the push note gives the verdict).
   - A problem found after the push gets a new fix commit. Never rewrite pushed history.
 
 ## Tasks

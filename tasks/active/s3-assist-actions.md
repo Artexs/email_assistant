@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress: stages 1–9 done; stage 10 (Undo service, D22) is next.** Paused by the user after stage 9; handoff `notes/2026-11-07-handoff-s3-build-stage10.md`. The user said: build to the end without stops; take the defaults or the proposed values for questions. Q1 and Q5 keep their defaults.
+> **Status 2026-11-07 — in progress: stages 1–9 done; stage 10 (Undo service, D22) built in the working tree, not committed, not reviewed.** Run mode: pipeline from stage 10 (`tasks/README.md` § "Pipeline mode"). Handoff `notes/2026-11-07-handoff-s3-pipeline.md`. The user said: build to the end without stops; take the defaults or the proposed values for questions. Q1 and Q5 keep their defaults.
 
 # S3 Assist actions
 
@@ -123,6 +123,10 @@ The main session stops after the commit of the named stage and gives the user a 
 ### Review model
 
 Implementers run on default Sonnet. Stage reviews of `[risky]` stages run on Opus, high (user, planning input 2026-11-06); the other stages on Sonnet, high. The group reviews at checkpoints 2 and 3 run on Opus, high.
+
+### Run mode
+
+Run mode: pipeline, from stage 10 (user decision 2026-11-07; rules in `tasks/README.md` § "Pipeline mode"). The implementers run one after the other; each stage gets a local commit when its checks pass, and a background review on a frozen worktree. A stage is pushed only after its PASS. Limit: 2 stages ahead of the last PASS.
 
 ### Stages
 
@@ -249,3 +253,4 @@ Answered 2026-11-06 with the plan defaults (P1–P7). Questions 1–4 of the fir
 - 2026-11-07: Checkpoint 2 group review of stages 2–7 (Opus, high): FAIL on a design gap (finding 1: a reverse move stopped between COPY and expunge makes the sync store a `#2` and the retry copy again); the code of stages 2–7 has no bug. Main session decisions (the user: use the defaults, no stops): D22 `emails.undo_pending_at` (stage 10), stage 8 one clock for `updated_at`, stage 9 fake `keepUidOnUserMove` + fake copy-path contract + case-insensitive folder match; addenda in the stage 8, 9 and 10 files.
 - 2026-11-07: Stage 8 built (8.1 `applyAction` for summary, flag, mark_read and the error rules, one clock per the addendum; 8.2 `createCommitterJob`, `claimFilterFor`). Review round 1 (Opus, high) FAIL (major: the failed row kept `attempts = 2` after 3 hard errors; plus release and test gaps), fixed; round 2 PASS. Two test notes moved to the stage 9 addendum.
 - 2026-11-07: Stage 9 built (9.1a `ensureMoved`, folder resolver, original move, fake `keepUidOnCopy`/`keepUidOnUserMove`, fake copy-path contract, case-insensitive folder match; 9.1b reverse move, crash test, stability runs 3× 19 pass; `ensureFolder` keeps a real parent spelling). Review (Opus, high): PASS; two minors moved to the stage 10 addendum. The user paused the build after stage 9 (to continue on another machine).
+- 2026-11-07: The user changed the run mode to pipeline from stage 10: implementers do not wait for the reviews; local commit before the review, push after PASS, fixes in own commits, limit 2 stages ahead (`tasks/README.md` § "Pipeline mode", `CLAUDE.md`).

@@ -66,6 +66,22 @@ input, rules, checkpoints, a stage list with one box per stage, results, log) an
 Each subagent call then reads the task file and one stage file, not the whole plan. Tick the steps in the stage file and the stage box
 in the task file. Move the folder together with the task file (`git mv`). Example: `tasks/active/s1b-shadow-triage/`.
 
+### Pipeline mode (user decision 2026-11-07)
+
+The implementers run one after the other and do not wait for the reviews. The reviews run at the same time, each on a frozen copy.
+This mode replaces steps 2–4 above when the task file says `Run mode: pipeline`. The planner step and the user checkpoints do not change.
+
+1. **Build.** The implementer builds the steps of stage N in the main checkout. The main session then runs `bun run lint && bun run typecheck && bun run test:unit && bun run test:int`.
+2. **Local commit.** All checks pass → the main session ticks the steps, adds a log line `stage N built, review pending`, and commits the stage files by explicit path. Body: `Review: pending`. No push.
+3. **Review (background).** The main session makes a read-only copy: `git worktree add --detach ~/.cache/ea-review/stage-N <sha>` (no branch), then `bun install` there. It starts the reviewer in the background: `~/.pi/agent/bin/bg-agent.sh reviewer ~/.cache/ea-review/stage-N ~/.cache/ea-review/stage-N.md "<task>" [model] [thinking]`. Scope: the commit range `<sha>^..<sha>`. In the worktree the reviewer runs only lint, typecheck and unit tests. The dev DB is shared, so `test:int` runs only in the main checkout, by the main session.
+4. **Next stage at once.** The implementer for stage N+1 starts right after the local commit of stage N. It does not wait for the review.
+5. **Review result.** After each implementer, the main session checks `~/.cache/ea-review/*.md.done`.
+   - PASS → push the stages up to the first stage that is not yet PASS, in stage order (`git fetch`, `git log HEAD..origin/master` first). Remove the worktree (`git worktree remove`).
+   - FAIL → the fix for stage N is the next implementer job (before stage N+2). The main session commits the fix locally: `<area>: <slice> stage N fix — <what>`. Then a new background review of the fix commit runs. Max 2 FAIL rounds per stage, then stop and ask the user.
+   - A finding that changes an interface or a decision that later stages use → stop the pipeline. Fix stage N, then check the later local commits before the next stage.
+6. **Limit: 2 stages ahead.** The implementer of stage N+2 starts only after stage N has PASS. Example: stages 10 and 11 are built, and the stage 10 review is not done → the main session waits for it before it starts stage 12. Why: a review can change stage N, and the stages after it build on it. The limit keeps the redo small.
+7. **Never** rewrite a commit, force-push, or push a stage before its PASS. A group review at a checkpoint runs after all stages of its range have PASS.
+
 ## Template
 
 ```markdown
