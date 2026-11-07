@@ -27,7 +27,8 @@ Open: stage 19 (the real paths of the `AI/*` folders at Interia, the UID behavio
 ## GreenMail 2.1.15 (tests and dev server, 2026-11-07)
 
 - Capabilities: `MOVE` and `UIDPLUS` yes (`notes/2026-11-03-greenmail-facts.md`). The dev mailbox connect on 2026-11-07 showed MOVE=yes and UIDPLUS=yes.
-- Delimiter: `.` (seen once by a raw `LIST` on `127.0.0.1:3143` on 2026-11-07, not pinned by a test). The Interia delimiter is `/`. The tests accept both (`/^AI[./]Info$/`, `report.delimiter` is `.` or `/`), so no test pins the GreenMail path of `AI/Info`.
+- Delimiter: `.` (seen by a raw `LIST` on `127.0.0.1:3143` and confirmed by the stage 16 dev run on 2026-11-07: `folder_map` holds `AI.Info`, `AI.Spam`, `AI.Notifications`; no test pins it). The Interia delimiter is `/`. The tests accept both (`/^AI[./]Info$/`, `report.delimiter` is `.` or `/`), so no test pins the GreenMail path of `AI/Info`.
+- GreenMail keeps mail in memory: `docker stop` / `docker start` of the container empties every mailbox (stage 16: a `ready` flag action then ended `failed` / `mail_not_found`).
 - A raw `CREATE AI/X` on GreenMail makes one flat folder named `AI/X`. Code that must create `AI/Info` goes through `ensureFolder`, which uses the server delimiter.
 - The contract tests run twice: `imap-greenmail` (MOVE) and `imap-greenmail-copy-path` (`forceCopyMove`). The COPY path leaves no `\Deleted` mail in the source folder (`apps/server/test/integration/imap-contract.test.ts`).
 - `probeMove` runs every write on GreenMail and cleans up, including the `AI` parent (`imap-probe-move.test.ts`).
@@ -38,13 +39,13 @@ Open: stage 19 (the real paths of the `AI/*` folders at Interia, the UID behavio
 
 ## Not verified yet
 
-| Item                                                                       | State                                                           |
-| -------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Telegram: the limit of inline buttons per message and row (digest uses 45) | open: stage 16 (the dev run with the phone)                     |
-| The dev run result (stage 16): Undo on the phone, toasts, `action_failed`  | open: stage 16                                                  |
-| The restore test result                                                    | open: stage 17                                                  |
-| The real `AI/*` paths at Interia, UID behaviour seen by the committer      | open: stage 19                                                  |
-| The one-week result of `assist` mode (N = 3 wrong moves)                   | open: stage 20                                                  |
-| The `copies <c>` values of the `returned below cursor` lines               | open: stage 20 (input for `tasks/planned/copy-below-cursor.md`) |
+| Item                                                                       | State                                                                                                                               |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Telegram: the limit of inline buttons per message and row (digest uses 45) | stage 16 (2026-11-07): a 15-line digest with 38 buttons (rows of 6 and 4) was accepted and shown; 45 not reached (the seed gave 38) |
+| The dev run result (stage 16): Undo on the phone, toasts, `action_failed`  | done 2026-11-07: see the task file § Results, stage 16                                                                              |
+| The restore test result                                                    | open: stage 17                                                                                                                      |
+| The real `AI/*` paths at Interia, UID behaviour seen by the committer      | open: stage 19                                                                                                                      |
+| The one-week result of `assist` mode (N = 3 wrong moves)                   | open: stage 20                                                                                                                      |
+| The `copies <c>` values of the `returned below cursor` lines               | open: stage 20 (input for `tasks/planned/copy-below-cursor.md`)                                                                     |
 
 Update this note when those stages finish.

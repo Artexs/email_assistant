@@ -4,7 +4,7 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 
 ## Stage 16 — Dev run: `assist` on GreenMail with the dev bot (user checkpoint 3) [risky]
 
-- [ ] **16.1 The user tries S3 on the Mac with GreenMail and the dev bot**
+- [x] **16.1 The user tries S3 on the Mac with GreenMail and the dev bot**
   - Goal: the done-when items work end to end on a real phone and a real (local) IMAP server before anything goes to the VPS.
   - Files: this task file ("Results": the measured facts, no mail data, no chat id, no token; one log line).
   - Interfaces: none (operations). Dev DB shell: `D="docker compose -f deploy/compose.yaml -f deploy/compose.dev.yaml --env-file .env"`; SQL with `$D exec -T db psql -U postgres -d email_assistant -c "<SQL>"`. GreenMail IMAP on `127.0.0.1:3143`, auth off.
