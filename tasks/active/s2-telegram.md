@@ -1,4 +1,4 @@
-> **Status 2026-11-06 — in progress.** The plan is approved by the user (commit 6773a42). Stage 0 done (bots: dev `@Email_assistant_local_bot`, pilot `@Email_assistant_vps_bot`). Stages 1–10 done; checkpoint 2 passed (user go). Stages 11–20 done; checkpoint 3 group review done (fixes committed). Stage 22 done. Stage 23: deployed, the pilot bot polls, the user's chat is linked (2026-11-06 ~23:05Z); the 08:00 digest of 2026-11-07 was sent (07:00:15Z); a ✅ tap with source `telegram` is not yet seen. Left: stage 21 and stage 23 steps 6 and 8 (the user's phone checks, 2026-11-07 after 07:00), then the results, the done-checklist and the move to `done/`.
+> **Status 2026-11-07 — in progress.** Stages 0–23 done (stage 21 dev run and stage 23 pilot checks passed on 2026-11-07; see "Results"). Left: the D3 change (user said yes on 2026-11-07: a linked chat that sends its used `/start <token>` again gets "This chat is linked already"), its VPS update, the final checks, the done-checklist and the move to `done/`.
 
 # S2 Telegram
 
@@ -137,13 +137,41 @@ Each stage lives in its own file in [`s2-telegram/`](s2-telegram/). An implement
 - [x] [Stage 18](s2-telegram/stage-18-pause-and-resume.md) — Commands: `/pause`, `/resume` [risky]
 - [x] [Stage 19](s2-telegram/stage-19-mailbox-password.md) — `mailbox:password`: leave `auth_error` [risky]
 - [x] [Stage 20](s2-telegram/stage-20-server-wiring-and-log-test.md) — Server wiring, shutdown and the log test [risky] — user checkpoint 3 after it
-- [ ] [Stage 21](s2-telegram/stage-21-dev-run-with-the-dev-bot.md) — Dev run with the dev bot: the user tries it on the phone [risky]
+- [x] [Stage 21](s2-telegram/stage-21-dev-run-with-the-dev-bot.md) — Dev run with the dev bot: the user tries it on the phone [risky]
 - [x] [Stage 22](s2-telegram/stage-22-docs-and-notes.md) — Docs, notes, known alerts
-- [ ] [Stage 23](s2-telegram/stage-23-vps-deploy-with-the-pilot-bot.md) — VPS deploy with the pilot bot [risky] — user checkpoint 4 before it
+- [x] [Stage 23](s2-telegram/stage-23-vps-deploy-with-the-pilot-bot.md) — VPS deploy with the pilot bot [risky] — user checkpoint 4 before it
 
 ### Results (filled in stages 21 and 23)
 
-_Not yet._
+Stage 21 — dev run on the Mac with `@Email_assistant_local_bot`, 2026-11-07 10:48–11:40Z (`TRIAGE_LLM_SCOPE=synthetic`, provider `openai` / `gpt-6-luna`, server started with `bun apps/server/src/main.ts`, no `--watch`, because other agents edited files in the same checkout):
+
+| Step                             | Result                                                                                                                                                                   |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2 start                          | `telegram: polling as @Email_assistant_local_bot (id 9088924109)`, `triage takes only synthetic mail`                                                                    |
+| 3 link, `/help`, `/status`       | `✅ This chat is linked.` + help; `/status`: `Mode: shadow · Status: active`, `Last sync`, `LLM calls since 09:00: 4 of 300`, triage scope, `Next digest`, quiet hours   |
+| 4 urgent time                    | `t0` (seed) 10:51:36Z, mail `received_at` 10:51:38Z, notice sent 10:55:30Z: **3 min 54 s** (goal ≤ 10 min)                                                               |
+| 5 ✅ on urgent                   | toast `✅ Saved: Urgent is right.`; row `right` / `urgent` / `telegram`                                                                                                  |
+| 6 `/digest`, ✏️                  | `/digest` after the 12:00 digest: "No new mail since 12:00." (P2: the period starts at the last scheduled digest). ✏️ → picker → Info: row `wrong` / `info` / `telegram` |
+| 7 scheduled digest               | slot 12:00 local, sent 11:00:15Z (15 s after the slot); 2126 characters, 20 buttons, `🧪 test` marks, shadow line                                                        |
+| 8 `/pause`, `/status`, `/resume` | `⏸ Paused: …`; `/status` `paused since 12:07`; `▶️ Resumed: …`; audit `mailbox.paused` / `mailbox.resumed`                                                              |
+| 9 `auth_error`                   | SQL at 11:07:42Z → notice sent within 30 s (`❌ Login to … failed at 12:07.`); `mailbox:password` → `status active`; `/status` `Status: active`                          |
+| 10 sync late                     | skipped (optional, 45 min)                                                                                                                                               |
+| 11 stop                          | Ctrl+C (SIGINT) → stopped in 1 s; log grep for seeded addresses, subjects, `start=`, link token, bot token pattern: no hit (only the bot user name)                      |
+| 12 second account                | skipped (optional; the router tests cover it)                                                                                                                            |
+| LLM calls                        | 9 (`ok` 9) since 10:48Z                                                                                                                                                  |
+
+Stage 23 — pilot on the VPS with `@Email_assistant_vps_bot`:
+
+| Step           | Result                                                                                                                                                                                               |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1–5, 7         | done 2026-11-06 (see the log): deployed `a6c281d`, polling as the pilot bot, two different bots, digest times 08:00 / 16:00                                                                          |
+| 6 link         | chat linked 2026-11-06 ~23:05Z; `chat_links` count 1                                                                                                                                                 |
+| 8 digest + tap | slot `2026-11-07T08:00` sent 07:00:15Z (2956 characters, 26 buttons, 15 lines + "+159 more"); feedback rows with source `telegram`: `right` / `urgent` 10:44:23Z, `right` / `notification` 10:47:13Z |
+
+Findings of the live runs (not bugs of the plan, no code change in S2):
+
+- A ✏️ pick equal to the latest feedback row of the mail (also a `cli` row) writes no row and answers "Already saved.", but the picker message still says `✏️ Saved: …`. Follow-up: `tasks/planned/telegram-picker-already-saved.md`.
+- The D3 case happened live: the user opened the used pilot link again and got "This link was used already. Ask for a new link." The user said yes to the D3 change on 2026-11-07.
 
 ## Questions for the user
 
@@ -199,3 +227,4 @@ Answered 2026-11-05: the user approved the plan as written, so each question kee
 - 2026-11-06: Stage 23 steps 1–5, 7: `date -u` 22:50Z; `<OLD>` = `6934089` (same code as HEAD, only docs and tasks differ). VPS `grep -c '^TELEGRAM_BOT_TOKEN=.' .env` → `1`, mode 600; SHA-256 prefixes differ (VPS `10fd7a4a5c0a`, Mac `9ff228eb7028`). `git pull` → `a6c281d`; `db:migrate` nothing new; `up -d --build --wait` → healthy; log `telegram: polling as @Email_assistant_vps_bot (id 9012248212)`, no `409`. `telegram:check` VPS → `@Email_assistant_vps_bot`, Mac → `@Email_assistant_local_bot`. `digest:times` → `08:00, 16:00 (Europe/Warsaw)`. 9 minutes of logs: 0 `error` / `warn` lines of channels, telegram, reports; the sync runs. `notes/2026-11-03-pilot-vps.md` has the deploy facts.
 - 2026-11-07: Stage 23 step 6: the user linked the chat with the pilot bot (log `chat linked for user 8fb22cd6-…`, `chat_links` count 1) and says it works. Not yet seen: a `triage_feedback` row with source `telegram` (step 8) and the scheduled 08:00 digest. Next session: stage 21 (dev bot) after 07:00 local, then step 8, the Results, the done-checklist and `git mv` to `done/`.
 - 2026-11-07: The pilot 08:00 digest was sent (`digests` slot `2026-11-07T08:00`, outbox `sent` at 07:00:15Z). Log: `a used link token was tried` (the D3 case). Handoff for the finish: `~/.pi/agent/notes/2026-11-07-handoff-s2-telegram-finish.md`.
+- 2026-11-07: Stage 21 done with the user (dev bot, all steps except the optional 10 and 12 pass; urgent notice 3 min 54 s). Stage 23 step 8 done (two `telegram` ✅ rows on the pilot). "Results" filled; the "pending (stage 21/23)" marks in `docs/roadmap.md`, `docs/known-alerts.md`, `notes/2026-11-06-telegram-bot-facts.md` and `notes/2026-11-03-pilot-vps.md` replaced. The user said yes to the D3 change and to the other proposals.

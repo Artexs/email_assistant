@@ -20,7 +20,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ### `callback failed: <label>`
 
-- **First seen:** 2026-11-06 (S2 code; live occurrence pending, stage 21/23)
+- **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/telegram/bot.ts` (`[telegram]`, level `error`).
 - **Cause:** The handler of a button tap threw an error (a database error or a bug). The label is `GrammyError <method> <code>`, `HttpError <method>` or the `describeError` text. The user sees "Something went wrong".
 - **Fix:** Read the label. A database label: check the DB and the migration state. Repeat the tap. If it repeats, file a bug with the label (never with a message text).
@@ -28,7 +28,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ### `digest for org <id> user <id> failed: <label>`
 
-- **First seen:** 2026-11-06 (S2 code; live occurrence pending, stage 21/23)
+- **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/digest-job.ts` (`[channels]`, level `error`).
 - **Cause:** Building or saving the digest of one member failed (for example a database error or a missing organization). The other members continue. The slot stays open, so the next minute tries again.
 - **Fix:** Read the label. If it repeats every minute, check the DB and the member's `digest_times` (`bun run digest:times`). A late slot older than 6 hours is skipped.
@@ -36,7 +36,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ### `notices for org <id> failed: <label>`
 
-- **First seen:** 2026-11-06 (S2 code; live occurrence pending, stage 21/23)
+- **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/notices.ts` (`[channels]`, level `error`).
 - **Cause:** Notice detection for one organization failed (database error or missing organization). The other organizations continue. The next tick (15 s) tries again.
 - **Fix:** Read the label. If it repeats, check the DB and the organization row.
@@ -44,7 +44,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ### `outbox <id>: lost the claim after the send`
 
-- **First seen:** 2026-11-06 (S2 code; live occurrence pending, stage 21/23)
+- **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/sender.ts` (`[channels]`, level `warn`).
 - **Cause:** The message was sent, but the row was no longer `sending` with the same lock when the sender marked it `sent`. Another run reclaimed the row (stale claim) or the row was deleted (cascade).
 - **Fix:** Check the outbox row `<id>` and the other log lines for the same id. A duplicate message is possible (delivery is at least once). No action if it is rare.
@@ -52,7 +52,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ### `outbox <id>: sent again after a stale send (a duplicate is possible)`
 
-- **First seen:** 2026-11-06 (S2 code; live occurrence pending, stage 21/23)
+- **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/sender.ts` (`[channels]`, level `warn`).
 - **Cause:** A row stayed `sending` for more than 5 minutes (the process died, or the DB commit after the send failed), so the next claim sends it again. The user can get the message twice.
 - **Fix:** No action. If it repeats, look for crashes or DB errors around the first send of the row.
@@ -60,7 +60,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ### `outbox <id>: Telegram refused the message (<code>)`
 
-- **First seen:** 2026-11-06 (S2 code; live occurrence pending, stage 21/23)
+- **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/sender.ts` (`[channels]`, level `error`). Code: `telegram_400`, `message_too_long` or `button_data_too_long`.
 - **Cause:** Telegram or the adapter guard refused the text or the buttons (400). The row becomes `failed` / `bad_request` and is never sent again.
 - **Fix:** Read the row (`text` length, `buttons`). A `message_too_long` or `button_data_too_long` code is a bug in the text builder: file it with the row id.
@@ -68,7 +68,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ### `outbox <id>: the user blocked the bot (403)`
 
-- **First seen:** 2026-11-06 (S2 code; live occurrence pending, stage 21/23)
+- **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/sender.ts` (`[channels]`, level `warn`).
 - **Cause:** The member blocked the bot or deleted the chat. The row becomes `failed` / `blocked`.
 - **Fix:** Ask the member to unblock the bot and send `/start`. If the chat is gone, make a new link (`bun run telegram:link`).
@@ -76,7 +76,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ### `outbox <id>: <code>; sending paused for <s> s` (also `outbox <id>: rate limited; sending paused for <s> s`)
 
-- **First seen:** 2026-11-06 (S2 code; live occurrence pending, stage 21/23)
+- **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/sender.ts` (`[channels]`, level `warn`). The text `outbox <id>: rate limited; sending paused for <s> s` is the 429 case (waits `retry_after`). The codes `telegram_network` and `telegram_500` (and other 5xx) are soft errors (backoff 30 s doubling to 15 min).
 - **Cause:** Telegram limited the bot (429) or was not reachable (network error, HTTP 5xx). The sender pauses and tries the same rows later. After 5 other errors a row becomes `failed` / `too_many_errors`.
 - **Fix:** No action for short pauses. For a long one, check the network of the host and https://core.telegram.org reachability. Rows older than 24 hours become `failed` / `expired`.
@@ -84,7 +84,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ### `telegram token rejected (401): check TELEGRAM_BOT_TOKEN; sending paused for 10 min`
 
-- **First seen:** 2026-11-06 (S2 code; live occurrence pending, stage 21/23)
+- **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/sender.ts` (`[channels]`, level `error`).
 - **Cause:** Telegram answered 401 to a send: the token in `.env` is wrong, revoked or from another bot. The sender pauses for 10 minutes and tries again.
 - **Fix:** Check the token with `bun run telegram:check`. Fix `TELEGRAM_BOT_TOKEN` in `.env` (the user edits it) and restart the server.
@@ -92,7 +92,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ### `telegram: setMyCommands failed: <label>`
 
-- **First seen:** 2026-11-06 (S2 code; live occurrence pending, stage 21/23)
+- **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/telegram/polling.ts` (`[telegram]`, level `warn`).
 - **Cause:** The server could not set the command list at the start (network error or Telegram error). Polling goes on; only the `/` menu in the app is missing or old.
 - **Fix:** No action. The next start sets the list again. If it repeats with the label `GrammyError setMyCommands 401`, fix the token.
@@ -100,7 +100,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ### `telegram: polling failed: <label>; next try in <n> min`
 
-- **First seen:** 2026-11-06 (S2 code; live occurrence pending, stage 21/23)
+- **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/telegram/polling.ts` (`[telegram]`, level `error`).
 - **Cause:** `bot.start` failed with an error other than 401 or 409 (network down, Telegram 5xx). The server tries again after 1, 2, 4 … at most 30 minutes. The count resets after a good `getUpdates`.
 - **Fix:** Check the network of the host. No action if the next try works. Mail sync and the DB are not affected.
@@ -108,7 +108,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ### `telegram: another process polls this bot token (409); dev and pilot must use different bots (ADR 0005); next try in <n> min`
 
-- **First seen:** 2026-11-06 (S2 code; live occurrence pending, stage 21/23)
+- **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/telegram/polling.ts` (`[telegram]`, level `error`).
 - **Cause:** Telegram allows one update consumer per token. A second process (for example the Mac with the pilot token, or a second server container) polls the same bot (409). The server tries again after 1, 2, 4 … at most 30 minutes.
 - **Fix:** Find and stop the other process. Use the dev bot on the Mac and the pilot bot on the VPS. The server takes over by itself at the next try.
@@ -116,7 +116,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ### `telegram: the bot token was rejected (401): check TELEGRAM_BOT_TOKEN; polling stopped`
 
-- **First seen:** 2026-11-06 (S2 code; live occurrence pending, stage 21/23)
+- **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
 - **Source:** `apps/server/src/modules/channels/telegram/polling.ts` (`[telegram]`, level `error`).
 - **Cause:** Telegram answered 401 to `getMe` or `getUpdates`: the token is wrong, revoked or empty-looking. Polling stops and does not retry.
 - **Fix:** Check the token with `bun run telegram:check`. Fix `TELEGRAM_BOT_TOKEN` in `.env` (the user edits it) and restart the server. Never print the token.
