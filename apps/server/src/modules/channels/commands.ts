@@ -16,6 +16,7 @@ import type { Transaction } from "kysely";
 import type { DB, Db } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
+import { countActionsSince, type ActionsScope } from "../actions";
 import { auditEvents, countLlmCallsSince, recordAudit } from "../audit";
 import { getMailboxSettings } from "../config";
 import { changeMailboxStatus, countWaiting, listMailboxes, type MailboxSummary } from "../mail";
@@ -32,6 +33,7 @@ export interface CommandDeps {
   now(): Date;
   llmDailyCap: number;
   triageScope: "off" | "synthetic" | "all";
+  actionsScope: ActionsScope;
   llm: { provider: string; classifierModel: string };
 }
 
@@ -44,6 +46,14 @@ const SCOPE_TEXTS: Record<CommandDeps["triageScope"], string> = {
   synthetic: "test mail only (TRIAGE_LLM_SCOPE=synthetic)",
   all: "real mail of the test mailbox (TRIAGE_LLM_SCOPE=all)",
 };
+
+const ACTIONS_SCOPE_TEXTS: Record<ActionsScope["kind"], string> = {
+  off: "off",
+  synthetic: "test mail only (ACTIONS_SCOPE=synthetic)",
+  all: "real mail of the test mailbox (ACTIONS_SCOPE=all)",
+};
+
+const ACTIONS_WINDOW_MS = 24 * 3_600_000;
 
 export function helpMessage(): OutMessage {
   return { text: helpText(), buttons: [] };
@@ -79,6 +89,10 @@ export async function statusMessage(deps: CommandDeps, link: LinkedChat): Promis
 
   const waiting = await countWaiting(db, ctx, { receivedSince: new Date(now.getTime() - WAITING_WINDOW_MS) });
   lines.push(`Waiting for triage: ${waiting}`, `Triage: ${SCOPE_TEXTS[deps.triageScope]}`);
+  const actions = await countActionsSince(db, ctx, { since: new Date(now.getTime() - ACTIONS_WINDOW_MS) });
+  lines.push(
+    `Actions: ${ACTIONS_SCOPE_TEXTS[deps.actionsScope.kind]} · last 24 h: applied ${actions.applied}, undone ${actions.undone}, failed ${actions.failed}`
+  );
   lines.push(`LLM: ${deps.llm.provider} · ${deps.llm.classifierModel}`);
 
   const member = await getMembership(db, ctx, link.userId);
@@ -207,6 +221,7 @@ export function runCommand(deps: CommandDeps, link: LinkedChat, name: CommandNam
 export function createUpdateHandlers(deps: CommandDeps): UpdateHandlers {
   return {
     command: (link, name) => runCommand(deps, link, name),
-    callback: (link, data) => handleCallback({ db: deps.db, now: deps.now }, link, data),
+    callback: (link, data) =>
+      handleCallback({ db: deps.db, now: deps.now, actionsScope: deps.actionsScope }, link, data),
   };
 }

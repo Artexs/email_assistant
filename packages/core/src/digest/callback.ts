@@ -10,6 +10,7 @@ export function isLabelCategory(category: Category): category is LabelCategory {
 export type FeedbackCallback =
   | { kind: "right"; category: LabelCategory; emailId: string }
   | { kind: "edit"; emailId: string }
+  | { kind: "undo"; emailId: string }
   | { kind: "pick"; category: LabelCategory; emailId: string }
   | { kind: "cancel"; emailId: string };
 
@@ -26,7 +27,7 @@ const CODE_TO_CATEGORY = Object.fromEntries(
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const WITH_CODE = new RegExp(`^(fr|fc):([urins]):(${UUID})$`);
-const WITHOUT_CODE = new RegExp(`^(fe|fx):(${UUID})$`);
+const WITHOUT_CODE = new RegExp(`^(fe|fx|fu):(${UUID})$`);
 
 // Button data is at most 64 bytes (Telegram); the longest value here is 41.
 export function encodeCallback(callback: FeedbackCallback): string {
@@ -40,6 +41,8 @@ export function encodeCallback(callback: FeedbackCallback): string {
       return `fe:${callback.emailId}`;
     case "cancel":
       return `fx:${callback.emailId}`;
+    case "undo":
+      return `fu:${callback.emailId}`;
   }
 }
 
@@ -55,7 +58,8 @@ export function parseCallback(data: string): FeedbackCallback | null {
   const withoutCode = WITHOUT_CODE.exec(data);
   if (withoutCode !== null) {
     const emailId = withoutCode[2] as string;
-    return withoutCode[1] === "fe" ? { kind: "edit", emailId } : { kind: "cancel", emailId };
+    if (withoutCode[1] === "fe") return { kind: "edit", emailId };
+    return withoutCode[1] === "fu" ? { kind: "undo", emailId } : { kind: "cancel", emailId };
   }
   return null;
 }

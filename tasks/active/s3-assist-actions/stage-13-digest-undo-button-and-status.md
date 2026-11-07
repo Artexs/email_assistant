@@ -4,7 +4,7 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 
 ## Stage 13 — Digest ↩️ button, the Undo tap, `/status` lines [risky]
 
-- [ ] **13.1 Core: the `undo` callback and the third digest button (D14, P4)**
+- [x] **13.1 Core: the `undo` callback and the third digest button (D14, P4)**
   - Goal: a digest line whose mail has an undoable action gets `↩️ n`; the button data parses back to `{ kind: "undo", emailId }`; the message limits hold.
   - Files: change `packages/core/src/digest/callback.ts`, `callback.test.ts`, `digest.ts`, `digest.test.ts`, `notices.ts` (`feedbackButtons` gets an optional `undo?: string` text and appends the button), `apps/server/src/modules/reports/digest.ts`, `apps/server/test/integration/reports-digest.test.ts`.
   - Interfaces: `FeedbackCallback` gets `| { kind: "undo"; emailId: string }`; `encodeCallback` → `fu:<emailId>`; `parseCallback` accepts `fu`. `DigestItem` gets `undoable: boolean`. `feedbackButtons(emailId, category, texts: { right: string; edit: string; undo?: string })`.
@@ -17,7 +17,7 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
   - Done when: the tests pass.
   - Out of scope: the handler (13.2).
 
-- [ ] **13.2 The Undo tap, the feedback row, `/status` and `/help` lines**
+- [x] **13.2 The Undo tap, the feedback row, `/status` and `/help` lines**
   - Goal: a tap on ↩️ starts the Undo of the mail's actions after the tenant check and writes one feedback row (`wrong`, source `undo`); `/status` shows the actions scope and the counts.
   - Files: change `apps/server/src/modules/channels/callbacks.ts`, `apps/server/src/modules/channels/commands.ts`, `apps/server/src/modules/channels/texts.ts`, `apps/server/src/modules/channels/telegram/runtime.ts` (`TelegramRuntimeDeps.actionsScope: ActionsScope` from the `actions` index: the Undo tap needs the `all` scope's mailbox address), `apps/server/test/integration/channels-callbacks.test.ts`, `apps/server/test/integration/channels-commands.test.ts`.
   - Interfaces: `CommandDeps` and the callback deps get `actionsScope: ActionsScope`. Texts in `callbacks.ts`: `UNDO_TEXTS = { started: "↩️ Undo started: the mail goes back within a minute.", already: "Undo was already requested for this mail.", nothing: "Nothing to undo.", too_old: "Too old to undo (7 days).", held: "Undo is not possible now: mailbox changes are off or the mailbox is paused.", not_found: "This mail is not in your account." }`.

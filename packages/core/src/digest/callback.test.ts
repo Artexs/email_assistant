@@ -12,6 +12,7 @@ const all: FeedbackCallback[] = [
   ]),
   { kind: "edit", emailId: ID },
   { kind: "cancel", emailId: ID },
+  { kind: "undo", emailId: ID },
 ];
 
 describe("callback data", () => {
@@ -24,11 +25,17 @@ describe("callback data", () => {
   test("uses the documented formats", () => {
     expect(encodeCallback({ kind: "right", category: "urgent", emailId: ID })).toBe(`fr:u:${ID}`);
     expect(encodeCallback({ kind: "edit", emailId: ID })).toBe(`fe:${ID}`);
+    const undo = encodeCallback({ kind: "undo", emailId: ID });
+    expect(undo).toBe(`fu:${ID}`);
+    expect(Buffer.byteLength(undo)).toBe(39);
   });
 
-  test.each(["", `fr:x:${ID}`, `fr:u:${ID.toUpperCase()}`, `fe:${ID}:x`, `zz:${ID}`])("rejects %p", (data) => {
-    expect(parseCallback(data)).toBeNull();
-  });
+  test.each(["", `fr:x:${ID}`, `fr:u:${ID.toUpperCase()}`, `fe:${ID}:x`, `zz:${ID}`, "fu:not-a-uuid"])(
+    "rejects %p",
+    (data) => {
+      expect(parseCallback(data)).toBeNull();
+    }
+  );
 
   test("encode refuses a bad id", () => {
     expect(() => encodeCallback({ kind: "edit", emailId: "not-a-uuid" })).toThrow("bad email id");

@@ -5,15 +5,16 @@ import { formatClock } from "./local-time";
 import type { OutButton, OutMessage } from "./message";
 import { cleanSubject, cutText, senderLabel } from "./text";
 
-// ✅ (only for a category the user may pick) and ✏️ of one mail.
+// ✅ (only for a category the user may pick), ✏️ and, with `undo` text, ↩️ of one mail.
 export function feedbackButtons(
   emailId: string,
   category: Category,
-  texts: { right: string; edit: string }
+  texts: { right: string; edit: string; undo?: string }
 ): OutButton[] {
   const edit = { text: texts.edit, data: encodeCallback({ kind: "edit", emailId }) };
-  if (!isLabelCategory(category)) return [edit];
-  return [{ text: texts.right, data: encodeCallback({ kind: "right", category, emailId }) }, edit];
+  const undo = texts.undo === undefined ? [] : [{ text: texts.undo, data: encodeCallback({ kind: "undo", emailId }) }];
+  if (!isLabelCategory(category)) return [edit, ...undo];
+  return [{ text: texts.right, data: encodeCallback({ kind: "right", category, emailId }) }, edit, ...undo];
 }
 
 export function renderUrgentNotice(input: {

@@ -1,6 +1,7 @@
 import {
   aiTextFor,
   describeActions,
+  isUndoable,
   mailboxModes,
   renderDigest,
   type DigestItem,
@@ -98,6 +99,7 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
       confidence: row.confidence,
     }),
     wouldDo: describeActions(actions.get(row.email_id) ?? []),
+    undoable: isUndoable(actions.get(row.email_id) ?? [], request.now),
   }));
 
   const skippedTooOld = await countEventsBetween(db, ctx, auditEvents.emailSkipped, range);

@@ -13,7 +13,7 @@ import {
   markDigestSent,
 } from "../../src/modules/reports";
 
-import { createOrgWithMailbox, insertTestEmail, insertTriaged } from "./fixtures";
+import { createOrgWithMailbox, insertAction, insertTestEmail, insertTriaged } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -167,6 +167,33 @@ describe("buildDigestMessage", () => {
       const firstRow = message.buttons[0]?.map((button) => button.data);
       expect(firstRow).toContain(`fr:u:${urgentId}`);
       expect(firstRow).toContain(`fe:${urgentId}`);
+    });
+  });
+
+  test("the undo button shows for an applied move inside the window only", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId };
+      await insertDefaultSettings(trx, ctx, a.mailboxId);
+      const mail = async (subject: string) =>
+        insertTriaged(trx, ctx, a.mailboxId, { category: "info", createdAt: at(-2 * HOUR), subject });
+      const fresh = await mail("fresh");
+      await insertAction(trx, ctx, fresh, { type: "move", status: "applied", appliedAt: at(-HOUR) });
+      const reversed = await mail("reversed");
+      const original = await insertAction(trx, ctx, reversed, {
+        type: "move",
+        status: "applied",
+        appliedAt: at(-HOUR),
+      });
+      await insertAction(trx, ctx, reversed, { type: "move", status: "ready", reversesActionId: original });
+      const old = await mail("old");
+      await insertAction(trx, ctx, old, { type: "move", status: "applied", appliedAt: at(-8 * DAY) });
+
+      const message = await buildDigestMessage(trx, ctx, request);
+      const data = message.buttons.flat().map((button) => button.data);
+      expect(data).toContain(`fu:${fresh}`);
+      expect(data).not.toContain(`fu:${reversed}`);
+      expect(data).not.toContain(`fu:${old}`);
     });
   });
 

@@ -7,6 +7,7 @@ export function helpText(): string {
     "/resume – start them again",
     "/help – this list",
     "Tap ✅ when the AI category is right, ✏️ to correct it.",
+    "↩️ under a digest line undoes what the system did to that mail (7 days).",
   ].join("\n");
 }
 

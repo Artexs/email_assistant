@@ -2,6 +2,7 @@ import type { UserFromGetMe } from "grammy/types";
 import type { Transaction } from "kysely";
 
 import type { DB, Db } from "../../../platform/db";
+import type { ActionsScope } from "../../actions";
 import { createUpdateHandlers } from "../commands";
 import { scheduleDigests } from "../digest-job";
 import { detectNotices } from "../notices";
@@ -18,6 +19,7 @@ export interface TelegramRuntimeDeps {
   startedAt: Date;
   llmDailyCap: number;
   triageScope: "off" | "synthetic" | "all";
+  actionsScope: ActionsScope;
   llm: { provider: string; classifierModel: string };
   // Only for tests.
   apiRoot?: string;
@@ -44,6 +46,7 @@ export function createTelegramRuntime(deps: TelegramRuntimeDeps): TelegramRuntim
         now,
         llmDailyCap: deps.llmDailyCap,
         triageScope: deps.triageScope,
+        actionsScope: deps.actionsScope,
         llm: deps.llm,
       }),
     },

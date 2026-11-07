@@ -32,6 +32,7 @@ function item(n: number, category: Category, extra: Partial<DigestItem> = {}): D
     synthetic: false,
     aiText: `AI text ${n}`,
     wouldDo: "would flag",
+    undoable: false,
     ...extra,
   };
 }
@@ -80,6 +81,26 @@ describe("renderDigest", () => {
     expect(message.text).toContain("Since 5 Nov 16:00: 6 mails, 3 need action");
     expect(message.text).toContain("Shadow mode: the system changed nothing in your mailbox.");
     expect(message.buttons[1]?.map((b) => b.text)).toEqual(["✏️ 3", "✅ 4", "✏️ 4"]);
+  });
+
+  test("undoable items get a third button; unsure keeps edit and undo", () => {
+    const items = [item(1, "urgent", { undoable: true }), item(2, "unsure", { undoable: true }), item(3, "info")];
+    const message = renderDigest(input({ items, counts: { urgent: 1, info: 1, unsure: 1 } }));
+    const urgent = message.buttons[0]?.slice(0, 3).map((b) => b.data);
+    expect(urgent).toEqual([`fr:u:${uuid(1)}`, `fe:${uuid(1)}`, `fu:${uuid(1)}`]);
+    expect(message.buttons[0]?.map((b) => b.text)).toEqual(["✅ 1", "✏️ 1", "↩️ 1", "✏️ 2", "↩️ 2"]);
+    expect(message.buttons[0]?.slice(3).map((b) => b.data)).toEqual([`fe:${uuid(2)}`, `fu:${uuid(2)}`]);
+    expect(message.buttons[1]?.map((b) => b.text)).toEqual(["✅ 3", "✏️ 3"]);
+  });
+
+  test("15 undoable lines give 45 buttons in 8 rows within the limits", () => {
+    const items = Array.from({ length: 15 }, (_, i) => item(i + 1, "urgent", { undoable: true }));
+    const message = renderDigest(input({ items, counts: { urgent: 15 } }));
+    expect(message.buttons).toHaveLength(8);
+    expect(message.buttons.flat()).toHaveLength(45);
+    expect(message.buttons.every((row) => row.length <= 6)).toBe(true);
+    for (const button of message.buttons.flat()) expect(Buffer.byteLength(button.data)).toBeLessThanOrEqual(64);
+    expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
   });
 
   test("lists 15 of 20 items with +N more and button rows", () => {

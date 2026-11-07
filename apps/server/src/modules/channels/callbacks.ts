@@ -11,6 +11,7 @@ import {
 import type { Transaction } from "kysely";
 
 import type { DB, Db } from "../../platform/db";
+import { undo, type ActionsScope, type UndoResult } from "../actions";
 import { getLabelTarget, recordFeedback } from "../triage";
 
 import type { CallbackResult, LinkedChat } from "./port";
@@ -18,7 +19,18 @@ import type { CallbackResult, LinkedChat } from "./port";
 export interface CallbackDeps {
   db: Db | Transaction<DB>;
   now(): Date;
+  actionsScope: ActionsScope;
 }
+
+export const UNDO_TEXTS: Record<Exclude<UndoResult["kind"], "not_found">, string> = {
+  started: "↩️ Undo started: the mail goes back within a minute.",
+  already: "Undo was already requested for this mail.",
+  nothing: "Nothing to undo.",
+  too_old: "Too old to undo (7 days).",
+  held: "Undo is not possible now: mailbox changes are off or the mailbox is paused.",
+};
+
+const NOT_FOUND_TEXT = "This mail is not in your account.";
 
 const label = (category: Category): string => categoryLabels[category].name;
 
@@ -49,7 +61,27 @@ export async function handleCallback(deps: CallbackDeps, link: LinkedChat, data:
   const ctx = { orgId: link.orgId, userId: link.userId };
   const target = await getLabelTarget(deps.db, ctx, callback.emailId);
   if (!target) {
-    return { answer: "This mail is not in your account." };
+    return { answer: NOT_FOUND_TEXT };
+  }
+  if (callback.kind === "undo") {
+    const result = await undo(deps.db, ctx, callback.emailId, {
+      now: deps.now(),
+      userId: link.userId,
+      scope: deps.actionsScope,
+    });
+    if (result.kind === "not_found") return { answer: NOT_FOUND_TEXT };
+    // keepLabel: a ✏️ label with a true category stays the latest feedback row. An unsure mail has no wrong category to record.
+    if (result.kind === "started" && target.category !== "unsure") {
+      await recordFeedback(deps.db, ctx, {
+        emailId: callback.emailId,
+        verdict: "wrong",
+        source: "undo",
+        userId: link.userId,
+        skipIfSame: true,
+        keepLabel: true,
+      });
+    }
+    return { answer: UNDO_TEXTS[result.kind] };
   }
   if (callback.kind === "edit") {
     return { answer: "", send: pickerMessage(callback.emailId, target.subject, target.category) };

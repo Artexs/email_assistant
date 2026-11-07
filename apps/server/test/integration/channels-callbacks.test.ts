@@ -5,10 +5,11 @@ import { sql, type Transaction } from "kysely";
 
 import { handleCallback, type CallbackDeps } from "../../src/modules/channels";
 import type { LinkedChat } from "../../src/modules/channels";
+import { UNDO_TEXTS } from "../../src/modules/channels/callbacks";
 import { listLabeledResults } from "../../src/modules/triage";
 import type { DB } from "../../src/platform/db";
 
-import { createOrgWithMailbox, insertTriaged } from "./fixtures";
+import { createOrgWithMailbox, insertAction, insertTriaged, insertTriagedWithActions } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -18,6 +19,9 @@ afterAll(async () => {
 });
 
 const T = new Date("2026-11-06T10:00:00Z");
+const HOUR = 3_600_000;
+const DAY = 24 * HOUR;
+const NOT_FOUND = "This mail is not in your account.";
 
 async function feedbackRows(trx: Transaction<DB>, emailId: string) {
   return trx.selectFrom("triage_feedback").selectAll().where("email_id", "=", emailId).execute();
@@ -32,7 +36,8 @@ async function ageFeedback(trx: Transaction<DB>): Promise<void> {
 }
 
 async function setup(trx: Transaction<DB>) {
-  const a = await createOrgWithMailbox(trx);
+  const address = `box-${randomUUID()}@x.test`;
+  const a = await createOrgWithMailbox(trx, { address });
   const b = await createOrgWithMailbox(trx);
   const ctxA = { orgId: a.orgId };
   const info = await insertTriaged(trx, ctxA, a.mailboxId, {
@@ -43,7 +48,7 @@ async function setup(trx: Transaction<DB>) {
   const unsure = await insertTriaged(trx, ctxA, a.mailboxId, { category: "unsure", createdAt: T });
   const other = await insertTriaged(trx, { orgId: b.orgId }, b.mailboxId, { category: "info", createdAt: T });
   const link: LinkedChat = { orgId: a.orgId, userId: a.userId, role: "owner", chatId: 1, linkedAt: T };
-  const deps: CallbackDeps = { db: trx, now: () => T };
+  const deps: CallbackDeps = { db: trx, now: () => T, actionsScope: { kind: "all", mailboxAddress: address } };
   return { a, ctxA, info, unsure, other, link, deps };
 }
 
@@ -160,6 +165,148 @@ describe("handleCallback", () => {
 
       expect(result).toEqual({ answer: "", edit: { text: "✏️ Cancelled.", buttons: [] } });
       expect(await feedbackRows(trx, info)).toEqual([]);
+    });
+  });
+
+  describe("undo", () => {
+    const applied = (type: "move" | "mark_read", payload?: Record<string, string>) => ({
+      type,
+      status: "applied",
+      payload,
+      appliedAt: new Date(T.getTime() - HOUR),
+    });
+
+    async function reverseRows(trx: Transaction<DB>, orgId: string) {
+      return trx
+        .selectFrom("actions")
+        .select(["type", "email_id"])
+        .where("org_id", "=", orgId)
+        .where("reverses_action_id", "is not", null)
+        .execute();
+    }
+
+    async function undoMail(trx: Transaction<DB>, s: Awaited<ReturnType<typeof setup>>, category: "info" | "unsure") {
+      return insertTriagedWithActions(trx, s.ctxA, s.a.mailboxId, {
+        category,
+        createdAt: T,
+        actions: [applied("move", { folder: category === "info" ? "ai_info" : "ai_manual" }), applied("mark_read")],
+      });
+    }
+
+    test("(1)(2) a tap starts the Undo and writes one feedback row; the second tap says already", async () => {
+      await withRollback(db, async (trx) => {
+        const s = await setup(trx);
+        const mail = await undoMail(trx, s, "info");
+
+        const first = await handleCallback(s.deps, s.link, `fu:${mail.emailId}`);
+        expect(first).toEqual({ answer: UNDO_TEXTS.started });
+        expect(await reverseRows(trx, s.a.orgId)).toHaveLength(2);
+        expect(await feedbackRows(trx, mail.emailId)).toMatchObject([
+          { verdict: "wrong", true_category: null, source: "undo", user_id: s.a.userId },
+        ]);
+
+        const second = await handleCallback(s.deps, s.link, `fu:${mail.emailId}`);
+        expect(second.answer).toBe(UNDO_TEXTS.already);
+        expect(await reverseRows(trx, s.a.orgId)).toHaveLength(2);
+        expect(await feedbackRows(trx, mail.emailId)).toHaveLength(1);
+      });
+    });
+
+    test("(3) an unsure mail starts the Undo and writes no feedback row", async () => {
+      await withRollback(db, async (trx) => {
+        const s = await setup(trx);
+        const mail = await undoMail(trx, s, "unsure");
+
+        const result = await handleCallback(s.deps, s.link, `fu:${mail.emailId}`);
+
+        expect(result.answer).toBe(UNDO_TEXTS.started);
+        expect(await reverseRows(trx, s.a.orgId)).toHaveLength(2);
+        expect(await feedbackRows(trx, mail.emailId)).toEqual([]);
+      });
+    });
+
+    test("(4) a mail with logged rows only: nothing to undo", async () => {
+      await withRollback(db, async (trx) => {
+        const s = await setup(trx);
+        await insertAction(trx, s.ctxA, s.info, { type: "move", status: "logged" });
+
+        const result = await handleCallback(s.deps, s.link, `fu:${s.info}`);
+
+        expect(result.answer).toBe(UNDO_TEXTS.nothing);
+        expect(await reverseRows(trx, s.a.orgId)).toEqual([]);
+        expect(await feedbackRows(trx, s.info)).toEqual([]);
+      });
+    });
+
+    test("(5) applied 8 days ago: too old", async () => {
+      await withRollback(db, async (trx) => {
+        const s = await setup(trx);
+        await insertAction(trx, s.ctxA, s.info, {
+          type: "mark_read",
+          status: "applied",
+          appliedAt: new Date(T.getTime() - 8 * DAY),
+        });
+
+        const result = await handleCallback(s.deps, s.link, `fu:${s.info}`);
+
+        expect(result.answer).toBe(UNDO_TEXTS.too_old);
+        expect(await reverseRows(trx, s.a.orgId)).toEqual([]);
+        expect(await feedbackRows(trx, s.info)).toEqual([]);
+      });
+    });
+
+    test("(5b) scope off: held, no reverse row, no feedback row", async () => {
+      await withRollback(db, async (trx) => {
+        const s = await setup(trx);
+        const mail = await undoMail(trx, s, "info");
+
+        const result = await handleCallback({ ...s.deps, actionsScope: { kind: "off" } }, s.link, `fu:${mail.emailId}`);
+
+        expect(result.answer).toBe(UNDO_TEXTS.held);
+        expect(await reverseRows(trx, s.a.orgId)).toEqual([]);
+        expect(await feedbackRows(trx, mail.emailId)).toEqual([]);
+      });
+    });
+
+    test("(5c) a ✏️ label with a true category stays the latest feedback row", async () => {
+      await withRollback(db, async (trx) => {
+        const s = await setup(trx);
+        const mail = await undoMail(trx, s, "info");
+        await handleCallback(s.deps, s.link, `fc:s:${mail.emailId}`);
+        await ageFeedback(trx);
+
+        const result = await handleCallback(s.deps, s.link, `fu:${mail.emailId}`);
+
+        expect(result.answer).toBe(UNDO_TEXTS.started);
+        expect(await reverseRows(trx, s.a.orgId)).toHaveLength(2);
+        expect(await feedbackRows(trx, mail.emailId)).toMatchObject([{ verdict: "wrong", true_category: "spam" }]);
+      });
+    });
+
+    test("(6) another organization's mail and an unknown id: not found, no rows", async () => {
+      await withRollback(db, async (trx) => {
+        const s = await setup(trx);
+        await insertAction(
+          trx,
+          {
+            orgId: (await trx.selectFrom("emails").select("org_id").where("id", "=", s.other).executeTakeFirstOrThrow())
+              .org_id,
+          },
+          s.other,
+          {
+            type: "mark_read",
+            status: "applied",
+            appliedAt: new Date(T.getTime() - HOUR),
+          }
+        );
+
+        for (const id of [s.other, randomUUID()]) {
+          expect((await handleCallback(s.deps, s.link, `fu:${id}`)).answer).toBe(NOT_FOUND);
+        }
+        expect(await feedbackRows(trx, s.other)).toEqual([]);
+        const rows = await trx.selectFrom("actions").select("id").where("reverses_action_id", "is not", null).execute();
+        expect(rows).toEqual([]);
+      });
     });
   });
 });

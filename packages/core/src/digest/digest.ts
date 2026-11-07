@@ -41,6 +41,7 @@ export interface DigestItem {
   synthetic: boolean;
   aiText: string | null;
   wouldDo: string;
+  undoable: boolean;
 }
 
 export interface DigestInput {
@@ -152,7 +153,11 @@ function renderListed(input: DigestInput, listed: readonly DigestItem[]): OutMes
   const buttons: OutButton[][] = [];
   listed.forEach((item, index) => {
     const n = index + 1;
-    const own = feedbackButtons(item.emailId, item.category, { right: `✅ ${n}`, edit: `✏️ ${n}` });
+    const own = feedbackButtons(item.emailId, item.category, {
+      right: `✅ ${n}`,
+      edit: `✏️ ${n}`,
+      ...(item.undoable ? { undo: `↩️ ${n}` } : {}),
+    });
     if (index % 2 === 0) buttons.push(own);
     else buttons[buttons.length - 1]?.push(...own);
   });

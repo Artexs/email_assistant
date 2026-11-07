@@ -22,7 +22,7 @@ import { insertDigest, markDigestSent } from "../../src/modules/reports";
 import { setDigestTimes } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
 
-import { createOrgWithMailbox, insertTestEmail, insertTriaged, testCapabilities } from "./fixtures";
+import { createOrgWithMailbox, insertAction, insertTestEmail, insertTriaged, testCapabilities } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -44,6 +44,7 @@ function depsAt(trx: Transaction<DB>, now: Date, extra: Partial<CommandDeps> = {
     now: () => now,
     llmDailyCap: 300,
     triageScope: "all",
+    actionsScope: { kind: "off" },
     llm: { provider: "gemini", classifierModel: "gemini-3.5-flash-lite" },
     ...extra,
   };
@@ -82,6 +83,10 @@ describe("helpMessage", () => {
   test("is the help text without buttons", () => {
     expect(helpMessage()).toEqual({ text: helpText(), buttons: [] });
   });
+
+  test("has the Undo line", () => {
+    expect(helpText()).toContain("↩️ under a digest line undoes what the system did to that mail (7 days).");
+  });
 });
 
 describe("statusMessage", () => {
@@ -108,6 +113,28 @@ describe("statusMessage", () => {
       expect(message.text).toContain("LLM: gemini · gemini-3.5-flash-lite");
       expect(message.text).toContain("Next digest: 16:00");
       expect(message.text).toContain("Quiet hours: 22:00–07:00 (notices wait until 07:00)");
+    });
+  });
+
+  test("the actions line shows the scope and the counts of the last 24 h", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, link, a, address } = await setup(trx);
+      const off = await statusMessage(depsAt(trx, T), link);
+      expect(off.text).toContain("Actions: off · last 24 h: applied 0, undone 0, failed 0");
+
+      const emailId = await insertTriaged(trx, ctx, a.mailboxId, { category: "info", createdAt: at(-2 * HOUR) });
+      await insertAction(trx, ctx, emailId, { type: "mark_read", status: "applied", appliedAt: at(-HOUR) });
+      await insertAction(trx, ctx, emailId, { type: "flag", status: "applied", appliedAt: at(-2 * HOUR) });
+      await insertAction(trx, ctx, emailId, { type: "move", status: "failed", createdAt: at(-HOUR) });
+      await insertAction(trx, ctx, emailId, { type: "save_summary", status: "applied", appliedAt: at(-HOUR) });
+      await insertAction(trx, ctx, emailId, { type: "flag", status: "applied", appliedAt: at(-30 * HOUR) });
+
+      const all = await statusMessage(depsAt(trx, T, { actionsScope: { kind: "all", mailboxAddress: address } }), link);
+      expect(all.text).toContain(
+        "Actions: real mail of the test mailbox (ACTIONS_SCOPE=all) · last 24 h: applied 2, undone 0, failed 1"
+      );
+      const synthetic = await statusMessage(depsAt(trx, T, { actionsScope: { kind: "synthetic" } }), link);
+      expect(synthetic.text).toContain("Actions: test mail only (ACTIONS_SCOPE=synthetic) · last 24 h: applied 2");
     });
   });
 
