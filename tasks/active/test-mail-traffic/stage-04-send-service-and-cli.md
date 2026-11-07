@@ -11,13 +11,18 @@ explicit env for `loadTestmailConfig`).
 
 - [ ] **4.1 Lock, log file I/O and the send service**
   - Goal: run a batch: plan, intent, display name, send with retries, sent/failed lines, pace, caps, exit code.
-  - Review units (task file "Run mode"): **4.1a** = `paths.ts`, `lock.ts`, `log-file.ts` and their tests (tests 15–16); **4.1b** = `send.ts` and `send.test.ts`
+  - Review units (task file "Run mode"): **4.1a** = `paths.ts`, `lock.ts`, `log-file.ts` and their tests (tests 15–16, `paths.test.ts`); **4.1b** = `send.ts` and `send.test.ts`
     (tests 1–14, 17). Build, review and commit 4.1a first.
   - Files: create `apps/server/src/modules/testmail/lock.ts`, `apps/server/src/modules/testmail/log-file.ts`, `apps/server/src/modules/testmail/send.ts`,
     `apps/server/src/modules/testmail/send.test.ts`, `apps/server/src/modules/testmail/lock.test.ts`, `apps/server/src/modules/testmail/log-file.test.ts`,
     `apps/server/src/modules/testmail/paths.ts`; change `apps/server/src/modules/testmail/index.ts`.
-  - Paths (`paths.ts`): `testmailPaths(root = process.env.TESTMAIL_ROOT ?? resolve(import.meta.dir, "../../../../.."))` (the repo root from `apps/server/src/modules/testmail/`) → `{ batchesDir, personasFile, targetFile, runsDir, lockFile, batchLog(id) }`
-    (D6). `process.env` is read only here and in the scripts.
+  - Paths (`paths.ts`): `testmailPaths(env = process.env)` → `{ batchesDir, personasFile, targetFile, runsDir, lockFile, batchLog(id) }` (D6).
+    `root` = `env.TESTMAIL_ROOT` when set, else `resolve(import.meta.dir, "../../../../..")` (the repo root from `apps/server/src/modules/testmail/`).
+    `runsDir` = `<root>/evals/.runs/testmail` when `TESTMAIL_ROOT` is set (tests), else `join(homedir(), ".local/state/ea-testmail")` (the same folder for the main
+    checkout and every worktree). `lockFile` = `<runsDir>/send.lock`, `batchLog(id)` = `<runsDir>/<id>.jsonl`. The runs folder is created with `mkdirSync(…, { recursive: true, mode: 0o700 })`
+    on first write. `process.env` is read only here and in the scripts.
+    Test (`paths.test.ts`, in 4.1a): with `{ TESTMAIL_ROOT: "/tmp/x" }` every path is under `/tmp/x`; with `{}` `runsDir` is `~/.local/state/ea-testmail` and
+    `batchesDir` ends with `evals/testmail/batches`.
   - Interfaces:
 
     ```ts
@@ -170,7 +175,7 @@ explicit env for `loadTestmailConfig`).
            bun run testmail:blind --batch <id> [--apply <labels.json> --checker <model id>]
            TEST_MAILBOX_ADDRESS=<address> bun run testmail:send --batch <id> [--limit n] [--interval-sec 30] [--daily-cap 50] [--dry-run]
            bun run testmail:status --batch <id>
-      Files: evals/testmail/{batches/,personas.json,target.json}, logs in evals/.runs/testmail/.
+      Files: evals/testmail/{batches/,personas.json,target.json}, logs and lock in ~/.local/state/ea-testmail/.
       send refuses every recipient except TEST_MAILBOX_ADDRESS, and TEST_MAILBOX_ADDRESS must equal testAddress in evals/testmail/target.json.
       Exit codes: 0 done, 1 error or a case needs a fix, 2 run again later.
     ```
@@ -193,7 +198,7 @@ explicit env for `loadTestmailConfig`).
       not matching `/^[^\s@]+@[^\s@]+\.[^\s@]+$/` → `TEST_MAILBOX_ADDRESS is not an address: send refused`; ends with `@agentmail.to` →
       `TEST_MAILBOX_ADDRESS is an AgentMail address: send refused`; ≠ `testAddress` of `target.json` (read with `remoteTargetSchema` below) →
       `TEST_MAILBOX_ADDRESS differs from evals/testmail/target.json: send refused`. Then `validateBatch` with
-      `requireBlind: true`; issues → print them, exit 1. Then the lock (`<runs-dir>/send.lock`), `readAllSendLogs` (`badFiles` not empty → `send log damaged: <file names>`, exit 1),
+      `requireBlind: true`; issues → print them, exit 1. Then the lock (`lockFile`, D6), `readAllSendLogs` (`badFiles` not empty → `send log damaged: <file names>`, exit 1),
       the batch log `batchLog(id)`. `--dry-run`: no API key needed, no HTTP call, no log line written: print the first plan of `planSends` (`would send <case> attempt <n>`,
       `skip <case> <reason>`), exit 0. Else `getInbox(<username>@agentmail.to)` (404 → `inbox not found: run bun run testmail:setup`, exit 1) and `runSend`.
       Print a summary: `sent <n>, recovered <n>, failed <n>, remaining <n>`, the failed and remaining case ids with reasons, and `stopped: <stoppedBy>` when set. Exit `result.exitCode`.

@@ -82,7 +82,8 @@ Docs and data only, no code. The runbook is the brief for every later agent that
        case, give the single best category. Do not guess what the writer meant; read only the mail and its thread. Output only JSON: `[{"id": "...", "category": "..."}]`."
     8. **Commands and exit codes**: a table of the commands (`testmail:setup|validate|blind|send|status|target`, `testmail:remote deliver [--check-only]`,
        `testmail:remote compare`) with their exit codes (D12).
-    9. **Files**: the table of D6 plus `evals/testmail/target.json`.
+    9. **Files**: the table of D6 plus `evals/testmail/target.json`. Say that the send logs and the lock live in `~/.local/state/ea-testmail/`, outside every
+       checkout, so a worktree removal never deletes them, and that nobody moves or deletes them.
     10. **Troubleshooting**: `send log damaged` (a bad line in the middle: stop and ask the user; never move, edit or delete a send log, because a lost log can
         resend every mail after 24 h); `duplicate_found` (two mails with one case label: report, no resend); `another testmail send runs` (check the pid with `ps -p <pid>`;
         when it is not a testmail run, ask the user); `inbox not found` (run setup); deliver keeps `not found` (run `bun run testmail:remote deliver --batch <id> --check-only`

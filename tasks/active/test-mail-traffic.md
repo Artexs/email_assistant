@@ -1,9 +1,10 @@
-> **Status 2026-11-07 — in progress — plan written; in-session cold review PASS; independent review (session 2) PASS after fixes (4 majors and 11 minors fixed, 1 minor accepted).** Left: the user's OK on the plan and on the 4 open defaults, then the build (stages 1–9).
+> **Status 2026-11-08 — in progress — plan approved by the user; build next in the worktree `../email_assistant-wt/test-mail-traffic` (branch `task/test-mail-traffic`).** Left: stages 1–9 (handoff `~/.pi/agent/notes/2026-11-08-handoff-test-mail-traffic-build.md`).
 
 # Test mail traffic: AgentMail synthetic mail utility
 
 Scope: test tooling for the Interia test mailbox (`TEST_MAILBOX_ADDRESS`); not a roadmap slice. Needs: the user's AgentMail account (Free plan) and its API key in the local `.env` (`AGENTMAIL_API_KEY`, set by the user on 2026-11-07).
 Facts and sources: `notes/2026-11-07-agentmail-test-mail.md` (§3 docs, §7–8 live probe).
+Git mode: worktree (user 2026-11-08: "prepare a handoff that will start implementing it in the separate work tree"; replaces the `master` exception in `tasks/README.md` § "Git mode").
 
 ## Goal
 
@@ -50,7 +51,7 @@ any write into `triage_feedback`; any change of the S3 go/no-go gate (`mailbox:s
 - [x] Stage files 1–9 written (2026-11-07).
 - [x] Cold review (reviewer subagent, Opus, high): FAIL (3 blockers, 12 majors, 22 minors), all fixed; re-review: PASS (13 minors, fixed). Record: [`test-mail-traffic/review-2026-11-07.md`](test-mail-traffic/review-2026-11-07.md).
 - [x] Independent review, separate session (Claude Code, Opus): 0 blockers, 4 majors, 12 minors; all fixed except one accepted minor. Record: [`test-mail-traffic/review-2026-11-07-session2.md`](test-mail-traffic/review-2026-11-07-session2.md).
-- [ ] User approval (plan and the open defaults).
+- [x] User approval (2026-11-08): "Plan is finished, everything is finished to start implementing it" and the worktree build (Git mode line).
 
 ### Input: user words (word for word, 2026-11-07)
 
@@ -109,7 +110,10 @@ All with source in `notes/2026-11-07-agentmail-test-mail.md` (§3 docs, §7–8 
   no `.env` value in the bundle because `--env` was not used).
 - The VPS is reachable from this PC as `ssh home_vm` (repo `~/email_assistant`, compose `docker compose -f deploy/compose.yaml --env-file .env`). The VPS runs
   an older server image (S2 era); the S3 deploy is S3 stage 19 (not done). The VPS DB has the migrations up to `20261107000002` (S3);
-  `20261108000001_delegation.sql` (S4) is not applied (notes §9).
+  `20261108000001_delegation.sql` (S4) is not applied (notes §9). **[stale 2026-11-08]** S4 is done and deployed on the VPS (`fa60c7b`, `SEND_SCOPE=all` since
+  2026-11-07 22:40Z, `tasks/done/s4-drafts-approvals-delegation.md`), so the VPS image, its classifier version and its migrations are newer now. Stage 9
+  reads `schema_migrations` again; compare prints the prompt versions. With S4 live, a test mail that the triage calls `delegation` can get a draft and a send
+  request: `ACTIONS_SCOPE=synthetic` (checked 2026-11-07) holds the draft of AgentMail mail back (it is not synthetic, D14), and every send needs the user's tap.
 - `platform/log.ts`: `info` and `debug` go to stdout (`console.log`), `warn` and `error` to stderr.
 - Pilot ids (`notes/2026-11-03-pilot-vps.md`): org `ac6ed6a2-ee37-461f-9632-cc08cf549e40`, mailbox `8bc7f572-a7f5-4fa5-aaab-db16dc663e96`, address `artekstryszowski@interia.pl` = `TEST_MAILBOX_ADDRESS` on the VPS.
 - stdin and the exit code pass through `ssh home_vm '… docker compose … run --rm -T -v …:ro server bun <file>'` (probe 2026-11-07: a JSON line in, exit 2 out).
@@ -173,10 +177,13 @@ All with source in `notes/2026-11-07-agentmail-test-mail.md` (§3 docs, §7–8 
   last name the tool set in this run or the inbox shows). The display name is for the user's view only (the app keeps the bare address).
   Rule for agents: never add a sender rule (`rules:add`) for the inbox address; it would hit every persona.
 - **D6 Files.** Batches: `evals/testmail/batches/<YYYY-MM-DD>-<slug>.json` (committed, made-up content). Personas: `evals/testmail/personas.json`.
-  Send logs: `evals/.runs/testmail/<batch>.jsonl` (outside git, `.gitignore` has `evals/.runs/`): ids, keys, hashes, times, codes, folder keys, and the persona inbox
-  address in `sent` lines; no subject, no body, no other address. Lock: `evals/.runs/testmail/send.lock`. Remote target and pinned recipient: `evals/testmail/target.json`.
-  Batch id = the file name without `.json`, regex `^\d{4}-\d{2}-\d{2}-[a-z0-9-]{1,40}$`. All these paths hang off one root: the repo root, or `TESTMAIL_ROOT` from
-  the environment (tests only). The CLIs have no per-path flags, so a real run cannot use a second log folder that the cap and the lock do not see.
+  Send logs: `~/.local/state/ea-testmail/<batch>.jsonl` (outside every checkout and outside git): ids, keys, hashes, times, codes, folder keys, and the persona inbox
+  address in `sent` lines; no subject, no body, no other address. Lock: `~/.local/state/ea-testmail/send.lock`. Why outside the checkout (2026-11-08, worktree
+  mode): `git worktree remove` would delete logs inside the worktree (a lost log can resend every mail after 24 h, D3), and a log per checkout would hide sends
+  from the daily cap and the lock. Remote target and pinned recipient: `evals/testmail/target.json`.
+  Batch id = the file name without `.json`, regex `^\d{4}-\d{2}-\d{2}-[a-z0-9-]{1,40}$`. The batch, persona and target files hang off the repo root of the
+  checkout that runs the CLI. `TESTMAIL_ROOT` from the environment (tests only) moves all paths, also the runs folder (`<root>/evals/.runs/testmail/`), into a
+  temp folder. The CLIs have no per-path flags, so a real run cannot use a second log folder that the cap and the lock do not see.
 - **D7 Batch rules (validate).** Schema in `packages/core/src/testmail/batch.ts` (stage 1). Each case: `id` (`^[a-z0-9-]{1,40}$`, unique), `persona` (a key in the persona
   file), `lang` (`pl` | `en`), `subject` (1–200 characters, no line break), `body` (1–6000 characters), `expected.category` (`urgent` | `needs_reply` | `info` |
   `notification` | `spam`), `blind.category` (same enum; missing = not yet labelled), optional `replyTo` (an earlier case id of the same batch, same persona or
@@ -235,7 +242,7 @@ All with source in `notes/2026-11-07-agentmail-test-mail.md` (§3 docs, §7–8 
 - States of a case: `due` → `intent` → `sent` | `failed`; `intent` → (crash) → resend same key | label lookup → `sent` | new attempt; any open intent with another
   hash → `changed`; child of a not-sent parent → `waiting`; child of a `failed`/`changed` parent → `blocked`. After `sent`: deliver → `moved` | `in_inbox` |
   `duplicate_removed` | `synced` | `not_found`; compare → `not_synced` | `not_triaged` | `triaged`.
-- Before the first run: no send log → every case `due`; no lock → create; the `evals/.runs/testmail/` folder is created on first use.
+- Before the first run: no send log → every case `due`; no lock → create; the runs folder (`~/.local/state/ea-testmail/`, D6) is created on first use (mode 0700).
 - Crash between the AgentMail call and the `sent` line: D3. Crash between COPY and EXPUNGE: D10.
 - Two runs at once: `send` lock (D8). Two `deliver` runs: the second gets `MailNotFoundError` from `moveMessage` → that case reports `not_found` this run and is
   `synced`/`in_inbox` next run. `compare` is read-only.
@@ -272,23 +279,28 @@ All with source in `notes/2026-11-07-agentmail-test-mail.md` (§3 docs, §7–8 
 - Integration tests: `withRollback` and `testDb` from `apps/server/test/integration/helpers.ts`; fixtures from `fixtures.ts` (`createOrgWithMailbox`, `insertTestEmail`,
   `insertTriaged`). Fake mail: `createFakeMailProvider` (`mail/fake`); the COPY path uses `capabilities: { move: false, uidplus: true }`.
 - Times in tests: fixed `Date` values; never `new Date()` in an assertion.
-- **Shared working tree.** The S3 and S4 builds use this checkout (S4 runs in pipeline mode on 2026-11-07). Start a build step of this plan only when `git status`
-  shows no change outside this task's files and no other session builds (the S3/S4 task status lines say blocked, waiting or done), or the user says go.
-  Stage and commit only this step's files, by explicit path. Before a push: `git fetch`, `git log HEAD..origin/master`; when the remote is ahead, `git pull --no-rebase`
-  (a merge; never rebase or force-push). Then `git log --oneline origin/master..HEAD`: push only when every commit ahead is of this task or already reviewed
-  and pushed by its owner's rules; else ask the user (incident 2026-11-07: the plan push also pushed 3 unreviewed S4 commits).
-  Every `git fetch`/`git push` on this PC: `GIT_SSH_COMMAND="ssh -i $HOME/.ssh/github -o IdentitiesOnly=yes" git …` (Facts checked).
+- **Worktree** (Git mode: worktree, `tasks/README.md` § "Git mode"). Build in `../email_assistant-wt/test-mail-traffic` on branch `task/test-mail-traffic`
+  (from `origin/master`); every subagent call gets that folder as `cwd`; never edit, commit or run checks in the main checkout (other sessions work there).
+  Copy `.env` from the main checkout (never commit it), run `bun install`, and use an own database: `bun run db:worktree test-mail-traffic`, then put its two
+  printed env lines into the worktree `.env`; drop it with `--drop` when the task ends. GreenMail and the ports stay shared: before `bun run test:int` or
+  `db:migrate`, check that no other checkout runs them (`pgrep -af "bun test apps/server/test|dbmate"`); if one runs, wait.
+  Stage and commit only this task's files, by explicit path. Push with `git push -u origin task/test-mail-traffic`; to get new `master` work, `git merge origin/master`
+  in the branch (never rebase a pushed branch). Every `git fetch`/`git push` on this PC: `GIT_SSH_COMMAND="ssh -i $HOME/.ssh/github -o IdentitiesOnly=yes" git …`
+  (Facts checked).
 
 ### User checkpoints
 
-1. Before stage 9 (the first real send): the group reviews of stages 1–5 and 6–8 (Opus, high) must give PASS. The main session then gives the user a 4-line summary.
+1. Before stage 9 (the first real send): the group reviews of stages 1–5 and 6–8 (Opus, high) must give PASS. Then merge the branch into `master` (`tasks/README.md`
+   § "Git mode" step 3: `git merge origin/master` in the branch, checks pass, `git merge --no-ff task/test-mail-traffic` on `master` in the main checkout, push),
+   because `testmail:remote` bundles from `origin/master` only (D1). Stage 9 then runs in the worktree after `git merge origin/master`. The main session gives the
+   user a 4-line summary.
    Default: stage 9 starts without waiting (P8: the user lets the agent work alone); the user may say "stop" at plan approval to make this a hard stop.
 2. After stage 9: the user reads the compare report (in this file) and closes the task.
 
-### Open defaults (the user has not confirmed them yet)
+### Defaults in force (the user approved the plan on 2026-11-08 without changes to them)
 
 1. Stage 9 starts after the group reviews give PASS, without a stop for the user (checkpoint 1).
-2. The build starts only when the S3 and S4 sessions are idle (rule "Shared working tree"), unless the user says go.
+2. (Replaced 2026-11-08: the build runs in its own worktree, so it does not wait for other sessions; rule "Worktree".)
 3. Every test mail shows in the Telegram digest, and `urgent` ones send an urgent notice (about 5 per 25-mail batch).
 4. The user's Telegram feedback on test mail counts as real labels in `triage_feedback` until `tasks/planned/testmail-mail-kind.md` lands (D14).
 
@@ -343,3 +355,4 @@ Not yet (stage 9 writes the compare report here).
 - 2026-11-07: Plan written (9 stages, 6 `[risky]`). Cold review (Opus, high): FAIL, 3 blockers (unreviewed bundle on the VPS, send log damage → resend, free-text recipient), 12 majors, 22 minors; all fixed. Re-review (Opus, high): PASS with 13 minors, fixed. Waiting for the user's approval.
 - 2026-11-07: Independent review in a separate session (Claude Code, Opus; record `test-mail-traffic/review-2026-11-07-session2.md`): 0 blockers, 4 majors (git fetch fails with the default SSH key, `[risky]` stages with 2 steps, deliver could delete the only copy of a synced mail, no push check of foreign commits), 12 minors. All fixed in the plan files, except one accepted minor. Waiting for the user's approval.
 - 2026-11-07: Review session 2, live checks (read-only): the AgentMail label filter works; `status_until` is not documented and moves with activity; the `origin/master` config loads on the VPS. Moved from "Not verified" to "Facts checked".
+- 2026-11-08: The user approved the plan and chose a separate worktree for the build. Plan changes for it: Git mode worktree, rule "Worktree", send logs and lock in `~/.local/state/ea-testmail/` (D6), merge into `master` at checkpoint 1 (D1 bundles from `origin/master`). Noted that S4 is now deployed on the VPS (stale facts marked). Build handoff written.

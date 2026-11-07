@@ -16,7 +16,8 @@ On this PC every `git push` and every `bun run testmail:remote …` (it runs `gi
 
 - [ ] **9.1 Smoke run (3 mails) and the open facts**
   - Goal: prove the whole loop on 3 mails and settle the "Not verified" items before the big batch.
-  - Preconditions: the testmail code (stages 1–8) is pushed (`git log origin/master` has stage 8). Read-only on the VPS:
+  - Preconditions: the testmail code (stages 1–8) is merged into `master` and pushed (task file "User checkpoints" 1; `git log origin/master` has stage 8),
+    and the worktree branch has `git merge origin/master`. Run every command of this stage in the worktree. Read-only on the VPS:
     `ssh home_vm 'cd ~/email_assistant && docker compose -f deploy/compose.yaml --env-file .env exec -T db psql -U postgres -d email_assistant -At -c "select version from schema_migrations order by version"'`.
     The bundled code uses `mailboxes`, `mailbox_credentials`, `emails` and `triage_results` (all from migrations up to `20261104000001`); a missing one of those → stop.
   - Steps:
