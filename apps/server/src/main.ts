@@ -1,7 +1,8 @@
-import { createCommitterJob, isOwnActionId, type ActionsScope } from "./modules/actions";
+import { actionsScope, committerDeps, sendScope, uidplusOf } from "./composition";
+import { createCommitterJob, createExpiryJob, isOwnActionId } from "./modules/actions";
 import { createTelegramRuntime } from "./modules/channels";
-import { delegationHooks } from "./modules/delegation";
-import { createMailSyncJob, mailboxHasUidplus, openImapProvider } from "./modules/mail";
+import { createChaserJob, delegationHooks } from "./modules/delegation";
+import { createMailSyncJob, openImapProvider } from "./modules/mail";
 import { createLlmPause, createReturnedJob, createTriageJob, type TriageScope } from "./modules/triage";
 import { ConfigError, llmSettings, loadConfig, type Config } from "./platform/config";
 import { createSecretBox } from "./platform/crypto";
@@ -39,22 +40,6 @@ function triageScope(config: Config, providerLabel: string): TriageScope | null 
     return { kind: "synthetic" };
   }
   log.warn(`triage sends the real mail of the TEST_MAILBOX_ADDRESS mailbox to ${providerLabel} (TRIAGE_LLM_SCOPE=all)`);
-  return { kind: "all", mailboxAddress: config.TEST_MAILBOX_ADDRESS ?? "" };
-}
-
-// The one value goes to the committer and to the Telegram runtime. The config check guarantees the key that `all` needs.
-function actionsScope(config: Config): ActionsScope {
-  if (config.ACTIONS_SCOPE === "off") {
-    log.info("actions committer: mailbox changes are off (ACTIONS_SCOPE=off)");
-    return { kind: "off" };
-  }
-  if (config.ACTIONS_SCOPE === "synthetic") {
-    log.info("actions committer applies mailbox changes to synthetic mail only");
-    return { kind: "synthetic" };
-  }
-  log.warn(
-    "actions committer applies mailbox changes to the real mail of the TEST_MAILBOX_ADDRESS mailbox (ACTIONS_SCOPE=all)"
-  );
   return { kind: "all", mailboxAddress: config.TEST_MAILBOX_ADDRESS ?? "" };
 }
 
@@ -119,22 +104,33 @@ if (scope !== null) {
   });
 }
 
-// The runs of the committer and the returned job that are going now. Shutdown waits for them.
+// The runs of the committer, the returned job and the S4 jobs that are going now. Shutdown waits for them.
 let committerRun: Promise<void> = Promise.resolve();
 let returnedRun: Promise<void> = Promise.resolve();
+let expiryRun: Promise<void> = Promise.resolve();
+let chaserRun: Promise<void> = Promise.resolve();
 const scopeOfActions = actionsScope(config);
+const scopeOfSends = sendScope(config);
+const hooks = delegationHooks({ db });
+const uidplus = uidplusOf(db);
 // Always built: `save_summary` rows are applied under every scope.
-const committer = createCommitterJob({
-  db,
-  secrets,
-  openProvider: openImapProvider,
-  scope: scopeOfActions,
-  now: () => new Date(),
-});
+const committer = createCommitterJob(committerDeps({ db, secrets, scope: scopeOfActions, sendScope: scopeOfSends }));
 scheduler.add("actions.committer", "*/15 * * * * *", () => {
   committerRun = committer.run();
   return committerRun;
 });
+const expiry = createExpiryJob({ db, now: () => new Date(), hooks, uidplus });
+scheduler.add("actions.expiry", "0 7 * * * *", () => {
+  expiryRun = expiry.run();
+  return expiryRun;
+});
+log.info("actions expiry: hourly");
+const chaser = createChaserJob({ db, now: () => new Date() });
+scheduler.add("delegation.chaser", "20 */15 * * * *", () => {
+  chaserRun = chaser.run();
+  return chaserRun;
+});
+log.info("delegation chaser: every 15 min (acts at 07:30 local)");
 const returned = createReturnedJob({ db, now: () => new Date() });
 scheduler.add("triage.returned", "*/15 * * * * *", () => {
   returnedRun = returned.run();
@@ -157,10 +153,9 @@ if (config.TELEGRAM_BOT_TOKEN === undefined) {
     triageScope: config.TRIAGE_LLM_SCOPE,
     actionsScope: scopeOfActions,
     llm: { provider: settings.provider, classifierModel: settings.classifierModel },
-    hooks: delegationHooks({ db }),
-    uidplus: (ctx, mailboxId) => mailboxHasUidplus(db, ctx, mailboxId),
-    // Stage 18 reads SEND_SCOPE; until then no send is admitted.
-    sendScope: { kind: "off" },
+    hooks,
+    uidplus,
+    sendScope: scopeOfSends,
   });
   telegram = runtime;
   scheduler.add("channels.notifier", "*/15 * * * * *", () => {
@@ -193,7 +188,7 @@ async function shutdown(): Promise<void> {
   }
   // A kill in the middle of a batch makes the next start count an attempt for each claimed mail. Wait for the batch, but not for ever.
   await Promise.race([
-    Promise.allSettled([triageRun, committerRun, returnedRun, channelRun, digestRun]),
+    Promise.allSettled([triageRun, committerRun, returnedRun, expiryRun, chaserRun, channelRun, digestRun]),
     sleep(SHUTDOWN_WAIT_MS),
   ]);
   await server.stop();

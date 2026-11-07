@@ -262,6 +262,6 @@ export async function setToolSwitch(
     event: auditEvents.mailboxSwitchChanged,
     data: { field: `switch.${input.name}`, from: before.toolSwitches[input.name], to: input.value },
     close: { field: "switch", name: input.name, to: input.value },
-    warnings: input.name === "create_draft" ? ["create_draft: S4, no effect yet"] : [],
+    warnings: [],
   }));
 }

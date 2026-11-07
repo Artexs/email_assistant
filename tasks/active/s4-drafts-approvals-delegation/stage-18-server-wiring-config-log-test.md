@@ -4,7 +4,7 @@ Part of [`../s4-drafts-approvals-delegation.md`](../s4-drafts-approvals-delegati
 
 ## Stage 18 — Server wiring: `SEND_SCOPE`, `SEND_TEST_ADDRESSES`, the jobs, the sender factory, the log test [risky]
 
-- [ ] **18.1 Config keys, `main.ts`, the composition of the deps (D16, D29, D31)**
+- [x] **18.1 Config keys, `main.ts`, the composition of the deps (D16, D29, D31)**
   - Goal: the server runs the committer with the SMTP sender and the scopes, the expiry job and the chaser, and passes the S4 deps to Telegram; a bad scope config stops the start.
   - Files: change `apps/server/src/platform/config.ts`, `config.test.ts`, `.env.example`, `apps/server/src/main.ts`, `apps/server/src/modules/actions/committer.ts` (the S4 deps), `apps/server/src/modules/channels/telegram/runtime.ts`, `apps/server/src/modules/config/service.ts` (`setToolSwitch`, `service.ts:265`: drop the warning `"create_draft: S4, no effect yet"`, so `warnings` is `[]` for every switch; `scripts/mailbox-settings.ts:44` only prints the list and does not change; M3), `apps/server/test/integration/config-settings.test.ts` (the test of that warning at `:162` expects no warning now), `deploy/README.md` (the two keys in the env list; the full section comes in stage 21).
   - Interfaces:
@@ -33,7 +33,7 @@ Part of [`../s4-drafts-approvals-delegation.md`](../s4-drafts-approvals-delegati
   - Done when: the tests pass and the manual start shows the lines.
   - Out of scope: the VPS `.env` (stage 22).
 
-- [ ] **18.2 Log test: no mail data in the S4 log lines (D30)**
+- [x] **18.2 Log test: no mail data in the S4 log lines (D30)**
   - Goal: a test proves that the committer (drafts and sends), the notifier (approvals and results), the expiry job, the chaser and the taps log no recipient, subject, task, draft text, SMTP reply text or secret, and that the expected lines appear.
   - Files: create `apps/server/test/integration/actions-send-logs.test.ts` (the pattern of `actions-logs.test.ts` of S3 stage 15.2: capture the `log` output for the test's duration).
   - Decisions:
