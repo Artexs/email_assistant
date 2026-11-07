@@ -191,6 +191,7 @@ describe("backfillInbox", () => {
     await withRollback(db, async (trx) => {
       const s = await syncedMailbox(trx);
       const provider: MailProvider = {
+        ...s.fake,
         serverInfo: () => s.fake.serverInfo(),
         inboxStatus: () => s.fake.inboxStatus(),
         fetchAbove: (lastUid) => s.fake.fetchAbove(lastUid),

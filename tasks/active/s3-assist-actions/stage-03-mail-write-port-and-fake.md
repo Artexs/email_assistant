@@ -4,7 +4,7 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 
 ## Stage 3 — Mail write port, fake provider, contract cases [risky]
 
-- [ ] **3.1 Port methods and the fake provider (D1)**
+- [x] **3.1 Port methods and the fake provider (D1)**
   - Goal: `MailProvider` can read and write in any folder; the fake behaves like a server with or without MOVE and UIDPLUS, and like a server that keeps the UID on a copy on request (checkpoint 1: an Interia protocol COPY gets a new UID; only an Interia webmail move keeps it; the option stays as the harder case for the tests).
   - Files: change `apps/server/src/modules/mail/port.ts`, `apps/server/src/modules/mail/fake/index.ts`, `apps/server/src/modules/mail/fake/fake.test.ts`, `apps/server/test/contract/mail-provider.ts`, `apps/server/src/modules/mail/index.ts`, `apps/server/src/modules/mail/imap/client.ts` (stub methods only, see Decisions).
   - Interfaces (`port.ts`; every folder argument is a real folder path; `INBOX` is the constant):

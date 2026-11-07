@@ -1,11 +1,14 @@
 import { HardError } from "../../../platform/errors";
 import {
   INBOX,
+  MailNotFoundError,
+  type FolderMessageMeta,
   type InboxStatus,
   type MailCapabilities,
   type MailProvider,
   type MailServerInfo,
   type MessageMeta,
+  type MoveResult,
 } from "../port";
 import { renderSeedMessage, type SeedMessage } from "../seed";
 
@@ -30,6 +33,10 @@ export interface FakeMailProviderOptions {
   bodyLimitBytes?: number;
   /** Mimic the RFC 3501 `n:*` rule (default true). */
   starQuirk?: boolean;
+  /** A copied message keeps its UID in the target when that UID is free there (default false). */
+  keepUidOnCopy?: boolean;
+  /** `moveMessage` returns `newUid`; false mimics a server without COPYUID (default true). */
+  copyUidMap?: boolean;
 }
 
 interface StoredMessage {
@@ -37,6 +44,7 @@ interface StoredMessage {
   size: number;
   internalDate: Date;
   msg: SeedMessage;
+  flags: Set<string>;
 }
 
 interface Folder {
@@ -71,6 +79,10 @@ function toMeta(stored: StoredMessage): MessageMeta {
   };
 }
 
+function toFolderMeta(stored: StoredMessage): FolderMessageMeta {
+  return { ...toMeta(stored), flags: [...stored.flags].sort() };
+}
+
 function utcDay(date: Date): number {
   return Math.floor(date.getTime() / 86_400_000);
 }
@@ -85,6 +97,8 @@ function stripTags(html: string): string {
 export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): FakeMailProvider {
   const bodyLimitBytes = opts.bodyLimitBytes ?? 5_000_000;
   const starQuirk = opts.starQuirk ?? true;
+  const keepUidOnCopy = opts.keepUidOnCopy ?? false;
+  const copyUidMap = opts.copyUidMap ?? true;
   const capabilities: MailCapabilities = {
     idle: true,
     move: true,
@@ -118,12 +132,33 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
     throw failure.error;
   }
 
-  function store(folder: string, msg: SeedMessage, internalDate: Date, size: number): number {
+  function store(
+    folder: string,
+    msg: SeedMessage,
+    internalDate: Date,
+    size: number,
+    flags: Iterable<string> = [],
+    keepUid?: number
+  ): number {
     const target = folderOf(folder);
-    const uid = target.uidNext;
-    target.uidNext += 1;
-    target.messages.push({ uid, size, internalDate, msg });
+    const uid = keepUid !== undefined && !target.messages.some((m) => m.uid === keepUid) ? keepUid : target.uidNext;
+    target.uidNext = Math.max(target.uidNext, uid + 1);
+    target.messages.push({ uid, size, internalDate, msg, flags: new Set(flags) });
     return uid;
+  }
+
+  /** Copies the message to `toFolder`, then removes the source. */
+  function relocate(stored: StoredMessage, fromFolder: string, toFolder: string): number {
+    const newUid = store(
+      toFolder,
+      stored.msg,
+      stored.internalDate,
+      stored.size,
+      stored.flags,
+      keepUidOnCopy ? stored.uid : undefined
+    );
+    provider.remove(fromFolder, stored.uid);
+    return newUid;
   }
 
   function find(folder: string, uid: number): StoredMessage | undefined {
@@ -142,8 +177,7 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
     userMove(fromFolder, uid, toFolder) {
       const stored = find(fromFolder, uid);
       if (!stored) throw new HardError(`No message ${uid} in ${fromFolder}`);
-      provider.remove(fromFolder, uid);
-      return store(toFolder, stored.msg, stored.internalDate, stored.size);
+      return relocate(stored, fromFolder, toFolder);
     },
 
     remove(folder, uid) {
@@ -221,6 +255,64 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
       enter("findByMessageId");
       const found = folders.get(folder)?.messages.find((m) => m.msg.messageId === messageId);
       return found?.uid ?? null;
+    },
+
+    async ensureFolder(name) {
+      enter("ensureFolder");
+      folderOf(name);
+      return name;
+    },
+
+    async fetchMetaIn(folder, uid) {
+      enter("fetchMetaIn");
+      const stored = find(folder, uid);
+      return stored ? toFolderMeta(stored) : null;
+    },
+
+    async searchSinceIn(folder, since) {
+      enter("searchSinceIn");
+      const day = utcDay(since);
+      return (folders.get(folder)?.messages ?? [])
+        .filter((m) => utcDay(m.internalDate) >= day)
+        .map((m) => m.uid)
+        .sort((a, b) => a - b);
+    },
+
+    async fetchByUidsIn(folder, uids) {
+      enter("fetchByUidsIn");
+      const wanted = new Set(uids);
+      return (folders.get(folder)?.messages ?? [])
+        .filter((m) => wanted.has(m.uid))
+        .sort((a, b) => a.uid - b.uid)
+        .map(toFolderMeta);
+    },
+
+    async moveMessage(fromFolder, uid, toFolder): Promise<MoveResult> {
+      enter("moveMessage");
+      const stored = find(fromFolder, uid);
+      if (!stored) throw new MailNotFoundError(`No message ${uid} in the source folder`);
+      // Same order as a server: fetch, then the UIDPLUS check for the copy+delete path, then the write.
+      if (!capabilities.move && !capabilities.uidplus) throw new HardError("no UIDPLUS");
+      if (!folders.has(toFolder)) throw new HardError("NO [TRYCREATE]");
+      // Both paths end in the same state; without MOVE a real server copies, then deletes.
+      const newUid = relocate(stored, fromFolder, toFolder);
+      return { newUid: copyUidMap && capabilities.uidplus ? newUid : null };
+    },
+
+    async deleteMessage(folder, uid) {
+      enter("deleteMessage");
+      if (!capabilities.uidplus) throw new HardError("no UIDPLUS");
+      if (!find(folder, uid)) return false;
+      provider.remove(folder, uid);
+      return true;
+    },
+
+    async setFlags(folder, uid, change) {
+      enter("setFlags");
+      const stored = find(folder, uid);
+      if (!stored) throw new MailNotFoundError(`No message ${uid} in the folder`);
+      for (const flag of change.add ?? []) stored.flags.add(flag);
+      for (const flag of change.remove ?? []) stored.flags.delete(flag);
     },
 
     async close() {

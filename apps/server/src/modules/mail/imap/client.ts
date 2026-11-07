@@ -11,11 +11,13 @@ import { createLog } from "../../../platform/log";
 import {
   INBOX,
   MailAuthError,
+  type FolderMessageMeta,
   type InboxStatus,
   type MailCapabilities,
   type MailProvider,
   type MailServerInfo,
   type MessageMeta,
+  type MoveResult,
 } from "../port";
 
 import { bodyTextFromSource, toMessageMeta } from "./mapper";
@@ -245,6 +247,35 @@ class ImapMailProvider implements MailProvider {
         lock.release();
       }
     });
+  }
+
+  // The seven methods below are built in stage 4.
+  ensureFolder(_name: string): Promise<string> {
+    return Promise.reject(new HardError("not built until stage 4"));
+  }
+
+  fetchMetaIn(_folder: string, _uid: number): Promise<FolderMessageMeta | null> {
+    return Promise.reject(new HardError("not built until stage 4"));
+  }
+
+  searchSinceIn(_folder: string, _since: Date): Promise<number[]> {
+    return Promise.reject(new HardError("not built until stage 4"));
+  }
+
+  fetchByUidsIn(_folder: string, _uids: number[]): Promise<FolderMessageMeta[]> {
+    return Promise.reject(new HardError("not built until stage 4"));
+  }
+
+  moveMessage(_fromFolder: string, _uid: number, _toFolder: string): Promise<MoveResult> {
+    return Promise.reject(new HardError("not built until stage 4"));
+  }
+
+  deleteMessage(_folder: string, _uid: number): Promise<boolean> {
+    return Promise.reject(new HardError("not built until stage 4"));
+  }
+
+  setFlags(_folder: string, _uid: number, _change: { add?: string[]; remove?: string[] }): Promise<void> {
+    return Promise.reject(new HardError("not built until stage 4"));
   }
 
   async close(): Promise<void> {

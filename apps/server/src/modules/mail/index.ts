@@ -8,12 +8,15 @@ export { verifySmtpLogin, type SmtpConnectOptions } from "./imap/smtp";
 export {
   INBOX,
   MailAuthError,
+  MailNotFoundError,
+  type FolderMessageMeta,
   type InboxStatus,
   type MailCapabilities,
   type MailFolder,
   type MailProvider,
   type MailServerInfo,
   type MessageMeta,
+  type MoveResult,
 } from "./port";
 export {
   changeMailboxStatus,

@@ -111,6 +111,7 @@ async function cursorOf(trx: Db | Transaction<DB>, mailboxId: string) {
 function onBodyCall(fake: FakeMailProvider, hook: (call: number) => Promise<void>): MailProvider {
   let call = 0;
   return {
+    ...fake,
     serverInfo: () => fake.serverInfo(),
     inboxStatus: () => fake.inboxStatus(),
     fetchAbove: (lastUid) => fake.fetchAbove(lastUid),
@@ -141,6 +142,7 @@ function afterFirstCall(
     return value;
   };
   return {
+    ...fake,
     serverInfo: () => fake.serverInfo(),
     inboxStatus: async () => {
       const status = await fake.inboxStatus();
