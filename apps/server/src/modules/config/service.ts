@@ -59,9 +59,9 @@ type Change =
 // Follows `decidePolicy`. null = the change closes no gate.
 export function closedBy(
   change: Change
-): { types: MailboxActionType[]; category?: { is: string } | { not: string } } | null {
+): { types: MailboxActionType[]; category?: { is: string } | { not: string }; sends?: true } | null {
   if (change.field === "mode") {
-    return change.to === "shadow" ? { types: ["move", "mark_read", "flag"] } : null;
+    return change.to === "shadow" ? { types: ["move", "mark_read", "flag"], sends: true } : null;
   }
   if (change.field === "auto") {
     // A higher threshold with `auto` on: fail-safe, the rows planned under the old threshold expire too.
@@ -82,7 +82,7 @@ export function closedBy(
     case "flag":
       return { types: ["flag"] };
     case "create_draft":
-      return null;
+      return { types: [], sends: true };
   }
 }
 

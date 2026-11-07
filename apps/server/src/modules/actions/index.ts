@@ -47,6 +47,7 @@ export {
   getSend,
   insertReverse,
   isOwnActionId,
+  listAwaitingSendIds,
   listActionsForEmail,
   listActionsForEmails,
   listFailedUnnotified,
@@ -96,6 +97,15 @@ export {
   type SendScope,
 } from "./scope";
 export { expireReady } from "./expire";
-export { closeDraftOfSend, expireReminderActions, expireSend, type SendCloseReason } from "./expiry";
+export {
+  closeDraftOfSend,
+  createExpiryJob,
+  EXPIRY_BATCH,
+  expireReminderActions,
+  expireSend,
+  UNNOTIFIED_TTL_MS,
+  type ExpiryDeps,
+  type SendCloseReason,
+} from "./expiry";
 export { noDelegationHooks, type DelegationHooks } from "./hooks";
 export { undo, type UndoResult } from "./undo";

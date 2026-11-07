@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
-import { expireReady } from "../../src/modules/actions";
+import { expireReady, getSend, noDelegationHooks, type DelegationHooks } from "../../src/modules/actions";
 import {
   closedBy,
   getMovesSupported,
@@ -13,10 +13,11 @@ import {
   updateMailboxSettings,
   type SettingsDeps,
 } from "../../src/modules/config";
+import { mailboxHasUidplus } from "../../src/modules/mail";
 import type { DB, TenantContext } from "../../src/platform/db";
 import { HardError } from "../../src/platform/errors";
 
-import { createOrgWithMailbox, insertTriagedWithActions } from "./fixtures";
+import { createOrgWithMailbox, insertDraftAndSend, insertTriagedWithActions } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -30,15 +31,35 @@ const GO = { decision: "go", precision: 0.99, kept: 40, forced: false } as const
 
 interface Setup {
   ctx: TenantContext;
+  userId: string;
   mailboxId: string;
   deps: SettingsDeps;
+  cancelled: { delegationId: string; reason: string }[];
 }
 
 async function setup(trx: Transaction<DB>): Promise<Setup> {
   const box = await createOrgWithMailbox(trx);
   const ctx = { orgId: box.orgId };
   await insertDefaultSettings(trx, ctx, box.mailboxId);
-  return { ctx, mailboxId: box.mailboxId, deps: { db: trx, now: () => NOW, expireReady } };
+  const cancelled: Setup["cancelled"] = [];
+  const hooks: DelegationHooks = {
+    ...noDelegationHooks,
+    onCancelled: async (_trx, _ctx, input) => {
+      cancelled.push({ delegationId: input.delegationId, reason: input.reason });
+      return true;
+    },
+  };
+  // The composition root wraps `expireReady` with the send close (S4 D13).
+  const deps: SettingsDeps = {
+    db: trx,
+    now: () => NOW,
+    expireReady: async (t, c, filter, opts) =>
+      expireReady(t, c, filter, {
+        ...opts,
+        sendClose: { hooks, uidplus: await mailboxHasUidplus(t, c, filter.mailboxId) },
+      }),
+  };
+  return { ctx, userId: box.userId, mailboxId: box.mailboxId, deps, cancelled };
 }
 
 async function auditRows(trx: Transaction<DB>, s: Setup, event: string) {
@@ -369,9 +390,125 @@ describe("gate close (B3)", () => {
   });
 });
 
+const DELEGATION_A = "11111111-1111-4111-8111-111111111111";
+const DELEGATION_B = "22222222-2222-4222-8222-222222222222";
+
+// A `ready` draft + send pair, an `applied` draft + send pair, and an `approved` send.
+async function sendPairs(trx: Transaction<DB>, s: Setup) {
+  const createdAt = new Date(NOW.getTime() - 3_600_000);
+  const ready = await insertDraftAndSend(trx, s.ctx, s.mailboxId, {
+    draftStatus: "ready",
+    delegationId: DELEGATION_A,
+    createdAt,
+  });
+  const applied = await insertDraftAndSend(trx, s.ctx, s.mailboxId, {
+    delegationId: DELEGATION_B,
+    draftProviderResult: { folder: "Drafts", uid: 7 },
+    createdAt,
+  });
+  const approved = await insertDraftAndSend(trx, s.ctx, s.mailboxId, {
+    sendStatus: "approved",
+    approved: { userId: s.userId, at: createdAt },
+    draftProviderResult: { folder: "Drafts", uid: 8 },
+    createdAt,
+  });
+  return { ready, applied, approved };
+}
+
+async function expectSendsClosed(trx: Transaction<DB>, s: Setup, p: Awaited<ReturnType<typeof sendPairs>>) {
+  expect(await getSend(trx, s.ctx, p.ready.sendId)).toMatchObject({
+    status: "expired",
+    status_reason: "policy_changed",
+  });
+  expect(await getSend(trx, s.ctx, p.applied.sendId)).toMatchObject({
+    status: "expired",
+    status_reason: "policy_changed",
+  });
+  const readyDraft = await trx
+    .selectFrom("actions")
+    .select("status")
+    .where("id", "=", p.ready.draftId)
+    .executeTakeFirstOrThrow();
+  expect(readyDraft.status).toBe("expired");
+  const reverses = await trx
+    .selectFrom("actions")
+    .select(["id", "status"])
+    .where("reverses_action_id", "in", [p.ready.draftId, p.applied.draftId])
+    .execute();
+  expect(reverses).toHaveLength(1);
+  expect((await getSend(trx, s.ctx, p.approved.sendId))?.status).toBe("approved");
+  expect(s.cancelled.map((call) => call.delegationId).sort()).toEqual([DELEGATION_A, DELEGATION_B]);
+  expect(s.cancelled.every((call) => call.reason === "expired")).toBe(true);
+}
+
+describe("gate close for sends (S4 D13, D33)", () => {
+  test("(15) create_draft off closes the awaiting sends and their drafts", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      await setToolSwitch(s.deps, s.ctx, s.mailboxId, { name: "create_draft", value: true, actor: "cli" });
+      const p = await sendPairs(trx, s);
+
+      const result = await setToolSwitch(s.deps, s.ctx, s.mailboxId, {
+        name: "create_draft",
+        value: false,
+        actor: "cli",
+      });
+
+      expect(result.expired).toBe(2);
+      await expectSendsClosed(trx, s, p);
+    });
+  });
+
+  test("(16) mode shadow closes the sends and the mailbox rows", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      await setMode(s.deps, s.ctx, s.mailboxId, { mode: "assist", keepSwitches: false, actor: "cli" });
+      const mail = await readyMail(trx, s, "info", ["move"]);
+      const p = await sendPairs(trx, s);
+
+      const result = await setMode(s.deps, s.ctx, s.mailboxId, { mode: "shadow", keepSwitches: false, actor: "cli" });
+
+      expect(result.expired).toBe(3);
+      expect(await statuses(trx, mail.emailId)).toMatchObject({ move: "expired" });
+      await expectSendsClosed(trx, s, p);
+    });
+  });
+
+  test("(17) mode assist and a switch on close no send", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      await setToolSwitch(s.deps, s.ctx, s.mailboxId, { name: "create_draft", value: true, actor: "cli" });
+      const p = await sendPairs(trx, s);
+
+      const on = await setToolSwitch(s.deps, s.ctx, s.mailboxId, { name: "flag", value: true, actor: "cli" });
+      const assist = await setMode(s.deps, s.ctx, s.mailboxId, { mode: "assist", keepSwitches: false, actor: "cli" });
+
+      expect(on.expired).toBe(0);
+      expect(assist.expired).toBe(0);
+      expect((await getSend(trx, s.ctx, p.ready.sendId))?.status).toBe("awaiting_approval");
+      expect((await getSend(trx, s.ctx, p.applied.sendId))?.status).toBe("awaiting_approval");
+      expect(s.cancelled).toEqual([]);
+    });
+  });
+
+  test("(18) expireReady with sends and no sendClose throws", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      await expect(
+        expireReady(
+          trx,
+          s.ctx,
+          { mailboxId: s.mailboxId, types: [], sends: true },
+          { now: NOW, reason: "manual", actor: "cli" }
+        )
+      ).rejects.toBeInstanceOf(HardError);
+    });
+  });
+});
+
 describe("closedBy", () => {
   test("follows decidePolicy", () => {
-    expect(closedBy({ field: "mode", to: "shadow" })).toEqual({ types: ["move", "mark_read", "flag"] });
+    expect(closedBy({ field: "mode", to: "shadow" })).toEqual({ types: ["move", "mark_read", "flag"], sends: true });
     expect(closedBy({ field: "mode", to: "assist" })).toBeNull();
     const info = { types: ["move", "mark_read"], category: { is: "info" } };
     expect(closedBy({ field: "auto", category: "info", to: false, thresholdRaised: false })).toEqual(
@@ -391,7 +528,7 @@ describe("closedBy", () => {
     });
     expect(closedBy({ field: "switch", name: "mark_read", to: false })).toEqual({ types: ["mark_read"] });
     expect(closedBy({ field: "switch", name: "flag", to: false })).toEqual({ types: ["flag"] });
-    expect(closedBy({ field: "switch", name: "create_draft", to: false })).toBeNull();
+    expect(closedBy({ field: "switch", name: "create_draft", to: false })).toEqual({ types: [], sends: true });
     expect(closedBy({ field: "switch", name: "flag", to: true })).toBeNull();
   });
 });

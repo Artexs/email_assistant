@@ -14,7 +14,7 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 import { mailKindFilter } from "../mail";
 
-import { APPROVAL_TTL_MS } from "./constants";
+import { APPROVAL_TTL_MS, UNNOTIFIED_TTL_MS } from "./constants";
 
 type DbOrTrx = Db | Transaction<DB>;
 
@@ -974,6 +974,8 @@ export interface ExpireFilter {
   types: readonly MailboxActionType[];
   // The category of the newest triage_results row of the mail.
   category?: { is: string } | { not: string };
+  // Also close the `awaiting_approval` sends of the mailbox (and their drafts): `expireReady` does it (S4 D13, D33).
+  sends?: true;
 }
 
 // A row that a committer run holds now (`locked_at` >= `staleBefore`) stays: it ends as `applied` and keeps its Undo.
@@ -1463,8 +1465,6 @@ export async function markResultNotified(db: DbOrTrx, ctx: TenantContext, id: st
   return result.numUpdatedRows > 0n;
 }
 
-const NOT_NOTIFIED_AFTER_MS = 7 * 24 * 3_600_000;
-
 type ExpiredReason = "timeout" | "draft_missing" | "not_notified" | "held_timeout";
 
 // D22: the sends of one mailbox that the expiry job closes, each with the first reason that applies.
@@ -1475,7 +1475,7 @@ export async function listExpiredApprovals(
   opts: { now: Date; limit: number; staleBefore: Date }
 ): Promise<{ id: string; reason: ExpiredReason }[]> {
   const ttlBefore = new Date(opts.now.getTime() - APPROVAL_TTL_MS);
-  const createdBefore = new Date(opts.now.getTime() - NOT_NOTIFIED_AFTER_MS);
+  const createdBefore = new Date(opts.now.getTime() - UNNOTIFIED_TTL_MS);
   const result = await sql<{ id: string; reason: ExpiredReason }>`
     select id, reason from (
       select a.id, a.created_at,
@@ -1498,6 +1498,30 @@ export async function listExpiredApprovals(
     limit ${opts.limit}
   `.execute(db);
   return result.rows;
+}
+
+// The `awaiting_approval` sends of one mailbox, oldest first. The caller locks each one (`expireSend`).
+export async function listAwaitingSendIds(
+  trx: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { emailId?: string } = {}
+): Promise<{ id: string; emailId: string }[]> {
+  const { emailId } = opts;
+  const rows = await trx
+    .selectFrom("actions")
+    .select(["id", "email_id"])
+    .where("org_id", "=", ctx.orgId)
+    .where("type", "=", "send")
+    .where("status", "=", "awaiting_approval")
+    .where("email_id", "in", (eb) =>
+      eb.selectFrom("emails").select("id").where("org_id", "=", ctx.orgId).where("mailbox_id", "=", mailboxId)
+    )
+    .$if(emailId !== undefined, (qb) => qb.where("email_id", "=", emailId as string))
+    .orderBy("created_at")
+    .orderBy("id")
+    .execute();
+  return rows.map((row) => ({ id: row.id, emailId: row.email_id }));
 }
 
 // For /status and the held-send warning (D16): the whole organization.

@@ -37,6 +37,7 @@ export {
   getMailbox,
   listFolderUids,
   listMailboxes,
+  listMailboxTargets,
   listReturned,
   listSyncTargets,
   listThreadContext,
