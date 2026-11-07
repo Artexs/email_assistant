@@ -10,6 +10,10 @@ describe("cutText", () => {
     expect(cutText("a\u0000b", 10)).toBe("a b");
   });
 
+  test("removes the Arabic letter mark", () => {
+    expect(cutText("ab\u061ccd", 10)).toBe("abcd");
+  });
+
   test("removes bidi override characters", () => {
     expect(cutText("ab\u202ecd", 10)).toBe("abcd");
   });
