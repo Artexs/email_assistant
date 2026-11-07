@@ -207,10 +207,20 @@ Prerequisites:
 
 Steps:
 
-1. Create the database as `postgres` on the dev Postgres. The roles `migrator` and `app` exist already (they belong to the cluster). Then give them the grants of `db/roles.sql` (the init script is `deploy/db-init/10-roles.sh`):
+1. Run `bun run db:worktree <name>`. The name has lower-case letters, digits, `_` and `-` (`-` becomes `_`). The script does these steps:
+   - It creates `email_assistant_<name>` as `postgres` (password `POSTGRES_PASSWORD` from `.env`).
+   - It marks the database with the comment `db:worktree`. It refuses a database that it did not create.
+   - It gives the grants of `db/roles.sql` to `migrator` and `app`. These roles belong to the cluster and exist already.
+   - It runs `db:migrate`.
+   - It prints `DATABASE_URL=…` and `MIGRATOR_DATABASE_URL=…` for the own database.
+
+   If the script stops between `CREATE DATABASE` and `COMMENT ON DATABASE`, the database has no mark. The script then refuses it. Drop it by hand as `postgres`.
+
+   Manual steps (what the script does):
 
 ```sql
 CREATE DATABASE email_assistant_<name>;
+COMMENT ON DATABASE email_assistant_<name> IS 'db:worktree'; -- the mark: the script reuses and drops only marked databases
 GRANT CONNECT ON DATABASE email_assistant_<name> TO migrator, app;
 -- connect to email_assistant_<name>, then:
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
@@ -218,9 +228,9 @@ GRANT USAGE, CREATE ON SCHEMA public TO migrator;
 GRANT USAGE ON SCHEMA public TO app;
 ```
 
-2. Migrate: `MIGRATOR_DATABASE_URL=<…/email_assistant_<name>> bun run db:migrate`.
+2. The script ran the migrations. After a new migration, run `bun run db:worktree <name>` again. It reuses the database.
 3. Start the server on another port, without `--watch`: `bun apps/server/src/main.ts`. Override these env keys (they win over `.env`):
-   - `DATABASE_URL` and `MIGRATOR_DATABASE_URL`: the own database
+   - `DATABASE_URL` and `MIGRATOR_DATABASE_URL`: the two lines that the script printed
    - `PORT`: for example `8081`
    - `TELEGRAM_API_ROOT=http://127.0.0.1:8090` and `TELEGRAM_BOT_TOKEN=<FAKE_TOKEN>`
    - `TRIAGE_LLM_SCOPE=synthetic` and `ACTIONS_SCOPE=synthetic`
@@ -233,7 +243,7 @@ GRANT USAGE ON SCHEMA public TO app;
 6. Seed one urgent mail: `GM_USER=<GreenMail user> bun tools/fake-telegram/scripts/seed-urgent.ts`. It prints the subject and the Message-ID. Then `fake-tg wait "Urgent mail" --timeout 600`.
 7. Send `/digest`, then `fake-tg press --button "↩️ 1"` (read the real button text with `fake-tg read`).
 8. Check the result: `DATABASE_URL=<the own database> GM_USER=<GreenMail user> bun tools/fake-telegram/scripts/check-undo.ts`. It prints the `actions` rows, the `triage_feedback` count per source and the INBOX flags of each mail. Exit code 0 means: the original action is `undone`, a reverse action is `applied`, an `undo` feedback row exists and no mail has `\Flagged`.
-9. At the end: stop the server, then the fake. Run `telegram:unlink`. Then `DROP DATABASE email_assistant_<name>;` as `postgres`.
+9. At the end: stop the server, then the fake. Run `telegram:unlink`. Then run `bun run db:worktree <name> --drop`. It fails while a server or a test still uses the database.
 
 Rules and timing:
 

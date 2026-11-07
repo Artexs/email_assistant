@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress.** Plan written (5 stages), Opus plan review PASS; stage 1 done (CI proof on the PR pending); left: stages 2–5, merge.
+> **Status 2026-11-07 — in progress.** Plan written (5 stages), Opus plan review PASS; stages 1–2 done (stage 1 CI proof on PR #1 pending); left: stages 3–5, merge.
 
 Git mode: worktree (`../email_assistant-wt/fake-telegram-followups`, branch `task/fake-telegram-followups`).
 
@@ -71,7 +71,7 @@ Close the small gaps that the fake Telegram build found and did not fix.
 
 ### Stage 2 — Own DB per worktree [risky]
 
-- [ ] **2.1 Script `bun run db:worktree <name>` (create, grants, migrate, print the env overrides; `--drop`).** Database `email_assistant_<name>`, grants as in `db/roles.sql` / `tools/fake-telegram/README.md` § "Live run without the shared dev DB", admin access as `postgres` with `POSTGRES_PASSWORD` from `.env`. Name check (safe identifier only). Never touches `email_assistant` itself. [risky]
+- [x] **2.1 Script `bun run db:worktree <name>` (create, grants, migrate, print the env overrides; `--drop`).** Database `email_assistant_<name>`, grants as in `db/roles.sql` / `tools/fake-telegram/README.md` § "Live run without the shared dev DB", admin access as `postgres` with `POSTGRES_PASSWORD` from `.env`. Name check (safe identifier only). Never touches `email_assistant` itself. [risky]
   - Goal: one command creates (or drops) an own database on the dev Postgres for a worktree, with the grants and the migrations, and prints the two env overrides.
   - Files:
     - `apps/server/src/scripts/db-worktree-args.ts` (new): pure functions, no I/O. Same pattern as `apps/server/src/scripts/job-run-args.ts`.
@@ -155,7 +155,7 @@ Close the small gaps that the fake Telegram build found and did not fix.
   - Done when: the unit tests pass, and the live run shows create → migrate → reuse → mark refusal → drop with the exit codes above, and `email_assistant` and `email_assistant_s19` are untouched (`psql` as `postgres`: `\l` still lists both).
   - Out of scope: a port offset, `.env` copy, `bun install` or GreenMail users per worktree (the note proposes them; this task does only the DB); changes to `db/roles.sql`, `deploy/db-init/` or the CI workflow; an integration test in `test:int` (it would create databases on the shared dev Postgres).
 
-- [ ] **2.2 Docs.** `tools/fake-telegram/README.md` step 1, 2 and 9 use the script; `tasks/README.md` § "Git mode" (shared runtime line) and `notes/2026-11-07-parallel-agents-worktrees.md` name it.
+- [x] **2.2 Docs.** `tools/fake-telegram/README.md` step 1, 2 and 9 use the script; `tasks/README.md` § "Git mode" (shared runtime line) and `notes/2026-11-07-parallel-agents-worktrees.md` name it.
   - Goal: the docs tell the next agent to use `bun run db:worktree` instead of the manual SQL.
   - Files: `tools/fake-telegram/README.md`, `tasks/README.md`, `notes/2026-11-07-parallel-agents-worktrees.md` (changes only).
   - Interfaces: none (docs).
@@ -299,3 +299,4 @@ Resolved by the Opus plan review (2026-11-07), now facts in the steps:
 - 2026-11-07: Created at the end of the fake Telegram build.
 - 2026-11-07: Opus plan review round 1: FAIL, 16 findings (1 major, 11 minor, 4 questions), all put into the step detail. Stage 4 split into stage 4 (format) and stage 5 (`TELEGRAM_API_ROOT` line). Round 2: PASS, 4 minors fixed by the main session.
 - 2026-11-07: Stage 1 built (job `image` in `ci.yml`), review PASS. CI proof follows on the PR.
+- 2026-11-07: Stage 2 built (`db:worktree` script, docs), review PASS; live run on throwaway DBs only. Reviewer minor fixed: the manual SQL in the README sets the `db:worktree` mark.
