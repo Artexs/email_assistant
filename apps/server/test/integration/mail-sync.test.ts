@@ -122,7 +122,6 @@ function onBodyCall(fake: FakeMailProvider, hook: (call: number) => Promise<void
       await hook(call);
       return fake.fetchBodyText(uid);
     },
-    findByMessageId: (folder, messageId) => fake.findByMessageId(folder, messageId),
     close: () => fake.close(),
   };
 }
@@ -155,7 +154,6 @@ function afterFirstCall(
     },
     fetchByUids: (uids) => fake.fetchByUids(uids),
     fetchBodyText: (uid) => fake.fetchBodyText(uid),
-    findByMessageId: (folder, messageId) => fake.findByMessageId(folder, messageId),
     close: () => fake.close(),
   };
 }
@@ -288,6 +286,74 @@ describe("syncMailbox: incremental", () => {
       expect(rows).toHaveLength(2);
       expect(rows[1]?.dedup_key).toBe(`${rows[0]?.dedup_key}#2`);
       expect(rows[0]?.returned_at).toBeNull();
+    });
+  });
+
+  test("Interia shape: the copy in the folder keeps the INBOX uid and a new identical INBOX copy is stored with #2", async () => {
+    await withRollback(db, async (trx) => {
+      const base = await setup(trx);
+      const s = { ...base, fake: createFakeMailProvider({ uidValidity: UID_VALIDITY, keepUidOnCopy: true }) };
+      const uid = s.fake.deliver("INBOX", seed(1));
+      await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      await trx.updateTable("emails").set({ folder: "AI/Info" }).where("mailbox_id", "=", s.mailboxId).execute();
+      expect(s.fake.userMove("INBOX", uid, "AI/Info")).toBe(uid);
+      const fresh = s.fake.deliver("INBOX", seed(1));
+      expect(fresh).not.toBe(uid);
+
+      const result = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(result.stored).toBe(1);
+      expect(result.returned).toBe(0);
+      const rows = await emails(trx, s.mailboxId);
+      expect(rows).toHaveLength(2);
+      expect(rows[0]).toMatchObject({ folder: "AI/Info", returned_at: null });
+      expect(Number(rows[0]?.uid)).toBe(uid);
+      expect(rows[1]?.dedup_key).toBe(`${rows[0]?.dedup_key}#2`);
+      expect(Number(rows[1]?.uid)).toBe(fresh);
+    });
+  });
+
+  test("a known mail without Message-ID that is still in its folder: a new identical copy is stored with #2", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const uid = s.fake.deliver("INBOX", seed(1, { messageId: undefined }));
+      await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      await trx.updateTable("emails").set({ folder: "AI/Info" }).where("mailbox_id", "=", s.mailboxId).execute();
+      s.fake.userMove("INBOX", uid, "AI/Info");
+      s.fake.deliver("INBOX", seed(1, { messageId: undefined }));
+
+      const result = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(result.stored).toBe(1);
+      expect(result.returned).toBe(0);
+      const rows = await emails(trx, s.mailboxId);
+      expect(rows).toHaveLength(2);
+      expect(rows[1]?.dedup_key).toBe(`${rows[0]?.dedup_key}#2`);
+    });
+  });
+
+  test("two rows of one identity in AI/Spam and only the copy of #2 there: a new INBOX copy marks #1 returned", async () => {
+    await withRollback(db, async (trx) => {
+      const base = await setup(trx);
+      const s = { ...base, fake: createFakeMailProvider({ uidValidity: UID_VALIDITY, keepUidOnCopy: true }) };
+      s.fake.deliver("INBOX", seed(1));
+      const second = s.fake.deliver("INBOX", seed(1));
+      await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      await trx.updateTable("emails").set({ folder: "AI/Spam" }).where("mailbox_id", "=", s.mailboxId).execute();
+      s.fake.userMove("INBOX", second, "AI/Spam");
+      s.fake.remove("INBOX", 1);
+      const fresh = s.fake.deliver("INBOX", seed(1));
+
+      const result = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(result.returned).toBe(1);
+      expect(result.stored).toBe(0);
+      const rows = await emails(trx, s.mailboxId);
+      expect(rows).toHaveLength(2);
+      const first = rows.find((row) => !row.dedup_key.endsWith("#2"));
+      const kept = rows.find((row) => row.dedup_key.endsWith("#2"));
+      expect(first).toMatchObject({ folder: "INBOX" });
+      expect(first?.returned_at).toBeInstanceOf(Date);
+      expect(Number(first?.uid)).toBe(fresh);
+      expect(kept).toMatchObject({ folder: "AI/Spam", returned_at: null });
+      expect(Number(kept?.uid)).toBe(second);
     });
   });
 

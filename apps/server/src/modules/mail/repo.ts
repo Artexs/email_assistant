@@ -11,9 +11,9 @@ import { z } from "zod";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 
-import type { MailCapabilities } from "./port";
+import { INBOX, type MailCapabilities } from "./port";
 import { SYNTHETIC_MESSAGE_ID_LIKE } from "./seed";
-import type { KnownCopy } from "./sync-rules";
+import { otherCopyUids, type KnownCopy } from "./sync-rules";
 
 type DbOrTrx = Db | Transaction<DB>;
 
@@ -287,26 +287,51 @@ export async function findCopies(
 ): Promise<KnownCopy[]> {
   const rows = await db
     .selectFrom("emails")
-    .select(["id", "dedup_key", "folder"])
+    .select(["id", "dedup_key", "folder", "uid", "content_hash", "from_address", "received_at"])
     .where("org_id", "=", ctx.orgId)
     .where("mailbox_id", "=", mailboxId)
     .where("message_id_header", key.messageId === null ? "is" : "=", key.messageId)
     .where("content_hash", "=", key.contentHash)
     .execute();
-  return rows.map((row) => ({ id: row.id, dedupKey: row.dedup_key, folder: row.folder }));
+  return rows.map((row) => ({
+    id: row.id,
+    dedupKey: row.dedup_key,
+    folder: row.folder,
+    uid: Number(row.uid),
+    contentHash: row.content_hash,
+    from: row.from_address,
+    receivedAt: row.received_at,
+  }));
+}
+
+// The UIDs that the other rows of the same identity hold in `folder` (the `excludeUids` of locateMessage).
+export async function listFolderUids(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  folder: string,
+  key: { exceptEmailId: string; messageId: string | null; contentHash: string }
+): Promise<Set<number>> {
+  const copies = await findCopies(db, ctx, mailboxId, key);
+  return otherCopyUids(copies, key.exceptEmailId, folder);
 }
 
 export async function insertEmail(db: DbOrTrx, ctx: TenantContext, row: NewEmail): Promise<boolean> {
   const result = await db
     .insertInto("emails")
-    .values({ ...row, org_id: ctx.orgId })
+    .values({ ...row, inbox_uid: row.uid, org_id: ctx.orgId })
     .onConflict((oc) => oc.columns(["mailbox_id", "dedup_key"]).doNothing())
     .executeTakeFirst();
   return (result.numInsertedOrUpdatedRows ?? 0n) > 0n;
 }
 
 export async function updateEmailUid(db: DbOrTrx, ctx: TenantContext, emailId: string, uid: number): Promise<void> {
-  await db.updateTable("emails").set({ uid }).where("org_id", "=", ctx.orgId).where("id", "=", emailId).execute();
+  await db
+    .updateTable("emails")
+    .set({ uid, inbox_uid: uid })
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", emailId)
+    .execute();
 }
 
 export async function markEmailReturned(
@@ -318,7 +343,7 @@ export async function markEmailReturned(
 ): Promise<void> {
   await db
     .updateTable("emails")
-    .set({ returned_at: at, folder: "INBOX", uid })
+    .set({ returned_at: at, folder: INBOX, uid, inbox_uid: uid })
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", emailId)
     .execute();

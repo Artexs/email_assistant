@@ -4,6 +4,7 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 
+import { locateMessage, type LocateKey } from "./locate";
 import { INBOX, type InboxStatus, type MailProvider, type MessageMeta } from "./port";
 import {
   findCopies,
@@ -23,6 +24,7 @@ import {
   decideIncoming,
   filterAboveCursor,
   normalizeMessageId,
+  otherCopyUids,
   resolveFolderCheck,
   threadKey,
   type KnownCopy,
@@ -124,7 +126,15 @@ async function planChunk(
     const baseKey = baseDedupKey(messageId, hash);
     // Rows that this run stores are copies too, but no other mail of this run can match them.
     const runKeys = state.newKeys.get(baseKey) ?? [];
-    const runCopies: KnownCopy[] = runKeys.map((key) => ({ id: `run:${key}`, dedupKey: key, folder: INBOX }));
+    const runCopies: KnownCopy[] = runKeys.map((key) => ({
+      id: `run:${key}`,
+      dedupKey: key,
+      folder: INBOX,
+      uid: meta.uid,
+      contentHash: hash,
+      from: meta.from,
+      receivedAt: meta.internalDate,
+    }));
     for (const copy of runCopies) state.matched.add(copy.id);
     const fromDb = await findCopies(deps.db, ctx, mailboxId, { messageId, contentHash: hash });
     const copies = [...fromDb.filter((copy) => !runKeys.includes(copy.dedupKey)), ...runCopies];
@@ -136,9 +146,17 @@ async function planChunk(
       writes.push({ kind: "update_uid", emailId: decision.emailId, uid: meta.uid });
     } else if (decision.kind === "check_folder") {
       state.matched.add(decision.emailId);
-      // Without a Message-ID the folder cannot be searched: treat the mail as returned.
-      const stillInFolder =
-        messageId !== null && (await deps.provider.findByMessageId(decision.folder, messageId)) !== null;
+      const copy = copies.find((candidate) => candidate.id === decision.emailId);
+      if (copy === undefined) throw new HardError("matched copy is missing");
+      const key: LocateKey = {
+        messageId,
+        contentHash: copy.contentHash,
+        from: copy.from,
+        receivedAt: copy.receivedAt,
+        hintUid: copy.uid,
+      };
+      const excludeUids = otherCopyUids(copies, copy.id, decision.folder);
+      const stillInFolder = (await locateMessage(deps.provider, decision.folder, key, { excludeUids })) !== null;
       const check = resolveFolderCheck({ emailId: decision.emailId, stillInFolder, baseKey, copyCount: copies.length });
       if (check.kind === "returned") {
         writes.push({ kind: "returned", emailId: check.emailId, uid: meta.uid });

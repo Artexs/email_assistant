@@ -13,6 +13,7 @@ import {
   insertCredentials,
   insertEmail,
   insertMailbox,
+  listFolderUids,
   listInboxEmailKeys,
   listSyncTargets,
   lockMailbox,
@@ -60,6 +61,11 @@ function newEmail(mailboxId: string, overrides: Partial<NewEmail> = {}): NewEmai
     received_at: new Date("2026-11-03T10:00:00Z"),
     ...overrides,
   };
+}
+
+async function inboxUidOf(trx: Transaction<DB>, emailId: string) {
+  const row = await trx.selectFrom("emails").select("inbox_uid").where("id", "=", emailId).executeTakeFirstOrThrow();
+  return row.inbox_uid;
 }
 
 async function emailRow(trx: Transaction<DB>, mailboxId: string, dedupKey: string) {
@@ -287,6 +293,57 @@ describe("mail repository: emails", () => {
     });
   });
 
+  test("insertEmail sets inbox_uid to uid", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      await insertEmail(trx, a.ctx, newEmail(a.mailboxId, { uid: 7 }));
+      const row = await trx
+        .selectFrom("emails")
+        .select(["uid", "inbox_uid"])
+        .where("mailbox_id", "=", a.mailboxId)
+        .executeTakeFirstOrThrow();
+      expect({ uid: Number(row.uid), inboxUid: Number(row.inbox_uid) }).toEqual({ uid: 7, inboxUid: 7 });
+    });
+  });
+
+  test("findCopies returns uid, content hash, from and received_at", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      await insertEmail(trx, a.ctx, newEmail(a.mailboxId, { uid: 9 }));
+      const [copy] = await findCopies(trx, a.ctx, a.mailboxId, { messageId: "<1@x.test>", contentHash: "hash-1" });
+      expect(copy).toMatchObject({
+        uid: 9,
+        contentHash: "hash-1",
+        from: "sender@x.test",
+        receivedAt: new Date("2026-11-03T10:00:00Z"),
+      });
+    });
+  });
+
+  test("listFolderUids returns the UIDs of the other rows in that folder, filtered by org and mailbox", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      await insertEmail(trx, a.ctx, newEmail(a.mailboxId, { uid: 5, folder: "AI/Spam" }));
+      await insertEmail(
+        trx,
+        a.ctx,
+        newEmail(a.mailboxId, { dedup_key: "mid:<1@x.test>:hash-1#2", uid: 6, folder: "AI/Spam" })
+      );
+      await insertEmail(
+        trx,
+        a.ctx,
+        newEmail(a.mailboxId, { dedup_key: "mid:<1@x.test>:hash-1#3", uid: 7, folder: "AI/Info" })
+      );
+      const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
+      const key = { exceptEmailId: id, messageId: "<1@x.test>", contentHash: "hash-1" };
+
+      expect(await listFolderUids(trx, a.ctx, a.mailboxId, "AI/Spam", key)).toEqual(new Set([6]));
+      expect(await listFolderUids(trx, a.ctx, a.mailboxId, "AI/Info", key)).toEqual(new Set([7]));
+      expect(await listFolderUids(trx, b.ctx, a.mailboxId, "AI/Spam", key)).toEqual(new Set());
+      expect(await listFolderUids(trx, a.ctx, b.mailboxId, "AI/Spam", key)).toEqual(new Set());
+    });
+  });
+
   test("updateEmailUid changes 0 rows of another organization", async () => {
     await withRollback(db, async (trx) => {
       const { a, b } = await createTwoTenants(trx);
@@ -298,6 +355,7 @@ describe("mail repository: emails", () => {
 
       await updateEmailUid(trx, a.ctx, id, 50);
       expect(Number((await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1")).uid)).toBe(50);
+      expect(Number(await inboxUidOf(trx, id))).toBe(50);
     });
   });
 
@@ -324,6 +382,7 @@ describe("mail repository: emails", () => {
         returnedAt: at,
         status: "pending",
       });
+      expect(Number(await inboxUidOf(trx, id))).toBe(60);
     });
   });
 });

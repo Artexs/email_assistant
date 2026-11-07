@@ -1,6 +1,15 @@
 import { afterEach, describe, expect, test } from "bun:test";
 
-import { MailNotFoundError, type MailProvider, type SeedMessage } from "../../src/modules/mail";
+import {
+  locateMessage,
+  MailNotFoundError,
+  sameMailIdentity,
+  type MailIdentity,
+  type MailProvider,
+  type MessageMeta,
+  type SeedMessage,
+} from "../../src/modules/mail";
+import { contentHash, normalizeMessageId } from "../../src/modules/mail/sync-rules";
 
 export interface ContractEnv {
   provider: MailProvider;
@@ -19,6 +28,15 @@ function mail(n: number, extra: Partial<SeedMessage> = {}): SeedMessage {
     date: new Date(),
     text: `Body number ${n}`,
     ...extra,
+  };
+}
+
+function identityOf(meta: MessageMeta): MailIdentity {
+  return {
+    messageId: normalizeMessageId(meta.messageId),
+    contentHash: contentHash(meta),
+    from: meta.from,
+    receivedAt: meta.internalDate,
   };
 }
 
@@ -129,13 +147,37 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
       expect(meta?.messageId).toBeNull();
     });
 
-    test("findByMessageId finds a mail in another folder; null for unknown id or folder", async () => {
+    test("fetchMetaIn in another folder keeps the identity; locateMessage finds the moved mail without a hint", async () => {
       const { provider, seed } = await freshEnv();
-      await seed("Archive-test", mail(7));
-      const uid = await provider.findByMessageId("Archive-test", "<contract-7@example.test>");
-      expect(uid).toBeGreaterThan(0);
-      expect(await provider.findByMessageId("Archive-test", "<unknown@example.test>")).toBeNull();
-      expect(await provider.findByMessageId("No-such-folder", "<contract-7@example.test>")).toBeNull();
+      await seed("INBOX", mail(7));
+      const [source] = await provider.fetchAbove(0);
+      if (source === undefined) throw new Error("seed failed");
+      const key = identityOf(source);
+      const folder = await provider.ensureFolder(`AI/Contract-${crypto.randomUUID()}`);
+      const { newUid } = await provider.moveMessage("INBOX", source.uid, folder);
+
+      const found = await locateMessage(provider, folder, { ...key, hintUid: null });
+      expect(found).not.toBeNull();
+      if (newUid !== null) expect(found?.uid).toBe(newUid);
+      const same = await provider.fetchMetaIn(folder, found?.uid ?? 0);
+      expect(same !== null && sameMailIdentity(same, key)).toBe(true);
+      const hinted = await locateMessage(provider, folder, { ...key, hintUid: found?.uid ?? null });
+      expect(hinted?.uid).toBe(found?.uid ?? -1);
+    });
+
+    test("locateMessage gives null for a mail that is not in the folder, was deleted, or has a missing folder", async () => {
+      const { provider, seed } = await freshEnv();
+      await seed("INBOX", mail(8));
+      const [source] = await provider.fetchAbove(0);
+      if (source === undefined) throw new Error("seed failed");
+      const key = { ...identityOf(source), hintUid: null };
+      const folder = await provider.ensureFolder(`AI/Contract-${crypto.randomUUID()}`);
+      expect(await locateMessage(provider, folder, key)).toBeNull();
+      expect(await locateMessage(provider, "No-such-folder", key)).toBeNull();
+      const { newUid } = await provider.moveMessage("INBOX", source.uid, folder);
+      const uid = newUid ?? (await provider.searchSinceIn(folder, new Date(Date.now() - DAY_MS)))[0] ?? 0;
+      expect(await provider.deleteMessage(folder, uid)).toBe(true);
+      expect(await locateMessage(provider, folder, { ...key, hintUid: uid })).toBeNull();
     });
 
     const yesterday = () => new Date(Date.now() - DAY_MS);

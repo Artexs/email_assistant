@@ -64,8 +64,6 @@ export interface MailProvider {
   fetchByUids(uids: number[]): Promise<MessageMeta[]>;
   /** INBOX. Null when larger than the size limit or no text. */
   fetchBodyText(uid: number): Promise<string | null>;
-  /** Null also when the folder does not exist. */
-  findByMessageId(folder: string, messageId: string): Promise<number | null>;
   /** Creates the folder when it is missing. Returns the path as the server lists it. */
   ensureFolder(name: string): Promise<string>;
   /** Null when the folder has no such UID (also when the folder does not exist). */

@@ -8,7 +8,7 @@ Checkpoint 1 input: if stage 1 found `targetMeta.sameSize` false and `targetMeta
 
 Checkpoint 1 result (Interia, 2026-11-07): a COPY keeps RFC822.SIZE, INTERNALDATE, the ENVELOPE date and `Message-ID` → `IDENTITY_MODE = "strict"`. `SEARCH SINCE` works in a folder other than INBOX → no fallback.
 
-- [ ] **5.1 Pure identity rules and `locateMessage` (D3)**
+- [x] **5.1 Pure identity rules and `locateMessage` (D3)**
   - Goal: the system finds a known mail in any folder without a header search, and tells a second identical copy from a returned mail with the same rule as S1a.
   - Files: change `apps/server/src/modules/mail/sync-rules.ts`, `apps/server/src/modules/mail/sync-rules.test.ts`; create `apps/server/src/modules/mail/locate.ts`, `apps/server/src/modules/mail/locate.test.ts`; change `apps/server/src/modules/mail/index.ts`.
   - Interfaces:
@@ -51,7 +51,7 @@ Checkpoint 1 result (Interia, 2026-11-07): a COPY keeps RFC822.SIZE, INTERNALDAT
   - Done when: the tests pass.
   - Out of scope: callers (5.2), the returned check (stage 6).
 
-- [ ] **5.2 The sync uses `locateMessage`; `findByMessageId` is removed; `inbox_uid` on insert and update**
+- [x] **5.2 The sync uses `locateMessage`; `findByMessageId` is removed; `inbox_uid` on insert and update**
   - Goal: the S1a "known mail in INBOX" rule works at Interia (architecture §6.1), and every INBOX row carries `inbox_uid` (D2).
   - Files: change `apps/server/src/modules/mail/sync.ts`, `apps/server/src/modules/mail/sync-rules.ts`, `apps/server/src/modules/mail/repo.ts`, `apps/server/src/modules/mail/index.ts`, `apps/server/src/modules/mail/port.ts`, `apps/server/src/modules/mail/imap/client.ts`, `apps/server/src/modules/mail/fake/index.ts`, `apps/server/src/modules/mail/fake/fake.test.ts` (line 39 uses `findByMessageId`), `apps/server/test/contract/mail-provider.ts`, `apps/server/test/integration/imap-contract.test.ts`, `apps/server/test/integration/mail-backfill.test.ts` (lines 124 and 209 use `findByMessageId`), `apps/server/test/integration/mail-sync.test.ts`, `apps/server/test/integration/mail-repo.test.ts`.
   - Interfaces: `MailProvider.findByMessageId` is removed (port, adapter, fake, contract case "findByMessageId finds a mail in another folder…" and the GreenMail case "INBOX works again after a lookup in a missing folder" change to `fetchMetaIn` / `locateMessage` cases). `repo.ts`: `findCopies` also selects `uid`, `content_hash`, `from_address`, `received_at` (the `KnownCopy` type grows: `uid: number`, `contentHash: string`, `from: string | null`, `receivedAt: Date`); `insertEmail` sets `inbox_uid = row.uid`; `updateEmailUid` sets `uid` and `inbox_uid`; `markEmailReturned` sets `uid`, `inbox_uid`, `folder = INBOX`, `returned_at`. New: `listFolderUids(db, ctx, mailboxId, folder, key: { exceptEmailId: string; messageId: string | null; contentHash: string }): Promise<Set<number>>` = the `uid` of every other row of the same identity (`findCopies`) whose `folder` equals `folder` (the committer and stage 6 fill `excludeUids` with it); a pure `otherCopyUids(copies: KnownCopy[], exceptId: string, folder: string): Set<number>` in `sync-rules.ts` does the filter and serves the sync, which has the copies already. Export `listFolderUids` from `mail/index.ts`.

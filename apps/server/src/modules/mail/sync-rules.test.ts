@@ -1,15 +1,19 @@
 import { describe, expect, test } from "bun:test";
 
-import type { MessageMeta } from "./port";
+import type { FolderMessageMeta, MessageMeta } from "./port";
 import {
   baseDedupKey,
   contentHash,
   copyDedupKey,
   decideIncoming,
   filterAboveCursor,
+  isDeleted,
+  type MailIdentity,
   type KnownCopy,
   normalizeMessageId,
+  otherCopyUids,
   resolveFolderCheck,
+  sameMailIdentity,
   threadKey,
 } from "./sync-rules";
 
@@ -147,6 +151,31 @@ describe("filterAboveCursor", () => {
   });
 });
 
+function copy(id: string, dedupKey: string, folder: string, uid = 1): KnownCopy {
+  return {
+    id,
+    dedupKey,
+    folder,
+    uid,
+    contentHash: HASH,
+    from: "boss@example.test",
+    receivedAt: new Date("2026-11-03T10:05:00Z"),
+  };
+}
+
+describe("otherCopyUids", () => {
+  test("keeps the UIDs of the other rows in the folder only", () => {
+    const copies = [
+      copy("e1", BASE, "AI/Spam", 5),
+      copy("e2", `${BASE}#2`, "AI/Spam", 6),
+      copy("e3", `${BASE}#3`, "AI/Info", 7),
+    ];
+    expect(otherCopyUids(copies, "e1", "AI/Spam")).toEqual(new Set([6]));
+    expect(otherCopyUids(copies, "e3", "AI/Spam")).toEqual(new Set([5, 6]));
+    expect(otherCopyUids([], "e1", "AI/Spam")).toEqual(new Set());
+  });
+});
+
 describe("decideIncoming", () => {
   const none = new Set<string>();
 
@@ -158,7 +187,7 @@ describe("decideIncoming", () => {
   });
 
   test("one INBOX copy gives update_uid", () => {
-    const copies: KnownCopy[] = [{ id: "e1", dedupKey: BASE, folder: "INBOX" }];
+    const copies: KnownCopy[] = [copy("e1", BASE, "INBOX")];
     expect(decideIncoming({ baseKey: BASE, copies, matched: none })).toEqual({
       kind: "update_uid",
       emailId: "e1",
@@ -166,7 +195,7 @@ describe("decideIncoming", () => {
   });
 
   test("an INBOX copy that is already matched gives new #2", () => {
-    const copies: KnownCopy[] = [{ id: "e1", dedupKey: BASE, folder: "INBOX" }];
+    const copies: KnownCopy[] = [copy("e1", BASE, "INBOX")];
     expect(decideIncoming({ baseKey: BASE, copies, matched: new Set(["e1"]) })).toEqual({
       kind: "new",
       dedupKey: `${BASE}#2`,
@@ -174,7 +203,7 @@ describe("decideIncoming", () => {
   });
 
   test("a copy in another folder gives check_folder", () => {
-    const copies: KnownCopy[] = [{ id: "e1", dedupKey: BASE, folder: "AI/Info" }];
+    const copies: KnownCopy[] = [copy("e1", BASE, "AI/Info")];
     expect(decideIncoming({ baseKey: BASE, copies, matched: none })).toEqual({
       kind: "check_folder",
       emailId: "e1",
@@ -183,10 +212,7 @@ describe("decideIncoming", () => {
   });
 
   test("base in INBOX matched and #2 in AI/Info gives check_folder #2", () => {
-    const copies: KnownCopy[] = [
-      { id: "e2", dedupKey: `${BASE}#2`, folder: "AI/Info" },
-      { id: "e1", dedupKey: BASE, folder: "INBOX" },
-    ];
+    const copies: KnownCopy[] = [copy("e2", `${BASE}#2`, "AI/Info"), copy("e1", BASE, "INBOX")];
     expect(decideIncoming({ baseKey: BASE, copies, matched: new Set(["e1"]) })).toEqual({
       kind: "check_folder",
       emailId: "e2",
@@ -195,10 +221,7 @@ describe("decideIncoming", () => {
   });
 
   test("INBOX copies come before copies in other folders", () => {
-    const copies: KnownCopy[] = [
-      { id: "e1", dedupKey: BASE, folder: "AI/Info" },
-      { id: "e2", dedupKey: `${BASE}#2`, folder: "INBOX" },
-    ];
+    const copies: KnownCopy[] = [copy("e1", BASE, "AI/Info"), copy("e2", `${BASE}#2`, "INBOX")];
     expect(decideIncoming({ baseKey: BASE, copies, matched: none })).toEqual({
       kind: "update_uid",
       emailId: "e2",
@@ -207,9 +230,9 @@ describe("decideIncoming", () => {
 
   test("copies sort by number: #10 comes after #2", () => {
     const copies: KnownCopy[] = [
-      { id: "e10", dedupKey: `${BASE}#10`, folder: "INBOX" },
-      { id: "e2", dedupKey: `${BASE}#2`, folder: "INBOX" },
-      { id: "e1", dedupKey: BASE, folder: "INBOX" },
+      copy("e10", `${BASE}#10`, "INBOX"),
+      copy("e2", `${BASE}#2`, "INBOX"),
+      copy("e1", BASE, "INBOX"),
     ];
     expect(decideIncoming({ baseKey: BASE, copies, matched: new Set(["e1"]) })).toEqual({
       kind: "update_uid",
@@ -218,10 +241,7 @@ describe("decideIncoming", () => {
   });
 
   test("all copies matched gives new with the next number", () => {
-    const copies: KnownCopy[] = [
-      { id: "e1", dedupKey: BASE, folder: "INBOX" },
-      { id: "e2", dedupKey: `${BASE}#2`, folder: "AI/Info" },
-    ];
+    const copies: KnownCopy[] = [copy("e1", BASE, "INBOX"), copy("e2", `${BASE}#2`, "AI/Info")];
     expect(decideIncoming({ baseKey: BASE, copies, matched: new Set(["e1", "e2"]) })).toEqual({
       kind: "new",
       dedupKey: `${BASE}#3`,
@@ -242,5 +262,67 @@ describe("resolveFolderCheck", () => {
       kind: "returned",
       emailId: "e1",
     });
+  });
+});
+
+describe("sameMailIdentity", () => {
+  function key(overrides: Partial<MailIdentity> = {}): MailIdentity {
+    return {
+      messageId: "<a1@example.test>",
+      contentHash: contentHash(meta()),
+      from: "boss@example.test",
+      receivedAt: new Date("2026-11-03T10:05:00.250Z"),
+      ...overrides,
+    };
+  }
+
+  test("strict: same id and same hash", () => {
+    expect(sameMailIdentity(meta(), key(), "strict")).toBe(true);
+  });
+
+  test("strict: same id and other size", () => {
+    expect(sameMailIdentity(meta({ size: 1300 }), key(), "strict")).toBe(false);
+  });
+
+  test("strict: other id", () => {
+    expect(sameMailIdentity(meta({ messageId: "<b@example.test>" }), key(), "strict")).toBe(false);
+  });
+
+  test("strict: no id and same hash", () => {
+    expect(sameMailIdentity(meta({ messageId: null }), key({ messageId: null }), "strict")).toBe(true);
+  });
+
+  test("no id and other size is not found, in both modes", () => {
+    for (const mode of ["strict", "no_size"] as const) {
+      expect(sameMailIdentity(meta({ messageId: null, size: 1300 }), key({ messageId: null }), mode)).toBe(false);
+    }
+  });
+
+  test("no_size: other size, same id, from and INTERNALDATE second", () => {
+    expect(sameMailIdentity(meta({ size: 1300, from: "Boss@Example.test" }), key(), "no_size")).toBe(true);
+  });
+
+  test("no_size: other from", () => {
+    expect(sameMailIdentity(meta({ size: 1300, from: "other@example.test" }), key(), "no_size")).toBe(false);
+  });
+
+  test("no_size: INTERNALDATE one second off", () => {
+    const off = new Date("2026-11-03T10:05:01Z");
+    expect(sameMailIdentity(meta({ size: 1300, internalDate: off }), key(), "no_size")).toBe(false);
+  });
+
+  test("no_size: the Date header does not matter", () => {
+    const other = new Date("2026-01-01T00:00:00Z");
+    expect(sameMailIdentity(meta({ size: 1300, date: other }), key(), "no_size")).toBe(true);
+  });
+});
+
+describe("isDeleted", () => {
+  const withFlags = (flags: string[]): FolderMessageMeta => ({ ...meta(), flags });
+
+  test("true only with \\Deleted", () => {
+    expect(isDeleted(withFlags(["\\Seen", "\\Deleted"]))).toBe(true);
+    expect(isDeleted(withFlags(["\\Seen", "\\Flagged"]))).toBe(false);
+    expect(isDeleted(withFlags([]))).toBe(false);
   });
 });

@@ -36,7 +36,7 @@ describe("fake provider", () => {
     const newUid = fake.userMove(INBOX, uid, "Archive");
     expect(newUid).toBe(1);
     expect(await fake.fetchByUids([uid])).toHaveLength(0);
-    expect(await fake.findByMessageId("Archive", "<fake-1@example.test>")).toBe(newUid);
+    expect((await fake.fetchMetaIn("Archive", newUid))?.messageId).toBe("<fake-1@example.test>");
   });
 
   test("resetUidValidity renumbers INBOX from 1 in the old order", async () => {

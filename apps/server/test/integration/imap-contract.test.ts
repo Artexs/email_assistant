@@ -94,7 +94,7 @@ test("imap-greenmail: INBOX works again after a lookup in a missing folder", asy
         text: "Body",
       })
     );
-    expect(await provider.findByMessageId("No-such-folder", "<after-missing@example.test>")).toBeNull();
+    expect(await provider.fetchMetaIn("No-such-folder", 1)).toBeNull();
     const metas = await provider.fetchAbove(0);
     expect(metas.map((m) => m.messageId)).toEqual(["<after-missing@example.test>"]);
   } finally {

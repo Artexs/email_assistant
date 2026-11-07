@@ -250,27 +250,6 @@ class ImapMailProvider implements MailProvider {
     );
   }
 
-  findByMessageId(folder: string, messageId: string): Promise<number | null> {
-    return guard("findByMessageId", async () => {
-      let lock: MailboxLockObject;
-      try {
-        lock = await this.client.getMailboxLock(folder);
-      } catch (error) {
-        if (toMailError(error, "select") instanceof SoftError) throw error;
-        // SELECT failed: a missing folder gives null, any other failure is an error.
-        const exists = (await this.client.list()).some((entry) => entry.path === folder);
-        if (exists) throw error;
-        return null;
-      }
-      try {
-        const uids = await this.client.search({ header: { "message-id": messageId } }, { uid: true });
-        return uids === false ? null : (uids[0] ?? null);
-      } finally {
-        lock.release();
-      }
-    });
-  }
-
   /** Locks `folder`; null when the folder does not exist, any other SELECT error throws. */
   private async lockOrNull(folder: string): Promise<MailboxLockObject | null> {
     try {

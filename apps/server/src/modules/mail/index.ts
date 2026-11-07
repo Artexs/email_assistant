@@ -25,6 +25,7 @@ export {
   finishEmail,
   forceRescan,
   getMailbox,
+  listFolderUids,
   listMailboxes,
   listSyncTargets,
   listThreadContext,
@@ -43,3 +44,5 @@ export {
 } from "./seed";
 export { backfillInbox, CursorMovedError, syncMailbox, type SyncDeps, type SyncResult } from "./sync";
 export { auditMailbox, backfillMailbox, seedMailbox, type ToolDeps } from "./tools";
+export { locateKeyOf, locateMessage, LOCATE_CHUNK, type LocateKey } from "./locate";
+export { IDENTITY_MODE, isDeleted, sameMailIdentity, type IdentityMode, type MailIdentity } from "./sync-rules";

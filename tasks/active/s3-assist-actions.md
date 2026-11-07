@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress: stages 1–4 done; stage 5 (`locateMessage` and the sync) is next.** Q1 and Q5 keep their defaults until the user answers.
+> **Status 2026-11-07 — in progress: stages 1–5 done; stage 6 (returned mail below the cursor) is next.** Q1 and Q5 keep their defaults until the user answers.
 
 # S3 Assist actions
 
@@ -131,7 +131,7 @@ Each stage lives in its own file in [`s3-assist-actions/`](s3-assist-actions/). 
 - [x] [Stage 2](s3-assist-actions/stage-02-s3-migration.md) — S3 migration: `applied_at`, `inbox_uid`, `moved_at`, indexes, outbox kind [risky]
 - [x] [Stage 3](s3-assist-actions/stage-03-mail-write-port-and-fake.md) — Mail write port, fake provider, contract cases [risky]
 - [x] [Stage 4](s3-assist-actions/stage-04-imap-adapter-writes.md) — IMAP adapter writes (MOVE and COPY paths) on GreenMail [risky]
-- [ ] [Stage 5](s3-assist-actions/stage-05-locate-message-and-sync.md) — `locateMessage`, identity rules, sync without `findByMessageId` [risky]
+- [x] [Stage 5](s3-assist-actions/stage-05-locate-message-and-sync.md) — `locateMessage`, identity rules, sync without `findByMessageId` [risky]
 - [ ] [Stage 6](s3-assist-actions/stage-06-returned-below-cursor.md) — Returned mail below the UID cursor [risky]
 - [ ] [Stage 7](s3-assist-actions/stage-07-actions-repo-and-fixtures.md) — Actions repository: claim, finish, release, fail; email location; fixtures (steps 7.1a, 7.1b, 7.2) [risky] — user checkpoint 2 after it
 - [ ] [Stage 8](s3-assist-actions/stage-08-committer-flags-summary-errors-job.md) — Committer: flags, summaries, error rules, scope, the job [risky]
@@ -241,3 +241,5 @@ Answered 2026-11-06 with the plan defaults (P1–P7). Questions 1–4 of the fir
 - 2026-11-07: Stage 2 built: migration `20261107000001_assist_actions.sql` (real constraint names `outbox_kind_check`, `outbox_check1`), `schema.ts` regenerated, `actions-schema.test.ts`; round trip with an `action_failed` row OK. Review (Opus, high): PASS; minor fixes (savepoint helper, `urgent` case); its questions added to stage 19 step 1 (conname check) and stage 18.1 (rollback runbook line). `tasks/planned/s1b-claim-index.md` done by S3 stage 2.
 - 2026-11-07: Stage 3 built: port methods, `MailNotFoundError`, fake writes (`keepUidOnCopy`, `copyUidMap`), 8 contract cases (`skipIf` on IMAP until stage 4), IMAP stubs; `...fake` in the two hand-built test wrappers. Review (Opus, high) round 1 FAIL (major: the fake moved mail without MOVE and UIDPLUS; minor: `newUid` without UIDPLUS, move to a missing folder, path test), fixed; round 2 PASS (minor: no folder path in the fake TRYCREATE error, fixed).
 - 2026-11-07: Stage 4 built: `ImapMailProvider` writes (`createImapMailProvider`, `matchFolder`, parent-first `ensureFolder`, own COPY + UID EXPUNGE path, `forceCopyMove`), contract on GreenMail twice (MOVE and COPY path). Review (Opus, high): PASS; hardening applied: `!copied` / `!moved` (imapflow can return undefined), a re-fetch after `messageDelete` (`expunge refused` when the UID stays), more stub tests. Not done (reviewer question): COPYUID is not required before the delete (stage 9 locates by identity).
+- 2026-11-07: Stopped by the user after step 5.1 was built (uncommitted, not reviewed): `mail/sync-rules.ts` (identity rules), new `mail/locate.ts` + `locate.test.ts`, `mail/index.ts`, `sync-rules.test.ts`; lint 0, typecheck 0, 684 unit pass. Implementer deviations to review: a mail without `Message-ID` matches only a meta without one (plus the hash); `no_size` compares a null `from` as an empty string. Next: step 5.2, then the stage 5 review (Opus, high) and commit.
+- 2026-11-07: Stage 5 built (5.1 identity rules and `locateMessage`; 5.2 the sync uses it, `findByMessageId` removed, `inbox_uid` on insert, update and return, `listFolderUids`). Review (Opus, high): PASS; deviations accepted (a mail without `Message-ID` matches only a meta without one; `no_size` null `from` = ""). Its question (a return of a later copy when two copies are in one folder) is a follow-up: `tasks/planned/sync-return-of-a-later-copy.md`.

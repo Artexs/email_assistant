@@ -121,7 +121,15 @@ describe("backfillInbox", () => {
       expect(byId.get("<b4@x.test>")?.backfilled_at).toBeNull();
       expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY, lastUid: 4 });
 
-      const readOnly = ["inboxStatus", "searchInboxSince", "fetchByUids", "fetchBodyText", "findByMessageId"];
+      const readOnly = [
+        "inboxStatus",
+        "searchInboxSince",
+        "fetchByUids",
+        "fetchBodyText",
+        "fetchMetaIn",
+        "searchSinceIn",
+        "fetchByUidsIn",
+      ];
       for (const call of s.fake.calls) expect(readOnly).toContain(call);
     });
   });
@@ -207,7 +215,6 @@ describe("backfillInbox", () => {
           );
           return s.fake.fetchBodyText(uid);
         },
-        findByMessageId: (folder, messageId) => s.fake.findByMessageId(folder, messageId),
         close: () => s.fake.close(),
       };
 

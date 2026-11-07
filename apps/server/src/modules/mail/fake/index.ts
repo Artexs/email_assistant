@@ -251,12 +251,6 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
       return null;
     },
 
-    async findByMessageId(folder, messageId) {
-      enter("findByMessageId");
-      const found = folders.get(folder)?.messages.find((m) => m.msg.messageId === messageId);
-      return found?.uid ?? null;
-    },
-
     async ensureFolder(name) {
       enter("ensureFolder");
       folderOf(name);
