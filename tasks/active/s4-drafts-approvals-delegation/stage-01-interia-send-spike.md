@@ -75,7 +75,7 @@ Why first: the "Not verified" Interia items (drafts folder behaviour, the header
   - Done when: the GreenMail test passes and `bun run mailbox:probe-send` prints the usage without arguments.
   - Out of scope: the port methods and the sender adapter (stage 5: the probe uses `imapflow` and `SMTPConnection` directly, like `probe.ts`); any write to a mail that is not the probe mail.
 
-- [ ] **1.2 Run the probe on the pilot Interia mailbox (user step) and record the facts**
+- [x] **1.2 Run the probe on the pilot Interia mailbox (user step) and record the facts**
   - Goal: the "Not verified" Interia items become facts in the note; the stage 6, 11 and 12 decisions are settled (user checkpoint 1).
   - Files: change `notes/2026-11-03-interia-imap-capabilities.md` (append "Send probe (S4 stage 1, <date>)" with the report lines), this task file ("Results": the report; a log line).
   - Interfaces: none (operations).

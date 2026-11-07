@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress: build step 0 done (plan checked against the S3 code). Stages 2–5 and their fixes PASS (pushed); stages 7–10 and all fixes PASS (pushed). Checkpoint 2 group review FAIL (1 major: a plan-order decision, 8 minors): fixes in build. Stage 1.1 and its fix PASS. Next: the user runs stage 1.2 on Interia; then stage 6, stages 11–18 in pipeline mode; stage 1 (Interia probe) runs when the user is free (password on stdin, `/pause`); stage 6 waits for checkpoint 1.** Run mode: pipeline (`tasks/README.md` § "Pipeline mode"), user decision 2026-11-07. The user said S3 counts as built (they test S3 stage 16 in a separate checkout, `~/ea-s3-test`). Build handoff: `notes/2026-11-07-handoff-s4-build.md`.
+> **Status 2026-11-07 — in progress: build step 0 done (plan checked against the S3 code). Stages 2–5 and their fixes PASS (pushed); stages 7–10 and all fixes PASS (pushed). Checkpoint 2 group review FAIL (1 major: a plan-order decision, 8 minors): fixes in build. Stage 1.1 and its fix PASS. Stage 1 done (checkpoint 1: the Interia facts hold, no plan change). Group fix PASS (pushed). Next: stages 6, 11–18, then user checkpoint 3 in pipeline mode; stage 1 (Interia probe) runs when the user is free (password on stdin, `/pause`); stage 6 waits for checkpoint 1.** Run mode: pipeline (`tasks/README.md` § "Pipeline mode"), user decision 2026-11-07. The user said S3 counts as built (they test S3 stage 16 in a separate checkout, `~/ea-s3-test`). Build handoff: `notes/2026-11-07-handoff-s4-build.md`.
 
 > **Deploy order (main session, 2026-11-07):** stage 20 (the `classifier-v2` eval) runs before any VPS deploy of a commit after `c0340b4`. S3 stage 19 holds the same precondition.
 
@@ -153,7 +153,7 @@ Implementers run on default Sonnet. Stage reviews of `[risky]` stages run on Opu
 
 Each stage lives in its own file in [`s4-drafts-approvals-delegation/`](s4-drafts-approvals-delegation/). An implementer or reviewer reads this file (Input, Rules, checkpoints) and only the stage file of its step. The main session ticks the step boxes in the stage file and the stage box here. `[written]` marks a stage file that is on disk (planning progress).
 
-- [ ] [Stage 1](s4-drafts-approvals-delegation/stage-01-interia-send-spike.md) — Interia send spike: `mailbox:probe-send` on the real mailbox [risky] [written] — user checkpoint 1 after it
+- [x] [Stage 1](s4-drafts-approvals-delegation/stage-01-interia-send-spike.md) — Interia send spike: `mailbox:probe-send` on the real mailbox [risky] [written] — user checkpoint 1 after it
 - [x] [Stage 2](s4-drafts-approvals-delegation/stage-02-s4-migration.md) — S4 migration: `delegates`, `delegations`, action types and checks, outbox kinds [risky] [written]
 - [x] [Stage 3](s4-drafts-approvals-delegation/stage-03-core-triage-delegation.md) — Core: `delegation` in the rules, the analysis schema, the planner, the policy [risky] [written]
 - [x] [Stage 4](s4-drafts-approvals-delegation/stage-04-core-outgoing-messages.md) — Core: outgoing message builder, templates, quote, external-sender rule [risky] [written]
@@ -223,7 +223,18 @@ New, minors and questions:
 
 ### Results (filled in stages 1, 19, 20, 22 and 23)
 
-_Not yet._
+**Stage 1 (Interia send probe, 2026-11-07, run by the user):**
+
+- `mailbox:probe-send` (run 2, the full report): folders `Wersje robocze` (`\Drafts`) and `Wysłane` (`\Sent`), none created; UIDPLUS true; SMTP PIPELINING true.
+- Draft APPEND with `\Draft`: APPENDUID 38939; `SEARCH SINCE` in Drafts finds it; the FETCH of the uid returns the `x-ea-action-id` header; ENVELOPE Message-ID, RFC822.SIZE (= raw length), INTERNALDATE and the `\Draft` flag are kept; `UID EXPUNGE` deletes it and it is gone after.
+- SMTP send (port 465): DATA reply 354, final reply 250, no error.
+- Sent copy APPEND: APPENDUID 38940; header fetched; `SEARCH SINCE` in Sent finds it; deleted.
+- Sent autosave: the SMTP server saves no copy in `Wysłane` (polled 60 s).
+- Own mail back in INBOX: found after 1 s with the `X-EA-Action-Id` header intact (uid 38941); deleted.
+- UIDs are consecutive across folders (38939 Drafts, 38940 Sent, 38941 INBOX): one UID counter for the mailbox (as in the S3 probe).
+- Run 1 (uids 38936 draft, 38937 Sent copy) printed up to the Sent copy step only in the user's paste; its INBOX mail (subject `EA probe send …`) may still be in INBOX if that run did not end: check by hand.
+
+Consequences for stages 6, 11 and 12 (checkpoint 1): every "Not verified" Interia item holds as the plan assumed, so no decision changes. D14 `locateByActionId` (SEARCH SINCE + header FETCH) works in Drafts and Sent; D11 keeps the Sent-copy APPEND (no autosave) and a crash in `applying` at Interia ends `outcome_unknown`; D15 own-mail skip is needed (the mail returns to INBOX with the header); D10 counted DATA reply is needed (PIPELINING true); D13 draft removal by reverse row works (UIDPLUS true).
 
 ## Questions for the user
 
@@ -288,3 +299,4 @@ Answered 2026-11-07 with the plan defaults (P1–P8). Questions 1–12 below: **
 - 2026-11-07: stage 1.1 review FAIL (Opus, high; 2 majors, 3 minors: the own Sent copy counted as autosave, the cleanup note for the sent mail, a SEARCH-only draft uid deleted without identity, duplicate notes, the status line). Fixed in the stage 1 fix (int 672 pass).
 - 2026-11-07: checkpoint 2 group review of stages 2–10 FAIL (Opus, high): 1 major, 8 minors. Major: master now runs `classifier-v2` live, and S3 stage 19 deploys master with `git pull`, so v2 would reach real mail before the stage 20 eval (P7). Main-session decision (option b; the user can change it): stage 20 (the eval) runs before any VPS deploy of a commit after `c0340b4`; S3 stage 19 gets this precondition. The minors go into one fix commit.
 - 2026-11-07: stage 1 fix PASS (Sonnet, high; 2 optional minors: no APPENDUID makes the own Sent copy look like autosave, and the SEARCH-only identity path has no test — both noted, Interia has UIDPLUS). Checkpoint 2 group-review fix built (items 1–9: the deploy-order precondition in S3 stage 19 and here; `sendAgain` checks `DelegationHooks.isOpen` → `delegation_closed`; no raw delegation writers in the index; `setDelegationId` replaces `mergeActionPayload`; `not_handled` waits 5 min; stage 11 lock order; `closeDelegation` `not_closable`; D7 `answered_delegation_id`; core `delegationInputOf`; unit 938 pass, int 674 pass).
+- 2026-11-07: checkpoint 2 group fix PASS (Sonnet, high); on GitHub with the other chat's push of `19cbdfd`. Stage 1.2: the user ran the probe on Interia; all facts hold (Results). Checkpoint 1 passed: the user said go and "do it until you finish it".

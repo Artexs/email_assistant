@@ -66,3 +66,14 @@ The probe mail `EA probe 6a8a502f-…` stayed in INBOX; the user deletes it by h
 - Cleanup: probe mail deleted, probe folder and the created `AI` parent deleted.
 - The pilot password for Mac runs is in the macOS Keychain (service `ea-interia-imap`, account = pilot address); the user allowed the agent to pipe it into the probe (2026-11-07). Never print it. Remove after S3: `security delete-generic-password -s ea-interia-imap`.
 - Open: stage 19 (S3 deploy) — the real paths of the `AI/*` folders and the UID behaviour seen by the committer. See `notes/2026-11-07-assist-actions-facts.md`.
+
+## Send probe (S4 stage 1, 2026-11-07)
+
+- `mailbox:probe-send` (run 2, the full report): folders `Wersje robocze` (`\Drafts`) and `Wysłane` (`\Sent`), none created; UIDPLUS true; SMTP PIPELINING true.
+- Draft APPEND with `\Draft`: APPENDUID 38939; `SEARCH SINCE` in Drafts finds it; the FETCH of the uid returns the `x-ea-action-id` header; ENVELOPE Message-ID, RFC822.SIZE (= raw length), INTERNALDATE and the `\Draft` flag are kept; `UID EXPUNGE` deletes it and it is gone after.
+- SMTP send (port 465): DATA reply 354, final reply 250, no error.
+- Sent copy APPEND: APPENDUID 38940; header fetched; `SEARCH SINCE` in Sent finds it; deleted.
+- Sent autosave: the SMTP server saves no copy in `Wysłane` (polled 60 s).
+- Own mail back in INBOX: found after 1 s with the `X-EA-Action-Id` header intact (uid 38941); deleted.
+- UIDs are consecutive across folders (38939 Drafts, 38940 Sent, 38941 INBOX): one UID counter for the mailbox (as in the S3 probe).
+- Run 1 (uids 38936 draft, 38937 Sent copy) printed up to the Sent copy step only in the user's paste; its INBOX mail (subject `EA probe send …`) may still be in INBOX if that run did not end: check by hand.
