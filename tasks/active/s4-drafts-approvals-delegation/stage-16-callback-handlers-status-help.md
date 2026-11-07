@@ -8,13 +8,15 @@ Why risky: a tap is the approval record of ADR 0003. The handler must check the 
 
 - [ ] **16.1 The tap handlers (D18, D26)**
   - Goal: an owner's tap approves or rejects a send (or a set), asks for a resend, or closes a delegation; the tapped message shows the outcome; every other case gets a short, honest answer.
-  - Files: change `apps/server/src/modules/channels/callbacks.ts`, `channels/repo.ts` (`findOutboxByDedup(db, ctx, userId, dedupKey): Promise<{ id; text } | undefined>`), `channels/texts.ts`, `channels/telegram/runtime.ts` and `channels/commands.ts` (`CallbackDeps` and `CommandDeps` gain `hooks: DelegationHooks`, `uidplus(ctx, mailboxId)`, `sendScope: SendScope`), `apps/server/test/integration/channels-callbacks.test.ts`.
+  - Files: change `apps/server/src/modules/channels/callbacks.ts`, `channels/repo.ts` (`findOutboxByDedup(db, ctx, userId, dedupKey): Promise<{ id; text } | undefined>`), `channels/texts.ts`, `channels/telegram/runtime.ts` and `channels/commands.ts` (`CallbackDeps` and `CommandDeps` gain `hooks: DelegationHooks`, `uidplus(ctx, mailboxId)`, `sendScope: SendScope`; `createUpdateHandlers` (`commands.ts:222-226`) builds `CallbackDeps` field by field today, `{ db: deps.db, now: deps.now, actionsScope: deps.actionsScope }`, so it passes the three new fields too: M12), `apps/server/test/integration/channels-callbacks.test.ts`.
   - Interfaces:
 
     ```ts
     export interface CallbackDeps {
+      // channels/callbacks.ts:19-23 (S3): db, now, actionsScope stay; the Undo tap reads deps.actionsScope (`callbacks.ts:69`)
       db;
       now(): Date;
+      actionsScope: ActionsScope;
       hooks: DelegationHooks;
       uidplus(ctx, mailboxId): Promise<boolean>;
       sendScope: SendScope;
@@ -44,6 +46,7 @@ Why risky: a tap is the approval record of ADR 0003. The handler must check the 
     ```
 
   - Decisions:
+    - **Order in `handleCallback` (M12).** Today `handleCallback` calls `getLabelTarget(deps.db, ctx, callback.emailId)` for every kind except `cancel` (`callbacks.ts:63`). The six new kinds carry an action, set or delegation id and no `emailId`: handle them right after the `cancel` branch and before `getLabelTarget` (one `switch` or early returns); the S2 and S3 kinds keep the `getLabelTarget` path.
     - `handleCallback`, new kinds (after `parseCallback`; the S2 and S3 kinds unchanged): `approve`, `reject`, `approve_set`, `reject_set`, `send_again` → `link.role !== "owner"` → `{ answer: owner_only }` before any query. `delegation_done` → every member.
     - `approve`: `result = approve(db, ctx, actionId, { userId: link.userId, via: "telegram", now })`; `approved` → the held check: `send = getSend(actionId)`, `mailbox = getMailbox(send.email.mailbox_id)`, `admits = sendScopeAdmits(sendFilterFor(deps.sendScope, mailbox.address), payload.to)` (a pure helper in `actions/scope.ts`: `none` → false, `self` → every address in the list, `all` → true); `heldBy` = `!admits` → `scope`, else `mailbox.status === "paused"` → `paused`, else `mailbox.status === "auth_error"` → `auth_error`, else none (the S3 committer claims nothing of a mailbox that is not `active`, so the toast "within a minute" would be false: review round 2 N17, the S3 D10 held pattern) → answer `approved`, or `approved_held` / `approved_paused` / `approved_auth_error`; `edit` = `approvalEdit({ original, outcome: heldBy ? "approved_held" : "approved", heldBy, at: now, timeZone, actionId })` (stage 14: the held variant keeps the `[✖️ Reject]` button, so the user can still cancel a held send; `reject` accepts an `approved` row with `locked_at` null) where `original` = `findOutboxByDedup(db, ctx, link.userId, approval:<actionId>)?.text ?? ""` (an empty original → no edit, only the answer); `expired` (the 48 h passed before the tap: `approve` expired the row) → the `expired` text and the `rejected`-style edit with `⌛ Expired <HH:MM>.`; `already_approved` → the clock of `at` in the organization timezone; the other kinds → their texts, no edit (the message of another owner stays as it is; a second tap on the same message after an edit cannot happen: the buttons are gone).
     - `reject`: `reject({ db, hooks, uidplus }, ctx, actionId, …)` → `rejected` → answer `rejected_now`, `edit` with `"rejected"`; `already` → the text of that status (`sent` for `applied`, `sending` for `applying` / locked `approved`, `rejected`, `expired`, `failed`); `not_found` → the S2 text.

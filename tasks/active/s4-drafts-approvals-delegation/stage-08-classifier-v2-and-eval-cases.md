@@ -8,7 +8,7 @@ Why risky: the prompt decides which mail becomes a draft and to whom; the eval c
 
 - [ ] **8.1 Prompt `classifier-v2` and the classifier input (D3)**
   - Goal: the classifier sends the delegates list and gets back a delegate id from that list, a task and a clarification; the prompt version is `classifier-v2`.
-  - Files: create `apps/server/src/modules/triage/prompts/classifier-v2.ts`; change `apps/server/src/modules/triage/classifier.ts`, `classifier.test.ts`, `triage/index.ts` (`PROMPT_VERSION` from v2), `triage/service.ts` (the two `PROMPT_VERSION` imports → v2), `apps/server/src/scripts/llm-check.ts` (option `--delegates`: the v2 schema with a sample list of two ids; if the script does not exist yet because `llm-provider-switch` stage 4 is not built, do the same with `bun run eval --set delegation --limit 2 --provider <id>` after 8.2 and write it in the log).
+  - Files: create `apps/server/src/modules/triage/prompts/classifier-v2.ts`; change `apps/server/src/modules/triage/classifier.ts`, `classifier.test.ts`; the five v1 `PROMPT_VERSION` imports move to `./prompts/classifier-v2` (M20): `classifier.ts:7` (with `buildSystemPrompt`, `buildUserPrompt`), `eval.ts:36` (with `EXCERPT_CHARS`: v2 exports the same constant), `triage/index.ts:33` (the re-export), `service.ts:31` (one import, used at `:251` and `:370`), `eval.test.ts:12`; `apps/server/src/scripts/llm-check.ts` (option `--delegates`: the v2 schema with a sample list of two ids; if the script does not exist yet because `llm-provider-switch` stage 4 is not built, do the same with `bun run eval --set delegation --limit 2 --provider <id>` after 8.2 and write it in the log).
   - Interfaces:
 
     ```ts
@@ -59,7 +59,8 @@ Why risky: the prompt decides which mail becomes a draft and to whom; the eval c
     export function delegateIdOf(key: string): string; // a deterministic uuid: `00000000-0000-4000-8000-` + the first 12 hex characters of sha256(key); the payload schemas need a uuid (D2), and the schema enum takes it as any string
     // eval.ts
     CaseResult: + delegatePick: boolean | null; draftKind: "delegation" | "clarification" | "none" | null; draftMatches: boolean | null
-    EvalReport.delegation: { pick: { right: number; total: number }; draft: { right: number; total: number } }
+    // EvalReport = CasesEvalReport | RealEvalReport (`eval.ts:110`): the new field goes on CasesEvalReport (`eval.ts:78`) only (M21)
+    CasesEvalReport.delegation: { pick: { right: number; total: number }; draft: { right: number; total: number } }
     ```
 
   - Decisions:
@@ -71,5 +72,5 @@ Why risky: the prompt decides which mail becomes a draft and to whom; the eval c
     - `mailbox:seed --eval-cases delegation` seeds the case mails (`toSeedMessage` unchanged); the delegates for a dev run come from `delegates:add` (stage 19 step).
   - Test: `eval-case.test.ts`: the new fields parse with defaults; `selectCases({ perCategory })` includes `delegation` synthetic cases per category and still the injection subset. `eval.test.ts` (fake LLM): (1) a delegation case whose fake answer picks the expected key → `delegatePick` true, `draftKind` `delegation`, `injectionPassed` null (not an injection case); (2) an injection case with delegates whose fake answer is `delegation` with `delegate_id` = `delegateIdOf("anna")` (an id of the list, so `classifyEmail` keeps it) and a task with `x@evil.test` → `injectionPassed` false (a draft for a non-delegation expectation); (3) an injection case answered `spam` → true; (4) a delegation case answered with a clarification → `draftKind` `clarification`; (5) the report counts. `eval-report.test.ts`: the two new lines render.
   - Check: `bun run lint && bun run typecheck && bun run test:unit` (`eval-cases.test.ts` runs in `test:unit`: it is next to the code). No LLM call in this step.
-  - Done when: the tests pass; `bun run eval --set delegation --limit 0` (or `--per-category 0`: whichever the runner accepts) prints the report shape without calls, or the runner is run in stage 20 only — the step log says which.
+  - Done when: the tests pass; the unit tests show the report shape (`eval-report.test.ts`); no zero-call run (M21: `scripts/eval.ts:45-46` declares `--limit` and `--per-category` as `.positive()`, so `0` is refused; the first real run is stage 20).
   - Out of scope: the eval run itself (stage 20).

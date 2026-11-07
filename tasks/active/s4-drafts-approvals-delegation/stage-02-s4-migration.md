@@ -4,12 +4,12 @@ Part of [`../s4-drafts-approvals-delegation.md`](../s4-drafts-approvals-delegati
 
 ## Stage 2 — S4 migration: `delegates`, `delegations`, action types and checks, outbox kinds [risky]
 
-- [ ] **2.1 Migration `<next free version>_delegation.sql`**
+- [ ] **2.1 Migration `20261108000001_delegation.sql` (or the next free version)**
   - Goal: the schema of D1 with the guards in the database: a send on its way out always has an approval record; a send is never `ready`; a delegation in `sent` always has its message id.
-  - Files: create `db/migrations/<version>_delegation.sql` (`<version>` = the next free version after the highest file in `db/migrations/`, after the S3 migration; never a version that exists); regenerate `apps/server/src/platform/db/schema.ts` (`bun run db:types`, never by hand); create `apps/server/test/integration/delegation-schema.test.ts`.
+  - Files: create `db/migrations/<version>_delegation.sql` (`<version>` = the next free version after the highest file in `db/migrations/`; at `279387b` the highest is the second S3 migration `20261107000002_undo_pending.sql` (`emails.undo_pending_at`), after `20261107000001_assist_actions.sql`, so for example `20261108000001`; never a version that exists; M15); regenerate `apps/server/src/platform/db/schema.ts` (`bun run db:types`, never by hand); create `apps/server/test/integration/delegation-schema.test.ts`.
   - Interfaces: the SQL below. After `db:types`: `Delegates`, `Delegations` interfaces; `Actions.result_notified_at: Timestamp | null`.
   - Decisions:
-    - Read the real constraint names first on the dev DB: `SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid = 'actions'::regclass AND contype = 'c';` (the column check of `type` is `actions_type_check` by the default rule) and the same for `outbox` (the S3 migration named `outbox_kind_check` and `outbox_email_kind_check`). Use the real names in both directions.
+    - Read the real constraint names first on the dev DB: `SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid = 'actions'::regclass AND contype = 'c';` (the column check of `type` is `actions_type_check` by the default rule) and the same for `outbox` (the S3 migration named `outbox_kind_check` and `outbox_email_kind_check`: `20261107000001_assist_actions.sql:14-17`; build step 0 found that the names in the SQL below match). Use the real names in both directions.
     - Exact SQL (keep the order; `-- migrate:down` undoes it in reverse):
 
       ```sql
