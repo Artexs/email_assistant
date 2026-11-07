@@ -22,14 +22,16 @@ export async function insertDefaultSettings(db: DbOrTrx, ctx: TenantContext, mai
   await db.insertInto("mailbox_settings").values({ mailbox_id: mailboxId, org_id: ctx.orgId }).execute();
 }
 
+// `version` is `updated_at` as text: it keeps the microseconds that a JS Date drops.
 export async function getMailboxSettings(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string
-): Promise<MailboxSettingsRow | undefined> {
+): Promise<(MailboxSettingsRow & { version: string }) | undefined> {
   return db
     .selectFrom("mailbox_settings")
     .selectAll()
+    .select(sql<string>`updated_at::text`.as("version"))
     .where("org_id", "=", ctx.orgId)
     .where("mailbox_id", "=", mailboxId)
     .executeTakeFirst();
@@ -48,6 +50,23 @@ export async function lockMailboxSettings(
     .where("mailbox_id", "=", mailboxId)
     .forUpdate()
     .executeTakeFirst();
+}
+
+// Share lock until the end of the transaction: a setter (FOR UPDATE) waits for this writer, or the writer sees its commit.
+// Returns the `version` of `getMailboxSettings`, or `undefined` when the row is missing.
+export async function lockSettingsForShare(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string
+): Promise<string | undefined> {
+  const row = await trx
+    .selectFrom("mailbox_settings")
+    .select(sql<string>`updated_at::text`.as("version"))
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .forShare()
+    .executeTakeFirst();
+  return row?.version;
 }
 
 export async function updateMailboxSettings(

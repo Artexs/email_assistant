@@ -4,6 +4,7 @@ export {
   insertDefaultSettings,
   insertSenderRule,
   listSenderRules,
+  lockSettingsForShare,
   lockMailboxSettings,
   type MailboxSettingsRow,
   updateMailboxSettings,

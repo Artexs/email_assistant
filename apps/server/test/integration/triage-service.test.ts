@@ -3,6 +3,7 @@ import type { Transaction } from "kysely";
 
 import { listActionsForEmail } from "../../src/modules/actions";
 import { auditEvents, countLlmCallsSince, recordAudit } from "../../src/modules/audit";
+import { getMailboxSettings, insertDefaultSettings } from "../../src/modules/config";
 import { claimEmails, type ClaimedEmail } from "../../src/modules/mail";
 import {
   finishTriageError,
@@ -36,6 +37,9 @@ const now = new Date("2026-11-05T12:00:00.123Z");
 async function setup(trx: Transaction<DB>) {
   const created = await createOrgWithMailbox(trx);
   const ctx: TenantContext = { orgId: created.orgId };
+  await insertDefaultSettings(trx, ctx, created.mailboxId);
+  const settings = await getMailboxSettings(trx, ctx, created.mailboxId);
+  if (!settings) throw new Error("no settings");
   const emailId = await insertTestEmail(trx, ctx, created.mailboxId);
   const [email] = await claimEmails(trx, ctx, created.mailboxId, {
     now,
@@ -46,6 +50,7 @@ async function setup(trx: Transaction<DB>) {
   if (!email) throw new Error("claim failed");
   const mailbox: TriageMailbox = {
     id: created.mailboxId,
+    settingsVersion: settings.version,
     mode: "shadow",
     toolSwitches: { move: true, mark_read: true, flag: true, create_draft: false, move_unsure: true },
     policy: { info: { auto: true } },

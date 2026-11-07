@@ -73,6 +73,7 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
             const capabilities: { move?: boolean; uidplus?: boolean } = row.capabilities;
             mailbox = {
               id: mailboxId,
+              settingsVersion: settings.version,
               mode: modeSchema.parse(settings.mode),
               toolSwitches: parseToolSwitches(settings.tool_switches),
               policy: parseCategoryPolicy(settings.category_policy),

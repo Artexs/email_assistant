@@ -23,6 +23,7 @@ import { LlmBlockedError, LlmConfigError, llmErrorCode, type LlmClient, type Llm
 import { createLog } from "../../platform/log";
 import { createPlanned, type PlannedActionInput } from "../actions";
 import { auditEvents, countLlmCallsSince, recordAudit } from "../audit";
+import { lockSettingsForShare } from "../config";
 import { finishEmail, isSyntheticMessageId, listThreadContext, releaseEmail, type ClaimedEmail } from "../mail";
 
 import { classifyEmail, type ClassifierEmail } from "./classifier";
@@ -34,6 +35,8 @@ const log = createLog("triage");
 
 export interface TriageMailbox {
   id: string;
+  // `mailbox_settings.updated_at` (as text) at the read of this snapshot; `saveTriage` compares it under a lock.
+  settingsVersion: string;
   mode: MailboxMode;
   toolSwitches: ToolSwitches;
   policy: CategoryPolicy;
@@ -94,6 +97,9 @@ function payloadOf(action: PlannedAction): Record<string, string> {
 
 // One transaction: the email status, the result, the actions and the audit rows.
 // A lost claim (another run took the mail) returns `lost` and writes nothing; it does not throw.
+// The settings row is share-locked first, then the email row: a setter (FOR UPDATE on settings, then the action rows)
+// cannot commit between the check and the action inserts. Changed settings: the mail goes back without a count
+// (`retry_later`) and the next run triages it with the new settings.
 export async function saveTriage(
   db: Db | Transaction<DB>,
   ctx: TenantContext,
@@ -119,6 +125,14 @@ export async function saveTriage(
   }));
 
   const run = async (trx: Transaction<DB>): Promise<TriageOutcome> => {
+    if ((await lockSettingsForShare(trx, ctx, mailbox.id)) !== mailbox.settingsVersion) {
+      log.debug(`triage ${email.id}: settings changed, mail released`);
+      const released = await releaseEmail(trx, ctx, email.id, email.locked_at, {
+        nextAttemptAt: null,
+        countAttempt: false,
+      });
+      return released ? { kind: "retry_later" } : { kind: "lost" };
+    }
     if (!(await finishEmail(trx, ctx, email.id, email.locked_at, { status: "triaged" }))) {
       log.warn(`triage ${email.id}: lost the claim`);
       return { kind: "lost" };
