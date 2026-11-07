@@ -8,7 +8,7 @@ Preconditions: stage 19 is done; `tasks/done/s1b-shadow-run.md` stage 40 is done
 
 **Risk (name it to the user before the go):** from this stage on the system moves the user's real mail. Every move has Undo for 7 days; a user move back writes feedback; N = 3 wrong moves in the week is the bar (P2). To stop at once: `/pause` (no sync, no triage, no new actions, no Undo until `/resume`), or the user sets `ACTIONS_SCOPE=off` and restarts the server (`ready` rows wait and expire after 24 h, D21; an Undo tap answers "not possible now"), or `mailbox:settings mode --mode shadow` (new triage becomes `logged`, and the `ready` mailbox actions expire at once in the same transaction, D13; only a row that a committer run holds at that second still finishes, with Undo).
 
-- [ ] **20.1 Start: `auto` from the go/no-go table, scope `all`**
+- [x] **20.1 Start: `auto` from the go/no-go table, scope `all`**
   - Goal: the policy gate reflects the S1b table; the committer applies real mail.
   - Files: this task file ("Results", log line).
   - Steps:

@@ -2,6 +2,7 @@ import { parseArgs } from "node:util";
 
 import { z } from "zod";
 
+import { isOwnActionId } from "../modules/actions";
 import { backfillMailbox, CursorMovedError } from "../modules/mail";
 import { requeueBackfillWindow } from "../modules/triage";
 import { loadConfig } from "../platform/config";
@@ -60,10 +61,15 @@ async function main(): Promise<number> {
     await assertAppRole(db);
     const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
     const now = new Date();
-    const result = await backfillMailbox({ db, secrets }, { orgId: options.orgId }, options.mailboxId, {
-      days: options.days,
-      now,
-    });
+    const result = await backfillMailbox(
+      { db, secrets, isOwnActionId: (ctx, mailboxId, actionId) => isOwnActionId(db, ctx, mailboxId, actionId) },
+      { orgId: options.orgId },
+      options.mailboxId,
+      {
+        days: options.days,
+        now,
+      }
+    );
     log.info(
       `backfill ${options.mailboxId}: fetched ${result.fetched}, stored ${result.stored}, uid updated ${result.uidUpdated}, returned ${result.returned}`
     );

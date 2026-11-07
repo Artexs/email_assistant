@@ -25,7 +25,13 @@ import { createSecretBox } from "../../src/platform/crypto";
 import type { DB, TenantContext } from "../../src/platform/db";
 import { HardError, SoftError } from "../../src/platform/errors";
 
-import { createOrgWithMailbox, insertAction, insertTriagedWithActions, pauseOtherMailboxes } from "./fixtures";
+import {
+  applyDepsDefaults,
+  createOrgWithMailbox,
+  insertAction,
+  insertTriagedWithActions,
+  pauseOtherMailboxes,
+} from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -456,7 +462,7 @@ describe("undo: a reverse move in flight (D22)", () => {
       { db: trx, now: () => at, provider: s.fake, mailboxId: s.mailboxId, folderMap: { ...AI_FOLDER_NAMES } },
       s.ctx
     );
-    return { db: trx, now: () => at, mailboxId: s.mailboxId, folders };
+    return { db: trx, now: () => at, mailboxId: s.mailboxId, folders, ...applyDepsDefaults() };
   }
 
   const syncDeps = (trx: Transaction<DB>, s: Setup, at: Date) => ({

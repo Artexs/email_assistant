@@ -77,3 +77,10 @@ The probe mail `EA probe 6a8a502f-…` stayed in INBOX; the user deletes it by h
 - Own mail back in INBOX: found after 1 s with the `X-EA-Action-Id` header intact (uid 38941); deleted.
 - UIDs are consecutive across folders (38939 Drafts, 38940 Sent, 38941 INBOX): one UID counter for the mailbox (as in the S3 probe).
 - Run 1 (uids 38936 draft, 38937 Sent copy) printed up to the Sent copy step only in the user's paste; its INBOX mail (subject `EA probe send …`) may still be in INBOX if that run did not end: check by hand.
+
+## S3 stage 19 facts (2026-11-07, the committer on the real mailbox)
+
+- The `AI/*` folders: `AI/Info`, `AI/Spam`, `AI/Notifications`, `AI/Manual` (delimiter `/`).
+- A system move (COPY + UID EXPUNGE, Interia has no MOVE) gives the mail a new UID in the target folder (INBOX 38942 → `AI/Spam` 38947).
+- The system COPY back to INBOX (Undo) gives a new INBOX UID (38951).
+- A webmail move back to INBOX keeps the folder UID (38948).

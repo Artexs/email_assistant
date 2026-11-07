@@ -1,4 +1,4 @@
-import { folderKeys, type FolderKey } from "@ea/core";
+import { folderKeys, type FolderKey, type OutgoingMessage } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -11,31 +11,48 @@ import {
   locateKeyOf,
   locateMessage,
   MailAuthError,
+  type MailSender,
   setUndoPending,
   updateEmailLocation,
   type FolderMessageMeta,
   type MailProvider,
 } from "../mail";
 
+import { HARD_ERROR_TRIES, RETRY_WAIT_MS } from "./constants";
+import { applyDraft, removeDraft } from "./drafts";
+import type { DelegationHooks } from "./hooks";
 import { ensureMoved, type EnsureResult } from "./move";
 import { finishAction, markUndone, releaseAction, type ClaimedAction } from "./repo";
 
 const log = createLog("actions");
 
-export const HARD_ERROR_TRIES = 3;
-export const RETRY_WAIT_MS = 5 * 60_000;
+export { HARD_ERROR_TRIES, RETRY_WAIT_MS };
 
 export type ApplyOutcome =
   | { kind: "applied" }
-  | { kind: "failed"; reason: "mail_not_found" | "hard_error" | "no_provider" | "bad_payload" }
+  | {
+      kind: "failed";
+      reason:
+        | "mail_not_found"
+        | "hard_error"
+        | "no_provider"
+        | "bad_payload"
+        | "smtp_rejected"
+        | "smtp_error"
+        | "outcome_unknown";
+    }
+  // An `applying` draft whose send ended before the APPEND (N12).
+  | { kind: "expired"; reason: "send_closed" }
   | { kind: "retry"; soft: boolean }
   | { kind: "auth_error" }
   | { kind: "not_handled" }
   | { kind: "lost" };
 
 // Gives the real path of a folder key. `ensureFolder` runs once per key per run; a path that differs from `folder_map` is stored.
+export type ResolvableFolderKey = FolderKey | "drafts" | "sent";
+
 export interface FolderResolver {
-  resolve(key: FolderKey): Promise<string>;
+  resolve(key: ResolvableFolderKey): Promise<string>;
 }
 
 export interface ApplyDeps {
@@ -43,8 +60,14 @@ export interface ApplyDeps {
   now(): Date;
   mailboxId: string;
   folders: FolderResolver;
+  mailbox: { address: string; capabilities: { uidplus: boolean }; folderMap: Record<string, string> };
+  owner: { displayName: string };
+  organization: { styleText: string | null; timezone: string };
+  compose(message: OutgoingMessage): Promise<Buffer>;
+  sender: MailSender | null;
+  hooks: DelegationHooks;
   /** Test hook: runs after the IMAP change, before the DB transaction. */
-  beforeCommit?: () => void;
+  beforeCommit?: () => void | Promise<void>;
 }
 
 const FLAG_OF_TYPE: Record<string, string> = { flag: "\\Flagged", mark_read: "\\Seen" };
@@ -359,9 +382,9 @@ export async function applyAction(
   if (action.type === "save_summary") {
     return applySummary(deps, ctx, action);
   }
-  // Until the draft and send handlers exist: give the row back in its status, no count, wait 5 min so the rows do not
-  // fill each batch. Never apply it as a flag.
-  if (action.type === "create_draft" || action.type === "send") {
+  // Until the send handler (stage 12) exists: give the row back in its status, no count, wait 5 min so the rows do
+  // not fill each batch. Never apply it as a flag.
+  if (action.type === "send") {
     log.warn(`committer: ${action.id} type ${action.type} not handled yet`);
     const now = deps.now();
     await releaseAction(deps.db, ctx, action.id, action.locked_at, {
@@ -376,12 +399,16 @@ export async function applyAction(
     log.error(`action ${action.id}: no provider for ${action.type}`);
     const now = deps.now();
     await releaseAction(deps.db, ctx, action.id, action.locked_at, {
-      toStatus: "ready",
+      toStatus: action.status === "applying" ? "applying" : "ready",
       nextAttemptAt: new Date(now.getTime() + RETRY_WAIT_MS),
       countAttempt: false,
       now,
     });
     return { kind: "retry", soft: true };
+  }
+  if (action.type === "create_draft") {
+    if (action.reverses_action_id !== null) return removeDraft(deps, ctx, action, provider);
+    return applyDraft(deps, ctx, action, provider);
   }
   if (action.type === "move") {
     return applyMove(deps, ctx, action, provider);

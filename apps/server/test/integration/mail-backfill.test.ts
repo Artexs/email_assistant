@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
+import { isOwnActionId } from "../../src/modules/actions";
 import {
   backfillInbox,
   backfillMailbox,
@@ -18,7 +19,7 @@ import { createSecretBox } from "../../src/platform/crypto";
 import type { DB, Db, TenantContext } from "../../src/platform/db";
 import { HardError, SoftError } from "../../src/platform/errors";
 
-import { createOrgWithMailbox } from "./fixtures";
+import { createOrgWithMailbox, insertAction, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -101,6 +102,10 @@ async function cursorOf(trx: Db | Transaction<DB>, mailboxId: string) {
 
 const SINCE = ago(30 * DAY_MS);
 
+function ownOf(trx: Db | Transaction<DB>): SyncDeps["isOwnActionId"] {
+  return (ctx, mailboxId, actionId) => isOwnActionId(trx, ctx, mailboxId, actionId);
+}
+
 describe("backfillInbox", () => {
   test("stores the missing mails of the window with backfilled_at and keeps the cursor", async () => {
     await withRollback(db, async (trx) => {
@@ -131,6 +136,28 @@ describe("backfillInbox", () => {
         "fetchByUidsIn",
       ];
       for (const call of s.fake.calls) expect(readOnly).toContain(call);
+    });
+  });
+
+  test("a mail with the X-EA-Action-Id of a draft of this mailbox is skipped", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await syncedMailbox(trx);
+      const emailId = await insertTestEmail(trx, s.ctx, s.mailboxId);
+      const draftId = await insertAction(trx, s.ctx, emailId, { type: "create_draft", status: "ready" });
+      s.fake.deliver("INBOX", { ...seed(6), headers: { "X-EA-Action-Id": draftId } }, { internalDate: ago(HOUR_MS) });
+      s.fake.deliver(
+        "INBOX",
+        { ...seed(7), headers: { "X-EA-Action-Id": crypto.randomUUID() } },
+        { internalDate: ago(HOUR_MS) }
+      );
+
+      const result = await backfillInbox({ ...deps(trx, s.fake), isOwnActionId: ownOf(trx) }, s.ctx, s.mailboxId, {
+        since: SINCE,
+      });
+      expect(result.skippedOwn).toBe(1);
+      const ids = (await emails(trx, s.mailboxId)).map((row) => row.message_id_header);
+      expect(ids).not.toContain("<b6@x.test>");
+      expect(ids).toContain("<b7@x.test>");
     });
   });
 
@@ -256,10 +283,15 @@ describe("backfillMailbox", () => {
     await withRollback(db, async (trx) => {
       const s = await syncedMailbox(trx);
       await withPassword(trx, s);
-      const result = await backfillMailbox({ db: trx, secrets, openProvider: async () => s.fake }, s.ctx, s.mailboxId, {
-        days: 30,
-        now: NOW,
-      });
+      const result = await backfillMailbox(
+        { db: trx, secrets, openProvider: async () => s.fake, isOwnActionId: ownOf(trx) },
+        s.ctx,
+        s.mailboxId,
+        {
+          days: 30,
+          now: NOW,
+        }
+      );
       expect(result.mode).toBe("backfill");
       expect(result.stored).toBe(3);
       expect(result.uidUpdated).toBe(1);
@@ -273,10 +305,15 @@ describe("backfillMailbox", () => {
       await withPassword(trx, s);
       s.fake.resetUidValidity(UID_VALIDITY + 1);
       await expect(
-        backfillMailbox({ db: trx, secrets, openProvider: async () => s.fake }, s.ctx, s.mailboxId, {
-          days: 30,
-          now: NOW,
-        })
+        backfillMailbox(
+          { db: trx, secrets, openProvider: async () => s.fake, isOwnActionId: ownOf(trx) },
+          s.ctx,
+          s.mailboxId,
+          {
+            days: 30,
+            now: NOW,
+          }
+        )
       ).rejects.toBeInstanceOf(SoftError);
       expect(s.fake.closed).toBe(true);
     });
@@ -290,6 +327,7 @@ describe("backfillMailbox", () => {
         {
           db: trx,
           secrets,
+          isOwnActionId: ownOf(trx),
           openProvider: async () => {
             opened += 1;
             return s.fake;

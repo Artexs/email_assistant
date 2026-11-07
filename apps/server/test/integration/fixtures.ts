@@ -3,7 +3,8 @@ import { randomUUID } from "node:crypto";
 import { sendPayloadFor, type ActionType, type Category, type DraftPayload, type MembershipRole } from "@ea/core";
 import type { Transaction } from "kysely";
 
-import type { MailCapabilities, NewEmail } from "../../src/modules/mail";
+import { noDelegationHooks, type ApplyDeps } from "../../src/modules/actions";
+import { composeMessage, type MailCapabilities, type NewEmail } from "../../src/modules/mail";
 import { insertMailbox } from "../../src/modules/mail/repo";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
@@ -17,6 +18,21 @@ export const testCapabilities: MailCapabilities = {
   specialUse: true,
   keywords: true,
 };
+
+// The S4 fields of `ApplyDeps` for tests that apply no draft or send.
+export function applyDepsDefaults(): Pick<
+  ApplyDeps,
+  "mailbox" | "owner" | "organization" | "compose" | "sender" | "hooks"
+> {
+  return {
+    mailbox: { address: "box@x.test", capabilities: { uidplus: true }, folderMap: {} },
+    owner: { displayName: "Owner" },
+    organization: { styleText: null, timezone: "Europe/Warsaw" },
+    compose: composeMessage,
+    sender: null,
+    hooks: noDelegationHooks,
+  };
+}
 
 export async function createOrgWithMailbox(
   trx: Transaction<DB>,

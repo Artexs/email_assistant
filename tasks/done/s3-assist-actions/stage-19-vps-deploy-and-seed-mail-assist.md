@@ -8,7 +8,7 @@ Preconditions (user checkpoint 4): stages 1–18 are committed and pushed; S2 st
 
 **Risk (name it to the user before the go):** the deploy restarts the server: about one minute of triage stops, and each mail in a running LLM call loses one attempt (the S1b shadow run is done, 2026-11-06). After this stage the pilot mailbox runs in mode `assist` with `ACTIONS_SCOPE=synthetic`: real mail gets `ready` rows that the committer never claims (D8), and they expire after 24 h (D21). Nothing moves real mail in this stage. Rollback: `git rev-parse --short HEAD` before the update gives `<OLD>`; if the server does not start or restarts again and again: first `$C exec -T db psql -U postgres -d email_assistant -c "update outbox set status = 'failed', error_code = 'outdated' where kind = 'action_failed' and status = 'pending';"` (the old code's `claimDueOutbox` parses `kind` with the old enum and fails on every run while such a row is pending, m17), then `git checkout <OLD> && $C up -d --build --wait`, tell the user, later `git checkout master`. The S3 migration adds columns, indexes and a check; the old code ignores them, so no DB rollback is needed. Before the rollback set the mode back to `shadow` with the new image if possible (`$C run --rm -T server bun run mailbox:settings mode …`), else by SQL `update mailbox_settings set mode = 'shadow' where mailbox_id = '<MB>'`.
 
-- [ ] **19.1 Deploy S3 and switch the pilot mailbox to `assist` with the seed-mail scope**
+- [x] **19.1 Deploy S3 and switch the pilot mailbox to `assist` with the seed-mail scope**
   - Goal: the pilot server runs the S3 code; the mode is `assist`; mailbox changes are limited to synthetic mail.
   - Files: this task file ("Results", log line); `notes/2026-11-03-pilot-vps.md` (append: the S3 deploy date, the new `.env` key name `ACTIONS_SCOPE` without a value comment beyond `synthetic`).
   - Steps:
@@ -22,7 +22,7 @@ Preconditions (user checkpoint 4): stages 1–18 are committed and pushed; S2 st
   - Done when: the checks pass.
   - Out of scope: real mail (scope `all` is stage 20).
 
-- [ ] **19.2 Seed-mail run on the real Interia mailbox: moves, Undo, user move back**
+- [x] **19.2 Seed-mail run on the real Interia mailbox: moves, Undo, user move back**
   - Goal: the done-when items on real IMAP (Interia): moves land in `AI/*`, Undo brings a mail back, a user move back gives one `imap_move` row, the audit rows exist, and the logs stay clean.
   - Files: this task file ("Results"), `notes/2026-11-03-interia-imap-capabilities.md` (the real `AI/*` paths, the UID behaviour the committer saw: `provider_result` of the applied moves).
   - Steps:

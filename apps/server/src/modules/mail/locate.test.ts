@@ -1,7 +1,15 @@
 import { describe, expect, test } from "bun:test";
 
 import { createFakeMailProvider } from "./fake";
-import { locateKeyOf, locateMessage, LOCATE_CHUNK, type LocateKey } from "./locate";
+import {
+  locateByActionId,
+  locateKeyOf,
+  locateMessage,
+  LOCATE_CHUNK,
+  LOCATE_NEWEST_FIRST_CHUNK,
+  type ActionLocateKey,
+  type LocateKey,
+} from "./locate";
 import type { MessageMeta } from "./port";
 import type { SeedMessage } from "./seed";
 import { contentHash } from "./sync-rules";
@@ -141,5 +149,97 @@ describe("locateKeyOf", () => {
       receivedAt: RECEIVED,
       hintUid: 4,
     });
+  });
+});
+
+describe("locateByActionId", () => {
+  const DRAFTS = "Drafts";
+  const ACTION_A = "11111111-1111-4111-8111-111111111111";
+  const ACTION_B = "22222222-2222-4222-8222-222222222222";
+
+  function draft(n: number, actionId: string | null, header = "X-EA-Action-Id"): SeedMessage {
+    return { ...mail(n), headers: actionId === null ? {} : { [header]: actionId } };
+  }
+
+  function actionKey(actionId: string, hintUid: number | null = null): ActionLocateKey {
+    return { actionId, hintUid, since: RECEIVED };
+  }
+
+  test("hint hit: one fetchMetaIn, no search", async () => {
+    const fake = createFakeMailProvider();
+    const uid = fake.deliver(DRAFTS, draft(1, ACTION_A), opts);
+    const found = await locateByActionId(fake, DRAFTS, actionKey(ACTION_A, uid));
+    expect(found?.uid).toBe(uid);
+    expect(fake.calls).toEqual(["fetchMetaIn"]);
+  });
+
+  test("hint miss (another message at that uid): the search finds it by the header", async () => {
+    const fake = createFakeMailProvider();
+    const other = fake.deliver(DRAFTS, draft(2, ACTION_B), opts);
+    const wanted = fake.deliver(DRAFTS, draft(1, ACTION_A), opts);
+    const found = await locateByActionId(fake, DRAFTS, actionKey(ACTION_A, other));
+    expect(found?.uid).toBe(wanted);
+    expect(fake.calls).toEqual(["fetchMetaIn", "searchSinceIn", "fetchByUidsIn"]);
+  });
+
+  test("two drafts of two actions: each locate returns its own", async () => {
+    const fake = createFakeMailProvider();
+    const a = fake.deliver(DRAFTS, draft(1, ACTION_A), opts);
+    const b = fake.deliver(DRAFTS, draft(2, ACTION_B), opts);
+    expect((await locateByActionId(fake, DRAFTS, actionKey(ACTION_A)))?.uid).toBe(a);
+    expect((await locateByActionId(fake, DRAFTS, actionKey(ACTION_B)))?.uid).toBe(b);
+  });
+
+  test("no message carries the action id: null", async () => {
+    const fake = createFakeMailProvider();
+    fake.deliver(DRAFTS, draft(1, ACTION_B), opts);
+    fake.deliver(DRAFTS, draft(2, null), opts);
+    expect(await locateByActionId(fake, DRAFTS, actionKey(ACTION_A))).toBeNull();
+  });
+
+  test("the only copy has \\Deleted: null", async () => {
+    const fake = createFakeMailProvider();
+    const uid = fake.deliver(DRAFTS, draft(1, ACTION_A), opts);
+    await fake.setFlags(DRAFTS, uid, { add: ["\\Deleted"] });
+    expect(await locateByActionId(fake, DRAFTS, actionKey(ACTION_A, uid))).toBeNull();
+  });
+
+  test("folder missing: null, no throw", async () => {
+    const fake = createFakeMailProvider();
+    expect(await locateByActionId(fake, "No/Such", actionKey(ACTION_A, 1))).toBeNull();
+    expect(await locateByActionId(fake, "No/Such", actionKey(ACTION_A))).toBeNull();
+  });
+
+  test("empty search: null and no fetchByUidsIn", async () => {
+    const fake = createFakeMailProvider();
+    fake.ensureFolder(DRAFTS);
+    fake.calls.length = 0;
+    expect(await locateByActionId(fake, DRAFTS, actionKey(ACTION_A))).toBeNull();
+    expect(fake.calls).toEqual(["searchSinceIn"]);
+  });
+
+  test("250 mails, the wanted one at the lowest uid: three chunks, newest first", async () => {
+    expect(LOCATE_NEWEST_FIRST_CHUNK).toBe(100);
+    const fake = createFakeMailProvider();
+    const wanted = fake.deliver(DRAFTS, draft(1, ACTION_A), opts);
+    for (let n = 1000; n < 1249; n += 1) fake.deliver(DRAFTS, draft(n, ACTION_B), opts);
+    const fetched: number[][] = [];
+    const original = fake.fetchByUidsIn.bind(fake);
+    fake.fetchByUidsIn = async (folder, uids) => {
+      fetched.push([...uids]);
+      return original(folder, uids);
+    };
+    const found = await locateByActionId(fake, DRAFTS, actionKey(ACTION_A));
+    expect(found?.uid).toBe(wanted);
+    expect(callsOf(fake, "fetchByUidsIn")).toBe(3);
+    expect(fetched.map((chunk) => chunk.length)).toEqual([100, 100, 50]);
+    expect(fetched[0]?.[0]).toBe(250);
+    expect(Math.min(...(fetched[0] ?? []))).toBeGreaterThan(Math.max(...(fetched[1] ?? [])));
+  });
+
+  test("a header name in another case still matches", async () => {
+    const fake = createFakeMailProvider();
+    const uid = fake.deliver(DRAFTS, draft(1, ACTION_A, "x-ea-action-id"), opts);
+    expect((await locateByActionId(fake, DRAFTS, actionKey(ACTION_A)))?.uid).toBe(uid);
   });
 });

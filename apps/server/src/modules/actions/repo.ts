@@ -20,6 +20,27 @@ type DbOrTrx = Db | Transaction<DB>;
 
 const actionTypeSchema = z.enum(actionTypes);
 
+// The `X-EA-Action-Id` of a mail is the id of a draft of this mailbox: the mail is the system's own (D15).
+// Any sender can write the header, so a value that is not a uuid never reaches the query.
+export async function isOwnActionId(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  actionId: string
+): Promise<boolean> {
+  if (!z.uuid().safeParse(actionId).success) return false;
+  const row = await db
+    .selectFrom("actions as a")
+    .innerJoin("emails as e", (join) => join.onRef("e.id", "=", "a.email_id").onRef("e.org_id", "=", "a.org_id"))
+    .select("a.id")
+    .where("a.org_id", "=", ctx.orgId)
+    .where("a.id", "=", actionId)
+    .where("a.type", "in", ["create_draft", "send"])
+    .where("e.mailbox_id", "=", mailboxId)
+    .executeTakeFirst();
+  return row !== undefined;
+}
+
 export interface PlannedActionInput {
   type: ActionType;
   payload: Record<string, unknown>;
@@ -711,7 +732,7 @@ export async function markUndone(
   trx: DbOrTrx,
   ctx: TenantContext,
   originalId: string,
-  opts: { at: Date; reason: "undo" | "user_moved_back" }
+  opts: { at: Date; reason: "undo" | "user_moved_back" | "sent" | "rejected" | "expired" }
 ): Promise<boolean> {
   const result = await trx
     .updateTable("actions")

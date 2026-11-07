@@ -58,3 +58,41 @@ export async function locateMessage(
   }
   return null;
 }
+
+export const LOCATE_NEWEST_FIRST_CHUNK = 100;
+
+export interface ActionLocateKey {
+  /** The X-EA-Action-Id value = the draft action id. */
+  actionId: string;
+  /** provider_result.uid of the APPEND, when known. */
+  hintUid: number | null;
+  /** The draft's created_at: the search window starts one day earlier. */
+  since: Date;
+}
+
+/**
+ * Finds the system's own draft or Sent copy in `folder` by the action id in the fetched header
+ * (Interia finds no header by SEARCH, but a FETCH returns it). Nothing here writes to the mailbox.
+ */
+export async function locateByActionId(
+  provider: MailProvider,
+  folder: string,
+  key: ActionLocateKey
+): Promise<FolderMessageMeta | null> {
+  const counts = (meta: FolderMessageMeta): boolean => !isDeleted(meta) && meta.actionId === key.actionId;
+
+  if (key.hintUid !== null) {
+    const hinted = await provider.fetchMetaIn(folder, key.hintUid);
+    if (hinted !== null && counts(hinted)) return hinted;
+  }
+
+  // SINCE compares dates in the server's timezone: start one day early.
+  const uids = await provider.searchSinceIn(folder, new Date(key.since.getTime() - DAY_MS));
+  const newestFirst = [...uids].sort((a, b) => b - a);
+  for (let i = 0; i < newestFirst.length; i += LOCATE_NEWEST_FIRST_CHUNK) {
+    const metas = await provider.fetchByUidsIn(folder, newestFirst.slice(i, i + LOCATE_NEWEST_FIRST_CHUNK));
+    const found = metas.find(counts);
+    if (found !== undefined) return found;
+  }
+  return null;
+}

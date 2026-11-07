@@ -123,7 +123,7 @@ async function detectActionFailed(db: DbOrTrx, ctx: TenantContext, owners: Linke
   for (const action of failed) {
     const run = async (trx: DbOrTrx) => {
       if (
-        isMailboxActionType(action.type) &&
+        (isMailboxActionType(action.type) || (action.type === "create_draft" && action.reverse)) &&
         action.updated_at.getTime() >= now.getTime() - ACTION_FAILED_LOOKBACK_MS
       ) {
         const key = typeof action.payload.folder === "string" ? action.payload.folder : undefined;
@@ -132,7 +132,8 @@ async function detectActionFailed(db: DbOrTrx, ctx: TenantContext, owners: Linke
             ? AI_FOLDER_NAMES[key as keyof typeof AI_FOLDER_NAMES]
             : null;
         const reason =
-          action.status_reason === "mail_not_found" || action.status_reason === "bad_payload"
+          action.type !== "create_draft" &&
+          (action.status_reason === "mail_not_found" || action.status_reason === "bad_payload")
             ? action.status_reason
             : "other";
         const message = renderActionFailedNotice({

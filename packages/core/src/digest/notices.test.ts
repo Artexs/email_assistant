@@ -142,6 +142,16 @@ describe("renderActionFailedNotice", () => {
     expect(lines({ ...base, reverse: true })[3]).toContain("The mail stays in AI/Info: move it by hand.");
   });
 
+  test("a reverse create_draft says that the draft stays in Drafts", () => {
+    const out = lines({ ...base, actionType: "create_draft", reverse: true, folderName: null });
+    expect(out).toEqual([
+      "⚠️ Could not remove the draft for a mail",
+      "From: Ann <ann@firma.test>",
+      "Subject: Offer, see [link]",
+      "Tried 3 times. The draft stays in Drafts: delete it by hand. /status shows the mailbox state.",
+    ]);
+  });
+
   test("a reverse mail_not_found has the not-found line and no Tried line", () => {
     const out = lines({ ...base, reverse: true, reason: "mail_not_found" });
     expect(out[3]).toBe("The mail was not found: it was moved or deleted in the mail client.");

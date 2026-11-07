@@ -15,7 +15,7 @@ import { contentHash } from "../../src/modules/mail/sync-rules";
 import type { DB, TenantContext } from "../../src/platform/db";
 import { HardError, SoftError } from "../../src/platform/errors";
 
-import { createOrgWithMailbox, insertAction, insertTriagedWithActions } from "./fixtures";
+import { applyDepsDefaults, createOrgWithMailbox, insertAction, insertTriagedWithActions } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -45,7 +45,7 @@ function depsAt(s: Setup, trx: Transaction<DB>, at: Date = NOW): ApplyDeps {
     { db: trx, now: () => at, provider: s.fake, mailboxId: s.mailboxId, folderMap: {} },
     s.ctx
   );
-  return { db: trx, now: () => at, mailboxId: s.mailboxId, folders };
+  return { db: trx, now: () => at, mailboxId: s.mailboxId, folders, ...applyDepsDefaults() };
 }
 
 // Delivers `messageId` to `folder` so that it gets `uid`; filler mails with other ids fill the gap.
@@ -153,7 +153,7 @@ describe("applyAction", () => {
         actions: [{ type: "flag", status: "ready" }],
       });
       const [claimed] = await claim(trx, s);
-      const action = { ...(claimed as ClaimedAction), type: "create_draft" } as ClaimedAction;
+      const action = { ...(claimed as ClaimedAction), type: "send" } as ClaimedAction;
       expect(action.locked_at).not.toBeNull();
 
       expect(await applyAction(depsAt(s, trx), s.ctx, action, s.fake)).toEqual({ kind: "not_handled" });

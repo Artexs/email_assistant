@@ -1,4 +1,4 @@
-import { createCommitterJob, type ActionsScope } from "./modules/actions";
+import { createCommitterJob, isOwnActionId, type ActionsScope } from "./modules/actions";
 import { createTelegramRuntime } from "./modules/channels";
 import { createMailSyncJob, openImapProvider } from "./modules/mail";
 import { createLlmPause, createReturnedJob, createTriageJob, type TriageScope } from "./modules/triage";
@@ -78,8 +78,7 @@ const mailSync = createMailSyncJob({
   db,
   secrets,
   openProvider: openImapProvider,
-  // The actions table comes in S1b; until then no mail is the system's own.
-  isOwnActionId: async () => false,
+  isOwnActionId: (ctx, mailboxId, actionId) => isOwnActionId(db, ctx, mailboxId, actionId),
   now: () => new Date(),
 });
 const heartbeat = createHeartbeat({ url: config.HEARTBEAT_URL, checkDb: () => checkDb(db) });

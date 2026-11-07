@@ -12,7 +12,7 @@ import { appendRaw } from "./imap/tools";
 import { INBOX, type MailProvider } from "./port";
 import { getCredentials, getMailbox, listInboxEmailKeys, type MailboxRow } from "./repo";
 import { renderSeedMessage, SYNTHETIC_MESSAGE_ID_DOMAIN, type SeedMessage } from "./seed";
-import { backfillInbox, fetchSince, type SyncResult } from "./sync";
+import { backfillInbox, fetchSince, type SyncDeps, type SyncResult } from "./sync";
 import { contentHash, normalizeMessageId } from "./sync-rules";
 
 // Operator tools for the 48-hour run (`mailbox:seed`, `mailbox:audit`).
@@ -104,7 +104,10 @@ export async function auditMailbox(
 
 /** One-off, read-only: stores INBOX mail of the last `days` days that the regular sync missed (`backfilled_at`). */
 export async function backfillMailbox(
-  deps: ToolDeps & { openProvider?: (opts: ImapConnectOptions) => Promise<MailProvider> },
+  deps: ToolDeps & {
+    openProvider?: (opts: ImapConnectOptions) => Promise<MailProvider>;
+    isOwnActionId: SyncDeps["isOwnActionId"];
+  },
   ctx: TenantContext,
   mailboxId: string,
   opts: { days: number; now: Date }
@@ -113,7 +116,7 @@ export async function backfillMailbox(
   const provider = await (deps.openProvider ?? openImapProvider)(imap);
   try {
     return await backfillInbox(
-      { db: deps.db, provider, isOwnActionId: async () => false, now: () => opts.now },
+      { db: deps.db, provider, isOwnActionId: deps.isOwnActionId, now: () => opts.now },
       ctx,
       mailboxId,
       { since: new Date(opts.now.getTime() - opts.days * 24 * 3_600_000) }
