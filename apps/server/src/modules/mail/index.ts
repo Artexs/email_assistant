@@ -1,6 +1,7 @@
 export { checkMailbox, type CheckDeps, type CheckOptions, type CheckReport } from "./check";
 export { buildFolderMap, connectMailbox, updateMailboxPassword, type ConnectDeps, type ConnectInput } from "./connect";
 export { compareInboxWithDb, type AuditCounts, type InboxKey } from "./audit";
+export { openMailboxProvider, type OpenDeps } from "./open";
 export { createMailSyncJob, type MailSyncJobDeps } from "./jobs";
 export { openImapProvider, type ImapConnectOptions } from "./imap/client";
 export { assertTestAddress, probeMove, type ProbeMoveReport } from "./imap/probe-move";
@@ -32,6 +33,8 @@ export {
   mailKindFilter,
   releaseEmail,
   requeueTooOld,
+  setFolderMapEntry,
+  updateEmailLocation,
 } from "./repo";
 export type { MailKind } from "./repo";
 export type { ClaimedEmail, Cursor, MailboxRow, MailboxStatus, MailboxSummary, NewEmail } from "./repo";

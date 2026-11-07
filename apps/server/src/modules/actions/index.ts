@@ -1,2 +1,34 @@
-export { createPlanned, listActionsForEmail, listActionsForEmails, listSummaries } from "./repo";
-export type { ActionRow, CreatedAction, PlannedActionInput } from "./repo";
+export { MAILBOX_ACTION_TYPES, type MailboxActionType } from "@ea/core";
+export {
+  CLAIM_MAX_AGE_MS,
+  CLAIM_MAX_MAIL_AGE_MS,
+  claimActions,
+  countActionsSince,
+  countClaimable,
+  createPlanned,
+  expireReadyOriginals,
+  expireStaleReady,
+  finishAction,
+  insertReverse,
+  listActionsForEmail,
+  listActionsForEmails,
+  listFailedUnnotified,
+  listSummaries,
+  lockActionsForUndo,
+  lockLatestOriginalMove,
+  markNotified,
+  markUndone,
+  releaseAction,
+  releaseActions,
+} from "./repo";
+export type {
+  ActionRow,
+  ClaimedAction,
+  ClaimFilter,
+  CreatedAction,
+  ExpireFilter,
+  FailedAction,
+  FinishNext,
+  PlannedActionInput,
+  UndoCandidate,
+} from "./repo";

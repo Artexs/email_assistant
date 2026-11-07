@@ -4,6 +4,10 @@ import type { Category } from "./categories";
 export const actionTypes = ["move", "mark_read", "flag", "save_summary"] as const;
 export type ActionType = (typeof actionTypes)[number];
 
+// The types that change the mailbox (`save_summary` is DB only).
+export const MAILBOX_ACTION_TYPES = ["move", "mark_read", "flag"] as const;
+export type MailboxActionType = (typeof MAILBOX_ACTION_TYPES)[number];
+
 // The committer turns a key into a folder name through `mailboxes.folder_map`.
 export const folderKeys = ["ai_info", "ai_notifications", "ai_spam", "ai_manual"] as const;
 export type FolderKey = (typeof folderKeys)[number];

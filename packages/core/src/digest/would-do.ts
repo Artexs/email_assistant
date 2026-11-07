@@ -1,9 +1,13 @@
 import { type ActionType, AI_FOLDER_NAMES, type FolderKey } from "../triage/planners";
 
 export interface ActionView {
+  id: string;
   type: ActionType;
   status: string;
   folder: FolderKey | null;
+  reverse: boolean;
+  reversesActionId: string | null;
+  appliedAt: Date | null;
 }
 
 const TENSES: Record<string, string> = {
@@ -34,6 +38,7 @@ function phrase(action: ActionView): string | null {
 export function describeActions(actions: readonly ActionView[]): string {
   const groups = new Map<string, string[]>();
   for (const action of actions) {
+    if (action.reverse) continue;
     const tense = TENSES[action.status];
     const text = phrase(action);
     if (tense === undefined || text === null) continue;

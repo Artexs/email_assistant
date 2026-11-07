@@ -1,3 +1,4 @@
+import type { FolderKey } from "@ea/core";
 import {
   expressionBuilder,
   sql,
@@ -406,6 +407,44 @@ export async function markEmailReturned(
   // The below-cursor check must not touch a row that the normal path already moved back.
   if (opts.onlyOutsideInbox === true) query = query.where("folder", "<>", INBOX);
   const result = await query.executeTakeFirst();
+  return result.numUpdatedRows === 1n;
+}
+
+// `undefined` keeps the column (M7). `movedAt: null` clears `moved_at` (an Undo back to INBOX). Never touches `status` or `returned_at`.
+export async function updateEmailLocation(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailId: string,
+  next: { folder: string; uid: number; inboxUid?: number; movedAt?: Date | null }
+): Promise<boolean> {
+  const result = await db
+    .updateTable("emails")
+    .set({
+      folder: next.folder,
+      uid: next.uid,
+      ...(next.inboxUid === undefined ? {} : { inbox_uid: next.inboxUid }),
+      ...(next.movedAt === undefined ? {} : { moved_at: next.movedAt }),
+    })
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", emailId)
+    .executeTakeFirst();
+  return result.numUpdatedRows === 1n;
+}
+
+// Replaces one key of `mailboxes.folder_map` and keeps the others.
+export async function setFolderMapEntry(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  key: FolderKey,
+  path: string
+): Promise<boolean> {
+  const result = await db
+    .updateTable("mailboxes")
+    .set({ folder_map: sql`jsonb_set(folder_map, ARRAY[${key}]::text[], to_jsonb(${path}::text), true)` })
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", mailboxId)
+    .executeTakeFirst();
   return result.numUpdatedRows === 1n;
 }
 

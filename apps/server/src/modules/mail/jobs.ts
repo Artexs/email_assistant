@@ -6,8 +6,9 @@ import { SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 
 import type { ImapConnectOptions } from "./imap/client";
+import { openMailboxProvider } from "./open";
 import { MailAuthError, type MailProvider } from "./port";
-import { getCredentials, getMailbox, listSyncTargets, markSynced, setMailboxStatus } from "./repo";
+import { listSyncTargets, markSynced, setMailboxStatus } from "./repo";
 import { CursorMovedError, syncMailbox, type SyncDeps } from "./sync";
 
 const log = createLog("mail");
@@ -22,25 +23,8 @@ export interface MailSyncJobDeps {
 
 // The log lines carry the mailbox id only: never the address, a password or a subject.
 async function syncOne(deps: MailSyncJobDeps, ctx: TenantContext, mailboxId: string): Promise<void> {
-  const mailbox = await getMailbox(deps.db, ctx, mailboxId);
-  const credentials = await getCredentials(deps.db, ctx, mailboxId);
-  if (mailbox === undefined || credentials === undefined) {
-    log.error(`sync ${mailboxId}: mailbox or credentials row is missing`);
-    return;
-  }
-  const password = deps.secrets.decrypt(
-    { ciphertext: credentials.encrypted_secret, keyVersion: credentials.key_version },
-    `mailbox:${mailboxId}`
-  );
-
-  let provider: MailProvider | undefined;
+  const { provider } = await openMailboxProvider(deps, ctx, mailboxId);
   try {
-    provider = await deps.openProvider({
-      host: mailbox.imap_host,
-      port: mailbox.imap_port,
-      user: mailbox.address,
-      password,
-    });
     const result = await syncMailbox(
       { db: deps.db, provider, isOwnActionId: deps.isOwnActionId, now: deps.now },
       ctx,
@@ -51,7 +35,7 @@ async function syncOne(deps: MailSyncJobDeps, ctx: TenantContext, mailboxId: str
       `synced ${mailboxId}: ${result.mode}, fetched ${result.fetched}, stored ${result.stored}, uid updated ${result.uidUpdated}, returned ${result.returned}`
     );
   } finally {
-    await provider?.close().catch((error: unknown) => {
+    await provider.close().catch((error: unknown) => {
       log.warn(`close ${mailboxId} failed:`, error instanceof Error ? error.message : String(error));
     });
   }

@@ -6,7 +6,7 @@ Part of [`../s3-assist-actions.md`](../s3-assist-actions.md). Read that file's "
 
 Step 7.1 of the first plan was too big for one implementer step (cold review m1). It is now 7.1a (the claim side and the action fixtures) and 7.1b (the Undo, returned, notice and expiry queries). Build them in this order: 7.1a, 7.1b, 7.2.
 
-- [ ] **7.1a Claim queue, status changes and the action fixtures**
+- [x] **7.1a Claim queue, status changes and the action fixtures**
   - Goal: the committer has typed, tenant-filtered queries with conditional updates (`locked_at` as the token, as in `claimEmails`); tests can build triaged mail with actions in one call.
   - Files: change `apps/server/src/modules/actions/repo.ts`, `apps/server/src/modules/actions/index.ts`, `apps/server/src/modules/mail/repo.ts` (`mailKindFilter` gets an optional table alias, see Decisions), `apps/server/test/integration/actions-repo.test.ts`, `apps/server/test/integration/fixtures.ts` (`insertAction`, `insertTriagedWithActions`: the interfaces are in 7.2; they move here because the 7.1a tests use them); change `packages/core/src/digest/would-do.ts` (`ActionView`), `packages/core/src/digest/would-do.test.ts`, `packages/core/src/triage/planners.ts` (`MAILBOX_ACTION_TYPES`, `MailboxActionType`, next to `actionTypes`; the core barrel exports the file already).
   - Interfaces:
@@ -97,7 +97,7 @@ Step 7.1 of the first plan was too big for one implementer step (cold review m1)
   - Done when: the tests pass.
   - Out of scope: the committer (stage 8), the queries of 7.1b.
 
-- [ ] **7.1b Undo, returned, notice and expiry queries**
+- [x] **7.1b Undo, returned, notice and expiry queries**
   - Goal: the Undo service, the returned job, the notice detector, the `/status` counts and the gate-change expiry have typed, tenant-filtered queries with conditional updates.
   - Files: change `apps/server/src/modules/actions/repo.ts`, `apps/server/src/modules/actions/index.ts`, `apps/server/test/integration/actions-repo.test.ts`.
   - Interfaces:
@@ -174,7 +174,7 @@ Step 7.1 of the first plan was too big for one implementer step (cold review m1)
   - Done when: the tests pass.
   - Out of scope: the Undo service (stage 10), the returned job (stage 11), the notice (stage 12), the settings service (stage 14).
 
-- [ ] **7.2 Email location updates in `mail/repo.ts`, `openMailboxProvider`, fixtures**
+- [x] **7.2 Email location updates in `mail/repo.ts`, `openMailboxProvider`, fixtures**
   - Goal: the committer can record where a mail is, update a real folder path, and open a mailbox connection through the `mail` index. (The fixtures `insertAction` and `insertTriagedWithActions` below are built in 7.1a; their interfaces stay here.)
   - Files: change `apps/server/src/modules/mail/repo.ts`, `apps/server/src/modules/mail/index.ts`, `apps/server/src/modules/mail/jobs.ts` (use the new open helper), `apps/server/src/modules/mail/tools.ts` (may use it), `apps/server/test/integration/mail-repo.test.ts`; create `apps/server/src/modules/mail/open.ts`.
   - Interfaces:

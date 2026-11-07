@@ -4,7 +4,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
 import { getMailboxSettings, insertDefaultSettings } from "../../src/modules/config";
-import type { NewEmail } from "../../src/modules/mail";
+import { INBOX, type NewEmail } from "../../src/modules/mail";
 import {
   findCopies,
   forceRescan,
@@ -20,8 +20,10 @@ import {
   lockMailbox,
   markEmailReturned,
   markSynced,
+  setFolderMapEntry,
   setMailboxStatus,
   updateCursor,
+  updateEmailLocation,
   updateEmailUid,
 } from "../../src/modules/mail/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
@@ -521,6 +523,71 @@ describe("config repository: mailbox settings", () => {
       await sql`savepoint cross_org_settings`.execute(trx);
       await expect(insertDefaultSettings(trx, b.ctx, a.mailboxId)).rejects.toMatchObject({ code: "23503" });
       await sql`rollback to savepoint cross_org_settings`.execute(trx);
+    });
+  });
+});
+
+describe("mail repository: email location", () => {
+  async function locationOf(trx: Transaction<DB>, emailId: string) {
+    return trx
+      .selectFrom("emails")
+      .select(["folder", "uid", "inbox_uid", "moved_at", "status", "returned_at"])
+      .where("id", "=", emailId)
+      .executeTakeFirstOrThrow();
+  }
+
+  test("updateEmailLocation changes only the named columns and filters by org_id", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      await insertEmail(trx, a.ctx, newEmail(a.mailboxId));
+      const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
+      const movedAt = new Date("2026-11-04T10:00:00Z");
+
+      expect(await updateEmailLocation(trx, a.ctx, id, { folder: "AI/Info", uid: 77, movedAt })).toBe(true);
+      const moved = await locationOf(trx, id);
+      expect(moved.folder).toBe("AI/Info");
+      expect(Number(moved.uid)).toBe(77);
+      expect(Number(moved.inbox_uid)).toBe(1);
+      expect(moved.moved_at?.toISOString()).toBe(movedAt.toISOString());
+      expect(moved.returned_at).toBeNull();
+
+      // undefined keeps inbox_uid and moved_at
+      await updateEmailLocation(trx, a.ctx, id, { folder: "AI/Info", uid: 78 });
+      const kept = await locationOf(trx, id);
+      expect(Number(kept.uid)).toBe(78);
+      expect(Number(kept.inbox_uid)).toBe(1);
+      expect(kept.moved_at?.toISOString()).toBe(movedAt.toISOString());
+
+      // org B cannot change it
+      expect(await updateEmailLocation(trx, b.ctx, id, { folder: "X", uid: 1 })).toBe(false);
+      expect((await locationOf(trx, id)).folder).toBe("AI/Info");
+
+      // movedAt null clears; inboxUid is set when given
+      await updateEmailLocation(trx, a.ctx, id, { folder: INBOX, uid: 5, inboxUid: 5, movedAt: null });
+      const back = await locationOf(trx, id);
+      expect(back.folder).toBe(INBOX);
+      expect(Number(back.inbox_uid)).toBe(5);
+      expect(back.moved_at).toBeNull();
+      expect(back.status).toBe("pending");
+    });
+  });
+
+  test("setFolderMapEntry replaces one key, keeps the others and filters by org_id", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      expect(await setFolderMapEntry(trx, a.ctx, a.mailboxId, "ai_info", "INBOX.AI.Info")).toBe(true);
+      expect((await getMailbox(trx, a.ctx, a.mailboxId))?.folder_map).toEqual({
+        drafts: "Drafts",
+        ai_info: "INBOX.AI.Info",
+      });
+      await setFolderMapEntry(trx, a.ctx, a.mailboxId, "ai_info", "AI/Info");
+      await setFolderMapEntry(trx, a.ctx, a.mailboxId, "ai_spam", "Junk2");
+      expect((await getMailbox(trx, a.ctx, a.mailboxId))?.folder_map).toEqual({
+        drafts: "Drafts",
+        ai_spam: "Junk2",
+        ai_info: "AI/Info",
+      });
+      expect(await setFolderMapEntry(trx, b.ctx, a.mailboxId, "ai_info", "Nope")).toBe(false);
     });
   });
 });

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import type { Category, MembershipRole } from "@ea/core";
+import type { ActionType, Category, MembershipRole } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { MailCapabilities, NewEmail } from "../../src/modules/mail";
@@ -161,4 +161,83 @@ export async function isolateChannels(trx: Transaction<DB>): Promise<void> {
     .set({ status: "failed", error_code: "outdated", locked_at: null })
     .where("status", "in", ["pending", "sending"])
     .execute();
+}
+
+// One `actions` row. `applied` and `undone` rows need `applied_at`: it defaults to the row's creation time.
+export async function insertAction(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  emailId: string,
+  opts: {
+    type: ActionType;
+    status: string;
+    payload?: Record<string, string>;
+    idempotencyKey?: string;
+    appliedAt?: Date | null;
+    reversesActionId?: string | null;
+    attempts?: number;
+    nextAttemptAt?: Date | null;
+    lockedAt?: Date | null;
+    statusReason?: string | null;
+    createdAt?: Date;
+  }
+): Promise<string> {
+  const createdAt = opts.createdAt ?? new Date();
+  const needsAppliedAt = opts.status === "applied" || opts.status === "undone";
+  const row = await trx
+    .insertInto("actions")
+    .values({
+      org_id: ctx.orgId,
+      email_id: emailId,
+      type: opts.type,
+      status: opts.status,
+      payload: JSON.stringify(opts.payload ?? {}),
+      idempotency_key: opts.idempotencyKey ?? `test:${randomUUID()}`,
+      applied_at: opts.appliedAt === undefined ? (needsAppliedAt ? createdAt : null) : opts.appliedAt,
+      reverses_action_id: opts.reversesActionId ?? null,
+      attempts: opts.attempts ?? 0,
+      next_attempt_at: opts.nextAttemptAt ?? null,
+      locked_at: opts.lockedAt ?? null,
+      status_reason: opts.statusReason ?? null,
+      created_at: createdAt,
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  return row.id;
+}
+
+// A triaged mail (`insertTriaged`) with its location columns and action rows; the actions are created in the given order.
+export async function insertTriagedWithActions(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: Parameters<typeof insertTriaged>[3] & {
+    folder?: string;
+    uid?: number;
+    inboxUid?: number | null;
+    contentHash?: string;
+    movedAt?: Date | null;
+    actions: { type: ActionType; status: string; payload?: Record<string, string>; appliedAt?: Date | null }[];
+  }
+): Promise<{ emailId: string; actionIds: string[] }> {
+  const { folder, uid, inboxUid, contentHash, movedAt, actions, ...triaged } = opts;
+  const emailId = await insertTriaged(trx, ctx, mailboxId, triaged);
+  const mailUid = uid ?? 1;
+  await trx
+    .updateTable("emails")
+    .set({
+      folder: folder ?? "INBOX",
+      uid: mailUid,
+      inbox_uid: inboxUid === undefined ? mailUid : inboxUid,
+      content_hash: contentHash ?? "h",
+      moved_at: movedAt ?? null,
+    })
+    .where("id", "=", emailId)
+    .where("org_id", "=", ctx.orgId)
+    .execute();
+  const actionIds: string[] = [];
+  for (const action of actions) {
+    actionIds.push(await insertAction(trx, ctx, emailId, { ...action, createdAt: triaged.createdAt }));
+  }
+  return { emailId, actionIds };
 }
