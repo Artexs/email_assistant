@@ -8,7 +8,7 @@ Why risky: this is the one code path that sends mail to a person. At most once: 
 
 Checkpoint 1 input: stage 1 settled whether Interia saves sent mail by itself (`sentAutosave.foundInSent`) and what it answers to DATA (`dataReplyCode`). The Sent copy below locates first, so the rule holds in both cases; the main session notes the Interia answers here.
 
-- [ ] **12.1 `applySend`: the happy path, the error outcomes, the Sent copy, the hooks, the draft reverse (D9, D10, D11, D13)**
+- [x] **12.1 `applySend`: the happy path, the error outcomes, the Sent copy, the hooks, the draft reverse (D9, D10, D11, D13)**
   - Goal: an approved send goes out once; after the 250 the row is `applied` at once with the delegation `sent`; the Sent copy and the draft removal follow and can fail without touching the send's outcome.
   - Files: create `apps/server/src/modules/actions/send.ts`, `apps/server/test/integration/actions-send.test.ts`; change `apps/server/src/modules/actions/apply.ts`, `actions/committer.ts`, `actions/index.ts`, `apps/server/src/modules/mail/open.ts` and `mail/index.ts` (`openMailboxProvider(deps, ctx, mailboxId, { withSender?: boolean })` returns `{ provider, sender: MailSender | null, mailbox }`: the SMTP sender is opened with the same decrypted password in the same call frame; `OpenDeps` gains `openSender(opts: SmtpConnectOptions): Promise<MailSender>`; D33).
   - Interfaces:
@@ -46,7 +46,7 @@ Checkpoint 1 input: stage 1 settled whether Interia saves sent mail by itself (`
   - Done when: the tests pass.
   - Out of scope: recovery and the crash tests (12.2), the notices (stage 15).
 
-- [ ] **12.2 Recovery of a stale `applying` send and the crash tests (D11)**
+- [x] **12.2 Recovery of a stale `applying` send and the crash tests (D11)**
   - Goal: a send that crashed in `applying` never goes out a second time by itself; the user gets the `outcome_unknown` notice unless the Sent folder proves the send; an error during the recovery never puts the row back to `approved`.
   - Files: change `apps/server/src/modules/actions/send.ts`, `apps/server/test/integration/actions-send.test.ts`, `apps/server/test/integration/actions-committer.test.ts` (S3 stage 8.2).
   - Decisions:

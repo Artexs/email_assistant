@@ -9,6 +9,14 @@ export {
 } from "./apply";
 export { applyDraft, buildDraftMessage } from "./drafts";
 export {
+  applySend,
+  SEND_HARD_TRIES,
+  SEND_RETRY_WAIT_MS,
+  SENT_COPY_PENDING_MAX_AGE_MS,
+  sendOutcomeOf,
+  type SendOutcome,
+} from "./send";
+export {
   approve,
   approveSet,
   reject,

@@ -18,14 +18,23 @@ import {
   type MailboxRow,
   type MailCapabilities,
   type MailProvider,
+  type MailSender,
+  type SmtpConnectOptions,
 } from "../mail";
 import { getOrganization, listMemberships } from "../tenancy";
 
 import { applyAction, type ApplyDeps, type FolderResolver, type ResolvableFolderKey } from "./apply";
 import { STALE_AFTER_MS } from "./constants";
 import { noDelegationHooks, type DelegationHooks } from "./hooks";
-import { claimActions, countClaimable, expireStaleReady, releaseActions, type ClaimedAction } from "./repo";
-import { claimFilterFor, type ActionsScope } from "./scope";
+import {
+  claimActions,
+  countClaimable,
+  countHeldSends,
+  expireStaleReady,
+  releaseActions,
+  type ClaimedAction,
+} from "./repo";
+import { claimFilterFor, sendFilterFor, type ActionsScope, type SendScope } from "./scope";
 
 const log = createLog("actions");
 
@@ -36,6 +45,9 @@ export interface CommitterDeps {
   secrets: SecretBox;
   openProvider(opts: ImapConnectOptions): Promise<MailProvider>;
   scope: ActionsScope;
+  // S4: `off` when missing (the tests of S3). `main.ts` wires the SMTP opener and the scope (stage 18).
+  sendScope?: SendScope;
+  openSender?(opts: SmtpConnectOptions): Promise<MailSender>;
   now(): Date;
   batchSize?: number;
   // S4 (D33): the delegation callbacks and the composer. The defaults serve the tests of S3; `main.ts` wires them (stage 18).
@@ -127,6 +139,7 @@ async function expireStale(deps: CommitterDeps, ctx: TenantContext, mailboxId: s
 export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> } {
   const batchSize = deps.batchSize ?? DEFAULT_BATCH_SIZE;
   const warnedOff = new Set<string>();
+  const warnedHeld = new Set<string>();
 
   // `now` is the claim token (`locked_at`) of every row of this batch.
   async function release(ctx: TenantContext, actions: readonly ClaimedAction[], now: Date): Promise<void> {
@@ -152,9 +165,30 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     }
   }
 
-  async function openFor(ctx: TenantContext, mailboxId: string, batch: ClaimedAction[], now: Date) {
+  // D16: once per process and mailbox. Runs before the `total === 0` return: a mailbox with only held sends has `total` 0.
+  async function warnWhenSendsHeld(
+    ctx: TenantContext,
+    mailboxId: string,
+    sendScope: SendScope,
+    send: ReturnType<typeof sendFilterFor>
+  ): Promise<void> {
+    if (warnedHeld.has(mailboxId)) return;
+    const held = await countHeldSends(deps.db, ctx, mailboxId, { send });
+    if (held > 0) {
+      warnedHeld.add(mailboxId);
+      log.info(`committer ${mailboxId}: SEND_SCOPE=${sendScope.kind}, ${held} approved sends wait`);
+    }
+  }
+
+  async function openFor(
+    ctx: TenantContext,
+    mailboxId: string,
+    batch: ClaimedAction[],
+    now: Date,
+    withSender: boolean
+  ) {
     try {
-      return await openMailboxProvider(deps, ctx, mailboxId);
+      return await openMailboxProvider(deps, ctx, mailboxId, { withSender });
     } catch (error) {
       await release(ctx, batch, now);
       if (error instanceof MailAuthError) {
@@ -196,11 +230,12 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     mailbox: MailboxRow,
     batch: ClaimedAction[],
     provider: MailProvider | null,
+    sender: MailSender | null,
     now: Date,
     facts: TenantFacts
   ): Promise<void> {
     const mailboxId = mailbox.id;
-    const counts = { applied: 0, failed: 0, retry: 0, closed: 0 };
+    const counts = { applied: 0, failed: 0, retry: 0, closed: 0, sent: 0 };
     const folders: FolderResolver =
       provider === null
         ? { resolve: () => Promise.reject(new HardError("no provider")) }
@@ -221,7 +256,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
       owner: facts.owner,
       organization: facts.organization,
       compose: deps.compose ?? composeMessage,
-      sender: null,
+      sender,
       hooks: deps.hooks ?? noDelegationHooks,
     };
     let index = 0;
@@ -229,8 +264,10 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
       for (; index < batch.length; index += 1) {
         const action = batch[index] as ClaimedAction;
         const outcome = await applyAction(applyDeps, ctx, action, provider);
-        if (outcome.kind === "applied") counts.applied += 1;
-        else if (outcome.kind === "expired") counts.closed += 1;
+        if (outcome.kind === "applied") {
+          counts.applied += 1;
+          if (action.type === "send") counts.sent += 1;
+        } else if (outcome.kind === "expired") counts.closed += 1;
         else if (outcome.kind === "failed") counts.failed += 1;
         else if (outcome.kind === "retry") counts.retry += 1;
         if (outcome.kind === "auth_error") {
@@ -254,8 +291,9 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     } finally {
       if (counts.applied + counts.failed + counts.retry + counts.closed > 0) {
         const closed = counts.closed > 0 ? `, closed ${counts.closed}` : "";
+        const sent = counts.sent > 0 ? `, sent ${counts.sent}` : "";
         log.info(
-          `committer ${mailboxId}: applied ${counts.applied}, failed ${counts.failed}, retry ${counts.retry}${closed}`
+          `committer ${mailboxId}: applied ${counts.applied}, failed ${counts.failed}, retry ${counts.retry}${closed}${sent}`
         );
       }
     }
@@ -270,8 +308,13 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     const expired = await expireStale(deps, ctx, mailboxId, now);
     if (expired > 0) log.warn(`committer ${mailboxId}: expired ${expired} stale actions`);
 
-    const filter = { mailbox: claimFilterFor(deps.scope, mailbox.address), send: { kind: "none" } } as const;
+    const sendScope = deps.sendScope ?? { kind: "off" };
+    const filter = {
+      mailbox: claimFilterFor(deps.scope, mailbox.address),
+      send: sendFilterFor(sendScope, mailbox.address),
+    };
     await warnWhenHeldBack(ctx, mailboxId, now);
+    await warnWhenSendsHeld(ctx, mailboxId, sendScope, filter.send);
     const { total } = await countClaimable(deps.db, ctx, mailboxId, { now, staleBefore, filter });
     if (total === 0) return;
 
@@ -279,18 +322,24 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     if (batch.length === 0) return;
 
     let provider: MailProvider | null = null;
+    let sender: MailSender | null = null;
     if (batch.some(isMailboxChanging)) {
-      const opened = await openFor(ctx, mailboxId, batch, now);
+      // The recovery of an `applying` send needs no SMTP (M9).
+      const withSender = batch.some((action) => action.type === "send" && action.status === "approved");
+      const opened = await openFor(ctx, mailboxId, batch, now, withSender);
       if (opened === null) return;
       provider = opened.provider;
+      sender = opened.sender;
     }
     try {
       const tenantFacts = await loadFacts(ctx, mailbox, facts);
-      await applyBatch(ctx, mailbox, batch, provider, now, tenantFacts);
+      await applyBatch(ctx, mailbox, batch, provider, sender, now, tenantFacts);
     } finally {
-      await provider?.close().catch((error: unknown) => {
-        log.warn(`committer ${mailboxId}: close failed: ${describeError(error)}`);
-      });
+      for (const connection of [provider, sender]) {
+        await connection?.close().catch((error: unknown) => {
+          log.warn(`committer ${mailboxId}: close failed: ${describeError(error)}`);
+        });
+      }
     }
   }
 
