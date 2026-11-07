@@ -186,7 +186,7 @@ Each notice says what happened. The left part is the start of the text.
 - `⌛ Not sent: the approval expired (48 h)` (`expired`, `timeout`): nobody tapped within 48 hours. The draft was removed (or the notice says it stays).
 - `⌛ Not sent: it waited 48 h after your approval` (`held_timeout`): a held approval. Read the scope: `SEND_SCOPE`, a paused mailbox (`/resume`) or a login error (`mailbox:password`). The system does not plan it again; send the task by hand from the draft, which stays in Drafts.
 - `⌛ Not sent: no approval request could go out within 7 days` (`not_notified`): no owner was linked, or the draft was not created. Link an owner with `telegram:link`.
-- `⌛ Not sent: the draft could not be created` (`draft_missing`): the draft failed three times. Read `docs/known-alerts.md` (`action <id>: failed hard_error`).
+- `❌ Not sent: the draft could not be created` (`draft_missing`): the draft failed three times. Read `docs/known-alerts.md` (`action <id>: failed hard_error`).
 - `⌛ Not sent: the setting was changed` (`policy_changed`): `mode shadow` or `switch create_draft off` closed the gate.
 - `⌛ Not sent: the delegation was closed`: a reminder that waited for a tap while the delegate answered or you closed the delegation.
 
