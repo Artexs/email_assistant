@@ -11,6 +11,7 @@
 - A module exposes one `index.ts`. Other modules import only from it, never from its inner files.
 - Module files: `index.ts` (public API), `service.ts`, `repo.ts` (DB), `routes.ts` (HTTP), `jobs.ts` (workers), `*.test.ts` next to the code.
 - `packages/core` has no I/O: no DB, no network, no `process.env`, no imports from `apps/*`.
+- Test tools live in `tools/<name>/` (workspace `tools/*`, first: `tools/fake-telegram/`). App code (`apps/*`, `packages/*`) never imports them, and the server image holds only their `package.json`.
 
 ## Ports and adapters
 

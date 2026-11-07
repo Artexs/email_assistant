@@ -5,17 +5,19 @@
   "version": "0.0.1",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "tools/*"
   ],
   "scripts": {
     "typecheck": "bun run --filter '*' typecheck",
     "dev": "bun --watch apps/server/src/main.ts",
     "start": "bun apps/server/src/main.ts",
-    "test:unit": "bun test packages/core apps/server/src",
-    "test:int": "bun test apps/server/test",
+    "test:unit": "bun test packages/core apps/server/src tools/fake-telegram/src",
+    "test:int": "bun test apps/server/test tools/fake-telegram/test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
+    "fake-tg": "bun tools/fake-telegram/src/cli.ts",
     "web:dev": "bun run --filter @ea/web dev",
     "web:build": "bun run --filter @ea/web build",
     "rules:add": "bun apps/server/src/scripts/rules.ts add",

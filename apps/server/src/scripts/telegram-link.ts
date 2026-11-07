@@ -60,7 +60,7 @@ async function main(): Promise<number> {
     if (userId === undefined) return 1;
 
     // The bot check comes first: a bad token must not leave a token row.
-    const { username } = await checkBot(token);
+    const { username } = await checkBot(token, { apiRoot: config.TELEGRAM_API_ROOT });
     const link = await createLinkToken(db, { orgId: options.orgId }, userId, new Date());
     const until = link.expiresAt.toISOString().slice(11, 16);
     process.stdout.write(

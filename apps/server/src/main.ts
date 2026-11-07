@@ -144,9 +144,15 @@ let telegram: ReturnType<typeof createTelegramRuntime> | null = null;
 if (config.TELEGRAM_BOT_TOKEN === undefined) {
   log.info("telegram is off (TELEGRAM_BOT_TOKEN is empty)");
 } else {
+  if (config.TELEGRAM_API_ROOT !== undefined) {
+    log.warn(
+      `telegram: TELEGRAM_API_ROOT is set: the bot talks to the Bot API at ${config.TELEGRAM_API_ROOT}, not to Telegram`
+    );
+  }
   const runtime = createTelegramRuntime({
     db,
     token: config.TELEGRAM_BOT_TOKEN,
+    apiRoot: config.TELEGRAM_API_ROOT,
     now: () => new Date(),
     startedAt,
     llmDailyCap: config.LLM_DAILY_CAP,
