@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress — plan written, cold review PASS; waiting for the user's approval.** Left: the user's OK, then the build (stages 1–9).
+> **Status 2026-11-07 — in progress — plan written; in-session cold review PASS; independent review (session 2) PASS after fixes (4 majors and 11 minors fixed, 1 minor accepted).** Left: the user's OK on the plan and on the 4 open defaults, then the build (stages 1–9).
 
 # Test mail traffic: AgentMail synthetic mail utility
 
@@ -49,7 +49,8 @@ any write into `triage_feedback`; any change of the S3 go/no-go gate (`mailbox:s
 - [x] Live probe (AgentMail side and Interia side): `notes/2026-11-07-agentmail-test-mail.md` §7–8.
 - [x] Stage files 1–9 written (2026-11-07).
 - [x] Cold review (reviewer subagent, Opus, high): FAIL (3 blockers, 12 majors, 22 minors), all fixed; re-review: PASS (13 minors, fixed). Record: [`test-mail-traffic/review-2026-11-07.md`](test-mail-traffic/review-2026-11-07.md).
-- [ ] User approval, plan commit.
+- [x] Independent review, separate session (Claude Code, Opus): 0 blockers, 4 majors, 12 minors; all fixed except one accepted minor. Record: [`test-mail-traffic/review-2026-11-07-session2.md`](test-mail-traffic/review-2026-11-07-session2.md).
+- [ ] User approval (plan and the open defaults).
 
 ### Input: user words (word for word, 2026-11-07)
 
@@ -113,12 +114,20 @@ All with source in `notes/2026-11-07-agentmail-test-mail.md` (§3 docs, §7–8 
 - Pilot ids (`notes/2026-11-03-pilot-vps.md`): org `ac6ed6a2-ee37-461f-9632-cc08cf549e40`, mailbox `8bc7f572-a7f5-4fa5-aaab-db16dc663e96`, address `artekstryszowski@interia.pl` = `TEST_MAILBOX_ADDRESS` on the VPS.
 - stdin and the exit code pass through `ssh home_vm '… docker compose … run --rm -T -v …:ro server bun <file>'` (probe 2026-11-07: a JSON line in, exit 2 out).
 - The local `.env` has no `TEST_MAILBOX_ADDRESS`. `mailbox:probe-move` already takes it on the command line (`TEST_MAILBOX_ADDRESS=<address> bun run …`).
+- Git over SSH from this PC: the default key fails (`git ls-remote origin master` → `Permission denied (publickey)`); with
+  `GIT_SSH_COMMAND="ssh -i $HOME/.ssh/github -o IdentitiesOnly=yes"` it works (checked 2026-11-07, review session 2). `git fetch` and `git push` both need it.
+- The app classifier is `classifier-v2` on `origin/master` since 2026-11-07 (`triage/index.ts` exports `PROMPT_VERSION` from `prompts/classifier-v2.ts`; S4 D3).
+  The VPS runs an older image (v1). `triage_results.prompt_version` stores the version per result. `categories.ts` also has `delegation` (only with active
+  delegates) and `unsure` (rules, blocked calls).
 
 ### Not verified (and the stage that checks it)
 
 - `GET /inboxes/{id}/messages?labels=<label>` returns exactly the messages with that label (docs say it filters). Stage 3 builds it (and keeps only items that really carry the label); stage 9 step 9.1.4 checks it live (one call).
 - The name of the 409 for "a retry while the first request is still in progress" (docs give no name). Stage 3 treats every 409 that is not `IdempotencyKeyConflictError` as soft.
 - The day boundary of the AgentMail 100/day limit. D8 uses a rolling 24 h with a cap of 50, far below the limit.
+- Whether `loadConfig()` of the `origin/master` bundle accepts the S2-era VPS `.env` (a later slice can add a required key). A `ConfigError` fails safe (exit 1,
+  key names only); stage 9 step 9.1.5 meets it first. Then stop and ask the user: no `.env` change is allowed (P8).
+- Whether `POST /inboxes` with a known `client_id` still answers 200 when the Free plan has 3 of 3 inboxes. Stage 4.2 `setup` calls `GET` first and `POST` only on 404.
 - The meaning of the inbox field `status_until` (`2026-12-07T14:40:11Z`, 30 days after create; maybe a Free-plan deactivation). Stage 4 `setup` prints it; stage 9 records it.
 - Whether Interia keeps sorting this sender into `Oferty`, or later into `Wiadomości-śmieci` or another sort folder. D10 handles all sort folders.
 
@@ -169,7 +178,8 @@ All with source in `notes/2026-11-07-agentmail-test-mail.md` (§3 docs, §7–8 
   no phone number of 9 or more digits in a row; no `TEST_MAILBOX_ADDRESS` value in the text. `send` and the structural test refuse a batch with a case where
   `blind` is missing, or `blind` ≠ `expected` and `note` does not start with `borderline:`. `note` that starts with `attack:` marks an injection-style case.
 - **D8 Pace and caps.** `--interval-sec` default 30 (min 5) between sends; `--limit` (default all due cases); daily cap `--daily-cap` default 50 (max 95): the
-  number of `sent` lines in all send logs in the last 24 h. Cap reached → stop, exit 2. One `send` at a time: lock file created with `wx`; it holds the pid and the
+  number of `sent` lines with `via: "send"` in all send logs in the last 24 h. Cap reached → stop, exit 2. Known gap: a mail found by label recovery and an open
+  intent whose mail went out are not counted; a key reuse is counted although no new mail goes out. The cap of 50 against the limit of 100 covers this. One `send` at a time: lock file created with `wx`; it holds the pid and the
   time; it is stale (replaced) when the pid is not alive (`process.kill(pid, 0)` throws `ESRCH`; `EPERM` counts as alive) or the lock is older than 24 h.
   `--interval-sec` 5–600.
 - **D9 Threads.** A case with `replyTo` is sent only after its parent has a `sent` line. Headers: `In-Reply-To: <parent message_id>`,
@@ -177,7 +187,9 @@ All with source in `notes/2026-11-07-agentmail-test-mail.md` (§3 docs, §7–8 
   A parent that is `failed` or `changed` → the child is `blocked` (reported, not sent).
 - **D10 Deliver.** Runs in `testmail-target` with the mailbox's IMAP login (decrypted inside the VPS container only). Input: the sent list (message ids, sender
   address, sent times). The sender must end with `@agentmail.to` and differ from the mailbox address. For each wanted id: the DB already has an `emails` row →
-  `synced` (S3 may have moved it to `AI/*` later, so the tool never looks there; a leftover copy in a sort folder is deleted). Else look in INBOX and in the sort
+  `synced` (S3 may have moved it to `AI/*` later, so the tool never looks there). A sort-folder copy of a `synced` mail is deleted only when an INBOX copy is also
+  found (a crash leftover); a sort-folder copy without an INBOX copy is left alone, because it can be the only copy (moved back by the user or a later slice).
+  Else look in INBOX and in the sort
   folders: `Oferty`, `Społeczności`, `Rachunki` (by exact name) and the folder with special use `\Junk`. Only mails whose trimmed `Message-ID` is wanted **and**
   whose `From` is the persona inbox address are touched. `--check-only` plans and reports with no IMAP change (the read-only inspect for troubleshooting). In INBOX only → `in_inbox`. In INBOX and in a sort folder → delete the
   sort-folder copy (`deleteMessage`) → `duplicate_removed`. In a sort folder only → `moveMessage(folder, uid, INBOX)` → `moved` (Interia: COPY + EXPUNGE, new UID
@@ -187,7 +199,9 @@ All with source in `notes/2026-11-07-agentmail-test-mail.md` (§3 docs, §7–8 
   category, confidence, reason code, model). The report has a per-case table (case id, persona, expected, triage category, confidence, reason code, `ok`/`WRONG`)
   and a `thread` column for cases with `replyTo` (`ok` when the stored mail has `in_reply_to`, else `MISSING`), and the eval report of `buildRealReport` +
   `renderEvalReport` with the expected category as the truth. Rows that are not `triaged` are left out of the metrics
-  and counted in the header. Cases with `borderline:` count in the metrics and are marked in the table.
+  and counted in the header. Cases with `borderline:` count in the metrics and are marked in the table. The report uses `mail: "synthetic"` (made-up content),
+  so it never reads as real-label evidence for the S3 gate. Under the table: the prompt versions of the results (`triage_results.prompt_version`). A triage
+  category outside the 5 classifier categories (`delegation`, `unsure`) counts as `WRONG`.
 - **D12 Exit codes.** `validate`: 0 valid, 1 invalid. `send`: 0 every case sent; 1 error, guard refusal, or a case that needs an agent fix (`failed`, `changed`,
   `blocked`, duplicate found); 2 stopped early with nothing to fix (cap, limit, 429 or network retries used up, waiting children) — run the same command later. `deliver`: 0 every sent case is `synced`, `in_inbox`, `moved` or `duplicate_removed`; 2 some `not_found`; 1 error. `compare`: 0 every
   sent case is `triaged`, 2 some not yet, 1 error. `remote`: the exit code of the remote command (or 1 when SSH or the build fails).
@@ -254,13 +268,22 @@ All with source in `notes/2026-11-07-agentmail-test-mail.md` (§3 docs, §7–8 
 - **Shared working tree.** The S3 and S4 builds use this checkout (S4 runs in pipeline mode on 2026-11-07). Start a build step of this plan only when `git status`
   shows no change outside this task's files and no other session builds (the S3/S4 task status lines say blocked, waiting or done), or the user says go.
   Stage and commit only this step's files, by explicit path. Before a push: `git fetch`, `git log HEAD..origin/master`; when the remote is ahead, `git pull --no-rebase`
-  (a merge; never rebase or force-push).
+  (a merge; never rebase or force-push). Then `git log --oneline origin/master..HEAD`: push only when every commit ahead is of this task or already reviewed
+  and pushed by its owner's rules; else ask the user (incident 2026-11-07: the plan push also pushed 3 unreviewed S4 commits).
+  Every `git fetch`/`git push` on this PC: `GIT_SSH_COMMAND="ssh -i $HOME/.ssh/github -o IdentitiesOnly=yes" git …` (Facts checked).
 
 ### User checkpoints
 
-1. Before stage 9 (the first real send): a group review of stages 1–8 (Opus, high) must give PASS. The main session then gives the user a 4-line summary.
+1. Before stage 9 (the first real send): the group reviews of stages 1–5 and 6–8 (Opus, high) must give PASS. The main session then gives the user a 4-line summary.
    Default: stage 9 starts without waiting (P8: the user lets the agent work alone); the user may say "stop" at plan approval to make this a hard stop.
 2. After stage 9: the user reads the compare report (in this file) and closes the task.
+
+### Open defaults (the user has not confirmed them yet)
+
+1. Stage 9 starts after the group reviews give PASS, without a stop for the user (checkpoint 1).
+2. The build starts only when the S3 and S4 sessions are idle (rule "Shared working tree"), unless the user says go.
+3. Every test mail shows in the Telegram digest, and `urgent` ones send an urgent notice (about 5 per 25-mail batch).
+4. The user's Telegram feedback on test mail counts as real labels in `triage_feedback` until `tasks/planned/testmail-mail-kind.md` lands (D14).
 
 Stage 9 commits (CLAUDE.md "one commit only after the reviewer gives PASS"): stage 9 makes 3 commits, each after a reviewer PASS on its content:
 the smoke batch file (9.1), the batch-01 file (9.2, before its send: data rule, labels, tone), and the results (report file, task file, notes; the reviewer checks
@@ -270,11 +293,15 @@ User steps: none. The API key is in `.env` already; `TEST_MAILBOX_ADDRESS` goes 
 
 ### Review model
 
-Implementers: Sonnet, medium (agent file default). Reviews of `[risky]` stages (2, 3, 4, 5, 7, 9): Opus, high. Other stages: Sonnet, high. Group review before stage 9: Opus, high.
+Implementers: Sonnet, medium (agent file default). Reviews of `[risky]` stages (2, 3, 4, 5, 7, 9): Opus, high. Other stages: Sonnet, high. Group reviews (Opus, high): stages 1–5 after stage 5 (`tasks/README.md`: every 5 stages), and stages 6–8 before stage 9.
 
 ### Run mode
 
 Run mode: normal (one stage at a time: build → review → commit → push). Not pipeline: the plan is small and the S3 build uses the same tree.
+
+Review units (`tasks/README.md` plan shape: a `[risky]` stage has 1 step): in the `[risky]` stages 2, 3, 4, 5, 7 and 9 **each step is its own unit**
+(build → review → commit → push), commit message `<area>: test-mail-traffic stage N.M — <what>`. Step 4.1 has two units: 4.1a (`paths.ts`, `lock.ts`,
+`log-file.ts`, tests 15–16) and 4.1b (`send.ts`, tests 1–14 and 17). The normal stages 1, 6 and 8 stay one unit each.
 
 ### Stages
 
@@ -307,3 +334,4 @@ Not yet (stage 9 writes the compare report here).
 - 2026-11-07: User answers: AgentMail account on the Free plan; the agent proposes personas (check plus tags `inbox+tag@`); the agent session writes the mails (free, a different model family from the classifier); the agent decides labels and review.
 - 2026-11-07: Plan session (plan-task skill). User: defaults for all open questions; subagents with one approval at the end; S4 delegate persona later. Live probe: 1 inbox created (`ea-testmail-75wd@agentmail.to`, the only free slot), 6 + 2 mails sent to the pilot address. Findings: SES replaces `Message-ID`; `From` override and plus tags dropped; display name by PATCH works; idempotency key works; Interia sorts the mail into `Oferty`. The user's webmail sender rule did not stick; user: the tool moves its own mail into INBOX. Task moved to `active/`.
 - 2026-11-07: Plan written (9 stages, 6 `[risky]`). Cold review (Opus, high): FAIL, 3 blockers (unreviewed bundle on the VPS, send log damage → resend, free-text recipient), 12 majors, 22 minors; all fixed. Re-review (Opus, high): PASS with 13 minors, fixed. Waiting for the user's approval.
+- 2026-11-07: Independent review in a separate session (Claude Code, Opus; record `test-mail-traffic/review-2026-11-07-session2.md`): 0 blockers, 4 majors (git fetch fails with the default SSH key, `[risky]` stages with 2 steps, deliver could delete the only copy of a synced mail, no push check of foreign commits), 12 minors. All fixed in the plan files, except one accepted minor. Waiting for the user's approval.

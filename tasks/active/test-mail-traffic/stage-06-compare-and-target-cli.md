@@ -54,6 +54,7 @@ Its input comes on stdin as JSON (no mail text), so the VPS needs no batch file 
       confidence: number | null;
       reasonCode: string | null;
       model: string | null;
+      promptVersion: string | null; // triage_results.prompt_version
       ok: boolean | null; // null unless triaged
       thread: "ok" | "MISSING" | null; // only for cases with a parent and a stored mail: in_reply_to set or not
     }
@@ -66,6 +67,7 @@ Its input comes on stdin as JSON (no mail text), so the VPS needs no batch file 
         confidence: number;
         reason_code: string;
         model: string | null;
+        prompt_version: string | null;
       }[]
     ): CompareRow[];
     export function renderCompareTable(rows: readonly CompareRow[]): string; // Markdown
@@ -82,6 +84,7 @@ Its input comes on stdin as JSON (no mail text), so the VPS needs no batch file 
         confidence: number;
         reason_code: string;
         model: string | null;
+        prompt_version: string | null;
         fields: unknown;
       }[]
     >; // latest per email_id (created_at desc, id desc), org filter; [] for []; chunks of 500
@@ -91,11 +94,12 @@ Its input comes on stdin as JSON (no mail text), so the VPS needs no batch file 
     - `buildTargetInput`: one entry per batch case in batch order; `messageId`/`sentAt` from the `sent` state (`caseStates`), else null. `marker` = `attack` when `note`
       starts with `attack:`, `borderline` when it starts with `borderline:`, else `none`; `parentCaseId` = `replyTo ?? null`.
     - `buildCompareRows`: `messageId` null → `not_sent`; no email row with that `message_id_header` → `not_synced`; a row but no result → `not_triaged`; else `triaged`
-      with the result fields and `ok = category === expected`. Two email rows with the same id (a second copy) → take the row that has a result; if both or none
+      with the result fields and `ok = category === expected` (a `delegation` or `unsure` result is never equal, so it counts as `WRONG`). Two email rows with the same id (a second copy) → take the row that has a result; if both or none
       have one, the first by `id` order (the table shows the case once). `thread` = `ok`/`MISSING` from the chosen row's `in_reply_to` when `parentCaseId` is set and a row exists, else null.
     - `renderCompareTable`: header line `| case | persona | expected | triage | confidence | reason | result | thread |` (`thread` cell empty when null); `result` is `ok`, `WRONG`, or the state
       (`not sent`, `not synced`, `not triaged`); a `borderline` row gets ` (borderline)` after the case id, an `attack` row ` (attack)`. Confidence with 2 decimals.
-      Below the table: `triaged <n> of <m> sent; ok <n>; wrong <n>`. No subject, no body (the agent reads them in the batch file).
+      Below the table: `triaged <n> of <m> sent; ok <n>; wrong <n>`, then `prompt versions: <version> (<n>), …` over the triaged rows (`none` for null),
+      in order of count, then name. No subject, no body (the agent reads them in the batch file).
     - `listLatestTriageByEmailIds` filters `triage_results.org_id = ctx.orgId`; it uses `distinctOn("email_id")` with the same order as `listLabeledResults`.
   - Test:
     1. (`target.test.ts`) `buildTargetInput` of a 3-case batch with one `sent` case and notes `attack: …` / `borderline: …` → markers and nulls as decided; the result passes `targetInputSchema`.
@@ -131,7 +135,9 @@ Its input comes on stdin as JSON (no mail text), so the VPS needs no batch file 
     - `compare`: `listEmailsByMessageIds` (mail index) → `listLatestTriageByEmailIds` (triage index) → `buildCompareRows`. stdout: the heading
       `# Testmail compare: <batch>`, the table, the line `expected labels come from the batch file (writer + blind checker), not from triage_feedback`, then the
       eval report: map each `triaged` row to the `listLabeledResults` row shape (`email_id`, `category`, `confidence`, `reason_code`, `model`, `fields`,
-      `verdict: ok ? "right" : "wrong"`, `true_category: expected`) → `buildRealReport(rows, { bar, minKept, mail: "real", now: new Date() })` →
+      `verdict: ok ? "right" : "wrong"`, `true_category: expected`) → `buildRealReport(rows, { bar, minKept, mail: "synthetic", now: new Date() })` (`"synthetic"`: the header then says
+      `labeled synthetic mails` and `synthetic mail, dev check`; with `"real"` it would say `real mails` and print the real-label done-when line, and a later agent
+      could take the file for S3 gate evidence) →
       `renderEvalReport(report, { title })` with the title `Eval report: testmail batch <batch>`. Exit 0 when every sent case is `triaged`; 2 when some sent case
       is not; 1 on error.
     - The script never writes to the DB (compare) and never reads a batch file or a send log.
@@ -139,7 +145,8 @@ Its input comes on stdin as JSON (no mail text), so the VPS needs no batch file 
     keys that a test wants unset are passed as `""`; stdin from the test. A spawned process cannot see a rolled-back transaction, so the rows are committed:
     `insertTriaged`/`insertTestEmail` on `db` (not a transaction) in a new org per test file; `afterAll` deletes that org's `triage_results`, `emails`, mailbox and org
     (in that order, by its `org_id`)):
-    1. `compare` with 3 cases (one triaged right, one triaged wrong, one `not_synced`) → exit 2; stdout has the table with `ok`, `WRONG`, `not synced` and an `Eval report: testmail batch` section.
+    1. `compare` with 3 cases (one triaged right, one triaged wrong, one `not_synced`) → exit 2; stdout has the table with `ok`, `WRONG`, `not synced`, a
+       `prompt versions:` line and an `Eval report: testmail batch` section with `synthetic mail, dev check` and without `real mails`.
     2. `compare` with all sent cases triaged → exit 0.
     3. Bad stdin (`{}`) → exit 1, `bad input`.
     4. `deliver` with `TEST_MAILBOX_ADDRESS: ""`, `TRIAGE_LLM_SCOPE: "off"` and `ACTIONS_SCOPE: "off"` in the child env (else `loadConfig` can fail first) → exit 1,

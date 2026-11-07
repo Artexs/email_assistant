@@ -11,6 +11,8 @@ explicit env for `loadTestmailConfig`).
 
 - [ ] **4.1 Lock, log file I/O and the send service**
   - Goal: run a batch: plan, intent, display name, send with retries, sent/failed lines, pace, caps, exit code.
+  - Review units (task file "Run mode"): **4.1a** = `paths.ts`, `lock.ts`, `log-file.ts` and their tests (tests 15–16); **4.1b** = `send.ts` and `send.test.ts`
+    (tests 1–14, 17). Build, review and commit 4.1a first.
   - Files: create `apps/server/src/modules/testmail/lock.ts`, `apps/server/src/modules/testmail/log-file.ts`, `apps/server/src/modules/testmail/send.ts`,
     `apps/server/src/modules/testmail/send.test.ts`, `apps/server/src/modules/testmail/lock.test.ts`, `apps/server/src/modules/testmail/log-file.test.ts`,
     `apps/server/src/modules/testmail/paths.ts`; change `apps/server/src/modules/testmail/index.ts`.
@@ -179,7 +181,8 @@ explicit env for `loadTestmailConfig`).
     - Argument parsing with `parseArgs` (`strict: true`) and a Zod schema per subcommand, as in `eval.ts`. `--batch` must match `BATCH_ID_PATTERN`; the file is
       `<batchesDir>/<id>.json` (`testmailPaths()`). Numbers: `--limit` int ≥ 0, `--interval-sec` int 5–600, `--daily-cap` int 1–95.
     - Loading: personas with `personaFileSchema`, batch with `batchSchema`. A Zod error prints each issue as `<path>: <code>` only (no input values), exit 1.
-    - `setup`: `loadTestmailConfig()` (key required) → `ensureInbox({username, clientId, displayName: defaultDisplayName})` → `getInbox(inboxId)` → print from the GET result
+    - `setup`: `loadTestmailConfig()` (key required) → `getInbox(<username>@agentmail.to)`; only on 404 → `ensureInbox({username, clientId, displayName: defaultDisplayName})`
+      and `getInbox` again (the Free plan has 3 of 3 inboxes in use; whether a `POST` with a known `client_id` still answers 200 then is not verified) → print from the GET result
       `inbox <email> status <status ?? "active"> status_until <statusUntil ?? "-">`. `email` ≠ `<username>@agentmail.to` → print `inbox address differs from the persona file`, exit 1.
     - `validate`: `validateBatch(batch, personas, { fileBatchId, testAddress: loadRemoteTarget(targetFile).testAddress, requireBlind: !allowUnlabelled })` (`send` passes the same `testAddress`). Print one line per issue
       (`case <id|-> <code> <detail>`), then counts by expected category and by persona, then `valid` or `invalid (<n> issues)`. Exit 0 / 1. No API key needed.
@@ -208,7 +211,8 @@ explicit env for `loadTestmailConfig`).
     6. `send` again → exit 0, no new fake send.
     7. A damaged log (a bad line in the middle) → exit 1 `send log damaged`, 0 send requests.
     8. `blind` prints JSON without `expected`; `blind --apply` with 1 disagreeing label → exit 0, the file has `blind` and `checker`, the output has `disagree`.
-    9. `setup` against the fake → prints `inbox <username>@agentmail.to status active status_until 2026-12-07T14:40:11.000Z`, exit 0.
+    9. `setup` against the fake → prints `inbox <username>@agentmail.to status active status_until 2026-12-07T14:40:11.000Z`, exit 0; the first run makes
+       `GET` (404), `POST`, `GET`; a second run makes one `GET` and no `POST` (check the fake's `requests`).
     10. A live lock file with the test runner's pid → `send` exit 1 `another testmail send runs`.
     11. `TEST_MAILBOX_ADDRESS=other@interia.test` (valid, but ≠ `target.json`) → exit 1 `differs from evals/testmail/target.json`, 0 requests; `not-an-address` → exit 1.
   - Check: `bun run lint && bun run typecheck && bun run test:unit && bun run test:int`

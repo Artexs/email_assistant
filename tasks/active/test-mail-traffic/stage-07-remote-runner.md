@@ -40,7 +40,8 @@ No step in this stage contacts the VPS. Tests use `--dry-run` and injected `run`
       `--check-only` only for `deliver`; `bar` must be a number 0–1 (printed with `String(bar)`), `minKept` an int 1–10000; else `HardError`. It re-parses `target`
       with `remoteTargetSchema` first. A unique path per run, so two remote runs never share or delete each other's bundle.
       Fact: stdin and the exit code pass through `ssh` and `docker compose run -T` (probe 2026-11-07: exit 2 and stdin JSON came back).
-    - `findEnvValuesInBundle`: for each env key whose name matches `/KEY|TOKEN|PASSWORD|SECRET|DATABASE_URL|CREDENTIALS/` and whose value has 8 or more characters, check
+    - `findEnvValuesInBundle`: for each env key whose name matches `/KEY|TOKEN|PASSWORD|SECRET|HASH|PHONE|DATABASE_URL|CREDENTIALS|IMAP_USER/` (the local `.env`
+      also has `TELEGRAM_API_HASH`, `TELEGRAM_TEST_PHONE`, `IMAP_USER`) and whose value has 8 or more characters, check
       `bundle.includes(value)`; return the key names only (never the values).
     - `parseDeliverOutput`: only stdout lines that start with `{` are read (other lines, e.g. a log line, are ignored); each must parse as `{case, result, folder}` with
       the stage 5 result enum and `folder` in `deliverFolderKeys` or null, else it counts as `bad`. Each line from `deliveredLogLines` is checked with
@@ -97,7 +98,9 @@ No step in this stage contacts the VPS. Tests use `--dry-run` and injected `run`
       `buildTargetInput(batch, lines, "<username>@agentmail.to")`.
       `--print-input` → print the JSON and exit 0 (no git, no build, no ssh; local use: `… --print-input | bun run testmail:target compare --org-id … --mailbox-id …`).
     - No case has a `messageId` → print `nothing sent yet`, exit 2 (no build, no ssh).
-    - `buildReviewedBundle`: `git fetch origin master` → `git rev-parse origin/master` = sha → worktree `<cacheDir>/<sha>`: when missing,
+    - `buildReviewedBundle`: `git fetch origin master` (the child inherits the environment, so `GIT_SSH_COMMAND` reaches git; a non-zero exit →
+      `HardError("git fetch origin master failed: on this PC set GIT_SSH_COMMAND=\"ssh -i $HOME/.ssh/github -o IdentitiesOnly=yes\"")`; never fall back to the
+      local `origin/master` ref, it can be old) → `git rev-parse origin/master` = sha → worktree `<cacheDir>/<sha>`: when missing,
       `git worktree add --detach <dir> <sha>`; then `bun install --frozen-lockfile` in it every time (fast when nothing changed; it repairs a failed first install);
       when `<dir>/apps/server/src/scripts/testmail-target.ts` is missing → `HardError("origin/master has no testmail-target: push the testmail code first")`.
       Then `buildBundleFrom(<dir>, outDir)`. Other folders under `<cacheDir>` are removed with `git worktree remove --force <dir>` (only those folders; never another
@@ -121,8 +124,8 @@ No step in this stage contacts the VPS. Tests use `--dry-run` and injected `run`
     5. scp exit 1 → exit 1, ssh not called. ssh exit 255 → exit 1 with `ssh to home_vm failed`.
     6. `--print-input` → JSON on stdout; `buildBundle` and `run` not called. A batch with no sent case → exit 2 `nothing sent yet`, no build.
     7. `buildReviewedBundle` with a fake `run` and `cacheDir` = a temp folder: the argv order is `git fetch origin master`, `git rev-parse origin/master`, `git worktree add --detach …`, `bun install --frozen-lockfile`;
-       a missing entry file → the `push the testmail code first` error.
-    8. Bundle check (real build): `buildBundleFrom(<repo root>, <tmp>)` → `findEnvValuesInBundle(text, process.env)` is `[]`. `bun test` loads `.env`, so `DATABASE_URL`,
+       a missing entry file → the `push the testmail code first` error; `git fetch` exit 128 → the error names `GIT_SSH_COMMAND`, and no `rev-parse`/`worktree` call follows.
+    8. Bundle check (real build, test timeout 60 s): `buildBundleFrom(<repo root>, <tmp>)` → `findEnvValuesInBundle(text, process.env)` is `[]`. `bun test` loads `.env`, so `DATABASE_URL`,
        `CREDENTIALS_KEY` and `AGENTMAIL_API_KEY` hold real values here; the assertion prints key names only. Skip a key that is unset.
   - Check: `bun run lint && bun run typecheck && bun run test:unit && bun run test:int`
   - Done when: tests 1–8 pass. The real run is stage 9.

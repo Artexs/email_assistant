@@ -7,9 +7,12 @@ Part of [`../test-mail-traffic.md`](../test-mail-traffic.md). Read that file's "
 Why risky: real systems (the AgentMail account, the Interia mailbox, the VPS DB) and real sends. The main session runs this stage itself (no implementer):
 it needs `ssh home_vm`, the real API key and judgement on the results.
 
-Gate: user checkpoint 1 (group review of stages 1–8 PASS). Risk to other work: the VPS runs `docker compose run --rm` one-off containers next to the live server
+Gate: user checkpoint 1 (group reviews of stages 1–5 and 6–8 PASS). Risk to other work: the VPS runs `docker compose run --rm` one-off containers next to the live server
 (no restart, no deploy); each test mail costs one classifier call on the VPS and shows in the user's Telegram digest; urgent ones send an urgent notice.
 Do not run this stage while an S3 VPS stage (19, 20) runs.
+
+On this PC every `git push` and every `bun run testmail:remote …` (it runs `git fetch`) needs the prefix
+`GIT_SSH_COMMAND="ssh -i $HOME/.ssh/github -o IdentitiesOnly=yes"` (task file "Facts checked"). Each push follows the task file rule "Shared working tree".
 
 - [ ] **9.1 Smoke run (3 mails) and the open facts**
   - Goal: prove the whole loop on 3 mails and settle the "Not verified" items before the big batch.
@@ -30,6 +33,7 @@ Do not run this stage while an S3 VPS stage (19, 20) runs.
     7. `bun run testmail:remote compare --batch <id>` → exit 0, 3 rows `triaged`; the child row has `thread` = `ok`.
   - Decisions:
     - Any step that fails → stop the stage, write the facts to the notes file, and ask the user only if "Input" does not answer it.
+    - A `ConfigError` from the bundle on the VPS (the `origin/master` config needs a key that the VPS `.env` lacks) → stop and ask the user (P8: no `.env` change).
     - A mail found in no folder after 5 deliver runs → `bun run testmail:remote deliver --batch <id> --check-only` and record where the copies are; a mail in no
       checked folder → tell the user (Interia may have a new sort folder).
   - Done when: the preconditions hold and steps 1–7 pass; notes §10 has the facts (label filter, folders, sync delay, triage delay, `status_until`, bundled sha).

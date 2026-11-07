@@ -55,15 +55,17 @@ Why risky: it changes a real mailbox (moves and deletes). Two guards must hold: 
 
   - Decisions:
     - A copy counts only when its trimmed `messageId` equals a wanted id **and** `from` equals `sender` (case-insensitive, trimmed). Every other copy is ignored, so real mail is never touched.
-    - Per wanted case: in `syncedMessageIds` → `synced`, folder `db`; ops = `delete` of every matching sort-folder copy (a leftover of a crash; the INBOX copy is
-      never touched: the sync owns it).
+    - Per wanted case: in `syncedMessageIds` → `synced`, folder `db`; ops = `delete` of every matching sort-folder copy **only when a matching INBOX copy is also
+      found** (a crash leftover; the INBOX copy is never touched: the sync owns it). A synced case with sort-folder copies and no INBOX copy → no op: that copy can
+      be the only one (the user or a later slice moved it there), and a delete would lose it in the user's only real mailbox.
       Else copies in INBOX and in sort folders → `duplicate_removed`, folder = the first sort folder (order `offers`, `social`, `bills`, `junk`), ops = `delete` of
       every sort-folder copy. Copies in INBOX only → `in_inbox`, no ops. Sort-folder copies only → `moved`, folder = the first one, ops = `move` of the copy with the
       lowest UID in that folder, then `delete` of every other sort-folder copy. No copy → `not_found`, folder null.
     - The output keeps the order of `wanted`.
     - `listEmailsByMessageIds` filters `org_id = ctx.orgId` and `mailbox_id`, `message_id_header in (…)`.
   - Test:
-    1. (`delivery.test.ts`) one case per result kind: synced, in_inbox, moved (from offers), duplicate_removed (inbox + junk), not_found; a synced case with a leftover copy in `offers` → `synced` with one `delete offers`.
+    1. (`delivery.test.ts`) one case per result kind: synced, in_inbox, moved (from offers), duplicate_removed (inbox + junk), not_found; a synced case with copies in INBOX and `offers` → `synced` with one `delete offers`;
+       a synced case with a copy only in `offers` → `synced`, `ops` empty.
     2. A copy whose `messageId` is `" <x@y.test> "` matches the wanted `<x@y.test>`.
     3. A copy with the wanted id but another `from` → ignored (the case is `not_found`); a copy from the sender with an unknown id → ignored.
     4. Two copies in `offers` (uid 7 and 5) + one in `junk` → `move offers 5`, `delete offers 7`, `delete junk <uid>`.
@@ -121,7 +123,8 @@ Why risky: it changes a real mailbox (moves and deletes). Two guards must hold: 
        results a `moved`, b `in_inbox`, c `synced`, d `not_found`; e is still in `Oferty`; a is in INBOX of the fake.
     4. Copy path (`capabilities: { move: false, uidplus: true }`): a in `Oferty`; `failOn("deleteMessage", …)` once → the call throws; the fake has a in INBOX and in `Oferty`;
        a second run → `duplicate_removed`; `Oferty` is empty.
-    5. All wanted ids synced, one leftover copy in `Oferty` → results `synced`; the copy is deleted; the INBOX copy stays.
+    5. All wanted ids synced: id a has copies in INBOX and `Oferty` → the `Oferty` copy is deleted, the INBOX copy stays; id b has a copy only in `Oferty` →
+       it stays (no `deleteMessage` call for b in `calls`); both results `synced`.
     6. `moveMessage` throws `MailNotFoundError` (fake `failOn`) → that case `not_found`, the next case still runs.
     7. Junk: the fake with `folderSpecialUse: { "Wiadomości-śmieci": "\\Junk" }` and mail a there → `moved`, folder `junk`.
     8. `checkOnly: true` with mail a in `Oferty` → result `moved` with one `move` op, and a is still in `Oferty` (no provider write call in `calls`).

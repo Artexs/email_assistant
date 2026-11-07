@@ -41,29 +41,36 @@ Docs and data only, no code. The runbook is the brief for every later agent that
        Warning line: the Interia test mailbox is the user's only real mailbox (`notes/2026-11-03-interia-imap-capabilities.md`); the deliver step moves only the tool's own mails.
     2. **Limits**: Free plan 100 mails/day, the tool's cap 50 per rolling 24 h; one sender address for all personas (the app keeps only the address); the body
        footer `-- Sent via AgentMail`; the VPS triages the mail with the real LLM (`TRIAGE_LLM_SCOPE=all`), so each mail costs one classifier call; urgent mails make
-       Telegram urgent notices for the user, and every mail shows in the digest; AgentMail mail is not "synthetic" for the scope gates (D14).
+       Telegram urgent notices for the user, and every mail shows in the digest; AgentMail mail is not "synthetic" for the scope gates (D14); a triage result
+       `delegation` (S4, only with active delegates) or `unsure` counts as `WRONG` in compare; the VPS can run an older prompt version than `origin/master`
+       (compare prints the versions).
     3. **Rules**: made-up content only (data rule of `evals/README.md`: reserved domains, no real people, brands, phone numbers); no real link targets (only
        `example.com`, `*.test`); spam and phishing-like cases stay mild (AgentMail suspends accounts on abuse); never add a sender rule for the inbox address;
        never send to another address; never write expected labels into `triage_feedback`; dates in the text are relative ("jutro", "w piątek") because the mail arrives live.
     4. **Batch mix** (default for 25 cases): 5 per category (`urgent`, `needs_reply`, `info`, `notification`, `spam`); at least 6 personas; at least 2 threads
        (`replyTo`), one of them across personas of group `work`; 2–3 `borderline:` cases (real grey zones: a newsletter with a question, a polite reminder that is not
        urgent); 1–2 `attack:` cases (text that tells the assistant what to do; expected = the category a correct classifier gives); about 70 % `pl`, 30 % `en`.
-       Category guide: copy the definitions from the classifier prompt by reference (`apps/server/src/modules/triage/prompts/classifier-v1.ts`), do not restate them.
+       Category guide: link the definitions of the current classifier prompt, do not restate them: the file that `apps/server/src/modules/triage/index.ts`
+       exports `PROMPT_VERSION` from (`prompts/classifier-v2.ts` on 2026-11-07; its `MEANINGS` map). Do not name a version number as fixed in the runbook text.
     5. **Procedure** (numbered, exact commands):
        1. `bun run testmail:setup` — check the inbox (prints `status_until`; when the inbox is deactivated, stop and tell the user).
        2. Writer: the pi `subagent` tool with agent `testmail-writer` (step 8.3) and a task that names the batch id and the mix.
           It writes `evals/testmail/batches/<YYYY-MM-DD>-<slug>.json` with `writer: "claude-sonnet-5-5"` and no `blind` fields. It has no shell.
        3. The main session runs `bun run testmail:validate --batch <id> --allow-unlabelled` and fixes every issue (or sends the issue list back to the writer).
        4. `bun run testmail:blind --batch <id> > /tmp/<id>.blind.json`. Checker: the pi `subagent` tool with agent `testmail-checker` (step 8.3); the task text
-          holds the full content of `/tmp/<id>.blind.json` (the checker has no file tools, so it cannot read the batch with `expected`). pi passes the task as one process argument (Linux limit 128 KiB): send at most 15 cases per checker call and merge the answers. The main session saves its JSON
+          holds the full content of `/tmp/<id>.blind.json` (the checker has no file tools, so it cannot read the batch with `expected`). pi passes the task as one process argument (Linux limit 128 KiB per argument): split the blind JSON into chunks of at most 100 000 bytes (whole cases,
+          a thread case with its `thread`; check with `wc -c`), one checker call per chunk, and merge the answers. The main session saves its JSON
           answer to `/tmp/<id>.labels.json`, then runs `bun run testmail:blind --batch <id> --apply /tmp/<id>.labels.json --checker claude-haiku-5-5`.
        5. For each `disagree` line: rewrite the case so that it is clear, or remove it, or keep it with a `note` that starts with `borderline:` and says why. Do not
           change `expected` to the checker's label without a reason in the note. Then `bun run testmail:validate --batch <id>` → `valid`.
        6. `bunx prettier --write evals/testmail/batches/<id>.json`; commit the batch file alone (`testmail: batch <id>`) and push. The batch is in git before its first send.
+          Push with the task file rule "Shared working tree" (check `git log --oneline origin/master..HEAD` first) and
+          `GIT_SSH_COMMAND="ssh -i $HOME/.ssh/github -o IdentitiesOnly=yes" git push` (the default SSH key fails on this PC).
        7. `TEST_MAILBOX_ADDRESS=artekstryszowski@interia.pl bun run testmail:send --batch <id> --dry-run`, then the same without `--dry-run` and with
           `--limit 10 --interval-sec 45` (about 7 minutes; give the shell call a timeout of 900 s). Repeat until exit 0. Exit 2 → run the same command again (later when
           the cap is reached); exit 1 → read the failed/remaining lines and fix (a new case id for a changed or failed case).
-       8. `bun run testmail:remote deliver --batch <id>` about 1 minute after the send. Exit 2 (`not found`) → wait 2 minutes, run again (at most 5 times; then check
+       8. `GIT_SSH_COMMAND="ssh -i $HOME/.ssh/github -o IdentitiesOnly=yes" bun run testmail:remote deliver --batch <id>` about 1 minute after the send (every
+          `testmail:remote` call needs this prefix on this PC: it runs `git fetch`; with `--print-input` it does not). Exit 2 (`not found`) → wait 2 minutes, run again (at most 5 times; then check
           the Interia folders with the VPS inspect steps in the notes file).
        9. Wait for the sync and the triage (a few minutes), then `bun run testmail:remote compare --batch <id> --out evals/results/<YYYY-MM-DD>-testmail-<id>.md`.
           Exit 2 → wait 5 minutes and run again (at most 1 hour). The report file has no mail text; commit it with the batch results line in the task or notes.
@@ -83,7 +90,9 @@ Docs and data only, no code. The runbook is the brief for every later agent that
         `docker compose -f deploy/compose.yaml --env-file .env logs --since 30m server | grep '\[mail\] sync'`).
   - Content of `tasks/planned/testmail-mail-kind.md`: status line `planned`; goal: mail from the testmail sender counts as test mail for `mailKindFilter`
     (eval `--real`, scope gates), so the user's feedback on it does not mix with real labels; options (a configured sender list `TEST_SENDER_ADDRESSES`, or a header
-    check — headers are not stored now); risks (the S3 `ACTIONS_SCOPE=synthetic` claim filter changes); link D14.
+    check — headers are not stored now); risks (the S3 `ACTIONS_SCOPE=synthetic` claim filter changes); link D14. Note in it: a sender filter also removes
+    feedback that the user gave on test mail before the change (it is retroactive), so it must land before the next `eval --real` go/no-go decision
+    (S3 `mailbox:settings auto`).
   - Test: none (docs). The 8.1 test covers the data files.
   - Check: `bunx prettier --check evals/testmail/README.md evals/README.md tasks/planned/testmail-mail-kind.md notes/2026-11-07-agentmail-test-mail.md docs/code-patterns.md`
   - Done when: a reviewer can follow the procedure from the README alone (the review checks each command name against `package.json` and each flag against the CLI usage texts).

@@ -104,7 +104,8 @@ Why risky: security (the API key) and sending to people (the send call). The cli
   - Decisions:
     - Auth: a wrong or missing Bearer key → 401 `{name: "UnauthorizedError"}` for every route.
     - `POST /v0/inboxes`: same `client_id` → the same inbox; a new one → `inbox_id = email = <username>@agentmail.to`, `display_name` as given.
-    - `PATCH /v0/inboxes/{id}` sets `display_name`; `GET` returns the inbox with `status_until` `2026-12-07T14:40:11.000Z`.
+    - `PATCH /v0/inboxes/{id}` sets `display_name`; `GET` returns the inbox with `status_until` `2026-12-07T14:40:11.000Z`. `GET`, `PATCH` and `send` of an
+      unknown inbox → 404 `{name: "NotFoundError"}` (stage 4.2 `setup` and `send` depend on it).
     - `POST …/messages/send`: no `Idempotency-Key` → 400 (the client must always send one); key seen with a byte-equal body and the same inbox → 200 with the first
       `message_id`, no new entry in `sent`; key seen with another body → 409 `{name: "IdempotencyKeyConflictError", code: "conflict"}`; else a new
       `message_id` `<fake-<n>@email.amazonses.test>` and `thread_id` `t-<n>`, and the message is stored with its labels and the inbox's current display name.
