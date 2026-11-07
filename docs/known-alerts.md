@@ -38,7 +38,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 - **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
 - **Source:** `apps/server/src/modules/triage/returned.ts` (`[triage]`, level `info`; job `triage.returned`, every 15 s).
-- **Cause:** The job wrote feedback for <n> mails that the sync marked as returned to INBOX (`emails.returned_at`): `imap_move` for a user move back, none after an Undo.
+- **Cause:** The job processed <n> mails that the sync marked as returned to INBOX (`emails.returned_at`). Only some get a feedback row: `imap_move` for a user move back; none after an Undo or for an `unsure` mail.
 - **Fix:** No action. A line `returned <id>: <label>` at level `error` means one row failed; read the label and check the DB.
 - **Status:** won't fix (expected behaviour)
 
@@ -79,7 +79,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
 - **Source:** `apps/server/src/modules/actions/committer.ts` (`[actions]`, level `warn`).
 - **Cause:** The mailbox refused the login. The committer set the mailbox status to `auth_error`; the sync notice tells the user. The claimed actions go back to `ready`.
-- **Fix:** Fix the secret (password or app password) and set the mailbox to `active` again. Actions wait and apply later if they are younger than 24 h and the mail is younger than 7 days; older ones expire.
+- **Fix:** Fix the secret (password or app password) with `bun run mailbox:password` and set the mailbox to `active` again. Actions wait and apply later if they are younger than 24 h and the mail is younger than 7 days; older ones expire.
 - **Status:** investigating
 
 ### `action <id>: <Class code>, try <n> of 3`
@@ -118,7 +118,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 - **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
 - **Source:** `apps/server/src/modules/actions/committer.ts` (`[actions]`, level `info`; once per mailbox and process start).
-- **Cause:** `ACTIONS_SCOPE` is `off` (the default), so the committer applies no mailbox change. <n> mailbox actions are `ready` and wait. Flag-only and summary actions are not mailbox changes in this count.
+- **Cause:** `ACTIONS_SCOPE` is `off` (the default), so the committer applies no mailbox change. <n> mailbox actions are `ready` and wait. The count has `move`, `mark_read` and `flag` actions. `save_summary` is not counted.
 - **Fix:** No action if you want no changes. To apply them: set `ACTIONS_SCOPE=synthetic` or `all` in the `.env`, run `expire-ready` first when the rows are old (`deploy/README.md`, "Assist mode"), and restart the server.
 - **Status:** won't fix (expected behaviour)
 

@@ -27,7 +27,7 @@ Open: stage 19 (the real paths of the `AI/*` folders at Interia, the UID behavio
 ## GreenMail 2.1.15 (tests and dev server, 2026-11-07)
 
 - Capabilities: `MOVE` and `UIDPLUS` yes (`notes/2026-11-03-greenmail-facts.md`). The dev mailbox connect on 2026-11-07 showed MOVE=yes and UIDPLUS=yes.
-- Delimiter: `.` (raw `LIST` on `127.0.0.1:3143` on 2026-11-07). The Interia delimiter is `/`. The tests accept both (`/^AI[./]Info$/`, `report.delimiter` is `.` or `/`), so no test pins the GreenMail path of `AI/Info`.
+- Delimiter: `.` (seen once by a raw `LIST` on `127.0.0.1:3143` on 2026-11-07, not pinned by a test). The Interia delimiter is `/`. The tests accept both (`/^AI[./]Info$/`, `report.delimiter` is `.` or `/`), so no test pins the GreenMail path of `AI/Info`.
 - A raw `CREATE AI/X` on GreenMail makes one flat folder named `AI/X`. Code that must create `AI/Info` goes through `ensureFolder`, which uses the server delimiter.
 - The contract tests run twice: `imap-greenmail` (MOVE) and `imap-greenmail-copy-path` (`forceCopyMove`). The COPY path leaves no `\Deleted` mail in the source folder (`apps/server/test/integration/imap-contract.test.ts`).
 - `probeMove` runs every write on GreenMail and cleans up, including the `AI` parent (`imap-probe-move.test.ts`).

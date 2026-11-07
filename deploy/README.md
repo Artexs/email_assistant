@@ -91,13 +91,14 @@ $C run --rm server bun run mailbox:settings mode --org-id <uuid> --mailbox-id <u
 $C run --rm server bun run mailbox:settings auto --org-id <uuid> --mailbox-id <uuid> --category info --value on
 ```
 
-- `mode --mode assist` sets the switches `move`, `mark_read` and `flag` on. Add `--keep-switches` to keep the old values.
+- `mode --mode assist` sets the switches `move`, `mark_read` and `flag` on. Add `--keep-switches` to keep the old values. Without it, `mode --mode assist` also expires the `ready` rows of each switch it turns off.
 - `auto --value on` needs a go/no-go `go` for the category on real labeled mail (bar 0.98, at least 30 kept). If the gate says no-go, the command exits with code 2. `--force` sets `auto` on anyway and records `forced` in the audit log.
 - `switch --name <name> --value on|off` changes one switch. `create_draft` has no effect yet (S4).
 - A change that closes a gate expires the `ready` actions it closes. The command prints `expired <n> ready actions`.
 - Before you set `ACTIONS_SCOPE=all`, run `mailbox:settings expire-ready`. Real mail of the shadow-scope days then does not move when the scope opens. If `ready mailbox actions left` is above 0, a committer run holds a row: run the command again after 15 seconds.
-- You can close a gate as an emergency stop (`mode shadow`, `auto … off` or `switch … off`). Then run `expire-ready` again after one triage batch (15 seconds plus the LLM time).
-  A triage batch that started before the change can still insert `ready` rows. It planned them under the old settings.
+- You can close a gate as an emergency stop (`mode shadow`, `auto … off` or `switch … off`). No second `expire-ready` is needed.
+  `saveTriage` share-locks the settings row and compares its version. A triage batch that started before the change writes nothing for its mails and releases them.
+  The next run triages them under the new settings.
 
 ### `ACTIONS_SCOPE`
 
@@ -129,8 +130,7 @@ The owners get one notice for each failed action. An action fails after 3 hard e
 
 ### Known effects
 
-- A deadlock is possible between two jobs. The returned job locks the original move, then `emails`. The committer's reverse apply locks `emails`, then the original move.
-  The returned job retries the row on the next run. The committer's ensure finds the mail moved. No action is needed, unless the deadlock repeats.
+- Lock order is one order on every path (undo, returned job, committer): the original move row first, then `emails`. No deadlock cycle exists.
 
 ### Roll back
 

@@ -220,7 +220,7 @@ The policy is the first gate. `ACTIONS_SCOPE` (env, S3) is a second gate next to
 `all` = every mail of the mailbox `TEST_MAILBOX_ADDRESS`, and no mailbox change in any other mailbox. The server refuses `all` without `TEST_MAILBOX_ADDRESS`.
 Actions that the scope holds back stay `ready` and wait (they expire after 24 h, §4.1 rule 7). `synthetic` is a test gate, not a security boundary: any sender can write such an id.
 The mode, the `auto` flags and the switches change only through `bun run mailbox:settings` (audit rows `mailbox.mode_changed`, `mailbox.policy_changed`, `mailbox.switch_changed`).
-A change that closes a gate (`mode shadow`, `auto … off`, `switch … off`) also expires the `ready` rows it closes, in the same transaction.
+A change that closes a gate (`mode shadow`, `auto … off`, `switch … off`, and `mode assist` without `--keep-switches` for each switch it turns off) also expires the `ready` rows it closes, in the same transaction. `saveTriage` share-locks the settings row and compares the settings version: a triage batch planned under old settings writes nothing and releases its mails.
 A category gets automatic moves only after it passes the go/no-go bar of the S1b report (default: precision ≥ 98%).
 The policy returns one of three values per action: `apply`, `await_approval`, `log_only`.
 
@@ -551,7 +551,7 @@ Tenancy:
   (the digest at each member's times in the organization timezone; a missed slot is sent if the server is back within 6 hours).
 - **S3 jobs:** `actions.committer` (every 15 s; per active mailbox it expires stale `ready` originals, claims by `ACTIONS_SCOPE`, applies, §4.1 rules 6 and 7)
   and `triage.returned` (every 15 s, always on; turns `returned_at` into feedback, §4.4).
-  `channels.notifier` also detects failed actions: one `action_failed` notice per failed action to the linked owners (dedup `action_failed:<action id>`; `actions.notified_at` is set in the same transaction;
+  `channels.notifier` also detects failed actions: one `action_failed` notice per failed action (not for `save_summary`) to the linked owners (dedup `action_failed:<action id>`; `actions.notified_at` is set in the same transaction;
   a row older than 24 h is marked notified with no notice; an original row with `mail_not_found` gets none). The text names the action, the cleaned subject, "tried 3 times" and where the mail is.
 - **Work queue:** `emails` and `actions` rows with `status`, `attempts`, `next_attempt_at`, `locked_at`, claimed with `FOR UPDATE SKIP LOCKED`.
 - **Mailbox errors:** IMAP/SMTP login error → mailbox `auth_error`, a Telegram notice to the linked owners (one per `status_changed_at`), other mailboxes continue.
