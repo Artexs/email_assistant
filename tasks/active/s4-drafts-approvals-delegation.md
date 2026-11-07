@@ -173,7 +173,7 @@ Each stage lives in its own file in [`s4-drafts-approvals-delegation/`](s4-draft
 - [x] [Stage 18](s4-drafts-approvals-delegation/stage-18-server-wiring-config-log-test.md) — Server wiring: `SEND_SCOPE`, `SEND_TEST_ADDRESSES`, the jobs, the sender factory, `job:run`, the log test [risky] [written] — user checkpoint 3 after it
 - [ ] [Stage 19](s4-drafts-approvals-delegation/stage-19-dev-run-greenmail-dev-bot.md) — Dev run: drafts, approval, send, reply and reminders on GreenMail with the dev bot [risky] [written]
 - [ ] [Stage 20](s4-drafts-approvals-delegation/stage-20-eval-prompt-v2.md) — Eval of `classifier-v2` on the Mac: synthetic, injection, delegation cases; the gate [risky] [written]
-- [ ] [Stage 21](s4-drafts-approvals-delegation/stage-21-docs-notes-follow-ups.md) — Docs, notes, known alerts, follow-ups [written]
+- [x] [Stage 21](s4-drafts-approvals-delegation/stage-21-docs-notes-follow-ups.md) — Docs, notes, known alerts, follow-ups [written]
 - [ ] [Stage 22](s4-drafts-approvals-delegation/stage-22-vps-deploy-self-send.md) — VPS deploy, `SEND_SCOPE=self`, the first real send to the user's own address, a reply [risky] [written] — user checkpoint 4 before it
 - [ ] [Stage 23](s4-drafts-approvals-delegation/stage-23-first-real-delegation.md) — `SEND_SCOPE=all`: the first real delegation and one week of use [risky] [written] — user checkpoint 5 before it
 
@@ -238,18 +238,18 @@ Consequences for stages 6, 11 and 12 (checkpoint 1): every "Not verified" Interi
 
 **Stage 20 (eval of `classifier-v2`, 2026-11-07, OpenAI `gpt-6-luna`, reasoning effort none, 108 cases, 0 errors, about $0.02 per run; report `evals/results/2026-11-07-gpt-6-luna-classifier-v2.md`; v1 = `evals/results/2026-11-06-gpt-6-luna-none.md`, 92 cases):**
 
-Basis (after the stage 20 review): the same 92 old cases in both runs (80 synthetic, 12 injection; v2 also has 12 delegation cases and `inj-13`…`inj-16`, left out here), all predictions (the v1 "Metrics per category" table has exactly these 92 cases; v2 numbers computed from the v2 state file `evals/.runs/gpt-6-luna-none-classifier-v2-all.jsonl`).
+Basis (after two stage 20 reviews): the same 92 old cases in both runs, only the 86 rows that the LLM decided (6 are rule rows: whitelist and blocklist), all predictions — this is exactly the v1 "Metrics per category" table (support 16, 19, 16, 17, 18). The v2 numbers are computed from the v2 state file `evals/.runs/gpt-6-luna-none-classifier-v2-all.jsonl` without the 12 delegation cases and `inj-13`…`inj-16`. "Predicted" = the rows the model gave that category (no confidence threshold).
 
-| category                   | precision v1 → v2    | recall v1 → v2  |
-| -------------------------- | -------------------- | --------------- |
-| urgent                     | 100.0% → 100.0%      | 100.0% → 93.8%  |
-| needs_reply                | 95.0% → 95.0%        | 100.0% → 100.0% |
-| info                       | 75.0% → 69.2% (−5.8) | 56.3% → 56.3%   |
-| notification               | 93.3% → 93.3%        | 82.4% → 82.4%   |
-| spam                       | 76.2% → 78.6%        | 88.9% → 91.7%   |
-| delegation (new, 12 cases) | 100.0%               | 100.0%          |
+| category                   | precision v1 → v2    | recall v1 → v2  | predicted v1 → v2 |
+| -------------------------- | -------------------- | --------------- | ----------------- |
+| urgent                     | 100.0% → 100.0%      | 100.0% → 93.8%  | 16 → 15           |
+| needs_reply                | 95.0% → 95.0%        | 100.0% → 100.0% | 20 → 20           |
+| info                       | 75.0% → 69.2% (−5.8) | 56.3% → 56.3%   | 12 → 13           |
+| notification               | 93.3% → 93.3%        | 82.4% → 82.4%   | 15 → 15           |
+| spam                       | 76.2% → 72.7% (−3.5) | 88.9% → 88.9%   | 21 → 22           |
+| delegation (new, 12 cases) | — → 100.0%           | — → 100.0%      | — → 12            |
 
-Injection 16/16, whitelist 12/12, delegate pick 8/8, draft kind 16/16. **Gate: one miss** — `info` precision falls 5.8 points (limit 5): one mail, `syn-urgent-16`, is read as `info` (v1: `urgent`); 9 of 13 `info` predictions are right (v1: 9 of 12). The results have no generation settings, so one case can change between runs. Run 1 missed more (needs_reply precision 79.2%: the 4 clarification cases and one delegation case went to `needs_reply`); the `delegation` and `needs_reply` meanings got one clause each (only when delegates exist; still `classifier-v2`, never deployed). Waits for the user: accept the `info` miss, or a fix round. Until then the deploy-order rule holds (no VPS deploy of a commit after `c0340b4`). The earlier log claim "every old category within 0.2 points of v1" was wrong (it mixed the go/no-go and the metrics tables).
+Injection 16/16, whitelist 12/12, delegate pick 8/8, draft kind 16/16. **Gate: one miss** — `info` precision falls 5.8 points (limit 5): one mail, `syn-urgent-16`, is read as `info` (v1: `urgent`); 9 of 13 `info` predictions are right (v1: 9 of 12). `spam` precision falls 3.5 points (inside the limit). The results have no generation settings, so one case can change between runs. Run 1 missed more (needs_reply precision 79.2%: the 4 clarification cases and one delegation case went to `needs_reply`); the `delegation` and `needs_reply` meanings got one clause each (only when delegates exist; still `classifier-v2`, never deployed). Waits for the user: accept the `info` miss, or a fix round. Until then the deploy-order rule holds (no VPS deploy of a commit after `c0340b4`). The earlier log claim "every old category within 0.2 points of v1" was wrong (it mixed the go/no-go and the metrics tables).
 
 ## Questions for the user
 
@@ -333,3 +333,5 @@ Answered 2026-11-07 with the plan defaults (P1–P8). Questions 1–12 below: **
 - 2026-11-07: stage 18 built, review pending (18.1 `SEND_SCOPE`, `SEND_TEST_ADDRESSES`, `composition.ts`, the jobs `actions.expiry` and `delegation.chaser`, `job:run`, `.env.example`, the `create_draft` warning removed; 18.2 the send log test; unit 1038 pass, int 825 pass; the dev server starts with `sends: off (SEND_SCOPE=off)` and stops on SIGINT with exit 0).
 - 2026-11-07: stage 17 fix committed. Stage 20 done ahead of stage 19 (allowed by its Order line): eval run 1 missed the gate (needs_reply precision 79.2%); prompt text fixed; run 2 holds the gate (Results). The deploy-order rule is now met for the code at this commit.
 - 2026-11-07: stage 20 review FAIL (Sonnet, high): the v1 → v2 table mixed two report tables. Recomputed on the same 92 cases: one gate miss, `info` precision −5.8 (one mail, `syn-urgent-16`). Stage 20 waits for the user's decision (Results).
+- 2026-11-07: second stage 20 review FAIL: the spam row was wrong (the basis must leave out the 6 rule rows, as the v1 metrics table does). Recomputed on the 86 LLM rows of the same 92 cases: info −5.8 (the one miss), spam −3.5 (inside the limit); a predicted-count column added.
+- 2026-11-07: checkpoint 3 group fix and the merge of origin/master (fake-telegram) checked: lint 0, typecheck 0, unit 1112 pass, int 836 pass. Stage 21 built, review pending (architecture, modules, code patterns, roadmap, ADR 0003/0007/0010, deploy README, 12 known alerts, `notes/2026-11-07-send-approval-facts.md`, 6 follow-ups in `tasks/planned/`).
