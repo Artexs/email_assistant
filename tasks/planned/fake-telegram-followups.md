@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — planned.** Ideas from the fake Telegram build (`tasks/active/fake-telegram.md`, later `tasks/done/`). Nothing started.
+> **Status 2026-11-07 — planned.** Ideas from the fake Telegram build (`tasks/done/fake-telegram.md`). Nothing started.
 
 # Fake Telegram: follow-ups
 

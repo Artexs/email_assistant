@@ -1,6 +1,6 @@
 # fake-telegram: facts from the live run (2026-11-07)
 
-Task: `tasks/active/fake-telegram.md` (step 6.2, section "## Results"). Usage: `tools/fake-telegram/README.md`.
+Task: `tasks/done/fake-telegram.md` (step 6.2, section "## Results"). Usage: `tools/fake-telegram/README.md`.
 
 ## Own database for a live run
 
