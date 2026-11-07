@@ -4,7 +4,7 @@ Part of [`../s2-telegram.md`](../s2-telegram.md). Read that file's "Input" and "
 
 ## Stage 21 — Dev run with the dev bot (user checkpoint 3) [risky]
 
-- [ ] **21.1 The user tries S2 on the Mac with the dev bot and GreenMail**
+- [x] **21.1 The user tries S2 on the Mac with the dev bot and GreenMail**
   - Goal: the done-when items work end to end on a real phone with the dev bot, before anything goes to the VPS.
   - Files: this task file ("Results": the measured times and the check results, no mail data, no chat id, no token; one log line).
   - Interfaces: none (operations). Dev DB shell: `D="docker compose -f deploy/compose.yaml -f deploy/compose.dev.yaml --env-file .env"`; SQL with `$D exec -T db psql -U postgres -d email_assistant -c "<SQL>"`.

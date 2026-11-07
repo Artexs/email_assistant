@@ -1,7 +1,7 @@
 # Telegram bot facts (S2)
 
 Verified Telegram Bot API and grammY facts for S2. Task: `tasks/active/s2-telegram.md`. Alert texts: `docs/known-alerts.md`.
-Each fact has its source and date. "Pending (stage 21/23)" means that the live run has not yet shown it.
+Each fact has its source and date. The table at the end has the results of the live runs (stages 21 and 23, 2026-11-07).
 
 ## Facts checked on 2026-11-05 (planning, no real token)
 
@@ -53,10 +53,17 @@ Accepted, no code change.
 
 ## Not verified when the plan was written, and what the live runs showed
 
-| Item                                                                                               | Result                                                                                                            |
-| -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| How Telegram counts the 4096 limit (UTF-16 units or code points)                                   | The code uses JS `string.length` (UTF-16 units), never smaller. Live result: pending (stage 21)                   |
-| A limit on the number of inline buttons in one message                                             | The digest uses at most 30 buttons. Live result: pending (stage 21)                                               |
-| Real description texts: "message is not modified", "bot was blocked by the user", "chat not found" | The code uses the error codes; only the "not modified" case reads the description. Real texts: pending (stage 21) |
-| grammY under Bun 1.3.14 (the server image; the probe used Bun 1.4.4)                               | Pending (stage 23: `telegram:check` in the image)                                                                 |
-| Urgent notice time (mail arrival to message on the phone, goal ≤ 10 minutes)                       | Pending (stage 21)                                                                                                |
+| Item                                                                                               | Result                                                                                                                                                     |
+| -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| How Telegram counts the 4096 limit (UTF-16 units or code points)                                   | Not reached live: the longest real message was 2956 characters (pilot digest, 2026-11-07). The code keeps JS `string.length` (UTF-16 units), never smaller |
+| A limit on the number of inline buttons in one message                                             | The pilot digest with 26 buttons and the dev digest with 20 buttons were accepted (2026-11-07). The cap stays at 30                                        |
+| Real description texts: "message is not modified", "bot was blocked by the user", "chat not found" | Not seen live (no such error in the stage 21 and 23 runs). The code uses the error codes; only the "not modified" case reads the description               |
+| grammY under Bun 1.3.14 (the server image; the probe used Bun 1.4.4)                               | Works: the VPS image logs `telegram: polling as @Email_assistant_vps_bot` and `telegram:check` passes (stage 23, 2026-11-06)                               |
+| Urgent notice time (mail arrival to message on the phone, goal ≤ 10 minutes)                       | 3 min 54 s on the dev run (seed 10:51:36Z, sent 10:55:30Z, 2026-11-07, stage 21)                                                                           |
+
+## Live runs (2026-11-07)
+
+- A ✏️ pick that equals the latest feedback row of the mail (also a `cli` row) writes no row: `skipIfSame` compares with the latest row of any source. The toast says "Already saved.", but the picker message is still edited to `✏️ Saved: …`. Seen on the pilot: two Spam picks on mail that the S1b CLI labels had marked `spam` already.
+- The scheduled digest goes out within 15 s of the slot minute (dev 12:00:15, pilot 08:00:15 local).
+- `/digest` right after a scheduled digest says "No new mail since <slot>": the period starts at the last sent scheduled digest (P2).
+- An urgent mail triaged before the chat link gives no notice (the notice look-back starts at the link time, D13).

@@ -8,7 +8,7 @@ Preconditions (user checkpoint 4): stages 0–22 are committed and pushed; S1b s
 
 **Risk (name it to the user before the go):** if the S1b shadow week (stage 38) runs, this deploy restarts the server in that week. A restart costs about one minute of triage, and each mail in a running LLM call gets one attempt (the 30-second batch wait and `stop_grace_period: 45s` make this rare). A crash loop of the new code would stop the triage of the week: step 23.1 watches for it, and the rollback below needs no DB change, because the S2 migration only adds tables, one column and one default.
 
-- [ ] **23.1 Deploy S2 to the VPS with the pilot bot and link the user's chat**
+- [x] **23.1 Deploy S2 to the VPS with the pilot bot and link the user's chat**
   - Goal: the pilot server sends the digest and the notices through the pilot bot; dev and pilot use two different bots (done-when).
   - Files: this task file ("Results", log line); `notes/2026-11-03-pilot-vps.md` (append: the S2 deploy date, the new `.env` key name `TELEGRAM_BOT_TOKEN` without its value, the pilot bot user name).
   - Interfaces: none (operations).
@@ -29,4 +29,5 @@ Preconditions (user checkpoint 4): stages 0–22 are committed and pushed; S1b s
   - Check: steps 3–8 give the results above.
   - Done when: the checks pass and the user confirms the digest on the phone. The labels from the pilot bot also count for S1b stage 40 (`eval --real` reads every feedback source).
   - Progress 2026-11-06 (main session): steps 1–5 and 7 done (see the task log); steps 6 (link the chat) and 8 (digest + ✅ tap) wait for the user on 2026-11-07.
+  - Progress 2026-11-07: step 6 done (chat linked 2026-11-06 ~23:05Z); step 8 done (08:00 digest sent 07:00:15Z, two `telegram` ✅ rows). Stage done.
   - Out of scope: real mail of another person (ADR 0013 gate), a webhook, a change of `TRIAGE_LLM_SCOPE` (S1b decides it).
