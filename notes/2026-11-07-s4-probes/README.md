@@ -1,6 +1,6 @@
 # S4 plan probes (2026-11-07)
 
-The S4 plan (`tasks/active/s4-drafts-approvals-delegation.md`, "Facts checked") uses the results of these four local probes. They ran on the Mac with Bun 1.4.4, nodemailer 10.3.1, imapflow 1.7.8 and GreenMail 2.1.15. They hold only fake test credentials (`owner@x.test` / `secret` on a fake local server).
+The S4 plan (`tasks/done/s4-drafts-approvals-delegation.md`, "Facts checked") uses the results of these four local probes. They ran on the Mac with Bun 1.4.4, nodemailer 10.3.1, imapflow 1.7.8 and GreenMail 2.1.15. They hold only fake test credentials (`owner@x.test` / `secret` on a fake local server).
 
 The files have the extension `.ts.txt`. Then `eslint .` and the typecheck do not read them (they do not follow the repo's lint rules).
 

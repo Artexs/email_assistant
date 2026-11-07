@@ -1,4 +1,4 @@
-> **Status 2026-11-07 — in progress: stages 1–18 and 21 done and pushed, all reviews PASS (group reviews at checkpoints 2 and 3 included). Stage 20 done (the user accepted the `info` miss, −5.8). Left: stage 19 ran on GreenMail with the fake Telegram (steps 1–15 pass; the user may confirm the look on a real phone); stage 22.1 done (VPS on `fa60c7b`, `SEND_SCOPE=self`); stage 22.2 skipped by the user; stage 23.1 done (`SEND_SCOPE=all` since 2026-11-07 22:40Z, delegate = the user's Gmail); left: the first real delegation and one week of use (23.2, until 2026-11-14 22:40Z), then the close.** Run mode: pipeline. Deploy rule: met (stage 20 accepted). Finish handoff: `notes/2026-11-07-handoff-s4-finish.md`.
+> **Status 2026-11-07 — done.** Code, tests, reviews, docs and the VPS deploy are done (`fa60c7b`, `SEND_SCOPE=all` since 2026-11-07 22:40Z). The real-mail checks (stage 22.2 round trip, stage 23.2 week counts) moved to `tasks/planned/s4-pilot-week.md` (the user's decision). Run mode: pipeline.
 
 > **Deploy order (main session, 2026-11-07):** stage 20 (the `classifier-v2` eval) runs before any VPS deploy of a commit after `c0340b4`. S3 stage 19 holds the same precondition.
 
@@ -21,6 +21,18 @@ Delegation and clarification drafts, approval with Telegram buttons, send by SMT
 - A delegate's reply in the thread sets the delegation to `answered`.
 - The approval message shows the recipient, the original sender, the external-sender warning and the full draft text (a reminder set shows, per item, the recipient and the task; the reminder text is the fixed template with that task: D21).
 - Injection eval cases pass: links, bank account numbers and phone numbers in LLM text are removed or marked.
+
+### Done-when evidence (2026-11-07 close)
+
+Checks run at the close: `bun run lint` exit 0, `bun run typecheck` exit 0, `bun run test:unit` 1125 pass 0 fail, `bun run test:int` 836 pass 0 fail.
+
+- Tap before send, two taps send once, expired or rejected approval cannot send, no send without an approval row: `apps/server/test/integration/actions-approvals.test.ts`, `actions-send.test.ts`, `actions-committer.test.ts`.
+- Crash tests in `applying`, SMTP 250 → `applied`, Sent copy failure notice, retry only before DATA: `actions-send.test.ts`, `smtp-send.test.ts`, `actions-send-logs.test.ts`.
+- Approval only after the draft is `applied`, `draft_missing`: `actions-expiry.test.ts`, `actions-approvals.test.ts`.
+- Chaser and the reply → `answered`: `delegation-chaser.test.ts`, `delegation-service.test.ts`; dev run stage 19 steps 8 and 12 (GreenMail, fake Telegram).
+- Approval message content: stage 19 step 5 (fake Telegram).
+- Injection eval cases: stage 20, injection 16/16.
+- Not proven on real mail (Interia, the real phone): moved to `tasks/planned/s4-pilot-week.md`.
 
 ## Plan
 
@@ -171,8 +183,8 @@ Each stage lives in its own file in [`s4-drafts-approvals-delegation/`](s4-draft
 - [x] [Stage 16](s4-drafts-approvals-delegation/stage-16-callback-handlers-status-help.md) — Telegram: the taps (approve, reject, set, send again, done), `/status`, `/help` [risky] [written]
 - [x] [Stage 17](s4-drafts-approvals-delegation/stage-17-chaser.md) — `delegation.chaser`: overdue, reminder pairs, sets, the daily gate [risky] [written]
 - [x] [Stage 18](s4-drafts-approvals-delegation/stage-18-server-wiring-config-log-test.md) — Server wiring: `SEND_SCOPE`, `SEND_TEST_ADDRESSES`, the jobs, the sender factory, `job:run`, the log test [risky] [written] — user checkpoint 3 after it
-- [ ] [Stage 19](s4-drafts-approvals-delegation/stage-19-dev-run-greenmail-dev-bot.md) — Dev run: drafts, approval, send, reply and reminders on GreenMail with the dev bot [risky] [written]
-- [ ] [Stage 20](s4-drafts-approvals-delegation/stage-20-eval-prompt-v2.md) — Eval of `classifier-v2` on the Mac: synthetic, injection, delegation cases; the gate [risky] [written]
+- [x] [Stage 19](s4-drafts-approvals-delegation/stage-19-dev-run-greenmail-dev-bot.md) — Dev run: drafts, approval, send, reply and reminders on GreenMail with the dev bot [risky] [written]
+- [x] [Stage 20](s4-drafts-approvals-delegation/stage-20-eval-prompt-v2.md) — Eval of `classifier-v2` on the Mac: synthetic, injection, delegation cases; the gate [risky] [written]
 - [x] [Stage 21](s4-drafts-approvals-delegation/stage-21-docs-notes-follow-ups.md) — Docs, notes, known alerts, follow-ups [written]
 - [ ] [Stage 22](s4-drafts-approvals-delegation/stage-22-vps-deploy-self-send.md) — VPS deploy, `SEND_SCOPE=self`, the first real send to the user's own address, a reply [risky] [written] — user checkpoint 4 before it
 - [ ] [Stage 23](s4-drafts-approvals-delegation/stage-23-first-real-delegation.md) — `SEND_SCOPE=all`: the first real delegation and one week of use [risky] [written] — user checkpoint 5 before it
@@ -296,10 +308,10 @@ Answered 2026-11-07 with the plan defaults (P1–P8). Questions 1–12 below: **
 
 ## Done-checklist
 
-- [ ] Done-when checks pass (name the command and its output in the log).
-- [ ] `docs/` describe what was built (architecture, modules, roadmap, code patterns); ADR 0003 and ADR 0010 stay accepted (implementation notes added); ADR 0007 gets the "writer role unused in S4" line.
-- [ ] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
-- [ ] Follow-up ideas are in `planned/`.
+- [x] Done-when checks pass (name the command and its output in the log). Real-mail items: `tasks/planned/s4-pilot-week.md`.
+- [x] `docs/` describe what was built (architecture, modules, roadmap, code patterns); ADR 0003 and ADR 0010 stay accepted (implementation notes added); ADR 0007 gets the "writer role unused in S4" line.
+- [x] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
+- [x] Follow-up ideas are in `planned/`.
 
 ## Log
 
@@ -367,3 +379,4 @@ Answered 2026-11-07 with the plan defaults (P1–P8). Questions 1–12 below: **
 - 2026-11-07: stage 20 closed: the user accepted the `info` precision miss (−5.8, one mail `syn-urgent-16`) with the main-session recommendation; no fix round. The deploy-order rule is met. Next: stage 22 (the user's go and second address).
 - 2026-11-07: stage 22.1 steps 1–4 done on the VPS (deploy `fa60c7b`, migration, scope `self`, Test delegate, `create_draft` on; Results). Step 5 and stage 22.2 wait for the user; quiet hours (22:00–07:00 Warsaw) hold approval messages until 07:00.
 - 2026-11-07: the user skipped stage 22.2 and set `SEND_SCOPE=all`; stage 23.1 done (held sends 0, restart, log line; Results). `<START>` 22:40Z. Left: 23.2 (the week) and the close.
+- 2026-11-07: S4 closed (the user's decision): lint 0, typecheck 0, unit 1125 pass, int 836 pass. Stage 19 ticked with the fake-Telegram note; stages 22 and 23 stay unticked: 22.1 and 23.1 done on the VPS, the real-mail steps 22.2 and 23.2 moved to `tasks/planned/s4-pilot-week.md`. Moved to `tasks/done/`.

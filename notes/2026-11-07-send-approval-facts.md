@@ -1,6 +1,6 @@
 # S4 send and approval facts (2026-11-07)
 
-Facts that the S4 task (`tasks/active/s4-drafts-approvals-delegation.md`) checked or still must check. A later agent reads this note before it changes the draft, send or approval code.
+Facts that the S4 task (`tasks/done/s4-drafts-approvals-delegation.md`) checked or still must check. A later agent reads this note before it changes the draft, send or approval code.
 Sources are named in each line. Interia details: `notes/2026-11-03-interia-imap-capabilities.md`, "Send probe". The probe scripts: `notes/2026-11-07-s4-probes/`.
 
 State of the S4 stages that give facts: stage 1 (Interia probe) done; stage 20 (eval) done with **one gate miss, waits for the user**; stage 19 (dev run) **not done**; stages 22 and 23 (VPS) **not done**.
