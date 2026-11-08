@@ -1,0 +1,47 @@
+{
+  "batch": "2026-11-08-smoke",
+  "writer": "claude-opus-5-5",
+  "cases": [
+    {
+      "id": "anna-termin-dostawy",
+      "persona": "klient-anna",
+      "lang": "pl",
+      "subject": "Pytanie o termin dostawy palet",
+      "body": "Dzień dobry,\n\nczy mogą Państwo potwierdzić, że dostawa 40 palet z naszego ostatniego zamówienia dotrze do magazynu w przyszły czwartek? Potrzebuję odpowiedzi do środy, bo planujemy grafik zmian.\n\nPozdrawiam,\nAnna Nowak\nKierownik zakupów, Nowak Logistyka\nanna.nowak@nowak-logistyka.test",
+      "expected": {
+        "category": "needs_reply"
+      },
+      "blind": {
+        "category": "needs_reply"
+      }
+    },
+    {
+      "id": "piotr-re-termin",
+      "persona": "kolega-piotr",
+      "lang": "pl",
+      "subject": "Re: Pytanie o termin dostawy palet",
+      "body": "Cześć,\n\nwidzę pytanie Anny Nowak o dostawę palet. Sprawdziłem w systemie: wysyłka jest zaplanowana na wtorek, więc czwartek jest realny. Czy odpiszesz jej sam, czy mam to zrobić ja? Daj znać jutro rano.\n\nPiotr Zieliński\nDział sprzedaży",
+      "expected": {
+        "category": "needs_reply"
+      },
+      "replyTo": "anna-termin-dostawy",
+      "blind": {
+        "category": "needs_reply"
+      }
+    },
+    {
+      "id": "faktura-wystawiona",
+      "persona": "faktury",
+      "lang": "pl",
+      "subject": "Wystawiono fakturę FV/2026/11/0142",
+      "body": "Faktury Online – powiadomienie automatyczne\n\nWystawiono nową fakturę:\nNumer: FV/2026/11/0142\nKwota brutto: 2 460,00 PLN\nTermin płatności: 14 dni\n\nFakturę pobierzesz w panelu: https://panel.faktury-online.test/faktury\n\nTa wiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.",
+      "expected": {
+        "category": "notification"
+      },
+      "blind": {
+        "category": "notification"
+      }
+    }
+  ],
+  "checker": "claude-haiku-5-5"
+}
