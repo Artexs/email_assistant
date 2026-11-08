@@ -35,6 +35,7 @@ export {
   getEmailMailbox,
   getEmailMeta,
   getMailbox,
+  listEmailsByMessageIds,
   listFolderUids,
   listMailboxes,
   listMailboxTargets,
@@ -60,7 +61,15 @@ export {
   type SeedMessage,
 } from "./seed";
 export { backfillInbox, CursorMovedError, syncMailbox, type SyncDeps, type SyncResult } from "./sync";
-export { auditMailbox, backfillMailbox, seedMailbox, type ToolDeps } from "./tools";
+export {
+  auditMailbox,
+  backfillMailbox,
+  deliverTestMail,
+  seedMailbox,
+  type DeliverDeps,
+  type DeliverInput,
+  type ToolDeps,
+} from "./tools";
 export {
   locateByActionId,
   locateKeyOf,

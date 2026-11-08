@@ -2,7 +2,15 @@ import { randomBytes } from "node:crypto";
 
 import { describe, expect, test } from "bun:test";
 
-import { classifierModel, ConfigError, isLoopbackApiRoot, llmSettings, loadConfig, sendTestAddresses } from "./config";
+import {
+  classifierModel,
+  ConfigError,
+  isLoopbackApiRoot,
+  llmSettings,
+  loadConfig,
+  loadTestmailConfig,
+  sendTestAddresses,
+} from "./config";
 
 const fullEnv = {
   DATABASE_URL: "postgres://app:pw@127.0.0.1:5433/email_assistant",
@@ -356,5 +364,27 @@ describe("SEND_SCOPE", () => {
 
   test("an empty SEND_TEST_ADDRESSES counts as missing", () => {
     expect(loadConfig({ ...fullEnv, SEND_TEST_ADDRESSES: "" }).SEND_TEST_ADDRESSES).toBeUndefined();
+  });
+});
+
+describe("loadTestmailConfig", () => {
+  test("throws ConfigError with the key name when AGENTMAIL_API_KEY is missing", () => {
+    try {
+      loadTestmailConfig({});
+      throw new Error("did not throw");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ConfigError);
+      expect((error as ConfigError).keys).toContain("AGENTMAIL_API_KEY");
+    }
+  });
+
+  test("with the key only, the base URL has its default", () => {
+    const config = loadTestmailConfig({ AGENTMAIL_API_KEY: "k-test-1234567890", AGENTMAIL_BASE_URL: "" });
+    expect(config.AGENTMAIL_BASE_URL).toBe("https://api.agentmail.to/v0");
+    expect(config.TEST_MAILBOX_ADDRESS).toBeUndefined();
+  });
+
+  test("loadConfig works without the AgentMail keys", () => {
+    expect(() => loadConfig(fullEnv)).not.toThrow();
   });
 });

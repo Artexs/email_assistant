@@ -1,0 +1,75 @@
+{
+  "inbox": { "username": "ea-testmail-75wd", "clientId": "ea-testmail-1", "defaultDisplayName": "EA Test Mail" },
+  "personas": [
+    {
+      "key": "prezes",
+      "displayName": "Tomasz Wiśniewski",
+      "group": "work",
+      "lang": "pl",
+      "voice": "The manager's boss (CEO). Writes short and direct. Topics: deadlines, decisions, board meetings. Signs with first name or initials."
+    },
+    {
+      "key": "klient-anna",
+      "displayName": "Anna Nowak",
+      "group": "work",
+      "lang": "pl",
+      "voice": "Key client at Nowak Logistyka. Topics: orders, complaints, contract questions. Polite but firm. Signs with full name, role and company."
+    },
+    {
+      "key": "kolega-piotr",
+      "displayName": "Piotr Zieliński",
+      "group": "work",
+      "lang": "pl",
+      "voice": "Colleague in the sales team. Topics: status updates, asks for input, FYI notes. Informal, first-name tone, sometimes very short."
+    },
+    {
+      "key": "dostawca",
+      "displayName": "Marek Kowalczyk",
+      "group": "work",
+      "lang": "pl",
+      "voice": "Vendor for IT and office equipment. Topics: quotes, delivery dates, service windows. Formal and factual. Signs with name and company."
+    },
+    {
+      "key": "client-en",
+      "displayName": "Laura Bennett",
+      "group": "work",
+      "lang": "en",
+      "voice": "Foreign partner in the UK. Topics: meeting requests, proposals, follow-ups. Polite business English. Signs with name and company."
+    },
+    {
+      "key": "portal-hr",
+      "displayName": "Portal HR",
+      "group": "services",
+      "lang": "pl",
+      "voice": "Automated HR system. Topics: leave approvals, payslip ready, policy changes. Reads like a system message. No personal signature."
+    },
+    {
+      "key": "faktury",
+      "displayName": "Faktury Online",
+      "group": "services",
+      "lang": "pl",
+      "voice": "Automated invoicing service. Topics: invoice issued, payment reminder, payment received. Reads like a system message with amounts and due dates."
+    },
+    {
+      "key": "newsletter",
+      "displayName": "Biznes Tydzień",
+      "group": "services",
+      "lang": "pl",
+      "voice": "Weekly business newsletter. Contains a few article teasers, an event notice and an unsubscribe line at the end."
+    },
+    {
+      "key": "oferta-b2b",
+      "displayName": "Krzysztof Lewandowski",
+      "group": "outside",
+      "lang": "pl",
+      "voice": "Cold B2B sales. Offers lead generation, SEO or leasing. Pushy, many exclamation marks, promises quick results, asks for a call."
+    },
+    {
+      "key": "security-en",
+      "displayName": "Account Security Team",
+      "group": "outside",
+      "lang": "en",
+      "voice": "Phishing-like mail: asks to verify an account, fake urgency. Mild tone. Links only to example.com."
+    }
+  ]
+}

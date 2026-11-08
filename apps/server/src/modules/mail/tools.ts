@@ -1,21 +1,34 @@
 import { randomUUID } from "node:crypto";
 
+import {
+  planDelivery,
+  SORT_FOLDER_NAMES,
+  sortFolderKeys,
+  type CaseDelivery,
+  type FoundCopy,
+  type SortFolderKey,
+} from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { SecretBox } from "../../platform/crypto";
 import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
+import { createLog } from "../../platform/log";
 
 import { compareInboxWithDb, type AuditCounts } from "./audit";
 import { openImapProvider, type ImapConnectOptions } from "./imap/client";
+import { assertTestAddress } from "./imap/probe-move";
 import { appendRaw } from "./imap/tools";
-import { INBOX, type MailProvider } from "./port";
-import { getCredentials, getMailbox, listInboxEmailKeys, type MailboxRow } from "./repo";
+import { LOCATE_CHUNK } from "./locate";
+import { INBOX, MailNotFoundError, type MailProvider } from "./port";
+import { getCredentials, getMailbox, listEmailsByMessageIds, listInboxEmailKeys, type MailboxRow } from "./repo";
 import { renderSeedMessage, SYNTHETIC_MESSAGE_ID_DOMAIN, type SeedMessage } from "./seed";
 import { backfillInbox, fetchSince, type SyncDeps, type SyncResult } from "./sync";
 import { contentHash, normalizeMessageId } from "./sync-rules";
 
-// Operator tools for the 48-hour run (`mailbox:seed`, `mailbox:audit`).
+// Operator tools for the 48-hour run (`mailbox:seed`, `mailbox:audit`, `testmail-target deliver`).
+
+const log = createLog("mail");
 
 export interface ToolDeps {
   db: Db | Transaction<DB>;
@@ -124,4 +137,132 @@ export async function backfillMailbox(
   } finally {
     await provider.close();
   }
+}
+
+export interface DeliverDeps extends ToolDeps {
+  openProvider?: (imap: ImapConnectOptions) => Promise<MailProvider>;
+}
+
+export interface DeliverInput {
+  testAddress: string | undefined;
+  sender: string;
+  wanted: { caseId: string; messageId: string; sentAt: Date }[]; // 1..200
+  checkOnly: boolean; // plan and report, no move and no delete
+}
+
+const MAX_WANTED = 200;
+const DAY_MS = 86_400_000;
+
+async function findCopies(
+  provider: MailProvider,
+  folders: { key: FoundCopy["folder"]; path: string }[],
+  since: Date
+): Promise<FoundCopy[]> {
+  const found: FoundCopy[] = [];
+  for (const { key, path } of folders) {
+    const uids = await provider.searchSinceIn(path, since);
+    if (uids.length === 0) continue;
+    for (let i = 0; i < uids.length; i += LOCATE_CHUNK) {
+      for (const meta of await provider.fetchByUidsIn(path, uids.slice(i, i + LOCATE_CHUNK))) {
+        found.push({ folder: key, uid: meta.uid, messageId: meta.messageId, from: meta.from });
+      }
+    }
+  }
+  return found;
+}
+
+/**
+ * Moves the mails of the test tool from the Interia sort folders into INBOX. It refuses, before any connection, unless the mailbox is
+ * `testAddress`, and it touches only mails whose Message-ID is wanted and whose From is `sender`.
+ */
+export async function deliverTestMail(
+  deps: DeliverDeps,
+  ctx: TenantContext,
+  mailboxId: string,
+  input: DeliverInput
+): Promise<CaseDelivery[]> {
+  const mailbox = await getMailboxOrThrow(deps, ctx, mailboxId);
+  assertTestAddress(mailbox.address, input.testAddress);
+  const sender = input.sender.trim().toLowerCase();
+  if (sender === mailbox.address.trim().toLowerCase())
+    throw new HardError("the sender is the mailbox itself: deliver refused");
+  if (!sender.endsWith("@agentmail.to")) throw new HardError("the sender is not an AgentMail address: deliver refused");
+  if (input.wanted.length === 0 || input.wanted.length > MAX_WANTED) {
+    throw new HardError(`wanted must hold 1 to ${MAX_WANTED} mails: deliver refused`);
+  }
+  for (const item of input.wanted) {
+    if (Number.isNaN(item.sentAt.getTime())) throw new HardError("a sentAt is not a valid time: deliver refused");
+    if (item.messageId.trim() === "") throw new HardError("a messageId is empty: deliver refused");
+  }
+
+  const wanted = input.wanted.map(({ caseId, messageId }) => ({ caseId, messageId: messageId.trim() }));
+  const rows = await listEmailsByMessageIds(
+    deps.db,
+    ctx,
+    mailboxId,
+    wanted.map((item) => item.messageId)
+  );
+  const syncedMessageIds = new Set(rows.map((row) => row.message_id_header.trim()));
+  const since = new Date(Math.min(...input.wanted.map((item) => item.sentAt.getTime())) - DAY_MS);
+
+  const imap = await loadImapOptions(deps, ctx, mailboxId, mailbox);
+  const provider = await (deps.openProvider ?? openImapProvider)(imap);
+  try {
+    const info = await provider.serverInfo();
+    const paths: Partial<Record<SortFolderKey, string>> = {};
+    for (const key of sortFolderKeys) {
+      if (key === "junk") {
+        const junk = info.folders.find((folder) => folder.specialUse === "\\Junk");
+        if (junk !== undefined) paths.junk = junk.path;
+      } else if (info.folders.some((folder) => folder.path === SORT_FOLDER_NAMES[key])) {
+        paths[key] = SORT_FOLDER_NAMES[key];
+      }
+    }
+    const folders: { key: FoundCopy["folder"]; path: string }[] = [{ key: "inbox", path: INBOX }];
+    for (const key of sortFolderKeys) {
+      const path = paths[key];
+      if (path !== undefined) folders.push({ key, path });
+    }
+
+    const found = await findCopies(provider, folders, since);
+    const plan = planDelivery({ wanted, sender, syncedMessageIds, found });
+    const results = input.checkOnly ? plan : await runPlan(provider, paths, plan);
+
+    const count = (result: CaseDelivery["result"]) => results.filter((item) => item.result === result).length;
+    log.info(
+      `deliver ${mailboxId}: moved ${count("moved")}, in inbox ${count("in_inbox")}, duplicates removed ${count("duplicate_removed")}, synced ${count("synced")}, not found ${count("not_found")}`
+    );
+    return results;
+  } finally {
+    await provider.close();
+  }
+}
+
+// A failed move skips the deletes of its case: a delete runs only after the INBOX copy exists.
+async function runPlan(
+  provider: MailProvider,
+  paths: Partial<Record<SortFolderKey, string>>,
+  plan: CaseDelivery[]
+): Promise<CaseDelivery[]> {
+  const results: CaseDelivery[] = [];
+  for (const delivery of plan) {
+    let gone = false;
+    for (const op of delivery.ops) {
+      const path = paths[op.folder];
+      if (path === undefined) throw new HardError("a planned folder is missing");
+      try {
+        if (op.op === "move") {
+          await provider.moveMessage(path, op.uid, INBOX);
+        } else if (!(await provider.deleteMessage(path, op.uid))) {
+          gone = true;
+        }
+      } catch (error) {
+        if (!(op.op === "move" && error instanceof MailNotFoundError)) throw error;
+        gone = true;
+      }
+      if (gone) break;
+    }
+    results.push(gone ? { caseId: delivery.caseId, result: "not_found", folder: null, ops: [] } : delivery);
+  }
+  return results;
 }

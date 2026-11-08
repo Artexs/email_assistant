@@ -1,4 +1,4 @@
-> **Status 2026-11-08 — in progress — plan approved by the user; build next in the worktree `../email_assistant-wt/test-mail-traffic` (branch `task/test-mail-traffic`).** Left: stages 1–9 (handoff `~/.pi/agent/notes/2026-11-08-handoff-test-mail-traffic-build.md`).
+> **Status 2026-11-08 — in progress — stages 1–8 done, group reviews 1–5 and 6–8 PASS; merge into `master` (checkpoint 1) next.** Left: the user's answer to Q1, then stage 9 (handoff `~/.pi/agent/notes/2026-11-08-handoff-test-mail-traffic-build.md`).
 
 # Test mail traffic: AgentMail synthetic mail utility
 
@@ -112,8 +112,11 @@ All with source in `notes/2026-11-07-agentmail-test-mail.md` (§3 docs, §7–8 
   an older server image (S2 era); the S3 deploy is S3 stage 19 (not done). The VPS DB has the migrations up to `20261107000002` (S3);
   `20261108000001_delegation.sql` (S4) is not applied (notes §9). **[stale 2026-11-08]** S4 is done and deployed on the VPS (`fa60c7b`, `SEND_SCOPE=all` since
   2026-11-07 22:40Z, `tasks/done/s4-drafts-approvals-delegation.md`), so the VPS image, its classifier version and its migrations are newer now. Stage 9
-  reads `schema_migrations` again; compare prints the prompt versions. With S4 live, a test mail that the triage calls `delegation` can get a draft and a send
-  request: `ACTIONS_SCOPE=synthetic` (checked 2026-11-07) holds the draft of AgentMail mail back (it is not synthetic, D14), and every send needs the user's tap.
+  reads `schema_migrations` again; compare prints the prompt versions. **[corrected 2026-11-08, group review 6–8]** The VPS `.env` has `ACTIONS_SCOPE=all`,
+  `SEND_SCOPE=all` and `TRIAGE_LLM_SCOPE=all` (read-only `grep -c` on the VPS, 2026-11-08; S4 stage 22.1: mode `assist`, `create_draft` on, one active delegate
+  "Test delegate" = the user's Gmail). So the server acts on AgentMail test mail like on real mail: the committer moves it into `AI/*`, a `needs_reply` or
+  `delegation` mail can get a draft in the Interia Drafts folder and an approval prompt in the user's Telegram, and a send goes out only after the user's tap.
+  The active delegate also adds `delegation` to the classifier prompt (a `delegation` result counts as `WRONG` in compare, D11).
 - `platform/log.ts`: `info` and `debug` go to stdout (`console.log`), `warn` and `error` to stderr.
 - Pilot ids (`notes/2026-11-03-pilot-vps.md`): org `ac6ed6a2-ee37-461f-9632-cc08cf549e40`, mailbox `8bc7f572-a7f5-4fa5-aaab-db16dc663e96`, address `artekstryszowski@interia.pl` = `TEST_MAILBOX_ADDRESS` on the VPS.
 - stdin and the exit code pass through `ssh home_vm '… docker compose … run --rm -T -v …:ro server bun <file>'` (probe 2026-11-07: a JSON line in, exit 2 out).
@@ -128,7 +131,7 @@ All with source in `notes/2026-11-07-agentmail-test-mail.md` (§3 docs, §7–8 
   with that label (the inbox has 8 messages); an unknown label → `count` 0. `GET /inboxes/{id}` → 200 with no `status` field (docs: `status` is omitted when the
   inbox is active; `deactivated` stops send and receive; the documented schedule field is `deactivate_at`, https://docs.agentmail.to/api-reference/inboxes/update.md).
 - Checked live 2026-11-07 (review session 2): a `bun build --target bun` bundle of `platform/config.ts` from `origin/master` (`1921dad`; no env value in it) ran in
-  the VPS server image with `docker compose run --rm -T`: `loadConfig()` OK, `TRIAGE_LLM_SCOPE=all`, `ACTIONS_SCOPE=synthetic`, `TEST_MAILBOX_ADDRESS` set.
+  the VPS server image with `docker compose run --rm -T`: `loadConfig()` OK, `TRIAGE_LLM_SCOPE=all`, `ACTIONS_SCOPE=synthetic` **[stale 2026-11-08: now `all`, see above]**, `TEST_MAILBOX_ADDRESS` set.
   `schema_migrations` on the VPS: up to `20261107000002` (unchanged).
 
 ### Not verified (and the stage that checks it)
@@ -222,7 +225,8 @@ All with source in `notes/2026-11-07-agentmail-test-mail.md` (§3 docs, §7–8 
 - **D13 Config.** New keys in `.env.example`: `AGENTMAIL_API_KEY` (secret), `AGENTMAIL_BASE_URL` (default `https://api.agentmail.to/v0`; tests set a local fake).
   They are read by `loadTestmailConfig()` in `platform/config.ts` (own Zod schema), not by `loadConfig()`: the server does not need them and must not fail without them.
 - **D14 Mail kind.** AgentMail mail is not synthetic for `mailKindFilter` and the scope gates (its `Message-ID` is the SES id, D4). On the VPS `TRIAGE_LLM_SCOPE=all`
-  triages it; `ACTIONS_SCOPE=synthetic` would not act on it. The user's own Telegram feedback on such mail lands in `triage_feedback` like real labels. This plan
+  triages it, and `ACTIONS_SCOPE=all` / `SEND_SCOPE=all` act on it like on real mail (moves into `AI/*`, drafts, approval prompts; corrected 2026-11-08: the
+  plan first said `ACTIONS_SCOPE=synthetic`). Agents never tap approve for a test mail. The user's own Telegram feedback on such mail lands in `triage_feedback` like real labels. This plan
   does not change that; a follow-up task `tasks/planned/testmail-mail-kind.md` (stage 8) proposes a sender-based mail kind.
 - **D15 Module layout.** Pure logic: `packages/core/src/testmail/` (batch, send log, send plan, delivery plan, compare rows), exported from `@ea/core`.
   AgentMail client and send service: new module `apps/server/src/modules/testmail/` (`index.ts`, `agentmail/client.ts`, `agentmail/fake.ts`, `send.ts`, `lock.ts`,
@@ -295,11 +299,12 @@ All with source in `notes/2026-11-07-agentmail-test-mail.md` (§3 docs, §7–8 
    because `testmail:remote` bundles from `origin/master` only (D1). Stage 9 then runs in the worktree after `git merge origin/master`. The main session gives the
    user a 4-line summary.
    Default: stage 9 starts without waiting (P8: the user lets the agent work alone); the user may say "stop" at plan approval to make this a hard stop.
+   **Changed 2026-11-08:** stage 9 waits for the user's answer to Q1 ("Open question for the user").
 2. After stage 9: the user reads the compare report (in this file) and closes the task.
 
 ### Defaults in force (the user approved the plan on 2026-11-08 without changes to them)
 
-1. Stage 9 starts after the group reviews give PASS, without a stop for the user (checkpoint 1).
+1. Stage 9 starts after the group reviews give PASS, without a stop for the user (checkpoint 1), and after the user answers Q1 (added 2026-11-08).
 2. (Replaced 2026-11-08: the build runs in its own worktree, so it does not wait for other sessions; rule "Worktree".)
 3. Every test mail shows in the Telegram digest, and `urgent` ones send an urgent notice (about 5 per 25-mail batch).
 4. The user's Telegram feedback on test mail counts as real labels in `triage_feedback` until `tasks/planned/testmail-mail-kind.md` lands (D14).
@@ -309,6 +314,19 @@ the smoke batch file (9.1), the batch-01 file (9.2, before its send: data rule, 
 the numbers against the compare output). A batch file is data, not code, so its review is short (Sonnet, high).
 
 User steps: none. The API key is in `.env` already; `TEST_MAILBOX_ADDRESS` goes on the command line.
+
+### Open question for the user (2026-11-08, before stage 9)
+
+- **Q1 Live product actions on test mail.** The defaults (above) cover the digest, the urgent notices and the feedback. They do not cover what S4 does now on
+  the VPS (`ACTIONS_SCOPE=all`, `SEND_SCOPE=all`, mode `assist`): moves of test mail into `AI/*`, drafts in the Interia Drafts folder and approval prompts in
+  Telegram for `needs_reply`/`delegation` test mail (no send without the user's tap). The main session asks the user before the first send (stage 9.1).
+  Second risk (group review 6–8): two pilot-week measurements run on the same mailbox now. `tasks/planned/s3-assist-week-result.md` (to 2026-11-14T20:00Z)
+  excludes only `%@ea-seed.test>` mail, so AgentMail mail counts as real mail in "Applied by type", and a `wrong` tap on a test mail adds to N (S3 bar N ≤ 3).
+  `tasks/planned/s4-pilot-week.md` part B (to 2026-11-14T22:40Z) counts drafts, approvals and sends; part A A1 expects `Approvals: 0 waiting`.
+  Options: (a) start stage 9 after 2026-11-14T22:40Z (recommended: no change to other tasks); (b) run now, and add the exclusion
+  `and lower(e.from_address) is distinct from 'ea-testmail-75wd@agentmail.to'` to every `emails e` join of S3 step 20.2.3 and S4 step 23.2.3, plus a note line in
+  both planned files; S4 A1 runs before the first test send, or it does not count waiting approvals of test mail; the stage 9 line "Do not run this stage while
+  an S3 VPS stage (19, 20) runs" then means the VPS command steps of S3 stage 20, not its whole week.
 
 ### Review model
 
@@ -326,14 +344,14 @@ Review units (`tasks/README.md` plan shape: a `[risky]` stage has 1 step): in th
 
 Each stage lives in its own file in [`test-mail-traffic/`](test-mail-traffic/). An implementer or reviewer reads this file (Input, Rules) and only the stage file of its step.
 
-- [ ] [Stage 1](test-mail-traffic/stage-01-core-batch-schema.md) [written] — Core: batch and persona schemas, validation, blind view
-- [ ] [Stage 2](test-mail-traffic/stage-02-core-send-log-and-plan.md) [written] — Core: send log and send plan [risky]
-- [ ] [Stage 3](test-mail-traffic/stage-03-agentmail-client.md) [written] — AgentMail client, fake server, config keys [risky]
-- [ ] [Stage 4](test-mail-traffic/stage-04-send-service-and-cli.md) [written] — Send service and CLI `testmail` (setup, validate, blind, send, status) [risky]
-- [ ] [Stage 5](test-mail-traffic/stage-05-deliver.md) [written] — Deliver: move own test mail from the Interia sort folders into INBOX [risky]
-- [ ] [Stage 6](test-mail-traffic/stage-06-compare-and-target-cli.md) [written] — Compare: repository, report, CLI `testmail-target`
-- [ ] [Stage 7](test-mail-traffic/stage-07-remote-runner.md) [written] — Remote runner `testmail:remote` (bundle, scp, ssh) [risky]
-- [ ] [Stage 8](test-mail-traffic/stage-08-runbook-and-docs.md) [written] — Runbook, persona file, docs, follow-up task
+- [x] [Stage 1](test-mail-traffic/stage-01-core-batch-schema.md) [written] — Core: batch and persona schemas, validation, blind view
+- [x] [Stage 2](test-mail-traffic/stage-02-core-send-log-and-plan.md) [written] — Core: send log and send plan [risky]
+- [x] [Stage 3](test-mail-traffic/stage-03-agentmail-client.md) [written] — AgentMail client, fake server, config keys [risky]
+- [x] [Stage 4](test-mail-traffic/stage-04-send-service-and-cli.md) [written] — Send service and CLI `testmail` (setup, validate, blind, send, status) [risky]
+- [x] [Stage 5](test-mail-traffic/stage-05-deliver.md) [written] — Deliver: move own test mail from the Interia sort folders into INBOX [risky]
+- [x] [Stage 6](test-mail-traffic/stage-06-compare-and-target-cli.md) [written] — Compare: repository, report, CLI `testmail-target`
+- [x] [Stage 7](test-mail-traffic/stage-07-remote-runner.md) [written] — Remote runner `testmail:remote` (bundle, scp, ssh) [risky]
+- [x] [Stage 8](test-mail-traffic/stage-08-runbook-and-docs.md) [written] — Runbook, persona file, docs, follow-up task
 - [ ] [Stage 9](test-mail-traffic/stage-09-first-real-batch.md) [written] — First real batch: write, blind check, send, deliver, compare [risky] — user checkpoint 1 before it
 
 ### Results
@@ -356,3 +374,19 @@ Not yet (stage 9 writes the compare report here).
 - 2026-11-07: Independent review in a separate session (Claude Code, Opus; record `test-mail-traffic/review-2026-11-07-session2.md`): 0 blockers, 4 majors (git fetch fails with the default SSH key, `[risky]` stages with 2 steps, deliver could delete the only copy of a synced mail, no push check of foreign commits), 12 minors. All fixed in the plan files, except one accepted minor. Waiting for the user's approval.
 - 2026-11-07: Review session 2, live checks (read-only): the AgentMail label filter works; `status_until` is not documented and moves with activity; the `origin/master` config loads on the VPS. Moved from "Not verified" to "Facts checked".
 - 2026-11-08: The user approved the plan and chose a separate worktree for the build. Plan changes for it: Git mode worktree, rule "Worktree", send logs and lock in `~/.local/state/ea-testmail/` (D6), merge into `master` at checkpoint 1 (D1 bundles from `origin/master`). Noted that S4 is now deployed on the VPS (stale facts marked). Build handoff written.
+- 2026-11-08: Build started in the worktree (own DB `email_assistant_test_mail_traffic`). Stage 1 built (1.1 fix round: a typecheck error in a test), review (Sonnet, high): PASS, 3 minors not fixed (detail without match count, no subject test for the data rule, duplicate unknown ids in `applyBlindLabels`).
+- 2026-11-08: Stage 2.1 built, review (Opus, high): PASS with 2 minors (partial-line rule of `parseSendLog`), both fixed.
+- 2026-11-08: Stage 2.2 built, review (Opus, high): PASS with 3 minors (order-dependent test 9, two untested child branches, a redundant check), all fixed. Stage 2 done.
+- 2026-11-08: Stage 3.1 built, review (Opus, high): PASS with 2 minors, fixed. Deviation accepted: a 2xx body that is not JSON (or cannot be read) is a `SoftError` (a cut body can hide a sent mail; safe by D3, same-key repeat).
+- 2026-11-08: Stage 3.2 built, review (Opus, high): PASS with 1 minor + 1 question, both fixed (fake: 409 `AlreadyExistsError` for a taken username; hold comment). Open point for stage 4: `isSoftAgentMailError` treats a 409 `AlreadyExistsError` on `ensureInbox` as soft (setup calls GET first). Stage 3 done.
+- 2026-11-08: Unit 4.1a (paths, lock, log file) built, review (Opus, high): PASS with 4 minors + 1 question, all fixed: lock written by temp file + hard link, real pid tests, repo root test, short-write check; main session decision: a relative `TESTMAIL_ROOT` is an error, an empty one = unset.
+- 2026-11-08: Unit 4.1b (`runSend`) built, review (Opus, high): PASS with 2 minors + 1 question, all fixed (tests for 503, 400 then 403, 404, `--limit` with a failed case and with a recover; 401 → `auth` on every call). Step 4.1 done.
+- 2026-11-08: Step 4.2 (CLI `testmail`, `target.json`, scripts) built, review (Opus, high): PASS with 2 minors + 2 questions, all fixed (dry-run cap from all logs, hash comment, `AgentMailError` message printed, no-log and no-key test asserts). `test:int`: 847 pass. Stage 4 done.
+- 2026-11-08: Step 5.1 (`planDelivery`, `listEmailsByMessageIds`) built, review (Opus, high): PASS with 2 minors + 1 question, fixed (one trimmed id for both lookups, row type). Decision: callers pass unique message ids; 5.2 drops duplicates before the plan.
+- 2026-11-08: Step 5.2 (`deliverTestMail`) built, review (Opus, high): PASS with 5 minors; fixed: UID fetch in chunks of 100, refuse an invalid `sentAt` or an empty id, module comment. Left as is: the `probe refused` text (accepted minor 11), no test for a delete that returns false. Decisions: a later case with a duplicate message id is `not_found` with no ops; a failed move skips the deletes of its case. Stage 5 done.
+- 2026-11-08: Group review of stages 1–5 (Opus, high; `1a0f079..705264a`): PASS, 2 minors, fixed: `send` uses the pinned `testAddress` as the recipient (env letter case no longer changes the request hash); stage 7 `RemoteDeps.root` → `paths: TestmailPaths` (a root would move the real logs and lock into the checkout, D6).
+- 2026-11-08: Stage 6 (compare rows, `listLatestTriageByEmailIds`, CLI `testmail-target`) built, review (Sonnet, high): PASS with 3 minors, fixed (test user clean-up, a `delegation`/`unsure` test, `messageId` and `sentAt` both set or both null). Stage 6 done.
+- 2026-11-08: Step 7.1 (`remote.ts`: command string, bundle check, deliver output parsing) built, review (Opus, high): PASS with 3 minors + 1 question; fixed: one template literal, result/folder pairs checked (`synced` needs folder `db`, `in_inbox` needs `inbox`), `--bar`/`--min-kept` only with compare and `bar > 0`. For 7.2: check each `delivered` line with `sendLogLineSchema` before the append.
+- 2026-11-08: Step 7.2 (CLI `testmail:remote`, `bundle.ts`) built, review (Opus, high): PASS with 7 minors + 2 questions; fixed: `lstat` in the cache clean-up, clean-up test, unknown-case lines count as bad, a reused bundle worktree must be clean at the sha, `log.warn`, bundle size check, refusal test, `refs/remotes/origin/master`. Accepted deviations: no `delivered` append when any remote line is bad (exit 1); `--dry-run`/`--print-input` take no lock. Known gap for the runbook: after an ssh 255 the bundle stays in VPS `/tmp` (code only). Stage 7 done.
+- 2026-11-08: Stage 8 (persona file, runbook `evals/testmail/README.md`, `tasks/planned/testmail-mail-kind.md`, doc lines) built; main session wrote the pi agents `testmail-writer` and `testmail-checker` (`~/.pi/agent/agents/`); checker dry call (2 cases) → `[{"id":"dry-1","category":"notification"},{"id":"dry-2","category":"needs_reply"}]`. Review (Sonnet, high): FAIL (2 majors: writer field list and rules, exit-code table), fixed; re-review PASS with 2 minors, fixed by the main session (schema limits line, `testmail:target` exit 2 text). Stage 8 done.
+- 2026-11-08: Group review of stages 6–8 (Opus, high; `1f4abca..2e5776f`): FAIL, 1 major: the plan said `ACTIONS_SCOPE=synthetic` on the VPS; the VPS has `ACTIONS_SCOPE=all`, `SEND_SCOPE=all` (main session, read-only `grep -c`: 1, 1). Fixed: D14 and the facts corrected, Q1 for the user, a stage 9.1 scope check; code minors fixed (`--out` only on exit 0/2, strict result/folder pairs, cross-stage test, shared `readJsonFile` and `deliveryResults`, one report name). Re-review 1: FAIL, 1 major (the S3 and S4 pilot weeks to 2026-11-14 count test mail), added to Q1 with options (a)/(b). Re-review 2: PASS, 3 minors on option (b), fixed. `test:int`: 885 pass.

@@ -188,3 +188,22 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
   }
   return result.data;
 }
+
+// Test tool only (bun run testmail:*). The server never needs these keys, so `loadConfig` does not read them.
+export const testmailConfigSchema = z.object({
+  // Secret: never print or log it.
+  AGENTMAIL_API_KEY: z.preprocess(emptyAsUndefined, z.string().min(10)),
+  AGENTMAIL_BASE_URL: z.preprocess(emptyAsUndefined, z.string().url().default("https://api.agentmail.to/v0")),
+  TEST_MAILBOX_ADDRESS: z.preprocess(emptyAsUndefined, z.string().regex(addressPattern).optional()),
+});
+
+export type TestmailConfig = z.infer<typeof testmailConfigSchema>;
+
+export function loadTestmailConfig(env: Record<string, string | undefined> = process.env): TestmailConfig {
+  const result = testmailConfigSchema.safeParse(env);
+  if (!result.success) {
+    const keys = [...new Set(result.error.issues.map((issue) => issue.path.join(".")))];
+    throw new ConfigError(keys);
+  }
+  return result.data;
+}

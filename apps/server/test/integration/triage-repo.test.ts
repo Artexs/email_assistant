@@ -6,6 +6,7 @@ import {
   insertTriageResult,
   latestTriageResult,
   listLabeledResults,
+  listLatestTriageByEmailIds,
   listUnlabeled,
   listUsageSince,
   type TriageResultInput,
@@ -461,6 +462,23 @@ describe("triage repository", () => {
         latency_ms: 900,
       });
       expect(rows[0]?.created_at).toBeInstanceOf(Date);
+    });
+  });
+
+  test("listLatestTriageByEmailIds returns the newest result per email, only for the org", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      const emailA = await insertTestEmail(trx, a.ctx, a.mailboxId);
+      const emailB = await insertTestEmail(trx, b.ctx, b.mailboxId);
+      const older = await insertTriageResult(trx, a.ctx, resultRow(emailA, { category: "info" }));
+      const newer = await insertTriageResult(trx, a.ctx, resultRow(emailA, { category: "spam" }));
+      await insertTriageResult(trx, b.ctx, resultRow(emailB));
+      await setResultCreatedAt(trx, older, 10);
+      await setResultCreatedAt(trx, newer, 1);
+
+      const rows = await listLatestTriageByEmailIds(trx, a.ctx, [emailA, emailB]);
+      expect(rows.map((r) => [r.email_id, r.category, r.prompt_version])).toEqual([[emailA, "spam", "classifier-v1"]]);
+      expect(await listLatestTriageByEmailIds(trx, a.ctx, [])).toEqual([]);
     });
   });
 });
