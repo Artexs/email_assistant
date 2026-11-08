@@ -1,4 +1,4 @@
-> **Status 2026-11-08 — in progress — plan written and cold-reviewed (`plan-task` session): S1–S13, 22 facts, W1–W20, 15 stage files; 35 review findings fixed.** Left: the user's OK, then the build with `run-task` (pipeline mode, worktree `task/s5a-web-foundation`, own database `email_assistant_s5a`). No S5 code yet.
+> **Status 2026-11-08 — in progress — plan written and cold-reviewed once (`plan-task` session): S1–S13, 22 facts, W1–W20, 15 stage files; 35 review findings fixed; a second cold review in a separate session is next (the user's decision).** Left: the second review and its fixes, the user's OK, then the build with `run-task` (pipeline mode, worktree `task/s5a-web-foundation`, own database `email_assistant_s5a`). No S5 code yet.
 
 # S5a Web foundation
 
