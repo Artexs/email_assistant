@@ -12,6 +12,7 @@ export {
   latestFeedback,
   latestTriageResult,
   listLabeledResults,
+  listLatestTriageByEmailIds,
   listTriagedBetween,
   listUnlabeled,
   listUsageSince,

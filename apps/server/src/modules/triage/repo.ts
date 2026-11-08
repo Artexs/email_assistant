@@ -131,6 +131,39 @@ export async function latestTriageResult(
   return { ...row, category: categorySchema.parse(row.category) };
 }
 
+// The latest result per email (created_at desc, id desc, as `listLabeledResults`), in chunks of 500 ids.
+export async function listLatestTriageByEmailIds(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailIds: readonly string[]
+): Promise<
+  {
+    email_id: string;
+    category: Category;
+    confidence: number;
+    reason_code: string;
+    model: string | null;
+    prompt_version: string | null;
+    fields: unknown;
+  }[]
+> {
+  const out = [];
+  for (let i = 0; i < emailIds.length; i += 500) {
+    const rows = await db
+      .selectFrom("triage_results")
+      .distinctOn("email_id")
+      .select(["email_id", "category", "confidence", "reason_code", "model", "prompt_version", "fields"])
+      .where("org_id", "=", ctx.orgId)
+      .where("email_id", "in", emailIds.slice(i, i + 500))
+      .orderBy("email_id")
+      .orderBy("created_at", "desc")
+      .orderBy("id", "desc")
+      .execute();
+    out.push(...rows.map((row) => ({ ...row, category: categorySchema.parse(row.category) })));
+  }
+  return out;
+}
+
 export async function insertFeedback(db: DbOrTrx, ctx: TenantContext, row: FeedbackInput): Promise<string> {
   const inserted = await db
     .insertInto("triage_feedback")

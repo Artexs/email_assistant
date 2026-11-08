@@ -4,3 +4,4 @@ export * from "./delivery";
 export * from "./plan";
 export * from "./request";
 export * from "./send-log";
+export * from "./target";

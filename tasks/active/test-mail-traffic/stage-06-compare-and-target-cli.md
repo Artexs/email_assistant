@@ -7,7 +7,7 @@ Part of [`../test-mail-traffic.md`](../test-mail-traffic.md). Read that file's "
 `testmail-target` is the DB side of the tool. It runs where the mailbox's DB is: in tests and on the dev DB locally, on the VPS through stage 7.
 Its input comes on stdin as JSON (no mail text), so the VPS needs no batch file and no send log.
 
-- [ ] **6.1 Target input, compare rows and table (core); latest triage query (triage repo)**
+- [x] **6.1 Target input, compare rows and table (core); latest triage query (triage repo)**
   - Goal: the stdin format, the per-case compare rows, a Markdown table, and the query for the latest triage result per mail.
   - Files: create `packages/core/src/testmail/target.ts`, `packages/core/src/testmail/target.test.ts`; change `packages/core/src/testmail/index.ts`,
     `apps/server/src/modules/triage/repo.ts`, `apps/server/src/modules/triage/index.ts`, `apps/server/test/integration/triage-repo.test.ts`.
@@ -111,7 +111,7 @@ Its input comes on stdin as JSON (no mail text), so the VPS needs no batch file 
   - Done when: tests 1–5 pass.
   - Out of scope: the CLI (6.2).
 
-- [ ] **6.2 CLI `testmail-target` (deliver, compare)**
+- [x] **6.2 CLI `testmail-target` (deliver, compare)**
   - Goal: the DB-side commands; JSON on stdin; clear stdout and exit codes (D12).
   - Files: create `apps/server/src/scripts/testmail-target.ts`, `apps/server/test/integration/testmail-target.test.ts`; change `package.json`
     (`"testmail:target": "bun apps/server/src/scripts/testmail-target.ts"`).

@@ -37,6 +37,7 @@
     "testmail:blind": "bun apps/server/src/scripts/testmail.ts blind",
     "testmail:send": "bun apps/server/src/scripts/testmail.ts send",
     "testmail:status": "bun apps/server/src/scripts/testmail.ts status",
+    "testmail:target": "bun apps/server/src/scripts/testmail-target.ts",
     "llm:check": "bun apps/server/src/scripts/llm-check.ts",
     "gemini:test": "bun apps/server/src/scripts/llm-check.ts --provider gemini",
     "org:create": "bun apps/server/src/scripts/org-create.ts",
