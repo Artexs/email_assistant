@@ -58,7 +58,8 @@ Why risky: exactly-once moves in the user's mailbox (the ensure rule, D5 of S3) 
     5. A crash between APPEND and EXPUNGE (`failOn("deleteMessage", new HardError("x"))` once) → the first try retries later; the second claim finds the mail in
        INBOX and in the source, deletes the source, `applied` with `leftover_deleted` true; one INBOX copy.
     6. A crash after the IMAP part (`beforeCommit` throws) → the next claim finds the target only, `applied`, no second `transferByAppend` (`fake.calls`).
-    7. During the rescue the row has `undo_pending_at` set (read it in `beforeCommit`).
+    7. During the rescue the row has `undo_pending_at` set: read it in a provider wrapper around `transferByAppend` before it calls the fake (the wrapper
+       is awaited; `beforeCommit` is not, `apply.ts` calls `deps.beforeCommit?.()` without `await`, so an async read there races the commit; independent review m5).
     8. A rescue whose mail is gone (deleted from the source) → `failed` `mail_not_found`; `undo_pending_at` null.
     9. The S3 reverse of an INBOX-source mail from `AI/Spam` into INBOX uses `moveMessage` (source INBOX → `byAppend` false); the existing tests pass.
     10. `resolve("inbox")` makes no `ensureFolder` call and no `folder_map` change; `resolve("ai_info")` as today.

@@ -16,10 +16,12 @@ Why risky: it writes and deletes mail in the user's mailbox. The order rule: APP
     // apps/server/src/modules/mail/port.ts
     /** The largest message that transferByAppend reads into memory. */
     export const TRANSFER_MAX_BYTES = 25_000_000;
+    /** Flags that transferByAppend never copies (case-insensitive). */
+    export const TRANSFER_DROP_FLAGS = ["\\Recent", "\\Deleted", "$Junk", "Junk"] as const;
     export interface MailProvider {
       // …
       /**
-       * Moves one message by APPEND of its raw source to `toFolder` (flags without \Recent and \Deleted, the same INTERNALDATE),
+       * Moves one message by APPEND of its raw source to `toFolder` (flags without \Recent, \Deleted and the keywords $Junk and Junk, the same INTERNALDATE),
        * then \Deleted + UID EXPUNGE of the source. For a server that sorts a COPY into INBOX back (Interia, F8).
        * Throws MailNotFoundError when `uid` is not in `fromFolder` (also when the folder is missing); HardError("no UIDPLUS") before any write
        * when the server has no UIDPLUS; HardError("message too large to transfer") when RFC822.SIZE > TRANSFER_MAX_BYTES.
@@ -35,18 +37,19 @@ Why risky: it writes and deletes mail in the user's mailbox. The order rule: APP
       1. `lockOrNull(fromFolder)` (null → `MailNotFoundError`). Inside: `hasUid(uid)` (false → `MailNotFoundError`); UIDPLUS check (`HardError("no UIDPLUS")`);
          `fetchOne(uid, { uid: true, size: true, flags: true, internalDate: true }, { uid: true })`; size check; `fetchOne(uid, { uid: true, source: true }, { uid: true })`
          (no source → `HardError("no source")`). Release the lock (`finally`).
-      2. With no lock held: `client.append(toFolder, source, flags without \Recent and \Deleted, internalDate)`; `false` → `SoftError("IMAP append skipped")`
+      2. With no lock held: `client.append(toFolder, source, flags without \Recent, \Deleted, $Junk and Junk, internalDate)` (`TRANSFER_DROP_FLAGS`, compare case-insensitive;
+         a rescued mail must not carry a junk mark into INBOX, independent review m3); `false` → `SoftError("IMAP append skipped")`
          (as `appendMessage`); no APPENDUID → `HardError("append gave no uid")` (UIDPLUS is required, so this is a fault; review m4). The source stays.
       3. With no lock held: `this.fetchMetaIn(toFolder, newUid)` (it takes and releases its own lock); null → `HardError("appended mail not found")`, the source stays.
       4. `lockOrNull(fromFolder)` again (null → return `{ newUid }`: the source folder is gone, nothing to delete). Inside: `hasUid(uid)` false → return
          `{ newUid }` (another client removed it); else `messageDelete(String(uid), { uid: true })`, then `hasUid(uid)` must be false, else
          `HardError("expunge refused")`. Release the lock (`finally`).
-    - The fake: the same checks in the same order; `store(toFolder, msg, internalDate, size, flags minus \Recent/\Deleted)`; then `failIfSet("deleteMessage")`
+    - The fake: the same checks in the same order; `store(toFolder, msg, internalDate, size, flags minus TRANSFER_DROP_FLAGS)`; then `failIfSet("deleteMessage")`
       (a test can stop the delete step, as for the copy path); then remove the source. `toFolder` missing → `HardError("NO [TRYCREATE]")` before any write.
     - Never fall back to `moveMessage` inside `transferByAppend`; the caller chooses (stage 10).
   - Test (contract: fake + `imap-greenmail` + `imap-greenmail-copy-path`):
     1. A mail with `\Seen` and `\Flagged` in `Oferty` → `transferByAppend("Oferty", uid, INBOX)`: INBOX holds one copy with the same RFC822.SIZE, INTERNALDATE
-       (to the second), `Message-ID`, and the flags `\Seen`, `\Flagged` (ignore `\Recent`); `Oferty` has no copy; `newUid` = the INBOX UID (`fetchByUidsIn` finds it).
+       (to the second), `Message-ID`, and the flags `\Seen`, `\Flagged` (ignore `\Recent`); (fake only) a source keyword `$Junk` is not on the INBOX copy; `Oferty` has no copy; `newUid` = the INBOX UID (`fetchByUidsIn` finds it).
     2. `sameMailIdentity(meta in INBOX, identity of the source meta)` is true (the `content_hash` does not change).
     3. An unknown UID → `MailNotFoundError`; a missing source folder → `MailNotFoundError`; nothing written.
     4. (fake) `capabilities: { uidplus: false, move: false }` → `HardError("no UIDPLUS")`, INBOX unchanged.

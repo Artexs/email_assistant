@@ -43,7 +43,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's D
       ctx: TenantContext,
       mailboxId: string,
       since: Date
-    ): Promise<{ key: SyncFolderKey; counts: AuditCounts }[]>;
+    ): Promise<{ key: SyncFolderKey; counts: AuditCounts | null }[]>; // null = the server does not list the folder (independent review m7)
     // audit.ts: AuditCounts gets `cross: number`. compareFolderWithDb(mail, rowsHere, rowsInOtherSyncedFolders): a mail key with no row in this folder but a
     // row of the mailbox whose `folder` is another enabled synced folder counts as `cross`, not `missing` (D24 e, review m10). A row in `AI/*` does not count
     // (a leftover after a failed expunge stays `missing`: a real problem). Pure; the old name may stay as an alias.

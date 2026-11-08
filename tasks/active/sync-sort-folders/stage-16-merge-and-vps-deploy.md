@@ -36,7 +36,8 @@ Gate: user checkpoint 2 (the group review of stages 12–15 and the branch is PA
     `select count(*) from audit_log a join emails e on e.id = a.email_id and e.org_id = a.org_id where a.event = 'email.returned' and a.created_at > '<T>' and e.source_folder <> 'INBOX';`
     plus `select count(*) from triage_feedback where source = 'imap_move' and created_at > '<T>';` → 0 both. A count > 0 with no user action = Interia
     sorted a moved mail back: switch moves off at once (`$C run --rm server bun run mailbox:settings switch --org-id <ORG> --mailbox-id <MB> --name move --value off`),
-    write the fact, and stop for the user. 10. Commit the time `<T>` into the two pilot-week notes and this task file § Results (master mode, task files only).
+    write the fact, and stop for the user. 10. Commit the time `<T>` into the two pilot-week notes and this task file § Results (master mode, task files only; in a temporary detached
+    worktree of `origin/master` as in step 1, push with `git push origin HEAD:master`, then remove it: the main checkout holds other sessions' work, independent review m11).
   - Rollback (write which one ran, if any):
     - One folder misbehaves: `$C run --rm server bun run mailbox:settings sync-folder --org-id <ORG> --mailbox-id <MB> --key <key> --value off` (the next tick
       skips it). This does not stop actions of rows that are already stored: add `switch --name move --value off` when moves are the problem.

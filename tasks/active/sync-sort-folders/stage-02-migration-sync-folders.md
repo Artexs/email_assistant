@@ -129,7 +129,9 @@ Why risky: a migration on the live pilot DB, and the sync cursor moves to a new 
        connect as `app`, so they also prove the default grants of the new table, `20261103000001_app_grants.sql`.)
     7. (`mail-connect.test.ts`) after `connectMailbox` the mailbox has one INBOX row with null cursor.
     8. (`mail-sync.test.ts`, `mail-backfill.test.ts`) the existing cases pass unchanged: their `updateCursor(…, mailboxId, …)` setup now writes the INBOX row
-       (and `mailboxes`); one new case: after an incremental sync `mailboxes.last_uid` equals the INBOX row's `last_uid`.
+       (and `mailboxes`); one new case: after an incremental sync `mailboxes.last_uid` equals the INBOX row's `last_uid`. Exception (independent review m4):
+       the two `CursorMovedError` cases that move the cursor with `trx.updateTable("mailboxes").set({ last_uid: 99 })` (`mail-sync.test.ts` near lines 522
+       and 1141) now set `last_uid` 99 on the INBOX row of `mailbox_folders` (the sync no longer reads `mailboxes`); name both in the step log line.
     9. `forceRescan` → every folder row with a cursor and `mailboxes` have `uidvalidity` 0; the next sync rescans INBOX (existing rescan test).
   - Check: `bun run db:migrate && bun run db:types && bun run lint && bun run typecheck && bun run test:unit && bun run test:int`; test 1 by hand.
   - Done when: tests 1–9 pass; `git diff --stat` shows no change to old migrations.

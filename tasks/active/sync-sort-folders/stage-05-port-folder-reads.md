@@ -59,7 +59,8 @@ Why risky: the sync cursor rule (D4) and every read of the sync go through these
       /** The STATUS UIDNEXT that the fake reports before the D4 rule; Interia gives 1 (F2). Default: the real next UID. */
       uidNextValue?: number;
     }
-    // resetUidValidity(next, folder = INBOX): the folder gets a new UIDVALIDITY and its uids are renumbered.
+    // resetUidValidity(next, folder = INBOX): the folder gets a new UIDVALIDITY and its uids are renumbered in the old order: from 1 without
+    // globalUids (as today); with globalUids from the shared counter, so a UID stays unique in the mailbox (F3; independent review m6).
     /** Every call with its folder argument (or "" for calls without one), in call order. `calls` (names only) stays as it is. */
     readonly folderCalls: { method: string; folder: string }[];
     ```

@@ -1,4 +1,4 @@
-> **Status 2026-11-08 — in progress — plan approved by the user (Q6, Q7: defaults); an independent plan review in a separate session is next.** Left: that review and its fixes, then the build (`run-task`, stage 1 first with checkpoint 0) and the VPS deploy (stage 16, checkpoint 2). No code yet.
+> **Status 2026-11-08 — in progress — independent plan review done (session 2): 1 major waits for the user (spam folder `delegation` plan, M1 of [`review-2026-11-08-session2.md`](sync-sort-folders/review-2026-11-08-session2.md)); 13 minors fixed or decided.** Left: the user's answer to M1 and its fix in the plan, then the build (`run-task`, stage 1 first with checkpoint 0) and the VPS deploy (stage 16, checkpoint 2). No code yet.
 
 # Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
@@ -184,7 +184,7 @@ The sync reads INBOX and the Interia sort folders, stores and triages their mail
   not VIP; else `log_only`. So on the VPS today (`auto` off for `urgent` and `needs_reply`) a rescue is `logged`: the digest line reads "would move to INBOX"
   with `📁 Wiadomości-śmieci`, and the user moves the mail by hand or turns `auto` on (`mailbox:settings auto --category urgent --value on --force`).
   `delegation` has no `auto` flag, so its rescue is always `logged`. Transfer: when the target is INBOX and the mail's `source_folder` is not INBOX,
-  the committer uses `transferByAppend` (raw source + flags without `\Recent`/`\Deleted` + INTERNALDATE, APPEND to INBOX, then `UID EXPUNGE` of the
+  the committer uses `transferByAppend` (raw source + flags without `\Recent`, `\Deleted` and the junk keywords `$Junk`, `Junk` + INTERNALDATE, APPEND to INBOX, then `UID EXPUNGE` of the
   source; F7, F8), else `moveMessage` as now. The ensure rule of S3 (locate in the target and the source first) stays. The Undo of a rescue is a normal COPY
   move back into the spam folder. If stage 1 shows that a COPY out of a sort or spam folder into `AI/*` is sorted back (NV1), stop: the main session proposes
   "transfer by APPEND for every move out of a `sort` or `junk` folder" and asks the user.
@@ -228,10 +228,14 @@ move in flight n, skipped own n, ignored below cursor n` (info). `sync <mailboxI
 - **D24 Known limits (written in ADR 0014).** (a) A return into a synced folder that is not the row's source, below that folder's cursor, is not seen
   (Interia keeps the UID). (b) A mail that the user moves between two synced folders in the seconds between their passes of one run is not stored.
   (c) A row whose source became INBOX by a user move out of `Oferty` gets its Undo by COPY into INBOX, which Interia may sort back (F8). (d) After a code
-  rollback the old code ends a `ready` move `{ folder: "inbox" }` as `bad_payload` and sends an Undo of `Oferty` mail to INBOX. (e) `mailbox:audit` shows a
+  rollback the old code ends a `ready` move `{ folder: "inbox" }` as `bad_payload` and sends an Undo of `Oferty` mail to INBOX; an Undo of a rescue
+  ends `applied` with no IMAP change (the old reverse targets INBOX, where the rescued mail is), so the mail stays in INBOX (independent review m8). (e) `mailbox:audit` shows a
   cross copy as `cross`, not as `missing` (stage 13.2).
   (f) A spam folder mail that the user moves into INBOX by hand (the Q6 default path) keeps its UID at Interia, so it is below the INBOX cursor: the row
   stays `folder` = `Wiadomości-śmieci` (stale location, the mail itself is fine in INBOX).
+  (g) A user move of a mail that the system did not move, between two synced folders, keeps its UID at Interia. When that UID is below the target
+  folder's cursor, the sync does not see the move: the row keeps its old folder, and an action on it ends `mail_not_found` (independent review m9;
+  the follow-up `tasks/planned/sync-return-to-other-folder.md` covers (a) and (g)).
 
 ### Edge cases (decided; each has a test in its stage)
 
@@ -274,7 +278,9 @@ move in flight n, skipped own n, ignored below cursor n` (info). `sync <mailboxI
       all fixed (stage 9 lock order, test refs, `matched` only for real matches, cross copies only from synced folders, rollback with pending spam-folder rows). Second re-review (Opus, high): **PASS** with 8 minors, all fixed.
 - [x] User approval (2026-11-08): "Okay, I approve it and prepare me handoff for review of this plan for another agent." Q6 and Q7: the defaults
       (the summary said "Reply OK to approve, or tell me what to change"; the user changed nothing). Plan commit `e95e06a` on `task/sync-sort-folders`.
-- [ ] Independent review in a separate session (handoff `~/.pi/agent/notes/2026-11-08-handoff-sync-sort-folders-plan-review.md`), findings fixed.
+- [ ] Independent review in a separate session (handoff `~/.pi/agent/notes/2026-11-08-handoff-sync-sort-folders-plan-review.md`; record
+      [`sync-sort-folders/review-2026-11-08-session2.md`](sync-sort-folders/review-2026-11-08-session2.md)): FAIL, 0 blockers, 1 major (spam folder
+      `delegation` gets a draft and an approval push, against the D23 reason; the user decides), 13 minors (fixed or decided; one accepted).
 
 ### Differences found at collect (2026-11-08)
 
@@ -373,7 +379,10 @@ whole branch diff before stage 16. Stage 7a and 7b count as two stages of the ra
 
 Run mode: normal (one step at a time: build → review → commit → push the branch). Not pipeline: the `[risky]` stages build on each other's interfaces
 (port → rules → loop → actions), so a review finding would redo the later stages. Each `[risky]` stage has one step = one review unit. The normal stages
-3, 12, 13, 15 are one review unit per step. Commit message: `mail: sync-sort-folders stage N.M — <what>` (area `actions`, `triage`, `core`, `tasks`, `docs` as fits).
+3, 12, 13, 15 are one review unit per step.
+Stage size (independent review 2026-11-08, m12, decided): stages 2, 5 and 10 can pass ~300 changed lines, mostly tests and mechanical caller edits.
+No split: a split of stage 5 leaves a port with two read APIs for one stage, and a split of stage 10 leaves a committer that moves into INBOX without
+the marker. The implementer reports `git diff --stat` (source and tests apart) in its result; the reviewer reads the source diff first. Commit message: `mail: sync-sort-folders stage N.M — <what>` (area `actions`, `triage`, `core`, `tasks`, `docs` as fits).
 
 ### Stages
 
@@ -421,3 +430,5 @@ Not yet (stages 1, 14, 16 and 17 write their results here).
   normal move gate, no flag, no urgent notice: D23) and needs the user's yes (Q6). Re-review: FAIL (2 majors, 10 minors), fixed. Second re-review: PASS (8 minors, fixed). Q6 and Q7 wait for the approval.
   The `test-mail-traffic` status line now links `tasks/active/sync-sort-folders.md`.
 - 2026-11-08: The user approved the plan (Q6 and Q7: defaults) and asked for a handoff: an independent review of the plan by another agent before the build.
+- 2026-11-08: Independent review (Claude Code, claude-opus-5-5, separate session): 1 major open for the user, 13 minors fixed or decided
+  (stage 1 in two runs, `listedExactly`, `TRANSFER_DROP_FLAGS`, test fixes in stages 2, 5, 10, 13, D24 (d) and (g), docs in stage 15, where the master-mode commits run).

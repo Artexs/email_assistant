@@ -9,11 +9,11 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's "
   - Files: create `docs/decisions/0014-sync-provider-sort-folders.md`; change `docs/decisions/README.md` (row 0014; row 0010 status "accepted, amended by 0014"),
     `docs/decisions/0010-imap-first.md` (only the status line: "accepted, amended by 0014"; the ADR rule allows a status change), `docs/architecture.md`,
     `docs/modules.md`, `docs/roadmap.md` (line 14 "Fetch new INBOX mail every 5 minutes"), `docs/code-patterns.md` (test-tool list: `mailbox:seed --folder`;
-    the port list if it names the INBOX-only calls), `deploy/README.md` (a section for this migration: "Roll back the code, not the migration" holds; the
+    the port list if it names the INBOX-only calls), `deploy/README.md` (the `mailbox:audit` line near line 121 now says per folder and `cross`; a section for this migration: "Roll back the code, not the migration" holds; the
     off switch per folder).
   - Decisions (ADR 0014 content, template of `docs/decisions/README.md`): Status accepted (the user approved the plan); Context = Interia tabs are folders,
     notes §10, F1–F4; Decision = D1, D2, D4, D5, D7, D11, D12, D14, D16, D23 in short form with links to this task; Consequences = one cursor per folder, the Interia
-    UIDNEXT rule, the known limits D24 (a)–(f), the old cursor columns stay until `tasks/planned/drop-mailbox-cursor-columns.md`, a new provider needs its
+    UIDNEXT rule, the known limits D24 (a)–(g), the old cursor columns stay until `tasks/planned/drop-mailbox-cursor-columns.md`, a new provider needs its
     own `SYNC_FOLDER_DEFAULTS`.
     `docs/architecture.md` changes: §4.1 flow node `mail.sync` ("INBOX and the synced folders above each folder's UID cursor") and pipeline rule 1 (the new
     rule: the system reads INBOX and the synced folders of `mailbox_folders`; it never reads `AI/*`, Sent, Drafts, Trash or the user's own folders);
@@ -33,7 +33,8 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's "
 - [ ] **15.2 Notes, known alerts, follow-up tasks**
   - Goal: the facts for later agents and the ideas that this task did not build.
   - Files: change `notes/2026-11-03-interia-imap-capabilities.md` (F1–F3 and the stage 1 result, if stage 1 did not write them all), `notes/2026-11-07-agentmail-test-mail.md`
-    (§10: a line that the sync reads `Oferty` now; `deliver` is not needed), `docs/known-alerts.md` (the UIDNEXT entry: STATUS gives 1 at Interia; the fix is
+    (§10: a line that the sync reads `Oferty` now; `deliver` is not needed), `docs/known-alerts.md` (the `mailbox:audit` entry near line 359: `listInboxEmailKeys` is now `listFolderEmailKeys`, and a `cross` count is no
+    problem, independent review m10; the UIDNEXT entry: STATUS gives 1 at Interia; the fix is
     D4); create in `tasks/planned/`: `drop-mailbox-cursor-columns.md` (rename `inbox_uid` → `source_uid`, `undo_pending_at` → `move_pending_at`, drop
     `mailboxes.uidvalidity`/`last_uid` and the dual write, after the pilot weeks), `junk-llm-cap.md` (D14), `classifier-folder-hint.md` (D13, needs an eval run),
     `sync-return-to-other-folder.md` (the known limit of stage 8), `backfill-per-folder.md` (`mailbox:backfill --folder`); change
