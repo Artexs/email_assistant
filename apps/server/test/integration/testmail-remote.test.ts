@@ -193,6 +193,22 @@ describe("testmail:remote main", () => {
     expect(calls[1]?.argv[4]).toContain(" --bar 0.9 --min-kept 5;");
   });
 
+  test("4b. compare --out writes no file on exit 1 and keeps an existing one", async () => {
+    writeLog([sentA]);
+    const file = join(root, "r.md");
+    const failing = makeDeps((argv) => (argv[0] === "scp" ? ok() : { code: 1, stdout: "remote error\n" }));
+    expect(await main(["compare", "--batch", batchId, "--out", file], failing)).toBe(1);
+    expect(existsSync(file)).toBe(false);
+
+    writeFileSync(file, "old report");
+    expect(await main(["compare", "--batch", batchId, "--out", file], failing)).toBe(1);
+    expect(readFileSync(file, "utf8")).toBe("old report");
+
+    const waiting = makeDeps((argv) => (argv[0] === "scp" ? ok() : { code: 2, stdout: "wait\n" }));
+    expect(await main(["compare", "--batch", batchId, "--out", file], waiting)).toBe(2);
+    expect(readFileSync(file, "utf8")).toBe("wait\n");
+  });
+
   test("5. scp failure stops before ssh; ssh 255 is exit 1", async () => {
     writeLog([sentA]);
     expect(

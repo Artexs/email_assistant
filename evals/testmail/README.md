@@ -23,6 +23,11 @@ Plan: `tasks/active/test-mail-traffic.md`. Notes: `notes/2026-11-07-agentmail-te
 - The AgentMail Free plan allows 100 mails per day. The tool cap is 50 mails per rolling 24 hours (`--daily-cap`).
 - All personas use one sender address. The app keeps only the address, not the display name.
 - Each body ends with the footer `-- Sent via AgentMail`.
+- The server acts on AgentMail test mail like on real mail. On the VPS (checked 2026-11-08, S4 stage 22.1/23.1)
+  `ACTIONS_SCOPE=all`, `SEND_SCOPE=all`, mode `assist`, `create_draft` is on, and one delegate is active.
+  The committer moves the mail into `AI/*` folders. A `needs_reply` or `delegation` mail can get a draft in the Interia Drafts folder
+  and an approval prompt in the user's Telegram. A send goes out only after the user taps approve.
+  Rule for agents: never tap approve for a test mail. Tell the user before you send a batch.
 - The VPS triages the mail with the real LLM (`TRIAGE_LLM_SCOPE=all`). Each mail costs one classifier call.
 - Urgent mails make Telegram urgent notices for the user. Every mail shows in the digest.
 - AgentMail mail is not "synthetic" for the scope gates (D14 in the task file). The follow-up is `tasks/planned/testmail-mail-kind.md`.
@@ -113,7 +118,7 @@ Replace `<id>` with the batch id `<YYYY-MM-DD>-<slug>`.
    - Exit 2 (`not found`): wait 2 minutes and run again. Run at most 5 times.
    - Then check the Interia folders with `deliver --check-only` (see section 10) and the VPS inspect steps in the notes file.
 9. Wait for the sync and the triage (a few minutes). Then run
-   `GIT_SSH_COMMAND="ssh -i $HOME/.ssh/github -o IdentitiesOnly=yes" bun run testmail:remote compare --batch <id> --out evals/results/<YYYY-MM-DD>-testmail-<id>.md`.
+   `GIT_SSH_COMMAND="ssh -i $HOME/.ssh/github -o IdentitiesOnly=yes" bun run testmail:remote compare --batch <id> --out evals/results/testmail-<id>.md`.
    - Exit 2: wait 5 minutes and run again. Wait at most 1 hour.
    - The report file has no mail text. Commit it, and add the batch result line to the task file or to a note.
 
@@ -189,7 +194,7 @@ It prints the `scp` and `ssh` commands and runs neither. With `--print-input` it
 | `evals/testmail/target.json`            | Remote target (VPS host, compose args, org and mailbox ids) and the pinned recipient. |
 | `~/.local/state/ea-testmail/<id>.jsonl` | Send log: ids, keys, hashes, times, codes, folder keys. No subject, no body.          |
 | `~/.local/state/ea-testmail/send.lock`  | Lock file of a running send.                                                          |
-| `evals/results/<date>-testmail-<id>.md` | Compare report (no mail text).                                                        |
+| `evals/results/testmail-<id>.md`        | Compare report (no mail text).                                                        |
 
 The logs and the lock live outside every checkout. A worktree removal never deletes them.
 Nobody moves, edits or deletes them.

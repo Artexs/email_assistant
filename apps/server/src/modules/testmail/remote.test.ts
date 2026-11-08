@@ -89,10 +89,14 @@ describe("parseDeliverOutput", () => {
         `{"case":"c","result":"duplicate_removed","folder":"db"}`,
         `{"case":"d","result":"in_inbox","folder":"inbox"}`,
         `{"case":"e","result":"synced","folder":"db"}`,
+        `{"case":"f","result":"synced","folder":"offers"}`,
+        `{"case":"g","result":"in_inbox","folder":"db"}`,
+        `{"case":"h","result":"not_found","folder":"inbox"}`,
+        `{"case":"i","result":"moved","folder":"junk"}`,
       ].join("\n")
     );
-    expect(out.bad).toBe(3);
-    expect(out.lines.map((l) => l.case)).toEqual(["d", "e"]);
+    expect(out.bad).toBe(6);
+    expect(out.lines.map((l) => l.case)).toEqual(["d", "e", "i"]);
   });
 
   test("log lines skip not_found", () => {

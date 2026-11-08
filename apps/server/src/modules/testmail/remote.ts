@@ -1,4 +1,4 @@
-import { deliverFolderKeys, type CaseDelivery, type SendLogLine } from "@ea/core";
+import { deliverFolderKeys, deliveryResults, sortFolderKeys, type CaseDelivery, type SendLogLine } from "@ea/core";
 import { z } from "zod";
 
 import { HardError } from "../../platform/errors";
@@ -54,17 +54,23 @@ export function findEnvValuesInBundle(bundle: string, env: Record<string, string
 
 const deliverLineSchema = z.object({
   case: z.string(),
-  result: z.enum(["synced", "in_inbox", "moved", "duplicate_removed", "not_found"]),
+  result: z.enum(deliveryResults),
   folder: z.enum(deliverFolderKeys).nullable(),
 });
 type DeliverLine = z.infer<typeof deliverLineSchema>;
 
 function isConsistent(line: DeliverLine): boolean {
-  if (line.result === "not_found") return true;
-  if (line.folder === null) return false;
-  if (line.result === "moved" || line.result === "duplicate_removed")
-    return line.folder !== "inbox" && line.folder !== "db";
-  return true;
+  switch (line.result) {
+    case "synced":
+      return line.folder === "db";
+    case "in_inbox":
+      return line.folder === "inbox";
+    case "not_found":
+      return line.folder === null;
+    case "moved":
+    case "duplicate_removed":
+      return line.folder !== null && (sortFolderKeys as readonly string[]).includes(line.folder);
+  }
 }
 
 export function parseDeliverOutput(stdout: string): {

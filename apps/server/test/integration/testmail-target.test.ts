@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { connectMailbox } from "../../src/modules/mail";
 import { createFakeMailProvider } from "../../src/modules/mail/fake";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
+import { parseDeliverOutput } from "../../src/modules/testmail";
 import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
 
@@ -197,6 +198,9 @@ describe("testmail-target", () => {
     const lines = stdout.split("\n").filter((line) => line.trim() !== "");
     expect(lines).toHaveLength(2);
     for (const line of lines) expect(JSON.parse(line)).toMatchObject({ result: "synced" });
+    const parsed = parseDeliverOutput(stdout);
+    expect(parsed.bad).toBe(0);
+    expect(parsed.lines).toHaveLength(2);
     expect(stdout).not.toContain("secret-subject");
   });
 });

@@ -8,6 +8,7 @@ export {
   type AgentMailMessageItem,
   type AgentMailSent,
 } from "./agentmail/client";
+export { readJsonFile } from "./json-file";
 export { acquireSendLock } from "./lock";
 export { appendSendLogLine, readAllSendLogs, readSendLog } from "./log-file";
 export { testmailPaths, type TestmailPaths } from "./paths";

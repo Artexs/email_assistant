@@ -10,7 +10,7 @@ The user's feedback on such mail then does not mix with real labels in `triage_f
 ## Why
 
 AgentMail mail has the SES `Message-ID`, not the `@ea-seed.test>` suffix. So it is not "synthetic" for the scope gates.
-`TRIAGE_LLM_SCOPE=all` triages it, and `ACTIONS_SCOPE=synthetic` does not act on it.
+`TRIAGE_LLM_SCOPE=all` triages it, and `ACTIONS_SCOPE=all` / `SEND_SCOPE=all` on the VPS act on it like on real mail (checked 2026-11-08).
 The Telegram feedback of the user on such mail lands in `triage_feedback` like a real label.
 
 ## Options
@@ -20,7 +20,10 @@ The Telegram feedback of the user on such mail lands in `triage_feedback` like a
 
 ## Risks
 
-- The S3 `ACTIONS_SCOPE=synthetic` claim filter changes: the committer would act on testmail mail. Decide if that is wanted.
+- The committer acts on testmail mail now. On the VPS (checked 2026-11-08, S4 stage 22.1/23.1) `ACTIONS_SCOPE=all`, `SEND_SCOPE=all`,
+  mode `assist`, `create_draft` is on, and one delegate is active. So the server moves test mail into `AI/*` folders.
+  A `needs_reply` or `delegation` mail can get a draft in the Interia Drafts folder and an approval prompt in the user's Telegram.
+  A send goes out only after the user taps approve. Agents never tap approve for a test mail. This task decides if the change below is wanted.
 - A sender filter also removes the feedback that the user gave on test mail before the change (it is retroactive).
   So this task must land before the next `eval --real` go/no-go decision (S3 `mailbox:settings auto`).
 

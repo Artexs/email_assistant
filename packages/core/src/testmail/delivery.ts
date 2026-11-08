@@ -19,9 +19,11 @@ export type DeliveryOp =
   | { op: "move"; folder: SortFolderKey; uid: number }
   | { op: "delete"; folder: SortFolderKey; uid: number };
 
+export const deliveryResults = ["synced", "in_inbox", "moved", "duplicate_removed", "not_found"] as const;
+
 export interface CaseDelivery {
   caseId: string;
-  result: "synced" | "in_inbox" | "moved" | "duplicate_removed" | "not_found";
+  result: (typeof deliveryResults)[number];
   folder: "db" | "inbox" | SortFolderKey | null; // where the tool found it (null for not_found)
   ops: DeliveryOp[];
 }

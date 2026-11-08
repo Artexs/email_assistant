@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
@@ -22,6 +22,7 @@ import {
   findEnvValuesInBundle,
   loadRemoteTarget,
   parseDeliverOutput,
+  readJsonFile,
   readSendLog,
   remoteBundlePath,
   remoteCommand,
@@ -66,22 +67,6 @@ function out(text: string): void {
 
 function err(text: string): void {
   process.stderr.write(`${text}\n`);
-}
-
-function readJsonFile<T>(file: string, schema: z.ZodType<T>): T {
-  if (!existsSync(file)) throw new HardError(`file not found: ${file}`);
-  let raw: unknown;
-  try {
-    raw = JSON.parse(readFileSync(file, "utf8"));
-  } catch {
-    throw new HardError(`invalid JSON: ${file}`);
-  }
-  const result = schema.safeParse(raw);
-  if (!result.success) {
-    const issues = result.error.issues.map((issue) => `${issue.path.join(".") || "-"}: ${issue.code}`);
-    throw new HardError(`invalid file ${file}\n${issues.join("\n")}`);
-  }
-  return result.data;
 }
 
 function parseOptions(command: string, rest: string[]): Options | undefined {
@@ -188,7 +173,9 @@ async function runRemote({ command, options, deps }: RunInput): Promise<number> 
 
     if (command === "compare") {
       process.stdout.write(result.stdout);
-      if (options.out !== undefined) writeFileSync(resolve(options.out), result.stdout);
+      // Exit 1 is a remote error: its output is no report.
+      if (options.out !== undefined && (result.code === 0 || result.code === 2))
+        writeFileSync(resolve(options.out), result.stdout);
       return result.code;
     }
 

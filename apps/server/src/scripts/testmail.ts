@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 
@@ -28,6 +28,7 @@ import {
   createAgentMailClient,
   loadRemoteTarget,
   readAllSendLogs,
+  readJsonFile,
   readSendLog,
   requestHash,
   runSend,
@@ -93,19 +94,6 @@ function out(text: string): void {
 
 function issueLines(error: z.ZodError): string[] {
   return error.issues.map((issue) => `${issue.path.join(".") || "-"}: ${issue.code}`);
-}
-
-function readJsonFile<T>(file: string, schema: z.ZodType<T>): T {
-  if (!existsSync(file)) throw new HardError(`file not found: ${file}`);
-  let raw: unknown;
-  try {
-    raw = JSON.parse(readFileSync(file, "utf8"));
-  } catch {
-    throw new HardError(`invalid JSON: ${file}`);
-  }
-  const result = schema.safeParse(raw);
-  if (!result.success) throw new HardError(`invalid file ${file}\n${issueLines(result.error).join("\n")}`);
-  return result.data;
 }
 
 function loadBatch(batchesDir: string, id: string): Batch {
