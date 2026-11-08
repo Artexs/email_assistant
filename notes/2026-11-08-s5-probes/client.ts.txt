@@ -1,0 +1,60 @@
+// Drives the probe server with plain fetch, like the web client will. Prints results, never the cookie value.
+const BASE = "http://127.0.0.1:4123";
+const email = `probe-${Date.now()}@x.test`;
+const password = "correct-horse-battery-staple";
+const results: string[] = [];
+const ok = (name: string, cond: boolean, extra = "") => results.push(`${cond ? "PASS" : "FAIL"} ${name}${extra ? ` (${extra})` : ""}`);
+
+const post = (path: string, body: unknown, headers: Record<string, string> = {}) =>
+  fetch(`${BASE}${path}`, {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: BASE, ...headers },
+    body: JSON.stringify(body),
+  });
+
+// 1. sign-up
+const signUp = await post("/api/auth/sign-up/email", { email, password, name: "Probe User" });
+ok("sign-up 200", signUp.status === 200, `status ${signUp.status}`);
+
+// 2. sign-in wrong password
+const bad = await post("/api/auth/sign-in/email", { email, password: "wrong-password-wrong" });
+ok("wrong password rejected", bad.status === 401, `status ${bad.status}`);
+
+// 3. sign-in right password; capture the cookie
+const signIn = await post("/api/auth/sign-in/email", { email, password });
+const setCookie = signIn.headers.get("set-cookie") ?? "";
+const cookieAttrs = setCookie
+  .split(";")
+  .slice(1)
+  .map((s) => s.trim().split("=")[0]?.toLowerCase())
+  .join(",");
+const cookieName = setCookie.split("=")[0] ?? "";
+ok("sign-in 200 with cookie", signIn.status === 200 && setCookie.length > 0, `cookie ${cookieName}; attrs ${cookieAttrs}`);
+const cookie = setCookie.split(";")[0] ?? "";
+
+// 4. protected route with and without the cookie
+const me = await fetch(`${BASE}/api/me`, { headers: { cookie } });
+ok("/api/me 200 with cookie", me.status === 200, `status ${me.status}`);
+const meNo = await fetch(`${BASE}/api/me`);
+ok("/api/me 401 without cookie", meNo.status === 401, `status ${meNo.status}`);
+
+// 5. cross-site origin on a POST is refused
+const csrf = await post("/api/auth/sign-in/email", { email, password }, { origin: "https://evil.example" });
+ok("foreign Origin refused", csrf.status === 403, `status ${csrf.status}`);
+
+// 6. sign-out, then the cookie is dead
+const out = await post("/api/auth/sign-out", {}, { cookie });
+ok("sign-out 200", out.status === 200, `status ${out.status}`);
+const after = await fetch(`${BASE}/api/me`, { headers: { cookie } });
+ok("/api/me 401 after sign-out", after.status === 401, `status ${after.status}`);
+
+// 7. duplicate sign-up
+const dup = await post("/api/auth/sign-up/email", { email, password, name: "Probe User" });
+ok("duplicate sign-up refused", dup.status === 422 || dup.status === 400, `status ${dup.status}`);
+
+// 8. short password
+const short = await post("/api/auth/sign-up/email", { email: `s-${email}`, password: "short", name: "P" });
+ok("short password refused", short.status === 400 || short.status === 422, `status ${short.status}`);
+
+console.log(results.join("\n"));
+process.exit(results.some((r) => r.startsWith("FAIL")) ? 1 : 0);

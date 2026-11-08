@@ -1,0 +1,31 @@
+// Run from the repo root so Bun loads the repo .env: `bun /tmp/ea-s5-probe/ba/setup-db.ts [--drop]`.
+// Creates a throwaway role and database on the dev Postgres (127.0.0.1:5433). Prints no secret.
+import { randomBytes } from "node:crypto";
+import { chmodSync, writeFileSync } from "node:fs";
+
+import { Client } from "pg";
+
+const superPassword = process.env.POSTGRES_PASSWORD;
+if (!superPassword) {
+  console.error("POSTGRES_PASSWORD is not in the environment (run from the repo root)");
+  process.exit(1);
+}
+const drop = process.argv.includes("--drop");
+const admin = new Client({ connectionString: `postgres://postgres:${encodeURIComponent(superPassword)}@127.0.0.1:5433/postgres` });
+await admin.connect();
+if (drop) {
+  await admin.query("DROP DATABASE IF EXISTS ea_s5_probe");
+  await admin.query("DROP ROLE IF EXISTS ea_probe");
+  console.log("dropped ea_s5_probe and ea_probe");
+} else {
+  const password = randomBytes(18).toString("base64url");
+  await admin.query("DROP DATABASE IF EXISTS ea_s5_probe");
+  await admin.query("DROP ROLE IF EXISTS ea_probe");
+  await admin.query(`CREATE ROLE ea_probe LOGIN PASSWORD '${password}' NOSUPERUSER NOCREATEDB NOCREATEROLE`);
+  await admin.query("CREATE DATABASE ea_s5_probe OWNER ea_probe");
+  const url = `postgres://ea_probe:${password}@127.0.0.1:5433/ea_s5_probe`;
+  writeFileSync("/tmp/ea-s5-probe/ba/.probe-url", url);
+  chmodSync("/tmp/ea-s5-probe/ba/.probe-url", 0o600);
+  console.log("created database ea_s5_probe (owner ea_probe); url written to .probe-url");
+}
+await admin.end();
