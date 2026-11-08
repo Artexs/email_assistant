@@ -1,4 +1,4 @@
-> **Status 2026-11-08 — in progress — independent plan review done (session 2): 1 major waits for the user (spam folder `delegation` plan, M1 of [`review-2026-11-08-session2.md`](sync-sort-folders/review-2026-11-08-session2.md)); 13 minors fixed or decided.** Left: the user's answer to M1 and its fix in the plan, then the build (`run-task`, stage 1 first with checkpoint 0) and the VPS deploy (stage 16, checkpoint 2). No code yet.
+> **Status 2026-11-08 — in progress — independent plan review done (session 2) and fixed: M1 decided by the user (spam folder `delegation` → move into INBOX only), 13 minors fixed or decided ([`review-2026-11-08-session2.md`](sync-sort-folders/review-2026-11-08-session2.md)). The plan is ready to build.** Left: the build (`run-task`, stage 1 first with checkpoint 0) and the VPS deploy (stage 16, checkpoint 2). No code yet.
 
 # Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
@@ -49,6 +49,8 @@ The questions (with the defaults that the user took for Q3–Q5) are in "Questio
 - **U6 (Q2):** a valid mail in `Wiadomości-śmieci` moves to the folder of its category. Reading (D11, shown to the user in the plan summary):
   `info` → `AI/Info`, `notification` → `AI/Notifications` (as U2), and `urgent`, `needs_reply`, `delegation` → INBOX (the folder where these categories stay).
   The cold review (M3) added the normal move gate and "no flag, no urgent notice" for this mail (D11, D12, D23): the user confirms at the plan approval.
+- **U10 (independent review M1, 2026-11-08):** a spam folder mail with the category `delegation` gets only the move into INBOX: no draft, no send,
+  no approval message, no delegation row (D11). User words: "Yes, I agree that's a good idea to move it to different inbox folder."
 - **U7 (Q3, default):** digest lines and notices of mail outside INBOX show its folder; "stays in INBOX" names the real folder.
 - **U8 (Q4, default):** a read-only count on the VPS now (done: F4); a separate daily LLM limit for spam folder mail (start value from the count, default 100).
   **Changed by the count (D14, the user confirms at the plan approval):** no separate limit in this task.
@@ -67,7 +69,8 @@ The sync reads INBOX and the Interia sort folders, stores and triages their mail
 2. Each synced folder has its own UID cursor and UIDVALIDITY check; a mail that the user moves between synced folders is not stored twice (stage 7a, 7b and 8 tests).
 3. A move action takes the mail from the folder where it is; Undo brings it back to its source folder, not to INBOX (stage 10 tests, stage 14 dev run).
 4. Spam folder rules: `spam` stays in `Wiadomości-śmieci`; `urgent`, `needs_reply`, `delegation` get a move into INBOX and `info`, `notification` a move into
-   `AI/*`, each under the normal move gate (D11, D12); no flag and no urgent notice for spam folder mail (D23) (stage 3, 11, 12 tests, stage 14 dev run).
+   `AI/*`, each under the normal move gate (D11, D12); no flag and no urgent notice for spam folder mail (D23); no draft and no approval for spam folder
+   `delegation` mail (U10) (stage 3, 11, 12 tests, stage 14 dev run).
 5. `test-mail-traffic` is unblocked: its status line and its stage 9 file say that `deliver` is not needed (stage 17). Its own stage 9 run is that task's
    done-when (changed 2026-11-08 from "stage 9 runs to the end": the smoke mails are older than the 24 h first-sync window at deploy time, D20).
 6. ADR 0014 replaces the rule "The system reads only INBOX"; `docs/architecture.md` says which folders the sync reads (stage 15).
@@ -175,8 +178,8 @@ The sync reads INBOX and the Interia sort folders, stores and triages their mail
 - **D11 Plan for mail from the spam folder (U5, U6; changed by the cold review M3, the user confirms at the plan approval).** Spam folder mail is
   controlled by its sender (Interia put it there for a reason; its `From` can be forged), so it gets the normal gates and no extra push.
   `planActions` gets `{ fromJunk }`. `fromJunk` = the mail's `source_folder` is the path of the mailbox's `junk` row. For `fromJunk`: `spam` → no action
-  (the mail stays); `urgent` → move `inbox` (no flag); `needs_reply` → move `inbox`; `delegation` → move `inbox` + the draft and send as now (a send always
-  waits for the user's tap); `info` → summary + move `ai_info`; `notification` → mark read + move `ai_notifications`; `unsure` → move `ai_manual` (only with
+  (the mail stays); `urgent` → move `inbox` (no flag); `needs_reply` → move `inbox`; `delegation` → move `inbox` only (U10: no draft, no send, no approval
+  message, no delegation row; the text of a spam folder mail comes from its sender, the same reason as D23); `info` → summary + move `ai_info`; `notification` → mark read + move `ai_notifications`; `unsure` → move `ai_manual` (only with
   `move_unsure`, as now). The VIP rule is unchanged (no automatic move or mark read of a VIP mail, also not into INBOX). Mail from INBOX and the `sort`
   folders: the plan is as now (U2). The blocklist rule (spam, no LLM call) is unchanged.
 - **D12 The rescue move into INBOX.** New move target `inbox` (payload `{ folder: "inbox" }`), resolved to `INBOX` without `ensureFolder` and without
@@ -280,7 +283,8 @@ move in flight n, skipped own n, ignored below cursor n` (info). `sync <mailboxI
       (the summary said "Reply OK to approve, or tell me what to change"; the user changed nothing). Plan commit `e95e06a` on `task/sync-sort-folders`.
 - [ ] Independent review in a separate session (handoff `~/.pi/agent/notes/2026-11-08-handoff-sync-sort-folders-plan-review.md`; record
       [`sync-sort-folders/review-2026-11-08-session2.md`](sync-sort-folders/review-2026-11-08-session2.md)): FAIL, 0 blockers, 1 major (spam folder
-      `delegation` gets a draft and an approval push, against the D23 reason; the user decides), 13 minors (fixed or decided; one accepted).
+      `delegation` gets a draft and an approval push, against the D23 reason; the user decided U10: move into INBOX only), 13 minors (fixed or decided;
+      one accepted).
 
 ### Differences found at collect (2026-11-08)
 
@@ -432,3 +436,5 @@ Not yet (stages 1, 14, 16 and 17 write their results here).
 - 2026-11-08: The user approved the plan (Q6 and Q7: defaults) and asked for a handoff: an independent review of the plan by another agent before the build.
 - 2026-11-08: Independent review (Claude Code, claude-opus-5-5, separate session): 1 major open for the user, 13 minors fixed or decided
   (stage 1 in two runs, `listedExactly`, `TRANSFER_DROP_FLAGS`, test fixes in stages 2, 5, 10, 13, D24 (d) and (g), docs in stage 15, where the master-mode commits run).
+- 2026-11-08: User answer to review M1 (U10): spam folder `delegation` mail gets only the move into INBOX (no draft, no approval). D11, stages 3.2 and
+  11.1 changed. The independent review is closed: the plan is ready to build.

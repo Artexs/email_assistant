@@ -93,8 +93,8 @@ Pure code in `packages/core` (no I/O), plus one small change in the test tool. R
 
   - Decisions:
     - `fromJunk` false → every plan as today.
-    - `fromJunk` true: `spam` → `[]`; `urgent` → `[move inbox]` (no flag, D11); `needs_reply` → `[move inbox]`; `delegation` → `[move inbox, …planDelegation(…)]`
-      (the move first; no delegate and no question → `[move inbox]` only); `info` → `[save_summary, move ai_info]`; `notification` → `[mark_read, move ai_notifications]`;
+    - `fromJunk` true: `spam` → `[]`; `urgent` → `[move inbox]` (no flag, D11); `needs_reply` → `[move inbox]`; `delegation` → `[move inbox]` only
+      (U10: no `planDelegation`, so no draft, no send and no delegation row); `info` → `[save_summary, move ai_info]`; `notification` → `[mark_read, move ai_notifications]`;
       `unsure` → `[move ai_manual]`.
     - Policy (`decidePolicy`): a move with `folder` `inbox` follows the move rule of today unchanged (`assist`, `move` switch, `categoryAuto`, `movesSupported`,
       not VIP; `unsure` → `move_unsure`). No new branch is needed; the tests pin it.
@@ -103,7 +103,8 @@ Pure code in `packages/core` (no I/O), plus one small change in the test tool. R
     1. fromJunk `spam` → `[]`.
     2. fromJunk `urgent` → `[{ type: "move", folder: "inbox" }]` (no `flag`).
     3. fromJunk `needs_reply` → `[{ type: "move", folder: "inbox" }]`.
-    4. fromJunk `delegation` with the delegate → move inbox, `create_draft`, `send`; without delegate and question → move inbox only.
+    4. fromJunk `delegation` with the delegate → `[{ type: "move", folder: "inbox" }]` only (no `create_draft`, no `send`, U10); with a clarification
+       question and a sender address → the same; `fromJunk` false with the delegate → the plan of today (`create_draft`, `send`).
     5. fromJunk `info` → save_summary `S` + move `ai_info`.
     6. fromJunk `notification` → mark_read + move `ai_notifications`.
     7. fromJunk `unsure` → move `ai_manual`.

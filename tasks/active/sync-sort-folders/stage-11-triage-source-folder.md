@@ -36,8 +36,8 @@ Why risky: it decides which actions the committer runs on mail from the spam fol
     4. The same with `auto urgent` on (set in the settings row) → the `move` `inbox` is `ready`.
     5. Spam folder mail, `info` (`auto` off) → `save_summary` `ready`, `move` `ai_info` `logged`.
     6. Spam folder mail from a VIP sender, `notification` (`auto` on) → `mark_read` `logged`, `move` `ai_notifications` `logged` (the VIP rule).
-    7. Spam folder mail, `delegation` with a delegate, switch `create_draft` on for this test (default off, `settings.ts`) → `move` `inbox` `logged` (no `auto`
-       for `delegation`), `create_draft` `ready`, `send` `awaiting_approval`.
+    7. Spam folder mail, `delegation` with a delegate, switch `create_draft` on for this test (default off, `settings.ts`) → one `move` `inbox` `logged` (no
+       `auto` for `delegation`); no `create_draft` row, no `send` row, no `delegations` row (U10).
     8. `Oferty` mail (`sort`), `needs_reply` → no `actions` row (it stays, as INBOX mail); `urgent` → `flag` `ready` (as INBOX mail).
     9. `Oferty` mail, `notification` (`auto` on) → `mark_read` and `move` `ai_notifications` `ready` (as INBOX mail).
     10. The `junk` row disabled → test 3 gives the same plan (the role comes from the row); a mailbox without a `junk` row: mail with `source_folder`
