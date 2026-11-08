@@ -11,3 +11,4 @@ export {
 export { acquireSendLock } from "./lock";
 export { appendSendLogLine, readAllSendLogs, readSendLog } from "./log-file";
 export { testmailPaths, type TestmailPaths } from "./paths";
+export { requestHash, runSend, type SendDeps, type SendRunInput, type SendRunResult, type StoppedBy } from "./send";
