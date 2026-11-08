@@ -35,6 +35,7 @@ export {
   getEmailMailbox,
   getEmailMeta,
   getMailbox,
+  listEmailsByMessageIds,
   listFolderUids,
   listMailboxes,
   listMailboxTargets,

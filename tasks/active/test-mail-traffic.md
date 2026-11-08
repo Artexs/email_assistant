@@ -1,4 +1,4 @@
-> **Status 2026-11-08 — in progress — build in the worktree `../email_assistant-wt/test-mail-traffic` (branch `task/test-mail-traffic`); stages 1–4 done.** Left: see the stage list (handoff `~/.pi/agent/notes/2026-11-08-handoff-test-mail-traffic-build.md`).
+> **Status 2026-11-08 — in progress — build in the worktree `../email_assistant-wt/test-mail-traffic` (branch `task/test-mail-traffic`); stages 1–4 and 5.1 done.** Left: see the stage list (handoff `~/.pi/agent/notes/2026-11-08-handoff-test-mail-traffic-build.md`).
 
 # Test mail traffic: AgentMail synthetic mail utility
 
@@ -364,3 +364,4 @@ Not yet (stage 9 writes the compare report here).
 - 2026-11-08: Unit 4.1a (paths, lock, log file) built, review (Opus, high): PASS with 4 minors + 1 question, all fixed: lock written by temp file + hard link, real pid tests, repo root test, short-write check; main session decision: a relative `TESTMAIL_ROOT` is an error, an empty one = unset.
 - 2026-11-08: Unit 4.1b (`runSend`) built, review (Opus, high): PASS with 2 minors + 1 question, all fixed (tests for 503, 400 then 403, 404, `--limit` with a failed case and with a recover; 401 → `auth` on every call). Step 4.1 done.
 - 2026-11-08: Step 4.2 (CLI `testmail`, `target.json`, scripts) built, review (Opus, high): PASS with 2 minors + 2 questions, all fixed (dry-run cap from all logs, hash comment, `AgentMailError` message printed, no-log and no-key test asserts). `test:int`: 847 pass. Stage 4 done.
+- 2026-11-08: Step 5.1 (`planDelivery`, `listEmailsByMessageIds`) built, review (Opus, high): PASS with 2 minors + 1 question, fixed (one trimmed id for both lookups, row type). Decision: callers pass unique message ids; 5.2 drops duplicates before the plan.

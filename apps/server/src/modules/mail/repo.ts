@@ -745,6 +745,38 @@ export async function listInboxEmailKeys(
     .execute();
 }
 
+const MESSAGE_ID_CHUNK = 500;
+
+interface EmailByMessageIdRow {
+  id: string;
+  message_id_header: string;
+  folder: string;
+  status: string;
+  in_reply_to: string | null;
+}
+
+export async function listEmailsByMessageIds(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  messageIds: readonly string[]
+): Promise<EmailByMessageIdRow[]> {
+  const rows: EmailByMessageIdRow[] = [];
+  for (let start = 0; start < messageIds.length; start += MESSAGE_ID_CHUNK) {
+    const chunk = await db
+      .selectFrom("emails")
+      .select(["id", "message_id_header", "folder", "status", "in_reply_to"])
+      .where("org_id", "=", ctx.orgId)
+      .where("mailbox_id", "=", mailboxId)
+      .where("message_id_header", "in", messageIds.slice(start, start + MESSAGE_ID_CHUNK))
+      .execute();
+    for (const row of chunk) {
+      if (row.message_id_header !== null) rows.push({ ...row, message_id_header: row.message_id_header });
+    }
+  }
+  return rows;
+}
+
 // Gives stored real INBOX mail of the window that the worker skipped as `too_old` a new triage run. No audit: the caller writes it.
 export async function requeueTooOld(
   trx: Transaction<DB>,

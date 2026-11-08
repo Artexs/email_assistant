@@ -6,7 +6,7 @@ Part of [`../test-mail-traffic.md`](../test-mail-traffic.md). Read that file's "
 
 Why risky: it changes a real mailbox (moves and deletes). Two guards must hold: the mailbox is `TEST_MAILBOX_ADDRESS`, and only the tool's own mails are touched.
 
-- [ ] **5.1 Delivery plan (core) and `listEmailsByMessageIds` (mail repo)**
+- [x] **5.1 Delivery plan (core) and `listEmailsByMessageIds` (mail repo)**
   - Goal: a pure plan of the IMAP operations per case, and a repository query for the mails that the DB already has.
   - Files: create `packages/core/src/testmail/delivery.ts`, `packages/core/src/testmail/delivery.test.ts`; change `packages/core/src/testmail/index.ts`,
     `apps/server/src/modules/mail/repo.ts`, `apps/server/src/modules/mail/index.ts`, `apps/server/test/integration/mail-repo.test.ts`.
