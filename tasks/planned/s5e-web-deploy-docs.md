@@ -24,7 +24,7 @@ The panel runs on the home VPS and is reachable only through Tailscale Serve wit
 
 ## Stage sketch
 
-1. **Compose, env text, runbook, alerts**: the loopback port, `.env.example` comments, the "Web panel" runbook section, known-alerts entries for `web is off`, `web: dist folder missing`, `web: reset requested for user <id>`, the Better Auth `warn` lines, repeated 403 `bad_origin` or 401 counts.
+1. **Compose, env text, runbook, alerts**: the loopback port, `.env.example` comments, the "Web panel" runbook section, known-alerts entries for `web is off`, `web: dist folder missing`, `web: reset requested for user <id>`, the Better Auth `warn` lines, repeated 403 `bad_origin` or 401 counts, and the Better Auth upgrade path (a Dependabot PR: run the auth integration tests and the login smoke, then deploy; D1).
 2. **User steps** `[risky]` (gated): Tailscale on the VPS (`sudo`), on the phone and the laptop; HTTPS certificates and MagicDNS in the admin console; `tailscale serve --bg 8080`; the user sets `WEB_BASE_URL`, `WEB_AUTH_SECRET`, `WEB_TRUSTED_PROXIES` in the VPS `.env`. The agent verifies only with read-only commands the user runs or allows (`tailscale status`, `curl -I https://<name>/health`).
 3. **Deploy** `[risky]` (gated): `git pull`, `db:migrate` (the two S5 migrations), `up -d --build --wait`, the start log lines, `web:invite`, the first login on the phone, the hand smoke of every page, the source address check for `WEB_TRUSTED_PROXIES`, a day of use.
 4. **Docs and ADRs**: D23 list; the notes; the S5 state paragraph in the roadmap.
@@ -44,3 +44,4 @@ Whether the user wants the panel on more than one phone or laptop; the Tailscale
 ## Log
 
 - 2026-11-08: Created by the S5 master plan session (`tasks/active/s5-web-panel.md`, P11).
+- 2026-11-08: Cold review fix (finding 22): the Better Auth upgrade path in `docs/known-alerts.md`.

@@ -13,7 +13,7 @@ The activity page shows what the system decided for each mail and why, what it d
 
 - The S5 done-when "the activity page shows each mail's decision and reason, with Undo and ✅ / ✏️ feedback" holds in dev with seeded synthetic mail (Playwright in both projects): the row shows category, confidence, reason or summary and the action phrases of the digest; ✅ writes a `web` feedback row; ✏️ opens the picker and writes the label; ↩️ gives "started" under `ACTIONS_SCOPE=synthetic` and "not possible now" under `off`.
 - `undoWithFeedback` is the one code path for the Telegram tap and the web button (D10 (a)); the S3 callback tests stay green.
-- `listActivity` filters by organization (test), pages by cursor with a stable order, honours the window, returns null subjects as "(removed)" after retention, and runs a fixed number of queries per page (test counts them).
+- `listActivity` filters by organization (test), pages by the keyset cursor `(received_at, id)` of D9 with a stable order (a test with equal timestamps), honours the window, returns null subjects as "(removed)" after retention, and runs a fixed number of queries per page (test counts them).
 - A mail of another organization is "not found" on feedback and undo (404 and `not_found`).
 - Polling (U7): the page refetches every 30 s while visible and stops when hidden (unit test of the hook with fake timers); the "updated HH:MM" line and Refresh work.
 
@@ -46,3 +46,4 @@ The row density on the phone (two lines or three); which filters are default (la
 ## Log
 
 - 2026-11-08: Created by the S5 master plan session (`tasks/active/s5-web-panel.md`, P11).
+- 2026-11-08: Cold review fix (finding 17): keyset cursor on `(received_at, id)`.

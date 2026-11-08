@@ -2,7 +2,7 @@
 
 # S5c Web: settings and rules
 
-Scope: the S5 master plan `tasks/active/s5-web-panel.md` (P7, U8, D10 (b) (d) (e), D16, the API contract rows marked S5c, "Rules for every step"). Needs: S5a built and merged (S5b only for the mailbox list the selector shows; the route exists after S5b, else the selector reads `/api/mailboxes` once S5b lands).
+Scope: the S5 master plan `tasks/active/s5-web-panel.md` (P7, U8, D10 (b) (d) (e), D16, the API contract rows marked S5c, "Rules for every step"). Needs: S5a and S5b built and merged (the Settings page selector reads `GET /api/mailboxes`; a hard dependency since the cold review, finding 15).
 Git mode: worktree (`task/s5c-web-settings-rules`). Run mode: pipeline.
 
 ## Goal
@@ -48,3 +48,4 @@ Which settings sit on one screen and which behind tabs on the phone; the wording
 ## Log
 
 - 2026-11-08: Created by the S5 master plan session (`tasks/active/s5-web-panel.md`, P11).
+- 2026-11-08: Cold review fix (finding 15): S5b is a hard dependency.
