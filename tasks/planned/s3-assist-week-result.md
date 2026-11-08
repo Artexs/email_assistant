@@ -23,10 +23,17 @@ Measure the first week of `assist` on the pilot mailbox and decide: S3 passes (N
 - N (wrong moves of real mail) is written down: N ≤ 3 → S3 passes; N > 3 → the user decides (a category back to `auto off` and a new week, or S3 closes with the number and a follow-up task).
 - Audit coverage query → 0 (every applied action has an `action.applied` row).
 
+## Test mail in the week (2026-11-08)
+
+From 2026-11-08 the AgentMail test tool (`tasks/active/test-mail-traffic.md`, stage 9; user decision Q1 option (b): "Run it now.") sends about 28 made-up mails
+from `ea-testmail-75wd@agentmail.to` to the pilot mailbox. The server triages and moves them like real mail. The step 20.2.3 queries exclude only
+`%@ea-seed.test>` mail, so add `and lower(e.from_address) is distinct from 'ea-testmail-75wd@agentmail.to'` to every `emails e` join (also in N, the wrong
+moves). A `wrong` verdict on a test mail is not a wrong move of real mail.
+
 ## Plan
 
 - [ ] 1. `date -u` ≥ 2026-11-14T20:00Z. Read step 20.2 of the stage 20 file.
-- [ ] 2. Run the queries of step 20.2.3 with `<START>` above: applied by type, wrong moves (N), failed, audit coverage, returns; `mailbox:audit --since <START>` with the D18 reading; `triage:cost --days 7`.
+- [ ] 2. Run the queries of step 20.2.3 with `<START>` above and the test-mail exclusion (§ "Test mail in the week"): applied by type, wrong moves (N), failed, audit coverage, returns; `mailbox:audit --since <START>` with the D18 reading; `triage:cost --days 7`.
 - [ ] 3. Write the tables in § Results. Tell the user N and the counts.
 - [ ] 4. N > 3: stop and ask the user (step 20.2.4).
 - [ ] 5. Close-out: update the S3 state line in `docs/roadmap.md` (the week result); tick the done-when item in `tasks/done/s3-assist-actions.md` with a log line (a link fix in a done file is allowed; a result line is the one exception, name this task); remind the user to delete the Keychain entry on the Mac: `security delete-generic-password -s ea-interia-imap`.

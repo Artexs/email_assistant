@@ -25,13 +25,22 @@ Prove S4 on real mail: a real draft in `Wersje robocze`, a real approval on the 
 - Part B: the step 23.2.3 queries ran after `<START>` + 7 days; their tables (counts only) are in § Results; injection incidents = the user's answer (expected 0).
 - The S4 state line in `docs/roadmap.md` holds the week result.
 
+## Test mail in the week (2026-11-08)
+
+From 2026-11-08 the AgentMail test tool (`tasks/active/test-mail-traffic.md`, stage 9; user decision Q1 option (b): "Run it now.") sends about 28 made-up mails
+from `ea-testmail-75wd@agentmail.to` to the pilot mailbox. The server acts on them like on real mail: `needs_reply` or `delegation` test mail can get a draft and
+an approval message. Never approve a send for a test mail: reject it (`✖️ Reject`) or let it expire.
+
+- A1: approvals of test mail do not count in `Approvals: 0 waiting`.
+- B2: add `and lower(e.from_address) is distinct from 'ea-testmail-75wd@agentmail.to'` to every `emails e` join of the step 23.2.3 queries.
+
 ## Plan
 
 - [ ] A1. `date -u` ≥ 2026-11-08T06:00Z. `/status` on the phone: `Send: real delegates of the test mailbox (SEND_SCOPE=all)`, `Approvals: 0 waiting`.
 - [ ] A2. Step 22.2 steps 1–10 of the stage 22 file, with the Gmail as both the task sender and the delegate: task mail `Oferta dla firmy X` from Gmail to the pilot address; SQL and webmail checks; tap `📤 Send`; reply `Zrobione.`; reminder (`due_at` back 1 day, `job:run --name delegation.chaser --force`); a third mail → `✖️ Reject`; logs with no `error`, address, subject or task text; `mailbox:audit --since <t0>`.
 - [ ] A3. Write the facts into § Results and the Interia note (the 250 line shape, `sent_copy`, how Interia shows the draft, the `From` display in Gmail; check Gmail spam).
 - [ ] B1. Daily: `/status`, the digest lines, `$C logs --since 24h server | grep -cE "\[(actions|delegation)\].*error"` → 0.
-- [ ] B2. `date -u` ≥ 2026-11-14T22:40Z. Run the step 23.2.3 queries with `<START>` (sends by outcome, delegations by status, approval time, notices; real mail only); `triage:cost --days 7`; ask the user for wrong drafts and injection incidents.
+- [ ] B2. `date -u` ≥ 2026-11-14T22:40Z. Run the step 23.2.3 queries with `<START>` and the test-mail exclusion (§ "Test mail in the week") (sends by outcome, delegations by status, approval time, notices; real mail only); `triage:cost --days 7`; ask the user for wrong drafts and injection incidents.
 - [ ] B3. Write the tables in § Results; update the S4 state line in `docs/roadmap.md`; add a result line to `tasks/done/s4-drafts-approvals-delegation.md` (the one allowed edit of a done file; name this task).
 - [ ] B4. Ask the user: keep `SEND_SCOPE=all`, add real delegates, or go back to `self`. Then `git mv` this file to `tasks/done/`.
 
