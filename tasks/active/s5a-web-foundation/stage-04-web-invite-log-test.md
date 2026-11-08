@@ -24,6 +24,6 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
   - Test:
     1. The log test above.
     2. `web-invite-cli.test.ts` (the `org-create` subprocess pattern of `tenancy.test.ts`): run `bun apps/server/src/scripts/web-invite.ts --org-id <org>` with `env: { ...process.env, WEB_BASE_URL: "http://127.0.0.1:8080", WEB_AUTH_SECRET: "x".repeat(40) }` for an organization with one member → exit 0, stdout line 2 starts with `http://127.0.0.1:8080/api/auth/reset-password/` and ends with `?callbackURL=http%3A%2F%2F127.0.0.1%3A8080%2Fsetup`, line 3 holds "replaces it", stderr has no `@`; the token from that URL resets the password through `auth.api.resetPassword` (the link is real). With `WEB_BASE_URL: ""` → exit 1 and the `web is off` message (Bun keeps an empty value and does not refill it from `.env`: fact 21). With two members and no `--user-id` → exit 1 and the `pass --user-id` message. Cleanup as in stage 3.
-  - Check: `bun run lint && bun run typecheck && bun run test:unit && bun run test:int`.
+  - Check: the database guard (segment file, user step 0; it must print `/email_assistant_s5a /email_assistant_s5a`, else stop), then `bun run lint && bun run typecheck && bun run test:unit && bun run test:int`.
   - Done when: the tests pass; a manual `bun run web:invite --org-id <dev org>` with the web keys in the worktree's `.env` prints a link (user step 1; skip the manual run when the keys are not set and say so in the log line).
   - Out of scope: the setup page that consumes the link (stage 11), an e-mail sender (S6).

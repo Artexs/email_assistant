@@ -27,6 +27,8 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
         - uses: actions/checkout@v4
         - uses: oven-sh/setup-bun@v2
           with: { bun-version: 1.3.14 }
+        - uses: actions/setup-node@v4
+          with: { node-version: 24 } # the Playwright runner is Node (D19): pinned, not the runner image's default
         - run: bun install --frozen-lockfile
         - name: Generate a test credentials key
           run: echo "CREDENTIALS_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
@@ -44,7 +46,7 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
           with: { name: playwright-results, path: apps/web/e2e/test-results/, retention-days: 7 }
     ```
 
-  - Decisions: the `e2e` job uses the e2e database for everything (`DATABASE_URL` = the e2e URL too, so the seed's guard passes and `db:migrate` targets it); `db/roles.sql` is cluster-wide (the roles) plus a grant on `email_assistant` (its `:"DBNAME"` is the connected database), so the e2e database needs the four grant statements of `db-worktree.ts` `grantSchema`; `bunx playwright install --with-deps chromium` installs Playwright's Chromium and its libraries (`CHROMIUM_PATH` is unset in CI); `actions/upload-artifact@v4` keeps the traces (`trace: "retain-on-failure"`, stage 13.1). The `ci` job keeps `bun run web:build` as its last step. The branch trigger (cold review of this plan, finding 33): without it a push to `task/s5a-web-foundation` runs nothing, and the `ci` and `image` jobs then also run on every task branch push, which is the intent (the user may veto this in the end summary; the alternative is a draft PR, which is outward-facing). The job's wall time is a not-verified item: read it from the first run and write it in the log.
+  - Decisions: the `e2e` job uses the e2e database for everything (`DATABASE_URL` = the e2e URL too, so the seed's guard passes and `db:migrate` targets it); `db/roles.sql` is cluster-wide (the roles) plus a grant on `email_assistant` (its `:"DBNAME"` is the connected database), so the e2e database needs the four grant statements of `db-worktree.ts` `grantSchema`; `bunx playwright install --with-deps chromium` installs Playwright's Chromium and its libraries (`CHROMIUM_PATH` is unset in CI); `actions/setup-node@v4` pins the Node major of the Playwright runner (the facts cover Node 26.13 on this PC; 24 is an LTS line with `process.loadEnvFile` and `import.meta.dirname`; second cold review, finding 17); `actions/upload-artifact@v4` keeps the traces (`trace: "retain-on-failure"`, stage 13.1). The `ci` job keeps `bun run web:build` as its last step. The branch trigger (cold review of this plan, finding 33): without it a push to `task/s5a-web-foundation` runs nothing, and the `ci` and `image` jobs then also run on every task branch push, which is the intent (the user may veto this in the end summary; the alternative is a draft PR, which is outward-facing). The job's wall time is a not-verified item: read it from the first run and write it in the log.
   - Test: the CI run on the branch after the push of this stage (pipeline mode pushes after PASS): the `e2e` job is green, `12 passed`, under 20 minutes; the `ci` and `image` jobs are green too. Locally: review the YAML by eye in `git diff` (no validator is installed).
   - Check: `bun run lint && bun run typecheck` (unchanged), `bunx prettier --check .github/workflows/ci.yml`, the CI run after the push.
   - Done when: the three jobs pass on the branch; the `e2e` duration is in the log line.
