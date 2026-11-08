@@ -102,4 +102,10 @@ describe("planDelivery", () => {
       "in_inbox"
     );
   });
+
+  test("a later case with the same message id is not_found without ops", () => {
+    const result = plan(["<x@y.test>", " <x@y.test> "], [copy("offers", 4, "<x@y.test>")]);
+    expect(result.map((item) => item.result)).toEqual(["moved", "not_found"]);
+    expect(result[1]).toEqual({ caseId: "c1", result: "not_found", folder: null, ops: [] });
+  });
 });

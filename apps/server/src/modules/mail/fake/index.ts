@@ -43,6 +43,8 @@ export interface FakeMailProviderOptions {
   pathDelimiter?: string;
   /** `moveMessage` returns `newUid`; false mimics a server without COPYUID (default true). */
   copyUidMap?: boolean;
+  /** Special-use flag per folder path, reported by `serverInfo()` (default none), e.g. `{ "Junk": "\\Junk" }`. */
+  folderSpecialUse?: Record<string, string>;
 }
 
 interface StoredMessage {
@@ -114,6 +116,7 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
   const keepUidOnUserMove = opts.keepUidOnUserMove ?? false;
   const pathDelimiter = opts.pathDelimiter ?? "/";
   const copyUidMap = opts.copyUidMap ?? true;
+  const folderSpecialUse = opts.folderSpecialUse ?? {};
   const capabilities: MailCapabilities = {
     idle: true,
     move: true,
@@ -222,7 +225,7 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
       enter("serverInfo");
       return {
         capabilities: { ...capabilities },
-        folders: [...folders.keys()].map((path) => ({ path, specialUse: null })),
+        folders: [...folders.keys()].map((path) => ({ path, specialUse: folderSpecialUse[path] ?? null })),
       };
     },
 

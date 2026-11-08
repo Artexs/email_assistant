@@ -1,4 +1,4 @@
-> **Status 2026-11-08 — in progress — build in the worktree `../email_assistant-wt/test-mail-traffic` (branch `task/test-mail-traffic`); stages 1–4 and 5.1 done.** Left: see the stage list (handoff `~/.pi/agent/notes/2026-11-08-handoff-test-mail-traffic-build.md`).
+> **Status 2026-11-08 — in progress — build in the worktree `../email_assistant-wt/test-mail-traffic` (branch `task/test-mail-traffic`); stages 1–5 done; group review 1–5 next.** Left: see the stage list (handoff `~/.pi/agent/notes/2026-11-08-handoff-test-mail-traffic-build.md`).
 
 # Test mail traffic: AgentMail synthetic mail utility
 
@@ -330,7 +330,7 @@ Each stage lives in its own file in [`test-mail-traffic/`](test-mail-traffic/). 
 - [x] [Stage 2](test-mail-traffic/stage-02-core-send-log-and-plan.md) [written] — Core: send log and send plan [risky]
 - [x] [Stage 3](test-mail-traffic/stage-03-agentmail-client.md) [written] — AgentMail client, fake server, config keys [risky]
 - [x] [Stage 4](test-mail-traffic/stage-04-send-service-and-cli.md) [written] — Send service and CLI `testmail` (setup, validate, blind, send, status) [risky]
-- [ ] [Stage 5](test-mail-traffic/stage-05-deliver.md) [written] — Deliver: move own test mail from the Interia sort folders into INBOX [risky]
+- [x] [Stage 5](test-mail-traffic/stage-05-deliver.md) [written] — Deliver: move own test mail from the Interia sort folders into INBOX [risky]
 - [ ] [Stage 6](test-mail-traffic/stage-06-compare-and-target-cli.md) [written] — Compare: repository, report, CLI `testmail-target`
 - [ ] [Stage 7](test-mail-traffic/stage-07-remote-runner.md) [written] — Remote runner `testmail:remote` (bundle, scp, ssh) [risky]
 - [ ] [Stage 8](test-mail-traffic/stage-08-runbook-and-docs.md) [written] — Runbook, persona file, docs, follow-up task
@@ -365,3 +365,4 @@ Not yet (stage 9 writes the compare report here).
 - 2026-11-08: Unit 4.1b (`runSend`) built, review (Opus, high): PASS with 2 minors + 1 question, all fixed (tests for 503, 400 then 403, 404, `--limit` with a failed case and with a recover; 401 → `auth` on every call). Step 4.1 done.
 - 2026-11-08: Step 4.2 (CLI `testmail`, `target.json`, scripts) built, review (Opus, high): PASS with 2 minors + 2 questions, all fixed (dry-run cap from all logs, hash comment, `AgentMailError` message printed, no-log and no-key test asserts). `test:int`: 847 pass. Stage 4 done.
 - 2026-11-08: Step 5.1 (`planDelivery`, `listEmailsByMessageIds`) built, review (Opus, high): PASS with 2 minors + 1 question, fixed (one trimmed id for both lookups, row type). Decision: callers pass unique message ids; 5.2 drops duplicates before the plan.
+- 2026-11-08: Step 5.2 (`deliverTestMail`) built, review (Opus, high): PASS with 5 minors; fixed: UID fetch in chunks of 100, refuse an invalid `sentAt` or an empty id, module comment. Left as is: the `probe refused` text (accepted minor 11), no test for a delete that returns false. Decisions: a later case with a duplicate message id is `not_found` with no ops; a failed move skips the deletes of its case. Stage 5 done.

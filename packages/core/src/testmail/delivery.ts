@@ -37,7 +37,7 @@ function sortOrder(a: SortCopy, b: SortCopy): number {
 
 const deleteOf = (copy: SortCopy): DeliveryOp => ({ op: "delete", folder: copy.folder, uid: copy.uid });
 
-// Callers must pass unique message ids: two cases with the same id would get the same copies.
+// A later case with an already planned message id is `not_found` without ops: two cases must never act on the same copies.
 export function planDelivery(input: {
   wanted: { caseId: string; messageId: string }[];
   sender: string; // the persona inbox address
@@ -47,8 +47,11 @@ export function planDelivery(input: {
   const sender = input.sender.trim().toLowerCase();
   const ours = input.found.filter((copy) => copy.messageId !== null && copy.from?.trim().toLowerCase() === sender);
 
+  const planned = new Set<string>();
   return input.wanted.map(({ caseId, messageId }) => {
     const id = messageId.trim();
+    if (planned.has(id)) return { caseId, result: "not_found", folder: null, ops: [] };
+    planned.add(id);
     const copies = ours.filter((copy) => copy.messageId?.trim() === id);
     const inInbox = copies.some((copy) => copy.folder === "inbox");
     const sortCopies: SortCopy[] = [];
