@@ -57,7 +57,7 @@ No step in this stage contacts the VPS. Tests use `--dry-run` and injected `run`
   - Done when: tests 1–4 pass.
   - Out of scope: spawning processes (7.2).
 
-- [ ] **7.2 CLI `testmail:remote`**
+- [x] **7.2 CLI `testmail:remote`**
   - Goal: one command from the PC that runs `testmail-target` on the VPS for a batch, with reviewed code only.
   - Files: create `apps/server/src/scripts/testmail-remote.ts`, `apps/server/src/modules/testmail/bundle.ts`, `apps/server/test/integration/testmail-remote.test.ts`;
     change `package.json` (`"testmail:remote": "bun apps/server/src/scripts/testmail-remote.ts"`), `apps/server/src/modules/testmail/index.ts`.

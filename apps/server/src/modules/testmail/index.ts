@@ -20,3 +20,4 @@ export {
   remoteBundlePath,
   remoteCommand,
 } from "./remote";
+export { buildBundleFrom, buildReviewedBundle, type BuiltBundle } from "./bundle";
