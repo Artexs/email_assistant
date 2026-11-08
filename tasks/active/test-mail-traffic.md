@@ -1,4 +1,4 @@
-> **Status 2026-11-08 — in progress — build in the worktree `../email_assistant-wt/test-mail-traffic` (branch `task/test-mail-traffic`); stages 1–7 done.** Left: see the stage list (handoff `~/.pi/agent/notes/2026-11-08-handoff-test-mail-traffic-build.md`).
+> **Status 2026-11-08 — in progress — build in the worktree `../email_assistant-wt/test-mail-traffic` (branch `task/test-mail-traffic`); stages 1–8 done; group review 6–8 next.** Left: see the stage list (handoff `~/.pi/agent/notes/2026-11-08-handoff-test-mail-traffic-build.md`).
 
 # Test mail traffic: AgentMail synthetic mail utility
 
@@ -333,7 +333,7 @@ Each stage lives in its own file in [`test-mail-traffic/`](test-mail-traffic/). 
 - [x] [Stage 5](test-mail-traffic/stage-05-deliver.md) [written] — Deliver: move own test mail from the Interia sort folders into INBOX [risky]
 - [x] [Stage 6](test-mail-traffic/stage-06-compare-and-target-cli.md) [written] — Compare: repository, report, CLI `testmail-target`
 - [x] [Stage 7](test-mail-traffic/stage-07-remote-runner.md) [written] — Remote runner `testmail:remote` (bundle, scp, ssh) [risky]
-- [ ] [Stage 8](test-mail-traffic/stage-08-runbook-and-docs.md) [written] — Runbook, persona file, docs, follow-up task
+- [x] [Stage 8](test-mail-traffic/stage-08-runbook-and-docs.md) [written] — Runbook, persona file, docs, follow-up task
 - [ ] [Stage 9](test-mail-traffic/stage-09-first-real-batch.md) [written] — First real batch: write, blind check, send, deliver, compare [risky] — user checkpoint 1 before it
 
 ### Results
@@ -370,3 +370,4 @@ Not yet (stage 9 writes the compare report here).
 - 2026-11-08: Stage 6 (compare rows, `listLatestTriageByEmailIds`, CLI `testmail-target`) built, review (Sonnet, high): PASS with 3 minors, fixed (test user clean-up, a `delegation`/`unsure` test, `messageId` and `sentAt` both set or both null). Stage 6 done.
 - 2026-11-08: Step 7.1 (`remote.ts`: command string, bundle check, deliver output parsing) built, review (Opus, high): PASS with 3 minors + 1 question; fixed: one template literal, result/folder pairs checked (`synced` needs folder `db`, `in_inbox` needs `inbox`), `--bar`/`--min-kept` only with compare and `bar > 0`. For 7.2: check each `delivered` line with `sendLogLineSchema` before the append.
 - 2026-11-08: Step 7.2 (CLI `testmail:remote`, `bundle.ts`) built, review (Opus, high): PASS with 7 minors + 2 questions; fixed: `lstat` in the cache clean-up, clean-up test, unknown-case lines count as bad, a reused bundle worktree must be clean at the sha, `log.warn`, bundle size check, refusal test, `refs/remotes/origin/master`. Accepted deviations: no `delivered` append when any remote line is bad (exit 1); `--dry-run`/`--print-input` take no lock. Known gap for the runbook: after an ssh 255 the bundle stays in VPS `/tmp` (code only). Stage 7 done.
+- 2026-11-08: Stage 8 (persona file, runbook `evals/testmail/README.md`, `tasks/planned/testmail-mail-kind.md`, doc lines) built; main session wrote the pi agents `testmail-writer` and `testmail-checker` (`~/.pi/agent/agents/`); checker dry call (2 cases) → `[{"id":"dry-1","category":"notification"},{"id":"dry-2","category":"needs_reply"}]`. Review (Sonnet, high): FAIL (2 majors: writer field list and rules, exit-code table), fixed; re-review PASS with 2 minors, fixed by the main session (schema limits line, `testmail:target` exit 2 text). Stage 8 done.
