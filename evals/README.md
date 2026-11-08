@@ -11,6 +11,8 @@ Test cases for the triage classifier. `bun run eval` runs them against the LLM.
 A file is an array of cases. The schema is `evalCaseSchema` in `packages/core/src/triage/eval-case.ts`.
 The structural test is `apps/server/src/modules/triage/eval-cases.test.ts`.
 
+See also: `evals/testmail/README.md` (runbook for live test mail from AgentMail to the Interia test mailbox).
+
 ## Data rule
 
 - Never put real mail in git (ADR 0007, architecture §9).

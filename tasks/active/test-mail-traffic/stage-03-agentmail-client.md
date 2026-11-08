@@ -6,7 +6,7 @@ Part of [`../test-mail-traffic.md`](../test-mail-traffic.md). Read that file's "
 
 Why risky: security (the API key) and sending to people (the send call). The client is the only code that talks to AgentMail.
 
-- [ ] **3.1 Config keys and the AgentMail client**
+- [x] **3.1 Config keys and the AgentMail client**
   - Goal: a small typed REST client over `fetch` for the 5 calls the tool needs, with typed errors that never hold the key or mail text.
   - Files: create `apps/server/src/modules/testmail/agentmail/client.ts`, `apps/server/src/modules/testmail/index.ts`; change `apps/server/src/platform/config.ts`
     (add `testmailConfigSchema`, `loadTestmailConfig`), `apps/server/src/platform/config.test.ts`, `.env.example`.
@@ -74,7 +74,7 @@ Why risky: security (the API key) and sending to people (the send call). The cli
   - Done when: tests 1–8 pass; `.env.example` lists the keys.
   - Out of scope: retries, logging, the send loop (stage 4).
 
-- [ ] **3.2 AgentMail fake server**
+- [x] **3.2 AgentMail fake server**
   - Goal: a local HTTP fake of the 5 calls for unit and integration tests, with the probe-verified idempotency rules (Facts checked).
   - Files: create `apps/server/src/modules/testmail/agentmail/fake.ts`, `apps/server/src/modules/testmail/agentmail/fake.test.ts`; change `apps/server/src/modules/testmail/index.ts` (no export of the fake from `index.ts`: tests import the file directly).
   - Interfaces:

@@ -9,7 +9,7 @@ No value from a batch file, a send log or mail data may reach the remote command
 
 No step in this stage contacts the VPS. Tests use `--dry-run` and injected `run`/`buildBundle` functions. Stage 9 runs it for real.
 
-- [ ] **7.1 Remote plan, bundle check, output parsing (module code)**
+- [x] **7.1 Remote plan, bundle check, output parsing (module code)**
   - Goal: pure and injectable parts of the remote run.
   - Files: create `apps/server/src/modules/testmail/remote.ts`, `apps/server/src/modules/testmail/remote.test.ts`; change `apps/server/src/modules/testmail/index.ts`.
     `remoteTargetSchema`, `loadRemoteTarget` and `evals/testmail/target.json` exist since stage 4.2.
@@ -57,7 +57,7 @@ No step in this stage contacts the VPS. Tests use `--dry-run` and injected `run`
   - Done when: tests 1–4 pass.
   - Out of scope: spawning processes (7.2).
 
-- [ ] **7.2 CLI `testmail:remote`**
+- [x] **7.2 CLI `testmail:remote`**
   - Goal: one command from the PC that runs `testmail-target` on the VPS for a batch, with reviewed code only.
   - Files: create `apps/server/src/scripts/testmail-remote.ts`, `apps/server/src/modules/testmail/bundle.ts`, `apps/server/test/integration/testmail-remote.test.ts`;
     change `package.json` (`"testmail:remote": "bun apps/server/src/scripts/testmail-remote.ts"`), `apps/server/src/modules/testmail/index.ts`.
@@ -88,7 +88,7 @@ No step in this stage contacts the VPS. Tests use `--dry-run` and injected `run`
       buildBundle(outDir: string): Promise<BuiltBundle>;
       now(): Date;
       randomId(): string;
-      root: string; // the testmail root (real: the testmailPaths() default); tests pass a temp folder, so no process.env change leaks to other test files
+      paths: TestmailPaths; // real: testmailPaths() (logs and lock in ~/.local/state/ea-testmail, D6); tests: testmailPaths({ TESTMAIL_ROOT: <tmp> }), so no process.env change leaks to other test files
     }
     export async function main(argv: string[], deps: RemoteDeps): Promise<number>; // the file calls main(process.argv.slice(2), realDeps) only when import.meta.main
     ```

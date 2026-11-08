@@ -13,6 +13,7 @@ import {
   insertCredentials,
   insertEmail,
   insertMailbox,
+  listEmailsByMessageIds,
   listFolderUids,
   listInboxEmailKeys,
   listRecentlyMoved,
@@ -588,6 +589,30 @@ describe("mail repository: email location", () => {
         ai_info: "AI/Info",
       });
       expect(await setFolderMapEntry(trx, b.ctx, a.mailboxId, "ai_info", "Nope")).toBe(false);
+    });
+  });
+
+  test("listEmailsByMessageIds returns the rows of the given ids and filters by org_id", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      for (const [index, id] of ["<a1@x.test>", "<a2@x.test>", "<a3@x.test>"].entries()) {
+        await insertEmail(
+          trx,
+          a.ctx,
+          newEmail(a.mailboxId, { dedup_key: `k${index}`, message_id_header: id, content_hash: `h${index}` })
+        );
+      }
+      await insertEmail(
+        trx,
+        b.ctx,
+        newEmail(b.mailboxId, { dedup_key: "kb", message_id_header: "<a1@x.test>", content_hash: "hb" })
+      );
+
+      const rows = await listEmailsByMessageIds(trx, a.ctx, a.mailboxId, ["<a1@x.test>", "<a2@x.test>"]);
+      expect(rows.map((row) => row.message_id_header).sort()).toEqual(["<a1@x.test>", "<a2@x.test>"]);
+      expect(rows[0]?.folder).toBe(INBOX);
+      expect(await listEmailsByMessageIds(trx, b.ctx, a.mailboxId, ["<a1@x.test>"])).toEqual([]);
+      expect(await listEmailsByMessageIds(trx, a.ctx, a.mailboxId, [])).toEqual([]);
     });
   });
 });

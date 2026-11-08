@@ -6,7 +6,7 @@ Part of [`../test-mail-traffic.md`](../test-mail-traffic.md). Read that file's "
 
 Docs and data only, no code. The runbook is the brief for every later agent that writes and sends a batch: it must work without chat history.
 
-- [ ] **8.1 Persona file**
+- [x] **8.1 Persona file**
   - Goal: the committed persona set for the one inbox (D5).
   - Files: create `evals/testmail/personas.json`; change `apps/server/src/modules/testmail/send.test.ts` only if it reads the real file (it should not: tests use fixtures).
   - Content (exact keys and names; `voice` texts may be reworded, max 500 characters each, in English):
@@ -32,7 +32,7 @@ Docs and data only, no code. The runbook is the brief for every later agent that
   - Done when: the test passes.
   - Out of scope: batch files (stage 9).
 
-- [ ] **8.2 Runbook `evals/testmail/README.md`, docs, follow-up task**
+- [x] **8.2 Runbook `evals/testmail/README.md`, docs, follow-up task**
   - Goal: one page that tells an agent how to write, check, send, deliver and compare a batch; doc links; the follow-up task file.
   - Files: create `evals/testmail/README.md`, `evals/testmail/batches/.gitkeep`, `tasks/planned/testmail-mail-kind.md`; change `evals/README.md` (one "See also" line),
     `docs/code-patterns.md` (if stage 5 did not add the test-tool line yet), `notes/2026-11-07-agentmail-test-mail.md` (a line "Runbook: evals/testmail/README.md").
@@ -99,7 +99,7 @@ Docs and data only, no code. The runbook is the brief for every later agent that
   - Done when: a reviewer can follow the procedure from the README alone (the review checks each command name against `package.json` and each flag against the CLI usage texts).
   - Out of scope: running the procedure (stage 9).
 
-- [ ] **8.3 pi agent files for the writer and the checker (main session, outside the repo)**
+- [x] **8.3 pi agent files for the writer and the checker (main session, outside the repo)**
   - Goal: two pi subagents with fixed models and tools, so every batch uses the same writer and a checker that cannot see `expected`.
   - Files: create `~/.pi/agent/agents/testmail-writer.md` and `~/.pi/agent/agents/testmail-checker.md` (global pi agents, not in git; the main session writes them
     because the implementer works in the repo). Format as `~/.pi/agent/agents/reviewer.md` (front matter `name`, `description`, `tools`, `model`, `thinking`, then the prompt).

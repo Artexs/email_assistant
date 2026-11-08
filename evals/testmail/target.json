@@ -1,0 +1,8 @@
+{
+  "testAddress": "artekstryszowski@interia.pl",
+  "host": "home_vm",
+  "remoteDir": "~/email_assistant",
+  "composeArgs": "-f deploy/compose.yaml --env-file .env",
+  "orgId": "ac6ed6a2-ee37-461f-9632-cc08cf549e40",
+  "mailboxId": "8bc7f572-a7f5-4fa5-aaab-db16dc663e96"
+}

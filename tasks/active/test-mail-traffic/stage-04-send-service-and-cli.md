@@ -9,7 +9,7 @@ Why risky: this is the code that sends mail (sending to people, exactly-once). T
 **Test safety:** the task file rule "Test safety" applies to every test of this stage (temp `cwd` for spawned `testmail.ts`, the fake's `AGENTMAIL_BASE_URL`,
 explicit env for `loadTestmailConfig`).
 
-- [ ] **4.1 Lock, log file I/O and the send service**
+- [x] **4.1 Lock, log file I/O and the send service**
   - Goal: run a batch: plan, intent, display name, send with retries, sent/failed lines, pace, caps, exit code.
   - Review units (task file "Run mode"): **4.1a** = `paths.ts`, `lock.ts`, `log-file.ts` and their tests (tests 15–16, `paths.test.ts`); **4.1b** = `send.ts` and `send.test.ts`
     (tests 1–14, 17). Build, review and commit 4.1a first.
@@ -128,7 +128,7 @@ explicit env for `loadTestmailConfig`).
   - Done when: tests 1–17 pass.
   - Out of scope: the CLI (4.2), deliver, compare.
 
-- [ ] **4.2 CLI `testmail` and package scripts**
+- [x] **4.2 CLI `testmail` and package scripts**
   - Goal: the PC-side commands for agents: `setup`, `validate`, `blind`, `send`, `status`.
   - Files: create `apps/server/src/scripts/testmail.ts`, `apps/server/test/integration/testmail-cli.test.ts`, `apps/server/src/modules/testmail/target.ts`,
     `apps/server/src/modules/testmail/target.test.ts`, `evals/testmail/target.json`; change `package.json` (scripts), `apps/server/src/modules/testmail/index.ts`.

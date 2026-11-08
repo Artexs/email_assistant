@@ -7,12 +7,14 @@ Part of [`../test-mail-traffic.md`](../test-mail-traffic.md). Read that file's "
 Why risky: real systems (the AgentMail account, the Interia mailbox, the VPS DB) and real sends. The main session runs this stage itself (no implementer):
 it needs `ssh home_vm`, the real API key and judgement on the results.
 
-Gate: user checkpoint 1 (group reviews of stages 1–5 and 6–8 PASS). Risk to other work: the VPS runs `docker compose run --rm` one-off containers next to the live server
+Gate: user checkpoint 1 (group reviews of stages 1–5 and 6–8 PASS) and the user's answer to task file question Q1. Risk to other work: the VPS runs `docker compose run --rm` one-off containers next to the live server
 (no restart, no deploy); each test mail costs one classifier call on the VPS and shows in the user's Telegram digest; urgent ones send an urgent notice.
+With `ACTIONS_SCOPE=all` and `SEND_SCOPE=all` on the VPS (task file "Facts checked", corrected 2026-11-08), the server also moves test mail into `AI/*`, and a
+`needs_reply` or `delegation` test mail can get a draft in Interia Drafts and an approval prompt in Telegram. Never tap approve for a test mail.
 Do not run this stage while an S3 VPS stage (19, 20) runs.
 
 On this PC every `git push` and every `bun run testmail:remote …` (it runs `git fetch`) needs the prefix
-`GIT_SSH_COMMAND="ssh -i $HOME/.ssh/github -o IdentitiesOnly=yes"` (task file "Facts checked"). Each push follows the task file rule "Shared working tree".
+`GIT_SSH_COMMAND="ssh -i $HOME/.ssh/github -o IdentitiesOnly=yes"` (task file "Facts checked"). Each push follows the task file rule "Worktree".
 
 - [ ] **9.1 Smoke run (3 mails) and the open facts**
   - Goal: prove the whole loop on 3 mails and settle the "Not verified" items before the big batch.
@@ -20,6 +22,10 @@ On this PC every `git push` and every `bun run testmail:remote …` (it runs `gi
     and the worktree branch has `git merge origin/master`. Run every command of this stage in the worktree. Read-only on the VPS:
     `ssh home_vm 'cd ~/email_assistant && docker compose -f deploy/compose.yaml --env-file .env exec -T db psql -U postgres -d email_assistant -At -c "select version from schema_migrations order by version"'`.
     The bundled code uses `mailboxes`, `mailbox_credentials`, `emails` and `triage_results` (all from migrations up to `20261104000001`); a missing one of those → stop.
+    Scopes, read-only (counts only, no values): `ssh home_vm 'cd ~/email_assistant && for k in ACTIONS_SCOPE=all SEND_SCOPE=all TRIAGE_LLM_SCOPE=all; do echo "$k $(grep -c "^$k\$" .env)"; done'`
+    and the active delegates (`select count(*) from delegates where active`). Record them in notes §10. A value that differs from task file "Facts checked"
+    (corrected 2026-11-08) → stop and tell the user. The user's answer to Q1 must be in the task file log before step 3. Q1 option (a): `date -u` is after
+    2026-11-14T22:40Z (the S3 and S4 pilot weeks are over). Q1 option (b): the exclusion lines are in both planned pilot-week files before step 3.
   - Steps:
     1. `bun run testmail:setup` → record `status` and `status_until` in the notes file (§10, new).
     2. The main session writes `evals/testmail/batches/<today>-smoke.json` by hand: 3 cases (one `work` persona `needs_reply`, its `replyTo` child from another `work`
@@ -48,7 +54,7 @@ On this PC every `git push` and every `bun run testmail:remote …` (it runs `gi
     4. Reviewer (Sonnet, high) on the batch file (data rule, labels, tone of spam and phishing-like cases, the mix): PASS. Then commit and push the batch file.
     5. `TEST_MAILBOX_ADDRESS=artekstryszowski@interia.pl bun run testmail:send --batch <id> --limit 10 --interval-sec 45` (shell timeout 900 s); repeat until exit 0.
     6. `testmail:remote deliver` until every case is `synced` (runbook step 8).
-    7. `bun run testmail:remote compare --batch <id> --out evals/results/<today>-testmail-batch-01.md` until exit 0.
+    7. `bun run testmail:remote compare --batch <id> --out evals/results/testmail-<id>.md` until exit 0.
   - Decisions:
     - The compare report goes into the task file "Results" (the per-category table and the counts) and into `evals/results/` (committed: no mail text in it).
     - The main session writes 3–5 lines of findings under "Results": the categories with the most errors, whether `borderline:` cases explain them, whether the
