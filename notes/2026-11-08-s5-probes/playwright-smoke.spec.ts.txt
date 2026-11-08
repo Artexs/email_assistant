@@ -1,0 +1,6 @@
+import { expect, test } from "@playwright/test";
+test("opens a page", async ({ page }) => {
+  await page.setContent("<h1>hello</h1><button>ok</button>");
+  await expect(page.getByRole("heading")).toHaveText("hello");
+  await page.getByRole("button", { name: "ok" }).click();
+});
