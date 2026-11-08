@@ -1,0 +1,65 @@
+// Opens the built shell page in headless Chromium under the header CSP plus the Astro CSP meta and records every
+// console error, warning and page error; opens the Sheet (Radix Dialog with its scroll lock) and the DropdownMenu.
+// Never throws before it printed what it saw.
+import { chromium, type Page } from "@playwright/test";
+
+const URL_ = process.env.PROBE_URL ?? "http://127.0.0.1:4182/shell";
+const messages: string[] = [];
+const browser = await chromium.launch({ executablePath: "/usr/bin/chromium" });
+
+async function domState(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const dialogs = [...document.querySelectorAll('[role="dialog"]')].map(
+      (el) => `dialog state=${el.getAttribute("data-state")} display=${getComputedStyle(el).display} vis=${getComputedStyle(el).visibility} rect=${JSON.stringify(el.getBoundingClientRect().toJSON())}`
+    );
+    const menus = [...document.querySelectorAll('[role="menu"]')].map((el) => `menu state=${el.getAttribute("data-state")}`);
+    return `dialogs=${dialogs.length} ${dialogs.join(" ; ")} | menus=${menus.length} ${menus.join(" ; ")} | body.style="${document.body.getAttribute("style") ?? ""}" | styleTags=${document.querySelectorAll("style").length} | bodyOverflow=${getComputedStyle(document.body).overflow}`;
+  });
+}
+
+try {
+  for (const scheme of ["light", "dark"] as const) {
+    const context = await browser.newContext({ colorScheme: scheme, viewport: { width: 412, height: 915 } });
+    const page = await context.newPage();
+    page.on("console", (m) => {
+      if (m.type() === "error" || m.type() === "warning") messages.push(`[${scheme}] console.${m.type()}: ${m.text()}`);
+    });
+    page.on("pageerror", (e) => messages.push(`[${scheme}] pageerror: ${e.message}`));
+    try {
+      const response = await page.goto(URL_, { waitUntil: "networkidle" });
+      const html = (await response?.text()) ?? "";
+      if (scheme === "light") {
+        const meta = /<meta http-equiv="content-security-policy" content="([^"]+)"/i.exec(html)?.[1] ?? "(no meta)";
+        console.log(`meta CSP: ${meta.replace(/sha256-[A-Za-z0-9+/=]+/g, "sha256-…")}`);
+        console.log(
+          `inline <script> tags: ${(html.match(/<script(?![^>]*\bsrc=)[^>]*>/g) ?? []).length}; inline <style> tags: ${(html.match(/<style[^>]*>/g) ?? []).length}; external scripts: ${(html.match(/<script[^>]*\bsrc=/g) ?? []).length}; stylesheets: ${(html.match(/<link[^>]*rel="stylesheet"/g) ?? []).length}`
+        );
+      }
+      console.log(`[${scheme}] body background: ${await page.evaluate(() => getComputedStyle(document.body).backgroundColor)}`);
+      await page.getByTestId("count").click();
+      console.log(`[${scheme}] island interactive: "${await page.getByTestId("count").textContent()}"`);
+      console.log(`[${scheme}] before menu: ${await domState(page)}`);
+      await page.getByTestId("open-menu").click();
+      await page.waitForTimeout(1500);
+      console.log(`[${scheme}] after menu click: ${await domState(page)}`);
+      await page.screenshot({ path: `/tmp/ea-s5a-probe/shell-${scheme}-sheet.png` });
+      const dialogVisible = await page.getByRole("dialog").isVisible().catch(() => false);
+      console.log(`[${scheme}] sheet visible: ${dialogVisible}; link "Onboarding" visible: ${await page.getByRole("link", { name: "Onboarding" }).isVisible().catch(() => false)}`);
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(800);
+      console.log(`[${scheme}] after Escape: ${await domState(page)}`);
+      await page.getByTestId("open-user").click();
+      await page.waitForTimeout(1000);
+      console.log(`[${scheme}] after user click: ${await domState(page)}; logout visible: ${await page.getByTestId("logout").isVisible().catch(() => false)}`);
+      await page.screenshot({ path: `/tmp/ea-s5a-probe/shell-${scheme}-menu.png` });
+      await page.keyboard.press("Escape");
+    } catch (error) {
+      console.log(`[${scheme}] step failed: ${error instanceof Error ? error.message.split("\n")[0] : String(error)}`);
+    }
+    await context.close();
+  }
+} finally {
+  await browser.close();
+}
+console.log(`console errors/warnings and page errors: ${messages.length}`);
+for (const m of messages) console.log(`  ${m}`);

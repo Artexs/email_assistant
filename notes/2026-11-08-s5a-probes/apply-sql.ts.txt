@@ -1,0 +1,20 @@
+import { readFileSync } from "node:fs";
+
+import { Client } from "pg";
+
+import { urls } from "./db-urls";
+
+// bun apply-sql.ts <migrator|app> <file.sql>
+const [role, file] = process.argv.slice(2);
+if ((role !== "migrator" && role !== "app") || !file) {
+  console.error("usage: bun apply-sql.ts <migrator|app> <file.sql>");
+  process.exit(2);
+}
+const client = new Client({ connectionString: role === "app" ? urls.DATABASE_URL : urls.MIGRATOR_DATABASE_URL });
+await client.connect();
+try {
+  await client.query(readFileSync(file, "utf8"));
+  console.log(`applied ${file} as ${role}`);
+} finally {
+  await client.end();
+}

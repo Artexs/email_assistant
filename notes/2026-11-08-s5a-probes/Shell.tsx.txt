@@ -1,0 +1,52 @@
+import { useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+
+// Probe island: a shadcn Sheet (Radix Dialog with the scroll lock) and a DropdownMenu, under the strict CSP meta.
+export default function Shell() {
+  const [count, setCount] = useState(0);
+  return (
+    <div className="min-h-screen bg-background p-4 text-foreground">
+      <header className="flex items-center justify-between">
+        <h1 className="text-lg font-semibold">Email Assistant</h1>
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" data-testid="open-menu">
+              Menu
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right">
+            <SheetHeader>
+              <SheetTitle>Menu</SheetTitle>
+              <SheetDescription>Navigation</SheetDescription>
+            </SheetHeader>
+            <nav className="flex flex-col gap-2 px-4">
+              <a href="/onboarding">Onboarding</a>
+              <a href="/activity">Activity</a>
+            </nav>
+          </SheetContent>
+        </Sheet>
+      </header>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" data-testid="open-user">
+            owner@x.test
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem data-testid="logout">Log out</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Button onClick={() => setCount((c) => c + 1)} data-testid="count">
+        count {count}
+      </Button>
+    </div>
+  );
+}

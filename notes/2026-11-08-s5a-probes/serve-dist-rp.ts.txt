@@ -1,0 +1,20 @@
+// Serves the Astro dist with a configurable Referrer-Policy and echoes the Origin header of a POST to /api/echo.
+import { statSync } from "node:fs";
+const DIST = "/tmp/ea-s5-review/web/dist";
+const RP = process.env.PROBE_REFERRER_POLICY ?? "no-referrer";
+const fileAt = (p: string) => { try { return statSync(p).isFile() ? p : null; } catch { return null; } };
+const server = Bun.serve({
+  port: Number(process.env.PROBE_PORT ?? 4183), hostname: "127.0.0.1",
+  async fetch(req) {
+    const url = new URL(req.url);
+    if (url.pathname === "/api/echo") {
+      return Response.json({ origin: req.headers.get("origin"), secFetchSite: req.headers.get("sec-fetch-site"), referer: req.headers.get("referer") });
+    }
+    for (const c of [url.pathname, `${url.pathname.replace(/\/$/, "")}/index.html`]) {
+      const f = fileAt(`${DIST}${c}`);
+      if (f) return new Response(Bun.file(f), { headers: { "content-security-policy": "frame-ancestors 'none'", "referrer-policy": RP, "x-frame-options": "DENY" } });
+    }
+    return new Response("not found", { status: 404 });
+  },
+});
+console.log(`rp server ${server.port} Referrer-Policy=${RP}`);
