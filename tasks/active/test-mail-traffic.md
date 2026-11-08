@@ -1,4 +1,4 @@
-> **Status 2026-11-08 — in progress — build in the worktree `../email_assistant-wt/test-mail-traffic` (branch `task/test-mail-traffic`); stages 1–5 done; group review 1–5 next.** Left: see the stage list (handoff `~/.pi/agent/notes/2026-11-08-handoff-test-mail-traffic-build.md`).
+> **Status 2026-11-08 — in progress — build in the worktree `../email_assistant-wt/test-mail-traffic` (branch `task/test-mail-traffic`); stages 1–5 done, group review 1–5 PASS.** Left: stages 6–9 (handoff `~/.pi/agent/notes/2026-11-08-handoff-test-mail-traffic-build.md`).
 
 # Test mail traffic: AgentMail synthetic mail utility
 
@@ -366,3 +366,4 @@ Not yet (stage 9 writes the compare report here).
 - 2026-11-08: Step 4.2 (CLI `testmail`, `target.json`, scripts) built, review (Opus, high): PASS with 2 minors + 2 questions, all fixed (dry-run cap from all logs, hash comment, `AgentMailError` message printed, no-log and no-key test asserts). `test:int`: 847 pass. Stage 4 done.
 - 2026-11-08: Step 5.1 (`planDelivery`, `listEmailsByMessageIds`) built, review (Opus, high): PASS with 2 minors + 1 question, fixed (one trimmed id for both lookups, row type). Decision: callers pass unique message ids; 5.2 drops duplicates before the plan.
 - 2026-11-08: Step 5.2 (`deliverTestMail`) built, review (Opus, high): PASS with 5 minors; fixed: UID fetch in chunks of 100, refuse an invalid `sentAt` or an empty id, module comment. Left as is: the `probe refused` text (accepted minor 11), no test for a delete that returns false. Decisions: a later case with a duplicate message id is `not_found` with no ops; a failed move skips the deletes of its case. Stage 5 done.
+- 2026-11-08: Group review of stages 1–5 (Opus, high; `1a0f079..705264a`): PASS, 2 minors, fixed: `send` uses the pinned `testAddress` as the recipient (env letter case no longer changes the request hash); stage 7 `RemoteDeps.root` → `paths: TestmailPaths` (a root would move the real logs and lock into the checkout, D6).

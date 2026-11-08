@@ -237,6 +237,17 @@ describe("testmail CLI send", () => {
     expect(existsSync(join(runsDir(), "send.lock"))).toBe(false);
   }, 20_000);
 
+  test("a TEST_MAILBOX_ADDRESS in other letter case sends to the pinned address", async () => {
+    writeBatch(makeBatch());
+    expect((await cli(["setup"])).code).toBe(0);
+    const result = await cli(["send", "--batch", batchId, "--interval-sec", "5"], {
+      TEST_MAILBOX_ADDRESS: testAddress.toUpperCase(),
+    });
+    expect(result.code).toBe(0);
+    expect(fake.sent).toHaveLength(2);
+    for (const item of fake.sent) expect(item.body.to).toEqual([testAddress]);
+  }, 20_000);
+
   test("7. a damaged log stops send", async () => {
     writeBatch(makeBatch());
     mkdirSync(runsDir(), { recursive: true });

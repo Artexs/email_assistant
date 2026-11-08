@@ -88,7 +88,7 @@ No step in this stage contacts the VPS. Tests use `--dry-run` and injected `run`
       buildBundle(outDir: string): Promise<BuiltBundle>;
       now(): Date;
       randomId(): string;
-      root: string; // the testmail root (real: the testmailPaths() default); tests pass a temp folder, so no process.env change leaks to other test files
+      paths: TestmailPaths; // real: testmailPaths() (logs and lock in ~/.local/state/ea-testmail, D6); tests: testmailPaths({ TESTMAIL_ROOT: <tmp> }), so no process.env change leaks to other test files
     }
     export async function main(argv: string[], deps: RemoteDeps): Promise<number>; // the file calls main(process.argv.slice(2), realDeps) only when import.meta.main
     ```

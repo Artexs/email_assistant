@@ -222,7 +222,7 @@ function guardRecipient(testAddress: string): string {
   if (address.toLowerCase() !== testAddress.toLowerCase()) {
     throw new HardError("TEST_MAILBOX_ADDRESS differs from evals/testmail/target.json: send refused");
   }
-  return address;
+  return testAddress.trim();
 }
 
 function printDryRun(
