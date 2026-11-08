@@ -1,6 +1,6 @@
-> **Status 2026-11-08 — planned.** The user chose this on 2026-11-08. Left: the user's answers to the questions below, then the plan (`plan-task`), then the build (`run-task`) and a VPS deploy.
+> **Status 2026-11-08 — planned.** The user answered the questions (see "User decisions"). Left: the detailed plan (`plan-task`, handoff `~/.pi/agent/notes/2026-11-08-handoff-sync-sort-folders-plan.md`), then the build (`run-task`) and a VPS deploy.
 
-# Sync the Interia sort folders (Oferty, Społeczności, Rachunki)
+# Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
 Scope: product change of the mail sync (S1a sync, S3 actions). Source: `tasks/active/test-mail-traffic.md` stage 9.1 and `notes/2026-11-07-agentmail-test-mail.md` §10.
 Needs: nothing. Blocks: `test-mail-traffic` stage 9 (its test mail lands in `Oferty`).
@@ -18,13 +18,26 @@ into INBOX goes back to `Oferty` (notes §10). So a move into INBOX is no fix.
 > "Third point is definitely okay to read the offerty. I mean, in the real scenarios there will be more emails across the inbox, so all of them have to be read.
 > So, go with option 3. And also all other sources of emails that are available in the inbox."
 
+> "1. yes, but all the emails there should be treated and processed by the internal tool, i mean most of the spam emails should be rejected. but sometimes there are few valuable emails. so perhaps its good to check them also. so app will check all the emails from inbox."
+> "All other answers are default ones. Your suggested answers."
+> "So I assume that's a completely new plan of implementation, so you should prepare me a handoff for detailed planning session for it."
+
+## User decisions (2026-11-08)
+
+- **U1 Folders:** sync INBOX, `Oferty`, `Społeczności`, `Rachunki` **and** the Interia spam folder `Wiadomości-śmieci`. Every mail there goes through the
+  normal pipeline (rules, classifier): most spam folder mail ends as `spam`, but a valuable mail there must be found. The app's own folders (`AI`, `AI/*`)
+  and `Wysłane`, `Wersje robocze`, `Kosz` stay out.
+- **U2 Actions:** the committer acts on mail from every synced folder like on INBOX mail (moves into `AI/*`); Undo returns it to the folder it came from.
+- **U3 First sync of a new folder:** only mail of the last 24 hours.
+- **U4 Deploy:** now (do not wait for 2026-11-14), with a note in both pilot-week tasks.
+
 ## Goal
 
 The sync reads INBOX and the Interia sort folders, stores and triages their mail like INBOX mail, and the actions and undo work for mail from every synced folder.
 
 ## Done when
 
-- New mail in `Oferty`, `Społeczności` or `Rachunki` is stored, triaged, and shows in the digest (dev with GreenMail, then the VPS).
+- New mail in `Oferty`, `Społeczności`, `Rachunki` or `Wiadomości-śmieci` is stored, triaged, and shows in the digest (dev with GreenMail, then the VPS).
 - Each synced folder has its own UID cursor and UIDVALIDITY check; a mail that the user moves between synced folders is not stored twice.
 - A move action takes the mail from the folder where it is; Undo brings it back to that folder, not to INBOX.
 - The test-mail flow works without `deliver`: `test-mail-traffic` stage 9 runs to the end.
@@ -38,12 +51,14 @@ The sync reads INBOX and the Interia sort folders, stores and triages their mail
 - `\Junk` is `AI/Spam` now (S3 set the flag); `Wiadomości-śmieci` has no flag (notes §10).
 - The S3 and S4 pilot weeks measure the live sync until 2026-11-14T22:40Z (`tasks/planned/s3-assist-week-result.md`, `tasks/planned/s4-pilot-week.md`).
 
-## Questions for the user
+## Open points for the planner
 
-1. **Folders.** Sync `Oferty`, `Społeczności`, `Rachunki`. Also the Interia spam folder `Wiadomości-śmieci`? Default: no (spam stays where Interia put it).
-2. **Actions on sort-folder mail.** The committer moves it into `AI/*` like INBOX mail, and Undo returns it to its own folder. Default: yes.
-3. **First sync of a new folder.** Only mail of the last 24 hours, like the first connect (`docs/architecture.md` "First connect"). Default: yes.
-4. **Deploy time.** A sync change on the VPS changes what the S3 and S4 pilot weeks measure. Deploy after 2026-11-14T22:40Z, or now? Default: now, with a note in both week tasks.
+- Spam folder mail and the rules: a blocklist hit stays `spam` with no LLM call; a whitelist or VIP sender in the spam folder gets the normal category list.
+  Decide whether a `spam` result for spam-folder mail moves it into `AI/Spam` or leaves it in `Wiadomości-śmieci` (fewer writes; the user decides if unclear).
+- LLM cost: the spam folder can hold much mail; check the daily cap and the Gemini quota (`docs/decisions/0012-llm-data-and-cost.md`).
+- Folder names differ per provider: the Interia names are fixed strings now (`SORT_FOLDER_NAMES` in `packages/core/src/testmail/delivery.ts`); the planner
+  decides where the list of synced folders lives (mailbox setting, `folder_map`, or provider defaults).
+- Return detection (`sync-rules.ts`, "returned below cursor") and the user-move detection must work across folders.
 
 ## Plan
 
@@ -60,3 +75,4 @@ source folder, audit and check per folder, digest, ADR, docs, VPS deploy.
 ## Log
 
 - 2026-11-08: Created from the `test-mail-traffic` stage 9.1 finding. The user chose "sync the sort folders" over the APPEND move and the webmail filter.
+- 2026-11-08: User answers: U1 also the spam folder (all mail is checked), U2–U4 the defaults. Handoff for the planning session written.
