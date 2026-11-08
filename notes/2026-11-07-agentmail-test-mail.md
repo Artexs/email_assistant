@@ -130,3 +130,20 @@ Read-only check on the VPS: SQL on `emails`, and a one-off IMAP script (`/tmp/ea
   - Update inbox: `PATCH /inboxes/{id}` with `display_name`, `status`, `deactivate_at`, `signature`, `metadata`. Source: https://docs.agentmail.to/api-reference/inboxes/update.md
 - **Interia folders** (`notes/2026-11-03-interia-imap-capabilities.md`): `Oferty`, `Rachunki`, `Społeczności` (no flag), `Wiadomości-śmieci` = `\Junk`.
   The Interia account is the user's only account (real and test use), so the deliver step moves mail in a real mailbox: only the tool's own mails.
+
+## 10. Stage 9.1 smoke run (2026-11-08, task `test-mail-traffic`)
+
+- Preconditions (VPS, read-only): `ACTIONS_SCOPE=all` 1, `SEND_SCOPE=all` 1, `TRIAGE_LLM_SCOPE=all` 1; migrations up to `20261108000001`; 1 active delegate;
+  VPS repo `fa60c7b`. PC Bun 1.4.4 builds the bundle; the VPS image runs it (worked).
+- `testmail:setup`: `status active`, `status_until 2026-12-07T15:47:05.928Z` (unchanged by the setup GET).
+- Send: batch `2026-11-08-smoke`, 3 mails, 07:58:16Z–07:58:38Z, exit 0. The send log holds no subject, body or recipient.
+- Live `listByLabel` (our client, real API) for the first case label → count 1. **Verified.**
+- `testmail:remote deliver` bundled `origin/master` `b6a0742` and ran in the VPS image. The 3 mails were in `Oferty` (folder key `offers`).
+- **Finding: Interia sorts an IMAP `UID COPY` into INBOX back into `Oferty`.** Deliver reported `moved 3` (COPY + EXPUNGE without error), but a read-only
+  inspect right after shows the 3 mails in `Oferty` again with new UIDs (38957–38959 → 38960–38962), and none in INBOX. The VPS sync stored none of them.
+  No mail was lost or doubled. So the D10 move (COPY + EXPUNGE) does not work at Interia for this sender.
+- **Finding: IMAP `APPEND` into INBOX stays.** A probe APPENDed the raw source of one smoke mail (`anna-termin-dostawy`, from `Oferty` uid 38960) into
+  INBOX (uid 38963, same INTERNALDATE). After 45 s and after the next sync it was still in INBOX; the VPS stored it (`stored 1`) and triaged it
+  (`needs_reply`, `question`). The `Oferty` copy (uid 38960) is still there.
+- **Finding: `\Junk` is `AI/Spam` now** (S3 set the flag), and `Wiadomości-śmieci` has no flag. Deliver's `junk` key resolves to `AI/Spam`, a product folder.
+- Probe scripts (not in git): `/tmp/ea-tmt-inspect/` (read-only inspect; APPEND probe).
