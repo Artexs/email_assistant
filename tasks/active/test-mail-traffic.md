@@ -1,4 +1,4 @@
-> **Status 2026-11-08 — in progress — build in the worktree `../email_assistant-wt/test-mail-traffic` (branch `task/test-mail-traffic`); stages 1–3 and step 4.1 done.** Left: see the stage list (handoff `~/.pi/agent/notes/2026-11-08-handoff-test-mail-traffic-build.md`).
+> **Status 2026-11-08 — in progress — build in the worktree `../email_assistant-wt/test-mail-traffic` (branch `task/test-mail-traffic`); stages 1–4 done.** Left: see the stage list (handoff `~/.pi/agent/notes/2026-11-08-handoff-test-mail-traffic-build.md`).
 
 # Test mail traffic: AgentMail synthetic mail utility
 
@@ -329,7 +329,7 @@ Each stage lives in its own file in [`test-mail-traffic/`](test-mail-traffic/). 
 - [x] [Stage 1](test-mail-traffic/stage-01-core-batch-schema.md) [written] — Core: batch and persona schemas, validation, blind view
 - [x] [Stage 2](test-mail-traffic/stage-02-core-send-log-and-plan.md) [written] — Core: send log and send plan [risky]
 - [x] [Stage 3](test-mail-traffic/stage-03-agentmail-client.md) [written] — AgentMail client, fake server, config keys [risky]
-- [ ] [Stage 4](test-mail-traffic/stage-04-send-service-and-cli.md) [written] — Send service and CLI `testmail` (setup, validate, blind, send, status) [risky]
+- [x] [Stage 4](test-mail-traffic/stage-04-send-service-and-cli.md) [written] — Send service and CLI `testmail` (setup, validate, blind, send, status) [risky]
 - [ ] [Stage 5](test-mail-traffic/stage-05-deliver.md) [written] — Deliver: move own test mail from the Interia sort folders into INBOX [risky]
 - [ ] [Stage 6](test-mail-traffic/stage-06-compare-and-target-cli.md) [written] — Compare: repository, report, CLI `testmail-target`
 - [ ] [Stage 7](test-mail-traffic/stage-07-remote-runner.md) [written] — Remote runner `testmail:remote` (bundle, scp, ssh) [risky]
@@ -363,3 +363,4 @@ Not yet (stage 9 writes the compare report here).
 - 2026-11-08: Stage 3.2 built, review (Opus, high): PASS with 1 minor + 1 question, both fixed (fake: 409 `AlreadyExistsError` for a taken username; hold comment). Open point for stage 4: `isSoftAgentMailError` treats a 409 `AlreadyExistsError` on `ensureInbox` as soft (setup calls GET first). Stage 3 done.
 - 2026-11-08: Unit 4.1a (paths, lock, log file) built, review (Opus, high): PASS with 4 minors + 1 question, all fixed: lock written by temp file + hard link, real pid tests, repo root test, short-write check; main session decision: a relative `TESTMAIL_ROOT` is an error, an empty one = unset.
 - 2026-11-08: Unit 4.1b (`runSend`) built, review (Opus, high): PASS with 2 minors + 1 question, all fixed (tests for 503, 400 then 403, 404, `--limit` with a failed case and with a recover; 401 → `auth` on every call). Step 4.1 done.
+- 2026-11-08: Step 4.2 (CLI `testmail`, `target.json`, scripts) built, review (Opus, high): PASS with 2 minors + 2 questions, all fixed (dry-run cap from all logs, hash comment, `AgentMailError` message printed, no-log and no-key test asserts). `test:int`: 847 pass. Stage 4 done.

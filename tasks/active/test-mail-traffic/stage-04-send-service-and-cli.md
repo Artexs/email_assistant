@@ -128,7 +128,7 @@ explicit env for `loadTestmailConfig`).
   - Done when: tests 1–17 pass.
   - Out of scope: the CLI (4.2), deliver, compare.
 
-- [ ] **4.2 CLI `testmail` and package scripts**
+- [x] **4.2 CLI `testmail` and package scripts**
   - Goal: the PC-side commands for agents: `setup`, `validate`, `blind`, `send`, `status`.
   - Files: create `apps/server/src/scripts/testmail.ts`, `apps/server/test/integration/testmail-cli.test.ts`, `apps/server/src/modules/testmail/target.ts`,
     `apps/server/src/modules/testmail/target.test.ts`, `evals/testmail/target.json`; change `package.json` (scripts), `apps/server/src/modules/testmail/index.ts`.
