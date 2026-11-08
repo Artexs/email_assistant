@@ -1,4 +1,4 @@
-> **Status 2026-11-08 — in progress — plan written and reviewed; waits for the user's approval (and the answers to Q6, Q7).** 18 stage files (1–17, stage 7 as 7a and 7b), cold review and re-review fixed. Left: the user's approval, commit and push. No code yet. Then the build (`run-task`, stage 1 first, checkpoint 0) and the VPS deploy (stage 16, checkpoint 2).
+> **Status 2026-11-08 — in progress — plan approved by the user (Q6, Q7: defaults); an independent plan review in a separate session is next.** Left: that review and its fixes, then the build (`run-task`, stage 1 first with checkpoint 0) and the VPS deploy (stage 16, checkpoint 2). No code yet.
 
 # Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
@@ -272,7 +272,9 @@ move in flight n, skipped own n, ignored below cursor n` (info). `sync <mailboxI
       4 majors, 17 minors, 2 questions; all fixed (stage 7 split into 7a and 7b; D7, D11, D12 changed; D23, D24 added). Re-review (Opus, high): FAIL,
       0 blockers, 2 majors (N1: a nested imapflow lock in `transferByAppend` would hang the committer; N2: stale test numbers after the 7a split), 10 minors;
       all fixed (stage 9 lock order, test refs, `matched` only for real matches, cross copies only from synced folders, rollback with pending spam-folder rows). Second re-review (Opus, high): **PASS** with 8 minors, all fixed.
-- [ ] User approval, commit, push.
+- [x] User approval (2026-11-08): "Okay, I approve it and prepare me handoff for review of this plan for another agent." Q6 and Q7: the defaults
+      (the summary said "Reply OK to approve, or tell me what to change"; the user changed nothing). Plan commit `e95e06a` on `task/sync-sort-folders`.
+- [ ] Independent review in a separate session (handoff `~/.pi/agent/notes/2026-11-08-handoff-sync-sort-folders-plan-review.md`), findings fixed.
 
 ### Differences found at collect (2026-11-08)
 
@@ -309,7 +311,7 @@ move in flight n, skipped own n, ignored below cursor n` (info). `sync <mailboxI
   The build has a spike stage on the real mailbox first (one synthetic probe mail APPENDed into `Oferty` and `Wiadomości-śmieci`, COPY to a
   probe folder and back, then deleted), with its own gate. This task adds its migration before S5a adds its own.
 
-### Open questions at the plan approval (2026-11-08; the plan uses the defaults)
+### Open questions at the plan approval (2026-11-08; answered: the user approved the defaults)
 
 - **Q6 Gate for spam folder mail (cold review M3).** Default (D11, D12, D23): spam folder mail gets no flag and no urgent notice; VIP mail there is never
   moved by the system; the move into INBOX uses the normal category gate (`auto`). On the VPS `auto` is off for `urgent` and `needs_reply`, so a valid mail
@@ -418,3 +420,4 @@ Not yet (stages 1, 14, 16 and 17 write their results here).
 - 2026-11-08: Stage files written (1–17; stage 7 as 7a and 7b). Cold review: FAIL (4 majors, 17 minors), fixed; M3 changed D11/D12 (spam folder mail gets the
   normal move gate, no flag, no urgent notice: D23) and needs the user's yes (Q6). Re-review: FAIL (2 majors, 10 minors), fixed. Second re-review: PASS (8 minors, fixed). Q6 and Q7 wait for the approval.
   The `test-mail-traffic` status line now links `tasks/active/sync-sort-folders.md`.
+- 2026-11-08: The user approved the plan (Q6 and Q7: defaults) and asked for a handoff: an independent review of the plan by another agent before the build.
