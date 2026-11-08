@@ -9,7 +9,7 @@ No value from a batch file, a send log or mail data may reach the remote command
 
 No step in this stage contacts the VPS. Tests use `--dry-run` and injected `run`/`buildBundle` functions. Stage 9 runs it for real.
 
-- [ ] **7.1 Remote plan, bundle check, output parsing (module code)**
+- [x] **7.1 Remote plan, bundle check, output parsing (module code)**
   - Goal: pure and injectable parts of the remote run.
   - Files: create `apps/server/src/modules/testmail/remote.ts`, `apps/server/src/modules/testmail/remote.test.ts`; change `apps/server/src/modules/testmail/index.ts`.
     `remoteTargetSchema`, `loadRemoteTarget` and `evals/testmail/target.json` exist since stage 4.2.
