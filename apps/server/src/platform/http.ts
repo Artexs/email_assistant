@@ -139,14 +139,23 @@ export const PUBLIC_PAGE_PATHS: readonly RegExp[] = [
   /^\/robots\.txt$/,
 ];
 
+interface ValidationDetail {
+  path: string;
+  code: string;
+  message: string;
+}
+
 export class ValidationError extends HTTPException {
-  constructor(details: { path: string; code: string; message: string }[]) {
+  readonly details: ValidationDetail[];
+
+  constructor(details: ValidationDetail[]) {
     super(400, {
       res: new Response(JSON.stringify({ error: "validation", details }), {
         status: 400,
         headers: { "content-type": "application/json" },
       }),
     });
+    this.details = details;
   }
 }
 
@@ -220,10 +229,12 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
   });
 
   app.onError((error, c) => {
+    // Built through the context, so prepared headers (a refreshed session cookie) stay on the 400.
+    if (error instanceof ValidationError) return c.json({ error: "validation", details: error.details }, 400);
     if (error instanceof HTTPException) {
       return error.res ?? c.json({ error: error.message || "error" }, error.status);
     }
-    log.error(`${c.req.method} ${routePath(c)} ${describeError(error)}`);
+    log.error(`${c.req.method} ${routePath(c)}: ${describeError(error)}`);
     return c.json({ error: "internal" }, 500);
   });
 
@@ -285,7 +296,10 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
     })
   );
 
-  app.notFound((c) => c.html(notFoundHtml, 404));
+  app.notFound((c) => {
+    c.header("Cache-Control", "private, no-store");
+    return c.html(notFoundHtml, 404);
+  });
 
   return app;
 }

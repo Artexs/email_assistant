@@ -125,6 +125,7 @@ describe("page gate", () => {
     const missing = await app.request("/nope", { headers: GOOD });
     expect(missing.status).toBe(404);
     expect(missing.headers.get("content-type")).toContain("text/html");
+    expect(missing.headers.get("cache-control")).toBe("private, no-store");
     expect(await missing.text()).toContain("not found page");
   });
 
@@ -246,10 +247,22 @@ describe("errors", () => {
       expect(await res.json()).toEqual({ error: "internal" });
       const lines = errorSpy.mock.calls.map((call) => call.join(" "));
       expect(lines.some((line) => line.includes("Error"))).toBe(true);
+      expect(lines.some((line) => line.includes("GET /api/boom: "))).toBe(true);
       expect(lines.some((line) => line.includes("secret text"))).toBe(false);
     } finally {
       errorSpy.mockRestore();
     }
+  });
+
+  test("keeps the refreshed session cookie on a 400", async () => {
+    const res = await appWith({ routers: errorRouters }).request("/api/zod", {
+      method: "POST",
+      headers: { ...ORIGIN, ...REFRESH, "content-type": "application/json" },
+      body: JSON.stringify({ n: "x" }),
+    });
+    expect(res.status).toBe(400);
+    expect(res.headers.get("set-cookie")).toStartWith("ea.session_token=new;");
+    expect(((await res.json()) as { error: string }).error).toBe("validation");
   });
 
   test("answers 400 with details and without the input", async () => {
