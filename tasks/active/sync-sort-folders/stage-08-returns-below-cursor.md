@@ -6,7 +6,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's F
 
 Why risky: the "returned" signal writes user feedback (`triage.returned` → `wrong`). A false return hurts the metric; a missed one hides a wrong move.
 
-- [ ] **8.1 The below-cursor return check (S3 D4) per source folder; the Interia keep-UID cases**
+- [x] **8.1 The below-cursor return check (S3 D4) per source folder; the Interia keep-UID cases**
   - Goal: a system-moved mail that the user puts back into its source folder with the same UID (Interia webmail, F3) is found below that folder's cursor, for every synced folder.
   - Files: change `apps/server/src/modules/mail/sync.ts` (`checkReturnedBelowCursor`, `isStillInFolder`), `apps/server/src/modules/mail/repo.ts`
     (`listRecentlyMoved`), tests `apps/server/test/integration/mail-sync.test.ts`, `apps/server/test/integration/mail-repo.test.ts`,

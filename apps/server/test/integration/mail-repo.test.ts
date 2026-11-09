@@ -487,13 +487,61 @@ describe("mail repository: emails", () => {
         .execute();
       await add(a, 8, { folder: "AI/Info" }, at(7));
 
-      const all = await listRecentlyMoved(trx, a.ctx, a.mailboxId, { movedAfter: at(6), limit: 10 });
+      const all = await listRecentlyMoved(trx, a.ctx, a.mailboxId, {
+        sourceFolder: "INBOX",
+        movedAfter: at(6),
+        limit: 10,
+      });
       expect(all.map((row) => row.uid)).toEqual([2, 1, 8]);
       expect(all[0]).toMatchObject({ folder: "AI/Info", inbox_uid: 2, moved_at: at(10) });
-      const limited = await listRecentlyMoved(trx, a.ctx, a.mailboxId, { movedAfter: at(6), limit: 2 });
+      const limited = await listRecentlyMoved(trx, a.ctx, a.mailboxId, {
+        sourceFolder: "INBOX",
+        movedAfter: at(6),
+        limit: 2,
+      });
       expect(limited.map((row) => row.uid)).toEqual([2, 1]);
-      expect(await listRecentlyMoved(trx, b.ctx, a.mailboxId, { movedAfter: at(6), limit: 10 })).toEqual([]);
-      expect(await listRecentlyMoved(trx, a.ctx, b.mailboxId, { movedAfter: at(6), limit: 10 })).toEqual([]);
+      expect(
+        await listRecentlyMoved(trx, b.ctx, a.mailboxId, { sourceFolder: "INBOX", movedAfter: at(6), limit: 10 })
+      ).toEqual([]);
+      expect(
+        await listRecentlyMoved(trx, a.ctx, b.mailboxId, { sourceFolder: "INBOX", movedAfter: at(6), limit: 10 })
+      ).toEqual([]);
+    });
+  });
+
+  test("listRecentlyMoved with a sort folder source leaves out other sources, rows in their source, old rows and other orgs", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      const at = (hour: number) => new Date(Date.UTC(2026, 10, 3, hour));
+      const add = async (tenant: Tenant, n: number, overrides: Partial<NewEmail>, movedAt: Date) => {
+        await insertEmail(
+          trx,
+          tenant.ctx,
+          newEmail(tenant.mailboxId, { dedup_key: `mid:<${n}@x.test>:h`, uid: n, ...overrides })
+        );
+        await trx
+          .updateTable("emails")
+          .set({ moved_at: movedAt })
+          .where("mailbox_id", "=", tenant.mailboxId)
+          .where("dedup_key", "=", `mid:<${n}@x.test>:h`)
+          .execute();
+      };
+      await add(a, 1, { folder: "AI/Info", source_folder: "Oferty" }, at(8));
+      await add(a, 2, { folder: "INBOX", source_folder: "Oferty" }, at(10)); // a row that the system moved into INBOX
+      await add(a, 3, { folder: "AI/Info", source_folder: "INBOX" }, at(9)); // source INBOX
+      await add(a, 4, { folder: "Oferty", source_folder: "Oferty" }, at(11)); // in its source
+      await add(a, 5, { folder: "AI/Info", source_folder: "Oferty" }, at(5)); // before the window
+      await add(b, 6, { folder: "AI/Info", source_folder: "Oferty" }, at(11)); // other tenant
+
+      const rows = await listRecentlyMoved(trx, a.ctx, a.mailboxId, {
+        sourceFolder: "Oferty",
+        movedAfter: at(6),
+        limit: 10,
+      });
+      expect(rows.map((row) => row.uid)).toEqual([2, 1]);
+      expect(
+        await listRecentlyMoved(trx, b.ctx, a.mailboxId, { sourceFolder: "Oferty", movedAfter: at(6), limit: 10 })
+      ).toEqual([]);
     });
   });
 

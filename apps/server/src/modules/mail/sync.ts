@@ -331,40 +331,41 @@ async function setCursor(
   await (deps.db.isTransaction ? run(deps.db as Transaction<DB>) : deps.db.transaction().execute(run));
 }
 
-// D4: a mail that the user puts back into INBOX can keep its UID (Interia) and then sits below the cursor.
+// D4: a mail that the user puts back into its source folder can keep its UID (Interia) and then sits below that folder's cursor.
 async function checkReturnedBelowCursor(
   deps: SyncDeps,
   ctx: TenantContext,
   mailboxId: string,
-  folderId: string,
+  folder: SyncFolderRow,
   cursor: Cursor,
   result: SyncResult
 ): Promise<void> {
   const now = deps.now();
   const rows = await listRecentlyMoved(deps.db, ctx, mailboxId, {
+    sourceFolder: folder.path,
     movedAfter: new Date(now.getTime() - RETURN_CHECK_WINDOW_MS),
     limit: RETURN_CHECK_LIMIT,
   });
   if (rows.length === 0) return;
   if (rows.length === RETURN_CHECK_LIMIT) {
-    log.warn(`sync ${mailboxId} returned below cursor: list hit the limit ${rows.length}`);
+    log.warn(`sync ${mailboxId} folder ${folder.key} returned below cursor: list hit the limit ${rows.length}`);
   }
 
   for (let offset = 0; offset < rows.length; offset += RETURN_CHECK_CHUNK) {
     const chunk = rows.slice(offset, offset + RETURN_CHECK_CHUNK);
     const uids = [...new Set(chunk.flatMap((row) => (row.inbox_uid === null ? [row.uid] : [row.inbox_uid, row.uid])))];
-    const metas = await deps.provider.fetchByUidsIn(INBOX, uids);
+    const metas = await deps.provider.fetchByUidsIn(folder.path, uids);
     const returns: { emailId: string; uid: number }[] = [];
     for (const hit of matchReturned(metas, chunk)) {
       const row = chunk.find((candidate) => candidate.id === hit.emailId);
       if (row === undefined) throw new HardError("matched row is missing");
-      // Another row of the mailbox already holds this INBOX UID (an identical copy that stayed): not a return.
-      const inboxUids = await listFolderUids(deps.db, ctx, mailboxId, INBOX, {
+      // Another row of the mailbox already holds this UID in the source folder (an identical copy that stayed): not a return.
+      const sourceUids = await listFolderUids(deps.db, ctx, mailboxId, folder.path, {
         exceptEmailId: row.id,
         messageId: row.message_id_header,
         contentHash: row.content_hash,
       });
-      if (inboxUids.has(hit.uid)) continue;
+      if (sourceUids.has(hit.uid)) continue;
       if (await isStillInFolder(deps, ctx, mailboxId, row)) {
         log.debug(`sync ${mailboxId} copy below cursor: email ${row.id}`);
         result.copiesBelowCursor += 1;
@@ -375,13 +376,13 @@ async function checkReturnedBelowCursor(
     if (returns.length === 0) continue;
 
     const run = async (trx: Transaction<DB>): Promise<number> => {
-      const folder = await lockSyncFolder(trx, ctx, folderId);
-      if (folder?.uidvalidity !== cursor.uidValidity || folder.last_uid !== cursor.lastUid) {
+      const locked = await lockSyncFolder(trx, ctx, folder.id);
+      if (locked?.uidvalidity !== cursor.uidValidity || locked.last_uid !== cursor.lastUid) {
         throw new CursorMovedError(`cursor of mailbox ${mailboxId} moved during the sync`);
       }
       let changed = 0;
       for (const hit of returns) {
-        if (await markEmailReturned(trx, ctx, hit.emailId, hit.uid, now, { folder: INBOX })) changed += 1;
+        if (await markEmailReturned(trx, ctx, hit.emailId, hit.uid, now, { folder: folder.path })) changed += 1;
       }
       return changed;
     };
@@ -391,16 +392,18 @@ async function checkReturnedBelowCursor(
         : deps.db.transaction().execute(run));
     } catch (error) {
       if (!(error instanceof CursorMovedError)) throw error;
-      log.warn(`sync ${mailboxId} returned below cursor: cursor moved, check repeats at the next sync`);
+      log.warn(
+        `sync ${mailboxId} folder ${folder.key} returned below cursor: cursor moved, check repeats at the next sync`
+      );
       break;
     }
   }
   log.info(
-    `sync ${mailboxId} returned below cursor: checked ${rows.length}, returned ${result.returnedBelowCursor}, copies ${result.copiesBelowCursor}`
+    `sync ${mailboxId} folder ${folder.key} returned below cursor: checked ${rows.length}, returned ${result.returnedBelowCursor}, copies ${result.copiesBelowCursor}`
   );
 }
 
-// Folder check of a hit (M4): the mail is still in the folder it was moved to, so INBOX holds a copy.
+// Folder check of a hit (M4): the mail is still in the folder it was moved to, so its source folder holds a copy.
 async function isStillInFolder(deps: SyncDeps, ctx: TenantContext, mailboxId: string, row: MovedRow): Promise<boolean> {
   const excludeUids = await listFolderUids(deps.db, ctx, mailboxId, row.folder, {
     exceptEmailId: row.id,
@@ -479,9 +482,8 @@ async function syncFolder(
     const highest = kept[kept.length - 1]?.uid ?? 0;
     const lastUid = Math.max(status.uidNext - 1, highest);
     await setCursor(deps, ctx, mailboxId, row.id, start, { uidValidity: status.uidValidity, lastUid });
-  } else if (row.key === "inbox") {
-    // Stage 8 makes this check per folder.
-    await checkReturnedBelowCursor(deps, ctx, mailboxId, row.id, cursor, result);
+  } else {
+    await checkReturnedBelowCursor(deps, ctx, mailboxId, row, cursor, result);
   }
 
   log.info(

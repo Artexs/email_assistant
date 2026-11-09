@@ -563,12 +563,12 @@ export interface MovedRow {
   moved_at: Date;
 }
 
-// Mail that the system moved out of INBOX lately: the candidates for a return below the UID cursor (D4).
+// Mail that the system moved out of `sourceFolder` lately: the candidates for a return below that folder's UID cursor (D4).
 export async function listRecentlyMoved(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
-  opts: { movedAfter: Date; limit: number }
+  opts: { sourceFolder: string; movedAfter: Date; limit: number }
 ): Promise<MovedRow[]> {
   const rows = await db
     .selectFrom("emails")
@@ -586,7 +586,8 @@ export async function listRecentlyMoved(
     ])
     .where("org_id", "=", ctx.orgId)
     .where("mailbox_id", "=", mailboxId)
-    .where("folder", "<>", INBOX)
+    .where("source_folder", "=", opts.sourceFolder)
+    .whereRef("folder", "<>", "source_folder")
     .where("inbox_uid", "is not", null)
     .where("moved_at", ">=", opts.movedAfter)
     .orderBy("moved_at", "desc")

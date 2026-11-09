@@ -1840,4 +1840,170 @@ describe("syncMailbox: sync folders", () => {
       expect(mailbox.last_synced_at).toBeNull();
     });
   });
+
+  // Stage 8: a mail of source folder `path` (Mail 1) that the system moved to AI/Info an hour ago; `path` has a later mail
+  // (Mail 2), so the cursor of `path` is above the UID of Mail 1.
+  async function movedFromFolder(
+    trx: Transaction<DB>,
+    s: Setup,
+    key: "offers" | "junk" | "inbox",
+    path: string
+  ): Promise<{ uid: number; rowId: string }> {
+    if (key !== "inbox") await addFolderRow(trx, s, key, path, { lastUid: 0 });
+    const uid = s.fake.deliver(path, seed(1), ago(2));
+    await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+    s.fake.deliver(path, seed(2), ago(1));
+    await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+    const row = await trx
+      .selectFrom("emails")
+      .select("id")
+      .where("mailbox_id", "=", s.mailboxId)
+      .where("subject", "=", "Mail 1")
+      .executeTakeFirstOrThrow();
+    return { uid, rowId: row.id };
+  }
+
+  async function markMoved(trx: Transaction<DB>, rowId: string, folder: string, movedAt: Date): Promise<void> {
+    await trx.updateTable("emails").set({ folder, moved_at: movedAt }).where("id", "=", rowId).execute();
+  }
+
+  async function rowById(trx: Transaction<DB>, rowId: string) {
+    const row = await trx
+      .selectFrom("emails")
+      .select(["uid", "inbox_uid", "folder", "source_folder", "returned_at"])
+      .where("id", "=", rowId)
+      .executeTakeFirstOrThrow();
+    return { ...row, uid: Number(row.uid), inbox_uid: Number(row.inbox_uid) };
+  }
+
+  test("8.1 a mail that the user puts back into Oferty with the same UID below the cursor is returned", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      const { uid, rowId } = await movedFromFolder(trx, s, "offers", OFFERS);
+      // The system COPY gave the mail another UID in AI/Info than its UID in Oferty.
+      const inFolder = s.fake.deliver("AI/Info", seed(1), ago(2));
+      s.fake.remove(OFFERS, uid);
+      expect(inFolder).not.toBe(uid);
+      await trx.updateTable("emails").set({ uid: inFolder }).where("id", "=", rowId).execute();
+      await trx
+        .updateTable("mailbox_folders")
+        .set({ last_uid: inFolder + 10 })
+        .where("mailbox_id", "=", s.mailboxId)
+        .where("key", "=", "offers")
+        .execute();
+      await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - 3_600_000));
+      expect(s.fake.userMove("AI/Info", inFolder, OFFERS)).toBe(inFolder);
+
+      await withLogs(async (lines) => {
+        const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+        expect(of(result, "offers")?.returnedBelowCursor).toBe(1);
+        expect(of(result, "inbox")?.returnedBelowCursor).toBe(0);
+        expect(
+          lines.info.some((line) =>
+            line.includes(`sync ${s.mailboxId} folder offers returned below cursor: checked 1, returned 1, copies 0`)
+          )
+        ).toBe(true);
+      });
+      const row = await rowById(trx, rowId);
+      expect(row).toMatchObject({ folder: OFFERS, source_folder: OFFERS, uid: inFolder, inbox_uid: inFolder });
+      expect(row.returned_at).toEqual(FOLDER_NOW);
+      expect(await storedRows(trx, s.mailboxId)).toHaveLength(2);
+    });
+  });
+
+  test("8.2 a mail still in AI/Info with an identical copy in Oferty at its UID is a copy, not a return", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      const { uid, rowId } = await movedFromFolder(trx, s, "offers", OFFERS);
+      const inFolder = s.fake.deliver("AI/Info", seed(1), ago(2));
+      await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - 3_600_000));
+      await trx.updateTable("emails").set({ uid: inFolder }).where("id", "=", rowId).execute();
+
+      const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(of(result, "offers")?.copiesBelowCursor).toBe(1);
+      expect(of(result, "offers")?.returnedBelowCursor).toBe(0);
+      const row = await rowById(trx, rowId);
+      expect(row).toMatchObject({ folder: "AI/Info", uid: inFolder, inbox_uid: uid, returned_at: null });
+    });
+  });
+
+  test("8.3 a mail of source INBOX returned into INBOX below the cursor is returned by the INBOX run only", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
+      await s.fake.ensureFolder(OFFERS);
+      const { uid, rowId } = await movedFromFolder(trx, s, "inbox", "INBOX");
+      await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - 3_600_000));
+      s.fake.userMove("INBOX", uid, "AI/Info");
+      s.fake.userMove("AI/Info", uid, "INBOX");
+
+      const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(of(result, "inbox")?.returnedBelowCursor).toBe(1);
+      expect(of(result, "offers")?.returnedBelowCursor).toBe(0);
+      const row = await rowById(trx, rowId);
+      expect(row).toMatchObject({ folder: "INBOX", source_folder: "INBOX", uid, inbox_uid: uid });
+      expect(row.returned_at).toEqual(FOLDER_NOW);
+    });
+  });
+
+  test("8.4 a mail of source INBOX that the user files into Oferty below its cursor is not seen (known limit)", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
+      await s.fake.ensureFolder(OFFERS);
+      const { uid, rowId } = await movedFromFolder(trx, s, "inbox", "INBOX");
+      s.fake.deliver(OFFERS, seed(3), ago(1));
+      await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect((await folderRow(trx, s.mailboxId, "offers"))?.lastUid).toBeGreaterThan(uid);
+      await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - 3_600_000));
+      s.fake.userMove("INBOX", uid, "AI/Info");
+      expect(s.fake.userMove("AI/Info", uid, OFFERS)).toBe(uid);
+      const before = await storedRows(trx, s.mailboxId);
+
+      const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(of(result, "offers")?.returnedBelowCursor).toBe(0);
+      expect(of(result, "inbox")?.returnedBelowCursor).toBe(0);
+      expect(await storedRows(trx, s.mailboxId)).toEqual(before);
+      const row = await rowById(trx, rowId);
+      expect(row).toMatchObject({ folder: "AI/Info", source_folder: "INBOX", returned_at: null });
+    });
+  });
+
+  test("8.6 a rescued mail that the user moves back into the spam folder with its UID is returned by the junk run", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      const { uid, rowId } = await movedFromFolder(trx, s, "junk", JUNK);
+      await markMoved(trx, rowId, "INBOX", new Date(FOLDER_NOW.getTime() - 3_600_000));
+      expect(s.fake.userMove(JUNK, uid, "INBOX")).toBe(uid);
+      expect(s.fake.userMove("INBOX", uid, JUNK)).toBe(uid);
+
+      const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(of(result, "junk")?.returnedBelowCursor).toBe(1);
+      expect(of(result, "inbox")?.returnedBelowCursor).toBe(0);
+      const row = await rowById(trx, rowId);
+      expect(row).toMatchObject({ folder: JUNK, source_folder: JUNK, uid, inbox_uid: uid });
+      expect(row.returned_at).toEqual(FOLDER_NOW);
+    });
+  });
+
+  test("8.7 the Oferty check fetches only Oferty by UID and reads only the row folder for the folder check", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      const { uid, rowId } = await movedFromFolder(trx, s, "offers", OFFERS);
+      await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - 3_600_000));
+      s.fake.userMove(OFFERS, uid, "AI/Info");
+      s.fake.userMove("AI/Info", uid, OFFERS);
+      const spy = spyFolderReads(s.fake);
+
+      const result = await syncMailbox(folderDeps(trx, spy.provider), s.ctx, s.mailboxId);
+      expect(of(result, "offers")?.returnedBelowCursor).toBe(1);
+      const fetches = spy.folderCalls.filter((call) => call.method === "fetchByUidsIn");
+      expect(fetches.length).toBeGreaterThan(0);
+      expect(fetches.every((call) => call.folder === OFFERS)).toBe(true);
+      const locates = spy.folderCalls.filter((call) => call.method !== "fetchByUidsIn");
+      expect(locates.length).toBeGreaterThan(0);
+      expect(locates.every((call) => call.folder === "AI/Info")).toBe(true);
+      expect(spy.folderCalls.some((call) => call.folder === "INBOX")).toBe(false);
+    });
+  });
 });
