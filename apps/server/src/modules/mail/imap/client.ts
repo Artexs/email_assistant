@@ -20,6 +20,8 @@ import {
   type MessageMeta,
   MailNotFoundError,
   type MoveResult,
+  TRANSFER_MAX_BYTES,
+  transferFlags,
 } from "../port";
 import { resolveUidNext } from "../uid-next";
 
@@ -388,6 +390,63 @@ class ImapMailProvider implements MailProvider {
         return { newUid: copied.uidMap?.get(uid) ?? null };
       } finally {
         lock.release();
+      }
+    });
+  }
+
+  transferByAppend(fromFolder: string, uid: number, toFolder: string): Promise<MoveResult> {
+    return guard("transferByAppend", async () => {
+      // imapflow holds one mailbox lock at a time and waits for it without a timeout:
+      // never call a method that takes its own lock (fetchMetaIn) while this method holds a lock.
+      let source: Buffer;
+      let flags: string[];
+      let internalDate: Date;
+      let sourceValidity: bigint | undefined;
+      const readLock = await this.lockOrNull(fromFolder);
+      if (readLock === null) throw new MailNotFoundError("mail not found");
+      try {
+        if (!(await this.hasUid(uid))) throw new MailNotFoundError("mail not found");
+        if (!this.client.capabilities.has("UIDPLUS")) throw new HardError("no UIDPLUS");
+        const head = await this.client.fetchOne(
+          String(uid),
+          { uid: true, size: true, flags: true, internalDate: true },
+          { uid: true }
+        );
+        if (head === false) throw new MailNotFoundError("mail not found");
+        if (head.size === undefined || head.size > TRANSFER_MAX_BYTES)
+          throw new HardError("message too large to transfer");
+        const date = new Date(head.internalDate ?? Number.NaN);
+        if (Number.isNaN(date.getTime())) throw new HardError("mail has no valid INTERNALDATE");
+        const full = await this.client.fetchOne(String(uid), { uid: true, source: true }, { uid: true });
+        if (full === false || full.source === undefined) throw new HardError("no source");
+        source = full.source;
+        flags = transferFlags(head.flags ?? []);
+        internalDate = date;
+        const box = this.client.mailbox;
+        sourceValidity = box === false ? undefined : box.uidValidity;
+      } finally {
+        readLock.release();
+      }
+
+      // APPEND first, EXPUNGE last: a crash in between leaves two copies, never none.
+      const appended = await this.client.append(toFolder, source, flags, internalDate);
+      if (appended === false) throw new SoftError("IMAP append skipped");
+      const newUid = appended.uid ?? null;
+      if (newUid === null) throw new HardError("append gave no uid");
+      if ((await this.fetchMetaIn(toFolder, newUid)) === null) throw new HardError("appended mail not found");
+
+      const deleteLock = await this.lockOrNull(fromFolder);
+      if (deleteLock === null) return { newUid };
+      try {
+        // A changed UIDVALIDITY means the UID may now name another mail: keep the source.
+        const box = this.client.mailbox;
+        if (box === false || box.uidValidity !== sourceValidity) return { newUid };
+        if (!(await this.hasUid(uid))) return { newUid };
+        const deleted = await this.client.messageDelete(String(uid), { uid: true });
+        if (!deleted || (await this.hasUid(uid))) throw new HardError("expunge refused");
+        return { newUid };
+      } finally {
+        deleteLock.release();
       }
     });
   }

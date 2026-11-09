@@ -339,4 +339,56 @@ describe("fake provider", () => {
     await expect(fake.appendMessage("Drafts", raw, [], new Date())).rejects.toBeInstanceOf(SoftError);
     expect((await fake.appendMessage("Drafts", raw, [], new Date())).uid).toBe(1);
   });
+
+  describe("transferByAppend", () => {
+    test("does not copy $Junk, Junk, \\Deleted and \\Recent; keeps the other flags", async () => {
+      const fake = createFakeMailProvider();
+      const uid = fake.deliver("Oferty", mail(1));
+      await fake.setFlags("Oferty", uid, { add: ["\\Seen", "$Junk", "junk", "\\Deleted", "\\Recent", "$Label"] });
+      const { newUid } = await fake.transferByAppend("Oferty", uid, INBOX);
+      expect((await fake.fetchMetaIn(INBOX, newUid ?? 0))?.flags).toEqual(["$Label", "\\Seen"]);
+      expect(await fake.fetchMetaIn("Oferty", uid)).toBeNull();
+    });
+
+    test("without UIDPLUS it throws HardError('no UIDPLUS') and writes nothing", async () => {
+      const fake = createFakeMailProvider({ capabilities: { uidplus: false, move: false } });
+      const uid = fake.deliver("Oferty", mail(1));
+      await expect(fake.transferByAppend("Oferty", uid, INBOX)).rejects.toThrow("no UIDPLUS");
+      expect(await fake.fetchAbove(INBOX, 0)).toEqual([]);
+      expect(await fake.fetchMetaIn("Oferty", uid)).not.toBeNull();
+    });
+
+    test("failOn deleteMessage leaves the mail in both folders", async () => {
+      const fake = createFakeMailProvider();
+      const uid = fake.deliver("Oferty", mail(1));
+      fake.failOn("deleteMessage", new HardError("x"));
+      await expect(fake.transferByAppend("Oferty", uid, INBOX)).rejects.toBeInstanceOf(HardError);
+      expect(await fake.fetchMetaIn("Oferty", uid)).not.toBeNull();
+      expect(await fake.fetchAbove(INBOX, 0)).toHaveLength(1);
+    });
+
+    test("a message above 25 MB throws HardError('message too large to transfer') and writes nothing", async () => {
+      const fake = createFakeMailProvider();
+      const uid = fake.deliver("Oferty", mail(1), { size: 25_000_001 });
+      await expect(fake.transferByAppend("Oferty", uid, INBOX)).rejects.toThrow("message too large to transfer");
+      expect(await fake.fetchAbove(INBOX, 0)).toEqual([]);
+      expect(await fake.fetchMetaIn("Oferty", uid)).not.toBeNull();
+    });
+
+    test("a missing target folder throws HardError before any write", async () => {
+      const fake = createFakeMailProvider();
+      const uid = fake.deliver("Oferty", mail(1));
+      await expect(fake.transferByAppend("Oferty", uid, "Nope")).rejects.toThrow("TRYCREATE");
+      expect(await fake.fetchMetaIn("Oferty", uid)).not.toBeNull();
+      expect((await fake.listFolders()).map((f) => f.path)).not.toContain("Nope");
+    });
+
+    test("appendUid false: HardError('append gave no uid'), the source stays, the copy stays", async () => {
+      const fake = createFakeMailProvider({ appendUid: false });
+      const uid = fake.deliver("Oferty", mail(1));
+      await expect(fake.transferByAppend("Oferty", uid, INBOX)).rejects.toThrow("append gave no uid");
+      expect(await fake.fetchMetaIn("Oferty", uid)).not.toBeNull();
+      expect(await fake.fetchAbove(INBOX, 0)).toHaveLength(1);
+    });
+  });
 });

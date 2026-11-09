@@ -387,6 +387,75 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
       ).rejects.toBeInstanceOf(HardError);
     });
 
+    async function transferred(
+      provider: MailProvider,
+      folder: string,
+      newUid: number | null
+    ): Promise<Awaited<ReturnType<MailProvider["fetchByUidsIn"]>>> {
+      return newUid === null
+        ? provider.fetchByUidsIn(folder, await provider.searchSinceIn(folder, yesterday()))
+        : provider.fetchByUidsIn(folder, [newUid]);
+    }
+
+    test("transferByAppend moves the mail with its size, date, Message-ID and flags (test 1, 2, 7b)", async () => {
+      const { provider, seed } = await freshEnv();
+      const oferty = await provider.ensureFolder("Oferty");
+      await seed(oferty, mail(1));
+      const [source] = await provider.fetchAbove(oferty, 0);
+      if (source === undefined) throw new Error("seed failed");
+      await provider.setFlags(oferty, source.uid, { add: ["\\Seen", "\\Flagged"] });
+
+      const { newUid } = await provider.transferByAppend(oferty, source.uid, INBOX);
+
+      expect(newUid).not.toBeNull();
+      const inbox = await provider.fetchByUidsIn(INBOX, [newUid ?? 0]);
+      expect(inbox).toHaveLength(1);
+      expect(await provider.fetchAbove(INBOX, 0)).toHaveLength(1);
+      const copy = inbox[0];
+      if (copy === undefined) throw new Error("no copy");
+      expect(copy.uid).toBe(newUid ?? 0);
+      expect(copy.size).toBe(source.size);
+      expect(Math.floor(copy.internalDate.getTime() / 1000)).toBe(Math.floor(source.internalDate.getTime() / 1000));
+      expect(copy.messageId).toBe(source.messageId ?? "missing");
+      expect(copy.flags).toContain("\\Seen");
+      expect(copy.flags).toContain("\\Flagged");
+      expect(await provider.fetchMetaIn(oferty, source.uid)).toBeNull();
+      expect(await provider.fetchAbove(oferty, 0)).toEqual([]);
+      expect(sameMailIdentity(copy, identityOf(source))).toBe(true);
+    }, 10_000);
+
+    test("transferByAppend of an unknown uid or from a missing folder throws MailNotFoundError and writes nothing (test 3)", async () => {
+      const { provider, seed } = await freshEnv();
+      const oferty = await provider.ensureFolder("Oferty");
+      await seed(oferty, mail(1));
+      await expect(provider.transferByAppend(oferty, 999_999, INBOX)).rejects.toBeInstanceOf(MailNotFoundError);
+      await expect(provider.transferByAppend(`Nope-${crypto.randomUUID()}`, 1, INBOX)).rejects.toBeInstanceOf(
+        MailNotFoundError
+      );
+      expect(await provider.fetchAbove(INBOX, 0)).toEqual([]);
+      expect(await provider.fetchAbove(oferty, 0)).toHaveLength(1);
+    }, 10_000);
+
+    test("transferByAppend between two sort folders keeps size, date and Message-ID (test 9, U11)", async () => {
+      const { provider, seed } = await freshEnv();
+      const info = await provider.ensureFolder("AI/Info");
+      const oferty = await provider.ensureFolder("Oferty");
+      await seed(info, mail(1));
+      const [source] = await provider.fetchAbove(info, 0);
+      if (source === undefined) throw new Error("seed failed");
+
+      const { newUid } = await provider.transferByAppend(info, source.uid, oferty);
+
+      const target = await transferred(provider, oferty, newUid);
+      expect(target).toHaveLength(1);
+      expect(target[0]?.size).toBe(source.size);
+      expect(Math.floor((target[0]?.internalDate.getTime() ?? 0) / 1000)).toBe(
+        Math.floor(source.internalDate.getTime() / 1000)
+      );
+      expect(target[0]?.messageId).toBe(source.messageId ?? "missing");
+      expect(await provider.fetchAbove(info, 0)).toEqual([]);
+    }, 10_000);
+
     test("serverInfo lists INBOX", async () => {
       const { provider } = await freshEnv();
       const info = await provider.serverInfo();

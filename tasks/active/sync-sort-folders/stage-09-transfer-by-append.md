@@ -6,7 +6,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's F
 
 Why risky: it writes and deletes mail in the user's mailbox. The order rule: APPEND first, EXPUNGE last (a crash leaves two copies, never none).
 
-- [ ] **9.1 `transferByAppend` in the port, the IMAP adapter and the fake, with contract tests**
+- [x] **9.1 `transferByAppend` in the port, the IMAP adapter and the fake, with contract tests**
   - Goal: move one message by APPEND of its raw source (flags and INTERNALDATE kept), then `UID EXPUNGE` of the source (D12).
   - Files: change `apps/server/src/modules/mail/port.ts`, `apps/server/src/modules/mail/imap/client.ts`, `apps/server/src/modules/mail/fake/index.ts`,
     `apps/server/src/modules/mail/fake/fake.test.ts`, `apps/server/test/contract/mail-provider.ts`.

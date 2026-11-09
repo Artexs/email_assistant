@@ -2,6 +2,17 @@ import { HardError } from "../../platform/errors";
 
 export const INBOX = "INBOX";
 
+/** The largest message that transferByAppend reads into memory. */
+export const TRANSFER_MAX_BYTES = 25_000_000;
+/** Flags that transferByAppend never copies (case-insensitive). */
+export const TRANSFER_DROP_FLAGS = ["\\Recent", "\\Deleted", "$Junk", "Junk"] as const;
+
+/** The flags that transferByAppend copies. */
+export function transferFlags(flags: Iterable<string>): string[] {
+  const drop = new Set(TRANSFER_DROP_FLAGS.map((flag) => flag.toLowerCase()));
+  return [...flags].filter((flag) => !drop.has(flag.toLowerCase()));
+}
+
 export interface MailCapabilities {
   idle: boolean;
   move: boolean;
@@ -76,6 +87,14 @@ export interface MailProvider {
   fetchByUidsIn(folder: string, uids: number[]): Promise<FolderMessageMeta[]>;
   /** Moves one message. Throws MailNotFoundError when `uid` is not in `fromFolder`. */
   moveMessage(fromFolder: string, uid: number, toFolder: string): Promise<MoveResult>;
+  /**
+   * Moves one message by APPEND of its raw source to `toFolder` (flags without \Recent, \Deleted and the keywords $Junk and Junk, the same INTERNALDATE),
+   * then \Deleted + UID EXPUNGE of the source. For a server that re-sorts a COPY into INBOX or a tab folder (Interia, F8, F12).
+   * Throws MailNotFoundError when `uid` is not in `fromFolder` (also when the folder is missing); HardError("no UIDPLUS") before any write
+   * when the server has no UIDPLUS; HardError("message too large to transfer") when RFC822.SIZE > TRANSFER_MAX_BYTES.
+   * `newUid` = the APPENDUID; throws HardError("append gave no uid") when the server gives none.
+   */
+  transferByAppend(fromFolder: string, uid: number, toFolder: string): Promise<MoveResult>;
   /** `\Deleted` + UID EXPUNGE of one message. Throws HardError("no UIDPLUS") when the server has no UIDPLUS. Returns false when the UID is not there. */
   deleteMessage(folder: string, uid: number): Promise<boolean>;
   /** Adds and removes IMAP flags of one message. Throws MailNotFoundError when `uid` is not in `folder`. */

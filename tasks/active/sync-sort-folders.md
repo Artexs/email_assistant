@@ -1,4 +1,4 @@
-> **Status 2026-11-09 — in progress — stages 1–8 done; group reviews 2–4 and 5–8 done.** Left: stages 9–17 (next: stage 9; group review 9–11 after stage 11), checkpoint 2 before the deploy (stage 16).
+> **Status 2026-11-09 — in progress — stages 1–9 done; group reviews 2–4 and 5–8 done.** Left: stages 10–17 (next: stage 10; group review 9–11 after stage 11), checkpoint 2 before the deploy (stage 16).
 
 # Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
@@ -413,7 +413,7 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - [x] [Stage 7a](sync-sort-folders/stage-07a-sync-loop-per-folder.md) [written] — Sync loop per folder: discovery, new mail, errors [risky]
 - [x] [Stage 7b](sync-sort-folders/stage-07b-sync-incoming-across-folders.md) [written] — Sync: cross copies, relocated, returned, move in flight across folders [risky]
 - [x] [Stage 8](sync-sort-folders/stage-08-returns-below-cursor.md) [written] — Sync: returns below the cursor per source folder; the Interia keep-UID cases [risky] — group review 5–8
-- [ ] [Stage 9](sync-sort-folders/stage-09-transfer-by-append.md) [written] — Adapter: move by APPEND (`transferByAppend`) [risky]
+- [x] [Stage 9](sync-sort-folders/stage-09-transfer-by-append.md) [written] — Adapter: move by APPEND (`transferByAppend`) [risky]
 - [ ] [Stage 10](sync-sort-folders/stage-10-actions-source-folder.md) [written] — Actions: Undo to the source folder, the rescue move, the move marker [risky]
 - [ ] [Stage 11](sync-sort-folders/stage-11-triage-source-folder.md) [written] — Triage: plan by the source folder [risky] — group review 9–11
 - [ ] [Stage 12](sync-sort-folders/stage-12-digest-notice-texts.md) [written] — Digest and notice texts with the folder
@@ -541,3 +541,8 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
   gets a required `folder` guard (a committer move between plan and apply gets no stale UID; a write that changes no row is not counted). Accepted as is:
   the 1b INBOX cursor is above every UID; the GreenMail test name; no sync-level test of the not-counted `update_uid`. Checks: `bun run lint` pass;
   `bun run typecheck` exit 0; `bun run test:unit` 1336 pass; `bun run test:int` 961 pass, 0 fail.
+- 2026-11-09: Stage 9 built (implementer) and reviewed (Opus, high): PASS, 4 minors fixed: the delete step keeps the source when the source folder's
+  UIDVALIDITY changed between the two locks (no test: the fake cannot change it in that window); a missing RFC822.SIZE counts as too large (no unlimited
+  read); contract test 1 asserts `newUid`, the target by `newUid` and one INBOX copy; the port comment. Deviations: a shared `transferFlags` helper;
+  `HardError("mail has no valid INTERNALDATE")` before any write; the fake copies the raw source. No nested lock (test 7b: < 10 s on both GreenMail
+  variants). Checks: `bun run lint` pass; `bun run typecheck` exit 0; `bun run test:unit` 1348 pass; `bun run test:int` 967 pass, 0 fail.

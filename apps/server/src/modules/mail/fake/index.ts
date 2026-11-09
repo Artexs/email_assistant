@@ -10,6 +10,8 @@ import {
   type MailServerInfo,
   type MessageMeta,
   type MoveResult,
+  TRANSFER_MAX_BYTES,
+  transferFlags,
 } from "../port";
 import { renderSeedMessage, type SeedMessage } from "../seed";
 import { resolveUidNext } from "../uid-next";
@@ -56,6 +58,8 @@ export interface FakeMailProviderOptions {
   globalUids?: boolean;
   /** The STATUS UIDNEXT that the fake reports before the D4 rule; Interia gives 1 (F2). Default: the real next UID. */
   uidNextValue?: number;
+  /** `appendMessage` and `transferByAppend` return the APPENDUID (default true); false mimics a server that drops it. */
+  appendUid?: boolean;
 }
 
 interface StoredMessage {
@@ -129,6 +133,7 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
   const copyUidMap = opts.copyUidMap ?? true;
   const folderSpecialUse = opts.folderSpecialUse ?? {};
   const globalUids = opts.globalUids ?? false;
+  const appendUid = opts.appendUid ?? true;
   let globalNext = 1;
   const capabilities: MailCapabilities = {
     idle: true,
@@ -374,6 +379,22 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
       return { newUid: copyUidMap && capabilities.uidplus ? newUid : null };
     },
 
+    async transferByAppend(fromFolder, uid, toFolder): Promise<MoveResult> {
+      enter("transferByAppend", fromFolder);
+      const stored = find(fromFolder, uid);
+      if (!stored) throw new MailNotFoundError(`No message ${uid} in the source folder`);
+      if (!capabilities.uidplus) throw new HardError("no UIDPLUS");
+      if (stored.size > TRANSFER_MAX_BYTES) throw new HardError("message too large to transfer");
+      if (!folders.has(toFolder)) throw new HardError("NO [TRYCREATE]");
+      const newUid = store(toFolder, stored.msg, stored.internalDate, stored.size, transferFlags(stored.flags));
+      if (stored.raw) (find(toFolder, newUid) as StoredMessage).raw = Buffer.from(stored.raw);
+      if (!appendUid) throw new HardError("append gave no uid");
+      // `failOn("deleteMessage")` stops the delete step: the mail sits in both folders.
+      failIfSet("deleteMessage");
+      provider.remove(fromFolder, stored.uid);
+      return { newUid };
+    },
+
     async deleteMessage(folder, uid) {
       enter("deleteMessage", folder);
       if (!capabilities.uidplus) throw new HardError("no UIDPLUS");
@@ -412,7 +433,7 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
       };
       const uid = store(folder, msg, internalDate, raw.byteLength, flags);
       (find(folder, uid) as StoredMessage).raw = Buffer.from(raw);
-      return { uid: capabilities.uidplus ? uid : null };
+      return { uid: capabilities.uidplus && appendUid ? uid : null };
     },
 
     async close() {
