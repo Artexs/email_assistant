@@ -66,8 +66,8 @@ export interface SyncResult {
   returned: number;
   returnedBelowCursor: number;
   copiesBelowCursor: number;
-  /** D22: INBOX copies that are the target of a reverse move in flight (not stored). */
-  undoInFlight: number;
+  /** D9: mail that is the target of a move in flight (not stored). */
+  moveInFlight: number;
   skippedOwn: number;
   ignoredBelowCursor: number;
 }
@@ -86,8 +86,8 @@ type Write =
   | { kind: "returned"; emailId: string; uid: number };
 
 interface RunState {
-  /** Email ids that this run already used. */
-  matched: Set<string>;
+  /** Email ids (or `run:` ids) that this run already used, with the folder where it matched or stored them (D7). */
+  matched: Map<string, string>;
   /** Dedup keys that this run stores, by base key. */
   newKeys: Map<string, string[]>;
 }
@@ -144,23 +144,29 @@ async function planChunk(
       id: `run:${key}`,
       dedupKey: key,
       folder: INBOX,
+      sourceFolder: INBOX,
       uid: meta.uid,
       contentHash: hash,
       from: meta.from,
       receivedAt: meta.internalDate,
-      undoPendingAt: null,
+      movePendingAt: null,
     }));
-    for (const copy of runCopies) state.matched.add(copy.id);
+    for (const copy of runCopies) state.matched.set(copy.id, INBOX);
     const fromDb = await findCopies(deps.db, ctx, mailboxId, { messageId, contentHash: hash });
     const copies = [...fromDb.filter((copy) => !runKeys.includes(copy.dedupKey)), ...runCopies];
 
-    const decision = decideIncoming({ baseKey, copies, matched: state.matched });
+    const decision = decideIncoming({ folder: INBOX, baseKey, copies, matched: state.matched, now: deps.now() });
     let dedupKey: string | null = null;
-    if (decision.kind === "update_uid") {
-      state.matched.add(decision.emailId);
+    if (decision.kind === "move_in_flight") {
+      result.moveInFlight += 1;
+      log.debug(`sync ${mailboxId}: INBOX copy of mail ${decision.emailId} is the target of a move, not stored`);
+    } else if (decision.kind === "update_uid") {
+      state.matched.set(decision.emailId, INBOX);
       writes.push({ kind: "update_uid", emailId: decision.emailId, uid: meta.uid });
+    } else if (decision.kind === "cross_copy") {
+      throw new HardError("unexpected folder check result");
     } else if (decision.kind === "check_folder") {
-      state.matched.add(decision.emailId);
+      state.matched.set(decision.emailId, INBOX);
       const copy = copies.find((candidate) => candidate.id === decision.emailId);
       if (copy === undefined) throw new HardError("matched copy is missing");
       const key: LocateKey = {
@@ -175,18 +181,18 @@ async function planChunk(
       const check = resolveFolderCheck({
         emailId: decision.emailId,
         stillInFolder,
+        systemMoved: decision.systemMoved,
+        seenElsewhere: decision.seenElsewhere,
         baseKey,
         copyCount: copies.length,
-        undoPendingAt: copy.undoPendingAt,
-        now: deps.now(),
       });
-      if (check.kind === "undo_in_flight") {
-        result.undoInFlight += 1;
-        log.debug(`sync ${mailboxId}: INBOX copy of mail ${check.emailId} is the target of a reverse move, not stored`);
-      } else if (check.kind === "returned") {
+      if (check.kind === "returned") {
         writes.push({ kind: "returned", emailId: check.emailId, uid: meta.uid });
-      } else {
+      } else if (check.kind === "new") {
         dedupKey = check.dedupKey;
+      } else {
+        // Only INBOX is synced: every copy has the source INBOX and nothing is matched elsewhere (stage 7b).
+        throw new HardError("unexpected folder check result");
       }
     } else {
       dedupKey = decision.dedupKey;
@@ -381,7 +387,7 @@ export async function syncMailbox(deps: SyncDeps, ctx: TenantContext, mailboxId:
     returned: 0,
     returnedBelowCursor: 0,
     copiesBelowCursor: 0,
-    undoInFlight: 0,
+    moveInFlight: 0,
     skippedOwn: 0,
     ignoredBelowCursor: 0,
   };
@@ -400,7 +406,7 @@ export async function syncMailbox(deps: SyncDeps, ctx: TenantContext, mailboxId:
   }
 
   const chunkSize = deps.chunkSize ?? DEFAULT_CHUNK_SIZE;
-  const state: RunState = { matched: new Set(), newKeys: new Map() };
+  const state: RunState = { matched: new Map(), newKeys: new Map() };
   const start: Cursor = { uidValidity: folder.uidvalidity, lastUid: folder.last_uid };
   let cursor = start;
   for (let offset = 0; offset < kept.length; offset += chunkSize) {
@@ -461,13 +467,13 @@ export async function backfillInbox(
     returned: 0,
     returnedBelowCursor: 0,
     copiesBelowCursor: 0,
-    undoInFlight: 0,
+    moveInFlight: 0,
     skippedOwn: 0,
     ignoredBelowCursor: 0,
   };
 
   const chunkSize = deps.chunkSize ?? DEFAULT_CHUNK_SIZE;
-  const state: RunState = { matched: new Set(), newKeys: new Map() };
+  const state: RunState = { matched: new Map(), newKeys: new Map() };
   const start: Cursor = { uidValidity: folder.uidvalidity, lastUid: folder.last_uid };
   for (let offset = 0; offset < kept.length; offset += chunkSize) {
     const chunk = kept.slice(offset, offset + chunkSize);

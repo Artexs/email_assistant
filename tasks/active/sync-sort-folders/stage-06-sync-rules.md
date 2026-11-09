@@ -6,7 +6,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's D
 
 Why risky: dedup. These pure rules decide whether a mail is new, a copy, moved by the user, or returned. Stages 7a, 7b and 8 only apply them.
 
-- [ ] **6.1 `decideIncoming`, `resolveFolderCheck`, `matchReturned` for a synced folder S**
+- [x] **6.1 `decideIncoming`, `resolveFolderCheck`, `matchReturned` for a synced folder S**
   - Goal: D7 as pure functions with full unit tests.
   - Files: change `apps/server/src/modules/mail/sync-rules.ts`, `apps/server/src/modules/mail/sync-rules.test.ts`, `apps/server/src/modules/mail/repo.ts`
     (only the `KnownCopy` mapping in `findCopies` and the `MovedRow` type), `apps/server/src/modules/mail/sync.ts` (only to compile: pass `folder: INBOX`

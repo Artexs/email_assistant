@@ -503,7 +503,17 @@ export async function findCopies(
 ): Promise<KnownCopy[]> {
   const rows = await db
     .selectFrom("emails")
-    .select(["id", "dedup_key", "folder", "uid", "content_hash", "from_address", "received_at", "undo_pending_at"])
+    .select([
+      "id",
+      "dedup_key",
+      "folder",
+      "source_folder",
+      "uid",
+      "content_hash",
+      "from_address",
+      "received_at",
+      "undo_pending_at",
+    ])
     .where("org_id", "=", ctx.orgId)
     .where("mailbox_id", "=", mailboxId)
     .where("message_id_header", key.messageId === null ? "is" : "=", key.messageId)
@@ -513,11 +523,12 @@ export async function findCopies(
     id: row.id,
     dedupKey: row.dedup_key,
     folder: row.folder,
+    sourceFolder: row.source_folder,
     uid: Number(row.uid),
     contentHash: row.content_hash,
     from: row.from_address,
     receivedAt: row.received_at,
-    undoPendingAt: row.undo_pending_at,
+    movePendingAt: row.undo_pending_at,
   }));
 }
 
@@ -537,8 +548,10 @@ export interface MovedRow {
   id: string;
   /** The UID in `folder` (the hint of the folder check). */
   uid: number;
+  /** The last known UID in `source_folder` (D3: the name stays). */
   inbox_uid: number | null;
   folder: string;
+  source_folder: string;
   message_id_header: string | null;
   content_hash: string;
   from_address: string | null;
@@ -560,6 +573,7 @@ export async function listRecentlyMoved(
       "uid",
       "inbox_uid",
       "folder",
+      "source_folder",
       "message_id_header",
       "content_hash",
       "from_address",

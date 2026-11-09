@@ -1,4 +1,4 @@
-> **Status 2026-11-09 — in progress — stages 1–5 done (spike; migration; core; folder repository; port folder reads); group review 2–4 done.** Left: stages 6–17 (next: stage 6; group review 5–8 after stage 8), checkpoint 2 before the deploy (stage 16).
+> **Status 2026-11-09 — in progress — stages 1–6 done (spike; migration; core; folder repository; port folder reads; sync rules); group review 2–4 done.** Left: stages 7a–17 (next: stage 7a; group review 5–8 after stage 8), checkpoint 2 before the deploy (stage 16).
 
 # Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
@@ -409,7 +409,7 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - [x] [Stage 3](sync-sort-folders/stage-03-core-folders-and-plan.md) [written] — Core: sync folder defaults; plan for spam folder mail; the `inbox` move target and its policy
 - [x] [Stage 4](sync-sort-folders/stage-04-folder-repository.md) [written] — Folder repository: list, discovery insert, switch, junk path [risky] — group review 2–4
 - [x] [Stage 5](sync-sort-folders/stage-05-port-folder-reads.md) [written] — Port and adapters: folder status, fetch above, body text, folder list per folder [risky]
-- [ ] [Stage 6](sync-sort-folders/stage-06-sync-rules.md) [written] — Sync rules across folders (pure) [risky]
+- [x] [Stage 6](sync-sort-folders/stage-06-sync-rules.md) [written] — Sync rules across folders (pure) [risky]
 - [ ] [Stage 7a](sync-sort-folders/stage-07a-sync-loop-per-folder.md) [written] — Sync loop per folder: discovery, new mail, errors [risky]
 - [ ] [Stage 7b](sync-sort-folders/stage-07b-sync-incoming-across-folders.md) [written] — Sync: cross copies, relocated, returned, move in flight across folders [risky]
 - [ ] [Stage 8](sync-sort-folders/stage-08-returns-below-cursor.md) [written] — Sync: returns below the cursor per source folder; the Interia keep-UID cases [risky] — group review 5–8
@@ -512,3 +512,9 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
   `fetchByUids` removed (no caller left; stage 15 now names the docs lines that still mention them). Deviations: a cast of imapflow `status()` to allow
   `false`; an extra fake test for `globalUids` + `resetUidValidity`. `fetchSince` now throws on a failed SEARCH (was `[]`; safer). Checks: `bun run lint` pass;
   `bun run typecheck` exit 0; `bun run test:unit` 1323 pass, 0 fail; `bun run test:int` 918 pass, 0 fail (reviewer, clean run).
+- 2026-11-09: Stage 6 built (implementer) and reviewed (Opus, high): round 1 FAIL (1 major: the old INBOX-only `decideIncoming` tests were rewritten, not kept
+  next to the new ones, test 11), fixed (6 tests restored or added); round 2 PASS. Test 12 (changed tests): dropped `resolveFolderCheck` unit tests
+  "fresh undo_pending_at gives undo_in_flight" (now "a fresh move marker gives move_in_flight, also when matched" + "free copy #1 in S and #2 with a fresh
+  marker"), "undo_pending_at older than 1 day" (now "a move marker of 25 h is a leftover"), "an undo_pending_at does not stop a return", "still in its
+  folder gives new", "gone gives returned" (now the `systemMoved` cases). Rename only (`undoInFlight` → `moveInFlight`): `actions-undo.test.ts` (10), (11),
+  `mail-sync.test.ts` near 468. Checks: `bun run lint` pass; `bun run typecheck` exit 0; `bun run test:unit` 1336 pass, 0 fail; `bun run test:int` 918 pass, 0 fail (round 1).
