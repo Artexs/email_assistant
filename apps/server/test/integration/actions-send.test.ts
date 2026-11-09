@@ -892,6 +892,7 @@ describe("send end to end", () => {
         movesSupported: true,
         delegates: [{ id: delegateId, name: "Anna", email: "anna@firma.test", tags: ["offers"] }],
         timezone: "Europe/Warsaw",
+        junkFolder: null,
       };
       const claimMail = async (time: Date) =>
         claimEmails(trx, s.ctx, s.mailboxId, {

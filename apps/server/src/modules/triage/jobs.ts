@@ -8,7 +8,7 @@ import type { LlmClient } from "../../platform/llm";
 import { createLog } from "../../platform/log";
 import { getMailboxSettings, listSenderRules } from "../config";
 import { listDelegates } from "../delegation";
-import { claimEmails, getMailbox, listSyncTargets, releaseEmail, type ClaimedEmail } from "../mail";
+import { claimEmails, getJunkFolderPath, getMailbox, listSyncTargets, releaseEmail, type ClaimedEmail } from "../mail";
 import { getOrganization } from "../tenancy";
 
 import type { LlmPause } from "./pause";
@@ -106,6 +106,7 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
               movesSupported: capabilities.move === true || capabilities.uidplus === true,
               delegates,
               timezone,
+              junkFolder: await getJunkFolderPath(deps.db, ctx, mailboxId),
             };
             log.debug(`triage ${mailboxId}: delegates ${delegates.length}`);
 

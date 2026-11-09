@@ -1,4 +1,4 @@
-> **Status 2026-11-09 — in progress — stages 1–10 done (last: stage 10 commit); group reviews 2–4 and 5–8 done.** Left: stage 11, then the group review 9–11; stages 12–17; group review 12–15 + branch; checkpoint 2 (the user's "deploy") before stage 16.
+> **Status 2026-11-09 — in progress — stages 1–11 done (last: stage 11 commit); group reviews 2–4 and 5–8 done.** Left: group review 9–11 (Opus, high; range `d3f3109..<stage 11 commit>`); stages 12–17; group review 12–15 + branch; checkpoint 2 (the user's "deploy") before stage 16.
 
 # Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
@@ -415,7 +415,7 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - [x] [Stage 8](sync-sort-folders/stage-08-returns-below-cursor.md) [written] — Sync: returns below the cursor per source folder; the Interia keep-UID cases [risky] — group review 5–8
 - [x] [Stage 9](sync-sort-folders/stage-09-transfer-by-append.md) [written] — Adapter: move by APPEND (`transferByAppend`) [risky]
 - [x] [Stage 10](sync-sort-folders/stage-10-actions-source-folder.md) [written] — Actions: Undo to the source folder, the rescue move, the move marker [risky]
-- [ ] [Stage 11](sync-sort-folders/stage-11-triage-source-folder.md) [written] — Triage: plan by the source folder [risky] — group review 9–11
+- [x] [Stage 11](sync-sort-folders/stage-11-triage-source-folder.md) [written] — Triage: plan by the source folder [risky] — group review 9–11
 - [ ] [Stage 12](sync-sort-folders/stage-12-digest-notice-texts.md) [written] — Digest and notice texts with the folder
 - [ ] [Stage 13](sync-sort-folders/stage-13-tools.md) [written] — Tools: `mailbox:settings sync-folder`, `mailbox:audit` per folder, `mailbox:rescan`, `mailbox:seed --folder`
 - [ ] [Stage 14](sync-sort-folders/stage-14-dev-run-greenmail.md) [written] — Dev run on GreenMail with the fake Telegram [risky] — main session
@@ -550,3 +550,4 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
   (`actions/{apply,committer,move,repo}.ts`, `mail/repo.ts`, tests `actions-drafts`, `actions-send`, `fixtures`, `mail-repo`); no new tests yet. Handoff for a
   new session: `~/.pi/agent/notes/2026-11-09-handoff-sync-sort-folders-build-2.md`.
 - 2026-11-09: Stage 10 finished in a new session (implementer: tests 1–13, 2b, 2c) and reviewed (Opus, high): PASS, 3 minors fixed (test 13 cases for AI/Info and a rescued INBOX mail; `moveTargetSchema` rename; no-op line removed). Question m4 (the source folder of an Undo was deleted or renamed → TRYCREATE → the action goes through `mapProviderError` and fails, the mail stays where it is): accepted; the digest shows the failure, no fallback. Checks: `bun run lint`, `bun run typecheck` pass; `bun run test:unit` 1348 pass; `bun run test:int` 984 pass, 0 fail.
+- 2026-11-09: Stage 11 built (implementer) and reviewed (Opus, high): PASS, 2 test minors fixed (dead `summary` field, `mailbox_id` filter in test 10). Test 4 sets `auto urgent` in the policy snapshot (`saveTriage` reads only the snapshot); accepted. Added a `createTriageJob` test (the job fills `junkFolder`). Checks: `bun run lint`, `bun run typecheck` pass; `bun run test:unit` 1348 pass; `bun run test:int` 995 pass, 0 fail.

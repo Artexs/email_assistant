@@ -70,6 +70,7 @@ async function committedSetup() {
       movesSupported: true,
       delegates: [],
       timezone: "Europe/Warsaw",
+      junkFolder: null,
     };
     return { created, ctx, emailId, email, mailbox };
   } catch (error) {
