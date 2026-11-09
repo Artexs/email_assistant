@@ -1,4 +1,4 @@
-> **Status 2026-11-06 — planned.** Found in S2 (stage 22): the daily retention job does not exist yet.
+> **Status 2026-11-09 — in progress.** Chosen from the decision document `notes/decision-docs/2026-11-09-next-task.md` (the HTML is built from it with the explainer skill) (retention job: value high, complexity medium, risk medium). Left: the file-level plan, then the build.
 
 # Retention job (`platform.retention`)
 
@@ -47,3 +47,4 @@ Written when the task starts. Known input:
 ## Log
 
 - 2026-11-06: Created in S2 stage 22. The user decided the two outbox indexes at S2 checkpoint 2.
+- 2026-11-09: Chosen by the user over four other planned tasks (decision document in `notes/decision-docs/`). Moved to `active/`. Pre-mortem risks to cover in the plan: wrong cutoff or missing organization filter, big first delete (use batches), `outbox.text` NOT NULL constraint, stale `architecture.md` §7 note.
