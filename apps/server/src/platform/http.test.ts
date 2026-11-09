@@ -1,6 +1,6 @@
 import type { BlockList } from "node:net";
 
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -12,8 +12,11 @@ import {
   normalizeAddress,
   originAllowed,
   parseBody,
+  requireOwner,
+  requireTenant,
   safeNext,
   ValidationError,
+  type ApiEnv,
 } from "./http";
 
 describe("GET /health", () => {
@@ -198,5 +201,70 @@ describe("parseBody", () => {
     const error = (await run("{not json")) as ValidationError;
     const json = JSON.parse((await error.res?.text()) ?? "");
     expect(json.details[0].code).toBe("invalid_json");
+  });
+});
+
+describe("requireTenant", () => {
+  type Rows = Awaited<ReturnType<Parameters<typeof requireTenant>[0]["listMembershipsOfUser"]>>;
+
+  const appFor = (rows: Rows) => {
+    const app = new Hono<ApiEnv>();
+    app.use("*", async (c, next) => {
+      c.set("session", { userId: c.req.header("x-user") ?? "u-none" });
+      await next();
+    });
+    app.use("*", requireTenant({ listMembershipsOfUser: async () => rows }));
+    app.get("/who", (c) => c.json({ ctx: c.get("ctx"), role: c.get("role") }));
+    return app;
+  };
+
+  test("answers 403 no_organization without a membership", async () => {
+    const res = await appFor([]).request("/who");
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "no_organization" });
+  });
+
+  test("uses the first membership and warns once per user", async () => {
+    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    try {
+      const app = appFor([
+        { org_id: "org-1", role: "assistant" },
+        { org_id: "org-2", role: "owner" },
+      ]);
+      const headers = { "x-user": "u-multi" };
+      const first = await app.request("/who", { headers });
+      expect(await first.json()).toEqual({ ctx: { orgId: "org-1", userId: "u-multi" }, role: "assistant" });
+      await app.request("/who", { headers });
+      const lines = errorSpy.mock.calls.map((call) => call.join(" "));
+      expect(
+        lines.filter((line) => line.includes("web: user u-multi has 2 memberships; using the oldest"))
+      ).toHaveLength(1);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+});
+
+describe("requireOwner", () => {
+  const appWithRole = (role: "owner" | "assistant") => {
+    const app = new Hono<ApiEnv>();
+    app.use("*", async (c, next) => {
+      c.set("role", role);
+      await next();
+    });
+    app.use("*", requireOwner);
+    app.get("/x", (c) => c.json({ ok: true }));
+    return app;
+  };
+
+  test("answers 403 owner_only for an assistant", async () => {
+    const res = await appWithRole("assistant").request("/x");
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "owner_only" });
+  });
+
+  test("lets an owner through", async () => {
+    const res = await appWithRole("owner").request("/x");
+    expect(res.status).toBe(200);
   });
 });

@@ -140,6 +140,8 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
       },
     },
     advanced: {
+      // Tests run the same origin and callbackURL checks as production (bun test sets NODE_ENV=test).
+      disableOriginCheck: false,
       cookiePrefix: "ea",
       database: { generateId: "uuid" },
       ipAddress: { ipAddressHeaders: ["x-client-ip"] },

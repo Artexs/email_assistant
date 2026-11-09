@@ -51,6 +51,10 @@
 - No import cycles between modules: a module sets a column that another module's worker reads (`docs/modules.md` §2).
 - The LLM returns data that a Zod schema checks. LLM text is untrusted: never use it as a recipient, a folder name or a command.
 
+## HTTP routes (S5)
+
+A route file (`routes.ts`) is thin: it parses the body with `parseBody` and a `@ea/core` schema, calls one service or repository function, and maps the result to JSON. No SQL, no business rule, no `org_id` from the request: `requireTenant` sets `ctx` from the session. Every route test covers 401 (no session), 403 (an assistant on an owner route, when the route is owner-only), 404 (another organization's id, when the route takes an id) and 400 (a bad body, `details` without the input). The platform (`platform/http.ts`) imports no module; the composition root (`apps/server/src/web.ts`) wires the module routers.
+
 ## Config and secrets
 
 - All config comes from env, checked with a Zod schema at start (`platform/config`). A missing key stops the start.

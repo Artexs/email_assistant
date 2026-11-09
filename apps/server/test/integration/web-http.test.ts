@@ -6,8 +6,11 @@ import { join } from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { z } from "zod";
 
+import { createOrganizationWithOwner, tenancyRoutes } from "../../src/modules/tenancy";
+import { loadConfig } from "../../src/platform/config";
 import { buildTrustedProxies, createApp, parseBody, type WebDeps } from "../../src/platform/http";
 import { setLogLevel } from "../../src/platform/log";
+import { webDeps } from "../../src/web";
 
 import { testDb } from "./helpers";
 
@@ -36,6 +39,7 @@ afterEach(() => {
   setLogLevel("info");
 });
 
+const offScope = { kind: "off", reason: "env_off" } as const;
 const GOOD = { cookie: "ea.session_token=good" };
 const REFRESH = { cookie: "ea.session_token=refresh" };
 const ORIGIN = { origin: "http://127.0.0.1:8080" };
@@ -61,7 +65,7 @@ function makeWeb(overrides: Partial<WebDeps> = {}): WebDeps {
     trustedOrigins: new Set(["http://127.0.0.1:8080", "http://localhost:4321"]),
     trustedProxies: buildTrustedProxies(["172.18.0.0/16"]),
     connInfo: () => "203.0.113.9",
-    listMembershipsOfUser: async () => [],
+    listMembershipsOfUser: async () => [{ org_id: randomUUID(), role: "owner" }],
     ...overrides,
   };
 }
@@ -142,10 +146,36 @@ describe("api", () => {
     const anonymous = await app.request("/api/me");
     expect(anonymous.status).toBe(401);
     expect(await anonymous.json()).toEqual({ error: "unauthorized" });
-    const known = await app.request("/api/me", { headers: GOOD });
-    expect(known.status).toBe(404);
-    expect(known.headers.get("content-type")).toContain("application/json");
-    expect(await known.json()).toEqual({ error: "not_found" });
+    const { orgId, userId } = await createOrganizationWithOwner(db, {
+      orgName: "Web http",
+      timezone: "Europe/Warsaw",
+      email: `web-http-${randomUUID()}@x.test`,
+      displayName: "Owner",
+    });
+    try {
+      const mounted = appWith({
+        auth: { handler: async () => new Response(), getSession: async () => ({ userId }) },
+        listMembershipsOfUser: async () => [{ org_id: orgId, role: "owner" }],
+        routers: (api) =>
+          api.route(
+            "/",
+            tenancyRoutes({
+              db,
+              scopes: { triage: offScope, actions: offScope, send: offScope },
+              countMailboxes: async () => ({ total: 0, inAuthError: 0 }),
+            })
+          ),
+      });
+      const me = await mounted.request("/api/me", { headers: GOOD });
+      expect(me.status).toBe(200);
+      const known = await mounted.request("/api/nope", { headers: GOOD });
+      expect(known.status).toBe(404);
+      expect(known.headers.get("content-type")).toContain("application/json");
+      expect(await known.json()).toEqual({ error: "not_found" });
+    } finally {
+      await db.deleteFrom("organizations").where("id", "=", orgId).execute();
+      await db.deleteFrom("users").where("id", "=", userId).execute();
+    }
   });
 
   test("checks the origin of a non-safe request", async () => {
@@ -353,5 +383,77 @@ describe("http logs", () => {
       logSpy.mockRestore();
       errorSpy.mockRestore();
     }
+  });
+});
+
+describe("real webDeps", () => {
+  test("serves the real Better Auth instance and keeps the markers out of the logs", async () => {
+    const env = {
+      ...process.env,
+      WEB_BASE_URL: "http://127.0.0.1:8080",
+      WEB_AUTH_SECRET: "x".repeat(40),
+      WEB_DIST: dist,
+    };
+    const web = webDeps(loadConfig(env), db);
+    if (web === null) throw new Error("webDeps returned null");
+    const lines: string[] = [];
+    const logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]): void => {
+      lines.push(args.join(" "));
+    });
+    const errorSpy = spyOn(console, "error").mockImplementation((...args: unknown[]): void => {
+      lines.push(args.join(" "));
+    });
+    try {
+      expect(web.baseUrl.origin).toBe("http://127.0.0.1:8080");
+      expect(web.trustedOrigins.has("http://127.0.0.1:8080")).toBe(true);
+      expect(web.dist).toBe(dist);
+      const app = createApp({ checkDb, web });
+
+      const session = await app.request("/api/auth/get-session");
+      expect(session.status).toBe(200);
+      expect(await session.json()).toBeNull();
+
+      const signIn = await app.request("/api/auth/sign-in/email", {
+        method: "POST",
+        headers: { ...ORIGIN, "content-type": "application/json" },
+        body: JSON.stringify({ email: `nobody-${randomUUID()}@x.test`, password: "wrong-password-1" }),
+      });
+      expect(signIn.status).toBe(401);
+      expect(((await signIn.json()) as { code?: string }).code).toBe("INVALID_EMAIL_OR_PASSWORD");
+
+      const reset = await app.request("/api/auth/request-password-reset", {
+        method: "POST",
+        headers: { ...ORIGIN, "content-type": "application/json" },
+        body: JSON.stringify({ email: "nobody@x.test" }),
+      });
+      expect(reset.status).toBe(404);
+
+      expect((await app.request("/api/me")).status).toBe(401);
+
+      const tokenMarker = `MARKER-TOKEN-${randomUUID()}`;
+      const urlMarker = `MARKER-URL-${randomUUID()}`;
+      const callback = await app.request(
+        `/api/auth/reset-password/${tokenMarker}?callbackURL=https://evil.test/${urlMarker}`
+      );
+      expect(callback.status).toBe(403);
+      expect(lines.some((line) => line.includes(tokenMarker) || line.includes(urlMarker))).toBe(false);
+    } finally {
+      logSpy.mockRestore();
+      errorSpy.mockRestore();
+      await web.close();
+    }
+  });
+
+  test("returns null when WEB_BASE_URL is empty", () => {
+    const lines: string[] = [];
+    const logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]): void => {
+      lines.push(args.join(" "));
+    });
+    try {
+      expect(webDeps(loadConfig({ ...process.env, WEB_BASE_URL: "" }), db)).toBeNull();
+    } finally {
+      logSpy.mockRestore();
+    }
+    expect(lines.some((line) => line.includes("web is off (WEB_BASE_URL is empty)"))).toBe(true);
   });
 });

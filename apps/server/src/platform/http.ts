@@ -199,6 +199,32 @@ export const requireSession: MiddlewareHandler<ApiEnv> = async (c, next) => {
   await next();
 };
 
+const warnedMultiOrg = new Set<string>();
+
+// D3: the tenant comes from the session user's oldest membership, never from the request.
+export function requireTenant(deps: {
+  listMembershipsOfUser: WebDeps["listMembershipsOfUser"];
+}): MiddlewareHandler<ApiEnv> {
+  return async (c, next) => {
+    const { userId } = c.get("session");
+    const rows = await deps.listMembershipsOfUser(userId);
+    const [first] = rows;
+    if (!first) return c.json({ error: "no_organization" }, 403);
+    if (rows.length > 1 && !warnedMultiOrg.has(userId)) {
+      warnedMultiOrg.add(userId);
+      log.warn(`web: user ${userId} has ${rows.length} memberships; using the oldest`);
+    }
+    c.set("ctx", { orgId: first.org_id, userId });
+    c.set("role", first.role);
+    await next();
+  };
+}
+
+export const requireOwner: MiddlewareHandler<ApiEnv> = async (c, next) => {
+  if (c.get("role") !== "owner") return c.json({ error: "owner_only" }, 403);
+  await next();
+};
+
 const MISSING_BUILD = "The web build is missing. Run bun run web:build.";
 
 export function createApp(deps: HttpDeps): Hono<ApiEnv> {
@@ -261,7 +287,7 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
 
   const api = new Hono<ApiEnv>();
   api.use("*", requireSession);
-  // stage 8: requireTenant goes here
+  api.use("*", requireTenant({ listMembershipsOfUser: web.listMembershipsOfUser }));
   web.routers?.(api);
   api.all("*", (c) => c.json({ error: "not_found" }, 404));
   app.route("/api", api);
