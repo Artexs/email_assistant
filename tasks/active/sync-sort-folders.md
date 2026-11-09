@@ -1,4 +1,4 @@
-> **Status 2026-11-09 — in progress — stages 1–3 done (spike; migration; core folder defaults and the spam folder plan).** Left: stages 4–17 (next: stage 4, then the group review of stages 2–4), checkpoint 2 before the deploy (stage 16).
+> **Status 2026-11-09 — in progress — stages 1–4 done (spike; migration; core folder defaults and the spam folder plan; folder repository).** Left: the group review of stages 2–4, stages 5–17, checkpoint 2 before the deploy (stage 16).
 
 # Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
@@ -407,7 +407,7 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - [x] [Stage 1](sync-sort-folders/stage-01-spike-real-mailbox.md) [written] — Spike on the real mailbox: sort-folder and spam-folder moves [risky] — main session; checkpoints 0 and 1
 - [x] [Stage 2](sync-sort-folders/stage-02-migration-sync-folders.md) [written] — Migration `sync_folders`; the INBOX cursor in `mailbox_folders` [risky]
 - [x] [Stage 3](sync-sort-folders/stage-03-core-folders-and-plan.md) [written] — Core: sync folder defaults; plan for spam folder mail; the `inbox` move target and its policy
-- [ ] [Stage 4](sync-sort-folders/stage-04-folder-repository.md) [written] — Folder repository: list, discovery insert, switch, junk path [risky] — group review 2–4
+- [x] [Stage 4](sync-sort-folders/stage-04-folder-repository.md) [written] — Folder repository: list, discovery insert, switch, junk path [risky] — group review 2–4
 - [ ] [Stage 5](sync-sort-folders/stage-05-port-folder-reads.md) [written] — Port and adapters: folder status, fetch above, body text, folder list per folder [risky]
 - [ ] [Stage 6](sync-sort-folders/stage-06-sync-rules.md) [written] — Sync rules across folders (pure) [risky]
 - [ ] [Stage 7a](sync-sort-folders/stage-07a-sync-loop-per-folder.md) [written] — Sync loop per folder: discovery, new mail, errors [risky]
@@ -496,3 +496,8 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - 2026-11-09: Stage 3 built (implementer, 3.1 and 3.2) and reviewed per step (Opus, high): 3.1 PASS (2 test minors fixed: a second `a` copy in `AI/Spam`
   in deliver test 7; `AI_FOLDER_ROOT` pinned), 3.2 PASS (1 comment minor fixed). Checks: `bun run lint` exit 0; `bun run typecheck` exit 0;
   `bun run test:unit` 1305 pass, 0 fail; `bun run test:int` 893 pass, 0 fail (reviewer run).
+- 2026-11-09: Stage 4 built (implementer) and reviewed (Opus, high): round 1 FAIL (1 major: no second-org test for `updateSyncFolderEnabled`; 3 minors;
+  1 question), fixed; round 2 PASS. Decisions: `setSyncFolderEnabled` gets an `actor` parameter (`mailbox:settings` passes "cli", stage 13 updated;
+  discovery keeps "system"); `insertSyncFolders` also takes the `inbox` pick (`ensureSyncFolders` repairs a missing INBOX row through it); test 10 uses a
+  SAVEPOINT inside `withRollback` (the tenant rows are not committed). `listSyncFolders` is exported from `mail/index.ts` (stage 10, U11). Checks:
+  `bun run lint` pass; `bun run typecheck` exit 0; `bun run test:unit` 1305 pass, 0 fail; `bun run test:int` 908 pass, 0 fail.

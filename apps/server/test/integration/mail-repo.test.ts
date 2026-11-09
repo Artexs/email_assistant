@@ -10,17 +10,21 @@ import {
   forceRescan,
   getCredentials,
   getMailbox,
+  getJunkFolderPath,
   getSyncFolder,
   insertCredentials,
   insertEmail,
   insertInboxFolder,
+  insertSyncFolders,
   insertMailbox,
   listEmailsByMessageIds,
   listFolderUids,
   listInboxEmailKeys,
   listRecentlyMoved,
+  listSyncFolders,
   listSyncTargets,
   lockMailbox,
+  lockSyncFolderByKey,
   markEmailReturned,
   markSynced,
   setFolderMapEntry,
@@ -29,6 +33,7 @@ import {
   updateEmailLocation,
   updateEmailUid,
   updateFolderCursor,
+  updateSyncFolderEnabled,
 } from "../../src/modules/mail/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
 
@@ -278,7 +283,7 @@ describe("mail repository: forceRescan", () => {
         .executeTakeFirstOrThrow();
       await trx
         .insertInto("mailbox_folders")
-        .values({ org_id: a.ctx.orgId, mailbox_id: a.mailboxId, key: "news", path: "News", role: "sort" })
+        .values({ org_id: a.ctx.orgId, mailbox_id: a.mailboxId, key: "bills", path: "Rachunki", role: "sort" })
         .execute();
       expect(await forceRescan(trx, b.ctx, a.mailboxId)).toBe(false);
       expect((await getMailbox(trx, a.ctx, a.mailboxId))?.uidvalidity).toBe(7);
@@ -294,7 +299,7 @@ describe("mail repository: forceRescan", () => {
         uidValidity: 0,
         lastUid: 8,
       });
-      const empty = await getSyncFolder(trx, a.ctx, a.mailboxId, "news");
+      const empty = await getSyncFolder(trx, a.ctx, a.mailboxId, "bills");
       expect({ uidValidity: empty?.uidvalidity, lastUid: empty?.last_uid }).toEqual({
         uidValidity: null,
         lastUid: null,
@@ -712,6 +717,105 @@ describe("mail repository: email location", () => {
       expect(rows[0]?.folder).toBe(INBOX);
       expect(await listEmailsByMessageIds(trx, b.ctx, a.mailboxId, ["<a1@x.test>"])).toEqual([]);
       expect(await listEmailsByMessageIds(trx, a.ctx, a.mailboxId, [])).toEqual([]);
+    });
+  });
+});
+
+describe("mail repository: sync folders", () => {
+  const offers = { key: "offers", path: "Oferty", role: "sort" } as const;
+  const junk = { key: "junk", path: "Wiadomości-śmieci", role: "junk" } as const;
+  const at = new Date("2026-11-01T10:00:00.000Z");
+
+  test("listSyncFolders of a new mailbox is the INBOX row, tenant-scoped", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      const rows = await listSyncFolders(trx, a.ctx, a.mailboxId, { enabledOnly: false });
+      expect(rows.map((row) => [row.key, row.role, row.path])).toEqual([["inbox", "inbox", INBOX]]);
+      expect(await listSyncFolders(trx, b.ctx, a.mailboxId, { enabledOnly: false })).toEqual([]);
+    });
+  });
+
+  test("listSyncFolders orders inbox, sort rows in default order, junk; enabledOnly leaves disabled out", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      const bills = { key: "bills", path: "Rachunki", role: "sort" } as const;
+      await insertSyncFolders(trx, a.ctx, a.mailboxId, [junk, bills, offers], at);
+      await trx
+        .updateTable("mailbox_folders")
+        .set({ enabled: false })
+        .where("mailbox_id", "=", a.mailboxId)
+        .where("key", "=", "bills")
+        .execute();
+      const all = await listSyncFolders(trx, a.ctx, a.mailboxId, { enabledOnly: false });
+      expect(all.map((row) => row.key)).toEqual(["inbox", "offers", "bills", "junk"]);
+      const enabled = await listSyncFolders(trx, a.ctx, a.mailboxId, { enabledOnly: true });
+      expect(enabled.map((row) => row.key)).toEqual(["inbox", "offers", "junk"]);
+    });
+  });
+
+  test("insertSyncFolders returns only new rows and never changes an existing row", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      expect(await insertSyncFolders(trx, a.ctx, a.mailboxId, [], at)).toEqual([]);
+      expect(await insertSyncFolders(trx, a.ctx, a.mailboxId, [offers], at)).toEqual([{ key: "offers", role: "sort" }]);
+      expect(await insertSyncFolders(trx, a.ctx, a.mailboxId, [{ ...offers, path: "Other" }], at)).toEqual([]);
+      expect((await getSyncFolder(trx, a.ctx, a.mailboxId, "offers"))?.path).toBe("Oferty");
+    });
+  });
+
+  test("insertSyncFolders with another organization's context is refused by the foreign key", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      // A savepoint keeps the failed insert from aborting the shared test transaction.
+      await sql`savepoint foreign_insert`.execute(trx);
+      await expect(insertSyncFolders(trx, b.ctx, a.mailboxId, [offers], at)).rejects.toThrow(/foreign key/);
+      await sql`rollback to savepoint foreign_insert`.execute(trx);
+      expect(await getSyncFolder(trx, a.ctx, a.mailboxId, "offers")).toBeUndefined();
+    });
+  });
+
+  test("lockSyncFolderByKey is tenant-scoped", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      expect((await lockSyncFolderByKey(trx, a.ctx, a.mailboxId, "inbox"))?.key).toBe("inbox");
+      expect(await lockSyncFolderByKey(trx, b.ctx, a.mailboxId, "inbox")).toBeUndefined();
+      expect(await lockSyncFolderByKey(trx, a.ctx, a.mailboxId, "offers")).toBeUndefined();
+    });
+  });
+
+  test("getJunkFolderPath is null before, the path after (also disabled), null for another tenant", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      expect(await getJunkFolderPath(trx, a.ctx, a.mailboxId)).toBeNull();
+      await insertSyncFolders(trx, a.ctx, a.mailboxId, [junk], at);
+      expect(await getJunkFolderPath(trx, a.ctx, a.mailboxId)).toBe("Wiadomości-śmieci");
+      await trx.updateTable("mailbox_folders").set({ enabled: false }).where("key", "=", "junk").execute();
+      expect(await getJunkFolderPath(trx, a.ctx, a.mailboxId)).toBe("Wiadomości-śmieci");
+      expect(await getJunkFolderPath(trx, b.ctx, a.mailboxId)).toBeNull();
+    });
+  });
+
+  test("updateSyncFolderEnabled with another organization's context changes nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      await insertSyncFolders(trx, a.ctx, a.mailboxId, [offers], at);
+      const row = await getSyncFolder(trx, a.ctx, a.mailboxId, "offers");
+      if (!row) throw new Error("folder row missing");
+      await updateFolderCursor(
+        trx,
+        a.ctx,
+        row.id,
+        { uidValidity: null, lastUid: null },
+        { uidValidity: 1, lastUid: 500 }
+      );
+
+      expect(await updateSyncFolderEnabled(trx, b.ctx, row.id, { enabled: false, clearCursor: true, at })).toBe(false);
+      const after = await getSyncFolder(trx, a.ctx, a.mailboxId, "offers");
+      expect({ enabled: after?.enabled, uv: after?.uidvalidity, last: after?.last_uid }).toEqual({
+        enabled: true,
+        uv: 1,
+        last: 500,
+      });
     });
   });
 });

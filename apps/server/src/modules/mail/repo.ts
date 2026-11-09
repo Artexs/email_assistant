@@ -1,4 +1,12 @@
-import type { FolderKey } from "@ea/core";
+import {
+  SYNC_FOLDER_DEFAULTS,
+  syncFolderKeys,
+  syncFolderRoles,
+  type FolderKey,
+  type SyncFolderDefault,
+  type SyncFolderKey,
+  type SyncFolderRole,
+} from "@ea/core";
 import {
   expressionBuilder,
   sql,
@@ -11,6 +19,7 @@ import {
 import { z } from "zod";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
+import { HardError } from "../../platform/errors";
 
 import { INBOX, type MailCapabilities } from "./port";
 import { SYNTHETIC_MESSAGE_ID_LIKE } from "./seed";
@@ -136,25 +145,31 @@ export async function lockMailbox(
   return row && toMailboxRow(row);
 }
 
-// The one row type of the table (stage 4 adds the other queries and narrows `key` and `role`).
+const syncFolderKeySchema = z.enum(syncFolderKeys);
+const syncFolderRoleSchema = z.enum(syncFolderRoles);
+
+// The one row type of the table.
 export interface SyncFolderRow {
   id: string;
   mailbox_id: string;
-  key: string;
+  key: SyncFolderKey;
   path: string;
-  role: string;
+  role: SyncFolderRole;
   enabled: boolean;
   uidvalidity: number | null;
   last_uid: number | null;
 }
 
 function toSyncFolderRow(row: Selectable<DB["mailbox_folders"]>): SyncFolderRow {
+  const key = syncFolderKeySchema.safeParse(row.key);
+  const role = syncFolderRoleSchema.safeParse(row.role);
+  if (!key.success || !role.success) throw new HardError("mailbox_folders row has an unknown key or role");
   return {
     id: row.id,
     mailbox_id: row.mailbox_id,
-    key: row.key,
+    key: key.data,
     path: row.path,
-    role: row.role,
+    role: role.data,
     enabled: row.enabled,
     uidvalidity: row.uidvalidity === null ? null : Number(row.uidvalidity),
     last_uid: row.last_uid === null ? null : Number(row.last_uid),
@@ -173,7 +188,7 @@ export async function getSyncFolder(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
-  key: string
+  key: SyncFolderKey
 ): Promise<SyncFolderRow | undefined> {
   const row = await db
     .selectFrom("mailbox_folders")
@@ -198,6 +213,113 @@ export async function lockSyncFolder(
     .forUpdate()
     .executeTakeFirst();
   return row && toSyncFolderRow(row);
+}
+
+// Order: INBOX, then the sort rows in SYNC_FOLDER_DEFAULTS order, then junk.
+export async function listSyncFolders(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { enabledOnly: boolean }
+): Promise<SyncFolderRow[]> {
+  const keyOrder = sql<number>`case key ${sql.join(
+    SYNC_FOLDER_DEFAULTS.map((item, index) => sql`when ${sql.lit(item.key)} then ${sql.lit(index)}`),
+    sql` `
+  )} else ${sql.lit(SYNC_FOLDER_DEFAULTS.length)} end`;
+  let query = db
+    .selectFrom("mailbox_folders")
+    .selectAll()
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId);
+  if (opts.enabledOnly) query = query.where("enabled", "=", true);
+  const rows = await query
+    .orderBy(sql`case role when 'inbox' then 0 when 'sort' then 1 else 2 end`)
+    .orderBy(keyOrder)
+    .orderBy("key")
+    .execute();
+  return rows.map(toSyncFolderRow);
+}
+
+// One INSERT that never changes an existing row (any unique key). Returns the rows that it inserted.
+export async function insertSyncFolders(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  picks: readonly (SyncFolderDefault | { key: "inbox"; path: string; role: "inbox" })[],
+  at: Date
+): Promise<{ key: SyncFolderKey; role: SyncFolderRole }[]> {
+  if (picks.length === 0) return [];
+  const rows = await db
+    .insertInto("mailbox_folders")
+    .values(
+      picks.map((pick) => ({
+        org_id: ctx.orgId,
+        mailbox_id: mailboxId,
+        key: pick.key,
+        path: pick.path,
+        role: pick.role,
+        created_at: at,
+        updated_at: at,
+      }))
+    )
+    .onConflict((oc) => oc.doNothing())
+    .returning(["key", "role"])
+    .execute();
+  return rows.map((row) => {
+    const key = syncFolderKeySchema.parse(row.key);
+    const role = syncFolderRoleSchema.parse(row.role);
+    return { key, role };
+  });
+}
+
+export async function lockSyncFolderByKey(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  key: SyncFolderKey
+): Promise<SyncFolderRow | undefined> {
+  const row = await trx
+    .selectFrom("mailbox_folders")
+    .selectAll()
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("key", "=", key)
+    .forUpdate()
+    .executeTakeFirst();
+  return row && toSyncFolderRow(row);
+}
+
+// Sets `enabled`; with `clearCursor` the folder starts again with a new first sync.
+export async function updateSyncFolderEnabled(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  folderId: string,
+  change: { enabled: boolean; clearCursor: boolean; at: Date }
+): Promise<boolean> {
+  const row = await trx
+    .updateTable("mailbox_folders")
+    .set({
+      enabled: change.enabled,
+      updated_at: change.at,
+      ...(change.clearCursor ? { uidvalidity: null, last_uid: null } : {}),
+    })
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", folderId)
+    .returning("id")
+    .executeTakeFirst();
+  return row !== undefined;
+}
+
+// The path of the junk row, also when it is disabled.
+export async function getJunkFolderPath(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<string | null> {
+  const row = await db
+    .selectFrom("mailbox_folders")
+    .select("path")
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("role", "=", "junk")
+    .executeTakeFirst();
+  return row?.path ?? null;
 }
 
 // Conditional update on the folder row: it changes the cursor only when the stored cursor is still `expected`.

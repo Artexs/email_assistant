@@ -6,7 +6,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's D
 
 Why risky: tenant isolation and data integrity (the rows decide which folders of the user's mailbox the app reads).
 
-- [ ] **4.1 Repository functions of `mailbox_folders` and the two audit events**
+- [x] **4.1 Repository functions of `mailbox_folders` and the two audit events**
   - Goal: typed queries that the sync loop (stage 7a), the triage (stage 11) and the tools (stage 13) use.
   - Files: change `apps/server/src/modules/mail/repo.ts` (one query per function), create `apps/server/src/modules/mail/folders.ts` (the two functions that
     write an audit row: transaction + audit, like `connect.ts`), change `apps/server/src/modules/mail/index.ts`, `apps/server/src/modules/audit/repo.ts`
@@ -77,6 +77,7 @@ Why risky: tenant isolation and data integrity (the rows decide which folders of
       mailboxId: string,
       key: Exclude<SyncFolderKey, "inbox">,
       enabled: boolean,
+      actor: "cli" | "system", // the audit actor (stage 4 review, 2026-11-09: `mailbox:settings` passes "cli")
       at: Date
     ): Promise<SyncFolderSwitchResult>;
     ```

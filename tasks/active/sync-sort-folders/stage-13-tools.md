@@ -18,7 +18,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's D
     | { kind: "sync-folder"; orgId: string; mailboxId: string; key: "offers" | "social" | "bills" | "junk"; value: boolean }
     ```
 
-  - Decisions: the script calls `setSyncFolderEnabled` (stage 4) with `now`; prints `sync folder <key>: on|off (changed)`, `(no change)`, or for `not_found`
+  - Decisions: the script calls `setSyncFolderEnabled` (stage 4) with actor `"cli"` and `now`; prints `sync folder <key>: on|off (changed)`, `(no change)`, or for `not_found`
     `sync folder <key>: no such folder row (the sync adds it when the server lists the folder)` with exit 1. `show` adds one line per row of `listSyncFolders`:
     `sync folder <key>: <on|off>, role <role>, path <path>, cursor <set|none>` (an operator CLI on the server: the path may show here, never in a log of the server process).
     `--key inbox` is a usage error (exit 1).
