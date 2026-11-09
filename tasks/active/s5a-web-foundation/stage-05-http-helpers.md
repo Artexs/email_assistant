@@ -4,7 +4,7 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
 
 ## Stage 5 — `platform/http.ts`: the `WebDeps` type and the pure helpers of W1, W3, W8 (unit-tested); `createApp` is unchanged here
 
-- [ ] **5.1 Types and pure helpers**
+- [x] **5.1 Types and pure helpers**
   - Goal: every rule of the HTTP platform that can be a pure function is one, with a unit test, before stage 6 wires them into `createApp`.
   - Files: change `apps/server/src/platform/http.ts` (add exports; `createApp` stays as today), create `apps/server/src/platform/http.test.ts`.
   - Interfaces:
