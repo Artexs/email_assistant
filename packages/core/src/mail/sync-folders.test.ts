@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { SORT_FOLDER_NAMES } from "../testmail/delivery";
 import { AI_FOLDER_NAMES } from "../triage/planners";
 
-import { AI_FOLDER_ROOT, pickSyncFolders, type SyncFolderDefault } from "./sync-folders";
+import { AI_FOLDER_ROOT, pickSyncFolders, syncFolderDefaultPath, type SyncFolderDefault } from "./sync-folders";
 
 const listed = (...paths: string[]) => paths.map((path) => ({ path, delimiter: "/" }));
 const keys = (picked: SyncFolderDefault[]) => picked.map((folder) => folder.key);
@@ -59,5 +59,12 @@ describe("SORT_FOLDER_NAMES", () => {
 describe("AI_FOLDER_ROOT", () => {
   test("is the first part of the AI info folder", () => {
     expect(AI_FOLDER_NAMES.ai_info.startsWith(`${AI_FOLDER_ROOT}/`)).toBe(true);
+  });
+});
+
+describe("syncFolderDefaultPath", () => {
+  test("returns the default path of each folder key", () => {
+    expect(syncFolderDefaultPath("offers")).toBe("Oferty");
+    expect(syncFolderDefaultPath("junk")).toBe("Wiadomości-śmieci");
   });
 });

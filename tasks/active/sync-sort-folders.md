@@ -501,3 +501,9 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
   discovery keeps "system"); `insertSyncFolders` also takes the `inbox` pick (`ensureSyncFolders` repairs a missing INBOX row through it); test 10 uses a
   SAVEPOINT inside `withRollback` (the tenant rows are not committed). `listSyncFolders` is exported from `mail/index.ts` (stage 10, U11). Checks:
   `bun run lint` pass; `bun run typecheck` exit 0; `bun run test:unit` 1305 pass, 0 fail; `bun run test:int` 908 pass, 0 fail.
+- 2026-11-09: Group review stages 2–4 (Opus, high; range `a2e6c50..5b1f1c9`): PASS, 5 minors, 2 questions. Fix commit (implementer): unique describe name,
+  tests for the missing INBOX row (`syncMailbox`, `backfillInbox`) and an unknown key (`listSyncFolders`), `planFromJunk` uses the normal plan for
+  `info`/`notification`/`unsure`, one `syncFolderDefaultPath` in core. Decided by the main session: Q6 → stage 7a throws the stage 2 `HardError` when
+  `listSyncFolders` has no INBOX row; Q7 → stage 7a makes `NewEmail.source_folder` required; minor 3 → stage 7a and 13 test the plain-`Db` branch;
+  stage 4 interface of `insertSyncFolders` updated. Checks: `bun run lint` pass; `bun run typecheck` exit 0; `bun run test:unit` 1306 pass;
+  `bun run test:int` 910 pass.

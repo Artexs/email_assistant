@@ -36,6 +36,7 @@ import {
   updateSyncFolderEnabled,
 } from "../../src/modules/mail/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
+import { HardError } from "../../src/platform/errors";
 
 import { createOrgWithMailbox, testCapabilities } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -194,7 +195,7 @@ describe("mail repository: mailboxes", () => {
   });
 });
 
-describe("mail repository: sync folders", () => {
+describe("mail repository: sync folder cursor", () => {
   test("insertInboxFolder twice leaves one row; getSyncFolder is tenant-scoped", async () => {
     await withRollback(db, async (trx) => {
       const { a, b } = await createTwoTenants(trx);
@@ -816,6 +817,17 @@ describe("mail repository: sync folders", () => {
         uv: 1,
         last: 500,
       });
+    });
+  });
+
+  test("listSyncFolders throws a HardError for a key that the database allows and the enum does not", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      await trx
+        .insertInto("mailbox_folders")
+        .values({ org_id: a.ctx.orgId, mailbox_id: a.mailboxId, key: "junk_b", path: "X", role: "sort" })
+        .execute();
+      await expect(listSyncFolders(trx, a.ctx, a.mailboxId, { enabledOnly: false })).rejects.toBeInstanceOf(HardError);
     });
   });
 });

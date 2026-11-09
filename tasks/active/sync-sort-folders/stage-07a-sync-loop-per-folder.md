@@ -51,7 +51,8 @@ The cross-folder decisions (cross copy, relocated, returned into another folder)
     - `syncMailbox`: (1) `getMailbox`; discovery in a `try`: `provider.listFolders()`; `reservedPaths` = the `folder_map` values of `drafts`, `sent`, `trash`
       and every `ai_*` key; `pickSyncFolders`; `ensureSyncFolders(…, deps.now())`; info line `sync <mb>: added sync folders <keys>` (comma-separated)
       when some were added. A `MailAuthError` rethrows; any other error → the D5 warn line, `listed` = null (every row counts as listed). (2)
-      `listSyncFolders(enabledOnly: true)`. (3) For each row in order: `listed` not null and the path not in it → warn + `skipped`; else `syncFolder`.
+      `listSyncFolders(enabledOnly: true)`; no `inbox` row in the result → `HardError("mailbox has no INBOX folder row")` (the stage 2 error; group review
+      2–4, Q6: a missing INBOX row after a failed discovery must not set `last_synced_at`). (3) For each row in order: `listed` not null and the path not in it → warn + `skipped`; else `syncFolder`.
       (4) Errors of `syncFolder`: `MailAuthError` → rethrow; the INBOX row → rethrow (as today); another row → the D21 warn line with
       `describeError(error)`, `failed`, go on. (5) One `RunState` for the whole run; `state.matched` is a `Map` (id → folder).
     - `syncFolder(deps, ctx, mailbox, row, state)`: today's `syncMailbox` body with `row.path` as S: `folderStatus(S)`; mode from the row's cursor (null →
@@ -61,7 +62,9 @@ The cross-folder decisions (cross copy, relocated, returned into another folder)
       The below-cursor check runs only for INBOX in this stage (as today); stage 8 makes it per folder. One info line per folder (D21).
     - `planChunk` with S: the own-mail skip as today; `decideIncoming({ folder: S, … })`; `move_in_flight` → count, no write; `update_uid` → the write with
       `isSource` (`updateEmailUid(…, uid, { isSource })`: `inbox_uid` only when `isSource`); `new` → body from `fetchBodyText(S, uid)`, row with `folder` =
-      `source_folder` = S; run copies go into `state.newKeys` and `state.matched` with S. For S ≠ INBOX, `check_folder` and `cross_copy` throw
+      `source_folder` = S; run copies go into `state.newKeys` and `state.matched` with S. `NewEmail.source_folder` becomes required (`string`, no
+      default in the type; group review 2–4, Q7), so no insert path can store a non-INBOX mail with the DB default INBOX; fix every caller and fixture
+      that the typecheck names. `ensureSyncFolders(deps.db, …)` runs with a plain `Db` here: a test covers its own-transaction branch (group review 2–4, minor 3). For S ≠ INBOX, `check_folder` and `cross_copy` throw
       `HardError("cross-folder check: stage 7b")` (the folder fails safe with a warn line; the tests of this stage avoid these cases). For S = INBOX they
       behave as after stage 6.
     - `jobs.ts`: `markSynced` after `syncMailbox` returns (INBOX synced, D5); the job line sums `folders` (D21); the 3-runs `error` line (D5): a
@@ -88,7 +91,10 @@ The cross-folder decisions (cross copy, relocated, returned into another folder)
     14. (`mail-jobs.test.ts`) `Oferty` fails 3 runs in a row → exactly one `error` line on the third run; a success resets the count (a 4th failure gives no line,
         the 3rd after the reset gives one).
     15. (`imap-sync-greenmail.test.ts`, GreenMail) create `Oferty`, APPEND 1 mail, run `syncMailbox` twice → 1 row with `source_folder` `Oferty`; the second run stores nothing.
+    16. Discovery fails (`listFolders` throws a `SoftError`) and the mailbox has no INBOX row → `syncMailbox` throws `HardError("mailbox has no INBOX folder row")`;
+        `last_synced_at` is not set (group review 2–4, Q6).
+    17. `ensureSyncFolders` with a plain `Db` (outside `withRollback`; clean up the org at the end) → rows and audit rows written in its own transaction (minor 3).
   - Check: `bun run lint && bun run typecheck && bun run test:unit && bun run test:int`
-  - Done when: tests 1–15 pass and the existing sync, backfill, seed, jobs and actions tests pass. Existing tests that compare a whole result with
+  - Done when: tests 1–17 pass and the existing sync, backfill, seed, jobs and actions tests pass. Existing tests that compare a whole result with
     `toEqual` (for example `mail-sync.test.ts` around line 440) get the new fields `folder`, `relocated`, `crossCopies`, `moveInFlight` (re-review n3).
   - Out of scope: cross copies, relocated, returned into another folder (stage 7b); the below-cursor check per folder (stage 8); actions (stage 10).

@@ -24,7 +24,8 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's D
     `--key inbox` is a usage error (exit 1).
   - Test:
     1. args: `sync-folder --key junk --value off` parses; `--key inbox` → undefined; a missing `--value` → undefined; `--name` with `sync-folder` → undefined.
-    2. (integration) off → row disabled, audit `mailbox.sync_folder_changed`; on → enabled, cursor null.
+    2. (integration) off → row disabled, audit `mailbox.sync_folder_changed` with actor `cli`; on → enabled, cursor null. The script path calls
+       `setSyncFolderEnabled` with a plain `Db` (its own-transaction branch; group review 2–4, minor 3).
     3. `show` prints the INBOX row and the `offers` row.
   - Check: `bun run lint && bun run typecheck && bun run test:unit && bun run test:int`
   - Done when: tests 1–3 pass.

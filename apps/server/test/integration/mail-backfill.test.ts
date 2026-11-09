@@ -82,6 +82,26 @@ async function syncedMailbox(trx: Transaction<DB>) {
   return s;
 }
 
+describe("mailbox without an INBOX folder row", () => {
+  test("syncMailbox and backfillInbox throw a HardError", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      await trx
+        .deleteFrom("mailbox_folders")
+        .where("mailbox_id", "=", s.mailboxId)
+        .where("key", "=", "inbox")
+        .execute();
+      const since = ago(DAY_MS);
+      const sync = syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      await expect(sync).rejects.toBeInstanceOf(HardError);
+      await expect(sync).rejects.toThrow("mailbox has no INBOX folder row");
+      const backfill = backfillInbox(deps(trx, s.fake), s.ctx, s.mailboxId, { since });
+      await expect(backfill).rejects.toBeInstanceOf(HardError);
+      await expect(backfill).rejects.toThrow("mailbox has no INBOX folder row");
+    });
+  });
+});
+
 async function emails(trx: Db | Transaction<DB>, mailboxId: string) {
   return trx
     .selectFrom("emails")

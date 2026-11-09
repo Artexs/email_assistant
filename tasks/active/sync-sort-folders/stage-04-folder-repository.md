@@ -39,7 +39,7 @@ Why risky: tenant isolation and data integrity (the rows decide which folders of
       db: DbOrTrx,
       ctx: TenantContext,
       mailboxId: string,
-      picks: readonly SyncFolderDefault[],
+      picks: readonly (SyncFolderDefault | { key: "inbox"; path: string; role: "inbox" })[], // built: also the INBOX repair pick
       at: Date
     ): Promise<{ key: SyncFolderKey; role: SyncFolderRole }[]>;
     export async function lockSyncFolderByKey(

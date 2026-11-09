@@ -117,7 +117,8 @@ export interface PlanSource {
 
 // The plan for a mail from the spam folder (D11): the normal move gate decides; no flag, no VIP exception.
 // A `delegation` mail only moves into INBOX: no draft, no send, no approval (U10).
-function planFromJunk(category: Category, summary: string | null): PlannedAction[] {
+// Returns undefined for the categories that use the normal plan.
+function planFromJunk(category: Category): PlannedAction[] | undefined {
   switch (category) {
     case "spam":
       return [];
@@ -125,19 +126,8 @@ function planFromJunk(category: Category, summary: string | null): PlannedAction
     case "needs_reply":
     case "delegation":
       return [{ type: "move", folder: "inbox" }];
-    case "info":
-      return [
-        { type: "save_summary", summary: summary ?? "" },
-        { type: "move", folder: "ai_info" },
-      ];
-    case "notification":
-      return [{ type: "mark_read" }, { type: "move", folder: "ai_notifications" }];
-    case "unsure":
-      return [{ type: "move", folder: "ai_manual" }];
-    default: {
-      const unknown: never = category;
-      throw new Error(`unknown category: ${String(unknown)}`);
-    }
+    default:
+      return undefined;
   }
 }
 
@@ -148,7 +138,8 @@ export function planActions(
   delegation?: DelegationInput,
   source?: PlanSource
 ): PlannedAction[] {
-  if (source?.fromJunk) return planFromJunk(category, summary);
+  const fromJunk = source?.fromJunk ? planFromJunk(category) : undefined;
+  if (fromJunk !== undefined) return fromJunk;
   switch (category) {
     case "urgent":
       return [{ type: "flag" }];

@@ -18,6 +18,12 @@ export const SYNC_FOLDER_DEFAULTS: readonly SyncFolderDefault[] = [
   { key: "junk", path: "Wiadomości-śmieci", role: "junk" },
 ];
 
+export function syncFolderDefaultPath(key: SyncFolderDefault["key"]): string {
+  const folder = SYNC_FOLDER_DEFAULTS.find((item) => item.key === key);
+  if (folder === undefined) throw new Error(`no sync folder default for ${key}`);
+  return folder.path;
+}
+
 // The root of the app's own folders (the first part of AI_FOLDER_NAMES.ai_info).
 export const AI_FOLDER_ROOT = "AI";
 
