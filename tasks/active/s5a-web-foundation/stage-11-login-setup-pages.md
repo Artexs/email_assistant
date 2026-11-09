@@ -13,7 +13,7 @@ Reviewed on Opus high (the login flow and the redirect guard are auth code).
 
     ```ts
     // lib/next-path.ts (pure; the browser twin of the server's safeNext, stage 5)
-    export function safeNextPath(raw: string | null): string; // the six steps of stage 5's safeNext (its Decisions), the same test list; else "/"
+    export function safeNextPath(raw: string | null): string; // the seven steps of stage 5's safeNext (its Decisions), the same test list; else "/"
     // islands/LoginPage.tsx
     export default function LoginPage(): JSX.Element;
     // state: { email, password, pending, error: TextKey | null, setupDone: boolean }
@@ -26,7 +26,7 @@ Reviewed on Opus high (the login flow and the redirect guard are auth code).
     - Submit: `const { error } = await authClient.signIn.email({ email, password })`; `error === null` → `location.assign(safeNextPath(params.get("next")))`; `error.status === 429` → `t("error_too_many")`; `error.status === 401` or `error.code === "INVALID_EMAIL_OR_PASSWORD"` → `t("login_error_credentials")`; anything else (network, 403 `bad_origin`, 500) → `t("error_generic")`. The error renders in `<p role="alert" className="text-destructive text-sm">` under the form (one text, never which field was wrong: S3). The password field is cleared on an error; the e-mail stays. The client's error shape (`error.status`, `error.code`) is a not-verified item that stage 13's smoke settles; if it differs, map by `error.status` only.
     - Help (S3): `<details>` with `<summary>{t("login_help_summary")}</summary><p>{t("login_help_text")}</p></details>` under the form; plain HTML, keyboard-reachable (U9).
   - Test:
-    1. `next-path.test.ts`: `safeNextPath("/mailboxes")` → `/mailboxes`; `"/mailboxes?x=1#y"` → the same; `null` → `/`; `""` → `/`; `"//evil.test"` → `/`; `"https://evil.test/"` → `/`; `"/\\evil.test"` → `/`; `"mailboxes"` → `/`; `"/login"`, `"/login?next=%2F"`, `"/setup?token=abc"` → `/`; `"/\t/evil.test"`, `"/\n/evil.test"`, `"/\r\n/evil.test"` → `/` (the URL parser drops tab, LF and CR; second cold review, finding 1); `"/%09/evil.test"` → the same.
+    1. `next-path.test.ts`: `safeNextPath("/mailboxes")` → `/mailboxes`; `"/mailboxes?x=1#y"` → the same; `null` → `/`; `""` → `/`; `"//evil.test"` → `/`; `"https://evil.test/"` → `/`; `"/\\evil.test"` → `/`; `"mailboxes"` → `/`; `"/login"`, `"/login?next=%2F"`, `"/setup?token=abc"` → `/`; `"/\t/evil.test"`, `"/\n/evil.test"`, `"/\r\n/evil.test"` → `/` (the URL parser drops tab, LF and CR; second cold review, finding 1); `"/%09/evil.test"` → the same; `"/.//evil.test"`, `"/..//evil.test"`, `"/a/..//evil.test"`, `"/%2e//evil.test"` → `/` (dot segments; stage 5 review, 2026-11-09).
     2. Playwright (stage 13, W20 cases 1–3, 7) covers the wrong password text, the success redirect to `/onboarding` through `/`, the sign-out and the 429 text.
   - Check: `bun run lint && bun run typecheck && bun run test:unit && cd apps/web && bun run build`; then `grep -rlE "__vite-browser-external|node:crypto" dist/_astro` → nothing (second cold review, finding 16).
   - Done when: the build is green, the unit test passes, and the hand check of 11.3 passes for the login.

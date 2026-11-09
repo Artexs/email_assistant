@@ -50,14 +50,17 @@ const ipFamily = (address: string): "ipv4" | "ipv6" => (isIP(address) === 6 ? "i
 export function buildTrustedProxies(entries: readonly string[]): BlockList {
   const list = new BlockList();
   for (const entry of entries) {
-    const [address, prefix] = entry.split("/");
-    if (address === undefined || isIP(address) === 0) throw new Error(`invalid trusted proxy entry: ${entry}`);
+    const parts = entry.split("/");
+    const [address, prefix] = parts;
+    if (parts.length > 2 || address === undefined || isIP(address) === 0)
+      throw new Error(`invalid trusted proxy entry: ${entry}`);
     const family = ipFamily(address);
     if (prefix === undefined) {
       list.addAddress(address, family);
     } else {
       const bits = Number(prefix);
-      if (!Number.isInteger(bits)) throw new Error(`invalid trusted proxy entry: ${entry}`);
+      if (!/^\d{1,3}$/.test(prefix) || !Number.isInteger(bits))
+        throw new Error(`invalid trusted proxy entry: ${entry}`);
       list.addSubnet(address, bits, family);
     }
   }
@@ -78,6 +81,8 @@ export function clientAddress(
   trusted: BlockList
 ): string | null {
   if (peer === undefined) return null;
+  // A peer that is not a plain IP (for example a zoned fe80::1%eth0) is returned unchanged:
+  // it only keys the rate limit and auth_sessions.ip_address, never trust.
   const peerAddress = normalizeAddress(peer);
   if (!forwardedFor || !isTrusted(peerAddress, trusted)) return peerAddress;
   const hops = forwardedFor.split(",").map((hop) => normalizeAddress(hop.trim()));
@@ -105,6 +110,7 @@ export function safeNext(path: string | null | undefined): string {
   if (!path.startsWith("/") || path.startsWith("//") || path.includes("\\")) return "/";
   const url = new URL(path, "http://x.invalid");
   if (url.origin !== "http://x.invalid") return "/";
+  if (url.pathname.startsWith("//")) return "/";
   if (url.pathname.startsWith("/login") || url.pathname.startsWith("/setup")) return "/";
   return `${url.pathname}${url.search}${url.hash}`;
 }

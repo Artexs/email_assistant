@@ -84,6 +84,10 @@ describe("buildTrustedProxies and normalizeAddress", () => {
     expect(() => buildTrustedProxies(["nope"])).toThrow();
   });
 
+  test.each(["10.0.0.0/", "10.0.0.0/8/9", "10.0.0.0/ 8"])("a malformed prefix %j throws", (entry) => {
+    expect(() => buildTrustedProxies([entry])).toThrow();
+  });
+
   test("normalizeAddress unwraps IPv4-mapped addresses only", () => {
     expect(normalizeAddress("::ffff:10.0.0.1")).toBe("10.0.0.1");
     expect(normalizeAddress("2001:db8::1")).toBe("2001:db8::1");
@@ -121,6 +125,10 @@ describe("safeNext", () => {
     ["/\r\n/evil.test", "/"],
     ["/%09/evil.test", "/%09/evil.test"],
     ["/mailboxes?x=1#y", "/mailboxes?x=1#y"],
+    ["/.//evil.test", "/"],
+    ["/..//evil.test", "/"],
+    ["/a/..//evil.test", "/"],
+    ["/%2e//evil.test", "/"],
   ])("%j -> %j", (input, expected) => {
     expect(safeNext(input)).toBe(expected);
   });
