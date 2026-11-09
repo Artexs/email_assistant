@@ -1,6 +1,8 @@
-import { describe, expect, test } from "bun:test";
+import { APIError } from "better-auth/api";
+import { afterEach, describe, expect, spyOn, test } from "bun:test";
 
-import { AUTH_ALLOWED_PATHS, cleanLogText, isAllowedAuthPath } from "./auth";
+import { AUTH_ALLOWED_PATHS, cleanLogText, isAllowedAuthPath, onAuthError } from "./auth";
+import { setLogLevel } from "./log";
 
 describe("isAllowedAuthPath", () => {
   test("allows the eight paths with POST and GET", () => {
@@ -48,5 +50,38 @@ describe("cleanLogText", () => {
 
   test("keeps a plain text", () => {
     expect(cleanLogText("Invalid password")).toBe("Invalid password");
+  });
+});
+
+describe("onAuthError", () => {
+  afterEach(() => setLogLevel("info"));
+
+  function capture(error: unknown): string[] {
+    const spy = spyOn(console, "error").mockImplementation((): void => undefined);
+    try {
+      onAuthError(error);
+      return spy.mock.calls.map((call) => call.join(" "));
+    } finally {
+      spy.mockRestore();
+    }
+  }
+
+  test("logs nothing for a 4xx APIError", () => {
+    expect(capture(new APIError("UNAUTHORIZED", { message: "Invalid password" }))).toEqual([]);
+    expect(capture(new APIError("BAD_REQUEST", { message: "bad" }))).toEqual([]);
+  });
+
+  test("logs a 500 APIError with its name only", () => {
+    const lines = capture(new APIError("INTERNAL_SERVER_ERROR", { message: "MARKER-DETAIL" }));
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain("better-auth: APIError");
+    expect(lines[0]).not.toContain("MARKER-DETAIL");
+  });
+
+  test("logs a non-API error with its name only", () => {
+    const lines = capture(new TypeError("MARKER-DETAIL"));
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain("better-auth: TypeError");
+    expect(lines[0]).not.toContain("MARKER-DETAIL");
   });
 });

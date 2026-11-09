@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { APIError } from "better-auth/api";
 import { Pool } from "pg";
 
 import { describeError } from "./errors";
@@ -48,6 +49,19 @@ const URL_RUN = /\b[a-z][a-z0-9+.-]*:\/\/\S*/gi;
 
 export function cleanLogText(text: string): string {
   return text.replace(CONTROL_CHARACTERS, " ").replace(URL_RUN, "<url>").slice(0, 200);
+}
+
+// The router's own log of a thrown error can hold request data, so this hook replaces it.
+// A 4xx APIError is an expected answer (wrong password, bad token): no log line.
+export function onAuthError(error: unknown): void {
+  if (isApiError(error) && error.status !== "INTERNAL_SERVER_ERROR") {
+    return;
+  }
+  log.error(`better-auth: ${cleanLogText(describeError(error))}`);
+}
+
+function isApiError(error: unknown): error is { status: string } {
+  return error instanceof APIError;
 }
 
 function createBetterAuth(deps: AuthDeps, pool: Pool) {
@@ -166,10 +180,12 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
         },
       },
     },
+    onAPIError: { onError: onAuthError },
     logger: {
       level: "warn",
-      log: (level, message) => {
-        const text = cleanLogText(typeof message === "string" ? message : describeError(message));
+      log: (level, message, ...args) => {
+        const base = typeof message === "string" ? message : describeError(message);
+        const text = cleanLogText(args[0] instanceof Error ? `${base}: ${describeError(args[0])}` : base);
         (level === "error" ? log.error : log.warn)(`better-auth: ${text}`);
       },
     },

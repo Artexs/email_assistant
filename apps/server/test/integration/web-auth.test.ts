@@ -43,7 +43,9 @@ const tokens: string[] = [];
 afterEach(async () => {
   setLogLevel("info");
   if (tokens.length > 0) {
-    await sql`DELETE FROM auth_verifications WHERE value IN (${sql.join(tokens)})`.execute(db);
+    // Better Auth stores `identifier = "reset-password:<token>"`.
+    const identifiers = tokens.map((token) => `reset-password:${token}`);
+    await sql`DELETE FROM auth_verifications WHERE identifier IN (${sql.join(identifiers)})`.execute(db);
   }
   for (const orgId of orgIds) {
     await db.deleteFrom("organizations").where("id", "=", orgId).execute();
@@ -172,6 +174,7 @@ describe("web auth", () => {
     const first = await signIn(email, PASSWORD);
     await signIn(email, PASSWORD);
     expect(await countRows("auth_sessions", userId)).toBe(2);
+    expect(await auditRows(orgId, "web.login")).toHaveLength(2);
 
     const cookie = (first.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
     await auth.api.changePassword({

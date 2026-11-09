@@ -129,6 +129,7 @@ describe("web auth logs", () => {
       }
     }
     expect(lines.some((line) => line.includes(`web: reset requested for user ${userId}`))).toBe(true);
+    // This line comes from the sign-in route (`logger.warn`), not from the onAPIError hook, which stays silent on a 4xx.
     expect(lines.some((line) => line.includes("better-auth: Invalid password"))).toBe(true);
 
     const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
