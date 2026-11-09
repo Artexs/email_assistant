@@ -6,7 +6,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's F
 
 Why risky: the sync cursor rule (D4) and every read of the sync go through these calls. The sync stays INBOX-only in this stage (it passes `INBOX`).
 
-- [ ] **5.1 Folder-aware read calls in the port, the IMAP adapter and the fake**
+- [x] **5.1 Folder-aware read calls in the port, the IMAP adapter and the fake**
   - Goal: the port reads any folder: status with the UIDNEXT rule (D4), UID range fetch, body text, folder list. The INBOX-only calls go away.
   - Files: create `apps/server/src/modules/mail/uid-next.ts`, `apps/server/src/modules/mail/uid-next.test.ts`; change `apps/server/src/modules/mail/port.ts`,
     `apps/server/src/modules/mail/imap/client.ts`,

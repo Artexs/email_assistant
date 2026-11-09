@@ -4,8 +4,8 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 
-import { locateKeyOf, locateMessage, type LocateKey } from "./locate";
-import { INBOX, type InboxStatus, type MailProvider, type MessageMeta } from "./port";
+import { LOCATE_CHUNK, locateKeyOf, locateMessage, type LocateKey } from "./locate";
+import { INBOX, type FolderStatus, type MailProvider, type MessageMeta } from "./port";
 import {
   findCopies,
   getMailbox,
@@ -193,7 +193,7 @@ async function planChunk(
     }
 
     if (dedupKey !== null) {
-      const body = await deps.provider.fetchBodyText(meta.uid);
+      const body = await deps.provider.fetchBodyText(INBOX, meta.uid);
       writes.push({ kind: "insert", row: newRow(mailboxId, meta, messageId, hash, dedupKey, body) });
       state.newKeys.set(baseKey, [...runKeys, dedupKey]);
     }
@@ -348,17 +348,19 @@ async function readInboxFolder(deps: SyncDeps, ctx: TenantContext, mailboxId: st
   return folder;
 }
 
-function selectMode(folder: SyncFolderRow, status: InboxStatus): SyncResult["mode"] {
+function selectMode(folder: SyncFolderRow, status: FolderStatus): SyncResult["mode"] {
   if (folder.uidvalidity === null) return "initial";
   return folder.uidvalidity === status.uidValidity ? "incremental" : "rescan";
 }
 
-// INBOX mail with INTERNALDATE at or after `since`. IMAP SINCE is by day, so filter again by the time.
-export async function fetchSince(provider: MailProvider, since: Date): Promise<MessageMeta[]> {
+// Mail of `folder` with INTERNALDATE at or after `since`. IMAP SINCE is by day, so filter again by the time.
+export async function fetchSince(provider: MailProvider, folder: string, since: Date): Promise<MessageMeta[]> {
   // SINCE is a date in the server's time zone, but imapflow sends the UTC date: search one day earlier.
-  const uids = await provider.searchInboxSince(new Date(since.getTime() - DAY_MS));
-  if (uids.length === 0) return [];
-  const metas = await provider.fetchByUids(uids);
+  const uids = await provider.searchSinceIn(folder, new Date(since.getTime() - DAY_MS));
+  const metas: MessageMeta[] = [];
+  for (let i = 0; i < uids.length; i += LOCATE_CHUNK) {
+    metas.push(...(await provider.fetchByUidsIn(folder, uids.slice(i, i + LOCATE_CHUNK))));
+  }
   const inWindow = metas.filter((meta) => meta.internalDate.getTime() >= since.getTime());
   // Cursor 0 drops no uid: this only sorts and drops repeated uids.
   return filterAboveCursor(inWindow, 0).kept;
@@ -369,7 +371,7 @@ export async function syncMailbox(deps: SyncDeps, ctx: TenantContext, mailboxId:
   if (!mailbox) throw new HardError(`mailbox ${mailboxId} not found`);
   const folder = await readInboxFolder(deps, ctx, mailboxId);
 
-  const status = await deps.provider.inboxStatus();
+  const status = await deps.provider.folderStatus(INBOX);
   const mode = selectMode(folder, status);
   const result: SyncResult = {
     mode,
@@ -386,14 +388,14 @@ export async function syncMailbox(deps: SyncDeps, ctx: TenantContext, mailboxId:
 
   let kept: MessageMeta[];
   if (mode === "incremental") {
-    const metas = await deps.provider.fetchAbove(folder.last_uid ?? 0);
+    const metas = await deps.provider.fetchAbove(INBOX, folder.last_uid ?? 0);
     const filtered = filterAboveCursor(metas, folder.last_uid ?? 0);
     kept = filtered.kept;
     result.fetched = metas.length;
     result.ignoredBelowCursor = filtered.ignored;
   } else {
     const windowMs = mode === "initial" ? INITIAL_WINDOW_MS : RESCAN_WINDOW_MS;
-    kept = await fetchSince(deps.provider, new Date(deps.now().getTime() - windowMs));
+    kept = await fetchSince(deps.provider, INBOX, new Date(deps.now().getTime() - windowMs));
     result.fetched = kept.length;
   }
 
@@ -445,12 +447,12 @@ export async function backfillInbox(
   const folder = await readInboxFolder(deps, ctx, mailboxId);
   if (folder.uidvalidity === null) throw new HardError("mailbox was never synced: run the sync first");
 
-  const status = await deps.provider.inboxStatus();
+  const status = await deps.provider.folderStatus(INBOX);
   if (status.uidValidity !== folder.uidvalidity) {
     throw new SoftError("UIDVALIDITY changed: wait for the regular sync to rescan, then run the backfill again");
   }
 
-  const kept = await fetchSince(deps.provider, opts.since);
+  const kept = await fetchSince(deps.provider, INBOX, opts.since);
   const result: SyncResult = {
     mode: "backfill",
     fetched: kept.length,

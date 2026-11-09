@@ -104,7 +104,7 @@ export async function auditMailbox(
   const provider = await openImapProvider(imap);
   let metas;
   try {
-    metas = await fetchSince(provider, since);
+    metas = await fetchSince(provider, INBOX, since);
   } finally {
     await provider.close();
   }

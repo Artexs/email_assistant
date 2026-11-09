@@ -116,14 +116,12 @@ function onBodyCall(fake: FakeMailProvider, hook: (call: number) => Promise<void
   return {
     ...fake,
     serverInfo: () => fake.serverInfo(),
-    inboxStatus: () => fake.inboxStatus(),
-    fetchAbove: (lastUid) => fake.fetchAbove(lastUid),
-    searchInboxSince: (since) => fake.searchInboxSince(since),
-    fetchByUids: (uids) => fake.fetchByUids(uids),
-    fetchBodyText: async (uid) => {
+    folderStatus: (folder) => fake.folderStatus(folder),
+    fetchAbove: (folder, lastUid) => fake.fetchAbove(folder, lastUid),
+    fetchBodyText: async (folder, uid) => {
       call += 1;
       await hook(call);
-      return fake.fetchBodyText(uid);
+      return fake.fetchBodyText(folder, uid);
     },
     close: () => fake.close(),
   };
@@ -132,7 +130,7 @@ function onBodyCall(fake: FakeMailProvider, hook: (call: number) => Promise<void
 // Runs `hook` once, right after the first call of `method` returns.
 function afterFirstCall(
   fake: FakeMailProvider,
-  method: "inboxStatus" | "searchInboxSince",
+  method: "folderStatus" | "searchSinceIn",
   hook: () => void
 ): MailProvider {
   let done = false;
@@ -146,17 +144,17 @@ function afterFirstCall(
   return {
     ...fake,
     serverInfo: () => fake.serverInfo(),
-    inboxStatus: async () => {
-      const status = await fake.inboxStatus();
-      return method === "inboxStatus" ? once(status) : status;
+    folderStatus: async (folder) => {
+      const status = await fake.folderStatus(folder);
+      return method === "folderStatus" ? once(status) : status;
     },
-    fetchAbove: (lastUid) => fake.fetchAbove(lastUid),
-    searchInboxSince: async (since) => {
-      const uids = await fake.searchInboxSince(since);
-      return method === "searchInboxSince" ? once(uids) : uids;
+    fetchAbove: (folder, lastUid) => fake.fetchAbove(folder, lastUid),
+    searchSinceIn: async (folder, since) => {
+      const uids = await fake.searchSinceIn(folder, since);
+      return method === "searchSinceIn" ? once(uids) : uids;
     },
-    fetchByUids: (uids) => fake.fetchByUids(uids),
-    fetchBodyText: (uid) => fake.fetchBodyText(uid),
+    fetchByUidsIn: (folder, uids) => fake.fetchByUidsIn(folder, uids),
+    fetchBodyText: (folder, uid) => fake.fetchBodyText(folder, uid),
     close: () => fake.close(),
   };
 }
@@ -658,12 +656,12 @@ describe("syncMailbox: initial", () => {
     });
   });
 
-  test("a mail delivered after inboxStatus and before the search is stored and sets the cursor", async () => {
+  test("a mail delivered after folderStatus and before the search is stored and sets the cursor", async () => {
     await withRollback(db, async (trx) => {
       const s = await setupNew(trx);
       s.fake.deliver("INBOX", seed(1), { internalDate: hoursAgo(2) });
       let late = 0;
-      const provider = afterFirstCall(s.fake, "inboxStatus", () => {
+      const provider = afterFirstCall(s.fake, "folderStatus", () => {
         late = s.fake.deliver("INBOX", seed(2), { internalDate: hoursAgo(1) });
       });
 
@@ -680,9 +678,9 @@ describe("syncMailbox: initial", () => {
     await withRollback(db, async (trx) => {
       const s = await setupNew(trx);
       s.fake.deliver("INBOX", seed(1), { internalDate: hoursAgo(2) });
-      const { uidNext } = await s.fake.inboxStatus();
+      const { uidNext } = await s.fake.folderStatus("INBOX");
       let late = 0;
-      const provider = afterFirstCall(s.fake, "searchInboxSince", () => {
+      const provider = afterFirstCall(s.fake, "searchSinceIn", () => {
         late = s.fake.deliver("INBOX", seed(2), { internalDate: hoursAgo(1) });
       });
 

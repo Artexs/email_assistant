@@ -1,9 +1,10 @@
 import { HardError } from "../../../platform/errors";
 import {
   INBOX,
+  MailFolderMissingError,
   MailNotFoundError,
   type FolderMessageMeta,
-  type InboxStatus,
+  type FolderStatus,
   type MailCapabilities,
   type MailProvider,
   type MailServerInfo,
@@ -11,6 +12,7 @@ import {
   type MoveResult,
 } from "../port";
 import { renderSeedMessage, type SeedMessage } from "../seed";
+import { resolveUidNext } from "../uid-next";
 
 import { parseRawHeaders } from "./raw";
 
@@ -20,12 +22,17 @@ export interface FakeMailProvider extends MailProvider {
   /** Returns the new uid in `toFolder`. */
   userMove(fromFolder: string, uid: number, toFolder: string): number;
   remove(folder: string, uid: number): void;
-  /** INBOX: new UIDVALIDITY, uids renumbered from 1 in the old order. */
-  resetUidValidity(next: number): void;
+  /**
+   * `folder` (default INBOX) gets a new UIDVALIDITY and its uids are renumbered in the old order: from 1,
+   * or with `globalUids` from the shared counter, so a UID stays unique in the mailbox.
+   */
+  resetUidValidity(next: number, folder?: string): void;
   /** The next call(s) of `method` throw `error`. For `deleteMessage` this also stops the delete step of a copy-path `moveMessage`. */
   failOn(method: keyof MailProvider, error: Error, times?: number): void;
   /** Method names in call order. */
   readonly calls: string[];
+  /** Every call with its folder argument (or "" for calls without one), in call order. */
+  readonly folderCalls: { method: string; folder: string }[];
   closed: boolean;
 }
 
@@ -45,6 +52,10 @@ export interface FakeMailProviderOptions {
   copyUidMap?: boolean;
   /** Special-use flag per folder path, reported by `serverInfo()` (default none), e.g. `{ "Junk": "\\Junk" }`. */
   folderSpecialUse?: Record<string, string>;
+  /** One UID counter for all folders, as Interia (F3). Default false (one counter per folder, as GreenMail, F6). */
+  globalUids?: boolean;
+  /** The STATUS UIDNEXT that the fake reports before the D4 rule; Interia gives 1 (F2). Default: the real next UID. */
+  uidNextValue?: number;
 }
 
 interface StoredMessage {
@@ -117,6 +128,8 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
   const pathDelimiter = opts.pathDelimiter ?? "/";
   const copyUidMap = opts.copyUidMap ?? true;
   const folderSpecialUse = opts.folderSpecialUse ?? {};
+  const globalUids = opts.globalUids ?? false;
+  let globalNext = 1;
   const capabilities: MailCapabilities = {
     idle: true,
     move: true,
@@ -129,6 +142,7 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
   const folders = new Map<string, Folder>();
   const failures = new Map<string, { error: Error; times: number }>();
   const calls: string[] = [];
+  const folderCalls: { method: string; folder: string }[] = [];
 
   function folderOf(path: string): Folder {
     let folder = folders.get(path);
@@ -149,8 +163,9 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
     throw failure.error;
   }
 
-  function enter(method: keyof MailProvider): void {
+  function enter(method: keyof MailProvider, folder = ""): void {
     calls.push(method);
+    folderCalls.push({ method, folder });
     failIfSet(method);
   }
 
@@ -163,8 +178,10 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
     keepUid?: number
   ): number {
     const target = folderOf(folder);
-    const uid = keepUid !== undefined && !target.messages.some((m) => m.uid === keepUid) ? keepUid : target.uidNext;
+    const next = globalUids ? globalNext : target.uidNext;
+    const uid = keepUid !== undefined && !target.messages.some((m) => m.uid === keepUid) ? keepUid : next;
     target.uidNext = Math.max(target.uidNext, uid + 1);
+    globalNext = Math.max(globalNext, uid + 1);
     target.messages.push({ uid, size, internalDate, msg, flags: new Set(flags) });
     return uid;
   }
@@ -187,8 +204,15 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
     return folders.get(folder)?.messages.find((m) => m.uid === uid);
   }
 
+  function existingFolder(path: string): Folder {
+    const folder = folders.get(path);
+    if (!folder) throw new MailFolderMissingError();
+    return folder;
+  }
+
   const provider: FakeMailProvider = {
     calls,
+    folderCalls,
     closed: false,
 
     deliver(folder, msg, deliverOpts = {}) {
@@ -208,13 +232,14 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
       target.messages = target.messages.filter((m) => m.uid !== uid);
     },
 
-    resetUidValidity(next) {
-      const inbox = folderOf(INBOX);
-      inbox.uidValidity = next;
-      inbox.messages.forEach((m, index) => {
-        m.uid = index + 1;
+    resetUidValidity(next, folder = INBOX) {
+      const target = folderOf(folder);
+      target.uidValidity = next;
+      target.messages.forEach((m, index) => {
+        m.uid = globalUids ? globalNext + index : index + 1;
       });
-      inbox.uidNext = inbox.messages.length + 1;
+      if (globalUids) globalNext += target.messages.length;
+      target.uidNext = globalUids ? globalNext : target.messages.length + 1;
     },
 
     failOn(method, error, times = 1) {
@@ -229,44 +254,42 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
       };
     },
 
-    async inboxStatus(): Promise<InboxStatus> {
-      enter("inboxStatus");
-      const inbox = folderOf(INBOX);
-      return { uidValidity: inbox.uidValidity, uidNext: inbox.uidNext };
+    async listFolders() {
+      enter("listFolders");
+      return [...folders.keys()].map((path) => ({ path, delimiter: pathDelimiter }));
     },
 
-    async fetchAbove(lastUid) {
-      enter("fetchAbove");
-      const inbox = folderOf(INBOX);
-      const above = inbox.messages.filter((m) => m.uid > lastUid);
-      if (above.length === 0 && starQuirk && inbox.messages.length > 0) {
-        const highest = inbox.messages.reduce((a, b) => (b.uid > a.uid ? b : a));
+    async folderStatus(folder): Promise<FolderStatus> {
+      enter("folderStatus", folder);
+      const target = existingFolder(folder);
+      const highestUid = target.messages.reduce((top, m) => Math.max(top, m.uid), 0);
+      const realNext = globalUids ? globalNext : target.uidNext;
+      return {
+        uidValidity: target.uidValidity,
+        uidNext: resolveUidNext({
+          statusUidNext: opts.uidNextValue ?? realNext,
+          selectUidNext: undefined,
+          highestUid,
+        }),
+        highestUid,
+      };
+    },
+
+    async fetchAbove(folder, lastUid) {
+      enter("fetchAbove", folder);
+      const target = existingFolder(folder);
+      const above = target.messages.filter((m) => m.uid > lastUid);
+      if (above.length === 0 && starQuirk && target.messages.length > 0) {
+        const highest = target.messages.reduce((a, b) => (b.uid > a.uid ? b : a));
         return [toMeta(highest)];
       }
       return above.sort((a, b) => a.uid - b.uid).map(toMeta);
     },
 
-    async searchInboxSince(since) {
-      enter("searchInboxSince");
-      const day = utcDay(since);
-      return folderOf(INBOX)
-        .messages.filter((m) => utcDay(m.internalDate) >= day)
-        .map((m) => m.uid)
-        .sort((a, b) => a - b);
-    },
-
-    async fetchByUids(uids) {
-      enter("fetchByUids");
-      const wanted = new Set(uids);
-      return folderOf(INBOX)
-        .messages.filter((m) => wanted.has(m.uid))
-        .sort((a, b) => a.uid - b.uid)
-        .map(toMeta);
-    },
-
-    async fetchBodyText(uid) {
-      enter("fetchBodyText");
-      const stored = find(INBOX, uid);
+    async fetchBodyText(folder, uid) {
+      enter("fetchBodyText", folder);
+      existingFolder(folder);
+      const stored = find(folder, uid);
       if (!stored || stored.size > bodyLimitBytes) return null;
       if (stored.msg.text !== undefined) return stored.msg.text;
       if (stored.msg.html !== undefined) return stripTags(stored.msg.html);
@@ -274,7 +297,7 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
     },
 
     async ensureFolder(name) {
-      enter("ensureFolder");
+      enter("ensureFolder", name);
       const parts = name.split("/");
       // A parent that differs only in case is the user's folder: build the child from its real spelling.
       const real: string[] = [];
@@ -301,13 +324,13 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
     },
 
     async fetchMetaIn(folder, uid) {
-      enter("fetchMetaIn");
+      enter("fetchMetaIn", folder);
       const stored = find(folder, uid);
       return stored ? toFolderMeta(stored) : null;
     },
 
     async searchSinceIn(folder, since) {
-      enter("searchSinceIn");
+      enter("searchSinceIn", folder);
       const day = utcDay(since);
       return (folders.get(folder)?.messages ?? [])
         .filter((m) => utcDay(m.internalDate) >= day)
@@ -316,7 +339,7 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
     },
 
     async fetchByUidsIn(folder, uids) {
-      enter("fetchByUidsIn");
+      enter("fetchByUidsIn", folder);
       const wanted = new Set(uids);
       return (folders.get(folder)?.messages ?? [])
         .filter((m) => wanted.has(m.uid))
@@ -325,7 +348,7 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
     },
 
     async moveMessage(fromFolder, uid, toFolder): Promise<MoveResult> {
-      enter("moveMessage");
+      enter("moveMessage", fromFolder);
       const stored = find(fromFolder, uid);
       if (!stored) throw new MailNotFoundError(`No message ${uid} in the source folder`);
       // Same order as a server: fetch, then the UIDPLUS check for the copy+delete path, then the write.
@@ -352,7 +375,7 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
     },
 
     async deleteMessage(folder, uid) {
-      enter("deleteMessage");
+      enter("deleteMessage", folder);
       if (!capabilities.uidplus) throw new HardError("no UIDPLUS");
       if (!find(folder, uid)) return false;
       provider.remove(folder, uid);
@@ -360,7 +383,7 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
     },
 
     async setFlags(folder, uid, change) {
-      enter("setFlags");
+      enter("setFlags", folder);
       const stored = find(folder, uid);
       if (!stored) throw new MailNotFoundError(`No message ${uid} in the folder`);
       for (const flag of change.add ?? []) stored.flags.add(flag);
@@ -368,7 +391,7 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
     },
 
     async appendMessage(folder, raw, flags, internalDate) {
-      enter("appendMessage");
+      enter("appendMessage", folder);
       // Like a server: no folder, no APPEND (imapflow reports TRYCREATE).
       if (!folders.has(folder)) throw new HardError("NO [TRYCREATE]");
       const headers = parseRawHeaders(raw);

@@ -12,9 +12,10 @@ export { openSmtpSender, verifySmtpLogin, type SmtpConnectOptions } from "./imap
 export {
   INBOX,
   MailAuthError,
+  MailFolderMissingError,
   MailNotFoundError,
   type FolderMessageMeta,
-  type InboxStatus,
+  type FolderStatus,
   type MailCapabilities,
   type MailFolder,
   type MailProvider,

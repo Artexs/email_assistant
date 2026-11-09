@@ -22,9 +22,12 @@ export interface MailServerInfo {
   folders: MailFolder[];
 }
 
-export interface InboxStatus {
+export interface FolderStatus {
   uidValidity: number;
+  /** The largest of STATUS UIDNEXT, SELECT UIDNEXT and highestUid + 1 (finite values only), at least 1. */
   uidNext: number;
+  /** The UID of `*`; 0 when the folder is empty. */
+  highestUid: number;
 }
 
 export interface MessageMeta {
@@ -55,15 +58,14 @@ export interface MoveResult {
 
 export interface MailProvider {
   serverInfo(): Promise<MailServerInfo>;
-  inboxStatus(): Promise<InboxStatus>;
-  /** UID FETCH lastUid+1:* in INBOX. Can also return uid <= lastUid (RFC 3501 `*` rule). */
-  fetchAbove(lastUid: number): Promise<MessageMeta[]>;
-  /** UIDs in INBOX with INTERNALDATE on or after the day of `since`. */
-  searchInboxSince(since: Date): Promise<number[]>;
-  /** INBOX. */
-  fetchByUids(uids: number[]): Promise<MessageMeta[]>;
-  /** INBOX. Null when larger than the size limit or no text. */
-  fetchBodyText(uid: number): Promise<string | null>;
+  /** LIST only (no SELECT): path and delimiter of every folder. */
+  listFolders(): Promise<{ path: string; delimiter: string }[]>;
+  /** Throws MailFolderMissingError when the folder does not exist. */
+  folderStatus(folder: string): Promise<FolderStatus>;
+  /** UID FETCH lastUid+1:* in `folder`. Can also return uid <= lastUid (RFC 3501 `*` rule). [] for an empty folder. Throws MailFolderMissingError. */
+  fetchAbove(folder: string, lastUid: number): Promise<MessageMeta[]>;
+  /** Null when larger than the size limit, no text, or no such UID. Throws MailFolderMissingError. */
+  fetchBodyText(folder: string, uid: number): Promise<string | null>;
   /** Creates the folder when it is missing. Returns the path as the server lists it. */
   ensureFolder(name: string): Promise<string>;
   /** Null when the folder has no such UID (also when the folder does not exist). */
@@ -96,6 +98,14 @@ export class MailNotFoundError extends HardError {
   constructor(message: string, options?: { cause?: unknown }) {
     super(message, options);
     this.name = "MailNotFoundError";
+  }
+}
+
+/** The folder is not on the server (any more). The message never holds the path. */
+export class MailFolderMissingError extends HardError {
+  constructor(options?: { cause?: unknown }) {
+    super("IMAP folder not found", options);
+    this.name = "MailFolderMissingError";
   }
 }
 

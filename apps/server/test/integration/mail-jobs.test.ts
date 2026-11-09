@@ -164,7 +164,7 @@ describe("mail sync job", () => {
       const box = await addBox(trx);
       const o = openers();
       const fake = createFakeMailProvider({ uidValidity: 7 });
-      fake.failOn("inboxStatus", new SoftError("connection lost"));
+      fake.failOn("folderStatus", new SoftError("connection lost"));
       o.fakes.set(box.address, fake);
 
       await jobFor(trx, o).run();

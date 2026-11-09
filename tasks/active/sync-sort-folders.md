@@ -1,4 +1,4 @@
-> **Status 2026-11-09 — in progress — stages 1–4 done (spike; migration; core folder defaults and the spam folder plan; folder repository).** Left: the group review of stages 2–4, stages 5–17, checkpoint 2 before the deploy (stage 16).
+> **Status 2026-11-09 — in progress — stages 1–5 done (spike; migration; core; folder repository; port folder reads); group review 2–4 done.** Left: stages 6–17 (next: stage 6; group review 5–8 after stage 8), checkpoint 2 before the deploy (stage 16).
 
 # Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
@@ -408,7 +408,7 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - [x] [Stage 2](sync-sort-folders/stage-02-migration-sync-folders.md) [written] — Migration `sync_folders`; the INBOX cursor in `mailbox_folders` [risky]
 - [x] [Stage 3](sync-sort-folders/stage-03-core-folders-and-plan.md) [written] — Core: sync folder defaults; plan for spam folder mail; the `inbox` move target and its policy
 - [x] [Stage 4](sync-sort-folders/stage-04-folder-repository.md) [written] — Folder repository: list, discovery insert, switch, junk path [risky] — group review 2–4
-- [ ] [Stage 5](sync-sort-folders/stage-05-port-folder-reads.md) [written] — Port and adapters: folder status, fetch above, body text, folder list per folder [risky]
+- [x] [Stage 5](sync-sort-folders/stage-05-port-folder-reads.md) [written] — Port and adapters: folder status, fetch above, body text, folder list per folder [risky]
 - [ ] [Stage 6](sync-sort-folders/stage-06-sync-rules.md) [written] — Sync rules across folders (pure) [risky]
 - [ ] [Stage 7a](sync-sort-folders/stage-07a-sync-loop-per-folder.md) [written] — Sync loop per folder: discovery, new mail, errors [risky]
 - [ ] [Stage 7b](sync-sort-folders/stage-07b-sync-incoming-across-folders.md) [written] — Sync: cross copies, relocated, returned, move in flight across folders [risky]
@@ -507,3 +507,8 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
   `listSyncFolders` has no INBOX row; Q7 → stage 7a makes `NewEmail.source_folder` required; minor 3 → stage 7a and 13 test the plain-`Db` branch;
   stage 4 interface of `insertSyncFolders` updated. Checks: `bun run lint` pass; `bun run typecheck` exit 0; `bun run test:unit` 1306 pass;
   `bun run test:int` 910 pass.
+- 2026-11-09: Stage 5 built (implementer) and reviewed (Opus, high): PASS, no findings. Port: `listFolders`, `folderStatus` (D4 via `resolveUidNext`; SELECT read
+  before STATUS), `fetchAbove`/`fetchBodyText` per folder, `MailFolderMissingError` ("IMAP folder not found"); `inboxStatus`, `searchInboxSince`,
+  `fetchByUids` removed (no caller left; stage 15 now names the docs lines that still mention them). Deviations: a cast of imapflow `status()` to allow
+  `false`; an extra fake test for `globalUids` + `resetUidValidity`. `fetchSince` now throws on a failed SEARCH (was `[]`; safer). Checks: `bun run lint` pass;
+  `bun run typecheck` exit 0; `bun run test:unit` 1323 pass, 0 fail; `bun run test:int` 918 pass, 0 fail (reviewer, clean run).

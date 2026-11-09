@@ -146,15 +146,7 @@ describe("backfillInbox", () => {
       expect(byId.get("<b4@x.test>")?.backfilled_at).toBeNull();
       expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY, lastUid: 4 });
 
-      const readOnly = [
-        "inboxStatus",
-        "searchInboxSince",
-        "fetchByUids",
-        "fetchBodyText",
-        "fetchMetaIn",
-        "searchSinceIn",
-        "fetchByUidsIn",
-      ];
+      const readOnly = ["folderStatus", "fetchBodyText", "fetchMetaIn", "searchSinceIn", "fetchByUidsIn"];
       for (const call of s.fake.calls) expect(readOnly).toContain(call);
     });
   });
@@ -227,7 +219,7 @@ describe("backfillInbox", () => {
       await expect(backfillInbox(deps(trx, s.fake), s.ctx, s.mailboxId, { since: SINCE })).rejects.toBeInstanceOf(
         SoftError
       );
-      expect(s.fake.calls).not.toContain("searchInboxSince");
+      expect(s.fake.calls).not.toContain("searchSinceIn");
       expect((await emails(trx, s.mailboxId)).length).toBe(1);
     });
   });
@@ -248,11 +240,11 @@ describe("backfillInbox", () => {
       const provider: MailProvider = {
         ...s.fake,
         serverInfo: () => s.fake.serverInfo(),
-        inboxStatus: () => s.fake.inboxStatus(),
-        fetchAbove: (lastUid) => s.fake.fetchAbove(lastUid),
-        searchInboxSince: (since) => s.fake.searchInboxSince(since),
-        fetchByUids: (uids) => s.fake.fetchByUids(uids),
-        fetchBodyText: async (uid) => {
+        folderStatus: (folder) => s.fake.folderStatus(folder),
+        fetchAbove: (folder, lastUid) => s.fake.fetchAbove(folder, lastUid),
+        searchSinceIn: (folder, since) => s.fake.searchSinceIn(folder, since),
+        fetchByUidsIn: (folder, uids) => s.fake.fetchByUidsIn(folder, uids),
+        fetchBodyText: async (folder, uid) => {
           await updateCursor(
             trx,
             s.ctx,
@@ -260,7 +252,7 @@ describe("backfillInbox", () => {
             { uidValidity: UID_VALIDITY, lastUid: 4 },
             { uidValidity: UID_VALIDITY, lastUid: 5 }
           );
-          return s.fake.fetchBodyText(uid);
+          return s.fake.fetchBodyText(folder, uid);
         },
         close: () => s.fake.close(),
       };

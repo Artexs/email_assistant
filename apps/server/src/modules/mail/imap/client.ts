@@ -11,8 +11,9 @@ import { createLog } from "../../../platform/log";
 import {
   INBOX,
   MailAuthError,
+  MailFolderMissingError,
   type FolderMessageMeta,
-  type InboxStatus,
+  type FolderStatus,
   type MailCapabilities,
   type MailProvider,
   type MailServerInfo,
@@ -20,6 +21,7 @@ import {
   MailNotFoundError,
   type MoveResult,
 } from "../port";
+import { resolveUidNext } from "../uid-next";
 
 import { bodyTextFromSource, toFolderMessageMeta, toMessageMeta } from "./mapper";
 
@@ -199,31 +201,51 @@ class ImapMailProvider implements MailProvider {
     });
   }
 
-  inboxStatus(): Promise<InboxStatus> {
-    return guard("inboxStatus", () =>
-      this.withMailbox(INBOX, async () => {
+  folderStatus(folder: string): Promise<FolderStatus> {
+    return guard("folderStatus", async () => {
+      const lock = await this.lockOrNull(folder);
+      if (lock === null) throw new MailFolderMissingError();
+      try {
         const box = this.client.mailbox;
-        if (box === false) throw new HardError("IMAP INBOX is not open");
+        if (box === false) throw new HardError("IMAP folder is not open");
         const uidValidity = Number(box.uidValidity);
-        if (!Number.isFinite(uidValidity)) throw new HardError("IMAP INBOX gave no valid UIDVALIDITY");
-        // Interia sends no UIDNEXT on SELECT: ask with STATUS, then fall back to the highest UID + 1.
-        let uidNext = box.uidNext;
-        if (!Number.isFinite(uidNext)) {
-          uidNext = (await this.client.status(INBOX, { uidNext: true })).uidNext as number;
-        }
-        if (!Number.isFinite(uidNext) && box.exists > 0) {
+        if (!Number.isFinite(uidValidity)) throw new HardError("IMAP folder gave no valid UIDVALIDITY");
+        const selectUidNext = box.uidNext;
+        let highestUid = 0;
+        if (box.exists > 0) {
           const last = await this.client.fetchOne("*", { uid: true }, { uid: true });
-          uidNext = last === false ? NaN : last.uid + 1;
+          highestUid = last === false ? 0 : last.uid;
         }
-        if (!Number.isFinite(uidNext)) uidNext = 1;
-        return { uidValidity, uidNext };
-      })
-    );
+        // Interia gives a wrong STATUS value: D4 takes the largest of all three sources.
+        let statusUidNext: number | undefined;
+        try {
+          // The typings have no `false`, but a refused STATUS gives it at run time.
+          const status = (await this.client.status(folder, { uidNext: true })) as { uidNext?: number } | false;
+          statusUidNext = status === false ? undefined : status.uidNext;
+        } catch (error) {
+          if (toMailError(error, "status") instanceof SoftError) throw error;
+        }
+        return { uidValidity, uidNext: resolveUidNext({ statusUidNext, selectUidNext, highestUid }), highestUid };
+      } finally {
+        lock.release();
+      }
+    });
   }
 
-  fetchAbove(lastUid: number): Promise<MessageMeta[]> {
+  /** Locks `folder` or throws MailFolderMissingError. */
+  private async withExistingFolder<T>(folder: string, fn: () => Promise<T>): Promise<T> {
+    const lock = await this.lockOrNull(folder);
+    if (lock === null) throw new MailFolderMissingError();
+    try {
+      return await fn();
+    } finally {
+      lock.release();
+    }
+  }
+
+  fetchAbove(folder: string, lastUid: number): Promise<MessageMeta[]> {
     return guard("fetchAbove", () =>
-      this.withMailbox(INBOX, async () => {
+      this.withExistingFolder(folder, async () => {
         const box = this.client.mailbox;
         // `n:*` on an empty mailbox is an invalid range for some servers.
         if (box === false || box.exists === 0) return [];
@@ -232,23 +254,9 @@ class ImapMailProvider implements MailProvider {
     );
   }
 
-  searchInboxSince(since: Date): Promise<number[]> {
-    return guard("searchInboxSince", () =>
-      this.withMailbox(INBOX, async () => {
-        const uids = await this.client.search({ since }, { uid: true });
-        return uids === false ? [] : uids;
-      })
-    );
-  }
-
-  fetchByUids(uids: number[]): Promise<MessageMeta[]> {
-    if (uids.length === 0) return Promise.resolve([]);
-    return guard("fetchByUids", () => this.withMailbox(INBOX, () => this.fetchMetas(uids.join(","))));
-  }
-
-  fetchBodyText(uid: number): Promise<string | null> {
+  fetchBodyText(folder: string, uid: number): Promise<string | null> {
     return guard("fetchBodyText", () =>
-      this.withMailbox(INBOX, async () => {
+      this.withExistingFolder(folder, async () => {
         const head = await this.client.fetchOne(String(uid), { uid: true, size: true }, { uid: true });
         if (head === false || (head.size ?? 0) > this.bodyLimitBytes) return null;
         const full = await this.client.fetchOne(String(uid), { uid: true, source: true }, { uid: true });
@@ -292,8 +300,10 @@ class ImapMailProvider implements MailProvider {
     return msg !== false && msg.uid === uid;
   }
 
-  private async listFolders(): Promise<FolderEntry[]> {
-    return (await this.client.list()).map((entry) => ({ path: entry.path, delimiter: entry.delimiter }));
+  listFolders(): Promise<FolderEntry[]> {
+    return guard("listFolders", async () =>
+      (await this.client.list()).map((entry) => ({ path: entry.path, delimiter: entry.delimiter }))
+    );
   }
 
   ensureFolder(name: string): Promise<string> {
