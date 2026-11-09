@@ -25,6 +25,7 @@ import {
   listSyncTargets,
   lockMailbox,
   lockSyncFolderByKey,
+  markEmailRelocated,
   markEmailReturned,
   markSynced,
   setFolderMapEntry,
@@ -518,7 +519,7 @@ describe("mail repository: emails", () => {
       const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
       const at = new Date("2026-11-03T13:00:00Z");
 
-      expect(await markEmailReturned(trx, b.ctx, id, 60, at)).toBe(false);
+      expect(await markEmailReturned(trx, b.ctx, id, 60, at, { folder: "INBOX" })).toBe(false);
       let row = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
       expect({ folder: row.folder, uid: Number(row.uid), returnedAt: row.returned_at }).toEqual({
         folder: "AI/Info",
@@ -526,7 +527,7 @@ describe("mail repository: emails", () => {
         returnedAt: null,
       });
 
-      expect(await markEmailReturned(trx, a.ctx, id, 60, at)).toBe(true);
+      expect(await markEmailReturned(trx, a.ctx, id, 60, at, { folder: "INBOX" })).toBe(true);
       row = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
       expect({ folder: row.folder, uid: Number(row.uid), returnedAt: row.returned_at, status: row.status }).toEqual({
         folder: "INBOX",
@@ -536,11 +537,77 @@ describe("mail repository: emails", () => {
       });
       expect(Number(await inboxUidOf(trx, id))).toBe(60);
 
-      // onlyOutsideInbox: a row that is already in INBOX stays as it is.
+      // The guard is always on: a row with folder = source_folder stays as it is.
       const later = new Date("2026-11-03T14:00:00Z");
-      expect(await markEmailReturned(trx, a.ctx, id, 70, later, { onlyOutsideInbox: true })).toBe(false);
+      expect(await markEmailReturned(trx, a.ctx, id, 70, later, { folder: "INBOX" })).toBe(false);
       row = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
       expect({ uid: Number(row.uid), returnedAt: row.returned_at }).toEqual({ uid: 60, returnedAt: at });
+    });
+  });
+
+  test("markEmailReturned into another synced folder sets folder and source_folder", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      await insertEmail(trx, a.ctx, newEmail(a.mailboxId, { folder: "AI/Info" }));
+      const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
+      const at = new Date("2026-11-03T13:00:00Z");
+
+      expect(await markEmailReturned(trx, a.ctx, id, 60, at, { folder: "Oferty" })).toBe(true);
+      const row = await trx
+        .selectFrom("emails")
+        .select(["folder", "source_folder", "uid", "inbox_uid", "returned_at"])
+        .where("id", "=", id)
+        .executeTakeFirstOrThrow();
+      expect({ ...row, uid: Number(row.uid), inbox_uid: Number(row.inbox_uid) }).toEqual({
+        folder: "Oferty",
+        source_folder: "Oferty",
+        uid: 60,
+        inbox_uid: 60,
+        returned_at: at,
+      });
+    });
+  });
+
+  test("markEmailRelocated moves folder, source_folder and uids only from the given folder, and filters by org_id", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      await insertEmail(trx, a.ctx, newEmail(a.mailboxId));
+      const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
+      const change = { from: "INBOX", to: "Oferty", uid: 80 };
+      const read = () =>
+        trx
+          .selectFrom("emails")
+          .select(["folder", "source_folder", "uid", "inbox_uid", "returned_at"])
+          .where("id", "=", id)
+          .executeTakeFirstOrThrow();
+
+      expect(await markEmailRelocated(trx, a.ctx, id, { ...change, from: "Rachunki" })).toBe(false);
+      expect(await markEmailRelocated(trx, b.ctx, id, change)).toBe(false);
+      let row = await read();
+      expect({ folder: row.folder, source: row.source_folder, uid: Number(row.uid) }).toEqual({
+        folder: "INBOX",
+        source: "INBOX",
+        uid: 1,
+      });
+
+      expect(await markEmailRelocated(trx, a.ctx, id, change)).toBe(true);
+      row = await read();
+      expect({ ...row, uid: Number(row.uid), inbox_uid: Number(row.inbox_uid) }).toEqual({
+        folder: "Oferty",
+        source_folder: "Oferty",
+        uid: 80,
+        inbox_uid: 80,
+        returned_at: null,
+      });
+    });
+  });
+
+  test("markEmailRelocated leaves a system-moved row alone", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      await insertEmail(trx, a.ctx, newEmail(a.mailboxId, { folder: "AI/Info" }));
+      const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
+      expect(await markEmailRelocated(trx, a.ctx, id, { from: "AI/Info", to: "Oferty", uid: 80 })).toBe(false);
     });
   });
 });

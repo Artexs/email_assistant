@@ -6,7 +6,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's D
 
 Why risky: dedup across folders. A wrong decision stores a mail twice, loses its location, or writes a false "returned" (user feedback).
 
-- [ ] **7b.1 The cross-folder writes of `planChunk` and `applyChunk`**
+- [x] **7b.1 The cross-folder writes of `planChunk` and `applyChunk`**
   - Goal: D7 and D8 for every synced folder S, with the run state shared by all folders (review M1).
   - Files: change `apps/server/src/modules/mail/sync.ts`, `apps/server/src/modules/mail/repo.ts`, `apps/server/src/modules/mail/index.ts` (exports if needed);
     tests `apps/server/test/integration/mail-sync.test.ts`, `apps/server/test/integration/mail-repo.test.ts`.

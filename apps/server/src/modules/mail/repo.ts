@@ -632,22 +632,40 @@ export async function updateEmailUid(
     .execute();
 }
 
+// D8 returned: the user put the mail into synced folder `opts.folder`. Only while the row is system-moved.
 export async function markEmailReturned(
   db: DbOrTrx,
   ctx: TenantContext,
   emailId: string,
   uid: number,
   at: Date,
-  opts: { onlyOutsideInbox?: boolean } = {}
+  opts: { folder: string }
 ): Promise<boolean> {
-  let query = db
+  const result = await db
     .updateTable("emails")
-    .set({ returned_at: at, folder: INBOX, uid, inbox_uid: uid })
+    .set({ returned_at: at, folder: opts.folder, source_folder: opts.folder, uid, inbox_uid: uid })
     .where("org_id", "=", ctx.orgId)
-    .where("id", "=", emailId);
-  // The below-cursor check must not touch a row that the normal path already moved back.
-  if (opts.onlyOutsideInbox === true) query = query.where("folder", "<>", INBOX);
-  const result = await query.executeTakeFirst();
+    .where("id", "=", emailId)
+    .whereRef("folder", "<>", "source_folder")
+    .executeTakeFirst();
+  return result.numUpdatedRows === 1n;
+}
+
+// D8 relocated: the user moved the mail between synced folders. Only while the row is still in the old source folder.
+export async function markEmailRelocated(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailId: string,
+  change: { from: string; to: string; uid: number }
+): Promise<boolean> {
+  const result = await db
+    .updateTable("emails")
+    .set({ folder: change.to, source_folder: change.to, uid: change.uid, inbox_uid: change.uid })
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", emailId)
+    .whereRef("folder", "=", "source_folder")
+    .where("folder", "=", change.from)
+    .executeTakeFirst();
   return result.numUpdatedRows === 1n;
 }
 

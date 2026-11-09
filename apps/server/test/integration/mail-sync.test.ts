@@ -1209,12 +1209,12 @@ describe("syncMailbox: sync folders", () => {
     deps(trx, provider, { now: () => FOLDER_NOW, ...overrides });
 
   // The Interia shape: one UID counter for the mailbox, no MOVE, a user move keeps the UID, STATUS UIDNEXT 1.
-  async function folderSetup(trx: Transaction<DB>): Promise<Setup> {
+  async function folderSetup(trx: Transaction<DB>, opts: { keepUidOnUserMove?: boolean } = {}): Promise<Setup> {
     const s = await setup(trx);
     const fake = createFakeMailProvider({
       uidValidity: UID_VALIDITY,
       globalUids: true,
-      keepUidOnUserMove: true,
+      keepUidOnUserMove: opts.keepUidOnUserMove ?? true,
       uidNextValue: 1,
       capabilities: { move: false },
     });
@@ -1519,27 +1519,259 @@ describe("syncMailbox: sync folders", () => {
     });
   });
 
-  test("the same mail new in INBOX and in Oferty in one run is stored once; Oferty fails safe", async () => {
+  // Cross-folder dedup (stage 7b).
+  async function crossRows(trx: Db | Transaction<DB>, mailboxId: string) {
+    const rows = await trx
+      .selectFrom("emails")
+      .select(["dedup_key", "uid", "inbox_uid", "folder", "source_folder", "returned_at", "moved_at"])
+      .where("mailbox_id", "=", mailboxId)
+      .orderBy("uid")
+      .execute();
+    return rows.map((row) => ({
+      ...row,
+      uid: Number(row.uid),
+      inbox_uid: row.inbox_uid === null ? null : Number(row.inbox_uid),
+    }));
+  }
+
+  // The system moved the stored row (one row in the mailbox) to `AI/Info`, and so did the server.
+  async function markSystemMoved(trx: Db | Transaction<DB>, s: Setup, from: string, uid: number): Promise<number> {
+    await trx
+      .updateTable("emails")
+      .set({ folder: "AI/Info", moved_at: FOLDER_NOW })
+      .where("mailbox_id", "=", s.mailboxId)
+      .execute();
+    return s.fake.userMove(from, uid, "AI/Info");
+  }
+
+  test("7b.1 a row in INBOX and the same mail delivered into Oferty: Oferty stores nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
+      s.fake.deliver("INBOX", seed(1), ago(1));
+      await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      s.fake.deliver(OFFERS, seed(1), ago(1));
+
+      const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(result.failed).toEqual([]);
+      expect(of(result, "offers")?.stored).toBe(0);
+      expect(of(result, "offers")?.crossCopies).toBe(1);
+      const rows = await crossRows(trx, s.mailboxId);
+      expect(rows.map((row) => row.folder)).toEqual(["INBOX"]);
+    });
+  });
+
+  test("7b.2 the same mail new in INBOX and in Oferty in one run: INBOX stores it, Oferty counts a cross copy with no locate", async () => {
     await withRollback(db, async (trx) => {
       const s = await folderSetup(trx);
       await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
       s.fake.deliver("INBOX", seed(1), ago(1));
       s.fake.deliver(OFFERS, seed(1), ago(1));
+      const callsBefore = s.fake.folderCalls.length;
 
-      await withLogs(async (lines) => {
-        const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
-        expect(result.failed).toEqual(["offers"]);
-        expect(of(result, "inbox")?.stored).toBe(1);
-        expect(lines.warn.some((line) => line.includes("folder offers: HardError;"))).toBe(true);
-      });
-      const rows = await storedRows(trx, s.mailboxId);
+      const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(result.failed).toEqual([]);
+      expect(of(result, "inbox")?.stored).toBe(1);
+      expect(of(result, "offers")?.stored).toBe(0);
+      expect(of(result, "offers")?.crossCopies).toBe(1);
+      const rows = await crossRows(trx, s.mailboxId);
+      expect(rows.map((row) => row.folder)).toEqual(["INBOX"]);
+      const methods = s.fake.folderCalls.slice(callsBefore).map((call) => call.method);
+      expect(methods).not.toContain("fetchMetaIn");
+      expect(methods).not.toContain("searchSinceIn");
+    });
+  });
+
+  test("7b.3 a rescan of INBOX and Oferty with the anna case: INBOX update_uid, Oferty cross copy, no new row", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
+      s.fake.deliver("INBOX", seed(1), ago(1));
+      await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      s.fake.deliver(OFFERS, seed(1), ago(1));
+      await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(await forceRescan(trx, s.ctx, s.mailboxId)).toBe(true);
+
+      const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(of(result, "inbox")?.mode).toBe("rescan");
+      expect(of(result, "inbox")?.uidUpdated).toBe(1);
+      expect(of(result, "offers")?.mode).toBe("rescan");
+      expect(of(result, "offers")?.crossCopies).toBe(1);
+      expect(of(result, "offers")?.uidUpdated).toBe(0);
+      expect(await crossRows(trx, s.mailboxId)).toHaveLength(1);
+    });
+  });
+
+  test("7b.4 a user move from INBOX into Oferty is relocated: no new row, no feedback", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx, { keepUidOnUserMove: false });
+      await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
+      await s.fake.ensureFolder(OFFERS);
+      const uid = s.fake.deliver("INBOX", seed(1), ago(1));
+      await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      const moved = s.fake.userMove("INBOX", uid, OFFERS);
+
+      const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(of(result, "offers")?.relocated).toBe(1);
+      expect(of(result, "offers")?.stored).toBe(0);
+      const rows = await crossRows(trx, s.mailboxId);
       expect(rows).toHaveLength(1);
-      expect(rows[0]?.folder).toBe("INBOX");
+      expect(rows[0]).toMatchObject({
+        folder: OFFERS,
+        source_folder: OFFERS,
+        uid: moved,
+        inbox_uid: moved,
+        returned_at: null,
+      });
+      const feedback = await trx.selectFrom("triage_feedback").select("id").where("org_id", "=", s.ctx.orgId).execute();
+      expect(feedback).toHaveLength(0);
+    });
+  });
+
+  test("7b.5 a mail moved back into its source Oferty above the cursor is returned", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx, { keepUidOnUserMove: false });
+      await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
+      const uid = s.fake.deliver(OFFERS, seed(1), ago(1));
+      await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      const inInfo = await markSystemMoved(trx, s, OFFERS, uid);
+      const back = s.fake.userMove("AI/Info", inInfo, OFFERS);
+
+      const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(of(result, "offers")?.returned).toBe(1);
+      const rows = await crossRows(trx, s.mailboxId);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({
+        folder: OFFERS,
+        source_folder: OFFERS,
+        uid: back,
+        inbox_uid: back,
+        returned_at: FOLDER_NOW,
+      });
+    });
+  });
+
+  test("7b.6 a returned mail in INBOX that is also in Oferty: INBOX returned, Oferty cross copy, no new row", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx, { keepUidOnUserMove: false });
+      await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
+      const uid = s.fake.deliver("INBOX", seed(1), ago(1));
+      await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      const inInfo = await markSystemMoved(trx, s, "INBOX", uid);
+      const back = s.fake.userMove("AI/Info", inInfo, "INBOX");
+      s.fake.deliver(OFFERS, seed(1), ago(1));
+
+      const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(of(result, "inbox")?.returned).toBe(1);
+      expect(of(result, "offers")?.crossCopies).toBe(1);
+      expect(of(result, "offers")?.stored).toBe(0);
+      const rows = await crossRows(trx, s.mailboxId);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ folder: "INBOX", source_folder: "INBOX", uid: back, returned_at: FOLDER_NOW });
+    });
+  });
+
+  test("7b.7 a mail of source INBOX that the user files into Oferty counts as a return", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx, { keepUidOnUserMove: false });
+      await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
+      await s.fake.ensureFolder(OFFERS);
+      const uid = s.fake.deliver("INBOX", seed(1), ago(1));
+      await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      const inInfo = await markSystemMoved(trx, s, "INBOX", uid);
+      const filed = s.fake.userMove("AI/Info", inInfo, OFFERS);
+
+      const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(of(result, "offers")?.returned).toBe(1);
+      const rows = await crossRows(trx, s.mailboxId);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({
+        folder: OFFERS,
+        source_folder: OFFERS,
+        uid: filed,
+        inbox_uid: filed,
+        returned_at: FOLDER_NOW,
+      });
+    });
+  });
+
+  test("7b.8 a move in flight: its copies in INBOX and Oferty are not stored and not located", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
+      const uid = s.fake.deliver("INBOX", seed(1), ago(1));
+      await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      await markSystemMoved(trx, s, "INBOX", uid);
+      await trx
+        .updateTable("emails")
+        .set({ undo_pending_at: new Date(FOLDER_NOW.getTime() - 60_000) })
+        .where("mailbox_id", "=", s.mailboxId)
+        .execute();
+      s.fake.deliver("INBOX", seed(1), ago(1));
+      s.fake.deliver(OFFERS, seed(1), ago(1));
+      const callsBefore = s.fake.folderCalls.length;
+
+      const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(of(result, "inbox")?.moveInFlight).toBe(1);
+      expect(of(result, "offers")?.moveInFlight).toBe(1);
+      expect(await crossRows(trx, s.mailboxId)).toHaveLength(1);
+      const methods = s.fake.folderCalls.slice(callsBefore).map((call) => call.method);
+      expect(methods).not.toContain("fetchMetaIn");
+      expect(methods).not.toContain("searchSinceIn");
+    });
+  });
+
+  test("7b.10 a rescan of INBOX and Oferty: the INBOX copy is a cross copy, the Oferty pass updates the row's UID", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
+      s.fake.deliver(OFFERS, seed(1), ago(1));
+      await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      s.fake.deliver("INBOX", seed(1), ago(1));
+      expect(await forceRescan(trx, s.ctx, s.mailboxId)).toBe(true);
+      s.fake.resetUidValidity(9, OFFERS);
+
+      const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(of(result, "inbox")?.crossCopies).toBe(1);
+      expect(of(result, "offers")?.crossCopies).toBe(0);
+      expect(of(result, "offers")?.uidUpdated).toBe(1);
+      const rows = await crossRows(trx, s.mailboxId);
+      const [offersUid] = (await s.fake.fetchAbove(OFFERS, 0)).map((meta) => meta.uid);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ folder: OFFERS, source_folder: OFFERS, uid: offersUid, inbox_uid: offersUid });
+    });
+  });
+
+  test("7b.12 a chunk that fails before its commit leaves no run state: the later folder stores the mail", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
+      await addFolderRow(trx, s, "junk", JUNK, { lastUid: 0 });
+      s.fake.deliver(OFFERS, seed(1), ago(1));
+      const failing = s.fake.deliver(OFFERS, seed(2), ago(1));
+      s.fake.deliver(JUNK, seed(1), ago(1));
+      const provider: MailProvider = {
+        ...s.fake,
+        fetchBodyText: async (folder, uid) => {
+          if (folder === OFFERS && uid === failing) throw new SoftError("lost connection");
+          return s.fake.fetchBodyText(folder, uid);
+        },
+      };
+
+      await withLogs(async () => {
+        const result = await syncMailbox(folderDeps(trx, provider), s.ctx, s.mailboxId);
+        expect(result.failed).toEqual(["offers"]);
+        expect(of(result, "junk")?.stored).toBe(1);
+        expect(of(result, "junk")?.crossCopies).toBe(0);
+      });
+      const rows = await crossRows(trx, s.mailboxId);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ folder: JUNK, source_folder: JUNK });
     });
   });
 
   for (const chunkSize of [undefined, 1]) {
-    test(`two identical new copies in Oferty: the second row gets #2 (chunkSize ${chunkSize ?? "default"})`, async () => {
+    test(`7b.9 two identical new copies in Oferty: the second row gets #2 (chunkSize ${chunkSize ?? "default"})`, async () => {
       await withRollback(db, async (trx) => {
         const s = await folderSetup(trx);
         await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });

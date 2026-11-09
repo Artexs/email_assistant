@@ -17,6 +17,7 @@ import {
   listRecentlyMoved,
   listSyncFolders,
   lockSyncFolder,
+  markEmailRelocated,
   markEmailReturned,
   updateEmailUid,
   updateFolderCursor,
@@ -119,13 +120,14 @@ export class CursorMovedError extends SoftError {
 type Write =
   | { kind: "insert"; row: NewEmail }
   | { kind: "update_uid"; emailId: string; uid: number; isSource: boolean }
-  | { kind: "returned"; emailId: string; uid: number };
+  | { kind: "returned"; emailId: string; uid: number; folder: string }
+  | { kind: "relocated"; emailId: string; uid: number; from: string; to: string };
 
 interface RunState {
   /** Email ids (or `run:` ids) that this run already used, with the folder where it matched or stored them (D7). */
   matched: Map<string, string>;
-  /** Dedup keys that this run stores, by base key. */
-  newKeys: Map<string, string[]>;
+  /** The rows that this run stores, by base key, with the folder and UID where it stored them. */
+  newKeys: Map<string, { dedupKey: string; folder: string; uid: number }[]>;
 }
 
 function newRow(
@@ -157,6 +159,12 @@ function newRow(
   };
 }
 
+// D7: one mail in two synced folders is stored once. It sets no `matched` entry (a rescan would turn the row's own pass into a cross copy).
+function countCrossCopy(mailboxId: string, result: SyncResult, emailId: string): void {
+  result.crossCopies += 1;
+  log.debug(`sync ${mailboxId} folder ${result.folder}: copy of mail ${emailId} is a cross copy, not stored`);
+}
+
 // Phase 1: provider calls and DB reads only.
 async function planChunk(
   deps: SyncDeps,
@@ -177,13 +185,14 @@ async function planChunk(
     const hash = contentHash(meta);
     const baseKey = baseDedupKey(messageId, hash);
     // Rows that this run stores are copies too, but no other mail of this run can match them.
-    const runKeys = state.newKeys.get(baseKey) ?? [];
-    const runCopies: KnownCopy[] = runKeys.map((key) => ({
-      id: `run:${key}`,
-      dedupKey: key,
-      folder,
-      sourceFolder: folder,
-      uid: meta.uid,
+    const runStored = state.newKeys.get(baseKey) ?? [];
+    const runKeys = runStored.map((stored) => stored.dedupKey);
+    const runCopies: KnownCopy[] = runStored.map((stored) => ({
+      id: `run:${stored.dedupKey}`,
+      dedupKey: stored.dedupKey,
+      folder: stored.folder,
+      sourceFolder: stored.folder,
+      uid: stored.uid,
       contentHash: hash,
       from: meta.from,
       receivedAt: meta.internalDate,
@@ -203,11 +212,8 @@ async function planChunk(
       state.matched.set(decision.emailId, folder);
       writes.push({ kind: "update_uid", emailId: decision.emailId, uid: meta.uid, isSource: decision.isSource });
     } else if (decision.kind === "cross_copy") {
-      // Stage 7b: the cross copy. For INBOX nothing is matched elsewhere yet.
-      throw new HardError(folder === INBOX ? "unexpected folder check result" : "cross-folder check: stage 7b");
+      countCrossCopy(mailboxId, result, decision.emailId);
     } else if (decision.kind === "check_folder") {
-      if (folder !== INBOX) throw new HardError("cross-folder check: stage 7b");
-      state.matched.set(decision.emailId, folder);
       const copy = copies.find((candidate) => candidate.id === decision.emailId);
       if (copy === undefined) throw new HardError("matched copy is missing");
       const key: LocateKey = {
@@ -227,13 +233,17 @@ async function planChunk(
         baseKey,
         copyCount: copies.length,
       });
-      if (check.kind === "returned") {
-        writes.push({ kind: "returned", emailId: check.emailId, uid: meta.uid });
-      } else if (check.kind === "new") {
-        dedupKey = check.dedupKey;
+      if (check.kind === "cross_copy") {
+        countCrossCopy(mailboxId, result, check.emailId);
       } else {
-        // Only INBOX is synced: every copy has the source INBOX and nothing is matched elsewhere (stage 7b).
-        throw new HardError("unexpected folder check result");
+        state.matched.set(decision.emailId, folder);
+        if (check.kind === "returned") {
+          writes.push({ kind: "returned", emailId: decision.emailId, uid: meta.uid, folder });
+        } else if (check.kind === "relocated") {
+          writes.push({ kind: "relocated", emailId: decision.emailId, uid: meta.uid, from: copy.folder, to: folder });
+        } else {
+          dedupKey = check.dedupKey;
+        }
       }
     } else {
       dedupKey = decision.dedupKey;
@@ -242,7 +252,7 @@ async function planChunk(
     if (dedupKey !== null) {
       const body = await deps.provider.fetchBodyText(folder, meta.uid);
       writes.push({ kind: "insert", row: newRow(mailboxId, folder, meta, messageId, hash, dedupKey, body) });
-      state.newKeys.set(baseKey, [...runKeys, dedupKey]);
+      state.newKeys.set(baseKey, [...runStored, { dedupKey, folder, uid: meta.uid }]);
       state.matched.set(`run:${dedupKey}`, folder);
     }
   }
@@ -268,21 +278,31 @@ async function applyChunk(
     let stored = 0;
     let uidUpdated = 0;
     let returned = 0;
+    let relocated = 0;
     for (const write of writes) {
       if (write.kind === "insert") {
         if (await insertEmail(trx, ctx, write.row)) stored += 1;
       } else if (write.kind === "update_uid") {
         await updateEmailUid(trx, ctx, write.emailId, write.uid, { isSource: write.isSource });
         uidUpdated += 1;
+      } else if (write.kind === "returned") {
+        if (await markEmailReturned(trx, ctx, write.emailId, write.uid, deps.now(), { folder: write.folder })) {
+          returned += 1;
+        } else {
+          log.debug(`sync ${mailboxId}: return of mail ${write.emailId} changed no row`);
+        }
+      } else if (
+        await markEmailRelocated(trx, ctx, write.emailId, { from: write.from, to: write.to, uid: write.uid })
+      ) {
+        relocated += 1;
       } else {
-        await markEmailReturned(trx, ctx, write.emailId, write.uid, deps.now());
-        returned += 1;
+        log.debug(`sync ${mailboxId}: move of mail ${write.emailId} between folders changed no row`);
       }
     }
     if (next !== null && !(await updateFolderCursor(trx, ctx, folderId, expected, next))) {
       throw new CursorMovedError(`cursor of mailbox ${mailboxId} moved during the sync`);
     }
-    return { stored, uidUpdated, returned };
+    return { stored, uidUpdated, returned, relocated };
   };
 
   const counts = deps.db.isTransaction
@@ -291,6 +311,7 @@ async function applyChunk(
   result.stored += counts.stored;
   result.uidUpdated += counts.uidUpdated;
   result.returned += counts.returned;
+  result.relocated += counts.relocated;
 }
 
 // After the last chunk of an initial sync or a rescan: set the cursor in one more transaction.
@@ -360,7 +381,7 @@ async function checkReturnedBelowCursor(
       }
       let changed = 0;
       for (const hit of returns) {
-        if (await markEmailReturned(trx, ctx, hit.emailId, hit.uid, now, { onlyOutsideInbox: true })) changed += 1;
+        if (await markEmailReturned(trx, ctx, hit.emailId, hit.uid, now, { folder: INBOX })) changed += 1;
       }
       return changed;
     };
@@ -502,7 +523,7 @@ export async function syncMailbox(deps: SyncDeps, ctx: TenantContext, mailboxId:
   const rows = await listSyncFolders(deps.db, ctx, mailboxId, { enabledOnly: true });
   if (!rows.some((row) => row.key === "inbox")) throw new HardError("mailbox has no INBOX folder row");
 
-  const state: RunState = { matched: new Map(), newKeys: new Map() };
+  let state: RunState = { matched: new Map(), newKeys: new Map() };
   const folders: SyncResult[] = [];
   const failed: SyncFolderKey[] = [];
   const skipped: SyncFolderKey[] = [];
@@ -512,10 +533,13 @@ export async function syncMailbox(deps: SyncDeps, ctx: TenantContext, mailboxId:
       skipped.push(row.key);
       continue;
     }
+    // A folder that fails leaves no run-state entry of a chunk that did not commit.
+    const before: RunState = { matched: new Map(state.matched), newKeys: new Map(state.newKeys) };
     try {
       folders.push(await syncFolder(deps, ctx, mailboxId, row, state));
     } catch (error) {
       if (error instanceof MailAuthError || row.key === "inbox") throw error;
+      state = before;
       log.warn(`sync ${mailboxId} folder ${row.key}: ${describeError(error)}; the next tick tries again`);
       failed.push(row.key);
     }
