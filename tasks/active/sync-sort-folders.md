@@ -1,4 +1,4 @@
-> **Status 2026-11-09 — in progress — stages 1–15 done, all group reviews PASS (last commit `13c2b8f`). Waiting at checkpoint 2: the user's "deploy".** Left: stage 16 (merge + VPS deploy), stage 17 (live checks, close), checkpoint 3.
+> **Status 2026-11-09 — in progress — stage 16 done: merged (`0d39663`) and deployed to the VPS at T = 2026-11-09 15:21 UTC; the first checks pass. Stage 17 left: at T + 24 h (2026-11-10 15:21 UTC) or later, the live checks, the user's checkpoint 3 (optional ↩️ on a moved `Oferty` mail), unblock `test-mail-traffic`, close.** Handoff: `~/.pi/agent/notes/2026-11-09-handoff-sync-sort-folders-finish.md`.
 
 # Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
@@ -421,7 +421,7 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - [x] [Stage 13](sync-sort-folders/stage-13-tools.md) [written] — Tools: `mailbox:settings sync-folder`, `mailbox:audit` per folder, `mailbox:rescan`, `mailbox:seed --folder`
 - [x] [Stage 14](sync-sort-folders/stage-14-dev-run-greenmail.md) [written] — Dev run on GreenMail with the fake Telegram [risky] — main session
 - [x] [Stage 15](sync-sort-folders/stage-15-docs-adr-followups.md) [written] — Docs, ADR 0014, notes, follow-up tasks — group review 12–15 + branch
-- [ ] [Stage 16](sync-sort-folders/stage-16-merge-and-vps-deploy.md) [written] — Merge into `master` and VPS deploy [risky] — main session; checkpoint 2 before it
+- [x] [Stage 16](sync-sort-folders/stage-16-merge-and-vps-deploy.md) [written] — Merge into `master` and VPS deploy [risky] — main session; checkpoint 2 before it
 - [ ] [Stage 17](sync-sort-folders/stage-17-live-checks-and-close.md) [written] — Live checks, unblock `test-mail-traffic`, close [risky] — main session; checkpoint 3
 
 ### Results
@@ -477,6 +477,19 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - Step 12: server stopped with SIGINT (no process left); `auto` off for the 4 categories; mode `shadow`; `junk` on; `fake-tg` stopped.
 - Not covered here (stage 17, Interia): the real re-sort behaviour (F12); first sync counts on the pilot mailbox.
 - No bug found; no fix step.
+
+#### Stage 16 (2026-11-09, merge and VPS deploy; T = 2026-11-09 15:21 UTC)
+
+- Merge: `git merge origin/master` in the branch (only task files came in; D22: `git log origin/master -- db/migrations` showed no new migration); `bun run lint`, `bun run typecheck` pass; `bun run test:unit` 1361 pass; `bun run test:int` 1010 pass. `git merge --no-ff task/sync-sort-folders` in a temporary detached worktree of `origin/master`; `master` = `0d39663`, pushed.
+- Pre-checks on the VPS (`<PREV>` = `fa60c7b`): `max(version)` 20261108000001; `ACTIONS_SCOPE=all`, `SEND_SCOPE=all`, `TRIAGE_LLM_SCOPE=all` 1 each; disk free 2.3 GB (90 % used; `docker image prune -f` reclaimed 0 B); 0 failure-pattern lines in the last 10 minutes.
+- Backup: `ea-20261109T151753Z.dump.age` (272039 bytes). `git merge --ff-only origin/master` → `0d39663`. `db:migrate` applied `20261109083501_sync_folders.sql` in 21 ms; `docker compose up -d --build --wait` healthy at 15:21 UTC.
+- First sync (15:25 tick): `added sync folders offers,social,bills,junk`; INBOX `incremental, fetched 1, stored 0, ignored below cursor 1`; `offers: initial, fetched 4, stored 4`; `social`, `bills`, `junk`: `initial, fetched 0`. No failure line.
+- `mailbox_folders`: `inbox` last_uid 38990, `offers` 38989 (F4: ≥ 38964), `social` 35156, `bills` 32543, `junk` 38892; none 0.
+- Stored rows since T: `Oferty` 4 (the plan said about 6–9; the 24 h window held 4), `min(received_at)` 2026-11-09 05:06 UTC (> T − 24 h).
+- Triage (after about 10 min): 4 × `spam` (code `marketing`), move `ai_spam` `logged` (`auto` off for spam); no applied move, no flag, no urgent notice. 0 emails `pending` or `processing`.
+- Re-sort watch, first look (about 5 min after T; no move applied yet, so the real watch starts with the first applied move): `email.returned` audit rows since T 0; `triage_feedback` `imap_move` since T 0.
+- Left for stage 17: the 15- and 60-minute watch after the first applied move (none yet), the NV2 rescue check, the Undo into `Oferty` by APPEND on Interia (needs a moved `Oferty` mail and a tap on ↩️: the user), the `info` path, the `uid updated` counter.
+- No rollback ran. Task files of the two pilot weeks got the section with T.
 
 ## Done-checklist
 
@@ -580,3 +593,4 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - 2026-11-09: Stage 13 built (implementer, 13.1–13.3) and reviewed (Sonnet, high): PASS, 2 minors fixed (`auditExitCode` gives 1 for null INBOX counts; a CLI spawn test for `sync-folder`). `AuditCounts.inbox` is now `mail`; `compareInboxWithDb` stays as an alias. For stage 15: `docs/code-patterns.md` test-tool line names `--folder`; `docs/known-alerts.md` ~354–359 (the audit alert text lacks ` cross=<n>`, names `listInboxEmailKeys` → `listFolderEmailKeys`). Checks: `bun run lint`, `bun run typecheck` pass; `bun run test:unit` 1361 pass; `bun run test:int` 1010 pass, 0 fail.
 - 2026-11-09: Stage 14 run by the main session on GreenMail with `fake-tg` and the real classifier: steps 2–12 passed, no bug (§ Results "Stage 14"). Classifier fact: the `info` cases were classified `spam`.
 - 2026-11-09: Stage 15 built (implementer, 15.1 + 15.2) and reviewed (Sonnet, high): round 1 FAIL (2 major doc claims: audit compares by `folder`; returned-below-cursor looks up only the source folder S; 3 minors), fixed in round 2 (main session checked the fixes; the group review 12–15 reads the docs again). `docs/diagrams/code-map.html` rebuilt with `bun ~/.pi/agent/skills/explainer/scripts/explainer.ts build docs/diagrams/code-map.md -o docs/diagrams/code-map.html` (exit 1 on a label-spacing warning; file written). Prettier on `docs/modules.md`, `docs/roadmap.md`, `docs/decisions/README.md` re-padded tables (real change small: `git diff -w`).
+- 2026-11-09: Stage 16 done by the main session after the user's "deploy" (checkpoint 2, "yes, you can deploy and proceed…"): merged `0d39663`, VPS deployed at 15:21 UTC, first sync as expected (§ Results "Stage 16"). Stage 17 waits for T + 24 h.

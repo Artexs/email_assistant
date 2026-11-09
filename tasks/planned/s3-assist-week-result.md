@@ -30,9 +30,9 @@ from `ea-testmail-75wd@agentmail.to` to the pilot mailbox. The server triages an
 `%@ea-seed.test>` mail, so add `and lower(e.from_address) is distinct from 'ea-testmail-75wd@agentmail.to'` to every `emails e` join (also in N, the wrong
 moves). A `wrong` verdict on a test mail is not a wrong move of real mail.
 
-## Sort-folder sync (TBD)
+## Sort-folder sync (2026-11-09 15:21 UTC)
 
-From TBD (UTC) the server also syncs `Oferty`, `Społeczności`, `Rachunki` and `Wiadomości-śmieci` (`tasks/active/sync-sort-folders.md`). Their mail can get moves into `AI/*` (and spam folder mail into INBOX). Report N (wrong moves) twice: for all real mail, and with `and e.source_folder = 'INBOX'` in every `emails e` join (the mail that the week started with). Spam folder mail with a `spam` result has no action.
+From 2026-11-09 15:21 UTC the server also syncs `Oferty`, `Społeczności`, `Rachunki` and `Wiadomości-śmieci` (`tasks/active/sync-sort-folders.md`). Their mail can get moves into `AI/*` (and spam folder mail into INBOX). Report N (wrong moves) twice: for all real mail, and with `and e.source_folder = 'INBOX'` in every `emails e` join (the mail that the week started with). Spam folder mail with a `spam` result has no action.
 
 ## Plan
 

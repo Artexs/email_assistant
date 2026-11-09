@@ -8,7 +8,7 @@ stages 1–15 and user checkpoint 2.
 Why risky: it changes the live server on the user's only real mailbox during the S3 and S4 pilot weeks. Who: the main session.
 Gate: user checkpoint 2 (the group review of stages 12–15 and the branch is PASS, the stage 14 dev run passed; the user says "deploy").
 
-- [ ] **16.1 Pilot-week notes, merge, deploy, first checks**
+- [x] **16.1 Pilot-week notes, merge, deploy, first checks**
   - Goal: `master` holds the reviewed branch, the VPS runs it with the migration applied, and both pilot-week tasks know the change and its time (U4, done-when 7).
   - Files: `tasks/planned/s3-assist-week-result.md` and `tasks/planned/s4-pilot-week.md` (a section "Sort-folder sync (<deploy UTC time>)"); this task file
     (§ Results "Stage 16", Log).
