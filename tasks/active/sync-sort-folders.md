@@ -1,4 +1,4 @@
-> **Status 2026-11-09 — in progress — stages 1–13 done; group reviews 2–4, 5–8 and 9–11 done.** Left: stages 14–17; group review 12–15 + branch (Opus, high) before stage 16; checkpoint 2 (the user's "deploy") before stage 16.
+> **Status 2026-11-09 — in progress — stages 1–14 done (stage 14: dev run passed, review pending); group reviews 2–4, 5–8 and 9–11 done.** Left: stages 15–17; group review 12–15 + branch (Opus, high) before stage 16; checkpoint 2 (the user's "deploy") before stage 16.
 
 # Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
@@ -418,7 +418,7 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - [x] [Stage 11](sync-sort-folders/stage-11-triage-source-folder.md) [written] — Triage: plan by the source folder [risky] — group review 9–11
 - [x] [Stage 12](sync-sort-folders/stage-12-digest-notice-texts.md) [written] — Digest and notice texts with the folder
 - [x] [Stage 13](sync-sort-folders/stage-13-tools.md) [written] — Tools: `mailbox:settings sync-folder`, `mailbox:audit` per folder, `mailbox:rescan`, `mailbox:seed --folder`
-- [ ] [Stage 14](sync-sort-folders/stage-14-dev-run-greenmail.md) [written] — Dev run on GreenMail with the fake Telegram [risky] — main session
+- [x] [Stage 14](sync-sort-folders/stage-14-dev-run-greenmail.md) [written] — Dev run on GreenMail with the fake Telegram [risky] — main session
 - [ ] [Stage 15](sync-sort-folders/stage-15-docs-adr-followups.md) [written] — Docs, ADR 0014, notes, follow-up tasks — group review 12–15 + branch
 - [ ] [Stage 16](sync-sort-folders/stage-16-merge-and-vps-deploy.md) [written] — Merge into `master` and VPS deploy [risky] — main session; checkpoint 2 before it
 - [ ] [Stage 17](sync-sort-folders/stage-17-live-checks-and-close.md) [written] — Live checks, unblock `test-mail-traffic`, close [risky] — main session; checkpoint 3
@@ -453,6 +453,29 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - Conclusion: an Undo into a `sort` folder by COPY fails at Interia; by APPEND it works. D12 proposal for the user: transfer by APPEND also for a move whose
   target is a `sort` folder. **User decided U11 (2026-11-09): "Okay, proceed."** Checkpoint 1 closed; stage 1 done (`listedExactly` true, `leftovers` 0 after
   the one-off cleanup, the smoke mail in `Oferty`, facts in the Interia note).
+
+#### Stage 14 (2026-11-09, dev run on GreenMail with `fake-tg`, 14:25–14:55Z; own DB `email_assistant_sync_sort_folders`)
+
+- Setup: org `2ed578a0-…`, mailbox `fffd7f61-…` (GreenMail user `u-<uuid>@localhost`), mode `assist`, switches `move`, `mark_read`, `flag` on, `auto` on (`--force`) for
+  `info`, `notification`, `urgent`, `needs_reply`; folders `Oferty`, `Wiadomości-śmieci` made by a `bun -e` one-off; scopes `TRIAGE_LLM_SCOPE=synthetic ACTIONS_SCOPE=synthetic`; `fake-tg` linked.
+  GreenMail uses `.` as the folder separator: `ensureFolder` made `AI.Notifications`, not `AI/Notifications`. `folder_map` still holds `ai_info: AI/Info` and `ai_spam: AI/Spam` (not resolved in this run).
+- Step 2 (14:30Z tick): `mailbox_folders` rows `inbox`, `offers` (`sort`), `junk` with `uidvalidity` set and `last_uid` 0 (empty folders); log `added sync folders offers,junk`, one `sync … folder <key>: initial` line each. Pass.
+- Step 3: t0 = 14:30:18Z; `mailbox:seed --eval-cases synthetic --per-category 1 --folder Oferty` and `--folder Wiadomości-śmieci`: `appended 5` each. Pass.
+- Step 4 (within 6 min; stored category): classifier fact: the `info` case of both folders was classified `spam` (one `Oferty` spam pair, one junk spam pair); no `info` mail in this run.
+  - `Oferty`: `urgent` flag applied, stays in `Oferty` (`\Flagged` in IMAP); `needs_reply` no action; `notification` mark_read + move `ai_notifications` applied; 2 × `spam` move `ai_spam` `logged`.
+  - `Wiadomości-śmieci`: 2 × `spam` no action, folder stays; `urgent` move `inbox` applied, no flag; `needs_reply` move `inbox` applied; `notification` mark_read + move applied.
+  - As expected for the categories that ran. Not exercised here: `info` (save_summary, move to the `AI` info folder, the Undo of an `info` line); stage 17 or the pilot covers it. Pass.
+- Step 5 (IMAP EXAMINE): INBOX holds the 2 rescued mails (UIDs 1, 2; the `urgent` rescue has no flag, as the plan says: no flag for spam folder mail) and `Wiadomości-śmieci` no longer holds them; the notifications are in `AI.Notifications`. Pass.
+- Step 6 (`/digest`): lines of `Oferty` mail end `· 📁 Oferty · 🧪 test`, of spam folder mail `· 📁 Wiadomości-śmieci`; rescued lines `→ done: move to INBOX`; the junk `spam` lines `→ stays in Wiadomości-śmieci`; the `Oferty` `needs_reply` line `→ stays in Oferty`; the `Oferty` spam lines `→ would move to AI/Spam`; INBOX-source mail would show no tag (none in this run). Urgent notices: exactly one, `🔴 Urgent mail · 📁 Oferty · 🧪 test`; none for the junk `urgent` mail (D23). Pass.
+- Step 7 (Undo): `↩️ 3` (rescued `needs_reply`) → back in `Wiadomości-śmieci`, row `folder` = `source_folder`, `uid` = `inbox_uid` = 6, `moved_at` null, reverse `provider_result.by_append` false (MOVE; GreenMail has MOVE). The forward rescue into INBOX itself is an APPEND (`by_append` true, D12): the Interia check (F12) in stage 17 covers it. The `/digest` text of step 6 is saved in `notes/2026-11-09-sort-folders-dev-run-digest.md`.
+  `↩️ 6` (`Oferty` notification) → back in `Oferty` (UID 6), `by_append` true (U11), `mark_read` also undone (no `\Seen`), `moved_at` null, `undo_pending_at` null for all rows; originals `undone`. Pass.
+- Step 8 (cross copy): APPEND of the `Oferty` `needs_reply` raw into INBOX → next tick INBOX line `fetched 2, stored 0, uid updated 1, … cross copies 1`; no new row (row count by folder unchanged). Pass. (Note: `uid updated` likely counts a same-value update too: no row changed its UID; stage 17 compares the first-sync counts on Interia.)
+- Step 9: `sync-folder --key junk --value off` → the next tick has no `junk` line (`folders 2`); `show` lists `junk: off … cursor set`; `--value on` → `folder junk: initial, fetched 3, stored 0` (the 3 junk mails were already stored: no duplicates). Pass.
+- Step 10: `mailbox:audit --since 2026-11-09T14:30:18Z` → `inbox=2 stored=1 missing=0 duplicates=0 cross=1`, `folder=offers mail=5 stored=5 missing=0 duplicates=0 cross=0`, `folder=junk mail=3 stored=3 missing=0 duplicates=0 cross=0`; exit 0. Pass.
+- Step 11: server log: 0 lines with `error`; 0 lines with a folder name, subject, sender or address (grep of `Oferty`, `śmieci`, the case subjects, `@`: only the bot name line). Pass.
+- Step 12: server stopped with SIGINT (no process left); `auto` off for the 4 categories; mode `shadow`; `junk` on; `fake-tg` stopped.
+- Not covered here (stage 17, Interia): the real re-sort behaviour (F12); first sync counts on the pilot mailbox.
+- No bug found; no fix step.
 
 ## Done-checklist
 
@@ -554,3 +577,4 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - 2026-11-09: Group review of stages 9–11 (Opus, high; `d3f3109..0366cae`): PASS. Minor fixed: a committer test that the `junk` row is not in `appendFolders` (the Undo of a rescue uses MOVE, `by_append` false). Question: after an APPEND, a final failure of the rescue or of an Undo into a `sort` folder leaves the mail in both folders, and the sync (marker set) moved the cursor past the new copy. Decision: accept (same as the S3 COPY path; the `action_failed` notice tells the user); stage 15 adds it to D24 / ADR 0014. Note: before each stage commit check `git diff --staged --stat` for task files that lost content (`bf2b5ca` emptied a stage file; `0366cae` restored it). `bun run test:int` 996 pass.
 - 2026-11-09: Stage 12 built (implementer, 12.1 + 12.2) and reviewed (Sonnet, high): PASS, 3 minors fixed (`stayFolder` cut to 30; digest + audit assertions for the junk-folder urgent mail; `detectUrgent` arrays renamed). Checks: `bun run lint`, `bun run typecheck` pass; `bun run test:unit` 1354 pass; `bun run test:int` 999 pass, 0 fail.
 - 2026-11-09: Stage 13 built (implementer, 13.1–13.3) and reviewed (Sonnet, high): PASS, 2 minors fixed (`auditExitCode` gives 1 for null INBOX counts; a CLI spawn test for `sync-folder`). `AuditCounts.inbox` is now `mail`; `compareInboxWithDb` stays as an alias. For stage 15: `docs/code-patterns.md` test-tool line names `--folder`; `docs/known-alerts.md` ~354–359 (the audit alert text lacks ` cross=<n>`, names `listInboxEmailKeys` → `listFolderEmailKeys`). Checks: `bun run lint`, `bun run typecheck` pass; `bun run test:unit` 1361 pass; `bun run test:int` 1010 pass, 0 fail.
+- 2026-11-09: Stage 14 run by the main session on GreenMail with `fake-tg` and the real classifier: steps 2–12 passed, no bug (§ Results "Stage 14"). Classifier fact: the `info` cases were classified `spam`.

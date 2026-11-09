@@ -8,7 +8,7 @@ The procedure follows `tasks/done/s4-drafts-approvals-delegation/stage-19-dev-ru
 
 Why risky: the first end-to-end run of the new sync and moves (the real classifier, a real IMAP server). Who: the main session (operations, no code). The reviewer (Sonnet, high) checks the Results text against the commands' output.
 
-- [ ] **14.1 End-to-end run: sort folder, spam folder, rescue, Undo, digest texts**
+- [x] **14.1 End-to-end run: sort folder, spam folder, rescue, Undo, digest texts**
   - Goal: done-when items 1, 3 and 4 on a real local IMAP server, the real classifier and the fake Telegram, before anything goes to the VPS.
   - Files: this task file (§ Results "Stage 14": statuses, counts, the digest lines with mail text replaced by `<subject>`; one Log line).
   - Interfaces: dev shell `D="docker compose -f deploy/compose.yaml -f deploy/compose.dev.yaml --env-file .env"` (through `newgrp docker`); SQL on the worktree DB
