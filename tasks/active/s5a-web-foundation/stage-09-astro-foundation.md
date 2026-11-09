@@ -6,7 +6,7 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
 
 Order inside S5a: the server stages 1–8 are built, so `bun run dev` serves `/api/*` on 8080 for the dev loop (D18). Reviewed on Opus high (the CSP integration is security code).
 
-- [ ] **9.1 Dependencies, `astro.config.mjs`, the CSP integration, styles, shadcn components, `Public.astro`, the 404 page, the `index.astro` redirect stub**
+- [x] **9.1 Dependencies, `astro.config.mjs`, the CSP integration, styles, shadcn components, `Public.astro`, the 404 page, the `index.astro` redirect stub**
   - Goal: `bun run web:build` produces a static `apps/web/dist` whose every page carries the D5 meta CSP (hashed scripts, `style-src 'self' 'unsafe-inline'`), with no inline stylesheet, dark mode by the system setting and no theme script (W3, W4, D17); the shadcn components of D17 exist; the starter pages are gone; the 404 page (S10) is the first real page.
   - Files: change `apps/web/package.json` (remove `@astrojs/node` and `@astrojs/sitemap`; add `"better-auth": "1.7.18"` — the same exact pin as `apps/server`, for `better-auth/react` in 9.2 — plus `"@ea/core": "workspace:*"` and `"zod": "^4.1.12"` (the same range as the server; the web imports `@ea/core/web`, which imports `zod`); the shadcn CLI adds its own packages: `radix-ui`, `sonner`, `next-themes`, maybe `cmdk`; keep what the CLI adds, remove nothing by hand), the root `bun.lock` (this stage's change; stage 13 adds `@playwright/test`), `apps/web/astro.config.mjs`, create `apps/web/integrations/csp-style-src.ts`, change `apps/web/src/styles/global.css`, create `apps/web/src/layouts/Public.astro`, `apps/web/src/pages/404.astro`, `apps/web/src/i18n/en.ts` (the keys of this step only; 9.2 fills the rest), replace `apps/web/src/pages/index.astro` (the redirect stub), delete `apps/web/src/components/Welcome.astro` and `apps/web/src/layouts/Layout.astro`; the shadcn CLI writes `apps/web/src/components/ui/*.tsx` (it overwrites `button.tsx`).
   - Interfaces:
@@ -66,7 +66,7 @@ Order inside S5a: the server stages 1–8 are built, so `bun run dev` serves `/a
   - Done when: the build and the checks pass and the greps hold.
   - Out of scope: the app shell and the app pages (stage 10), the login and setup pages (stage 11), Playwright (stages 12–13).
 
-- [ ] **9.2 `i18n/en.ts` with `t()`, `lib/api.ts`, `lib/auth-client.ts`, `lib/use-resource.ts`, the `jsx-no-literals` lint rule, the web rule in the code patterns**
+- [x] **9.2 `i18n/en.ts` with `t()`, `lib/api.ts`, `lib/auth-client.ts`, `lib/use-resource.ts`, the `jsx-no-literals` lint rule, the web rule in the code patterns**
   - Goal: every user-visible string of S5a has a key (U1, S3–S12), the pages of stages 10 and 11 have their helpers (W19), and the lint guards the "no literal text in a component" rule from the first component on.
   - Files: change `apps/web/src/i18n/en.ts` (all keys), create `apps/web/src/lib/api.ts`, `apps/web/src/lib/auth-client.ts`, `apps/web/src/lib/use-resource.ts`, `apps/web/src/lib/api.test.ts`; keep `apps/web/src/lib/utils.ts` (`cn`); change `eslint.config.js`, the root `package.json` (`test:unit` gains `apps/web/src/lib`), `docs/code-patterns.md`.
   - Interfaces:

@@ -70,6 +70,14 @@ A route file (`routes.ts`) is thin: it parses the body with `parseBody` and a `@
 - Telegram errors: log only `telegramErrorLabel(error)`. Never log `error.message` of an inner error, `payload` or `description` (they can hold the bot token or message text). Other errors: `describeError(error)`.
 - Errors: throw typed errors (`SoftError` for timeout / 429 / 503 / lost connection, `HardError` for the rest); the job runner decides the retry.
 
+## Web app (`apps/web`)
+
+- Every user-visible string is a key in `apps/web/src/i18n/en.ts` and reaches a component through `t()`. A component never holds a literal text (`react/jsx-no-literals` on the islands and the shell and auth components).
+- No inline `<script>` and no hand-written `<style>`: the build hashes the scripts (D5), and styles come from Tailwind classes.
+- shadcn components come from the shadcn CLI, never by hand.
+- One island per page. The shell is a React component inside the island.
+- Data comes from `/api/*` through `lib/api.ts`. The request and response shapes are the `@ea/core/web` schemas. The web imports core only through that subpath.
+
 ## Tests
 
 - `bun run test:unit` runs unit tests; `bun run test:int` runs integration tests.
