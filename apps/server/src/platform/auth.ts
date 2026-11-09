@@ -1,5 +1,5 @@
 import { betterAuth } from "better-auth";
-import { APIError } from "better-auth/api";
+import { isAPIError } from "better-auth/api";
 import { Pool } from "pg";
 
 import { describeError } from "./errors";
@@ -54,14 +54,10 @@ export function cleanLogText(text: string): string {
 // The router's own log of a thrown error can hold request data, so this hook replaces it.
 // A 4xx APIError is an expected answer (wrong password, bad token): no log line.
 export function onAuthError(error: unknown): void {
-  if (isApiError(error) && error.status !== "INTERNAL_SERVER_ERROR") {
+  if (isAPIError(error) && error.statusCode < 500) {
     return;
   }
   log.error(`better-auth: ${cleanLogText(describeError(error))}`);
-}
-
-function isApiError(error: unknown): error is { status: string } {
-  return error instanceof APIError;
 }
 
 function createBetterAuth(deps: AuthDeps, pool: Pool) {

@@ -1,4 +1,5 @@
 import { APIError } from "better-auth/api";
+import { APIError as BaseAPIError } from "better-call";
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 
 import { AUTH_ALLOWED_PATHS, cleanLogText, isAllowedAuthPath, onAuthError } from "./auth";
@@ -69,6 +70,15 @@ describe("onAuthError", () => {
   test("logs nothing for a 4xx APIError", () => {
     expect(capture(new APIError("UNAUTHORIZED", { message: "Invalid password" }))).toEqual([]);
     expect(capture(new APIError("BAD_REQUEST", { message: "bad" }))).toEqual([]);
+  });
+
+  test("logs nothing for a base APIError with a 4xx number", () => {
+    expect(capture(new BaseAPIError(400))).toEqual([]);
+    expect(capture(new BaseAPIError(415))).toEqual([]);
+  });
+
+  test("logs a base APIError with a 500 number", () => {
+    expect(capture(new BaseAPIError(500))).toHaveLength(1);
   });
 
   test("logs a 500 APIError with its name only", () => {
