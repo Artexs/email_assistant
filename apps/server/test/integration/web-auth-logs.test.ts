@@ -18,6 +18,7 @@ const run = randomUUID();
 const MARKERS = {
   email: `marker-${run}@x.test`,
   password: `MARKER-PASSWORD-${run}-long`,
+  newPassword: `MARKER-NEWPASS-${run}-long`,
   secret: `MARKER-SECRET-${run}-padded-to-forty-chars`,
 };
 
@@ -81,7 +82,15 @@ describe("web auth logs", () => {
     const logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
     const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
     setLogLevel("debug");
-    const forbidden: string[] = [MARKERS.email, MARKERS.password, MARKERS.secret, "reset-password/", "callbackURL"];
+    const forbidden: string[] = [
+      MARKERS.email,
+      MARKERS.email.toUpperCase(),
+      MARKERS.password,
+      MARKERS.newPassword,
+      MARKERS.secret,
+      "reset-password/",
+      "callbackURL",
+    ];
     let lines: string[] = [];
     let userId = "";
     try {
@@ -105,6 +114,14 @@ describe("web auth logs", () => {
       const cookieValue = decodeURIComponent((headers.get("set-cookie") ?? "").split(";")[0]?.split("=")[1] ?? "");
       expect(cookieValue.length).toBeGreaterThan(10);
       forbidden.push(cookieValue, cookieValue.split(".")[0] ?? "");
+
+      // A second session, then the password change: the only call with two passwords in one body.
+      await auth.api.signInEmail({ body: { email: MARKERS.email, password: MARKERS.password } });
+      const cookiePair = (headers.get("set-cookie") ?? "").split(";")[0] ?? "";
+      await auth.api.changePassword({
+        body: { currentPassword: MARKERS.password, newPassword: MARKERS.newPassword, revokeOtherSessions: true },
+        headers: new Headers({ cookie: cookiePair }),
+      });
 
       await auth.api.signInEmail({ body: { email: MARKERS.email, password: `wrong-${MARKERS.password}` } }).then(
         () => {

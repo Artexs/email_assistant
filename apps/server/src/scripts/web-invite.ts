@@ -3,7 +3,7 @@ import { parseArgs } from "node:util";
 import { z } from "zod";
 
 import { getMembership } from "../modules/tenancy";
-import { createAuth } from "../platform/auth";
+import { type AuthHandle, createAuth } from "../platform/auth";
 import { loadConfig, webTrustedOrigins } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError, HardError } from "../platform/errors";
@@ -57,7 +57,7 @@ async function main(): Promise<number> {
   }
 
   const db = createDb(config.DATABASE_URL);
-  let handle: ReturnType<typeof createAuth> | undefined;
+  let handle: AuthHandle | undefined;
   try {
     await assertAppRole(db);
     const userId = await pickMemberId(db, options.orgId, options.userId, log);
