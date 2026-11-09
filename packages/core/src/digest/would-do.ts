@@ -1,10 +1,10 @@
-import { type ActionType, AI_FOLDER_NAMES, type FolderKey } from "../triage/planners";
+import { type ActionType, MOVE_TARGET_NAMES, type MoveTarget } from "../triage/planners";
 
 export interface ActionView {
   id: string;
   type: ActionType;
   status: string;
-  folder: FolderKey | null;
+  folder: MoveTarget | null;
   reverse: boolean;
   reversesActionId: string | null;
   appliedAt: Date | null;
@@ -57,7 +57,7 @@ function phrase(action: ActionView, names: ReadonlyMap<string, string>): string 
     case "mark_read":
       return "mark read";
     case "move":
-      return action.folder === null ? "move" : `move to ${AI_FOLDER_NAMES[action.folder]}`;
+      return action.folder === null ? "move" : `move to ${MOVE_TARGET_NAMES[action.folder]}`;
     case "create_draft":
       return draftPhrase(action, names);
     case "save_summary":

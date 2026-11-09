@@ -1,4 +1,4 @@
-> **Status 2026-11-09 — in progress — stages 1–2 done (spike; migration `sync_folders` with the INBOX cursor in `mailbox_folders`).** Left: stages 3–17 (next: stage 3), checkpoint 2 before the deploy (stage 16).
+> **Status 2026-11-09 — in progress — stages 1–3 done (spike; migration; core folder defaults and the spam folder plan).** Left: stages 4–17 (next: stage 4, then the group review of stages 2–4), checkpoint 2 before the deploy (stage 16).
 
 # Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
@@ -406,7 +406,7 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 
 - [x] [Stage 1](sync-sort-folders/stage-01-spike-real-mailbox.md) [written] — Spike on the real mailbox: sort-folder and spam-folder moves [risky] — main session; checkpoints 0 and 1
 - [x] [Stage 2](sync-sort-folders/stage-02-migration-sync-folders.md) [written] — Migration `sync_folders`; the INBOX cursor in `mailbox_folders` [risky]
-- [ ] [Stage 3](sync-sort-folders/stage-03-core-folders-and-plan.md) [written] — Core: sync folder defaults; plan for spam folder mail; the `inbox` move target and its policy
+- [x] [Stage 3](sync-sort-folders/stage-03-core-folders-and-plan.md) [written] — Core: sync folder defaults; plan for spam folder mail; the `inbox` move target and its policy
 - [ ] [Stage 4](sync-sort-folders/stage-04-folder-repository.md) [written] — Folder repository: list, discovery insert, switch, junk path [risky] — group review 2–4
 - [ ] [Stage 5](sync-sort-folders/stage-05-port-folder-reads.md) [written] — Port and adapters: folder status, fetch above, body text, folder list per folder [risky]
 - [ ] [Stage 6](sync-sort-folders/stage-06-sync-rules.md) [written] — Sync rules across folders (pure) [risky]
@@ -493,3 +493,6 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - 2026-11-09: D22 note: the S5a branch already has `20261109000001_web_panel.sql` (pushed, not on `origin/master` `4300cd1`; the master commits after `1f882b5` change task files only); it sorts **before** this task's
   `20261109083501_sync_folders.sql`. dbmate applies an older pending migration too, but `db:rollback` takes the highest version. The stage 16 check
   (`git log origin/master --oneline -- db/migrations`; an S5a migration that sorts before ours = stop and ask) stays; the end summary tells the user.
+- 2026-11-09: Stage 3 built (implementer, 3.1 and 3.2) and reviewed per step (Opus, high): 3.1 PASS (2 test minors fixed: a second `a` copy in `AI/Spam`
+  in deliver test 7; `AI_FOLDER_ROOT` pinned), 3.2 PASS (1 comment minor fixed). Checks: `bun run lint` exit 0; `bun run typecheck` exit 0;
+  `bun run test:unit` 1305 pass, 0 fail; `bun run test:int` 893 pass, 0 fail (reviewer run).

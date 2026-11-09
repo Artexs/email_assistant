@@ -6,7 +6,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's D
 
 Pure code in `packages/core` (no I/O), plus one small change in the test tool. Review: Opus, high (the plan decides what the committer does to real mail).
 
-- [ ] **3.1 Sync folder defaults and the pick rule; the test tool takes its names from them**
+- [x] **3.1 Sync folder defaults and the pick rule; the test tool takes its names from them**
   - Goal: one source for the provider folder names (D2, D18) and a pure rule that picks the folders to sync from the server's folder list.
   - Files: create `packages/core/src/mail/sync-folders.ts`, `packages/core/src/mail/sync-folders.test.ts`, `packages/core/src/mail/index.ts`; change
     `packages/core/src/index.ts` (export), `packages/core/src/testmail/delivery.ts` (`SORT_FOLDER_NAMES` from the defaults), `apps/server/src/modules/mail/tools.ts`
@@ -60,7 +60,7 @@ Pure code in `packages/core` (no I/O), plus one small change in the test tool. R
   - Done when: tests 1–7 pass.
   - Out of scope: the DB rows (stage 4); the sync (stage 7a).
 
-- [ ] **3.2 Plan for spam folder mail, the `inbox` target, its policy and phrase**
+- [x] **3.2 Plan for spam folder mail, the `inbox` target, its policy and phrase**
   - Goal: D11 and D12 as pure functions (after the cold review M3: the normal move gate, no flag, no VIP exception).
   - Files: change `packages/core/src/triage/planners.ts`, `packages/core/src/triage/planners.test.ts`, `packages/core/src/triage/policy.ts` (only if a type
     needs it), `packages/core/src/triage/policy.test.ts`, `packages/core/src/digest/would-do.ts`, `packages/core/src/digest/would-do.test.ts`,

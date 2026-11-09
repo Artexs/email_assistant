@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import {
   planDelivery,
   SORT_FOLDER_NAMES,
+  SYNC_FOLDER_DEFAULTS,
   sortFolderKeys,
   type CaseDelivery,
   type FoundCopy,
@@ -211,12 +212,9 @@ export async function deliverTestMail(
     const info = await provider.serverInfo();
     const paths: Partial<Record<SortFolderKey, string>> = {};
     for (const key of sortFolderKeys) {
-      if (key === "junk") {
-        const junk = info.folders.find((folder) => folder.specialUse === "\\Junk");
-        if (junk !== undefined) paths.junk = junk.path;
-      } else if (info.folders.some((folder) => folder.path === SORT_FOLDER_NAMES[key])) {
-        paths[key] = SORT_FOLDER_NAMES[key];
-      }
+      const path =
+        key === "junk" ? SYNC_FOLDER_DEFAULTS.find((folder) => folder.key === "junk")?.path : SORT_FOLDER_NAMES[key];
+      if (path !== undefined && info.folders.some((folder) => folder.path === path)) paths[key] = path;
     }
     const folders: { key: FoundCopy["folder"]; path: string }[] = [{ key: "inbox", path: INBOX }];
     for (const key of sortFolderKeys) {
