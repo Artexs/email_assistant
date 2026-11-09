@@ -6,7 +6,7 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
 
 The seed deletes an organization by name and writes into a database: that is why the stage is `[risky]` (D19: it must never touch the dev database or another task's worktree database).
 
-- [ ] **12.1 The seed script and its guards**
+- [x] **12.1 The seed script and its guards**
   - Goal: an idempotent script makes the fixed `E2E` organization with an owner who has a known password and two assistants (`mobile`, `desktop`) who each have an unused setup link, on the e2e database only, and refuses every other database.
   - Files: create `apps/server/src/scripts/e2e-seed.ts`, `apps/server/src/scripts/e2e-seed-args.ts` (pure helpers and constants, unit-tested), `apps/server/src/scripts/e2e-seed-args.test.ts`, `apps/server/test/integration/e2e-seed.test.ts`; change `apps/server/src/modules/tenancy/index.ts` (export `insertUser` and `insertMembership`: a script imports a module through its index, as `pick-member.ts` does; second cold review, finding 10), the root `package.json` (`"e2e:seed": "bun apps/server/src/scripts/e2e-seed.ts"`), `.gitignore` (`apps/web/e2e/.seed.json`, `apps/web/e2e/test-results/`, `apps/web/e2e/playwright-report/`).
   - Interfaces:

@@ -31,3 +31,8 @@ deploy/backup.env
 
 # eval run state (per-case results)
 evals/.runs/
+
+# e2e seed output and Playwright reports
+apps/web/e2e/.seed.json
+apps/web/e2e/test-results/
+apps/web/e2e/playwright-report/

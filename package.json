@@ -43,6 +43,7 @@
     "gemini:test": "bun apps/server/src/scripts/llm-check.ts --provider gemini",
     "org:create": "bun apps/server/src/scripts/org-create.ts",
     "web:invite": "bun apps/server/src/scripts/web-invite.ts",
+    "e2e:seed": "bun apps/server/src/scripts/e2e-seed.ts",
     "telegram:check": "bun apps/server/src/scripts/telegram-check.ts",
     "telegram:link": "bun apps/server/src/scripts/telegram-link.ts",
     "telegram:unlink": "bun apps/server/src/scripts/telegram-unlink.ts",

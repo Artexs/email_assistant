@@ -1,6 +1,8 @@
 export {
   getMembership,
   getOrganization,
+  insertMembership,
+  insertUser,
   listMemberships,
   listMembershipsOfUser,
   setDigestTimes,
