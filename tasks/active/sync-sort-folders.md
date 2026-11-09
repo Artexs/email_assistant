@@ -1,4 +1,4 @@
-> **Status 2026-11-09 — in progress — stages 1–15 done; group reviews 2–4, 5–8 and 9–11 done.** Left: group review 12–15 + branch (Opus, high); checkpoint 2 (the user's "deploy") before stage 16; stages 16–17; checkpoint 3.
+> **Status 2026-11-09 — in progress — stages 1–15 done, all group reviews PASS (last commit `13c2b8f`). Waiting at checkpoint 2: the user's "deploy".** Left: stage 16 (merge + VPS deploy), stage 17 (live checks, close), checkpoint 3.
 
 # Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
