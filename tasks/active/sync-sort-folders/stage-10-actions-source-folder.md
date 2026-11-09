@@ -1,18 +1,21 @@
 # sync-sort-folders — Stage 10
 
-Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's D9, D10, D12 and "Rules for every step" first. Needs stages 3, 6, 7b and 9.
+Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's D9, D10, D12, U11, F12 and "Rules for every step" first. Needs stages 3, 4 (`listSyncFolders`), 6, 7b and 9.
 
 ## Stage 10 — Actions: Undo to the source folder, the rescue move, the move marker [risky]
 
 Why risky: exactly-once moves in the user's mailbox (the ensure rule, D5 of S3) and the Undo target change.
 
-- [ ] **10.1 Reverse to `source_folder`; target `inbox`; APPEND transfer for INBOX targets of non-INBOX mail; marker for the rescue**
+- [ ] **10.1 Reverse to `source_folder`; target `inbox`; APPEND transfer for INBOX targets of non-INBOX mail and for `sort` folder targets (U11); marker for the rescue**
   - Goal: D10 and D12 in the committer.
   - Files: change `apps/server/src/modules/actions/apply.ts`, `apps/server/src/modules/actions/move.ts`, `apps/server/src/modules/actions/committer.ts`
     (`createFolderResolver`), `apps/server/src/modules/actions/repo.ts` (claim returns `emails.source_folder`; the action view parses `MoveTarget`),
     `apps/server/src/modules/mail/repo.ts` (`updateEmailLocation` param name), and `applyFlag` in `apply.ts` (its location write sets `inbox_uid` when
     `email.folder === email.source_folder`, not when `email.folder === INBOX`; review m1), tests `apps/server/test/integration/actions-move.test.ts`,
-    `apps/server/test/integration/actions-undo.test.ts`, `apps/server/test/integration/actions-committer.test.ts`, `apps/server/test/integration/actions-repo.test.ts`.
+    `apps/server/test/integration/actions-undo.test.ts`, `apps/server/test/integration/actions-committer.test.ts`, `apps/server/test/integration/actions-repo.test.ts`; and for the new required
+    `ApplyDeps.appendFolders` (U11): `apps/server/test/integration/fixtures.ts` (`applyDepsDefaults` gets `appendFolders: new Set()`, and `"appendFolders"` goes into its `Pick` list),
+    `apps/server/test/integration/actions-apply.test.ts`, `actions-drafts.test.ts`, `actions-send.test.ts` (keep the field required, so that production code
+    cannot leave it out and use a COPY by mistake).
   - Interfaces:
 
     ```ts
@@ -32,13 +35,22 @@ Why risky: exactly-once moves in the user's mailbox (the ensure rule, D5 of S3) 
       opts: { byAppend: boolean }
     ): Promise<EnsureResult | null>;
     // apps/server/src/modules/mail/repo.ts — updateEmailLocation: the param `inboxUid` is renamed `sourceUid` (it writes emails.inbox_uid)
+    // apps/server/src/modules/actions/apply.ts — ApplyDeps gets (U11):
+    /** Paths of the mailbox's `sort` rows (enabled or not): a move into one of them is an APPEND transfer (Interia re-sorts a COPY, F12). */
+    appendFolders: ReadonlySet<string>;
     ```
 
   - Decisions:
     - `createFolderResolver.resolve("inbox")` returns `INBOX` at once: no `ensureFolder`, no `folder_map` write, no audit row.
     - `applyMove`: `bad_payload` when a forward payload folder is not a `MoveTarget` (`isMoveTarget`). Forward target = `resolve(folder)`; reverse target =
       `email.source_folder`. `from` = `email.folder` (as today). Hints: forward `{ fromUid: email.uid, toUid: email.uid }`; reverse
-      `{ fromUid: email.uid, toUid: email.inbox_uid }`. `byAppend` = `to === INBOX && email.source_folder !== INBOX`.
+      `{ fromUid: email.uid, toUid: email.inbox_uid }`. `byAppend` = `(to === INBOX && email.source_folder !== INBOX) || deps.appendFolders.has(to)` (U11).
+    - The committer loads `appendFolders` once per mailbox batch: `listSyncFolders(db, ctx, mailboxId, { enabledOnly: false })` (stage 4, through `mail/index.ts`;
+      export it there if stage 4 did not), the paths of the rows with role `sort`. A disabled `sort` row still counts (its mail can still be undone).
+      A load error follows the `loadFacts` pattern (`committer.ts`): catch it, log `committer <mailboxId>: sync folders failed: <describeError(error)>`
+      (`log.error`, as `loadFacts`), `release(ctx, batch, now).catch(…"release failed")` as `loadFacts`, return (the actions stay `ready`; the next tick tries again).
+    - A move's `provider_result` gets `by_append: true|false` (next to `moved_now`, `leftover_deleted`), so the dev run and the live check can see which
+      transfer ran.
     - `ensureOnce`: when it must move, `byAppend` → `provider.transferByAppend(from, uid, to)`, else `provider.moveMessage(from, uid, to)`. The rest of the
       ensure (locate the target, then the source, delete a leftover, `from === to` only locates) is unchanged.
     - Marker (D9): a forward move with target `inbox` sets `undo_pending_at` = now with `setUndoPending` in its own commit before `ensureMoved` (each try;
@@ -50,8 +62,14 @@ Why risky: exactly-once moves in the user's mailbox (the ensure rule, D5 of S3) 
   - Test (fake; the Interia COPY path `capabilities: { move: false, uidplus: true }` unless named; fixtures `insertTestEmail` with `folder`, `source_folder`):
     1. Forward move of an `Oferty`-source mail into `AI/Info` → row `folder` `AI/Info`, new uid, `source_folder` `Oferty`, `inbox_uid` unchanged, `moved_at` set;
        `fake.calls` has `moveMessage`, no `transferByAppend`.
-    2. Undo of test 1 → the reverse moves it back into `Oferty` (not INBOX): `folder` = `Oferty`, `uid` = `inbox_uid` = the new `Oferty` uid, `moved_at` null,
-       `undo_pending_at` null; the original is `undone`.
+    2. Undo of test 1 (the mailbox has an `offers` row with path `Oferty`) → the reverse moves it back into `Oferty` (not INBOX) by `transferByAppend`
+       (`fake.calls` has `transferByAppend`, not `moveMessage`; U11): `folder` = `Oferty`, `uid` = `inbox_uid` = the new `Oferty` uid (the APPENDUID),
+       `moved_at` null, `undo_pending_at` null, `provider_result.by_append` true; the original is `undone`. Same with the `offers` row disabled.
+       Test 1 has `by_append` false. Run test 2 (row enabled and disabled) in `actions-committer.test.ts` through `createCommitter(...).run()`, so that the
+       committer's `listSyncFolders` load is under test (the apply-level tests get `appendFolders` from `applyDepsDefaults`).
+       2c. (`actions-committer.test.ts`) `listSyncFolders` throws (a wrapped `db` or a dropped row type) → the batch goes back to `ready`, no IMAP call.
+       2b. A crash between the APPEND and the EXPUNGE of that Undo (`failOn("deleteMessage", new HardError("x"))` once) → the next claim finds the mail in
+       `Oferty` and in `AI/Info`, deletes the `AI/Info` copy, `applied`; one `Oferty` copy, no second `transferByAppend`.
     3. Rescue: a `Wiadomości-śmieci`-source mail with `\Flagged`, action move `inbox` → `fake.calls` has `transferByAppend`, not `moveMessage`; row `folder` INBOX,
        `source_folder` `Wiadomości-śmieci`, `moved_at` set, `undo_pending_at` null after the commit; the INBOX copy has `\Flagged`.
     4. Undo of the rescue → `moveMessage` back into `Wiadomości-śmieci`; `folder` = `source_folder`; `moved_at` null.

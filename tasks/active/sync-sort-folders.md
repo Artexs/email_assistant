@@ -1,4 +1,4 @@
-> **Status 2026-11-08 — in progress — independent plan review done (session 2) and fixed: M1 decided by the user (spam folder `delegation` → move into INBOX only), 13 minors fixed or decided ([`review-2026-11-08-session2.md`](sync-sort-folders/review-2026-11-08-session2.md)). The plan is ready to build.** Left: the build (`run-task`, stage 1 first with checkpoint 0) and the VPS deploy (stage 16, checkpoint 2). No code yet.
+> **Status 2026-11-09 — in progress — stage 1 done (spike on the real mailbox); checkpoint 1 decided by the user (U11: an Undo into a `sort` folder uses the APPEND transfer); plan changed (F12, D10, D12, D24, stages 9, 10, 14, 15, 17).** Left: stages 2–17 (next: stage 2), checkpoint 2 before the deploy (stage 16).
 
 # Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
@@ -49,6 +49,9 @@ The questions (with the defaults that the user took for Q3–Q5) are in "Questio
 - **U6 (Q2):** a valid mail in `Wiadomości-śmieci` moves to the folder of its category. Reading (D11, shown to the user in the plan summary):
   `info` → `AI/Info`, `notification` → `AI/Notifications` (as U2), and `urgent`, `needs_reply`, `delegation` → INBOX (the folder where these categories stay).
   The cold review (M3) added the normal move gate and "no flag, no urgent notice" for this mail (D11, D12, D23): the user confirms at the plan approval.
+- **U11 (checkpoint 1, 2026-11-09):** an Undo into a `sort` folder (`Oferty`, `Społeczności`, `Rachunki`) uses the APPEND transfer, not a COPY (stage 1:
+  Interia sorts a COPY into `Oferty` into INBOX; an APPEND stays). Undo into INBOX and into the spam folder stays a COPY. User words (to the proposal
+  "Undo into `Oferty`, `Społeczności` or `Rachunki` uses APPEND, not COPY"): "Okay, proceed."
 - **U10 (independent review M1, 2026-11-08):** a spam folder mail with the category `delegation` gets only the move into INBOX: no draft, no send,
   no approval message, no delegation row (D11). User words: "Yes, I agree that's a good idea to move it to different inbox folder."
 - **U7 (Q3, default):** digest lines and notices of mail outside INBOX show its folder; "stays in INBOX" names the real folder.
@@ -105,12 +108,17 @@ The sync reads INBOX and the Interia sort folders, stores and triages their mail
   returns `{ uid }` with APPENDUID (S4). `fetchOne(uid, { source: true })` returns the raw bytes (`fetchBodyText`).
 - **F10 Code:** the forward move already starts from `emails.folder` (`actions/apply.ts:305`); only the reverse targets INBOX (`apply.ts:298`). The INBOX-only
   places: "Differences found at collect" items 2–4.
+- **F12 Interia sorter on COPY** (stage 1, 2026-11-08, `notes/2026-11-03-interia-imap-capabilities.md` § "Sort-folder probe"): a COPY into `Oferty` (a synthetic
+  probe and a mail that Interia itself sorted into `Oferty`) lands in INBOX with the same UID within 5 minutes; an APPEND into `Oferty` stays. A COPY into `AI/*`
+  and into `Wiadomości-śmieci` stays. `UID SEARCH SINCE` misses a mail that Interia re-sorted (a FETCH by UID finds it). `AI/Info` and `AI/Manual` do not
+  exist yet (the committer's `ensureFolder` creates them). STATUS `MESSAGES` is wrong too (0 for `Oferty`).
 - **F11 Deploy rule:** `deploy/README.md` (lines 139, 224): "Roll back the code, not the migration." Migrate step: `$C run --build --rm server bun run db:migrate`,
   then `$C up -d --build --wait`.
 
 ### Not verified (and the stage that checks it)
 
 - **NV1** A COPY from `Oferty` or `Wiadomości-śmieci` into `AI/*` stays, and the COPY back stays (Interia re-sorts a COPY into INBOX only?). Stage 1.
+  → Stage 1 result: out stays; back into `Wiadomości-śmieci` stays; back into `Oferty` is re-sorted into INBOX (F12, U11).
 - **NV2** An APPEND transfer from `Wiadomości-śmieci` into INBOX at Interia stays and keeps size, INTERNALDATE and `Message-ID`. Stage 1 checks it with a
   synthetic probe mail only: it is not proven for mail that Interia classified as spam (there is no own test mail in that folder). F8 (an APPEND of `Oferty`
   mail into INBOX stays) makes it likely. Stage 17 checks the first real rescue, if one happens.
@@ -174,7 +182,7 @@ The sync reads INBOX and the Interia sort folders, stores and triages their mail
   A marker older than 24 h is a leftover. The sync checks the marker before any locate (D7). Change against S3: a reverse move whose IMAP part ran but
   whose commit did not is no longer marked `returned` by the sync; the committer writes the location.
 - **D10 Actions.** The forward move starts from `emails.folder` (as now). The reverse move (Undo) targets `emails.source_folder` with the hint `inbox_uid`
-  (was INBOX). The location write: target = `source_folder` → `inbox_uid` = new UID, `moved_at` = null; else `moved_at` = now. Flags work in `emails.folder` (as now).
+  (was INBOX); into a `sort` folder it is an APPEND transfer (U11, D12). The location write: target = `source_folder` → `inbox_uid` = new UID, `moved_at` = null; else `moved_at` = now. Flags work in `emails.folder` (as now).
 - **D11 Plan for mail from the spam folder (U5, U6; changed by the cold review M3, the user confirms at the plan approval).** Spam folder mail is
   controlled by its sender (Interia put it there for a reason; its `From` can be forged), so it gets the normal gates and no extra push.
   `planActions` gets `{ fromJunk }`. `fromJunk` = the mail's `source_folder` is the path of the mailbox's `junk` row. For `fromJunk`: `spam` → no action
@@ -187,10 +195,11 @@ The sync reads INBOX and the Interia sort folders, stores and triages their mail
   not VIP; else `log_only`. So on the VPS today (`auto` off for `urgent` and `needs_reply`) a rescue is `logged`: the digest line reads "would move to INBOX"
   with `📁 Wiadomości-śmieci`, and the user moves the mail by hand or turns `auto` on (`mailbox:settings auto --category urgent --value on --force`).
   `delegation` has no `auto` flag, so its rescue is always `logged`. Transfer: when the target is INBOX and the mail's `source_folder` is not INBOX,
-  the committer uses `transferByAppend` (raw source + flags without `\Recent`, `\Deleted` and the junk keywords `$Junk`, `Junk` + INTERNALDATE, APPEND to INBOX, then `UID EXPUNGE` of the
-  source; F7, F8), else `moveMessage` as now. The ensure rule of S3 (locate in the target and the source first) stays. The Undo of a rescue is a normal COPY
-  move back into the spam folder. If stage 1 shows that a COPY out of a sort or spam folder into `AI/*` is sorted back (NV1), stop: the main session proposes
-  "transfer by APPEND for every move out of a `sort` or `junk` folder" and asks the user.
+  or the target is the path of a `sort` row of the mailbox (an Undo into `Oferty`, `Społeczności`, `Rachunki`; U11, F12),
+  the committer uses `transferByAppend` (raw source + flags without `\Recent`, `\Deleted` and the junk keywords `$Junk`, `Junk` + INTERNALDATE, APPEND to the target, then `UID EXPUNGE` of the
+  source; F7, F8, F12), else `moveMessage` as now. The ensure rule of S3 (locate in the target and the source first) stays. The Undo of a rescue is a normal COPY
+  move back into the spam folder. Stage 1 result (checkpoint 1): a COPY out of a sort or spam folder into `AI/*` stays; a COPY back into `Oferty` is
+  re-sorted into INBOX, so the user decided U11 (APPEND for an Undo into a `sort` folder).
 - **D13 Triage.** One pipeline for all folders. The classifier gets no folder hint (a prompt change needs an eval run: follow-up
   `tasks/planned/classifier-folder-hint.md`). Mail older than 7 days is skipped as now. `TriageMailbox` gets `junkFolder` (the path of the `junk` row,
   also when it is disabled); `ClaimedEmail` gets `source_folder`.
@@ -230,7 +239,7 @@ move in flight n, skipped own n, ignored below cursor n` (info). `sync <mailboxI
   path. Such mail shows in the digest (NEEDS ACTION, `📁 Wiadomości-śmieci`). Reason: an injected "urgent" text must not push a spam-folder mail to the phone.
 - **D24 Known limits (written in ADR 0014).** (a) A return into a synced folder that is not the row's source, below that folder's cursor, is not seen
   (Interia keeps the UID). (b) A mail that the user moves between two synced folders in the seconds between their passes of one run is not stored.
-  (c) A row whose source became INBOX by a user move out of `Oferty` gets its Undo by COPY into INBOX, which Interia may sort back (F8). (d) After a code
+  (c) A row whose source became INBOX by a user move out of `Oferty` gets its Undo by COPY into INBOX, which Interia sorts back (F8, F12). (d) After a code
   rollback the old code ends a `ready` move `{ folder: "inbox" }` as `bad_payload` and sends an Undo of `Oferty` mail to INBOX; an Undo of a rescue
   ends `applied` with no IMAP change (the old reverse targets INBOX, where the rescued mail is), so the mail stays in INBOX (independent review m8). (e) `mailbox:audit` shows a
   cross copy as `cross`, not as `missing` (stage 13.2).
@@ -239,6 +248,8 @@ move in flight n, skipped own n, ignored below cursor n` (info). `sync <mailboxI
   (g) A user move of a mail that the system did not move, between two synced folders, keeps its UID at Interia. When that UID is below the target
   folder's cursor, the sync does not see the move: the row keeps its old folder, and an action on it ends `mail_not_found` (independent review m9;
   the follow-up `tasks/planned/sync-return-to-other-folder.md` covers (a) and (g)).
+  (h) Interia's SEARCH misses a mail that its sorter moved after a COPY (F12): the locate without a UID hit, `fetchSince` (initial window, rescan) and
+  `mailbox:audit` do not see it. After U11 only an Undo into INBOX makes such a COPY (S3 path; case (c) and a crash between the COPY and the commit).
 
 ### Edge cases (decided; each has a test in its stage)
 
@@ -250,7 +261,8 @@ move in flight n, skipped own n, ignored below cursor n` (info). `sync <mailboxI
 - **Before the first run:** INBOX row from the migration with the old cursor → incremental, no change for INBOX (2.T1, 7a.T1). Sort rows appear on the first
   run after the deploy → initial 24 h (7a.T1).
 - **Crash and repeat:** sync between the IMAP read and the commit → the folder cursor did not move → the next run repeats; the dedup key and the cross-copy rule
-  stop duplicates (7b.T1, 7a.T10). Rescue between APPEND and EXPUNGE → both copies → the ensure deletes the source copy (10.T5). After the IMAP part, before the
+  stop duplicates (7b.T1, 7a.T10). Rescue between APPEND and EXPUNGE → both copies → the ensure deletes the source copy (10.T5). Undo into a `sort` folder between APPEND and EXPUNGE →
+  the ensure deletes the `AI/*` copy (10.T2b). After the IMAP part, before the
   commit → the ensure finds the target only → `applied` with no second transfer (10.T6). Marker set → the sync stores no copy meanwhile (7b.T8, 10.T7).
 - **Two runs at once:** the CAS on the folder row (`CursorMovedError`) → a warn, the next folder runs (7a.T9).
 - **Two tenants:** every new repository function filters by `org_id` and has a test with a second organization (4.T1–T10, 2.T6, 7b.T11, 13.2 T5).
@@ -392,7 +404,7 @@ the marker. The implementer reports `git diff --stat` (source and tests apart) i
 
 Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). An implementer or reviewer reads this file (Input, Rules) and only the stage file of its step.
 
-- [ ] [Stage 1](sync-sort-folders/stage-01-spike-real-mailbox.md) [written] — Spike on the real mailbox: sort-folder and spam-folder moves [risky] — main session; checkpoints 0 and 1
+- [x] [Stage 1](sync-sort-folders/stage-01-spike-real-mailbox.md) [written] — Spike on the real mailbox: sort-folder and spam-folder moves [risky] — main session; checkpoints 0 and 1
 - [ ] [Stage 2](sync-sort-folders/stage-02-migration-sync-folders.md) [written] — Migration `sync_folders`; the INBOX cursor in `mailbox_folders` [risky]
 - [ ] [Stage 3](sync-sort-folders/stage-03-core-folders-and-plan.md) [written] — Core: sync folder defaults; plan for spam folder mail; the `inbox` move target and its policy
 - [ ] [Stage 4](sync-sort-folders/stage-04-folder-repository.md) [written] — Folder repository: list, discovery insert, switch, junk path [risky] — group review 2–4
@@ -401,7 +413,7 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - [ ] [Stage 7a](sync-sort-folders/stage-07a-sync-loop-per-folder.md) [written] — Sync loop per folder: discovery, new mail, errors [risky]
 - [ ] [Stage 7b](sync-sort-folders/stage-07b-sync-incoming-across-folders.md) [written] — Sync: cross copies, relocated, returned, move in flight across folders [risky]
 - [ ] [Stage 8](sync-sort-folders/stage-08-returns-below-cursor.md) [written] — Sync: returns below the cursor per source folder; the Interia keep-UID cases [risky] — group review 5–8
-- [ ] [Stage 9](sync-sort-folders/stage-09-transfer-by-append.md) [written] — Adapter: move into INBOX by APPEND (`transferByAppend`) [risky]
+- [ ] [Stage 9](sync-sort-folders/stage-09-transfer-by-append.md) [written] — Adapter: move by APPEND (`transferByAppend`) [risky]
 - [ ] [Stage 10](sync-sort-folders/stage-10-actions-source-folder.md) [written] — Actions: Undo to the source folder, the rescue move, the move marker [risky]
 - [ ] [Stage 11](sync-sort-folders/stage-11-triage-source-folder.md) [written] — Triage: plan by the source folder [risky] — group review 9–11
 - [ ] [Stage 12](sync-sort-folders/stage-12-digest-notice-texts.md) [written] — Digest and notice texts with the folder
@@ -413,7 +425,34 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 
 ### Results
 
-Not yet (stages 1, 14, 16 and 17 write their results here).
+#### Stage 1 (2026-11-08, run `249f9b84`, 16:43–16:53Z; detail in `notes/2026-11-03-interia-imap-capabilities.md` § "Sort-folder probe")
+
+- Setup: `.env` copied; own DB `email_assistant_sync_sort_folders` (`bun run db:worktree sync-sort-folders` → exit 0).
+- Script review (Opus, high): round 1 FAIL (blocker: idle 300 s waits hit the imapflow 5-minute socket timeout; 4 minors), fixed; round 2 PASS (3 minors fixed).
+- Deviations: Interia has no `AI/Info` (and no `AI/Manual`); the first part 1 run stopped before any write on that check. The spike then used `AI/Notifications`
+  for P1 too (no folder created). Part 2 also reads the smoke `Message-ID` on stdin (stage file command updated).
+- NV1 out (`Oferty` → `AI/*`, `Wiadomości-śmieci` → `AI/*`): stays. As expected.
+- NV1 back into `Wiadomości-śmieci`: stays. As expected.
+- **NV1 back into `Oferty`: NOT as expected.** The COPY landed in `Oferty` (COPYUID 38975), then Interia sorted it into INBOX with the same UID 38975
+  (about 4 min). The old VPS sync stored it (row `d8c247e6-…`, triage `info`, `move ai_info` logged only). Part 1 stopped at step D, so **step D2
+  (a mail that Interia itself sorted into `Oferty`) did not run**: it is not known whether a real `Oferty` mail returns to `Oferty` on a COPY.
+- **New fact: SEARCH misses the re-sorted mail.** `UID SEARCH SINCE` in INBOX did not return UID 38975, but a FETCH of the UID did. So the locate without a
+  UID hint does not find such a mail; part 2's cleanup missed it (`leftovers: 0` was wrong). A one-off `cleanup` run deleted it after a FETCH check.
+- NV2 (APPEND `Wiadomości-śmieci` → INBOX): stays; size, INTERNALDATE and `Message-ID` kept; source EXPUNGE true. As expected.
+- NV3: STATUS `UIDNEXT` 1 for the 4 folders, 2 for INBOX; STATUS `MESSAGES` 0 for `Oferty` (wrong); EXAMINE gives no UIDNEXT. D4 holds.
+- `listedExactly`: true for all 4 paths. Smoke mail `piotr-re-termin`: in `Oferty`, not moved. VPS log: 0 error lines.
+- Step 10 SQL (`select count(*) from emails where message_id_header like '<ea-probe-ssf-%'`): 1 (row `d8c247e6-…`, P1 stored from INBOX; harmless as stated).
+- **Checkpoint 1: STOP** (D12, the stage 1 "Done when": a result "sorted back" is a stop). The Undo of a mail moved out of `Oferty` is a COPY into `Oferty` (D10),
+  which Interia may re-sort. Asked the user (see Log).
+- User: "yes, proceed. you can run the test" (step D2 alone). **D2: the smoke mail (sorted into `Oferty` by Interia) COPY → `AI/Notifications` stays; COPY back
+  into `Oferty` → Interia sorted it into INBOX (same UID 38979), the old sync stored it (row `3cf26e47-…`, `needs_reply`, no action).** SEARCH missed it again.
+- APPEND of that mail back into `Oferty` (raw source, `\Seen`, same INTERNALDATE; APPENDUID 38980) + UID EXPUNGE in INBOX: stays after 5 min; SEARCH finds it.
+  The smoke mail is in `Oferty` again. Its row `3cf26e47-…` (folder INBOX, `needs_reply`, the INBOX UID is gone) stays: the digest can show it once as NEEDS
+  ACTION (the test tool's own mail; an action on it ends `mail_not_found`); `test-mail-traffic` sends a new smoke batch after the deploy (D20), so its counts
+  do not use it.
+- Conclusion: an Undo into a `sort` folder by COPY fails at Interia; by APPEND it works. D12 proposal for the user: transfer by APPEND also for a move whose
+  target is a `sort` folder. **User decided U11 (2026-11-09): "Okay, proceed."** Checkpoint 1 closed; stage 1 done (`listedExactly` true, `leftovers` 0 after
+  the one-off cleanup, the smoke mail in `Oferty`, facts in the Interia note).
 
 ## Done-checklist
 
@@ -438,3 +477,10 @@ Not yet (stages 1, 14, 16 and 17 write their results here).
   (stage 1 in two runs, `listedExactly`, `TRANSFER_DROP_FLAGS`, test fixes in stages 2, 5, 10, 13, D24 (d) and (g), docs in stage 15, where the master-mode commits run).
 - 2026-11-08: User answer to review M1 (U10): spam folder `delegation` mail gets only the move into INBOX (no draft, no approval). D11, stages 3.2 and
   11.1 changed. The independent review is closed: the plan is ready to build.
+- 2026-11-08: Build session (Claude Code, claude-opus-5-5). Setup: worktree `.env`, own DB. User: "proceed" = checkpoint 0 yes. Stage 1 spike script reviewed
+  (FAIL → fixed → PASS), run on the VPS. Checkpoint 1: STOP: a COPY back into `Oferty` was re-sorted into INBOX (synthetic probe), SEARCH missed the re-sorted
+  mail, `AI/Info` does not exist yet, step D2 not run (§ Results). Asked the user: run D2, and/or Undo into a sort folder by APPEND.
+- 2026-11-09: User yes to D2 alone: a real `Oferty` mail is re-sorted into INBOX after a COPY back; an APPEND back stays (§ Results, F12). User decided U11
+  ("Okay, proceed."): an Undo into a `sort` folder uses `transferByAppend`. Plan changed: F12, U11, NV1 result, D10, D12, D24 (c) and (h), edge cases,
+  stages 9 (doc), 10 (`appendFolders`, `by_append`, tests 2, 2b), 14 (step 7), 15 (ADR (a)–(h)), 17 (step 4). Plan-change review (Opus, high): FAIL
+  (1 major: stale task record; 5 minors), all fixed. Stage 1 closed.

@@ -8,7 +8,7 @@ Why risky: it writes to the user's only real mailbox (APPEND, COPY, EXPUNGE of 2
 AgentMail smoke mails). Who: the main session (not an implementer).
 Gate: user checkpoint 0 (a yes in chat). The reviewer (Opus, high) checks the script before the run.
 
-- [ ] **1.1 Probe script, run on the VPS, facts into the notes**
+- [x] **1.1 Probe script, run on the VPS, facts into the notes**
   - Goal: check NV1–NV3 before any code depends on them: a COPY out of `Oferty` and out of `Wiadomości-śmieci` into `AI/*` stays, the COPY back stays,
     an APPEND transfer from `Wiadomości-śmieci` into INBOX stays and keeps the identity, and the STATUS UIDNEXT value.
   - Files: create `/tmp/ea-ssf-spike/spike.ts` (not in git; the scripts folder holds nothing else); bundle `/tmp/ea-ssf-spike/spike.js`. Change
@@ -21,8 +21,8 @@ Gate: user checkpoint 0 (a yes in chat). The reviewer (Opus, high) checks the sc
     wait for a `synced` line before step E). Part 1 = steps A–D2 (the `Message-ID` of step D2 goes in on stdin, one line; the script reads it with
     `await Bun.stdin.text()`); it prints the probe `run` id. Part 2 = steps E, F, G; it gets the `run` id as an argument (8 hex characters, not secret).
     Run part 1: `scp -q /tmp/ea-ssf-spike/spike.js home_vm:/tmp/ea-ssf-spike.js && printf '%s\n' '<message-id of step D2>' | ssh home_vm 'cd ~/email_assistant && docker compose -f deploy/compose.yaml --env-file .env run --rm -T -v /tmp/ea-ssf-spike.js:/tmp/ea-ssf-spike.js:ro server bun /tmp/ea-ssf-spike.js part1; echo exit=$?'`
-    (stdin passes through `ssh … run --rm -T`, notes §9). Run part 2 (the start rule is in step E):
-    `ssh home_vm 'cd ~/email_assistant && docker compose -f deploy/compose.yaml --env-file .env run --rm -T -v /tmp/ea-ssf-spike.js:/tmp/ea-ssf-spike.js:ro server bun /tmp/ea-ssf-spike.js part2 <run>; code=$?; rm -f /tmp/ea-ssf-spike.js; echo exit=$code'`.
+    (stdin passes through `ssh … run --rm -T`, notes §9). Run part 2 (the start rule is in step E; part 2 also reads the `Message-ID` of step D2 on stdin for the smoke check of step F, build 2026-11-08):
+    `printf '%s\n' '<message-id of step D2>' | ssh home_vm 'cd ~/email_assistant && docker compose -f deploy/compose.yaml --env-file .env run --rm -T -v /tmp/ea-ssf-spike.js:/tmp/ea-ssf-spike.js:ro server bun /tmp/ea-ssf-spike.js part2 <run>; code=$?; rm -f /tmp/ea-ssf-spike.js; echo exit=$code'`.
     If part 1 fails, run part 2 at once (it cleans up every probe copy and the smoke mail; its step E skips when P2 is not in `Wiadomości-śmieci`).
   - Decisions (the script, in this order; every step prints one JSON line with the step name, folder **keys**, UIDs, sizes, booleans and times; never a subject,
     an address or a body):

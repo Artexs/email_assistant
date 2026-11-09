@@ -2,7 +2,7 @@
 
 Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's F7, F8, D12 and "Rules for every step" first. Needs stage 5.
 
-## Stage 9 — Adapter: move into INBOX by APPEND (`transferByAppend`) [risky]
+## Stage 9 — Adapter: move by APPEND (`transferByAppend`) [risky]
 
 Why risky: it writes and deletes mail in the user's mailbox. The order rule: APPEND first, EXPUNGE last (a crash leaves two copies, never none).
 
@@ -22,7 +22,7 @@ Why risky: it writes and deletes mail in the user's mailbox. The order rule: APP
       // …
       /**
        * Moves one message by APPEND of its raw source to `toFolder` (flags without \Recent, \Deleted and the keywords $Junk and Junk, the same INTERNALDATE),
-       * then \Deleted + UID EXPUNGE of the source. For a server that sorts a COPY into INBOX back (Interia, F8).
+       * then \Deleted + UID EXPUNGE of the source. For a server that re-sorts a COPY into INBOX or a tab folder (Interia, F8, F12).
        * Throws MailNotFoundError when `uid` is not in `fromFolder` (also when the folder is missing); HardError("no UIDPLUS") before any write
        * when the server has no UIDPLUS; HardError("message too large to transfer") when RFC822.SIZE > TRANSFER_MAX_BYTES.
        * `newUid` = the APPENDUID, else null.
@@ -59,6 +59,8 @@ Why risky: it writes and deletes mail in the user's mailbox. The order rule: APP
        7b. (GreenMail, both variants) the call returns within 10 s (a test timeout of 10 000 ms): it would hang with a nested lock (N1).
     8. (fake) `appendMessage` path with `capabilities.uidplus` true but an option that drops the APPENDUID (add fake option `appendUid: false`) → `HardError("append gave no uid")`,
        the source unchanged (the appended copy stays: the ensure of stage 10 finds it in the target and deletes the source on the next try).
+    9. (GreenMail, both variants; U11) `transferByAppend("AI/Info", uid, "Oferty")` → one copy in `Oferty` with the same size, INTERNALDATE and `Message-ID`;
+       `AI/Info` has no copy.
   - Check: `bun run lint && bun run typecheck && bun run test:unit && bun run test:int`
-  - Done when: tests 1–8 and 7b pass on all three contract variants where they apply.
+  - Done when: tests 1–9 and 7b pass on all three contract variants where they apply.
   - Out of scope: when the committer uses it (stage 10).

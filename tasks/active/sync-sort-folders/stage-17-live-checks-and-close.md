@@ -24,7 +24,9 @@ Why risky: the checks run on the live VPS and the user's only real mailbox (read
     3. `mailbox:audit --since <T>` on the VPS (`$C run --rm server bun run mailbox:audit --org-id <ORG> --mailbox-id <MB> --since <T>`): the INBOX line as before;
        the `offers` line `missing=0` and `cross` = the number of cross copies (expected 0 or 1).
     4. Checkpoint 3 (user): the user opens a digest with `📁 Oferty` lines; optional: taps ↩️ on a moved `Oferty` mail and checks in the webmail that it is back in `Oferty`.
-       The main session checks the row after the tap (`folder` = `source_folder` = `Oferty`).
+       The main session checks the row after the tap (`folder` = `source_folder` = `Oferty`, the reverse action's `provider_result.by_append` true; U11).
+       Then it waits at least 10 minutes (Interia re-sorts a COPY after about 4–5 minutes, F12) and checks again: the row still has `folder` = `Oferty`, and no
+       new row with `source_folder` INBOX and the same `message_id_header` exists. A re-sort = a finding (stop and ask the user).
     5. Unblock `test-mail-traffic` (master-mode commit of task files only, `tasks/README.md` § "Git mode"): its status line names the deploy commit and says stage 9 resumes
        without `deliver`; remove its "Blocked until" line. Tell the user in the end message that the test-mail-traffic session can resume.
     6. Close, in this order: tick the done-checklist (each item with the command and its output in the Log); `git mv` this file and its folder to

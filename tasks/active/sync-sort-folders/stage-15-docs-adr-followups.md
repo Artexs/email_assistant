@@ -13,14 +13,14 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's "
     off switch per folder).
   - Decisions (ADR 0014 content, template of `docs/decisions/README.md`): Status accepted (the user approved the plan); Context = Interia tabs are folders,
     notes §10, F1–F4; Decision = D1, D2, D4, D5, D7, D11, D12, D14, D16, D23 in short form with links to this task; Consequences = one cursor per folder, the Interia
-    UIDNEXT rule, the known limits D24 (a)–(g), the old cursor columns stay until `tasks/planned/drop-mailbox-cursor-columns.md`, a new provider needs its
+    UIDNEXT rule, the known limits D24 (a)–(h), the old cursor columns stay until `tasks/planned/drop-mailbox-cursor-columns.md`, a new provider needs its
     own `SYNC_FOLDER_DEFAULTS`.
     `docs/architecture.md` changes: §4.1 flow node `mail.sync` ("INBOX and the synced folders above each folder's UID cursor") and pipeline rule 1 (the new
     rule: the system reads INBOX and the synced folders of `mailbox_folders`; it never reads `AI/*`, Sent, Drafts, Trash or the user's own folders);
     §4.2 (a short paragraph: plan for spam folder mail, D11, D12); §4.4 Undo text ("move: ensure the mail in its source folder"); §5 tables
     (`mailbox_folders` row; `emails.source_folder`; the meaning of `inbox_uid` and `undo_pending_at`; `mailboxes.uidvalidity`/`last_uid` = a copy of the INBOX
     cursor for a code rollback); §6.1 bullets "Sync cursor", "Which mail is new", "Known mail in INBOX" (→ "Known mail"), "Returned below the cursor",
-    "First connect" (24 h for every new synced folder), "UIDVALIDITY change" (per folder), "Move" (`transferByAppend` for INBOX targets of non-INBOX mail),
+    "First connect" (24 h for every new synced folder), "UIDVALIDITY change" (per folder), "Move" (`transferByAppend` for INBOX targets of non-INBOX mail and for an Undo into a `sort` folder, U11, F12),
     and the Interia facts (F2, F3, notes link). Also §4.2 the VIP line (unchanged rule; add "also for spam folder mail") and §4.3: the go/no-go sentence
     and the policy table row "Move to an `AI/*` folder" (it now reads "Move to an `AI/*` folder or, for spam folder mail, into INBOX"), plus a line for D23
     (no urgent notice for spam folder mail) and D24 (the known limits, short, link the ADR).

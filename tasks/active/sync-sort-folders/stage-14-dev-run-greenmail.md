@@ -37,7 +37,9 @@ Why risky: the first end-to-end run of the new sync and moves (the real classifi
        reads `→ stays in Wiadomości-śmieci`; the rescued line reads `→ done: move to INBOX`. The `Oferty` `urgent` mail got an urgent notice with `📁 Oferty`
        in line 1; the spam folder `urgent` mail got **no** urgent notice (D23): `bun run fake-tg read --last 10` shows none for it.
     7. Undo: `bun run fake-tg press --button "↩️ <n>"` on the rescued `needs_reply` line → within 30 s the row has `folder` = `source_folder` =
-       `Wiadomości-śmieci`, `moved_at` null; IMAP: the mail is back in `Wiadomości-śmieci`, not in INBOX. Undo on the `Oferty` `info` line → back in `Oferty`.
+       `Wiadomości-śmieci`, `moved_at` null; IMAP: the mail is back in `Wiadomości-śmieci`, not in INBOX. Undo on the `Oferty` `info` line → back in `Oferty`
+       by the APPEND transfer (U11: `select provider_result->>'by_append' from actions where id = '<reverse id>'` → `true`; GreenMail does not re-sort,
+       so stage 17 step 4 checks the Interia side).
     8. Cross copy: APPEND the raw of the `Oferty` `needs_reply` seed mail (it stays in `Oferty`) into INBOX (`bun -e`) → the next tick stores no new row:
        the INBOX pass finds the `Oferty` row (in its source folder, still there) → the INBOX folder line shows `cross copies 1`.
     9. Switch: `mailbox:settings sync-folder --key junk --value off` → the next tick has no `junk` line; `--value on` → the next tick is `initial` for `junk`.
