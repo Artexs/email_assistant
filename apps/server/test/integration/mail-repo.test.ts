@@ -796,8 +796,8 @@ describe("mail repository: email location", () => {
       expect(await updateEmailLocation(trx, b.ctx, id, { folder: "X", uid: 1 })).toBe(false);
       expect((await locationOf(trx, id)).folder).toBe("AI/Info");
 
-      // movedAt null clears; inboxUid is set when given
-      await updateEmailLocation(trx, a.ctx, id, { folder: INBOX, uid: 5, inboxUid: 5, movedAt: null });
+      // movedAt null clears; sourceUid is set when given
+      await updateEmailLocation(trx, a.ctx, id, { folder: INBOX, uid: 5, sourceUid: 5, movedAt: null });
       const back = await locationOf(trx, id);
       expect(back.folder).toBe(INBOX);
       expect(Number(back.inbox_uid)).toBe(5);

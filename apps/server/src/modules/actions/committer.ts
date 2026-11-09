@@ -9,6 +9,8 @@ import { auditEvents, recordAudit } from "../audit";
 import {
   composeMessage,
   getMailbox,
+  INBOX,
+  listSyncFolders,
   listSyncTargets,
   MailAuthError,
   openMailboxProvider,
@@ -61,9 +63,11 @@ interface TenantFacts {
   organization: ApplyDeps["organization"];
 }
 
-const DEFAULT_PATHS: Record<ResolvableFolderKey, string> = { ...AI_FOLDER_NAMES, drafts: "Drafts", sent: "Sent" };
+type EnsuredFolderKey = Exclude<ResolvableFolderKey, "inbox">;
 
-// D9: `ensureFolder` once per key per run. A real path that differs from `folder_map` is stored (audit: the key, not the path).
+const DEFAULT_PATHS: Record<EnsuredFolderKey, string> = { ...AI_FOLDER_NAMES, drafts: "Drafts", sent: "Sent" };
+
+// D9: `ensureFolder` once per key per run; `inbox` is `INBOX` at once (D12). A real path that differs from `folder_map` is stored (audit: the key, not the path).
 export function createFolderResolver(
   deps: {
     db: Db | Transaction<DB>;
@@ -75,9 +79,9 @@ export function createFolderResolver(
   ctx: TenantContext
 ): FolderResolver {
   const map = { ...deps.folderMap };
-  const cache = new Map<ResolvableFolderKey, Promise<string>>();
+  const cache = new Map<EnsuredFolderKey, Promise<string>>();
 
-  async function ensure(key: ResolvableFolderKey): Promise<string> {
+  async function ensure(key: EnsuredFolderKey): Promise<string> {
     const path = await deps.provider.ensureFolder(map[key] ?? DEFAULT_PATHS[key]);
     if (path !== map[key]) {
       const run = async (trx: Transaction<DB>): Promise<void> => {
@@ -97,6 +101,7 @@ export function createFolderResolver(
 
   return {
     resolve(key) {
+      if (key === "inbox") return Promise.resolve(INBOX);
       let pending = cache.get(key);
       if (pending === undefined) {
         pending = ensure(key);
@@ -232,7 +237,8 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     provider: MailProvider | null,
     sender: MailSender | null,
     now: Date,
-    facts: TenantFacts | null
+    facts: TenantFacts | null,
+    appendFolders: ReadonlySet<string>
   ): Promise<void> {
     const mailboxId = mailbox.id;
     const counts = { applied: 0, failed: 0, retry: 0, closed: 0, sent: 0 };
@@ -259,6 +265,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
       compose: deps.compose ?? composeMessage,
       sender,
       hooks: deps.hooks ?? noDelegationHooks,
+      appendFolders,
     };
     let index = 0;
     try {
@@ -322,6 +329,21 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     const batch = await claimActions(deps.db, ctx, mailboxId, { now, limit: batchSize, staleBefore, filter });
     if (batch.length === 0) return;
 
+    // U11: a move into a `sort` folder is an APPEND transfer. A disabled row counts: its mail can still be undone.
+    let appendFolders: ReadonlySet<string> = new Set();
+    if (batch.some((action) => action.type === "move")) {
+      try {
+        const rows = await listSyncFolders(deps.db, ctx, mailboxId, { enabledOnly: false });
+        appendFolders = new Set(rows.filter((row) => row.role === "sort").map((row) => row.path));
+      } catch (error) {
+        log.error(`committer ${mailboxId}: sync folders failed: ${describeError(error)}`);
+        await release(ctx, batch, now).catch((releaseError: unknown) => {
+          log.error(`committer ${mailboxId}: release failed: ${describeError(releaseError)}`);
+        });
+        return;
+      }
+    }
+
     let provider: MailProvider | null = null;
     let sender: MailSender | null = null;
     if (batch.some(isMailboxChanging)) {
@@ -346,7 +368,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
           return;
         }
       }
-      await applyBatch(ctx, mailbox, batch, provider, sender, now, tenantFacts);
+      await applyBatch(ctx, mailbox, batch, provider, sender, now, tenantFacts, appendFolders);
     } finally {
       for (const connection of [provider, sender]) {
         await connection?.close().catch((error: unknown) => {

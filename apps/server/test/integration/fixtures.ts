@@ -22,7 +22,7 @@ export const testCapabilities: MailCapabilities = {
 // The S4 fields of `ApplyDeps` for tests that apply no draft or send.
 export function applyDepsDefaults(): Pick<
   ApplyDeps,
-  "mailbox" | "owner" | "organization" | "compose" | "sender" | "hooks"
+  "mailbox" | "owner" | "organization" | "compose" | "sender" | "hooks" | "appendFolders"
 > {
   return {
     mailbox: { address: "box@x.test", capabilities: { uidplus: true }, folderMap: {} },
@@ -31,6 +31,7 @@ export function applyDepsDefaults(): Pick<
     compose: composeMessage,
     sender: null,
     hooks: noDelegationHooks,
+    appendFolders: new Set(),
   };
 }
 
@@ -244,6 +245,7 @@ export async function insertTriagedWithActions(
   mailboxId: string,
   opts: Parameters<typeof insertTriaged>[3] & {
     folder?: string;
+    sourceFolder?: string;
     uid?: number;
     inboxUid?: number | null;
     contentHash?: string;
@@ -251,13 +253,14 @@ export async function insertTriagedWithActions(
     actions: Omit<Parameters<typeof insertAction>[3], "createdAt">[];
   }
 ): Promise<{ emailId: string; actionIds: string[] }> {
-  const { folder, uid, inboxUid, contentHash, movedAt, actions, ...triaged } = opts;
+  const { folder, sourceFolder, uid, inboxUid, contentHash, movedAt, actions, ...triaged } = opts;
   const emailId = await insertTriaged(trx, ctx, mailboxId, triaged);
   const mailUid = uid ?? 1;
   await trx
     .updateTable("emails")
     .set({
       folder: folder ?? "INBOX",
+      source_folder: sourceFolder ?? "INBOX",
       uid: mailUid,
       inbox_uid: inboxUid === undefined ? mailUid : inboxUid,
       content_hash: contentHash ?? "h",

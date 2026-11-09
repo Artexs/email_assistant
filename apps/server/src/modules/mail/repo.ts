@@ -781,19 +781,19 @@ export async function mailboxHasUidplus(db: DbOrTrx, ctx: TenantContext, mailbox
   return (mailbox?.capabilities as Partial<MailCapabilities> | undefined)?.uidplus === true;
 }
 
-// `undefined` keeps the column (M7). `movedAt: null` clears `moved_at` (an Undo back to INBOX). `undoPendingAt: null` clears the D22 flag. Never touches `status` or `returned_at`.
+// `undefined` keeps the column (M7). `sourceUid` writes `inbox_uid` (the UID in `source_folder`). `movedAt: null` clears `moved_at` (the mail is back in its source folder). `undoPendingAt: null` clears the D22 flag. Never touches `status` or `returned_at`.
 export async function updateEmailLocation(
   db: DbOrTrx,
   ctx: TenantContext,
   emailId: string,
-  next: { folder: string; uid: number; inboxUid?: number; movedAt?: Date | null; undoPendingAt?: null }
+  next: { folder: string; uid: number; sourceUid?: number; movedAt?: Date | null; undoPendingAt?: null }
 ): Promise<boolean> {
   const result = await db
     .updateTable("emails")
     .set({
       folder: next.folder,
       uid: next.uid,
-      ...(next.inboxUid === undefined ? {} : { inbox_uid: next.inboxUid }),
+      ...(next.sourceUid === undefined ? {} : { inbox_uid: next.sourceUid }),
       ...(next.movedAt === undefined ? {} : { moved_at: next.movedAt }),
       ...(next.undoPendingAt === undefined ? {} : { undo_pending_at: null }),
     })

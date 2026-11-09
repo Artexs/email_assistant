@@ -1,4 +1,4 @@
-import { folderKeys, type FolderKey, type OutgoingMessage } from "@ea/core";
+import { isMoveTarget, type MoveTarget, type OutgoingMessage } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -49,7 +49,7 @@ export type ApplyOutcome =
   | { kind: "lost" };
 
 // Gives the real path of a folder key. `ensureFolder` runs once per key per run; a path that differs from `folder_map` is stored.
-export type ResolvableFolderKey = FolderKey | "drafts" | "sent";
+export type ResolvableFolderKey = MoveTarget | "drafts" | "sent";
 
 export interface FolderResolver {
   resolve(key: ResolvableFolderKey): Promise<string>;
@@ -66,6 +66,8 @@ export interface ApplyDeps {
   compose(message: OutgoingMessage): Promise<Buffer>;
   sender: MailSender | null;
   hooks: DelegationHooks;
+  /** Paths of the mailbox's `sort` rows (enabled or not): a move into one of them is an APPEND transfer (Interia re-sorts a COPY, F12). */
+  appendFolders: ReadonlySet<string>;
   /** Test hook: runs after the IMAP change, before the DB transaction. */
   beforeCommit?: () => void | Promise<void>;
   /** Test hooks of the send (D11): before the SMTP call, after the 250, before the Sent copy. A throw is a crash. */
@@ -80,9 +82,9 @@ async function inTransaction<T>(db: ApplyDeps["db"], run: (trx: Transaction<DB>)
   return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
 }
 
-// D22: a reverse move that ends (applied or failed) clears the in-flight flag of the mail.
-async function clearUndoPending(trx: Transaction<DB>, ctx: TenantContext, action: ClaimedAction): Promise<void> {
-  if (action.type === "move" && action.reverses_action_id !== null) {
+// D9: a reverse move or a rescue (forward target `inbox`) that ends (applied or failed) clears the in-flight flag of the mail.
+async function clearMovePending(trx: Transaction<DB>, ctx: TenantContext, action: ClaimedAction): Promise<void> {
+  if (action.type === "move" && (action.reverses_action_id !== null || action.payload.folder === "inbox")) {
     await setUndoPending(trx, ctx, action.email_id, null);
   }
 }
@@ -143,7 +145,7 @@ async function mapProviderError(
       ) {
         return false;
       }
-      await clearUndoPending(trx, ctx, action);
+      await clearMovePending(trx, ctx, action);
       await recordAudit(trx, ctx, {
         emailId: action.email_id,
         actionId: action.id,
@@ -186,7 +188,7 @@ async function failAction(
     ) {
       return false;
     }
-    await clearUndoPending(trx, ctx, action);
+    await clearMovePending(trx, ctx, action);
     await recordAudit(trx, ctx, {
       emailId: action.email_id,
       actionId: action.id,
@@ -252,7 +254,7 @@ async function applyFlag(
       await updateEmailLocation(trx, ctx, email.id, {
         folder: email.folder,
         uid,
-        ...(email.folder === INBOX ? { inboxUid: uid } : {}),
+        ...(email.folder === email.source_folder ? { sourceUid: uid } : {}),
       });
     }
     await recordAudit(trx, ctx, {
@@ -278,10 +280,8 @@ async function applyFlag(
   return { kind: "applied" };
 }
 
-const isFolderKey = (value: string | undefined): value is FolderKey =>
-  (folderKeys as readonly string[]).includes(value as string);
-
-// A move (D5): the ensure puts the mail in the target whatever happened before. A reverse brings it back to INBOX.
+// A move (D5): the ensure puts the mail in the target whatever happened before.
+// A reverse brings it back to its source folder (D10); a forward move to `inbox` is the rescue (D12).
 async function applyMove(
   deps: ApplyDeps,
   ctx: TenantContext,
@@ -290,20 +290,24 @@ async function applyMove(
 ): Promise<ApplyOutcome> {
   const { email } = action;
   const reverseOf = action.reverses_action_id;
-  const folderKey = typeof action.payload.folder === "string" ? action.payload.folder : undefined;
-  if (reverseOf === null && !isFolderKey(folderKey)) {
+  const folderKey = isMoveTarget(action.payload.folder) ? action.payload.folder : undefined;
+  if (reverseOf === null && folderKey === undefined) {
     return failAction(deps, ctx, action, "bad_payload");
   }
+  const rescue = reverseOf === null && folderKey === "inbox";
 
-  let to = INBOX;
+  let to = email.source_folder;
   try {
-    if (reverseOf === null) to = await deps.folders.resolve(folderKey as FolderKey);
+    if (reverseOf === null) to = await deps.folders.resolve(folderKey as MoveTarget);
   } catch (error) {
     return mapProviderError(deps, ctx, action, error);
   }
-  // When the sync marked the mail returned, `from` is INBOX too and the ensure only locates (rule 1).
+  // D9: the sync must not store an INBOX copy of the mail while the rescue runs. Idempotent: each try sets it again.
+  if (rescue) await setUndoPending(deps.db, ctx, email.id, deps.now());
+  // When the sync marked the mail returned, `from` is the source folder too and the ensure only locates (rule 1).
   const from = email.folder;
   const hints = { fromUid: email.uid, toUid: reverseOf === null ? email.uid : email.inbox_uid };
+  const byAppend = (to === INBOX && email.source_folder !== INBOX) || deps.appendFolders.has(to);
   const keyOf = { exceptEmailId: email.id, messageId: email.message_id_header, contentHash: email.content_hash };
   const exclude = {
     from: await listFolderUids(deps.db, ctx, deps.mailboxId, from, keyOf),
@@ -312,7 +316,7 @@ async function applyMove(
 
   let ensured: EnsureResult | null;
   try {
-    ensured = await ensureMoved(provider, email, from, to, hints, exclude);
+    ensured = await ensureMoved(provider, email, from, to, hints, exclude, { byAppend });
   } catch (error) {
     return mapProviderError(deps, ctx, action, error);
   }
@@ -328,7 +332,7 @@ async function applyMove(
       !(await finishAction(trx, ctx, action.id, action.locked_at, {
         status: "applied",
         at: now,
-        providerResult: { uid, moved_now: movedNow, leftover_deleted: leftoverDeleted },
+        providerResult: { uid, moved_now: movedNow, leftover_deleted: leftoverDeleted, by_append: byAppend },
       }))
     ) {
       return false;
@@ -339,9 +343,8 @@ async function applyMove(
     await updateEmailLocation(trx, ctx, email.id, {
       folder: to,
       uid,
-      ...(to === INBOX ? { inboxUid: uid } : {}),
-      movedAt: to === INBOX ? null : now,
-      ...(reverseOf === null ? {} : { undoPendingAt: null }),
+      ...(to === email.source_folder ? { sourceUid: uid, movedAt: null } : { movedAt: now }),
+      ...(reverseOf === null && !rescue ? {} : { undoPendingAt: null }),
     });
     await recordAudit(trx, ctx, {
       emailId: email.id,
@@ -352,7 +355,7 @@ async function applyMove(
         action_type: "move",
         mailbox_id: deps.mailboxId,
         // The payload of a reverse is the original's (D10).
-        ...(isFolderKey(folderKey) ? { folder_key: folderKey } : {}),
+        ...(folderKey === undefined ? {} : { folder_key: folderKey }),
         reverse: reverseOf !== null,
         moved_now: movedNow,
         leftover_deleted: leftoverDeleted,

@@ -25,7 +25,8 @@ async function ensureOnce(
   from: string,
   to: string,
   hints: Hints,
-  exclude: EnsureExclude
+  exclude: EnsureExclude,
+  opts: { byAppend: boolean }
 ): Promise<EnsureResult | null> {
   const target = await locateMessage(provider, to, locateKeyOf(email, hints.toUid), { excludeUids: exclude.to });
   // B1: the source is the target. A second locate would find the same mail, and "both" would expunge the only copy.
@@ -45,7 +46,9 @@ async function ensureOnce(
   if (source === null) {
     return null;
   }
-  const moved = await provider.moveMessage(from, source.uid, to);
+  const moved = opts.byAppend
+    ? await provider.transferByAppend(from, source.uid, to)
+    : await provider.moveMessage(from, source.uid, to);
   const located =
     moved.newUid ??
     (await locateMessage(provider, to, locateKeyOf(email, source.uid), { excludeUids: exclude.to }))?.uid ??
@@ -63,11 +66,12 @@ export async function ensureMoved(
   from: string,
   to: string,
   hints: Hints,
-  exclude: EnsureExclude
+  exclude: EnsureExclude,
+  opts: { byAppend: boolean }
 ): Promise<EnsureResult | null> {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      return await ensureOnce(provider, email, from, to, hints, exclude);
+      return await ensureOnce(provider, email, from, to, hints, exclude, opts);
     } catch (error) {
       if (!(error instanceof MailNotFoundError)) throw error;
     }

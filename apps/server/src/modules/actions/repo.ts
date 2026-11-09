@@ -1,10 +1,9 @@
 import {
   actionTypes,
-  folderKeys,
+  moveTargets,
   MAILBOX_ACTION_TYPES,
   type ActionType,
   type ActionView,
-  type FolderKey,
   type MailboxActionType,
 } from "@ea/core";
 import { sql, type Expression, type ExpressionBuilder, type SqlBool, type Transaction } from "kysely";
@@ -187,7 +186,7 @@ export async function listSummaries(db: DbOrTrx, ctx: TenantContext, emailIds: s
   return new Map(rows.map((row) => [row.email_id, row.summary]));
 }
 
-const folderKeySchema = z.enum(folderKeys);
+const moveTargetSchema = z.enum(moveTargets);
 const sendKindSchema = z.enum(["delegation", "clarification", "reminder"]);
 
 // Oldest first per email. A row with an unknown type is left out; an unknown folder gives `null`.
@@ -223,13 +222,13 @@ export async function listActionsForEmails(
     if (!type.success) {
       continue;
     }
-    const folder = folderKeySchema.safeParse(row.folder);
+    const folder = moveTargetSchema.safeParse(row.folder);
     const kind = sendKindSchema.safeParse(row.kind);
     const view: ActionView = {
       id: row.id,
       type: type.data,
       status: row.status,
-      folder: folder.success ? (folder.data as FolderKey) : null,
+      folder: folder.success ? folder.data : null,
       reverse: row.reverses_action_id !== null,
       reversesActionId: row.reverses_action_id,
       appliedAt: row.applied_at,
@@ -301,6 +300,8 @@ export interface ClaimedAction {
     folder: string;
     uid: number;
     inbox_uid: number | null;
+    /** emails.source_folder (D6). `inbox_uid` keeps its name: the last known UID in this folder (D3). */
+    source_folder: string;
     message_id_header: string | null;
     content_hash: string;
     from_address: string | null;
@@ -522,6 +523,7 @@ export async function claimActions(
       "emails.folder",
       "emails.uid",
       "emails.inbox_uid",
+      "emails.source_folder",
       "emails.message_id_header",
       "emails.content_hash",
       "emails.from_address",
@@ -557,6 +559,7 @@ export async function claimActions(
           folder: row.folder,
           uid: Number(row.uid),
           inbox_uid: row.inbox_uid === null ? null : Number(row.inbox_uid),
+          source_folder: row.source_folder,
           message_id_header: row.message_id_header,
           content_hash: row.content_hash,
           from_address: row.from_address,

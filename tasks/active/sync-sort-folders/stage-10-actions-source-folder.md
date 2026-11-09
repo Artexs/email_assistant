@@ -6,7 +6,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's D
 
 Why risky: exactly-once moves in the user's mailbox (the ensure rule, D5 of S3) and the Undo target change.
 
-- [ ] **10.1 Reverse to `source_folder`; target `inbox`; APPEND transfer for INBOX targets of non-INBOX mail and for `sort` folder targets (U11); marker for the rescue**
+- [x] **10.1 Reverse to `source_folder`; target `inbox`; APPEND transfer for INBOX targets of non-INBOX mail and for `sort` folder targets (U11); marker for the rescue**
   - Goal: D10 and D12 in the committer.
   - Files: change `apps/server/src/modules/actions/apply.ts`, `apps/server/src/modules/actions/move.ts`, `apps/server/src/modules/actions/committer.ts`
     (`createFolderResolver`), `apps/server/src/modules/actions/repo.ts` (claim returns `emails.source_folder`; the action view parses `MoveTarget`),
