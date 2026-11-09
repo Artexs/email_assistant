@@ -7,7 +7,7 @@ interface ResourceState<T> {
 }
 
 export function useResource<T>(load: () => Promise<T>, opts: { pollMs?: number } = {}) {
-  const { pollMs } = opts;
+  const { pollMs = 30_000 } = opts;
   const loadRef = useRef(load);
   const [state, setState] = useState<ResourceState<T>>({ data: null, error: null, loading: true });
   const [tick, setTick] = useState(0);
@@ -57,6 +57,7 @@ export function useResource<T>(load: () => Promise<T>, opts: { pollMs?: number }
       stop();
       document.removeEventListener("visibilitychange", onVisibility);
     };
+    // `tick` restarts the loop on reload(); `load` is read through the ref, so it is not a dependency.
   }, [pollMs, tick]);
 
   return { ...state, reload };

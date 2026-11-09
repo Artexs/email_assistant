@@ -1,12 +1,15 @@
 import { randomUUID } from "node:crypto";
 
 import { meSchema } from "@ea/core";
+import { hashPassword } from "better-auth/crypto";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { insertMailbox, setMailboxStatus } from "../../src/modules/mail/repo";
-import { createOrganizationWithOwner, tenancyRoutes } from "../../src/modules/tenancy";
+import { createOrganizationWithOwner, listMembershipsOfUser, tenancyRoutes } from "../../src/modules/tenancy";
 import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
+import { loadConfig } from "../../src/platform/config";
 import { buildTrustedProxies, createApp, type WebDeps } from "../../src/platform/http";
+import { countMailboxes, webDeps } from "../../src/web";
 
 import { testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
@@ -86,25 +89,11 @@ function appFor(ids: { ownerId: string; assistantId: string; nobodyId: string })
     trustedOrigins: new Set(["http://127.0.0.1:8080"]),
     trustedProxies: buildTrustedProxies([]),
     connInfo: () => undefined,
-    listMembershipsOfUser: async (userId) => {
-      const rows = await db
-        .selectFrom("memberships")
-        .select(["org_id", "role"])
-        .where("user_id", "=", userId)
-        .execute();
-      return rows as { org_id: string; role: "owner" | "assistant" }[];
-    },
+    listMembershipsOfUser: (userId) => listMembershipsOfUser(db, userId),
     routers: (api) =>
       api.route(
         "/",
-        tenancyRoutes({
-          db,
-          scopes: { triage: off, actions: off, send: off },
-          countMailboxes: async (ctx) => {
-            const rows = await db.selectFrom("mailboxes").select("status").where("org_id", "=", ctx.orgId).execute();
-            return { total: rows.length, inAuthError: rows.filter((r) => r.status === "auth_error").length };
-          },
-        })
+        tenancyRoutes({ db, scopes: { triage: off, actions: off, send: off }, countMailboxes: countMailboxes(db) })
       ),
   };
   return createApp({ checkDb: async () => true, web });
@@ -146,5 +135,66 @@ describe("GET /api/me", () => {
     const ids = await setup();
     const res = await appFor(ids).request("/api/me");
     expect(res.status).toBe(401);
+  });
+});
+
+describe("countMailboxes", () => {
+  test("counts all mailboxes and those in auth_error", async () => {
+    const ids = await setup();
+    expect(await countMailboxes(db)({ orgId: ids.orgId })).toEqual({ total: 2, inAuthError: 1 });
+  });
+});
+
+describe("real webDeps getSession", () => {
+  test("maps a real sign-in cookie to the user id", async () => {
+    const ids = await setup();
+    await db
+      .insertInto("auth_accounts")
+      .values({
+        account_id: ids.ownerId,
+        provider_id: "credential",
+        user_id: ids.ownerId,
+        password: await hashPassword("a-good-password-1"),
+        access_token: null,
+        access_token_expires_at: null,
+        id_token: null,
+        refresh_token: null,
+        refresh_token_expires_at: null,
+        scope: null,
+      })
+      .execute();
+    const web = webDeps(
+      loadConfig({
+        ...process.env,
+        WEB_BASE_URL: "http://127.0.0.1:8080",
+        WEB_AUTH_SECRET: "x".repeat(40),
+        WEB_DIST: "/nonexistent/dist",
+      }),
+      db
+    );
+    if (web === null) throw new Error("webDeps returned null");
+    try {
+      const app = createApp({ checkDb: async () => true, web });
+      const signIn = await app.request("/api/auth/sign-in/email", {
+        method: "POST",
+        headers: { origin: "http://127.0.0.1:8080", "content-type": "application/json" },
+        body: JSON.stringify({ email: ids.ownerEmail, password: "a-good-password-1" }),
+      });
+      expect(signIn.status).toBe(200);
+      const cookie = (signIn.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
+      expect(cookie).toContain("ea.session_token=");
+
+      const session = await web.auth.getSession(new Headers({ cookie }));
+      expect(session?.userId).toBe(ids.ownerId);
+      expect(await web.auth.getSession(new Headers())).toBeNull();
+
+      const res = await app.request("/api/me", { headers: { cookie } });
+      expect(res.status).toBe(200);
+      const me = meSchema.parse(await res.json());
+      expect(me.mailboxCount).toBe(2);
+      expect(me.mailboxesInAuthError).toBe(1);
+    } finally {
+      await web.close();
+    }
   });
 });

@@ -149,12 +149,7 @@ export class ValidationError extends HTTPException {
   readonly details: ValidationDetail[];
 
   constructor(details: ValidationDetail[]) {
-    super(400, {
-      res: new Response(JSON.stringify({ error: "validation", details }), {
-        status: 400,
-        headers: { "content-type": "application/json" },
-      }),
-    });
+    super(400);
     this.details = details;
   }
 }

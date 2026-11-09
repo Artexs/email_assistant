@@ -18,6 +18,34 @@ function setup(response: Response) {
 }
 
 describe("createApi", () => {
+  test("sends same-origin credentials, accept, and a JSON body only when there is one", async () => {
+    const calls: { path: string; init?: RequestInit }[] = [];
+    const api = createApi({
+      fetchImpl: (path, init) => {
+        calls.push({ path, init });
+        return Promise.resolve(Response.json({ ok: true }));
+      },
+      onUnauthorized: () => undefined,
+    });
+    await api("/api/get", okSchema);
+    await api("/api/post", okSchema, { method: "POST", body: { a: 1 } });
+
+    expect(calls[0]?.path).toBe("/api/get");
+    expect(calls[0]?.init).toEqual({
+      method: "GET",
+      credentials: "same-origin",
+      headers: { accept: "application/json" },
+      body: undefined,
+    });
+    expect(calls[1]?.path).toBe("/api/post");
+    expect(calls[1]?.init).toEqual({
+      method: "POST",
+      credentials: "same-origin",
+      headers: { accept: "application/json", "content-type": "application/json" },
+      body: JSON.stringify({ a: 1 }),
+    });
+  });
+
   test("a 403 becomes an ApiError with status and code", async () => {
     const { api } = setup(Response.json({ error: "owner_only" }, { status: 403 }));
     const error = await api("/api/x", okSchema).catch((e: unknown) => e);

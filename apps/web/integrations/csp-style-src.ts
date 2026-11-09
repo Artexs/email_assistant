@@ -6,7 +6,8 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AstroIntegration } from "astro";
 
-export const STYLE_SRC = /style-src [^;]*;/;
+export const STYLE_SRC = /style-src [^;"]*;?/;
+const CSP_META = /http-equiv="content-security-policy"/i;
 export const RELAXED_STYLE_SRC = "style-src 'self' 'unsafe-inline';";
 
 export function relaxStyleSrc(html: string): string {
@@ -30,6 +31,7 @@ export default function cspStyleSrc(): AstroIntegration {
         for (const file of htmlFiles(fileURLToPath(dir))) {
           const html = readFileSync(file, "utf8");
           const next = relaxStyleSrc(html);
+          if (next === html && CSP_META.test(html)) throw new Error(`style-src not found in the CSP meta of ${file}`);
           if (next !== html) {
             writeFileSync(file, next);
             changed += 1;

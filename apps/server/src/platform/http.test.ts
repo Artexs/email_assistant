@@ -190,17 +190,13 @@ describe("parseBody", () => {
     const error = (await run('{"n":"x"}')) as ValidationError;
     expect(error).toBeInstanceOf(ValidationError);
     expect(error.status).toBe(400);
-    const text = await error.res?.text();
-    const json = JSON.parse(text ?? "");
-    expect(json.error).toBe("validation");
-    expect(json.details).toEqual([{ path: "n", code: "invalid_type", message: expect.any(String) }]);
-    expect(text).not.toContain('"x"');
+    expect(error.details).toEqual([{ path: "n", code: "invalid_type", message: expect.any(String) }]);
+    expect(JSON.stringify(error.details)).not.toContain('"x"');
   });
 
   test("bad JSON gives invalid_json", async () => {
     const error = (await run("{not json")) as ValidationError;
-    const json = JSON.parse((await error.res?.text()) ?? "");
-    expect(json.details[0].code).toBe("invalid_json");
+    expect(error.details[0]?.code).toBe("invalid_json");
   });
 });
 

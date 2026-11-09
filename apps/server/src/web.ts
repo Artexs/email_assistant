@@ -55,6 +55,13 @@ export function scopeInfos(config: Config): TenancyRouteDeps["scopes"] {
   };
 }
 
+export function countMailboxes(db: Db): TenancyRouteDeps["countMailboxes"] {
+  return async (ctx) => {
+    const rows = await listMailboxes(db, ctx);
+    return { total: rows.length, inAuthError: rows.filter((row) => row.status === "auth_error").length };
+  };
+}
+
 export function distPath(config: Config, cwd = process.cwd()): string {
   return resolve(cwd, config.WEB_DIST);
 }
@@ -95,11 +102,6 @@ export function webDeps(config: Config, db: Db): WebRuntime | null {
     return { userId: response.response.user.id, setCookie: response.headers.getSetCookie() };
   };
 
-  const countMailboxes: TenancyRouteDeps["countMailboxes"] = async (ctx) => {
-    const rows = await listMailboxes(db, ctx);
-    return { total: rows.length, inAuthError: rows.filter((row) => row.status === "auth_error").length };
-  };
-
   log.info(`web is on: ${baseUrl.origin}, dist ${dist}`);
   return {
     auth: { handler: (req) => handle.auth.handler(req), getSession },
@@ -111,7 +113,7 @@ export function webDeps(config: Config, db: Db): WebRuntime | null {
     trustedProxies: buildTrustedProxies(webTrustedProxies(config)),
     connInfo: peerAddress,
     listMembershipsOfUser: (userId) => listMembershipsOfUser(db, userId),
-    routers: (api) => api.route("/", tenancyRoutes({ db, scopes, countMailboxes })),
+    routers: (api) => api.route("/", tenancyRoutes({ db, scopes, countMailboxes: countMailboxes(db) })),
     close: () => handle.close(),
   };
 }
