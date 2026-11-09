@@ -1,4 +1,4 @@
-> **Status 2026-11-09 — in progress — stages 1–9 done; group reviews 2–4 and 5–8 done.** Left: stages 10–17 (next: stage 10; group review 9–11 after stage 11), checkpoint 2 before the deploy (stage 16).
+> **Status 2026-11-09 — in progress — stages 1–9 done (last `591add7`); group reviews 2–4 and 5–8 done. Stage 10 PARTIAL: an implementer stopped at a usage limit; its changes are uncommitted in the worktree and not reviewed.** Left: finish and review stage 10, stages 11–17, group reviews 9–11 and 12–15 + branch, checkpoint 2 (the user's "deploy") before stage 16.
 
 # Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
@@ -546,3 +546,6 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
   read); contract test 1 asserts `newUid`, the target by `newUid` and one INBOX copy; the port comment. Deviations: a shared `transferFlags` helper;
   `HardError("mail has no valid INTERNALDATE")` before any write; the fake copies the raw source. No nested lock (test 7b: < 10 s on both GreenMail
   variants). Checks: `bun run lint` pass; `bun run typecheck` exit 0; `bun run test:unit` 1348 pass; `bun run test:int` 967 pass, 0 fail.
+- 2026-11-09: Stage 10 implementer stopped at the Claude usage limit (five-hour quota) mid-step. Partial, uncommitted, unreviewed changes in 9 files
+  (`actions/{apply,committer,move,repo}.ts`, `mail/repo.ts`, tests `actions-drafts`, `actions-send`, `fixtures`, `mail-repo`); no new tests yet. Handoff for a
+  new session: `~/.pi/agent/notes/2026-11-09-handoff-sync-sort-folders-build-2.md`.
