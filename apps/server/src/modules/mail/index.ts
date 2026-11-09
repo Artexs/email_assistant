@@ -52,7 +52,7 @@ export {
   updateEmailLocation,
 } from "./repo";
 export type { EmailMeta, MailKind } from "./repo";
-export type { ClaimedEmail, Cursor, MailboxRow, MailboxStatus, MailboxSummary, NewEmail } from "./repo";
+export type { ClaimedEmail, Cursor, MailboxRow, MailboxStatus, MailboxSummary, NewEmail, SyncFolderRow } from "./repo";
 export {
   isSyntheticMessageId,
   renderSeedMessage,

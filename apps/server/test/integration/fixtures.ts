@@ -5,7 +5,7 @@ import type { Transaction } from "kysely";
 
 import { noDelegationHooks, type ApplyDeps } from "../../src/modules/actions";
 import { composeMessage, type MailCapabilities, type NewEmail } from "../../src/modules/mail";
-import { insertMailbox } from "../../src/modules/mail/repo";
+import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
@@ -60,6 +60,7 @@ export async function createOrgWithMailbox(
       folderMap: { drafts: "Drafts" },
     }
   );
+  await insertInboxFolder(trx, { orgId }, mailboxId);
   return { orgId, userId, mailboxId };
 }
 

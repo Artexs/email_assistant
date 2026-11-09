@@ -102,9 +102,10 @@ async function emails(trx: Db | Transaction<DB>, mailboxId: string) {
 
 async function cursorOf(trx: Db | Transaction<DB>, mailboxId: string) {
   const row = await trx
-    .selectFrom("mailboxes")
+    .selectFrom("mailbox_folders")
     .select(["uidvalidity", "last_uid"])
-    .where("id", "=", mailboxId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("key", "=", "inbox")
     .executeTakeFirstOrThrow();
   return { uidValidity: Number(row.uidvalidity), lastUid: Number(row.last_uid) };
 }
@@ -161,6 +162,27 @@ function afterFirstCall(
 }
 
 describe("syncMailbox: incremental", () => {
+  test("after an incremental sync mailboxes.last_uid equals the INBOX folder row (dual write)", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      s.fake.deliver("INBOX", seed(1));
+      s.fake.deliver("INBOX", seed(2));
+      const result = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(result.mode).toBe("incremental");
+
+      const mailbox = await trx
+        .selectFrom("mailboxes")
+        .select(["uidvalidity", "last_uid"])
+        .where("id", "=", s.mailboxId)
+        .executeTakeFirstOrThrow();
+      expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY, lastUid: 2 });
+      expect({ uidValidity: Number(mailbox.uidvalidity), lastUid: Number(mailbox.last_uid) }).toEqual({
+        uidValidity: UID_VALIDITY,
+        lastUid: 2,
+      });
+    });
+  });
+
   test("a message below the cursor from UID FETCH n:* is ignored", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
@@ -519,7 +541,12 @@ describe("syncMailbox: incremental", () => {
       s.fake.deliver("INBOX", seed(2));
       const provider = onBodyCall(s.fake, async (call) => {
         if (call === 2) {
-          await trx.updateTable("mailboxes").set({ last_uid: 99 }).where("id", "=", s.mailboxId).execute();
+          await trx
+            .updateTable("mailbox_folders")
+            .set({ last_uid: 99 })
+            .where("mailbox_id", "=", s.mailboxId)
+            .where("key", "=", "inbox")
+            .execute();
         }
       });
 
@@ -693,9 +720,10 @@ describe("syncMailbox: initial", () => {
       const provider = onBodyCall(s.fake, async () => {
         cursorsSeen.push(
           await trx
-            .selectFrom("mailboxes")
+            .selectFrom("mailbox_folders")
             .select(["uidvalidity", "last_uid"])
-            .where("id", "=", s.mailboxId)
+            .where("mailbox_id", "=", s.mailboxId)
+            .where("key", "=", "inbox")
             .executeTakeFirstOrThrow()
         );
       });
@@ -720,9 +748,10 @@ describe("syncMailbox: initial", () => {
       );
       expect((await emails(trx, s.mailboxId)).map((row) => Number(row.uid))).toEqual([1, 2]);
       const row = await trx
-        .selectFrom("mailboxes")
+        .selectFrom("mailbox_folders")
         .select(["uidvalidity", "last_uid"])
-        .where("id", "=", s.mailboxId)
+        .where("mailbox_id", "=", s.mailboxId)
+        .where("key", "=", "inbox")
         .executeTakeFirstOrThrow();
       expect(row).toEqual({ uidvalidity: null, last_uid: null });
 
@@ -1138,7 +1167,12 @@ describe("syncMailbox: returned mail below the cursor", () => {
         ...s.fake,
         fetchByUidsIn: async (folder, uids) => {
           const metas = await s.fake.fetchByUidsIn(folder, uids);
-          await trx.updateTable("mailboxes").set({ last_uid: 99 }).where("id", "=", s.mailboxId).execute();
+          await trx
+            .updateTable("mailbox_folders")
+            .set({ last_uid: 99 })
+            .where("mailbox_id", "=", s.mailboxId)
+            .where("key", "=", "inbox")
+            .execute();
           return metas;
         },
       };

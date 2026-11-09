@@ -6,7 +6,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's D
 
 Why risky: a migration on the live pilot DB, and the sync cursor moves to a new table. The behaviour of the sync must not change in this stage (INBOX only).
 
-- [ ] **2.1 Migration, schema types, INBOX cursor through the folder row (dual write)**
+- [x] **2.1 Migration, schema types, INBOX cursor through the folder row (dual write)**
   - Goal: the new table and column exist; every mailbox has an INBOX row with its cursor; the INBOX sync and the backfill read and write that row and also
     write the old `mailboxes` columns in the same transaction (D3). No other behaviour change.
   - Files: create `db/migrations/<YYYYMMDDHHMMSS>_sync_folders.sql` (the UTC time of the build; it must sort after `20261108000001_delegation.sql` and must

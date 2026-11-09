@@ -9,17 +9,18 @@ import { INBOX, type InboxStatus, type MailProvider, type MessageMeta } from "./
 import {
   findCopies,
   getMailbox,
+  getSyncFolder,
   insertEmail,
   listFolderUids,
   listRecentlyMoved,
-  lockMailbox,
+  lockSyncFolder,
   markEmailReturned,
-  updateCursor,
   updateEmailUid,
+  updateFolderCursor,
   type Cursor,
   type MovedRow,
-  type MailboxRow,
   type NewEmail,
+  type SyncFolderRow,
 } from "./repo";
 import {
   baseDedupKey,
@@ -106,6 +107,7 @@ function newRow(
     content_hash: hash,
     uid: meta.uid,
     folder: INBOX,
+    source_folder: INBOX,
     thread_key: threadKey({ ...meta, messageId }, dedupKey),
     in_reply_to: meta.inReplyTo,
     references_header: meta.references.length > 0 ? meta.references.join(" ") : null,
@@ -204,14 +206,15 @@ async function applyChunk(
   deps: SyncDeps,
   ctx: TenantContext,
   mailboxId: string,
+  folderId: string,
   writes: Write[],
   expected: Cursor,
   next: Cursor | null,
   result: SyncResult
 ): Promise<void> {
   const run = async (trx: Transaction<DB>) => {
-    const mailbox = await lockMailbox(trx, ctx, mailboxId);
-    if (mailbox?.uidvalidity !== expected.uidValidity || mailbox.last_uid !== expected.lastUid) {
+    const folder = await lockSyncFolder(trx, ctx, folderId);
+    if (folder?.uidvalidity !== expected.uidValidity || folder.last_uid !== expected.lastUid) {
       throw new CursorMovedError(`cursor of mailbox ${mailboxId} moved during the sync`);
     }
     let stored = 0;
@@ -228,7 +231,7 @@ async function applyChunk(
         returned += 1;
       }
     }
-    if (next !== null && !(await updateCursor(trx, ctx, mailboxId, expected, next))) {
+    if (next !== null && !(await updateFolderCursor(trx, ctx, folderId, expected, next))) {
       throw new CursorMovedError(`cursor of mailbox ${mailboxId} moved during the sync`);
     }
     return { stored, uidUpdated, returned };
@@ -247,11 +250,12 @@ async function setCursor(
   deps: SyncDeps,
   ctx: TenantContext,
   mailboxId: string,
+  folderId: string,
   expected: Cursor,
   next: Cursor
 ): Promise<void> {
   const run = async (trx: Transaction<DB>) => {
-    if (!(await updateCursor(trx, ctx, mailboxId, expected, next))) {
+    if (!(await updateFolderCursor(trx, ctx, folderId, expected, next))) {
       throw new CursorMovedError(`cursor of mailbox ${mailboxId} moved during the sync`);
     }
   };
@@ -263,6 +267,7 @@ async function checkReturnedBelowCursor(
   deps: SyncDeps,
   ctx: TenantContext,
   mailboxId: string,
+  folderId: string,
   cursor: Cursor,
   result: SyncResult
 ): Promise<void> {
@@ -301,8 +306,8 @@ async function checkReturnedBelowCursor(
     if (returns.length === 0) continue;
 
     const run = async (trx: Transaction<DB>): Promise<number> => {
-      const mailbox = await lockMailbox(trx, ctx, mailboxId);
-      if (mailbox?.uidvalidity !== cursor.uidValidity || mailbox.last_uid !== cursor.lastUid) {
+      const folder = await lockSyncFolder(trx, ctx, folderId);
+      if (folder?.uidvalidity !== cursor.uidValidity || folder.last_uid !== cursor.lastUid) {
         throw new CursorMovedError(`cursor of mailbox ${mailboxId} moved during the sync`);
       }
       let changed = 0;
@@ -337,9 +342,15 @@ async function isStillInFolder(deps: SyncDeps, ctx: TenantContext, mailboxId: st
   return found !== null;
 }
 
-function selectMode(mailbox: MailboxRow, status: InboxStatus): SyncResult["mode"] {
-  if (mailbox.uidvalidity === null) return "initial";
-  return mailbox.uidvalidity === status.uidValidity ? "incremental" : "rescan";
+async function readInboxFolder(deps: SyncDeps, ctx: TenantContext, mailboxId: string): Promise<SyncFolderRow> {
+  const folder = await getSyncFolder(deps.db, ctx, mailboxId, "inbox");
+  if (!folder) throw new HardError("mailbox has no INBOX folder row");
+  return folder;
+}
+
+function selectMode(folder: SyncFolderRow, status: InboxStatus): SyncResult["mode"] {
+  if (folder.uidvalidity === null) return "initial";
+  return folder.uidvalidity === status.uidValidity ? "incremental" : "rescan";
 }
 
 // INBOX mail with INTERNALDATE at or after `since`. IMAP SINCE is by day, so filter again by the time.
@@ -356,9 +367,10 @@ export async function fetchSince(provider: MailProvider, since: Date): Promise<M
 export async function syncMailbox(deps: SyncDeps, ctx: TenantContext, mailboxId: string): Promise<SyncResult> {
   const mailbox = await getMailbox(deps.db, ctx, mailboxId);
   if (!mailbox) throw new HardError(`mailbox ${mailboxId} not found`);
+  const folder = await readInboxFolder(deps, ctx, mailboxId);
 
   const status = await deps.provider.inboxStatus();
-  const mode = selectMode(mailbox, status);
+  const mode = selectMode(folder, status);
   const result: SyncResult = {
     mode,
     fetched: 0,
@@ -374,8 +386,8 @@ export async function syncMailbox(deps: SyncDeps, ctx: TenantContext, mailboxId:
 
   let kept: MessageMeta[];
   if (mode === "incremental") {
-    const metas = await deps.provider.fetchAbove(mailbox.last_uid ?? 0);
-    const filtered = filterAboveCursor(metas, mailbox.last_uid ?? 0);
+    const metas = await deps.provider.fetchAbove(folder.last_uid ?? 0);
+    const filtered = filterAboveCursor(metas, folder.last_uid ?? 0);
     kept = filtered.kept;
     result.fetched = metas.length;
     result.ignoredBelowCursor = filtered.ignored;
@@ -387,26 +399,26 @@ export async function syncMailbox(deps: SyncDeps, ctx: TenantContext, mailboxId:
 
   const chunkSize = deps.chunkSize ?? DEFAULT_CHUNK_SIZE;
   const state: RunState = { matched: new Set(), newKeys: new Map() };
-  const start: Cursor = { uidValidity: mailbox.uidvalidity, lastUid: mailbox.last_uid };
+  const start: Cursor = { uidValidity: folder.uidvalidity, lastUid: folder.last_uid };
   let cursor = start;
   for (let offset = 0; offset < kept.length; offset += chunkSize) {
     const chunk = kept.slice(offset, offset + chunkSize);
     const writes = await planChunk(deps, ctx, mailboxId, chunk, state, result);
     if (mode === "incremental") {
       const next: Cursor = { uidValidity: cursor.uidValidity, lastUid: chunk[chunk.length - 1]?.uid ?? cursor.lastUid };
-      await applyChunk(deps, ctx, mailboxId, writes, cursor, next, result);
+      await applyChunk(deps, ctx, mailboxId, folder.id, writes, cursor, next, result);
       cursor = next;
     } else {
       // A crash before the last chunk keeps the old cursor: the next run scans again, the dedup key stops duplicates.
-      await applyChunk(deps, ctx, mailboxId, writes, start, null, result);
+      await applyChunk(deps, ctx, mailboxId, folder.id, writes, start, null, result);
     }
   }
   if (mode !== "incremental") {
     const highest = kept[kept.length - 1]?.uid ?? 0;
     const lastUid = Math.max(status.uidNext - 1, highest);
-    await setCursor(deps, ctx, mailboxId, start, { uidValidity: status.uidValidity, lastUid });
+    await setCursor(deps, ctx, mailboxId, folder.id, start, { uidValidity: status.uidValidity, lastUid });
   } else {
-    await checkReturnedBelowCursor(deps, ctx, mailboxId, cursor, result);
+    await checkReturnedBelowCursor(deps, ctx, mailboxId, folder.id, cursor, result);
   }
 
   log.info(
@@ -430,10 +442,11 @@ export async function backfillInbox(
   }
   const mailbox = await getMailbox(deps.db, ctx, mailboxId);
   if (!mailbox) throw new HardError(`mailbox ${mailboxId} not found`);
-  if (mailbox.uidvalidity === null) throw new HardError("mailbox was never synced: run the sync first");
+  const folder = await readInboxFolder(deps, ctx, mailboxId);
+  if (folder.uidvalidity === null) throw new HardError("mailbox was never synced: run the sync first");
 
   const status = await deps.provider.inboxStatus();
-  if (status.uidValidity !== mailbox.uidvalidity) {
+  if (status.uidValidity !== folder.uidvalidity) {
     throw new SoftError("UIDVALIDITY changed: wait for the regular sync to rescan, then run the backfill again");
   }
 
@@ -453,7 +466,7 @@ export async function backfillInbox(
 
   const chunkSize = deps.chunkSize ?? DEFAULT_CHUNK_SIZE;
   const state: RunState = { matched: new Set(), newKeys: new Map() };
-  const start: Cursor = { uidValidity: mailbox.uidvalidity, lastUid: mailbox.last_uid };
+  const start: Cursor = { uidValidity: folder.uidvalidity, lastUid: folder.last_uid };
   for (let offset = 0; offset < kept.length; offset += chunkSize) {
     const chunk = kept.slice(offset, offset + chunkSize);
     const writes = await planChunk(deps, ctx, mailboxId, chunk, state, result);
@@ -462,7 +475,7 @@ export async function backfillInbox(
       if (write.kind === "insert") write.row.backfilled_at = backfilledAt;
     }
     // `next` is null: the cursor never moves.
-    await applyChunk(deps, ctx, mailboxId, writes, start, null, result);
+    await applyChunk(deps, ctx, mailboxId, folder.id, writes, start, null, result);
   }
 
   log.info(

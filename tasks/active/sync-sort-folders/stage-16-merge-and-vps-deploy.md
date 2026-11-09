@@ -49,7 +49,9 @@ Gate: user checkpoint 2 (the group review of stages 12–15 and the branch is PA
       `Oferty` mail goes to INBOX.
     - Roll forward after a code rollback: before the new code starts again, copy the cursor that the old code wrote:
       `update mailbox_folders f set uidvalidity = m.uidvalidity, last_uid = m.last_uid, updated_at = now() from mailboxes m where f.mailbox_id = m.id and f.key = 'inbox';`
-      (as `postgres` through `$C exec -T db psql …`), then step 4–8 again.
+      (as `postgres` through `$C exec -T db psql …`), then step 4–8 again. A mailbox that was connected while the old code ran has no INBOX row: first
+      `insert into mailbox_folders (org_id, mailbox_id, key, path, role, enabled, uidvalidity, last_uid) select org_id, id, 'inbox', 'INBOX', 'inbox', true, uidvalidity, last_uid from mailboxes on conflict do nothing;`
+      (check the column list against the migration first; stage 2 review, 2026-11-09).
   - Test: none (operations).
   - Check: steps 2–9 results as above.
   - Done when: steps 1–10 done; no rollback, or a written rollback with its reason and a stop for the user.

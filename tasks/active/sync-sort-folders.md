@@ -1,4 +1,4 @@
-> **Status 2026-11-09 — in progress — stage 1 done (spike on the real mailbox); checkpoint 1 decided by the user (U11: an Undo into a `sort` folder uses the APPEND transfer); plan changed (F12, D10, D12, D24, stages 9, 10, 14, 15, 17).** Left: stages 2–17 (next: stage 2), checkpoint 2 before the deploy (stage 16).
+> **Status 2026-11-09 — in progress — stages 1–2 done (spike; migration `sync_folders` with the INBOX cursor in `mailbox_folders`).** Left: stages 3–17 (next: stage 3), checkpoint 2 before the deploy (stage 16).
 
 # Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
@@ -405,7 +405,7 @@ the marker. The implementer reports `git diff --stat` (source and tests apart) i
 Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). An implementer or reviewer reads this file (Input, Rules) and only the stage file of its step.
 
 - [x] [Stage 1](sync-sort-folders/stage-01-spike-real-mailbox.md) [written] — Spike on the real mailbox: sort-folder and spam-folder moves [risky] — main session; checkpoints 0 and 1
-- [ ] [Stage 2](sync-sort-folders/stage-02-migration-sync-folders.md) [written] — Migration `sync_folders`; the INBOX cursor in `mailbox_folders` [risky]
+- [x] [Stage 2](sync-sort-folders/stage-02-migration-sync-folders.md) [written] — Migration `sync_folders`; the INBOX cursor in `mailbox_folders` [risky]
 - [ ] [Stage 3](sync-sort-folders/stage-03-core-folders-and-plan.md) [written] — Core: sync folder defaults; plan for spam folder mail; the `inbox` move target and its policy
 - [ ] [Stage 4](sync-sort-folders/stage-04-folder-repository.md) [written] — Folder repository: list, discovery insert, switch, junk path [risky] — group review 2–4
 - [ ] [Stage 5](sync-sort-folders/stage-05-port-folder-reads.md) [written] — Port and adapters: folder status, fetch above, body text, folder list per folder [risky]
@@ -484,3 +484,12 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
   ("Okay, proceed."): an Undo into a `sort` folder uses `transferByAppend`. Plan changed: F12, U11, NV1 result, D10, D12, D24 (c) and (h), edge cases,
   stages 9 (doc), 10 (`appendFolders`, `by_append`, tests 2, 2b), 14 (step 7), 15 (ADR (a)–(h)), 17 (step 4). Plan-change review (Opus, high): FAIL
   (1 major: stale task record; 5 minors), all fixed. Stage 1 closed.
+- 2026-11-09: Stage 2 built (implementer) and reviewed (Opus, high): PASS, 3 minors fixed (forceRescan test with a `sort` row and a null cursor; the chunk
+  and crash tests read the folder row; the repo transaction style). Migration `20261109083501_sync_folders.sql`. Test 1 by hand on the worktree DB:
+  `db:rollback` → insert 2 mailboxes (7, 120) / (null, null) and 2 emails (INBOX, `AI/Info`) → `db:migrate` → INBOX rows (7, 120) and (null, null),
+  both emails `source_folder` INBOX, index `WHERE (folder <> source_folder)`; `rollback && migrate` twice OK. The 2 `CursorMovedError` cases of test 8
+  (`mail-sync.test.ts` near lines 541 and 1165) now write the INBOX row of `mailbox_folders`. Checks: `bun run lint` pass; `bun run typecheck` 3 projects exit 0;
+  `bun run test:unit` 1274 pass, 0 fail; `bun run test:int` 893 pass, 0 fail (reviewer run); after the fixes `bun test` of `mail-repo` + `mail-sync` 72 pass.
+- 2026-11-09: D22 note: the S5a branch already has `20261109000001_web_panel.sql` (pushed, not on `origin/master` `4300cd1`; the master commits after `1f882b5` change task files only); it sorts **before** this task's
+  `20261109083501_sync_folders.sql`. dbmate applies an older pending migration too, but `db:rollback` takes the highest version. The stage 16 check
+  (`git log origin/master --oneline -- db/migrations`; an S5a migration that sorts before ours = stop and ask) stays; the end summary tells the user.

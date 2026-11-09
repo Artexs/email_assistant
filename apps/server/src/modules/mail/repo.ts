@@ -136,7 +136,104 @@ export async function lockMailbox(
   return row && toMailboxRow(row);
 }
 
-// Conditional update: it changes the cursor only when the stored cursor is still `expected`.
+// The one row type of the table (stage 4 adds the other queries and narrows `key` and `role`).
+export interface SyncFolderRow {
+  id: string;
+  mailbox_id: string;
+  key: string;
+  path: string;
+  role: string;
+  enabled: boolean;
+  uidvalidity: number | null;
+  last_uid: number | null;
+}
+
+function toSyncFolderRow(row: Selectable<DB["mailbox_folders"]>): SyncFolderRow {
+  return {
+    id: row.id,
+    mailbox_id: row.mailbox_id,
+    key: row.key,
+    path: row.path,
+    role: row.role,
+    enabled: row.enabled,
+    uidvalidity: row.uidvalidity === null ? null : Number(row.uidvalidity),
+    last_uid: row.last_uid === null ? null : Number(row.last_uid),
+  };
+}
+
+export async function insertInboxFolder(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<void> {
+  await db
+    .insertInto("mailbox_folders")
+    .values({ org_id: ctx.orgId, mailbox_id: mailboxId, key: "inbox", path: INBOX, role: "inbox" })
+    .onConflict((oc) => oc.columns(["mailbox_id", "key"]).doNothing())
+    .execute();
+}
+
+export async function getSyncFolder(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  key: string
+): Promise<SyncFolderRow | undefined> {
+  const row = await db
+    .selectFrom("mailbox_folders")
+    .selectAll()
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("key", "=", key)
+    .executeTakeFirst();
+  return row && toSyncFolderRow(row);
+}
+
+export async function lockSyncFolder(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  folderId: string
+): Promise<SyncFolderRow | undefined> {
+  const row = await trx
+    .selectFrom("mailbox_folders")
+    .selectAll()
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", folderId)
+    .forUpdate()
+    .executeTakeFirst();
+  return row && toSyncFolderRow(row);
+}
+
+// Conditional update on the folder row: it changes the cursor only when the stored cursor is still `expected`.
+// The INBOX row also writes the two `mailboxes` columns in the same transaction (D3 dual write, for a code rollback).
+export async function updateFolderCursor(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  folderId: string,
+  expected: Cursor,
+  next: Cursor
+): Promise<boolean> {
+  const run = async (trx: DbOrTrx): Promise<boolean> => {
+    const row = await trx
+      .updateTable("mailbox_folders")
+      .set({ uidvalidity: next.uidValidity, last_uid: next.lastUid, updated_at: sql<Date>`now()` })
+      .where("org_id", "=", ctx.orgId)
+      .where("id", "=", folderId)
+      .where("uidvalidity", "is not distinct from", toInt8(expected.uidValidity))
+      .where("last_uid", "is not distinct from", toInt8(expected.lastUid))
+      .returning(["mailbox_id", "key"])
+      .executeTakeFirst();
+    if (row === undefined) return false;
+    if (row.key === "inbox") {
+      await trx
+        .updateTable("mailboxes")
+        .set({ uidvalidity: next.uidValidity, last_uid: next.lastUid })
+        .where("org_id", "=", ctx.orgId)
+        .where("id", "=", row.mailbox_id)
+        .execute();
+    }
+    return true;
+  };
+  return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
+}
+
+// The CAS of the INBOX row of the mailbox. False when the mailbox has no INBOX row.
 export async function updateCursor(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -144,15 +241,9 @@ export async function updateCursor(
   expected: Cursor,
   next: Cursor
 ): Promise<boolean> {
-  const result = await db
-    .updateTable("mailboxes")
-    .set({ uidvalidity: next.uidValidity, last_uid: next.lastUid })
-    .where("org_id", "=", ctx.orgId)
-    .where("id", "=", mailboxId)
-    .where("uidvalidity", "is not distinct from", toInt8(expected.uidValidity))
-    .where("last_uid", "is not distinct from", toInt8(expected.lastUid))
-    .executeTakeFirst();
-  return result.numUpdatedRows === 1n;
+  const folder = await getSyncFolder(db, ctx, mailboxId, "inbox");
+  if (folder === undefined) return false;
+  return updateFolderCursor(db, ctx, folder.id, expected, next);
 }
 
 export async function markSynced(db: DbOrTrx, ctx: TenantContext, mailboxId: string, at: Date): Promise<void> {
@@ -582,14 +673,25 @@ export function listSyncTargets(db: DbOrTrx): Promise<{ orgId: string; mailboxId
 
 // Forces the next sync to rescan: a real server never has UIDVALIDITY 0, so the sync sees a change.
 export async function forceRescan(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<boolean> {
-  const result = await db
-    .updateTable("mailboxes")
-    .set({ uidvalidity: "0" })
-    .where("org_id", "=", ctx.orgId)
-    .where("id", "=", mailboxId)
-    .where("uidvalidity", "is not", null)
-    .executeTakeFirst();
-  return result.numUpdatedRows === 1n;
+  const run = async (trx: DbOrTrx): Promise<boolean> => {
+    const result = await trx
+      .updateTable("mailbox_folders")
+      .set({ uidvalidity: "0", updated_at: sql<Date>`now()` })
+      .where("org_id", "=", ctx.orgId)
+      .where("mailbox_id", "=", mailboxId)
+      .where("uidvalidity", "is not", null)
+      .executeTakeFirst();
+    // D3 dual write.
+    await trx
+      .updateTable("mailboxes")
+      .set({ uidvalidity: "0" })
+      .where("org_id", "=", ctx.orgId)
+      .where("id", "=", mailboxId)
+      .where("uidvalidity", "is not", null)
+      .execute();
+    return result.numUpdatedRows > 0n;
+  };
+  return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
 }
 
 // Claims due pending rows and stale processing rows. `locked_at` = `opts.now` (a JS value, not SQL now()):
