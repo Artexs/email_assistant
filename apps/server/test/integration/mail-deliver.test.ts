@@ -156,6 +156,7 @@ describe("deliverTestMail", () => {
         message_id_header: "<c@t.test>",
         content_hash: "hc",
         uid: 1,
+        source_folder: INBOX,
         thread_key: "<c@t.test>",
         from_address: SENDER,
         subject: "c",
@@ -201,6 +202,7 @@ describe("deliverTestMail", () => {
           message_id_header: `<${id}@t.test>`,
           content_hash: `h${id}`,
           uid: 1,
+          source_folder: INBOX,
           thread_key: `<${id}@t.test>`,
           from_address: SENDER,
           subject: id,
@@ -238,15 +240,18 @@ describe("deliverTestMail", () => {
     });
   });
 
-  test("finds the mail in the \\Junk folder", async () => {
+  test("finds the mail in the spam folder by its name, not by \\Junk", async () => {
     await withRollback(db, async (trx) => {
-      const { run, fake } = await setup(trx, { folderSpecialUse: { "Wiadomości-śmieci": "\\Junk" } });
+      const { run, fake } = await setup(trx, { folderSpecialUse: { "AI/Spam": "\\Junk" } });
       fake.deliver("Wiadomości-śmieci", mail("a"));
+      fake.deliver("AI/Spam", mail("b"));
+      fake.deliver("AI/Spam", mail("a")); // same id as the junk copy
 
       const result = await run({ wanted: want("a") });
 
       expect(result.map((item) => [item.result, item.folder])).toEqual([["moved", "junk"]]);
       expect(await ids(fake, INBOX)).toEqual(["<a@t.test>"]);
+      expect(await ids(fake, "AI/Spam")).toEqual(["<b@t.test>", "<a@t.test>"]);
     });
   });
 

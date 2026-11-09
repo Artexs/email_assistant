@@ -22,7 +22,12 @@ export interface MailSyncJobDeps {
 }
 
 // The log lines carry the mailbox id only: never the address, a password or a subject.
-async function syncOne(deps: MailSyncJobDeps, ctx: TenantContext, mailboxId: string): Promise<void> {
+async function syncOne(
+  deps: MailSyncJobDeps,
+  ctx: TenantContext,
+  mailboxId: string,
+  failures: Map<string, number>
+): Promise<void> {
   const { provider } = await openMailboxProvider(deps, ctx, mailboxId);
   try {
     const result = await syncMailbox(
@@ -31,9 +36,18 @@ async function syncOne(deps: MailSyncJobDeps, ctx: TenantContext, mailboxId: str
       mailboxId
     );
     await markSynced(deps.db, ctx, mailboxId, deps.now());
+    const sum = (field: "fetched" | "stored" | "uidUpdated" | "returned") =>
+      result.folders.reduce((total, folder) => total + folder[field], 0);
     log.info(
-      `synced ${mailboxId}: ${result.mode}, fetched ${result.fetched}, stored ${result.stored}, uid updated ${result.uidUpdated}, returned ${result.returned}`
+      `synced ${mailboxId}: folders ${result.folders.length}, fetched ${sum("fetched")}, stored ${sum("stored")}, uid updated ${sum("uidUpdated")}, returned ${sum("returned")}`
     );
+    // D5: a folder that fails 3 runs in a row gets one error line, until it syncs again.
+    for (const folder of result.folders) failures.set(`${mailboxId}:${folder.folder}`, 0);
+    for (const key of result.failed) {
+      const count = (failures.get(`${mailboxId}:${key}`) ?? 0) + 1;
+      failures.set(`${mailboxId}:${key}`, count);
+      if (count === 3) log.error(`sync ${mailboxId} folder ${key}: failed 3 runs in a row`);
+    }
   } finally {
     await provider.close().catch((error: unknown) => {
       log.warn(`close ${mailboxId} failed:`, error instanceof Error ? error.message : String(error));
@@ -42,13 +56,14 @@ async function syncOne(deps: MailSyncJobDeps, ctx: TenantContext, mailboxId: str
 }
 
 export function createMailSyncJob(deps: MailSyncJobDeps): { run(): Promise<void> } {
+  const failures = new Map<string, number>();
   return {
     async run() {
       const targets = await listSyncTargets(deps.db);
       for (const { orgId, mailboxId } of targets) {
         const ctx = { orgId };
         try {
-          await syncOne(deps, ctx, mailboxId);
+          await syncOne(deps, ctx, mailboxId, failures);
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           if (error instanceof MailAuthError) {

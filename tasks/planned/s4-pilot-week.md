@@ -34,6 +34,10 @@ an approval message. Never approve a send for a test mail: reject it (`✖️ Re
 - A1: approvals of test mail do not count in `Approvals: 0 waiting`.
 - B2: add `and lower(e.from_address) is distinct from 'ea-testmail-75wd@agentmail.to'` to every `emails e` join of the step 23.2.3 queries.
 
+## Sort-folder sync (TBD)
+
+From TBD (UTC) the server also syncs `Oferty`, `Społeczności`, `Rachunki` and `Wiadomości-śmieci` (`tasks/active/sync-sort-folders.md`). Their mail can get moves into `AI/*` (and spam folder mail into INBOX). Count drafts, approvals and sends for all mail and with `e.source_folder = 'INBOX'`.
+
 ## Plan
 
 - [ ] A1. `date -u` ≥ 2026-11-08T06:00Z. `/status` on the phone: `Send: real delegates of the test mailbox (SEND_SCOPE=all)`, `Approvals: 0 waiting`.

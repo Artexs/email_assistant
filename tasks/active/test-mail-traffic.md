@@ -1,4 +1,4 @@
-> **Status 2026-11-08 — blocked until `tasks/planned/sync-sort-folders.md` is deployed on the VPS.** Stages 1–8 are done and merged (`9171a79`). Stage 9.1 sent the smoke batch; the mails stay in Interia `Oferty`, which the app does not sync. Left: stage 9 after that task (deliver is then not needed).
+> **Status 2026-11-08 — blocked until `tasks/active/sync-sort-folders.md` is deployed on the VPS.** Stages 1–8 are done and merged (`9171a79`). Stage 9.1 sent the smoke batch; the mails stay in Interia `Oferty`, which the app does not sync. Left: stage 9 after that task (deliver is then not needed).
 > **Blocked until:** the VPS sync reads `Oferty` (task `sync-sort-folders`). Before then an agent may only read (`testmail:status`, `deliver --check-only`, read-only SQL). Do not send more test mail.
 
 # Test mail traffic: AgentMail synthetic mail utility

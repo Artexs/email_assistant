@@ -2,6 +2,17 @@ import { HardError } from "../../platform/errors";
 
 export const INBOX = "INBOX";
 
+/** The largest message that transferByAppend reads into memory. */
+export const TRANSFER_MAX_BYTES = 25_000_000;
+/** Flags that transferByAppend never copies (case-insensitive). */
+export const TRANSFER_DROP_FLAGS = ["\\Recent", "\\Deleted", "$Junk", "Junk"] as const;
+
+/** The flags that transferByAppend copies. */
+export function transferFlags(flags: Iterable<string>): string[] {
+  const drop = new Set(TRANSFER_DROP_FLAGS.map((flag) => flag.toLowerCase()));
+  return [...flags].filter((flag) => !drop.has(flag.toLowerCase()));
+}
+
 export interface MailCapabilities {
   idle: boolean;
   move: boolean;
@@ -22,9 +33,12 @@ export interface MailServerInfo {
   folders: MailFolder[];
 }
 
-export interface InboxStatus {
+export interface FolderStatus {
   uidValidity: number;
+  /** The largest of STATUS UIDNEXT, SELECT UIDNEXT and highestUid + 1 (finite values only), at least 1. */
   uidNext: number;
+  /** The UID of `*`; 0 when the folder is empty. */
+  highestUid: number;
 }
 
 export interface MessageMeta {
@@ -55,15 +69,14 @@ export interface MoveResult {
 
 export interface MailProvider {
   serverInfo(): Promise<MailServerInfo>;
-  inboxStatus(): Promise<InboxStatus>;
-  /** UID FETCH lastUid+1:* in INBOX. Can also return uid <= lastUid (RFC 3501 `*` rule). */
-  fetchAbove(lastUid: number): Promise<MessageMeta[]>;
-  /** UIDs in INBOX with INTERNALDATE on or after the day of `since`. */
-  searchInboxSince(since: Date): Promise<number[]>;
-  /** INBOX. */
-  fetchByUids(uids: number[]): Promise<MessageMeta[]>;
-  /** INBOX. Null when larger than the size limit or no text. */
-  fetchBodyText(uid: number): Promise<string | null>;
+  /** LIST only (no SELECT): path and delimiter of every folder. */
+  listFolders(): Promise<{ path: string; delimiter: string }[]>;
+  /** Throws MailFolderMissingError when the folder does not exist. */
+  folderStatus(folder: string): Promise<FolderStatus>;
+  /** UID FETCH lastUid+1:* in `folder`. Can also return uid <= lastUid (RFC 3501 `*` rule). [] for an empty folder. Throws MailFolderMissingError. */
+  fetchAbove(folder: string, lastUid: number): Promise<MessageMeta[]>;
+  /** Null when larger than the size limit, no text, or no such UID. Throws MailFolderMissingError. */
+  fetchBodyText(folder: string, uid: number): Promise<string | null>;
   /** Creates the folder when it is missing. Returns the path as the server lists it. */
   ensureFolder(name: string): Promise<string>;
   /** Null when the folder has no such UID (also when the folder does not exist). */
@@ -74,6 +87,14 @@ export interface MailProvider {
   fetchByUidsIn(folder: string, uids: number[]): Promise<FolderMessageMeta[]>;
   /** Moves one message. Throws MailNotFoundError when `uid` is not in `fromFolder`. */
   moveMessage(fromFolder: string, uid: number, toFolder: string): Promise<MoveResult>;
+  /**
+   * Moves one message by APPEND of its raw source to `toFolder` (flags without \Recent, \Deleted and the keywords $Junk and Junk, the same INTERNALDATE),
+   * then \Deleted + UID EXPUNGE of the source. For a server that re-sorts a COPY into INBOX or a tab folder (Interia, F8, F12).
+   * Throws MailNotFoundError when `uid` is not in `fromFolder` (also when the folder is missing); HardError("no UIDPLUS") before any write
+   * when the server has no UIDPLUS; HardError("message too large to transfer") when RFC822.SIZE > TRANSFER_MAX_BYTES.
+   * `newUid` = the APPENDUID; throws HardError("append gave no uid") when the server gives none.
+   */
+  transferByAppend(fromFolder: string, uid: number, toFolder: string): Promise<MoveResult>;
   /** `\Deleted` + UID EXPUNGE of one message. Throws HardError("no UIDPLUS") when the server has no UIDPLUS. Returns false when the UID is not there. */
   deleteMessage(folder: string, uid: number): Promise<boolean>;
   /** Adds and removes IMAP flags of one message. Throws MailNotFoundError when `uid` is not in `folder`. */
@@ -96,6 +117,14 @@ export class MailNotFoundError extends HardError {
   constructor(message: string, options?: { cause?: unknown }) {
     super(message, options);
     this.name = "MailNotFoundError";
+  }
+}
+
+/** The folder is not on the server (any more). The message never holds the path. */
+export class MailFolderMissingError extends HardError {
+  constructor(options?: { cause?: unknown }) {
+    super("IMAP folder not found", options);
+    this.name = "MailFolderMissingError";
   }
 }
 
