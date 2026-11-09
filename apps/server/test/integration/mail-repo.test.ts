@@ -19,7 +19,7 @@ import {
   insertMailbox,
   listEmailsByMessageIds,
   listFolderUids,
-  listInboxEmailKeys,
+  listFolderEmailKeys,
   listRecentlyMoved,
   listSyncFolders,
   listSyncTargets,
@@ -672,7 +672,7 @@ describe("mail repository: emails", () => {
   });
 });
 
-describe("mail repository: listInboxEmailKeys", () => {
+describe("mail repository: listFolderEmailKeys", () => {
   test("lists INBOX rows since the time, and filters by org_id", async () => {
     await withRollback(db, async (trx) => {
       const { a, b } = await createTwoTenants(trx);
@@ -724,7 +724,7 @@ describe("mail repository: listInboxEmailKeys", () => {
         })
       );
 
-      const rows = await listInboxEmailKeys(trx, a.ctx, a.mailboxId, since);
+      const rows = await listFolderEmailKeys(trx, a.ctx, a.mailboxId, ["INBOX"], since);
       expect(rows).toHaveLength(2);
       expect(rows).toEqual(
         expect.arrayContaining([
@@ -732,7 +732,10 @@ describe("mail repository: listInboxEmailKeys", () => {
           { message_id_header: "<edge@x.test>", content_hash: "edge" },
         ])
       );
-      expect(await listInboxEmailKeys(trx, b.ctx, a.mailboxId, since)).toEqual([]);
+      expect(await listFolderEmailKeys(trx, b.ctx, a.mailboxId, ["INBOX"], since)).toEqual([]);
+      expect(await listFolderEmailKeys(trx, a.ctx, a.mailboxId, [], since)).toEqual([]);
+      const several = await listFolderEmailKeys(trx, a.ctx, a.mailboxId, ["INBOX", "AI/Info"], since);
+      expect(several.map((row) => row.content_hash).sort()).toEqual(["edge", "hash-1", "moved"]);
     });
   });
 });

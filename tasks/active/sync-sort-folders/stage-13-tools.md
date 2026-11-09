@@ -4,7 +4,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's D
 
 ## Stage 13 — Tools: `mailbox:settings sync-folder`, `mailbox:audit` per folder, `mailbox:rescan`, `mailbox:seed --folder`
 
-- [ ] **13.1 `mailbox:settings sync-folder` and the folder list in `show`**
+- [x] **13.1 `mailbox:settings sync-folder` and the folder list in `show`**
   - Goal: the off switch per folder (D16), the rollback tool of stage 16 that needs no deploy.
   - Files: change `apps/server/src/scripts/mailbox-settings-args.ts`, `apps/server/src/scripts/mailbox-settings-args.test.ts`, `apps/server/src/scripts/mailbox-settings.ts`,
     test `apps/server/test/integration/config-settings.test.ts` (or a new `mail-folders-cli.test.ts` if the CLI tests live elsewhere: follow the file that tests
@@ -31,7 +31,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's D
   - Done when: tests 1–3 pass.
   - Out of scope: a web setting (S5c).
 
-- [ ] **13.2 `mailbox:audit` per folder; `mailbox:rescan` text**
+- [x] **13.2 `mailbox:audit` per folder; `mailbox:rescan` text**
   - Goal: the read-only audit compares every enabled synced folder with its stored rows.
   - Files: change `apps/server/src/modules/mail/tools.ts` (`auditMailbox`), `apps/server/src/modules/mail/repo.ts`(`listInboxEmailKeys` → `listFolderEmailKeys(db, ctx, mailboxId, folders: string[], since)`),
     `apps/server/src/modules/mail/audit.ts` (names only if needed), `apps/server/src/scripts/mailbox-audit.ts`, `apps/server/src/scripts/mailbox-rescan.ts`,
@@ -68,7 +68,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's D
   - Done when: tests 1–6 pass.
   - Out of scope: `mailbox:backfill` (stays INBOX-only, D16).
 
-- [ ] **13.3 `mailbox:seed --folder <path>`**
+- [x] **13.3 `mailbox:seed --folder <path>`**
   - Goal: the dev run (stage 14) puts synthetic mail into `Oferty` and `Wiadomości-śmieci` on GreenMail.
   - Files: change `apps/server/src/modules/mail/tools.ts` (`seedMailbox` gets `folder?: string`, default INBOX), `apps/server/src/scripts/mailbox-seed.ts`,
     test `apps/server/test/integration/mail-seed.test.ts`.

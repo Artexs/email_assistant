@@ -33,6 +33,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's "
   - Out of scope: the web panel docs (S5).
 
 - [ ] **15.2 Notes, known alerts, follow-up tasks**
+  - Added by stage 13: `docs/known-alerts.md` ~354–359 (audit alert: add ` cross=<n>`, `listInboxEmailKeys` is now `listFolderEmailKeys`); `docs/code-patterns.md` test-tool line names `mailbox:seed --folder`.
   - Goal: the facts for later agents and the ideas that this task did not build.
   - Files: change `notes/2026-11-03-interia-imap-capabilities.md` (F1–F3 and the stage 1 result, if stage 1 did not write them all), `notes/2026-11-07-agentmail-test-mail.md`
     (§10: a line that the sync reads `Oferty` now; `deliver` is not needed), `docs/known-alerts.md` (the `mailbox:audit` entry near line 359: `listInboxEmailKeys` is now `listFolderEmailKeys`, and a `cross` count is no

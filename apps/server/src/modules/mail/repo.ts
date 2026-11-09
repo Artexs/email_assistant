@@ -1002,18 +1002,20 @@ export async function listThreadContext(
   return query.orderBy("received_at", "desc").orderBy("id", "desc").limit(3).execute();
 }
 
-export async function listInboxEmailKeys(
+export async function listFolderEmailKeys(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
+  folders: string[],
   since: Date
 ): Promise<{ message_id_header: string | null; content_hash: string }[]> {
+  if (folders.length === 0) return [];
   return db
     .selectFrom("emails")
     .select(["message_id_header", "content_hash"])
     .where("org_id", "=", ctx.orgId)
     .where("mailbox_id", "=", mailboxId)
-    .where("folder", "=", "INBOX")
+    .where("folder", "in", folders)
     .where("received_at", ">=", since)
     .execute();
 }

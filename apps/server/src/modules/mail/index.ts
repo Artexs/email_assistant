@@ -1,7 +1,7 @@
 export { checkMailbox, type CheckDeps, type CheckOptions, type CheckReport } from "./check";
 export { buildFolderMap, connectMailbox, updateMailboxPassword, type ConnectDeps, type ConnectInput } from "./connect";
 export { ensureSyncFolders, setSyncFolderEnabled, type SyncFolderSwitchResult } from "./folders";
-export { compareInboxWithDb, type AuditCounts, type InboxKey } from "./audit";
+export { auditExitCode, compareFolderWithDb, compareInboxWithDb, type AuditCounts, type InboxKey } from "./audit";
 export { openMailboxProvider, type OpenDeps } from "./open";
 export { createMailSyncJob, type MailSyncJobDeps } from "./jobs";
 export { openImapProvider, type ImapConnectOptions } from "./imap/client";
