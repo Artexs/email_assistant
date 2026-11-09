@@ -1,5 +1,4 @@
-> **Status 2026-11-08 — blocked until `tasks/active/sync-sort-folders.md` is deployed on the VPS.** Stages 1–8 are done and merged (`9171a79`). Stage 9.1 sent the smoke batch; the mails stay in Interia `Oferty`, which the app does not sync. Left: stage 9 after that task (deliver is then not needed).
-> **Blocked until:** the VPS sync reads `Oferty` (task `sync-sort-folders`). Before then an agent may only read (`testmail:status`, `deliver --check-only`, read-only SQL). Do not send more test mail.
+> **Status 2026-11-09 — UNBLOCKED (user, 2026-11-09).** The sort-folder sync is deployed on the VPS since 2026-11-09 15:21 UTC (`master` `0d39663`). Stages 1–8 are done and merged (`9171a79`). Left: stage 9 without `deliver` (the sync reads `Oferty`; the 2026-11-08 smoke mails are older than the first-sync window, so send a new smoke batch). Also verify the new sync with it: `notes/2026-11-09-sort-folders-live-test-with-testmail.md` (hand back `notes/2026-11-09-sort-folders-live-test-results.md`).
 
 # Test mail traffic: AgentMail synthetic mail utility
 
