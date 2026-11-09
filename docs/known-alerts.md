@@ -18,6 +18,38 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `sync <mailbox id> folder <key>: failed 3 runs in a row`
+
+- **First seen:** 2026-11-09
+- **Source:** `apps/server/src/modules/mail/jobs.ts`, `[mail]` sync job. Error line, once per streak of 3 failed runs of one synced folder (D5).
+- **Cause:** the folder read fails in each of 3 runs (IMAP error, a rejected folder, a DB error). The other folders sync as normal. The line names the key, never the path.
+- **Fix:** read the warn or error lines before it: `$C logs --since 1h server | grep -E 'failed|tries again|not on the server'`. Switch the folder off if it stays broken: `mailbox:settings sync-folder … --key <key> --value off`. The line comes again only after the folder syncs once.
+- **Status:** investigating (per case)
+
+### `sync <mailbox id> folder <key>: not on the server, skipped`
+
+- **First seen:** 2026-11-09
+- **Source:** `apps/server/src/modules/mail/sync.ts`. Warning, one per run.
+- **Cause:** the folder listing of the server has no folder with the stored path of that row (the user renamed or deleted the folder).
+- **Fix:** none needed while the folder is gone: the sync skips that folder and runs the others. Restore the folder name, or switch the row off with `mailbox:settings sync-folder`.
+- **Status:** workaround
+
+### `sync <mailbox id>: folder discovery failed: <error>`
+
+- **First seen:** 2026-11-09
+- **Source:** `apps/server/src/modules/mail/sync.ts`, discovery of the sort folders. Warning.
+- **Cause:** the LIST of the server failed or the insert of the folder rows failed. An auth error is not caught here and ends the run as `auth_error`.
+- **Fix:** none needed once. The sync goes on with the stored rows and skips the "not on the server" check for this run. Discovery runs again on the next tick. If it repeats, check the connection and the DB.
+- **Status:** investigating (per case)
+
+### `IMAP folder gave no highest UID`
+
+- **First seen:** 2026-11-09
+- **Source:** `apps/server/src/modules/mail/imap/client.ts`, `folderStatus()`. A `HardError`, so the folder counts as failed in that run.
+- **Cause:** the folder reports mail (`exists` > 0), but `FETCH *` returned nothing. The folder changed during the read, or the server answered wrong.
+- **Fix:** the next tick tries again. After 3 runs in a row, the alert `failed 3 runs in a row` follows. Check the folder in the webmail.
+- **Status:** investigating (per case)
+
 ### `mailbox:seed and mailbox:audit CLI > seed exits 1 … ^ this test timed out after 5000ms.`
 
 - **First seen:** 2026-11-07

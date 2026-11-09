@@ -65,6 +65,8 @@ Short form. The task file has the full text of each decision.
   - (f) A spam folder mail that the user moves into INBOX by hand keeps its UID, so it is below the INBOX cursor. The row keeps the old folder; the mail is fine.
   - (g) A user move between two synced folders, of a mail that the system did not move, is not seen when its UID is below the target cursor.
     The row keeps its old folder, and an action on it ends `mail_not_found`. Follow-up: `tasks/planned/sync-return-to-other-folder.md` (covers (a) and (g)).
+  - (i) A rescue that goes back to `ready` and then expires (`expireStaleReady`, or `mailbox:settings switch --name move --value off`) keeps `undo_pending_at` for up to 24 h.
+    The sync stores no copy of that mail meanwhile. Rare; accepted.
   - (h) The Interia SEARCH misses a mail that its sorter moved after a COPY. A locate without a UID hit, `fetchSince` and `mailbox:audit` do not see it.
 - **Accepted case: a double copy after an APPEND (group review 9–11).** The rescue and an Undo into a `sort` folder run as APPEND, then `UID EXPUNGE`.
   When the final try of such a move fails after the APPEND, the mail stays in both folders. The sync (move marker set) has moved the cursor past the new copy,

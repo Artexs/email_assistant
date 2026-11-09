@@ -250,6 +250,7 @@ move in flight n, skipped own n, ignored below cursor n` (info). `sync <mailboxI
   the follow-up `tasks/planned/sync-return-to-other-folder.md` covers (a) and (g)).
   (h) Interia's SEARCH misses a mail that its sorter moved after a COPY (F12): the locate without a UID hit, `fetchSince` (initial window, rescan) and
   `mailbox:audit` do not see it. After U11 only an Undo into INBOX makes such a COPY (S3 path; case (c) and a crash between the COPY and the commit).
+  (i) Accepted (group review 12–15): a rescue that goes back to `ready` and then expires (`expireStaleReady`, or `mailbox:settings switch --name move --value off`) keeps `undo_pending_at` for up to 24 h, so the sync stores no copy of that mail meanwhile (rare).
 
 ### Edge cases (decided; each has a test in its stage)
 

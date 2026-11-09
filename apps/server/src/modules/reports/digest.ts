@@ -16,13 +16,11 @@ import { listActionsForEmails, listDraftTasks, listSummaries } from "../actions"
 import { auditEvents, countEventsBetween } from "../audit";
 import { getMailboxSettings } from "../config";
 import { countOpenDelegations, listDelegateNames } from "../delegation";
-import { countWaiting, isSyntheticMessageId, listMailboxes } from "../mail";
+import { countWaiting, INBOX, isSyntheticMessageId, listMailboxes } from "../mail";
 import { getOrganization } from "../tenancy";
 import { countTriagedBetween, listTriagedBetween } from "../triage";
 
 import { lastSentDigestEnd } from "./repo";
-
-const INBOX = "INBOX";
 
 export const DIGEST_ITEM_LIMIT = 100;
 export const DIGEST_MAX_PERIOD_MS = 7 * 24 * 3_600_000;

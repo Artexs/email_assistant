@@ -54,6 +54,7 @@ import {
   getEmailMeta,
   getJunkFolderPath,
   getMailbox,
+  INBOX,
   isSyntheticMessageId,
   listMailboxes,
   type MailboxSummary,
@@ -65,8 +66,6 @@ import type { LinkedChat } from "./port";
 import { cancelPendingOutbox, insertOutbox, listLinkedChats, listSentStaleEpisodes, type NewOutboxRow } from "./repo";
 
 const log = createLog("channels");
-
-const INBOX = "INBOX";
 
 export const URGENT_LOOKBACK_MS = 24 * 3_600_000;
 export const URGENT_LIMIT = 200;
