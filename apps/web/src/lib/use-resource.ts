@@ -16,7 +16,10 @@ export function useResource<T>(load: () => Promise<T>, opts: { pollMs?: number }
     loadRef.current = load;
   });
 
-  const reload = useCallback(() => setTick((n) => n + 1), []);
+  const reload = useCallback(() => {
+    setState((prev) => ({ ...prev, loading: true }));
+    setTick((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     let active = true;

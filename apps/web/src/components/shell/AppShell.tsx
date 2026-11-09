@@ -46,7 +46,7 @@ function Frame({ active, title, children }: AppShellProps) {
   const email = me?.user.email ?? null;
   // S5b: `me.onboarding` becomes an object; then add `|| !me.onboarding.done` (W5).
   const onboardingOpen = me === null || me.onboarding === null;
-  const navProps = { active, onboardingOpen, email, onLogOut };
+  const navProps = { active, onboardingOpen, email, loading, onLogOut };
 
   let content: ReactNode;
   if (me !== null) {

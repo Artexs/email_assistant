@@ -20,7 +20,9 @@ export function UserMenu({ email, onLogOut }: UserMenuProps) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="w-full justify-between" aria-label={t("user_menu")}>
-          <span className="truncate">{email}</span>
+          <span className="truncate" title={email}>
+            {email}
+          </span>
           <ChevronsUpDown />
         </Button>
       </DropdownMenuTrigger>
