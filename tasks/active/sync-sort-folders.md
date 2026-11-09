@@ -1,4 +1,4 @@
-> **Status 2026-11-09 — in progress — stages 1–6 done (spike; migration; core; folder repository; port folder reads; sync rules); group review 2–4 done.** Left: stages 7a–17 (next: stage 7a; group review 5–8 after stage 8), checkpoint 2 before the deploy (stage 16).
+> **Status 2026-11-09 — in progress — stages 1–7a done (spike; migration; core; folder repository; port folder reads; sync rules; sync loop per folder); group review 2–4 done.** Left: stages 7b–17 (next: stage 7b; group review 5–8 after stage 8; 7a must not deploy without 7b), checkpoint 2 before the deploy (stage 16).
 
 # Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
@@ -410,7 +410,7 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - [x] [Stage 4](sync-sort-folders/stage-04-folder-repository.md) [written] — Folder repository: list, discovery insert, switch, junk path [risky] — group review 2–4
 - [x] [Stage 5](sync-sort-folders/stage-05-port-folder-reads.md) [written] — Port and adapters: folder status, fetch above, body text, folder list per folder [risky]
 - [x] [Stage 6](sync-sort-folders/stage-06-sync-rules.md) [written] — Sync rules across folders (pure) [risky]
-- [ ] [Stage 7a](sync-sort-folders/stage-07a-sync-loop-per-folder.md) [written] — Sync loop per folder: discovery, new mail, errors [risky]
+- [x] [Stage 7a](sync-sort-folders/stage-07a-sync-loop-per-folder.md) [written] — Sync loop per folder: discovery, new mail, errors [risky]
 - [ ] [Stage 7b](sync-sort-folders/stage-07b-sync-incoming-across-folders.md) [written] — Sync: cross copies, relocated, returned, move in flight across folders [risky]
 - [ ] [Stage 8](sync-sort-folders/stage-08-returns-below-cursor.md) [written] — Sync: returns below the cursor per source folder; the Interia keep-UID cases [risky] — group review 5–8
 - [ ] [Stage 9](sync-sort-folders/stage-09-transfer-by-append.md) [written] — Adapter: move by APPEND (`transferByAppend`) [risky]
@@ -518,3 +518,9 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
   marker"), "undo_pending_at older than 1 day" (now "a move marker of 25 h is a leftover"), "an undo_pending_at does not stop a return", "still in its
   folder gives new", "gone gives returned" (now the `systemMoved` cases). Rename only (`undoInFlight` → `moveInFlight`): `actions-undo.test.ts` (10), (11),
   `mail-sync.test.ts` near 468. Checks: `bun run lint` pass; `bun run typecheck` exit 0; `bun run test:unit` 1336 pass, 0 fail; `bun run test:int` 918 pass, 0 fail (round 1).
+- 2026-11-09: Stage 7a built (implementer) and reviewed (Opus, high): round 1 FAIL (1 major: a run copy was matched with the current folder, so the same new
+  mail in INBOX and `Oferty` in one run gave two rows), fixed (a run copy enters `matched` with its folder once); round 2 PASS; 2 test minors added (two
+  identical `Oferty` copies give `#2`, one chunk and `chunkSize: 1`; the warn line). Deviation: the backfill test "no INBOX row" makes `listFolders` fail
+  (discovery repairs the row otherwise). Decided for stage 7b (question 3): restore the run state when a folder fails (7b decision + test 12). 7a alone
+  must not deploy: a non-INBOX folder with a cross copy fails until 7b. Checks: `bun run lint` pass; `bun run typecheck` exit 0; `bun run test:unit` 1336 pass;
+  `bun run test:int` 937 pass, 0 fail (reviewer round 2); `bun test mail-sync.test.ts` 63 pass after the test minors.

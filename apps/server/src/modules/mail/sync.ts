@@ -1,11 +1,13 @@
+import { pickSyncFolders, type SyncFolderKey } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { HardError, SoftError } from "../../platform/errors";
+import { describeError, HardError, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 
+import { ensureSyncFolders } from "./folders";
 import { LOCATE_CHUNK, locateKeyOf, locateMessage, type LocateKey } from "./locate";
-import { INBOX, type FolderStatus, type MailProvider, type MessageMeta } from "./port";
+import { INBOX, MailAuthError, type FolderStatus, type MailProvider, type MessageMeta } from "./port";
 import {
   findCopies,
   getMailbox,
@@ -13,6 +15,7 @@ import {
   insertEmail,
   listFolderUids,
   listRecentlyMoved,
+  listSyncFolders,
   lockSyncFolder,
   markEmailReturned,
   updateEmailUid,
@@ -59,17 +62,50 @@ export interface SyncDeps {
 }
 
 export interface SyncResult {
+  folder: SyncFolderKey;
   mode: "initial" | "incremental" | "rescan" | "backfill";
   fetched: number;
   stored: number;
   uidUpdated: number;
   returned: number;
-  returnedBelowCursor: number;
-  copiesBelowCursor: number;
+  relocated: number;
+  crossCopies: number;
   /** D9: mail that is the target of a move in flight (not stored). */
   moveInFlight: number;
+  returnedBelowCursor: number;
+  copiesBelowCursor: number;
   skippedOwn: number;
   ignoredBelowCursor: number;
+}
+
+/** The top-level fields are the INBOX result. */
+export interface MailboxSyncResult extends SyncResult {
+  /** Every folder that synced, INBOX first. */
+  folders: SyncResult[];
+  /** Folders with an error (D5), never `inbox`. */
+  failed: SyncFolderKey[];
+  /** Rows whose path the server does not list. */
+  skipped: SyncFolderKey[];
+  /** Rows that discovery inserted in this run. */
+  added: SyncFolderKey[];
+}
+
+function emptyResult(folder: SyncFolderKey, mode: SyncResult["mode"]): SyncResult {
+  return {
+    folder,
+    mode,
+    fetched: 0,
+    stored: 0,
+    uidUpdated: 0,
+    returned: 0,
+    relocated: 0,
+    crossCopies: 0,
+    moveInFlight: 0,
+    returnedBelowCursor: 0,
+    copiesBelowCursor: 0,
+    skippedOwn: 0,
+    ignoredBelowCursor: 0,
+  };
 }
 
 /** Another run moved the cursor of this mailbox. */
@@ -82,7 +118,7 @@ export class CursorMovedError extends SoftError {
 
 type Write =
   | { kind: "insert"; row: NewEmail }
-  | { kind: "update_uid"; emailId: string; uid: number }
+  | { kind: "update_uid"; emailId: string; uid: number; isSource: boolean }
   | { kind: "returned"; emailId: string; uid: number };
 
 interface RunState {
@@ -94,6 +130,7 @@ interface RunState {
 
 function newRow(
   mailboxId: string,
+  folder: string,
   meta: MessageMeta,
   messageId: string | null,
   hash: string,
@@ -106,8 +143,8 @@ function newRow(
     message_id_header: messageId,
     content_hash: hash,
     uid: meta.uid,
-    folder: INBOX,
-    source_folder: INBOX,
+    folder,
+    source_folder: folder,
     thread_key: threadKey({ ...meta, messageId }, dedupKey),
     in_reply_to: meta.inReplyTo,
     references_header: meta.references.length > 0 ? meta.references.join(" ") : null,
@@ -125,6 +162,7 @@ async function planChunk(
   deps: SyncDeps,
   ctx: TenantContext,
   mailboxId: string,
+  folder: string,
   chunk: MessageMeta[],
   state: RunState,
   result: SyncResult
@@ -143,30 +181,33 @@ async function planChunk(
     const runCopies: KnownCopy[] = runKeys.map((key) => ({
       id: `run:${key}`,
       dedupKey: key,
-      folder: INBOX,
-      sourceFolder: INBOX,
+      folder,
+      sourceFolder: folder,
       uid: meta.uid,
       contentHash: hash,
       from: meta.from,
       receivedAt: meta.internalDate,
       movePendingAt: null,
     }));
-    for (const copy of runCopies) state.matched.set(copy.id, INBOX);
     const fromDb = await findCopies(deps.db, ctx, mailboxId, { messageId, contentHash: hash });
     const copies = [...fromDb.filter((copy) => !runKeys.includes(copy.dedupKey)), ...runCopies];
 
-    const decision = decideIncoming({ folder: INBOX, baseKey, copies, matched: state.matched, now: deps.now() });
+    const decision = decideIncoming({ folder, baseKey, copies, matched: state.matched, now: deps.now() });
     let dedupKey: string | null = null;
     if (decision.kind === "move_in_flight") {
       result.moveInFlight += 1;
-      log.debug(`sync ${mailboxId}: INBOX copy of mail ${decision.emailId} is the target of a move, not stored`);
+      log.debug(
+        `sync ${mailboxId}: copy of mail ${decision.emailId} in a synced folder is the target of a move, not stored`
+      );
     } else if (decision.kind === "update_uid") {
-      state.matched.set(decision.emailId, INBOX);
-      writes.push({ kind: "update_uid", emailId: decision.emailId, uid: meta.uid });
+      state.matched.set(decision.emailId, folder);
+      writes.push({ kind: "update_uid", emailId: decision.emailId, uid: meta.uid, isSource: decision.isSource });
     } else if (decision.kind === "cross_copy") {
-      throw new HardError("unexpected folder check result");
+      // Stage 7b: the cross copy. For INBOX nothing is matched elsewhere yet.
+      throw new HardError(folder === INBOX ? "unexpected folder check result" : "cross-folder check: stage 7b");
     } else if (decision.kind === "check_folder") {
-      state.matched.set(decision.emailId, INBOX);
+      if (folder !== INBOX) throw new HardError("cross-folder check: stage 7b");
+      state.matched.set(decision.emailId, folder);
       const copy = copies.find((candidate) => candidate.id === decision.emailId);
       if (copy === undefined) throw new HardError("matched copy is missing");
       const key: LocateKey = {
@@ -199,9 +240,10 @@ async function planChunk(
     }
 
     if (dedupKey !== null) {
-      const body = await deps.provider.fetchBodyText(INBOX, meta.uid);
-      writes.push({ kind: "insert", row: newRow(mailboxId, meta, messageId, hash, dedupKey, body) });
+      const body = await deps.provider.fetchBodyText(folder, meta.uid);
+      writes.push({ kind: "insert", row: newRow(mailboxId, folder, meta, messageId, hash, dedupKey, body) });
       state.newKeys.set(baseKey, [...runKeys, dedupKey]);
+      state.matched.set(`run:${dedupKey}`, folder);
     }
   }
   return writes;
@@ -230,7 +272,7 @@ async function applyChunk(
       if (write.kind === "insert") {
         if (await insertEmail(trx, ctx, write.row)) stored += 1;
       } else if (write.kind === "update_uid") {
-        await updateEmailUid(trx, ctx, write.emailId, write.uid);
+        await updateEmailUid(trx, ctx, write.emailId, write.uid, { isSource: write.isSource });
         uidUpdated += 1;
       } else {
         await markEmailReturned(trx, ctx, write.emailId, write.uid, deps.now());
@@ -372,67 +414,115 @@ export async function fetchSince(provider: MailProvider, folder: string, since: 
   return filterAboveCursor(inWindow, 0).kept;
 }
 
-export async function syncMailbox(deps: SyncDeps, ctx: TenantContext, mailboxId: string): Promise<SyncResult> {
-  const mailbox = await getMailbox(deps.db, ctx, mailboxId);
-  if (!mailbox) throw new HardError(`mailbox ${mailboxId} not found`);
-  const folder = await readInboxFolder(deps, ctx, mailboxId);
-
-  const status = await deps.provider.folderStatus(INBOX);
-  const mode = selectMode(folder, status);
-  const result: SyncResult = {
-    mode,
-    fetched: 0,
-    stored: 0,
-    uidUpdated: 0,
-    returned: 0,
-    returnedBelowCursor: 0,
-    copiesBelowCursor: 0,
-    moveInFlight: 0,
-    skippedOwn: 0,
-    ignoredBelowCursor: 0,
-  };
+// D4 and D5: one folder of the run, with its own cursor. S = `row.path`.
+async function syncFolder(
+  deps: SyncDeps,
+  ctx: TenantContext,
+  mailboxId: string,
+  row: SyncFolderRow,
+  state: RunState
+): Promise<SyncResult> {
+  const status = await deps.provider.folderStatus(row.path);
+  const mode = selectMode(row, status);
+  const result = emptyResult(row.key, mode);
 
   let kept: MessageMeta[];
   if (mode === "incremental") {
-    const metas = await deps.provider.fetchAbove(INBOX, folder.last_uid ?? 0);
-    const filtered = filterAboveCursor(metas, folder.last_uid ?? 0);
+    const metas = await deps.provider.fetchAbove(row.path, row.last_uid ?? 0);
+    const filtered = filterAboveCursor(metas, row.last_uid ?? 0);
     kept = filtered.kept;
     result.fetched = metas.length;
     result.ignoredBelowCursor = filtered.ignored;
   } else {
     const windowMs = mode === "initial" ? INITIAL_WINDOW_MS : RESCAN_WINDOW_MS;
-    kept = await fetchSince(deps.provider, INBOX, new Date(deps.now().getTime() - windowMs));
+    kept = await fetchSince(deps.provider, row.path, new Date(deps.now().getTime() - windowMs));
     result.fetched = kept.length;
   }
 
   const chunkSize = deps.chunkSize ?? DEFAULT_CHUNK_SIZE;
-  const state: RunState = { matched: new Map(), newKeys: new Map() };
-  const start: Cursor = { uidValidity: folder.uidvalidity, lastUid: folder.last_uid };
+  const start: Cursor = { uidValidity: row.uidvalidity, lastUid: row.last_uid };
   let cursor = start;
   for (let offset = 0; offset < kept.length; offset += chunkSize) {
     const chunk = kept.slice(offset, offset + chunkSize);
-    const writes = await planChunk(deps, ctx, mailboxId, chunk, state, result);
+    const writes = await planChunk(deps, ctx, mailboxId, row.path, chunk, state, result);
     if (mode === "incremental") {
       const next: Cursor = { uidValidity: cursor.uidValidity, lastUid: chunk[chunk.length - 1]?.uid ?? cursor.lastUid };
-      await applyChunk(deps, ctx, mailboxId, folder.id, writes, cursor, next, result);
+      await applyChunk(deps, ctx, mailboxId, row.id, writes, cursor, next, result);
       cursor = next;
     } else {
       // A crash before the last chunk keeps the old cursor: the next run scans again, the dedup key stops duplicates.
-      await applyChunk(deps, ctx, mailboxId, folder.id, writes, start, null, result);
+      await applyChunk(deps, ctx, mailboxId, row.id, writes, start, null, result);
     }
   }
   if (mode !== "incremental") {
     const highest = kept[kept.length - 1]?.uid ?? 0;
     const lastUid = Math.max(status.uidNext - 1, highest);
-    await setCursor(deps, ctx, mailboxId, folder.id, start, { uidValidity: status.uidValidity, lastUid });
-  } else {
-    await checkReturnedBelowCursor(deps, ctx, mailboxId, folder.id, cursor, result);
+    await setCursor(deps, ctx, mailboxId, row.id, start, { uidValidity: status.uidValidity, lastUid });
+  } else if (row.key === "inbox") {
+    // Stage 8 makes this check per folder.
+    await checkReturnedBelowCursor(deps, ctx, mailboxId, row.id, cursor, result);
   }
 
   log.info(
-    `sync ${mailboxId} ${result.mode}: fetched ${result.fetched}, stored ${result.stored}, uid updated ${result.uidUpdated}, returned ${result.returned}, skipped own ${result.skippedOwn}, ignored below cursor ${result.ignoredBelowCursor}`
+    `sync ${mailboxId} folder ${row.key}: ${result.mode}, fetched ${result.fetched}, stored ${result.stored}, uid updated ${result.uidUpdated}, returned ${result.returned}, relocated ${result.relocated}, cross copies ${result.crossCopies}, move in flight ${result.moveInFlight}, skipped own ${result.skippedOwn}, ignored below cursor ${result.ignoredBelowCursor}`
   );
   return result;
+}
+
+const RESERVED_MAP_KEYS = new Set(["drafts", "sent", "trash"]);
+
+// D2: insert the rows of the default folders that the server lists. Returns the listed paths (null: unknown) and the new keys.
+async function discoverFolders(
+  deps: SyncDeps,
+  ctx: TenantContext,
+  mailboxId: string,
+  folderMap: Record<string, string>
+): Promise<{ listed: Set<string> | null; added: SyncFolderKey[] }> {
+  try {
+    const listed = await deps.provider.listFolders();
+    const reservedPaths = Object.entries(folderMap)
+      .filter(([key]) => RESERVED_MAP_KEYS.has(key) || key.startsWith("ai_"))
+      .map(([, path]) => path);
+    const picks = pickSyncFolders({ listed, reservedPaths });
+    const added = await ensureSyncFolders(deps.db, ctx, mailboxId, picks, deps.now());
+    if (added.length > 0) log.info(`sync ${mailboxId}: added sync folders ${added.join(",")}`);
+    return { listed: new Set(listed.map((folder) => folder.path)), added };
+  } catch (error) {
+    if (error instanceof MailAuthError) throw error;
+    log.warn(`sync ${mailboxId}: folder discovery failed: ${describeError(error)}`);
+    return { listed: null, added: [] };
+  }
+}
+
+export async function syncMailbox(deps: SyncDeps, ctx: TenantContext, mailboxId: string): Promise<MailboxSyncResult> {
+  const mailbox = await getMailbox(deps.db, ctx, mailboxId);
+  if (!mailbox) throw new HardError(`mailbox ${mailboxId} not found`);
+  const { listed, added } = await discoverFolders(deps, ctx, mailboxId, mailbox.folder_map);
+
+  const rows = await listSyncFolders(deps.db, ctx, mailboxId, { enabledOnly: true });
+  if (!rows.some((row) => row.key === "inbox")) throw new HardError("mailbox has no INBOX folder row");
+
+  const state: RunState = { matched: new Map(), newKeys: new Map() };
+  const folders: SyncResult[] = [];
+  const failed: SyncFolderKey[] = [];
+  const skipped: SyncFolderKey[] = [];
+  for (const row of rows) {
+    if (row.key !== "inbox" && listed !== null && !listed.has(row.path)) {
+      log.warn(`sync ${mailboxId} folder ${row.key}: not on the server, skipped`);
+      skipped.push(row.key);
+      continue;
+    }
+    try {
+      folders.push(await syncFolder(deps, ctx, mailboxId, row, state));
+    } catch (error) {
+      if (error instanceof MailAuthError || row.key === "inbox") throw error;
+      log.warn(`sync ${mailboxId} folder ${row.key}: ${describeError(error)}; the next tick tries again`);
+      failed.push(row.key);
+    }
+  }
+  const inbox = folders[0];
+  if (inbox === undefined) throw new HardError("mailbox has no INBOX folder row");
+  return { ...inbox, folders, failed, skipped, added };
 }
 
 /**
@@ -459,25 +549,14 @@ export async function backfillInbox(
   }
 
   const kept = await fetchSince(deps.provider, INBOX, opts.since);
-  const result: SyncResult = {
-    mode: "backfill",
-    fetched: kept.length,
-    stored: 0,
-    uidUpdated: 0,
-    returned: 0,
-    returnedBelowCursor: 0,
-    copiesBelowCursor: 0,
-    moveInFlight: 0,
-    skippedOwn: 0,
-    ignoredBelowCursor: 0,
-  };
+  const result: SyncResult = { ...emptyResult("inbox", "backfill"), fetched: kept.length };
 
   const chunkSize = deps.chunkSize ?? DEFAULT_CHUNK_SIZE;
   const state: RunState = { matched: new Map(), newKeys: new Map() };
   const start: Cursor = { uidValidity: folder.uidvalidity, lastUid: folder.last_uid };
   for (let offset = 0; offset < kept.length; offset += chunkSize) {
     const chunk = kept.slice(offset, offset + chunkSize);
-    const writes = await planChunk(deps, ctx, mailboxId, chunk, state, result);
+    const writes = await planChunk(deps, ctx, mailboxId, INBOX, chunk, state, result);
     const backfilledAt = deps.now();
     for (const write of writes) {
       if (write.kind === "insert") write.row.backfilled_at = backfilledAt;

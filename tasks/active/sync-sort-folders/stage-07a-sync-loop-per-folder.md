@@ -7,7 +7,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's U
 Why risky: sync on the user's only real mailbox. After this stage the sync reads every enabled synced folder and stores new mail with its source folder.
 The cross-folder decisions (cross copy, relocated, returned into another folder) come in stage 7b; until then they fail safe (see Decisions).
 
-- [ ] **7a.1 `syncMailbox` runs discovery and one `syncFolder` per row**
+- [x] **7a.1 `syncMailbox` runs discovery and one `syncFolder` per row**
   - Goal: one cursor per folder, new mail stored with `folder` = `source_folder` = S, the D5 error rules, the D21 log lines.
   - Files: change `apps/server/src/modules/mail/sync.ts`, `apps/server/src/modules/mail/jobs.ts`, `apps/server/src/modules/mail/repo.ts`
     (`updateEmailUid` with an optional `opts: { isSource?: boolean }`, default `true`, so the existing `mail-repo.test.ts` calls keep working), `apps/server/src/modules/mail/index.ts`; tests

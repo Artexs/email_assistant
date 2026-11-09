@@ -64,7 +64,14 @@ export {
   SYNTHETIC_MESSAGE_ID_LIKE,
   type SeedMessage,
 } from "./seed";
-export { backfillInbox, CursorMovedError, syncMailbox, type SyncDeps, type SyncResult } from "./sync";
+export {
+  backfillInbox,
+  CursorMovedError,
+  syncMailbox,
+  type MailboxSyncResult,
+  type SyncDeps,
+  type SyncResult,
+} from "./sync";
 export {
   auditMailbox,
   backfillMailbox,

@@ -50,6 +50,11 @@ Why risky: dedup across folders. A wrong decision stores a mail twice, loses its
     - `applyChunk` counts only writes that changed a row (`markEmailReturned` / `markEmailRelocated` false → 0; a debug line with the email id).
     - The below-cursor check (S3 D4, still INBOX-only until stage 8) calls `markEmailReturned(…, { folder: INBOX })`.
     - Remove the stage 7a `HardError("cross-folder check: stage 7b")`.
+    - (stage 7a review, 2026-11-09) Built in 7a: a run copy enters `state.matched` with its folder when its insert is planned, never again later. 7a builds
+      the run copy's `KnownCopy` with the current S and `meta.uid`; this stage replaces that with the stored folder and UID from `state.newKeys` (above).
+    - (stage 7a review, question 3, decided by the main session) A folder that fails must not leave run-state entries of chunks that did not commit:
+      `syncMailbox` copies `state` (`matched`, `newKeys`) before each `syncFolder` and restores the copy when that folder fails. Else a later folder would
+      count its copy of a never-stored mail as a cross copy, and no row would be stored if the mail leaves the failed folder before the next run.
   - Test (`mail-sync.test.ts`; Interia-mode fake unless named; `NOW` = `2026-11-08T12:00:00Z`):
     1. Cross copy: a row in INBOX (source INBOX) and the same mail delivered into `Oferty` (new UID) → the `Oferty` run stores nothing;
        `crossCopies` 1 in the `offers` result.
@@ -72,6 +77,9 @@ Why risky: dedup across folders. A wrong decision stores a mail twice, loses its
         pass gives `update_uid` on R1 (its new UID after `resetUidValidity`), not a cross copy (re-review n4).
     11. (`mail-repo.test.ts`) `markEmailRelocated` with a wrong `from` → false, no change; with another organization's context → false; `markEmailReturned` on a
         row with `folder = source_folder` → false; with another organization's context → false.
+    12. A new mail in `Oferty` whose chunk fails before its commit (the fake fails `fetchBodyText` of a later UID in the same chunk), and the same mail new in
+        `Wiadomości-śmieci` later in the run → the `Wiadomości-śmieci` pass stores it (1 row, source `Wiadomości-śmieci`, no cross copy): the state was restored.
   - Check: `bun run lint && bun run typecheck && bun run test:unit && bun run test:int`
-  - Done when: tests 1–11 pass and the stage 7a tests still pass.
+  - Done when: tests 1–12 pass and the stage 7a tests still pass (the 7a test "the same mail new in INBOX and in Oferty in one run" becomes
+    `crossCopies` 1 with no failed folder, as test 2).
   - Out of scope: the below-cursor check per source folder (stage 8); actions (stage 10).

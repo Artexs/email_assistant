@@ -92,6 +92,8 @@ describe("mailbox without an INBOX folder row", () => {
         .where("key", "=", "inbox")
         .execute();
       const since = ago(DAY_MS);
+      // A successful discovery repairs the missing INBOX row (ensureSyncFolders): the error needs a failed discovery.
+      s.fake.failOn("listFolders", new SoftError("lost connection"));
       const sync = syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
       await expect(sync).rejects.toBeInstanceOf(HardError);
       await expect(sync).rejects.toThrow("mailbox has no INBOX folder row");
@@ -146,7 +148,14 @@ describe("backfillInbox", () => {
       expect(byId.get("<b4@x.test>")?.backfilled_at).toBeNull();
       expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY, lastUid: 4 });
 
-      const readOnly = ["folderStatus", "fetchBodyText", "fetchMetaIn", "searchSinceIn", "fetchByUidsIn"];
+      const readOnly = [
+        "listFolders",
+        "folderStatus",
+        "fetchBodyText",
+        "fetchMetaIn",
+        "searchSinceIn",
+        "fetchByUidsIn",
+      ];
       for (const call of s.fake.calls) expect(readOnly).toContain(call);
     });
   });

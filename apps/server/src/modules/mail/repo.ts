@@ -54,7 +54,11 @@ export type MailboxRow = Omit<
   folder_map: Record<string, string>;
 };
 
-export type NewEmail = Omit<Insertable<DB["emails"]>, "id" | "org_id" | "status" | "attempts" | "created_at">;
+// `source_folder` has a DB default (INBOX), but no insert path may rely on it (D6).
+export type NewEmail = Omit<
+  Insertable<DB["emails"]>,
+  "id" | "org_id" | "status" | "attempts" | "created_at" | "source_folder"
+> & { source_folder: string };
 
 export interface ClaimedEmail {
   id: string;
@@ -612,10 +616,17 @@ export async function insertEmail(db: DbOrTrx, ctx: TenantContext, row: NewEmail
   return (result.numInsertedOrUpdatedRows ?? 0n) > 0n;
 }
 
-export async function updateEmailUid(db: DbOrTrx, ctx: TenantContext, emailId: string, uid: number): Promise<void> {
+// `inbox_uid` (the UID in `source_folder`) changes only when the row sits in its source folder.
+export async function updateEmailUid(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailId: string,
+  uid: number,
+  opts: { isSource?: boolean } = {}
+): Promise<void> {
   await db
     .updateTable("emails")
-    .set({ uid, inbox_uid: uid })
+    .set(opts.isSource === false ? { uid } : { uid, inbox_uid: uid })
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", emailId)
     .execute();

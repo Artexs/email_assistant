@@ -5,6 +5,7 @@ import { isOwnActionId } from "../../src/modules/actions";
 import {
   CursorMovedError,
   syncMailbox,
+  type MailboxSyncResult,
   type MailProvider,
   type SeedMessage,
   type SyncDeps,
@@ -13,7 +14,7 @@ import { createFakeMailProvider, type FakeMailProvider } from "../../src/modules
 import { forceRescan, updateCursor } from "../../src/modules/mail/repo";
 import { RETURN_CHECK_LIMIT } from "../../src/modules/mail/sync";
 import type { DB, Db, TenantContext } from "../../src/platform/db";
-import { SoftError } from "../../src/platform/errors";
+import { HardError, SoftError } from "../../src/platform/errors";
 
 import { createOrgWithMailbox, insertAction, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -457,12 +458,18 @@ describe("syncMailbox: incremental", () => {
       s.fake.deliver("INBOX", seed(2));
 
       const first = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
-      expect(first).toEqual({
+      const { folders, failed, skipped, added, ...inboxResult } = first;
+      expect(folders).toHaveLength(1);
+      expect([failed, skipped, added]).toEqual([[], [], []]);
+      expect(inboxResult).toEqual({
+        folder: "inbox",
         mode: "incremental",
         fetched: 2,
         stored: 2,
         uidUpdated: 0,
         returned: 0,
+        relocated: 0,
+        crossCopies: 0,
         returnedBelowCursor: 0,
         copiesBelowCursor: 0,
         moveInFlight: 0,
@@ -1184,6 +1191,421 @@ describe("syncMailbox: returned mail below the cursor", () => {
       }
       const row = await movedRowOf(trx, s.mailboxId);
       expect(row).toMatchObject({ folder: "AI/Info", returned_at: null });
+    });
+  });
+});
+
+describe("syncMailbox: sync folders", () => {
+  const OFFERS = "Oferty";
+  const SOCIAL = "Społeczności";
+  const BILLS = "Rachunki";
+  const JUNK = "Wiadomości-śmieci";
+  const FOLDER_NOW = new Date("2026-11-08T12:00:00Z");
+
+  const ago = (hours: number): { internalDate: Date } => ({
+    internalDate: new Date(FOLDER_NOW.getTime() - hours * 3_600_000),
+  });
+  const folderDeps = (trx: Db | Transaction<DB>, provider: MailProvider, overrides: Partial<SyncDeps> = {}) =>
+    deps(trx, provider, { now: () => FOLDER_NOW, ...overrides });
+
+  // The Interia shape: one UID counter for the mailbox, no MOVE, a user move keeps the UID, STATUS UIDNEXT 1.
+  async function folderSetup(trx: Transaction<DB>): Promise<Setup> {
+    const s = await setup(trx);
+    const fake = createFakeMailProvider({
+      uidValidity: UID_VALIDITY,
+      globalUids: true,
+      keepUidOnUserMove: true,
+      uidNextValue: 1,
+      capabilities: { move: false },
+    });
+    return { ...s, fake };
+  }
+
+  async function addFolderRow(
+    trx: Db | Transaction<DB>,
+    s: Setup,
+    key: "offers" | "social" | "bills" | "junk",
+    path: string,
+    opts: { enabled?: boolean; lastUid?: number | null } = {}
+  ): Promise<void> {
+    await trx
+      .insertInto("mailbox_folders")
+      .values({
+        org_id: s.ctx.orgId,
+        mailbox_id: s.mailboxId,
+        key,
+        path,
+        role: key === "junk" ? "junk" : "sort",
+        enabled: opts.enabled ?? true,
+        uidvalidity: opts.lastUid === undefined || opts.lastUid === null ? null : 1,
+        last_uid: opts.lastUid ?? null,
+      })
+      .execute();
+  }
+
+  async function folderRow(trx: Db | Transaction<DB>, mailboxId: string, key: string) {
+    const row = await trx
+      .selectFrom("mailbox_folders")
+      .select(["uidvalidity", "last_uid", "enabled"])
+      .where("mailbox_id", "=", mailboxId)
+      .where("key", "=", key)
+      .executeTakeFirst();
+    return (
+      row && {
+        uidValidity: row.uidvalidity === null ? null : Number(row.uidvalidity),
+        lastUid: row.last_uid === null ? null : Number(row.last_uid),
+        enabled: row.enabled,
+      }
+    );
+  }
+
+  async function storedRows(trx: Db | Transaction<DB>, mailboxId: string) {
+    return trx
+      .selectFrom("emails")
+      .select(["uid", "inbox_uid", "folder", "source_folder", "status", "subject"])
+      .where("mailbox_id", "=", mailboxId)
+      .orderBy("uid")
+      .execute();
+  }
+
+  const of = (result: MailboxSyncResult, key: string) => result.folders.find((item) => item.folder === key);
+
+  async function withLogs(fn: (lines: { warn: string[]; info: string[] }) => Promise<void>): Promise<void> {
+    const warn = spyOn(console, "error").mockImplementation(() => undefined);
+    const info = spyOn(console, "log").mockImplementation(() => undefined);
+    try {
+      await fn({
+        get warn() {
+          return warn.mock.calls.map((call) => call.join(" "));
+        },
+        get info() {
+          return info.mock.calls.map((call) => call.join(" "));
+        },
+      });
+    } finally {
+      warn.mockRestore();
+      info.mockRestore();
+    }
+  }
+
+  test("1. first run after the deploy: Oferty is added, only the last 24 h are stored, the cursor is the highest UID", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      s.fake.deliver(OFFERS, seed(1), ago(2));
+      s.fake.deliver(OFFERS, seed(2), ago(20));
+      const old = s.fake.deliver(OFFERS, seed(3), ago(30));
+
+      await withLogs(async (lines) => {
+        const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+        expect(result.added).toEqual(["offers"]);
+        expect(result.mode).toBe("incremental");
+        expect(of(result, "offers")?.mode).toBe("initial");
+        expect(result.failed).toEqual([]);
+        expect(lines.info.some((line) => line.includes(`sync ${s.mailboxId}: added sync folders offers`))).toBe(true);
+      });
+      const rows = await storedRows(trx, s.mailboxId);
+      expect(rows.map((row) => row.subject)).toEqual(["Mail 1", "Mail 2"]);
+      expect(rows.every((row) => row.folder === OFFERS && row.source_folder === OFFERS)).toBe(true);
+      expect(rows.map((row) => Number(row.inbox_uid))).toEqual(rows.map((row) => Number(row.uid)));
+      expect((await folderRow(trx, s.mailboxId, "offers"))?.lastUid).toBe(old);
+    });
+  });
+
+  test("2. a spam folder without mail in 24 h stores nothing and its cursor is the highest UID", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      for (const n of [1, 2, 3]) s.fake.deliver(JUNK, seed(n), ago(72));
+
+      const first = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(first.added).toEqual(["junk"]);
+      expect(first.stored).toBe(0);
+      expect(await storedRows(trx, s.mailboxId)).toHaveLength(0);
+      expect((await folderRow(trx, s.mailboxId, "junk"))?.lastUid).toBe(3);
+
+      const second = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(of(second, "junk")?.mode).toBe("incremental");
+      expect(of(second, "junk")?.stored).toBe(0);
+      expect(await storedRows(trx, s.mailboxId)).toHaveLength(0);
+    });
+  });
+
+  test("3. a new mail in Społeczności above its cursor is stored pending, with the body read from that folder", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      await addFolderRow(trx, s, "social", SOCIAL, { lastUid: 0 });
+      const uid = s.fake.deliver(SOCIAL, seed(1), ago(1));
+
+      const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(of(result, "social")?.stored).toBe(1);
+      const rows = await storedRows(trx, s.mailboxId);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ folder: SOCIAL, source_folder: SOCIAL, status: "pending", uid: String(uid) });
+      expect(s.fake.folderCalls).toContainEqual({ method: "fetchBodyText", folder: SOCIAL });
+    });
+  });
+
+  test("4. a disabled junk row is not synced and discovery does not enable it", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      await addFolderRow(trx, s, "junk", JUNK, { enabled: false, lastUid: 0 });
+      s.fake.deliver(JUNK, seed(1), ago(1));
+
+      const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(result.added).toEqual([]);
+      expect(result.folders.map((item) => item.folder)).toEqual(["inbox"]);
+      expect(await storedRows(trx, s.mailboxId)).toHaveLength(0);
+      expect(await folderRow(trx, s.mailboxId, "junk")).toEqual({ uidValidity: 1, lastUid: 0, enabled: false });
+      expect(s.fake.folderCalls.some((call) => call.method === "folderStatus" && call.folder === JUNK)).toBe(false);
+    });
+  });
+
+  test("5. a row whose path the server does not list is skipped with one warn line", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      await addFolderRow(trx, s, "bills", BILLS, { lastUid: 0 });
+      s.fake.deliver("INBOX", seed(1), ago(1));
+
+      await withLogs(async (lines) => {
+        const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+        expect(result.skipped).toEqual(["bills"]);
+        expect(result.failed).toEqual([]);
+        expect(result.stored).toBe(1);
+        expect(lines.warn.filter((line) => line.includes("not on the server"))).toHaveLength(1);
+      });
+    });
+  });
+
+  test("6. a SoftError in the Oferty read fails only that folder; the next run stores its mail once", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
+      await addFolderRow(trx, s, "junk", JUNK, { lastUid: 0 });
+      s.fake.deliver("INBOX", seed(1), ago(1));
+      s.fake.deliver(OFFERS, seed(2), ago(1));
+      s.fake.deliver(JUNK, seed(3), ago(1));
+      let broken = true;
+      const provider: MailProvider = {
+        ...s.fake,
+        fetchAbove: async (folder, lastUid) => {
+          if (broken && folder === OFFERS) throw new SoftError("lost connection");
+          return s.fake.fetchAbove(folder, lastUid);
+        },
+      };
+
+      await withLogs(async (lines) => {
+        const result = await syncMailbox(folderDeps(trx, provider), s.ctx, s.mailboxId);
+        expect(result.stored).toBe(1);
+        expect(result.failed).toEqual(["offers"]);
+        expect(of(result, "junk")?.stored).toBe(1);
+        expect(lines.warn.some((line) => line.includes("folder offers: SoftError; the next tick tries again"))).toBe(
+          true
+        );
+      });
+      expect((await folderRow(trx, s.mailboxId, "offers"))?.lastUid).toBe(0);
+
+      broken = false;
+      const next = await syncMailbox(folderDeps(trx, provider), s.ctx, s.mailboxId);
+      expect(next.failed).toEqual([]);
+      expect(of(next, "offers")?.stored).toBe(1);
+      expect((await storedRows(trx, s.mailboxId)).filter((row) => row.folder === OFFERS)).toHaveLength(1);
+    });
+  });
+
+  test("7. a SoftError in INBOX stops the run before any other folder", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
+      s.fake.deliver(OFFERS, seed(1), ago(1));
+      s.fake.failOn("fetchAbove", new SoftError("lost connection"));
+
+      await expect(syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId)).rejects.toBeInstanceOf(SoftError);
+      expect(s.fake.folderCalls.some((call) => call.folder === OFFERS)).toBe(false);
+    });
+  });
+
+  test("8. a UIDVALIDITY change in Oferty rescans only that folder and gives its known rows the new UIDs", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
+      s.fake.deliver(OFFERS, seed(1), ago(1));
+      s.fake.deliver(OFFERS, seed(2), ago(30));
+      await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(await storedRows(trx, s.mailboxId)).toHaveLength(2);
+
+      s.fake.resetUidValidity(9, OFFERS);
+      const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(result.mode).toBe("incremental");
+      const offers = of(result, "offers");
+      expect(offers?.mode).toBe("rescan");
+      expect(offers?.stored).toBe(0);
+      expect(offers?.uidUpdated).toBe(2);
+      const rows = await storedRows(trx, s.mailboxId);
+      expect(rows).toHaveLength(2);
+      const uids = (await s.fake.fetchAbove(OFFERS, 0)).map((meta) => meta.uid);
+      expect(rows.map((row) => Number(row.uid))).toEqual(uids);
+      expect(rows.map((row) => Number(row.inbox_uid))).toEqual(uids);
+      expect((await folderRow(trx, s.mailboxId, "offers"))?.uidValidity).toBe(9);
+    });
+  });
+
+  test("9. a CursorMovedError in the Oferty chunk fails only that folder", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
+      await addFolderRow(trx, s, "junk", JUNK, { lastUid: 0 });
+      s.fake.deliver(OFFERS, seed(1), ago(1));
+      s.fake.deliver(JUNK, seed(2), ago(1));
+      const provider: MailProvider = {
+        ...s.fake,
+        fetchBodyText: async (folder, uid) => {
+          if (folder === OFFERS) {
+            await trx
+              .updateTable("mailbox_folders")
+              .set({ last_uid: 99 })
+              .where("mailbox_id", "=", s.mailboxId)
+              .where("key", "=", "offers")
+              .execute();
+          }
+          return s.fake.fetchBodyText(folder, uid);
+        },
+      };
+
+      await withLogs(async (lines) => {
+        const result = await syncMailbox(folderDeps(trx, provider), s.ctx, s.mailboxId);
+        expect(result.failed).toEqual(["offers"]);
+        expect(of(result, "junk")?.stored).toBe(1);
+        expect(lines.warn.some((line) => line.includes("folder offers: CursorMovedError"))).toBe(true);
+      });
+      expect((await storedRows(trx, s.mailboxId)).map((row) => row.folder)).toEqual([JUNK]);
+    });
+  });
+
+  test("10. a crash before the Oferty commit leaves no row and no cursor; the next run stores the mail once", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      s.fake.deliver(OFFERS, seed(1), ago(1));
+      let crash = true;
+      const provider: MailProvider = {
+        ...s.fake,
+        fetchBodyText: async (folder, uid) => {
+          const body = await s.fake.fetchBodyText(folder, uid);
+          if (crash && folder === OFFERS) throw new SoftError("crash after the plan");
+          return body;
+        },
+      };
+
+      const first = await syncMailbox(folderDeps(trx, provider), s.ctx, s.mailboxId);
+      expect(first.failed).toEqual(["offers"]);
+      expect(await storedRows(trx, s.mailboxId)).toHaveLength(0);
+      expect(await folderRow(trx, s.mailboxId, "offers")).toEqual({ uidValidity: null, lastUid: null, enabled: true });
+
+      crash = false;
+      const second = await syncMailbox(folderDeps(trx, provider), s.ctx, s.mailboxId);
+      expect(of(second, "offers")?.stored).toBe(1);
+      expect(await storedRows(trx, s.mailboxId)).toHaveLength(1);
+    });
+  });
+
+  test("11. an own sent mail in Oferty is skipped", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
+      s.fake.deliver(OFFERS, seed(1, { headers: { "X-EA-Action-Id": "act-1" } }), ago(1));
+      const isOwnActionId = async (_ctx: TenantContext, _mailboxId: string, actionId: string) => actionId === "act-1";
+
+      const result = await syncMailbox(folderDeps(trx, s.fake, { isOwnActionId }), s.ctx, s.mailboxId);
+      expect(of(result, "offers")?.skippedOwn).toBe(1);
+      expect(await storedRows(trx, s.mailboxId)).toHaveLength(0);
+    });
+  });
+
+  test("the same mail new in INBOX and in Oferty in one run is stored once; Oferty fails safe", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
+      s.fake.deliver("INBOX", seed(1), ago(1));
+      s.fake.deliver(OFFERS, seed(1), ago(1));
+
+      await withLogs(async (lines) => {
+        const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+        expect(result.failed).toEqual(["offers"]);
+        expect(of(result, "inbox")?.stored).toBe(1);
+        expect(lines.warn.some((line) => line.includes("folder offers: HardError;"))).toBe(true);
+      });
+      const rows = await storedRows(trx, s.mailboxId);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.folder).toBe("INBOX");
+    });
+  });
+
+  for (const chunkSize of [undefined, 1]) {
+    test(`two identical new copies in Oferty: the second row gets #2 (chunkSize ${chunkSize ?? "default"})`, async () => {
+      await withRollback(db, async (trx) => {
+        const s = await folderSetup(trx);
+        await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
+        s.fake.deliver(OFFERS, seed(1), ago(1));
+        s.fake.deliver(OFFERS, seed(1), ago(1));
+
+        const overrides = chunkSize === undefined ? {} : { chunkSize };
+        const result = await syncMailbox(folderDeps(trx, s.fake, overrides), s.ctx, s.mailboxId);
+        expect(of(result, "offers")?.stored).toBe(2);
+        const rows = (await emails(trx, s.mailboxId)).filter((row) => row.folder === OFFERS);
+        expect(rows).toHaveLength(2);
+        expect(rows[1]?.dedup_key).toBe(`${rows[0]?.dedup_key}#2`);
+      });
+    });
+  }
+
+  test("12. a folder that is the trash path in folder_map is not added", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      await trx
+        .updateTable("mailboxes")
+        .set({ folder_map: JSON.stringify({ drafts: "Drafts", trash: OFFERS }) })
+        .where("id", "=", s.mailboxId)
+        .execute();
+      s.fake.deliver(OFFERS, seed(1), ago(1));
+
+      const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+      expect(result.added).toEqual([]);
+      expect(await folderRow(trx, s.mailboxId, "offers")).toBeUndefined();
+      expect(await storedRows(trx, s.mailboxId)).toHaveLength(0);
+    });
+  });
+
+  test("13. a failed discovery gives one warn line and the existing rows sync", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
+      s.fake.deliver("INBOX", seed(1), ago(1));
+      s.fake.deliver(OFFERS, seed(2), ago(1));
+      s.fake.failOn("listFolders", new HardError("list failed"));
+
+      await withLogs(async (lines) => {
+        const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+        expect(result.stored).toBe(1);
+        expect(of(result, "offers")?.stored).toBe(1);
+        expect(result.added).toEqual([]);
+        expect(lines.warn.filter((line) => line.includes("folder discovery failed: HardError"))).toHaveLength(1);
+      });
+    });
+  });
+
+  test("16. a failed discovery and no INBOX row: HardError and last_synced_at stays empty", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      await trx.deleteFrom("mailbox_folders").where("mailbox_id", "=", s.mailboxId).execute();
+      s.fake.failOn("listFolders", new SoftError("lost connection"));
+
+      const error = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId).catch((caught: unknown) => caught);
+      expect(error).toBeInstanceOf(HardError);
+      expect((error as Error).message).toBe("mailbox has no INBOX folder row");
+      const mailbox = await trx
+        .selectFrom("mailboxes")
+        .select("last_synced_at")
+        .where("id", "=", s.mailboxId)
+        .executeTakeFirstOrThrow();
+      expect(mailbox.last_synced_at).toBeNull();
     });
   });
 });

@@ -68,6 +68,7 @@ function newEmail(mailboxId: string, overrides: Partial<NewEmail> = {}): NewEmai
     message_id_header: "<1@x.test>",
     content_hash: "hash-1",
     uid: 1,
+    source_folder: "INBOX",
     thread_key: "<1@x.test>",
     from_address: "sender@x.test",
     subject: "Hello",

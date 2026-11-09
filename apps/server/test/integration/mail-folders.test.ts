@@ -49,6 +49,27 @@ async function auditRows(trx: Transaction<DB>, orgId: string, event: string) {
 }
 
 describe("ensureSyncFolders", () => {
+  test("a plain Db writes the rows and the audit rows in its own transaction", async () => {
+    const created = await db.transaction().execute((trx) => createOrgWithMailbox(trx));
+    const ctx = { orgId: created.orgId };
+    try {
+      expect(await ensureSyncFolders(db, ctx, created.mailboxId, [offers, junk], at)).toEqual(["offers", "junk"]);
+      const rows = await listSyncFolders(db, ctx, created.mailboxId, { enabledOnly: false });
+      expect(rows.map((row) => row.key)).toEqual(["inbox", "offers", "junk"]);
+      const audit = await db
+        .selectFrom("audit_log")
+        .select("data")
+        .where("org_id", "=", ctx.orgId)
+        .where("event", "=", "mailbox.sync_folder_added")
+        .execute();
+      expect(audit).toHaveLength(2);
+      expect(await ensureSyncFolders(db, ctx, created.mailboxId, [offers, junk], at)).toEqual([]);
+    } finally {
+      await db.deleteFrom("organizations").where("id", "=", created.orgId).execute();
+      await db.deleteFrom("users").where("id", "=", created.userId).execute();
+    }
+  });
+
   test("inserts the picks in order and audits key and role, never the path", async () => {
     await withRollback(db, async (trx) => {
       const { a } = await createTwoTenants(trx);
