@@ -618,19 +618,22 @@ export async function insertEmail(db: DbOrTrx, ctx: TenantContext, row: NewEmail
 }
 
 // `inbox_uid` (the UID in `source_folder`) changes only when the row sits in its source folder.
+// Only while the row is still in `opts.folder`, the folder of the decision: a move in between keeps its UID.
 export async function updateEmailUid(
   db: DbOrTrx,
   ctx: TenantContext,
   emailId: string,
   uid: number,
-  opts: { isSource?: boolean } = {}
-): Promise<void> {
-  await db
+  opts: { folder: string; isSource?: boolean }
+): Promise<boolean> {
+  const result = await db
     .updateTable("emails")
     .set(opts.isSource === false ? { uid } : { uid, inbox_uid: uid })
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", emailId)
-    .execute();
+    .where("folder", "=", opts.folder)
+    .executeTakeFirst();
+  return result.numUpdatedRows === 1n;
 }
 
 // D8 returned: the user put the mail into synced folder `opts.folder`. Only while the row is system-moved.

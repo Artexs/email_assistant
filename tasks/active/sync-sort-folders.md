@@ -1,4 +1,4 @@
-> **Status 2026-11-09 — in progress — stages 1–8 done (spike; migration; core; folder repository; port folder reads; sync rules; sync loop; cross-folder incoming; returns below the cursor); group review 2–4 done.** Left: the group review 5–8, stages 9–17, checkpoint 2 before the deploy (stage 16).
+> **Status 2026-11-09 — in progress — stages 1–8 done; group reviews 2–4 and 5–8 done.** Left: stages 9–17 (next: stage 9; group review 9–11 after stage 11), checkpoint 2 before the deploy (stage 16).
 
 # Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
@@ -534,3 +534,10 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
   a comment). The below-cursor check runs per source folder S (`listRecentlyMoved` by `source_folder = S`, CAS on the folder row, `markEmailReturned` with
   S); the stage 7b open point is gone. A re-sort by Interia below a folder's cursor counts as a return (D8). Checks: `bun run lint` pass; `bun run typecheck`
   exit 0; `bun run test:unit` 1336 pass; `bun run test:int` 959 pass, 0 fail (reviewer); `bun test mail-sync + mail-repo` 116 pass after the fix.
+- 2026-11-09: Group review stages 5–8 (Opus, high; range `ddbbe9e..269179d`): PASS, 3 minors, 1 question. Fix commit (implementer; fix review PASS):
+  `folderStatus` throws `HardError("IMAP folder gave no highest UID")` when a non-empty folder gives no `*` UID (else an initial run could set cursor 0;
+  no test: real adapter only); test 1b with the shape of the first VPS run (4 folders added, one UID counter, 24 h window, cursors at the highest UIDs,
+  `AI/Spam` never read); the GreenMail test also syncs `Wiadomości-śmieci` (non-ASCII path). Question 4 decided by the main session: `updateEmailUid`
+  gets a required `folder` guard (a committer move between plan and apply gets no stale UID; a write that changes no row is not counted). Accepted as is:
+  the 1b INBOX cursor is above every UID; the GreenMail test name; no sync-level test of the not-counted `update_uid`. Checks: `bun run lint` pass;
+  `bun run typecheck` exit 0; `bun run test:unit` 1336 pass; `bun run test:int` 961 pass, 0 fail.

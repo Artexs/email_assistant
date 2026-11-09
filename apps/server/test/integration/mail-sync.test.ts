@@ -1311,6 +1311,62 @@ describe("syncMailbox: sync folders", () => {
     });
   });
 
+  test("1b. the first VPS run: four default folders are added at once, INBOX stays incremental, AI/Spam is never synced", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await folderSetup(trx);
+      await s.fake.ensureFolder("AI/Spam");
+      // One UID counter: the UIDs interleave across the folders.
+      s.fake.deliver(SOCIAL, seed(1), ago(100));
+      const inboxUid = s.fake.deliver("INBOX", seed(2), ago(50));
+      s.fake.deliver(OFFERS, seed(3), ago(60));
+      s.fake.deliver(BILLS, seed(4), ago(90));
+      s.fake.deliver(OFFERS, seed(5), ago(2));
+      s.fake.deliver("AI/Spam", seed(6), ago(1));
+      const socialTop = s.fake.deliver(SOCIAL, seed(7), ago(48));
+      s.fake.deliver(OFFERS, seed(8), ago(5));
+      const billsTop = s.fake.deliver(BILLS, seed(9), ago(30));
+      const junkTop = s.fake.deliver(JUNK, seed(10), ago(80));
+      const offersTop = s.fake.deliver(OFFERS, seed(11), ago(30));
+      await trx
+        .updateTable("mailbox_folders")
+        .set({ last_uid: offersTop + 100 })
+        .where("mailbox_id", "=", s.mailboxId)
+        .where("key", "=", "inbox")
+        .execute();
+      await insertTestEmail(trx, s.ctx, s.mailboxId, {
+        folder: "INBOX",
+        uid: inboxUid,
+        inbox_uid: inboxUid,
+        subject: "Migrated",
+      });
+
+      await withLogs(async (lines) => {
+        const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
+        expect(result.added).toEqual(["offers", "social", "bills", "junk"]);
+        expect(result.failed).toEqual([]);
+        expect(
+          lines.info.some((line) => line.includes(`sync ${s.mailboxId}: added sync folders offers,social,bills,junk`))
+        ).toBe(true);
+        expect(result.folders.map((item) => item.folder)).toEqual(["inbox", "offers", "social", "bills", "junk"]);
+        expect(of(result, "inbox")?.mode).toBe("incremental");
+        expect(of(result, "offers")?.mode).toBe("initial");
+        expect(of(result, "offers")?.stored).toBe(2);
+        expect(of(result, "social")?.stored).toBe(0);
+        expect(of(result, "bills")?.stored).toBe(0);
+      });
+      expect((await folderRow(trx, s.mailboxId, "offers"))?.lastUid).toBe(offersTop);
+      expect((await folderRow(trx, s.mailboxId, "social"))?.lastUid).toBe(socialTop);
+      expect((await folderRow(trx, s.mailboxId, "bills"))?.lastUid).toBe(billsTop);
+      expect((await folderRow(trx, s.mailboxId, "junk"))?.lastUid).toBe(junkTop);
+      const rows = await storedRows(trx, s.mailboxId);
+      expect(rows.filter((row) => row.folder !== "INBOX").map((row) => row.subject)).toEqual(["Mail 5", "Mail 8"]);
+      expect(rows.some((row) => row.folder === "AI/Spam")).toBe(false);
+      expect(s.fake.folderCalls.some((call) => call.folder === "AI/Spam" && call.method !== "ensureFolder")).toBe(
+        false
+      );
+    });
+  });
+
   test("2. a spam folder without mail in 24 h stores nothing and its cursor is the highest UID", async () => {
     await withRollback(db, async (trx) => {
       const s = await folderSetup(trx);

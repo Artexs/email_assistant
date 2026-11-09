@@ -119,7 +119,7 @@ export class CursorMovedError extends SoftError {
 
 type Write =
   | { kind: "insert"; row: NewEmail }
-  | { kind: "update_uid"; emailId: string; uid: number; isSource: boolean }
+  | { kind: "update_uid"; emailId: string; uid: number; folder: string; isSource: boolean }
   | { kind: "returned"; emailId: string; uid: number; folder: string }
   | { kind: "relocated"; emailId: string; uid: number; from: string; to: string };
 
@@ -210,7 +210,13 @@ async function planChunk(
       );
     } else if (decision.kind === "update_uid") {
       state.matched.set(decision.emailId, folder);
-      writes.push({ kind: "update_uid", emailId: decision.emailId, uid: meta.uid, isSource: decision.isSource });
+      writes.push({
+        kind: "update_uid",
+        emailId: decision.emailId,
+        uid: meta.uid,
+        folder,
+        isSource: decision.isSource,
+      });
     } else if (decision.kind === "cross_copy") {
       countCrossCopy(mailboxId, result, decision.emailId);
     } else if (decision.kind === "check_folder") {
@@ -283,8 +289,13 @@ async function applyChunk(
       if (write.kind === "insert") {
         if (await insertEmail(trx, ctx, write.row)) stored += 1;
       } else if (write.kind === "update_uid") {
-        await updateEmailUid(trx, ctx, write.emailId, write.uid, { isSource: write.isSource });
-        uidUpdated += 1;
+        if (
+          await updateEmailUid(trx, ctx, write.emailId, write.uid, { folder: write.folder, isSource: write.isSource })
+        ) {
+          uidUpdated += 1;
+        } else {
+          log.debug(`sync ${mailboxId}: uid update of mail ${write.emailId} changed no row`);
+        }
       } else if (write.kind === "returned") {
         if (await markEmailReturned(trx, ctx, write.emailId, write.uid, deps.now(), { folder: write.folder })) {
           returned += 1;

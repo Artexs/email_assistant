@@ -67,6 +67,19 @@ test("a mail in a sort folder is stored once with its source folder, also after 
       })
     );
 
+    await appendRaw(
+      imap,
+      "Wiadomości-śmieci",
+      renderSeedMessage({
+        messageId: `<junk-${suffix}@x.test>`,
+        from: "spam@x.test",
+        to: [address],
+        subject: "Junk",
+        date: new Date(),
+        text: "Body",
+      })
+    );
+
     const provider = await openImapProvider(imap);
     try {
       const syncDeps = { db: trx, provider, isOwnActionId: async () => false, now: () => new Date() };
@@ -83,7 +96,11 @@ test("a mail in a sort folder is stored once with its source folder, also after 
       .selectFrom("emails")
       .select(["folder", "source_folder"])
       .where("mailbox_id", "=", mailboxId)
+      .orderBy("source_folder")
       .execute();
-    expect(rows).toEqual([{ folder: "Oferty", source_folder: "Oferty" }]);
+    expect(rows).toEqual([
+      { folder: "Oferty", source_folder: "Oferty" },
+      { folder: "Wiadomości-śmieci", source_folder: "Wiadomości-śmieci" },
+    ]);
   });
 });

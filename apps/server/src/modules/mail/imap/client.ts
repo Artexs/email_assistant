@@ -214,7 +214,8 @@ class ImapMailProvider implements MailProvider {
         let highestUid = 0;
         if (box.exists > 0) {
           const last = await this.client.fetchOne("*", { uid: true }, { uid: true });
-          highestUid = last === false ? 0 : last.uid;
+          if (last === false) throw new HardError("IMAP folder gave no highest UID");
+          highestUid = last.uid;
         }
         // Interia gives a wrong STATUS value: D4 takes the largest of all three sources.
         let statusUidNext: number | undefined;

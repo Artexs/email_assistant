@@ -551,12 +551,24 @@ describe("mail repository: emails", () => {
       await insertEmail(trx, a.ctx, newEmail(a.mailboxId));
       const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
 
-      await updateEmailUid(trx, b.ctx, id, 50);
+      await updateEmailUid(trx, b.ctx, id, 50, { folder: "INBOX" });
       expect(Number((await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1")).uid)).toBe(1);
 
-      await updateEmailUid(trx, a.ctx, id, 50);
+      await updateEmailUid(trx, a.ctx, id, 50, { folder: "INBOX" });
       expect(Number((await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1")).uid)).toBe(50);
       expect(Number(await inboxUidOf(trx, id))).toBe(50);
+    });
+  });
+
+  test("updateEmailUid changes 0 rows when the row left the folder of the decision", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      await insertEmail(trx, a.ctx, newEmail(a.mailboxId, { folder: "AI/Info" }));
+      const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
+
+      expect(await updateEmailUid(trx, a.ctx, id, 50, { folder: "Oferty" })).toBe(false);
+      expect(Number((await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1")).uid)).toBe(1);
+      expect(await updateEmailUid(trx, a.ctx, id, 50, { folder: "AI/Info" })).toBe(true);
     });
   });
 
