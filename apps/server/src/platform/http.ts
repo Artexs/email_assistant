@@ -1,11 +1,19 @@
+import { existsSync, readFileSync } from "node:fs";
 import { BlockList, isIP } from "node:net";
+import { join } from "node:path";
 
 import type { MembershipRole } from "@ea/core";
-import { type Context, Hono } from "hono";
+import { serveStatic } from "@hono/bun";
+import { type Context, Hono, type MiddlewareHandler } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { HTTPException } from "hono/http-exception";
+import { routePath } from "hono/route";
+import { secureHeaders } from "hono/secure-headers";
 import type { z } from "zod";
 
+import { isAllowedAuthPath } from "./auth";
 import type { Db, TenantContext } from "./db";
+import { describeError } from "./errors";
 import { createLog } from "./log";
 
 const log = createLog("http");
@@ -16,7 +24,7 @@ export interface WebSession {
 }
 
 export interface ApiEnv {
-  Variables: { session: WebSession; ctx: TenantContext; role: MembershipRole };
+  Variables: { session: WebSession; ctx: TenantContext; role: MembershipRole; web: WebDeps };
 }
 
 export interface WebDeps {
@@ -34,7 +42,7 @@ export interface WebDeps {
 
 export interface HttpDeps {
   checkDb: () => Promise<boolean>;
-  web?: WebDeps | null;
+  web: WebDeps | null;
 }
 
 const ipFamily = (address: string): "ipv4" | "ipv6" => (isIP(address) === 6 ? "ipv6" : "ipv4");
@@ -159,8 +167,46 @@ export async function parseBody<T>(c: Context, schema: z.ZodType<T>): Promise<T>
   return result.data;
 }
 
-export function createApp(deps: HttpDeps): Hono {
-  const app = new Hono();
+// One getSession call per request: the result is cached in the context; refreshed cookies go to the response (W17).
+export async function readSession(c: Context): Promise<WebSession | null> {
+  const ctx = c as Context<ApiEnv>;
+  const cached = ctx.get("session");
+  if (cached) return cached;
+  const session = await ctx.get("web").auth.getSession(ctx.req.raw.headers);
+  if (!session) return null;
+  ctx.set("session", session);
+  for (const value of session.setCookie ?? []) ctx.header("set-cookie", value, { append: true });
+  return session;
+}
+
+export const requireSession: MiddlewareHandler<ApiEnv> = async (c, next) => {
+  if (!(await readSession(c))) return c.json({ error: "unauthorized" }, 401);
+  await next();
+};
+
+const MISSING_BUILD = "The web build is missing. Run bun run web:build.";
+
+export function createApp(deps: HttpDeps): Hono<ApiEnv> {
+  const { web } = deps;
+  const app = new Hono<ApiEnv>();
+
+  app.use("*", async (c, next) => {
+    const start = performance.now();
+    await next();
+    log.debug(`${c.req.method} ${routePath(c)} ${c.res.status} ${Math.round(performance.now() - start)}ms`);
+  });
+
+  app.use(
+    "*",
+    secureHeaders({
+      contentSecurityPolicy: { frameAncestors: ["'none'"] },
+      xFrameOptions: "DENY",
+      referrerPolicy: "same-origin",
+      strictTransportSecurity:
+        web !== null && web.baseUrl.protocol === "https:" ? "max-age=15552000; includeSubDomains" : false,
+      crossOriginEmbedderPolicy: false,
+    })
+  );
 
   app.get("/health", async (c) => {
     const dbUp = await deps.checkDb();
@@ -168,9 +214,72 @@ export function createApp(deps: HttpDeps): Hono {
   });
 
   app.onError((error, c) => {
-    log.error(error.message);
+    if (error instanceof HTTPException) {
+      return error.res ?? c.json({ error: error.message || "error" }, error.status);
+    }
+    log.error(`${c.req.method} ${routePath(c)} ${describeError(error)}`);
     return c.json({ error: "internal" }, 500);
   });
+
+  if (web === null) return app;
+
+  app.use("*", async (c, next) => {
+    c.set("web", web);
+    await next();
+  });
+
+  app.use("/api/*", bodyLimit({ maxSize: 64 * 1024, onError: (c) => c.json({ error: "too_large" }, 413) }));
+
+  app.use("/api/*", async (c, next) => {
+    if (!originAllowed(c.req.raw, web.trustedOrigins)) return c.json({ error: "bad_origin" }, 403);
+    await next();
+  });
+
+  app.on(["GET", "POST"], "/api/auth/*", async (c) => {
+    const path = new URL(c.req.url).pathname.slice("/api/auth".length);
+    if (!isAllowedAuthPath(c.req.method, path)) return c.json({ error: "not_found" }, 404);
+    const address = clientAddress(web.connInfo(c), c.req.header("x-forwarded-for"), web.trustedProxies);
+    return web.auth.handler(authRequest(c.req.raw, address));
+  });
+
+  const api = new Hono<ApiEnv>();
+  api.use("*", requireSession);
+  // stage 8: requireTenant goes here
+  web.routers?.(api);
+  api.all("*", (c) => c.json({ error: "not_found" }, 404));
+  app.route("/api", api);
+
+  const notFoundPath = join(web.dist, "404.html");
+  if (!existsSync(web.dist) || !existsSync(notFoundPath)) {
+    log.warn("web: dist folder missing, pages are off");
+    app.on(["GET", "HEAD"], "*", (c) => c.text(MISSING_BUILD, 503));
+    return app;
+  }
+  const notFoundHtml = readFileSync(notFoundPath, "utf8");
+
+  app.use("*", async (c, next) => {
+    if (c.req.method !== "GET" && c.req.method !== "HEAD") return c.text("not found", 404);
+    const path = c.req.path;
+    if (PUBLIC_PAGE_PATHS.some((pattern) => pattern.test(path))) return next();
+    if (!(await readSession(c))) return c.redirect(`/login?next=${encodeURIComponent(safeNext(path))}`, 302);
+    if (path === "/") return c.redirect("/onboarding", 302);
+    return next();
+  });
+
+  app.use(
+    "*",
+    serveStatic({
+      root: web.dist,
+      onFound: (filePath, c) => {
+        c.header(
+          "Cache-Control",
+          filePath.includes("/_astro/") ? "public, max-age=31536000, immutable" : "private, no-store"
+        );
+      },
+    })
+  );
+
+  app.notFound((c) => c.html(notFoundHtml, 404));
 
   return app;
 }

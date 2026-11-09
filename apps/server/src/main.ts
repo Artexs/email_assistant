@@ -55,7 +55,7 @@ try {
   process.exit(1);
 }
 
-const app = createApp({ checkDb: () => checkDb(db) });
+const app = createApp({ checkDb: () => checkDb(db), web: null });
 const server = Bun.serve({ port: config.PORT, fetch: app.fetch });
 log.info(`listening on port ${server.port}`);
 
