@@ -704,6 +704,7 @@ describe("createCommitterJob with sends", () => {
 
 describe("the Undo of a move into a sort folder (U11)", () => {
   const OFFERS = "Oferty";
+  const JUNK = "Wiadomości-śmieci";
   const LATER = new Date(NOW.getTime() + 30 * MINUTE);
 
   // A mail whose source folder is `Oferty`, moved into AI/Info, with a `ready` reverse. The mail sits in AI/Info on the fake.
@@ -716,7 +717,16 @@ describe("the Undo of a move into a sort folder (U11)", () => {
       keepUidOnUserMove: true,
     });
     const ctx = { orgId: box.orgId };
-    await insertSyncFolders(trx, ctx, box.mailboxId, [{ key: "offers", path: OFFERS, role: "sort" }], NOW);
+    await insertSyncFolders(
+      trx,
+      ctx,
+      box.mailboxId,
+      [
+        { key: "offers", path: OFFERS, role: "sort" },
+        { key: "junk", path: JUNK, role: "junk" },
+      ],
+      NOW
+    );
     if (!enabled) {
       await trx
         .updateTable("mailbox_folders")
@@ -844,6 +854,58 @@ describe("the Undo of a move into a sort folder (U11)", () => {
       expect(await actionState(trx, reverseId)).toMatchObject({ status: "ready", locked_at: null, attempts: 0 });
       expect(opener.calls).toEqual([]);
       expect(box.fake.calls).toEqual([]);
+    });
+  });
+
+  test("(3) the Undo of a rescue goes back into the junk folder by MOVE, not APPEND", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const box = await addBox(trx);
+      box.fake = createFakeMailProvider({ capabilities: { move: true, uidplus: true } });
+      const ctx = { orgId: box.orgId };
+      await insertSyncFolders(trx, ctx, box.mailboxId, [{ key: "junk", path: JUNK, role: "junk" }], NOW);
+      const message = {
+        messageId: "<u11-rescue@x.test>",
+        from: "sender@x.test",
+        to: [box.address],
+        subject: "s",
+        date: RECEIVED,
+      };
+      const junkUid = box.fake.deliver(JUNK, message, { internalDate: RECEIVED });
+      const inboxUid = box.fake.userMove(JUNK, junkUid, "INBOX");
+      const meta = await box.fake.fetchMetaIn("INBOX", inboxUid);
+      const mail = await insertTriagedWithActions(trx, ctx, box.mailboxId, {
+        category: "info",
+        createdAt: RECEIVED,
+        receivedAt: RECEIVED,
+        from: "sender@x.test",
+        messageId: "<u11-rescue@x.test>",
+        folder: "INBOX",
+        sourceFolder: JUNK,
+        uid: inboxUid,
+        inboxUid,
+        contentHash: contentHash(meta as NonNullable<typeof meta>),
+        movedAt: RECEIVED,
+        actions: [{ type: "move", status: "applied", payload: { folder: "inbox" }, appliedAt: RECEIVED }],
+      });
+      const reverseId = await insertAction(trx, ctx, mail.emailId, {
+        type: "move",
+        status: "ready",
+        payload: { folder: "inbox" },
+        reversesActionId: mail.actionIds[0],
+        createdAt: new Date(RECEIVED.getTime() + MINUTE),
+      });
+      box.fake.calls.length = 0;
+
+      await jobFor(trx, openerFor([box]), { kind: "all", mailboxAddress: box.address }).run();
+
+      expect(box.fake.calls).toContain("moveMessage");
+      expect(box.fake.calls).not.toContain("transferByAppend");
+      expect(await actionState(trx, reverseId)).toMatchObject({
+        status: "applied",
+        provider_result: { by_append: false },
+      });
+      expect((await emailState(trx, mail.emailId)).folder).toBe(JUNK);
     });
   });
 });

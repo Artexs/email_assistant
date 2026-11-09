@@ -5,6 +5,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's "
 ## Stage 15 — Docs, ADR 0014, notes, follow-up tasks
 
 - [ ] **15.1 ADR 0014 and the architecture docs**
+  - Added by the group review 9–11: document in D24 / ADR 0014 the accepted case: after an APPEND, a final failure of the rescue or of an Undo into a `sort` folder leaves the mail in both folders; the sync (marker set) moved the cursor past the new copy; the `action_failed` notice tells the user.
   - Goal: the docs say which folders the sync reads and how (done-when 6). One source per fact: link the task file and the notes, do not copy them.
   - Files: create `docs/decisions/0014-sync-provider-sort-folders.md`; change `docs/decisions/README.md` (row 0014; row 0010 status "accepted, amended by 0014"),
     `docs/decisions/0010-imap-first.md` (only the status line: "accepted, amended by 0014"; the ADR rule allows a status change), `docs/architecture.md`,
