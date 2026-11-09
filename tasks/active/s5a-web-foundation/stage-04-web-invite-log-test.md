@@ -4,7 +4,7 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
 
 ## Stage 4 — `web:invite` CLI (D2, W12) and the auth log test [risky]
 
-- [ ] **4.1 `web:invite` and the log test**
+- [x] **4.1 `web:invite` and the log test**
   - Goal: the owner gets a one-time setup link from the CLI, and a test proves that no token, URL, e-mail address, password, cookie or secret reaches a log line in the whole server-side auth flow.
   - Files: create `apps/server/src/scripts/web-invite.ts`, `apps/server/test/integration/web-auth-logs.test.ts`, `apps/server/test/integration/web-invite-cli.test.ts`; change the root `package.json` (`"web:invite": "bun apps/server/src/scripts/web-invite.ts"`).
   - Interfaces: `bun run web:invite --org-id <uuid> [--user-id <uuid>]`; stdout on success:
