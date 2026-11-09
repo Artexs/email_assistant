@@ -1,0 +1,11 @@
+import { defineConfig } from "astro/config";
+import react from "@astrojs/react";
+import tailwindcss from "@tailwindcss/vite";
+import cspStyleSrc from "./csp-style-src.mjs";
+export default defineConfig({
+  output: "static",
+  integrations: [react(), cspStyleSrc()],
+  vite: { plugins: [tailwindcss()] },
+  build: { inlineStylesheets: "never" },
+  experimental: { csp: { directives: ["default-src 'self'", "img-src 'self' data:", "connect-src 'self'", "font-src 'self'", "form-action 'self'", "base-uri 'self'", "object-src 'none'"] } },
+});

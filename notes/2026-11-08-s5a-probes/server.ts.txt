@@ -1,0 +1,98 @@
+// The HTTP shape of D5 (hardening), D6 (static serving), D1 (the /api/auth allow-list), D3 (page redirect).
+import { serveStatic } from "@hono/bun";
+import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
+import { secureHeaders } from "hono/secure-headers";
+
+import { BASE_URL, createAuth, DEV_ORIGIN } from "./auth";
+
+const { auth } = createAuth();
+const DIST = process.env.PROBE_DIST ?? "/tmp/ea-s5a-probe/dist";
+const PORT = Number(process.env.PROBE_PORT ?? 4181);
+
+const app = new Hono();
+
+app.use(
+  "*",
+  secureHeaders({
+    contentSecurityPolicy: {
+      defaultSrc: ["'self'"],
+      imgSrc: ["'self'", "data:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      frameAncestors: ["'none'"],
+      formAction: ["'self'"],
+      baseUri: ["'self'"],
+    },
+    xFrameOptions: "DENY",
+    strictTransportSecurity: false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
+app.use("/api/*", bodyLimit({ maxSize: 64 * 1024 }));
+
+const trusted = new Set([new URL(BASE_URL).origin, DEV_ORIGIN]);
+app.use("/api/*", async (c, next) => {
+  const method = c.req.method;
+  if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
+    const site = c.req.header("sec-fetch-site");
+    const origin = c.req.header("origin");
+    if (site !== "same-origin" && !(origin !== undefined && trusted.has(origin))) {
+      return c.json({ error: "bad_origin" }, 403);
+    }
+  }
+  await next();
+});
+
+const ALLOW = new Set([
+  "/sign-in/email",
+  "/sign-out",
+  "/get-session",
+  "/reset-password",
+  "/change-password",
+  "/revoke-other-sessions",
+  "/revoke-sessions",
+  "/list-sessions",
+]);
+app.on(["GET", "POST"], "/api/auth/*", async (c) => {
+  const path = new URL(c.req.url).pathname.slice("/api/auth".length);
+  const allowed = ALLOW.has(path) || (c.req.method === "GET" && path.startsWith("/reset-password/"));
+  if (!allowed) return c.json({ error: "not_found" }, 404);
+  return auth.handler(c.req.raw);
+});
+
+app.get("/api/me", async (c) => {
+  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+  if (!session) return c.json({ error: "unauthorized" }, 401);
+  return c.json({ userId: session.user.id, email: session.user.email });
+});
+app.all("/api/*", (c) => c.json({ error: "not_found" }, 404));
+
+const PUBLIC = [/^\/login\/?$/, /^\/setup\/?$/, /^\/404\.html$/, /^\/_astro\//, /^\/favicon\./, /^\/robots\.txt$/, /^\/health$/];
+app.get("/health", (c) => c.json({ status: "ok" }));
+app.use("*", async (c, next) => {
+  if (c.req.method !== "GET" && c.req.method !== "HEAD") return c.text("not found", 404);
+  const path = new URL(c.req.url).pathname;
+  if (PUBLIC.some((re) => re.test(path))) return next();
+  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+  if (!session) return c.redirect(`/login?next=${encodeURIComponent(path)}`, 302);
+  if (path === "/") return c.redirect("/onboarding", 302);
+  await next();
+});
+app.use(
+  "*",
+  serveStatic({
+    root: DIST,
+    onFound: (filePath, c) => {
+      c.header(
+        "Cache-Control",
+        filePath.includes("/_astro/") ? "public, max-age=31536000, immutable" : "private, no-store"
+      );
+    },
+  })
+);
+const notFoundHtml = await Bun.file(`${DIST.startsWith("/") ? DIST : `${process.cwd()}/${DIST}`}/404.html`).text();
+app.notFound((c) => c.html(notFoundHtml, 404));
+
+const server = Bun.serve({ port: PORT, hostname: "127.0.0.1", idleTimeout: 90, fetch: app.fetch });
+console.log(`probe server on ${server.port}, dist=${DIST}, bun ${Bun.version}`);

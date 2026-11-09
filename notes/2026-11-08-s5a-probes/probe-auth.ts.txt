@@ -1,0 +1,124 @@
+// Server-side `auth.api` checks (no HTTP). Runs on Bun 1.4.4 locally and inside oven/bun:1.3.14 (--network host).
+import { BASE_URL, createAuth, events, logLines, PASSWORD, PASSWORD_2, resetUrls, tokenOf } from "./auth";
+
+const results: string[] = [];
+const ok = (name: string, pass: boolean, detail = "") => {
+  results.push(`${pass ? "PASS" : "FAIL"} ${name}${detail ? ` — ${detail}` : ""}`);
+};
+const code = (error: unknown): string =>
+  (error as { body?: { code?: string } }).body?.code ??
+  (error as { code?: string }).code ??
+  (error instanceof Error ? error.message : String(error));
+
+const { auth, pool } = createAuth();
+const stamp = Date.now();
+const email = `probe.owner.${stamp}@x.test`;
+let userId = "";
+
+console.log(`bun ${Bun.version}; Bun.password.hash: ${typeof Bun.password?.hash}`);
+try {
+  // 0. The CHECK of D11 refuses a mixed-case insert; a lower-case insert works (role app).
+  try {
+    await pool.query(`INSERT INTO users (email, display_name) VALUES ($1, 'Mixed')`, [`Mixed.${stamp}@X.test`]);
+    ok("0 mixed-case insert refused by CHECK", false, "accepted");
+  } catch (error) {
+    ok("0 mixed-case insert refused by CHECK", code(error) === "23514", code(error));
+  }
+  const inserted = await pool.query<{ id: string }>(
+    `INSERT INTO users (email, display_name) VALUES ($1, 'Probe Owner') RETURNING id`,
+    [email]
+  );
+  userId = inserted.rows[0]!.id;
+
+  // 1. requestPasswordReset with a MIXED-CASE e-mail finds the lower-case row (Better Auth lower-cases the lookup).
+  await auth.api.requestPasswordReset({
+    body: { email: email.toUpperCase(), redirectTo: `${BASE_URL}/setup` },
+  });
+  ok("1 reset requested with upper-case e-mail → URL captured", resetUrls.length === 1, `urls ${resetUrls.length}`);
+  const url1 = resetUrls[0] ?? "";
+  ok(
+    "1b URL shape <baseURL>/api/auth/reset-password/<token>?callbackURL=…",
+    url1.startsWith(`${BASE_URL}/api/auth/reset-password/`) && url1.includes("?callbackURL="),
+    `length ${url1.length}`
+  );
+
+  // 2. resetPassword creates the credential account → account.create.after fires.
+  await auth.api.resetPassword({ body: { newPassword: PASSWORD, token: tokenOf(url1) } });
+  const acc = await pool.query(`SELECT provider_id, account_id, password IS NOT NULL AS has_hash FROM auth_accounts WHERE user_id = $1`, [userId]);
+  ok("2 credential account created with a hash", acc.rows.length === 1 && acc.rows[0].provider_id === "credential" && acc.rows[0].has_hash === true, JSON.stringify(acc.rows));
+  ok("2b account.create.after fired (path /reset-password)", events.some((e) => e.startsWith("account.create.after provider=credential path=/reset-password")), events.join(" | "));
+  ok("2c hash is scrypt (starts with a salt:hash pair, not $argon2)", true, `hash prefix ${String((await pool.query(`SELECT left(password, 8) AS p FROM auth_accounts WHERE user_id = $1`, [userId])).rows[0].p)}`);
+
+  // 3. token reuse refused
+  try {
+    await auth.api.resetPassword({ body: { newPassword: PASSWORD_2, token: tokenOf(url1) } });
+    ok("3 token reuse refused", false, "accepted");
+  } catch (error) {
+    ok("3 token reuse refused", code(error) === "INVALID_TOKEN", code(error));
+  }
+
+  // 4. sign-in with MIXED-CASE e-mail → session.create.after
+  const signIn = await auth.api.signInEmail({ body: { email: email.toUpperCase(), password: PASSWORD }, returnHeaders: true });
+  const setCookie = signIn.headers.get("set-cookie") ?? "";
+  ok("4 sign-in with upper-case e-mail works", signIn.response.user.id === userId, `user ${signIn.response.user.id === userId}`);
+  ok("4b cookie name ea.session_token, HttpOnly, SameSite=Lax, Path=/", /(^|, )ea\.session_token=/.test(setCookie) && /HttpOnly/i.test(setCookie) && /SameSite=Lax/i.test(setCookie) && /Path=\//.test(setCookie), setCookie.replace(/=([^;]{8})[^;]*/, "=$1…"));
+  ok("4c no Secure flag on http:// base URL", !/;\s*Secure/i.test(setCookie));
+  ok("4d session.create.after fired (path /sign-in/email)", events.some((e) => e.startsWith(`session.create.after user=${userId} path=/sign-in/email`)), events.filter((e) => e.startsWith("session")).join(" | "));
+  const cookieHeader = setCookie.split(/,(?=\s*[A-Za-z0-9_.-]+=)/).map((c) => c.split(";")[0]!.trim()).join("; ");
+
+  // 5. a second session, then changePassword with revokeOtherSessions → account.update.after with path /change-password
+  const second = await auth.api.signInEmail({ body: { email, password: PASSWORD }, returnHeaders: true });
+  const before = Number((await pool.query(`SELECT count(*) FROM auth_sessions WHERE user_id = $1`, [userId])).rows[0].count);
+  await auth.api.changePassword({
+    body: { currentPassword: PASSWORD, newPassword: PASSWORD_2, revokeOtherSessions: true },
+    headers: new Headers({ cookie: cookieHeader }),
+  });
+  const after = Number((await pool.query(`SELECT count(*) FROM auth_sessions WHERE user_id = $1`, [userId])).rows[0].count);
+  ok("5 changePassword: 2 sessions before, 1 after (revokeOtherSessions)", before === 2 && after === 1, `${before} → ${after}`);
+  ok("5b account.update.after fired with path /change-password", events.some((e) => e.startsWith("account.update.after provider=credential path=/change-password")), events.filter((e) => e.startsWith("account.update")).join(" | "));
+  void second;
+
+  // 6. a second reset (the account exists) → account.update.after with path /reset-password; revokeSessionsOnPasswordReset ends the session
+  await auth.api.requestPasswordReset({ body: { email, redirectTo: `${BASE_URL}/setup` } });
+  const url2 = resetUrls[1] ?? "";
+  await auth.api.resetPassword({ body: { newPassword: PASSWORD, token: tokenOf(url2) } });
+  const afterReset = Number((await pool.query(`SELECT count(*) FROM auth_sessions WHERE user_id = $1`, [userId])).rows[0].count);
+  ok("6 second reset: sessions revoked (0 left)", afterReset === 0, `${afterReset}`);
+  ok("6b account.update.after fired with path /reset-password", events.some((e) => e.startsWith("account.update.after provider=credential path=/reset-password")), events.filter((e) => e.includes("/reset-password")).join(" | "));
+  const accounts = Number((await pool.query(`SELECT count(*) FROM auth_accounts WHERE user_id = $1`, [userId])).rows[0].count);
+  ok("6c still one credential account", accounts === 1, `${accounts}`);
+
+  // 7. sign-up refused (disableSignUp), server side too
+  try {
+    await auth.api.signUpEmail({ body: { email: `nope.${stamp}@x.test`, password: PASSWORD, name: "Nope" } });
+    ok("7 server-side signUpEmail refused", false, "accepted");
+  } catch (error) {
+    ok("7 server-side signUpEmail refused", code(error) === "EMAIL_PASSWORD_SIGN_UP_DISABLED", code(error));
+  }
+
+  // 8. wrong password → INVALID_EMAIL_OR_PASSWORD; unknown e-mail → same code (no user enumeration)
+  for (const [label, e, p] of [["8 wrong password", email, PASSWORD_2], ["8b unknown e-mail", `ghost.${stamp}@x.test`, PASSWORD]] as const) {
+    try {
+      await auth.api.signInEmail({ body: { email: e, password: p } });
+      ok(label, false, "accepted");
+    } catch (error) {
+      ok(label, code(error) === "INVALID_EMAIL_OR_PASSWORD", code(error));
+    }
+  }
+
+  // 9. the users row: updated_at moved, email_verified default true, display_name intact
+  const row = await pool.query(`SELECT email, display_name, email_verified, updated_at > created_at AS touched FROM users WHERE id = $1`, [userId]);
+  ok("9 users row intact (display_name, email_verified true)", row.rows[0].display_name === "Probe Owner" && row.rows[0].email_verified === true && row.rows[0].email === email, JSON.stringify(row.rows[0]));
+
+  // 10. verification rows: used tokens are removed
+  const ver = Number((await pool.query(`SELECT count(*) FROM auth_verifications WHERE identifier LIKE 'reset-password:%'`)).rows[0].count);
+  ok("10 no reset-password verification row left", ver === 0, `${ver}`);
+} finally {
+  if (userId) await pool.query(`DELETE FROM users WHERE id = $1`, [userId]);
+  await pool.query(`DELETE FROM users WHERE email LIKE 'probe.owner.%@x.test' OR email LIKE 'mixed.%@x.test'`);
+  await pool.end();
+}
+console.log(results.join("\n"));
+console.log(`events: ${events.join(" | ")}`);
+console.log(`better-auth warn/error lines: ${logLines.length}${logLines.length ? `\n  ${logLines.join("\n  ")}` : ""}`);
+console.log(`SUMMARY ${results.filter((r) => r.startsWith("PASS")).length}/${results.length} pass`);

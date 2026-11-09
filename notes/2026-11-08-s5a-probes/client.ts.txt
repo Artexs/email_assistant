@@ -1,0 +1,115 @@
+// HTTP checks against server.ts. Run: bun server.ts & sleep 1 && bun client.ts
+import { BASE_URL, createAuth, PASSWORD, resetUrls, tokenOf } from "./auth";
+
+const results: string[] = [];
+const ok = (name: string, pass: boolean, detail = "") => {
+  results.push(`${pass ? "PASS" : "FAIL"} ${name}${detail ? ` — ${detail}` : ""}`);
+};
+const get = (path: string, init: RequestInit = {}) => fetch(`${BASE_URL}${path}`, { redirect: "manual", ...init });
+const post = (path: string, body: unknown, headers: Record<string, string> = {}) =>
+  fetch(`${BASE_URL}${path}`, {
+    method: "POST",
+    redirect: "manual",
+    headers: { "content-type": "application/json", ...headers },
+    body: JSON.stringify(body),
+  });
+
+const { auth, pool } = createAuth();
+const stamp = Date.now();
+const email = `probe.http.${stamp}@x.test`;
+let userId = "";
+try {
+  // Setup: a user with a password through the reset flow (server side, no HTTP).
+  const inserted = await pool.query<{ id: string }>(`INSERT INTO users (email, display_name) VALUES ($1, 'Http Owner') RETURNING id`, [email]);
+  userId = inserted.rows[0]!.id;
+  await auth.api.requestPasswordReset({ body: { email, redirectTo: `${BASE_URL}/setup` } });
+  await auth.api.resetPassword({ body: { newPassword: PASSWORD, token: tokenOf(resetUrls[0] ?? "") } });
+
+  // Static, no session
+  let r = await get("/login");
+  ok("S1 GET /login → 200 html, private no-store", r.status === 200 && (r.headers.get("content-type") ?? "").includes("text/html") && r.headers.get("cache-control") === "private, no-store", `${r.status} ${r.headers.get("content-type")} ${r.headers.get("cache-control")}`);
+  ok("S1b header CSP present without script-src, X-Frame-Options DENY", (r.headers.get("content-security-policy") ?? "").includes("frame-ancestors 'none'") && !(r.headers.get("content-security-policy") ?? "").includes("script-src") && r.headers.get("x-frame-options") === "DENY", `${r.headers.get("content-security-policy")} | ${r.headers.get("x-frame-options")} | HSTS=${r.headers.get("strict-transport-security")}`);
+  r = await get("/login/");
+  ok("S2 GET /login/ (trailing slash) → 200", r.status === 200, `${r.status}`);
+  r = await get("/_astro/x.js");
+  ok("S3 GET /_astro/x.js → 200 immutable", r.status === 200 && r.headers.get("cache-control") === "public, max-age=31536000, immutable", `${r.status} ${r.headers.get("cache-control")} ${r.headers.get("content-type")}`);
+  r = await get("/favicon.png");
+  ok("S4 GET /favicon.png → 200 (public)", r.status === 200, `${r.status}`);
+  r = await get("/mailboxes");
+  ok("S5 GET /mailboxes without session → 302 /login?next=%2Fmailboxes", r.status === 302 && r.headers.get("location") === "/login?next=%2Fmailboxes", `${r.status} ${r.headers.get("location")}`);
+  r = await get("/");
+  ok("S6 GET / without session → 302 /login?next=%2F", r.status === 302 && r.headers.get("location") === "/login?next=%2F", `${r.status} ${r.headers.get("location")}`);
+  r = await get("/health");
+  ok("S7 GET /health → 200 public", r.status === 200, `${r.status}`);
+  r = await get("/../etc/passwd");
+  ok("S8 GET /../etc/passwd → not 200", r.status !== 200, `${r.status}`);
+  r = await get("/api/me");
+  ok("A1 GET /api/me without session → 401 JSON", r.status === 401 && (await r.json()).error === "unauthorized", `${r.status}`);
+  r = await get("/api/nope");
+  ok("A2 GET /api/nope → 404 JSON", r.status === 404 && (r.headers.get("content-type") ?? "").includes("json"), `${r.status} ${r.headers.get("content-type")}`);
+
+  // Origin check and the allow-list
+  r = await post("/api/auth/sign-in/email", { email, password: "wrong-password-xx" });
+  ok("O1 POST sign-in without Origin and Sec-Fetch-Site → 403 bad_origin (ours)", r.status === 403 && (await r.json()).error === "bad_origin", `${r.status}`);
+  r = await post("/api/auth/sign-in/email", { email, password: "wrong-password-xx" }, { origin: "https://evil.test" });
+  ok("O2 POST sign-in with foreign Origin → 403 bad_origin (ours)", r.status === 403 && (await r.json()).error === "bad_origin", `${r.status}`);
+  r = await post("/api/auth/sign-in/email", { email, password: "wrong-password-xx" }, { origin: BASE_URL });
+  const o3 = await r.json();
+  ok("O3 POST sign-in with good Origin, wrong password → 401 from Better Auth (no double 403)", r.status === 401 && o3.code === "INVALID_EMAIL_OR_PASSWORD", `${r.status} ${JSON.stringify(o3)}`);
+  r = await post("/api/auth/sign-in/email", { email, password: "wrong-password-xx" }, { "sec-fetch-site": "same-origin" });
+  ok("O4 POST sign-in with Sec-Fetch-Site same-origin and no Origin → passes ours; Better Auth answers", r.status !== 403, `${r.status} ${JSON.stringify(await r.json())}`);
+  r = await post("/api/auth/sign-in/email", { email, password: "wrong-password-xx" }, { origin: "http://localhost:4321" });
+  ok("O5 POST sign-in with the dev Origin localhost:4321 → 401 (trusted by both)", r.status === 401, `${r.status}`);
+  for (const path of ["/api/auth/request-password-reset", "/api/auth/sign-up/email", "/api/auth/update-user", "/api/auth/sign-in/social"]) {
+    r = await post(path, {}, { origin: BASE_URL });
+    ok(`L POST ${path} → 404`, r.status === 404 && (await r.json()).error === "not_found", `${r.status}`);
+  }
+  r = await get("/api/auth/ok");
+  ok("L GET /api/auth/ok → 404", r.status === 404, `${r.status}`);
+  r = await get("/api/auth/list-accounts");
+  ok("L GET /api/auth/list-accounts → 404", r.status === 404, `${r.status}`);
+
+  // Rate limit: 3 per 10 s on /sign-in/email (shared bucket: no client IP header in this probe)
+  const codes: number[] = [];
+  for (let i = 0; i < 2; i++) {
+    r = await post("/api/auth/sign-in/email", { email, password: "wrong-password-xx" }, { origin: BASE_URL });
+    codes.push(r.status);
+  }
+  ok("R1 the 4th and 5th wrong sign-in within 10 s → 429", codes.every((c) => c === 429), `${codes.join(",")} (3 before)`);
+  await Bun.sleep(10_500);
+
+  // Body limit
+  r = await post("/api/auth/sign-in/email", { email, password: "x".repeat(70 * 1024) }, { origin: BASE_URL });
+  ok("B1 70 KB body → 413", r.status === 413, `${r.status}`);
+
+  // Sign in over HTTP, then the pages with a session
+  r = await post("/api/auth/sign-in/email", { email: email.toUpperCase(), password: PASSWORD }, { origin: BASE_URL });
+  const setCookie = r.headers.get("set-cookie") ?? "";
+  ok("H1 HTTP sign-in (upper-case e-mail) → 200 with ea.session_token cookie", r.status === 200 && setCookie.includes("ea.session_token="), `${r.status} ${setCookie.replace(/=([^;]{8})[^;]*/, "=$1…")}`);
+  const cookie = setCookie.split(";")[0] ?? "";
+  r = await get("/api/me", { headers: { cookie } });
+  ok("H2 GET /api/me with cookie → 200", r.status === 200 && (await r.json()).userId === userId, `${r.status}`);
+  r = await get("/", { headers: { cookie } });
+  ok("H3 GET / with session → 302 /onboarding", r.status === 302 && r.headers.get("location") === "/onboarding", `${r.status} ${r.headers.get("location")}`);
+  r = await get("/mailboxes", { headers: { cookie } });
+  ok("H4 GET /mailboxes with session → 200 mailboxes/index.html", r.status === 200 && (await r.text()).includes("mailboxes page"), `${r.status}`);
+  r = await get("/mailboxes/", { headers: { cookie } });
+  ok("H5 GET /mailboxes/ → 200", r.status === 200, `${r.status}`);
+  r = await get("/nope", { headers: { cookie } });
+  ok("H6 GET /nope with session → 404 with 404.html body", r.status === 404 && (await r.text()).includes("not found page"), `${r.status}`);
+  r = await get("/mailboxes", { method: "HEAD", headers: { cookie } });
+  ok("H7 HEAD /mailboxes → 200", r.status === 200, `${r.status}`);
+  r = await fetch(`${BASE_URL}/mailboxes`, { method: "POST", headers: { cookie } });
+  ok("H8 POST /mailboxes (a page path) → 404", r.status === 404, `${r.status}`);
+  r = await post("/api/auth/sign-out", {}, { origin: BASE_URL, cookie });
+  ok("H9 POST sign-out → 200", r.status === 200, `${r.status}`);
+  r = await get("/api/me", { headers: { cookie } });
+  ok("H10 GET /api/me after sign-out → 401", r.status === 401, `${r.status}`);
+  r = await get("/api/auth/get-session", { headers: { cookie } });
+  ok("H11 GET /api/auth/get-session after sign-out → 200 null body", r.status === 200 && (await r.text()).trim() === "null", `${r.status}`);
+} finally {
+  if (userId) await pool.query(`DELETE FROM users WHERE id = $1`, [userId]);
+  await pool.end();
+}
+console.log(results.join("\n"));
+console.log(`SUMMARY ${results.filter((r) => r.startsWith("PASS")).length}/${results.length} pass`);

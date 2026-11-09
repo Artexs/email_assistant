@@ -1,0 +1,41 @@
+// Astro integration (probe): after the build, replace the hashed `style-src` of every page's CSP meta with
+// `style-src 'self' 'unsafe-inline'`. Radix overlays inject a scroll-lock <style> whose text varies with the
+// scrollbar width, so no fixed hash exists; a hash in the list makes browsers ignore 'unsafe-inline'. Scripts stay hashed.
+import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const STYLE_SRC = /style-src [^;]*;/;
+const REPLACEMENT = "style-src 'self' 'unsafe-inline';";
+
+export function relaxStyleSrc(html) {
+  return html.replace(STYLE_SRC, REPLACEMENT);
+}
+
+function* htmlFiles(dir) {
+  for (const entry of readdirSync(dir)) {
+    const path = join(dir, entry);
+    if (statSync(path).isDirectory()) yield* htmlFiles(path);
+    else if (entry.endsWith(".html")) yield path;
+  }
+}
+
+export default function cspStyleSrc() {
+  return {
+    name: "ea-csp-style-src",
+    hooks: {
+      "astro:build:done": ({ dir, logger }) => {
+        let changed = 0;
+        for (const file of htmlFiles(fileURLToPath(dir))) {
+          const html = readFileSync(file, "utf8");
+          const next = relaxStyleSrc(html);
+          if (next !== html) {
+            writeFileSync(file, next);
+            changed += 1;
+          }
+        }
+        logger.info(`style-src relaxed in ${changed} page(s)`);
+      },
+    },
+  };
+}

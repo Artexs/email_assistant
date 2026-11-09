@@ -1,0 +1,9 @@
+---
+import Shell from "../islands/Shell.tsx";
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Shell probe">
+  <noscript>This app needs JavaScript. Turn it on and reload the page.</noscript>
+  <Shell client:load />
+</Layout>

@@ -1,0 +1,33 @@
+// Serves an Astro dist folder with the D5 header CSP (no script-src, no style-src) for the Chromium check.
+import { statSync } from "node:fs";
+
+const DIST = process.env.PROBE_DIST ?? "/tmp/ea-s5-review/web/dist";
+const CSP = "frame-ancestors 'none'"; const OLD_CSP =
+  "default-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'";
+
+function fileAt(path: string): string | null {
+  try {
+    return statSync(path).isFile() ? path : null;
+  } catch {
+    return null;
+  }
+}
+
+const server = Bun.serve({
+  port: Number(process.env.PROBE_PORT ?? 4182),
+  hostname: "127.0.0.1",
+  fetch(req) {
+    const pathname = new URL(req.url).pathname;
+    const candidates = [pathname, `${pathname.replace(/\/$/, "")}/index.html`, `${pathname}.html`];
+    for (const candidate of candidates) {
+      const found = fileAt(`${DIST}${candidate}`);
+      if (found) {
+        return new Response(Bun.file(found), {
+          headers: { "content-security-policy": CSP, "x-frame-options": "DENY", "cache-control": "no-store" },
+        });
+      }
+    }
+    return new Response("not found", { status: 404 });
+  },
+});
+console.log(`dist server on ${server.port} for ${DIST}`);

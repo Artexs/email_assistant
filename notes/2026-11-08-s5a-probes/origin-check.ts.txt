@@ -1,0 +1,15 @@
+import { chromium } from "@playwright/test";
+const browser = await chromium.launch({ executablePath: "/usr/bin/chromium" });
+const page = await browser.newPage();
+await page.goto("http://127.0.0.1:4183/shell", { waitUntil: "networkidle" });
+const fetchJson = await page.evaluate(async () => {
+  const r = await fetch("/api/echo", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+  return r.json();
+});
+const fetchForm = await page.evaluate(async () => {
+  const r = await fetch("/api/echo", { method: "POST", body: new URLSearchParams({ a: "1" }) });
+  return r.json();
+});
+console.log(`fetch JSON POST: ${JSON.stringify(fetchJson)}`);
+console.log(`fetch form POST: ${JSON.stringify(fetchForm)}`);
+await browser.close();
