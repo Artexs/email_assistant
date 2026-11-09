@@ -1,4 +1,4 @@
-> **Status 2026-11-09 — in progress — stages 1–14 done (stage 14: dev run passed, review pending); group reviews 2–4, 5–8 and 9–11 done.** Left: stages 15–17; group review 12–15 + branch (Opus, high) before stage 16; checkpoint 2 (the user's "deploy") before stage 16.
+> **Status 2026-11-09 — in progress — stages 1–15 done; group reviews 2–4, 5–8 and 9–11 done.** Left: group review 12–15 + branch (Opus, high); checkpoint 2 (the user's "deploy") before stage 16; stages 16–17; checkpoint 3.
 
 # Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
@@ -419,7 +419,7 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - [x] [Stage 12](sync-sort-folders/stage-12-digest-notice-texts.md) [written] — Digest and notice texts with the folder
 - [x] [Stage 13](sync-sort-folders/stage-13-tools.md) [written] — Tools: `mailbox:settings sync-folder`, `mailbox:audit` per folder, `mailbox:rescan`, `mailbox:seed --folder`
 - [x] [Stage 14](sync-sort-folders/stage-14-dev-run-greenmail.md) [written] — Dev run on GreenMail with the fake Telegram [risky] — main session
-- [ ] [Stage 15](sync-sort-folders/stage-15-docs-adr-followups.md) [written] — Docs, ADR 0014, notes, follow-up tasks — group review 12–15 + branch
+- [x] [Stage 15](sync-sort-folders/stage-15-docs-adr-followups.md) [written] — Docs, ADR 0014, notes, follow-up tasks — group review 12–15 + branch
 - [ ] [Stage 16](sync-sort-folders/stage-16-merge-and-vps-deploy.md) [written] — Merge into `master` and VPS deploy [risky] — main session; checkpoint 2 before it
 - [ ] [Stage 17](sync-sort-folders/stage-17-live-checks-and-close.md) [written] — Live checks, unblock `test-mail-traffic`, close [risky] — main session; checkpoint 3
 
@@ -578,3 +578,4 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - 2026-11-09: Stage 12 built (implementer, 12.1 + 12.2) and reviewed (Sonnet, high): PASS, 3 minors fixed (`stayFolder` cut to 30; digest + audit assertions for the junk-folder urgent mail; `detectUrgent` arrays renamed). Checks: `bun run lint`, `bun run typecheck` pass; `bun run test:unit` 1354 pass; `bun run test:int` 999 pass, 0 fail.
 - 2026-11-09: Stage 13 built (implementer, 13.1–13.3) and reviewed (Sonnet, high): PASS, 2 minors fixed (`auditExitCode` gives 1 for null INBOX counts; a CLI spawn test for `sync-folder`). `AuditCounts.inbox` is now `mail`; `compareInboxWithDb` stays as an alias. For stage 15: `docs/code-patterns.md` test-tool line names `--folder`; `docs/known-alerts.md` ~354–359 (the audit alert text lacks ` cross=<n>`, names `listInboxEmailKeys` → `listFolderEmailKeys`). Checks: `bun run lint`, `bun run typecheck` pass; `bun run test:unit` 1361 pass; `bun run test:int` 1010 pass, 0 fail.
 - 2026-11-09: Stage 14 run by the main session on GreenMail with `fake-tg` and the real classifier: steps 2–12 passed, no bug (§ Results "Stage 14"). Classifier fact: the `info` cases were classified `spam`.
+- 2026-11-09: Stage 15 built (implementer, 15.1 + 15.2) and reviewed (Sonnet, high): round 1 FAIL (2 major doc claims: audit compares by `folder`; returned-below-cursor looks up only the source folder S; 3 minors), fixed in round 2 (main session checked the fixes; the group review 12–15 reads the docs again). `docs/diagrams/code-map.html` rebuilt with `bun ~/.pi/agent/skills/explainer/scripts/explainer.ts build docs/diagrams/code-map.md -o docs/diagrams/code-map.html` (exit 1 on a label-spacing warning; file written). Prettier on `docs/modules.md`, `docs/roadmap.md`, `docs/decisions/README.md` re-padded tables (real change small: `git diff -w`).

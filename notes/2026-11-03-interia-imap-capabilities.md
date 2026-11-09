@@ -105,3 +105,13 @@ Script `/tmp/ea-ssf-spike/spike.ts` (not in git), run `249f9b84` on the VPS (`fa
 - **Step D2, run alone after the user's yes (17:09–17:20Z):** the smoke mail `piotr-re-termin` (Interia sorted it into `Oferty` on arrival, UID 38961) → COPY into `AI/Notifications` stays (UID 38978, 5 min). COPY back into `Oferty` (COPYUID 38979) → **Interia sorted it into INBOX with the same UID 38979** (5 min). SEARCH SINCE in INBOX missed it again; a FETCH by UID found it. The old VPS sync stored it at 17:15:00Z (row `3cf26e47-…`, triage `needs_reply`, no action, no outbox row). So a COPY into `Oferty` is re-sorted also for a mail that Interia itself put into `Oferty`.
 - **APPEND back into `Oferty` stays (17:20–17:25Z):** the raw source of INBOX UID 38979 (4447 bytes, `\Seen`) APPENDed into `Oferty` with the same INTERNALDATE (APPENDUID 38980), then UID EXPUNGE in INBOX. After 5 min: only in `Oferty`, same size and INTERNALDATE; SEARCH SINCE finds it. The row `3cf26e47-…` now points at a gone INBOX UID (harmless: an action on it ends `mail_not_found`).
 - Rule that follows: at Interia a COPY into INBOX or into a tab folder (`Oferty`, probably also `Społeczności`, `Rachunki`) runs the sorter again; an APPEND does not. A COPY into `AI/*` and into `Wiadomości-śmieci` stays.
+
+## Folder facts for the sort-folder sync (sync-sort-folders, read-only VPS count 2026-11-08)
+
+Source of the full text: `tasks/active/sync-sort-folders.md`, "Facts checked" (F1–F4, F12). Short form for later agents:
+
+- **F1 Folders.** Delimiter `/`. `Wiadomości-śmieci` has the LIST attribute `\Spam`, but imapflow gives it no special use. `AI/Spam` gets `\Junk` (by name). `Oferty` and `Społeczności` are `\Noinferiors`.
+- **F2 UIDVALIDITY and UIDNEXT.** UIDVALIDITY is 1 in all 12 folders. SELECT and EXAMINE give no UIDNEXT. STATUS gives `UIDNEXT 1` for every folder, which is wrong. The sync uses the highest UID + 1 (D4).
+- **F3 One UID counter.** All folders of the mailbox share one UID counter. A webmail move keeps the UID.
+- **F4 Volumes (8 days).** INBOX 83, `Oferty` 56 (about 7 a day), `Społeczności` 0, `Rachunki` 0, `Wiadomości-śmieci` 3.
+- **F12 Sorter on COPY.** See "Sort-folder probe" above: a COPY into INBOX or `Oferty` is sorted again, an APPEND is not.

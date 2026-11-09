@@ -48,3 +48,8 @@ Urgent notice (one only, for the `Oferty` mail; none for the spam folder `urgent
 `🔴 Urgent mail · 📁 Oferty · 🧪 test`
 
 The sender and subject text of the synthetic mail is replaced by `<sender>` and `<subject>`.
+
+## Open points of the stage 14 dev run
+
+- The dev run did not exercise the `info` path: the classifier gave `spam` for the synthetic `info` mail. So the run did not show an `AI/Info` move from a synced folder. Stage 17 (live checks) must cover `info`.
+- The `uid updated` counter in the sync log (`uidUpdated`, `apps/server/src/modules/mail/sync.ts`) likely counts updates that write the same value (the row already had that UID and folder). Do not read it as "UIDs changed". Stage 17 compares the first-sync counts: check what the counter counts before it compares.

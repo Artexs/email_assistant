@@ -4,7 +4,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's "
 
 ## Stage 15 — Docs, ADR 0014, notes, follow-up tasks
 
-- [ ] **15.1 ADR 0014 and the architecture docs**
+- [x] **15.1 ADR 0014 and the architecture docs**
   - Added by the group review 9–11: document in D24 / ADR 0014 the accepted case: after an APPEND, a final failure of the rescue or of an Undo into a `sort` folder leaves the mail in both folders; the sync (marker set) moved the cursor past the new copy; the `action_failed` notice tells the user.
   - Goal: the docs say which folders the sync reads and how (done-when 6). One source per fact: link the task file and the notes, do not copy them.
   - Files: create `docs/decisions/0014-sync-provider-sort-folders.md`; change `docs/decisions/README.md` (row 0014; row 0010 status "accepted, amended by 0014"),
@@ -32,7 +32,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's "
   - Done when: the check passes; the reviewer finds no rule in the docs that the code does not follow.
   - Out of scope: the web panel docs (S5).
 
-- [ ] **15.2 Notes, known alerts, follow-up tasks**
+- [x] **15.2 Notes, known alerts, follow-up tasks**
   - Added by stage 13: `docs/known-alerts.md` ~354–359 (audit alert: add ` cross=<n>`, `listInboxEmailKeys` is now `listFolderEmailKeys`); `docs/code-patterns.md` test-tool line names `mailbox:seed --folder`.
   - Goal: the facts for later agents and the ideas that this task did not build.
   - Files: change `notes/2026-11-03-interia-imap-capabilities.md` (F1–F3 and the stage 1 result, if stage 1 did not write them all), `notes/2026-11-07-agentmail-test-mail.md`

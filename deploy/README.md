@@ -118,7 +118,18 @@ The go/no-go gate: on 2026-11-06 every category was no-go (`tasks/done/s1b-shado
 - An Undo tap under `ACTIONS_SCOPE=off`, or for a paused mailbox, answers "not possible now" and changes nothing.
 - A move that a committer run holds at the second of the tap still finishes. The line then shows ↩️ again. Tap it again.
 - A second move back of the same mail at Interia is not seen. A mail that the user moves back after 7 days gives no feedback.
-- `mailbox:audit` counts only rows with `folder = 'INBOX'`. Mail that the system moved is not counted. After S3, a user move out of INBOX shows as a duplicate.
+- `mailbox:audit` compares INBOX and each enabled synced folder with the rows whose `folder` is that folder (ADR 0014). It prints one line per folder. `cross=<n>` counts a mail that sits in INBOX and in a synced folder: it is no problem. Mail that the system moved is not counted. A user move out of a folder shows as a duplicate.
+
+### Synced folders (ADR 0014)
+
+The sync reads INBOX and, at Interia, `Oferty`, `Społeczności`, `Rachunki` and the spam folder `Wiadomości-śmieci`. The server inserts a row for each of them in `mailbox_folders` when the server lists the exact name.
+
+- Show the folders: `$C run --rm server bun run mailbox:settings show --org-id <uuid> --mailbox-id <uuid>`.
+- Off switch per folder: `$C run --rm server bun run mailbox:settings sync-folder --org-id <uuid> --mailbox-id <uuid> --key offers|social|bills|junk --value on|off`. INBOX has no switch. `--value on` again clears the cursor: the next sync takes the last 24 hours of that folder.
+- `mailbox:rescan` forces a rescan of every synced folder. `mailbox:backfill` reads INBOX only.
+- A spam folder mail that the classifier finds valid gets a move into INBOX under the normal move gate (the category `auto` ON). With `auto` OFF, the digest says "would move to INBOX".
+- A final failure of a move by APPEND (the rescue, or an Undo into `Oferty`, `Społeczności`, `Rachunki`) can leave the mail in both folders. The `action_failed` notice tells you. Delete the extra copy by hand.
+- Roll back the code, not the migration: the migration `sync_folders` only adds (a table, `emails.source_folder`, an index). A `db:rollback` after live use loses the cursors of the non-INBOX folders and the source folder of non-INBOX mail. The INBOX cursor stays in `mailboxes` (dual write), so the old code runs on the new schema. After a code rollback, a `ready` move into INBOX ends as `bad_payload`, and an Undo of `Oferty` mail goes to INBOX (ADR 0014, D24 (d)).
 
 ### Notice `action_failed`
 

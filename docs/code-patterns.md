@@ -36,7 +36,7 @@
 ## Side effects
 
 - Only `actions.committer` changes a mailbox or sends mail. Planners and the policy are pure functions in `packages/core`.
-  The exceptions are the test tools that refuse every address except `TEST_MAILBOX_ADDRESS` (`mailbox:seed`, `testmail-target deliver`, `mailbox:probe-move`, `mailbox:probe-send`).
+  The exceptions are the test tools that refuse every address except `TEST_MAILBOX_ADDRESS` (`mailbox:seed` with `--folder <path>` to APPEND into another folder, `testmail-target deliver`, `mailbox:probe-move`, `mailbox:probe-send`).
   The committer finds its mailboxes with `listSyncTargets`; it adds no new entry point without a `TenantContext`.
 - A mail is located by identity (`locateMessage`), never by `SEARCH HEADER`: Interia finds nothing by `Message-ID`.
 - Non-idempotent provider calls (`create_draft`, `send`): commit status `applying` first; add the header `X-EA-Action-Id`.
