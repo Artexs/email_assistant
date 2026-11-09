@@ -91,6 +91,17 @@ describe("describeActions for drafts and sends", () => {
     expect(describeActions([send(status)], names)).toBe(expected);
   });
 
+  test("the stay folder is named when no action applies", () => {
+    expect(describeActions([], new Map(), { stayFolder: "Wiadomości-śmieci" })).toBe("stays in Wiadomości-śmieci");
+    expect(describeActions([])).toBe("stays in INBOX");
+  });
+
+  test("a long stay folder name is cut", () => {
+    const text = describeActions([], new Map(), { stayFolder: "F".repeat(45) });
+    expect(text.startsWith("stays in FFFF")).toBe(true);
+    expect(text.length).toBeLessThan("stays in ".length + 45);
+  });
+
   test("a draft and a send join with a semicolon", () => {
     expect(describeActions([draft("ready"), send("awaiting_approval")], names)).toBe(
       "will draft a delegation to Anna Nowak; waits for your approval"

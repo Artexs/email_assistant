@@ -900,6 +900,8 @@ export interface FailedAction {
   mailbox_id: string;
   from_address: string | null;
   message_id_header: string | null;
+  folder: string;
+  source_folder: string;
 }
 
 // No time filter (M11): the notice job marks every row it lists. An original `mail_not_found` row stays quiet;
@@ -927,6 +929,8 @@ export async function listFailedUnnotified(
       "emails.mailbox_id",
       "emails.from_address",
       "emails.message_id_header",
+      "emails.folder",
+      "emails.source_folder",
     ])
     .where("actions.org_id", "=", ctx.orgId)
     .where("emails.org_id", "=", ctx.orgId)
@@ -958,6 +962,8 @@ export async function listFailedUnnotified(
     mailbox_id: row.mailbox_id,
     from_address: row.from_address,
     message_id_header: row.message_id_header,
+    folder: row.folder,
+    source_folder: row.source_folder,
   }));
 }
 

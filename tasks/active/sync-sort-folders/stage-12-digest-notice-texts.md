@@ -4,7 +4,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's U
 
 ## Stage 12 — Digest and notice texts with the folder
 
-- [ ] **12.1 Core texts: folder tag, "stays in <folder>", failed-move texts**
+- [x] **12.1 Core texts: folder tag, "stays in <folder>", failed-move texts**
   - Goal: the pure render functions show where a mail is (D15).
   - Files: change `packages/core/src/digest/digest.ts`, `packages/core/src/digest/digest.test.ts`, `packages/core/src/digest/would-do.ts`,
     `packages/core/src/digest/would-do.test.ts`, `packages/core/src/digest/notices.ts`, `packages/core/src/digest/notices.test.ts`.
@@ -48,7 +48,7 @@ Part of [`../sync-sort-folders.md`](../sync-sort-folders.md). Read that file's U
   - Done when: tests 1–7 pass.
   - Out of scope: the server queries (12.2).
 
-- [ ] **12.2 Server: the folders reach the texts**
+- [x] **12.2 Server: the folders reach the texts**
   - Goal: the digest, the urgent notice and the failed-action notice get the folders from the DB; no urgent notice for spam folder mail (D23).
   - Files: change `apps/server/src/modules/triage/repo.ts` (`listTriagedBetween` selects `e.folder`, `e.source_folder`; `TriagedItemRow`),
     `apps/server/src/modules/reports/digest.ts`, `apps/server/src/modules/channels/notices.ts`, `apps/server/src/modules/actions/repo.ts`

@@ -1,4 +1,4 @@
-> **Status 2026-11-09 — in progress — stages 1–11 done; group reviews 2–4, 5–8 and 9–11 done.** Left: stages 12–17; group review 12–15 + branch (Opus, high) before stage 16; checkpoint 2 (the user's "deploy") before stage 16.
+> **Status 2026-11-09 — in progress — stages 1–12 done; group reviews 2–4, 5–8 and 9–11 done.** Left: stages 13–17; group review 12–15 + branch (Opus, high) before stage 16; checkpoint 2 (the user's "deploy") before stage 16.
 
 # Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
@@ -416,7 +416,7 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - [x] [Stage 9](sync-sort-folders/stage-09-transfer-by-append.md) [written] — Adapter: move by APPEND (`transferByAppend`) [risky]
 - [x] [Stage 10](sync-sort-folders/stage-10-actions-source-folder.md) [written] — Actions: Undo to the source folder, the rescue move, the move marker [risky]
 - [x] [Stage 11](sync-sort-folders/stage-11-triage-source-folder.md) [written] — Triage: plan by the source folder [risky] — group review 9–11
-- [ ] [Stage 12](sync-sort-folders/stage-12-digest-notice-texts.md) [written] — Digest and notice texts with the folder
+- [x] [Stage 12](sync-sort-folders/stage-12-digest-notice-texts.md) [written] — Digest and notice texts with the folder
 - [ ] [Stage 13](sync-sort-folders/stage-13-tools.md) [written] — Tools: `mailbox:settings sync-folder`, `mailbox:audit` per folder, `mailbox:rescan`, `mailbox:seed --folder`
 - [ ] [Stage 14](sync-sort-folders/stage-14-dev-run-greenmail.md) [written] — Dev run on GreenMail with the fake Telegram [risky] — main session
 - [ ] [Stage 15](sync-sort-folders/stage-15-docs-adr-followups.md) [written] — Docs, ADR 0014, notes, follow-up tasks — group review 12–15 + branch
@@ -552,3 +552,4 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - 2026-11-09: Stage 10 finished in a new session (implementer: tests 1–13, 2b, 2c) and reviewed (Opus, high): PASS, 3 minors fixed (test 13 cases for AI/Info and a rescued INBOX mail; `moveTargetSchema` rename; no-op line removed). Question m4 (the source folder of an Undo was deleted or renamed → TRYCREATE → the action goes through `mapProviderError` and fails, the mail stays where it is): accepted; the digest shows the failure, no fallback. Checks: `bun run lint`, `bun run typecheck` pass; `bun run test:unit` 1348 pass; `bun run test:int` 984 pass, 0 fail.
 - 2026-11-09: Stage 11 built (implementer) and reviewed (Opus, high): PASS, 2 test minors fixed (dead `summary` field, `mailbox_id` filter in test 10). Test 4 sets `auto urgent` in the policy snapshot (`saveTriage` reads only the snapshot); accepted. Added a `createTriageJob` test (the job fills `junkFolder`). Checks: `bun run lint`, `bun run typecheck` pass; `bun run test:unit` 1348 pass; `bun run test:int` 995 pass, 0 fail.
 - 2026-11-09: Group review of stages 9–11 (Opus, high; `d3f3109..0366cae`): PASS. Minor fixed: a committer test that the `junk` row is not in `appendFolders` (the Undo of a rescue uses MOVE, `by_append` false). Question: after an APPEND, a final failure of the rescue or of an Undo into a `sort` folder leaves the mail in both folders, and the sync (marker set) moved the cursor past the new copy. Decision: accept (same as the S3 COPY path; the `action_failed` notice tells the user); stage 15 adds it to D24 / ADR 0014. Note: before each stage commit check `git diff --staged --stat` for task files that lost content (`bf2b5ca` emptied a stage file; `0366cae` restored it). `bun run test:int` 996 pass.
+- 2026-11-09: Stage 12 built (implementer, 12.1 + 12.2) and reviewed (Sonnet, high): PASS, 3 minors fixed (`stayFolder` cut to 30; digest + audit assertions for the junk-folder urgent mail; `detectUrgent` arrays renamed). Checks: `bun run lint`, `bun run typecheck` pass; `bun run test:unit` 1354 pass; `bun run test:int` 999 pass, 0 fail.

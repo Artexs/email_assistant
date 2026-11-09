@@ -1,5 +1,7 @@
 import { type ActionType, MOVE_TARGET_NAMES, type MoveTarget } from "../triage/planners";
 
+import { cutText } from "./text";
+
 export interface ActionView {
   id: string;
   type: ActionType;
@@ -69,7 +71,8 @@ function phrase(action: ActionView, names: ReadonlyMap<string, string>): string 
 // The "what the system does or would do" line of a digest or notice. `names` maps delegate ids to names.
 export function describeActions(
   actions: readonly ActionView[],
-  names: ReadonlyMap<string, string> = new Map()
+  names: ReadonlyMap<string, string> = new Map(),
+  opts: { stayFolder?: string } = {}
 ): string {
   const groups = new Map<string, string[]>();
   const sends: string[] = [];
@@ -87,5 +90,7 @@ export function describeActions(
   }
   const all = [...[...groups].map(([tense, phrases]) => `${tense} ${phrases.join(", ")}`), ...sends];
   const parts = all.filter((part, index) => part !== all[index - 1]); // the same phrase never twice in a row
-  return parts.length === 0 ? "stays in INBOX" : parts.join("; ");
+  return parts.length === 0
+    ? `stays in ${opts.stayFolder === undefined ? "INBOX" : cutText(opts.stayFolder, 30)}`
+    : parts.join("; ");
 }

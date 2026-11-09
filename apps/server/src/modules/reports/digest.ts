@@ -22,6 +22,8 @@ import { countTriagedBetween, listTriagedBetween } from "../triage";
 
 import { lastSentDigestEnd } from "./repo";
 
+const INBOX = "INBOX";
+
 export const DIGEST_ITEM_LIMIT = 100;
 export const DIGEST_MAX_PERIOD_MS = 7 * 24 * 3_600_000;
 export const FIRST_DIGEST_LOOKBACK_MS = 24 * 3_600_000;
@@ -105,6 +107,7 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
     subject: row.subject,
     receivedAt: row.received_at,
     synthetic: isSyntheticMessageId(row.message_id_header),
+    folderTag: row.source_folder === INBOX ? null : row.source_folder,
     aiText: aiTextFor({
       category: row.category,
       reasonCode: row.reason_code,
@@ -114,7 +117,7 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
       confidence: row.confidence,
       task: tasks.get(row.email_id) ?? null,
     }),
-    wouldDo: describeActions(actions.get(row.email_id) ?? [], names),
+    wouldDo: describeActions(actions.get(row.email_id) ?? [], names, { stayFolder: row.folder }),
     undoable: isUndoable(actions.get(row.email_id) ?? [], request.now),
   }));
 
