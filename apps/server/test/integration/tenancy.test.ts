@@ -4,7 +4,12 @@ import { resolve } from "node:path";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
-import { createOrganizationWithOwner, getOrganization, listMemberships } from "../../src/modules/tenancy";
+import {
+  createOrganizationWithOwner,
+  getOrganization,
+  listMemberships,
+  listMembershipsOfUser,
+} from "../../src/modules/tenancy";
 import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
 import type { DB } from "../../src/platform/db";
 
@@ -88,6 +93,24 @@ describe("tenancy repository filters by org_id", () => {
   });
 });
 
+describe("listMembershipsOfUser", () => {
+  test("lists the organizations of a user ordered by created_at; an unknown user has none", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoOrgs(trx);
+      await insertMembership(trx, { orgId: b.orgId }, { userId: a.userId, role: "assistant" });
+      await sql`update memberships set created_at = now() + interval '1 hour' where org_id = ${b.orgId} and user_id = ${a.userId}`.execute(
+        trx
+      );
+      const rows = await listMembershipsOfUser(trx, a.userId);
+      expect(rows.map((row) => [row.org_id, row.role])).toEqual([
+        [a.orgId, "owner"],
+        [b.orgId, "assistant"],
+      ]);
+      expect(await listMembershipsOfUser(trx, randomUUID())).toEqual([]);
+    });
+  });
+});
+
 describe("createOrganizationWithOwner", () => {
   test("a duplicate e-mail rejects and leaves no new organization", async () => {
     await withRollback(db, async (trx) => {
@@ -104,6 +127,33 @@ describe("createOrganizationWithOwner", () => {
       await sql`rollback to savepoint duplicate_email`.execute(trx);
       const orgsC = await trx.selectFrom("organizations").select("id").where("name", "=", "Org C").execute();
       expect(orgsC).toHaveLength(0);
+    });
+  });
+
+  test("the e-mail is stored in lower case", async () => {
+    await withRollback(db, async (trx) => {
+      const { userId } = await createOrganizationWithOwner(trx, {
+        orgName: "Org M",
+        timezone: "Europe/Warsaw",
+        email: "Owner.Mixed@X.test",
+        displayName: "Owner M",
+      });
+      const user = await trx.selectFrom("users").select("email").where("id", "=", userId).executeTakeFirstOrThrow();
+      expect(user.email).toBe("owner.mixed@x.test");
+    });
+  });
+
+  test("a duplicate e-mail in another case rejects", async () => {
+    await withRollback(db, async (trx) => {
+      await createTwoOrgs(trx);
+      await expect(
+        createOrganizationWithOwner(trx, {
+          orgName: "Org C",
+          timezone: "Europe/Warsaw",
+          email: "A@X.test",
+          displayName: "Owner C",
+        })
+      ).rejects.toMatchObject({ code: "23505" });
     });
   });
 
@@ -146,7 +196,14 @@ describe("org:create CLI", () => {
       expect(members.map((m) => [m.user_id, m.email, m.role])).toEqual([[userId, email, "owner"]]);
       expect(stdout).not.toContain(email);
 
-      const duplicate = runOrgCreate(["--org-name", duplicateOrgName, "--email", email, "--display-name", "T"]);
+      const duplicate = runOrgCreate([
+        "--org-name",
+        duplicateOrgName,
+        "--email",
+        email.toUpperCase(),
+        "--display-name",
+        "T",
+      ]);
       expect(await duplicate.exited).toBe(1);
       expect(await new Response(duplicate.stderr).text()).toContain("user with this email already exists");
       const orphans = await db.selectFrom("organizations").select("id").where("name", "=", duplicateOrgName).execute();

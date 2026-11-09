@@ -1,3 +1,5 @@
+import { isIP } from "node:net";
+
 import { z } from "zod";
 
 import { type LlmProviderId, llmProviderIds } from "./llm";
@@ -29,6 +31,32 @@ export function isLoopbackApiRoot(value: string): boolean {
     ["127.0.0.1", "localhost", "[::1]"].includes(url.hostname) &&
     url.origin === value
   );
+}
+
+// A browser origin: http(s) with host and optional port, no path, query, hash or trailing "/".
+export function isOrigin(value: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  return (url.protocol === "http:" || url.protocol === "https:") && url.origin === value;
+}
+
+// An IP address, or a CIDR range "ip/n" with n in 0..32 (v4) or 0..128 (v6).
+export function isIpOrCidr(value: string): boolean {
+  const [ip = "", prefix, ...rest] = value.split("/");
+  const family = isIP(ip);
+  if (family === 0 || rest.length > 0) return false;
+  if (prefix === undefined) return true;
+  return /^\d{1,3}$/.test(prefix) && Number(prefix) <= (family === 4 ? 32 : 128);
+}
+
+// Comma-separated, trimmed, unique. An empty entry is dropped.
+function parseList(value: string | undefined): string[] {
+  const items = (value ?? "").split(",").map((item) => item.trim());
+  return [...new Set(items.filter((item) => item !== ""))];
 }
 
 const addressPattern = /^[^\s@]+@[^\s@]+$/;
@@ -93,6 +121,19 @@ const baseSchema = z.object({
   SEND_SCOPE: z.enum(["off", "self", "all"]).default("off"),
   // Comma-separated; needed with SEND_SCOPE=self.
   SEND_TEST_ADDRESSES: z.preprocess(emptyAsUndefined, z.string().optional()),
+  // Empty = the web is off.
+  WEB_BASE_URL: z.preprocess(
+    emptyAsUndefined,
+    z.string().refine(isOrigin, "must be http(s)://host[:port] with no path, query or hash").optional()
+  ),
+  // Secret: never print or log it.
+  WEB_AUTH_SECRET: z.preprocess(emptyAsUndefined, z.string().min(32).optional()),
+  // Comma list of origins.
+  WEB_TRUSTED_ORIGINS: z.preprocess(emptyAsUndefined, z.string().optional()),
+  // Comma list of IPs or CIDRs.
+  WEB_TRUSTED_PROXIES: z.preprocess(emptyAsUndefined, z.string().optional()),
+  // Relative to the process working directory.
+  WEB_DIST: z.preprocess(emptyAsUndefined, z.string().default("apps/web/dist")),
 });
 
 type BaseConfig = z.infer<typeof baseSchema>;
@@ -157,6 +198,19 @@ export const configSchema = baseSchema.superRefine((config, ctx) => {
   if (config.SEND_SCOPE === "all" && config.TEST_MAILBOX_ADDRESS === undefined) {
     ctx.addIssue({ code: "custom", path: ["TEST_MAILBOX_ADDRESS"], message: "needed when SEND_SCOPE is all" });
   }
+  if (config.WEB_BASE_URL !== undefined && config.WEB_AUTH_SECRET === undefined) {
+    ctx.addIssue({ code: "custom", path: ["WEB_AUTH_SECRET"], message: "needed when WEB_BASE_URL is set" });
+  }
+  if (!parseList(config.WEB_TRUSTED_ORIGINS).every(isOrigin)) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["WEB_TRUSTED_ORIGINS"],
+      message: "each entry must be http(s)://host[:port]",
+    });
+  }
+  if (!parseList(config.WEB_TRUSTED_PROXIES).every(isIpOrCidr)) {
+    ctx.addIssue({ code: "custom", path: ["WEB_TRUSTED_PROXIES"], message: "each entry must be an IP or a CIDR" });
+  }
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -167,6 +221,14 @@ export function llmSettings(config: Config, provider: LlmProviderId = config.LLM
 
 export function sendTestAddresses(config: Config): string[] {
   return parseAddressList(config.SEND_TEST_ADDRESSES);
+}
+
+export function webTrustedOrigins(config: Config): string[] {
+  return parseList(config.WEB_TRUSTED_ORIGINS);
+}
+
+export function webTrustedProxies(config: Config): string[] {
+  return parseList(config.WEB_TRUSTED_PROXIES);
 }
 
 export function classifierModel(config: Config): string {

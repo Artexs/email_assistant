@@ -15,6 +15,24 @@ export interface MembershipWithUser {
   display_name: string;
 }
 
+export interface UserMembership {
+  org_id: string;
+  role: MembershipRole;
+  created_at: Date;
+}
+
+// No TenantContext: the user gives the tenant (the web resolves the organization from the session, S5a).
+export async function listMembershipsOfUser(db: Db | Transaction<DB>, userId: string): Promise<UserMembership[]> {
+  const rows = await db
+    .selectFrom("memberships")
+    .select(["org_id", "role", "created_at"])
+    .where("user_id", "=", userId)
+    .orderBy("created_at")
+    .orderBy("org_id")
+    .execute();
+  return rows.map((row) => ({ ...row, role: membershipRoleSchema.parse(row.role) }));
+}
+
 export async function getOrganization(
   db: Db | Transaction<DB>,
   ctx: TenantContext
