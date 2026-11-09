@@ -64,6 +64,42 @@ export interface AuditLog {
   reason_code: string | null;
 }
 
+export interface AuthAccounts {
+  access_token: string | null;
+  access_token_expires_at: Timestamp | null;
+  account_id: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  id_token: string | null;
+  password: string | null;
+  provider_id: string;
+  refresh_token: string | null;
+  refresh_token_expires_at: Timestamp | null;
+  scope: string | null;
+  updated_at: Generated<Timestamp>;
+  user_id: string;
+}
+
+export interface AuthSessions {
+  created_at: Generated<Timestamp>;
+  expires_at: Timestamp;
+  id: Generated<string>;
+  ip_address: string | null;
+  token: string;
+  updated_at: Generated<Timestamp>;
+  user_agent: string | null;
+  user_id: string;
+}
+
+export interface AuthVerifications {
+  created_at: Generated<Timestamp>;
+  expires_at: Timestamp;
+  id: Generated<string>;
+  identifier: string;
+  updated_at: Generated<Timestamp>;
+  value: string;
+}
+
 export interface ChatLinks {
   channel: string;
   external_chat_id: Int8;
@@ -275,12 +311,18 @@ export interface Users {
   created_at: Generated<Timestamp>;
   display_name: string;
   email: string;
+  email_verified: Generated<boolean>;
   id: Generated<string>;
+  image: string | null;
+  updated_at: Generated<Timestamp>;
 }
 
 export interface DB {
   actions: Actions;
   audit_log: AuditLog;
+  auth_accounts: AuthAccounts;
+  auth_sessions: AuthSessions;
+  auth_verifications: AuthVerifications;
   chat_link_tokens: ChatLinkTokens;
   chat_links: ChatLinks;
   delegates: Delegates;

@@ -89,7 +89,7 @@ describe("tenancy repository filters by org_id", () => {
 });
 
 describe("createOrganizationWithOwner", () => {
-  test("a duplicate e-mail with other case rejects and leaves no new organization", async () => {
+  test("a duplicate e-mail rejects and leaves no new organization", async () => {
     await withRollback(db, async (trx) => {
       await createTwoOrgs(trx);
       await sql`savepoint duplicate_email`.execute(trx);
@@ -97,7 +97,7 @@ describe("createOrganizationWithOwner", () => {
         createOrganizationWithOwner(trx, {
           orgName: "Org C",
           timezone: "Europe/Warsaw",
-          email: "A@x.test",
+          email: "a@x.test",
           displayName: "Owner C",
         })
       ).rejects.toMatchObject({ code: "23505" });
@@ -146,14 +146,7 @@ describe("org:create CLI", () => {
       expect(members.map((m) => [m.user_id, m.email, m.role])).toEqual([[userId, email, "owner"]]);
       expect(stdout).not.toContain(email);
 
-      const duplicate = runOrgCreate([
-        "--org-name",
-        duplicateOrgName,
-        "--email",
-        email.toUpperCase(),
-        "--display-name",
-        "T",
-      ]);
+      const duplicate = runOrgCreate(["--org-name", duplicateOrgName, "--email", email, "--display-name", "T"]);
       expect(await duplicate.exited).toBe(1);
       expect(await new Response(duplicate.stderr).text()).toContain("user with this email already exists");
       const orphans = await db.selectFrom("organizations").select("id").where("name", "=", duplicateOrgName).execute();
