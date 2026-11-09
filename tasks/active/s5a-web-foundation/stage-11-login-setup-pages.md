@@ -6,7 +6,7 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
 
 Reviewed on Opus high (the login flow and the redirect guard are auth code).
 
-- [ ] **11.1 `/login`**
+- [x] **11.1 `/login`**
   - Goal: the owner signs in with e-mail and password (S3): one error text for a bad login, a text for 429 and for other failures, the `next` redirect rule, the "No password yet?" help, the `setup=done` note; a signed-in visitor is sent on.
   - Files: create `apps/web/src/pages/login.astro`, `apps/web/src/islands/LoginPage.tsx`, `apps/web/src/components/auth/AuthCard.tsx` (the shared card: `CardHeader` with the title, `CardContent` with `children`), `apps/web/src/lib/next-path.ts`, `apps/web/src/lib/next-path.test.ts`.
   - Interfaces:
@@ -32,7 +32,7 @@ Reviewed on Opus high (the login flow and the redirect guard are auth code).
   - Done when: the build is green, the unit test passes, and the hand check of 11.3 passes for the login.
   - Out of scope: the setup page (11.2), Playwright (stage 13), a password reset from the browser (S6).
 
-- [ ] **11.2 `/setup`**
+- [x] **11.2 `/setup`**
   - Goal: the setup link sets the first or a new password and signs the user in (S4, D2); a used, expired or missing link shows one clear text.
   - Files: create `apps/web/src/pages/setup.astro`, `apps/web/src/islands/SetupPage.tsx`.
   - Interfaces: `export default function SetupPage(): JSX.Element;` state `{ mode: "form" | "invalid" | "missing", email, password, repeat, pending, fieldErrors: Partial<Record<"email" | "password" | "repeat", TextKey>>, error: TextKey | null }`.

@@ -1,0 +1,7 @@
+---
+import Public from "../layouts/Public.astro";
+import LoginPage from "../islands/LoginPage.tsx";
+import { en } from "../i18n/en";
+---
+
+<Public title={en.title_login}><LoginPage client:load /></Public>
