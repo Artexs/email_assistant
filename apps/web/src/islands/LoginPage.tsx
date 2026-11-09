@@ -1,4 +1,4 @@
-import { loginFormSchema } from "@ea/core/web";
+import { fieldErrors as toFieldErrors, loginFormSchema } from "@ea/core/web";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { AuthCard } from "../components/auth/AuthCard";
@@ -27,9 +27,12 @@ export default function LoginPage() {
   useEffect(() => {
     setSetupDone(new URLSearchParams(location.search).get("setup") === "done");
     let active = true;
-    void authClient.getSession().then(({ data }) => {
-      if (active && data !== null && data !== undefined) location.replace(nextTarget());
-    });
+    void authClient
+      .getSession()
+      .then(({ data }) => {
+        if (active && data !== null && data !== undefined) location.replace(nextTarget());
+      })
+      .catch(() => undefined);
     return () => {
       active = false;
     };
@@ -39,13 +42,12 @@ export default function LoginPage() {
     event.preventDefault();
     const parsed = loginFormSchema.safeParse({ email, password });
     if (!parsed.success) {
-      const errors: FieldErrors = {};
-      for (const issue of parsed.error.issues) {
-        const key = issue.path[0];
-        if ((key === "email" || key === "password") && errors[key] === undefined)
-          errors[key] = issue.message as TextKey;
-      }
-      setFieldErrors(errors);
+      const errors = toFieldErrors(parsed);
+      setFieldErrors({
+        ...(errors.email === undefined ? {} : { email: errors.email as TextKey }),
+        ...(errors.password === undefined ? {} : { password: errors.password as TextKey }),
+      });
+      setError(null);
       return;
     }
     setFieldErrors({});
@@ -71,7 +73,7 @@ export default function LoginPage() {
   return (
     <AuthCard title="login_title">
       {setupDone ? <Alert variant="default">{t("login_setup_done")}</Alert> : null}
-      <form onSubmit={(event) => void onSubmit(event)} noValidate className="flex flex-col gap-4">
+      <form method="post" onSubmit={(event) => void onSubmit(event)} noValidate className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <Label htmlFor="email">{t("email_label")}</Label>
           <Input

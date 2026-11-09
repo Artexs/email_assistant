@@ -1,4 +1,4 @@
-import { setPasswordFormSchema } from "@ea/core/web";
+import { fieldErrors as toFieldErrors, setPasswordFormSchema } from "@ea/core/web";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { AuthCard } from "../components/auth/AuthCard";
@@ -11,8 +11,6 @@ import { authClient } from "../lib/auth-client";
 type Mode = "form" | "invalid" | "missing";
 type Field = "email" | "password" | "repeat";
 type FieldErrors = Partial<Record<Field, TextKey>>;
-
-const fields: readonly Field[] = ["email", "password", "repeat"];
 
 export default function SetupPage() {
   const [mounted, setMounted] = useState(false);
@@ -40,16 +38,12 @@ export default function SetupPage() {
     if (token === null) return;
     const parsed = setPasswordFormSchema.safeParse({ email, password, repeat });
     if (!parsed.success) {
-      const errors: FieldErrors = {};
-      for (const issue of parsed.error.issues) {
-        const key = issue.path[0];
-        if (fields.includes(key as Field) && errors[key as Field] === undefined) {
-          errors[key as Field] = issue.message as TextKey;
-        }
+      const errors = toFieldErrors(parsed);
+      const next: FieldErrors = {};
+      for (const field of ["email", "password", "repeat"] as const) {
+        if (errors[field] !== undefined) next[field] = errors[field] as TextKey;
       }
-      // Zod skips the repeat check while another field is invalid.
-      if (errors.repeat === undefined && password !== repeat) errors.repeat = "passwords_differ";
-      setFieldErrors(errors);
+      setFieldErrors(next);
       return;
     }
     setFieldErrors({});
@@ -64,13 +58,22 @@ export default function SetupPage() {
         setPending(false);
         return;
       }
-      const signIn = await authClient.signIn.email({ email, password });
-      if (signIn.error === null || signIn.error === undefined) location.assign("/");
-      else location.assign("/login?setup=done");
     } catch {
       setError("error_generic");
       setPending(false);
+      return;
     }
+    // The token is used now: a sign-in failure goes to the login page, not to an error.
+    try {
+      const signIn = await authClient.signIn.email({ email, password });
+      if (signIn.error === null || signIn.error === undefined) {
+        location.assign("/");
+        return;
+      }
+    } catch {
+      // Fall through to the login page.
+    }
+    location.assign("/login?setup=done");
   }
 
   if (!mounted) return null;
@@ -101,7 +104,7 @@ export default function SetupPage() {
 
   return (
     <AuthCard title="setup_title">
-      <form onSubmit={(event) => void onSubmit(event)} noValidate className="flex flex-col gap-4">
+      <form method="post" onSubmit={(event) => void onSubmit(event)} noValidate className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <Label htmlFor="email">{t("email_label")}</Label>
           <Input
