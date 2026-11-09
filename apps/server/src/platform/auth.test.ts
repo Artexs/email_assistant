@@ -1,9 +1,11 @@
 import { APIError } from "better-auth/api";
-import { APIError as BaseAPIError } from "better-call";
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 
 import { AUTH_ALLOWED_PATHS, cleanLogText, isAllowedAuthPath, onAuthError } from "./auth";
 import { setLogLevel } from "./log";
+
+// The base class that better-auth's APIError extends (better-call is not a direct dependency).
+const BaseAPIError = Object.getPrototypeOf(APIError) as new (status: number) => Error;
 
 describe("isAllowedAuthPath", () => {
   test("allows the eight paths with POST and GET", () => {

@@ -116,12 +116,25 @@ describe("web auth logs", () => {
       forbidden.push(cookieValue, cookieValue.split(".")[0] ?? "");
 
       // A second session, then the password change: the only call with two passwords in one body.
-      await auth.api.signInEmail({ body: { email: MARKERS.email, password: MARKERS.password } });
+      const second = await auth.api.signInEmail({
+        body: { email: MARKERS.email, password: MARKERS.password },
+        returnHeaders: true,
+      });
+      const secondCookie = decodeURIComponent(
+        (second.headers.get("set-cookie") ?? "").split(";")[0]?.split("=")[1] ?? ""
+      );
+      expect(secondCookie.length).toBeGreaterThan(10);
+      forbidden.push(secondCookie, secondCookie.split(".")[0] ?? "");
+      if (second.response.token) {
+        forbidden.push(second.response.token);
+      }
       const cookiePair = (headers.get("set-cookie") ?? "").split(";")[0] ?? "";
-      await auth.api.changePassword({
+      const changed = await auth.api.changePassword({
         body: { currentPassword: MARKERS.password, newPassword: MARKERS.newPassword, revokeOtherSessions: true },
         headers: new Headers({ cookie: cookiePair }),
       });
+      expect(changed.token).toBeTruthy();
+      forbidden.push(changed.token ?? "");
 
       await auth.api.signInEmail({ body: { email: MARKERS.email, password: `wrong-${MARKERS.password}` } }).then(
         () => {
