@@ -19,4 +19,9 @@ describe("apiErrorSchema", () => {
   test("lists too_large", () => {
     expect(apiErrorCodes).toContain("too_large");
   });
+
+  test("lists the S5b codes", () => {
+    expect(apiErrorCodes).toContain("host_not_allowed");
+    expect(apiErrorCodes).toContain("telegram_unreachable");
+  });
 });

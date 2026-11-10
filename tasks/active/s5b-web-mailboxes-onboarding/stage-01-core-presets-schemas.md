@@ -6,7 +6,7 @@ Part of [`../s5b-web-mailboxes-onboarding.md`](../s5b-web-mailboxes-onboarding.m
 
 Pure code in `packages/core`, no I/O, no server or web change. The server and web stages import these.
 
-- [ ] **1.1 Provider presets (B1)**
+- [x] **1.1 Provider presets (B1)**
   - Goal: one table of the five providers that the server (host resolution) and the browser (the form) share.
   - Files: create `packages/core/src/mail/providers.ts`, `packages/core/src/mail/providers.test.ts`; change `packages/core/src/mail/index.ts` (`export * from "./providers"`).
   - Interfaces:
@@ -43,7 +43,7 @@ Pure code in `packages/core`, no I/O, no server or web change. The server and we
   - Done when: the tests pass; `providers.ts` has no import.
   - Out of scope: the form (stage 12), the host rule (stage 8).
 
-- [ ] **1.2 Web schemas, scope badges, `onboardingOf`, error codes (B2, B3)**
+- [x] **1.2 Web schemas, scope badges, `onboardingOf`, error codes (B2, B3)**
   - Goal: the request and response shapes of every S5b route, shared by the routes (parse) and the browser (forms, parse of the answers).
   - Files: create `packages/core/src/web/mailboxes.ts`, `mailboxes.test.ts`, `telegram.ts`, `onboarding.ts`, `onboarding.test.ts`; change `packages/core/src/web/errors.ts` (two codes), `errors.test.ts`, `packages/core/src/web/index.ts` (exports, also `export * from "../mail/providers"`).
   - Interfaces:

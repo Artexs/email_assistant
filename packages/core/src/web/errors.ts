@@ -16,6 +16,8 @@ export const apiErrorCodes = [
   "telegram_off",
   "mail_login_failed",
   "mail_unreachable",
+  "host_not_allowed",
+  "telegram_unreachable",
   "internal",
 ] as const;
 export type ApiErrorCode = (typeof apiErrorCodes)[number];
