@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — plan written and cold-reviewed; waiting for the user's OK.** 15 stage files, B1–B17, 26 review findings fixed. Left: the user's OK, then the build with `run-task` (worktree `task/s5b-web-mailboxes-onboarding`).
+> **Status 2026-11-11 — in progress — plan approved; build not started.** 15 stage files, B1–B17, 26 review findings fixed. Left: stages 1–15 with `run-task` (worktree `task/s5b-web-mailboxes-onboarding`), starting with user step 0. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5b-build.md`.
 
 # S5b Web: mailboxes and onboarding
 
@@ -40,7 +40,7 @@ The resumed session reads this file, then continues at the first unticked item.
 - [x] B-lines B1–B17 written (2026-11-10); the master plan's D-lines get their dated lines in stage 15 (the build may still refine them).
 - [x] Stage files written (15 files, `[written]` in the stage list).
 - [x] Cold review (plan-task step 7, 2026-11-11): the `reviewer` subagent on Opus high; VERDICT FAIL, 26 findings (blocker 2, major 4, minor 18, question 2); all fixed the same day ("Cold review result" below).
-- [ ] `bunx prettier --check` on the plan files; commit and push (`master`, plan files only).
+- [x] `bunx prettier --check` on the plan files; commit and push (`master`, plan files only): `f78e27a` (2026-11-11).
 
 ### Input
 
@@ -203,3 +203,4 @@ Scope: 26 [minor] the deleted `sending` digest's "lost the claim" line and the r
 - 2026-11-10: Plan session started (Claude Code, Opus 5.5; handoff `~/.pi/agent/notes/2026-11-10-handoff-s5b-plan-and-build.md`). Collect done: 9 differences (none in the code; the DeepSeek override, the missing web and e2e keys in the main `.env`, the Limen plan), 10 facts. Moved to `active/`. The S5b questions Q1–Q12 sent to the user; no stage file yet.
 - 2026-11-10: The user: no DeepSeek; use the default settings and proceed (S2 changed: the agent-file models, Opus high on `[risky]` reviews). Facts 1–11 (provider pages read, library timeouts, the delete graph, `saveTriage` → `lost`), B1–B17, 15 stage files.
 - 2026-11-11: Cold review (Opus high, `reviewer` subagent): FAIL, 26 findings (2 blocker, 4 major, 18 minor, 2 question), all fixed in the segment file (dated "Cold review" sentences on B2, B3, B7, B8, B9, B12, B13, B16, B17; fact 2) and in stages 1–15. Next: the user's OK, then the build.
+- 2026-11-11: Plan committed (`f78e27a`). The user approved the build: "Okay, prepare a handoff for new agent to implement it stage by stage." Build handoff `~/.pi/agent/notes/2026-11-11-handoff-s5b-build.md`.
