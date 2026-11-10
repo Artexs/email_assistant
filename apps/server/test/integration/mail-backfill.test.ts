@@ -82,6 +82,28 @@ async function syncedMailbox(trx: Transaction<DB>) {
   return s;
 }
 
+describe("mailbox without an INBOX folder row", () => {
+  test("syncMailbox and backfillInbox throw a HardError", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      await trx
+        .deleteFrom("mailbox_folders")
+        .where("mailbox_id", "=", s.mailboxId)
+        .where("key", "=", "inbox")
+        .execute();
+      const since = ago(DAY_MS);
+      // A successful discovery repairs the missing INBOX row (ensureSyncFolders): the error needs a failed discovery.
+      s.fake.failOn("listFolders", new SoftError("lost connection"));
+      const sync = syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
+      await expect(sync).rejects.toBeInstanceOf(HardError);
+      await expect(sync).rejects.toThrow("mailbox has no INBOX folder row");
+      const backfill = backfillInbox(deps(trx, s.fake), s.ctx, s.mailboxId, { since });
+      await expect(backfill).rejects.toBeInstanceOf(HardError);
+      await expect(backfill).rejects.toThrow("mailbox has no INBOX folder row");
+    });
+  });
+});
+
 async function emails(trx: Db | Transaction<DB>, mailboxId: string) {
   return trx
     .selectFrom("emails")
@@ -127,9 +149,8 @@ describe("backfillInbox", () => {
       expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY, lastUid: 4 });
 
       const readOnly = [
-        "inboxStatus",
-        "searchInboxSince",
-        "fetchByUids",
+        "listFolders",
+        "folderStatus",
         "fetchBodyText",
         "fetchMetaIn",
         "searchSinceIn",
@@ -207,7 +228,7 @@ describe("backfillInbox", () => {
       await expect(backfillInbox(deps(trx, s.fake), s.ctx, s.mailboxId, { since: SINCE })).rejects.toBeInstanceOf(
         SoftError
       );
-      expect(s.fake.calls).not.toContain("searchInboxSince");
+      expect(s.fake.calls).not.toContain("searchSinceIn");
       expect((await emails(trx, s.mailboxId)).length).toBe(1);
     });
   });
@@ -228,11 +249,11 @@ describe("backfillInbox", () => {
       const provider: MailProvider = {
         ...s.fake,
         serverInfo: () => s.fake.serverInfo(),
-        inboxStatus: () => s.fake.inboxStatus(),
-        fetchAbove: (lastUid) => s.fake.fetchAbove(lastUid),
-        searchInboxSince: (since) => s.fake.searchInboxSince(since),
-        fetchByUids: (uids) => s.fake.fetchByUids(uids),
-        fetchBodyText: async (uid) => {
+        folderStatus: (folder) => s.fake.folderStatus(folder),
+        fetchAbove: (folder, lastUid) => s.fake.fetchAbove(folder, lastUid),
+        searchSinceIn: (folder, since) => s.fake.searchSinceIn(folder, since),
+        fetchByUidsIn: (folder, uids) => s.fake.fetchByUidsIn(folder, uids),
+        fetchBodyText: async (folder, uid) => {
           await updateCursor(
             trx,
             s.ctx,
@@ -240,7 +261,7 @@ describe("backfillInbox", () => {
             { uidValidity: UID_VALIDITY, lastUid: 4 },
             { uidValidity: UID_VALIDITY, lastUid: 5 }
           );
-          return s.fake.fetchBodyText(uid);
+          return s.fake.fetchBodyText(folder, uid);
         },
         close: () => s.fake.close(),
       };

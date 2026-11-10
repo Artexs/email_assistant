@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
-import type { ActionType, FolderKey } from "../triage/planners";
+import type { ActionType, MoveTarget } from "../triage/planners";
 
 import { type ActionView, describeActions } from "./would-do";
 
-function act(type: ActionType, status: string, folder: FolderKey | null = null, reverse = false): ActionView {
+function act(type: ActionType, status: string, folder: MoveTarget | null = null, reverse = false): ActionView {
   return {
     id: "a1",
     type,
@@ -44,6 +44,7 @@ describe("describeActions", () => {
     ],
     ["no actions", [], "stays in INBOX"],
     ["mixed tenses", [act("flag", "applied"), act("move", "logged", "ai_info")], "done: flag; would move to AI/Info"],
+    ["move into INBOX", [act("move", "logged", "inbox")], "would move to INBOX"],
     ["move without folder", [act("move", "logged")], "would move"],
     ["undone original", [act("move", "undone", "ai_info")], "undone: move to AI/Info"],
     [
@@ -88,6 +89,17 @@ describe("describeActions for drafts and sends", () => {
     ["failed", "not sent (failed)"],
   ])("send %s", (status, expected) => {
     expect(describeActions([send(status)], names)).toBe(expected);
+  });
+
+  test("the stay folder is named when no action applies", () => {
+    expect(describeActions([], new Map(), { stayFolder: "Wiadomości-śmieci" })).toBe("stays in Wiadomości-śmieci");
+    expect(describeActions([])).toBe("stays in INBOX");
+  });
+
+  test("a long stay folder name is cut", () => {
+    const text = describeActions([], new Map(), { stayFolder: "F".repeat(45) });
+    expect(text.startsWith("stays in FFFF")).toBe(true);
+    expect(text.length).toBeLessThan("stays in ".length + 45);
   });
 
   test("a draft and a send join with a semicolon", () => {

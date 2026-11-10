@@ -3,12 +3,15 @@ import { parseArgs } from "node:util";
 import { barCategories, toolSwitchNames, type BarCategory, type MailboxMode, type ToolSwitches } from "@ea/core";
 import { z } from "zod";
 
+import type { SyncFolderRow } from "../modules/mail";
+
 export const usage = [
   "usage:",
   "  bun run mailbox:settings show   --org-id <uuid> --mailbox-id <uuid>",
   "  bun run mailbox:settings mode   --org-id <uuid> --mailbox-id <uuid> --mode shadow|assist [--keep-switches]",
   "  bun run mailbox:settings auto   --org-id <uuid> --mailbox-id <uuid> --category urgent|needs_reply|info|notification|spam --value on|off [--threshold 0.nn] [--force]",
   "  bun run mailbox:settings switch --org-id <uuid> --mailbox-id <uuid> --name move|mark_read|flag|move_unsure|create_draft --value on|off",
+  "  bun run mailbox:settings sync-folder --org-id <uuid> --mailbox-id <uuid> --key offers|social|bills|junk --value on|off",
   "  bun run mailbox:settings expire-ready --org-id <uuid> --mailbox-id <uuid>",
   "  Exit 0: ok. Exit 1: usage error or failure. Exit 2: refused by the go/no-go gate.",
 ].join("\n");
@@ -25,7 +28,14 @@ export type SettingsCommand =
       threshold?: number;
       force: boolean;
     }
-  | { kind: "switch"; orgId: string; mailboxId: string; name: keyof ToolSwitches; value: boolean };
+  | { kind: "switch"; orgId: string; mailboxId: string; name: keyof ToolSwitches; value: boolean }
+  | {
+      kind: "sync-folder";
+      orgId: string;
+      mailboxId: string;
+      key: "offers" | "social" | "bills" | "junk";
+      value: boolean;
+    };
 
 const onOff = z.enum(["on", "off"]).transform((value) => value === "on");
 const threshold = z
@@ -48,6 +58,7 @@ export function parseSettingsArgs(argv: string[]): SettingsCommand | undefined {
         "keep-switches": { type: "boolean" },
         category: { type: "string" },
         name: { type: "string" },
+        key: { type: "string" },
         value: { type: "string" },
         threshold: { type: "string" },
         force: { type: "boolean" },
@@ -65,6 +76,7 @@ export function parseSettingsArgs(argv: string[]): SettingsCommand | undefined {
       mode: ["mode", "keep-switches"],
       auto: ["category", "value", "threshold", "force"],
       switch: ["name", "value"],
+      "sync-folder": ["key", "value"],
     };
     const own = allowed[kind ?? ""];
     if (!own) return undefined;
@@ -100,6 +112,12 @@ export function parseSettingsArgs(argv: string[]): SettingsCommand | undefined {
           force: values.force ?? false,
         };
       }
+      case "sync-folder": {
+        const parsed = z
+          .object({ ...common, key: z.enum(["offers", "social", "bills", "junk"]), value: onOff })
+          .parse({ ...ids, key: values.key, value: values.value });
+        return { kind, ...parsed };
+      }
       default: {
         const parsed = z
           .object({ ...common, name: z.enum(toolSwitchNames), value: onOff })
@@ -110,4 +128,10 @@ export function parseSettingsArgs(argv: string[]): SettingsCommand | undefined {
   } catch {
     return undefined;
   }
+}
+
+// One `show` line per sync folder row. An operator CLI on the server: the path may show here, never in a server log.
+export function describeSyncFolder(row: SyncFolderRow): string {
+  const cursor = row.uidvalidity === null || row.last_uid === null ? "none" : "set";
+  return `sync folder ${row.key}: ${row.enabled ? "on" : "off"}, role ${row.role}, path ${row.path}, cursor ${cursor}`;
 }

@@ -1,6 +1,7 @@
 export { checkMailbox, type CheckDeps, type CheckOptions, type CheckReport } from "./check";
 export { buildFolderMap, connectMailbox, updateMailboxPassword, type ConnectDeps, type ConnectInput } from "./connect";
-export { compareInboxWithDb, type AuditCounts, type InboxKey } from "./audit";
+export { ensureSyncFolders, setSyncFolderEnabled, type SyncFolderSwitchResult } from "./folders";
+export { auditExitCode, compareFolderWithDb, compareInboxWithDb, type AuditCounts, type InboxKey } from "./audit";
 export { openMailboxProvider, type OpenDeps } from "./open";
 export { createMailSyncJob, type MailSyncJobDeps } from "./jobs";
 export { openImapProvider, type ImapConnectOptions } from "./imap/client";
@@ -11,9 +12,10 @@ export { openSmtpSender, verifySmtpLogin, type SmtpConnectOptions } from "./imap
 export {
   INBOX,
   MailAuthError,
+  MailFolderMissingError,
   MailNotFoundError,
   type FolderMessageMeta,
-  type InboxStatus,
+  type FolderStatus,
   type MailCapabilities,
   type MailFolder,
   type MailProvider,
@@ -34,12 +36,14 @@ export {
   forceRescan,
   getEmailMailbox,
   getEmailMeta,
+  getJunkFolderPath,
   getMailbox,
   listEmailsByMessageIds,
   listFolderUids,
   listMailboxes,
   listMailboxTargets,
   listReturned,
+  listSyncFolders,
   listSyncTargets,
   listThreadContext,
   mailboxHasUidplus,
@@ -52,7 +56,7 @@ export {
   updateEmailLocation,
 } from "./repo";
 export type { EmailMeta, MailKind } from "./repo";
-export type { ClaimedEmail, Cursor, MailboxRow, MailboxStatus, MailboxSummary, NewEmail } from "./repo";
+export type { ClaimedEmail, Cursor, MailboxRow, MailboxStatus, MailboxSummary, NewEmail, SyncFolderRow } from "./repo";
 export {
   isSyntheticMessageId,
   renderSeedMessage,
@@ -60,7 +64,14 @@ export {
   SYNTHETIC_MESSAGE_ID_LIKE,
   type SeedMessage,
 } from "./seed";
-export { backfillInbox, CursorMovedError, syncMailbox, type SyncDeps, type SyncResult } from "./sync";
+export {
+  backfillInbox,
+  CursorMovedError,
+  syncMailbox,
+  type MailboxSyncResult,
+  type SyncDeps,
+  type SyncResult,
+} from "./sync";
 export {
   auditMailbox,
   backfillMailbox,

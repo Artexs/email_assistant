@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { describeMailProviderContract } from "../../../../test/contract/mail-provider";
 import { describeError, HardError, SoftError } from "../../../platform/errors";
-import { INBOX, MailNotFoundError } from "../port";
+import { INBOX, MailFolderMissingError, MailNotFoundError } from "../port";
 import type { SeedMessage } from "../seed";
 
 import { createFakeMailProvider } from "./index";
@@ -46,7 +46,7 @@ describe("fake provider", () => {
     const uid = fake.deliver(INBOX, mail(1));
     const newUid = fake.userMove(INBOX, uid, "Archive");
     expect(newUid).toBe(1);
-    expect(await fake.fetchByUids([uid])).toHaveLength(0);
+    expect(await fake.fetchByUidsIn(INBOX, [uid])).toHaveLength(0);
     expect((await fake.fetchMetaIn("Archive", newUid))?.messageId).toBe("<fake-1@example.test>");
   });
 
@@ -58,32 +58,82 @@ describe("fake provider", () => {
     fake.remove(INBOX, second);
     expect(third).toBe(3);
     fake.resetUidValidity(9);
-    expect(await fake.inboxStatus()).toEqual({ uidValidity: 9, uidNext: 3 });
-    const metas = await fake.fetchAbove(0);
+    expect(await fake.folderStatus(INBOX)).toEqual({ uidValidity: 9, uidNext: 3, highestUid: 2 });
+    const metas = await fake.fetchAbove(INBOX, 0);
     expect(metas.map((m) => [m.uid, m.messageId])).toEqual([
       [1, "<fake-1@example.test>"],
       [2, "<fake-3@example.test>"],
     ]);
   });
 
+  test("uidNextValue 1 (Interia) still gives highestUid + 1 as uidNext", async () => {
+    const fake = createFakeMailProvider({ uidNextValue: 1 });
+    for (let n = 1; n <= 3; n++) fake.deliver("Oferty", mail(n));
+    expect(await fake.folderStatus("Oferty")).toEqual({ uidValidity: 1, uidNext: 4, highestUid: 3 });
+  });
+
+  test("globalUids uses one UID counter for all folders", async () => {
+    const fake = createFakeMailProvider({ globalUids: true });
+    expect(fake.deliver(INBOX, mail(1))).toBe(1);
+    expect(fake.deliver("Oferty", mail(2))).toBe(2);
+    expect(fake.deliver(INBOX, mail(3))).toBe(3);
+    const raw = Buffer.from("Message-ID: <a@x.test>\r\nFrom: a@x.test\r\nTo: b@x.test\r\nSubject: s\r\n\r\nbody");
+    await fake.ensureFolder("AI/Info");
+    expect((await fake.appendMessage("AI/Info", raw, [], new Date("2026-11-03T10:00:00Z"))).uid).toBe(4);
+  });
+
+  test("globalUids renumbers a reset folder from the shared counter", async () => {
+    const fake = createFakeMailProvider({ globalUids: true });
+    fake.deliver(INBOX, mail(1));
+    fake.deliver("Oferty", mail(2));
+    fake.deliver("Oferty", mail(3));
+    fake.resetUidValidity(7, "Oferty");
+    expect((await fake.fetchAbove("Oferty", 0)).map((m) => m.uid)).toEqual([4, 5]);
+    expect((await fake.folderStatus("Oferty")).uidValidity).toBe(7);
+  });
+
+  test("resetUidValidity(9, folder) leaves INBOX unchanged", async () => {
+    const fake = createFakeMailProvider({ uidValidity: 5 });
+    fake.deliver(INBOX, mail(1));
+    fake.deliver("Oferty", mail(2));
+    fake.resetUidValidity(9, "Oferty");
+    expect((await fake.folderStatus("Oferty")).uidValidity).toBe(9);
+    expect((await fake.folderStatus(INBOX)).uidValidity).toBe(5);
+  });
+
+  test("folderCalls records the folder of each call; a missing folder error has a fixed message", async () => {
+    const fake = createFakeMailProvider();
+    fake.deliver("Oferty", mail(1));
+    fake.deliver(INBOX, mail(2));
+    await fake.fetchAbove("Oferty", 0);
+    await fake.fetchByUidsIn(INBOX, [1]);
+    expect(fake.folderCalls.slice(-2)).toEqual([
+      { method: "fetchAbove", folder: "Oferty" },
+      { method: "fetchByUidsIn", folder: INBOX },
+    ]);
+    const error = await fake.folderStatus("Secret/Path").catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(MailFolderMissingError);
+    expect((error as Error).message).toBe("IMAP folder not found");
+  });
+
   test("failOn throws once, then the call works", async () => {
     const fake = createFakeMailProvider();
-    fake.failOn("inboxStatus", new SoftError("lost connection"));
-    await expect(fake.inboxStatus()).rejects.toBeInstanceOf(SoftError);
-    expect((await fake.inboxStatus()).uidNext).toBe(1);
-    expect(fake.calls).toEqual(["inboxStatus", "inboxStatus"]);
+    fake.failOn("folderStatus", new SoftError("lost connection"));
+    await expect(fake.folderStatus(INBOX)).rejects.toBeInstanceOf(SoftError);
+    expect((await fake.folderStatus(INBOX)).uidNext).toBe(1);
+    expect(fake.calls).toEqual(["folderStatus", "folderStatus"]);
   });
 
   test("star quirk on returns the highest uid at or below the cursor; off returns nothing", async () => {
     const on = createFakeMailProvider();
     on.deliver(INBOX, mail(1));
     const top = on.deliver(INBOX, mail(2));
-    expect((await on.fetchAbove(top)).map((m) => m.uid)).toEqual([top]);
+    expect((await on.fetchAbove(INBOX, top)).map((m) => m.uid)).toEqual([top]);
 
     const off = createFakeMailProvider({ starQuirk: false });
     off.deliver(INBOX, mail(1));
     const offTop = off.deliver(INBOX, mail(2));
-    expect(await off.fetchAbove(offTop)).toEqual([]);
+    expect(await off.fetchAbove(INBOX, offTop)).toEqual([]);
   });
 
   test("close sets closed", async () => {
@@ -95,7 +145,7 @@ describe("fake provider", () => {
   test("fetchBodyText gives null when the size is over bodyLimitBytes", async () => {
     const fake = createFakeMailProvider({ bodyLimitBytes: 10 });
     const uid = fake.deliver(INBOX, mail(1), { size: 11 });
-    expect(await fake.fetchBodyText(uid)).toBeNull();
+    expect(await fake.fetchBodyText(INBOX, uid)).toBeNull();
   });
 
   test("MailNotFoundError has its own name that describeError prints", () => {
@@ -212,10 +262,10 @@ describe("fake provider", () => {
     const fake = createFakeMailProvider({ keepUidOnUserMove: true });
     const uid = fake.deliver(INBOX, mail(1));
     fake.deliver(INBOX, mail(2));
-    const before = await fake.inboxStatus();
+    const before = await fake.folderStatus(INBOX);
     expect(fake.userMove(INBOX, uid, "Archive")).toBe(uid);
     expect(fake.userMove("Archive", uid, INBOX)).toBe(uid);
-    expect(await fake.inboxStatus()).toEqual(before);
+    expect(await fake.folderStatus(INBOX)).toEqual(before);
   });
 
   test("deleteMessage without UIDPLUS throws HardError and keeps the message", async () => {
@@ -288,5 +338,57 @@ describe("fake provider", () => {
     const raw = Buffer.from("Message-ID: <x@example.test>\r\n\r\nBody");
     await expect(fake.appendMessage("Drafts", raw, [], new Date())).rejects.toBeInstanceOf(SoftError);
     expect((await fake.appendMessage("Drafts", raw, [], new Date())).uid).toBe(1);
+  });
+
+  describe("transferByAppend", () => {
+    test("does not copy $Junk, Junk, \\Deleted and \\Recent; keeps the other flags", async () => {
+      const fake = createFakeMailProvider();
+      const uid = fake.deliver("Oferty", mail(1));
+      await fake.setFlags("Oferty", uid, { add: ["\\Seen", "$Junk", "junk", "\\Deleted", "\\Recent", "$Label"] });
+      const { newUid } = await fake.transferByAppend("Oferty", uid, INBOX);
+      expect((await fake.fetchMetaIn(INBOX, newUid ?? 0))?.flags).toEqual(["$Label", "\\Seen"]);
+      expect(await fake.fetchMetaIn("Oferty", uid)).toBeNull();
+    });
+
+    test("without UIDPLUS it throws HardError('no UIDPLUS') and writes nothing", async () => {
+      const fake = createFakeMailProvider({ capabilities: { uidplus: false, move: false } });
+      const uid = fake.deliver("Oferty", mail(1));
+      await expect(fake.transferByAppend("Oferty", uid, INBOX)).rejects.toThrow("no UIDPLUS");
+      expect(await fake.fetchAbove(INBOX, 0)).toEqual([]);
+      expect(await fake.fetchMetaIn("Oferty", uid)).not.toBeNull();
+    });
+
+    test("failOn deleteMessage leaves the mail in both folders", async () => {
+      const fake = createFakeMailProvider();
+      const uid = fake.deliver("Oferty", mail(1));
+      fake.failOn("deleteMessage", new HardError("x"));
+      await expect(fake.transferByAppend("Oferty", uid, INBOX)).rejects.toBeInstanceOf(HardError);
+      expect(await fake.fetchMetaIn("Oferty", uid)).not.toBeNull();
+      expect(await fake.fetchAbove(INBOX, 0)).toHaveLength(1);
+    });
+
+    test("a message above 25 MB throws HardError('message too large to transfer') and writes nothing", async () => {
+      const fake = createFakeMailProvider();
+      const uid = fake.deliver("Oferty", mail(1), { size: 25_000_001 });
+      await expect(fake.transferByAppend("Oferty", uid, INBOX)).rejects.toThrow("message too large to transfer");
+      expect(await fake.fetchAbove(INBOX, 0)).toEqual([]);
+      expect(await fake.fetchMetaIn("Oferty", uid)).not.toBeNull();
+    });
+
+    test("a missing target folder throws HardError before any write", async () => {
+      const fake = createFakeMailProvider();
+      const uid = fake.deliver("Oferty", mail(1));
+      await expect(fake.transferByAppend("Oferty", uid, "Nope")).rejects.toThrow("TRYCREATE");
+      expect(await fake.fetchMetaIn("Oferty", uid)).not.toBeNull();
+      expect((await fake.listFolders()).map((f) => f.path)).not.toContain("Nope");
+    });
+
+    test("appendUid false: HardError('append gave no uid'), the source stays, the copy stays", async () => {
+      const fake = createFakeMailProvider({ appendUid: false });
+      const uid = fake.deliver("Oferty", mail(1));
+      await expect(fake.transferByAppend("Oferty", uid, INBOX)).rejects.toThrow("append gave no uid");
+      expect(await fake.fetchMetaIn("Oferty", uid)).not.toBeNull();
+      expect(await fake.fetchAbove(INBOX, 0)).toHaveLength(1);
+    });
   });
 });

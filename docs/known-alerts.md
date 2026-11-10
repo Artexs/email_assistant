@@ -18,6 +18,38 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `sync <mailbox id> folder <key>: failed 3 runs in a row`
+
+- **First seen:** 2026-11-09
+- **Source:** `apps/server/src/modules/mail/jobs.ts`, `[mail]` sync job. Error line, once per streak of 3 failed runs of one synced folder (D5).
+- **Cause:** the folder read fails in each of 3 runs (IMAP error, a rejected folder, a DB error). The other folders sync as normal. The line names the key, never the path.
+- **Fix:** read the warn or error lines before it: `$C logs --since 1h server | grep -E 'failed|tries again|not on the server'`. Switch the folder off if it stays broken: `mailbox:settings sync-folder … --key <key> --value off`. The line comes again only after the folder syncs once.
+- **Status:** investigating (per case)
+
+### `sync <mailbox id> folder <key>: not on the server, skipped`
+
+- **First seen:** 2026-11-09
+- **Source:** `apps/server/src/modules/mail/sync.ts`. Warning, one per run.
+- **Cause:** the folder listing of the server has no folder with the stored path of that row (the user renamed or deleted the folder).
+- **Fix:** none needed while the folder is gone: the sync skips that folder and runs the others. Restore the folder name, or switch the row off with `mailbox:settings sync-folder`.
+- **Status:** workaround
+
+### `sync <mailbox id>: folder discovery failed: <error>`
+
+- **First seen:** 2026-11-09
+- **Source:** `apps/server/src/modules/mail/sync.ts`, discovery of the sort folders. Warning.
+- **Cause:** the LIST of the server failed or the insert of the folder rows failed. An auth error is not caught here and ends the run as `auth_error`.
+- **Fix:** none needed once. The sync goes on with the stored rows and skips the "not on the server" check for this run. Discovery runs again on the next tick. If it repeats, check the connection and the DB.
+- **Status:** investigating (per case)
+
+### `IMAP folder gave no highest UID`
+
+- **First seen:** 2026-11-09
+- **Source:** `apps/server/src/modules/mail/imap/client.ts`, `folderStatus()`. A `HardError`, so the folder counts as failed in that run.
+- **Cause:** the folder reports mail (`exists` > 0), but `FETCH *` returned nothing. The folder changed during the read, or the server answered wrong.
+- **Fix:** the next tick tries again. After 3 runs in a row, the alert `failed 3 runs in a row` follows. Check the folder in the webmail.
+- **Status:** investigating (per case)
+
 ### `mailbox:seed and mailbox:audit CLI > seed exits 1 … ^ this test timed out after 5000ms.`
 
 - **First seen:** 2026-11-07
@@ -351,12 +383,12 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Check the token with `bun run telegram:check`. Fix `TELEGRAM_BOT_TOKEN` in `.env` (the user edits it) and restart the server. Never print the token.
 - **Status:** fix pending (user action when it fires)
 
-### `[mailbox-audit] inbox=<n> stored=<m> missing=0 duplicates=<k>` (exit 2)
+### `[mailbox-audit] inbox=<n> stored=<m> missing=0 duplicates=<k> cross=<c>` (exit 2)
 
 - **First seen:** 2026-11-05 (S1a 48-hour test, `~/ea-logs/audit.log` on the VPS)
 - **Source:** `bun run mailbox:audit` (`apps/server/src/modules/mail/tools.ts`, `auditMailbox`).
 - **Cause:** "duplicates" counts stored INBOX rows whose `(Message-ID, content hash)` key is not in the IMAP INBOX now. The sync never deletes rows, so a mail that the user deletes or moves out of INBOX after the sync stored it counts as a duplicate. On 2026-11-05 both rows were real mails deleted from the mailbox (not found in any folder).
-- **Fix:** Check for a real double store first: `SELECT message_id_header, content_hash, count(*) FROM emails WHERE mailbox_id = '<MB>' AND folder = 'INBOX' AND received_at >= '<since>' GROUP BY 1, 2 HAVING count(*) > 1;`. 0 rows and `missing=0` = no problem. To name the rows, compare the `fetchSince` keys with `listInboxEmailKeys` in a one-off read-only script.
+- **Fix:** Check for a real double store first: `SELECT message_id_header, content_hash, count(*) FROM emails WHERE mailbox_id = '<MB>' AND folder = 'INBOX' AND received_at >= '<since>' GROUP BY 1, 2 HAVING count(*) > 1;`. 0 rows and `missing=0` = no problem. To name the rows, compare the `fetchSince` keys with `listFolderEmailKeys` in a one-off read-only script. Since the sort-folder sync the tool also prints one `folder=<key> …` line per enabled synced folder. A `cross` count is no problem: it counts mail that has a row in another synced folder (the mail is not lost; independent review m10, `tasks/active/sync-sort-folders.md`).
 - **Status:** won't fix (audit limit; expected after a delete)
 
 ### `daily LLM cap reached for mailbox <mailboxId>: <cap> calls since <dayStart> (America/Los_Angeles day); mail waits until <time>`
@@ -452,8 +484,8 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 - **First seen:** 2026-11-03
 - **Source:** `[mail]` sync job, first sync of the Interia mailbox.
-- **Cause:** Interia sends no `UIDNEXT` in the SELECT reply. `inboxStatus()` returned `NaN`, and the cursor update failed in Postgres.
-- **Fix:** `inboxStatus()` in `apps/server/src/modules/mail/imap/client.ts` asks `STATUS (UIDNEXT)`, then uses the highest UID + 1, then 1.
+- **Cause:** Interia sends no `UIDNEXT` in the SELECT reply. The old `inboxStatus()` returned `NaN`, and the cursor update failed in Postgres. (Later finding, 2026-11-08: STATUS gives `UIDNEXT 1` for every folder, which is wrong too.)
+- **Fix:** the status call (`folderStatus()` in `apps/server/src/modules/mail/imap/client.ts`; the sort-folder sync removed `inboxStatus`, `searchInboxSince` and `fetchByUids`) asks `STATUS (UIDNEXT)`, then uses the highest UID + 1, then 1. With STATUS at 1, the fix is D4 of `tasks/active/sync-sort-folders.md` (cursor from the highest UID + 1, per folder).
   A missing `UIDVALIDITY` now gives `IMAP INBOX gave no valid UIDVALIDITY`.
 - **Status:** fixed
 

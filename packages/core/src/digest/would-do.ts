@@ -1,10 +1,12 @@
-import { type ActionType, AI_FOLDER_NAMES, type FolderKey } from "../triage/planners";
+import { type ActionType, MOVE_TARGET_NAMES, type MoveTarget } from "../triage/planners";
+
+import { cutText } from "./text";
 
 export interface ActionView {
   id: string;
   type: ActionType;
   status: string;
-  folder: FolderKey | null;
+  folder: MoveTarget | null;
   reverse: boolean;
   reversesActionId: string | null;
   appliedAt: Date | null;
@@ -57,7 +59,7 @@ function phrase(action: ActionView, names: ReadonlyMap<string, string>): string 
     case "mark_read":
       return "mark read";
     case "move":
-      return action.folder === null ? "move" : `move to ${AI_FOLDER_NAMES[action.folder]}`;
+      return action.folder === null ? "move" : `move to ${MOVE_TARGET_NAMES[action.folder]}`;
     case "create_draft":
       return draftPhrase(action, names);
     case "save_summary":
@@ -69,7 +71,8 @@ function phrase(action: ActionView, names: ReadonlyMap<string, string>): string 
 // The "what the system does or would do" line of a digest or notice. `names` maps delegate ids to names.
 export function describeActions(
   actions: readonly ActionView[],
-  names: ReadonlyMap<string, string> = new Map()
+  names: ReadonlyMap<string, string> = new Map(),
+  opts: { stayFolder?: string } = {}
 ): string {
   const groups = new Map<string, string[]>();
   const sends: string[] = [];
@@ -87,5 +90,7 @@ export function describeActions(
   }
   const all = [...[...groups].map(([tense, phrases]) => `${tense} ${phrases.join(", ")}`), ...sends];
   const parts = all.filter((part, index) => part !== all[index - 1]); // the same phrase never twice in a row
-  return parts.length === 0 ? "stays in INBOX" : parts.join("; ");
+  return parts.length === 0
+    ? `stays in ${opts.stayFolder === undefined ? "INBOX" : cutText(opts.stayFolder, 30)}`
+    : parts.join("; ");
 }

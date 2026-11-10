@@ -10,15 +10,22 @@ import {
   forceRescan,
   getCredentials,
   getMailbox,
+  getJunkFolderPath,
+  getSyncFolder,
   insertCredentials,
   insertEmail,
+  insertInboxFolder,
+  insertSyncFolders,
   insertMailbox,
   listEmailsByMessageIds,
   listFolderUids,
-  listInboxEmailKeys,
+  listFolderEmailKeys,
   listRecentlyMoved,
+  listSyncFolders,
   listSyncTargets,
   lockMailbox,
+  lockSyncFolderByKey,
+  markEmailRelocated,
   markEmailReturned,
   markSynced,
   setFolderMapEntry,
@@ -26,8 +33,11 @@ import {
   updateCursor,
   updateEmailLocation,
   updateEmailUid,
+  updateFolderCursor,
+  updateSyncFolderEnabled,
 } from "../../src/modules/mail/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
+import { HardError } from "../../src/platform/errors";
 
 import { createOrgWithMailbox, testCapabilities } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -59,6 +69,7 @@ function newEmail(mailboxId: string, overrides: Partial<NewEmail> = {}): NewEmai
     message_id_header: "<1@x.test>",
     content_hash: "hash-1",
     uid: 1,
+    source_folder: "INBOX",
     thread_key: "<1@x.test>",
     from_address: "sender@x.test",
     subject: "Hello",
@@ -186,6 +197,72 @@ describe("mail repository: mailboxes", () => {
   });
 });
 
+describe("mail repository: sync folder cursor", () => {
+  test("insertInboxFolder twice leaves one row; getSyncFolder is tenant-scoped", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      await insertInboxFolder(trx, a.ctx, a.mailboxId);
+      const rows = await trx.selectFrom("mailbox_folders").select("id").where("mailbox_id", "=", a.mailboxId).execute();
+      expect(rows).toHaveLength(1);
+
+      const folder = await getSyncFolder(trx, a.ctx, a.mailboxId, "inbox");
+      expect(folder).toMatchObject({
+        id: rows[0]?.id,
+        key: "inbox",
+        path: "INBOX",
+        role: "inbox",
+        enabled: true,
+        uidvalidity: null,
+        last_uid: null,
+      });
+      expect(await getSyncFolder(trx, b.ctx, a.mailboxId, "inbox")).toBeUndefined();
+      expect(await getSyncFolder(trx, a.ctx, a.mailboxId, "offers")).toBeUndefined();
+    });
+  });
+
+  test("updateFolderCursor on the INBOX row compares the cursor and writes mailboxes too", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      const folder = await getSyncFolder(trx, a.ctx, a.mailboxId, "inbox");
+      if (folder === undefined) throw new Error("no INBOX row");
+      const empty = { uidValidity: null, lastUid: null };
+      const first = { uidValidity: 4_000_000_000, lastUid: 10 };
+
+      expect(await updateFolderCursor(trx, b.ctx, folder.id, empty, first)).toBe(false);
+      expect(await updateFolderCursor(trx, a.ctx, folder.id, { uidValidity: 1, lastUid: 1 }, first)).toBe(false);
+      expect((await getMailbox(trx, a.ctx, a.mailboxId))?.last_uid).toBeNull();
+      expect((await getSyncFolder(trx, a.ctx, a.mailboxId, "inbox"))?.last_uid).toBeNull();
+
+      expect(await updateFolderCursor(trx, a.ctx, folder.id, empty, first)).toBe(true);
+      const row = await getSyncFolder(trx, a.ctx, a.mailboxId, "inbox");
+      const mailbox = await getMailbox(trx, a.ctx, a.mailboxId);
+      expect({ uidValidity: row?.uidvalidity, lastUid: row?.last_uid }).toEqual(first);
+      expect({ uidValidity: mailbox?.uidvalidity, lastUid: mailbox?.last_uid }).toEqual(first);
+    });
+  });
+
+  test("updateFolderCursor on a non-INBOX row leaves mailboxes unchanged", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      const inserted = await trx
+        .insertInto("mailbox_folders")
+        .values({ org_id: a.ctx.orgId, mailbox_id: a.mailboxId, key: "offers", path: "Oferty", role: "sort" })
+        .returning("id")
+        .executeTakeFirstOrThrow();
+      const next = { uidValidity: 9, lastUid: 33 };
+
+      expect(await updateFolderCursor(trx, a.ctx, inserted.id, { uidValidity: null, lastUid: null }, next)).toBe(true);
+      const row = await getSyncFolder(trx, a.ctx, a.mailboxId, "offers");
+      expect({ uidValidity: row?.uidvalidity, lastUid: row?.last_uid }).toEqual(next);
+      const mailbox = await getMailbox(trx, a.ctx, a.mailboxId);
+      expect({ uidValidity: mailbox?.uidvalidity, lastUid: mailbox?.last_uid }).toEqual({
+        uidValidity: null,
+        lastUid: null,
+      });
+    });
+  });
+});
+
 describe("mail repository: forceRescan", () => {
   test("sets uidvalidity to 0 only for the owner, and not on a never-synced mailbox", async () => {
     await withRollback(db, async (trx) => {
@@ -194,12 +271,42 @@ describe("mail repository: forceRescan", () => {
       expect(await forceRescan(trx, a.ctx, a.mailboxId)).toBe(false);
 
       await updateCursor(trx, a.ctx, a.mailboxId, { uidValidity: null, lastUid: null }, { uidValidity: 7, lastUid: 5 });
+      const sort = await trx
+        .insertInto("mailbox_folders")
+        .values({
+          org_id: a.ctx.orgId,
+          mailbox_id: a.mailboxId,
+          key: "offers",
+          path: "Oferty",
+          role: "sort",
+          uidvalidity: 4,
+          last_uid: 8,
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow();
+      await trx
+        .insertInto("mailbox_folders")
+        .values({ org_id: a.ctx.orgId, mailbox_id: a.mailboxId, key: "bills", path: "Rachunki", role: "sort" })
+        .execute();
       expect(await forceRescan(trx, b.ctx, a.mailboxId)).toBe(false);
       expect((await getMailbox(trx, a.ctx, a.mailboxId))?.uidvalidity).toBe(7);
 
       expect(await forceRescan(trx, a.ctx, a.mailboxId)).toBe(true);
       const row = await getMailbox(trx, a.ctx, a.mailboxId);
       expect({ uidValidity: row?.uidvalidity, lastUid: row?.last_uid }).toEqual({ uidValidity: 0, lastUid: 5 });
+      const folder = await getSyncFolder(trx, a.ctx, a.mailboxId, "inbox");
+      expect({ uidValidity: folder?.uidvalidity, lastUid: folder?.last_uid }).toEqual({ uidValidity: 0, lastUid: 5 });
+      const sortRow = await getSyncFolder(trx, a.ctx, a.mailboxId, "offers");
+      expect({ id: sortRow?.id, uidValidity: sortRow?.uidvalidity, lastUid: sortRow?.last_uid }).toEqual({
+        id: sort.id,
+        uidValidity: 0,
+        lastUid: 8,
+      });
+      const empty = await getSyncFolder(trx, a.ctx, a.mailboxId, "bills");
+      expect({ uidValidity: empty?.uidvalidity, lastUid: empty?.last_uid }).toEqual({
+        uidValidity: null,
+        lastUid: null,
+      });
     });
   });
 });
@@ -380,13 +487,61 @@ describe("mail repository: emails", () => {
         .execute();
       await add(a, 8, { folder: "AI/Info" }, at(7));
 
-      const all = await listRecentlyMoved(trx, a.ctx, a.mailboxId, { movedAfter: at(6), limit: 10 });
+      const all = await listRecentlyMoved(trx, a.ctx, a.mailboxId, {
+        sourceFolder: "INBOX",
+        movedAfter: at(6),
+        limit: 10,
+      });
       expect(all.map((row) => row.uid)).toEqual([2, 1, 8]);
       expect(all[0]).toMatchObject({ folder: "AI/Info", inbox_uid: 2, moved_at: at(10) });
-      const limited = await listRecentlyMoved(trx, a.ctx, a.mailboxId, { movedAfter: at(6), limit: 2 });
+      const limited = await listRecentlyMoved(trx, a.ctx, a.mailboxId, {
+        sourceFolder: "INBOX",
+        movedAfter: at(6),
+        limit: 2,
+      });
       expect(limited.map((row) => row.uid)).toEqual([2, 1]);
-      expect(await listRecentlyMoved(trx, b.ctx, a.mailboxId, { movedAfter: at(6), limit: 10 })).toEqual([]);
-      expect(await listRecentlyMoved(trx, a.ctx, b.mailboxId, { movedAfter: at(6), limit: 10 })).toEqual([]);
+      expect(
+        await listRecentlyMoved(trx, b.ctx, a.mailboxId, { sourceFolder: "INBOX", movedAfter: at(6), limit: 10 })
+      ).toEqual([]);
+      expect(
+        await listRecentlyMoved(trx, a.ctx, b.mailboxId, { sourceFolder: "INBOX", movedAfter: at(6), limit: 10 })
+      ).toEqual([]);
+    });
+  });
+
+  test("listRecentlyMoved with a sort folder source leaves out other sources, rows in their source, old rows and other orgs", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      const at = (hour: number) => new Date(Date.UTC(2026, 10, 3, hour));
+      const add = async (tenant: Tenant, n: number, overrides: Partial<NewEmail>, movedAt: Date) => {
+        await insertEmail(
+          trx,
+          tenant.ctx,
+          newEmail(tenant.mailboxId, { dedup_key: `mid:<${n}@x.test>:h`, uid: n, ...overrides })
+        );
+        await trx
+          .updateTable("emails")
+          .set({ moved_at: movedAt })
+          .where("mailbox_id", "=", tenant.mailboxId)
+          .where("dedup_key", "=", `mid:<${n}@x.test>:h`)
+          .execute();
+      };
+      await add(a, 1, { folder: "AI/Info", source_folder: "Oferty" }, at(8));
+      await add(a, 2, { folder: "INBOX", source_folder: "Oferty" }, at(10)); // a row that the system moved into INBOX
+      await add(a, 3, { folder: "AI/Info", source_folder: "INBOX" }, at(9)); // source INBOX
+      await add(a, 4, { folder: "Oferty", source_folder: "Oferty" }, at(11)); // in its source
+      await add(a, 5, { folder: "AI/Info", source_folder: "Oferty" }, at(5)); // before the window
+      await add(b, 6, { folder: "AI/Info", source_folder: "Oferty" }, at(11)); // other tenant
+
+      const rows = await listRecentlyMoved(trx, a.ctx, a.mailboxId, {
+        sourceFolder: "Oferty",
+        movedAfter: at(6),
+        limit: 10,
+      });
+      expect(rows.map((row) => row.uid)).toEqual([2, 1]);
+      expect(
+        await listRecentlyMoved(trx, b.ctx, a.mailboxId, { sourceFolder: "Oferty", movedAfter: at(6), limit: 10 })
+      ).toEqual([]);
     });
   });
 
@@ -396,12 +551,24 @@ describe("mail repository: emails", () => {
       await insertEmail(trx, a.ctx, newEmail(a.mailboxId));
       const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
 
-      await updateEmailUid(trx, b.ctx, id, 50);
+      await updateEmailUid(trx, b.ctx, id, 50, { folder: "INBOX" });
       expect(Number((await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1")).uid)).toBe(1);
 
-      await updateEmailUid(trx, a.ctx, id, 50);
+      await updateEmailUid(trx, a.ctx, id, 50, { folder: "INBOX" });
       expect(Number((await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1")).uid)).toBe(50);
       expect(Number(await inboxUidOf(trx, id))).toBe(50);
+    });
+  });
+
+  test("updateEmailUid changes 0 rows when the row left the folder of the decision", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      await insertEmail(trx, a.ctx, newEmail(a.mailboxId, { folder: "AI/Info" }));
+      const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
+
+      expect(await updateEmailUid(trx, a.ctx, id, 50, { folder: "Oferty" })).toBe(false);
+      expect(Number((await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1")).uid)).toBe(1);
+      expect(await updateEmailUid(trx, a.ctx, id, 50, { folder: "AI/Info" })).toBe(true);
     });
   });
 
@@ -412,7 +579,7 @@ describe("mail repository: emails", () => {
       const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
       const at = new Date("2026-11-03T13:00:00Z");
 
-      expect(await markEmailReturned(trx, b.ctx, id, 60, at)).toBe(false);
+      expect(await markEmailReturned(trx, b.ctx, id, 60, at, { folder: "INBOX" })).toBe(false);
       let row = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
       expect({ folder: row.folder, uid: Number(row.uid), returnedAt: row.returned_at }).toEqual({
         folder: "AI/Info",
@@ -420,7 +587,7 @@ describe("mail repository: emails", () => {
         returnedAt: null,
       });
 
-      expect(await markEmailReturned(trx, a.ctx, id, 60, at)).toBe(true);
+      expect(await markEmailReturned(trx, a.ctx, id, 60, at, { folder: "INBOX" })).toBe(true);
       row = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
       expect({ folder: row.folder, uid: Number(row.uid), returnedAt: row.returned_at, status: row.status }).toEqual({
         folder: "INBOX",
@@ -430,16 +597,82 @@ describe("mail repository: emails", () => {
       });
       expect(Number(await inboxUidOf(trx, id))).toBe(60);
 
-      // onlyOutsideInbox: a row that is already in INBOX stays as it is.
+      // The guard is always on: a row with folder = source_folder stays as it is.
       const later = new Date("2026-11-03T14:00:00Z");
-      expect(await markEmailReturned(trx, a.ctx, id, 70, later, { onlyOutsideInbox: true })).toBe(false);
+      expect(await markEmailReturned(trx, a.ctx, id, 70, later, { folder: "INBOX" })).toBe(false);
       row = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
       expect({ uid: Number(row.uid), returnedAt: row.returned_at }).toEqual({ uid: 60, returnedAt: at });
     });
   });
+
+  test("markEmailReturned into another synced folder sets folder and source_folder", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      await insertEmail(trx, a.ctx, newEmail(a.mailboxId, { folder: "AI/Info" }));
+      const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
+      const at = new Date("2026-11-03T13:00:00Z");
+
+      expect(await markEmailReturned(trx, a.ctx, id, 60, at, { folder: "Oferty" })).toBe(true);
+      const row = await trx
+        .selectFrom("emails")
+        .select(["folder", "source_folder", "uid", "inbox_uid", "returned_at"])
+        .where("id", "=", id)
+        .executeTakeFirstOrThrow();
+      expect({ ...row, uid: Number(row.uid), inbox_uid: Number(row.inbox_uid) }).toEqual({
+        folder: "Oferty",
+        source_folder: "Oferty",
+        uid: 60,
+        inbox_uid: 60,
+        returned_at: at,
+      });
+    });
+  });
+
+  test("markEmailRelocated moves folder, source_folder and uids only from the given folder, and filters by org_id", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      await insertEmail(trx, a.ctx, newEmail(a.mailboxId));
+      const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
+      const change = { from: "INBOX", to: "Oferty", uid: 80 };
+      const read = () =>
+        trx
+          .selectFrom("emails")
+          .select(["folder", "source_folder", "uid", "inbox_uid", "returned_at"])
+          .where("id", "=", id)
+          .executeTakeFirstOrThrow();
+
+      expect(await markEmailRelocated(trx, a.ctx, id, { ...change, from: "Rachunki" })).toBe(false);
+      expect(await markEmailRelocated(trx, b.ctx, id, change)).toBe(false);
+      let row = await read();
+      expect({ folder: row.folder, source: row.source_folder, uid: Number(row.uid) }).toEqual({
+        folder: "INBOX",
+        source: "INBOX",
+        uid: 1,
+      });
+
+      expect(await markEmailRelocated(trx, a.ctx, id, change)).toBe(true);
+      row = await read();
+      expect({ ...row, uid: Number(row.uid), inbox_uid: Number(row.inbox_uid) }).toEqual({
+        folder: "Oferty",
+        source_folder: "Oferty",
+        uid: 80,
+        inbox_uid: 80,
+        returned_at: null,
+      });
+    });
+  });
+
+  test("markEmailRelocated leaves a system-moved row alone", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      await insertEmail(trx, a.ctx, newEmail(a.mailboxId, { folder: "AI/Info" }));
+      const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
+      expect(await markEmailRelocated(trx, a.ctx, id, { from: "AI/Info", to: "Oferty", uid: 80 })).toBe(false);
+    });
+  });
 });
 
-describe("mail repository: listInboxEmailKeys", () => {
+describe("mail repository: listFolderEmailKeys", () => {
   test("lists INBOX rows since the time, and filters by org_id", async () => {
     await withRollback(db, async (trx) => {
       const { a, b } = await createTwoTenants(trx);
@@ -491,7 +724,7 @@ describe("mail repository: listInboxEmailKeys", () => {
         })
       );
 
-      const rows = await listInboxEmailKeys(trx, a.ctx, a.mailboxId, since);
+      const rows = await listFolderEmailKeys(trx, a.ctx, a.mailboxId, ["INBOX"], since);
       expect(rows).toHaveLength(2);
       expect(rows).toEqual(
         expect.arrayContaining([
@@ -499,7 +732,10 @@ describe("mail repository: listInboxEmailKeys", () => {
           { message_id_header: "<edge@x.test>", content_hash: "edge" },
         ])
       );
-      expect(await listInboxEmailKeys(trx, b.ctx, a.mailboxId, since)).toEqual([]);
+      expect(await listFolderEmailKeys(trx, b.ctx, a.mailboxId, ["INBOX"], since)).toEqual([]);
+      expect(await listFolderEmailKeys(trx, a.ctx, a.mailboxId, [], since)).toEqual([]);
+      const several = await listFolderEmailKeys(trx, a.ctx, a.mailboxId, ["INBOX", "AI/Info"], since);
+      expect(several.map((row) => row.content_hash).sort()).toEqual(["edge", "hash-1", "moved"]);
     });
   });
 });
@@ -563,8 +799,8 @@ describe("mail repository: email location", () => {
       expect(await updateEmailLocation(trx, b.ctx, id, { folder: "X", uid: 1 })).toBe(false);
       expect((await locationOf(trx, id)).folder).toBe("AI/Info");
 
-      // movedAt null clears; inboxUid is set when given
-      await updateEmailLocation(trx, a.ctx, id, { folder: INBOX, uid: 5, inboxUid: 5, movedAt: null });
+      // movedAt null clears; sourceUid is set when given
+      await updateEmailLocation(trx, a.ctx, id, { folder: INBOX, uid: 5, sourceUid: 5, movedAt: null });
       const back = await locationOf(trx, id);
       expect(back.folder).toBe(INBOX);
       expect(Number(back.inbox_uid)).toBe(5);
@@ -613,6 +849,116 @@ describe("mail repository: email location", () => {
       expect(rows[0]?.folder).toBe(INBOX);
       expect(await listEmailsByMessageIds(trx, b.ctx, a.mailboxId, ["<a1@x.test>"])).toEqual([]);
       expect(await listEmailsByMessageIds(trx, a.ctx, a.mailboxId, [])).toEqual([]);
+    });
+  });
+});
+
+describe("mail repository: sync folders", () => {
+  const offers = { key: "offers", path: "Oferty", role: "sort" } as const;
+  const junk = { key: "junk", path: "Wiadomości-śmieci", role: "junk" } as const;
+  const at = new Date("2026-11-01T10:00:00.000Z");
+
+  test("listSyncFolders of a new mailbox is the INBOX row, tenant-scoped", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      const rows = await listSyncFolders(trx, a.ctx, a.mailboxId, { enabledOnly: false });
+      expect(rows.map((row) => [row.key, row.role, row.path])).toEqual([["inbox", "inbox", INBOX]]);
+      expect(await listSyncFolders(trx, b.ctx, a.mailboxId, { enabledOnly: false })).toEqual([]);
+    });
+  });
+
+  test("listSyncFolders orders inbox, sort rows in default order, junk; enabledOnly leaves disabled out", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      const bills = { key: "bills", path: "Rachunki", role: "sort" } as const;
+      await insertSyncFolders(trx, a.ctx, a.mailboxId, [junk, bills, offers], at);
+      await trx
+        .updateTable("mailbox_folders")
+        .set({ enabled: false })
+        .where("mailbox_id", "=", a.mailboxId)
+        .where("key", "=", "bills")
+        .execute();
+      const all = await listSyncFolders(trx, a.ctx, a.mailboxId, { enabledOnly: false });
+      expect(all.map((row) => row.key)).toEqual(["inbox", "offers", "bills", "junk"]);
+      const enabled = await listSyncFolders(trx, a.ctx, a.mailboxId, { enabledOnly: true });
+      expect(enabled.map((row) => row.key)).toEqual(["inbox", "offers", "junk"]);
+    });
+  });
+
+  test("insertSyncFolders returns only new rows and never changes an existing row", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      expect(await insertSyncFolders(trx, a.ctx, a.mailboxId, [], at)).toEqual([]);
+      expect(await insertSyncFolders(trx, a.ctx, a.mailboxId, [offers], at)).toEqual([{ key: "offers", role: "sort" }]);
+      expect(await insertSyncFolders(trx, a.ctx, a.mailboxId, [{ ...offers, path: "Other" }], at)).toEqual([]);
+      expect((await getSyncFolder(trx, a.ctx, a.mailboxId, "offers"))?.path).toBe("Oferty");
+    });
+  });
+
+  test("insertSyncFolders with another organization's context is refused by the foreign key", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      // A savepoint keeps the failed insert from aborting the shared test transaction.
+      await sql`savepoint foreign_insert`.execute(trx);
+      await expect(insertSyncFolders(trx, b.ctx, a.mailboxId, [offers], at)).rejects.toThrow(/foreign key/);
+      await sql`rollback to savepoint foreign_insert`.execute(trx);
+      expect(await getSyncFolder(trx, a.ctx, a.mailboxId, "offers")).toBeUndefined();
+    });
+  });
+
+  test("lockSyncFolderByKey is tenant-scoped", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      expect((await lockSyncFolderByKey(trx, a.ctx, a.mailboxId, "inbox"))?.key).toBe("inbox");
+      expect(await lockSyncFolderByKey(trx, b.ctx, a.mailboxId, "inbox")).toBeUndefined();
+      expect(await lockSyncFolderByKey(trx, a.ctx, a.mailboxId, "offers")).toBeUndefined();
+    });
+  });
+
+  test("getJunkFolderPath is null before, the path after (also disabled), null for another tenant", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      expect(await getJunkFolderPath(trx, a.ctx, a.mailboxId)).toBeNull();
+      await insertSyncFolders(trx, a.ctx, a.mailboxId, [junk], at);
+      expect(await getJunkFolderPath(trx, a.ctx, a.mailboxId)).toBe("Wiadomości-śmieci");
+      await trx.updateTable("mailbox_folders").set({ enabled: false }).where("key", "=", "junk").execute();
+      expect(await getJunkFolderPath(trx, a.ctx, a.mailboxId)).toBe("Wiadomości-śmieci");
+      expect(await getJunkFolderPath(trx, b.ctx, a.mailboxId)).toBeNull();
+    });
+  });
+
+  test("updateSyncFolderEnabled with another organization's context changes nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      await insertSyncFolders(trx, a.ctx, a.mailboxId, [offers], at);
+      const row = await getSyncFolder(trx, a.ctx, a.mailboxId, "offers");
+      if (!row) throw new Error("folder row missing");
+      await updateFolderCursor(
+        trx,
+        a.ctx,
+        row.id,
+        { uidValidity: null, lastUid: null },
+        { uidValidity: 1, lastUid: 500 }
+      );
+
+      expect(await updateSyncFolderEnabled(trx, b.ctx, row.id, { enabled: false, clearCursor: true, at })).toBe(false);
+      const after = await getSyncFolder(trx, a.ctx, a.mailboxId, "offers");
+      expect({ enabled: after?.enabled, uv: after?.uidvalidity, last: after?.last_uid }).toEqual({
+        enabled: true,
+        uv: 1,
+        last: 500,
+      });
+    });
+  });
+
+  test("listSyncFolders throws a HardError for a key that the database allows and the enum does not", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      await trx
+        .insertInto("mailbox_folders")
+        .values({ org_id: a.ctx.orgId, mailbox_id: a.mailboxId, key: "junk_b", path: "X", role: "sort" })
+        .execute();
+      await expect(listSyncFolders(trx, a.ctx, a.mailboxId, { enabledOnly: false })).rejects.toBeInstanceOf(HardError);
     });
   });
 });

@@ -4,6 +4,8 @@
 
 Scope: `docs/roadmap.md` (S3 follow-up). Needs: S3. Related, other case: [`sync-return-of-a-later-copy.md`](sync-return-of-a-later-copy.md).
 
+Update 2026-11-09: the rules are per synced folder now (a cursor for each folder of `mailbox_folders`); see [`../active/sync-sort-folders.md`](../active/sync-sort-folders.md).
+
 ## Goal
 
 S3 stage 6 only logs and counts a copy that lands below the UID cursor. Interia may keep the UID on a COPY back to INBOX. The sync then does not see the mail as new. Store such a copy as `#n` and triage it: body fetch and the chunk insert path.
