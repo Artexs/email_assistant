@@ -16,7 +16,7 @@ Do not run this stage while an S3 VPS stage (19, 20) runs.
 On this PC every `git push` and every `bun run testmail:remote …` (it runs `git fetch`) needs the prefix
 `GIT_SSH_COMMAND="ssh -i $HOME/.ssh/github -o IdentitiesOnly=yes"` (task file "Facts checked"). Each push follows the task file rule "Worktree".
 
-- [ ] **9.1 Smoke run (3 mails) and the open facts**
+- [x] **9.1 Smoke run (3 mails) and the open facts** (2026-11-08 smoke: steps 1–4 done, steps 5–6 replaced: `deliver` does not work at Interia, notes §10; the server now syncs `Oferty`. Re-run 2026-11-09 with batch `2026-11-09-smoke`: step 7 exit 0, 3 triaged, child thread `ok`.)
   - Goal: prove the whole loop on 3 mails and settle the "Not verified" items before the big batch.
   - Preconditions: the testmail code (stages 1–8) is merged into `master` and pushed (task file "User checkpoints" 1; `git log origin/master` has stage 8),
     and the worktree branch has `git merge origin/master`. Run every command of this stage in the worktree. Read-only on the VPS:
@@ -45,7 +45,7 @@ On this PC every `git push` and every `bun run testmail:remote …` (it runs `gi
       checked folder → tell the user (Interia may have a new sort folder).
   - Done when: the preconditions hold and steps 1–7 pass; notes §10 has the facts (label filter, folders, sync delay, triage delay, `status_until`, bundled sha).
 
-- [ ] **9.2 First full batch (25 mails)**
+- [x] **9.2 First full batch (25 mails)** (2026-11-10, batch `2026-11-09-batch-01`; step 6 not needed: the sync reads `Oferty`; task file § Results.)
   - Goal: the first useful batch: done-when item 4 of the task.
   - Steps:
     1. Writer: `testmail-writer` for `<today>-batch-01` with the runbook mix (25 cases). Validate with `--allow-unlabelled`.
