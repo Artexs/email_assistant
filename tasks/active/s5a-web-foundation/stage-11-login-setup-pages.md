@@ -48,7 +48,7 @@ Reviewed on Opus high (the login flow and the redirect guard are auth code).
   - Done when: the build is green and the hand check of 11.3 passes for the setup link.
   - Out of scope: an e-mail with the link (S6), a "request a new link" button (S6, `web-public-hardening.md`).
 
-- [ ] **11.3 Dev loop hand check (both shapes of D18; a not-verified item)**
+- [x] **11.3 Dev loop hand check (both shapes of D18; a not-verified item)**
   - Goal: the real flow works in the Astro dev shape (`bun run web:dev` at `http://localhost:4321`, the API proxied to 8080) and the built shape (`bun run web:build && bun run dev`, the browser at `http://127.0.0.1:8080`).
   - Files: none (a check). The implementer writes the result as a log line in the segment file ("Log": the date, both shapes, pass or the exact failure).
   - Decisions: the keys in the worktree's `.env` are user step 1 (D18, D7: `WEB_BASE_URL=http://localhost:4321`, so every setup link carries `callbackURL=http://localhost:4321/setup`, which only the Astro dev server answers — the built shape on 8080 is for the login, not for the link: cold review of this plan, finding 7). The dev organization: `bun run org:create` exists from S0 (the worktree database has one after the user ran it there, or the implementer creates one: `bun run org:create --org-name Dev --email dev-owner@x.test --display-name Dev`).
