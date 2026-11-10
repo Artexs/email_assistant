@@ -94,7 +94,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 - **First seen:** 2026-11-09 (S5a code; not seen live)
 - **Source:** `apps/server/src/platform/auth.ts` (the Better Auth rate limiter through the logger, level `warn`).
-- **Cause:** A request reached Better Auth with no usable `x-client-ip`. The server sets that header before Better Auth (W1), so the limiter keeps one shared bucket per path for every client.
+- **Cause:** A request reached Better Auth with no usable `x-client-ip`. The server sets `x-client-ip` before Better Auth (W1), so this line means that wiring changed; Better Auth then falls back to one shared per-path bucket for every client.
 - **Fix:** Must not appear. If it does, the builder of the auth request or the `/api/auth/*` mount changed: check `authRequest` and `clientAddress` (with `peerAddress`) in `apps/server/src/platform/http.ts` and `WEB_TRUSTED_PROXIES`.
 - **Status:** investigating
 
