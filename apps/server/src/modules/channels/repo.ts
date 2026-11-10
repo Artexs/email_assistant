@@ -185,6 +185,7 @@ export const outboxKinds = [
   "approval_set",
   "send_result",
   "delegation_answered",
+  "mailbox_removed",
 ] as const;
 export type OutboxKind = (typeof outboxKinds)[number];
 const outboxKindSchema = z.enum(outboxKinds);

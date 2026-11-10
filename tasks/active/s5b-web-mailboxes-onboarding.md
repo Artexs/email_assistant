@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — stages 1-3 built (stages 1-2 PASS).** 15 stage files, B1–B17, 26 review findings fixed. Left: stages 1–15 with `run-task` (worktree `task/s5b-web-mailboxes-onboarding`), starting with user step 0. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5b-build.md`.
+> **Status 2026-11-11 — in progress — stages 1-4 built (stages 1-3 PASS).** 15 stage files, B1–B17, 26 review findings fixed. Left: stages 1–15 with `run-task` (worktree `task/s5b-web-mailboxes-onboarding`), starting with user step 0. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5b-build.md`.
 
 # S5b Web: mailboxes and onboarding
 
@@ -155,7 +155,7 @@ Each stage lives in its own file in [`s5b-web-mailboxes-onboarding/`](s5b-web-ma
 - [x] [Stage 1](s5b-web-mailboxes-onboarding/stage-01-core-presets-schemas.md) — Core: provider presets, the web schemas, the scope badges, `onboardingOf`, the error codes [written]
 - [x] [Stage 2](s5b-web-mailboxes-onboarding/stage-02-switch-mailbox-status.md) — `switchMailboxStatus` and the Telegram `/pause` `/resume` refactor [written]
 - [x] [Stage 3](s5b-web-mailboxes-onboarding/stage-03-connect-services.md) — Login timeouts and the deadline, `MailboxExistsError`, `MailboxNotFoundError`, `mailbox.connected`, actors [risky] [written]
-- [ ] [Stage 4](s5b-web-mailboxes-onboarding/stage-04-migration-delete-mailbox.md) — Migration `delete_mailbox` and the `mailbox_removed` kind, the deletion tests [risky] [written]
+- [x] [Stage 4](s5b-web-mailboxes-onboarding/stage-04-migration-delete-mailbox.md) — Migration `delete_mailbox` and the `mailbox_removed` kind, the deletion tests [risky] [written]
 - [ ] [Stage 5](s5b-web-mailboxes-onboarding/stage-05-remove-mailbox.md) — `removeMailbox`, the owners' notice, the race and lock tests [risky] [written]
 - [ ] [Stage 6](s5b-web-mailboxes-onboarding/stage-06-telegram-routes.md) — `botUsername`, `channels/routes.ts`, the web test helper [risky] [written]
 - [ ] [Stage 7](s5b-web-mailboxes-onboarding/stage-07-composition-mail-routes.md) — Composition and config key, `GET /api/mailboxes`, pause, resume, remove routes [risky] [written]
@@ -207,3 +207,4 @@ Scope: 26 [minor] the deleted `sending` digest's "lost the claim" line and the r
 - 2026-11-11: stage 1 built, review pending (worktree `task/s5b-web-mailboxes-onboarding`, database `email_assistant_s5b`). Check: lint, typecheck, test:unit (1500 pass), test:int (1063 pass), web build ok.
 - 2026-11-11: stage 1 review PASS (minor: no test for a bad `secretKind`, optional). Pushed. Stage 2 built, review pending. Check: lint, typecheck, test:unit (1500), test:int (1067 pass).
 - 2026-11-11: stage 2 review PASS (minor: export order, cosmetic). Pushed. Stage 3 built, review pending (Opus high). Check: lint, typecheck, test:unit (1502), test:int (1078 pass).
+- 2026-11-11: stage 3 review PASS (Opus high; minor: duplicated test seed helper, optional). Pushed. Stage 4 built, review pending (Opus high). Check: lint, typecheck, test:unit (1502), test:int (1086 pass); migration round trip ok.

@@ -6,7 +6,7 @@ Part of [`../s5b-web-mailboxes-onboarding.md`](../s5b-web-mailboxes-onboarding.m
 
 One step. The function is the only code path that may delete `audit_log` rows (ADR 0011: `app` has no `DELETE` on it).
 
-- [ ] **4.1 `db/migrations/20261111000001_delete_mailbox.sql`, the kind in `channels/repo.ts`, the tests (B7, D11)**
+- [x] **4.1 `db/migrations/20261111000001_delete_mailbox.sql`, the kind in `channels/repo.ts`, the tests (B7, D11)**
   - Goal: one privileged SQL function removes a mailbox and every row that belongs to it, clears the shared digest texts, and refuses a mailbox of another organization.
   - Files: create `db/migrations/20261111000001_delete_mailbox.sql`, `apps/server/test/integration/mailbox-rows.ts` (test helper), `apps/server/test/integration/delete-mailbox.test.ts`; change `apps/server/src/modules/channels/repo.ts` (`outboxKinds` + `"mailbox_removed"`); run `bun run db:types` (expected: no change, the kind is `text`; commit `apps/server/src/platform/db/schema.ts` only if it changed).
   - Interfaces:
