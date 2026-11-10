@@ -4,9 +4,11 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
 
 ## Stage 13 — Playwright: `playwright.config.ts`, `global-setup.ts`, the `test:e2e` script, the auth smoke in both projects (W20), the CSP assertion
 
+> **Changed at the merge (2026-11-10):** the `webServer` command runs `bun run db:migrate` before the server, and `global-setup.ts` runs only the seed (W10).
+
 The e2e run itself happens in the worktree, started by the main session (the review copies run only lint, typecheck and unit tests). **Pipeline pause:** user step 2 (the e2e database lines in the worktree's `.env`) before 13.1.
 
-- [ ] **13.1 `playwright.config.ts`, `env.ts`, `global-setup.ts`, `seed.ts`, the `test:e2e` script (D19, W10)**
+- [x] **13.1 `playwright.config.ts`, `env.ts`, `global-setup.ts`, `seed.ts`, the `test:e2e` script (D19, W10)**
   - Goal: `bun run test:e2e` starts the server on 8081 against the e2e database, seeds it, and runs the specs in the `mobile` and `desktop` projects with the system Chromium locally and Playwright's Chromium in CI; every test has its own client address, so the login rate limit never crosses tests.
   - Files: create `apps/web/e2e/playwright.config.ts`, `apps/web/e2e/global-setup.ts`, `apps/web/e2e/env.ts`, `apps/web/e2e/seed.ts`; change `apps/web/package.json` (`"@playwright/test": "1.65.0"` in `devDependencies`, exact), the root `bun.lock`, the root `package.json` (`"test:e2e": "bunx playwright test -c apps/web/e2e/playwright.config.ts"`).
   - Interfaces:
@@ -42,7 +44,7 @@ The e2e run itself happens in the worktree, started by the main session (the rev
   - Done when: `--list` works and `typecheck` passes.
   - Out of scope: CI (stage 14).
 
-- [ ] **13.2 `tests/auth.spec.ts` (W20) and `helpers.ts`**
+- [x] **13.2 `tests/auth.spec.ts` (W20) and `helpers.ts`**
   - Goal: the S5a done-when has its Playwright proof in both projects: wrong password, login and the shell, sign-out and the gate, the setup link once, zero CSP errors with the overlays open, no banner, the login rate limit.
   - Files: create `apps/web/e2e/tests/auth.spec.ts`, `apps/web/e2e/helpers.ts` (`cspErrors(page)`: collects console messages whose text contains `Content Security Policy`, page errors, and every `securitypolicyviolation` event: `page.addInitScript` adds a `document` listener that logs ``console.warn(`csp-violation ${e.violatedDirective} ${e.blockedURI}`)``, and the helper collects the lines that start with `csp-violation` (fact 23: Chromium logs no console text for an eval violation); `signIn(page, email, password)`; `nextAddress()`: a per-test `x-forwarded-for` value `198.51.100.<n>` from a module counter, applied with `test.use({ extraHTTPHeaders: { "x-forwarded-for": … } })` in a `beforeEach` through `browser.newContext`, or simpler: each test creates its context with `extraHTTPHeaders`).
   - Decisions: the texts come from `../../src/i18n/en` (one source, U1); locators by role and label (U9): `getByLabel(en.email_label)`, `getByLabel(en.password_label, { exact: true })`, `getByRole("button", { name: en.sign_in })`, `getByRole("alert")`, `getByRole("navigation", { name: en.nav_main })`, `getByRole("button", { name: en.menu_open })` (mobile), `getByRole("button", { name: en.user_menu })` (desktop: the sidebar's bottom block, stage 10), `getByRole("menuitem", { name: en.log_out })` (desktop) / `getByRole("button", { name: en.log_out })` (mobile, in the sheet). The project name decides mobile or desktop steps (`test.info().project.name`). Every test uses a fresh context with its own `x-forwarded-for` address (`198.51.100.<n>`), so the sign-ins of one test never count for another.

@@ -49,3 +49,5 @@ The mailbox card content and order; the connect form layout (preset first, then 
 
 - 2026-11-08: Created by the S5 master plan session (`tasks/active/s5-web-panel.md`, P11).
 - 2026-11-08: Cold review fixes (master plan "Cold review result", findings 3, 6, 7, 21): `keep-mode` route, pending digests dropped on removal, provider timeout, the unique index fact.
+- 2026-11-10: S5a built: the islands are `islands/<Page>Page.tsx` with `AppShell` inside (stage 10.2), the seed is `scripts/e2e-seed.ts` with `SeedFile` (stage 12), `requireOwner` and `parseBody` are exported from `platform/http.ts`, `WebDeps.routers` mounts a module router from `web.ts`, every web import of core goes through `@ea/core/web`.
+- 2026-11-10: S5a final review: `useResource` (`apps/web/src/lib/use-resource.ts`) has no test for the visibility pause (U7). It needs a DOM test library (a `bun.lock` change), so S5b adds it with its first polled page. The `next` guard is `safeNextPath` in `@ea/core/web` (server and web use the same function).

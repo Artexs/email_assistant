@@ -8,6 +8,8 @@
   "dependencies": {
     "@ea/core": "workspace:*",
     "@google/genai": "^2.32.0",
+    "@hono/bun": "1.0.1",
+    "better-auth": "1.7.18",
     "croner": "^11.0.0",
     "grammy": "^1.46.0",
     "hono": "^4.13.16",

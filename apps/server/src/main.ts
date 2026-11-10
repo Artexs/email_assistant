@@ -12,6 +12,7 @@ import { createApp } from "./platform/http";
 import { createLlmClient, llmProviders } from "./platform/llm";
 import { createLog, setLogLevel } from "./platform/log";
 import { createScheduler } from "./platform/scheduler";
+import { webDeps } from "./web";
 
 const log = createLog("main");
 const startedAt = new Date();
@@ -55,8 +56,10 @@ try {
   process.exit(1);
 }
 
-const app = createApp({ checkDb: () => checkDb(db) });
-const server = Bun.serve({ port: config.PORT, fetch: app.fetch });
+const web = webDeps(config, db);
+const app = createApp({ checkDb: () => checkDb(db), web });
+// idleTimeout: the connect route runs a mailbox login inside the request; Bun's default is 10 s.
+const server = Bun.serve({ port: config.PORT, idleTimeout: 90, fetch: app.fetch });
 log.info(`listening on port ${server.port}`);
 
 const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
@@ -198,6 +201,7 @@ async function shutdown(): Promise<void> {
     sleep(SHUTDOWN_WAIT_MS),
   ]);
   await server.stop();
+  await web?.close();
   await db.destroy();
   process.exit(0);
 }

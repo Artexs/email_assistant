@@ -1,8 +1,9 @@
 ---
-import Welcome from "../components/Welcome.astro";
-import Layout from "../layouts/Layout.astro";
+import Public from "../layouts/Public.astro";
+import { en } from "../i18n/en";
 ---
 
-<Layout>
-  <Welcome />
-</Layout>
+<Public title={en.brand}>
+  <meta http-equiv="refresh" content="0; url=/onboarding" slot="head" />
+  <a href="/onboarding">{en.continue}</a>
+</Public>

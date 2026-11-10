@@ -4,7 +4,7 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
 
 ## Stage 6 — `createApp({ checkDb, web })`: the middleware chain of W8, `requireSession`, the auth mount with the W1 request, static serving (D6), errors (D9); the route matrix and the HTTP log test [risky]
 
-- [ ] **6.1 The chain, the matrix, the HTTP log test**
+- [x] **6.1 The chain, the matrix, the HTTP log test**
   - Goal: the HTTP platform of D5, D6 and D9 as one testable `createApp({ checkDb, web })`, with nothing module-specific inside (the module routers mount through `web.routers`, stage 8), proven by a request matrix and by a log test over HTTP.
   - Files: change `apps/server/src/platform/http.ts`, `apps/server/test/integration/health.test.ts` (`createApp({ checkDb, web: null })`); create `apps/server/test/integration/web-http.test.ts`.
   - Interfaces: `createApp(deps: HttpDeps): Hono` with `HttpDeps = { checkDb: () => Promise<boolean>; web: WebDeps | null }` (`web` now required). Exports added: `requireSession: MiddlewareHandler<ApiEnv>` (for the API: 401 JSON) and `readSession(c): Promise<WebSession | null>` (shared with the page gate; caches the result in `c.set("session", …)` and appends `session.setCookie` values to the response with `c.header("set-cookie", value, { append: true })`, W17).

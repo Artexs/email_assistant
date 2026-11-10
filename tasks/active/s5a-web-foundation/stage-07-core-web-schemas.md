@@ -4,7 +4,7 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
 
 ## Stage 7 — `packages/core/src/web/`: the shared schemas and pure helpers (D9, W6, W18), exported as `@ea/core/web`
 
-- [ ] **7.1 Schemas, helpers, the subpath export, unit tests**
+- [x] **7.1 Schemas, helpers, the subpath export, unit tests**
   - Goal: the API and the browser share one source for the error shape, the `/api/me` shape, the scope codes, the form rules and the time format; the browser imports a subpath that pulls no Node module into the Vite bundle.
   - Files: create `packages/core/src/web/zod.ts`, `packages/core/src/web/errors.ts`, `packages/core/src/web/me.ts`, `packages/core/src/web/password.ts`, `packages/core/src/web/index.ts`, `packages/core/src/web/zod.test.ts`, `packages/core/src/web/errors.test.ts`, `packages/core/src/web/password.test.ts`, `packages/core/src/web/me.test.ts`; change `packages/core/src/index.ts` (`export * from "./web";`) and `packages/core/package.json` (`exports` gains `"./web": "./src/web/index.ts"`).
   - Interfaces:

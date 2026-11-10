@@ -4,7 +4,7 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
 
 ## Stage 3 — `platform/auth.ts`: `createAuth(deps)` with the D1 options, the W2 hooks through an injected `onEvent`, the W9 rate limits; `auditWebEvent` in the composition root; the auth integration tests [risky]
 
-- [ ] **3.1 `createAuth`, `auditWebEvent`, the tests**
+- [x] **3.1 `createAuth`, `auditWebEvent`, the tests**
   - Goal: one function builds the Better Auth instance on our tables for three callers (the server, `web:invite`, the e2e seed); it reports the three auth events through a dependency, and the composition root turns them into audit rows, so the platform imports no module (`docs/modules.md` §2) and an audit miss never fails a login.
   - Files: create `apps/server/src/platform/auth.ts`, `apps/server/src/platform/auth.test.ts` (unit: the allow-list helper), `apps/server/src/web.ts` (this stage: `auditWebEvent` only; stage 8 adds `webDeps`), `apps/server/test/integration/web-auth.test.ts`; change `apps/server/package.json` (`"better-auth": "1.7.18"` exact, `"@hono/bun": "1.0.1"` exact — stage 6 uses it; adding both here keeps the server's `bun.lock` change in one stage), the root `bun.lock`, `docs/code-patterns.md` ("Real platform paths" gets `platform/auth.ts`).
   - Interfaces:

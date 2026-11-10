@@ -4,7 +4,7 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
 
 ## Stage 8 — `requireTenant` and `requireOwner`, `tenancy/routes.ts` with `GET /api/me`, `web.ts` composition, `main.ts` wiring with `idleTimeout` [risky]
 
-- [ ] **8.1 `requireTenant`, `requireOwner`, `tenancy/routes.ts`, the routes rule in the code patterns**
+- [x] **8.1 `requireTenant`, `requireOwner`, `tenancy/routes.ts`, the routes rule in the code patterns**
   - Goal: every `/api/*` route after the session has the tenant and the role (D3); `/api/me` returns the W6 shape with the real counts; the "routes are thin" rule enters `docs/code-patterns.md` with the first route.
   - Files: change `apps/server/src/platform/http.ts` (the two middlewares, exported; `requireTenant` wired into the `api` sub-app after `requireSession`), `apps/server/src/platform/http.test.ts`, `apps/server/src/modules/tenancy/index.ts` (`export { tenancyRoutes, type TenancyRouteDeps } from "./routes"`), `apps/server/test/integration/web-http.test.ts` (the `/api/me` line of stage 6 test 3 becomes 200 when a router is mounted), `docs/code-patterns.md`; create `apps/server/src/modules/tenancy/routes.ts`, `apps/server/test/integration/web-me.test.ts`.
   - Interfaces:
@@ -40,7 +40,7 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
   - Done when: the tests pass; `apps/server/src/modules/tenancy/routes.ts` imports only `hono`, `@ea/core`, `../../platform/*` and `./repo`.
   - Out of scope: `onboarding`, `telegram` (S5b); `PATCH /api/organization` (S5c).
 
-- [ ] **8.2 `web.ts`: `webDeps`; `main.ts` wiring (D8, W7), `Bun.serve({ idleTimeout: 90 })` (D5)**
+- [x] **8.2 `web.ts`: `webDeps`; `main.ts` wiring (D8, W7), `Bun.serve({ idleTimeout: 90 })` (D5)**
   - Goal: `main.ts` serves the web when `WEB_BASE_URL` is set and stays as today when it is not; the start log says which; the process closes the auth pool on shutdown.
   - Files: change `apps/server/src/web.ts` (stage 3 created it with `auditWebEvent`), `apps/server/src/main.ts`, `apps/server/test/integration/web-http.test.ts` (one test through the real `webDeps`); create `apps/server/src/web.test.ts` (unit: the pure parts).
   - Interfaces:

@@ -44,6 +44,9 @@ export const auditEvents = {
   delegationCancelled: "delegation.cancelled",
   delegationDone: "delegation.done",
   delegationChaserRun: "delegation.chaser_run",
+  webLogin: "web.login",
+  webPasswordSet: "web.password_set",
+  webPasswordChanged: "web.password_changed",
 } as const;
 
 export interface AuditEvent {

@@ -149,6 +149,17 @@ export default tseslint.config(
     rules: restrictImports([grammyImports, geminiImports]),
   },
   {
+    // components/ui/** is excluded on purpose: the shadcn CLI writes sr-only texts there.
+    files: [
+      "apps/web/src/islands/**/*.tsx",
+      "apps/web/src/components/shell/**/*.tsx",
+      "apps/web/src/components/auth/**/*.tsx",
+    ],
+    rules: {
+      "react/jsx-no-literals": ["error", { noStrings: true, ignoreProps: true, allowedStrings: ["·", "—", "/"] }],
+    },
+  },
+  {
     files: ["apps/web/src/env.d.ts"],
     rules: { "@typescript-eslint/no-empty-object-type": "off" },
   },

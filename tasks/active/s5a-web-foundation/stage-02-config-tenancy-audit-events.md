@@ -4,7 +4,7 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
 
 ## Stage 2 — Config keys (D7), `.env.example`, `tenancy` changes (D2, W13, W14), the audit events, the code-patterns lines for them
 
-- [ ] **2.1 Config keys, `.env.example`, `listMembershipsOfUser`, the lower-case e-mail, the audit events**
+- [x] **2.1 Config keys, `.env.example`, `listMembershipsOfUser`, the lower-case e-mail, the audit events**
   - Goal: the server reads the five web keys with the D7 rules; the tenancy module lower-cases on insert and can list a user's organizations; the audit module knows the three web events; `docs/code-patterns.md` names the new repository exception in the same commit as the code.
   - Files: change `apps/server/src/platform/config.ts`, `apps/server/src/platform/config.test.ts`, `.env.example`, `apps/server/src/modules/tenancy/repo.ts`, `apps/server/src/modules/tenancy/service.ts`, `apps/server/src/modules/tenancy/index.ts`, `apps/server/src/modules/audit/repo.ts`, `apps/server/test/integration/tenancy.test.ts`, `docs/code-patterns.md`.
   - Interfaces:

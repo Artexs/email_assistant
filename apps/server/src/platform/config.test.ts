@@ -10,6 +10,8 @@ import {
   loadConfig,
   loadTestmailConfig,
   sendTestAddresses,
+  webTrustedOrigins,
+  webTrustedProxies,
 } from "./config";
 
 const fullEnv = {
@@ -386,5 +388,56 @@ describe("loadTestmailConfig", () => {
 
   test("loadConfig works without the AgentMail keys", () => {
     expect(() => loadConfig(fullEnv)).not.toThrow();
+  });
+});
+
+describe("web keys", () => {
+  const secret32 = "x".repeat(32);
+
+  test("empty web keys are undefined and WEB_DIST has its default", () => {
+    const config = loadConfig({
+      ...fullEnv,
+      WEB_BASE_URL: "",
+      WEB_AUTH_SECRET: "",
+      WEB_TRUSTED_ORIGINS: "",
+      WEB_TRUSTED_PROXIES: "",
+      WEB_DIST: "",
+    });
+    expect(config.WEB_BASE_URL).toBeUndefined();
+    expect(config.WEB_AUTH_SECRET).toBeUndefined();
+    expect(config.WEB_TRUSTED_ORIGINS).toBeUndefined();
+    expect(config.WEB_TRUSTED_PROXIES).toBeUndefined();
+    expect(config.WEB_DIST).toBe("apps/web/dist");
+    expect(webTrustedOrigins(config)).toEqual([]);
+    expect(webTrustedProxies(config)).toEqual([]);
+  });
+
+  test("WEB_BASE_URL needs WEB_AUTH_SECRET of 32 characters", () => {
+    const base = { ...fullEnv, WEB_BASE_URL: "https://ea.example.ts.net" };
+    expect(configError(base).keys).toEqual(["WEB_AUTH_SECRET"]);
+    expect(configError({ ...base, WEB_AUTH_SECRET: "x".repeat(31) }).keys).toEqual(["WEB_AUTH_SECRET"]);
+    expect(loadConfig({ ...base, WEB_AUTH_SECRET: secret32 }).WEB_BASE_URL).toBe("https://ea.example.ts.net");
+  });
+
+  test("WEB_BASE_URL is an origin", () => {
+    expect(configError({ ...fullEnv, WEB_BASE_URL: "https://x.test/panel", WEB_AUTH_SECRET: secret32 }).keys).toEqual([
+      "WEB_BASE_URL",
+    ]);
+    expect(() =>
+      loadConfig({ ...fullEnv, WEB_BASE_URL: "http://localhost:4321", WEB_AUTH_SECRET: secret32 })
+    ).not.toThrow();
+  });
+
+  test("WEB_TRUSTED_ORIGINS is a trimmed list of origins", () => {
+    const config = loadConfig({ ...fullEnv, WEB_TRUSTED_ORIGINS: "http://127.0.0.1:8080, http://localhost:8080" });
+    expect(webTrustedOrigins(config)).toEqual(["http://127.0.0.1:8080", "http://localhost:8080"]);
+    expect(configError({ ...fullEnv, WEB_TRUSTED_ORIGINS: "http://x.test/" }).keys).toEqual(["WEB_TRUSTED_ORIGINS"]);
+  });
+
+  test("WEB_TRUSTED_PROXIES is a list of IPs or CIDRs", () => {
+    const config = loadConfig({ ...fullEnv, WEB_TRUSTED_PROXIES: "172.18.0.1, 10.0.0.0/8, fd00::/8" });
+    expect(webTrustedProxies(config)).toEqual(["172.18.0.1", "10.0.0.0/8", "fd00::/8"]);
+    expect(configError({ ...fullEnv, WEB_TRUSTED_PROXIES: "172.18.0.1/33" }).keys).toEqual(["WEB_TRUSTED_PROXIES"]);
+    expect(configError({ ...fullEnv, WEB_TRUSTED_PROXIES: "gateway" }).keys).toEqual(["WEB_TRUSTED_PROXIES"]);
   });
 });

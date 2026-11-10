@@ -1,0 +1,7 @@
+---
+import Public from "../layouts/Public.astro";
+import SetupPage from "../islands/SetupPage.tsx";
+import { en } from "../i18n/en";
+---
+
+<Public title={en.title_setup}><SetupPage client:load /></Public>

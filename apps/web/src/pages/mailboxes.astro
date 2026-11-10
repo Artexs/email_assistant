@@ -1,0 +1,7 @@
+---
+import App from "../layouts/App.astro";
+import MailboxesPage from "../islands/MailboxesPage.tsx";
+import { en } from "../i18n/en";
+---
+
+<App title={en.title_mailboxes}><MailboxesPage client:load /></App>

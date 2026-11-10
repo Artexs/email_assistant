@@ -8,7 +8,7 @@ import { insertMembership, insertOrganization, insertUser } from "./repo";
 const createOrganizationInputSchema = z.object({
   orgName: z.string().trim().min(1),
   timezone: z.string().refine((tz) => Intl.supportedValuesOf("timeZone").includes(tz), "invalid timezone"),
-  email: z.email(),
+  email: z.email().transform((email) => email.toLowerCase()),
   displayName: z.string().trim().min(1),
 });
 

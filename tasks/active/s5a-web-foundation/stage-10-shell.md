@@ -4,7 +4,7 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
 
 ## Stage 10 — Shell: the `App.astro` layout, the React shell (tabs, sidebar, menu sheet, user menu, banner, states), placeholder app pages
 
-- [ ] **10.1 `App.astro`, `AppShell`, `MeProvider`, the nav, the banner, the shell states**
+- [x] **10.1 `App.astro`, `AppShell`, `MeProvider`, the nav, the banner, the shell states**
   - Goal: every app page renders one island that wraps its content in the shell of U3 and S5–S8, S11, S12: a bottom tab bar and a top bar under 1024 px, a left sidebar from 1024 px, one user control with "Log out", the `auth_error` banner from `/api/me.mailboxesInAuthError`, the loading skeleton, the "no organization" and "could not load" states, and the sonner `Toaster` for U6.
   - Files: create `apps/web/src/layouts/App.astro`, `apps/web/src/components/shell/AppShell.tsx`, `apps/web/src/components/shell/MeProvider.tsx`, `apps/web/src/components/shell/Nav.tsx`, `apps/web/src/components/shell/UserMenu.tsx`, `apps/web/src/components/shell/AuthErrorBanner.tsx`, `apps/web/src/components/shell/Placeholder.tsx`, `apps/web/src/components/shell/nav-items.ts`.
   - Interfaces:
@@ -50,7 +50,7 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
   - Done when: the build is green, the visual check matches U3 and S12, no CSP console error.
   - Out of scope: the login and setup pages (stage 11), real page content (S5b–S5d), toasts (S5b).
 
-- [ ] **10.2 Placeholder app pages**
+- [x] **10.2 Placeholder app pages**
   - Goal: the five app routes exist as static pages with the shell, so the navigation, the redirects and the banner can be tested at checkpoint 1 (S11).
   - Files: create `apps/web/src/pages/{onboarding,activity,mailboxes,settings,rules}.astro` and `apps/web/src/islands/{Onboarding,Activity,Mailboxes,Settings,Rules}Page.tsx`.
   - Interfaces: each page: `---` `import App from "../layouts/App.astro"; import OnboardingPage from "../islands/OnboardingPage.tsx"; import { en } from "../i18n/en";` `---` `<App title={en.title_onboarding}><OnboardingPage client:load /></App>`. Each island: `export default function OnboardingPage() { return <AppShell active="onboarding" title="title_onboarding"><Placeholder /></AppShell>; }`.

@@ -6,14 +6,14 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
 
 Reviewed on Opus high (the login flow and the redirect guard are auth code).
 
-- [ ] **11.1 `/login`**
+- [x] **11.1 `/login`**
   - Goal: the owner signs in with e-mail and password (S3): one error text for a bad login, a text for 429 and for other failures, the `next` redirect rule, the "No password yet?" help, the `setup=done` note; a signed-in visitor is sent on.
   - Files: create `apps/web/src/pages/login.astro`, `apps/web/src/islands/LoginPage.tsx`, `apps/web/src/components/auth/AuthCard.tsx` (the shared card: `CardHeader` with the title, `CardContent` with `children`), `apps/web/src/lib/next-path.ts`, `apps/web/src/lib/next-path.test.ts`.
   - Interfaces:
 
     ```ts
     // lib/next-path.ts (pure; the browser twin of the server's safeNext, stage 5)
-    export function safeNextPath(raw: string | null): string; // the six steps of stage 5's safeNext (its Decisions), the same test list; else "/"
+    export function safeNextPath(raw: string | null): string; // the seven steps of stage 5's safeNext (its Decisions), the same test list; else "/"
     // islands/LoginPage.tsx
     export default function LoginPage(): JSX.Element;
     // state: { email, password, pending, error: TextKey | null, setupDone: boolean }
@@ -26,13 +26,13 @@ Reviewed on Opus high (the login flow and the redirect guard are auth code).
     - Submit: `const { error } = await authClient.signIn.email({ email, password })`; `error === null` → `location.assign(safeNextPath(params.get("next")))`; `error.status === 429` → `t("error_too_many")`; `error.status === 401` or `error.code === "INVALID_EMAIL_OR_PASSWORD"` → `t("login_error_credentials")`; anything else (network, 403 `bad_origin`, 500) → `t("error_generic")`. The error renders in `<p role="alert" className="text-destructive text-sm">` under the form (one text, never which field was wrong: S3). The password field is cleared on an error; the e-mail stays. The client's error shape (`error.status`, `error.code`) is a not-verified item that stage 13's smoke settles; if it differs, map by `error.status` only.
     - Help (S3): `<details>` with `<summary>{t("login_help_summary")}</summary><p>{t("login_help_text")}</p></details>` under the form; plain HTML, keyboard-reachable (U9).
   - Test:
-    1. `next-path.test.ts`: `safeNextPath("/mailboxes")` → `/mailboxes`; `"/mailboxes?x=1#y"` → the same; `null` → `/`; `""` → `/`; `"//evil.test"` → `/`; `"https://evil.test/"` → `/`; `"/\\evil.test"` → `/`; `"mailboxes"` → `/`; `"/login"`, `"/login?next=%2F"`, `"/setup?token=abc"` → `/`; `"/\t/evil.test"`, `"/\n/evil.test"`, `"/\r\n/evil.test"` → `/` (the URL parser drops tab, LF and CR; second cold review, finding 1); `"/%09/evil.test"` → the same.
+    1. `next-path.test.ts`: `safeNextPath("/mailboxes")` → `/mailboxes`; `"/mailboxes?x=1#y"` → the same; `null` → `/`; `""` → `/`; `"//evil.test"` → `/`; `"https://evil.test/"` → `/`; `"/\\evil.test"` → `/`; `"mailboxes"` → `/`; `"/login"`, `"/login?next=%2F"`, `"/setup?token=abc"` → `/`; `"/\t/evil.test"`, `"/\n/evil.test"`, `"/\r\n/evil.test"` → `/` (the URL parser drops tab, LF and CR; second cold review, finding 1); `"/%09/evil.test"` → the same; `"/.//evil.test"`, `"/..//evil.test"`, `"/a/..//evil.test"`, `"/%2e//evil.test"` → `/` (dot segments; stage 5 review, 2026-11-09).
     2. Playwright (stage 13, W20 cases 1–3, 7) covers the wrong password text, the success redirect to `/onboarding` through `/`, the sign-out and the 429 text.
   - Check: `bun run lint && bun run typecheck && bun run test:unit && cd apps/web && bun run build`; then `grep -rlE "__vite-browser-external|node:crypto" dist/_astro` → nothing (second cold review, finding 16).
   - Done when: the build is green, the unit test passes, and the hand check of 11.3 passes for the login.
   - Out of scope: the setup page (11.2), Playwright (stage 13), a password reset from the browser (S6).
 
-- [ ] **11.2 `/setup`**
+- [x] **11.2 `/setup`**
   - Goal: the setup link sets the first or a new password and signs the user in (S4, D2); a used, expired or missing link shows one clear text.
   - Files: create `apps/web/src/pages/setup.astro`, `apps/web/src/islands/SetupPage.tsx`.
   - Interfaces: `export default function SetupPage(): JSX.Element;` state `{ mode: "form" | "invalid" | "missing", email, password, repeat, pending, fieldErrors: Partial<Record<"email" | "password" | "repeat", TextKey>>, error: TextKey | null }`.
@@ -48,7 +48,7 @@ Reviewed on Opus high (the login flow and the redirect guard are auth code).
   - Done when: the build is green and the hand check of 11.3 passes for the setup link.
   - Out of scope: an e-mail with the link (S6), a "request a new link" button (S6, `web-public-hardening.md`).
 
-- [ ] **11.3 Dev loop hand check (both shapes of D18; a not-verified item)**
+- [x] **11.3 Dev loop hand check (both shapes of D18; a not-verified item)**
   - Goal: the real flow works in the Astro dev shape (`bun run web:dev` at `http://localhost:4321`, the API proxied to 8080) and the built shape (`bun run web:build && bun run dev`, the browser at `http://127.0.0.1:8080`).
   - Files: none (a check). The implementer writes the result as a log line in the segment file ("Log": the date, both shapes, pass or the exact failure).
   - Decisions: the keys in the worktree's `.env` are user step 1 (D18, D7: `WEB_BASE_URL=http://localhost:4321`, so every setup link carries `callbackURL=http://localhost:4321/setup`, which only the Astro dev server answers — the built shape on 8080 is for the login, not for the link: cold review of this plan, finding 7). The dev organization: `bun run org:create` exists from S0 (the worktree database has one after the user ran it there, or the implementer creates one: `bun run org:create --org-name Dev --email dev-owner@x.test --display-name Dev`).

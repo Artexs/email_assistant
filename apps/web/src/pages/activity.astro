@@ -1,0 +1,7 @@
+---
+import App from "../layouts/App.astro";
+import ActivityPage from "../islands/ActivityPage.tsx";
+import { en } from "../i18n/en";
+---
+
+<App title={en.title_activity}><ActivityPage client:load /></App>

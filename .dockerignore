@@ -5,6 +5,9 @@ node_modules
 .git
 apps/web/dist
 apps/web/.astro
+apps/web/e2e/.seed.json
+apps/web/e2e/test-results
+apps/web/e2e/playwright-report
 tasks
 notes
 docs
