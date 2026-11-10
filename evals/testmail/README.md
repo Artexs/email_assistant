@@ -11,10 +11,13 @@ Plan: `tasks/active/test-mail-traffic.md`. Notes: `notes/2026-11-07-agentmail-te
 - The one AgentMail inbox is `ea-testmail-75wd` (see `evals/testmail/personas.json`). All personas send from its address,
   `ea-testmail-75wd@agentmail.to`. This is the sender that the classifier sees.
 - The recipient is `artekstryszowski@interia.pl` (`evals/testmail/target.json`, `TEST_MAILBOX_ADDRESS`).
-- Interia sorts the mail into the folder `Oferty`. The `deliver` step moves it to `INBOX` (user decision P5).
+- Interia sorts the mail into the folder `Oferty`. The server syncs `Oferty` and the other Interia sort folders
+  (ADR 0014, task `sync-sort-folders`), so it stores and triages the mail there. No move into INBOX is needed.
+- The `deliver` command is not part of the procedure. A COPY into INBOX does not work at Interia: Interia sorts the copy
+  back into `Oferty` (notes §10). Use only `deliver --check-only`, a read-only look at the Interia folders (section 10).
 
 > **Warning.** The Interia test mailbox is the user's only real mailbox (`notes/2026-11-03-interia-imap-capabilities.md`).
-> The `deliver` step moves only the mails that the tool sent.
+> Never run `deliver` without `--check-only`.
 
 `testmail:remote` bundles only `origin/master`. The testmail code must be on `master` (it is, after the task `test-mail-traffic` merges).
 
@@ -112,14 +115,11 @@ Replace `<id>` with the batch id `<YYYY-MM-DD>-<slug>`.
    This takes about 7 minutes. Give the shell call a timeout of 900 s. Repeat until the exit code is 0.
    - Exit 2: run the same command again later (for example when the cap is reached).
    - Exit 1: read the `failed` and `remaining` lines and fix them. Use a new case id for a changed or failed case.
-8. About 1 minute after the send, run
-   `GIT_SSH_COMMAND="ssh -i $HOME/.ssh/github -o IdentitiesOnly=yes" bun run testmail:remote deliver --batch <id>`.
-   Every `testmail:remote` call needs this prefix on this PC, because it runs `git fetch`. With `--print-input` it does not.
-   - Exit 2 (`not found`): wait 2 minutes and run again. Run at most 5 times.
-   - Then check the Interia folders with `deliver --check-only` (see section 10) and the VPS inspect steps in the notes file.
-9. Wait for the sync and the triage (a few minutes). Then run
+8. No deliver step. The VPS sync reads `Oferty` (and the other sort folders) at minute 0, 5, 10 … of each hour.
+9. Wait about 10 minutes for the sync and the triage. Then run
    `GIT_SSH_COMMAND="ssh -i $HOME/.ssh/github -o IdentitiesOnly=yes" bun run testmail:remote compare --batch <id> --out evals/results/testmail-<id>.md`.
-   - Exit 2: wait 5 minutes and run again. Wait at most 1 hour.
+   - Every `testmail:remote` call needs the `GIT_SSH_COMMAND` prefix on this PC, because it runs `git fetch`. With `--print-input` it does not.
+   - Exit 2: wait 5 minutes and run again. Wait at most 1 hour. Then see `compare` keeps `not synced` in section 10.
    - The report file has no mail text. Commit it, and add the batch result line to the task file or to a note.
 
 ## 6. Writer prompt
@@ -167,16 +167,16 @@ Output only JSON: [{"id": "...", "category": "..."}]
 
 ## 8. Commands and exit codes
 
-| Command                                                                                                                             | Exit 0                                                                                      | Exit 1                                                                                           | Exit 2                                                                                 |
-| ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| `bun run testmail:setup`                                                                                                            | inbox line printed; read `status` and `status_until` (also 0 when the inbox is deactivated) | error, or the inbox address differs from the persona file                                        | not used                                                                               |
-| `bun run testmail:validate --batch <id> [--allow-unlabelled]`                                                                       | valid                                                                                       | invalid                                                                                          | not used                                                                               |
-| `bun run testmail:blind --batch <id> [--apply <file> --checker <model>]`                                                            | done. Missing labels also give 0; read `missing N`                                          | error, or the label file has ids that are not in the batch (the batch file is already rewritten) | not used                                                                               |
-| `bun run testmail:send --batch <id> [--limit n] [--interval-sec 30] [--daily-cap 50] [--dry-run]`                                   | every case sent                                                                             | error, guard refusal, or a case needs a fix                                                      | stopped early: cap, limit, 429, waiting child                                          |
-| `bun run testmail:status --batch <id>`                                                                                              | state printed                                                                               | error                                                                                            | not used                                                                               |
-| `bun run testmail:target deliver\|compare --org-id <uuid> --mailbox-id <uuid> [--check-only] [--bar n] [--min-kept n] < input.json` | all delivered (deliver) or all triaged (compare)                                            | error, bad usage or bad stdin                                                                    | some case is `not_found` (deliver) or not triaged (compare); deliver: nothing sent yet |
-| `bun run testmail:remote deliver --batch <id> [--check-only] [--dry-run] [--print-input]`                                           | every sent case is `synced`, `in_inbox`, `moved` or `duplicate_removed`                     | error, or an ssh, scp, git or build error                                                        | some case is `not found`, or nothing sent yet                                          |
-| `bun run testmail:remote compare --batch <id> [--bar 0.98] [--min-kept 30] [--out <file.md>] [--dry-run] [--print-input]`           | every sent case is triaged                                                                  | error, or an ssh, scp, git or build error                                                        | some case is not triaged yet, or nothing sent yet                                      |
+| Command                                                                                                                             | Exit 0                                                                                                            | Exit 1                                                                                           | Exit 2                                                                                 |
+| ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `bun run testmail:setup`                                                                                                            | inbox line printed; read `status` and `status_until` (also 0 when the inbox is deactivated)                       | error, or the inbox address differs from the persona file                                        | not used                                                                               |
+| `bun run testmail:validate --batch <id> [--allow-unlabelled]`                                                                       | valid                                                                                                             | invalid                                                                                          | not used                                                                               |
+| `bun run testmail:blind --batch <id> [--apply <file> --checker <model>]`                                                            | done. Missing labels also give 0; read `missing N`                                                                | error, or the label file has ids that are not in the batch (the batch file is already rewritten) | not used                                                                               |
+| `bun run testmail:send --batch <id> [--limit n] [--interval-sec 30] [--daily-cap 50] [--dry-run]`                                   | every case sent                                                                                                   | error, guard refusal, or a case needs a fix                                                      | stopped early: cap, limit, 429, waiting child                                          |
+| `bun run testmail:status --batch <id>`                                                                                              | state printed                                                                                                     | error                                                                                            | not used                                                                               |
+| `bun run testmail:target deliver\|compare --org-id <uuid> --mailbox-id <uuid> [--check-only] [--bar n] [--min-kept n] < input.json` | all delivered (deliver) or all triaged (compare)                                                                  | error, bad usage or bad stdin                                                                    | some case is `not_found` (deliver) or not triaged (compare); deliver: nothing sent yet |
+| `bun run testmail:remote deliver --batch <id> [--check-only] [--dry-run] [--print-input]`                                           | every sent case is `synced`, `in_inbox`, `moved` or `duplicate_removed` (use only with `--check-only`, section 1) | error, or an ssh, scp, git or build error                                                        | some case is `not found`, or nothing sent yet                                          |
+| `bun run testmail:remote compare --batch <id> [--bar 0.98] [--min-kept 30] [--out <file.md>] [--dry-run] [--print-input]`           | every sent case is triaged                                                                                        | error, or an ssh, scp, git or build error                                                        | some case is not triaged yet, or nothing sent yet                                      |
 
 `testmail:target` runs on the VPS only. It needs `--org-id`, `--mailbox-id` and the target input on stdin.
 The pilot runs it through `testmail:remote`. Do not run it by hand. The tests run it locally.
@@ -205,10 +205,10 @@ Nobody moves, edits or deletes them.
 - `duplicate_found`: two mails have one case label. Report it. Do not resend.
 - `another testmail send runs`: check the pid with `ps -p <pid>`. When it is not a testmail run, ask the user.
 - `inbox not found`: run `bun run testmail:setup`.
-- `deliver` keeps `not found`: run `bun run testmail:remote deliver --batch <id> --check-only` and read where the copies are.
-  Interia may use a folder that the tool does not check. Tell the user.
 - `compare` keeps `not synced`: on the VPS, read-only, run
   `docker compose -f deploy/compose.yaml --env-file .env logs --since 30m server | grep '\[mail\] sync'`.
+  Then run `GIT_SSH_COMMAND="ssh -i $HOME/.ssh/github -o IdentitiesOnly=yes" bun run testmail:remote deliver --batch <id> --check-only`
+  (read-only) and read where the copies are. Interia may use a folder that the server does not sync. Tell the user.
 - After an ssh failure (exit 255) or a cut scp, the bundle `/tmp/ea-testmail-<uuid>.js` can stay on the VPS.
   It holds code only (the check for env values passed).
   When no run uses it, remove it with `ssh home_vm 'rm -f /tmp/ea-testmail-<uuid>.js'`.
