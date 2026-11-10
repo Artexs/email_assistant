@@ -1,6 +1,6 @@
-// The browser twin of `safeNext` in apps/server/src/platform/http.ts: keep both in step.
-export function safeNextPath(raw: string | null): string {
-  if (raw === null || raw === "") return "/";
+// The `next` target after a login: a same-origin path, else "/". The server's page gate and the login page use this one guard.
+export function safeNextPath(raw: string | null | undefined): string {
+  if (raw === null || raw === undefined || raw === "") return "/";
   for (let i = 0; i < raw.length; i++) {
     const code = raw.charCodeAt(i);
     if (code <= 0x1f || code === 0x7f) return "/";

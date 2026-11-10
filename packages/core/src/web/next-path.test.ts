@@ -1,4 +1,3 @@
-/// <reference types="bun" />
 import { describe, expect, test } from "bun:test";
 
 import { safeNextPath } from "./next-path";
@@ -6,13 +5,15 @@ import { safeNextPath } from "./next-path";
 describe("safeNextPath", () => {
   test.each([
     ["/mailboxes", "/mailboxes"],
+    ["/mailboxes?x=1", "/mailboxes?x=1"],
     ["/mailboxes?x=1#y", "/mailboxes?x=1#y"],
     [null, "/"],
+    [undefined, "/"],
     ["", "/"],
+    ["mailboxes", "/"],
     ["//evil.test", "/"],
     ["https://evil.test/", "/"],
     ["/\\evil.test", "/"],
-    ["mailboxes", "/"],
     ["/login", "/"],
     ["/login?next=%2F", "/"],
     ["/setup?token=abc", "/"],

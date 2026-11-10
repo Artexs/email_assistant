@@ -186,6 +186,8 @@ describe("api", () => {
     expect(await noOrigin.json()).toEqual({ error: "bad_origin" });
     expect((await post({ origin: "https://evil.test" })).status).toBe(403);
     expect((await post({ origin: "null" })).status).toBe(403);
+    expect((await post({ origin: "https://evil.test", "sec-fetch-site": "same-origin" })).status).toBe(403);
+    expect((await post({ "sec-fetch-site": "same-origin" })).status).toBe(401);
     expect((await post({ origin: "http://localhost:4321" })).status).toBe(401);
   });
 

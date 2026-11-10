@@ -14,7 +14,6 @@ import {
   parseBody,
   requireOwner,
   requireTenant,
-  safeNext,
   ValidationError,
   type ApiEnv,
 } from "./http";
@@ -103,38 +102,18 @@ describe("originAllowed", () => {
   test("safe methods pass", () => expect(originAllowed(req("GET"), origins)).toBe(true));
   test("a trusted Origin passes", () =>
     expect(originAllowed(req("POST", { origin: "https://ea.test" }), origins)).toBe(true));
-  test("Sec-Fetch-Site same-origin passes", () =>
+  test("Sec-Fetch-Site same-origin passes without Origin", () =>
     expect(originAllowed(req("POST", { "sec-fetch-site": "same-origin" }), origins)).toBe(true));
+  test("Sec-Fetch-Site same-origin passes with Origin null", () =>
+    expect(originAllowed(req("POST", { origin: "null", "sec-fetch-site": "same-origin" }), origins)).toBe(true));
+  test("a foreign Origin fails also with Sec-Fetch-Site same-origin", () =>
+    expect(originAllowed(req("POST", { origin: "https://evil.test", "sec-fetch-site": "same-origin" }), origins)).toBe(
+      false
+    ));
   test("a foreign Origin fails", () =>
     expect(originAllowed(req("POST", { origin: "https://evil.test" }), origins)).toBe(false));
   test("Origin null fails", () => expect(originAllowed(req("POST", { origin: "null" }), origins)).toBe(false));
   test("no headers fail", () => expect(originAllowed(req("POST"), origins)).toBe(false));
-});
-
-describe("safeNext", () => {
-  test.each([
-    ["/mailboxes?x=1", "/mailboxes?x=1"],
-    ["//evil.test", "/"],
-    ["https://evil.test", "/"],
-    ["/\\evil", "/"],
-    ["/login", "/"],
-    ["/login?next=%2F", "/"],
-    ["/setup?token=abc", "/"],
-    [null, "/"],
-    [undefined, "/"],
-    ["", "/"],
-    ["/\t/evil.test", "/"],
-    ["/\n/evil.test", "/"],
-    ["/\r\n/evil.test", "/"],
-    ["/%09/evil.test", "/%09/evil.test"],
-    ["/mailboxes?x=1#y", "/mailboxes?x=1#y"],
-    ["/.//evil.test", "/"],
-    ["/..//evil.test", "/"],
-    ["/a/..//evil.test", "/"],
-    ["/%2e//evil.test", "/"],
-  ])("%j -> %j", (input, expected) => {
-    expect(safeNext(input)).toBe(expected);
-  });
 });
 
 describe("authRequest", () => {

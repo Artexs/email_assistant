@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { BlockList, isIP } from "node:net";
 import { join } from "node:path";
 
-import type { MembershipRole } from "@ea/core";
+import { type MembershipRole, safeNextPath } from "@ea/core";
 import { serveStatic } from "@hono/bun";
 import { type Context, Hono, type MiddlewareHandler } from "hono";
 import { bodyLimit } from "hono/body-limit";
@@ -96,23 +96,10 @@ export function clientAddress(
 
 export function originAllowed(req: { method: string; headers: Headers }, trustedOrigins: ReadonlySet<string>): boolean {
   if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") return true;
-  if (req.headers.get("sec-fetch-site") === "same-origin") return true;
   const origin = req.headers.get("origin");
-  return origin !== null && trustedOrigins.has(origin);
-}
-
-export function safeNext(path: string | null | undefined): string {
-  if (path === null || path === undefined || path === "") return "/";
-  for (let i = 0; i < path.length; i++) {
-    const code = path.charCodeAt(i);
-    if (code <= 0x1f || code === 0x7f) return "/";
-  }
-  if (!path.startsWith("/") || path.startsWith("//") || path.includes("\\")) return "/";
-  const url = new URL(path, "http://x.invalid");
-  if (url.origin !== "http://x.invalid") return "/";
-  if (url.pathname.startsWith("//")) return "/";
-  if (url.pathname.startsWith("/login") || url.pathname.startsWith("/setup")) return "/";
-  return `${url.pathname}${url.search}${url.hash}`;
+  // A real Origin must be trusted. Only a missing or "null" Origin falls back to Sec-Fetch-Site.
+  if (origin !== null && origin !== "null") return trustedOrigins.has(origin);
+  return req.headers.get("sec-fetch-site") === "same-origin";
 }
 
 export function authRequest(req: Request, address: string | null): Request {
@@ -299,7 +286,7 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
     if (c.req.method !== "GET" && c.req.method !== "HEAD") return c.text("not found", 404);
     const path = c.req.path;
     if (PUBLIC_PAGE_PATHS.some((pattern) => pattern.test(path))) return next();
-    if (!(await readSession(c))) return c.redirect(`/login?next=${encodeURIComponent(safeNext(path))}`, 302);
+    if (!(await readSession(c))) return c.redirect(`/login?next=${encodeURIComponent(safeNextPath(path))}`, 302);
     if (path === "/") return c.redirect("/onboarding", 302);
     return next();
   });

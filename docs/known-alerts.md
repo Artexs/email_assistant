@@ -90,6 +90,14 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** No action for one line. Many lines mean someone probes the route. When a real link fires it, check `WEB_TRUSTED_ORIGINS` (the built shape needs its own origin, for example `http://127.0.0.1:8080`). Never paste such a link into a task file or a ticket: it holds a reset token.
 - **Status:** investigating
 
+### `better-auth: Invalid origin: <url>`
+
+- **First seen:** 2026-11-10 (S5a code; the final review found the path; not seen live)
+- **Source:** `apps/server/src/platform/auth.ts` (the Better Auth origin check through the logger, level `error`). `cleanLogText` replaces the URL with `<url>`.
+- **Cause:** A non-safe `/api/auth/*` request had no `Origin` header (or `Origin: null`) and `Sec-Fetch-Site: same-origin`, so our origin check let it through. Better Auth then checked the `Referer` header and found a foreign site. A browser does not send this combination. A script with hand-made headers does. Better Auth answers 403.
+- **Fix:** No action for one line. Many lines from one address mean someone probes the auth routes: the rate limit holds them. When a real browser gets it, check `WEB_TRUSTED_ORIGINS` and the `Referrer-Policy` header (`same-origin`).
+- **Status:** investigating
+
 ### `better-auth: Rate limiting could not determine a client IP …`
 
 - **First seen:** 2026-11-09 (S5a code; not seen live)

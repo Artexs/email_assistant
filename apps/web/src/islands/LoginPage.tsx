@@ -1,4 +1,4 @@
-import { fieldErrors as toFieldErrors, loginFormSchema } from "@ea/core/web";
+import { fieldErrors as toFieldErrors, loginFormSchema, safeNextPath } from "@ea/core/web";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { AuthCard } from "../components/auth/AuthCard";
@@ -8,7 +8,6 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { t, type TextKey } from "../i18n/en";
 import { authClient } from "../lib/auth-client";
-import { safeNextPath } from "../lib/next-path";
 
 type FieldErrors = Partial<Record<"email" | "password", TextKey>>;
 
