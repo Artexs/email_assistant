@@ -44,6 +44,7 @@ export default function SetupPage() {
         if (errors[field] !== undefined) next[field] = errors[field] as TextKey;
       }
       setFieldErrors(next);
+      setError(null);
       return;
     }
     setFieldErrors({});

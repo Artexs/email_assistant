@@ -1,3 +1,5 @@
+import { Client } from "pg";
+
 export const E2E_ORG_NAME = "E2E";
 export const E2E_OWNER_EMAIL = "e2e-owner@x.test";
 // A test value, not a secret.
@@ -17,16 +19,19 @@ export interface SeedFile {
   assistants: Record<E2eProject, { userId: string; email: string; setupUrl: string }>;
 }
 
+// Reads the name the way `pg` does, so the guard and the connection agree. No connection is opened.
 export function databaseNameOf(url: string): string | null {
   try {
-    return new URL(url).pathname.replace(/^\//, "");
+    const { protocol } = new URL(url);
+    if (protocol !== "postgres:" && protocol !== "postgresql:") return null;
+    return new Client({ connectionString: url }).database ?? null;
   } catch {
     return null;
   }
 }
 
 export function isE2eDatabaseName(name: string | null): boolean {
-  return name !== null && name.endsWith("_e2e");
+  return name !== null && /^[A-Za-z0-9_]+_e2e$/.test(name);
 }
 
 export function seedTargetOk(

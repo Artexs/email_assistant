@@ -2,6 +2,8 @@ import { resolve } from "node:path";
 
 import { afterAll, describe, expect, test } from "bun:test";
 
+import { E2E_OWNER_EMAIL } from "../../src/scripts/e2e-seed-args";
+
 import { testDb } from "./helpers";
 
 const db = testDb();
@@ -47,11 +49,16 @@ describe("e2e seed guards", () => {
 
   test("refuses the test database and touches nothing", async () => {
     const before = await e2eOrgCount();
+    await db.deleteFrom("users").where("email", "=", E2E_OWNER_EMAIL).execute();
+    await db.insertInto("users").values({ email: E2E_OWNER_EMAIL, display_name: "Survivor" }).execute();
     const result = await runSeed({ DATABASE_URL: appUrl, MIGRATOR_DATABASE_URL: appUrl });
     expect(result.code).toBe(1);
     expect(result.stderr).toContain("refusing: DATABASE_URL is not an e2e database");
     expect(await e2eOrgCount()).toBe(before);
     expect(before).toBe(0);
+    const survivor = await db.selectFrom("users").select("id").where("email", "=", E2E_OWNER_EMAIL).execute();
+    expect(survivor).toHaveLength(1);
+    await db.deleteFrom("users").where("email", "=", E2E_OWNER_EMAIL).execute();
   });
 
   test("refuses a migrator URL that is not an e2e database, before any connection", async () => {

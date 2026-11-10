@@ -1,4 +1,4 @@
-import { chmod, mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
 import { Client } from "pg";
@@ -6,7 +6,7 @@ import { Client } from "pg";
 import { createOrganizationWithOwner, insertMembership, insertUser } from "../modules/tenancy";
 import { createAuth } from "../platform/auth";
 import { loadConfig, webTrustedOrigins } from "../platform/config";
-import { createDb } from "../platform/db";
+import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 import { createLog } from "../platform/log";
 import { auditWebEvent } from "../web";
@@ -62,6 +62,7 @@ async function main(): Promise<number> {
   await wipe(migratorUrl);
 
   const db = createDb(config.DATABASE_URL);
+  await assertAppRole(db);
   const resets: { userId: string; url: string }[] = [];
   const handle = createAuth({
     databaseUrl: config.DATABASE_URL,
@@ -116,8 +117,9 @@ async function main(): Promise<number> {
     };
     const path = seedFilePath(repoRoot);
     await mkdir(dirname(path), { recursive: true });
+    // An old file may have wider permissions: remove it so the new one is never readable by others.
+    await rm(path, { force: true });
     await writeFile(path, `${JSON.stringify(seed, null, 2)}\n`, { mode: 0o600 });
-    await chmod(path, 0o600);
 
     log.info(
       `seeded org ${seed.orgId} owner ${seed.owner.userId} assistants ${E2E_PROJECTS.map((project) => assistantIds[project]).join(",")}`
