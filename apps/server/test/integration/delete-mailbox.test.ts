@@ -191,7 +191,8 @@ describe("delete_mailbox", () => {
       const row = proc.rows[0];
       expect(row?.prosecdef).toBe(true);
       expect(row?.proconfig).toContain("search_path=pg_catalog, public, pg_temp");
-      expect(row?.acl ?? []).not.toBeNull();
+      expect(row?.acl).not.toBeNull();
+      expect(row?.acl?.some((entry) => entry.startsWith("app="))).toBe(true);
       for (const entry of row?.acl ?? []) expect(entry.startsWith("=")).toBe(false);
     });
   });
