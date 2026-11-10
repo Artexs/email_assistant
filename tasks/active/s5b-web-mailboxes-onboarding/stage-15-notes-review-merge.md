@@ -1,0 +1,28 @@
+# s5b-web-mailboxes-onboarding — Stage 15
+
+Part of [`../s5b-web-mailboxes-onboarding.md`](../s5b-web-mailboxes-onboarding.md). Read that file's "Done when", "Owns", S1–S12, "Facts checked", B1–B17, "User steps" and the master plan's "Rules for every step" (`tasks/active/s5-web-panel.md`) first.
+
+## Stage 15 — Notes, alerts, master plan lines, group review, checkpoint, merge
+
+- [ ] **15.1 Docs for the next agents**
+  - Goal: what S5b learned and changed is findable without this chat.
+  - Files: create `notes/<date>-web-mailboxes-facts.md`; change `docs/known-alerts.md`, `docs/code-patterns.md`, `tasks/active/s5-web-panel.md`, `tasks/planned/s5c-web-settings-rules.md`, `tasks/planned/s5d-web-activity.md`, `tasks/planned/s5e-web-deploy-docs.md` (pointer lines only).
+  - Decisions:
+    - The note: the provider facts (fact 1, with the WP and o2 user-name gap), the timeout facts (fact 2), GreenMail's disabled auth (fact 3), the delete graph (fact 4), `saveTriage` → `lost` (fact 11), the Playwright facts of stage 14 (the start order of the two `webServer` entries as seen, the run count and time, the CI result), every deviation from the plan with its stage.
+    - `docs/known-alerts.md` (one entry each: text, cause, fix, status): `web: mailbox connect failed: <label>` and `web: mailbox password check failed: <label>` (info; a user typo or a provider outage), `web: telegram getMe failed: <label>` (warn), `web: home path failed: <label>` (warn), `web: WEB_MAIL_ALLOW_LOCAL=true: …` (warn; must be off on the VPS), `mailbox <id> removed by user <id>` (info), the sync job's foreign-key error right after a removal (one line, expected, fact 11), and `outbox <id>: lost the claim after the send` right after a removal (the deleted `sending` digest; the next digest repeats that period; B7, cold review finding 26).
+    - `docs/code-patterns.md`: one clause under "HTTP routes (S5)": a service that needs another module's write inside its transaction gets it as an injected hook from the composition root (`removeMailbox.onRemoved`, B8), and the onboarding state is injected into `tenancyRoutes` (B13).
+    - Master plan (`s5-web-panel.md`): dated lines (2026-11-1x, "S5b build") on D11 (`search_path = pg_catalog, public, pg_temp` and `public.` names, B7), D14 (`scopeAdmits` is not reused: the core helper `mailboxScopeBadges` with the drift test of stage 7; the help sentences live in `en.ts`, not in the preset rows, B1, B3), D19 (the seed gets no mailbox in S5b; the specs connect their own, B16), D10 (c) (pause and resume answer 200 when already in that status, B4), D11 (`saveTriage` gives `lost`, the hook, the version `20261111000001`), D14 (the timeouts and the deadline B5, the host rule B12 with `WEB_MAIL_ALLOW_LOCAL`, `mailbox.connected`), D15 (`homePath`, the per-user Telegram item), D9 (the codes `host_not_allowed`, `telegram_unreachable`), the contract rows (`POST /api/mailboxes` 400 `host_not_allowed`; `POST /api/channels/telegram/link` 502 `telegram_unreachable`); the S5b segment box ticked with a link to `tasks/done/s5b-web-mailboxes-onboarding.md`; the status line "next: the S5c plan session".
+    - S5c pointer: the Settings page selector reads `GET /api/mailboxes` (`mailboxListSchema` in `@ea/core/web`); the mode change writes `mailbox.mode_changed`, which also closes the onboarding mode item. S5d pointer: the e2e seed has no mailbox; the S5b specs connect their own; S5d adds the seeded mailbox and mail and must keep `cleanUpOrg` working. S5e pointer: `WEB_MAIL_ALLOW_LOCAL` stays empty on the VPS; ADR 0014 is taken (difference 6).
+  - Check: `bunx prettier --check` on every changed Markdown file; `grep -n "S5b" docs/known-alerts.md`.
+  - Done when: the files are written and pass Prettier.
+
+- [ ] **15.2 Group review, checkpoint, merge**
+  - Goal: the whole segment is reviewed as one change, the user sees it work, and it lands on `master`.
+  - Decisions:
+    - Group review: the `reviewer` subagent on `claude-bridge/claude-opus-5-5` high over the range `<branch base>..HEAD` (all stages PASS first): a pre-mortem ("a bug of S5b reached the user: which stage let it through?"), the tenant and secret rules over every new route, the D11 delete list against the schema, the e2e cleanup. Findings → fix commits, then a new review of the fix range.
+    - The full check line in the worktree: `bun run lint && bun run typecheck && bun run test:unit && bun run test:int && bun run web:build && bun run test:e2e`; record the counts.
+    - The user checkpoint of the segment file (the agent runs the walk-through unless the user wants to; screenshots at 400 px and 1280 px; zero console or CSP errors); then ask for the go.
+    - Merge (`tasks/README.md` § "Git mode", worktree step 3): `git fetch`; if `origin/master` has a migration that sorts after `20261111000001`, roll back `delete_mailbox` on the `s5b` and `e2e` databases first, rename the file to a later version, then migrate (the S5a merge rule); `git merge origin/master` in the branch; the full check line again; in the main checkout `git merge --no-ff task/s5b-web-mailboxes-onboarding`, push; `bun install --frozen-lockfile` and `bun run db:migrate` on the dev database (guard: `/email_assistant /email_assistant`). CI on the merge commit: `e2e` and `image` green; `ci` may stay red only on the known testmail flake (`docs/known-alerts.md`).
+    - Close: the done-checklist, the status line `done`, `git mv` the task file and its folder to `tasks/done/`, remove the worktree, delete the branch (local and remote), `bun run db:worktree s5b --drop` (user step 3).
+  - Check: the commands above, each with its output in the log.
+  - Done when: `master` holds S5b, CI as stated, the task is in `tasks/done/`.
