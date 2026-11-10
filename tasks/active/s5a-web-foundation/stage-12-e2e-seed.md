@@ -24,8 +24,8 @@ The seed deletes an organization by name and writes into a database: that is why
       owner: { userId: string; email: string; password: string };
       assistants: Record<E2eProject, { userId: string; email: string; setupUrl: string }>;
     }
-    export function databaseNameOf(url: string): string | null; // new URL(url).pathname without the leading "/"; null when it does not parse
-    export function isE2eDatabaseName(name: string | null): boolean; // name !== null && name.endsWith("_e2e")
+    export function databaseNameOf(url: string): string | null; // reads the name the way `pg` does (new Client({ connectionString }).database, no connection); null for a non-postgres/postgresql scheme or an unparsable string
+    export function isE2eDatabaseName(name: string | null): boolean; // name !== null && /^[A-Za-z0-9_]+_e2e$/.test(name)
     export function seedTargetOk(
       appUrl: string,
       migratorUrl: string

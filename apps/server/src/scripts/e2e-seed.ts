@@ -59,74 +59,79 @@ async function main(): Promise<number> {
     return 1;
   }
 
-  await wipe(migratorUrl);
-
+  // The role check fails before the destructive wipe when DATABASE_URL points at the wrong role.
   const db = createDb(config.DATABASE_URL);
-  await assertAppRole(db);
-  const resets: { userId: string; url: string }[] = [];
-  const handle = createAuth({
-    databaseUrl: config.DATABASE_URL,
-    baseUrl,
-    secret,
-    trustedOrigins: [baseUrl, ...webTrustedOrigins(config)],
-    onEvent: auditWebEvent(db),
-    sendResetPassword: async (reset) => {
-      resets.push(reset);
-    },
-  });
   try {
-    const owner = await createOrganizationWithOwner(db, {
-      orgName: E2E_ORG_NAME,
-      timezone: "Europe/Warsaw",
-      email: E2E_OWNER_EMAIL,
-      displayName: "E2E Owner",
+    await assertAppRole(db);
+
+    await wipe(migratorUrl);
+
+    const resets: { userId: string; url: string }[] = [];
+    const handle = createAuth({
+      databaseUrl: config.DATABASE_URL,
+      baseUrl,
+      secret,
+      trustedOrigins: [baseUrl, ...webTrustedOrigins(config)],
+      onEvent: auditWebEvent(db),
+      sendResetPassword: async (reset) => {
+        resets.push(reset);
+      },
     });
-    const assistantIds = {} as Record<E2eProject, string>;
-    for (const project of E2E_PROJECTS) {
-      const user = await insertUser(db, {
-        email: E2E_ASSISTANT_EMAILS[project],
-        displayName: `E2E Assistant ${project}`,
+    try {
+      const owner = await createOrganizationWithOwner(db, {
+        orgName: E2E_ORG_NAME,
+        timezone: "Europe/Warsaw",
+        email: E2E_OWNER_EMAIL,
+        displayName: "E2E Owner",
       });
-      await insertMembership(db, { orgId: owner.orgId }, { userId: user.id, role: "assistant" });
-      assistantIds[project] = user.id;
+      const assistantIds = {} as Record<E2eProject, string>;
+      for (const project of E2E_PROJECTS) {
+        const user = await insertUser(db, {
+          email: E2E_ASSISTANT_EMAILS[project],
+          displayName: `E2E Assistant ${project}`,
+        });
+        await insertMembership(db, { orgId: owner.orgId }, { userId: user.id, role: "assistant" });
+        assistantIds[project] = user.id;
+      }
+
+      // Takes the link of the last reset request for an e-mail address.
+      const requestLink = async (email: string): Promise<string> => {
+        resets.length = 0;
+        await handle.auth.api.requestPasswordReset({ body: { email, redirectTo: `${baseUrl}/setup` } });
+        const url = resets[0]?.url;
+        if (url === undefined) throw new Error("no reset link was produced");
+        return url;
+      };
+
+      const ownerLink = await requestLink(E2E_OWNER_EMAIL);
+      const token = new URL(ownerLink).pathname.split("/").pop() ?? "";
+      await handle.auth.api.resetPassword({ body: { newPassword: E2E_OWNER_PASSWORD, token } });
+
+      const assistants = {} as SeedFile["assistants"];
+      for (const project of E2E_PROJECTS) {
+        const email = E2E_ASSISTANT_EMAILS[project];
+        assistants[project] = { userId: assistantIds[project], email, setupUrl: await requestLink(email) };
+      }
+
+      const seed: SeedFile = {
+        orgId: owner.orgId,
+        owner: { userId: owner.userId, email: E2E_OWNER_EMAIL, password: E2E_OWNER_PASSWORD },
+        assistants,
+      };
+      const path = seedFilePath(repoRoot);
+      await mkdir(dirname(path), { recursive: true });
+      // An old file may have wider permissions: remove it so the new one is never readable by others.
+      await rm(path, { force: true });
+      await writeFile(path, `${JSON.stringify(seed, null, 2)}\n`, { mode: 0o600 });
+
+      log.info(
+        `seeded org ${seed.orgId} owner ${seed.owner.userId} assistants ${E2E_PROJECTS.map((project) => assistantIds[project]).join(",")}`
+      );
+      return 0;
+    } finally {
+      await handle.close();
     }
-
-    // Takes the link of the last reset request for an e-mail address.
-    const requestLink = async (email: string): Promise<string> => {
-      resets.length = 0;
-      await handle.auth.api.requestPasswordReset({ body: { email, redirectTo: `${baseUrl}/setup` } });
-      const url = resets[0]?.url;
-      if (url === undefined) throw new Error("no reset link was produced");
-      return url;
-    };
-
-    const ownerLink = await requestLink(E2E_OWNER_EMAIL);
-    const token = new URL(ownerLink).pathname.split("/").pop() ?? "";
-    await handle.auth.api.resetPassword({ body: { newPassword: E2E_OWNER_PASSWORD, token } });
-
-    const assistants = {} as SeedFile["assistants"];
-    for (const project of E2E_PROJECTS) {
-      const email = E2E_ASSISTANT_EMAILS[project];
-      assistants[project] = { userId: assistantIds[project], email, setupUrl: await requestLink(email) };
-    }
-
-    const seed: SeedFile = {
-      orgId: owner.orgId,
-      owner: { userId: owner.userId, email: E2E_OWNER_EMAIL, password: E2E_OWNER_PASSWORD },
-      assistants,
-    };
-    const path = seedFilePath(repoRoot);
-    await mkdir(dirname(path), { recursive: true });
-    // An old file may have wider permissions: remove it so the new one is never readable by others.
-    await rm(path, { force: true });
-    await writeFile(path, `${JSON.stringify(seed, null, 2)}\n`, { mode: 0o600 });
-
-    log.info(
-      `seeded org ${seed.orgId} owner ${seed.owner.userId} assistants ${E2E_PROJECTS.map((project) => assistantIds[project]).join(",")}`
-    );
-    return 0;
   } finally {
-    await handle.close();
     await db.destroy();
   }
 }
