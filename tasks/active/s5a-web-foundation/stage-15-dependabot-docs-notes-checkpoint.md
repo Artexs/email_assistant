@@ -4,7 +4,7 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
 
 ## Stage 15 — Dependabot, known alerts, notes, the `.env.example` review; the group review; user checkpoint 1; the merge
 
-- [ ] **15.1 Dependabot (D1, S13, W11)**
+- [x] **15.1 Dependabot (D1, S13, W11)**
   - Goal: an upgrade of `better-auth` arrives as a weekly pull request that runs the auth tests and the login smoke in CI before anyone merges it.
   - Files: create `.github/dependabot.yml`.
   - Interfaces:
@@ -29,7 +29,7 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
   - Done when: the file exists and passes Prettier.
   - Out of scope: other dependencies, security updates (not offered for `bun` by Dependabot).
 
-- [ ] **15.2 Known alerts, the `.env.example` review, the code-patterns read-through**
+- [x] **15.2 Known alerts, the `.env.example` review, the code-patterns read-through**
   - Goal: every new log line has its entry in `docs/known-alerts.md` with cause and fix, the Better Auth upgrade path is written down, and the code-patterns lines of stages 2, 3, 8 and 9 read as one text.
   - Files: change `docs/known-alerts.md`, `.env.example` (comments only, if the stage 2 text needs a correction after the build), `docs/code-patterns.md` (only if the read-through finds a contradiction between the lines that stages 2, 3, 8 and 9 added).
   - Decisions: `docs/known-alerts.md` entries (the file's template: alert text, cause, fix, status), one per new line: `web is off (WEB_BASE_URL is empty)` (info; expected until S5e sets the key on the VPS); `web is on: <origin>, dist <path>` (info); `web: dist folder missing, pages are off` (warn; run `bun run web:build` or check `WEB_DIST`; pages answer 503, the API works); `WEB_BASE_URL is http:// on a non-loopback host: cookies are not Secure` (warn; use `https://` behind Tailscale Serve); `web: reset requested for user <id>` (info; a `request-password-reset` reached the server instance — it cannot happen over HTTP in S5 (the route is closed), so a line means a code path changed: investigate); `better-auth: Invalid password`, `better-auth: User not found` and `better-auth: Reset Password: User not found` (warn; one per failed login or reset; many per minute from one address = someone guessing: the rate limit answers 429 after 3 in 10 s; S6 adds the lockout, `tasks/planned/web-public-hardening.md`); `better-auth: Invalid callbackURL: <url>` (error; a request to `/api/auth/reset-password/<token>` or another auth path carried a `callbackURL` outside `WEB_BASE_URL` and `WEB_TRUSTED_ORIGINS`: a hand-edited or foreign link; `cleanLogText` hides the URL itself; many lines = someone probes the route); `better-auth: Rate limiting could not determine a client IP …` (warn; must not appear: the server sets `x-client-ip` (W1); if it appears, `webDeps` or the auth mount changed); `web: user <id> has <n> memberships; using the oldest` (warn; S5 has no organization switcher); `web: no organization for user <id>` (warn; a user without a membership signed in or reset a password: `org:create` or an invite is missing); `web: audit <kind> failed: <label>` and `web: onEvent <kind> failed: <label>` (error; the audit row of a login or password change was not written; the login itself succeeded; check the DB); `POST /api/… 403` bursts in the debug access log (`bad_origin`: a client without a trusted `Origin`; check `WEB_TRUSTED_ORIGINS` or the proxy). Plus the **Better Auth upgrade path** entry (D1, master plan finding 22): "A Dependabot PR `deps: bump better-auth …`: read the release notes (security releases are listed on better-auth.com/blog), run `bun run test:int` (the `web-auth*` tests) and `bun run web:build && bun run test:e2e`, then merge and deploy (S5e runbook)."
@@ -38,7 +38,7 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
   - Done when: the entries exist and the grep finds every text.
   - Out of scope: `docs/architecture.md`, `docs/modules.md`, `docs/roadmap.md`, the ADRs (S5e, D23).
 
-- [ ] **15.3 Notes, the S5a log, the pointer for S5b**
+- [x] **15.3 Notes, the S5a log, the pointer for S5b**
   - Goal: what the build learned is in `notes/`, so that S5b's plan session and S5e's ADR writer start from facts.
   - Files: create `notes/<date>-web-foundation-build.md`; change `tasks/active/s5a-web-foundation.md` (the log line, the "Not verified" list with the results of stages 11.3, 13.2 and 14, the done-when evidence); `tasks/planned/s5b-web-mailboxes-onboarding.md` gets one log line: "S5a built: the islands are `islands/<Page>Page.tsx` with `AppShell` inside (stage 10.2), the seed is `scripts/e2e-seed.ts` with `SeedFile` (stage 12), `requireOwner` and `parseBody` are exported from `platform/http.ts`, `WebDeps.routers` mounts a module router from `web.ts`, every web import of core goes through `@ea/core/web`".
   - Decisions: the note holds: the versions as installed (`bun pm ls | grep -E "better-auth|@hono/bun|@playwright/test|radix-ui|astro"`), the CI `e2e` duration and the image size, the result of the `web:dev` hand check (11.3), anything that differed from the plan (each with the stage), the Dependabot status if known. No secrets, no URLs with tokens.

@@ -76,7 +76,7 @@ A route file (`routes.ts`) is thin: it parses the body with `parseBody` and a `@
 - No inline `<script>` and no hand-written `<style>`: the build hashes the scripts (D5), and styles come from Tailwind classes.
 - shadcn components come from the shadcn CLI, never by hand.
 - One island per page. The shell is a React component inside the island.
-- Data comes from `/api/*` through `lib/api.ts`. The request and response shapes are the `@ea/core/web` schemas. The web imports core only through that subpath.
+- Data comes from `/api/*` through `lib/api.ts`; only the auth paths (`/api/auth/*`) go through `lib/auth-client.ts`. The request and response shapes are the `@ea/core/web` schemas. The web imports core only through that subpath.
 
 ## Tests
 

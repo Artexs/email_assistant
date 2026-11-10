@@ -18,6 +18,150 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `web is off (WEB_BASE_URL is empty)`
+
+- **First seen:** 2026-11-10 (S5a code; seen live with `WEB_BASE_URL= bun run dev`, hand check 8.2)
+- **Source:** `apps/server/src/web.ts` (`webDeps`, level `info`, once per process start).
+- **Cause:** The server started without `WEB_BASE_URL`, so the web panel is off: no login, no pages, no `/api` routes. The jobs, the Telegram bot and the CLIs work as before.
+- **Fix:** No action, and expected until S5e sets the key on the VPS. To turn the panel on, set `WEB_BASE_URL` and `WEB_AUTH_SECRET` in the `.env` (only the user edits `.env`) and restart the server.
+- **Status:** won't fix (expected behaviour)
+
+### `web is on: <origin>, dist <path>`
+
+- **First seen:** 2026-11-10 (hand checks 8.2 and 11.3)
+- **Source:** `apps/server/src/web.ts` (`webDeps`, level `info`, once per process start).
+- **Cause:** The web panel is on. `<origin>` is the origin of `WEB_BASE_URL`, the trust anchor for the cookie and the links. `<path>` is the resolved `WEB_DIST` folder.
+- **Fix:** No action. Compare `<path>` with the folder that `bun run web:build` wrote (`apps/web/dist` unless `WEB_DIST` says otherwise). A wrong path gives `web: dist folder missing, pages are off`.
+- **Status:** won't fix (expected behaviour)
+
+### `web: dist folder missing, pages are off`
+
+- **First seen:** 2026-11-09 (S5a code; the route matrix of stage 6 covers it)
+- **Source:** `apps/server/src/platform/http.ts` (`createApp`, level `warn`, once per process start).
+- **Cause:** `WEB_DIST` (default `apps/web/dist`) does not exist or holds no `404.html`, so every `GET` and `HEAD` page path answers 503 `text/plain` "The web build is missing. Run bun run web:build." The `/api/*` routes and `/health` answer as before.
+- **Fix:** Run `bun run web:build`, or set `WEB_DIST` to the folder that holds the build (the image sets `/app/apps/web/dist`). Then restart the server.
+- **Status:** workaround (build the pages, or set `WEB_DIST`)
+
+### `WEB_BASE_URL is http:// on a non-loopback host: cookies are not Secure`
+
+- **First seen:** 2026-11-10 (S5a code; not seen live)
+- **Source:** `apps/server/src/web.ts` (`webDeps`, level `warn`, once per process start).
+- **Cause:** `WEB_BASE_URL` uses `http://` and its host is not `localhost`, `127.0.0.1` or `[::1]`. Better Auth adds `Secure` to the session cookie only for an `https://` base URL, so the browser sends the cookie in clear text.
+- **Fix:** Use an `https://` origin: behind Tailscale Serve on the VPS (S5e). An `http://` non-loopback origin is for a test network only.
+- **Status:** fix pending (S5e sets an `https://` `WEB_BASE_URL` on the VPS)
+
+### `web: reset requested for user <id>`
+
+- **First seen:** 2026-11-09 (S5a code; not seen live)
+- **Source:** `apps/server/src/platform/auth.ts` (the default `sendResetPassword`, level `info`).
+- **Cause:** A `request-password-reset` reached a `createAuth` instance that has no own `sendResetPassword`. It cannot happen over HTTP in S5: the `/api/auth/*` allow-list answers 404 for that path. `web:invite` passes its own callback and prints the link, so it logs no line.
+- **Fix:** Investigate: a line means a code path changed or a new `createAuth` caller exists. Check who builds the auth instance without `sendResetPassword` (`webDeps` in `web.ts`, `web-invite.ts`).
+- **Status:** investigating
+
+### `better-auth: Invalid password`
+
+- **First seen:** 2026-11-09 (S5a code; a wrong sign-in makes it, for example in the Playwright smoke of stage 13)
+- **Source:** `apps/server/src/platform/auth.ts` (Better Auth `sign-in.mjs` text through the logger, level `warn`, `cleanLogText` applied).
+- **Cause:** One sign-in came with a wrong password. The answer is the same 401 `INVALID_EMAIL_OR_PASSWORD` as for an unknown e-mail, so the text never says which of the two is wrong.
+- **Fix:** No action for one line. Many lines per minute from one address mean someone guesses: the rate limit answers 429 after 3 tries in 10 s (W9). S6 adds the lockout (`tasks/planned/web-public-hardening.md`).
+- **Status:** won't fix (expected behaviour)
+
+### `better-auth: User not found`
+
+- **First seen:** 2026-11-09 (S5a code; not seen live)
+- **Source:** `apps/server/src/platform/auth.ts` (Better Auth text through the logger, level `warn`).
+- **Cause:** A sign-in or a reset named an e-mail with no `users` row. The user answers the same 401 as a wrong password (no hint which one).
+- **Fix:** No action for one line; many lines from one address mean someone guesses (see the rate limit line above). A real user who sees the 401 text needs a setup link (`bun run web:invite`).
+- **Status:** won't fix (expected behaviour)
+
+### `better-auth: Reset Password: User not found`
+
+- **First seen:** 2026-11-09 (S5a code; not seen live)
+- **Source:** `apps/server/src/platform/auth.ts` (Better Auth text through the logger, level `warn`).
+- **Cause:** A reset came with a token whose user row is gone (the organization or the user was removed). The reset does nothing.
+- **Fix:** No action. Make a new setup link for the user (`bun run web:invite --org-id … --user-id …`) or remove the old link.
+- **Status:** won't fix (expected behaviour)
+
+### `better-auth: Invalid callbackURL: <url>`
+
+- **First seen:** 2026-11-09 (S5a code; the stage 3 fix review found the text)
+- **Source:** `apps/server/src/platform/auth.ts` (Better Auth origin check through the logger, level `error`). `cleanLogText` replaces the URL itself with `<url>`.
+- **Cause:** A request to `/api/auth/reset-password/<token>` or another auth path carried a `callbackURL` outside `WEB_BASE_URL` and `WEB_TRUSTED_ORIGINS`: a hand-edited or foreign link.
+- **Fix:** No action for one line. Many lines mean someone probes the route. When a real link fires it, check `WEB_TRUSTED_ORIGINS` (the built shape needs its own origin, for example `http://127.0.0.1:8080`). Never paste such a link into a task file or a ticket: it holds a reset token.
+- **Status:** investigating
+
+### `better-auth: Rate limiting could not determine a client IP …`
+
+- **First seen:** 2026-11-09 (S5a code; not seen live)
+- **Source:** `apps/server/src/platform/auth.ts` (the Better Auth rate limiter through the logger, level `warn`).
+- **Cause:** A request reached Better Auth with no usable `x-client-ip`. The server sets that header before Better Auth (W1), so the limiter keeps one shared bucket per path for every client.
+- **Fix:** Must not appear. If it does, the builder of the auth request or the `/api/auth/*` mount changed: check `authRequest` and `clientAddress` (with `peerAddress`) in `apps/server/src/platform/http.ts` and `WEB_TRUSTED_PROXIES`.
+- **Status:** investigating
+
+### `web: user <id> has <n> memberships; using the oldest`
+
+- **First seen:** 2026-11-09 (S5a code; the route matrix of stage 6 covers it)
+- **Source:** `apps/server/src/platform/http.ts` (`requireTenant`, level `warn`, once per process and user id).
+- **Cause:** The user is a member of more than one organization. S5 has no organization switcher, so `requireTenant` takes the oldest membership (`listMembershipsOfUser`, ordered by `created_at, org_id`).
+- **Fix:** No action for one line: the user sees the oldest organization, and the audit rows of the web events go there. A second organization is a bug of the setup until a switcher exists.
+- **Status:** won't fix (expected behaviour)
+
+### `web: no organization for user <id>`
+
+- **First seen:** 2026-11-09 (S5a code; not seen live)
+- **Source:** `apps/server/src/web.ts` (`auditWebEvent`, level `warn`).
+- **Cause:** A user with no membership signed in or set a password. There is no organization for the audit row `web.login`, `web.password_set` or `web.password_changed`. The login itself succeeded.
+- **Fix:** Give the user a membership: `bun run org:create` makes an owner; any other user needs an invitation (S5b). Until then that user's `/api/me` answers 403 `no_organization` and the shell shows "Your account is not in any organization. Ask the owner for an invitation."
+- **Status:** investigating
+
+### `web: audit <kind> failed: <label>`
+
+- **First seen:** 2026-11-09 (S5a code; not seen live)
+- **Source:** `apps/server/src/web.ts` (`auditWebEvent`, level `error`). `<kind>` is `login`, `password_set` or `password_changed`.
+- **Cause:** The audit row of a login or a password change was not written: a database error in `recordAudit` or in the membership query. The login itself succeeded, because the composer catches every `onEvent` error.
+- **Fix:** Read the label and check the DB (connection, migration state, the `audit_log` rows). One row is missing for that event; the next login writes its own.
+- **Status:** investigating
+
+### `web: onEvent <kind> failed: <label>`
+
+- **First seen:** 2026-11-09 (S5a code; not seen live)
+- **Source:** `apps/server/src/platform/auth.ts` (`report`, level `error`).
+- **Cause:** The injected `onEvent` of an auth event rejected. `auditWebEvent` catches its own errors, so this line means the composition root supplies another `onEvent`, or that function changed. The login or the password change itself succeeded.
+- **Fix:** Check the `onEvent` wiring in `apps/server/src/web.ts`. `auditWebEvent` must return without a throw; an audit miss must never fail a login.
+- **Status:** investigating
+
+### `# SERVER_ERROR: <message and stack>`
+
+- **First seen:** 2026-11-09 (S5a code, stage 3 fix review; not seen live)
+- **Source:** `better-call` `router.mjs` (`console.error`), not our logger. It follows our own `better-auth: <text>` line.
+- **Cause:** An error that is not a `better-call` `APIError` was thrown inside Better Auth, for example a database error. The line holds the full message and stack, so it can hold database text. `onAuthError` cannot suppress it.
+- **Fix:** Read our own `better-auth:` line first (name and code only); use this line for the stack. A database label: check the DB. Cut database text before you paste the line into a task file or a ticket.
+- **Status:** investigating
+
+### `POST /api/… 403` bursts in the debug access log (`bad_origin`)
+
+- **First seen:** 2026-11-09 (S5a code; the route matrix of stage 6 covers it)
+- **Source:** `apps/server/src/platform/http.ts`: the access log at level `debug` and the origin check that answers 403 `{ error: "bad_origin" }`.
+- **Cause:** A client sent a non-safe `/api/*` request without a trusted `Origin` (no `Origin` and no `Sec-Fetch-Site: same-origin` counts as untrusted). A browser on another origin, a proxy that drops `Origin`, or a `curl` call does this. The server refuses before any handler runs.
+- **Fix:** Check `WEB_TRUSTED_ORIGINS`: it must hold the browser origin (the built shape needs its own, for example `http://127.0.0.1:8080`). Check that the reverse proxy passes `Origin`. Set `LOG_LEVEL=debug` only while you diagnose.
+- **Status:** workaround (set the key or the proxy)
+
+### `deps: bump better-auth …` (a Dependabot pull request)
+
+- **First seen:** 2026-11-10 (stage 15.1; the first weekly run follows the merge)
+- **Source:** a Dependabot pull request from `.github/dependabot.yml` (ecosystem `bun`, `directory: /`, weekly, `better-auth` only, at most 2 open PRs).
+- **Cause:** Dependabot found a newer `better-auth`. The pins are exact, so one PR holds `apps/server/package.json`, `apps/web/package.json` and `bun.lock` together.
+- **Fix:** Read the release notes (security releases are listed on better-auth.com/blog), run `bun run test:int` (the `web-auth*` tests) and `bun run web:build && bun run test:e2e`, then merge and deploy (S5e runbook). Never merge a bump with a red auth test. If no PR arrives, see user step 4 of `tasks/active/s5a-web-foundation.md`: the fallback is a second entry with `directory: /apps/server`.
+- **Status:** won't fix (a process entry, not a fault)
+
+### `runSend > 3: a lost response is repeated with the same key` and `AgentMail fake > holdResponseNext: … ^ this test timed out after 5000ms`
+
+- **First seen:** 2026-11-10 (CI run on the S5a branch and on `master`; the `ci` job, `test:unit`)
+- **Source:** `apps/server/src/modules/testmail/send.test.ts` and `apps/server/src/modules/testmail/agentmail/fake.test.ts` (unit tests, no database).
+- **Cause:** Each test sends twice through the fake AgentMail server with a held response and a client timeout of 200 ms. On this PC each test takes about 0.2 s (checked 2026-11-10); on a CI runner the same two tests take about 5.2 s, just over the 5 s default test timeout of `bun test`, so they fail. The extra time on CI is not diagnosed. The S5a branch does not touch `apps/server/src/modules/testmail/`: the same two fail on `master`.
+- **Fix:** Give the two tests their own longer timeout (the third argument of `test`, as `apps/server/test/integration/mail-seed.test.ts` does with `30_000`). A re-run is not a fix. The `test-mail-traffic` task owns the fix.
+- **Status:** fix pending
+
 ### `mailbox:seed and mailbox:audit CLI > seed exits 1 … ^ this test timed out after 5000ms.`
 
 - **First seen:** 2026-11-07
