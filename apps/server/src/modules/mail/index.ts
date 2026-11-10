@@ -1,5 +1,6 @@
 export { checkMailbox, type CheckDeps, type CheckOptions, type CheckReport } from "./check";
 export { buildFolderMap, connectMailbox, updateMailboxPassword, type ConnectDeps, type ConnectInput } from "./connect";
+export { switchMailboxStatus, type SwitchResult } from "./status";
 export { ensureSyncFolders, setSyncFolderEnabled, type SyncFolderSwitchResult } from "./folders";
 export { auditExitCode, compareFolderWithDb, compareInboxWithDb, type AuditCounts, type InboxKey } from "./audit";
 export { openMailboxProvider, type OpenDeps } from "./open";
@@ -38,6 +39,7 @@ export {
   getEmailMeta,
   getJunkFolderPath,
   getMailbox,
+  getMailboxSummary,
   listEmailsByMessageIds,
   listFolderUids,
   listMailboxes,

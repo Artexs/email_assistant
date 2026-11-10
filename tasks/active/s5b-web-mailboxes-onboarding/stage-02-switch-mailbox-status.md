@@ -4,7 +4,7 @@ Part of [`../s5b-web-mailboxes-onboarding.md`](../s5b-web-mailboxes-onboarding.m
 
 ## Stage 2 — `switchMailboxStatus` and the Telegram `/pause` `/resume` refactor (B4, D10 (c))
 
-- [ ] **2.1 `mail/status.ts` and the caller in `channels/commands.ts`**
+- [x] **2.1 `mail/status.ts` and the caller in `channels/commands.ts`**
   - Goal: one function changes a mailbox between `active` and `paused` with its audit row; the web (stage 7) and Telegram call it; every Telegram text and audit row stays as today.
   - Files: create `apps/server/src/modules/mail/status.ts`, `apps/server/test/integration/mail-status.test.ts`; change `apps/server/src/modules/mail/repo.ts` (`getMailboxSummary`), `apps/server/src/modules/mail/index.ts` (exports), `apps/server/src/modules/channels/commands.ts` (`switchMailboxes`).
   - Interfaces:

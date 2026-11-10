@@ -15,7 +15,6 @@ import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
-import { createLog } from "../../platform/log";
 import {
   countActionsSince,
   countApprovals,
@@ -24,10 +23,10 @@ import {
   type DelegationHooks,
   type SendScope,
 } from "../actions";
-import { auditEvents, countLlmCallsSince, recordAudit } from "../audit";
+import { countLlmCallsSince } from "../audit";
 import { getMailboxSettings } from "../config";
 import { countOpenDelegations } from "../delegation";
-import { changeMailboxStatus, countWaiting, listMailboxes, type MailboxSummary } from "../mail";
+import { countWaiting, listMailboxes, switchMailboxStatus, type MailboxSummary } from "../mail";
 import { buildDigestMessage, digestPeriodStart, WAITING_WINDOW_MS } from "../reports";
 import { getMembership, getOrganization } from "../tenancy";
 
@@ -47,8 +46,6 @@ export interface CommandDeps {
   uidplus(ctx: TenantContext, mailboxId: string): Promise<boolean>;
   sendScope: SendScope;
 }
-
-const log = createLog("channels");
 
 const ADDRESS_MAX = 60;
 
@@ -191,14 +188,11 @@ export async function digestNowMessage(deps: CommandDeps, link: LinkedChat): Pro
 const OWNER_ONLY_TEXT = "Only the owner can pause or resume the mailboxes.";
 
 interface StatusSwitch {
-  from: "active" | "paused";
   to: "active" | "paused";
-  event: string;
-  verb: string;
   already: string;
 }
 
-// One transaction per mailbox: the conditional update and its audit row. `auth_error` never matches `from`.
+// `switchMailboxStatus` does one transaction per mailbox: the conditional update and its audit row.
 async function switchMailboxes(deps: CommandDeps, link: LinkedChat, change: StatusSwitch): Promise<OutMessage> {
   if (link.role !== "owner") return { text: OWNER_ONLY_TEXT, buttons: [] };
   const now = deps.now();
@@ -207,29 +201,20 @@ async function switchMailboxes(deps: CommandDeps, link: LinkedChat, change: Stat
   const extra: string[] = [];
   for (const mailbox of await listMailboxes(deps.db, ctx)) {
     const address = cutText(mailbox.address, ADDRESS_MAX);
+    const loginError = `❌ ${address} has a login error: run mailbox:password first.`;
     if (mailbox.status === "auth_error") {
-      extra.push(`❌ ${address} has a login error: run mailbox:password first.`);
+      extra.push(loginError);
       continue;
     }
-    const run = async (trx: Transaction<DB>): Promise<boolean> => {
-      const done = await changeMailboxStatus(trx, ctx, mailbox.id, { from: change.from, to: change.to, at: now });
-      if (done) {
-        await recordAudit(trx, ctx, {
-          actor: link.userId,
-          event: change.event,
-          data: { mailbox_id: mailbox.id, via: "telegram" },
-          at: now,
-        });
-      }
-      return done;
-    };
-    const done = await (deps.db.isTransaction ? run(deps.db as Transaction<DB>) : deps.db.transaction().execute(run));
-    if (done) {
-      changed.push(address);
-      log.info(`mailbox ${mailbox.id} ${change.verb} by user ${link.userId}`);
-    } else {
-      extra.push(`${address} ${change.already}`);
-    }
+    const result = await switchMailboxStatus(deps.db, ctx, mailbox.id, {
+      to: change.to,
+      actor: link.userId,
+      via: "telegram",
+      now,
+    });
+    if (result.kind === "changed") changed.push(address);
+    else if (result.kind === "already") extra.push(`${address} ${change.already}`);
+    else if (result.kind === "auth_error") extra.push(loginError);
   }
   return { text: [...changeLines(change.to, changed), ...extra].join("\n") || "No mailbox connected.", buttons: [] };
 }
@@ -251,20 +236,14 @@ function changeLines(to: "active" | "paused", changed: string[]): string[] {
 
 export function pauseMailboxes(deps: CommandDeps, link: LinkedChat): Promise<OutMessage> {
   return switchMailboxes(deps, link, {
-    from: "active",
     to: "paused",
-    event: auditEvents.mailboxPaused,
-    verb: "paused",
     already: "was paused already.",
   });
 }
 
 export function resumeMailboxes(deps: CommandDeps, link: LinkedChat): Promise<OutMessage> {
   return switchMailboxes(deps, link, {
-    from: "paused",
     to: "active",
-    event: auditEvents.mailboxResumed,
-    verb: "resumed",
     already: "was active already.",
   });
 }

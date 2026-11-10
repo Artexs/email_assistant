@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — stage 1 built (review pending).** 15 stage files, B1–B17, 26 review findings fixed. Left: stages 1–15 with `run-task` (worktree `task/s5b-web-mailboxes-onboarding`), starting with user step 0. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5b-build.md`.
+> **Status 2026-11-11 — in progress — stages 1-2 built (stage 1 PASS).** 15 stage files, B1–B17, 26 review findings fixed. Left: stages 1–15 with `run-task` (worktree `task/s5b-web-mailboxes-onboarding`), starting with user step 0. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5b-build.md`.
 
 # S5b Web: mailboxes and onboarding
 
@@ -153,7 +153,7 @@ The stage files cite these as B<n>. A text in quotes is a UI string; its key liv
 Each stage lives in its own file in [`s5b-web-mailboxes-onboarding/`](s5b-web-mailboxes-onboarding/). An implementer or reviewer reads this file (Done when, Owns, S1–S12, Facts, B1–B17, the master plan's "Rules for every step") and only the stage file of its step. The main session ticks the step boxes in the stage file and the stage box here. `[written]` marks a stage file that is on disk.
 
 - [x] [Stage 1](s5b-web-mailboxes-onboarding/stage-01-core-presets-schemas.md) — Core: provider presets, the web schemas, the scope badges, `onboardingOf`, the error codes [written]
-- [ ] [Stage 2](s5b-web-mailboxes-onboarding/stage-02-switch-mailbox-status.md) — `switchMailboxStatus` and the Telegram `/pause` `/resume` refactor [written]
+- [x] [Stage 2](s5b-web-mailboxes-onboarding/stage-02-switch-mailbox-status.md) — `switchMailboxStatus` and the Telegram `/pause` `/resume` refactor [written]
 - [ ] [Stage 3](s5b-web-mailboxes-onboarding/stage-03-connect-services.md) — Login timeouts and the deadline, `MailboxExistsError`, `MailboxNotFoundError`, `mailbox.connected`, actors [risky] [written]
 - [ ] [Stage 4](s5b-web-mailboxes-onboarding/stage-04-migration-delete-mailbox.md) — Migration `delete_mailbox` and the `mailbox_removed` kind, the deletion tests [risky] [written]
 - [ ] [Stage 5](s5b-web-mailboxes-onboarding/stage-05-remove-mailbox.md) — `removeMailbox`, the owners' notice, the race and lock tests [risky] [written]
@@ -205,3 +205,4 @@ Scope: 26 [minor] the deleted `sending` digest's "lost the claim" line and the r
 - 2026-11-11: Cold review (Opus high, `reviewer` subagent): FAIL, 26 findings (2 blocker, 4 major, 18 minor, 2 question), all fixed in the segment file (dated "Cold review" sentences on B2, B3, B7, B8, B9, B12, B13, B16, B17; fact 2) and in stages 1–15. Next: the user's OK, then the build.
 - 2026-11-11: Plan committed (`f78e27a`). The user approved the build: "Okay, prepare a handoff for new agent to implement it stage by stage." Build handoff `~/.pi/agent/notes/2026-11-11-handoff-s5b-build.md`.
 - 2026-11-11: stage 1 built, review pending (worktree `task/s5b-web-mailboxes-onboarding`, database `email_assistant_s5b`). Check: lint, typecheck, test:unit (1500 pass), test:int (1063 pass), web build ok.
+- 2026-11-11: stage 1 review PASS (minor: no test for a bad `secretKind`, optional). Pushed. Stage 2 built, review pending. Check: lint, typecheck, test:unit (1500), test:int (1067 pass).
