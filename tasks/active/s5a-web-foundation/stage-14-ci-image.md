@@ -4,7 +4,7 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
 
 ## Stage 14 — CI `e2e` job with its own database, the CI trigger for task branches, the image builds the web, the image check, `.dockerignore` [risky]
 
-- [ ] **14.1 CI: the `e2e` job and the branch trigger (D20)**
+- [x] **14.1 CI: the `e2e` job and the branch trigger (D20)**
   - Goal: every push runs the Playwright smoke on a second database next to the existing `ci` job, with traces kept on failure, inside 20 minutes; the workflow also runs on task branches, so a stage's CI evidence arrives before the merge.
   - Files: change `.github/workflows/ci.yml`.
   - Interfaces: `on.push.branches` becomes `[master, "task/**"]` and `on.workflow_dispatch: {}` is added (the existing `pull_request: [master]` stays); a new job `e2e` (no `needs`: it runs in parallel with `ci`):
@@ -52,7 +52,7 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
   - Done when: the three jobs pass on the branch; the `e2e` duration is in the log line.
   - Out of scope: the fake Telegram as a second `webServer` (S5b), Dependabot (stage 15).
 
-- [ ] **14.2 The image builds the web (D21); the image check; `.dockerignore`**
+- [x] **14.2 The image builds the web (D21); the image check; `.dockerignore`**
   - Goal: the server image carries the built web app at `/app/apps/web/dist` and the Compose service points `WEB_DIST` at it; the CI `image` job proves the file exists; no e2e artefact enters the image.
   - Files: change `deploy/Dockerfile`, `deploy/compose.yaml`, `.dockerignore`, `.github/workflows/ci.yml` (the `image` job).
   - Interfaces:

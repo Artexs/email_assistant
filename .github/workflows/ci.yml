@@ -2,9 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, "task/**"]
   pull_request:
     branches: [master]
+  workflow_dispatch: {}
 
 permissions:
   contents: read
@@ -56,6 +57,63 @@ jobs:
       - run: bun run db:migrate
       - run: bun run test:int
       - run: bun run web:build
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: email_assistant
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+      greenmail:
+        image: greenmail/standalone:2.1.15
+        env:
+          GREENMAIL_OPTS: "-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled -Dgreenmail.verbose=false"
+        ports: ["3025:3025", "3143:3143", "3993:3993"]
+    env:
+      TEST_IMAP_HOST: 127.0.0.1
+      TEST_IMAP_PORT: "3143"
+      TEST_IMAPS_PORT: "3993"
+      TEST_SMTP_PORT: "3025"
+      E2E_DATABASE_URL: postgres://app:app_ci@localhost:5432/email_assistant_e2e?sslmode=disable
+      E2E_MIGRATOR_DATABASE_URL: postgres://migrator:migrator_ci@localhost:5432/email_assistant_e2e?sslmode=disable
+      DATABASE_URL: postgres://app:app_ci@localhost:5432/email_assistant_e2e?sslmode=disable
+      MIGRATOR_DATABASE_URL: postgres://migrator:migrator_ci@localhost:5432/email_assistant_e2e?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      # The Playwright runner is Node (D19): pinned, not the runner image's default.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: bun install --frozen-lockfile
+      - name: Generate a test credentials key
+        run: echo "CREDENTIALS_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+      - name: Create database roles and the e2e database
+        run: |
+          psql "postgresql://postgres:postgres@localhost:5432/email_assistant" -v ON_ERROR_STOP=1 -v migrator_password=migrator_ci -v app_password=app_ci -f db/roles.sql
+          psql "postgresql://postgres:postgres@localhost:5432/email_assistant" -v ON_ERROR_STOP=1 -c 'CREATE DATABASE email_assistant_e2e'
+          psql "postgresql://postgres:postgres@localhost:5432/email_assistant_e2e" -v ON_ERROR_STOP=1 -c 'GRANT CONNECT ON DATABASE email_assistant_e2e TO migrator, app' -c 'REVOKE CREATE ON SCHEMA public FROM PUBLIC' -c 'GRANT USAGE, CREATE ON SCHEMA public TO migrator' -c 'GRANT USAGE ON SCHEMA public TO app'
+      - run: bun run db:migrate
+      - run: bun run web:build
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-results
+          path: apps/web/e2e/test-results/
+          retention-days: 7
   image:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -68,3 +126,5 @@ jobs:
           files="$(docker run --rm --entrypoint find ea-server:ci /app/tools -not -path '*/node_modules/*' -not -name node_modules -type f | sort)"
           echo "$files"
           test "$files" = "/app/tools/fake-telegram/package.json"
+      - name: Check that the image holds the built web app
+        run: docker run --rm --entrypoint test ea-server:ci -f /app/apps/web/dist/login/index.html
