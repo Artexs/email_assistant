@@ -199,7 +199,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **First seen:** 2026-11-10 (stage 15.1; the first weekly run follows the merge)
 - **Source:** a Dependabot pull request from `.github/dependabot.yml` (ecosystem `bun`, `directory: /`, weekly, `better-auth` only, at most 2 open PRs).
 - **Cause:** Dependabot found a newer `better-auth`. The pins are exact, so one PR holds `apps/server/package.json`, `apps/web/package.json` and `bun.lock` together.
-- **Fix:** Read the release notes (security releases are listed on better-auth.com/blog), run `bun run test:int` (the `web-auth*` tests) and `bun run web:build && bun run test:e2e`, then merge and deploy (S5e runbook). Never merge a bump with a red auth test. If no PR arrives, see user step 4 of `tasks/active/s5a-web-foundation.md`: the fallback is a second entry with `directory: /apps/server`.
+- **Fix:** Read the release notes (security releases are listed on better-auth.com/blog), run `bun run test:int` (the `web-auth*` tests) and `bun run web:build && bun run test:e2e`, then merge and deploy (S5e runbook). Never merge a bump with a red auth test. If no PR arrives, see user step 4 of `tasks/done/s5a-web-foundation.md`: the fallback is a second entry with `directory: /apps/server`.
 - **Status:** won't fix (a process entry, not a fault)
 
 ### `runSend > 3: a lost response is repeated with the same key` and `AgentMail fake > holdResponseNext: … ^ this test timed out after 5000ms`

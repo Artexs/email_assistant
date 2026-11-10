@@ -1,6 +1,6 @@
 # S5a web foundation — what the build learned (2026-11-10)
 
-Written at the end of the S5a build (`tasks/active/s5a-web-foundation.md`, stages 1–15), for the S5b plan session and the S5e ADR writer. No secrets and no links with tokens.
+Written at the end of the S5a build (`tasks/done/s5a-web-foundation.md`, stages 1–15), for the S5b plan session and the S5e ADR writer. No secrets and no links with tokens.
 
 ## Versions as installed (2026-11-10, `bun pm ls --all` in the repo root)
 

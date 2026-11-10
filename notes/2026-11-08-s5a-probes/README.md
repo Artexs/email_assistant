@@ -1,6 +1,6 @@
 # S5a plan probes (2026-11-08)
 
-Scripts that checked the facts behind the S5a plan (`tasks/active/s5a-web-foundation.md`, "Facts checked"). The files end in `.txt` so `eslint .` and `tsc` skip them. Copy them into a temp folder and remove the suffix to run them again. None of them touches the repo database `email_assistant`: they ran on `email_assistant_s5aprobe` from `bun run db:worktree s5aprobe` (dropped at the end of the session with `--drop`).
+Scripts that checked the facts behind the S5a plan (`tasks/done/s5a-web-foundation.md`, "Facts checked"). The files end in `.txt` so `eslint .` and `tsc` skip them. Copy them into a temp folder and remove the suffix to run them again. None of them touches the repo database `email_assistant`: they ran on `email_assistant_s5aprobe` from `bun run db:worktree s5aprobe` (dropped at the end of the session with `--drop`).
 
 Versions: Bun 1.4.4 (this PC) and `oven/bun:1.3.14` (the server image, through `newgrp docker`, see `notes/2026-11-08-docker-socket-newgrp.md`), `better-auth` 1.7.18, `hono` 4.13.16, `@hono/bun` 1.0.1, `pg` 8.23.0, `@playwright/test` 1.65.0, Astro 5.13.7, React 19.1.1, Tailwind 4.1.13, Postgres 17, Chromium `/usr/bin/chromium`.
 

@@ -47,7 +47,7 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
   - Done when: the note exists and the segment file's log and not-verified list are current.
   - Out of scope: the S5e docs.
 
-- [ ] **15.4 Group review, user checkpoint 1 (= master checkpoint 1), the merge**
+- [x] **15.4 Group review, user checkpoint 1 (= master checkpoint 1), the merge**
   - Goal: the segment is reviewed as a whole on Opus high (the review model), the user has used the result on the dev machine, and `master` gets the merge.
   - Files: none; the main session runs it (`tasks/README.md` § "Pipeline mode" 7, § "Git mode" worktree step 3).
   - Decisions:
