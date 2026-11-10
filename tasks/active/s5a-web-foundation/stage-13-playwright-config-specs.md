@@ -4,6 +4,8 @@ Part of [`../s5a-web-foundation.md`](../s5a-web-foundation.md). Read that file's
 
 ## Stage 13 — Playwright: `playwright.config.ts`, `global-setup.ts`, the `test:e2e` script, the auth smoke in both projects (W20), the CSP assertion
 
+> **Changed at the merge (2026-11-10):** the `webServer` command runs `bun run db:migrate` before the server, and `global-setup.ts` runs only the seed (W10).
+
 The e2e run itself happens in the worktree, started by the main session (the review copies run only lint, typecheck and unit tests). **Pipeline pause:** user step 2 (the e2e database lines in the worktree's `.env`) before 13.1.
 
 - [x] **13.1 `playwright.config.ts`, `env.ts`, `global-setup.ts`, `seed.ts`, the `test:e2e` script (D19, W10)**

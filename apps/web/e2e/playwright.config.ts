@@ -28,7 +28,9 @@ export default defineConfig({
     { name: "desktop", use: { viewport: { width: 1280, height: 800 } } },
   ],
   webServer: {
-    command: "bun apps/server/src/main.ts",
+    // Playwright starts the server before the global setup, and Better Auth keeps a schema mismatch it sees at
+    // start until a restart: so the server command migrates first.
+    command: "bun run db:migrate && bun apps/server/src/main.ts",
     cwd: repoRoot,
     url: `${E2E_BASE_URL}/health`,
     reuseExistingServer: false,

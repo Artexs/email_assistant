@@ -130,6 +130,14 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** No action for one line. Many lines from one address mean someone probes the auth routes: the rate limit holds them. When a real browser gets it, check `WEB_TRUSTED_ORIGINS` and the `Referrer-Policy` header (`same-origin`).
 - **Status:** investigating
 
+### `better-auth: Database schema mismatch … Missing tables …` and `GET /api/auth/*: BetterAuthError SCHEMA_MISMATCH`
+
+- **First seen:** 2026-11-10 (S5a merge: the first `test:e2e` run after a new migration)
+- **Source:** `apps/server/src/platform/auth.ts` (the Better Auth logger at start) and `apps/server/src/platform/http.ts` (`onError`, one line per auth request).
+- **Cause:** The server started before `bun run db:migrate` added the auth tables or columns. Better Auth checks the schema once and keeps the mismatch until the process restarts (`@better-auth/core` `db/schema-check.mjs`), so every login answers 500 even after the migration ran.
+- **Fix:** Run `bun run db:migrate`, then restart the server. The deploy runs the migration before `up` (`deploy/README.md`). The e2e server command runs `db:migrate` before the server starts (`apps/web/e2e/playwright.config.ts`).
+- **Status:** fixed (e2e config); a deploy that starts the server before the migration still gets it
+
 ### `better-auth: Rate limiting could not determine a client IP …`
 
 - **First seen:** 2026-11-09 (S5a code; not seen live)
