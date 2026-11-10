@@ -1,4 +1,4 @@
-> **Status 2026-11-10 — in progress — stage 9 run done: batch `2026-11-09-batch-01` sent and compared (24 of 25 ok); runbook without `deliver`.** Results review PASS. Left: commit, merge into `master`, user checkpoint 2 (the user reads § Results and closes the task), done-checklist, clean-up (worktree, branch, DB), `git mv` to `tasks/done/` with link fixes. The sort-folder results note `notes/2026-11-09-sort-folders-live-test-results.md` goes on `master` for `sync-sort-folders`.
+> **Status 2026-11-10 — done.** Stages 1–9 done; batch `2026-11-09-batch-01` 24 of 25 ok (§ Results); runbook without `deliver`. Follow-ups: `tasks/planned/testmail-mail-kind.md`, `testmail-delegation-label.md`, `testmail-s4-delegate-persona.md`.
 
 # Test mail traffic: AgentMail synthetic mail utility
 
@@ -385,10 +385,10 @@ Findings:
 
 ## Done-checklist
 
-- [ ] Done-when checks pass (name the command and its output in the log).
-- [ ] `docs/` describe what was built (code-patterns test-tool list, evals README link); related ADRs set to accepted or superseded (none expected).
-- [ ] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
-- [ ] Follow-up ideas are in `planned/` (`testmail-mail-kind.md`, the S4 delegate persona).
+- [x] Done-when checks pass (name the command and its output in the log).
+- [x] `docs/` describe what was built (code-patterns test-tool list, evals README link); related ADRs set to accepted or superseded (none expected).
+- [x] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
+- [x] Follow-up ideas are in `planned/` (`testmail-mail-kind.md`, `testmail-s4-delegate-persona.md`, `testmail-delegation-label.md`).
 
 ## Log
 
@@ -424,3 +424,4 @@ Findings:
 - 2026-11-10: User: "you can obviously send much more mails" (yes to batch-01). Batch-01: blind check (claude-haiku-5-5) agree 25/25; main-session read replaced 2 brand names (re-check agree 2); `testmail:validate` valid; reviewer (Sonnet, high) PASS (1 question, 3 minors: 1 note fixed; "Monday" weekday and 3 phishing cases accepted). Committed `b0cdeab`, pushed. `testmail:send --limit 10 --interval-sec 45` × 3 (exit 2, 2, 0), 25 sent 10:30–10:47Z. VPS read-only 10:57Z: 25 rows, all `source_folder` `Oferty`. `testmail:remote compare --batch 2026-11-09-batch-01 --out …` exit 0, "triaged 25 of 25 sent; ok 24; wrong 1" (§ Results). Runbook: `deliver` removed from the procedure (only `--check-only` as a read-only look); done-when 2 reworded (no `deliver`). Follow-up `tasks/planned/testmail-delegation-label.md`.
   Done-when evidence: (1) `testmail:send` sent 25 once each (`testmail:status` "sent 25"); without `TEST_MAILBOX_ADDRESS`: "[testmail] TEST_MAILBOX_ADDRESS is not set: send refused", exit 1. (2) 25 of 25 stored and triaged (SQL count 25; compare "triaged 25 of 25"). (3) compare report with precision, recall, go/no-go: `evals/results/testmail-2026-11-09-batch-01.md`. (4) 25 mails, 5 categories, 10 personas, 2 threads, ran end to end (§ Results). (5) grep of the 3 send logs and the report for the API key, 4 subject phrases and `interia.pl`: 0 hits each. (6) runbook `evals/testmail/README.md` updated; this session ran batch-01 from it.
 - 2026-11-10: The resume words of the user (2026-11-09, copied from the handoff `~/.pi/agent/notes/2026-11-09-handoff-testmail-and-sort-folders-finish.md`): "Okay, I implemented new feature to get all the emails from the inbox. So right now you can proceed with this task and finish it. … I suppose that you can test both things at once. And there will be possibility to close both tickets at once." Results review (Opus, high): PASS, 7 minors (fixed: quote, `status_until`, status line, goal item 5, runbook table row, confidence wording; links fixed at the move), 2 questions (results note: written on `master`; S4 delegate persona: `tasks/planned/testmail-s4-delegate-persona.md`).
+- 2026-11-10: User checkpoint 2: the user read the summary and said "both tickets are fully working and we can close them both" (close of this task). Done-checklist: done-when evidence in the Log line above; docs: `docs/code-patterns.md:39` lists `testmail-target deliver`, `evals/README.md:14` links the runbook; notes §10–11 and `notes/2026-11-09-sort-folders-live-test-results.md`; no new alert; 3 follow-ups in `planned/`. Merged `a72210b`. Task moved to `tasks/done/`; links fixed (not in `tasks/active/sync-sort-folders*`: its stage 17 step 6 fixes them). Clean-up: worktree DB dropped, worktree and branch `task/test-mail-traffic` removed.

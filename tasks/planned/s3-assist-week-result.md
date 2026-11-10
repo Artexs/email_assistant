@@ -25,7 +25,7 @@ Measure the first week of `assist` on the pilot mailbox and decide: S3 passes (N
 
 ## Test mail in the week (2026-11-08)
 
-From 2026-11-08 the AgentMail test tool (`tasks/active/test-mail-traffic.md`, stage 9; user decision Q1 option (b): "Run it now.") sends about 28 made-up mails
+From 2026-11-08 the AgentMail test tool (`tasks/done/test-mail-traffic.md`, stage 9; user decision Q1 option (b): "Run it now.") sends about 28 made-up mails
 from `ea-testmail-75wd@agentmail.to` to the pilot mailbox. The server triages and moves them like real mail. The step 20.2.3 queries exclude only
 `%@ea-seed.test>` mail, so add `and lower(e.from_address) is distinct from 'ea-testmail-75wd@agentmail.to'` to every `emails e` join (also in N, the wrong
 moves). A `wrong` verdict on a test mail is not a wrong move of real mail.

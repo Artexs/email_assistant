@@ -6,7 +6,7 @@ Read this file in full before you write, send or compare a batch. You need no ch
 
 Testmail sends made-up mail from one AgentMail inbox to the Interia test mailbox. The mails have an expected category.
 The VPS triages them with the real LLM. `compare` then checks the triage result against the expected category.
-Plan: `tasks/active/test-mail-traffic.md`. Notes: `notes/2026-11-07-agentmail-test-mail.md`.
+Plan: `tasks/done/test-mail-traffic.md`. Notes: `notes/2026-11-07-agentmail-test-mail.md`.
 
 - The one AgentMail inbox is `ea-testmail-75wd` (see `evals/testmail/personas.json`). All personas send from its address,
   `ea-testmail-75wd@agentmail.to`. This is the sender that the classifier sees.

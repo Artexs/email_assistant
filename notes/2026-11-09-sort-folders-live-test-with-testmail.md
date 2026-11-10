@@ -1,6 +1,6 @@
 # Live test of the sort-folder sync with AgentMail test mail
 
-> Written 2026-11-09 by the sync-sort-folders session. For the agent that runs `tasks/active/test-mail-traffic.md` stage 9 and verifies the new sync on real Interia mail.
+> Written 2026-11-09 by the sync-sort-folders session. For the agent that runs `tasks/done/test-mail-traffic.md` stage 9 and verifies the new sync on real Interia mail.
 
 ## Why this exists
 

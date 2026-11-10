@@ -27,7 +27,7 @@ Prove S4 on real mail: a real draft in `Wersje robocze`, a real approval on the 
 
 ## Test mail in the week (2026-11-08)
 
-From 2026-11-08 the AgentMail test tool (`tasks/active/test-mail-traffic.md`, stage 9; user decision Q1 option (b): "Run it now.") sends about 28 made-up mails
+From 2026-11-08 the AgentMail test tool (`tasks/done/test-mail-traffic.md`, stage 9; user decision Q1 option (b): "Run it now.") sends about 28 made-up mails
 from `ea-testmail-75wd@agentmail.to` to the pilot mailbox. The server acts on them like on real mail: `needs_reply` or `delegation` test mail can get a draft and
 an approval message. Never approve a send for a test mail: reject it (`✖️ Reject`) or let it expire.
 

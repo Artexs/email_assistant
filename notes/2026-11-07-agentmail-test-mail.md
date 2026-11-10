@@ -1,6 +1,6 @@
 # AgentMail as the source of synthetic test mail for the Interia test mailbox
 
-Written 2026-11-07. Idea approved by the user; plan: `tasks/active/test-mail-traffic.md` (stage files in `tasks/active/test-mail-traffic/`).
+Written 2026-11-07. Idea approved by the user; plan: `tasks/done/test-mail-traffic.md` (stage files in `tasks/done/test-mail-traffic/`).
 Runbook: evals/testmail/README.md
 
 ## 1. The idea (user, 2026-11-07)

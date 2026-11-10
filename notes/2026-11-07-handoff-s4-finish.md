@@ -42,7 +42,7 @@ S4 = the assistant writes a delegation draft, sends it only after the owner's Te
 ## Dead ends and traps
 
 - The stage 20 comparison went wrong twice: the v1 "Metrics per category" table holds only the **86 LLM rows** (6 rule rows left out) of 92 cases. Compare v2 on the same basis: leave out the 12 delegation cases, `inj-13`…`inj-16` and the rule rows. The v2 per-case data is in `evals/.runs/gpt-6-luna-none-classifier-v2-all.jsonl` (this PC, not in git).
-- Other chats work in this repo at the same time (fake-telegram is done and merged; test-mail-traffic plan is active). They committed in this checkout and pushed S4 commits. Stage by explicit path; never `git add -A`. `tasks/active/test-mail-traffic*` changes are not S4's.
+- Other chats work in this repo at the same time (fake-telegram is done and merged; test-mail-traffic plan is active). They committed in this checkout and pushed S4 commits. Stage by explicit path; never `git add -A`. `tasks/done/test-mail-traffic*` changes are not S4's.
 - Quiet hours (22:00–07:00 Warsaw) hold approval messages: a dev run at night needs another org timezone (stage 19 used `America/New_York`).
 - Docker socket: this shell has no docker group; `dev:up` fails. The containers db (5433) and GreenMail (3143/3025) were up. SQL went through `psql` as `postgres`.
 

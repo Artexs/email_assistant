@@ -7,7 +7,7 @@
 
 - `2026-11-09-smoke`: 3 mails sent 2026-11-09 16:41Z (needs_reply 2, notification 1).
 - `2026-11-09-batch-01`: 25 mails sent 2026-11-10 10:30–10:47Z (5 each: urgent, needs_reply, info, notification, spam).
-- Compare: smoke "triaged 3 of 3 sent; ok 2; wrong 1"; batch-01 "triaged 25 of 25 sent; ok 24; wrong 1" (`tasks/active/test-mail-traffic.md` § Results).
+- Compare: smoke "triaged 3 of 3 sent; ok 2; wrong 1"; batch-01 "triaged 25 of 25 sent; ok 24; wrong 1" (`tasks/done/test-mail-traffic.md` § Results).
 - No test mail had VIP-like sender rules (the tool has one sender address; runbook § 3 forbids `rules:add` for it).
 
 ## Landing folder × category × action × status (28 test mails)
