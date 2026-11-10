@@ -136,7 +136,10 @@ test("the pages keep the CSP and show the 404 page", async ({ page }) => {
 
   // A Radix overlay injects a scroll-lock style: the interesting case for `style-src` (fact 13).
   await expectShellEmail(page, owner.email);
-  if (!onMobile()) await page.getByRole("button", { name: en.user_menu }).click();
+  if (!onMobile()) {
+    await page.getByRole("button", { name: en.user_menu }).click();
+    await expect(page.getByRole("menuitem", { name: en.log_out })).toBeVisible();
+  }
   expect(errors).toEqual([]);
 
   const response = await page.goto("/nope");
