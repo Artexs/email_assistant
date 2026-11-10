@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { afterAll, describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
 import { MailAuthError, type ImapConnectOptions, type SeedMessage } from "../../src/modules/mail";
@@ -125,6 +125,34 @@ describe("mail sync job", () => {
     });
   });
 
+  test("a sync folder row that the server does not list is skipped and last_synced_at is set", async () => {
+    await withRollback(db, async (trx) => {
+      const box = await addBox(trx);
+      const o = openers();
+      const fake = createFakeMailProvider({ uidValidity: 7 });
+      fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - 3_600_000) });
+      o.fakes.set(box.address, fake);
+      await trx
+        .insertInto("mailbox_folders")
+        .values({
+          org_id: box.orgId,
+          mailbox_id: box.mailboxId,
+          key: "bills",
+          path: "Rachunki",
+          role: "sort",
+          enabled: true,
+          uidvalidity: 1,
+          last_uid: 0,
+        })
+        .execute();
+
+      await jobFor(trx, o).run();
+
+      expect(await emailCount(trx, box.mailboxId)).toBe(1);
+      expect((await mailboxRow(trx, box.mailboxId)).last_synced_at).toEqual(NOW);
+    });
+  });
+
   test("a login error sets auth_error and the other mailbox still syncs", async () => {
     await withRollback(db, async (trx) => {
       const bad = await addBox(trx);
@@ -164,7 +192,7 @@ describe("mail sync job", () => {
       const box = await addBox(trx);
       const o = openers();
       const fake = createFakeMailProvider({ uidValidity: 7 });
-      fake.failOn("inboxStatus", new SoftError("connection lost"));
+      fake.failOn("folderStatus", new SoftError("connection lost"));
       o.fakes.set(box.address, fake);
 
       await jobFor(trx, o).run();
@@ -187,6 +215,59 @@ describe("mail sync job", () => {
 
       expect(o.opened.length).toBe(0);
       expect((await mailboxRow(trx, box.mailboxId)).last_synced_at).toBeNull();
+    });
+  });
+
+  test("a folder that fails 3 runs in a row gives one error line; a success resets the count", async () => {
+    await withRollback(db, async (trx) => {
+      const box = await addBox(trx);
+      await trx
+        .insertInto("mailbox_folders")
+        .values({
+          org_id: box.orgId,
+          mailbox_id: box.mailboxId,
+          key: "offers",
+          path: "Oferty",
+          role: "sort",
+          uidvalidity: 1,
+          last_uid: 0,
+        })
+        .execute();
+      const fake = createFakeMailProvider({ uidValidity: 7 });
+      fake.deliver("Oferty", seed(1), { internalDate: new Date(NOW.getTime() - 3_600_000) });
+      let broken = true;
+      const flaky: FakeMailProvider = {
+        ...fake,
+        fetchAbove: async (folder, lastUid) => {
+          if (broken && folder === "Oferty") throw new SoftError("lost connection");
+          return fake.fetchAbove(folder, lastUid);
+        },
+      };
+      const o = openers();
+      o.fakes.set(box.address, flaky);
+      const job = jobFor(trx, o);
+
+      const error = spyOn(console, "error").mockImplementation(() => undefined);
+      const info = spyOn(console, "log").mockImplementation(() => undefined);
+      try {
+        const errorLines = () =>
+          error.mock.calls.map((call) => call.join(" ")).filter((line) => line.includes("failed 3 runs in a row"));
+        const runs: boolean[] = [true, true, true, true, false, true, true, true];
+        const linesAfterRun: number[] = [];
+        for (const fails of runs) {
+          broken = fails;
+          await job.run();
+          linesAfterRun.push(errorLines().length);
+        }
+        // Lines after each run: the 3rd failure gives one, the 4th none, a success resets, the 3rd failure after it gives one.
+        expect(linesAfterRun).toEqual([0, 0, 1, 1, 1, 1, 1, 2]);
+        expect(errorLines()[0]).toContain(`sync ${box.mailboxId} folder offers: failed 3 runs in a row`);
+        expect((await mailboxRow(trx, box.mailboxId)).last_synced_at).toEqual(NOW);
+        expect(info.mock.calls.some((call) => call.join(" ").includes(`synced ${box.mailboxId}: folders `))).toBe(true);
+      } finally {
+        error.mockRestore();
+        info.mockRestore();
+      }
     });
   });
 });

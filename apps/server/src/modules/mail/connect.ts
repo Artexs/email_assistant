@@ -17,6 +17,7 @@ import {
   getCredentials,
   getMailbox,
   insertCredentials,
+  insertInboxFolder,
   insertMailbox,
   lockMailbox,
   setMailboxStatus,
@@ -115,6 +116,7 @@ export async function connectMailbox(
       capabilities: info.capabilities,
       folderMap: buildFolderMap(info.folders),
     });
+    await insertInboxFolder(trx, ctx, mailboxId);
     await insertCredentials(trx, ctx, {
       mailboxId,
       encryptedSecret: secret.ciphertext,

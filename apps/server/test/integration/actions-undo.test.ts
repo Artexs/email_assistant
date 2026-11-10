@@ -492,7 +492,7 @@ describe("undo: a reverse move in flight (D22)", () => {
 
       const later = new Date(NOW.getTime() + 60_000);
       const result = await syncMailbox(syncDeps(trx, s, later), s.ctx, s.mailboxId);
-      expect(result).toMatchObject({ stored: 0, undoInFlight: 1 });
+      expect(result).toMatchObject({ stored: 0, moveInFlight: 1 });
 
       const retryAt = new Date(NOW.getTime() + 11 * 60_000);
       const [again] = await claim(trx, s, retryAt);
@@ -525,7 +525,7 @@ describe("undo: a reverse move in flight (D22)", () => {
 
       const result = await syncMailbox(syncDeps(trx, s, new Date(NOW.getTime() + 60_000)), s.ctx, s.mailboxId);
 
-      expect(result).toMatchObject({ stored: 1, undoInFlight: 0 });
+      expect(result).toMatchObject({ stored: 1, moveInFlight: 0 });
       const rows = await trx.selectFrom("emails").select("dedup_key").where("mailbox_id", "=", s.mailboxId).execute();
       expect(rows.some((row) => row.dedup_key.endsWith("#2"))).toBe(true);
     });

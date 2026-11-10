@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, test } from "bun:test";
 
 import {
+  INBOX,
   locateMessage,
+  MailFolderMissingError,
   MailNotFoundError,
   sameMailIdentity,
   type MailIdentity,
@@ -57,12 +59,61 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
       while (envs.length > 0) await envs.pop()?.cleanup();
     });
 
-    test("inboxStatus gives a positive uidValidity and uidNext", async () => {
+    test("folderStatus(INBOX) gives uidValidity, highestUid and a uidNext above it", async () => {
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(1));
-      const status = await provider.inboxStatus();
+      await seed("INBOX", mail(2));
+      const last = (await provider.fetchAbove(INBOX, 0)).at(-1)?.uid ?? 0;
+      const status = await provider.folderStatus(INBOX);
       expect(status.uidValidity).toBeGreaterThan(0);
-      expect(status.uidNext).toBeGreaterThan(0);
+      expect(status.highestUid).toBe(last);
+      expect(status.uidNext).toBeGreaterThan(status.highestUid);
+    });
+
+    test("folderStatus of a seeded folder gives its last uid; an empty folder gives highestUid 0", async () => {
+      const { provider, seed } = await freshEnv();
+      const oferty = await provider.ensureFolder("Oferty");
+      await seed(oferty, mail(1));
+      await seed(oferty, mail(2));
+      const last = (await provider.fetchAbove(oferty, 0)).at(-1)?.uid ?? 0;
+      expect((await provider.folderStatus(oferty)).highestUid).toBe(last);
+      const empty = await provider.ensureFolder(`Empty-${crypto.randomUUID()}`);
+      const status = await provider.folderStatus(empty);
+      expect(status.highestUid).toBe(0);
+      expect(status.uidNext).toBeGreaterThanOrEqual(1);
+    });
+
+    test("a missing folder gives MailFolderMissingError in every folder read; INBOX works after it", async () => {
+      const { provider, seed } = await freshEnv();
+      await seed("INBOX", mail(1));
+      const missing = `Nope-${crypto.randomUUID()}`;
+      await expect(provider.folderStatus(missing)).rejects.toBeInstanceOf(MailFolderMissingError);
+      await expect(provider.fetchAbove(missing, 0)).rejects.toBeInstanceOf(MailFolderMissingError);
+      await expect(provider.fetchBodyText(missing, 1)).rejects.toBeInstanceOf(MailFolderMissingError);
+      expect(await provider.fetchAbove(INBOX, 0)).toHaveLength(1);
+    });
+
+    test("fetchAbove and fetchBodyText read the asked folder only; an unknown uid gives null", async () => {
+      const { provider, seed } = await freshEnv();
+      const oferty = await provider.ensureFolder("Oferty");
+      await seed("INBOX", mail(1));
+      await seed(oferty, mail(2, { text: "Offer text" }));
+      await seed(oferty, mail(3));
+      const metas = await provider.fetchAbove(oferty, 0);
+      expect(metas.map((m) => m.messageId)).toEqual(["<contract-2@example.test>", "<contract-3@example.test>"]);
+      const uids = metas.map((m) => m.uid);
+      expect(uids).toEqual([...uids].sort((a, b) => a - b));
+      expect(await provider.fetchBodyText(oferty, uids[0] ?? 0)).toContain("Offer text");
+      expect(await provider.fetchBodyText(INBOX, 999_999)).toBeNull();
+    });
+
+    test("listFolders lists INBOX and created folders with a delimiter", async () => {
+      const { provider } = await freshEnv();
+      const created = await provider.ensureFolder("Oferty");
+      const folders = await provider.listFolders();
+      expect(folders.map((f) => f.path)).toContain(INBOX);
+      expect(folders.map((f) => f.path)).toContain(created);
+      for (const folder of folders) expect(folder.delimiter).toMatch(/^[/.]$/);
     });
 
     test("fetchAbove(0) returns the seeded mails in ascending uid order with their fields", async () => {
@@ -77,7 +128,7 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
       );
       await seed("INBOX", mail(3, { headers: { "X-EA-Action-Id": "act-1" } }));
 
-      const metas = await provider.fetchAbove(0);
+      const metas = await provider.fetchAbove(INBOX, 0);
       expect(metas).toHaveLength(3);
       const uids = metas.map((m) => m.uid);
       expect(uids).toEqual([...uids].sort((a, b) => a - b));
@@ -100,8 +151,8 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(1));
       await seed("INBOX", mail(2));
-      const maxUid = Math.max(...(await provider.fetchAbove(0)).map((m) => m.uid));
-      const metas = await provider.fetchAbove(maxUid);
+      const maxUid = Math.max(...(await provider.fetchAbove(INBOX, 0)).map((m) => m.uid));
+      const metas = await provider.fetchAbove(INBOX, maxUid);
       expect(metas.filter((m) => m.uid > maxUid)).toHaveLength(0);
     });
 
@@ -110,34 +161,34 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
       await seed("INBOX", mail(1));
       await seed("INBOX", mail(2));
       await seed("INBOX", mail(3));
-      const all = await provider.fetchAbove(0);
+      const all = await provider.fetchAbove(INBOX, 0);
       const asked = [all[0]?.uid ?? 0, all[2]?.uid ?? 0];
-      const metas = await provider.fetchByUids(asked);
+      const metas = await provider.fetchByUidsIn(INBOX, asked);
       expect(metas.map((m) => m.uid).sort((a, b) => a - b)).toEqual(asked);
     });
 
-    test("searchInboxSince(yesterday) contains all seeded uids", async () => {
+    test("searchSinceIn(INBOX, yesterday) contains all seeded uids", async () => {
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(1));
       await seed("INBOX", mail(2));
-      const all = (await provider.fetchAbove(0)).map((m) => m.uid);
-      const found = await provider.searchInboxSince(new Date(Date.now() - DAY_MS));
+      const all = (await provider.fetchAbove(INBOX, 0)).map((m) => m.uid);
+      const found = await provider.searchSinceIn(INBOX, new Date(Date.now() - DAY_MS));
       for (const uid of all) expect(found).toContain(uid);
     });
 
     test("fetchBodyText returns the text of a text mail", async () => {
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(1, { text: "Please approve the budget" }));
-      const [meta] = await provider.fetchAbove(0);
-      const body = await provider.fetchBodyText(meta?.uid ?? 0);
+      const [meta] = await provider.fetchAbove(INBOX, 0);
+      const body = await provider.fetchBodyText(INBOX, meta?.uid ?? 0);
       expect(body).toContain("Please approve the budget");
     });
 
     test("fetchBodyText returns the visible text of an html-only mail without tags", async () => {
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(1, { text: undefined, html: "<p>Visible words</p>" }));
-      const [meta] = await provider.fetchAbove(0);
-      const body = await provider.fetchBodyText(meta?.uid ?? 0);
+      const [meta] = await provider.fetchAbove(INBOX, 0);
+      const body = await provider.fetchBodyText(INBOX, meta?.uid ?? 0);
       expect(body).toContain("Visible words");
       expect(body).not.toContain("<p>");
     });
@@ -145,14 +196,14 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
     test("a mail without messageId gives messageId null", async () => {
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(1, { messageId: undefined }));
-      const [meta] = await provider.fetchAbove(0);
+      const [meta] = await provider.fetchAbove(INBOX, 0);
       expect(meta?.messageId).toBeNull();
     });
 
     test("fetchMetaIn in another folder keeps the identity; locateMessage finds the moved mail without a hint", async () => {
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(7));
-      const [source] = await provider.fetchAbove(0);
+      const [source] = await provider.fetchAbove(INBOX, 0);
       if (source === undefined) throw new Error("seed failed");
       const key = identityOf(source);
       const folder = await provider.ensureFolder(`AI/Contract-${crypto.randomUUID()}`);
@@ -170,7 +221,7 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
     test("locateMessage gives null for a mail that is not in the folder, was deleted, or has a missing folder", async () => {
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(8));
-      const [source] = await provider.fetchAbove(0);
+      const [source] = await provider.fetchAbove(INBOX, 0);
       if (source === undefined) throw new Error("seed failed");
       const key = { ...identityOf(source), hintUid: null };
       const folder = await provider.ensureFolder(`AI/Contract-${crypto.randomUUID()}`);
@@ -197,7 +248,7 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
     test("fetchMetaIn matches fetchAbove and has no \\Seen; null for unknown uid or folder", async () => {
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(1));
-      const [expected] = await provider.fetchAbove(0);
+      const [expected] = await provider.fetchAbove(INBOX, 0);
       const uid = expected?.uid ?? 0;
       const meta = await provider.fetchMetaIn("INBOX", uid);
       expect(meta?.messageId).toBe(expected?.messageId ?? "missing");
@@ -213,7 +264,7 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
     test("setFlags adds and removes flags", async () => {
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(1));
-      const uid = (await provider.fetchAbove(0))[0]?.uid ?? 0;
+      const uid = (await provider.fetchAbove(INBOX, 0))[0]?.uid ?? 0;
       await provider.setFlags("INBOX", uid, { add: ["\\Seen", "\\Flagged"] });
       const both = await provider.fetchMetaIn("INBOX", uid);
       expect(both?.flags).toContain("\\Seen");
@@ -227,7 +278,7 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
     test("moveMessage moves the mail with its fields and flags", async () => {
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(1));
-      const [source] = await provider.fetchAbove(0);
+      const [source] = await provider.fetchAbove(INBOX, 0);
       const uid = source?.uid ?? 0;
       await provider.setFlags("INBOX", uid, { add: ["\\Seen"] });
       const folder = await provider.ensureFolder(`AI/Contract-${crypto.randomUUID()}`);
@@ -253,7 +304,7 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
     test("searchSinceIn lists the moved uid; [] for a missing folder", async () => {
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(1));
-      const uid = (await provider.fetchAbove(0))[0]?.uid ?? 0;
+      const uid = (await provider.fetchAbove(INBOX, 0))[0]?.uid ?? 0;
       const folder = await provider.ensureFolder(`AI/Contract-${crypto.randomUUID()}`);
       const { newUid } = await provider.moveMessage("INBOX", uid, folder);
       const found = await provider.searchSinceIn(folder, yesterday());
@@ -279,11 +330,11 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(1));
       await seed("INBOX", mail(2));
-      const [first, second] = await provider.fetchAbove(0);
+      const [first, second] = await provider.fetchAbove(INBOX, 0);
       const lastUid = second?.uid ?? 0;
       const folder = await provider.ensureFolder(`AI/Contract-${crypto.randomUUID()}`);
       await provider.moveMessage("INBOX", first?.uid ?? 0, folder);
-      const metas = await provider.fetchAbove(lastUid);
+      const metas = await provider.fetchAbove(INBOX, lastUid);
       expect(metas.filter((m) => m.uid > lastUid)).toHaveLength(0);
       expect(metas.map((m) => m.uid)).not.toContain(first?.uid ?? 0);
     });
@@ -335,6 +386,75 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
         provider.appendMessage(`No-such-folder-${crypto.randomUUID()}`, outgoing(3, date).raw, [], date)
       ).rejects.toBeInstanceOf(HardError);
     });
+
+    async function transferred(
+      provider: MailProvider,
+      folder: string,
+      newUid: number | null
+    ): Promise<Awaited<ReturnType<MailProvider["fetchByUidsIn"]>>> {
+      return newUid === null
+        ? provider.fetchByUidsIn(folder, await provider.searchSinceIn(folder, yesterday()))
+        : provider.fetchByUidsIn(folder, [newUid]);
+    }
+
+    test("transferByAppend moves the mail with its size, date, Message-ID and flags (test 1, 2, 7b)", async () => {
+      const { provider, seed } = await freshEnv();
+      const oferty = await provider.ensureFolder("Oferty");
+      await seed(oferty, mail(1));
+      const [source] = await provider.fetchAbove(oferty, 0);
+      if (source === undefined) throw new Error("seed failed");
+      await provider.setFlags(oferty, source.uid, { add: ["\\Seen", "\\Flagged"] });
+
+      const { newUid } = await provider.transferByAppend(oferty, source.uid, INBOX);
+
+      expect(newUid).not.toBeNull();
+      const inbox = await provider.fetchByUidsIn(INBOX, [newUid ?? 0]);
+      expect(inbox).toHaveLength(1);
+      expect(await provider.fetchAbove(INBOX, 0)).toHaveLength(1);
+      const copy = inbox[0];
+      if (copy === undefined) throw new Error("no copy");
+      expect(copy.uid).toBe(newUid ?? 0);
+      expect(copy.size).toBe(source.size);
+      expect(Math.floor(copy.internalDate.getTime() / 1000)).toBe(Math.floor(source.internalDate.getTime() / 1000));
+      expect(copy.messageId).toBe(source.messageId ?? "missing");
+      expect(copy.flags).toContain("\\Seen");
+      expect(copy.flags).toContain("\\Flagged");
+      expect(await provider.fetchMetaIn(oferty, source.uid)).toBeNull();
+      expect(await provider.fetchAbove(oferty, 0)).toEqual([]);
+      expect(sameMailIdentity(copy, identityOf(source))).toBe(true);
+    }, 10_000);
+
+    test("transferByAppend of an unknown uid or from a missing folder throws MailNotFoundError and writes nothing (test 3)", async () => {
+      const { provider, seed } = await freshEnv();
+      const oferty = await provider.ensureFolder("Oferty");
+      await seed(oferty, mail(1));
+      await expect(provider.transferByAppend(oferty, 999_999, INBOX)).rejects.toBeInstanceOf(MailNotFoundError);
+      await expect(provider.transferByAppend(`Nope-${crypto.randomUUID()}`, 1, INBOX)).rejects.toBeInstanceOf(
+        MailNotFoundError
+      );
+      expect(await provider.fetchAbove(INBOX, 0)).toEqual([]);
+      expect(await provider.fetchAbove(oferty, 0)).toHaveLength(1);
+    }, 10_000);
+
+    test("transferByAppend between two sort folders keeps size, date and Message-ID (test 9, U11)", async () => {
+      const { provider, seed } = await freshEnv();
+      const info = await provider.ensureFolder("AI/Info");
+      const oferty = await provider.ensureFolder("Oferty");
+      await seed(info, mail(1));
+      const [source] = await provider.fetchAbove(info, 0);
+      if (source === undefined) throw new Error("seed failed");
+
+      const { newUid } = await provider.transferByAppend(info, source.uid, oferty);
+
+      const target = await transferred(provider, oferty, newUid);
+      expect(target).toHaveLength(1);
+      expect(target[0]?.size).toBe(source.size);
+      expect(Math.floor((target[0]?.internalDate.getTime() ?? 0) / 1000)).toBe(
+        Math.floor(source.internalDate.getTime() / 1000)
+      );
+      expect(target[0]?.messageId).toBe(source.messageId ?? "missing");
+      expect(await provider.fetchAbove(info, 0)).toEqual([]);
+    }, 10_000);
 
     test("serverInfo lists INBOX", async () => {
       const { provider } = await freshEnv();

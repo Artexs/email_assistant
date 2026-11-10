@@ -21,6 +21,7 @@ import {
   insertDraftAndSend,
   insertTestEmail,
   insertTriaged,
+  insertTriagedWithActions,
 } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
@@ -238,6 +239,64 @@ describe("buildDigestMessage", () => {
       const message = await buildDigestMessage(trx, ctx, request);
       expect(message.text).toContain("📭 Not processed (older than 7 days): 1");
       expect(message.text).toContain("⏳ Waiting for triage: 1");
+    });
+  });
+
+  test("the folder tag and the stay folder come from the mail's folders", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId };
+      await insertDefaultSettings(trx, ctx, a.mailboxId);
+      await insertTriagedWithActions(trx, ctx, a.mailboxId, {
+        category: "needs_reply",
+        createdAt: at(-2 * HOUR),
+        subject: "MARKER-OFFER",
+        folder: "Oferty",
+        sourceFolder: "Oferty",
+        uid: 11,
+        actions: [],
+      });
+      await insertTriagedWithActions(trx, ctx, a.mailboxId, {
+        category: "needs_reply",
+        createdAt: at(-3 * HOUR),
+        subject: "MARKER-RESCUED",
+        folder: "INBOX",
+        sourceFolder: "Wiadomości-śmieci",
+        uid: 12,
+        actions: [{ type: "move", status: "applied", payload: { folder: "inbox" } }],
+      });
+      await insertTriagedWithActions(trx, ctx, a.mailboxId, {
+        category: "urgent",
+        createdAt: at(-5 * HOUR),
+        subject: "MARKER-JUNK-URGENT",
+        folder: "Wiadomości-śmieci",
+        sourceFolder: "Wiadomości-śmieci",
+        uid: 14,
+        actions: [],
+      });
+      await insertTriagedWithActions(trx, ctx, a.mailboxId, {
+        category: "needs_reply",
+        createdAt: at(-4 * HOUR),
+        subject: "MARKER-PLAIN",
+        uid: 13,
+        actions: [],
+      });
+
+      const message = await buildDigestMessage(trx, ctx, request);
+      const block = (marker: string) => {
+        const lines = message.text.split("\n");
+        const index = lines.findIndex((line) => line.includes(marker));
+        return lines.slice(Math.max(0, index - 1), index + 4).join("\n");
+      };
+      expect(block("MARKER-OFFER")).toContain("📁 Oferty");
+      expect(block("MARKER-OFFER")).toContain("→ stays in Oferty");
+      expect(block("MARKER-RESCUED")).toContain("📁 Wiadomości-śmieci");
+      expect(block("MARKER-RESCUED")).toContain("→ done: move to INBOX");
+      expect(message.text.indexOf("NEEDS ACTION")).toBeGreaterThanOrEqual(0);
+      expect(block("MARKER-JUNK-URGENT")).toContain("📁 Wiadomości-śmieci");
+      expect(block("MARKER-JUNK-URGENT")).toContain("→ stays in Wiadomości-śmieci");
+      expect(block("MARKER-PLAIN")).not.toContain("📁");
+      expect(block("MARKER-PLAIN")).toContain("→ stays in INBOX");
     });
   });
 

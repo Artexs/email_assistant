@@ -1,6 +1,6 @@
 # AgentMail as the source of synthetic test mail for the Interia test mailbox
 
-Written 2026-11-07. Idea approved by the user; plan: `tasks/active/test-mail-traffic.md` (stage files in `tasks/active/test-mail-traffic/`).
+Written 2026-11-07. Idea approved by the user; plan: `tasks/done/test-mail-traffic.md` (stage files in `tasks/done/test-mail-traffic/`).
 Runbook: evals/testmail/README.md
 
 ## 1. The idea (user, 2026-11-07)
@@ -146,4 +146,13 @@ Read-only check on the VPS: SQL on `emails`, and a one-off IMAP script (`/tmp/ea
   INBOX (uid 38963, same INTERNALDATE). After 45 s and after the next sync it was still in INBOX; the VPS stored it (`stored 1`) and triaged it
   (`needs_reply`, `question`). The `Oferty` copy (uid 38960) is still there.
 - **Finding: `\Junk` is `AI/Spam` now** (S3 set the flag), and `Wiadomości-śmieci` has no flag. Deliver's `junk` key resolves to `AI/Spam`, a product folder.
+- **Update (sync-sort-folders, 2026-11-09):** the sync reads `Oferty` now (and `Społeczności`, `Rachunki`, `Wiadomości-śmieci`; `tasks/active/sync-sort-folders.md`). AgentMail mail that Interia sorts into `Oferty` is stored and triaged there, so the `deliver` step is not needed. A COPY into INBOX does not work at Interia (finding above); APPEND does.
 - Probe scripts (not in git): `/tmp/ea-tmt-inspect/` (read-only inspect; APPEND probe).
+
+## 11. Stage 9 with the sort-folder sync (2026-11-09/10)
+
+- Smoke `2026-11-09-smoke` (3) and batch `2026-11-09-batch-01` (25): Interia put all 28 mails into `Oferty`. The VPS sync stored and triaged each within about 10 minutes
+  (sync at minute 0, 5, 10 …). No `deliver` run.
+- Classifier on this sender: 24/25 ok on batch-01 (`classifier-v2`, `gpt-6-luna`); smoke: a client question → `delegation` (1 delegate active).
+- `testmail:send --limit 10 --interval-sec 45`: 3 runs for 25 mails (about 17 minutes). `status_until` after batch-01: `2026-12-10T10:30:47.019Z` (`testmail:setup` 2026-11-10 ~11:05Z; = 30 days after the first send of batch-01).
+- Sort-folder actions seen on test mail: the results note `notes/2026-11-09-sort-folders-live-test-results.md`.

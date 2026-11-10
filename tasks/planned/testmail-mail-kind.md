@@ -1,4 +1,4 @@
-> **Status 2026-11-08 — planned.** Follow-up of `tasks/active/test-mail-traffic.md` (decision D14). Not started.
+> **Status 2026-11-08 — planned.** Follow-up of `tasks/done/test-mail-traffic.md` (decision D14). Not started.
 
 # Mail kind for testmail mail
 

@@ -27,12 +27,16 @@ Prove S4 on real mail: a real draft in `Wersje robocze`, a real approval on the 
 
 ## Test mail in the week (2026-11-08)
 
-From 2026-11-08 the AgentMail test tool (`tasks/active/test-mail-traffic.md`, stage 9; user decision Q1 option (b): "Run it now.") sends about 28 made-up mails
+From 2026-11-08 the AgentMail test tool (`tasks/done/test-mail-traffic.md`, stage 9; user decision Q1 option (b): "Run it now.") sends about 28 made-up mails
 from `ea-testmail-75wd@agentmail.to` to the pilot mailbox. The server acts on them like on real mail: `needs_reply` or `delegation` test mail can get a draft and
 an approval message. Never approve a send for a test mail: reject it (`✖️ Reject`) or let it expire.
 
 - A1: approvals of test mail do not count in `Approvals: 0 waiting`.
 - B2: add `and lower(e.from_address) is distinct from 'ea-testmail-75wd@agentmail.to'` to every `emails e` join of the step 23.2.3 queries.
+
+## Sort-folder sync (2026-11-09 15:21 UTC)
+
+From 2026-11-09 15:21 UTC the server also syncs `Oferty`, `Społeczności`, `Rachunki` and `Wiadomości-śmieci` (`tasks/active/sync-sort-folders.md`). Their mail can get moves into `AI/*` (and spam folder mail into INBOX). Count drafts, approvals and sends for all mail and with `e.source_folder = 'INBOX'`.
 
 ## Plan
 

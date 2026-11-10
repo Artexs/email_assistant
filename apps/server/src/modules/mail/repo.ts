@@ -1,4 +1,12 @@
-import type { FolderKey } from "@ea/core";
+import {
+  SYNC_FOLDER_DEFAULTS,
+  syncFolderKeys,
+  syncFolderRoles,
+  type FolderKey,
+  type SyncFolderDefault,
+  type SyncFolderKey,
+  type SyncFolderRole,
+} from "@ea/core";
 import {
   expressionBuilder,
   sql,
@@ -11,6 +19,7 @@ import {
 import { z } from "zod";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
+import { HardError } from "../../platform/errors";
 
 import { INBOX, type MailCapabilities } from "./port";
 import { SYNTHETIC_MESSAGE_ID_LIKE } from "./seed";
@@ -45,7 +54,11 @@ export type MailboxRow = Omit<
   folder_map: Record<string, string>;
 };
 
-export type NewEmail = Omit<Insertable<DB["emails"]>, "id" | "org_id" | "status" | "attempts" | "created_at">;
+// `source_folder` has a DB default (INBOX), but no insert path may rely on it (D6).
+export type NewEmail = Omit<
+  Insertable<DB["emails"]>,
+  "id" | "org_id" | "status" | "attempts" | "created_at" | "source_folder"
+> & { source_folder: string };
 
 export interface ClaimedEmail {
   id: string;
@@ -64,6 +77,7 @@ export interface ClaimedEmail {
   message_id_header: string | null;
   in_reply_to: string | null;
   references_header: string | null;
+  source_folder: string;
 }
 
 // Int8 columns compare as strings in Kysely `where`.
@@ -136,7 +150,217 @@ export async function lockMailbox(
   return row && toMailboxRow(row);
 }
 
-// Conditional update: it changes the cursor only when the stored cursor is still `expected`.
+const syncFolderKeySchema = z.enum(syncFolderKeys);
+const syncFolderRoleSchema = z.enum(syncFolderRoles);
+
+// The one row type of the table.
+export interface SyncFolderRow {
+  id: string;
+  mailbox_id: string;
+  key: SyncFolderKey;
+  path: string;
+  role: SyncFolderRole;
+  enabled: boolean;
+  uidvalidity: number | null;
+  last_uid: number | null;
+}
+
+function toSyncFolderRow(row: Selectable<DB["mailbox_folders"]>): SyncFolderRow {
+  const key = syncFolderKeySchema.safeParse(row.key);
+  const role = syncFolderRoleSchema.safeParse(row.role);
+  if (!key.success || !role.success) throw new HardError("mailbox_folders row has an unknown key or role");
+  return {
+    id: row.id,
+    mailbox_id: row.mailbox_id,
+    key: key.data,
+    path: row.path,
+    role: role.data,
+    enabled: row.enabled,
+    uidvalidity: row.uidvalidity === null ? null : Number(row.uidvalidity),
+    last_uid: row.last_uid === null ? null : Number(row.last_uid),
+  };
+}
+
+export async function insertInboxFolder(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<void> {
+  await db
+    .insertInto("mailbox_folders")
+    .values({ org_id: ctx.orgId, mailbox_id: mailboxId, key: "inbox", path: INBOX, role: "inbox" })
+    .onConflict((oc) => oc.columns(["mailbox_id", "key"]).doNothing())
+    .execute();
+}
+
+export async function getSyncFolder(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  key: SyncFolderKey
+): Promise<SyncFolderRow | undefined> {
+  const row = await db
+    .selectFrom("mailbox_folders")
+    .selectAll()
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("key", "=", key)
+    .executeTakeFirst();
+  return row && toSyncFolderRow(row);
+}
+
+export async function lockSyncFolder(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  folderId: string
+): Promise<SyncFolderRow | undefined> {
+  const row = await trx
+    .selectFrom("mailbox_folders")
+    .selectAll()
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", folderId)
+    .forUpdate()
+    .executeTakeFirst();
+  return row && toSyncFolderRow(row);
+}
+
+// Order: INBOX, then the sort rows in SYNC_FOLDER_DEFAULTS order, then junk.
+export async function listSyncFolders(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { enabledOnly: boolean }
+): Promise<SyncFolderRow[]> {
+  const keyOrder = sql<number>`case key ${sql.join(
+    SYNC_FOLDER_DEFAULTS.map((item, index) => sql`when ${sql.lit(item.key)} then ${sql.lit(index)}`),
+    sql` `
+  )} else ${sql.lit(SYNC_FOLDER_DEFAULTS.length)} end`;
+  let query = db
+    .selectFrom("mailbox_folders")
+    .selectAll()
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId);
+  if (opts.enabledOnly) query = query.where("enabled", "=", true);
+  const rows = await query
+    .orderBy(sql`case role when 'inbox' then 0 when 'sort' then 1 else 2 end`)
+    .orderBy(keyOrder)
+    .orderBy("key")
+    .execute();
+  return rows.map(toSyncFolderRow);
+}
+
+// One INSERT that never changes an existing row (any unique key). Returns the rows that it inserted.
+export async function insertSyncFolders(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  picks: readonly (SyncFolderDefault | { key: "inbox"; path: string; role: "inbox" })[],
+  at: Date
+): Promise<{ key: SyncFolderKey; role: SyncFolderRole }[]> {
+  if (picks.length === 0) return [];
+  const rows = await db
+    .insertInto("mailbox_folders")
+    .values(
+      picks.map((pick) => ({
+        org_id: ctx.orgId,
+        mailbox_id: mailboxId,
+        key: pick.key,
+        path: pick.path,
+        role: pick.role,
+        created_at: at,
+        updated_at: at,
+      }))
+    )
+    .onConflict((oc) => oc.doNothing())
+    .returning(["key", "role"])
+    .execute();
+  return rows.map((row) => {
+    const key = syncFolderKeySchema.parse(row.key);
+    const role = syncFolderRoleSchema.parse(row.role);
+    return { key, role };
+  });
+}
+
+export async function lockSyncFolderByKey(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  key: SyncFolderKey
+): Promise<SyncFolderRow | undefined> {
+  const row = await trx
+    .selectFrom("mailbox_folders")
+    .selectAll()
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("key", "=", key)
+    .forUpdate()
+    .executeTakeFirst();
+  return row && toSyncFolderRow(row);
+}
+
+// Sets `enabled`; with `clearCursor` the folder starts again with a new first sync.
+export async function updateSyncFolderEnabled(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  folderId: string,
+  change: { enabled: boolean; clearCursor: boolean; at: Date }
+): Promise<boolean> {
+  const row = await trx
+    .updateTable("mailbox_folders")
+    .set({
+      enabled: change.enabled,
+      updated_at: change.at,
+      ...(change.clearCursor ? { uidvalidity: null, last_uid: null } : {}),
+    })
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", folderId)
+    .returning("id")
+    .executeTakeFirst();
+  return row !== undefined;
+}
+
+// The path of the junk row, also when it is disabled.
+export async function getJunkFolderPath(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<string | null> {
+  const row = await db
+    .selectFrom("mailbox_folders")
+    .select("path")
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("role", "=", "junk")
+    .executeTakeFirst();
+  return row?.path ?? null;
+}
+
+// Conditional update on the folder row: it changes the cursor only when the stored cursor is still `expected`.
+// The INBOX row also writes the two `mailboxes` columns in the same transaction (D3 dual write, for a code rollback).
+export async function updateFolderCursor(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  folderId: string,
+  expected: Cursor,
+  next: Cursor
+): Promise<boolean> {
+  const run = async (trx: DbOrTrx): Promise<boolean> => {
+    const row = await trx
+      .updateTable("mailbox_folders")
+      .set({ uidvalidity: next.uidValidity, last_uid: next.lastUid, updated_at: sql<Date>`now()` })
+      .where("org_id", "=", ctx.orgId)
+      .where("id", "=", folderId)
+      .where("uidvalidity", "is not distinct from", toInt8(expected.uidValidity))
+      .where("last_uid", "is not distinct from", toInt8(expected.lastUid))
+      .returning(["mailbox_id", "key"])
+      .executeTakeFirst();
+    if (row === undefined) return false;
+    if (row.key === "inbox") {
+      await trx
+        .updateTable("mailboxes")
+        .set({ uidvalidity: next.uidValidity, last_uid: next.lastUid })
+        .where("org_id", "=", ctx.orgId)
+        .where("id", "=", row.mailbox_id)
+        .execute();
+    }
+    return true;
+  };
+  return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
+}
+
+// The CAS of the INBOX row of the mailbox. False when the mailbox has no INBOX row.
 export async function updateCursor(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -144,15 +368,9 @@ export async function updateCursor(
   expected: Cursor,
   next: Cursor
 ): Promise<boolean> {
-  const result = await db
-    .updateTable("mailboxes")
-    .set({ uidvalidity: next.uidValidity, last_uid: next.lastUid })
-    .where("org_id", "=", ctx.orgId)
-    .where("id", "=", mailboxId)
-    .where("uidvalidity", "is not distinct from", toInt8(expected.uidValidity))
-    .where("last_uid", "is not distinct from", toInt8(expected.lastUid))
-    .executeTakeFirst();
-  return result.numUpdatedRows === 1n;
+  const folder = await getSyncFolder(db, ctx, mailboxId, "inbox");
+  if (folder === undefined) return false;
+  return updateFolderCursor(db, ctx, folder.id, expected, next);
 }
 
 export async function markSynced(db: DbOrTrx, ctx: TenantContext, mailboxId: string, at: Date): Promise<void> {
@@ -290,7 +508,17 @@ export async function findCopies(
 ): Promise<KnownCopy[]> {
   const rows = await db
     .selectFrom("emails")
-    .select(["id", "dedup_key", "folder", "uid", "content_hash", "from_address", "received_at", "undo_pending_at"])
+    .select([
+      "id",
+      "dedup_key",
+      "folder",
+      "source_folder",
+      "uid",
+      "content_hash",
+      "from_address",
+      "received_at",
+      "undo_pending_at",
+    ])
     .where("org_id", "=", ctx.orgId)
     .where("mailbox_id", "=", mailboxId)
     .where("message_id_header", key.messageId === null ? "is" : "=", key.messageId)
@@ -300,11 +528,12 @@ export async function findCopies(
     id: row.id,
     dedupKey: row.dedup_key,
     folder: row.folder,
+    sourceFolder: row.source_folder,
     uid: Number(row.uid),
     contentHash: row.content_hash,
     from: row.from_address,
     receivedAt: row.received_at,
-    undoPendingAt: row.undo_pending_at,
+    movePendingAt: row.undo_pending_at,
   }));
 }
 
@@ -324,8 +553,10 @@ export interface MovedRow {
   id: string;
   /** The UID in `folder` (the hint of the folder check). */
   uid: number;
+  /** The last known UID in `source_folder` (D3: the name stays). */
   inbox_uid: number | null;
   folder: string;
+  source_folder: string;
   message_id_header: string | null;
   content_hash: string;
   from_address: string | null;
@@ -333,12 +564,12 @@ export interface MovedRow {
   moved_at: Date;
 }
 
-// Mail that the system moved out of INBOX lately: the candidates for a return below the UID cursor (D4).
+// Mail that the system moved out of `sourceFolder` lately: the candidates for a return below that folder's UID cursor (D4).
 export async function listRecentlyMoved(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
-  opts: { movedAfter: Date; limit: number }
+  opts: { sourceFolder: string; movedAfter: Date; limit: number }
 ): Promise<MovedRow[]> {
   const rows = await db
     .selectFrom("emails")
@@ -347,6 +578,7 @@ export async function listRecentlyMoved(
       "uid",
       "inbox_uid",
       "folder",
+      "source_folder",
       "message_id_header",
       "content_hash",
       "from_address",
@@ -355,7 +587,8 @@ export async function listRecentlyMoved(
     ])
     .where("org_id", "=", ctx.orgId)
     .where("mailbox_id", "=", mailboxId)
-    .where("folder", "<>", INBOX)
+    .where("source_folder", "=", opts.sourceFolder)
+    .whereRef("folder", "<>", "source_folder")
     .where("inbox_uid", "is not", null)
     .where("moved_at", ">=", opts.movedAfter)
     .orderBy("moved_at", "desc")
@@ -385,31 +618,59 @@ export async function insertEmail(db: DbOrTrx, ctx: TenantContext, row: NewEmail
   return (result.numInsertedOrUpdatedRows ?? 0n) > 0n;
 }
 
-export async function updateEmailUid(db: DbOrTrx, ctx: TenantContext, emailId: string, uid: number): Promise<void> {
-  await db
+// `inbox_uid` (the UID in `source_folder`) changes only when the row sits in its source folder.
+// Only while the row is still in `opts.folder`, the folder of the decision: a move in between keeps its UID.
+export async function updateEmailUid(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailId: string,
+  uid: number,
+  opts: { folder: string; isSource?: boolean }
+): Promise<boolean> {
+  const result = await db
     .updateTable("emails")
-    .set({ uid, inbox_uid: uid })
+    .set(opts.isSource === false ? { uid } : { uid, inbox_uid: uid })
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", emailId)
-    .execute();
+    .where("folder", "=", opts.folder)
+    .executeTakeFirst();
+  return result.numUpdatedRows === 1n;
 }
 
+// D8 returned: the user put the mail into synced folder `opts.folder`. Only while the row is system-moved.
 export async function markEmailReturned(
   db: DbOrTrx,
   ctx: TenantContext,
   emailId: string,
   uid: number,
   at: Date,
-  opts: { onlyOutsideInbox?: boolean } = {}
+  opts: { folder: string }
 ): Promise<boolean> {
-  let query = db
+  const result = await db
     .updateTable("emails")
-    .set({ returned_at: at, folder: INBOX, uid, inbox_uid: uid })
+    .set({ returned_at: at, folder: opts.folder, source_folder: opts.folder, uid, inbox_uid: uid })
     .where("org_id", "=", ctx.orgId)
-    .where("id", "=", emailId);
-  // The below-cursor check must not touch a row that the normal path already moved back.
-  if (opts.onlyOutsideInbox === true) query = query.where("folder", "<>", INBOX);
-  const result = await query.executeTakeFirst();
+    .where("id", "=", emailId)
+    .whereRef("folder", "<>", "source_folder")
+    .executeTakeFirst();
+  return result.numUpdatedRows === 1n;
+}
+
+// D8 relocated: the user moved the mail between synced folders. Only while the row is still in the old source folder.
+export async function markEmailRelocated(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailId: string,
+  change: { from: string; to: string; uid: number }
+): Promise<boolean> {
+  const result = await db
+    .updateTable("emails")
+    .set({ folder: change.to, source_folder: change.to, uid: change.uid, inbox_uid: change.uid })
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", emailId)
+    .whereRef("folder", "=", "source_folder")
+    .where("folder", "=", change.from)
+    .executeTakeFirst();
   return result.numUpdatedRows === 1n;
 }
 
@@ -521,19 +782,19 @@ export async function mailboxHasUidplus(db: DbOrTrx, ctx: TenantContext, mailbox
   return (mailbox?.capabilities as Partial<MailCapabilities> | undefined)?.uidplus === true;
 }
 
-// `undefined` keeps the column (M7). `movedAt: null` clears `moved_at` (an Undo back to INBOX). `undoPendingAt: null` clears the D22 flag. Never touches `status` or `returned_at`.
+// `undefined` keeps the column (M7). `sourceUid` writes `inbox_uid` (the UID in `source_folder`). `movedAt: null` clears `moved_at` (the mail is back in its source folder). `undoPendingAt: null` clears the D22 flag. Never touches `status` or `returned_at`.
 export async function updateEmailLocation(
   db: DbOrTrx,
   ctx: TenantContext,
   emailId: string,
-  next: { folder: string; uid: number; inboxUid?: number; movedAt?: Date | null; undoPendingAt?: null }
+  next: { folder: string; uid: number; sourceUid?: number; movedAt?: Date | null; undoPendingAt?: null }
 ): Promise<boolean> {
   const result = await db
     .updateTable("emails")
     .set({
       folder: next.folder,
       uid: next.uid,
-      ...(next.inboxUid === undefined ? {} : { inbox_uid: next.inboxUid }),
+      ...(next.sourceUid === undefined ? {} : { inbox_uid: next.sourceUid }),
       ...(next.movedAt === undefined ? {} : { moved_at: next.movedAt }),
       ...(next.undoPendingAt === undefined ? {} : { undo_pending_at: null }),
     })
@@ -582,14 +843,25 @@ export function listSyncTargets(db: DbOrTrx): Promise<{ orgId: string; mailboxId
 
 // Forces the next sync to rescan: a real server never has UIDVALIDITY 0, so the sync sees a change.
 export async function forceRescan(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<boolean> {
-  const result = await db
-    .updateTable("mailboxes")
-    .set({ uidvalidity: "0" })
-    .where("org_id", "=", ctx.orgId)
-    .where("id", "=", mailboxId)
-    .where("uidvalidity", "is not", null)
-    .executeTakeFirst();
-  return result.numUpdatedRows === 1n;
+  const run = async (trx: DbOrTrx): Promise<boolean> => {
+    const result = await trx
+      .updateTable("mailbox_folders")
+      .set({ uidvalidity: "0", updated_at: sql<Date>`now()` })
+      .where("org_id", "=", ctx.orgId)
+      .where("mailbox_id", "=", mailboxId)
+      .where("uidvalidity", "is not", null)
+      .executeTakeFirst();
+    // D3 dual write.
+    await trx
+      .updateTable("mailboxes")
+      .set({ uidvalidity: "0" })
+      .where("org_id", "=", ctx.orgId)
+      .where("id", "=", mailboxId)
+      .where("uidvalidity", "is not", null)
+      .execute();
+    return result.numUpdatedRows > 0n;
+  };
+  return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
 }
 
 // Claims due pending rows and stale processing rows. `locked_at` = `opts.now` (a JS value, not SQL now()):
@@ -652,6 +924,7 @@ export async function claimEmails(
       "e.message_id_header",
       "e.in_reply_to",
       "e.references_header",
+      "e.source_folder",
     ])
     .execute();
   // RETURNING has no order.
@@ -729,18 +1002,20 @@ export async function listThreadContext(
   return query.orderBy("received_at", "desc").orderBy("id", "desc").limit(3).execute();
 }
 
-export async function listInboxEmailKeys(
+export async function listFolderEmailKeys(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
+  folders: string[],
   since: Date
 ): Promise<{ message_id_header: string | null; content_hash: string }[]> {
+  if (folders.length === 0) return [];
   return db
     .selectFrom("emails")
     .select(["message_id_header", "content_hash"])
     .where("org_id", "=", ctx.orgId)
     .where("mailbox_id", "=", mailboxId)
-    .where("folder", "=", "INBOX")
+    .where("folder", "in", folders)
     .where("received_at", ">=", since)
     .execute();
 }

@@ -186,6 +186,7 @@ export interface Emails {
   references_header: string | null;
   returned_at: Timestamp | null;
   skip_reason: string | null;
+  source_folder: Generated<string>;
   status: Generated<string>;
   subject: string | null;
   thread_key: string;
@@ -220,6 +221,20 @@ export interface Mailboxes {
   status: Generated<string>;
   status_changed_at: Generated<Timestamp>;
   uidvalidity: Int8 | null;
+}
+
+export interface MailboxFolders {
+  created_at: Generated<Timestamp>;
+  enabled: Generated<boolean>;
+  id: Generated<string>;
+  key: string;
+  last_uid: Int8 | null;
+  mailbox_id: string;
+  org_id: string;
+  path: string;
+  role: string;
+  uidvalidity: Int8 | null;
+  updated_at: Generated<Timestamp>;
 }
 
 export interface MailboxSettings {
@@ -330,6 +345,7 @@ export interface DB {
   digests: Digests;
   emails: Emails;
   mailbox_credentials: MailboxCredentials;
+  mailbox_folders: MailboxFolders;
   mailbox_settings: MailboxSettings;
   mailboxes: Mailboxes;
   memberships: Memberships;

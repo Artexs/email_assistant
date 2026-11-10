@@ -1,5 +1,4 @@
-> **Status 2026-11-08 — blocked until `tasks/planned/sync-sort-folders.md` is deployed on the VPS.** Stages 1–8 are done and merged (`9171a79`). Stage 9.1 sent the smoke batch; the mails stay in Interia `Oferty`, which the app does not sync. Left: stage 9 after that task (deliver is then not needed).
-> **Blocked until:** the VPS sync reads `Oferty` (task `sync-sort-folders`). Before then an agent may only read (`testmail:status`, `deliver --check-only`, read-only SQL). Do not send more test mail.
+> **Status 2026-11-10 — done.** Stages 1–9 done; batch `2026-11-09-batch-01` 24 of 25 ok (§ Results); runbook without `deliver`. Follow-ups: `tasks/planned/testmail-mail-kind.md`, `testmail-delegation-label.md`, `testmail-s4-delegate-persona.md`.
 
 # Test mail traffic: AgentMail synthetic mail utility
 
@@ -19,7 +18,7 @@ Interia INBOX, and compares the triage result of each mail with its expected cat
 2. Personas: one AgentMail inbox; each persona is a display name and a role in a committed persona file.
 3. Generator: the agent session (a Claude model, no LLM API call) writes batch files; a second Claude model labels them blind; a schema and data rules check them.
 4. Sender: sends the mails to `TEST_MAILBOX_ADDRESS` only, at most once each, and keeps a send log outside git.
-5. Deliver: moves the utility's own mails from the Interia sort folders (`Oferty`, …) into INBOX, so that the sync reads them.
+5. Deliver: moves the utility's own mails from the Interia sort folders (`Oferty`, …) into INBOX, so that the sync reads them. (Not used since 2026-11-10: the server syncs the sort folders, see done-when 2.)
 6. Compare: matches the sent mails with the synced and triaged mails and reports expected vs triage category, with the eval metrics.
 7. Agent use: non-interactive CLI commands with clear output and exit codes, a remote runner for the VPS part, and a runbook for agents.
 
@@ -32,7 +31,9 @@ any write into `triage_feedback`; any change of the S3 go/no-go gate (`mailbox:s
 
 1. `bun run testmail:send` sends the mails of a validated batch from the AgentMail inbox to `TEST_MAILBOX_ADDRESS`, at most once per case
    (also after a crash or a repeat), and refuses to run without `TEST_MAILBOX_ADDRESS`.
-2. `bun run testmail:remote deliver` puts every sent mail of the batch into the Interia INBOX; the VPS sync stores it and the triage worker triages it.
+2. Every sent mail of the batch reaches the server: the VPS sync stores it and the triage worker triages it. (Changed 2026-11-10: the server syncs
+   `Oferty` since task `sync-sort-folders` (user, 2026-11-08 "go with option 3"; 2026-11-09 "I suppose that you can test both things at once.", Log 2026-11-10), so no `deliver` move into INBOX is needed;
+   a COPY into INBOX does not work at Interia, notes §10.)
 3. `bun run testmail:remote compare` prints expected vs triage category per mail and the eval report (precision, recall, go/no-go) for the batch.
 4. The first real batch (stage 9: at least 25 mails, all 5 classifier categories, at least 3 personas, at least 2 threads) ran end to end; its compare report is in this file.
 5. No API key, IMAP password or mail text in any log line, error text, send log or bundle; the batch files hold only made-up content.
@@ -353,18 +354,41 @@ Each stage lives in its own file in [`test-mail-traffic/`](test-mail-traffic/). 
 - [x] [Stage 6](test-mail-traffic/stage-06-compare-and-target-cli.md) [written] — Compare: repository, report, CLI `testmail-target`
 - [x] [Stage 7](test-mail-traffic/stage-07-remote-runner.md) [written] — Remote runner `testmail:remote` (bundle, scp, ssh) [risky]
 - [x] [Stage 8](test-mail-traffic/stage-08-runbook-and-docs.md) [written] — Runbook, persona file, docs, follow-up task
-- [ ] [Stage 9](test-mail-traffic/stage-09-first-real-batch.md) [written] — First real batch: write, blind check, send, deliver, compare [risky] — user checkpoint 1 before it
+- [x] [Stage 9](test-mail-traffic/stage-09-first-real-batch.md) [written] — First real batch: write, blind check, send, deliver, compare [risky] — user checkpoint 1 before it
 
 ### Results
 
-Not yet (stage 9 writes the compare report here).
+**Batch `2026-11-09-batch-01`** (25 mails, sent 2026-11-10 10:30–10:47Z; report `evals/results/testmail-2026-11-09-batch-01.md`).
+`testmail:remote compare` exit 0: "triaged 25 of 25 sent; ok 24; wrong 1"; prompt `classifier-v2` (25); model `gpt-6-luna`. Blind checker agreed 25/25.
+
+| category     | sent | ok  | precision | recall | wrong                                                |
+| ------------ | ---- | --- | --------- | ------ | ---------------------------------------------------- |
+| urgent       | 5    | 5   | 100 %     | 100 %  |                                                      |
+| needs_reply  | 5    | 5   | 100 %     | 100 %  |                                                      |
+| info         | 5    | 4   | 100 %     | 80 %   | `info-newsletter-pytanie` (borderline) → `spam` 0.98 |
+| notification | 5    | 5   | 100 %     | 100 %  |                                                      |
+| spam         | 5    | 5   | 83.3 %    | 100 %  |                                                      |
+
+Both threads `ok`. Both `attack:` cases → `spam` 0.99. Every mail landed in `Oferty` and was stored by the sort-folder sync (no `deliver`).
+
+**Smoke `2026-11-09-smoke`** (3 mails, sent 2026-11-09 16:41Z): "triaged 3 of 3 sent; ok 2; wrong 1": `anna-termin-dostawy` (expected `needs_reply`) → `delegation` 0.84
+(1 delegate is active on the VPS; `compare` counts `delegation` as WRONG). The server made a draft and a send that waits for approval (not approved).
+
+Findings:
+
+- The classifier is very accurate on clear mail of this sender (24/25, confidence 0.95–0.99). The only errors are grey zones: a newsletter with a reader survey → `spam`
+  (reason `newsletter`), and a client question → `delegation` when a delegate exists.
+- The `-- Sent via AgentMail` footer and the single sender address do not seem to steer the classifier: personal mail stayed `urgent`/`needs_reply`/`info`, not `notification`.
+- Confidence is high (batch-01: 0.95–0.99; smoke: one at 0.84), so this batch says little about thresholds. 30 kept rows per category need more batches (go/no-go: "too few").
+- Next batch mix: more grey zones (newsletters, polite reminders, requests a delegate could take), and `delegation` as an expected category when delegates are active
+  (now `compare` counts it WRONG). No prompt change in this task.
 
 ## Done-checklist
 
-- [ ] Done-when checks pass (name the command and its output in the log).
-- [ ] `docs/` describe what was built (code-patterns test-tool list, evals README link); related ADRs set to accepted or superseded (none expected).
-- [ ] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
-- [ ] Follow-up ideas are in `planned/` (`testmail-mail-kind.md`, the S4 delegate persona).
+- [x] Done-when checks pass (name the command and its output in the log).
+- [x] `docs/` describe what was built (code-patterns test-tool list, evals README link); related ADRs set to accepted or superseded (none expected).
+- [x] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
+- [x] Follow-up ideas are in `planned/` (`testmail-mail-kind.md`, `testmail-s4-delegate-persona.md`, `testmail-delegation-label.md`).
 
 ## Log
 
@@ -395,3 +419,9 @@ Not yet (stage 9 writes the compare report here).
 - 2026-11-08: **User answer to Q1:** "Run it now." = option (b). Exclusion notes added to `tasks/planned/s3-assist-week-result.md` and `tasks/planned/s4-pilot-week.md` (test-mail filter in the week queries, A1, never approve a test-mail send). Stage 9 starts.
 - 2026-11-08: Stage 9.1 started. Preconditions OK (scopes as corrected, migrations, 1 delegate); setup `active`; smoke batch `2026-11-08-smoke` (3 mails) sent, exit 0; live `listByLabel` count 1. **Stopped at step 5:** Interia sorts a `UID COPY` into INBOX back into `Oferty` (deliver said `moved 3`; the mails are still in `Oferty` with new UIDs; nothing synced). An `APPEND` of the raw mail into INBOX stays, syncs and triages (probe, 1 mail). Facts: notes §10. Fix needs a deliver change (APPEND + delete) and a raw-read method: question Q2 to the user.
 - 2026-11-08: **User answer to Q2:** "go with option 3": the app syncs `Oferty` and the other Interia sort folders (a product change). New task `tasks/planned/sync-sort-folders.md`. This task is blocked until it is deployed; stage 9 then resumes at step 9.1.6 (wait for the sync, compare). State: `anna-termin-dostawy` is in INBOX (synced, triaged `needs_reply`) and in `Oferty` (uid 38960); `piotr-re-termin` and `faktura-wystawiona` are only in `Oferty`.
+- 2026-11-09: Resumed (user: the sort-folder sync is deployed; verify both with test mail). Worktree merged `origin/master` `091bcb5` (lint, typecheck, `test:unit` 1361 pass). VPS read-only: `0d39663`, migration `20261109083501`, 5 `mailbox_folders` rows enabled, scopes all 1/1/1, 1 delegate, disk 93 % (1.8 GB free). Pilot-week exclusion lines present (2 each). Setup: `active`, `status_until 2026-12-08T07:58:17Z`. Smoke batch `2026-11-09-smoke` (same reviewed content, new id) sent 16:41:31Z, exit 0. Batch-01 written (25 cases, 10 personas, 2 threads, 3 borderline, 2 attack), valid without labels. Handoff to a new session.
+- 2026-11-09 21:00Z: New session (handoff `~/.pi/agent/notes/2026-11-09-handoff-testmail-and-sort-folders-finish.md`). VPS read-only: `0d39663`, `max(version)` `20261109083501`, 5 folder rows enabled (`inbox` 38996, `offers` 38993), disk 93 %. Smoke `2026-11-09-smoke`: all 3 landed in `Oferty` (`source_folder`); `testmail:remote compare --batch 2026-11-09-smoke` exit 0, "triaged 3 of 3 sent; ok 2; wrong 1", prompt `classifier-v2`, model `gpt-6-luna`. `anna-termin-dostawy` → `delegation` 0.84 (WRONG): `create_draft` applied + `send` `awaiting_approval` (16:45:19Z; do not approve). `piotr-re-termin` `needs_reply`, thread ok, no action. `faktura-wystawiona` `notification`: `mark_read` + move `ai_notifications` applied 16:45:30Z (first applied move on a sort-folder mail). Re-sort watch at +4 h 13 min: `email.returned` 0, `imap_move` feedback 0.
+- 2026-11-10: User: "you can obviously send much more mails" (yes to batch-01). Batch-01: blind check (claude-haiku-5-5) agree 25/25; main-session read replaced 2 brand names (re-check agree 2); `testmail:validate` valid; reviewer (Sonnet, high) PASS (1 question, 3 minors: 1 note fixed; "Monday" weekday and 3 phishing cases accepted). Committed `b0cdeab`, pushed. `testmail:send --limit 10 --interval-sec 45` × 3 (exit 2, 2, 0), 25 sent 10:30–10:47Z. VPS read-only 10:57Z: 25 rows, all `source_folder` `Oferty`. `testmail:remote compare --batch 2026-11-09-batch-01 --out …` exit 0, "triaged 25 of 25 sent; ok 24; wrong 1" (§ Results). Runbook: `deliver` removed from the procedure (only `--check-only` as a read-only look); done-when 2 reworded (no `deliver`). Follow-up `tasks/planned/testmail-delegation-label.md`.
+  Done-when evidence: (1) `testmail:send` sent 25 once each (`testmail:status` "sent 25"); without `TEST_MAILBOX_ADDRESS`: "[testmail] TEST_MAILBOX_ADDRESS is not set: send refused", exit 1. (2) 25 of 25 stored and triaged (SQL count 25; compare "triaged 25 of 25"). (3) compare report with precision, recall, go/no-go: `evals/results/testmail-2026-11-09-batch-01.md`. (4) 25 mails, 5 categories, 10 personas, 2 threads, ran end to end (§ Results). (5) grep of the 3 send logs and the report for the API key, 4 subject phrases and `interia.pl`: 0 hits each. (6) runbook `evals/testmail/README.md` updated; this session ran batch-01 from it.
+- 2026-11-10: The resume words of the user (2026-11-09, copied from the handoff `~/.pi/agent/notes/2026-11-09-handoff-testmail-and-sort-folders-finish.md`): "Okay, I implemented new feature to get all the emails from the inbox. So right now you can proceed with this task and finish it. … I suppose that you can test both things at once. And there will be possibility to close both tickets at once." Results review (Opus, high): PASS, 7 minors (fixed: quote, `status_until`, status line, goal item 5, runbook table row, confidence wording; links fixed at the move), 2 questions (results note: written on `master`; S4 delegate persona: `tasks/planned/testmail-s4-delegate-persona.md`).
+- 2026-11-10: User checkpoint 2: the user read the summary and said "both tickets are fully working and we can close them both" (close of this task). Done-checklist: done-when evidence in the Log line above; docs: `docs/code-patterns.md:39` lists `testmail-target deliver`, `evals/README.md:14` links the runbook; notes §10–11 and `notes/2026-11-09-sort-folders-live-test-results.md`; no new alert; 3 follow-ups in `planned/`. Merged `a72210b`. Task moved to `tasks/done/`; links fixed (not in `tasks/active/sync-sort-folders*`: its stage 17 step 6 fixes them). Clean-up: worktree DB dropped, worktree and branch `task/test-mail-traffic` removed.

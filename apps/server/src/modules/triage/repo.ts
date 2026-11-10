@@ -68,6 +68,8 @@ export interface TriagedItemRow {
   from_address: string | null;
   subject: string | null;
   message_id_header: string | null;
+  folder: string;
+  source_folder: string;
 }
 
 export interface UsageRow {
@@ -420,11 +422,14 @@ export async function listTriagedBetween(
     from_address: string | null;
     subject: string | null;
     message_id_header: string | null;
+    folder: string;
+    source_folder: string;
   }>`
     WITH latest AS (${latestInWindow(ctx.orgId, range)})
     SELECT latest.email_id, latest.category, latest.confidence, latest.reason_code, latest.reason,
            latest.fields->>'model_category' AS model_category, latest.created_at,
-           e.mailbox_id, e.received_at, e.from_address, e.subject, e.message_id_header
+           e.mailbox_id, e.received_at, e.from_address, e.subject, e.message_id_header,
+           e.folder, e.source_folder
     FROM latest JOIN emails e ON e.id = latest.email_id AND e.org_id = ${ctx.orgId}
     ${categoryFilter}
     ORDER BY CASE latest.category WHEN 'urgent' THEN 1 WHEN 'needs_reply' THEN 2 WHEN 'delegation' THEN 3

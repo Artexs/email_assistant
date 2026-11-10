@@ -1,6 +1,7 @@
 export * from "./tenancy";
 export * from "./triage";
 export * from "./digest";
+export * from "./mail";
 export * from "./outgoing";
 export * from "./testmail";
 export * from "./web";
