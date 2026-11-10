@@ -153,33 +153,25 @@ describe("filterAboveCursor", () => {
   });
 });
 
-function copy(input: {
-  id: string;
-  key: string;
-  folder: string;
-  sourceFolder?: string;
-  uid?: number;
-  movePendingAt?: Date | null;
-}): KnownCopy {
+function copy(id: string, dedupKey: string, folder: string, uid = 1): KnownCopy {
   return {
-    id: input.id,
-    dedupKey: input.key,
-    folder: input.folder,
-    sourceFolder: input.sourceFolder ?? "INBOX",
-    uid: input.uid ?? 1,
+    id,
+    dedupKey,
+    folder,
+    uid,
     contentHash: HASH,
     from: "boss@example.test",
     receivedAt: new Date("2026-11-03T10:05:00Z"),
-    movePendingAt: input.movePendingAt ?? null,
+    undoPendingAt: null,
   };
 }
 
 describe("otherCopyUids", () => {
   test("keeps the UIDs of the other rows in the folder only", () => {
     const copies = [
-      copy({ id: "e1", key: BASE, folder: "AI/Spam", uid: 5 }),
-      copy({ id: "e2", key: `${BASE}#2`, folder: "AI/Spam", uid: 6 }),
-      copy({ id: "e3", key: `${BASE}#3`, folder: "AI/Info", uid: 7 }),
+      copy("e1", BASE, "AI/Spam", 5),
+      copy("e2", `${BASE}#2`, "AI/Spam", 6),
+      copy("e3", `${BASE}#3`, "AI/Info", 7),
     ];
     expect(otherCopyUids(copies, "e1", "AI/Spam")).toEqual(new Set([6]));
     expect(otherCopyUids(copies, "e3", "AI/Spam")).toEqual(new Set([5, 6]));
@@ -188,228 +180,119 @@ describe("otherCopyUids", () => {
 });
 
 describe("decideIncoming", () => {
-  const now = new Date("2026-11-08T12:00:00Z");
-  const none = new Map<string, string>();
-  const decide = (folder: string, copies: KnownCopy[], matched: ReadonlyMap<string, string> = none) =>
-    decideIncoming({ folder, baseKey: BASE, copies, matched, now });
+  const none = new Set<string>();
 
   test("no copies gives new with the base key", () => {
-    expect(decide("INBOX", [])).toEqual({ kind: "new", dedupKey: BASE });
+    expect(decideIncoming({ baseKey: BASE, copies: [], matched: none })).toEqual({
+      kind: "new",
+      dedupKey: BASE,
+    });
   });
 
-  test("one INBOX copy gives update_uid, isSource true", () => {
-    expect(decide("INBOX", [copy({ id: "e1", key: BASE, folder: "INBOX" })])).toEqual({
+  test("one INBOX copy gives update_uid", () => {
+    const copies: KnownCopy[] = [copy("e1", BASE, "INBOX")];
+    expect(decideIncoming({ baseKey: BASE, copies, matched: none })).toEqual({
       kind: "update_uid",
       emailId: "e1",
-      isSource: true,
     });
   });
 
-  test("a rescued copy in INBOX (source spam folder) gives update_uid, isSource false", () => {
-    const copies = [copy({ id: "e1", key: BASE, folder: "INBOX", sourceFolder: "Wiadomości-śmieci" })];
-    expect(decide("INBOX", copies)).toEqual({ kind: "update_uid", emailId: "e1", isSource: false });
-  });
-
-  test("S Oferty, a copy in INBOX gives check_folder INBOX, not system moved", () => {
-    expect(decide("Oferty", [copy({ id: "e1", key: BASE, folder: "INBOX" })])).toEqual({
-      kind: "check_folder",
-      emailId: "e1",
-      folder: "INBOX",
-      systemMoved: false,
-      seenElsewhere: false,
+  test("an INBOX copy that is already matched gives new #2", () => {
+    const copies: KnownCopy[] = [copy("e1", BASE, "INBOX")];
+    expect(decideIncoming({ baseKey: BASE, copies, matched: new Set(["e1"]) })).toEqual({
+      kind: "new",
+      dedupKey: `${BASE}#2`,
     });
   });
 
-  test("S Oferty, a copy in AI/Info gives check_folder AI/Info, system moved", () => {
-    expect(decide("Oferty", [copy({ id: "e1", key: BASE, folder: "AI/Info" })])).toEqual({
+  test("a copy in another folder gives check_folder", () => {
+    const copies: KnownCopy[] = [copy("e1", BASE, "AI/Info")];
+    expect(decideIncoming({ baseKey: BASE, copies, matched: none })).toEqual({
       kind: "check_folder",
       emailId: "e1",
       folder: "AI/Info",
-      systemMoved: true,
-      seenElsewhere: false,
     });
   });
 
-  test("a fresh move marker gives move_in_flight, also when the copy is matched", () => {
-    const copies = [copy({ id: "e1", key: BASE, folder: "AI/Info", movePendingAt: new Date("2026-11-08T11:00:00Z") })];
-    expect(decide("INBOX", copies)).toEqual({ kind: "move_in_flight", emailId: "e1" });
-    expect(decide("INBOX", copies, new Map([["e1", "INBOX"]]))).toEqual({ kind: "move_in_flight", emailId: "e1" });
-  });
-
-  test("a move marker of 25 h is a leftover: the normal rules apply", () => {
-    const copies = [copy({ id: "e1", key: BASE, folder: "AI/Info", movePendingAt: new Date("2026-11-07T11:00:00Z") })];
-    expect(decide("INBOX", copies)).toMatchObject({ kind: "check_folder", emailId: "e1" });
-  });
-
-  test("a copy in S wins over an earlier copy in another folder", () => {
-    const copies = [
-      copy({ id: "e1", key: BASE, folder: "AI/Info" }),
-      copy({ id: "e2", key: `${BASE}#2`, folder: "Oferty", sourceFolder: "Oferty" }),
-    ];
-    expect(decide("Oferty", copies)).toEqual({ kind: "update_uid", emailId: "e2", isSource: true });
-  });
-
-  test("the only copy in S is matched: new #2", () => {
-    const copies = [copy({ id: "e1", key: BASE, folder: "Oferty", sourceFolder: "Oferty" })];
-    expect(decide("Oferty", copies, new Map([["e1", "Oferty"]]))).toEqual({ kind: "new", dedupKey: `${BASE}#2` });
-  });
-
-  test("the copy in S is matched: the next free copy is checked", () => {
-    const copies = [
-      copy({ id: "e1", key: BASE, folder: "Oferty", sourceFolder: "Oferty" }),
-      copy({ id: "e2", key: `${BASE}#2`, folder: "AI/Info" }),
-    ];
-    expect(decide("Oferty", copies, new Map([["e1", "Oferty"]]))).toMatchObject({
+  test("base in INBOX matched and #2 in AI/Info gives check_folder #2", () => {
+    const copies: KnownCopy[] = [copy("e2", `${BASE}#2`, "AI/Info"), copy("e1", BASE, "INBOX")];
+    expect(decideIncoming({ baseKey: BASE, copies, matched: new Set(["e1"]) })).toEqual({
       kind: "check_folder",
+      emailId: "e2",
+      folder: "AI/Info",
+    });
+  });
+
+  test("INBOX copies come before copies in other folders", () => {
+    const copies: KnownCopy[] = [copy("e1", BASE, "AI/Info"), copy("e2", `${BASE}#2`, "INBOX")];
+    expect(decideIncoming({ baseKey: BASE, copies, matched: none })).toEqual({
+      kind: "update_uid",
       emailId: "e2",
     });
   });
 
   test("copies sort by number: #10 comes after #2", () => {
-    const copies = [
-      copy({ id: "e10", key: `${BASE}#10`, folder: "INBOX" }),
-      copy({ id: "e2", key: `${BASE}#2`, folder: "INBOX" }),
-      copy({ id: "e1", key: BASE, folder: "INBOX" }),
+    const copies: KnownCopy[] = [
+      copy("e10", `${BASE}#10`, "INBOX"),
+      copy("e2", `${BASE}#2`, "INBOX"),
+      copy("e1", BASE, "INBOX"),
     ];
-    expect(decide("INBOX", copies, new Map([["e1", "INBOX"]]))).toEqual({
+    expect(decideIncoming({ baseKey: BASE, copies, matched: new Set(["e1"]) })).toEqual({
       kind: "update_uid",
       emailId: "e2",
-      isSource: true,
     });
   });
 
-  test("all copies matched in S gives new with the next number", () => {
-    const copies = [
-      copy({ id: "e1", key: BASE, folder: "INBOX" }),
-      copy({ id: "e2", key: `${BASE}#2`, folder: "INBOX" }),
-    ];
-    const matched = new Map([
-      ["e1", "INBOX"],
-      ["e2", "INBOX"],
-    ]);
-    expect(decide("INBOX", copies, matched)).toEqual({ kind: "new", dedupKey: `${BASE}#3` });
-  });
-
-  test("S Oferty, the only copy is matched in INBOX gives cross_copy, no check_folder", () => {
-    const copies = [copy({ id: "e1", key: BASE, folder: "INBOX" })];
-    expect(decide("Oferty", copies, new Map([["e1", "INBOX"]]))).toEqual({ kind: "cross_copy", emailId: "e1" });
-  });
-
-  test("S Oferty, a free copy in AI/Info and a copy matched in INBOX: check_folder with seenElsewhere", () => {
-    const copies = [
-      copy({ id: "e1", key: BASE, folder: "AI/Info" }),
-      copy({ id: "e2", key: `${BASE}#2`, folder: "INBOX" }),
-    ];
-    expect(decide("Oferty", copies, new Map([["e2", "INBOX"]]))).toEqual({
-      kind: "check_folder",
-      emailId: "e1",
-      folder: "AI/Info",
-      systemMoved: true,
-      seenElsewhere: true,
-    });
-  });
-
-  test("a free copy #1 in S and a copy #2 with a fresh marker: move_in_flight wins", () => {
-    const copies = [
-      copy({ id: "e1", key: BASE, folder: "INBOX" }),
-      copy({ id: "e2", key: `${BASE}#2`, folder: "AI/Info", movePendingAt: new Date("2026-11-08T11:00:00Z") }),
-    ];
-    expect(decide("INBOX", copies)).toEqual({ kind: "move_in_flight", emailId: "e2" });
-  });
-
-  test("S INBOX, an INBOX copy that is already matched gives new #2", () => {
-    const copies = [copy({ id: "e1", key: BASE, folder: "INBOX" })];
-    expect(decide("INBOX", copies, new Map([["e1", "INBOX"]]))).toEqual({ kind: "new", dedupKey: `${BASE}#2` });
-  });
-
-  test("S INBOX, a copy in another folder gives check_folder, system moved", () => {
-    expect(decide("INBOX", [copy({ id: "e1", key: BASE, folder: "AI/Info" })])).toEqual({
-      kind: "check_folder",
-      emailId: "e1",
-      folder: "AI/Info",
-      systemMoved: true,
-      seenElsewhere: false,
-    });
-  });
-
-  test("S INBOX, e1 INBOX matched and e2 AI/Info free: check_folder e2, not seen elsewhere", () => {
-    const copies = [
-      copy({ id: "e2", key: `${BASE}#2`, folder: "AI/Info" }),
-      copy({ id: "e1", key: BASE, folder: "INBOX" }),
-    ];
-    expect(decide("INBOX", copies, new Map([["e1", "INBOX"]]))).toEqual({
-      kind: "check_folder",
-      emailId: "e2",
-      folder: "AI/Info",
-      systemMoved: true,
-      seenElsewhere: false,
-    });
-  });
-
-  test("S INBOX, INBOX copies come before copies in other folders", () => {
-    const copies = [
-      copy({ id: "e1", key: BASE, folder: "AI/Info" }),
-      copy({ id: "e2", key: `${BASE}#2`, folder: "INBOX" }),
-    ];
-    expect(decide("INBOX", copies)).toEqual({ kind: "update_uid", emailId: "e2", isSource: true });
-  });
-
-  test("S INBOX, e1 INBOX and e2 AI/Info both matched with INBOX gives new #3", () => {
-    const copies = [
-      copy({ id: "e1", key: BASE, folder: "INBOX" }),
-      copy({ id: "e2", key: `${BASE}#2`, folder: "AI/Info" }),
-    ];
-    const matched = new Map([
-      ["e1", "INBOX"],
-      ["e2", "INBOX"],
-    ]);
-    expect(decide("INBOX", copies, matched)).toEqual({ kind: "new", dedupKey: `${BASE}#3` });
-  });
-
-  test("a run copy stored in INBOX: cross_copy for S Oferty, new #2 for S INBOX", () => {
-    const run = copy({ id: `run:${BASE}`, key: BASE, folder: "INBOX" });
-    const matched = new Map([[run.id, "INBOX"]]);
-    expect(decide("Oferty", [run], matched)).toEqual({ kind: "cross_copy", emailId: run.id });
-    expect(decide("INBOX", [run], matched)).toEqual({ kind: "new", dedupKey: `${BASE}#2` });
-  });
-});
-
-describe("resolveFolderCheck", () => {
-  const input = { emailId: "e1", baseKey: BASE, copyCount: 2 };
-
-  test("system moved, still there: new with the next copy key", () => {
-    expect(resolveFolderCheck({ ...input, stillInFolder: true, systemMoved: true, seenElsewhere: false })).toEqual({
+  test("all copies matched gives new with the next number", () => {
+    const copies: KnownCopy[] = [copy("e1", BASE, "INBOX"), copy("e2", `${BASE}#2`, "AI/Info")];
+    expect(decideIncoming({ baseKey: BASE, copies, matched: new Set(["e1", "e2"]) })).toEqual({
       kind: "new",
       dedupKey: `${BASE}#3`,
     });
   });
+});
 
-  test("system moved, still there, seen elsewhere: cross_copy", () => {
-    expect(resolveFolderCheck({ ...input, stillInFolder: true, systemMoved: true, seenElsewhere: true })).toEqual({
-      kind: "cross_copy",
+describe("resolveFolderCheck", () => {
+  test("still in its folder gives new with the next copy key", () => {
+    const now = new Date("2026-11-07T12:00:00Z");
+    expect(
+      resolveFolderCheck({ emailId: "e1", stillInFolder: true, baseKey: BASE, copyCount: 1, undoPendingAt: null, now })
+    ).toEqual({
+      kind: "new",
+      dedupKey: `${BASE}#2`,
+    });
+  });
+
+  test("still in its folder with a fresh undo_pending_at gives undo_in_flight", () => {
+    const now = new Date("2026-11-07T12:00:00Z");
+    const input = { emailId: "e1", stillInFolder: true, baseKey: BASE, copyCount: 1, now };
+    expect(resolveFolderCheck({ ...input, undoPendingAt: new Date(now.getTime() - 3_600_000) })).toEqual({
+      kind: "undo_in_flight",
       emailId: "e1",
     });
   });
 
-  test("system moved, gone: returned", () => {
-    expect(resolveFolderCheck({ ...input, stillInFolder: false, systemMoved: true, seenElsewhere: false })).toEqual({
-      kind: "returned",
-      emailId: "e1",
+  test("an undo_pending_at older than 1 day gives the old rule", () => {
+    const now = new Date("2026-11-07T12:00:00Z");
+    const input = { emailId: "e1", stillInFolder: true, baseKey: BASE, copyCount: 1, now };
+    expect(resolveFolderCheck({ ...input, undoPendingAt: new Date(now.getTime() - 25 * 3_600_000) })).toEqual({
+      kind: "new",
+      dedupKey: `${BASE}#2`,
     });
   });
 
-  test("in its source folder, still there: cross_copy", () => {
-    expect(resolveFolderCheck({ ...input, stillInFolder: true, systemMoved: false, seenElsewhere: false })).toEqual({
-      kind: "cross_copy",
-      emailId: "e1",
-    });
+  test("an undo_pending_at does not stop a return", () => {
+    const now = new Date("2026-11-07T12:00:00Z");
+    expect(
+      resolveFolderCheck({ emailId: "e1", stillInFolder: false, baseKey: BASE, copyCount: 1, undoPendingAt: now, now })
+    ).toEqual({ kind: "returned", emailId: "e1" });
   });
 
-  test("in its source folder, gone: relocated", () => {
-    expect(resolveFolderCheck({ ...input, stillInFolder: false, systemMoved: false, seenElsewhere: false })).toEqual({
-      kind: "relocated",
-      emailId: "e1",
-    });
+  test("gone from its folder gives returned", () => {
+    const now = new Date("2026-11-07T12:00:00Z");
+    expect(
+      resolveFolderCheck({ emailId: "e1", stillInFolder: false, baseKey: BASE, copyCount: 1, undoPendingAt: null, now })
+    ).toEqual({ kind: "returned", emailId: "e1" });
   });
 });
 
@@ -486,7 +369,6 @@ describe("matchReturned", () => {
     uid: 3,
     inbox_uid: inboxUid,
     folder: "AI/Info",
-    source_folder: "INBOX",
     message_id_header: "<a1@example.test>",
     content_hash: contentHash(meta()),
     from_address: "boss@example.test",

@@ -20,7 +20,6 @@ const urgent = {
   aiText: "The server is down.",
   receivedAt: new Date("2026-11-06T06:42:00Z"),
   synthetic: false,
-  folderTag: null,
   wouldDo: "would flag",
   now,
   timeZone,
@@ -52,15 +51,6 @@ describe("renderUrgentNotice", () => {
   test("marks a test mail", () => {
     const first = renderUrgentNotice({ ...urgent, synthetic: true }).text.split("\n")[0];
     expect(first?.endsWith("· 🧪 test")).toBe(true);
-  });
-
-  test("shows the folder of the mail", () => {
-    expect(renderUrgentNotice({ ...urgent, folderTag: "Oferty" }).text.split("\n")[0]).toBe(
-      "🔴 Urgent mail · 📁 Oferty"
-    );
-    expect(renderUrgentNotice({ ...urgent, folderTag: "Oferty", synthetic: true }).text.split("\n")[0]).toBe(
-      "🔴 Urgent mail · 📁 Oferty · 🧪 test"
-    );
   });
 
   test("stays short for very long mail fields", () => {
@@ -116,8 +106,6 @@ describe("renderActionFailedNotice", () => {
     reverse: false,
     reason: "other" as const,
     folderName: "AI/Info",
-    sourceFolder: "INBOX",
-    currentFolder: "INBOX",
     from: "Ann <ann@firma.test>",
     subject: "Offer, see https://evil.test/x",
     synthetic: false,
@@ -175,19 +163,6 @@ describe("renderActionFailedNotice", () => {
     expect(out[0]).toBe("⚠️ Could not move a mail");
     expect(out[3]).toBe("The plan had an unknown folder. The mail stays in INBOX.");
     expect(out.join("\n")).not.toContain("Tried");
-  });
-
-  test("a reverse move names the source folder", () => {
-    expect(lines({ ...base, reverse: true, sourceFolder: "Oferty" })[0]).toBe(
-      "⚠️ Undo failed: could not move a mail back to Oferty"
-    );
-  });
-
-  test("a failed original move and bad_payload name the current folder", () => {
-    expect(lines({ ...base, currentFolder: "Oferty" })[3]).toContain("The mail stays in Oferty.");
-    expect(lines({ ...base, reason: "bad_payload", currentFolder: "Oferty" })[3]).toBe(
-      "The plan had an unknown folder. The mail stays in Oferty."
-    );
   });
 
   test("a null folder name ends the first line after 'a mail'", () => {

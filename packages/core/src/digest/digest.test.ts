@@ -5,7 +5,6 @@ import type { Category } from "../triage/categories";
 import { isFeedbackCallback, parseCallback } from "./callback";
 import { DIGEST_MAX_LINES, renderDigest, type DigestInput, type DigestItem, type DigestMailbox } from "./digest";
 import { MESSAGE_MAX_CHARS } from "./message";
-import { cutText } from "./text";
 
 const timeZone = "Europe/Warsaw";
 const now = new Date("2026-11-06T07:00:00Z");
@@ -31,7 +30,6 @@ function item(n: number, category: Category, extra: Partial<DigestItem> = {}): D
     subject: `Subject ${n}`,
     receivedAt: new Date(Date.UTC(2026, 10, 6, 5, n)),
     synthetic: false,
-    folderTag: null,
     aiText: `AI text ${n}`,
     wouldDo: "would flag",
     undoable: false,
@@ -221,16 +219,6 @@ describe("renderDigest", () => {
   test("synthetic item is marked", () => {
     const message = renderDigest(input({ items: [item(1, "info", { synthetic: true })], counts: { info: 1 } }));
     expect(blockStarts(message.text)[0]?.endsWith("· 🧪 test")).toBe(true);
-  });
-
-  test("a folder tag shows the folder after the sender", () => {
-    const tagged = renderDigest(input({ items: [item(1, "info", { folderTag: "Oferty" })], counts: { info: 1 } }));
-    expect(blockStarts(tagged.text)[0]?.endsWith("· 📁 Oferty")).toBe(true);
-    const plain = renderDigest(input({ items: [item(1, "info")], counts: { info: 1 } }));
-    expect(blockStarts(plain.text)[0]).not.toContain("📁");
-    const long = renderDigest(input({ items: [item(1, "info", { folderTag: "F".repeat(45) })], counts: { info: 1 } }));
-    expect(blockStarts(long.text)[0]).toContain(`· 📁 ${cutText("F".repeat(45), 30)}`);
-    expect(blockStarts(long.text)[0]).not.toContain("F".repeat(31));
   });
 
   test("footer lines for skipped and waiting mail", () => {

@@ -1,6 +1,6 @@
 # 0010 — IMAP + SMTP with a password first, behind a MailProvider port
 
-- Status: accepted (user, 2026-11-02), amended by 0014
+- Status: accepted (user, 2026-11-02)
 - Date: 2026-11-02
 - Supersedes: 0004
 

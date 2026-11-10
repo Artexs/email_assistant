@@ -1,10 +1,8 @@
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
-import { listActionsForEmail } from "../../src/modules/actions";
 import { auditEvents, recordAudit } from "../../src/modules/audit";
 import { insertDefaultSettings } from "../../src/modules/config";
-import { ensureSyncFolders } from "../../src/modules/mail";
 import { createLlmPause, createTriageJob, triageOne, type TriageScope } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
 import { LlmConfigError, LlmSoftError, type LlmClient } from "../../src/platform/llm";
@@ -110,35 +108,6 @@ describe("createTriageJob", () => {
       expect(llm.prompts[1]).toContain("second");
       expect(llm.prompts[2]).toContain("third");
       for (const id of [oldest, middle, newest]) expect((await emailRow(trx, id)).status).toBe("triaged");
-    });
-  });
-
-  test("a spam folder mail is planned by its source folder: spam leaves no action, INBOX spam does", async () => {
-    await withRollback(db, async (trx) => {
-      await pauseOtherMailboxes(trx);
-      const { ctx, mailboxId } = await mailboxWithSettings(trx);
-      await ensureSyncFolders(trx, ctx, mailboxId, [{ key: "junk", path: "Wiadomości-śmieci", role: "junk" }], now);
-      const junkMail = await insertTestEmail(trx, ctx, mailboxId, {
-        received_at: minutesFromNow(-20),
-        source_folder: "Wiadomości-śmieci",
-      });
-      const inboxMail = await insertTestEmail(trx, ctx, mailboxId, { received_at: minutesFromNow(-10) });
-
-      const spamLlm = {
-        classifierModel: "fake-model",
-        async classify(req) {
-          return {
-            data: req.schema.parse({ ...infoAnswer, category: "spam", summary: null }),
-            usage: { model: "fake-model", tokensIn: 100, tokensOut: 20, latencyMs: 300 },
-          };
-        },
-      } as LlmClient;
-      await job(trx, spamLlm, { kind: "all", mailboxAddress: await addressOf(trx, mailboxId) }).run();
-
-      expect((await emailRow(trx, junkMail)).status).toBe("triaged");
-      expect((await emailRow(trx, inboxMail)).status).toBe("triaged");
-      expect(await listActionsForEmail(trx, ctx, junkMail)).toHaveLength(0);
-      expect((await listActionsForEmail(trx, ctx, inboxMail)).length).toBeGreaterThan(0);
     });
   });
 

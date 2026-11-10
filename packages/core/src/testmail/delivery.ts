@@ -1,13 +1,11 @@
-import { syncFolderDefaultPath } from "../mail/sync-folders";
-
 export const sortFolderKeys = ["offers", "social", "bills", "junk"] as const;
 export type SortFolderKey = (typeof sortFolderKeys)[number];
 
-// junk: the Interia spam folder, found by its default name
+// junk: the \Junk special-use folder
 export const SORT_FOLDER_NAMES: Record<Exclude<SortFolderKey, "junk">, string> = {
-  offers: syncFolderDefaultPath("offers"),
-  social: syncFolderDefaultPath("social"),
-  bills: syncFolderDefaultPath("bills"),
+  offers: "Oferty",
+  social: "Społeczności",
+  bills: "Rachunki",
 };
 
 export interface FoundCopy {

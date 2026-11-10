@@ -24,13 +24,12 @@ export function renderUrgentNotice(input: {
   aiText: string | null;
   receivedAt: Date;
   synthetic: boolean;
-  folderTag: string | null;
   wouldDo: string;
   now: Date;
   timeZone: string;
 }): OutMessage {
   const lines = [
-    `🔴 Urgent mail${input.folderTag === null ? "" : ` · 📁 ${cutText(input.folderTag, 30)}`}${input.synthetic ? " · 🧪 test" : ""}`,
+    `🔴 Urgent mail${input.synthetic ? " · 🧪 test" : ""}`,
     `From: ${senderLabel(input.from)}`,
     `Subject: ${cleanSubject(input.subject)}`,
   ];
@@ -88,7 +87,7 @@ export function renderSyncOkNotice(input: {
 }
 
 const FAILED_FIRST_LINE = {
-  move: { original: "Could not move a mail", reverse: "Undo failed: could not move a mail back to" },
+  move: { original: "Could not move a mail", reverse: "Undo failed: could not move a mail back to INBOX" },
   flag: { original: "Could not flag a mail", reverse: "Undo failed: could not remove the flag" },
   mark_read: { original: "Could not mark a mail read", reverse: "Undo failed: could not mark a mail unread" },
   create_draft: { original: "Could not create a draft", reverse: "Could not remove the draft for a mail" },
@@ -100,8 +99,6 @@ export function renderActionFailedNotice(input: {
   reverse: boolean;
   reason: "mail_not_found" | "bad_payload" | "other";
   folderName: string | null;
-  sourceFolder: string;
-  currentFolder: string;
   from: string | null;
   subject: string | null;
   synthetic: boolean;
@@ -109,7 +106,6 @@ export function renderActionFailedNotice(input: {
 }): OutMessage {
   const folder = input.folderName === null ? null : cutText(input.folderName, 60);
   let first = `⚠️ ${FAILED_FIRST_LINE[input.actionType][input.reverse ? "reverse" : "original"]}`;
-  if (input.reverse && input.actionType === "move") first = `${first} ${cutText(input.sourceFolder, 30)}`;
   if (!input.reverse && input.actionType === "move" && folder !== null && input.reason !== "bad_payload") {
     first = `${first} to ${folder}`;
   }
@@ -118,14 +114,14 @@ export function renderActionFailedNotice(input: {
   if (input.reverse && input.reason === "mail_not_found") {
     last = "The mail was not found: it was moved or deleted in the mail client.";
   } else if (input.reason === "bad_payload") {
-    last = `The plan had an unknown folder. The mail stays in ${cutText(input.currentFolder, 30)}.`;
+    last = "The plan had an unknown folder. The mail stays in INBOX.";
   } else if (input.reverse) {
     let where = "";
     if (input.actionType === "move") where = ` The mail stays in ${folder ?? "its AI folder"}: move it by hand.`;
     if (input.actionType === "create_draft") where = " The draft stays in Drafts: delete it by hand.";
     last = `${tried}${where} /status shows the mailbox state.`;
   } else {
-    const where = input.actionType === "move" ? ` The mail stays in ${cutText(input.currentFolder, 30)}.` : "";
+    const where = input.actionType === "move" ? " The mail stays in INBOX." : "";
     last = `${tried}${where} /status shows the mailbox state.`;
   }
   const lines = [first];

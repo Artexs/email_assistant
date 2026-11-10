@@ -22,16 +22,6 @@ export const AI_FOLDER_NAMES: Record<FolderKey, string> = {
   ai_manual: "AI/Manual",
 };
 
-// A move goes to an app folder or back to INBOX (D11, D12).
-export const moveTargets = [...folderKeys, "inbox"] as const;
-export type MoveTarget = (typeof moveTargets)[number];
-
-export function isMoveTarget(value: unknown): value is MoveTarget {
-  return typeof value === "string" && (moveTargets as readonly string[]).includes(value);
-}
-
-export const MOVE_TARGET_NAMES: Record<MoveTarget, string> = { ...AI_FOLDER_NAMES, inbox: "INBOX" };
-
 // What the classifier and the delegates list give the planner for a `delegation` mail (D4).
 export interface DelegationInput {
   delegateId: string | null;
@@ -46,10 +36,10 @@ export interface DelegationInput {
   senderAddress: string | null;
 }
 
-// Move payloads hold only folder keys or `inbox`. Draft and send payloads hold the delegate's address from the delegates row
+// Move payloads hold only folder keys. Draft and send payloads hold the delegate's address from the delegates row
 // or the sender's address, never an address from the LLM text.
 export type PlannedAction =
-  | { type: "move"; folder: MoveTarget }
+  | { type: "move"; folder: FolderKey }
   | { type: "mark_read" }
   | { type: "flag" }
   | { type: "save_summary"; summary: string }
@@ -110,36 +100,8 @@ function planDelegation(input: DelegationInput | undefined): PlannedAction[] {
   return [];
 }
 
-export interface PlanSource {
-  // The mail's source_folder is the path of the mailbox's junk row (D11).
-  fromJunk: boolean;
-}
-
-// The plan for a mail from the spam folder (D11): the normal move gate decides; no flag, no VIP exception.
-// A `delegation` mail only moves into INBOX: no draft, no send, no approval (U10).
-// Returns undefined for the categories that use the normal plan.
-function planFromJunk(category: Category): PlannedAction[] | undefined {
-  switch (category) {
-    case "spam":
-      return [];
-    case "urgent":
-    case "needs_reply":
-    case "delegation":
-      return [{ type: "move", folder: "inbox" }];
-    default:
-      return undefined;
-  }
-}
-
 // The plan in `assist` mode (architecture §4.2). The caller marks the summary with `markUntrustedText` first.
-export function planActions(
-  category: Category,
-  summary: string | null,
-  delegation?: DelegationInput,
-  source?: PlanSource
-): PlannedAction[] {
-  const fromJunk = source?.fromJunk ? planFromJunk(category) : undefined;
-  if (fromJunk !== undefined) return fromJunk;
+export function planActions(category: Category, summary: string | null, delegation?: DelegationInput): PlannedAction[] {
   switch (category) {
     case "urgent":
       return [{ type: "flag" }];

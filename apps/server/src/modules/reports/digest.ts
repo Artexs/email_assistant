@@ -16,7 +16,7 @@ import { listActionsForEmails, listDraftTasks, listSummaries } from "../actions"
 import { auditEvents, countEventsBetween } from "../audit";
 import { getMailboxSettings } from "../config";
 import { countOpenDelegations, listDelegateNames } from "../delegation";
-import { countWaiting, INBOX, isSyntheticMessageId, listMailboxes } from "../mail";
+import { countWaiting, isSyntheticMessageId, listMailboxes } from "../mail";
 import { getOrganization } from "../tenancy";
 import { countTriagedBetween, listTriagedBetween } from "../triage";
 
@@ -105,7 +105,6 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
     subject: row.subject,
     receivedAt: row.received_at,
     synthetic: isSyntheticMessageId(row.message_id_header),
-    folderTag: row.source_folder === INBOX ? null : row.source_folder,
     aiText: aiTextFor({
       category: row.category,
       reasonCode: row.reason_code,
@@ -115,7 +114,7 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
       confidence: row.confidence,
       task: tasks.get(row.email_id) ?? null,
     }),
-    wouldDo: describeActions(actions.get(row.email_id) ?? [], names, { stayFolder: row.folder }),
+    wouldDo: describeActions(actions.get(row.email_id) ?? [], names),
     undoable: isUndoable(actions.get(row.email_id) ?? [], request.now),
   }));
 

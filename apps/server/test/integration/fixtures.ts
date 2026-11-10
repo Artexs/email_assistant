@@ -5,7 +5,7 @@ import type { Transaction } from "kysely";
 
 import { noDelegationHooks, type ApplyDeps } from "../../src/modules/actions";
 import { composeMessage, type MailCapabilities, type NewEmail } from "../../src/modules/mail";
-import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
+import { insertMailbox } from "../../src/modules/mail/repo";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
@@ -22,7 +22,7 @@ export const testCapabilities: MailCapabilities = {
 // The S4 fields of `ApplyDeps` for tests that apply no draft or send.
 export function applyDepsDefaults(): Pick<
   ApplyDeps,
-  "mailbox" | "owner" | "organization" | "compose" | "sender" | "hooks" | "appendFolders"
+  "mailbox" | "owner" | "organization" | "compose" | "sender" | "hooks"
 > {
   return {
     mailbox: { address: "box@x.test", capabilities: { uidplus: true }, folderMap: {} },
@@ -31,7 +31,6 @@ export function applyDepsDefaults(): Pick<
     compose: composeMessage,
     sender: null,
     hooks: noDelegationHooks,
-    appendFolders: new Set(),
   };
 }
 
@@ -61,7 +60,6 @@ export async function createOrgWithMailbox(
       folderMap: { drafts: "Drafts" },
     }
   );
-  await insertInboxFolder(trx, { orgId }, mailboxId);
   return { orgId, userId, mailboxId };
 }
 
@@ -245,7 +243,6 @@ export async function insertTriagedWithActions(
   mailboxId: string,
   opts: Parameters<typeof insertTriaged>[3] & {
     folder?: string;
-    sourceFolder?: string;
     uid?: number;
     inboxUid?: number | null;
     contentHash?: string;
@@ -253,14 +250,13 @@ export async function insertTriagedWithActions(
     actions: Omit<Parameters<typeof insertAction>[3], "createdAt">[];
   }
 ): Promise<{ emailId: string; actionIds: string[] }> {
-  const { folder, sourceFolder, uid, inboxUid, contentHash, movedAt, actions, ...triaged } = opts;
+  const { folder, uid, inboxUid, contentHash, movedAt, actions, ...triaged } = opts;
   const emailId = await insertTriaged(trx, ctx, mailboxId, triaged);
   const mailUid = uid ?? 1;
   await trx
     .updateTable("emails")
     .set({
       folder: folder ?? "INBOX",
-      source_folder: sourceFolder ?? "INBOX",
       uid: mailUid,
       inbox_uid: inboxUid === undefined ? mailUid : inboxUid,
       content_hash: contentHash ?? "h",

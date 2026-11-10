@@ -7,7 +7,6 @@ import { SENT_COPY_PENDING_MAX_AGE_MS } from "../../src/modules/actions";
 import { auditEvents, recordAudit } from "../../src/modules/audit";
 import { detectNotices } from "../../src/modules/channels";
 import { insertSenderRule } from "../../src/modules/config";
-import { ensureSyncFolders } from "../../src/modules/mail";
 import { insertMailbox, markSynced, type MailboxStatus } from "../../src/modules/mail/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
 
@@ -20,7 +19,6 @@ import {
   insertDraftAndSend,
   insertTestEmail,
   insertTriaged,
-  insertTriagedWithActions,
   isolateChannels,
   linkChat,
   randomChatId,
@@ -173,41 +171,6 @@ describe("urgent notices", () => {
 
       await run(trx);
       expect(await rows(trx, o.orgId)).toHaveLength(0);
-    });
-  });
-
-  test("the notice names a source folder; spam folder mail gets none (D23)", async () => {
-    await withRollback(db, async (trx) => {
-      await isolateChannels(trx);
-      const o = await org(trx);
-      await ensureSyncFolders(trx, o.ctx, o.mailboxId, [{ key: "junk", path: "Wiadomości-śmieci", role: "junk" }], T);
-      const offers = await insertTriagedWithActions(trx, o.ctx, o.mailboxId, {
-        category: "urgent",
-        createdAt: at(-10 * MINUTE),
-        folder: "Oferty",
-        sourceFolder: "Oferty",
-        uid: 21,
-        actions: [],
-      });
-      const junk = await insertTriagedWithActions(trx, o.ctx, o.mailboxId, {
-        category: "urgent",
-        createdAt: at(-9 * MINUTE),
-        folder: "Wiadomości-śmieci",
-        sourceFolder: "Wiadomości-śmieci",
-        uid: 22,
-        actions: [],
-      });
-
-      await run(trx);
-      const found = await rows(trx, o.orgId, "urgent");
-      expect(found.map((r) => r.email_id)).toEqual([offers.emailId, offers.emailId]);
-      for (const row of found) {
-        expect(row.text.split("\n")[0]).toContain("🔴 Urgent mail · 📁 Oferty");
-        expect(row.text).toContain("→ stays in Oferty");
-      }
-      expect(found.some((r) => r.email_id === junk.emailId)).toBe(false);
-      const audited = await trx.selectFrom("audit_log").select("id").where("email_id", "=", junk.emailId).execute();
-      expect(audited).toHaveLength(0);
     });
   });
 
@@ -593,23 +556,6 @@ describe("action_failed notices", () => {
       expect(found).toHaveLength(1);
       expect(found[0]?.text).toContain("Undo failed: could not move a mail back to INBOX");
       expect(found[0]?.text).toContain("Tried 3 times");
-    });
-  });
-
-  test("a failed reverse move of a mail in another folder names that folder", async () => {
-    await withRollback(db, async (trx) => {
-      await isolateChannels(trx);
-      const o = await org(trx);
-      const { emailId } = await failedMove(trx, o, { reverse: true, updatedAt: at(-MINUTE) });
-      await trx
-        .updateTable("emails")
-        .set({ folder: "Oferty", source_folder: "Oferty" })
-        .where("id", "=", emailId)
-        .execute();
-      await run(trx);
-      const found = await rows(trx, o.orgId, "action_failed");
-      expect(found).toHaveLength(1);
-      expect(found[0]?.text).toContain("Undo failed: could not move a mail back to Oferty");
     });
   });
 

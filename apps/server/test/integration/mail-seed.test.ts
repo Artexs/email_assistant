@@ -5,7 +5,6 @@ import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import {
-  auditExitCode,
   auditMailbox,
   connectMailbox,
   openImapProvider,
@@ -14,10 +13,7 @@ import {
   verifySmtpLogin,
   type ImapConnectOptions,
 } from "../../src/modules/mail";
-import { ensureSyncFolders, setSyncFolderEnabled } from "../../src/modules/mail/folders";
 import { connectImapClient } from "../../src/modules/mail/imap/client";
-import { appendRaw } from "../../src/modules/mail/imap/tools";
-import { renderSeedMessage } from "../../src/modules/mail/seed";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
@@ -65,11 +61,11 @@ async function connectGreenmail(
   return { mailboxId, address, imap: { host, port: imapPort, user: address, password } };
 }
 
-async function inboxMessageIds(imap: ImapConnectOptions, folder = "INBOX"): Promise<string[]> {
+async function inboxMessageIds(imap: ImapConnectOptions): Promise<string[]> {
   const client = await connectImapClient(imap);
   try {
-    if (!(await client.list()).some((entry) => entry.path === folder)) return [];
-    const lock = await client.getMailboxLock(folder);
+    if (!(await client.list()).some((entry) => entry.path === "INBOX")) return [];
+    const lock = await client.getMailboxLock("INBOX");
     try {
       const ids: string[] = [];
       if (client.mailbox && client.mailbox.exists === 0) return ids;
@@ -152,60 +148,6 @@ describe("seedMailbox", () => {
   });
 });
 
-async function createFolder(imap: ImapConnectOptions, path: string): Promise<void> {
-  const client = await connectImapClient(imap);
-  try {
-    await client.mailboxCreate(path);
-  } finally {
-    await client.logout();
-  }
-}
-
-describe("seedMailbox --folder", () => {
-  test("refuses a folder outside INBOX and the sync folders before any connection, and creates nothing", async () => {
-    await withRollback(db, async (trx) => {
-      const { orgId } = await createOrg(trx);
-      const ctx = { orgId };
-      const { mailboxId, address, imap } = await connectGreenmail(trx, ctx);
-      for (const folder of ["AI/Info", "Kosz", "Moje"]) {
-        await expect(
-          seedMailbox({ db: trx, secrets }, ctx, mailboxId, { count: 1, testAddress: address, folder })
-        ).rejects.toThrow("seed refused");
-      }
-      const client = await connectImapClient(imap);
-      try {
-        expect((await client.list()).map((entry) => entry.path)).not.toContain("AI/Info");
-      } finally {
-        await client.logout();
-      }
-    });
-  });
-
-  test("a missing sync folder is not created: folder not found", async () => {
-    await withRollback(db, async (trx) => {
-      const { orgId } = await createOrg(trx);
-      const ctx = { orgId };
-      const { mailboxId, address, imap } = await connectGreenmail(trx, ctx);
-      await expect(
-        seedMailbox({ db: trx, secrets }, ctx, mailboxId, { count: 1, testAddress: address, folder: "Oferty" })
-      ).rejects.toThrow("folder not found");
-      expect(await inboxMessageIds(imap, "Oferty")).toEqual([]);
-    });
-  });
-
-  test("an existing Oferty gets the mail, INBOX does not", async () => {
-    await withRollback(db, async (trx) => {
-      const { orgId } = await createOrg(trx);
-      const ctx = { orgId };
-      const { mailboxId, address, imap } = await connectGreenmail(trx, ctx);
-      await createFolder(imap, "Oferty");
-      await seedMailbox({ db: trx, secrets }, ctx, mailboxId, { count: 2, testAddress: address, folder: "Oferty" });
-      expect(await inboxMessageIds(imap, "Oferty")).toHaveLength(2);
-      expect(await inboxMessageIds(imap)).toEqual([]);
-    });
-  });
-});
-
 describe("auditMailbox", () => {
   test("shows seeded mail as missing before the sync and a clean result after it", async () => {
     await withRollback(db, async (trx) => {
@@ -215,9 +157,12 @@ describe("auditMailbox", () => {
       const since = new Date(Date.now() - 3_600_000);
       await seedMailbox({ db: trx, secrets }, ctx, mailboxId, { count: 2, testAddress: address });
 
-      expect(await auditMailbox({ db: trx, secrets }, ctx, mailboxId, since)).toEqual([
-        { key: "inbox", counts: { mail: 2, stored: 0, missing: 2, duplicates: 0, cross: 0 } },
-      ]);
+      expect(await auditMailbox({ db: trx, secrets }, ctx, mailboxId, since)).toEqual({
+        inbox: 2,
+        stored: 0,
+        missing: 2,
+        duplicates: 0,
+      });
 
       const provider = await openImapProvider({ host, port: imapPort, user: address, password: "any" });
       try {
@@ -230,144 +175,14 @@ describe("auditMailbox", () => {
         await provider.close();
       }
 
-      expect(await auditMailbox({ db: trx, secrets }, ctx, mailboxId, since)).toEqual([
-        { key: "inbox", counts: { mail: 2, stored: 2, missing: 0, duplicates: 0, cross: 0 } },
-      ]);
+      expect(await auditMailbox({ db: trx, secrets }, ctx, mailboxId, since)).toEqual({
+        inbox: 2,
+        stored: 2,
+        missing: 0,
+        duplicates: 0,
+      });
     });
   });
-});
-
-describe("auditMailbox per folder", () => {
-  const since = new Date(Date.now() - 3_600_000);
-  const offersPick = { key: "offers", path: "Oferty", role: "sort" } as const;
-  const junkPick = { key: "junk", path: "Wiadomości-śmieci", role: "junk" } as const;
-
-  async function prepare(trx: Db | Transaction<DB>, offersMails: number) {
-    const { orgId } = await createOrg(trx);
-    const ctx = { orgId };
-    const box = await connectGreenmail(trx, ctx);
-    await seedMailbox({ db: trx, secrets }, ctx, box.mailboxId, { count: 2, testAddress: box.address });
-    const provider = await openImapProvider(box.imap);
-    try {
-      await syncMailbox(
-        { db: trx, provider, isOwnActionId: async () => false, now: () => new Date() },
-        ctx,
-        box.mailboxId
-      );
-    } finally {
-      await provider.close();
-    }
-    const client = await connectImapClient(box.imap);
-    try {
-      await client.mailboxCreate("Oferty");
-    } finally {
-      await client.logout();
-    }
-    for (let n = 0; n < offersMails; n += 1) {
-      await appendRaw(
-        box.imap,
-        "Oferty",
-        renderSeedMessage({
-          messageId: `<offer-${randomUUID()}@ea-seed.test>`,
-          from: "shop@ea-seed.test",
-          to: [box.address],
-          subject: "Offer",
-          date: new Date(),
-          text: "Offer",
-        })
-      );
-    }
-    await ensureSyncFolders(trx, ctx, box.mailboxId, [offersPick, junkPick], new Date());
-    return { ctx, mailboxId: box.mailboxId };
-  }
-
-  test("one entry per enabled folder: INBOX clean, Oferty with 1 mail and 0 rows is missing, junk is not on the server", async () => {
-    await withRollback(db, async (trx) => {
-      const { ctx, mailboxId } = await prepare(trx, 1);
-      const results = await auditMailbox({ db: trx, secrets }, ctx, mailboxId, since);
-      expect(results).toEqual([
-        { key: "inbox", counts: { mail: 2, stored: 2, missing: 0, duplicates: 0, cross: 0 } },
-        { key: "offers", counts: { mail: 1, stored: 0, missing: 1, duplicates: 0, cross: 0 } },
-        { key: "junk", counts: null },
-      ]);
-      expect(auditExitCode(results[0]?.counts)).toBe(0);
-    });
-  });
-
-  test("a disabled junk row has no entry", async () => {
-    await withRollback(db, async (trx) => {
-      const { ctx, mailboxId } = await prepare(trx, 0);
-      await setSyncFolderEnabled(trx, ctx, mailboxId, "junk", false, "cli", new Date());
-      const results = await auditMailbox({ db: trx, secrets }, ctx, mailboxId, since);
-      expect(results.map((result) => result.key)).toEqual(["inbox", "offers"]);
-    });
-  });
-
-  test("a row that moved to Oferty makes the INBOX mail cross, and the exit code stays 0", async () => {
-    await withRollback(db, async (trx) => {
-      const { ctx, mailboxId } = await prepare(trx, 0);
-      await trx
-        .updateTable("emails")
-        .set({ folder: "Oferty" })
-        .where("mailbox_id", "=", mailboxId)
-        .where("id", "=", (eb) => eb.selectFrom("emails").select("id").where("mailbox_id", "=", mailboxId).limit(1))
-        .execute();
-      const results = await auditMailbox({ db: trx, secrets }, ctx, mailboxId, since);
-      expect(results[0]?.counts).toEqual({ mail: 2, stored: 1, missing: 0, duplicates: 0, cross: 1 });
-      expect(auditExitCode(results[0]?.counts)).toBe(0);
-    });
-  });
-
-  test("a row that sits in AI/Info stays missing, not cross; the exit code is 2", async () => {
-    await withRollback(db, async (trx) => {
-      const { ctx, mailboxId } = await prepare(trx, 0);
-      await trx
-        .updateTable("emails")
-        .set({ folder: "AI/Info" })
-        .where("mailbox_id", "=", mailboxId)
-        .where("id", "=", (eb) => eb.selectFrom("emails").select("id").where("mailbox_id", "=", mailboxId).limit(1))
-        .execute();
-      const results = await auditMailbox({ db: trx, secrets }, ctx, mailboxId, since);
-      expect(results[0]?.counts).toEqual({ mail: 2, stored: 1, missing: 1, duplicates: 0, cross: 0 });
-      expect(auditExitCode(results[0]?.counts)).toBe(2);
-    });
-  });
-});
-
-describe("mailbox:seed --folder CLI", () => {
-  test("--folder Oferty and --eval-cases --folder Wiadomości-śmieci fill that folder; AI/Info exits 1", async () => {
-    const { orgId, userId } = await createOrg(db);
-    try {
-      const { mailboxId, address, imap } = await connectGreenmail(db, { orgId });
-      const args = ["--org-id", orgId, "--mailbox-id", mailboxId];
-      const env = { TEST_MAILBOX_ADDRESS: address };
-      await createFolder(imap, "Oferty");
-      await createFolder(imap, "Wiadomości-śmieci");
-
-      const offers = await run(seedScript, [...args, "--folder", "Oferty"], env);
-      expect(offers.stderr).toBe("");
-      expect(offers.code).toBe(0);
-      expect(await inboxMessageIds(imap, "Oferty")).toHaveLength(1);
-      expect(await inboxMessageIds(imap)).toEqual([]);
-
-      const junk = await run(
-        seedScript,
-        [...args, "--eval-cases", "synthetic", "--per-category", "1", "--folder", "Wiadomości-śmieci"],
-        env
-      );
-      expect(junk.stderr).toBe("");
-      expect(junk.code).toBe(0);
-      expect(await inboxMessageIds(imap, "Wiadomości-śmieci")).toHaveLength(5);
-      expect(await inboxMessageIds(imap)).toEqual([]);
-
-      const refused = await run(seedScript, [...args, "--folder", "AI/Info"], env);
-      expect(refused.code).toBe(1);
-      expect(refused.stderr).toContain("seed refused");
-    } finally {
-      await db.deleteFrom("users").where("id", "=", userId).execute();
-      await db.deleteFrom("organizations").where("id", "=", orgId).execute();
-    }
-  }, 30_000);
 });
 
 describe("mailbox:seed and mailbox:audit CLI", () => {
@@ -395,7 +210,7 @@ describe("mailbox:seed and mailbox:audit CLI", () => {
       const since = new Date(Date.now() - 3_600_000).toISOString();
       const lost = await run(auditScript, [...args, "--since", since], {});
       expect(lost.code).toBe(2);
-      expect(lost.stdout).toContain("inbox=3 stored=0 missing=3 duplicates=0 cross=0");
+      expect(lost.stdout).toContain("inbox=3 stored=0 missing=3 duplicates=0");
 
       const provider = await openImapProvider(imap);
       try {
@@ -409,7 +224,7 @@ describe("mailbox:seed and mailbox:audit CLI", () => {
       }
       const clean = await run(auditScript, [...args, "--since", since], {});
       expect(clean.code).toBe(0);
-      expect(clean.stdout).toContain("inbox=3 stored=3 missing=0 duplicates=0 cross=0");
+      expect(clean.stdout).toContain("inbox=3 stored=3 missing=0 duplicates=0");
 
       const bad = await run(auditScript, args, {});
       expect(bad.code).toBe(1);

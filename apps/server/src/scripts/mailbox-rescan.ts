@@ -46,7 +46,7 @@ async function main(): Promise<number> {
       log.error("no mailbox changed: unknown mailbox, or it was never synced");
       return 1;
     }
-    log.info("rescan forced for every synced folder");
+    log.info("rescan forced");
     return 0;
   } catch (error) {
     log.error("failed:", error instanceof Error ? error.message : error);

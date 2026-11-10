@@ -10,9 +10,8 @@
 ## 1. Scope
 
 ### Pilot MVP (S0–S4): the user's own Interia mailbox, Telegram + CLI
-
 - Connect one or more IMAP mailboxes (address + password or app password), encrypted secrets.
-- Fetch new mail every 5 minutes from INBOX and the provider's sort folders and spam folder (ADR 0014).
+- Fetch new INBOX mail every 5 minutes.
 - Triage: hard rules (whitelist, blocklist, VIP) + AI category:
   `urgent`, `needs_reply`, `delegation`, `info` (with summary), `notification`, `spam`, `unsure`.
 - Two mailbox modes: `shadow` (log only) and `assist` (folder moves, mark read, flags, drafts; send only after the user's approval).
@@ -25,12 +24,10 @@
 - Runs on the home VPS in Compose (`server` + `db`), with backups and a heartbeat.
 
 ### Sellable MVP (+ S5, S6)
-
 - Web panel (lite): login, connect mailbox, link Telegram, settings, rules, activity.
 - Sign-up, billing, account and data deletion, hosted EU production, Vertex AI EU, privacy policy and DPA, cost model.
 
 ### Not in the MVP (Phase 2)
-
 - Gmail and Microsoft 365 adapters (OAuth; Gmail OAuth needs Google verification + CASA), web pages for approvals, digests and delegation,
   style learning, two-way chat with intents, voice notes, meetings + calendar, mobile app, WhatsApp, RAG / vector search,
   manual delegation from chat (old PRD US-012) and the Sent-folder check for manual delegations (`.ai/notes.md`), assistant role UI,
@@ -40,16 +37,16 @@
 
 Each slice ends with something that works end to end and that the user can try.
 
-| Slice                                            | Content                                                                                                                                                                                                                                                                                                                  | Result for the user                                                                     | Size          | Needs                       |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- | ------------- | --------------------------- |
-| **S0 Foundation**                                | Move to `apps/server`, `apps/web`, `packages/core`; env check; logger; DB layer + migration runner; tenancy tables; Compose `db` for dev; CI (lint, typecheck, unit + integration); `/health`; old code and deps removed                                                                                                 | Nothing visible yet. Clean base, CI green                                               | M             | ADR review                  |
-| **S1a IMAP read + pilot host** (done 2026-11-04) | IMAP adapter (read part), connect CLI, encrypted password, capability check, sync with the IMAP rules, test mailbox seed, Compose on the home VPS, heartbeat, nightly encrypted backup                                                                                                                                   | Your Interia INBOX is copied into the system every 5 minutes, on the home VPS           | M             | S0                          |
-| **S1b Shadow triage**                            | **Gate: free tier only for the temporary pilot mailbox (ADR 0013); Cloud Billing before any other person's mail.** Hard rules; classifier with Zod schema (summary in the same call); planners; policy in `shadow` mode; audit; feedback table + labeling CLI; eval runner with synthetic and injection cases; cost caps | The system logs what it _would_ do. You get precision per category and a go/no-go table | L             | S1a                         |
-| **S2 Telegram**                                  | Bot (dev + pilot), chat linking, shadow digest with ✅ / ✏️ buttons, urgent and `auth_error` notices, "last sync" line, `/digest` `/pause` `/resume` `/status`                                                                                                                                                           | Digest and urgent notices on your phone; you correct the AI with one tap                | M             | S1b                         |
-| **S3 Assist actions**                            | Committer with retries on the action row (idempotent actions go `ready → applied`; `applying` is for S4 drafts and send); folder moves, mark read, flag, summaries; Undo button; automatic moves only for categories that passed go/no-go; mode switch                                                                   | Your inbox gets cleaner for real; every change has Undo                                 | L             | S2                          |
-| **S4 Drafts, approvals, delegation**             | Delegates (CLI), delegation + clarification drafts (quote the original), approval with Telegram buttons, SMTP send after approval, delegation tracking, chaser, injection guards                                                                                                                                         | Delegations go out after one tap and are followed up                                    | L (23 stages) | S3                          |
-| **S5 Web panel (lite)**                          | Market check first (which mail the customers use); login; pages: onboarding, mailboxes, settings, rules, activity; API routes; web reachable from outside (proxy or tunnel)                                                                                                                                              | Setup and control without the CLI                                                       | M             | S3 (S4 for delegation data) |
-| **S6 Pre-sale**                                  | Sign-up, billing, deletion, hosted EU production, Vertex AI EU, privacy policy + DPA, cost model                                                                                                                                                                                                                         | The first external customer can sign up                                                 | L             | S5                          |
+| Slice | Content | Result for the user | Size | Needs |
+|---|---|---|---|---|
+| **S0 Foundation** | Move to `apps/server`, `apps/web`, `packages/core`; env check; logger; DB layer + migration runner; tenancy tables; Compose `db` for dev; CI (lint, typecheck, unit + integration); `/health`; old code and deps removed | Nothing visible yet. Clean base, CI green | M | ADR review |
+| **S1a IMAP read + pilot host** (done 2026-11-04) | IMAP adapter (read part), connect CLI, encrypted password, capability check, sync with the IMAP rules, test mailbox seed, Compose on the home VPS, heartbeat, nightly encrypted backup | Your Interia INBOX is copied into the system every 5 minutes, on the home VPS | M | S0 |
+| **S1b Shadow triage** | **Gate: free tier only for the temporary pilot mailbox (ADR 0013); Cloud Billing before any other person's mail.** Hard rules; classifier with Zod schema (summary in the same call); planners; policy in `shadow` mode; audit; feedback table + labeling CLI; eval runner with synthetic and injection cases; cost caps | The system logs what it *would* do. You get precision per category and a go/no-go table | L | S1a |
+| **S2 Telegram** | Bot (dev + pilot), chat linking, shadow digest with ✅ / ✏️ buttons, urgent and `auth_error` notices, "last sync" line, `/digest` `/pause` `/resume` `/status` | Digest and urgent notices on your phone; you correct the AI with one tap | M | S1b |
+| **S3 Assist actions** | Committer with retries on the action row (idempotent actions go `ready → applied`; `applying` is for S4 drafts and send); folder moves, mark read, flag, summaries; Undo button; automatic moves only for categories that passed go/no-go; mode switch | Your inbox gets cleaner for real; every change has Undo | L | S2 |
+| **S4 Drafts, approvals, delegation** | Delegates (CLI), delegation + clarification drafts (quote the original), approval with Telegram buttons, SMTP send after approval, delegation tracking, chaser, injection guards | Delegations go out after one tap and are followed up | L (23 stages) | S3 |
+| **S5 Web panel (lite)** | Market check first (which mail the customers use); login; pages: onboarding, mailboxes, settings, rules, activity; API routes; web reachable from outside (proxy or tunnel) | Setup and control without the CLI | M | S3 (S4 for delegation data) |
+| **S6 Pre-sale** | Sign-up, billing, deletion, hosted EU production, Vertex AI EU, privacy policy + DPA, cost model | The first external customer can sign up | L | S5 |
 
 S1b state (2026-11-05): built and tested (task file `tasks/done/s1b-shadow-triage.md`, stages 0–35, code done): hard rules, classifier `classifier-v1`, planners, policy, triage worker with LLM pause and daily cap, audit, feedback table and labeling CLI, eval runner (synthetic, injection, `--real`), cost report, backfill and re-queue, sender rules CLI, docs and notes (stage 35). First eval run (stage 34, `gemini-3.5-flash-lite`): whitelist and injection 12/12, no category at the 98% bar yet. Waiting, in `tasks/done/s1b-shadow-run.md`: the model comparison (stage 36) and the VPS stages 37–40 (deploy, one week of real mail in shadow mode, labels, cost, final eval and go/no-go table). S1b is not done until the go/no-go table exists. Update 2026-11-06: done (`tasks/done/s1b-shadow-run.md`). 123 real labels (180-day backfill), every category no-go (notification 96.2%, spam 83.6%; urgent, needs_reply, info too few). Pilot classifier: OpenAI `gpt-6-luna`.
 
@@ -75,7 +72,6 @@ graph LR
 ```
 
 Before each start (user steps):
-
 - S1a: turn on "korzystam z programu pocztowego" in Interia; no second Interia account: the pilot mailbox is the test mailbox (user 2026-11-04); Docker or Podman on the home VPS.
 - S1b: read the free-tier limits in AI Studio. Cloud Billing on before any other person's mail (ADR 0013).
 - S2: create two Telegram bots (dev, pilot) with BotFather.
@@ -83,26 +79,25 @@ Before each start (user steps):
 
 ## 3. Size of the MVP (S0–S6), rough estimate
 
-| Item                      | Count                                                                                                   |
-| ------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Containers                | 2 in the pilot (`server`, `db`); the web build is served by `server`                                    |
-| Shared packages           | 1 (`packages/core`)                                                                                     |
-| Server business modules   | 9: tenancy, mail, config, triage, actions, audit, reports, channels, delegation                         |
-| Server platform parts     | 9: config, db, llm, crypto, log, http, scheduler, retention, heartbeat                                  |
-| Sub-modules               | about 40                                                                                                |
-| Background jobs           | 9: mail sync, triage worker, committer, notifier, digest, approval expiry, retention, heartbeat, chaser |
-| DB tables                 | 17                                                                                                      |
-| HTTP route groups         | 8                                                                                                       |
-| Web pages                 | 6 in S5-lite (+ account page in S6; 3 more in Phase 2)                                                  |
-| External services (pilot) | 3: the IMAP/SMTP provider, Telegram Bot API, Google Gemini API                                          |
-| Source files              | about 160–200 (with tests)                                                                              |
-| Lines of TypeScript       | about 10–16 thousand (with tests)                                                                       |
+| Item | Count |
+|---|---|
+| Containers | 2 in the pilot (`server`, `db`); the web build is served by `server` |
+| Shared packages | 1 (`packages/core`) |
+| Server business modules | 9: tenancy, mail, config, triage, actions, audit, reports, channels, delegation |
+| Server platform parts | 9: config, db, llm, crypto, log, http, scheduler, retention, heartbeat |
+| Sub-modules | about 40 |
+| Background jobs | 9: mail sync, triage worker, committer, notifier, digest, approval expiry, retention, heartbeat, chaser |
+| DB tables | 17 |
+| HTTP route groups | 8 |
+| Web pages | 6 in S5-lite (+ account page in S6; 3 more in Phase 2) |
+| External services (pilot) | 3: the IMAP/SMTP provider, Telegram Bot API, Google Gemini API |
+| Source files | about 160–200 (with tests) |
+| Lines of TypeScript | about 10–16 thousand (with tests) |
 
 Server runtime libraries (about 11): `hono`, `imapflow`, `mailparser`, `nodemailer`, `html-to-text`, `@google/genai`, `zod`,
 `kysely` + `pg`, `croner`, `grammy`, and the migration runner (chosen in S0). Web: decided at the S5 start.
 
 Hardest parts (most risk):
-
 1. Classification accuracy on real Polish + English mail (S1b). This is why S1b runs in shadow mode and S3 waits for the go/no-go table.
 2. IMAP edge cases (S1a): provider differences (MOVE, UIDPLUS, keywords), UIDVALIDITY changes, mail without `Message-ID`,
    mail that the user moves back, threads built from headers.

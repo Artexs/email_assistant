@@ -668,39 +668,6 @@ describe("listActionsForEmails (grown view)", () => {
     });
   });
 
-  test("(12) a logged move to inbox shows the key inbox", async () => {
-    await withRollback(db, async (trx) => {
-      const { a } = await createTwoTenants(trx);
-      const mail = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
-        category: "info",
-        createdAt: ago(HOUR),
-        sourceFolder: "Wiadomości-śmieci",
-        folder: "Wiadomości-śmieci",
-        actions: [{ type: "move", status: "logged", payload: { folder: "inbox" } }],
-      });
-
-      const views = (await listActionsForEmails(trx, a.ctx, [mail.emailId])).get(mail.emailId);
-      expect(views?.map((view) => [view.type, view.folder])).toEqual([["move", "inbox"]]);
-    });
-  });
-
-  test("a claimed action carries emails.source_folder", async () => {
-    await withRollback(db, async (trx) => {
-      const { a } = await createTwoTenants(trx);
-      await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
-        category: "info",
-        createdAt: ago(HOUR),
-        folder: "AI/Info",
-        sourceFolder: "Oferty",
-        actions: [{ type: "move", status: "ready", payload: { folder: "ai_info" } }],
-      });
-
-      const claimed = await claimActions(trx, a.ctx, a.mailboxId, claimOpts());
-
-      expect(claimed.map((action) => action.email.source_folder)).toEqual(["Oferty"]);
-    });
-  });
-
   test("a draft and a send give kind and delegate id; listDraftTasks gives the draft task per tenant", async () => {
     await withRollback(db, async (trx) => {
       const { a, b } = await createTwoTenants(trx);

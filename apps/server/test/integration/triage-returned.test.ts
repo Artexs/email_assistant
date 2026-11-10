@@ -2,8 +2,6 @@ import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import { undo } from "../../src/modules/actions";
-import { syncMailbox } from "../../src/modules/mail";
-import { createFakeMailProvider } from "../../src/modules/mail/fake";
 import { createReturnedJob, processReturned, recordFeedback } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
 
@@ -253,93 +251,6 @@ describe("processReturned", () => {
 
       expect(saved.saved).toBe(true);
       expect((await feedbackRows(trx, mail.emailId)).map((row) => row.id)).toEqual([saved.id]);
-    });
-  });
-});
-
-describe("processReturned after a return into a sort folder", () => {
-  test("a mail that the user puts back into Oferty with its UID: the move is undone and one wrong imap_move row is written", async () => {
-    await withRollback(db, async (trx) => {
-      const t = await tenant(trx);
-      const fake = createFakeMailProvider({
-        uidValidity: 7,
-        globalUids: true,
-        keepUidOnUserMove: true,
-        uidNextValue: 1,
-        capabilities: { move: false },
-      });
-      await trx
-        .insertInto("mailbox_folders")
-        .values({
-          org_id: t.ctx.orgId,
-          mailbox_id: t.mailboxId,
-          key: "offers",
-          path: "Oferty",
-          role: "sort",
-          enabled: true,
-          uidvalidity: 1,
-          last_uid: 0,
-        })
-        .execute();
-      const sync = () =>
-        syncMailbox({ db: trx, provider: fake, isOwnActionId: async () => false, now: () => NOW }, t.ctx, t.mailboxId);
-      const seedMail = (n: number) => ({
-        messageId: `<offers${n}@x.test>`,
-        from: "sender@x.test",
-        to: [t.address],
-        subject: `Offer ${n}`,
-        date: new Date(NOW.getTime() - 3 * HOUR),
-        text: `Body ${n}`,
-      });
-      const uid = fake.deliver("Oferty", seedMail(1), { internalDate: new Date(NOW.getTime() - 2 * HOUR) });
-      await sync();
-      fake.deliver("Oferty", seedMail(2), { internalDate: new Date(NOW.getTime() - HOUR) });
-      await sync();
-
-      // The mail is triaged and moved to AI/Info by the system.
-      const mail = await trx
-        .selectFrom("emails")
-        .select("id")
-        .where("mailbox_id", "=", t.mailboxId)
-        .where("subject", "=", "Offer 1")
-        .executeTakeFirstOrThrow();
-      await trx
-        .updateTable("emails")
-        .set({ status: "triaged", folder: "AI/Info", moved_at: APPLIED })
-        .where("id", "=", mail.id)
-        .execute();
-      await trx
-        .insertInto("triage_results")
-        .values({
-          org_id: t.ctx.orgId,
-          email_id: mail.id,
-          category: "info",
-          confidence: 0.9,
-          reason_code: "direct_request",
-          reason: null,
-          fields: JSON.stringify({}),
-          created_at: RECEIVED,
-        })
-        .execute();
-      const moveId = await insertAction(trx, t.ctx, mail.id, {
-        type: "move",
-        status: "applied",
-        payload: { target: "AI/Info" },
-        appliedAt: APPLIED,
-        createdAt: RECEIVED,
-      });
-      fake.userMove("Oferty", uid, "AI/Info");
-      fake.userMove("AI/Info", uid, "Oferty");
-
-      await sync();
-      expect(await returnedAt(trx, mail.id)).not.toBeNull();
-      expect(await processReturned(trx, t.ctx, mail.id, NOW)).toEqual({ feedback: true, undone: true });
-
-      const rows = await feedbackRows(trx, mail.id);
-      expect(rows).toHaveLength(1);
-      expect(rows[0]).toMatchObject({ verdict: "wrong", source: "imap_move" });
-      expect(await actionState(trx, moveId)).toMatchObject({ status: "undone", status_reason: "user_moved_back" });
-      expect(await returnedAt(trx, mail.id)).toBeNull();
     });
   });
 });

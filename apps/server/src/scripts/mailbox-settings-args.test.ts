@@ -85,19 +85,4 @@ describe("parseSettingsArgs", () => {
     expect(parseSettingsArgs(["show", ...ids, "--force"])).toBeUndefined();
     expect(parseSettingsArgs(["show", "extra", ...ids])).toBeUndefined();
   });
-
-  test("sync-folder", () => {
-    expect(parseSettingsArgs(["sync-folder", ...ids, "--key", "junk", "--value", "off"])).toEqual({
-      kind: "sync-folder",
-      orgId: org,
-      mailboxId: mailbox,
-      key: "junk",
-      value: false,
-    });
-    expect(parseSettingsArgs(["sync-folder", ...ids, "--key", "inbox", "--value", "off"])).toBeUndefined();
-    expect(parseSettingsArgs(["sync-folder", ...ids, "--key", "junk"])).toBeUndefined();
-    expect(
-      parseSettingsArgs(["sync-folder", ...ids, "--key", "junk", "--value", "off", "--name", "move"])
-    ).toBeUndefined();
-  });
 });

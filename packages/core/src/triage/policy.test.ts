@@ -21,7 +21,6 @@ function input(overrides: Partial<PolicyInput> = {}): PolicyInput {
 }
 
 const move: PlannedAction = { type: "move", folder: "ai_info" };
-const inboxMove: PlannedAction = { type: "move", folder: "inbox" };
 const manualMove: PlannedAction = { type: "move", folder: "ai_manual" };
 const markRead: PlannedAction = { type: "mark_read" };
 const flag: PlannedAction = { type: "flag" };
@@ -75,12 +74,6 @@ describe("decidePolicy: the §4.3 table", () => {
     ["move assist, category not auto", move, { categoryAuto: false }, "log_only"],
     ["move assist, no move support", move, { movesSupported: false }, "log_only"],
     ["move assist, only move_unsure on", move, { toolSwitches: { ...allOff, move_unsure: true } }, "log_only"],
-    ["inbox move assist, all on", inboxMove, { category: "urgent" }, "apply"],
-    ["inbox move, category not auto", inboxMove, { category: "urgent", categoryAuto: false }, "log_only"],
-    ["inbox move vip", inboxMove, { category: "urgent", vip: true }, "log_only"],
-    ["inbox move shadow", inboxMove, { category: "urgent", mode: "shadow" }, "log_only"],
-    ["inbox move, no move support", inboxMove, { category: "urgent", movesSupported: false }, "log_only"],
-    ["inbox move of delegation (no bar)", inboxMove, { category: "delegation", categoryAuto: false }, "log_only"],
     ["move vip", move, { vip: true }, "log_only"],
     ["move vip shadow", move, { vip: true, mode: "shadow" }, "log_only"],
 

@@ -1,4 +1,5 @@
 import {
+  AI_FOLDER_NAMES,
   aiTextFor,
   approvalViewOf,
   buildOutgoingMessage,
@@ -7,7 +8,6 @@ import {
   isExternalSender,
   MAILBOX_ACTION_TYPES,
   matchSender,
-  MOVE_TARGET_NAMES,
   outgoingSubject,
   renderActionFailedNotice,
   renderApprovalRequest,
@@ -50,15 +50,7 @@ import {
   listDelegateNames,
   markAnsweredNotified,
 } from "../delegation";
-import {
-  getEmailMeta,
-  getJunkFolderPath,
-  getMailbox,
-  INBOX,
-  isSyntheticMessageId,
-  listMailboxes,
-  type MailboxSummary,
-} from "../mail";
+import { getEmailMeta, getMailbox, isSyntheticMessageId, listMailboxes, type MailboxSummary } from "../mail";
 import { getOrganization, listMemberships } from "../tenancy";
 import { listTriagedBetween } from "../triage";
 
@@ -120,7 +112,7 @@ async function detectUrgent(
   const lookbackStart = now.getTime() - URGENT_LOOKBACK_MS;
   const sinceOf = (member: LinkedChat) => Math.max(member.linkedAt.getTime(), lookbackStart);
   const earliest = Math.min(...members.map(sinceOf));
-  const triaged = (
+  const rows = (
     await listTriagedBetween(
       db,
       ctx,
@@ -128,13 +120,6 @@ async function detectUrgent(
       { limit: URGENT_LIMIT, categories: ["urgent"] }
     )
   ).filter((row) => !pausedMailboxIds.has(row.mailbox_id));
-  // D23: mail in the spam folder is in the digest, but it gets no urgent notice.
-  const junkPaths = new Map<string, string | null>();
-  const rows: typeof triaged = [];
-  for (const row of triaged) {
-    if (!junkPaths.has(row.mailbox_id)) junkPaths.set(row.mailbox_id, await getJunkFolderPath(db, ctx, row.mailbox_id));
-    if (row.source_folder !== junkPaths.get(row.mailbox_id)) rows.push(row);
-  }
   if (rows.length === 0) return;
   const actions = await listActionsForEmails(
     db,
@@ -174,8 +159,7 @@ async function detectUrgent(
             }),
             receivedAt: row.received_at,
             synthetic: isSyntheticMessageId(row.message_id_header),
-            folderTag: row.source_folder === INBOX ? null : row.source_folder,
-            wouldDo: describeActions(actions.get(row.email_id) ?? [], names, { stayFolder: row.folder }),
+            wouldDo: describeActions(actions.get(row.email_id) ?? [], names),
             now,
             timeZone,
           }),
@@ -201,8 +185,8 @@ async function detectActionFailed(db: DbOrTrx, ctx: TenantContext, owners: Linke
       ) {
         const key = typeof action.payload.folder === "string" ? action.payload.folder : undefined;
         const folderName =
-          action.type === "move" && key !== undefined && Object.hasOwn(MOVE_TARGET_NAMES, key)
-            ? MOVE_TARGET_NAMES[key as keyof typeof MOVE_TARGET_NAMES]
+          action.type === "move" && key !== undefined && Object.hasOwn(AI_FOLDER_NAMES, key)
+            ? AI_FOLDER_NAMES[key as keyof typeof AI_FOLDER_NAMES]
             : null;
         const reason =
           action.type !== "create_draft" &&
@@ -214,8 +198,6 @@ async function detectActionFailed(db: DbOrTrx, ctx: TenantContext, owners: Linke
           reverse: action.reverse,
           reason,
           folderName,
-          sourceFolder: action.source_folder,
-          currentFolder: action.folder,
           from: action.from_address,
           subject: action.subject,
           synthetic: isSyntheticMessageId(action.message_id_header),

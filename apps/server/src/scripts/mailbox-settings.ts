@@ -10,14 +10,14 @@ import {
   type SettingsDeps,
 } from "../modules/config";
 import { delegationHooks } from "../modules/delegation";
-import { listSyncFolders, mailboxHasUidplus, setSyncFolderEnabled } from "../modules/mail";
+import { mailboxHasUidplus } from "../modules/mail";
 import { buildRealReport, listLabeledResults } from "../modules/triage";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb, type Db } from "../platform/db";
 import { describeError } from "../platform/errors";
 import { createLog } from "../platform/log";
 
-import { describeSyncFolder, parseSettingsArgs, usage, type SettingsCommand } from "./mailbox-settings-args";
+import { parseSettingsArgs, usage, type SettingsCommand } from "./mailbox-settings-args";
 
 const log = createLog("mailbox-settings");
 
@@ -70,20 +70,6 @@ async function run(command: SettingsCommand, db: Db, now: Date): Promise<number>
     case "show": {
       const view = await getSettingsView(deps, ctx, mailboxId);
       describeSettings(view).forEach((line) => log.info(line));
-      for (const row of await listSyncFolders(db, ctx, mailboxId, { enabledOnly: false })) {
-        log.info(describeSyncFolder(row));
-      }
-      return 0;
-    }
-    case "sync-folder": {
-      const result = await setSyncFolderEnabled(db, ctx, mailboxId, command.key, command.value, ACTOR, now);
-      if (result === "not_found") {
-        log.error(`sync folder ${command.key}: no such folder row (the sync adds it when the server lists the folder)`);
-        return 1;
-      }
-      log.info(
-        `sync folder ${command.key}: ${command.value ? "on" : "off"} (${result === "changed" ? "changed" : "no change"})`
-      );
       return 0;
     }
     case "mode": {

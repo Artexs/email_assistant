@@ -2,7 +2,7 @@ import { parseArgs } from "node:util";
 
 import { z } from "zod";
 
-import { auditExitCode, auditMailbox } from "../modules/mail";
+import { auditMailbox } from "../modules/mail";
 import { loadConfig } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
@@ -13,8 +13,7 @@ const log = createLog("mailbox-audit");
 const usage = [
   "usage: bun run mailbox:audit --org-id <uuid> --mailbox-id <uuid> --since <ISO time>",
   "  Read-only. Run it right after a sync: mail from the last 5 minutes can show as missing.",
-  "  Checks INBOX and every other enabled synced folder. cross = mail that has a row in another synced folder (not lost).",
-  "  Exit 0: no difference in INBOX. Exit 2: lost or duplicate INBOX mail. Exit 1: error. cross never changes the code.",
+  "  Exit 0: no difference. Exit 2: lost or duplicate mail. Exit 1: error.",
 ].join("\n");
 
 function readOptions() {
@@ -53,21 +52,9 @@ async function main(): Promise<number> {
   try {
     await assertAppRole(db);
     const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
-    const results = await auditMailbox({ db, secrets }, { orgId: options.orgId }, options.mailboxId, options.since);
-    for (const { key, counts } of results) {
-      if (counts === null) {
-        log.info(`folder=${key} not on the server`);
-      } else if (key === "inbox") {
-        log.info(
-          `inbox=${counts.mail} stored=${counts.stored} missing=${counts.missing} duplicates=${counts.duplicates} cross=${counts.cross}`
-        );
-      } else {
-        log.info(
-          `folder=${key} mail=${counts.mail} stored=${counts.stored} missing=${counts.missing} duplicates=${counts.duplicates} cross=${counts.cross}`
-        );
-      }
-    }
-    return auditExitCode(results.find((result) => result.key === "inbox")?.counts);
+    const result = await auditMailbox({ db, secrets }, { orgId: options.orgId }, options.mailboxId, options.since);
+    log.info(`inbox=${result.inbox} stored=${result.stored} missing=${result.missing} duplicates=${result.duplicates}`);
+    return result.missing === 0 && result.duplicates === 0 ? 0 : 2;
   } catch (error) {
     log.error("failed:", error instanceof Error ? error.message : error);
     return 1;

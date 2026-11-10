@@ -49,8 +49,6 @@ export interface TriageMailbox {
   delegates: { id: string; name: string; email: string; tags: string[] }[];
   // The IANA zone of the organization (due dates).
   timezone: string;
-  // The path of the mailbox's junk folder row (null: none), read once per run with the snapshot (D11).
-  junkFolder: string | null;
 }
 
 export interface TriageDecision {
@@ -179,8 +177,7 @@ export async function saveTriage(
   const items: PlannedActionInput[] = planActions(
     decision.finalCategory,
     decision.summary,
-    decision.delegation ?? undefined,
-    { fromJunk: mailbox.junkFolder !== null && email.source_folder === mailbox.junkFolder }
+    decision.delegation ?? undefined
   ).map((action) => ({
     type: action.type,
     payload: payloadOf(action),

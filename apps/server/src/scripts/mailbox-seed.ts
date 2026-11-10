@@ -18,10 +18,9 @@ const casesDir = resolve(import.meta.dir, "../../../../evals/cases");
 const evalSets = ["synthetic", "injection", "delegation", "all"] as const;
 
 const usage = [
-  "usage: bun run mailbox:seed --org-id <uuid> --mailbox-id <uuid> [--count 1] [--folder <path>]",
-  "       bun run mailbox:seed --org-id <uuid> --mailbox-id <uuid> --eval-cases synthetic|injection|delegation|all [--per-category n] [--folder <path>]",
+  "usage: bun run mailbox:seed --org-id <uuid> --mailbox-id <uuid> [--count 1]",
+  "       bun run mailbox:seed --org-id <uuid> --mailbox-id <uuid> --eval-cases synthetic|injection|delegation|all [--per-category n]",
   "  It refuses every mailbox except the one in TEST_MAILBOX_ADDRESS.",
-  "  --folder: INBOX (default) or a sync folder path (Oferty, Społeczności, Rachunki, Wiadomości-śmieci); the folder must exist.",
 ].join("\n");
 
 function readOptions() {
@@ -34,7 +33,6 @@ function readOptions() {
         count: { type: "string", default: "1" },
         "eval-cases": { type: "string" },
         "per-category": { type: "string" },
-        folder: { type: "string" },
       },
       strict: true,
     });
@@ -49,9 +47,7 @@ function readOptions() {
     const perCategory = z.coerce.number().int().min(1).optional().safeParse(values["per-category"]);
     if (!perCategory.success) return undefined;
     if (evalSet.data === undefined && perCategory.data !== undefined) return undefined;
-    const folder = values.folder;
-    if (folder !== undefined && folder.length === 0) return undefined;
-    return { orgId, mailboxId, count: count.data, evalSet: evalSet.data, perCategory: perCategory.data, folder };
+    return { orgId, mailboxId, count: count.data, evalSet: evalSet.data, perCategory: perCategory.data };
   } catch {
     return undefined;
   }
@@ -101,7 +97,6 @@ async function main(): Promise<number> {
       count: options.count,
       testAddress,
       messages,
-      folder: options.folder,
     });
     log.info(`appended ${appended}`);
     return 0;

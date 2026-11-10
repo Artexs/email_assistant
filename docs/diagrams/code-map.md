@@ -4,7 +4,7 @@ chrome: title
 width: wide
 ---
 
-Today the server does one job: every 5 minutes it [reads new mail from INBOX and the synced folders](#mail->imap) and [stores it in Postgres](#mail->postgres). The [mail module](#mail) holds almost all the logic. The code uses factory functions and TypeScript interfaces, not class hierarchies: only the IMAP adapter and the error types are real classes.
+Today the server does one job: every 5 minutes it [reads new INBOX mail](#mail->imap) and [stores it in Postgres](#mail->postgres). The [mail module](#mail) holds almost all the logic. The code uses factory functions and TypeScript interfaces, not class hierarchies: only the IMAP adapter and the error types are real classes.
 
 ```figure
 id: system
@@ -27,7 +27,7 @@ edges:
   - scheduler -> mail
   - scheduler -> heartbeat: tick
   - tenancy -> postgres
-  - mail => imap: reads INBOX and the synced folders
+  - mail => imap: reads INBOX
   - mail -> postgres
   - heartbeat -> postgres: checks db
   - heartbeat => hc: pings
@@ -60,7 +60,7 @@ messages:
   - { from: t-job, to: t-db, label: reads credentials, about: "The job decrypts the password with AES-256-GCM. The AAD is `mailbox:<id>`, so a ciphertext copied to another mailbox does not decrypt." }
   - t-job => t-imap: logs in
   - t-job -> t-sync: syncMailbox()
-  - { from: t-sync, to: t-imap, kind: link, label: folder status, about: "UIDVALIDITY and UIDNEXT. A new UIDVALIDITY starts a 7-day rescan; no cursor starts a 1-day initial sync." }
+  - { from: t-sync, to: t-imap, kind: link, label: inbox status, about: "UIDVALIDITY and UIDNEXT. A new UIDVALIDITY starts a 7-day rescan; no cursor starts a 1-day initial sync." }
   - { from: t-sync, to: t-imap, kind: link, label: fetches headers, about: "Incremental mode fetches every UID above `last_uid`. The other modes search by date." }
   - { from: t-sync, to: t-db, label: finds copies, about: "Looks for rows with the same Message-ID and content hash. The pure `decideIncoming` rule then picks insert, update the UID, or check the old folder." }
   - t-sync => t-imap: fetches body
@@ -86,7 +86,7 @@ classes:
     span: 2
     stereotype: interface
     focal: true
-    operations: ["+folderStatus(folder): FolderStatus", "+fetchAbove(folder, lastUid): MessageMeta[]", "+fetchBodyText(folder, uid): string", "+transferByAppend(from, uid, to)", "+close()"]
+    operations: ["+inboxStatus(): InboxStatus", "+fetchAbove(lastUid): MessageMeta[]", "+fetchBodyText(uid): string", "+findByMessageId(folder, id)", "+close()"]
     about: The only way the code reads a mailbox. Every adapter must pass the contract suite in `test/contract/mail-provider.ts`.
   ImapMailProvider:
     at: [0, 5]

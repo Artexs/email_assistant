@@ -1,15 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { categories, type Category } from "./categories";
-import {
-  AI_FOLDER_NAMES,
-  delegationInputOf,
-  folderKeys,
-  isMoveTarget,
-  MOVE_TARGET_NAMES,
-  planActions,
-  type DelegationInput,
-} from "./planners";
+import { AI_FOLDER_NAMES, delegationInputOf, folderKeys, planActions, type DelegationInput } from "./planners";
 import { markUntrustedText } from "./untrusted-text";
 
 const plannable = categories.filter((category) => category !== "delegation");
@@ -206,67 +198,5 @@ describe("delegationInputOf", () => {
 
   test("another category gives null", () => {
     expect(delegationInputOf(analysis("d1", "info"), delegates, "boss@x.test")).toBeNull();
-  });
-});
-
-describe("planActions from the spam folder (D11, U10)", () => {
-  const fromJunk = { fromJunk: true };
-  const toInbox: ReturnType<typeof planActions> = [{ type: "move", folder: "inbox" }];
-  const delegate: DelegationInput = {
-    delegateId: "d1",
-    delegateName: "Ala",
-    to: "ala@x.test",
-    task: "T",
-    clarification: null,
-    dueDate: null,
-    language: "en",
-    senderAddress: "jan@klient.test",
-  };
-
-  test.each<[Category, ReturnType<typeof planActions>]>([
-    ["spam", []],
-    ["urgent", toInbox],
-    ["needs_reply", toInbox],
-    [
-      "info",
-      [
-        { type: "save_summary", summary: "S" },
-        { type: "move", folder: "ai_info" },
-      ],
-    ],
-    ["notification", [{ type: "mark_read" }, { type: "move", folder: "ai_notifications" }]],
-    ["unsure", [{ type: "move", folder: "ai_manual" }]],
-  ])("%s gives its junk plan", (category, expected) => {
-    expect(planActions(category, "S", undefined, fromJunk)).toEqual(expected);
-  });
-
-  test("delegation only moves into INBOX: no draft, no send", () => {
-    expect(planActions("delegation", "S", delegate, fromJunk)).toEqual(toInbox);
-    const question = { ...delegate, delegateId: null, to: null, task: null, clarification: "Who?" };
-    expect(planActions("delegation", "S", question, fromJunk)).toEqual(toInbox);
-  });
-
-  test("delegation not from junk keeps the draft and the send", () => {
-    const types = planActions("delegation", "S", delegate, { fromJunk: false }).map((action) => action.type);
-    expect(types).toEqual(["create_draft", "send"]);
-  });
-
-  test.each(categories)("%s: an undefined source and fromJunk false give the plan of today", (category) => {
-    const today = planActions(category, "S", category === "delegation" ? delegate : undefined);
-    expect(planActions(category, "S", category === "delegation" ? delegate : undefined, { fromJunk: false })).toEqual(
-      today
-    );
-  });
-});
-
-describe("move targets", () => {
-  test("isMoveTarget", () => {
-    expect(isMoveTarget("inbox")).toBe(true);
-    expect(isMoveTarget("INBOX")).toBe(false);
-    expect(isMoveTarget("ai_spam")).toBe(true);
-  });
-
-  test("MOVE_TARGET_NAMES adds INBOX to the app folder names", () => {
-    expect(MOVE_TARGET_NAMES).toEqual({ ...AI_FOLDER_NAMES, inbox: "INBOX" });
   });
 });

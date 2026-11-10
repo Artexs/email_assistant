@@ -11,19 +11,15 @@ import { createLog } from "../../../platform/log";
 import {
   INBOX,
   MailAuthError,
-  MailFolderMissingError,
   type FolderMessageMeta,
-  type FolderStatus,
+  type InboxStatus,
   type MailCapabilities,
   type MailProvider,
   type MailServerInfo,
   type MessageMeta,
   MailNotFoundError,
   type MoveResult,
-  TRANSFER_MAX_BYTES,
-  transferFlags,
 } from "../port";
-import { resolveUidNext } from "../uid-next";
 
 import { bodyTextFromSource, toFolderMessageMeta, toMessageMeta } from "./mapper";
 
@@ -203,52 +199,31 @@ class ImapMailProvider implements MailProvider {
     });
   }
 
-  folderStatus(folder: string): Promise<FolderStatus> {
-    return guard("folderStatus", async () => {
-      const lock = await this.lockOrNull(folder);
-      if (lock === null) throw new MailFolderMissingError();
-      try {
+  inboxStatus(): Promise<InboxStatus> {
+    return guard("inboxStatus", () =>
+      this.withMailbox(INBOX, async () => {
         const box = this.client.mailbox;
-        if (box === false) throw new HardError("IMAP folder is not open");
+        if (box === false) throw new HardError("IMAP INBOX is not open");
         const uidValidity = Number(box.uidValidity);
-        if (!Number.isFinite(uidValidity)) throw new HardError("IMAP folder gave no valid UIDVALIDITY");
-        const selectUidNext = box.uidNext;
-        let highestUid = 0;
-        if (box.exists > 0) {
+        if (!Number.isFinite(uidValidity)) throw new HardError("IMAP INBOX gave no valid UIDVALIDITY");
+        // Interia sends no UIDNEXT on SELECT: ask with STATUS, then fall back to the highest UID + 1.
+        let uidNext = box.uidNext;
+        if (!Number.isFinite(uidNext)) {
+          uidNext = (await this.client.status(INBOX, { uidNext: true })).uidNext as number;
+        }
+        if (!Number.isFinite(uidNext) && box.exists > 0) {
           const last = await this.client.fetchOne("*", { uid: true }, { uid: true });
-          if (last === false) throw new HardError("IMAP folder gave no highest UID");
-          highestUid = last.uid;
+          uidNext = last === false ? NaN : last.uid + 1;
         }
-        // Interia gives a wrong STATUS value: D4 takes the largest of all three sources.
-        let statusUidNext: number | undefined;
-        try {
-          // The typings have no `false`, but a refused STATUS gives it at run time.
-          const status = (await this.client.status(folder, { uidNext: true })) as { uidNext?: number } | false;
-          statusUidNext = status === false ? undefined : status.uidNext;
-        } catch (error) {
-          if (toMailError(error, "status") instanceof SoftError) throw error;
-        }
-        return { uidValidity, uidNext: resolveUidNext({ statusUidNext, selectUidNext, highestUid }), highestUid };
-      } finally {
-        lock.release();
-      }
-    });
+        if (!Number.isFinite(uidNext)) uidNext = 1;
+        return { uidValidity, uidNext };
+      })
+    );
   }
 
-  /** Locks `folder` or throws MailFolderMissingError. */
-  private async withExistingFolder<T>(folder: string, fn: () => Promise<T>): Promise<T> {
-    const lock = await this.lockOrNull(folder);
-    if (lock === null) throw new MailFolderMissingError();
-    try {
-      return await fn();
-    } finally {
-      lock.release();
-    }
-  }
-
-  fetchAbove(folder: string, lastUid: number): Promise<MessageMeta[]> {
+  fetchAbove(lastUid: number): Promise<MessageMeta[]> {
     return guard("fetchAbove", () =>
-      this.withExistingFolder(folder, async () => {
+      this.withMailbox(INBOX, async () => {
         const box = this.client.mailbox;
         // `n:*` on an empty mailbox is an invalid range for some servers.
         if (box === false || box.exists === 0) return [];
@@ -257,9 +232,23 @@ class ImapMailProvider implements MailProvider {
     );
   }
 
-  fetchBodyText(folder: string, uid: number): Promise<string | null> {
+  searchInboxSince(since: Date): Promise<number[]> {
+    return guard("searchInboxSince", () =>
+      this.withMailbox(INBOX, async () => {
+        const uids = await this.client.search({ since }, { uid: true });
+        return uids === false ? [] : uids;
+      })
+    );
+  }
+
+  fetchByUids(uids: number[]): Promise<MessageMeta[]> {
+    if (uids.length === 0) return Promise.resolve([]);
+    return guard("fetchByUids", () => this.withMailbox(INBOX, () => this.fetchMetas(uids.join(","))));
+  }
+
+  fetchBodyText(uid: number): Promise<string | null> {
     return guard("fetchBodyText", () =>
-      this.withExistingFolder(folder, async () => {
+      this.withMailbox(INBOX, async () => {
         const head = await this.client.fetchOne(String(uid), { uid: true, size: true }, { uid: true });
         if (head === false || (head.size ?? 0) > this.bodyLimitBytes) return null;
         const full = await this.client.fetchOne(String(uid), { uid: true, source: true }, { uid: true });
@@ -303,10 +292,8 @@ class ImapMailProvider implements MailProvider {
     return msg !== false && msg.uid === uid;
   }
 
-  listFolders(): Promise<FolderEntry[]> {
-    return guard("listFolders", async () =>
-      (await this.client.list()).map((entry) => ({ path: entry.path, delimiter: entry.delimiter }))
-    );
+  private async listFolders(): Promise<FolderEntry[]> {
+    return (await this.client.list()).map((entry) => ({ path: entry.path, delimiter: entry.delimiter }));
   }
 
   ensureFolder(name: string): Promise<string> {
@@ -390,63 +377,6 @@ class ImapMailProvider implements MailProvider {
         return { newUid: copied.uidMap?.get(uid) ?? null };
       } finally {
         lock.release();
-      }
-    });
-  }
-
-  transferByAppend(fromFolder: string, uid: number, toFolder: string): Promise<MoveResult> {
-    return guard("transferByAppend", async () => {
-      // imapflow holds one mailbox lock at a time and waits for it without a timeout:
-      // never call a method that takes its own lock (fetchMetaIn) while this method holds a lock.
-      let source: Buffer;
-      let flags: string[];
-      let internalDate: Date;
-      let sourceValidity: bigint | undefined;
-      const readLock = await this.lockOrNull(fromFolder);
-      if (readLock === null) throw new MailNotFoundError("mail not found");
-      try {
-        if (!(await this.hasUid(uid))) throw new MailNotFoundError("mail not found");
-        if (!this.client.capabilities.has("UIDPLUS")) throw new HardError("no UIDPLUS");
-        const head = await this.client.fetchOne(
-          String(uid),
-          { uid: true, size: true, flags: true, internalDate: true },
-          { uid: true }
-        );
-        if (head === false) throw new MailNotFoundError("mail not found");
-        if (head.size === undefined || head.size > TRANSFER_MAX_BYTES)
-          throw new HardError("message too large to transfer");
-        const date = new Date(head.internalDate ?? Number.NaN);
-        if (Number.isNaN(date.getTime())) throw new HardError("mail has no valid INTERNALDATE");
-        const full = await this.client.fetchOne(String(uid), { uid: true, source: true }, { uid: true });
-        if (full === false || full.source === undefined) throw new HardError("no source");
-        source = full.source;
-        flags = transferFlags(head.flags ?? []);
-        internalDate = date;
-        const box = this.client.mailbox;
-        sourceValidity = box === false ? undefined : box.uidValidity;
-      } finally {
-        readLock.release();
-      }
-
-      // APPEND first, EXPUNGE last: a crash in between leaves two copies, never none.
-      const appended = await this.client.append(toFolder, source, flags, internalDate);
-      if (appended === false) throw new SoftError("IMAP append skipped");
-      const newUid = appended.uid ?? null;
-      if (newUid === null) throw new HardError("append gave no uid");
-      if ((await this.fetchMetaIn(toFolder, newUid)) === null) throw new HardError("appended mail not found");
-
-      const deleteLock = await this.lockOrNull(fromFolder);
-      if (deleteLock === null) return { newUid };
-      try {
-        // A changed UIDVALIDITY means the UID may now name another mail: keep the source.
-        const box = this.client.mailbox;
-        if (box === false || box.uidValidity !== sourceValidity) return { newUid };
-        if (!(await this.hasUid(uid))) return { newUid };
-        const deleted = await this.client.messageDelete(String(uid), { uid: true });
-        if (!deleted || (await this.hasUid(uid))) throw new HardError("expunge refused");
-        return { newUid };
-      } finally {
-        deleteLock.release();
       }
     });
   }

@@ -39,7 +39,6 @@ export interface DigestItem {
   subject: string | null;
   receivedAt: Date;
   synthetic: boolean;
-  folderTag: string | null; // the source folder when it is not INBOX
   aiText: string | null;
   wouldDo: string;
   undoable: boolean;
@@ -102,7 +101,7 @@ function mailboxLine(input: DigestInput, mailbox: DigestMailbox): string {
 
 function itemBlock(n: number, item: DigestItem): string[] {
   const lines = [
-    `${n}. ${categoryTag(item.category)} · ${senderLabel(item.from)}${item.folderTag === null ? "" : ` · 📁 ${cutText(item.folderTag, 30)}`}${item.synthetic ? " · 🧪 test" : ""}`,
+    `${n}. ${categoryTag(item.category)} · ${senderLabel(item.from)}${item.synthetic ? " · 🧪 test" : ""}`,
     cleanSubject(item.subject),
   ];
   if (item.aiText !== null && item.aiText !== "") lines.push(`💬 ${cutText(item.aiText, 120)}`);

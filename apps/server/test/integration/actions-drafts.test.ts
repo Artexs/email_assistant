@@ -112,7 +112,6 @@ function depsOf(s: Setup, trx: Db | Transaction<DB>, at: Date = NOW, over: Parti
     compose: composeMessage,
     sender: null,
     hooks: noDelegationHooks,
-    appendFolders: new Set(),
     ...over,
   };
 }

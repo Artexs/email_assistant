@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { type FolderMessageMeta, type MessageMeta } from "./port";
+import { INBOX, type FolderMessageMeta, type MessageMeta } from "./port";
 import type { MovedRow } from "./repo";
 
 // Pure dedup and "is this mail new" rules (docs/architecture.md §6.1).
@@ -50,19 +50,14 @@ export interface KnownCopy {
   id: string;
   dedupKey: string;
   folder: string;
-  /** emails.source_folder (D6). */
-  sourceFolder: string;
   /** The UID the row holds in `folder`. */
   uid: number;
   contentHash: string;
   from: string | null;
   receivedAt: Date;
-  /** emails.undo_pending_at: a system move into a synced folder is in flight (D9). */
-  movePendingAt: Date | null;
+  /** D22: set while a reverse move of the mail is in flight. */
+  undoPendingAt: Date | null;
 }
-
-/** D9: a `movePendingAt` older than this is a leftover; the normal rules apply. */
-export const MOVE_PENDING_MAX_AGE_MS = 24 * 3_600_000;
 
 /** UIDs that the other rows of the same identity hold in `folder`: they are never the copy of row `exceptId`. */
 export function otherCopyUids(copies: readonly KnownCopy[], exceptId: string, folder: string): Set<number> {
@@ -70,10 +65,8 @@ export function otherCopyUids(copies: readonly KnownCopy[], exceptId: string, fo
 }
 
 export type IncomingDecision =
-  | { kind: "move_in_flight"; emailId: string }
-  | { kind: "update_uid"; emailId: string; isSource: boolean }
-  | { kind: "check_folder"; emailId: string; folder: string; systemMoved: boolean; seenElsewhere: boolean }
-  | { kind: "cross_copy"; emailId: string }
+  | { kind: "update_uid"; emailId: string }
+  | { kind: "check_folder"; emailId: string; folder: string }
   | { kind: "new"; dedupKey: string };
 
 // The base key ends with the hex hash, so a trailing `#<n>` only comes from copyDedupKey.
@@ -83,72 +76,55 @@ function copyNumber(dedupKey: string): number {
 }
 
 /**
- * D7. `folder` = S, the synced folder of the incoming mail. `copies` = rows with the same Message-ID and hash.
- * `matched` maps an email id (or `run:<dedup key>` of a row that this run stored) to the folder where this run
- * matched or stored it: such a copy is never free, so it is never located and never `relocated`.
+ * `copies` = rows with the same Message-ID and hash; `matched` = email ids that this sync run
+ * already used.
  */
 export function decideIncoming(input: {
-  folder: string;
   baseKey: string;
   copies: KnownCopy[];
-  matched: ReadonlyMap<string, string>;
-  now: Date;
+  matched: ReadonlySet<string>;
 }): IncomingDecision {
-  const { folder, matched, now } = input;
-  const sorted = [...input.copies].sort((a, b) => copyNumber(a.dedupKey) - copyNumber(b.dedupKey));
-  const inFlight = sorted.find(
-    (copy) => copy.movePendingAt !== null && now.getTime() - copy.movePendingAt.getTime() < MOVE_PENDING_MAX_AGE_MS
-  );
-  if (inFlight !== undefined) return { kind: "move_in_flight", emailId: inFlight.id };
-
-  const matchedElsewhere = sorted.find((copy) => {
-    const where = matched.get(copy.id);
-    return where !== undefined && where !== folder;
-  });
-  const seenElsewhere = matchedElsewhere !== undefined;
-  const free = sorted.filter((copy) => !matched.has(copy.id));
-  const here = free.find((copy) => copy.folder === folder);
-  if (here !== undefined) return { kind: "update_uid", emailId: here.id, isSource: here.folder === here.sourceFolder };
-  const other = free[0];
-  if (other !== undefined) {
-    return {
-      kind: "check_folder",
-      emailId: other.id,
-      folder: other.folder,
-      systemMoved: other.folder !== other.sourceFolder,
-      seenElsewhere,
-    };
+  const free = [...input.copies]
+    .sort((a, b) => copyNumber(a.dedupKey) - copyNumber(b.dedupKey))
+    .filter((copy) => !input.matched.has(copy.id));
+  const inInbox = free.find((copy) => copy.folder === INBOX);
+  if (inInbox !== undefined) return { kind: "update_uid", emailId: inInbox.id };
+  const elsewhere = free[0];
+  if (elsewhere !== undefined) {
+    return { kind: "check_folder", emailId: elsewhere.id, folder: elsewhere.folder };
   }
-  if (matchedElsewhere !== undefined) return { kind: "cross_copy", emailId: matchedElsewhere.id };
   return { kind: "new", dedupKey: copyDedupKey(input.baseKey, input.copies.length + 1) };
 }
 
 export type FolderCheckResult =
   | { kind: "returned"; emailId: string }
-  | { kind: "relocated"; emailId: string }
-  | { kind: "cross_copy"; emailId: string }
-  | { kind: "new"; dedupKey: string };
+  | { kind: "new"; dedupKey: string }
+  | { kind: "undo_in_flight"; emailId: string };
+
+/** D22: an `undo_pending_at` older than this is a leftover; the old rule applies. */
+export const UNDO_PENDING_MAX_AGE_MS = 24 * 3_600_000;
 
 /**
- * The known copy sits in another folder than S. A system-moved copy that is still there → an identical second
- * copy (`new`), or a `cross_copy` when this run saw the mail elsewhere; gone → the user moved it back (`returned`).
- * A copy in its source folder that is still there → `cross_copy`; gone → the user moved it (`relocated`).
+ * Still in its folder → a second identical copy (store and triage it), unless a reverse move of the
+ * known copy is in flight (D22): then the incoming mail is its target, store nothing.
+ * Gone → the user moved it back (the caller sets `returned_at` and `folder = INBOX`).
  */
 export function resolveFolderCheck(input: {
   emailId: string;
   stillInFolder: boolean;
-  systemMoved: boolean;
-  seenElsewhere: boolean;
   baseKey: string;
   copyCount: number;
+  undoPendingAt: Date | null;
+  now: Date;
 }): FolderCheckResult {
-  const { emailId } = input;
-  if (input.systemMoved) {
-    if (!input.stillInFolder) return { kind: "returned", emailId };
-    if (input.seenElsewhere) return { kind: "cross_copy", emailId };
+  if (input.stillInFolder) {
+    const { undoPendingAt, now } = input;
+    if (undoPendingAt && now.getTime() - undoPendingAt.getTime() < UNDO_PENDING_MAX_AGE_MS) {
+      return { kind: "undo_in_flight", emailId: input.emailId };
+    }
     return { kind: "new", dedupKey: copyDedupKey(input.baseKey, input.copyCount + 1) };
   }
-  return input.stillInFolder ? { kind: "cross_copy", emailId } : { kind: "relocated", emailId };
+  return { kind: "returned", emailId: input.emailId };
 }
 
 /** "strict": Message-ID and hash. "no_size": for a server that changes RFC822.SIZE on a COPY. */
@@ -192,10 +168,9 @@ export function isDeleted(meta: FolderMessageMeta): boolean {
 }
 
 /**
- * D4: the metas of the `source_folder` of moved rows (stage 8), at the `inbox_uid` (the last known UID in the source
- * folder) and the `uid` of each row (a system move gives the mail a new folder UID; a webmail move back keeps it).
- * A meta that is not `\Deleted` and has the identity of the row at one of its UIDs is a mail that came back to its
- * source folder below the cursor.
+ * D4: the metas of INBOX at the `inbox_uid` and the `uid` of moved rows (a system move gives the mail a new folder
+ * UID; a webmail move back keeps it). A meta that is not `\Deleted` and has the identity of the row at one of its
+ * UIDs is a mail that came back to INBOX below the cursor.
  */
 export function matchReturned(
   metas: readonly FolderMessageMeta[],

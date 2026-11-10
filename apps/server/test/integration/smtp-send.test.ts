@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { buildOutgoingMessage } from "@ea/core";
 import { expect, test } from "bun:test";
 
-import { composeMessage, INBOX, openImapProvider, openSmtpSender } from "../../src/modules/mail";
+import { composeMessage, openImapProvider, openSmtpSender } from "../../src/modules/mail";
 
 // Local GreenMail (bun run dev:up). Auth is off: a login with a new user creates the mailbox.
 const smtpPort = Number(process.env.TEST_SMTP_PORT ?? "3025");
@@ -49,7 +49,7 @@ test("a composed message reaches the recipient with the action id and the messag
 
   const inbox = await openImapProvider({ host, port: imapPort, user: recipient, password: "greenmail-test" });
   try {
-    const found = (await inbox.fetchAbove(INBOX, 0)).filter((meta) => meta.messageId === message.messageId);
+    const found = (await inbox.fetchAbove(0)).filter((meta) => meta.messageId === message.messageId);
     expect(found).toHaveLength(1);
     expect(found[0]?.actionId).toBe(draftActionId);
   } finally {

@@ -145,15 +145,6 @@ describe("connectMailbox", () => {
       expect(mailbox?.folder_map).toEqual(buildFolderMap(serverFolders));
       expect(JSON.stringify(mailbox)).not.toContain(password);
 
-      const folders = await trx
-        .selectFrom("mailbox_folders")
-        .select(["key", "path", "role", "enabled", "uidvalidity", "last_uid"])
-        .where("mailbox_id", "=", mailboxId)
-        .execute();
-      expect(folders).toEqual([
-        { key: "inbox", path: "INBOX", role: "inbox", enabled: true, uidvalidity: null, last_uid: null },
-      ]);
-
       const settings = await getMailboxSettings(trx, ctx, mailboxId);
       expect(settings?.mode).toBe("shadow");
       expect(settings?.tool_switches).toEqual({});

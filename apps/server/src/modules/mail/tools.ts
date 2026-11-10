@@ -2,12 +2,10 @@ import { randomUUID } from "node:crypto";
 
 import {
   planDelivery,
-  SYNC_FOLDER_DEFAULTS,
-  syncFolderDefaultPath,
+  SORT_FOLDER_NAMES,
   sortFolderKeys,
   type CaseDelivery,
   type FoundCopy,
-  type SyncFolderKey,
   type SortFolderKey,
 } from "@ea/core";
 import type { Transaction } from "kysely";
@@ -17,20 +15,13 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 
-import { compareFolderWithDb, type AuditCounts } from "./audit";
+import { compareInboxWithDb, type AuditCounts } from "./audit";
 import { openImapProvider, type ImapConnectOptions } from "./imap/client";
 import { assertTestAddress } from "./imap/probe-move";
 import { appendRaw } from "./imap/tools";
 import { LOCATE_CHUNK } from "./locate";
-import { INBOX, MailFolderMissingError, MailNotFoundError, type MailProvider, type MessageMeta } from "./port";
-import {
-  getCredentials,
-  getMailbox,
-  listEmailsByMessageIds,
-  listFolderEmailKeys,
-  listSyncFolders,
-  type MailboxRow,
-} from "./repo";
+import { INBOX, MailNotFoundError, type MailProvider } from "./port";
+import { getCredentials, getMailbox, listEmailsByMessageIds, listInboxEmailKeys, type MailboxRow } from "./repo";
 import { renderSeedMessage, SYNTHETIC_MESSAGE_ID_DOMAIN, type SeedMessage } from "./seed";
 import { backfillInbox, fetchSince, type SyncDeps, type SyncResult } from "./sync";
 import { contentHash, normalizeMessageId } from "./sync-rules";
@@ -66,15 +57,14 @@ async function loadImapOptions(
 }
 
 /**
- * APPENDs `count` synthetic mails into INBOX or `folder` (or, with `messages`, each message once; `count` is then ignored). It refuses, before any connection, unless `testAddress`
- * is set and equals the mailbox address (case-insensitive), so it never writes into a real mailbox. `folder` is INBOX (default) or the path of a sync folder
- * default; it must exist (the tool creates only INBOX).
+ * APPENDs `count` synthetic mails into INBOX (or, with `messages`, each message once; `count` is then ignored). It refuses, before any connection, unless `testAddress`
+ * is set and equals the mailbox address (case-insensitive), so it never writes into a real mailbox.
  */
 export async function seedMailbox(
   deps: ToolDeps,
   ctx: TenantContext,
   mailboxId: string,
-  opts: { count: number; testAddress: string | undefined; messages?: SeedMessage[]; folder?: string }
+  opts: { count: number; testAddress: string | undefined; messages?: SeedMessage[] }
 ): Promise<number> {
   const mailbox = await getMailboxOrThrow(deps, ctx, mailboxId);
   const address = mailbox.address;
@@ -82,14 +72,9 @@ export async function seedMailbox(
   if (opts.testAddress.trim().toLowerCase() !== address.toLowerCase()) {
     throw new HardError("the mailbox is not the test mailbox (TEST_MAILBOX_ADDRESS): seed refused");
   }
-  const folder = opts.folder ?? INBOX;
-  if (folder !== INBOX && !SYNC_FOLDER_DEFAULTS.some((item) => item.path === folder)) {
-    throw new HardError("the folder is not INBOX or a sync folder: seed refused");
-  }
-  const create = folder === INBOX;
   const imap = await loadImapOptions(deps, ctx, mailboxId, mailbox);
   if (opts.messages !== undefined) {
-    for (const message of opts.messages) await appendRaw(imap, folder, renderSeedMessage(message), [], create);
+    for (const message of opts.messages) await appendRaw(imap, INBOX, renderSeedMessage(message));
     return opts.messages.length;
   }
   for (let n = 0; n < opts.count; n += 1) {
@@ -103,62 +88,31 @@ export async function seedMailbox(
       text: "Synthetic mail from mailbox:seed.",
       headers: { "X-EA-Seed": "1" },
     });
-    await appendRaw(imap, folder, raw, [], create);
+    await appendRaw(imap, INBOX, raw);
   }
   return opts.count;
 }
 
-/**
- * Read-only: compares the mail since `since` of every enabled synced folder (INBOX first) with the stored rows of that folder.
- * `counts` is null when the server does not list the folder.
- */
+/** Read-only: compares INBOX mail since `since` with the stored INBOX rows. */
 export async function auditMailbox(
   deps: ToolDeps,
   ctx: TenantContext,
   mailboxId: string,
   since: Date
-): Promise<{ key: SyncFolderKey; counts: AuditCounts | null }[]> {
+): Promise<AuditCounts> {
   const imap = await loadImapOptions(deps, ctx, mailboxId, await getMailboxOrThrow(deps, ctx, mailboxId));
-  const folders = await listSyncFolders(deps.db, ctx, mailboxId, { enabledOnly: true });
   const provider = await openImapProvider(imap);
-  const found = new Map<string, MessageMeta[] | null>();
+  let metas;
   try {
-    for (const folder of folders) {
-      try {
-        await provider.folderStatus(folder.path);
-        found.set(folder.key, await fetchSince(provider, folder.path, since));
-      } catch (error) {
-        if (!(error instanceof MailFolderMissingError)) throw error;
-        found.set(folder.key, null);
-      }
-    }
+    metas = await fetchSince(provider, since);
   } finally {
     await provider.close();
   }
-  const results: { key: SyncFolderKey; counts: AuditCounts | null }[] = [];
-  for (const folder of folders) {
-    const metas = found.get(folder.key) ?? null;
-    if (metas === null) {
-      results.push({ key: folder.key, counts: null });
-      continue;
-    }
-    const others = folders.filter((other) => other.key !== folder.key).map((other) => other.path);
-    const here = await listFolderEmailKeys(deps.db, ctx, mailboxId, [folder.path], since);
-    const elsewhere = await listFolderEmailKeys(deps.db, ctx, mailboxId, others, since);
-    const toKey = (row: { message_id_header: string | null; content_hash: string }) => ({
-      messageId: row.message_id_header,
-      hash: row.content_hash,
-    });
-    results.push({
-      key: folder.key,
-      counts: compareFolderWithDb(
-        metas.map((meta) => ({ messageId: normalizeMessageId(meta.messageId), hash: contentHash(meta) })),
-        here.map(toKey),
-        elsewhere.map(toKey)
-      ),
-    });
-  }
-  return results;
+  const rows = await listInboxEmailKeys(deps.db, ctx, mailboxId, since);
+  return compareInboxWithDb(
+    metas.map((meta) => ({ messageId: normalizeMessageId(meta.messageId), hash: contentHash(meta) })),
+    rows.map((row) => ({ messageId: row.message_id_header, hash: row.content_hash }))
+  );
 }
 
 /** One-off, read-only: stores INBOX mail of the last `days` days that the regular sync missed (`backfilled_at`). */
@@ -257,8 +211,12 @@ export async function deliverTestMail(
     const info = await provider.serverInfo();
     const paths: Partial<Record<SortFolderKey, string>> = {};
     for (const key of sortFolderKeys) {
-      const path = syncFolderDefaultPath(key);
-      if (info.folders.some((folder) => folder.path === path)) paths[key] = path;
+      if (key === "junk") {
+        const junk = info.folders.find((folder) => folder.specialUse === "\\Junk");
+        if (junk !== undefined) paths.junk = junk.path;
+      } else if (info.folders.some((folder) => folder.path === SORT_FOLDER_NAMES[key])) {
+        paths[key] = SORT_FOLDER_NAMES[key];
+      }
     }
     const folders: { key: FoundCopy["folder"]; path: string }[] = [{ key: "inbox", path: INBOX }];
     for (const key of sortFolderKeys) {

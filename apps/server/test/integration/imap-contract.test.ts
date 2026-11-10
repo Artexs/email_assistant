@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { expect, test } from "bun:test";
 
-import { INBOX, openImapProvider, renderSeedMessage, type ImapConnectOptions } from "../../src/modules/mail";
+import { openImapProvider, renderSeedMessage, type ImapConnectOptions } from "../../src/modules/mail";
 import { connectImapClient } from "../../src/modules/mail/imap/client";
 import { appendRaw } from "../../src/modules/mail/imap/tools";
 import { describeMailProviderContract } from "../contract/mail-provider";
@@ -49,7 +49,7 @@ test("imap-greenmail: the COPY path leaves no \\Deleted mail in the source folde
   const client = await connectImapClient(opts);
   try {
     await appendRaw(opts, "INBOX", renderSeedMessage(seedMail("<copy-leftover@example.test>")));
-    const uid = (await provider.fetchAbove(INBOX, 0))[0]?.uid ?? 0;
+    const uid = (await provider.fetchAbove(0))[0]?.uid ?? 0;
     const folder = await provider.ensureFolder("AI/Leftover");
     await provider.moveMessage("INBOX", uid, folder);
     const lock = await client.getMailboxLock("INBOX");
@@ -58,7 +58,7 @@ test("imap-greenmail: the COPY path leaves no \\Deleted mail in the source folde
     } finally {
       lock.release();
     }
-    expect(await provider.fetchAbove(INBOX, 0)).toEqual([]);
+    expect(await provider.fetchAbove(0)).toEqual([]);
   } finally {
     await provider.close();
     await client.logout();
@@ -95,7 +95,7 @@ test("imap-greenmail: INBOX works again after a lookup in a missing folder", asy
       })
     );
     expect(await provider.fetchMetaIn("No-such-folder", 1)).toBeNull();
-    const metas = await provider.fetchAbove(INBOX, 0);
+    const metas = await provider.fetchAbove(0);
     expect(metas.map((m) => m.messageId)).toEqual(["<after-missing@example.test>"]);
   } finally {
     await provider.close();
@@ -105,7 +105,7 @@ test("imap-greenmail: INBOX works again after a lookup in a missing folder", asy
 test("imap-greenmail: fetchAbove on an empty INBOX gives []", async () => {
   const provider = await openImapProvider(greenmailUser());
   try {
-    expect(await provider.fetchAbove(INBOX, 0)).toEqual([]);
+    expect(await provider.fetchAbove(0)).toEqual([]);
   } finally {
     await provider.close();
   }

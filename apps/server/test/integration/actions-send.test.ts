@@ -132,7 +132,6 @@ function depsOf(s: Setup, trx: Db | Transaction<DB>, time: Date = NOW, over: Par
     compose: composeMessage,
     sender: s.sender,
     hooks: noDelegationHooks,
-    appendFolders: new Set(),
     ...over,
   };
 }
@@ -892,7 +891,6 @@ describe("send end to end", () => {
         movesSupported: true,
         delegates: [{ id: delegateId, name: "Anna", email: "anna@firma.test", tags: ["offers"] }],
         timezone: "Europe/Warsaw",
-        junkFolder: null,
       };
       const claimMail = async (time: Date) =>
         claimEmails(trx, s.ctx, s.mailboxId, {
