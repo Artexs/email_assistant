@@ -6,7 +6,7 @@ Part of [`../s5b-web-mailboxes-onboarding.md`](../s5b-web-mailboxes-onboarding.m
 
 One step. Uses the function of stage 4 and the helper `test/integration/mailbox-rows.ts`.
 
-- [ ] **5.1 `mail/remove.ts`, `queueMailboxRemovedNotices`, the tests (B8, D11, P5)**
+- [x] **5.1 `mail/remove.ts`, `queueMailboxRemovedNotices`, the tests (B8, D11, P5)**
   - Goal: the service that the web's remove route calls: the typed address must match, the data goes in one transaction with its audit row and the owners' Telegram notice, and a job that holds a claimed mail of the mailbox writes nothing afterwards.
   - Files: create `apps/server/src/modules/mail/remove.ts`, `apps/server/test/integration/mail-remove.test.ts`; change `mail/index.ts` (exports), `modules/audit/repo.ts` (`mailboxRemoved: "mailbox.removed"`), `channels/repo.ts` (`listLinkedChatsOfOrg`), `channels/notices.ts` (`queueMailboxRemovedNotices`), `channels/texts.ts` (`MAILBOX_REMOVED_TEXT`), `channels/index.ts` (exports).
   - Interfaces:

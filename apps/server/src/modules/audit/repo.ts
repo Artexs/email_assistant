@@ -19,6 +19,7 @@ export const auditEvents = {
   mailboxPaused: "mailbox.paused",
   mailboxResumed: "mailbox.resumed",
   mailboxPasswordChanged: "mailbox.password_changed",
+  mailboxRemoved: "mailbox.removed", // data: mailbox_id
   actionApplied: "action.applied",
   actionFailed: "action.failed",
   actionUndone: "action.undone",

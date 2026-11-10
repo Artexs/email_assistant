@@ -7,6 +7,7 @@ export {
   type ConnectInput,
   type ConnectMeta,
 } from "./connect";
+export { removeMailbox, type RemoveDeps, type RemoveResult } from "./remove";
 export { switchMailboxStatus, type SwitchResult } from "./status";
 export { ensureSyncFolders, setSyncFolderEnabled, type SyncFolderSwitchResult } from "./folders";
 export { auditExitCode, compareFolderWithDb, compareInboxWithDb, type AuditCounts, type InboxKey } from "./audit";
