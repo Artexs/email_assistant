@@ -7,6 +7,7 @@ import type { Transaction } from "kysely";
 import {
   connectMailbox,
   MailAuthError,
+  MailboxNotFoundError,
   updateMailboxPassword,
   type ConnectDeps,
   type MailboxStatus,
@@ -16,9 +17,12 @@ import { getMailbox, setMailboxStatus } from "../../src/modules/mail/repo";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { DB } from "../../src/platform/db";
-import { HardError } from "../../src/platform/errors";
+import { HardError, SoftError } from "../../src/platform/errors";
 
 import { testDb, withRollback } from "./helpers";
+
+// A promise that never settles: the deadline must end the check.
+const hang = <T = never>(): Promise<T> => new Promise<T>(() => undefined);
 
 const db = testDb();
 const repoRoot = resolve(import.meta.dir, "../../../..");
@@ -34,6 +38,7 @@ afterAll(async () => {
 interface Overrides {
   openProvider?: ConnectDeps["openProvider"];
   verifySmtp?: ConnectDeps["verifySmtp"];
+  timeouts?: ConnectDeps["timeouts"];
 }
 
 async function setup(trx: Transaction<DB>, status: MailboxStatus) {
@@ -165,6 +170,43 @@ describe("updateMailboxPassword", () => {
       expect((await storedSecret(trx, mailboxId)).password).toBe("old-pass");
       expect((await getMailbox(trx, ctx, mailboxId))?.status).toBe("auth_error");
       expect(await auditRows(trx, ctx.orgId)).toHaveLength(0);
+    });
+  });
+
+  test("an unknown id gives MailboxNotFoundError, still a HardError with the same message", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, deps } = await setup(trx, "active");
+      const error = await updateMailboxPassword(deps(), ctx, { mailboxId: randomUUID(), password: "x", now }).catch(
+        (e: unknown) => e
+      );
+      expect(error).toBeInstanceOf(MailboxNotFoundError);
+      expect(error).toBeInstanceOf(HardError);
+      expect((error as Error).message).toBe("mailbox not found");
+    });
+  });
+
+  test("the actor of the audit row is the given one", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, mailboxId, deps } = await setup(trx, "active");
+      const actor = randomUUID();
+      await updateMailboxPassword(deps(), ctx, { mailboxId, password: "new-pass", now, actor });
+      expect((await auditRows(trx, ctx.orgId))[0]?.actor).toBe(actor);
+    });
+  });
+
+  test("the deadline ends a hanging check and leaves the stored secret unchanged", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, mailboxId, deps } = await setup(trx, "auth_error");
+      const timeouts = { socketMs: 20_000, deadlineMs: 50 };
+      const hanging = [deps({ timeouts, openProvider: () => hang() }), deps({ timeouts, verifySmtp: () => hang() })];
+      for (const d of hanging) {
+        const error = await updateMailboxPassword(d, ctx, { mailboxId, password: "new-pass", now }).catch(
+          (e: unknown) => e
+        );
+        expect(error).toBeInstanceOf(SoftError);
+        expect((error as SoftError).message).toBe("mail check timed out");
+      }
+      expect((await storedSecret(trx, mailboxId)).password).toBe("old-pass");
     });
   });
 

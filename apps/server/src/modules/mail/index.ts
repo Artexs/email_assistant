@@ -1,5 +1,12 @@
 export { checkMailbox, type CheckDeps, type CheckOptions, type CheckReport } from "./check";
-export { buildFolderMap, connectMailbox, updateMailboxPassword, type ConnectDeps, type ConnectInput } from "./connect";
+export {
+  buildFolderMap,
+  connectMailbox,
+  updateMailboxPassword,
+  type ConnectDeps,
+  type ConnectInput,
+  type ConnectMeta,
+} from "./connect";
 export { switchMailboxStatus, type SwitchResult } from "./status";
 export { ensureSyncFolders, setSyncFolderEnabled, type SyncFolderSwitchResult } from "./folders";
 export { auditExitCode, compareFolderWithDb, compareInboxWithDb, type AuditCounts, type InboxKey } from "./audit";
@@ -13,6 +20,8 @@ export { openSmtpSender, verifySmtpLogin, type SmtpConnectOptions } from "./imap
 export {
   INBOX,
   MailAuthError,
+  MailboxExistsError,
+  MailboxNotFoundError,
   MailFolderMissingError,
   MailNotFoundError,
   type FolderMessageMeta,

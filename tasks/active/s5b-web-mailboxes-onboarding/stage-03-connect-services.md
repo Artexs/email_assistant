@@ -6,7 +6,7 @@ Part of [`../s5b-web-mailboxes-onboarding.md`](../s5b-web-mailboxes-onboarding.m
 
 One step. The CLI keeps its behaviour: every new option is optional, and the CLI passes none.
 
-- [ ] **3.1 Mail services for the web (B5, B6)**
+- [x] **3.1 Mail services for the web (B5, B6)**
   - Goal: a web connect or password check ends within about 50 s with a typed error; a duplicate address is refused before any login; the audit log names who connected a mailbox and who changed its password.
   - Files: change `apps/server/src/modules/mail/imap/client.ts` (`imapFlowOptions`), `client.test.ts`, `mail/imap/smtp.ts` (`SmtpConnectOptions`, `smtpTransportOptions`), `smtp.test.ts`, `mail/port.ts` (two errors), `mail/repo.ts` (`findMailboxIdByAddress`), `mail/connect.ts`, `mail/index.ts` (exports), `modules/audit/repo.ts` (`mailboxConnected: "mailbox.connected"`), `scripts/mailbox-connect.ts`, `test/integration/mail-connect.test.ts`, `test/integration/mail-password.test.ts`.
   - Interfaces:

@@ -32,6 +32,17 @@ describe("smtpTransportOptions", () => {
     });
   });
 
+  test("timeoutMs sets the three timeouts; without it none is set", () => {
+    const set = smtpTransportOptions({ host: "poczta.interia.pl", port: 465, timeoutMs: 20_000, ...creds });
+    expect(set.connectionTimeout).toBe(20_000);
+    expect(set.greetingTimeout).toBe(20_000);
+    expect(set.socketTimeout).toBe(20_000);
+    const bare = smtpTransportOptions({ host: "poczta.interia.pl", port: 465, ...creds });
+    expect("connectionTimeout" in bare).toBe(false);
+    expect("greetingTimeout" in bare).toBe(false);
+    expect("socketTimeout" in bare).toBe(false);
+  });
+
   test("a loopback host gets plain SMTP with ignoreTLS", () => {
     const options = smtpTransportOptions({ host: "127.0.0.1", port: 3025, ...creds });
     expect(options.secure).toBe(false);

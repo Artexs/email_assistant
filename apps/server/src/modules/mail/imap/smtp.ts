@@ -17,6 +17,7 @@ export interface SmtpConnectOptions {
   user: string;
   password: string;
   secure?: boolean;
+  timeoutMs?: number;
 }
 
 /** TLS certificates are always checked: this never sets `tls`, so no option can turn the check off. */
@@ -30,6 +31,9 @@ export function smtpTransportOptions(opts: SmtpConnectOptions): SMTPTransportOpt
     port: opts.port,
     secure,
     auth: { user: opts.user, pass: opts.password },
+    ...(opts.timeoutMs === undefined
+      ? {}
+      : { connectionTimeout: opts.timeoutMs, greetingTimeout: opts.timeoutMs, socketTimeout: opts.timeoutMs }),
     ...(secure ? {} : { ignoreTLS: true }),
   };
 }

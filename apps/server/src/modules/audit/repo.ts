@@ -15,6 +15,7 @@ export const auditEvents = {
   emailRequeued: "email.requeued",
   chatLinked: "chat.linked",
   chatUnlinked: "chat.unlinked",
+  mailboxConnected: "mailbox.connected",
   mailboxPaused: "mailbox.paused",
   mailboxResumed: "mailbox.resumed",
   mailboxPasswordChanged: "mailbox.password_changed",

@@ -9,18 +9,22 @@ import {
   buildFolderMap,
   connectMailbox,
   MailAuthError,
+  MailboxExistsError,
   type ConnectDeps,
   type ConnectInput,
   type MailFolder,
 } from "../../src/modules/mail";
 import { createFakeMailProvider, type FakeMailProvider } from "../../src/modules/mail/fake";
-import { getMailbox } from "../../src/modules/mail/repo";
+import { findMailboxIdByAddress, getMailbox, insertMailbox } from "../../src/modules/mail/repo";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { DB, Db } from "../../src/platform/db";
 import { SoftError } from "../../src/platform/errors";
 
 import { testDb, withRollback } from "./helpers";
+
+// A promise that never settles: the deadline must end the check.
+const hang = <T = never>(): Promise<T> => new Promise<T>(() => undefined);
 
 const db = testDb();
 const repoRoot = resolve(import.meta.dir, "../../../..");
@@ -233,6 +237,152 @@ describe("connectMailbox", () => {
   });
 });
 
+describe("connectMailbox: duplicates, audit, timeouts", () => {
+  function depsFor(trx: Db | Transaction<DB>, extra: Partial<ConnectDeps> = {}) {
+    const calls = { open: 0, openOpts: [] as unknown[], smtpOpts: [] as unknown[] };
+    const deps: ConnectDeps = {
+      db: trx,
+      secrets,
+      openProvider: async (opts) => {
+        calls.open += 1;
+        calls.openOpts.push(opts);
+        return fakeWithFolders();
+      },
+      verifySmtp: async (opts) => {
+        calls.smtpOpts.push(opts);
+      },
+      ...extra,
+    };
+    return { deps, calls };
+  }
+
+  async function seedMailbox(trx: Db | Transaction<DB>, orgId: string, address: string): Promise<string> {
+    const id = randomUUID();
+    await insertMailbox(
+      trx,
+      { orgId },
+      {
+        id,
+        address,
+        imapHost: "imap.x.test",
+        imapPort: 993,
+        smtpHost: "smtp.x.test",
+        smtpPort: 465,
+        capabilities: (await fakeWithFolders().serverInfo()).capabilities,
+        folderMap: buildFolderMap(serverFolders),
+      }
+    );
+    return id;
+  }
+
+  test("a duplicate address (any case) is refused before any login", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId } = await createOrg(trx);
+      const suffix = randomUUID();
+      await seedMailbox(trx, orgId, `A-${suffix}@X.test`);
+      const { deps, calls } = depsFor(trx);
+      const data = { ...input("pw"), address: `a-${suffix}@x.test` };
+      await expect(connectMailbox(deps, { orgId }, data)).rejects.toBeInstanceOf(MailboxExistsError);
+      expect(calls.open).toBe(0);
+    });
+  });
+
+  test("the same address in another organization connects", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrg(trx);
+      const b = await createOrg(trx);
+      const address = `shared-${randomUUID()}@x.test`;
+      await seedMailbox(trx, a.orgId, address);
+      const { deps } = depsFor(trx);
+      const { mailboxId } = await connectMailbox(deps, { orgId: b.orgId }, { ...input("pw"), address });
+      expect(await getMailbox(trx, { orgId: b.orgId }, mailboxId)).toBeDefined();
+    });
+  });
+
+  test("a mailbox that appears during the login becomes MailboxExistsError (unique index)", async () => {
+    const { orgId, userId } = await createOrg(db);
+    try {
+      const address = `race-${randomUUID()}@x.test`;
+      const { deps } = depsFor(db, {
+        openProvider: async () => {
+          await seedMailbox(db, orgId, address);
+          return fakeWithFolders();
+        },
+      });
+      const error = await connectMailbox(deps, { orgId }, { ...input("pw"), address }).catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(MailboxExistsError);
+      expect((error as { cause?: { code?: string } }).cause?.code).toBe("23505");
+      const rows = await db.selectFrom("mailboxes").select("id").where("org_id", "=", orgId).execute();
+      expect(rows).toHaveLength(1);
+    } finally {
+      await db.deleteFrom("organizations").where("id", "=", orgId).execute();
+      await db.deleteFrom("users").where("id", "=", userId).execute();
+    }
+  });
+
+  test("a connect writes one mailbox.connected row without the address", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId, userId } = await createOrg(trx);
+      const { deps } = depsFor(trx);
+      const first = await connectMailbox(deps, { orgId }, input("pw"));
+      const second = await connectMailbox(deps, { orgId }, input("pw"), { actor: userId, via: "web" });
+      const rows = await trx
+        .selectFrom("audit_log")
+        .select(["actor", "data"])
+        .where("org_id", "=", orgId)
+        .where("event", "=", "mailbox.connected")
+        .orderBy("id")
+        .execute();
+      expect(rows).toHaveLength(2);
+      expect(rows[0]).toEqual({ actor: "system", data: { mailbox_id: first.mailboxId, via: "cli" } });
+      expect(rows[1]).toEqual({ actor: userId, data: { mailbox_id: second.mailboxId, via: "web" } });
+      expect(Object.keys(rows[1]?.data as object)).not.toContain("address");
+    });
+  });
+
+  test("the timeouts reach the openers; without them both are undefined", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId } = await createOrg(trx);
+      const withT = depsFor(trx, { timeouts: { socketMs: 20_000, deadlineMs: 25_000 } });
+      await connectMailbox(withT.deps, { orgId }, input("pw"));
+      expect(withT.calls.openOpts[0]).toMatchObject({ connectionTimeoutMs: 20_000 });
+      expect(withT.calls.smtpOpts[0]).toMatchObject({ timeoutMs: 20_000 });
+      const bare = depsFor(trx);
+      await connectMailbox(bare.deps, { orgId }, input("pw"));
+      expect((bare.calls.openOpts[0] as { connectionTimeoutMs?: number }).connectionTimeoutMs).toBeUndefined();
+      expect((bare.calls.smtpOpts[0] as { timeoutMs?: number }).timeoutMs).toBeUndefined();
+    });
+  });
+
+  test("the deadline ends a hanging IMAP or SMTP check with a SoftError; no row is written", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId } = await createOrg(trx);
+      const timeouts = { socketMs: 20_000, deadlineMs: 50 };
+      const hangImap = depsFor(trx, { timeouts, openProvider: () => hang() });
+      const hangSmtp = depsFor(trx, { timeouts, verifySmtp: () => hang() });
+      for (const { deps } of [hangImap, hangSmtp]) {
+        const started = Date.now();
+        const error = await connectMailbox(deps, { orgId }, input("pw")).catch((e: unknown) => e);
+        expect(error).toBeInstanceOf(SoftError);
+        expect((error as SoftError).message).toBe("mail check timed out");
+        expect(Date.now() - started).toBeLessThan(1_000);
+      }
+      expect(await countMailboxes(trx, orgId)).toBe(0);
+    });
+  });
+
+  test("findMailboxIdByAddress filters by organization", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrg(trx);
+      const b = await createOrg(trx);
+      const address = `tenant-${randomUUID()}@x.test`;
+      const id = await seedMailbox(trx, a.orgId, address);
+      expect(await findMailboxIdByAddress(trx, { orgId: a.orgId }, address.toUpperCase())).toBe(id);
+      expect(await findMailboxIdByAddress(trx, { orgId: b.orgId }, address)).toBeUndefined();
+    });
+  });
+});
+
 // Needs the local GreenMail (bun run dev:up). Auth is off: any password logs in.
 describe("mailbox:connect CLI", () => {
   const imapHost = process.env.TEST_IMAP_HOST ?? "127.0.0.1";
@@ -290,6 +440,38 @@ describe("mailbox:connect CLI", () => {
         .where("mailbox_id", "=", mailboxId)
         .executeTakeFirstOrThrow();
       expectNoPlainText(raw.encrypted_secret, password);
+    } finally {
+      await db.deleteFrom("organizations").where("id", "=", orgId).execute();
+      await db.deleteFrom("users").where("id", "=", userId).execute();
+    }
+  });
+
+  test("a duplicate address exits 1 before any login", async () => {
+    const suffix = randomUUID();
+    const { orgId, userId } = await createOrg(db, suffix);
+    try {
+      await insertMailbox(
+        db,
+        { orgId },
+        {
+          id: randomUUID(),
+          address: "dup@x.test",
+          imapHost: "imap.x.test",
+          imapPort: 993,
+          smtpHost: "smtp.x.test",
+          smtpPort: 465,
+          capabilities: (await fakeWithFolders().serverInfo()).capabilities,
+          folderMap: buildFolderMap(serverFolders),
+        }
+      );
+      const proc = runConnect(["--org-id", orgId, "--address", "DUP@x.test"], "x");
+      const [code, stdout, stderr] = await Promise.all([
+        proc.exited,
+        new Response(proc.stdout).text(),
+        new Response(proc.stderr).text(),
+      ]);
+      expect(code).toBe(1);
+      expect(`${stdout}${stderr}`).toContain("mailbox with this address already exists");
     } finally {
       await db.deleteFrom("organizations").where("id", "=", orgId).execute();
       await db.deleteFrom("users").where("id", "=", userId).execute();

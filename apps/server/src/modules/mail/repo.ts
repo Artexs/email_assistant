@@ -135,6 +135,20 @@ export async function getMailbox(db: DbOrTrx, ctx: TenantContext, mailboxId: str
   return row && toMailboxRow(row);
 }
 
+export async function findMailboxIdByAddress(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  address: string
+): Promise<string | undefined> {
+  const row = await db
+    .selectFrom("mailboxes")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where(sql<string>`lower(address)`, "=", sql<string>`lower(${address})`)
+    .executeTakeFirst();
+  return row?.id;
+}
+
 export async function lockMailbox(
   trx: Transaction<DB>,
   ctx: TenantContext,

@@ -112,6 +112,22 @@ export class MailAuthError extends HardError {
   }
 }
 
+/** No mailbox with this id in the organization. */
+export class MailboxNotFoundError extends HardError {
+  constructor(options?: { cause?: unknown }) {
+    super("mailbox not found", options);
+    this.name = "MailboxNotFoundError";
+  }
+}
+
+/** The organization has a mailbox with this address already. */
+export class MailboxExistsError extends HardError {
+  constructor(options?: { cause?: unknown }) {
+    super("mailbox with this address already exists", options);
+    this.name = "MailboxExistsError";
+  }
+}
+
 /** The UID is not in the folder. */
 export class MailNotFoundError extends HardError {
   constructor(message: string, options?: { cause?: unknown }) {

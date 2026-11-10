@@ -83,6 +83,9 @@ export function imapFlowOptions(opts: ImapConnectOptions): ImapFlowOptions {
     logger: false,
     disableAutoIdle: true,
     connectionTimeout: opts.connectionTimeoutMs ?? DEFAULT_CONNECTION_TIMEOUT_MS,
+    ...(opts.connectionTimeoutMs === undefined
+      ? {}
+      : { greetingTimeout: opts.connectionTimeoutMs, socketTimeout: opts.connectionTimeoutMs }),
     ...(secure ? {} : { doSTARTTLS: false }),
   };
 }

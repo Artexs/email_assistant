@@ -6,14 +6,21 @@ import { z } from "zod";
 
 import type { SecretBox } from "../../platform/crypto";
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { HardError } from "../../platform/errors";
+import { HardError, SoftError } from "../../platform/errors";
 import { auditEvents, recordAudit } from "../audit";
 import { insertDefaultSettings } from "../config";
 
 import type { ImapConnectOptions } from "./imap/client";
 import type { SmtpConnectOptions } from "./imap/smtp";
-import type { MailFolder, MailProvider, MailServerInfo } from "./port";
 import {
+  MailboxExistsError,
+  MailboxNotFoundError,
+  type MailFolder,
+  type MailProvider,
+  type MailServerInfo,
+} from "./port";
+import {
+  findMailboxIdByAddress,
   getCredentials,
   getMailbox,
   insertCredentials,
@@ -60,6 +67,13 @@ export interface ConnectDeps {
   secrets: SecretBox;
   openProvider(opts: ImapConnectOptions): Promise<MailProvider>;
   verifySmtp(opts: SmtpConnectOptions): Promise<void>;
+  /** The web sets it: the socket timeout of each login and the deadline of the whole check. The CLI sets none. */
+  timeouts?: { socketMs: number; deadlineMs: number };
+}
+
+export interface ConnectMeta {
+  actor: string;
+  via: "web" | "cli";
 }
 
 export function buildFolderMap(folders: MailFolder[]): Record<string, string> {
@@ -70,6 +84,26 @@ export function buildFolderMap(folders: MailFolder[]): Record<string, string> {
   }
   // S3 creates the AI folders before the first move; connect does not change the mailbox.
   return { ...map, ...AI_FOLDER_NAMES };
+}
+
+// Ends a check that hangs: the late result of `promise` is dropped.
+async function withDeadline<T>(promise: Promise<T>, ms: number | undefined): Promise<T> {
+  if (ms === undefined) return promise;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new SoftError("mail check timed out")), ms);
+  });
+  try {
+    return await Promise.race([promise, deadline]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function isMailboxAddressViolation(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const fields = error as { code?: unknown; constraint?: unknown };
+  return fields.code === "23505" && fields.constraint === "mailboxes_org_address_key";
 }
 
 async function readServerInfo(deps: ConnectDeps, opts: ImapConnectOptions): Promise<MailServerInfo> {
@@ -85,22 +119,35 @@ async function readServerInfo(deps: ConnectDeps, opts: ImapConnectOptions): Prom
 export async function connectMailbox(
   deps: ConnectDeps,
   ctx: TenantContext,
-  input: ConnectInput
+  input: ConnectInput,
+  meta: ConnectMeta = { actor: "system", via: "cli" }
 ): Promise<{ mailboxId: string; info: MailServerInfo }> {
   const valid = connectInputSchema.parse(input);
 
-  const info = await readServerInfo(deps, {
-    host: valid.imapHost,
-    port: valid.imapPort,
-    user: valid.address,
-    password: valid.password,
-  });
-  await deps.verifySmtp({
-    host: valid.smtpHost,
-    port: valid.smtpPort,
-    user: valid.address,
-    password: valid.password,
-  });
+  // Before any login: a duplicate never opens a connection.
+  if ((await findMailboxIdByAddress(deps.db, ctx, valid.address)) !== undefined) throw new MailboxExistsError();
+
+  const { timeouts } = deps;
+  const info = await withDeadline(
+    readServerInfo(deps, {
+      host: valid.imapHost,
+      port: valid.imapPort,
+      user: valid.address,
+      password: valid.password,
+      connectionTimeoutMs: timeouts?.socketMs,
+    }),
+    timeouts?.deadlineMs
+  );
+  await withDeadline(
+    deps.verifySmtp({
+      host: valid.smtpHost,
+      port: valid.smtpPort,
+      user: valid.address,
+      password: valid.password,
+      timeoutMs: timeouts?.socketMs,
+    }),
+    timeouts?.deadlineMs
+  );
 
   const mailboxId = randomUUID();
   const secret = deps.secrets.encrypt(valid.password, `mailbox:${mailboxId}`);
@@ -124,9 +171,20 @@ export async function connectMailbox(
       keyVersion: secret.keyVersion,
     });
     await insertDefaultSettings(trx, ctx, mailboxId);
+    await recordAudit(trx, ctx, {
+      actor: meta.actor,
+      event: auditEvents.mailboxConnected,
+      data: { mailbox_id: mailboxId, via: meta.via },
+    });
   };
 
-  await (deps.db.isTransaction ? run(deps.db) : deps.db.transaction().execute(run));
+  try {
+    await (deps.db.isTransaction ? run(deps.db) : deps.db.transaction().execute(run));
+  } catch (error) {
+    // A concurrent connect of the same address wins the unique index.
+    if (isMailboxAddressViolation(error)) throw new MailboxExistsError({ cause: error });
+    throw error;
+  }
   return { mailboxId, info };
 }
 
@@ -135,26 +193,42 @@ export async function connectMailbox(
 export async function updateMailboxPassword(
   deps: ConnectDeps,
   ctx: TenantContext,
-  input: { mailboxId: string; password: string; secretKind?: "password" | "app_password"; now: Date }
+  input: { mailboxId: string; password: string; secretKind?: "password" | "app_password"; now: Date; actor?: string }
 ): Promise<{ status: MailboxStatus; reactivated: boolean }> {
   const { mailboxId, password, now } = input;
   const mailbox = await getMailbox(deps.db, ctx, mailboxId);
-  if (!mailbox) throw new HardError("mailbox not found");
+  if (!mailbox) throw new MailboxNotFoundError();
 
-  const provider = await deps.openProvider({
-    host: mailbox.imap_host,
-    port: mailbox.imap_port,
-    user: mailbox.address,
-    password,
-  });
-  await provider.close();
-  await deps.verifySmtp({ host: mailbox.smtp_host, port: mailbox.smtp_port, user: mailbox.address, password });
+  const { timeouts } = deps;
+  await withDeadline(
+    (async () => {
+      const provider = await deps.openProvider({
+        host: mailbox.imap_host,
+        port: mailbox.imap_port,
+        user: mailbox.address,
+        password,
+        connectionTimeoutMs: timeouts?.socketMs,
+      });
+      await provider.close();
+    })(),
+    timeouts?.deadlineMs
+  );
+  await withDeadline(
+    deps.verifySmtp({
+      host: mailbox.smtp_host,
+      port: mailbox.smtp_port,
+      user: mailbox.address,
+      password,
+      timeoutMs: timeouts?.socketMs,
+    }),
+    timeouts?.deadlineMs
+  );
 
   const secret = deps.secrets.encrypt(password, `mailbox:${mailboxId}`);
 
   const run = async (trx: Transaction<DB>) => {
     const locked = await lockMailbox(trx, ctx, mailboxId);
-    if (!locked) throw new HardError("mailbox not found");
+    if (!locked) throw new MailboxNotFoundError();
     const current = await getCredentials(trx, ctx, mailboxId);
     if (!current) throw new HardError("credentials row missing");
     const stored = await updateCredentials(trx, ctx, mailboxId, {
@@ -167,7 +241,7 @@ export async function updateMailboxPassword(
     const reactivated = locked.status === "auth_error";
     if (reactivated) await setMailboxStatus(trx, ctx, mailboxId, "active", now);
     await recordAudit(trx, ctx, {
-      actor: "system",
+      actor: input.actor ?? "system",
       event: auditEvents.mailboxPasswordChanged,
       data: { mailbox_id: mailboxId, reactivated },
       at: now,
