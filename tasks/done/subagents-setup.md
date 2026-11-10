@@ -1,4 +1,4 @@
-> **Status 2026-11-02 — in progress.** Left: first real run on S0 (each agent tested on a real job). Backup of `~/.pi/agent`: not now (user decision).
+> **Status 2026-11-10 — done.** The agents (`planner`, `implementer`, `reviewer`) ran on S0–S4, S5a and the sync and test-mail tasks. The rules live in `tasks/README.md` and the global `~/.pi/agent/agents/`. Backup of `~/.pi/agent`: skipped (user decision).
 
 # Subagents for the slice loop (plan → build → review)
 
@@ -90,3 +90,4 @@ examples `fork-or-fresh-subagent`, `worker-result-handoff`, `pr-review-rules`, `
 - 2026-11-02: Added a "Harness" line to `~/.pi/agent/AGENTS.md` (pi is the default). The user skipped a backup repo for `~/.pi/agent` for now.
 - 2026-11-03: First planner run on S0 over-searched the web (the main session's prompt asked it to check facts, and `planner.md` said to check every outside fact). The user stopped it; it wrote nothing. Fixes (user-approved): `planner.md` — new section "Your job, and only this" (split the decided design into steps, no redesign, no extra work, doc problems go to "Notes"), web only for open choices with max 3 searches, thinking `high` → `medium`; `run-slice` step 2 — the planner prompt holds only the task file path and the user's decisions. Migration runner = `dbmate` (user) written in the S0 file. Next: the other session runs the planner on S0 with "Write the plan for `tasks/active/s0-foundation.md`. Decided by the user: migration runner = `dbmate`."
 - 2026-11-05: Renamed the skill `run-slice` → `run-task` (user). Removed the model overrides from the skill and from the `implementer`/`reviewer` descriptions: each subagent uses its agent file model; only a task file or the user can name another model. Reason: `[risky]` stages ran the implementer on Opus without the user's wish.
+- 2026-11-10: Closed in a task cleanup: the loop ran on many real slices (run-task); nothing left.
