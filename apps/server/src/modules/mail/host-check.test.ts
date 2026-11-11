@@ -8,6 +8,7 @@ describe("isLocalMailHost", () => {
     "LOCALHOST",
     "mail.localhost",
     "localhost.",
+    "localhost..",
     "LocalHost.",
     "mail.localhost.",
     "127.0.0.1",

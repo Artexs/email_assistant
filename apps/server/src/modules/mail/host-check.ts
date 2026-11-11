@@ -29,7 +29,7 @@ for (const [net, prefix] of [
  * public here: the DNS-level check is a follow-up (`tasks/planned/web-public-hardening.md`).
  */
 export function isLocalMailHost(host: string): boolean {
-  let value = host.trim().toLowerCase().replace(/\.$/, ""); // the root dot: `localhost.` still resolves to loopback
+  let value = host.trim().toLowerCase().replace(/\.+$/, ""); // the root dot: `localhost.` still resolves to loopback
   if (value === "localhost" || value.endsWith(".localhost")) return true;
   value = value.replace(/^\[/, "").replace(/\]$/, "");
   const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(value);

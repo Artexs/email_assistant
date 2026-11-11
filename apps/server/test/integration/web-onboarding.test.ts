@@ -7,13 +7,12 @@ import { meSchema, type Me } from "@ea/core";
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import type { Hono } from "hono";
 
-import { auditEvents, hasAuditEvent, recordAudit } from "../../src/modules/audit";
+import { auditEvents, hasAuditEvent, recordAudit, recordAuditOnce } from "../../src/modules/audit";
 import { countSenderRules, insertSenderRule } from "../../src/modules/config";
 import { insertMailbox } from "../../src/modules/mail/repo";
 import { tenancyRoutes } from "../../src/modules/tenancy";
 import { insertUser } from "../../src/modules/tenancy/repo";
 import type { ApiEnv } from "../../src/platform/http";
-import { setLogLevel } from "../../src/platform/log";
 import { countMailboxes, homePathOf, onboardingDeps } from "../../src/web";
 
 import { linkChat, randomChatId, testCapabilities } from "./fixtures";
@@ -35,7 +34,6 @@ beforeAll(() => {
 });
 
 afterEach(async () => {
-  setLogLevel("info");
   for (const org of orgs) await org.cleanup();
   orgs.length = 0;
 });
@@ -185,6 +183,19 @@ describe("GET /api/me onboarding", () => {
     expect(await hasAuditEvent(db, ctx, [auditEvents.mailboxModeChanged, auditEvents.onboardingModeKept])).toBe(false);
     expect(await countSenderRules(db, ctx)).toBe(0);
     expect(await countSenderRules(db, other)).toBe(1);
+  });
+});
+
+describe("recordAuditOnce", () => {
+  test("an event of another organization does not block this one", async () => {
+    const { org } = await setup();
+    const event = { actor: org.otherOwnerId, event: auditEvents.onboardingModeKept };
+    expect(await recordAuditOnce(db, { orgId: org.otherOrgId }, event)).toBe(true);
+    const mine = { actor: org.ownerId, event: auditEvents.onboardingModeKept };
+    expect(await recordAuditOnce(db, { orgId: org.orgId }, mine)).toBe(true);
+    expect(await modeRows(org.orgId)).toHaveLength(1);
+    expect(await recordAuditOnce(db, { orgId: org.orgId }, mine)).toBe(false);
+    expect(await modeRows(org.orgId)).toHaveLength(1);
   });
 });
 
