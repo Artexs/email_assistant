@@ -6,7 +6,7 @@ Part of [`../s5d-web-activity.md`](../s5d-web-activity.md). Read that file's "Do
 
 One step. This is the first route that returns mail subjects and senders to the browser.
 
-- [ ] **5.1 `reports/routes.ts`, mounted in `web.ts` (B8 a, c)**
+- [x] **5.1 `reports/routes.ts`, mounted in `web.ts` (B8 a, c)**
   - Goal: the web reads a page of activity items through a thin route over `listActivity`.
   - Files: create `apps/server/src/modules/reports/routes.ts`, `apps/server/test/integration/web-activity.test.ts`; change `reports/index.ts`, `apps/server/src/web.ts`.
   - Interfaces:

@@ -15,3 +15,4 @@ export {
   type DigestRequest,
 } from "./digest";
 export { insertDigest, lastDigestSlotKey, lastSentDigestEnd, markDigestSent } from "./repo";
+export { activityRoutes, type ActivityRouteDeps } from "./routes";

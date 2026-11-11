@@ -17,6 +17,7 @@ import {
   verifySmtpLogin,
   WEB_MAIL_TIMEOUTS,
 } from "./modules/mail";
+import { activityRoutes } from "./modules/reports";
 import { listMembershipsOfUser, tenancyRoutes, type TenancyRouteDeps } from "./modules/tenancy";
 import { goNoGoFor, setCategoryAutoWithGate } from "./modules/triage";
 import { createAuth, type AuthDeps, type AuthEventKind } from "./platform/auth";
@@ -246,6 +247,7 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
       );
       api.route("/", settingsRoutes(settingsRouteDeps(db, now)));
       api.route("/", rulesRoutes({ db, now }));
+      api.route("/", activityRoutes({ db, now }));
       api.route("/", channelRoutes({ db, now, botUsername: extras.botUsername }));
     },
     close: () => handle.close(),
