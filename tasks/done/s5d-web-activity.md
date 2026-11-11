@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — stages 1–11.1 built, group review PASS (fixes in review); checkpoint 2 walk and merge left.** A1–A10 ("ok"), 14 facts, B1–B15, 11 stage files, cold-reviewed (all findings fixed). Left: the build with `run-task` in an own session (user step 0 first), stages 1–11.
+> **Status 2026-11-11 — done — merged into `master`.** Next: the S5e plan session (`tasks/planned/s5e-web-deploy-docs.md`). A1–A10 ("ok"), 14 facts, B1–B15, 11 stage files, cold-reviewed (all findings fixed). Left: the build with `run-task` in an own session (user step 0 first), stages 1–11.
 
 # S5d Web: activity
 
@@ -159,7 +159,7 @@ Each stage lives in its own file in [`s5d-web-activity/`](s5d-web-activity/). An
 - [x] [Stage 8](s5d-web-activity/stage-08-activity-list-page.md) — Activity page part 1: filters, list, rows, load more, refresh, polling, states [written]
 - [x] [Stage 9](s5d-web-activity/stage-09-panel-and-actions.md) — Activity page part 2: panel, ✅ ✏️ ↩️, picker, toasts [written]
 - [x] [Stage 10](s5d-web-activity/stage-10-playwright.md) — e2e data (second organization, activity script) and `activity.spec.ts` [written]
-- [ ] [Stage 11](s5d-web-activity/stage-11-notes-review-merge.md) — Notes, alerts, master plan lines, group review S5b–S5d, user checkpoint 2, merge [written]
+- [x] [Stage 11](s5d-web-activity/stage-11-notes-review-merge.md) — Notes, alerts, master plan lines, group review S5b–S5d, user checkpoint 2, merge [written]
 
 Docker on this PC: every `docker` or `bun run dev:up` command runs inside `newgrp docker <<'EOF' … EOF` (`notes/2026-11-08-docker-socket-newgrp.md`). Git push from the agent shell: `export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/github -o IdentitiesOnly=yes"` (`notes/2026-11-10-git-ssh-push.md`). S5d adds no package and no migration (B15).
 
@@ -198,10 +198,10 @@ Questions: 18 an empty poll with older pages loaded → `firstPage` (B11, stage 
 
 ## Done-checklist
 
-- [ ] Done-when checks pass (name the command and its output in the log).
-- [ ] `docs/` describe what was built (the S5 docs pass is S5e; this segment writes its notes).
-- [ ] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
-- [ ] Follow-up ideas are in `planned/`.
+- [x] Done-when checks pass (name the command and its output in the log).
+- [x] `docs/` describe what was built (the S5 docs pass is S5e; this segment writes its notes).
+- [x] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
+- [x] Follow-up ideas are in `planned/`.
 
 ## Log
 
@@ -225,3 +225,4 @@ Questions: 18 an empty poll with older pages loaded → `firstPage` (B11, stage 
 - 2026-11-11: Stage 8 review PASS (Sonnet high; 2 minor, 1 question; the two cheap ones fixed in `stage 8 fix`, review pending); stage 9 review PASS (Sonnet high; 3 minor, 1 question, all accepted: focus returns to body after a tap on a disabled button, the row and the panel have separate pending state (the server answers Already saved / already), the panel empties during the slide-out); pushed `1b7ea5e`. Stage 10 built, review pending (Sonnet high): lint, typecheck clean; unit 1706 pass; int 1263 pass; `TELEGRAM_BOT_TOKEN= WEB_MAIL_ALLOW_LOCAL=true bun run test:e2e` 40 passed. The e2e server log has no error line and no `failed mail_not_found` line (the committer did not run before `cleanUpOrg` removed the mailbox), so that half of fact 9 stays unverified. Deviation: test 3 uses an exact Undo button locator; M1 move at now-1h, mark_read at now-1h+1s.
 - 2026-11-11: Stage 10 review PASS (Sonnet high; 3 minor, all accepted: the e2e 404 test cannot tell a made-up id from a foreign one, the integration test covers it; the stage 8 fix has no test; fact 9 stays partly verified); pushed `0b7737c`. Stage 11.1 built (docs): note `notes/2026-11-11-web-activity-facts.md`, `docs/known-alerts.md` (2 entries), `docs/code-patterns.md`, master plan dated lines, S5e and retention pointers; `bunx prettier --check` passes. Left: 11.2 (group review, full check, checkpoint 2, merge).
 - 2026-11-11: Group review (Opus high, S5b–S5d, `f46e542..5ce32e0`) PASS: 6 minor, 1 question. Fixed in one commit: empty subject or sender shows the fallback like Telegram; the feedback state text says "(Undo)" only for source `undo`; the route answers are typed with the core types and the undo kinds come from one list; the note, the contract row and B12 match the code. Question (a tapped row stays until the next poll with "Only not rated" on): accepted (A8). Full check line before the fix: lint, typecheck clean; unit 1706 pass; int 1263 pass; web:build 9 pages; Playwright 40 passed.
+- 2026-11-11: The user approved checkpoint 2 and the merge ("ok, i approve it, proceed further") without trying the panel by hand: no walk database was set up; the Playwright run (40 passed) is the evidence for the activity page. `origin/master` (state-machine-transitions, `f0bf952`) merged into the branch without conflict. Full check line on the merged branch (db `s5d`): lint, typecheck clean; `bun run test:unit` 1719 pass, 0 fail; `bun run test:int` 1294 pass, 0 fail; `bun run web:build` exit 0; `TELEGRAM_BOT_TOKEN= WEB_MAIL_ALLOW_LOCAL=true bun run test:e2e` 40 passed.

@@ -16,7 +16,7 @@ Part of [`../s5d-web-activity.md`](../s5d-web-activity.md). Read that file's "Do
   - Check: `bunx prettier --check` on every changed Markdown file.
   - Done when: the files are written and pass Prettier.
 
-- [ ] **11.2 Group review, checkpoint 2, merge**
+- [x] **11.2 Group review, checkpoint 2, merge**
   - Goal: S5b–S5d are reviewed as one panel, the user tries the whole panel, and S5d lands on `master`.
   - Decisions:
     - Group review (master checkpoint 2: "Group review of S5b–S5d"): the `reviewer` subagent on `claude-bridge/claude-opus-5-5` high over the S5d range `<branch base>..HEAD` (all stages PASS first) plus a read of the S5b and S5c route files and pages for cross-page issues: a pre-mortem ("a bug of the panel reached the user: which stage let it through?"), the tenant rule over every `/api/*` route of S5b–S5d, the one Undo path (Telegram and web), no mail text in a log line or error body, the polling of every page (Mailboxes, Settings, Rules, Activity) and the drafts under polling, the e2e cleanup across the six specs. Findings → fix commits, then a review of the fix range.
