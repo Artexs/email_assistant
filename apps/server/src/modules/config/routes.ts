@@ -2,12 +2,15 @@ import {
   autoBodySchema,
   barCategories,
   modeBodySchema,
+  ruleBodySchema,
+  rulesQuerySchema,
   switchableSyncFolderKeys,
   switchBodySchema,
   syncFolderBodySchema,
   toolSwitchNames,
   type BarCategory,
   type GateView,
+  type RuleView,
   type SettingsWebChange,
   type SwitchableSyncFolderKey,
 } from "@ea/core";
@@ -16,9 +19,10 @@ import { Hono } from "hono";
 import { z } from "zod";
 
 import type { Db, TenantContext } from "../../platform/db";
-import { parseBody, requireOwner, type ApiEnv } from "../../platform/http";
+import { parseBody, parseQuery, requireOwner, type ApiEnv } from "../../platform/http";
 
-import { getMailboxSettings } from "./repo";
+import { getMailboxSettings, listSenderRuleRows, type SenderRuleRow } from "./repo";
+import { addSenderRule, removeSenderRule } from "./rules";
 import { setMode, setToolSwitch, SettingsNotFoundError, type SettingsChange } from "./service";
 import { buildSettingsView, type SettingsViewDeps } from "./view";
 
@@ -145,6 +149,65 @@ export function settingsRoutes(deps: SettingsRouteDeps): Hono<ApiEnv> {
       if (result === "not_found") return notFound(c);
       return respond(c, id, { changed: result === "changed", expired: 0 });
     });
+  });
+
+  return app;
+}
+
+export interface RulesRouteDeps {
+  db: Db;
+  now(): Date;
+}
+
+function ruleView(row: SenderRuleRow): RuleView {
+  return {
+    id: row.id,
+    kind: row.kind,
+    pattern: row.pattern,
+    mailboxId: row.mailbox_id,
+    createdAt: row.created_at.toISOString(),
+  };
+}
+
+export function rulesRoutes(deps: RulesRouteDeps): Hono<ApiEnv> {
+  const app = new Hono<ApiEnv>();
+
+  // A foreign or unknown mailboxId matches no mailbox rule: the answer holds the org-wide rules only.
+  app.get("/rules", async (c) => {
+    const query = parseQuery(c, rulesQuerySchema);
+    const rows = await listSenderRuleRows(deps.db, c.get("ctx"), { mailboxId: query.mailboxId });
+    return c.json(rows.map(ruleView));
+  });
+
+  app.post("/rules", requireOwner, async (c) => {
+    const body = await parseBody(c, ruleBodySchema);
+    const result = await addSenderRule(deps.db, c.get("ctx"), {
+      mailboxId: body.mailboxId ?? null,
+      pattern: body.pattern,
+      kind: body.kind,
+      actor: c.get("session").userId,
+      now: deps.now(),
+    });
+    switch (result.kind) {
+      case "added":
+        return c.json(ruleView(result.rule), 201);
+      case "exists":
+        return c.json({ error: "rule_exists" }, 409);
+      case "limit":
+        return c.json({ error: "rule_limit" }, 409);
+      case "mailbox_not_found":
+        return c.json({ error: "not_found" }, 404);
+    }
+  });
+
+  app.delete("/rules/:id", requireOwner, async (c) => {
+    const id = z.uuid().safeParse(c.req.param("id"));
+    if (!id.success) return c.json({ error: "not_found" }, 404);
+    const result = await removeSenderRule(deps.db, c.get("ctx"), id.data, {
+      actor: c.get("session").userId,
+      now: deps.now(),
+    });
+    return result.kind === "removed" ? c.body(null, 204) : c.json({ error: "not_found" }, 404);
   });
 
   return app;

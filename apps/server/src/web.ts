@@ -7,7 +7,7 @@ import type { Context } from "hono";
 import { settingsDeps } from "./composition";
 import { auditEvents, hasAuditEvent, recordAudit, recordAuditOnce } from "./modules/audit";
 import { channelRoutes, getChatLinkForUser, queueMailboxRemovedNotices } from "./modules/channels";
-import { countSenderRules, settingsRoutes, type SettingsRouteDeps } from "./modules/config";
+import { countSenderRules, rulesRoutes, settingsRoutes, type SettingsRouteDeps } from "./modules/config";
 import {
   listMailboxes,
   listSyncFolders,
@@ -245,6 +245,7 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
         })
       );
       api.route("/", settingsRoutes(settingsRouteDeps(db, now)));
+      api.route("/", rulesRoutes({ db, now }));
       api.route("/", channelRoutes({ db, now, botUsername: extras.botUsername }));
     },
     close: () => handle.close(),

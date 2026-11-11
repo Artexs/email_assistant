@@ -24,5 +24,11 @@ export {
   type SettingsDeps,
   type SettingsView,
 } from "./service";
-export { settingsRoutes, type AutoGateOutcome, type SettingsRouteDeps } from "./routes";
+export {
+  rulesRoutes,
+  settingsRoutes,
+  type AutoGateOutcome,
+  type RulesRouteDeps,
+  type SettingsRouteDeps,
+} from "./routes";
 export { buildSettingsView, type SettingsViewDeps } from "./view";
