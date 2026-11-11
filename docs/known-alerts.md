@@ -22,7 +22,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 - **First seen:** 2026-11-11 (S5c)
 - **Source:** `apps/server/src/modules/tenancy/service.ts`, `updateOrganizationSettings`. Level `info`. One line for each changed field. `<actor>` is the user id. The audit rows are `org.timezone_changed` (`from`, `to`) and `org.style_changed` (`set`, no text).
-- **Cause:** the owner changed the organization timezone or the signature in the panel. A timezone change can skip, delay or bring forward one digest on that day (`notes/2026-11-11-web-settings-rules-facts.md`). A signature change applies to every message built after it, also to the send of an older draft.
+- **Cause:** the owner changed the organization timezone or the signature in the panel. A timezone change can skip, delay or bring forward one or more digests on that day (`notes/2026-11-11-web-settings-rules-facts.md`). A signature change applies to every message built after it, also to the send of an older draft.
 - **Fix:** none. It is a record, not an error.
 - **Status:** won't fix (expected)
 

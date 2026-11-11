@@ -12,17 +12,12 @@ import { toast } from "sonner";
 import { t, type TextKey } from "../../i18n/en";
 import { api, ApiError } from "../../lib/api";
 import { errorText } from "../../lib/errors";
+import { kindTitles } from "../../lib/rules-view";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-
-const kindTitles: Record<SenderRuleKind, TextKey> = {
-  vip: "rule_kind_vip",
-  whitelist: "rule_kind_whitelist",
-  blocklist: "rule_kind_blocklist",
-};
 
 const ALL = "all";
 

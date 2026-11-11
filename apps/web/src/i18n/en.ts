@@ -244,6 +244,8 @@ export const en = {
   anyway_title: "Set auto anyway?",
   anyway_text:
     "{category} did not pass the check. The assistant would move and mark {category} mail on its own. You can undo a move for 7 days. Switch auto off again at any time.",
+  anyway_text_quiet:
+    "This category is below the bar. The setting changes little for {category} mail today (see the line under the switch). You can switch auto off again at any time.",
   anyway_submit: "Set anyway",
   folders_title: "Synced folders",
   folders_always: "Always synced",

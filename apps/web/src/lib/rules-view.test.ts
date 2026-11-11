@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import type { RuleView } from "@ea/core/web";
 
-import { groupRules, rulesPath, scopeLabel } from "./rules-view";
+import { en } from "../i18n/en";
+
+import { groupRules, kindTitles, ruleKindOrder, rulesPath, scopeLabel } from "./rules-view";
 
 const MAILBOX = "11111111-1111-4111-8111-111111111111";
 const GONE = "22222222-2222-4222-8222-222222222222";
@@ -59,5 +61,11 @@ describe("rulesPath", () => {
 
   test("the id is encoded", () => {
     expect(rulesPath("a b")).toBe("/api/rules?mailboxId=a%20b");
+  });
+});
+
+describe("kindTitles", () => {
+  test("names a text key for every kind of the order", () => {
+    for (const kind of ruleKindOrder) expect(Object.hasOwn(en, kindTitles[kind])).toBe(true);
   });
 });

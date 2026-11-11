@@ -1,6 +1,7 @@
 import type { BarCategory, GateView } from "@ea/core/web";
 
 import { t } from "../../i18n/en";
+import { anywayTextKey } from "../../lib/anyway-text";
 import { gateText } from "../../lib/gate-text";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
@@ -24,7 +25,7 @@ export function SetAnywayDialog({ category, gate, bar, minKept, pending, onCance
         <DialogHeader>
           <DialogTitle>{t("anyway_title")}</DialogTitle>
           <DialogDescription>
-            {category === null ? "" : t("anyway_text", { category: t(`cat_${category}`) })}
+            {category === null ? "" : t(anywayTextKey(category), { category: t(`cat_${category}`) })}
           </DialogDescription>
         </DialogHeader>
         {text !== null && <p className="text-sm">{t(text.key, text.vars)}</p>}

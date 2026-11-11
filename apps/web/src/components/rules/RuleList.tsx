@@ -7,15 +7,9 @@ import { z } from "zod";
 import { t, type TextKey } from "../../i18n/en";
 import { api, ApiError } from "../../lib/api";
 import { errorText } from "../../lib/errors";
-import { scopeLabel } from "../../lib/rules-view";
+import { kindTitles, scopeLabel } from "../../lib/rules-view";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-
-const kindTitles: Record<SenderRuleKind, TextKey> = {
-  vip: "rule_kind_vip",
-  whitelist: "rule_kind_whitelist",
-  blocklist: "rule_kind_blocklist",
-};
 
 const kindTexts: Record<SenderRuleKind, TextKey> = {
   vip: "rules_vip_text",

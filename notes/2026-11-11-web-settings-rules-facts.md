@@ -109,12 +109,11 @@ Better Auth 1.7.18.
 
 ## Review notes that stay open
 
-1. **Stage 10 minor 1.** On the Rules page, `aria-describedby` of the pattern input names only the help text (`rule-pattern-help`). It should also name the error text when the pattern error shows.
-2. **Stage 10 minor 2.** The add form resets when the mailbox filter changes (accepted).
-3. **No audit row for "Sign out everywhere"** (see above; `web-public-hardening.md`).
-4. **No e2e assertion of `web.password_changed`.** The S5a integration test covers the row.
-5. **The sender and chaser half of the timezone fact has no test.**
-6. **`atConfidence` of a `no-go` row is always 0.5.** The web text says "at confidence ≥ 0.5".
-7. **Stage 4: `docs/modules.md` needs the `tenancy → audit` edge** (`tenancy/service.ts` imports `../audit`). S5e owns `docs/modules.md`. The line is in `tasks/planned/s5e-web-deploy-docs.md`.
-8. **Stage 8 (accepted):** a per-switch pending state can reorder two answers until the next poll. No test for the `useResource` sequence ref (no React harness).
-9. **Not verified:** the shadcn `textarea` changed no package (checked: `git diff --exit-code bun.lock apps/web/package.json` exit 0). `<input type="time">` on iOS Safari is not tested (the S5e hand check on the phone covers it).
+1. **Stage 10 minor 2.** The add form resets when the mailbox filter changes (accepted).
+2. **No audit row for "Sign out everywhere"** (see above; `web-public-hardening.md`).
+3. **No e2e assertion of `web.password_changed`.** The S5a integration test covers the row.
+4. **The sender and chaser half of the timezone fact has no test.**
+5. **`atConfidence` of a `no-go` row is always 0.5.** The web text says "at confidence ≥ 0.5".
+6. **Stage 4: `docs/modules.md` needs the `tenancy → audit` edge** (`tenancy/service.ts` imports `../audit`). S5e owns `docs/modules.md`. The line is in `tasks/planned/s5e-web-deploy-docs.md`.
+7. **Stage 8 (accepted):** a per-switch pending state can reorder two answers until the next poll. No test for the `useResource` sequence ref (no React harness).
+8. **Checked and not tested.** Checked: the shadcn `textarea` changed no package (`git diff --exit-code bun.lock apps/web/package.json` exit 0). Not tested: `<input type="time">` on iOS Safari (the S5e hand check on the phone covers it).

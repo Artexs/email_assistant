@@ -4,6 +4,12 @@ import type { TextKey } from "../i18n/en";
 
 export const ruleKindOrder = ["vip", "whitelist", "blocklist"] as const;
 
+export const kindTitles: Record<SenderRuleKind, TextKey> = {
+  vip: "rule_kind_vip",
+  whitelist: "rule_kind_whitelist",
+  blocklist: "rule_kind_blocklist",
+};
+
 // Keeps the API order inside a kind.
 export function groupRules(rules: readonly RuleView[]): Record<SenderRuleKind, RuleView[]> {
   const groups: Record<SenderRuleKind, RuleView[]> = { vip: [], whitelist: [], blocklist: [] };

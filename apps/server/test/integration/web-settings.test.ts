@@ -171,6 +171,28 @@ describe("route matrix", () => {
     expect(body.details[0].path).toBe("mode");
   });
 
+  test("a bad body on each PATCH route → 400 validation with the path of the bad field", async () => {
+    const { app, m1 } = await setup();
+    const cases = [
+      { path: "mode", body: { mode: "on", keepSwitches: false }, field: "mode" },
+      { path: "mode", body: { mode: "assist" }, field: "keepSwitches" },
+      { path: "switches/flag", body: { value: "yes" }, field: "value" },
+      { path: "auto/info", body: { auto: "yes" }, field: "auto" },
+      { path: "auto/info", body: { auto: true, force: 1 }, field: "force" },
+      { path: "sync-folders/offers", body: { enabled: "yes" }, field: "enabled" },
+    ];
+    for (const item of cases) {
+      const res = await app.request(
+        `/api/settings/${m1}/${item.path}`,
+        as("owner", { method: "PATCH", body: item.body })
+      );
+      expect(res.status).toBe(400);
+      const body = await json(res);
+      expect(body.error).toBe("validation");
+      expect(body.details[0].path).toBe(item.field);
+    }
+  });
+
   test("a PATCH without Origin → 403 bad_origin", async () => {
     const { app, m1 } = await setup();
     const res = await app.request(`/api/settings/${m1}/mode`, {
