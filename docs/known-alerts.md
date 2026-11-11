@@ -143,7 +143,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **First seen:** 2026-11-10 (S5a code; seen live with `WEB_BASE_URL= bun run dev`, hand check 8.2)
 - **Source:** `apps/server/src/web.ts` (`webDeps`, level `info`, once per process start).
 - **Cause:** The server started without `WEB_BASE_URL`, so the web panel is off: no login, no pages, no `/api` routes. The jobs, the Telegram bot and the CLIs work as before.
-- **Fix:** No action, and expected until S5e sets the key on the VPS. To turn the panel on, set `WEB_BASE_URL` and `WEB_AUTH_SECRET` in the `.env` (only the user edits `.env`) and restart the server.
+- **Fix:** No action, and expected on a host where the web panel is off; the VPS has it on since S5e (deploy/README.md, Web panel). To turn the panel on, set `WEB_BASE_URL` and `WEB_AUTH_SECRET` in the `.env` (only the user edits `.env`) and restart the server.
 - **Status:** won't fix (expected behaviour)
 
 ### `web is on: <origin>, dist <path>`
@@ -168,7 +168,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Source:** `apps/server/src/web.ts` (`webDeps`, level `warn`, once per process start).
 - **Cause:** `WEB_BASE_URL` uses `http://` and its host is not `localhost`, `127.0.0.1` or `[::1]`. Better Auth adds `Secure` to the session cookie only for an `https://` base URL, so the browser sends the cookie in clear text.
 - **Fix:** Use an `https://` origin: behind Tailscale Serve on the VPS (S5e). An `http://` non-loopback origin is for a test network only.
-- **Status:** fix pending (S5e sets an `https://` `WEB_BASE_URL` on the VPS)
+- **Status:** won't fix (expected only in a misconfiguration: the VPS uses an `https://` `WEB_BASE_URL` since S5e)
 
 ### `web: reset requested for user <id>`
 
