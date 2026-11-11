@@ -6,7 +6,7 @@ Part of [`../s5d-web-activity.md`](../s5d-web-activity.md). Read that file's "Do
 
 One step. The activity list shows mail subjects and senders: a missing `org_id` filter would show another organization's mail.
 
-- [ ] **3.1 `listActivityRows`, `listLatestFeedbackByEmailIds`, `listLatestDelegationsByEmailIds` (B6)**
+- [x] **3.1 `listActivityRows`, `listLatestFeedbackByEmailIds`, `listLatestDelegationsByEmailIds` (B6)**
   - Goal: three batched queries that the read model (stage 4) needs, each filtered by the tenant.
   - Files: change `apps/server/src/modules/triage/repo.ts`, `triage/index.ts`, `apps/server/src/modules/delegation/repo.ts`, `delegation/index.ts`; create `apps/server/test/integration/activity-repo.test.ts`.
   - Interfaces:

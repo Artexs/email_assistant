@@ -1,4 +1,11 @@
-import { categorySchema, feedbackVerdicts, type Category, type FeedbackSource, type FeedbackVerdict } from "@ea/core";
+import {
+  categorySchema,
+  feedbackSources,
+  feedbackVerdicts,
+  type Category,
+  type FeedbackSource,
+  type FeedbackVerdict,
+} from "@ea/core";
 import { sql, type NotNull, type Transaction } from "kysely";
 import { z } from "zod";
 
@@ -461,4 +468,126 @@ export async function countTriagedBetween(
     counts[categorySchema.parse(row.category)] = Number(row.count);
   }
   return counts;
+}
+
+export interface ActivityRowsQuery {
+  mailboxId?: string;
+  categories?: readonly Category[];
+  notRated: boolean;
+  since: Date;
+  cursor?: { receivedAtKey: string; id: string };
+  limit: number;
+}
+
+export interface ActivityRow {
+  email_id: string;
+  mailbox_id: string;
+  received_at: Date;
+  received_at_key: string; // "2026-11-11T09:00:00.123456Z", UTC, microseconds
+  triaged_at: Date; // created_at of the latest triage result
+  from_address: string | null;
+  subject: string | null;
+  folder: string;
+  category: Category;
+  confidence: number;
+  reason_code: string;
+  reason: string | null;
+  model_category: Category | null;
+}
+
+// The activity page: the latest result of each mail received since `since`, newest mail first.
+// Keyset order (received_at, id) with a cursor; the key keeps the microseconds of the column.
+export async function listActivityRows(db: DbOrTrx, ctx: TenantContext, q: ActivityRowsQuery): Promise<ActivityRow[]> {
+  const orgId = ctx.orgId;
+  const mailboxFilter = q.mailboxId === undefined ? sql`` : sql`AND e.mailbox_id = ${q.mailboxId}`;
+  const categoryFilter =
+    q.categories === undefined
+      ? sql``
+      : q.categories.length === 0
+        ? sql`AND false`
+        : sql`AND latest.category IN (${sql.join(q.categories)})`;
+  const notRatedFilter = q.notRated
+    ? sql`AND NOT EXISTS (SELECT 1 FROM triage_feedback f WHERE f.org_id = ${orgId} AND f.email_id = e.id)`
+    : sql``;
+  const cursorFilter = q.cursor
+    ? sql`AND (e.received_at, e.id) < (${q.cursor.receivedAtKey}::timestamptz, ${q.cursor.id}::uuid)`
+    : sql``;
+  const { rows } = await sql<{
+    email_id: string;
+    mailbox_id: string;
+    received_at: Date;
+    received_at_key: string;
+    created_at: Date;
+    from_address: string | null;
+    subject: string | null;
+    folder: string;
+    category: string;
+    confidence: number;
+    reason_code: string;
+    reason: string | null;
+    model_category: string | null;
+  }>`
+    WITH latest AS (
+      SELECT DISTINCT ON (tr.email_id) tr.email_id, tr.category, tr.confidence, tr.reason_code, tr.reason,
+             tr.fields->>'model_category' AS model_category, tr.created_at
+      FROM triage_results tr
+      JOIN emails e ON e.id = tr.email_id AND e.org_id = ${orgId}
+      WHERE tr.org_id = ${orgId} AND e.received_at >= ${q.since} ${mailboxFilter}
+      ORDER BY tr.email_id, tr.created_at DESC, tr.id DESC
+    )
+    SELECT latest.email_id, latest.category, latest.confidence, latest.reason_code, latest.reason,
+           latest.model_category, latest.created_at,
+           e.mailbox_id, e.received_at,
+           to_char(e.received_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS received_at_key,
+           e.from_address, e.subject, e.folder
+    FROM latest JOIN emails e ON e.id = latest.email_id AND e.org_id = ${orgId}
+    WHERE true ${categoryFilter} ${notRatedFilter} ${cursorFilter}
+    ORDER BY e.received_at DESC, e.id DESC
+    LIMIT ${q.limit}
+  `.execute(db);
+  return rows.map(({ created_at, ...row }) => ({
+    ...row,
+    category: categorySchema.parse(row.category),
+    model_category: readModelCategory(row.model_category),
+    triaged_at: created_at,
+  }));
+}
+
+export interface LatestFeedbackRow {
+  verdict: FeedbackVerdict;
+  true_category: Category | null;
+  source: FeedbackSource;
+  created_at: Date;
+}
+
+const feedbackSourceSchema = z.enum(feedbackSources);
+
+// The latest feedback row per mail (created_at desc, id desc), in chunks of 500 ids.
+export async function listLatestFeedbackByEmailIds(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailIds: readonly string[]
+): Promise<Map<string, LatestFeedbackRow>> {
+  const out = new Map<string, LatestFeedbackRow>();
+  for (let i = 0; i < emailIds.length; i += 500) {
+    const rows = await db
+      .selectFrom("triage_feedback")
+      .distinctOn("email_id")
+      .select(["email_id", "verdict", "true_category", "source", "created_at"])
+      .where("org_id", "=", ctx.orgId)
+      .where("email_id", "in", emailIds.slice(i, i + 500))
+      .orderBy("email_id")
+      .orderBy("created_at", "desc")
+      .orderBy("id", "desc")
+      .execute();
+    for (const row of rows) {
+      out.set(row.email_id, {
+        verdict: verdictSchema.parse(row.verdict),
+        true_category: row.true_category === null ? null : categorySchema.parse(row.true_category),
+        source: feedbackSourceSchema.parse(row.source),
+        created_at: row.created_at,
+      });
+    }
+  }
+  return out;
 }
