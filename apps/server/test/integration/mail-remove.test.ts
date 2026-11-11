@@ -310,6 +310,29 @@ describe("removeMailbox", () => {
     expect(allZero(await counts(s.orgId, s.ids, { exceptEvents: ["mailbox.removed"] }))).toBe(true);
   });
 
+  test("two removals that both pass the lookup: the second gets not found from the delete", async () => {
+    const s = await setup();
+    const input = { userId: s.userId, confirmAddress: await addressOf(s.mailboxId), now };
+    const gate = Promise.withResolvers<undefined>();
+    const lockTaken = Promise.withResolvers<undefined>();
+    const holder = db.transaction().execute(async (trx) => {
+      await sql`SELECT id FROM mailboxes WHERE id = ${s.mailboxId} FOR UPDATE`.execute(trx);
+      lockTaken.resolve(undefined);
+      await gate.promise;
+    });
+    await lockTaken.promise;
+
+    // The lookup is a plain read, so both calls pass it. The pause update then waits for the row lock.
+    const removals = [removeMailbox(deps, s.ctx, s.mailboxId, input), removeMailbox(deps, s.ctx, s.mailboxId, input)];
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    gate.resolve(undefined);
+    await holder;
+    const results = await Promise.all(removals);
+
+    expect(results.map((result) => result.kind).sort()).toEqual(["not_found", "removed"]);
+    expect((await auditRows(s.orgId, "mailbox.removed")).length).toBe(1);
+  });
+
   test("two removals at once: one removed, one not found, one audit row", async () => {
     const s = await setup();
     const input = { userId: s.userId, confirmAddress: await addressOf(s.mailboxId), now };

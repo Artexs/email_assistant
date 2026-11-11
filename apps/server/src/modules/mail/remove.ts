@@ -60,7 +60,15 @@ export async function removeMailbox(
     }
   } catch (error) {
     if (codeOf(error) === NOT_FOUND_CODE) return { kind: "not_found" };
-    if (paused) await changeMailboxStatus(db, ctx, mailboxId, { from: "paused", to: "active", at: now });
+    if (paused) {
+      try {
+        await changeMailboxStatus(db, ctx, mailboxId, { from: "paused", to: "active", at: now });
+      } catch (restoreError) {
+        log.error(
+          `mailbox ${mailboxId} status restore failed: ${restoreError instanceof Error ? restoreError.message : "unknown error"}`
+        );
+      }
+    }
     throw error;
   }
   log.info(`mailbox ${mailboxId} removed by user ${input.userId}`);
