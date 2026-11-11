@@ -31,21 +31,27 @@ import { useResource } from "../lib/use-resource";
 interface MailboxSettingsProps {
   mailbox: MailboxView;
   isOwner: boolean;
+  listLoading: boolean;
   reloadMailboxes(): void;
   reloadMe(): void;
 }
 
-function MailboxSettings({ mailbox, isOwner, reloadMailboxes, reloadMe }: MailboxSettingsProps) {
+function MailboxSettings({ mailbox, isOwner, listLoading, reloadMailboxes, reloadMe }: MailboxSettingsProps) {
   const { data, error, loading, reload, mutate } = useResource(() => api(settingsPath(mailbox.id), settingsViewSchema));
 
   // A 404 on the settings means the mailbox is gone (removed in another tab): the list decides what is selected.
   const missing = error instanceof ApiError && error.status === 404;
+  const [asked, setAsked] = useState(false);
   useEffect(() => {
-    if (missing) reloadMailboxes();
-  }, [missing, reloadMailboxes]);
+    if (!missing || asked) return;
+    setAsked(true);
+    reloadMailboxes();
+  }, [missing, asked, reloadMailboxes]);
+  // The list reload is done and still holds this mailbox: show the error, not a skeleton for ever.
+  const waitingForList = missing && (!asked || listLoading);
 
   if (data === null) {
-    return error === null || loading || missing ? (
+    return error === null || loading || waitingForList ? (
       <div aria-busy="true" className="flex flex-col gap-3">
         <Skeleton className="h-40 w-full" />
         <Skeleton className="h-40 w-full" />
@@ -126,11 +132,14 @@ function Settings() {
   const { data, error, loading, reload } = useResource(() => api("/api/mailboxes", mailboxListSchema));
   const isOwner = me?.role === "owner";
 
-  // After each list load the selection must be a listed id (the first load reads `?mailbox=`).
+  // The selection is derived in render, so no frame shows "no mailbox" for a listed one (the first load reads `?mailbox=`).
+  const current =
+    data === null ? null : selectedMailboxId(data, selected ?? new URLSearchParams(location.search).get("mailbox"));
+
+  // Sync the state and the URL with the derived selection.
   useEffect(() => {
     if (data === null) return;
-    const query = selected === null ? new URLSearchParams(location.search).get("mailbox") : selected;
-    const next = selectedMailboxId(data, query);
+    const next = current;
     if (next === selected) return;
     setSelected(next);
     const params = new URLSearchParams(location.search);
@@ -138,7 +147,7 @@ function Settings() {
     else params.set("mailbox", next);
     const search = params.toString();
     history.replaceState(null, "", `${location.pathname}${search === "" ? "" : `?${search}`}${location.hash}`);
-  }, [data, selected]);
+  }, [data, current, selected]);
 
   if (me === null) return null;
 
@@ -149,7 +158,7 @@ function Settings() {
     history.replaceState(null, "", `${location.pathname}?${params.toString()}${location.hash}`);
   };
 
-  const mailbox = data?.find((item) => item.id === selected) ?? null;
+  const mailbox = data?.find((item) => item.id === current) ?? null;
 
   let content;
   if (data === null) {
@@ -187,6 +196,7 @@ function Settings() {
           key={mailbox.id}
           mailbox={mailbox}
           isOwner={isOwner}
+          listLoading={loading}
           reloadMailboxes={reload}
           reloadMe={reloadMe}
         />
