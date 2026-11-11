@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — stages 1-14 built (stages 1-13 PASS, stage 9 after a fix).** 15 stage files, B1–B17, 26 review findings fixed. Left: stages 1–15 with `run-task` (worktree `task/s5b-web-mailboxes-onboarding`), starting with user step 0. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5b-build.md`.
+> **Status 2026-11-11 — in progress — stages 1–14 PASS, 15.1 done; left: group review fixes, checkpoint, merge.** 15 stage files, B1–B17, 26 review findings fixed. Worktree `task/s5b-web-mailboxes-onboarding`. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5b-build.md`.
 
 # S5b Web: mailboxes and onboarding
 

@@ -89,12 +89,8 @@ export function createTelegramRuntime(deps: TelegramRuntimeDeps): TelegramRuntim
   );
   const sender = createOutboxSender({ db, channel: createTelegramChannel(bot.api), now });
   let polling: Polling | undefined;
-  const botUsername = cacheOnSuccess(() =>
-    withTimeout(
-      bot.api.getMe().then((me) => me.username),
-      BOT_USERNAME_TIMEOUT_MS
-    )
-  );
+  const loadBotUsername = cacheOnSuccess(() => bot.api.getMe().then((me) => me.username));
+  const botUsername = () => withTimeout(loadBotUsername(), BOT_USERNAME_TIMEOUT_MS);
 
   return {
     async notify() {

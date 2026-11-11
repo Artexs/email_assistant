@@ -29,7 +29,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `web: telegram getMe failed: <label>`
 
 - **First seen:** 2026-11-11 (S5b)
-- **Source:** `apps/server/src/modules/channels/routes.ts`. Warning. `GET /api/channels/telegram` and `POST /api/channels/telegram/link` call `botUsername()`.
+- **Source:** `apps/server/src/modules/channels/routes.ts`. Warning. Only `POST /api/channels/telegram/link` logs it. `GET /api/channels/telegram` and `/api/me` swallow the failure (`.catch(() => null)`). A `getMe` outage shows in the log only when someone clicks "Link Telegram".
 - **Cause:** the Telegram API is not reachable (network, wrong `TELEGRAM_API_ROOT`, bad token) or the 3 s limit ran out. The label is `telegramErrorLabel`.
 - **Fix:** check the network and the bot token. The link route then answers 502 `telegram_unreachable` and writes no token row. `/api/me` shows `botUsername: null`.
 - **Status:** investigating (per case)
