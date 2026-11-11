@@ -159,6 +159,7 @@ export default tseslint.config(
       "apps/web/src/components/onboarding/**/*.tsx",
       "apps/web/src/components/settings/**/*.tsx",
       "apps/web/src/components/rules/**/*.tsx",
+      "apps/web/src/components/activity/**/*.tsx",
     ],
     rules: {
       "react/jsx-no-literals": ["error", { noStrings: true, ignoreProps: true, allowedStrings: ["·", "—", "/"] }],

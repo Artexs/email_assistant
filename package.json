@@ -12,7 +12,7 @@
     "typecheck": "bun run --filter '*' typecheck",
     "dev": "bun --watch apps/server/src/main.ts",
     "start": "bun apps/server/src/main.ts",
-    "test:unit": "bun test packages/core apps/server/src tools/fake-telegram/src apps/web/src/lib apps/web/integrations",
+    "test:unit": "bun test packages/core apps/server/src tools/fake-telegram/src apps/web/src/lib apps/web/src/i18n apps/web/integrations",
     "test:int": "bun test apps/server/test tools/fake-telegram/test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
