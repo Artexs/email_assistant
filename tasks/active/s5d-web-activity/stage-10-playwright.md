@@ -6,7 +6,7 @@ Part of [`../s5d-web-activity.md`](../s5d-web-activity.md). Read that file's "Do
 
 Two steps. Read `notes/2026-11-11-web-settings-rules-facts.md` § "The e2e members" and `notes/2026-11-11-web-mailboxes-facts.md` (the e2e setup) first.
 
-- [ ] **10.1 The second organization in the seed, the activity rows script (B12)**
+- [x] **10.1 The second organization in the seed, the activity rows script (B12)**
   - Goal: the e2e run has a mail of another organization, and a spec can fill its own connected mailbox with activity rows.
   - Files: change `apps/server/src/scripts/e2e-seed-args.ts`, `e2e-seed.ts`, `apps/server/test/integration/e2e-seed.test.ts` (only if a case reads `SeedFile`); create `apps/server/src/scripts/e2e-activity-rows.ts`, `apps/server/src/scripts/e2e-activity.ts`, `apps/server/test/integration/e2e-activity.test.ts`.
   - Interfaces:
@@ -68,7 +68,7 @@ Two steps. Read `notes/2026-11-11-web-settings-rules-facts.md` § "The e2e membe
   - Done when: the tests pass.
   - Out of scope: the spec (10.2).
 
-- [ ] **10.2 `activity.spec.ts` (B14)**
+- [x] **10.2 `activity.spec.ts` (B14)**
   - Goal: the S5d done-when holds in the browser, in both projects.
   - Files: create `apps/web/e2e/tests/activity.spec.ts`; change `apps/web/e2e/helpers.ts` (one helper).
   - Interfaces:
