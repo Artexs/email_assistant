@@ -1,6 +1,9 @@
 import {
-  categoryLabels,
+  UNDO_TEXTS as SHARED_UNDO_TEXTS,
   categoryTag,
+  pickAnswer,
+  pickedText,
+  rightAnswer,
   cleanSubject,
   encodeCallback,
   isFeedbackCallback,
@@ -53,13 +56,7 @@ export interface CallbackDeps {
   sendScope: SendScope;
 }
 
-export const UNDO_TEXTS: Record<Exclude<UndoResult["kind"], "not_found">, string> = {
-  started: "↩️ Undo started: the mail goes back within a minute.",
-  already: "Undo was already requested for this mail.",
-  nothing: "Nothing to undo.",
-  too_old: "Too old to undo (7 days).",
-  held: "Undo is not possible now: mailbox changes are off or the mailbox is paused.",
-};
+export const UNDO_TEXTS: Record<Exclude<UndoResult["kind"], "not_found">, string> = SHARED_UNDO_TEXTS;
 
 export const APPROVAL_TEXTS = {
   owner_only: "Only an owner can approve or reject a send.",
@@ -99,8 +96,6 @@ export const APPROVAL_TEXTS = {
 };
 
 const NOT_FOUND_TEXT = APPROVAL_TEXTS.not_found;
-
-const label = (category: Category): string => categoryLabels[category].name;
 
 export function pickerMessage(emailId: string, subject: string | null, current: Category): OutMessage {
   const pick = (category: (typeof labelCategories)[number]) => ({
@@ -166,11 +161,11 @@ export async function handleCallback(deps: CallbackDeps, link: LinkedChat, data:
     skipIfSame: true,
   });
   if (callback.kind === "right") {
-    return { answer: saved.saved ? `✅ Saved: ${label(callback.category)} is right.` : "Already saved." };
+    return { answer: rightAnswer(saved.saved, callback.category) };
   }
   return {
-    answer: saved.saved ? "Saved." : "Already saved.",
-    edit: { text: `✏️ Saved: ${label(callback.category)} (AI said ${label(target.category)}).`, buttons: [] },
+    answer: pickAnswer(saved.saved),
+    edit: { text: pickedText(callback.category, target.category), buttons: [] },
   };
 }
 

@@ -6,7 +6,7 @@ Part of [`../s5d-web-activity.md`](../s5d-web-activity.md). Read that file's "Do
 
 Two steps. Pure code in `packages/core` plus one import change in `channels/callbacks.ts`. No behaviour of the server changes.
 
-- [ ] **1.1 `packages/core/src/web/activity.ts` (B1)**
+- [x] **1.1 `packages/core/src/web/activity.ts` (B1)**
   - Goal: one contract for the activity read model and the two write bodies, shared by the server and the browser.
   - Files: create `packages/core/src/web/activity.ts`, `packages/core/src/web/activity.test.ts`; change `packages/core/src/web/index.ts` (add `export * from "./activity";`).
   - Interfaces:
@@ -55,7 +55,7 @@ Two steps. Pure code in `packages/core` plus one import change in `channels/call
   - Done when: the tests pass; `@ea/core/web` exports the names above.
   - Out of scope: the server use (stages 4–6).
 
-- [ ] **1.2 `packages/core/src/digest/answers.ts`, `describeAction`, `callbacks.ts` reads the words (B2, B3)**
+- [x] **1.2 `packages/core/src/digest/answers.ts`, `describeAction`, `callbacks.ts` reads the words (B2, B3)**
   - Goal: one source of the Telegram answer words for both channels, and a phrase per action for the panel.
   - Files: create `packages/core/src/digest/answers.ts`, `answers.test.ts`; change `packages/core/src/digest/index.ts` (`export * from "./answers";`), `packages/core/src/digest/would-do.ts`, `would-do.test.ts`, `packages/core/src/web/index.ts` (re-export for the browser: `export { UNDO_TEXTS, rightAnswer, pickedText, pickAnswer, type UndoAnswerKind } from "../digest/answers"; export { categoryLabels, categoryTag } from "../digest/labels"; export { isLabelCategory, labelCategories, type LabelCategory } from "../digest/callback";`: both files import only a type from `../triage/categories`; the same symbol exported by `./digest` and `./web` through `packages/core/src/index.ts` is accepted by TypeScript, as `formatClock` is today), `apps/server/src/modules/channels/callbacks.ts`.
   - Interfaces:
