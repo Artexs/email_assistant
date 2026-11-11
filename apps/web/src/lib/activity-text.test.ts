@@ -4,6 +4,7 @@ import {
   categoryLabels,
   categoryTag,
   labelCategories,
+  pickAnswer,
   pickedText,
   rightAnswer,
   UNDO_TEXTS,
@@ -52,6 +53,10 @@ describe("words tied to the Telegram source (U6)", () => {
         );
       }
     }
+    // Not saved: the same words as the Telegram pick answer.
+    expect(feedbackToast("pick", { saved: false, verdict: "wrong", aiCategory: "info" }, "urgent")).toBe(
+      pickAnswer(false)
+    );
   });
 });
 
