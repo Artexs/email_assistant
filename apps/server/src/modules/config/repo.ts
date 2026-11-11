@@ -114,6 +114,16 @@ export async function listSenderRules(db: DbOrTrx, ctx: TenantContext, mailboxId
   return rows.map((row) => ({ pattern: row.pattern, kind: senderRuleKindSchema.parse(row.kind) }));
 }
 
+// Every rule of the organization: org-wide and per mailbox.
+export async function countSenderRules(db: DbOrTrx, ctx: TenantContext): Promise<number> {
+  const row = await db
+    .selectFrom("sender_rules")
+    .select((eb) => eb.fn.countAll<string>().as("count"))
+    .where("org_id", "=", ctx.orgId)
+    .executeTakeFirstOrThrow();
+  return Number(row.count);
+}
+
 // Returns false when the same rule exists (unique key with NULLS NOT DISTINCT).
 export async function insertSenderRule(
   db: DbOrTrx,

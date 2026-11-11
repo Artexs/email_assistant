@@ -5,26 +5,27 @@ import { hashPassword } from "better-auth/crypto";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { insertMailbox, setMailboxStatus } from "../../src/modules/mail/repo";
-import { createOrganizationWithOwner, listMembershipsOfUser, tenancyRoutes } from "../../src/modules/tenancy";
-import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
+import { tenancyRoutes } from "../../src/modules/tenancy";
+import { insertUser } from "../../src/modules/tenancy/repo";
 import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
-import { buildTrustedProxies, createApp, type WebDeps } from "../../src/platform/http";
-import { countMailboxes, webDeps } from "../../src/web";
+import { createApp } from "../../src/platform/http";
+import { countMailboxes, onboardingDeps, webDeps } from "../../src/web";
 
 import { testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
+import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
 const db = testDb();
 const off = { kind: "off", reason: "env_off" } as const;
 
-const orgIds: string[] = [];
+const orgs: WebOrg[] = [];
 const userIds: string[] = [];
 
 afterEach(async () => {
-  for (const orgId of orgIds) await db.deleteFrom("organizations").where("id", "=", orgId).execute();
+  for (const org of orgs) await org.cleanup();
   if (userIds.length > 0) await db.deleteFrom("users").where("id", "in", userIds).execute();
-  orgIds.length = 0;
+  orgs.length = 0;
   userIds.length = 0;
 });
 
@@ -33,25 +34,13 @@ afterAll(async () => {
 });
 
 async function setup() {
-  const ownerEmail = `web-me-${randomUUID()}@x.test`;
-  const { orgId, userId: ownerId } = await createOrganizationWithOwner(db, {
-    orgName: "Web me",
-    timezone: "Europe/Warsaw",
-    email: ownerEmail.toUpperCase(),
-    displayName: "Owner",
-  });
-  orgIds.push(orgId);
-  userIds.push(ownerId);
-  const { id: assistantId } = await insertUser(db, {
-    email: `web-me-a-${randomUUID()}@x.test`,
-    displayName: "Assistant",
-  });
-  userIds.push(assistantId);
-  await insertMembership(db, { orgId }, { userId: assistantId, role: "assistant" });
+  const org = await webOrg(db);
+  orgs.push(org);
+  const owner = await db.selectFrom("users").select("email").where("id", "=", org.ownerId).executeTakeFirstOrThrow();
   const { id: nobodyId } = await insertUser(db, { email: `web-me-n-${randomUUID()}@x.test`, displayName: "Nobody" });
   userIds.push(nobodyId);
 
-  const ctx = { orgId };
+  const ctx = { orgId: org.orgId };
   const mailboxIds = [randomUUID(), randomUUID()];
   for (const [i, id] of mailboxIds.entries()) {
     await insertMailbox(db, ctx, {
@@ -66,41 +55,26 @@ async function setup() {
     });
   }
   await setMailboxStatus(db, ctx, mailboxIds[0] as string, "auth_error");
-  return { ownerEmail: ownerEmail.toLowerCase(), orgId, ownerId, assistantId, nobodyId };
+  return { ownerEmail: owner.email, orgId: org.orgId, ownerId: org.ownerId, assistantId: org.assistantId, nobodyId };
 }
 
 function appFor(ids: { ownerId: string; assistantId: string; nobodyId: string }) {
-  const sessions: Record<string, string> = {
-    "good-owner": ids.ownerId,
-    "good-assistant": ids.assistantId,
-    "good-nobody": ids.nobodyId,
-  };
-  const web: WebDeps = {
-    auth: {
-      handler: async () => new Response(),
-      getSession: async (headers) => {
-        const userId = sessions[headers.get("cookie")?.replace("ea.session_token=", "") ?? ""];
-        return userId ? { userId } : null;
-      },
-    },
+  return webTestApp({
     db,
-    now: () => new Date(),
-    dist: "/nonexistent/dist",
-    baseUrl: new URL("http://127.0.0.1:8080"),
-    trustedOrigins: new Set(["http://127.0.0.1:8080"]),
-    trustedProxies: buildTrustedProxies([]),
-    connInfo: () => undefined,
-    listMembershipsOfUser: (userId) => listMembershipsOfUser(db, userId),
+    sessions: { "good-owner": ids.ownerId, "good-assistant": ids.assistantId, "good-nobody": ids.nobodyId },
     routers: (api) =>
       api.route(
         "/",
-        tenancyRoutes({ db, scopes: { triage: off, actions: off, send: off }, countMailboxes: countMailboxes(db) })
+        tenancyRoutes({
+          db,
+          now: () => new Date(),
+          scopes: { triage: off, actions: off, send: off },
+          countMailboxes: countMailboxes(db),
+          ...onboardingDeps(db, async () => "fake_ea_bot"),
+        })
       ),
-  };
-  return createApp({ checkDb: async () => true, web });
+  });
 }
-
-const as = (cookie: string) => ({ headers: { cookie: `ea.session_token=${cookie}` } });
 
 describe("GET /api/me", () => {
   test("returns the owner's shape with the real counts", async () => {
@@ -110,12 +84,19 @@ describe("GET /api/me", () => {
     const me = meSchema.parse(await res.json());
     expect(me.role).toBe("owner");
     expect(me.user).toEqual({ id: ids.ownerId, email: ids.ownerEmail, displayName: "Owner" });
-    expect(me.organization).toEqual({ id: ids.orgId, name: "Web me", timezone: "Europe/Warsaw" });
+    expect(me.organization).toEqual({ id: ids.orgId, name: "Web org", timezone: "Europe/Warsaw" });
     expect(me.mailboxCount).toBe(2);
     expect(me.mailboxesInAuthError).toBe(1);
     expect(me.scopes.triage).toEqual({ kind: "off", reason: "env_off" });
-    expect(me.telegram).toBeNull();
-    expect(me.onboarding).toBeNull();
+    expect(me.telegram).toEqual({ available: true, linked: false, botUsername: "fake_ea_bot" });
+    expect(me.onboarding).toEqual({
+      mailbox: true,
+      telegram: false,
+      telegramAvailable: true,
+      mode: false,
+      rules: 0,
+      done: false,
+    });
   });
 
   test("returns role assistant for an assistant", async () => {

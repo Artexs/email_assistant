@@ -11,7 +11,7 @@ import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
 import { buildTrustedProxies, createApp, parseBody, type WebDeps } from "../../src/platform/http";
 import { setLogLevel } from "../../src/platform/log";
-import { webDeps } from "../../src/web";
+import { onboardingDeps, webDeps } from "../../src/web";
 
 import { testDb } from "./helpers";
 
@@ -115,6 +115,29 @@ describe("page gate", () => {
     expect((await app.request("/login?next=x")).status).toBe(200);
   });
 
+  test("sends the root to the path that homePath gives", async () => {
+    const done = await appWith({ homePath: async () => "/activity" }).request("/", { headers: GOOD });
+    expect(done.status).toBe(302);
+    expect(done.headers.get("location")).toBe("/activity");
+  });
+
+  test("sends the root to /onboarding and warns when homePath throws", async () => {
+    const warnSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    try {
+      const app = appWith({
+        homePath: async () => {
+          throw new Error("db down");
+        },
+      });
+      const root = await app.request("/", { headers: GOOD });
+      expect(root.status).toBe(302);
+      expect(root.headers.get("location")).toBe("/onboarding");
+      expect(warnSpy.mock.calls.flat().join(" ")).toContain("web: home path failed: ");
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
   test("serves pages to a visitor with a session", async () => {
     const app = appWith();
     const post = await app.request("/mailboxes", { method: "POST", headers: GOOD });
@@ -163,8 +186,10 @@ describe("api", () => {
             "/",
             tenancyRoutes({
               db,
+              now: () => new Date(),
               scopes: { triage: offScope, actions: offScope, send: offScope },
               countMailboxes: async () => ({ total: 0, inAuthError: 0 }),
+              ...onboardingDeps(db, null),
             })
           ),
       });

@@ -13,6 +13,8 @@ export interface WebTestOptions {
   db: Db;
   sessions: Record<string, string>; // cookie value -> user id
   routers: WebDeps["routers"];
+  dist?: string; // default: a folder that does not exist
+  homePath?: WebDeps["homePath"];
 }
 
 export function webTestApp(opts: WebTestOptions): Hono<ApiEnv> {
@@ -27,12 +29,13 @@ export function webTestApp(opts: WebTestOptions): Hono<ApiEnv> {
     },
     db,
     now: () => new Date(),
-    dist: "/nonexistent/dist",
+    dist: opts.dist ?? "/nonexistent/dist",
     baseUrl: new URL(TEST_ORIGIN),
     trustedOrigins: new Set([TEST_ORIGIN]),
     trustedProxies: buildTrustedProxies([]),
     connInfo: () => undefined,
     listMembershipsOfUser: (userId) => listMembershipsOfUser(db, userId),
+    ...(opts.homePath ? { homePath: opts.homePath } : {}),
     routers: opts.routers,
   };
   return createApp({ checkDb: async () => true, web });

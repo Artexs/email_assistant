@@ -1,5 +1,6 @@
 import { membershipRoleSchema } from "../tenancy";
 
+import { onboardingSchema } from "./onboarding";
 import { z } from "./zod";
 
 export const scopeKinds = ["off", "synthetic", "self", "all"] as const;
@@ -23,8 +24,8 @@ export const meSchema = z.object({
   user: z.object({ id: z.uuid(), email: z.string(), displayName: z.string() }),
   organization: z.object({ id: z.uuid(), name: z.string(), timezone: z.string() }),
   role: membershipRoleSchema,
-  telegram: z.null(), // S5b: z.object({ linked, botUsername }).nullable()
-  onboarding: z.null(), // S5b: the D15 object, nullable
+  telegram: z.object({ available: z.boolean(), linked: z.boolean(), botUsername: z.string().nullable() }),
+  onboarding: onboardingSchema,
   scopes: z.object({ triage: scopeInfoSchema, actions: scopeInfoSchema, send: scopeInfoSchema }),
   mailboxCount: z.number().int().min(0),
   mailboxesInAuthError: z.number().int().min(0),

@@ -20,6 +20,7 @@ export const auditEvents = {
   mailboxResumed: "mailbox.resumed",
   mailboxPasswordChanged: "mailbox.password_changed",
   mailboxRemoved: "mailbox.removed", // data: mailbox_id
+  onboardingModeKept: "onboarding.mode_kept", // data: via
   actionApplied: "action.applied",
   actionFailed: "action.failed",
   actionUndone: "action.undone",
@@ -77,6 +78,29 @@ export async function recordAudit(db: DbOrTrx, ctx: TenantContext, event: AuditE
       ...(event.at ? { created_at: event.at } : {}),
     })
     .execute();
+}
+
+// True when the organization has a row of any of these events.
+export async function hasAuditEvent(db: DbOrTrx, ctx: TenantContext, events: readonly string[]): Promise<boolean> {
+  const row = await db
+    .selectFrom("audit_log")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where("event", "in", [...events])
+    .limit(1)
+    .executeTakeFirst();
+  return row !== undefined;
+}
+
+// One row per organization and event: true when this call wrote it.
+export async function recordAuditOnce(db: DbOrTrx, ctx: TenantContext, event: AuditEvent): Promise<boolean> {
+  const result = await sql`
+    INSERT INTO audit_log (org_id, email_id, action_id, actor, event, reason_code, data, created_at)
+    SELECT ${ctx.orgId}, ${event.emailId ?? null}, ${event.actionId ?? null}, ${event.actor}, ${event.event},
+      ${event.reasonCode ?? null}, ${JSON.stringify(event.data ?? {})}::jsonb, ${event.at ?? sql`now()`}
+    WHERE NOT EXISTS (SELECT 1 FROM audit_log WHERE org_id = ${ctx.orgId} AND event = ${event.event})
+  `.execute(db);
+  return (result.numAffectedRows ?? 0n) > 0n;
 }
 
 // One `llm.call` row per LLM call attempt; the mailbox id is in `data`, so no join to `emails`.

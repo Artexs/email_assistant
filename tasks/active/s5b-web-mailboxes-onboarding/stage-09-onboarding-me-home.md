@@ -6,7 +6,7 @@ Part of [`../s5b-web-mailboxes-onboarding.md`](../s5b-web-mailboxes-onboarding.m
 
 One step. It changes the S5a contract (`telegram` and `onboarding` are objects now) and the page gate.
 
-- [ ] **9.1 D15 end to end on the server, the shell rule (B13)**
+- [x] **9.1 D15 end to end on the server, the shell rule (B13)**
   - Goal: `/api/me` carries the onboarding state and the Telegram state; the owner can keep shadow mode once; `/` goes to `/onboarding` while open and to `/activity` when done.
   - Files: change `packages/core/src/web/me.ts`, `me.test.ts`, `modules/audit/repo.ts` (`onboardingModeKept`, `hasAuditEvent`, `recordAuditOnce`), `modules/audit/index.ts`, `modules/config/repo.ts` + `index.ts` (`countSenderRules`), `modules/tenancy/routes.ts`, `apps/server/src/web.ts`, `apps/server/src/platform/http.ts` (`WebDeps.homePath`, the `/` rule), `apps/web/src/components/shell/AppShell.tsx` (the S5b note goes), `apps/server/test/integration/web-me.test.ts` (moves to `web-helpers.ts`), `web-helpers.ts` (`homePath` and `dist` options, B17), `web-http.test.ts` (the `/` cases); create `apps/server/test/integration/web-onboarding.test.ts`.
   - Interfaces:

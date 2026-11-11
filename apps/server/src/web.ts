@@ -1,17 +1,18 @@
 import { resolve } from "node:path";
 
-import { scopeInfoOf, type ScopeEnv } from "@ea/core";
+import { onboardingOf, scopeInfoOf, type ScopeEnv } from "@ea/core";
 import { getConnInfo } from "@hono/bun";
 import type { Context } from "hono";
 
-import { auditEvents, recordAudit } from "./modules/audit";
-import { channelRoutes, queueMailboxRemovedNotices } from "./modules/channels";
+import { auditEvents, hasAuditEvent, recordAudit, recordAuditOnce } from "./modules/audit";
+import { channelRoutes, getChatLinkForUser, queueMailboxRemovedNotices } from "./modules/channels";
+import { countSenderRules } from "./modules/config";
 import { listMailboxes, mailRoutes, openImapProvider, verifySmtpLogin, WEB_MAIL_TIMEOUTS } from "./modules/mail";
 import { listMembershipsOfUser, tenancyRoutes, type TenancyRouteDeps } from "./modules/tenancy";
 import { createAuth, type AuthDeps, type AuthEventKind } from "./platform/auth";
 import { webMailAllowLocal, webTrustedOrigins, webTrustedProxies, type Config } from "./platform/config";
 import type { SecretBox } from "./platform/crypto";
-import type { Db } from "./platform/db";
+import type { Db, TenantContext } from "./platform/db";
 import { describeError } from "./platform/errors";
 import { buildTrustedProxies, type WebDeps, type WebSession } from "./platform/http";
 import { createLog } from "./platform/log";
@@ -70,6 +71,52 @@ export function countMailboxes(db: Db): TenancyRouteDeps["countMailboxes"] {
   return async (ctx) => {
     const rows = await listMailboxes(db, ctx);
     return { total: rows.length, inAuthError: rows.filter((row) => row.status === "auth_error").length };
+  };
+}
+
+// D15: the Telegram item is per user, the others per organization.
+export function onboardingDeps(
+  db: Db,
+  botUsername: (() => Promise<string>) | null
+): Pick<TenancyRouteDeps, "onboarding" | "telegram" | "keepMode"> {
+  const linked = async (ctx: TenantContext, userId: string) =>
+    (await getChatLinkForUser(db, ctx, userId)) !== undefined;
+  return {
+    onboarding: async (ctx, userId) =>
+      onboardingOf({
+        mailboxCount: (await listMailboxes(db, ctx)).length,
+        telegramLinked: await linked(ctx, userId),
+        telegramAvailable: botUsername !== null,
+        modeChosen: await hasAuditEvent(db, ctx, [auditEvents.mailboxModeChanged, auditEvents.onboardingModeKept]),
+        ruleCount: await countSenderRules(db, ctx),
+      }),
+    telegram: async (ctx, userId) => ({
+      available: botUsername !== null,
+      linked: await linked(ctx, userId),
+      botUsername: botUsername ? await botUsername().catch(() => null) : null,
+    }),
+    keepMode: async (ctx, userId, now) => {
+      await recordAuditOnce(db, ctx, {
+        actor: userId,
+        event: auditEvents.onboardingModeKept,
+        data: { via: "web" },
+        at: now,
+      });
+    },
+  };
+}
+
+// `botUsername` only tells whether Telegram is on: a server without a bot never blocks `done` (B2).
+export function homePathOf(
+  db: Db,
+  botUsername: (() => Promise<string>) | null = null
+): NonNullable<WebDeps["homePath"]> {
+  return async (userId) => {
+    const [membership] = await listMembershipsOfUser(db, userId);
+    if (!membership) return "/onboarding";
+    const ctx = { orgId: membership.org_id };
+    const state = await onboardingDeps(db, botUsername).onboarding(ctx, userId);
+    return state.done ? "/activity" : "/onboarding";
   };
 }
 
@@ -132,8 +179,18 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     trustedProxies: buildTrustedProxies(webTrustedProxies(config)),
     connInfo: peerAddress,
     listMembershipsOfUser: (userId) => listMembershipsOfUser(db, userId),
+    homePath: homePathOf(db, extras.botUsername),
     routers: (api) => {
-      api.route("/", tenancyRoutes({ db, scopes, countMailboxes: countMailboxes(db) }));
+      api.route(
+        "/",
+        tenancyRoutes({
+          db,
+          now,
+          scopes,
+          countMailboxes: countMailboxes(db),
+          ...onboardingDeps(db, extras.botUsername),
+        })
+      );
       api.route(
         "/",
         mailRoutes({

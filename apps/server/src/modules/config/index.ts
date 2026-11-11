@@ -1,4 +1,5 @@
 export {
+  countSenderRules,
   getMailboxSettings,
   getMovesSupported,
   insertDefaultSettings,
