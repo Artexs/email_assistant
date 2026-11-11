@@ -96,7 +96,7 @@ async function json(res: Response): Promise<Record<string, any>> {
   return res.json();
 }
 
-const post = (who: string, path: string, body: unknown) => as(who, { method: "POST", body });
+const post = (who: string, body: unknown) => as(who, { method: "POST", body });
 
 async function feedbackRows(emailId: string) {
   return db
@@ -141,13 +141,13 @@ describe("matrix on both routes", () => {
       expect((await json(noOrigin)).error).toBe("bad_origin");
 
       for (const body of [{}, { emailId: "nope", trueCategory: "info" }]) {
-        const res = await app.request(path, post("owner", path, body));
+        const res = await app.request(path, post("owner", body));
         expect(res.status).toBe(400);
         expect((await json(res)).error).toBe("validation");
       }
 
       const secret = "SECRET-VALUE-123";
-      const sent = await app.request(path, post("owner", path, { emailId: secret, trueCategory: secret }));
+      const sent = await app.request(path, post("owner", { emailId: secret, trueCategory: secret }));
       expect(sent.status).toBe(400);
       expect(JSON.stringify(await json(sent))).not.toContain(secret);
 
@@ -169,7 +169,7 @@ describe("matrix on both routes", () => {
     const app = appWith(org);
     const emailId = await addMail(org.orgId, mine);
     for (const trueCategory of ["unsure", "delegation"]) {
-      const res = await app.request("/api/feedback", post("owner", "", { emailId, trueCategory }));
+      const res = await app.request("/api/feedback", post("owner", { emailId, trueCategory }));
       expect(res.status).toBe(400);
     }
     expect(await feedbackRows(emailId)).toHaveLength(0);
@@ -182,10 +182,10 @@ describe("another organization and unknown ids", () => {
     const app = appWith(org);
     const foreign = await addMail(org.otherOrgId, theirs);
     for (const emailId of [foreign, randomUUID()]) {
-      const fb = await app.request("/api/feedback", post("owner", "", { emailId, trueCategory: "info" }));
+      const fb = await app.request("/api/feedback", post("owner", { emailId, trueCategory: "info" }));
       expect(fb.status).toBe(404);
       expect(await json(fb)).toEqual({ error: "not_found" });
-      const un = await app.request("/api/actions/undo", post("owner", "", { emailId }));
+      const un = await app.request("/api/actions/undo", post("owner", { emailId }));
       expect(un.status).toBe(404);
       expect(await json(un)).toEqual({ error: "not_found" });
     }
@@ -201,7 +201,7 @@ describe("POST /feedback", () => {
     const app = appWith(org);
     const emailId = await addMail(org.orgId, mine);
 
-    const first = await app.request("/api/feedback", post("owner", "", { emailId, trueCategory: "notification" }));
+    const first = await app.request("/api/feedback", post("owner", { emailId, trueCategory: "notification" }));
     expect(first.status).toBe(200);
     const firstBody = await json(first);
     expect(feedbackResultSchema.parse(firstBody)).toEqual({
@@ -210,11 +210,11 @@ describe("POST /feedback", () => {
       aiCategory: "notification",
     });
 
-    const again = await app.request("/api/feedback", post("owner", "", { emailId, trueCategory: "notification" }));
+    const again = await app.request("/api/feedback", post("owner", { emailId, trueCategory: "notification" }));
     const againBody = feedbackResultSchema.parse(await json(again));
     expect(againBody.saved).toBe(false);
 
-    const wrong = await app.request("/api/feedback", post("assistant", "", { emailId, trueCategory: "info" }));
+    const wrong = await app.request("/api/feedback", post("assistant", { emailId, trueCategory: "info" }));
     const wrongBody = feedbackResultSchema.parse(await json(wrong));
     expect(wrongBody).toMatchObject({ saved: true, verdict: "wrong", aiCategory: "notification" });
 
@@ -231,7 +231,7 @@ describe("POST /actions/undo", () => {
     const app = appWith(org);
     const emailId = await addMail(org.orgId, mine);
 
-    const res = await app.request("/api/actions/undo", post("assistant", "", { emailId }));
+    const res = await app.request("/api/actions/undo", post("assistant", { emailId }));
     expect(res.status).toBe(200);
     const body = await json(res);
     expect(undoResultSchema.parse(body)).toEqual({ kind: "started", created: 2 });
@@ -245,7 +245,7 @@ describe("POST /actions/undo", () => {
       user_id: org.assistantId,
     });
 
-    const again = await app.request("/api/actions/undo", post("assistant", "", { emailId }));
+    const again = await app.request("/api/actions/undo", post("assistant", { emailId }));
     expect(again.status).toBe(200);
     expect(undoResultSchema.parse(await json(again))).toEqual({ kind: "already" });
     expect(await feedbackRows(emailId)).toHaveLength(1);
@@ -255,10 +255,10 @@ describe("POST /actions/undo", () => {
     const { org, mine } = await setup();
     const app = appWith(org);
     const emailId = await addMail(org.orgId, mine);
-    const fb = await app.request("/api/feedback", post("owner", "", { emailId, trueCategory: "info" }));
+    const fb = await app.request("/api/feedback", post("owner", { emailId, trueCategory: "info" }));
     expect(fb.status).toBe(200);
 
-    const res = await app.request("/api/actions/undo", post("owner", "", { emailId }));
+    const res = await app.request("/api/actions/undo", post("owner", { emailId }));
     expect(undoResultSchema.parse(await json(res)).kind).toBe("started");
     const [latest] = await feedbackRows(emailId);
     expect(latest).toMatchObject({ source: "web", true_category: "info", verdict: "wrong" });
@@ -268,7 +268,7 @@ describe("POST /actions/undo", () => {
     const { org, mine } = await setup();
     const app = appWith(org, { kind: "off" });
     const emailId = await addMail(org.orgId, mine);
-    const res = await app.request("/api/actions/undo", post("owner", "", { emailId }));
+    const res = await app.request("/api/actions/undo", post("owner", { emailId }));
     expect(res.status).toBe(200);
     expect(undoResultSchema.parse(await json(res))).toEqual({ kind: "held" });
     expect(await reverseRows(org.orgId)).toHaveLength(0);
@@ -279,9 +279,9 @@ describe("POST /actions/undo", () => {
     const app = appWith(org);
     const old = await addMail(org.orgId, mine, "committed", 8 * DAY);
     const logged = await addMail(org.orgId, mine, "logged");
-    const a = await app.request("/api/actions/undo", post("owner", "", { emailId: old }));
+    const a = await app.request("/api/actions/undo", post("owner", { emailId: old }));
     expect(undoResultSchema.parse(await json(a))).toEqual({ kind: "too_old" });
-    const b = await app.request("/api/actions/undo", post("owner", "", { emailId: logged }));
+    const b = await app.request("/api/actions/undo", post("owner", { emailId: logged }));
     expect(undoResultSchema.parse(await json(b))).toEqual({ kind: "nothing" });
   });
 });

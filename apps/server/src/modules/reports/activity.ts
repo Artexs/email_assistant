@@ -48,8 +48,13 @@ export function decodeActivityCursor(text: string): ActivityCursor | null {
   if (!uuidSchema.safeParse(id).success) return null;
   if (!KEY_PATTERN.test(receivedAtKey)) return null;
   const date = new Date(receivedAtKey);
-  // JS rolls a date that does not exist over (02-30 becomes 03-02); Postgres refuses it.
-  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 19) !== receivedAtKey.slice(0, 19)) return null;
+  // JS rolls a date that does not exist over (02-30 becomes 03-02) and accepts year 0000; Postgres refuses both.
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getUTCFullYear() < 1 ||
+    date.toISOString().slice(0, 19) !== receivedAtKey.slice(0, 19)
+  )
+    return null;
   return { receivedAtKey, id };
 }
 

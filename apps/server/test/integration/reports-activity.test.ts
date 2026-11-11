@@ -376,5 +376,6 @@ describe("activity cursor", () => {
     expect(decodeActivityCursor(b64(`2026-13-45T10:00:00.000000Z|${cursor.id}`))).toBeNull();
     expect(decodeActivityCursor(b64(`2026-02-30T10:00:00.000000Z|${cursor.id}`))).toBeNull();
     expect(decodeActivityCursor(b64(`2026-02-29T10:00:00.000000Z|${cursor.id}`))).toBeNull();
+    expect(decodeActivityCursor(b64(`0000-01-01T00:00:00.000000Z|${cursor.id}`))).toBeNull();
   });
 });
