@@ -1,5 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { changePasswordFormSchema, digestTimesBodySchema, organizationPatchSchema, ruleBodySchema } from "@ea/core/web";
+import {
+  changePasswordFormSchema,
+  digestTimesBodySchema,
+  MAX_DIGEST_TIMES,
+  organizationPatchSchema,
+  ruleBodySchema,
+  STYLE_TEXT_MAX,
+} from "@ea/core/web";
 
 import { en, t } from "./en";
 
@@ -51,6 +58,13 @@ describe("keys for the messages of the core schemas", () => {
 
   test("t fills the variables", () => {
     expect(t("rules_delete", { pattern: "firma.pl" })).toBe("Delete the rule firma.pl");
-    expect(t("sig_counter", { count: 12 })).toBe("12 / 500");
+    expect(t("sig_counter", { count: 12, max: STYLE_TEXT_MAX })).toBe(`12 / ${STYLE_TEXT_MAX}`);
+    expect(t("digest_help", { timezone: "UTC", max: MAX_DIGEST_TIMES })).toContain(`Up to ${MAX_DIGEST_TIMES} times`);
+  });
+
+  // The core schemas emit these two as keys without variables, so their texts name the limit directly.
+  test("the texts of the limit messages carry the core constants", () => {
+    expect(t("times_too_many")).toContain(String(MAX_DIGEST_TIMES));
+    expect(t("style_too_long")).toContain(String(STYLE_TEXT_MAX));
   });
 });

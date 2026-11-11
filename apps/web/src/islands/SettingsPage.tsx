@@ -87,9 +87,9 @@ function GeneralSection({ isOwner }: { isOwner: boolean }) {
     api("/api/organization", organizationSettingsSchema)
   );
 
-  let content;
-  if (data === null || me === null) {
-    content =
+  let organizationCards;
+  if (data === null) {
+    organizationCards =
       error === null || loading ? (
         <div aria-busy="true" className="flex flex-col gap-3">
           <Skeleton className="h-40 w-full" />
@@ -107,12 +107,10 @@ function GeneralSection({ isOwner }: { isOwner: boolean }) {
       mutate({ ...data, ...view });
       reloadMe();
     };
-    content = (
+    organizationCards = (
       <>
-        <DigestTimesCard times={me.digestTimes} timeZone={me.organization.timezone} onSaved={reloadMe} />
         <SignatureCard organization={data} isOwner={isOwner} onSaved={saved} />
         <TimezoneCard organization={data} isOwner={isOwner} onSaved={saved} />
-        <AccountCard />
       </>
     );
   }
@@ -121,7 +119,9 @@ function GeneralSection({ isOwner }: { isOwner: boolean }) {
     <section className="flex flex-col gap-4">
       <h2 className="text-lg font-semibold">{t("set_section_general")}</h2>
       {!isOwner && <p className="text-sm text-muted-foreground">{t("set_owner_only")}</p>}
-      {content}
+      {me !== null && <DigestTimesCard times={me.digestTimes} timeZone={me.organization.timezone} onSaved={reloadMe} />}
+      {organizationCards}
+      <AccountCard />
     </section>
   );
 }

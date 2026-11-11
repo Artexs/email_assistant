@@ -257,7 +257,7 @@ export const en = {
   folder_on_toast: "{folder}: synced.",
   folder_off_toast: "{folder}: not synced.",
   digest_title: "Digest times (yours)",
-  digest_help: "When your Telegram digests come, in the organization timezone ({timezone}). Up to 6 times.",
+  digest_help: "When your Telegram digests come, in the organization timezone ({timezone}). Up to {max} times.",
   digest_none: "No times: you get no digests.",
   digest_time_label: "Digest time {n}",
   digest_remove: "Remove digest time {n}",
@@ -271,7 +271,7 @@ export const en = {
   sig_help:
     "Added at the end of the messages that the assistant writes for you from now on (delegations, questions, reminders). Empty: your display name.",
   sig_label: "Signature text",
-  sig_counter: "{count} / 500",
+  sig_counter: "{count} / {max}",
   sig_saved_toast: "Signature saved.",
   style_too_long: "Use at most 500 characters.",
   style_bad_char: "Remove the special characters.",

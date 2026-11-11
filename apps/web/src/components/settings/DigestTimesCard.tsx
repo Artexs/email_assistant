@@ -62,7 +62,9 @@ export function DigestTimesCard({ times, timeZone, onSaved }: DigestTimesCardPro
         <CardTitle>{t("digest_title")}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <p className="text-sm text-muted-foreground">{t("digest_help", { timezone: timeZone })}</p>
+        <p className="text-sm text-muted-foreground">
+          {t("digest_help", { timezone: timeZone, max: MAX_DIGEST_TIMES })}
+        </p>
         {rows.length === 0 && <p className="text-sm">{t("digest_none")}</p>}
         <ul className="flex flex-col gap-2">
           {rows.map((row, index) => (
@@ -73,6 +75,7 @@ export function DigestTimesCard({ times, timeZone, onSaved }: DigestTimesCardPro
                 step={60}
                 value={row}
                 aria-label={t("digest_time_label", { n: index + 1 })}
+                disabled={pending}
                 aria-invalid={error !== null}
                 onChange={(event) => edit(rows.map((item, at) => (at === index ? event.target.value : item)))}
               />
@@ -80,6 +83,7 @@ export function DigestTimesCard({ times, timeZone, onSaved }: DigestTimesCardPro
                 type="button"
                 variant="ghost"
                 size="icon"
+                disabled={pending}
                 aria-label={t("digest_remove", { n: index + 1 })}
                 onClick={() => edit(rows.filter((_, at) => at !== index))}
               >
@@ -98,7 +102,7 @@ export function DigestTimesCard({ times, timeZone, onSaved }: DigestTimesCardPro
           <Button
             type="button"
             variant="outline"
-            disabled={rows.length >= MAX_DIGEST_TIMES}
+            disabled={pending || rows.length >= MAX_DIGEST_TIMES}
             onClick={() => edit([...rows, ""])}
           >
             {t("digest_add")}

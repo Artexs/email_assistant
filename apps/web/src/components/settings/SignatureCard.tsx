@@ -1,6 +1,7 @@
 import {
   normalizeStyleText,
   organizationViewSchema,
+  STYLE_TEXT_MAX,
   styleTextSchema,
   type OrganizationSettings,
   type OrganizationView,
@@ -70,6 +71,7 @@ export function SignatureCard({ organization, isOwner, onSaved }: SignatureCardP
             rows={4}
             value={value}
             readOnly={!isOwner}
+            disabled={pending}
             aria-invalid={error !== null}
             onChange={(event) => {
               setError(null);
@@ -77,7 +79,7 @@ export function SignatureCard({ organization, isOwner, onSaved }: SignatureCardP
             }}
           />
           <p className="text-sm text-muted-foreground">
-            {t("sig_counter", { count: normalizeStyleText(value).length })}
+            {t("sig_counter", { count: normalizeStyleText(value).length, max: STYLE_TEXT_MAX })}
           </p>
           {error !== null && (
             <p role="alert" className="text-sm text-destructive">

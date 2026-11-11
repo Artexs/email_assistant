@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 import { t, type TextKey } from "../../i18n/en";
 import { authClient } from "../../lib/auth-client";
-import { changePasswordError } from "../../lib/password-errors";
+import { changePasswordError, signOutAllResult } from "../../lib/password-errors";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
@@ -23,6 +23,7 @@ export function AccountCard() {
   const [signingOut, setSigningOut] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [error, setError] = useState<TextKey | null>(null);
+  const [signOutError, setSignOutError] = useState<TextKey | null>(null);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -66,12 +67,19 @@ export function AccountCard() {
 
   async function signOutEverywhere() {
     setSigningOut(true);
+    setSignOutError(null);
     try {
-      await authClient.revokeSessions();
+      const { error: authError } = await authClient.revokeSessions();
+      const result = signOutAllResult(authError);
+      if (result.done) {
+        location.assign("/login");
+        return;
+      }
+      setSignOutError(result.key);
     } catch {
-      // The session may be gone already; the login page shows the state.
+      setSignOutError("error_generic");
     }
-    location.assign("/login");
+    setSigningOut(false);
   }
 
   return (
@@ -164,6 +172,11 @@ export function AccountCard() {
             {t("acct_sign_out_all")}
           </Button>
           <p className="text-muted-foreground text-sm">{t("acct_sign_out_all_help")}</p>
+          {signOutError === null ? null : (
+            <p role="alert" className="text-destructive text-sm">
+              {t(signOutError)}
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>
