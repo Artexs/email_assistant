@@ -128,6 +128,14 @@ export class MailboxExistsError extends HardError {
   }
 }
 
+/** The web refuses a local or private mail host (B12). */
+export class HostNotAllowedError extends HardError {
+  constructor(options?: { cause?: unknown }) {
+    super("host not allowed", options);
+    this.name = "HostNotAllowedError";
+  }
+}
+
 /** The UID is not in the folder. */
 export class MailNotFoundError extends HardError {
   constructor(message: string, options?: { cause?: unknown }) {

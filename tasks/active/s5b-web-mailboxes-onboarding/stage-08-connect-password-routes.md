@@ -6,7 +6,7 @@ Part of [`../s5b-web-mailboxes-onboarding.md`](../s5b-web-mailboxes-onboarding.m
 
 One step. The request body holds a mailbox password: it may reach only `connectMailbox` / `updateMailboxPassword`.
 
-- [ ] **8.1 `mail/host-check.ts`, `mail/connect-request.ts`, `POST /mailboxes`, `POST /mailboxes/:id/password`, `mailErrorBody` (B5, B6, B11, B12, D14)**
+- [x] **8.1 `mail/host-check.ts`, `mail/connect-request.ts`, `POST /mailboxes`, `POST /mailboxes/:id/password`, `mailErrorBody` (B5, B6, B11, B12, D14)**
   - Goal: the owner connects a mailbox by preset or by host fields and changes a password over HTTP; every failure has the D14 status and code, within about 50 s.
   - Files: create `apps/server/src/modules/mail/host-check.ts`, `host-check.test.ts`, `apps/server/src/modules/mail/connect-request.ts`, `apps/server/src/modules/mail/routes.test.ts` (unit: `mailErrorBody`); change `mail/routes.ts`, `mail/port.ts` (`HostNotAllowedError`), `mail/index.ts`, `apps/server/test/integration/web-mailboxes.test.ts` (connect and password cases), `tasks/planned/web-public-hardening.md` (one line: the DNS-level host check, B12).
   - Interfaces:
