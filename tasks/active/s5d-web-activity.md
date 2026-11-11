@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — building; stage 1 built, review pending.** A1–A10 ("ok"), 14 facts, B1–B15, 11 stage files, cold-reviewed (all findings fixed). Left: the build with `run-task` in an own session (user step 0 first), stages 1–11.
+> **Status 2026-11-11 — in progress — building; stage 2 built, review pending.** A1–A10 ("ok"), 14 facts, B1–B15, 11 stage files, cold-reviewed (all findings fixed). Left: the build with `run-task` in an own session (user step 0 first), stages 1–11.
 
 # S5d Web: activity
 
@@ -150,7 +150,7 @@ The stage files cite these as B<n>. A text in quotes is a UI string; its key liv
 Each stage lives in its own file in [`s5d-web-activity/`](s5d-web-activity/). An implementer or reviewer reads this file (Done when, Owns, A1–A10, Facts, B1–B15, the master plan's "Rules for every step") and only the stage file of its step. The main session ticks the step boxes in the stage file and the stage box here. `[written]` marks a stage file that is on disk.
 
 - [x] [Stage 1](s5d-web-activity/stage-01-core.md) — Core: activity schemas, the shared answer words, `describeAction`; `callbacks.ts` reads the words [written]
-- [ ] [Stage 2](s5d-web-activity/stage-02-undo-feedback-service.md) — `undoWithFeedback`, `recordWebFeedback`, the callbacks refactor [risky] [written]
+- [x] [Stage 2](s5d-web-activity/stage-02-undo-feedback-service.md) — `undoWithFeedback`, `recordWebFeedback`, the callbacks refactor [risky] [written]
 - [ ] [Stage 3](s5d-web-activity/stage-03-activity-repos.md) — Read-model repositories: `listActivityRows`, latest feedback, latest delegation [risky] [written]
 - [ ] [Stage 4](s5d-web-activity/stage-04-list-activity.md) — `listActivity`, the cursor, the query count [risky] [written]
 - [ ] [Stage 5](s5d-web-activity/stage-05-activity-route.md) — `GET /api/activity` and its wiring [risky] [written]
@@ -214,3 +214,4 @@ Questions: 18 an empty poll with older pages loaded → `firstPage` (B11, stage 
 - 2026-11-11: Cold review (Opus high, `reviewer` subagent): FAIL, 19 findings (1 blocker, 4 major, 12 minor, 2 question), all fixed in the task file and the stage files. Next: the user's approval, then commit and push the plan files on `master`.
 - 2026-11-11: The user approved the plan ("ok"). Plan files committed and pushed on `master`. Next: the build session with `run-task`.
 - 2026-11-11: Build session (Claude Code, Sonnet 5.5): user step 0 done by the agent (worktree `../email_assistant-wt/s5d-web-activity`, databases `s5d` and `e2e`, the five web/e2e keys appended to the worktree `.env`; the main `.env` had none of them). Baseline: unit 1660 pass, int 1211 pass. Stage 1 built, review pending: lint, typecheck clean; unit 1677 pass (17 new); int 1211 pass (callback tests unchanged, `git diff apps/server/test` empty). Deviation: `callbacks.ts` lost the unused `label` helper.
+- 2026-11-11: Stage 1 review PASS (Sonnet high; 0 blocker, 0 major, 1 minor: the "eight items" test case also repeats a category); pushed `ccc977a`. Stage 2 built, review pending (Opus high): lint, typecheck clean; unit 1677 pass; int 1220 pass (9 new in `triage-undo-feedback`; `channels-callbacks.test.ts` unchanged).

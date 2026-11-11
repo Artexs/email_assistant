@@ -1,11 +1,25 @@
-import { categories, type Category, type FeedbackSource, type FeedbackVerdict } from "@ea/core";
+import {
+  categories,
+  isLabelCategory,
+  type Category,
+  type FeedbackSource,
+  type FeedbackVerdict,
+  type LabelCategory,
+} from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 import { listSummaries } from "../actions";
 
-import { insertFeedback, latestFeedback, latestTriageResult, listUnlabeled, type MailKind } from "./repo";
+import {
+  getLabelTarget,
+  insertFeedback,
+  latestFeedback,
+  latestTriageResult,
+  listUnlabeled,
+  type MailKind,
+} from "./repo";
 
 export interface RecordFeedbackInput {
   emailId: string;
@@ -72,6 +86,37 @@ export async function recordFeedback(
     userId: input.userId ?? null,
   });
   return { id, verdict, saved: true };
+}
+
+export type WebFeedbackResult =
+  | { kind: "not_found" }
+  | { kind: "saved"; saved: boolean; verdict: FeedbackVerdict; aiCategory: Category };
+
+// The web feedback: the 404 rule lives here. A mail with no triage result or of another organization is "not found",
+// so recordFeedback never throws for it. One transaction, joined when the caller already holds one.
+export async function recordWebFeedback(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  input: { emailId: string; trueCategory: LabelCategory; userId: string }
+): Promise<WebFeedbackResult> {
+  const run = async (trx: Transaction<DB>): Promise<WebFeedbackResult> => {
+    const target = await getLabelTarget(trx, ctx, input.emailId);
+    if (!target) {
+      return { kind: "not_found" };
+    }
+    if (!isLabelCategory(input.trueCategory)) {
+      throw new HardError("not a label category");
+    }
+    const result = await recordFeedback(trx, ctx, {
+      emailId: input.emailId,
+      trueCategory: input.trueCategory,
+      source: "web",
+      userId: input.userId,
+      skipIfSame: true,
+    });
+    return { kind: "saved", saved: result.saved, verdict: result.verdict, aiCategory: target.category };
+  };
+  return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
 }
 
 function readModelCategory(fields: unknown): Category | null {
