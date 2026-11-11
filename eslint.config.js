@@ -154,6 +154,9 @@ export default tseslint.config(
       "apps/web/src/islands/**/*.tsx",
       "apps/web/src/components/shell/**/*.tsx",
       "apps/web/src/components/auth/**/*.tsx",
+      "apps/web/src/components/mailboxes/**/*.tsx",
+      "apps/web/src/components/telegram/**/*.tsx",
+      "apps/web/src/components/onboarding/**/*.tsx",
     ],
     rules: {
       "react/jsx-no-literals": ["error", { noStrings: true, ignoreProps: true, allowedStrings: ["·", "—", "/"] }],

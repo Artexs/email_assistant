@@ -6,7 +6,7 @@ Part of [`../s5b-web-mailboxes-onboarding.md`](../s5b-web-mailboxes-onboarding.m
 
 Two steps. No page changes yet: stages 11–13 use these parts.
 
-- [ ] **10.1 `lib/poll.ts` and its test (B14, U7; the S5a final review item)**
+- [x] **10.1 `lib/poll.ts` and its test (B14, U7; the S5a final review item)**
   - Goal: the 30-second polling pauses while the tab is hidden, and a unit test proves it without a DOM library (no `bun.lock` change).
   - Files: create `apps/web/src/lib/poll.ts`, `apps/web/src/lib/poll.test.ts`; change `apps/web/src/lib/use-resource.ts`.
   - Interfaces:
@@ -42,7 +42,7 @@ Two steps. No page changes yet: stages 11–13 use these parts.
   - Done when: the tests pass; `use-resource.ts` has no `visibilitychange` code of its own.
   - Out of scope: a DOM test library.
 
-- [ ] **10.2 The strings, the lint scope, the shared components (U1, B14, B15)**
+- [x] **10.2 The strings, the lint scope, the shared components (U1, B14, B15)**
   - Goal: every S5b text exists once in `en.ts`; the status badge, the scope badges and the Telegram link block are ready for both pages.
   - Files: change `apps/web/src/i18n/en.ts`, `eslint.config.js` (the `react/jsx-no-literals` block also covers `apps/web/src/components/mailboxes/**/*.tsx`, `components/telegram/**/*.tsx`, `components/onboarding/**/*.tsx`); create `apps/web/src/components/mailboxes/StatusBadge.tsx`, `ScopeBadges.tsx`, `apps/web/src/components/telegram/TelegramLink.tsx`, `apps/web/src/lib/errors.ts` (+ `errors.test.ts`), `apps/web/src/lib/scope-text.ts` (+ `scope-text.test.ts`), `apps/web/src/lib/use-now.ts`.
   - Interfaces:
