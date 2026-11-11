@@ -6,7 +6,7 @@ Part of [`../s5c-web-settings-rules.md`](../s5c-web-settings-rules.md). Read tha
 
 Two steps. Tenant isolation and audit privacy: a rule pattern is an e-mail address (personal data) and must never reach an audit row or a log line.
 
-- [ ] **3.1 Repository and service: list with ids, add with audit and cap, delete with audit (B7)**
+- [x] **3.1 Repository and service: list with ids, add with audit and cap, delete with audit (B7)**
   - Goal: the web and the CLI add and remove sender rules through one service that writes the audit rows.
   - Files: change `apps/server/src/modules/config/repo.ts`, `config/index.ts`, `apps/server/src/modules/audit/repo.ts`, `apps/server/test/integration/rules-audit-repo.test.ts`; create `apps/server/src/modules/config/rules.ts`, `apps/server/test/integration/config-rules.test.ts`.
   - Interfaces:
@@ -65,7 +65,7 @@ Two steps. Tenant isolation and audit privacy: a rule pattern is an e-mail addre
   - Done when: the tests pass; `grep -rn "pattern" apps/server/src/modules/config/rules.ts` shows no pattern in an audit `data` object or a log call.
   - Out of scope: the routes (stage 6).
 
-- [ ] **3.2 `rules:add` on the service, the sync-folder actor (B5, B7)**
+- [x] **3.2 `rules:add` on the service, the sync-folder actor (B5, B7)**
   - Goal: the CLI writes the same audit row as the web; the sync-folder setter accepts a user id as actor.
   - Files: change `apps/server/src/scripts/rules.ts`, `apps/server/src/modules/mail/folders.ts`; create `apps/server/test/integration/rules-cli.test.ts`.
   - Interfaces:

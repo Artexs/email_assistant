@@ -4,6 +4,7 @@ import { en } from "../src/i18n/en";
 import { E2E_BASE_URL, GREENMAIL } from "./env";
 
 // An address range for documentation (RFC 5737). Every test gets its own, so the login rate limit counts per test.
+// The counter lives in the worker process and all spec files of that worker share it, so two files can use the same block.
 // Playwright runs each project in its own worker process, where the counter starts at 1 again: the caller gives each a block.
 let addressCount = 0;
 
@@ -20,6 +21,10 @@ export async function signIn(page: Page, email: string, password: string): Promi
   await page.getByLabel(en.email_label).fill(email);
   await page.getByLabel(en.password_label, { exact: true }).fill(password);
   await page.getByRole("button", { name: en.sign_in }).click();
+}
+
+export async function signInAs(page: Page, user: { email: string; password: string }): Promise<void> {
+  await signIn(page, user.email, user.password);
 }
 
 const violationPrefix = "csp-violation";
@@ -43,26 +48,44 @@ export async function cspErrors(page: Page): Promise<string[]> {
   return collected;
 }
 
+// Console errors of the page (a failed request logs one too: the caller clears the list with `.length = 0` before the part it checks).
+export function consoleErrors(page: Page): string[] {
+  const collected: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") collected.push(message.text());
+  });
+  return collected;
+}
+
 // The address of the mailbox a spec connects: one per project, so the two never meet.
 export function mailboxAddress(project: string): string {
   return `e2e-${project}@e2e.test`;
 }
 
-// Removes what a spec made, through the API with the page's cookies: unlink, then every mailbox. Errors are ignored:
+// Removes what a spec made, through the API with the page's cookies: unlink, every mailbox, every rule, then the organization and digest settings. Errors are ignored:
 // a cleanup must not hide the real failure. The Origin header is the CSRF check of the API.
 export async function cleanUpOrg(page: Page): Promise<void> {
   const headers = { origin: E2E_BASE_URL };
   try {
     await page.request.delete("/api/channels/telegram/link", { headers });
     const list = await page.request.get("/api/mailboxes");
-    if (!list.ok()) return;
-    const mailboxes = (await list.json()) as { id: string; address: string }[];
-    for (const mailbox of mailboxes) {
-      await page.request.delete(`/api/mailboxes/${mailbox.id}`, {
-        headers,
-        data: { confirmAddress: mailbox.address },
-      });
+    if (list.ok()) {
+      const mailboxes = (await list.json()) as { id: string; address: string }[];
+      for (const mailbox of mailboxes) {
+        await page.request.delete(`/api/mailboxes/${mailbox.id}`, {
+          headers,
+          data: { confirmAddress: mailbox.address },
+        });
+      }
     }
+    const rules = await page.request.get("/api/rules");
+    if (rules.ok()) {
+      for (const rule of (await rules.json()) as { id: string }[]) {
+        await page.request.delete(`/api/rules/${rule.id}`, { headers });
+      }
+    }
+    await page.request.patch("/api/organization", { headers, data: { timezone: "Europe/Warsaw", styleText: null } });
+    await page.request.patch("/api/me/digest-times", { headers, data: { times: [] } });
   } catch {
     // Ignored on purpose.
   }

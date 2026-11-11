@@ -4,11 +4,21 @@ import { onboardingOf, scopeInfoOf, type ScopeEnv } from "@ea/core";
 import { getConnInfo } from "@hono/bun";
 import type { Context } from "hono";
 
+import { settingsDeps } from "./composition";
 import { auditEvents, hasAuditEvent, recordAudit, recordAuditOnce } from "./modules/audit";
 import { channelRoutes, getChatLinkForUser, queueMailboxRemovedNotices } from "./modules/channels";
-import { countSenderRules } from "./modules/config";
-import { listMailboxes, mailRoutes, openImapProvider, verifySmtpLogin, WEB_MAIL_TIMEOUTS } from "./modules/mail";
+import { countSenderRules, rulesRoutes, settingsRoutes, type SettingsRouteDeps } from "./modules/config";
+import {
+  listMailboxes,
+  listSyncFolders,
+  mailRoutes,
+  openImapProvider,
+  setSyncFolderEnabled,
+  verifySmtpLogin,
+  WEB_MAIL_TIMEOUTS,
+} from "./modules/mail";
 import { listMembershipsOfUser, tenancyRoutes, type TenancyRouteDeps } from "./modules/tenancy";
+import { goNoGoFor, setCategoryAutoWithGate } from "./modules/triage";
 import { createAuth, type AuthDeps, type AuthEventKind } from "./platform/auth";
 import { webMailAllowLocal, webTrustedOrigins, webTrustedProxies, type Config } from "./platform/config";
 import type { SecretBox } from "./platform/crypto";
@@ -120,6 +130,30 @@ export function homePathOf(
   };
 }
 
+// D8, D16: the web calls the same setters as the CLI, with the one `settingsDeps` builder.
+export function settingsRouteDeps(db: Db, now: () => Date): SettingsRouteDeps {
+  const settings = settingsDeps(db, now);
+  return {
+    db,
+    now,
+    settings,
+    goNoGo: (ctx, id, at) => goNoGoFor(db, ctx, id, at),
+    setAuto: async (ctx, id, input) => {
+      const result = await setCategoryAutoWithGate(settings, ctx, id, input);
+      return result.kind === "refused" ? result : { kind: "changed", change: result.change };
+    },
+    listSyncFolders: async (ctx, id) =>
+      (await listSyncFolders(db, ctx, id, { enabledOnly: false })).map(({ key, role, path, enabled }) => ({
+        key,
+        role,
+        path,
+        enabled,
+      })),
+    setSyncFolder: (ctx, id, input) =>
+      setSyncFolderEnabled(db, ctx, id, input.key, input.enabled, input.actor, input.now),
+  };
+}
+
 export function distPath(config: Config, cwd = process.cwd()): string {
   return resolve(cwd, config.WEB_DIST);
 }
@@ -210,6 +244,8 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
           },
         })
       );
+      api.route("/", settingsRoutes(settingsRouteDeps(db, now)));
+      api.route("/", rulesRoutes({ db, now }));
       api.route("/", channelRoutes({ db, now, botUsername: extras.botUsername }));
     },
     close: () => handle.close(),

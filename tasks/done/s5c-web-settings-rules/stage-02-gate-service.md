@@ -6,7 +6,7 @@ Part of [`../s5c-web-settings-rules.md`](../s5c-web-settings-rules.md). Read tha
 
 One step. After it, the CLI and (from stage 5) the web share the gate. The gate decides whether the assistant may move and mark a category's mail on its own: a wrong gate moves real mail.
 
-- [ ] **2.1 `triage/gate.ts`, `SettingsNotFoundError`, `composition.settingsDeps`, the CLI (B2, B3, B4)**
+- [x] **2.1 `triage/gate.ts`, `SettingsNotFoundError`, `composition.settingsDeps`, the CLI (B2, B3, B4)**
   - Goal: one service computes the go/no-go row of each category and sets `auto` behind it; the CLI keeps its output and exit codes.
   - Files: create `apps/server/src/modules/triage/gate.ts`, `apps/server/test/integration/triage-gate.test.ts`; change `apps/server/src/modules/triage/index.ts`, `apps/server/src/modules/config/service.ts`, `config/index.ts`, `apps/server/src/composition.ts`, `apps/server/src/scripts/mailbox-settings.ts`.
   - Interfaces:

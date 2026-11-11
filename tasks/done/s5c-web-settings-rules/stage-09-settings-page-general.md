@@ -6,7 +6,7 @@ Part of [`../s5c-web-settings-rules.md`](../s5c-web-settings-rules.md). Read tha
 
 Two steps. `[risky]`: the Account card changes the password and ends sessions (auth); the signature goes into mail to third parties.
 
-- [ ] **9.1 Digest times, Signature, Timezone (S2, S6, S7, U8, B9–B12)**
+- [x] **9.1 Digest times, Signature, Timezone (S2, S6, S7, U8, B9–B12)**
   - Goal: a member sets their own digest times; the owner sets the signature and the timezone; an assistant sees the last two read-only.
   - Files: create `apps/web/src/components/settings/DigestTimesCard.tsx`, `SignatureCard.tsx`, `TimezoneCard.tsx`; change `apps/web/src/islands/SettingsPage.tsx`.
   - Interfaces:
@@ -39,7 +39,7 @@ Two steps. `[risky]`: the Account card changes the password and ends sessions (a
   - Done when: the build and the hand check pass.
   - Out of scope: the Account card (9.2).
 
-- [ ] **9.2 Account: change password, sign out everywhere (S9, B13)**
+- [x] **9.2 Account: change password, sign out everywhere (S9, B13)**
   - Goal: a member changes their password (other sessions end by default) and can end every session.
   - Files: create `apps/web/src/components/settings/AccountCard.tsx`, `apps/web/src/lib/password-errors.ts`, `password-errors.test.ts`; change `apps/web/src/islands/SettingsPage.tsx`.
   - Interfaces:
@@ -57,7 +57,7 @@ Two steps. `[risky]`: the Account card changes the password and ends sessions (a
   - Decisions:
     - Fields (`autoComplete`: `current-password`, `new-password`, `new-password`): `acct_current_label`, `new_password_label` (with `password_help`), `repeat_password_label`; the `Switch` `acct_revoke_others` (on by default, with a `Label`); the button `acct_change` (`acct_changing` while pending). Validate with `changePasswordFormSchema` (B1) and show the issue keys inline (`fieldErrors`).
     - Submit: `const { error } = await authClient.changePassword({ currentPassword, newPassword, revokeOtherSessions })`. `changePasswordError`: `code === "INVALID_PASSWORD"` → `{ field: "current", key: "acct_wrong_current" }`; `PASSWORD_TOO_SHORT` → `{ field: "password", key: "password_too_short" }`; `PASSWORD_TOO_LONG` → `{ field: "password", key: "password_too_long" }`; `status === 429` → `{ field: null, key: "error_too_many" }`; any other error → `{ field: null, key: "error_generic" }`; no error → `null`. Success → toast `acct_changed_others_toast` (switch on) or `acct_changed_toast`; clear the three fields. A thrown error (network) → `error_generic`. Never log or toast a password.
-    - `acct_sign_out_all` (`variant="outline"`, destructive text color) with `acct_sign_out_all_help`: `await authClient.revokeSessions()` then `location.assign("/login")` (also when the call fails: the session may be gone; the login page shows the state). No dialog (U5 lists none).
+    - `acct_sign_out_all` (`variant="outline"`, destructive text color) with `acct_sign_out_all_help`: `await authClient.revokeSessions()` then `location.assign("/login")` only when the call succeeded or answered 401 (the session is gone already); on another error (429 → `error_too_many`, else `error_generic`) or a thrown error the card shows the text inline and re-enables the button, because the login page sends a live session back to the dashboard with no message (stage 9 review, fix round 1, 2026-11-11; deviation from the first plan text, B13). No dialog (U5 lists none).
     - The audit row of a change comes from the S5a hook (`web.password_changed`); "Sign out everywhere" writes none (B13).
     - The card shows for every member (S2), last on the page (S3).
   - Test (unit, `password-errors.test.ts`): each mapping above, also `{ status: 400, code: "INVALID_PASSWORD" }` and `{ status: 429 }`; `null` → `null`.

@@ -6,7 +6,7 @@ Part of [`../s5c-web-settings-rules.md`](../s5c-web-settings-rules.md). Read tha
 
 Two steps. The timezone moves every schedule of the organization (digests, quiet hours, the reminder run); the signature goes into mail to third parties.
 
-- [ ] **4.1 `updateOrganizationSettings` and the characterisation tests (B9, fact 3)**
+- [x] **4.1 `updateOrganizationSettings` and the characterisation tests (B9, fact 3)**
   - Goal: one service changes the timezone and the signature with their audit rows; tests pin what a timezone change does to the next digest.
   - Files: change `apps/server/src/modules/tenancy/repo.ts`, `tenancy/service.ts`, `tenancy/index.ts`, `packages/core/src/digest/schedule.test.ts`; create `apps/server/test/integration/tenancy-organization.test.ts`.
   - Interfaces:
@@ -54,7 +54,7 @@ Two steps. The timezone moves every schedule of the organization (digests, quiet
   - Done when: the tests pass.
   - Out of scope: the routes (4.2).
 
-- [ ] **4.2 `GET` and `PATCH /api/organization`, `PATCH /api/me/digest-times` (B9, B10)**
+- [x] **4.2 `GET` and `PATCH /api/organization`, `PATCH /api/me/digest-times` (B9, B10)**
   - Goal: the Settings page reads and changes the organization and the member's own digest times.
   - Files: change `apps/server/src/modules/tenancy/routes.ts`; create `apps/server/test/integration/web-organization.test.ts`.
   - Interfaces:

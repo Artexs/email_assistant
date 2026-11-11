@@ -75,29 +75,29 @@ function llmCallData(mailboxId: string) {
 }
 
 describe("config repository: sender rules", () => {
-  test("insertSenderRule stores the context org, trims and lower-cases, returns false on a duplicate", async () => {
+  test("insertSenderRule stores the context org, trims and lower-cases, returns null on a duplicate", async () => {
     await withRollback(db, async (trx) => {
       const { a, b } = await createTwoTenants(trx);
 
-      expect(await insertSenderRule(trx, a.ctx, { mailboxId: null, pattern: "  Boss@Firma.TEST ", kind: "vip" })).toBe(
-        true
-      );
-      expect(await insertSenderRule(trx, a.ctx, { mailboxId: null, pattern: "boss@firma.test", kind: "vip" })).toBe(
-        false
-      );
+      expect(
+        (await insertSenderRule(trx, a.ctx, { mailboxId: null, pattern: "  Boss@Firma.TEST ", kind: "vip" }))?.pattern
+      ).toBe("boss@firma.test");
+      expect(
+        await insertSenderRule(trx, a.ctx, { mailboxId: null, pattern: "boss@firma.test", kind: "vip" })
+      ).toBeNull();
       expect(
         await insertSenderRule(trx, a.ctx, { mailboxId: a.mailboxId, pattern: "firma.test", kind: "whitelist" })
-      ).toBe(true);
+      ).not.toBeNull();
       expect(
         await insertSenderRule(trx, a.ctx, { mailboxId: a.mailboxId, pattern: "FIRMA.test", kind: "whitelist" })
-      ).toBe(false);
+      ).toBeNull();
       // The same pattern with another kind or in another org is not a duplicate.
       expect(
         await insertSenderRule(trx, a.ctx, { mailboxId: null, pattern: "boss@firma.test", kind: "whitelist" })
-      ).toBe(true);
-      expect(await insertSenderRule(trx, b.ctx, { mailboxId: null, pattern: "boss@firma.test", kind: "vip" })).toBe(
-        true
-      );
+      ).not.toBeNull();
+      expect(
+        await insertSenderRule(trx, b.ctx, { mailboxId: null, pattern: "boss@firma.test", kind: "vip" })
+      ).not.toBeNull();
 
       const rowsA = await senderRuleRows(trx, a.ctx.orgId);
       expect(rowsA).toHaveLength(3);

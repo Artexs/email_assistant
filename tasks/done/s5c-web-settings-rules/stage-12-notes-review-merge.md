@@ -4,7 +4,7 @@ Part of [`../s5c-web-settings-rules.md`](../s5c-web-settings-rules.md). Read tha
 
 ## Stage 12 — Notes, alerts, master plan lines, group review, checkpoint, merge
 
-- [ ] **12.1 Docs for the next agents**
+- [x] **12.1 Docs for the next agents**
   - Goal: what S5c learned and changed is findable without this chat.
   - Files: create `notes/<date>-web-settings-rules-facts.md`; change `docs/known-alerts.md`, `docs/code-patterns.md`, `tasks/active/s5-web-panel.md`, `tasks/planned/s5d-web-activity.md`, `tasks/planned/s5e-web-deploy-docs.md`, `tasks/planned/web-public-hardening.md` (pointer lines only).
   - Decisions:
@@ -16,7 +16,7 @@ Part of [`../s5c-web-settings-rules.md`](../s5c-web-settings-rules.md). Read tha
   - Check: `bunx prettier --check` on every changed Markdown file.
   - Done when: the files are written and pass Prettier.
 
-- [ ] **12.2 Group review, checkpoint, merge**
+- [x] **12.2 Group review, checkpoint, merge**
   - Goal: the whole segment is reviewed as one change, the user sees it work, and it lands on `master`.
   - Decisions:
     - Group review: the `reviewer` subagent on `claude-bridge/claude-opus-5-5` high over the range `<branch base>..HEAD` (all stages PASS first): a pre-mortem ("a bug of S5c reached the user: which stage let it through?"), the owner and tenant rules over every new route, the gate against the CLI's old behaviour, no pattern or signature text in an audit row or log line, the polling and draft behaviour of the forms, the e2e cleanup. Findings → fix commits, then a new review of the fix range.

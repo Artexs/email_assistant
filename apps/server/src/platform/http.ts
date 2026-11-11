@@ -152,6 +152,14 @@ export async function parseBody<T>(c: Context, schema: z.ZodType<T>): Promise<T>
     }
     throw error;
   }
+  return parseWith(schema, input);
+}
+
+export function parseQuery<T>(c: Context, schema: z.ZodType<T>): T {
+  return parseWith(schema, c.req.query());
+}
+
+function parseWith<T>(schema: z.ZodType<T>, input: unknown): T {
   const result = schema.safeParse(input);
   if (!result.success) {
     throw new ValidationError(

@@ -13,6 +13,8 @@ export function useResource<T>(load: () => Promise<T>, opts: { pollMs?: number }
   const loadRef = useRef(load);
   const [state, setState] = useState<ResourceState<T>>({ data: null, error: null, loading: true });
   const [tick, setTick] = useState(0);
+  // A load answer counts only when no newer load or `mutate` came after it started.
+  const seqRef = useRef(0);
 
   useEffect(() => {
     loadRef.current = load;
@@ -23,17 +25,24 @@ export function useResource<T>(load: () => Promise<T>, opts: { pollMs?: number }
     setTick((n) => n + 1);
   }, []);
 
+  const mutate = useCallback((data: T) => {
+    seqRef.current += 1;
+    setState({ data, error: null, loading: false });
+  }, []);
+
   useEffect(() => {
     let active = true;
 
     const run = () => {
+      seqRef.current += 1;
+      const seq = seqRef.current;
       loadRef
         .current()
         .then((data) => {
-          if (active) setState({ data, error: null, loading: false });
+          if (active && seq === seqRef.current) setState({ data, error: null, loading: false });
         })
         .catch((error: unknown) => {
-          if (active) setState((prev) => ({ data: prev.data, error, loading: false }));
+          if (active && seq === seqRef.current) setState((prev) => ({ data: prev.data, error, loading: false }));
         });
     };
 
@@ -52,5 +61,5 @@ export function useResource<T>(load: () => Promise<T>, opts: { pollMs?: number }
     // `tick` restarts the loop on reload(); `load` is read through the ref, so it is not a dependency.
   }, [pollMs, tick]);
 
-  return { ...state, reload };
+  return { ...state, reload, mutate };
 }

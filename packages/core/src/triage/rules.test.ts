@@ -1,7 +1,14 @@
 import { describe, expect, test } from "bun:test";
 
 import { classifierCategories } from "./categories";
-import { applyHardRules, isNoreplyAddress, matchSender, type SenderRule } from "./rules";
+import {
+  applyHardRules,
+  isNoreplyAddress,
+  isValidSenderPattern,
+  matchSender,
+  normalizeSenderPattern,
+  type SenderRule,
+} from "./rules";
 
 const noSpam = classifierCategories.filter((category) => category !== "spam");
 
@@ -135,5 +142,23 @@ describe("applyHardRules delegation option", () => {
 
   test("noreply sender keeps delegation", () => {
     expect(allowedOf(applyHardRules("noreply@x.test", [], { delegation: true }))).toContain("delegation");
+  });
+});
+
+describe("sender pattern rule", () => {
+  test("accepts an address or a domain with a dot", () => {
+    for (const pattern of ["anna@x.pl", "x.pl", "mail.firma.co.uk", "a.b+c@x-y.pl"]) {
+      expect(isValidSenderPattern(pattern)).toBe(true);
+    }
+  });
+
+  test("refuses everything else", () => {
+    for (const pattern of ["@x.pl", "*.x.pl", "x", "anna@x", "anna @x.pl", ""]) {
+      expect(isValidSenderPattern(pattern)).toBe(false);
+    }
+  });
+
+  test("normalizes with trim and lower case", () => {
+    expect(normalizeSenderPattern("  Boss@Firma.TEST ")).toBe("boss@firma.test");
   });
 });

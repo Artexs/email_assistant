@@ -40,6 +40,27 @@ export async function getOrganization(
   return db.selectFrom("organizations").selectAll().where("id", "=", ctx.orgId).executeTakeFirst();
 }
 
+// FOR NO KEY UPDATE: a plain FOR UPDATE would block the foreign-key checks of the organization's child rows.
+export async function lockOrganization(trx: Transaction<DB>, ctx: TenantContext): Promise<OrganizationRow | undefined> {
+  return trx.selectFrom("organizations").selectAll().where("id", "=", ctx.orgId).forNoKeyUpdate().executeTakeFirst();
+}
+
+export async function updateOrganization(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  patch: { timezone?: string; styleText?: string | null }
+): Promise<OrganizationRow | undefined> {
+  return trx
+    .updateTable("organizations")
+    .set({
+      ...(patch.timezone !== undefined ? { timezone: patch.timezone } : {}),
+      ...(patch.styleText !== undefined ? { style_text: patch.styleText } : {}),
+    })
+    .where("id", "=", ctx.orgId)
+    .returningAll()
+    .executeTakeFirst();
+}
+
 export async function listMemberships(db: Db | Transaction<DB>, ctx: TenantContext): Promise<MembershipWithUser[]> {
   const rows = await db
     .selectFrom("memberships")

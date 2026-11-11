@@ -13,6 +13,8 @@ import { auditWebEvent } from "../web";
 
 import {
   E2E_ASSISTANT_EMAILS,
+  E2E_MEMBER_EMAILS,
+  E2E_MEMBER_PASSWORD,
   E2E_OWNER_EMAIL,
   E2E_OWNER_PASSWORD,
   E2E_ORG_NAME,
@@ -35,7 +37,11 @@ async function wipe(migratorUrl: string): Promise<void> {
     await client.query("DELETE FROM organizations WHERE name = $1", [E2E_ORG_NAME]);
     // Users are global: the cascade leaves them.
     await client.query("DELETE FROM users WHERE email = ANY($1)", [
-      [E2E_OWNER_EMAIL, ...E2E_PROJECTS.map((project) => E2E_ASSISTANT_EMAILS[project])],
+      [
+        E2E_OWNER_EMAIL,
+        ...E2E_PROJECTS.map((project) => E2E_ASSISTANT_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_MEMBER_EMAILS[project]),
+      ],
     ]);
     // Tokens left by a half-failed run.
     await client.query("DELETE FROM auth_verifications WHERE value NOT IN (SELECT id::text FROM users)");
@@ -94,6 +100,16 @@ async function main(): Promise<number> {
         assistantIds[project] = user.id;
       }
 
+      const memberIds = {} as Record<E2eProject, string>;
+      for (const project of E2E_PROJECTS) {
+        const user = await insertUser(db, {
+          email: E2E_MEMBER_EMAILS[project],
+          displayName: `E2E Member ${project}`,
+        });
+        await insertMembership(db, { orgId: owner.orgId }, { userId: user.id, role: "assistant" });
+        memberIds[project] = user.id;
+      }
+
       // Takes the link of the last reset request for an e-mail address.
       const requestLink = async (email: string): Promise<string> => {
         resets.length = 0;
@@ -113,10 +129,19 @@ async function main(): Promise<number> {
         assistants[project] = { userId: assistantIds[project], email, setupUrl: await requestLink(email) };
       }
 
+      const members = {} as SeedFile["members"];
+      for (const project of E2E_PROJECTS) {
+        const email = E2E_MEMBER_EMAILS[project];
+        const memberToken = new URL(await requestLink(email)).pathname.split("/").pop() ?? "";
+        await handle.auth.api.resetPassword({ body: { newPassword: E2E_MEMBER_PASSWORD, token: memberToken } });
+        members[project] = { userId: memberIds[project], email, password: E2E_MEMBER_PASSWORD };
+      }
+
       const seed: SeedFile = {
         orgId: owner.orgId,
         owner: { userId: owner.userId, email: E2E_OWNER_EMAIL, password: E2E_OWNER_PASSWORD },
         assistants,
+        members,
       };
       const path = seedFilePath(repoRoot);
       await mkdir(dirname(path), { recursive: true });
@@ -125,7 +150,7 @@ async function main(): Promise<number> {
       await writeFile(path, `${JSON.stringify(seed, null, 2)}\n`, { mode: 0o600 });
 
       log.info(
-        `seeded org ${seed.orgId} owner ${seed.owner.userId} assistants ${E2E_PROJECTS.map((project) => assistantIds[project]).join(",")}`
+        `seeded org ${seed.orgId} owner ${seed.owner.userId} assistants ${E2E_PROJECTS.map((project) => assistantIds[project]).join(",")} members ${E2E_PROJECTS.map((project) => memberIds[project]).join(",")}`
       );
       return 0;
     } finally {

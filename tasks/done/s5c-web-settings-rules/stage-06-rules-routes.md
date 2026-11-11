@@ -6,7 +6,7 @@ Part of [`../s5c-web-settings-rules.md`](../s5c-web-settings-rules.md). Read tha
 
 One step. A blocklist rule sends a sender's mail to spam; a rule of another organization must never show or change.
 
-- [ ] **6.1 `rulesRoutes` in `config/routes.ts`, mounted in `web.ts` (B7, B8)**
+- [x] **6.1 `rulesRoutes` in `config/routes.ts`, mounted in `web.ts` (B7, B8)**
   - Goal: the web lists, adds and deletes sender rules through the stage 3 services.
   - Files: change `apps/server/src/modules/config/routes.ts`, `config/index.ts`, `apps/server/src/web.ts`; create `apps/server/test/integration/web-rules.test.ts`.
   - Interfaces:

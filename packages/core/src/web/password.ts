@@ -15,6 +15,10 @@ export const setPasswordFormSchema = z
   .object({ email: z.email("email_invalid"), password: passwordSchema, repeat: z.string() })
   .refine((v) => v.password === v.repeat, { path: ["repeat"], message: "passwords_differ" });
 
+export const changePasswordFormSchema = z
+  .object({ current: z.string().min(1, "password_required"), password: passwordSchema, repeat: z.string() })
+  .refine((v) => v.password === v.repeat, { path: ["repeat"], message: "passwords_differ" });
+
 export function fieldErrors(result: z.ZodSafeParseResult<unknown>): Record<string, string> {
   const errors: Record<string, string> = {};
   if (result.success) return errors;

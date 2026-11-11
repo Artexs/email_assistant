@@ -13,6 +13,9 @@ describe("errorText", () => {
     ["owner_only", "owner_only"],
     ["telegram_off", "tg_off"],
     ["telegram_unreachable", "tg_unreachable"],
+    ["rule_exists", "err_rule_exists"],
+    ["rule_limit", "err_rule_limit"],
+    ["not_found", "err_not_found"],
   ] as const;
 
   for (const [code, key] of cases) {

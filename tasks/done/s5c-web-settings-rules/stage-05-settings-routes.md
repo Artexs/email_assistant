@@ -6,7 +6,7 @@ Part of [`../s5c-web-settings-rules.md`](../s5c-web-settings-rules.md). Read tha
 
 One step. Every route changes what the assistant may do to real mail; the owner rule, the tenant rule and the gate-closing expiry must hold on each.
 
-- [ ] **5.1 `config/view.ts`, `config/routes.ts` (`settingsRoutes`), `web.ts` (B3–B6)**
+- [x] **5.1 `config/view.ts`, `config/routes.ts` (`settingsRoutes`), `web.ts` (B3–B6)**
   - Goal: the web reads the settings of one mailbox with the gate and the synced folders, and changes the mode, a switch, a category's `auto` and a synced folder, with the same audit rows and expiry as the CLI.
   - Files: create `apps/server/src/modules/config/view.ts`, `apps/server/src/modules/config/routes.ts`, `apps/server/test/integration/web-settings.test.ts`; change `config/index.ts`, `apps/server/src/web.ts`.
   - Interfaces:

@@ -38,6 +38,10 @@ export const auditEvents = {
   mailboxSwitchChanged: "mailbox.switch_changed",
   mailboxSyncFolderAdded: "mailbox.sync_folder_added", // data: mailbox_id, folder_key, role
   mailboxSyncFolderChanged: "mailbox.sync_folder_changed", // data: mailbox_id, folder_key, enabled
+  ruleAdded: "rule.added", // data: rule_id, kind, scope, mailbox_id when scope is "mailbox"
+  ruleRemoved: "rule.removed", // data: the same
+  orgTimezoneChanged: "org.timezone_changed", // data: from, to
+  orgStyleChanged: "org.style_changed", // data: set
   delegateAdded: "delegate.added",
   delegateChanged: "delegate.changed",
   delegationCreated: "delegation.created",

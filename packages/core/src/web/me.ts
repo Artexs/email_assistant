@@ -29,5 +29,6 @@ export const meSchema = z.object({
   scopes: z.object({ triage: scopeInfoSchema, actions: scopeInfoSchema, send: scopeInfoSchema }),
   mailboxCount: z.number().int().min(0),
   mailboxesInAuthError: z.number().int().min(0),
+  digestTimes: z.array(z.string()),
 });
 export type Me = z.infer<typeof meSchema>;

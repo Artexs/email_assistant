@@ -11,4 +11,11 @@ export {
   type UserMembership,
 } from "./repo";
 export { tenancyRoutes, type TenancyRouteDeps } from "./routes";
-export { createOrganizationWithOwner, type CreateOrganizationInput } from "./service";
+export {
+  createOrganizationWithOwner,
+  isSupportedTimeZone,
+  organizationView,
+  updateOrganizationSettings,
+  type CreateOrganizationInput,
+  type UpdateOrganizationResult,
+} from "./service";

@@ -6,7 +6,7 @@ Part of [`../s5c-web-settings-rules.md`](../s5c-web-settings-rules.md). Read tha
 
 Two steps. Stage 9 adds the general section to the same page.
 
-- [ ] **8.1 The page frame, the selector, Mode and actions, the `assist` dialog (S2, S3, S5, S10, B12)**
+- [x] **8.1 The page frame, the selector, Mode and actions, the `assist` dialog (S2, S3, S5, S10, B12)**
   - Goal: the owner picks a mailbox, sees its status and scopes, switches the mode and the five tool switches; an assistant sees the same read-only.
   - Files: change `apps/web/src/islands/SettingsPage.tsx`, `apps/web/src/lib/use-resource.ts` (`mutate`); create `apps/web/src/components/settings/MailboxSelector.tsx`, `ModeCard.tsx`, `AssistDialog.tsx`, `apps/web/src/lib/settings-api.ts`, `settings-api.test.ts`.
   - Interfaces:
@@ -59,7 +59,7 @@ Two steps. Stage 9 adds the general section to the same page.
   - Done when: the build and the hand check pass.
   - Out of scope: the categories and folders (8.2); the general section (stage 9).
 
-- [ ] **8.2 Categories with the gate and "Set anyway", Synced folders (S1, S4, B5, B12)**
+- [x] **8.2 Categories with the gate and "Set anyway", Synced folders (S1, S4, B5, B12)**
   - Goal: the owner sets `auto` per category behind the gate, with "Set anyway" after a refusal, and switches the synced folders.
   - Files: create `apps/web/src/components/settings/CategoriesCard.tsx`, `SetAnywayDialog.tsx`, `SyncFoldersCard.tsx`; change `apps/web/src/islands/SettingsPage.tsx`.
   - Interfaces:

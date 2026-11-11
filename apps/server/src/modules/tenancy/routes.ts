@@ -1,10 +1,19 @@
-import type { Me, Onboarding, ScopeInfo } from "@ea/core";
+import {
+  digestTimesBodySchema,
+  organizationPatchSchema,
+  parseDigestTimes,
+  type Me,
+  type Onboarding,
+  type OrganizationSettings,
+  type ScopeInfo,
+} from "@ea/core";
 import { Hono } from "hono";
 
 import type { Db, TenantContext } from "../../platform/db";
-import { requireOwner, type ApiEnv } from "../../platform/http";
+import { parseBody, requireOwner, ValidationError, type ApiEnv } from "../../platform/http";
 
-import { getMembership, getOrganization } from "./repo";
+import { getMembership, getOrganization, setDigestTimes } from "./repo";
+import { organizationView, updateOrganizationSettings } from "./service";
 
 export interface TenancyRouteDeps {
   db: Db;
@@ -39,8 +48,39 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
       scopes: deps.scopes,
       mailboxCount: mailboxes.total,
       mailboxesInAuthError: mailboxes.inAuthError,
+      digestTimes: parseDigestTimes(member.digest_times),
     };
     return c.json(me);
+  });
+
+  app.get("/organization", async (c) => {
+    const row = await getOrganization(deps.db, c.get("ctx"));
+    if (!row) return c.json({ error: "not_found" }, 404);
+    const settings: OrganizationSettings = { ...organizationView(row), timezones: Intl.supportedValuesOf("timeZone") };
+    return c.json(settings);
+  });
+
+  app.patch("/organization", requireOwner, async (c) => {
+    const patch = await parseBody(c, organizationPatchSchema);
+    const result = await updateOrganizationSettings(deps.db, c.get("ctx"), patch, {
+      actor: c.get("session").userId,
+      now: deps.now(),
+    });
+    if (result.kind === "bad_timezone") {
+      throw new ValidationError([{ path: "timezone", code: "custom", message: "timezone_invalid" }]);
+    }
+    if (result.kind === "not_found") return c.json({ error: "not_found" }, 404);
+    return c.json(organizationView(result.organization));
+  });
+
+  // No audit row: the CLI writes none either.
+  app.patch("/me/digest-times", async (c) => {
+    const body = await parseBody(c, digestTimesBodySchema);
+    const times = parseDigestTimes(body.times);
+    if (!(await setDigestTimes(deps.db, c.get("ctx"), c.get("session").userId, times))) {
+      return c.json({ error: "not_found" }, 404);
+    }
+    return c.json({ times });
   });
 
   // D15: keep shadow mode once; a second call writes nothing and answers 204 too.

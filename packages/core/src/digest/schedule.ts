@@ -6,7 +6,7 @@ export const DIGEST_LATE_MS = 6 * 3_600_000;
 export const MAX_DIGEST_TIMES = 6;
 
 const LATE_SLOT_MS = 10 * 60_000;
-const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+export const DIGEST_TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export interface DigestSlot {
   key: string;
@@ -20,7 +20,7 @@ function sortedUnique(times: readonly string[]): string[] {
 
 // DB values ("08:00:00") or "HH:MM" → sorted, unique "HH:MM". A value that is not a valid time is dropped.
 export function parseDigestTimes(raw: readonly string[]): string[] {
-  const times = raw.map((value) => value.slice(0, 5)).filter((value) => TIME_PATTERN.test(value));
+  const times = raw.map((value) => value.slice(0, 5)).filter((value) => DIGEST_TIME_PATTERN.test(value));
   return sortedUnique(times);
 }
 
@@ -30,7 +30,7 @@ export function parseDigestTimesInput(input: string): { ok: true; times: string[
   if (text === "") return { ok: false, error: "empty input" };
   const parts = text.split(",").map((part) => part.trim());
   for (const part of parts) {
-    if (!TIME_PATTERN.test(part)) return { ok: false, error: `bad time: ${part}` };
+    if (!DIGEST_TIME_PATTERN.test(part)) return { ok: false, error: `bad time: ${part}` };
   }
   const times = sortedUnique(parts);
   if (times.length > MAX_DIGEST_TIMES) return { ok: false, error: `too many times (max ${MAX_DIGEST_TIMES})` };

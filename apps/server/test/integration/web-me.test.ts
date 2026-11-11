@@ -5,7 +5,7 @@ import { hashPassword } from "better-auth/crypto";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { insertMailbox, setMailboxStatus } from "../../src/modules/mail/repo";
-import { tenancyRoutes } from "../../src/modules/tenancy";
+import { setDigestTimes, tenancyRoutes } from "../../src/modules/tenancy";
 import { insertUser } from "../../src/modules/tenancy/repo";
 import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
@@ -97,6 +97,17 @@ describe("GET /api/me", () => {
       rules: 0,
       done: false,
     });
+  });
+
+  test("returns the digest times sorted, and [] when the member has none", async () => {
+    const ids = await setup();
+    const app = appFor(ids);
+    expect(await setDigestTimes(db, { orgId: ids.orgId }, ids.ownerId, [])).toBe(true); // the column default is 08:00 and 16:00
+    const none = meSchema.parse(await (await app.request("/api/me", as("good-owner"))).json());
+    expect(none.digestTimes).toEqual([]);
+    expect(await setDigestTimes(db, { orgId: ids.orgId }, ids.ownerId, ["13:00", "08:00"])).toBe(true);
+    const res = await app.request("/api/me", as("good-owner"));
+    expect(meSchema.parse(await res.json()).digestTimes).toEqual(["08:00", "13:00"]);
   });
 
   test("returns role assistant for an assistant", async () => {

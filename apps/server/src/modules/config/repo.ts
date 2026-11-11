@@ -124,13 +124,33 @@ export async function countSenderRules(db: DbOrTrx, ctx: TenantContext): Promise
   return Number(row.count);
 }
 
-// Returns false when the same rule exists (unique key with NULLS NOT DISTINCT).
+export interface SenderRuleRow {
+  id: string;
+  mailbox_id: string | null;
+  pattern: string;
+  kind: SenderRuleKind;
+  created_at: Date;
+}
+
+const senderRuleColumns = ["id", "mailbox_id", "pattern", "kind", "created_at"] as const;
+
+function toSenderRuleRow(row: {
+  id: string;
+  mailbox_id: string | null;
+  pattern: string;
+  kind: string;
+  created_at: Date;
+}): SenderRuleRow {
+  return { ...row, kind: senderRuleKindSchema.parse(row.kind) };
+}
+
+// Returns null when the same rule exists (unique key with NULLS NOT DISTINCT).
 export async function insertSenderRule(
   db: DbOrTrx,
   ctx: TenantContext,
   input: { mailboxId: string | null; pattern: string; kind: SenderRuleKind }
-): Promise<boolean> {
-  const result = await db
+): Promise<SenderRuleRow | null> {
+  const row = await db
     .insertInto("sender_rules")
     .values({
       org_id: ctx.orgId,
@@ -139,6 +159,47 @@ export async function insertSenderRule(
       kind: input.kind,
     })
     .onConflict((oc) => oc.doNothing())
+    .returning(senderRuleColumns)
     .executeTakeFirst();
-  return (result.numInsertedOrUpdatedRows ?? 0n) > 0n;
+  return row ? toSenderRuleRow(row) : null;
+}
+
+// Org-wide and per-mailbox rules; with a mailbox id: the org-wide rules and that mailbox's rules.
+export async function listSenderRuleRows(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { mailboxId?: string }
+): Promise<SenderRuleRow[]> {
+  let query = db.selectFrom("sender_rules").select(senderRuleColumns).where("org_id", "=", ctx.orgId);
+  const mailboxId = opts.mailboxId;
+  if (mailboxId !== undefined) {
+    query = query.where((eb) => eb.or([eb("mailbox_id", "is", null), eb("mailbox_id", "=", mailboxId)]));
+  }
+  const rows = await query.orderBy("created_at").orderBy("id").execute();
+  return rows.map(toSenderRuleRow);
+}
+
+export async function deleteSenderRule(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  ruleId: string
+): Promise<SenderRuleRow | undefined> {
+  const row = await db
+    .deleteFrom("sender_rules")
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", ruleId)
+    .returning(senderRuleColumns)
+    .executeTakeFirst();
+  return row ? toSenderRuleRow(row) : undefined;
+}
+
+// `config` cannot import `mail`; it reads `mailboxes` directly (as getMovesSupported does).
+export async function mailboxInOrg(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<boolean> {
+  const row = await db
+    .selectFrom("mailboxes")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", mailboxId)
+    .executeTakeFirst();
+  return row !== undefined;
 }
