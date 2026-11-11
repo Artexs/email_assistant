@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — stages 1-5 built (stages 1-4 PASS).** 15 stage files, B1–B17, 26 review findings fixed. Left: stages 1–15 with `run-task` (worktree `task/s5b-web-mailboxes-onboarding`), starting with user step 0. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5b-build.md`.
+> **Status 2026-11-11 — in progress — stages 1-6 built (stages 1-5 PASS).** 15 stage files, B1–B17, 26 review findings fixed. Left: stages 1–15 with `run-task` (worktree `task/s5b-web-mailboxes-onboarding`), starting with user step 0. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5b-build.md`.
 
 # S5b Web: mailboxes and onboarding
 
@@ -157,7 +157,7 @@ Each stage lives in its own file in [`s5b-web-mailboxes-onboarding/`](s5b-web-ma
 - [x] [Stage 3](s5b-web-mailboxes-onboarding/stage-03-connect-services.md) — Login timeouts and the deadline, `MailboxExistsError`, `MailboxNotFoundError`, `mailbox.connected`, actors [risky] [written]
 - [x] [Stage 4](s5b-web-mailboxes-onboarding/stage-04-migration-delete-mailbox.md) — Migration `delete_mailbox` and the `mailbox_removed` kind, the deletion tests [risky] [written]
 - [x] [Stage 5](s5b-web-mailboxes-onboarding/stage-05-remove-mailbox.md) — `removeMailbox`, the owners' notice, the race and lock tests [risky] [written]
-- [ ] [Stage 6](s5b-web-mailboxes-onboarding/stage-06-telegram-routes.md) — `botUsername`, `channels/routes.ts`, the web test helper [risky] [written]
+- [x] [Stage 6](s5b-web-mailboxes-onboarding/stage-06-telegram-routes.md) — `botUsername`, `channels/routes.ts`, the web test helper [risky] [written]
 - [ ] [Stage 7](s5b-web-mailboxes-onboarding/stage-07-composition-mail-routes.md) — Composition and config key, `GET /api/mailboxes`, pause, resume, remove routes [risky] [written]
 - [ ] [Stage 8](s5b-web-mailboxes-onboarding/stage-08-connect-password-routes.md) — Connect and password routes, the host rule, the error map [risky] [written]
 - [ ] [Stage 9](s5b-web-mailboxes-onboarding/stage-09-onboarding-me-home.md) — Onboarding state, `/api/me` fill, `keep-mode`, the `/` rule [risky] [written]
@@ -209,3 +209,4 @@ Scope: 26 [minor] the deleted `sending` digest's "lost the claim" line and the r
 - 2026-11-11: stage 2 review PASS (minor: export order, cosmetic). Pushed. Stage 3 built, review pending (Opus high). Check: lint, typecheck, test:unit (1502), test:int (1078 pass).
 - 2026-11-11: stage 3 review PASS (Opus high; minor: duplicated test seed helper, optional). Pushed. Stage 4 built, review pending (Opus high). Check: lint, typecheck, test:unit (1502), test:int (1086 pass); migration round trip ok.
 - 2026-11-11: stage 4 review PASS (Opus high; minor: the acl assertion in delete-mailbox.test.ts checks nothing, fix next). Pushed. Stage 5 built, review pending (Opus high). Check: lint, typecheck, test:unit (1502), test:int (1096 pass).
+- 2026-11-11: stage 4 fix PASS; stage 5 review PASS (minors: a test that always reaches P0002; restore error must not hide the delete error — fix job next). Pushed. Stage 6 built, review pending (Opus high). Check: lint, typecheck, test:unit (1506), test:int (1104 pass).

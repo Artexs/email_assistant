@@ -6,7 +6,7 @@ Part of [`../s5b-web-mailboxes-onboarding.md`](../s5b-web-mailboxes-onboarding.m
 
 One step. The routes hand out a one-time link token in a response body: they are a security surface.
 
-- [ ] **6.1 Telegram routes (B9) and the test helper (B17)**
+- [x] **6.1 Telegram routes (B9) and the test helper (B17)**
   - Goal: a signed-in member gets their Telegram state, a fresh `t.me` link and can unlink, with the same token rules as the CLI; later route stages reuse one test helper.
   - Files: create `apps/server/src/modules/channels/routes.ts`, `apps/server/test/integration/web-helpers.ts`, `apps/server/test/integration/web-telegram.test.ts`, `apps/server/src/modules/channels/telegram/runtime.test.ts`; change `channels/telegram/runtime.ts` (`botUsername`), `channels/linking.ts` (`unlinkUser` actor), `channels/index.ts` (exports `channelRoutes`, `type ChannelRouteDeps`, `getChatLinkForUser`), `apps/server/test/integration/channels-linking.test.ts` if an `unlinkUser` call needs the new argument (it is optional: none should).
   - Interfaces:

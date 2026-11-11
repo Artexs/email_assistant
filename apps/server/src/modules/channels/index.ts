@@ -13,6 +13,7 @@ export {
   claimDueOutbox,
   failOutbox,
   findChatLink,
+  getChatLinkForUser,
   insertOutbox,
   listLinkedChats,
   listLinkedChatsOfOrg,
@@ -34,6 +35,7 @@ export {
   unlinkUser,
   type ConsumeResult,
 } from "./linking";
+export { channelRoutes, type ChannelRouteDeps } from "./routes";
 export { createTelegramApi, createTelegramChannel } from "./telegram/api";
 export { checkBot } from "./telegram/check";
 export { createTelegramBot, type BotDeps } from "./telegram/bot";

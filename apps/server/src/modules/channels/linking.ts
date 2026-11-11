@@ -104,12 +104,18 @@ export async function consumeLinkToken(
   });
 }
 
-export async function unlinkUser(db: Db, ctx: TenantContext, userId: string, now: Date): Promise<number> {
+export async function unlinkUser(
+  db: Db,
+  ctx: TenantContext,
+  userId: string,
+  now: Date,
+  opts?: { actor?: string }
+): Promise<number> {
   return inTransaction(db, async (trx) => {
     const deleted = await deleteChatLinks(trx, ctx, userId);
     if (deleted > 0) {
       await recordAudit(trx, ctx, {
-        actor: "system",
+        actor: opts?.actor ?? "system",
         event: auditEvents.chatUnlinked,
         data: { channel: "telegram", user_id: userId, links: deleted },
         at: now,
