@@ -30,7 +30,7 @@ export const styleTextSchema = z
 
 export const organizationPatchSchema = z
   .object({
-    timezone: z.string().trim().min(1).max(64).optional(),
+    timezone: z.string().trim().min(1, "timezone_invalid").max(64, "timezone_invalid").optional(),
     styleText: styleTextSchema.nullable().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, { path: [], message: "empty_patch" });
@@ -44,7 +44,10 @@ export const organizationViewSchema = z.object({
   retentionDays: z.number().int().positive(),
 });
 
+export type OrganizationView = z.infer<typeof organizationViewSchema>;
+
 export const organizationSettingsSchema = organizationViewSchema.extend({ timezones: z.array(z.string()) });
+export type OrganizationSettings = z.infer<typeof organizationSettingsSchema>;
 
 export const digestTimesBodySchema = z
   .object({

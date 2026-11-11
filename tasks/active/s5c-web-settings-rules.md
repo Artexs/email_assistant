@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — build started (pipeline, worktree `task/s5c-web-settings-rules`, database `s5c`); stages 1 and 2 PASS, 3 built, review pending.** Left: stages 4–12 (stage 3 in review). Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5c-build.md`.
+> **Status 2026-11-11 — in progress — build started (pipeline, worktree `task/s5c-web-settings-rules`, database `s5c`); stages 1–3 PASS, 4 built, review pending.** Left: stages 5–12 (stage 4 in review). Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5c-build.md`.
 
 # S5c Web: settings and rules
 
@@ -158,7 +158,7 @@ Each stage lives in its own file in [`s5c-web-settings-rules/`](s5c-web-settings
 
 - [x] [Stage 1](s5c-web-settings-rules/stage-01-core-schemas.md) — Core: the web schemas, the pattern rule, the gate constants, `rule_limit`, `me.digestTimes` [written]
 - [x] [Stage 2](s5c-web-settings-rules/stage-02-gate-service.md) — Gate service, `SettingsNotFoundError`, `settingsDeps`, the `mailbox:settings` refactor [risky] [written]
-- [ ] [Stage 3](s5c-web-settings-rules/stage-03-rules-service.md) — Rules service and repository, the rule audit events, `rules:add` refactor, the sync-folder actor [risky] [written]
+- [x] [Stage 3](s5c-web-settings-rules/stage-03-rules-service.md) — Rules service and repository, the rule audit events, `rules:add` refactor, the sync-folder actor [risky] [written]
 - [ ] [Stage 4](s5c-web-settings-rules/stage-04-organization-digest-times.md) — Organization service and routes, digest times route, `/api/me.digestTimes`, the timezone characterisation tests [risky] [written]
 - [ ] [Stage 5](s5c-web-settings-rules/stage-05-settings-routes.md) — Settings routes, the view composer, the composition [risky] [written]
 - [ ] [Stage 6](s5c-web-settings-rules/stage-06-rules-routes.md) — Rules routes [risky] [written]
@@ -217,3 +217,5 @@ Scope: 21 the "Owns" list missed five changed files and the `tenancy → audit` 
 - 2026-11-11: Stage 2 review PASS (Opus high; 0 blocker, 0 major, 2 minor, 1 question); pushed `9d45202`. Minor: add a test where a `go` point is above 0.5 (threshold goes into the policy), done in a fix commit. Question: `atConfidence` of a `no-go` row is always 0.5 (kept never grows with the threshold); the S4 text stays right ("at confidence ≥ 0.5").
 - 2026-11-11: Stage 3 built, review pending (Opus high): lint, typecheck clean; unit 1610 pass; int 1164 pass (new `config-rules` 13 tests, `rules-cli` 3 tests). Deviations: the `refused: …` CLI lines go through `log.error` (stderr); test case 9 sets `created_at` by SQL.
 - 2026-11-11: Stage 2 fix (tests only): a `go` at 0.8 reaches the policy; the CLI test checks the gate log line and FORCED. int 1166 pass. Reviewed in the group review (test-only change).
+- 2026-11-11: Stage 3 review PASS (Opus high; 0 blocker, 0 major, 2 minor, 1 question); pushed `5dc8030`. Minor 1 (the `23503` maps to `mailbox_not_found` also for a bad org id) gets a fix commit; the race-path test (question) is not worth the cost.
+- 2026-11-11: Stage 4 built, review pending (Opus high): lint, typecheck clean; unit 1616 pass; int 1186 pass (new `tenancy-organization` and `web-organization`; six characterisation cases in `schedule.test.ts`). Deviation: no 404 row in the route matrix (no id in these routes); a user without membership gets 403.

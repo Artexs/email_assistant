@@ -40,6 +40,11 @@ describe("organizationPatchSchema", () => {
     expect(result.success ? [] : result.error.issues[0]?.path).toEqual(["timezone"]);
   });
 
+  test("gives an i18n message for an empty or too long timezone", () => {
+    expect(messageOf(organizationPatchSchema.safeParse({ timezone: "" }))).toBe("timezone_invalid");
+    expect(messageOf(organizationPatchSchema.safeParse({ timezone: "a".repeat(65) }))).toBe("timezone_invalid");
+  });
+
   test("accepts a timezone shape", () => {
     expect(organizationPatchSchema.safeParse({ timezone: "Europe/Warsaw" }).success).toBe(true);
   });
