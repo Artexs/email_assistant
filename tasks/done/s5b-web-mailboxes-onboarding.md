@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — stages 1–14 and the group review PASS, 15.1 done; left: the user go, merge, close.** 15 stage files, B1–B17, 26 review findings fixed. Worktree `task/s5b-web-mailboxes-onboarding`. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5b-build.md`.
+> **Status 2026-11-11 — done.** Merged into `master` (no-ff). 15 stage files, B1–B17, 26 review findings fixed. Worktree `task/s5b-web-mailboxes-onboarding`. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5b-build.md`.
 
 # S5b Web: mailboxes and onboarding
 
@@ -166,7 +166,7 @@ Each stage lives in its own file in [`s5b-web-mailboxes-onboarding/`](s5b-web-ma
 - [x] [Stage 12](s5b-web-mailboxes-onboarding/stage-12-connect-dialog-telegram-card.md) — The connect dialog and the Telegram card [written]
 - [x] [Stage 13](s5b-web-mailboxes-onboarding/stage-13-onboarding-page.md) — Onboarding page [written]
 - [x] [Stage 14](s5b-web-mailboxes-onboarding/stage-14-playwright.md) — Playwright: the fake Telegram server, `mailboxes.spec.ts`, `onboarding.spec.ts` [written]
-- [ ] [Stage 15](s5b-web-mailboxes-onboarding/stage-15-notes-review-merge.md) — Notes, alerts, master plan lines, group review, checkpoint, merge [written]
+- [x] [Stage 15](s5b-web-mailboxes-onboarding/stage-15-notes-review-merge.md) — Notes, alerts, master plan lines, group review, checkpoint, merge [written]
 
 Docker on this PC: every `docker` or `bun run dev:up` command runs inside `newgrp docker <<'EOF' … EOF` (`notes/2026-11-08-docker-socket-newgrp.md`). Git push from the agent shell: `export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/github -o IdentitiesOnly=yes"` (`notes/2026-11-10-git-ssh-push.md`). S5b adds no package (no `bun.lock` change) and one migration (stage 4).
 
@@ -220,3 +220,4 @@ Scope: 26 [minor] the deleted `sending` digest's "lost the claim" line and the r
 - 2026-11-11: stage 13 PASS (minors: ChecklistItem `done` is `boolean | null` for Telegram off — intended; Alert keeps role=alert — accepted); stage 12 fix PASS. Pushed through 74fda9f. Stage 14 built, review pending. Check: lint, typecheck, test:unit (1578), test:int (1134 pass), web build, test:e2e (20 passed, run twice).
 - 2026-11-11: stage 14 PASS (minor: a literal `Linked since` in onboarding.spec — accepted). Pushed through 8407cb4. Step 15.1 (docs) built; group review next.
 - 2026-11-11: group review PASS (5 minors; 1–4 fixed in 0a10d43, PASS; 5 skipped; the 6 s hang test accepted). Full check line in the worktree: lint, typecheck, test:unit (1580), test:int (1134), web build, test:e2e (20 passed). Checkpoint: the walk-through is covered by hand checks of stages 11–13 (pause/resume/password/remove; connect via Other with 409; onboarding four items, link with the fake `/start`, keep shadow mode, `/` -> /activity, both widths, zero console errors) and by the 20 e2e tests (both projects). Waiting for the user go to merge.
+- 2026-11-11: merged into `master` with `git merge --no-ff` (origin/master had no new commits, no migration clash with 20261111000001); task moved to `tasks/done/`. CI result and the dev-database migration: see the next line.

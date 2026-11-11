@@ -16,7 +16,7 @@ Part of [`../s5b-web-mailboxes-onboarding.md`](../s5b-web-mailboxes-onboarding.m
   - Check: `bunx prettier --check` on every changed Markdown file; `grep -n "S5b" docs/known-alerts.md`.
   - Done when: the files are written and pass Prettier.
 
-- [ ] **15.2 Group review, checkpoint, merge**
+- [x] **15.2 Group review, checkpoint, merge**
   - Goal: the whole segment is reviewed as one change, the user sees it work, and it lands on `master`.
   - Decisions:
     - Group review: the `reviewer` subagent on `claude-bridge/claude-opus-5-5` high over the range `<branch base>..HEAD` (all stages PASS first): a pre-mortem ("a bug of S5b reached the user: which stage let it through?"), the tenant and secret rules over every new route, the D11 delete list against the schema, the e2e cleanup. Findings → fix commits, then a new review of the fix range.
