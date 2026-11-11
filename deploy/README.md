@@ -115,7 +115,7 @@ Never run `tailscale up --force-reauth` over the tailnet. It cuts the connection
    - Leave `WEB_TRUSTED_ORIGINS`, `WEB_MAIL_ALLOW_LOCAL` and `WEB_DIST` empty.
 3. Do the section Update. The migrations of S5 run there.
 4. Check the log for the start line `web is on: https://…, dist /app/apps/web/dist`: `$C logs server | grep 'web'`
-   No `web:` warn line and no `WEB_BASE_URL` warn line must follow it.
+   The output must show no other line with `web:` or `WEB_BASE_URL is http://`.
 5. Start Tailscale Serve (you, sudo): `sudo tailscale serve --bg 8080`
 6. Check Serve: `tailscale serve status`
 
@@ -141,17 +141,17 @@ The same command makes a reset link later. The link is a secret. Do not paste it
 
 ### Troubleshooting
 
-| Symptom                                                                    | Cause                                                                    | Fix                                                                                                             |
-| -------------------------------------------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| The page does not open on a device                                         | Tailscale is off on the device, or MagicDNS is off                       | Turn Tailscale on. Run `tailscale status`. Turn MagicDNS on in the admin console.                               |
-| `502` from Serve                                                           | The server is down, or it does not listen on `127.0.0.1:8080`            | Run `$C ps` and `ss -ltn`. Start the server with `$C up -d --wait server`.                                      |
-| Certificate error on the first visit                                       | HTTPS is off in the admin console, or the first certificate is not ready | Turn HTTPS on. Wait a short time. Do not retry in a loop: the certificate authority has a rate limit.           |
-| `403 bad_origin` on every save                                             | `WEB_BASE_URL` is not the URL in the browser bar                         | Set `WEB_BASE_URL` to the exact URL of the browser bar. Run `$C up -d --wait server`.                           |
-| All members share one rate limit, or `auth_sessions.ip_address` is `172.x` | `WEB_TRUSTED_PROXIES` is not the gateway of the Compose network          | Read the gateway again (section Turn it on, step 1). Set it in `.env`. Run `$C up -d --wait server`.            |
-| `web is off` in the log                                                    | `WEB_BASE_URL` is empty                                                  | Set `WEB_BASE_URL` in `.env`. Run `$C up -d --wait server`.                                                     |
-| `web: dist folder missing` in the log                                      | The image has no web build                                               | Rebuild: `$C up -d --build --wait`.                                                                             |
-| The setup link says "invalid"                                              | The link was used, or it is older than 24 hours                          | Make a new link (section Give a member a password).                                                             |
-| The panel stopped after some months                                        | Key expiry was not disabled for the VPS                                  | In the admin console, choose Disable Key Expiry for `email-assistant`. Run `sudo tailscale up` again if needed. |
+| Symptom                                                                     | Cause                                                                    | Fix                                                                                                             |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| The page does not open on a device                                          | Tailscale is off on the device, or MagicDNS is off                       | Turn Tailscale on. Run `tailscale status`. Turn MagicDNS on in the admin console.                               |
+| `502` from Serve                                                            | The server is down, or it does not listen on `127.0.0.1:8080`            | Run `$C ps` and `ss -ltn`. Start the server with `$C up -d --wait server`.                                      |
+| Certificate error on the first visit                                        | HTTPS is off in the admin console, or the first certificate is not ready | Turn HTTPS on. Wait a short time. Do not retry in a loop: the certificate authority has a rate limit.           |
+| `403 bad_origin` on every save                                              | `WEB_BASE_URL` is not the URL in the browser bar                         | Set `WEB_BASE_URL` to the exact URL of the browser bar. Run `$C up -d --wait server`.                           |
+| All members share one rate limit, or `auth_sessions.ip_address` is `172.x`  | `WEB_TRUSTED_PROXIES` is not the gateway of the Compose network          | Read the gateway again (section Turn it on, step 1). Set it in `.env`. Run `$C up -d --wait server`.            |
+| `web is off` in the log                                                     | `WEB_BASE_URL` is empty                                                  | Set `WEB_BASE_URL` in `.env`. Run `$C up -d --wait server`.                                                     |
+| `web: dist folder missing` in the log                                       | The image has no web build                                               | Rebuild: `$C up -d --build --wait`.                                                                             |
+| The setup link says `This link was used or has expired. Ask for a new one.` | The link was used, or it is older than 24 hours                          | Make a new link (section Give a member a password).                                                             |
+| The panel stopped after some months                                         | Key expiry was not disabled for the VPS                                  | In the admin console, choose Disable Key Expiry for `email-assistant`. Run `sudo tailscale up` again if needed. |
 
 ### Turn it off
 
@@ -163,7 +163,11 @@ The auth tables stay.
 
 ### Roll back
 
-The rollback changes code only. There is no down migration, and the old code ignores the auth tables.
+Roll back the code, not the migrations. Do not run `db:rollback`: it deletes the auth tables. The old code ignores them.
+
+After the migration, the old code cannot create a user with a mixed-case e-mail. `org:create` fails on the check `users_email_lower_check`. Use a lower-case e-mail.
+
+Before an Update, write down the current commit: `git rev-parse HEAD`.
 
 1. Go to the previous commit: `git checkout <previous commit>`
 2. Rebuild and start: `$C up -d --build --wait`
