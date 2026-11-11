@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { t } from "../../i18n/en";
-import { api, ApiError } from "../../lib/api";
+import { api } from "../../lib/api";
 import { errorText } from "../../lib/errors";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
@@ -46,7 +46,7 @@ export function RemoveDialog({ mailbox, open, onOpenChange, onRemoved }: RemoveD
     } catch (caught) {
       // A 400 `confirm_mismatch` cannot happen while the button rule holds: it gets the generic text too.
       setFailed(true);
-      toast.error(t(caught instanceof ApiError ? errorText(caught) : "error_generic"));
+      toast.error(t(errorText(caught)));
     } finally {
       setPending(false);
     }

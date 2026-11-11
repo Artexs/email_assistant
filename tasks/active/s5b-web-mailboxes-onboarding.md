@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — stages 1-12 built (stages 1-11 PASS, stage 9 after a fix).** 15 stage files, B1–B17, 26 review findings fixed. Left: stages 1–15 with `run-task` (worktree `task/s5b-web-mailboxes-onboarding`), starting with user step 0. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5b-build.md`.
+> **Status 2026-11-11 — in progress — stages 1-13 built (stages 1-12 PASS, stage 9 after a fix).** 15 stage files, B1–B17, 26 review findings fixed. Left: stages 1–15 with `run-task` (worktree `task/s5b-web-mailboxes-onboarding`), starting with user step 0. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5b-build.md`.
 
 # S5b Web: mailboxes and onboarding
 
@@ -164,7 +164,7 @@ Each stage lives in its own file in [`s5b-web-mailboxes-onboarding/`](s5b-web-ma
 - [x] [Stage 10](s5b-web-mailboxes-onboarding/stage-10-web-foundations.md) — `lib/poll.ts` with the visibility test, the strings, the shared components [written]
 - [x] [Stage 11](s5b-web-mailboxes-onboarding/stage-11-mailboxes-page.md) — Mailboxes page: list, pause, resume, change password, remove [written]
 - [x] [Stage 12](s5b-web-mailboxes-onboarding/stage-12-connect-dialog-telegram-card.md) — The connect dialog and the Telegram card [written]
-- [ ] [Stage 13](s5b-web-mailboxes-onboarding/stage-13-onboarding-page.md) — Onboarding page [written]
+- [x] [Stage 13](s5b-web-mailboxes-onboarding/stage-13-onboarding-page.md) — Onboarding page [written]
 - [ ] [Stage 14](s5b-web-mailboxes-onboarding/stage-14-playwright.md) — Playwright: the fake Telegram server, `mailboxes.spec.ts`, `onboarding.spec.ts` [written]
 - [ ] [Stage 15](s5b-web-mailboxes-onboarding/stage-15-notes-review-merge.md) — Notes, alerts, master plan lines, group review, checkpoint, merge [written]
 
@@ -216,3 +216,4 @@ Scope: 26 [minor] the deleted `sending` digest's "lost the claim" line and the r
 - 2026-11-11: stage 8 fix PASS; fix 9fd3ca2 PASS; pushed through d054e7f. Stage 9 review FAIL (major: no tenant test for recordAuditOnce; minors: assert its return, remove stray setLogLevel; question: homePathOf got an optional `botUsername` argument so `/` and `/api/me` use one telegramAvailable — kept, B13). Stage 10 built, review pending. Check: lint, typecheck, test:unit (1566), web build.
 - 2026-11-11: stage 9 fix PASS, stage 10 PASS (minors: TelegramLink `off` never resets — done in stage 12; question: unreachable block replaces the open link UI — intended per plan). Pushed through 661d6a1. Stage 11 built, review pending. Check: lint, typecheck, test:unit (1567), test:int (0 fail), web build; hand check at 1280 and 400 px (pause, resume, password, remove; no console errors).
 - 2026-11-11: stage 11 PASS (minor: RemoveDialog repeats the ApiError check, fixed with stage 13). Pushed through a22b3b0. Stage 12 built, review pending. Check: lint, typecheck, test:unit (1576), test:int (1134 pass), web build; hand check (GreenMail through "Other", 409 on the second try, `?connect=1`, `tg_off`, 400 px no sideways scroll; the only console line is the browser log of the expected 409).
+- 2026-11-11: stage 12 PASS (minor: the address field resets the app-password switch while no preset matches — fix job next; fieldErrorKeys accepts a string path, kept). Pushed through ec24f02. Stage 13 built, review pending. Check: lint, typecheck, test:unit (1576), web build; hand check with the fake Telegram: four open items, connect via item 1, link with /start, keep shadow mode, `/` -> /activity, 400 px, zero console errors.

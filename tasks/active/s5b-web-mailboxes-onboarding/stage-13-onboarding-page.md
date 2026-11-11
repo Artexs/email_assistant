@@ -4,7 +4,7 @@ Part of [`../s5b-web-mailboxes-onboarding.md`](../s5b-web-mailboxes-onboarding.m
 
 ## Stage 13 — Onboarding page
 
-- [ ] **13.1 The checklist (S11, S12, D15, P10)**
+- [x] **13.1 The checklist (S11, S12, D15, P10)**
   - Goal: `/onboarding` shows the four items with their live state from `/api/me.onboarding`, lets the owner keep shadow mode, and links Telegram in place.
   - Files: change `apps/web/src/islands/OnboardingPage.tsx`; create `apps/web/src/components/onboarding/ChecklistItem.tsx`.
   - Interfaces:
