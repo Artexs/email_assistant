@@ -44,10 +44,11 @@ function ids(rows: { email_id: string }[]): string[] {
   return rows.map((row) => row.email_id);
 }
 
-async function ageFeedback(trx: Transaction<DB>): Promise<void> {
+async function ageFeedback(trx: Transaction<DB>, emailId: string): Promise<void> {
   await trx
     .updateTable("triage_feedback")
     .set({ created_at: sql`created_at - interval '1 minute'` })
+    .where("email_id", "=", emailId)
     .execute();
 }
 
@@ -320,7 +321,7 @@ describe("listLatestFeedbackByEmailIds", () => {
         source: "telegram",
         userId: a.userId,
       });
-      await ageFeedback(trx);
+      await ageFeedback(trx, mine);
       await insertFeedback(trx, ctxA, {
         emailId: mine,
         verdict: "right",
