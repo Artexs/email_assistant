@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — build started (pipeline, worktree `task/s5c-web-settings-rules`, database `s5c`); stages 1–3 PASS, 4 built, review pending.** Left: stages 5–12 (stage 4 in review). Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5c-build.md`.
+> **Status 2026-11-11 — in progress — build started (pipeline, worktree `task/s5c-web-settings-rules`, database `s5c`); stages 1–4 PASS, 5 built, review pending.** Left: stages 6–12 (stage 5 in review). Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5c-build.md`.
 
 # S5c Web: settings and rules
 
@@ -159,7 +159,7 @@ Each stage lives in its own file in [`s5c-web-settings-rules/`](s5c-web-settings
 - [x] [Stage 1](s5c-web-settings-rules/stage-01-core-schemas.md) — Core: the web schemas, the pattern rule, the gate constants, `rule_limit`, `me.digestTimes` [written]
 - [x] [Stage 2](s5c-web-settings-rules/stage-02-gate-service.md) — Gate service, `SettingsNotFoundError`, `settingsDeps`, the `mailbox:settings` refactor [risky] [written]
 - [x] [Stage 3](s5c-web-settings-rules/stage-03-rules-service.md) — Rules service and repository, the rule audit events, `rules:add` refactor, the sync-folder actor [risky] [written]
-- [ ] [Stage 4](s5c-web-settings-rules/stage-04-organization-digest-times.md) — Organization service and routes, digest times route, `/api/me.digestTimes`, the timezone characterisation tests [risky] [written]
+- [x] [Stage 4](s5c-web-settings-rules/stage-04-organization-digest-times.md) — Organization service and routes, digest times route, `/api/me.digestTimes`, the timezone characterisation tests [risky] [written]
 - [ ] [Stage 5](s5c-web-settings-rules/stage-05-settings-routes.md) — Settings routes, the view composer, the composition [risky] [written]
 - [ ] [Stage 6](s5c-web-settings-rules/stage-06-rules-routes.md) — Rules routes [risky] [written]
 - [ ] [Stage 7](s5c-web-settings-rules/stage-07-web-foundations.md) — Web foundations: `ApiError.raw`, the helpers, `textarea`, the lint scope, the strings [written]
@@ -220,3 +220,5 @@ Scope: 21 the "Owns" list missed five changed files and the `tenancy → audit` 
 - 2026-11-11: Stage 3 review PASS (Opus high; 0 blocker, 0 major, 2 minor, 1 question); pushed `5dc8030`. Minor 1 (the `23503` maps to `mailbox_not_found` also for a bad org id) gets a fix commit; the race-path test (question) is not worth the cost.
 - 2026-11-11: Stage 4 built, review pending (Opus high): lint, typecheck clean; unit 1616 pass; int 1186 pass (new `tenancy-organization` and `web-organization`; six characterisation cases in `schedule.test.ts`). Deviation: no 404 row in the route matrix (no id in these routes); a user without membership gets 403.
 - 2026-11-11: Stage 3 fix: `23503` maps to `mailbox_not_found` only for a mailbox id (and an own transaction); test added. int 1187 pass. Reviewed in the group review.
+- 2026-11-11: Stage 4 review PASS (Opus high; 0 blocker, 0 major, 2 minor, 1 question); pushed `f1c15d8` (this push also carries the test-only stage 2 fix `7bf854e`, checked locally with int 1166 pass). Open from the review: (a) stage 4 minor 2, `web-organization.test.ts` should assert the owner's times `[]` before the PATCH, not `not.toEqual`; (b) `docs/modules.md` needs the `tenancy → audit` edge: stage 12 adds a line to `tasks/planned/s5e-web-deploy-docs.md`; (c) the sender and chaser half of fact 3 has no test (accepted; the code read in fact 3 is the evidence). Both fixes (a) go into the next fix commit.
+- 2026-11-11: Stage 5 built, review pending (Opus high): lint, typecheck clean; unit 1616 pass; int 1201 pass (new `web-settings` 12 tests). Also: the stage 4 minor (a) is fixed in this commit (the owner's times are read before the PATCH). Deviation: `routes.ts` imports `z` from `zod` like `mail/connect.ts`.

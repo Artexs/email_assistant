@@ -201,6 +201,7 @@ describe("PATCH /api/organization", () => {
 describe("PATCH /api/me/digest-times", () => {
   test("sorts the times and changes only the session user's row", async () => {
     const { app } = await setup();
+    const ownerBefore = (await json(await app.request("/api/me", as("owner")))).digestTimes;
     const res = await app.request(
       "/api/me/digest-times",
       as("assistant", { method: "PATCH", body: { times: ["13:00", "08:00"] } })
@@ -209,7 +210,7 @@ describe("PATCH /api/me/digest-times", () => {
     expect(await json(res)).toEqual({ times: ["08:00", "13:00"] });
     expect((await json(await app.request("/api/me", as("assistant")))).digestTimes).toEqual(["08:00", "13:00"]);
     const ownerTimes = (await json(await app.request("/api/me", as("owner")))).digestTimes;
-    expect(ownerTimes).not.toEqual(["08:00", "13:00"]);
+    expect(ownerTimes).toEqual(ownerBefore);
 
     const none = await app.request("/api/me/digest-times", as("assistant", { method: "PATCH", body: { times: [] } }));
     expect(await json(none)).toEqual({ times: [] });
