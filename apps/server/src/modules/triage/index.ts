@@ -1,6 +1,8 @@
 export { listForLabeling, recordFeedback, recordWebFeedback } from "./feedback";
 export type { LabelItem, RecordFeedbackInput, WebFeedbackResult } from "./feedback";
 export { undoWithFeedback } from "./undo";
+export { triageRoutes } from "./routes";
+export type { TriageRouteDeps } from "./routes";
 export { parseLabelInput } from "./label-input";
 export type { LabelInput } from "./label-input";
 export { classifyEmail } from "./classifier";

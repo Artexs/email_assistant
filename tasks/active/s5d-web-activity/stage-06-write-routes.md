@@ -6,7 +6,7 @@ Part of [`../s5d-web-activity.md`](../s5d-web-activity.md). Read that file's "Do
 
 One step. The Undo route starts a mailbox change from the browser; the feedback route writes the labels that open the go/no-go gate (S5c).
 
-- [ ] **6.1 `triage/routes.ts`, mounted in `web.ts` (B8 b, c)**
+- [x] **6.1 `triage/routes.ts`, mounted in `web.ts` (B8 b, c)**
   - Goal: every member gives feedback and starts an Undo from the web through the stage 2 services.
   - Files: create `apps/server/src/modules/triage/routes.ts`, `apps/server/test/integration/web-feedback-undo.test.ts`; change `triage/index.ts`, `apps/server/src/web.ts`, `apps/server/src/main.ts`.
   - Interfaces:

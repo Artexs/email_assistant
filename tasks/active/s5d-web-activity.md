@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — building; stage 5 built, review pending.** A1–A10 ("ok"), 14 facts, B1–B15, 11 stage files, cold-reviewed (all findings fixed). Left: the build with `run-task` in an own session (user step 0 first), stages 1–11.
+> **Status 2026-11-11 — in progress — building; stage 6 built, review pending.** A1–A10 ("ok"), 14 facts, B1–B15, 11 stage files, cold-reviewed (all findings fixed). Left: the build with `run-task` in an own session (user step 0 first), stages 1–11.
 
 # S5d Web: activity
 
@@ -154,7 +154,7 @@ Each stage lives in its own file in [`s5d-web-activity/`](s5d-web-activity/). An
 - [x] [Stage 3](s5d-web-activity/stage-03-activity-repos.md) — Read-model repositories: `listActivityRows`, latest feedback, latest delegation [risky] [written]
 - [x] [Stage 4](s5d-web-activity/stage-04-list-activity.md) — `listActivity`, the cursor, the query count [risky] [written]
 - [x] [Stage 5](s5d-web-activity/stage-05-activity-route.md) — `GET /api/activity` and its wiring [risky] [written]
-- [ ] [Stage 6](s5d-web-activity/stage-06-write-routes.md) — `POST /api/feedback`, `POST /api/actions/undo` and their wiring [risky] [written]
+- [x] [Stage 6](s5d-web-activity/stage-06-write-routes.md) — `POST /api/feedback`, `POST /api/actions/undo` and their wiring [risky] [written]
 - [ ] [Stage 7](s5d-web-activity/stage-07-web-foundations.md) — Web foundations: strings, filters, list state, texts, API, media hook, lint scope [written]
 - [ ] [Stage 8](s5d-web-activity/stage-08-activity-list-page.md) — Activity page part 1: filters, list, rows, load more, refresh, polling, states [written]
 - [ ] [Stage 9](s5d-web-activity/stage-09-panel-and-actions.md) — Activity page part 2: panel, ✅ ✏️ ↩️, picker, toasts [written]
@@ -218,3 +218,4 @@ Questions: 18 an empty poll with older pages loaded → `firstPage` (B11, stage 
 - 2026-11-11: Stage 3 built, review pending (Opus high): lint, typecheck clean; unit 1677 pass; int 1232 pass (12 new in `activity-repo`: tenant filter, latest result, window, mailbox, keyset paging with equal timestamps, microsecond key, not-rated, empty category list, query count 0 for no ids).
 - 2026-11-11: Stage 4 built, review pending (Opus high): lint, typecheck clean; unit 1677 pass; int 1244 pass (12 new in `reports-activity`; the query count is the same for 3 and 60 rows, at most 7). Deviation: test 1 gives the move and the mark_read distinct `createdAt`, because `listActionsForEmails` orders equal `created_at` by random id and the phrase order flickered; stage 10 seeds must do the same.
 - 2026-11-11: Stage 2 review PASS (Opus high; 0 findings); pushed. Stage 3 review PASS (Opus high; 0 blocker, 0 major, 1 minor: `ageFeedback` had no WHERE); pushed `dcecb48`; the minor is fixed in its own test-only commit. Stage 5 built, review pending (Opus high): lint, typecheck clean; unit 1677 pass; int 1249 pass (5 new in `web-activity`: matrix, foreign mailbox gives 200 with no items, categories and notRated, cursor paging, a 400 body with no input).
+- 2026-11-11: Stage 4 review PASS (Opus high; 1 minor: `decodeActivityCursor` accepted dates that do not exist, which would give a 500; fixed in `567211f`, review pending); stage 5 review PASS (Opus high; 0 findings); pushed `cd1a4dc`. Stage 6 built, review pending (Opus high): lint, typecheck clean; unit 1677 pass; int 1258 pass (9 new in `web-feedback-undo`; `actionsScope` comes from `main.ts` through `WebExtras`; the two other `webDeps` test callers pass the scope).
