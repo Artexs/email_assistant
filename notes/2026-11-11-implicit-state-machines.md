@@ -169,3 +169,10 @@ Checked against the code by reading (nothing run). The plan file holds the full,
 - `delegation/chaser.ts:160` creates reminder rows (draft `ready`, send `awaiting_approval`) without `actionStatusFor`.
 - `undo.ts` writes no status directly: it calls `insertReverse` and `expireReady` (→ `expireReadyOriginals`, reason `undo`).
 - Latent edges (a guard admits them, no caller uses them): `releaseAction` `ready → approved|applying`, `approved → ready|applying`; `markApplying` for a non-send `approved` row; `finishAction` default `from` lets `ready → expired`; `markUndone` has no type guard.
+
+## Built (2026-11-11, `tasks/done/state-machine-transitions.md`)
+
+- The `actions.status` map is code now: `apps/server/src/modules/actions/transitions.ts` (statuses, entries, edges E1–E20, `WRITER_GUARDS` per type, latent edges, pair rules P1–P7). No runtime code imports it.
+- Tests: `transitions.test.ts` (test A, unit: the map is consistent; guard edges = edges + latent edges per type), `apps/server/test/integration/actions-transitions.test.ts` (test C: the CHECK lists from `pg_get_constraintdef`; test B: each writer × 10 statuses × types in Postgres, with held and stale locks).
+- Facts found: the status CHECK name is `actions_status_check`. `releaseAction` with `toStatus: "ready"` on a send in `approved` or `applying` fails with `23514` (`actions_send_never_ready_check`), not `false`. A failed statement aborts the `withRollback` transaction: use a savepoint (`expectCode` in `actions-schema.test.ts`).
+- Limit: a brand-new writer function fails no test. Only the `docs/code-patterns.md` rule covers it. Runtime follow-up: `tasks/planned/actions-transitions-runtime.md`.

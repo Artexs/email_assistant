@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — stages 1–5 done (map, tests A, B, C, pair-rule tests, docs).** Left: group review, done-checklist, merge at checkpoint 2. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-state-machine-build.md`.
+> **Status 2026-11-11 — done — stages 1–5, group review PASS, merged into `master`.** Follow-up: `tasks/planned/actions-transitions-runtime.md` (D3, `[risky]`).
 
 # Explicit state machine for `actions.status`
 
@@ -314,7 +314,7 @@ Stages: 1 analysis stage, 4 test stages. User checkpoints: after stage 1 (approv
   - Goal: the docs name the map and the rule.
   - Files: `docs/architecture.md` §4.6 (one line under `actions.status`: "Code map: `apps/server/src/modules/actions/transitions.ts`; tests compare it with the guards"; and the corrections from the stage 1 log, for example E11 `applying → applying`), `docs/code-patterns.md` § Data access (one rule: "A function that changes `actions.status` gets a row in `actions/transitions.ts` and a case in `actions-transitions.test.ts`."), `docs/modules.md` only if it lists the `actions` files.
   - Interfaces: none. Decisions: D4 line only if the user agreed. Test: none. Check: `bun run lint` (Prettier on Markdown, if configured). Done when: the lines are there. Out of scope: docs of other machines.
-- [ ] **Group review** of stages 1–5 (reviewer, `git diff master...task/state-machine-transitions`), then **checkpoint 2**: the user approves the merge.
+- [x] **Group review** of stages 1–5 (reviewer, `git diff master...task/state-machine-transitions`), then **checkpoint 2**: the user approves the merge.
 
 ## Coverage (step 1.2, 2026-11-11)
 
@@ -390,10 +390,10 @@ None.
 
 ## Done-checklist
 
-- [ ] Done-when checks pass (name the command and its output in the log).
-- [ ] `docs/` describe what was built (architecture §4.6, code-patterns); related ADRs: none.
-- [ ] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
-- [ ] Follow-up ideas are in `planned/`: the runtime step (D3), and, if the user wants them, the next machines (`emails` location flags, `mailboxes.status`, `delegations.status`) and D4.
+- [x] Done-when checks pass (name the command and its output in the log).
+- [x] `docs/` describe what was built (architecture §4.6, code-patterns); related ADRs: none.
+- [x] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
+- [x] Follow-up ideas are in `planned/`: the runtime step (D3), and, if the user wants them, the next machines (`emails` location flags, `mailboxes.status`, `delegations.status`) and D4.
 
 ## Log
 
@@ -407,3 +407,4 @@ None.
 - 2026-11-11: stage 3 built: `actions-transitions.test.ts` with test C (`actions_status_check` exists by that name; status and type lists equal the map; `bogus` → `23514`) and test B part 1 (`checkWriter` reads the expected result from `WRITER_GUARDS`; `markApplying`, `finishAction` 3 variants × 3 outcomes, `releaseAction` × 3 targets; only skip `send × ready`; `releaseAction` to `ready` on send `approved|applying` → `23514` in a savepoint). Mutation try (undone): remove `approved` from `markApplying` `create_draft` → 1 fail. Review: PASS (1 minor savepoint name and 1 comment fixed). Check: `bun test apps/server/test/integration/actions-transitions.test.ts` → 15 pass; `bun run test:int` → 1226 pass, 0 fail; lint, typecheck pass.
 - 2026-11-11: stage 4 built: test B for `setExpired`, `setApproved`, `setRejected`, `expireReadyDraft`, `expireStaleReady`, `expireReadyOriginals` (each reason), `markUndone`, and the entry writers (`createPlanned`, `insertReverse`, `insertSendAgain`, expected statuses from `ACTION_ENTRIES`). `checkWriter` has `lock: "token" | "free" | "fresh"`; with `free` each admitted row is also driven with a fresh lock (blocks only when `held: "blocks"`) and a stale lock. `setRejected` `from "approved"` runs on the `approved` status only (the other variant covers `awaiting_approval`). Mutation try (undone): remove `held: "blocks"` from `setRejected` `from "approved"` → 1 fail. Review: PASS. Minor points not done (optional): `status_reason` not asserted per `expireReadyOriginals` reason; no boundary row `locked_at = staleBefore`; the `reverses_action_id IS NULL` guard of `expireReadyDraft` and `expireStaleReady` has no field in the map and no reverse-row case. Check: `bun test apps/server/test/integration/actions-transitions.test.ts` → 29 pass; `bun run test:int` → 1240 pass, 0 fail; lint, typecheck pass.
 - 2026-11-11: stage 5 built: P1 re-check test in `actions-send.test.ts` (draft not `applied` → send released `approved`, no attempt, no SMTP call) and P4 reason `expired` test in `actions-drafts.test.ts` (deviation: they sit next to the local helpers of those files, not in `actions-transitions.test.ts`). Every `PAIR_RULES.test` names real tests; test A checks the format. A first version read test files with `readFileSync` (breaks the "no source text" rule): the main session sent a fix round; the check is now pure data in `transitions.test.ts`. Docs: §4.6 code-map line, E7 `approved → failed`, E17 `approved → rejected`, E11 `applying → applying`, E10 `applying → ready` wording; `code-patterns.md` rule; `modules.md` line. No D4 line. Review: PASS (1 comment fixed). Check: `bun run test:int` → 1242 pass, 0 fail; `bun run test:unit`, lint, typecheck pass.
+- 2026-11-11: group review of stages 1–5 (`eac7146..05d06ee`): PASS. Each "Done when" item checked; `git diff eac7146 --stat -- apps/server/src` shows only `transitions.ts` and `transitions.test.ts`. Minor limits recorded in `tasks/planned/actions-transitions-runtime.md`: a brand-new writer function fails no test (only the code-patterns rule covers it); `PAIR_RULES.test` is checked for format only; the `reverses_action_id IS NULL` guard has no map field. Done-checklist: follow-up idea `tasks/planned/actions-transitions-runtime.md` (D3); facts appended to `notes/2026-11-11-implicit-state-machines.md`; no new alert; no ADR. Ideas for the other machines: not written (the user did not ask). Checkpoint 2: the user said "proceed until you finish whole implementation plan", so the main session merges without a separate stop.
