@@ -60,8 +60,9 @@ export async function addSenderRule(
     return await inTransaction(db, run);
   } catch (error) {
     // The mailbox was removed between the check and the insert (foreign key). Inside a caller's
-    // transaction the error aborted it, so only a transaction of this service maps it.
-    if (ownsTransaction && (error as { code?: string } | null)?.code === "23503") {
+    // transaction the error aborted it, so only a transaction of this service maps it. Without a
+    // mailbox id the foreign key is the organization one: rethrow.
+    if (ownsTransaction && input.mailboxId !== null && (error as { code?: string } | null)?.code === "23503") {
       return { kind: "mailbox_not_found" };
     }
     throw error;

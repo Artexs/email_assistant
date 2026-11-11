@@ -126,6 +126,17 @@ describe("addSenderRule", () => {
     });
   });
 
+  test("an unknown organization with no mailbox id throws and does not answer mailbox_not_found", async () => {
+    // The service owns the transaction here: the failed insert rolls it back, nothing persists.
+    await expect(
+      addSenderRule(
+        db,
+        { orgId: randomUUID() },
+        { mailboxId: null, pattern: "firma.test", kind: "vip", actor: "user-1", now: NOW }
+      )
+    ).rejects.toMatchObject({ code: "23503" });
+  });
+
   test("an invalid pattern throws a HardError without the pattern", async () => {
     await withRollback(db, async (trx) => {
       const { a } = await createTwoTenants(trx);
