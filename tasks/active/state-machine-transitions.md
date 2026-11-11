@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — stage 1 done (edge table confirmed, coverage matrix); checkpoint 1 passed by the user's "proceed until you finish" instruction.** Left: stages 2–5, group review, merge at checkpoint 2. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-state-machine-build.md`.
+> **Status 2026-11-11 — in progress — stages 1–2 done (map `transitions.ts`, test A).** Left: stages 3–5 (test C, test B, pair rules, docs), group review, merge at checkpoint 2. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-state-machine-build.md`.
 
 # Explicit state machine for `actions.status`
 
@@ -195,7 +195,7 @@ Stages: 1 analysis stage, 4 test stages. User checkpoints: after stage 1 (approv
 
 ### Stage 2 — The map and test A (unit)
 
-- [ ] **2.1 `transitions.ts`.**
+- [x] **2.1 `transitions.ts`.**
   - Goal: the map as data, with no import of a DB or a runtime module.
   - Files: new `apps/server/src/modules/actions/transitions.ts` (about 200 lines). Not exported from `actions/index.ts` (no consumer yet).
   - Interfaces (the planner can refine the names):
@@ -267,7 +267,7 @@ Stages: 1 analysis stage, 4 test stages. User checkpoints: after stage 1 (approv
     ```
   - Decisions: D2, D8, D9, D12. Comments in English STE. The header comment says: "Source of truth for `actions.status` edges. A new status write must update this file; `transitions.test.ts` and `actions-transitions.test.ts` fail otherwise."
   - Test: 2.2. Check: `bun run typecheck && bun run lint`. Done when: the file holds the confirmed tables of stage 1. Out of scope: any import of this file from runtime code.
-- [ ] **2.2 Test A, `transitions.test.ts` (unit, no DB).**
+- [x] **2.2 Test A, `transitions.test.ts` (unit, no DB).**
   - Goal: the map is consistent with itself and with `@ea/core`.
   - Files: new `apps/server/src/modules/actions/transitions.test.ts` (about 100 lines).
   - Interfaces: imports `transitions.ts`; from `@ea/core`: `actionStatusFor` (`(decision: PolicyDecision) => "ready" | "awaiting_approval" | "logged"`, `packages/core/src/triage/policy.ts:55`), `type PolicyDecision` (`"apply" | "await_approval" | "log_only"`, `policy.ts:6`; no exported array of decisions, so the test writes `const DECISIONS = ["apply", "await_approval", "log_only"] as const satisfies readonly PolicyDecision[]`), and `actionTypes` (const array). `actionTypeSchema` is not exported from `@ea/core` (planner check 2026-11-11).
@@ -403,3 +403,4 @@ None.
 - 2026-11-11: planner check of the step detail against the code (read only: `fixtures.ts`, `helpers.ts`, `actions/repo.ts`, `actions/expiry.ts`, `actions/index.ts`, `@ea/core`, migrations). Corrections: `actionTypeSchema` is not in `@ea/core` (use `actionTypes`); CHECK names (`actions_send_approved_check`, `actions_type_check`) and 3.1 selects the list CHECKs by name; `releaseAction` to `ready` on an admitted send row fails with `23514` (savepoint per case); `setExpired`, `setApproved`, `setRejected`, `expireReadyDraft`, `insertSendAgain` are only in `actions/repo`; batch writers return rows, not booleans; held case for `expireStaleReady`, `expireReadyOriginals`; `bun run test:int -- <name>` does not narrow the run. Real signatures added to 3.2, 4.1, 4.2, 5.1. Fixture option names were right.
 - 2026-11-11: stage 1, steps 1.1 and 1.2 (implementer, analysis only; only this file changed). Command of 1.1: `grep -rn "finishAction\|releaseAction\|markApplying\|markUndone\|setExpired\|setApproved\|setRejected\|expireReadyDraft\|expireReadyOriginals\|expireStaleReady\|createPlanned\|insertReverse\|insertSendAgain" apps/server/src --include=*.ts` (ERE variant `-E`). Result: no status-writer caller outside the files that the tables and the step list name, plus `composition.ts` and `delegation/service.ts` (they call `expireReady` and `expireReminderActions`, not a repo writer). A second grep (`updateTable("actions")`, `insertInto("actions")`, `UPDATE actions`, `INSERT INTO actions`) finds status writes only in `actions/repo.ts`. All 20 edges, 3 entry writers, 13 writers and 7 pair rules are confirmed; the corrections (1–11) are in "Stage 1 result"; the matrix is in "Coverage". No code changed, nothing ran except grep/read commands. Boxes 1.1, 1.2 are left for the main agent to tick.
 - 2026-11-11: stage 1 reviewed: FAIL (correction 10 wrong about E6 `smtp_error`; 4 minor) → fixed → PASS (3 minor, fixed by the main session). Grep of step 1.1 found no missing writer caller. Checkpoint 1: the user said "proceed until you finish whole implementation plan / corrections of it", so the main session accepts the confirmed edge table and L1–L8 without a stop.
+- 2026-11-11: stage 2 built: `transitions.ts` (`WRITER_GUARDS.from` per type; `LatentEdge.types`; E14 split into E14a/b/c, one per writer; more latent edges than L1–L8, each checked against `repo.ts` by the reviewer: `markApplying` `ready → applying` for mailbox types, `finishAction` `applying → *` for mailbox types and send `applying → expired`, `releaseAction` `applying → ready|applying` for mailbox types and send `approved → applying`, `finishAction` `ready → failed` for `save_summary`). Test A has 13 tests. Mutation tries (undone): M1 remove E15 → test (f) and `nextStatuses` fail; M2 add `approved` to the `setApproved` guard → test (f) fails. Deviation: "retry edge" means "written by `releaseAction`" (E10, E13 change the status). Review: PASS (2 minor comments fixed). Check: `bun run lint && bun run typecheck && bun run test:unit` → 1673 pass, 0 fail.
