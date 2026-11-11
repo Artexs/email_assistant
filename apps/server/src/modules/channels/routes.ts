@@ -1,3 +1,4 @@
+import type { TelegramLink, TelegramState } from "@ea/core";
 import { Hono } from "hono";
 
 import type { Db } from "../../platform/db";
@@ -25,12 +26,13 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
     const { userId } = c.get("session");
     const link = await getChatLinkForUser(deps.db, ctx, userId);
     const botUsername = deps.botUsername ? await deps.botUsername().catch(() => null) : null;
-    return c.json({
+    const state: TelegramState = {
       available: deps.botUsername !== null,
       linked: link !== undefined,
       linkedAt: link?.linkedAt.toISOString() ?? null,
       botUsername,
-    });
+    };
+    return c.json(state);
   });
 
   app.post("/channels/telegram/link", async (c) => {
@@ -47,7 +49,11 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
     const { token, expiresAt } = await createLinkToken(deps.db, ctx, userId, deps.now());
     log.info(`web: telegram link made for user ${userId}`);
     c.header("Cache-Control", "no-store");
-    return c.json({ url: `https://t.me/${username}?start=${token}`, expiresAt: expiresAt.toISOString() });
+    const linkAnswer: TelegramLink = {
+      url: `https://t.me/${username}?start=${token}`,
+      expiresAt: expiresAt.toISOString(),
+    };
+    return c.json(linkAnswer);
   });
 
   app.delete("/channels/telegram/link", async (c) => {

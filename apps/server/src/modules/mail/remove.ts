@@ -2,6 +2,7 @@ import { sameAddress } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
+import { describeError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 
@@ -64,9 +65,7 @@ export async function removeMailbox(
       try {
         await changeMailboxStatus(db, ctx, mailboxId, { from: "paused", to: "active", at: now });
       } catch (restoreError) {
-        log.error(
-          `mailbox ${mailboxId} status restore failed: ${restoreError instanceof Error ? restoreError.message : "unknown error"}`
-        );
+        log.error(`mailbox ${mailboxId} status restore failed: ${describeError(restoreError)}`);
       }
     }
     throw error;
