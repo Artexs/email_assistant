@@ -1,5 +1,18 @@
 export { checkMailbox, type CheckDeps, type CheckOptions, type CheckReport } from "./check";
-export { buildFolderMap, connectMailbox, updateMailboxPassword, type ConnectDeps, type ConnectInput } from "./connect";
+export {
+  buildFolderMap,
+  connectMailbox,
+  updateMailboxPassword,
+  type ConnectDeps,
+  type ConnectInput,
+  type ConnectMeta,
+} from "./connect";
+export { connectMailboxRequest } from "./connect-request";
+export { isLocalMailHost } from "./host-check";
+export { removeMailbox, type RemoveDeps, type RemoveResult } from "./remove";
+export { mailErrorBody, mailRoutes, WEB_MAIL_TIMEOUTS, type MailRouteDeps } from "./routes";
+export { getMailboxView, listMailboxViews } from "./views";
+export { switchMailboxStatus, type SwitchResult } from "./status";
 export { ensureSyncFolders, setSyncFolderEnabled, type SyncFolderSwitchResult } from "./folders";
 export { auditExitCode, compareFolderWithDb, compareInboxWithDb, type AuditCounts, type InboxKey } from "./audit";
 export { openMailboxProvider, type OpenDeps } from "./open";
@@ -11,7 +24,10 @@ export { composeMessage } from "./imap/compose";
 export { openSmtpSender, verifySmtpLogin, type SmtpConnectOptions } from "./imap/smtp";
 export {
   INBOX,
+  HostNotAllowedError,
   MailAuthError,
+  MailboxExistsError,
+  MailboxNotFoundError,
   MailFolderMissingError,
   MailNotFoundError,
   type FolderMessageMeta,
@@ -38,6 +54,7 @@ export {
   getEmailMeta,
   getJunkFolderPath,
   getMailbox,
+  getMailboxSummary,
   listEmailsByMessageIds,
   listFolderUids,
   listMailboxes,

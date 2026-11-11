@@ -135,6 +135,20 @@ export async function getMailbox(db: DbOrTrx, ctx: TenantContext, mailboxId: str
   return row && toMailboxRow(row);
 }
 
+export async function findMailboxIdByAddress(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  address: string
+): Promise<string | undefined> {
+  const row = await db
+    .selectFrom("mailboxes")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where(sql<string>`lower(address)`, "=", sql<string>`lower(${address})`)
+    .executeTakeFirst();
+  return row?.id;
+}
+
 export async function lockMailbox(
   trx: Transaction<DB>,
   ctx: TenantContext,
@@ -431,10 +445,26 @@ export interface MailboxSummary {
   created_at: Date;
 }
 
+const summaryColumns = ["id", "address", "status", "last_synced_at", "status_changed_at", "created_at"] as const;
+
+export async function getMailboxSummary(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string
+): Promise<MailboxSummary | undefined> {
+  const row = await db
+    .selectFrom("mailboxes")
+    .select(summaryColumns)
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", mailboxId)
+    .executeTakeFirst();
+  return row && { ...row, status: mailboxStatusSchema.parse(row.status) };
+}
+
 export async function listMailboxes(db: DbOrTrx, ctx: TenantContext): Promise<MailboxSummary[]> {
   const rows = await db
     .selectFrom("mailboxes")
-    .select(["id", "address", "status", "last_synced_at", "status_changed_at", "created_at"])
+    .select(summaryColumns)
     .where("org_id", "=", ctx.orgId)
     .orderBy("created_at")
     .orderBy("id")

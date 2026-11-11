@@ -18,6 +18,62 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `web: mailbox connect failed: <label>` and `web: mailbox password check failed: <label>`
+
+- **First seen:** 2026-11-11 (S5b)
+- **Source:** `apps/server/src/modules/mail/routes.ts`, `POST /api/mailboxes` and `POST /api/mailboxes/:id/password`. Level `info`, one line per 422 or 502 answer.
+- **Cause:** a user typo (wrong password, wrong host) or a provider outage or timeout. The label comes from `describeError`; it never holds the password.
+- **Fix:** none needed for one line. Many lines in a row for one provider mean an outage or a changed server setting: check the preset hosts in `packages/core/src/mail/providers.ts`. WP and o2 user-name formats are not verified (`notes/2026-11-11-web-mailboxes-facts.md`).
+- **Status:** won't fix (expected)
+
+### `web: telegram getMe failed: <label>`
+
+- **First seen:** 2026-11-11 (S5b)
+- **Source:** `apps/server/src/modules/channels/routes.ts`. Warning. Only `POST /api/channels/telegram/link` logs it. `GET /api/channels/telegram` and `/api/me` swallow the failure (`.catch(() => null)`). A `getMe` outage shows in the log only when someone clicks "Link Telegram".
+- **Cause:** the Telegram API is not reachable (network, wrong `TELEGRAM_API_ROOT`, bad token) or the 3 s limit ran out. The label is `telegramErrorLabel`.
+- **Fix:** check the network and the bot token. The link route then answers 502 `telegram_unreachable` and writes no token row. `/api/me` shows `botUsername: null`.
+- **Status:** investigating (per case)
+
+### `web: home path failed: <label>`
+
+- **First seen:** 2026-11-11 (S5b)
+- **Source:** `apps/server/src/platform/http.ts`, the `/` page gate. Warning.
+- **Cause:** `homePath` (the onboarding state of the user) threw, for example a database error.
+- **Fix:** none for one line: `/` redirects to `/onboarding`. Read the error label and check the database.
+- **Status:** investigating (per case)
+
+### `web: WEB_MAIL_ALLOW_LOCAL=true: the connect form accepts local hosts`
+
+- **First seen:** 2026-11-11 (S5b)
+- **Source:** `apps/server/src/web.ts`, once at start. Warning.
+- **Cause:** `WEB_MAIL_ALLOW_LOCAL=true` lets the connect form accept local and private hosts. The dev and e2e setups need it for GreenMail.
+- **Fix:** the key must be empty or `false` on the VPS. If this line shows on the VPS, remove the key from `.env` and restart.
+- **Status:** workaround (dev and e2e only)
+
+### `mailbox <id> removed by user <id>`
+
+- **First seen:** 2026-11-11 (S5b)
+- **Source:** `apps/server/src/modules/mail/remove.ts`. Level `info`.
+- **Cause:** an owner removed a mailbox in the panel. `delete_mailbox` deleted every row of it. Linked owners get the `mailbox_removed` notice.
+- **Fix:** none. It is a record, not an error.
+- **Status:** won't fix (expected)
+
+### `sync <mailbox id> failed: … violates foreign key constraint …` right after a removal
+
+- **First seen:** 2026-11-11 (S5b)
+- **Source:** `apps/server/src/modules/mail/jobs.ts`, the per-mailbox `catch` of the sync job. Error line, one per run that held the mailbox at that second.
+- **Cause:** a sync run inserted a mail into a mailbox that `removeMailbox` deleted at the same time. The triage save is not affected: `saveTriage` returns `lost` and writes nothing (fact 11).
+- **Fix:** none. The next tick has no mailbox and is clean. Investigate only when the line repeats with no removal.
+- **Status:** won't fix (expected)
+
+### `outbox <id>: lost the claim after the send`
+
+- **First seen:** 2026-11-11 (S5b)
+- **Source:** `apps/server/src/modules/channels/sender.ts`. Warning.
+- **Cause:** right after a mailbox removal, `delete_mailbox` deleted a `sending` digest row that the sender already held. The digest went out, but the sender could not mark it. The unsent `digests` row stays, so the next digest repeats that period (B7, cold review finding 26).
+- **Fix:** none. One repeated period is accepted. Investigate only when the line shows with no removal.
+- **Status:** won't fix (expected)
+
 ### `sync <mailbox id> folder <key>: failed 3 runs in a row`
 
 - **First seen:** 2026-11-09

@@ -53,6 +53,16 @@ describe("imapFlowOptions", () => {
     );
   });
 
+  test("connectionTimeoutMs also sets the greeting and socket timeouts; without it they are absent", () => {
+    const set = imapFlowOptions({ host: "poczta.interia.pl", port: 993, connectionTimeoutMs: 20_000, ...creds });
+    expect(set.connectionTimeout).toBe(20_000);
+    expect(set.greetingTimeout).toBe(20_000);
+    expect(set.socketTimeout).toBe(20_000);
+    const bare = imapFlowOptions({ host: "poczta.interia.pl", port: 993, ...creds });
+    expect(bare.greetingTimeout).toBeUndefined();
+    expect(bare.socketTimeout).toBeUndefined();
+  });
+
   test("connectionTimeoutMs is passed on", () => {
     const options = imapFlowOptions({ host: "poczta.interia.pl", port: 993, connectionTimeoutMs: 5_000, ...creds });
     expect(options.connectionTimeout).toBe(5_000);

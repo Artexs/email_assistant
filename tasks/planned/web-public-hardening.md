@@ -14,6 +14,7 @@ The login and the API hold up on the public internet: brute force, credential st
 - A leaked-password check on password set and change (Better Auth "Have I Been Pwned" plugin or an equivalent), and a captcha or proof-of-work on the login and reset forms (Better Auth captcha plugin).
 - The e-mail sender for `sendResetPassword` (S6) with the same answer for a known and an unknown e-mail (no enumeration); the HTTP block of `request-password-reset` from S5 is removed then.
 - Session list and "sign out everywhere" in the Account card; session cookies `Secure` (automatic with an `https://` base URL) and the `trustedProxies` list set for the public proxy.
+- The mail host rule of the connect form (`isLocalMailHost`) also checks the DNS answer of a host name, so a public name that points to a private address is refused (S5b B12).
 - `docs/architecture.md` §7 lists the controls.
 
 ## Plan

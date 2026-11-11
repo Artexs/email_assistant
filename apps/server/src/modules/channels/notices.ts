@@ -63,7 +63,15 @@ import { getOrganization, listMemberships } from "../tenancy";
 import { listTriagedBetween } from "../triage";
 
 import type { LinkedChat } from "./port";
-import { cancelPendingOutbox, insertOutbox, listLinkedChats, listSentStaleEpisodes, type NewOutboxRow } from "./repo";
+import {
+  cancelPendingOutbox,
+  insertOutbox,
+  listLinkedChats,
+  listLinkedChatsOfOrg,
+  listSentStaleEpisodes,
+  type NewOutboxRow,
+} from "./repo";
+import { MAILBOX_REMOVED_TEXT } from "./texts";
 
 const log = createLog("channels");
 
@@ -676,6 +684,28 @@ async function detectForOrg(deps: NoticeDeps, orgId: string, members: LinkedChat
   await detectApprovalSets(db, ctx, owners, timeZone, now);
   await detectSendResults(db, ctx, owners, now);
   await detectDelegationAnswered(db, ctx, members, timeZone, now);
+}
+
+// D11: every owner hears that a mailbox was removed. No mailbox or email id: those rows are gone, and the text holds no address.
+export async function queueMailboxRemovedNotices(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  input: { mailboxId: string; now: Date }
+): Promise<number> {
+  let queued = 0;
+  for (const chat of await listLinkedChatsOfOrg(trx, ctx)) {
+    if (chat.role !== "owner") continue;
+    const id = await insertOutbox(trx, ctx, {
+      userId: chat.userId,
+      kind: "mailbox_removed",
+      dedupKey: `mailbox_removed:${input.mailboxId}`,
+      message: { text: MAILBOX_REMOVED_TEXT, buttons: [] },
+      createdAt: input.now,
+      nextAttemptAt: input.now,
+    });
+    if (id !== null) queued += 1;
+  }
+  return queued;
 }
 
 // Never throws. One organization that fails does not stop the next one.

@@ -1,6 +1,7 @@
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 import { en } from "../src/i18n/en";
+import { E2E_BASE_URL, GREENMAIL } from "./env";
 
 // An address range for documentation (RFC 5737). Every test gets its own, so the login rate limit counts per test.
 // Playwright runs each project in its own worker process, where the counter starts at 1 again: the caller gives each a block.
@@ -40,4 +41,44 @@ export async function cspErrors(page: Page): Promise<string[]> {
     });
   });
   return collected;
+}
+
+// The address of the mailbox a spec connects: one per project, so the two never meet.
+export function mailboxAddress(project: string): string {
+  return `e2e-${project}@e2e.test`;
+}
+
+// Removes what a spec made, through the API with the page's cookies: unlink, then every mailbox. Errors are ignored:
+// a cleanup must not hide the real failure. The Origin header is the CSRF check of the API.
+export async function cleanUpOrg(page: Page): Promise<void> {
+  const headers = { origin: E2E_BASE_URL };
+  try {
+    await page.request.delete("/api/channels/telegram/link", { headers });
+    const list = await page.request.get("/api/mailboxes");
+    if (!list.ok()) return;
+    const mailboxes = (await list.json()) as { id: string; address: string }[];
+    for (const mailbox of mailboxes) {
+      await page.request.delete(`/api/mailboxes/${mailbox.id}`, {
+        headers,
+        data: { confirmAddress: mailbox.address },
+      });
+    }
+  } catch {
+    // Ignored on purpose.
+  }
+}
+
+// Fills the open connect dialog for the GreenMail of the dev stack (provider "Other") and submits it.
+export async function connectGreenMail(page: Page, project: string): Promise<void> {
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("combobox", { name: en.provider_label }).click();
+  await page.getByRole("option", { name: en.preset_other }).click();
+  await dialog.getByLabel(en.address_label).fill(mailboxAddress(project));
+  await dialog.getByLabel(en.mb_password_label, { exact: true }).fill("e2e-mailbox-password");
+  await dialog.getByLabel(en.imap_host_label).fill(GREENMAIL.host);
+  await dialog.getByLabel(en.imap_port_label).fill(`${GREENMAIL.imapPort}`);
+  await dialog.getByLabel(en.smtp_host_label).fill(GREENMAIL.host);
+  await dialog.getByLabel(en.smtp_port_label).fill(`${GREENMAIL.smtpPort}`);
+  await dialog.getByRole("button", { name: en.connect_submit }).click();
+  await expect(page.getByText(en.connected_toast)).toBeVisible();
 }

@@ -12,6 +12,7 @@ import {
   unlinkUser,
 } from "../../src/modules/channels/linking";
 import { getChatLinkForUser } from "../../src/modules/channels/repo";
+import { insertMembership } from "../../src/modules/tenancy/repo";
 import type { DB } from "../../src/platform/db";
 import { HardError } from "../../src/platform/errors";
 
@@ -219,6 +220,23 @@ describe("chat linking", () => {
 
       expect(await unlinkUser(trx, { orgId }, userId, now)).toBe(0);
       expect(await auditRows(trx, orgId, "chat.unlinked")).toHaveLength(1);
+    });
+  });
+
+  test("unlinkUser removes only the link of the given organization", async () => {
+    await withRollback(db, async (trx) => {
+      const p = await createOrgWithMailbox(trx);
+      const q = await createOrgWithMailbox(trx);
+      await insertMembership(trx, { orgId: q.orgId }, { userId: p.userId, role: "assistant" });
+      const chatP = randomChatId();
+      const chatQ = randomChatId();
+      await linkChat(trx, { orgId: p.orgId }, p.userId, chatP, now);
+      await linkChat(trx, { orgId: q.orgId }, p.userId, chatQ, now);
+
+      expect(await unlinkUser(trx, { orgId: q.orgId }, p.userId, now)).toBe(1);
+      expect(await findChatLink(trx, chatQ)).toBeUndefined();
+      expect((await findChatLink(trx, chatP))?.orgId).toBe(p.orgId);
+      expect(await getChatLinkForUser(trx, { orgId: p.orgId }, p.userId)).toBeDefined();
     });
   });
 

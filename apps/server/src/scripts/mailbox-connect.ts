@@ -2,7 +2,13 @@ import { parseArgs } from "node:util";
 
 import { z } from "zod";
 
-import { connectMailbox, openImapProvider, verifySmtpLogin, type MailCapabilities } from "../modules/mail";
+import {
+  connectMailbox,
+  MailboxExistsError,
+  openImapProvider,
+  verifySmtpLogin,
+  type MailCapabilities,
+} from "../modules/mail";
 import { loadConfig } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
@@ -69,10 +75,6 @@ async function readPassword(): Promise<string | undefined> {
   return password === "" ? undefined : password;
 }
 
-function isUniqueViolation(error: unknown): boolean {
-  return typeof error === "object" && error !== null && "code" in error && error.code === "23505";
-}
-
 async function main(): Promise<number> {
   const options = readOptions();
   const password = options && (await readPassword());
@@ -98,7 +100,7 @@ async function main(): Promise<number> {
     }
     return 0;
   } catch (error) {
-    if (isUniqueViolation(error)) {
+    if (error instanceof MailboxExistsError) {
       log.error("mailbox with this address already exists");
     } else if (error instanceof z.ZodError) {
       log.error(`invalid input: ${error.issues.map((issue) => issue.path.join(".")).join(", ")}`);

@@ -37,6 +37,7 @@ export interface WebDeps {
   trustedProxies: BlockList;
   connInfo: (c: Context) => string | undefined; // the TCP peer address; undefined when unknown
   listMembershipsOfUser: (userId: string) => Promise<{ org_id: string; role: MembershipRole }[]>;
+  homePath?: (userId: string) => Promise<"/onboarding" | "/activity">; // where "/" goes; default "/onboarding"
   routers?: (api: Hono<ApiEnv>) => void; // web.ts mounts the module routers (after requireTenant)
 }
 
@@ -207,6 +208,16 @@ export const requireOwner: MiddlewareHandler<ApiEnv> = async (c, next) => {
   await next();
 };
 
+async function homeOf(web: WebDeps, userId: string): Promise<"/onboarding" | "/activity"> {
+  if (!web.homePath) return "/onboarding";
+  try {
+    return await web.homePath(userId);
+  } catch (error) {
+    log.warn(`web: home path failed: ${describeError(error)}`);
+    return "/onboarding";
+  }
+}
+
 const MISSING_BUILD = "The web build is missing. Run bun run web:build.";
 
 export function createApp(deps: HttpDeps): Hono<ApiEnv> {
@@ -286,8 +297,9 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
     if (c.req.method !== "GET" && c.req.method !== "HEAD") return c.text("not found", 404);
     const path = c.req.path;
     if (PUBLIC_PAGE_PATHS.some((pattern) => pattern.test(path))) return next();
-    if (!(await readSession(c))) return c.redirect(`/login?next=${encodeURIComponent(safeNextPath(path))}`, 302);
-    if (path === "/") return c.redirect("/onboarding", 302);
+    const session = await readSession(c);
+    if (!session) return c.redirect(`/login?next=${encodeURIComponent(safeNextPath(path))}`, 302);
+    if (path === "/") return c.redirect(await homeOf(web, session.userId), 302);
     return next();
   });
 

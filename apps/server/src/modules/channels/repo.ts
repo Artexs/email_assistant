@@ -152,6 +152,15 @@ export async function listLinkedChats(db: DbOrTrx): Promise<LinkedChat[]> {
   return rows.map(toLinkedChat);
 }
 
+// The linked chats of one organization, for the notices of a web action (the tenant filter is the org id).
+export async function listLinkedChatsOfOrg(db: DbOrTrx, ctx: TenantContext): Promise<LinkedChat[]> {
+  const rows = await selectLinkedChats(db)
+    .where("chat_links.org_id", "=", ctx.orgId)
+    .orderBy("chat_links.user_id")
+    .execute();
+  return rows.map(toLinkedChat);
+}
+
 export async function getChatLinkForUser(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -185,6 +194,7 @@ export const outboxKinds = [
   "approval_set",
   "send_result",
   "delegation_answered",
+  "mailbox_removed",
 ] as const;
 export type OutboxKind = (typeof outboxKinds)[number];
 const outboxKindSchema = z.enum(outboxKinds);

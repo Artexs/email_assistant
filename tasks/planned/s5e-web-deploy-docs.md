@@ -45,3 +45,4 @@ Whether the user wants the panel on more than one phone or laptop; the Tailscale
 
 - 2026-11-08: Created by the S5 master plan session (`tasks/active/s5-web-panel.md`, P11).
 - 2026-11-08: Cold review fix (finding 22): the Better Auth upgrade path in `docs/known-alerts.md`.
+- 2026-11-11: Pointer from S5b: `WEB_MAIL_ALLOW_LOCAL` stays empty on the VPS (the server warns at start when it is `true`). ADR 0014 is taken (`0014-sync-provider-sort-folders.md`; difference 6 of the S5b plan), so S5e starts at 0015. Facts: `notes/2026-11-11-web-mailboxes-facts.md`.

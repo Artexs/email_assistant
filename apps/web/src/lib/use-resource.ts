@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { startPolling } from "./poll";
+
 interface ResourceState<T> {
   data: T | null;
   error: unknown;
@@ -23,7 +25,6 @@ export function useResource<T>(load: () => Promise<T>, opts: { pollMs?: number }
 
   useEffect(() => {
     let active = true;
-    let timer: ReturnType<typeof setInterval> | undefined;
 
     const run = () => {
       loadRef
@@ -35,30 +36,18 @@ export function useResource<T>(load: () => Promise<T>, opts: { pollMs?: number }
           if (active) setState((prev) => ({ data: prev.data, error, loading: false }));
         });
     };
-    const stop = () => {
-      if (timer !== undefined) clearInterval(timer);
-      timer = undefined;
-    };
-    const start = () => {
-      stop();
-      if (pollMs !== undefined) timer = setInterval(run, pollMs);
-    };
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") {
-        run();
-        start();
-      } else {
-        stop();
-      }
-    };
 
-    run();
-    if (document.visibilityState === "visible") start();
-    document.addEventListener("visibilitychange", onVisibility);
+    const stop = startPolling(run, {
+      pollMs,
+      doc: document,
+      timers: {
+        setInterval: (handler, ms) => setInterval(handler, ms),
+        clearInterval: (id) => clearInterval(id as ReturnType<typeof setInterval>),
+      },
+    });
     return () => {
       active = false;
       stop();
-      document.removeEventListener("visibilitychange", onVisibility);
     };
     // `tick` restarts the loop on reload(); `load` is read through the ref, so it is not a dependency.
   }, [pollMs, tick]);
