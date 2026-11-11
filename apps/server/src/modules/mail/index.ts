@@ -8,6 +8,8 @@ export {
   type ConnectMeta,
 } from "./connect";
 export { removeMailbox, type RemoveDeps, type RemoveResult } from "./remove";
+export { mailRoutes, WEB_MAIL_TIMEOUTS, type MailRouteDeps } from "./routes";
+export { getMailboxView, listMailboxViews } from "./views";
 export { switchMailboxStatus, type SwitchResult } from "./status";
 export { ensureSyncFolders, setSyncFolderEnabled, type SyncFolderSwitchResult } from "./folders";
 export { auditExitCode, compareFolderWithDb, compareInboxWithDb, type AuditCounts, type InboxKey } from "./audit";

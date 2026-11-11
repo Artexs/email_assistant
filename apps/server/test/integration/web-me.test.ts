@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 
 import { meSchema } from "@ea/core";
 import { hashPassword } from "better-auth/crypto";
@@ -8,6 +8,7 @@ import { insertMailbox, setMailboxStatus } from "../../src/modules/mail/repo";
 import { createOrganizationWithOwner, listMembershipsOfUser, tenancyRoutes } from "../../src/modules/tenancy";
 import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
 import { loadConfig } from "../../src/platform/config";
+import { createSecretBox } from "../../src/platform/crypto";
 import { buildTrustedProxies, createApp, type WebDeps } from "../../src/platform/http";
 import { countMailboxes, webDeps } from "../../src/web";
 
@@ -170,7 +171,8 @@ describe("real webDeps getSession", () => {
         WEB_AUTH_SECRET: "x".repeat(40),
         WEB_DIST: "/nonexistent/dist",
       }),
-      db
+      db,
+      { secrets: createSecretBox(randomBytes(32).toString("base64"), 1), botUsername: null }
     );
     if (web === null) throw new Error("webDeps returned null");
     try {

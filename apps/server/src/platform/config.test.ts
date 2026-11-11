@@ -10,6 +10,7 @@ import {
   loadConfig,
   loadTestmailConfig,
   sendTestAddresses,
+  webMailAllowLocal,
   webTrustedOrigins,
   webTrustedProxies,
 } from "./config";
@@ -439,5 +440,13 @@ describe("web keys", () => {
     expect(webTrustedProxies(config)).toEqual(["172.18.0.1", "10.0.0.0/8", "fd00::/8"]);
     expect(configError({ ...fullEnv, WEB_TRUSTED_PROXIES: "172.18.0.1/33" }).keys).toEqual(["WEB_TRUSTED_PROXIES"]);
     expect(configError({ ...fullEnv, WEB_TRUSTED_PROXIES: "gateway" }).keys).toEqual(["WEB_TRUSTED_PROXIES"]);
+  });
+
+  test("WEB_MAIL_ALLOW_LOCAL is false by default and takes only true or false", () => {
+    const empty = loadConfig({ ...fullEnv, WEB_MAIL_ALLOW_LOCAL: "" });
+    expect(empty.WEB_MAIL_ALLOW_LOCAL).toBe("false");
+    expect(webMailAllowLocal(empty)).toBe(false);
+    expect(webMailAllowLocal(loadConfig({ ...fullEnv, WEB_MAIL_ALLOW_LOCAL: "true" }))).toBe(true);
+    expect(configError({ ...fullEnv, WEB_MAIL_ALLOW_LOCAL: "yes" }).keys).toEqual(["WEB_MAIL_ALLOW_LOCAL"]);
   });
 });

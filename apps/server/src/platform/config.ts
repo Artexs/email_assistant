@@ -134,6 +134,8 @@ const baseSchema = z.object({
   WEB_TRUSTED_PROXIES: z.preprocess(emptyAsUndefined, z.string().optional()),
   // Relative to the process working directory.
   WEB_DIST: z.preprocess(emptyAsUndefined, z.string().default("apps/web/dist")),
+  // true = the web connect form may name localhost or a private-network IP (dev, e2e).
+  WEB_MAIL_ALLOW_LOCAL: z.preprocess(emptyAsUndefined, z.enum(["true", "false"]).default("false")),
 });
 
 type BaseConfig = z.infer<typeof baseSchema>;
@@ -229,6 +231,10 @@ export function webTrustedOrigins(config: Config): string[] {
 
 export function webTrustedProxies(config: Config): string[] {
   return parseList(config.WEB_TRUSTED_PROXIES);
+}
+
+export function webMailAllowLocal(config: Config): boolean {
+  return config.WEB_MAIL_ALLOW_LOCAL === "true";
 }
 
 export function classifierModel(config: Config): string {

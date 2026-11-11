@@ -56,12 +56,6 @@ try {
   process.exit(1);
 }
 
-const web = webDeps(config, db);
-const app = createApp({ checkDb: () => checkDb(db), web });
-// idleTimeout: the connect route runs a mailbox login inside the request; Bun's default is 10 s.
-const server = Bun.serve({ port: config.PORT, idleTimeout: 90, fetch: app.fetch });
-log.info(`listening on port ${server.port}`);
-
 const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
 const mailSync = createMailSyncJob({
   db,
@@ -178,6 +172,12 @@ if (config.TELEGRAM_BOT_TOKEN === undefined) {
   runtime.startPolling();
 }
 void heartbeat.tick();
+
+const web = webDeps(config, db, { secrets, botUsername: telegram ? () => telegram.botUsername() : null });
+const app = createApp({ checkDb: () => checkDb(db), web });
+// idleTimeout: the connect route runs a mailbox login inside the request; Bun's default is 10 s.
+const server = Bun.serve({ port: config.PORT, idleTimeout: 90, fetch: app.fetch });
+log.info(`listening on port ${server.port}`);
 
 const SHUTDOWN_WAIT_MS = 30_000;
 // bot.stop() can wait for the network.

@@ -1,14 +1,16 @@
 import { resolve } from "node:path";
 
-import { scopeInfoOf } from "@ea/core";
+import { scopeInfoOf, type ScopeEnv } from "@ea/core";
 import { getConnInfo } from "@hono/bun";
 import type { Context } from "hono";
 
 import { auditEvents, recordAudit } from "./modules/audit";
-import { listMailboxes } from "./modules/mail";
+import { channelRoutes, queueMailboxRemovedNotices } from "./modules/channels";
+import { listMailboxes, mailRoutes, openImapProvider, verifySmtpLogin, WEB_MAIL_TIMEOUTS } from "./modules/mail";
 import { listMembershipsOfUser, tenancyRoutes, type TenancyRouteDeps } from "./modules/tenancy";
 import { createAuth, type AuthDeps, type AuthEventKind } from "./platform/auth";
-import { webTrustedOrigins, webTrustedProxies, type Config } from "./platform/config";
+import { webMailAllowLocal, webTrustedOrigins, webTrustedProxies, type Config } from "./platform/config";
+import type { SecretBox } from "./platform/crypto";
 import type { Db } from "./platform/db";
 import { describeError } from "./platform/errors";
 import { buildTrustedProxies, type WebDeps, type WebSession } from "./platform/http";
@@ -55,6 +57,15 @@ export function scopeInfos(config: Config): TenancyRouteDeps["scopes"] {
   };
 }
 
+export function scopeEnvOf(config: Config): ScopeEnv {
+  return {
+    triage: config.TRIAGE_LLM_SCOPE,
+    actions: config.ACTIONS_SCOPE,
+    send: config.SEND_SCOPE,
+    testMailboxAddress: config.TEST_MAILBOX_ADDRESS ?? null,
+  };
+}
+
 export function countMailboxes(db: Db): TenancyRouteDeps["countMailboxes"] {
   return async (ctx) => {
     const rows = await listMailboxes(db, ctx);
@@ -75,8 +86,13 @@ export function peerAddress(c: Context): string | undefined {
   }
 }
 
+export interface WebExtras {
+  secrets: SecretBox;
+  botUsername: (() => Promise<string>) | null; // null: Telegram is off
+}
+
 // null: the web is off.
-export function webDeps(config: Config, db: Db): WebRuntime | null {
+export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime | null {
   if (config.WEB_BASE_URL === undefined) {
     log.info("web is off (WEB_BASE_URL is empty)");
     return null;
@@ -85,6 +101,8 @@ export function webDeps(config: Config, db: Db): WebRuntime | null {
   if (baseUrl.protocol === "http:" && !LOOPBACK_HOSTS.includes(baseUrl.hostname)) {
     log.warn("WEB_BASE_URL is http:// on a non-loopback host: cookies are not Secure");
   }
+  const allowLocalHosts = webMailAllowLocal(config);
+  if (allowLocalHosts) log.warn("web: WEB_MAIL_ALLOW_LOCAL=true: the connect form accepts local hosts");
   const origins = [baseUrl.origin, ...webTrustedOrigins(config)];
   const handle = createAuth({
     databaseUrl: config.DATABASE_URL,
@@ -95,6 +113,7 @@ export function webDeps(config: Config, db: Db): WebRuntime | null {
   });
   const dist = distPath(config);
   const scopes = scopeInfos(config);
+  const now = () => new Date();
 
   const getSession = async (headers: Headers): Promise<WebSession | null> => {
     const response = await handle.auth.api.getSession({ headers, returnHeaders: true });
@@ -106,14 +125,36 @@ export function webDeps(config: Config, db: Db): WebRuntime | null {
   return {
     auth: { handler: (req) => handle.auth.handler(req), getSession },
     db,
-    now: () => new Date(),
+    now,
     dist,
     baseUrl,
     trustedOrigins: new Set(origins),
     trustedProxies: buildTrustedProxies(webTrustedProxies(config)),
     connInfo: peerAddress,
     listMembershipsOfUser: (userId) => listMembershipsOfUser(db, userId),
-    routers: (api) => api.route("/", tenancyRoutes({ db, scopes, countMailboxes: countMailboxes(db) })),
+    routers: (api) => {
+      api.route("/", tenancyRoutes({ db, scopes, countMailboxes: countMailboxes(db) }));
+      api.route(
+        "/",
+        mailRoutes({
+          db,
+          now,
+          scopeEnv: scopeEnvOf(config),
+          connect: {
+            db,
+            secrets: extras.secrets,
+            openProvider: openImapProvider,
+            verifySmtp: verifySmtpLogin,
+            timeouts: WEB_MAIL_TIMEOUTS,
+          },
+          allowLocalHosts,
+          onRemoved: async (trx, ctx, input) => {
+            await queueMailboxRemovedNotices(trx, ctx, input);
+          },
+        })
+      );
+      api.route("/", channelRoutes({ db, now, botUsername: extras.botUsername }));
+    },
     close: () => handle.close(),
   };
 }

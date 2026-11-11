@@ -6,7 +6,7 @@ Part of [`../s5b-web-mailboxes-onboarding.md`](../s5b-web-mailboxes-onboarding.m
 
 One step. After it, the running server serves the mailbox list, pause, resume, remove and the Telegram routes; connect and password come in stage 8.
 
-- [ ] **7.1 `WEB_MAIL_ALLOW_LOCAL`, `web.ts`, `main.ts`, `mail/views.ts`, `mail/routes.ts` (part 1) (B3, B4, B8, B10, B11)**
+- [x] **7.1 `WEB_MAIL_ALLOW_LOCAL`, `web.ts`, `main.ts`, `mail/views.ts`, `mail/routes.ts` (part 1) (B3, B4, B8, B10, B11)**
   - Goal: the web composition gets the mail and Telegram parts; the list shows the B3 badges; pause, resume and remove work over HTTP for the owner only.
   - Files: change `apps/server/src/platform/config.ts` (key, helper), `config.test.ts`, `.env.example`, `apps/server/src/web.ts`, `apps/server/src/main.ts`, `mail/index.ts`; create `apps/server/src/modules/mail/views.ts`, `apps/server/src/modules/mail/routes.ts`, `apps/server/test/integration/web-mailboxes.test.ts`, `apps/server/src/modules/mail/views.test.ts`; change `test/integration/web-me.test.ts` (line ~166) and `web-http.test.ts` (lines ~399, ~455): they call `webDeps(config, db)`, which now needs `extras`: pass `{ secrets: createSecretBox(randomBytes(32).toString("base64"), 1), botUsername: null }` (cold review finding 15).
   - Interfaces:

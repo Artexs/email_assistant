@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { createOrganizationWithOwner, tenancyRoutes } from "../../src/modules/tenancy";
 import { loadConfig } from "../../src/platform/config";
+import { createSecretBox } from "../../src/platform/crypto";
 import { buildTrustedProxies, createApp, parseBody, type WebDeps } from "../../src/platform/http";
 import { setLogLevel } from "../../src/platform/log";
 import { webDeps } from "../../src/web";
@@ -16,6 +17,7 @@ import { testDb } from "./helpers";
 
 const db = testDb();
 const checkDb = async () => true;
+const extras = { secrets: createSecretBox(randomBytes(32).toString("base64"), 1), botUsername: null };
 
 let dist = "";
 
@@ -396,7 +398,7 @@ describe("real webDeps", () => {
       WEB_AUTH_SECRET: "x".repeat(40),
       WEB_DIST: dist,
     };
-    const web = webDeps(loadConfig(env), db);
+    const web = webDeps(loadConfig(env), db, extras);
     if (web === null) throw new Error("webDeps returned null");
     const lines: string[] = [];
     const logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]): void => {
@@ -452,7 +454,7 @@ describe("real webDeps", () => {
       lines.push(args.join(" "));
     });
     try {
-      expect(webDeps(loadConfig({ ...process.env, WEB_BASE_URL: "" }), db)).toBeNull();
+      expect(webDeps(loadConfig({ ...process.env, WEB_BASE_URL: "" }), db, extras)).toBeNull();
     } finally {
       logSpy.mockRestore();
     }
