@@ -566,7 +566,7 @@ export const LATENT_EDGES: readonly LatentEdge[] = [
 ];
 
 // --- Pair rules (two rows move together) -----------------------------------------------------------------------
-// No runtime check (D8). `test` names the integration test that proves the rule; stage 5 fills the "none" rows.
+// No runtime check (D8). `test` names the integration test that proves the rule, as `<file> › <title>` (a title can be a prefix of the real title).
 
 export const PAIR_RULES: readonly PairRule[] = [
   {
@@ -574,7 +574,7 @@ export const PAIR_RULES: readonly PairRule[] = [
     when: "a send is claimed",
     then: "its draft (`depends_on_action_id`) must be `applied`",
     enforcedBy: ["claimableWhere (repo.ts)", "send.ts re-check (E12)"],
-    test: "actions-repo.test.ts › 2: an approved send with an applied draft is claimed with the mail fields; actions-repo.test.ts › 1: a ready draft is claimed while its send waits; the send is not (the send.ts re-check branch: none)",
+    test: "actions-repo.test.ts › 2: an approved send with an applied draft is claimed with the mail fields; actions-repo.test.ts › 1: a ready draft is claimed while its send waits; the send is not; actions-send.test.ts › a claimed send whose draft is no longer applied is released as approved with no count (P1 re-check)",
   },
   {
     id: "P2",
@@ -595,7 +595,7 @@ export const PAIR_RULES: readonly PairRule[] = [
     when: "a send ends (`applied`, `rejected`, `expired`)",
     then: "its draft: `ready` -> `expired`; `applied` with UIDPLUS -> a reverse row; the applied reverse row -> the draft `undone`",
     enforcedBy: ["closeDraftOfSend (expiry.ts)", "send.ts", "drafts.ts"],
-    test: "actions-send.test.ts › (1) the happy path; actions-approvals.test.ts › rejected, a reverse draft row; actions-drafts.test.ts › the reverse row removes the draft (reason expired: none)",
+    test: "actions-send.test.ts › (1) the happy path; actions-approvals.test.ts › rejected, a reverse draft row; actions-drafts.test.ts › the reverse row removes the draft and marks the original undone with the reason; actions-drafts.test.ts › a reverse row with the reason expired marks the original undone with that reason",
   },
   {
     id: "P5",

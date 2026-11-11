@@ -579,6 +579,20 @@ describe("applySend", () => {
     });
   });
 
+  test("a claimed send whose draft is no longer applied is released as approved with no count (P1 re-check)", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const p = await pair(trx, s);
+      const action = await claimOne(trx, s, p.sendId);
+      await trx.updateTable("actions").set({ status: "ready" }).where("id", "=", p.draftId).execute();
+
+      expect(await applySend(depsOf(s, trx), s.ctx, action, s.fake)).toEqual({ kind: "retry", soft: false });
+
+      expect(await row(trx, p.sendId)).toMatchObject({ status: "approved", attempts: 0, locked_at: null });
+      expect(s.sender.calls).toEqual([]);
+    });
+  });
+
   test("the row is committed as applying with the outgoing id before the SMTP call", async () => {
     const created = await db.transaction().execute((trx) => setup(trx));
     try {

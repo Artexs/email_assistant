@@ -154,9 +154,16 @@ describe("transitions map", () => {
     }
   });
 
-  test("pair rules P1-P7 each name a test", () => {
+  test("pair rules P1-P7 each name a test as `<file> › <title>`", () => {
     expect(PAIR_RULES.map((rule) => rule.id)).toEqual(["P1", "P2", "P3", "P4", "P5", "P6", "P7"]);
-    expect(PAIR_RULES.filter((rule) => rule.test.trim() === "")).toEqual([]);
+    for (const rule of PAIR_RULES) {
+      expect(rule.test.trim(), rule.id).not.toBe("");
+      expect(rule.test.toLowerCase(), rule.id).not.toContain("none");
+      // A title can hold `;`, so split only before the next file name.
+      for (const part of rule.test.split(/; (?=[\w-]+\.test\.ts › )/)) {
+        expect(part, `${rule.id}: ${part}`).toMatch(/^[\w-]+\.test\.ts › \S/);
+      }
+    }
   });
 
   test("nextStatuses follows the edges that callers use", () => {

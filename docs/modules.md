@@ -259,6 +259,7 @@ Built in S1b: `createPlanned`, `listActionsForEmail`, `listSummaries`. The triag
 
 - `drafts.ts`: `applyDraft` (`applying`, build, locate by action id, APPEND, recovery, `send_closed`), `buildDraftMessage`, `removeDraft` (the reverse `create_draft` row: locate, delete, original `undone`).
 - `send.ts`: `applySend` (`applying` in its own commit, one SMTP call, `applied` at once, the Sent copy, the recovery by the Sent search), `sendOutcomeOf` (the table of §4.1 rule 6).
+- `transitions.ts`: the map of `actions.status` as data (statuses, edges, the guard of each writer function, entry writers, pair rules). No runtime code reads it; `actions-transitions.test.ts` compares it with the guards and the CHECK lists in Postgres.
 - `approvals.ts`: `approve`, `reject`, `approveSet`, `rejectSet`, `sendAgain`. Each locks the send row first and changes the status with a conditional update. The role check is the caller's (the Telegram handler).
 - `expiry.ts`: `expireSend` (the cascade: send, draft, delegation), `closeDraftOfSend`, `expireReminderActions`, and `createExpiryJob` (`actions.expiry`, hourly). It sits beside the S3 `expire.ts`.
 - `hooks.ts`: `DelegationHooks` and `noDelegationHooks` (the hooks pattern, §2). `scope.ts` also has `sendFilterFor` and `sendScopeAdmits` for `SEND_SCOPE`.
