@@ -229,8 +229,10 @@ export const en = {
   cat_info: "Info",
   cat_notification: "Notifications",
   cat_spam: "Spam",
-  cat_effect_urgent: "Auto changes nothing here: urgent mail only gets a flag (the Flag switch).",
-  cat_effect_needs_reply: "Auto changes nothing here: mail that needs a reply stays in INBOX.",
+  cat_effect_urgent:
+    "Auto does not move urgent mail: it only gets a flag (the Flag switch). With auto on, urgent mail in the junk folder moves back to INBOX.",
+  cat_effect_needs_reply:
+    "Auto does not move mail that needs a reply: it stays in INBOX. With auto on, such mail moves back from the junk folder.",
   cat_effect_info: "Auto on: info mail moves out of INBOX.",
   cat_effect_notification: "Auto on: notifications are marked as read and move out of INBOX.",
   cat_effect_spam: "Auto on: spam moves out of INBOX.",
@@ -245,7 +247,7 @@ export const en = {
   anyway_text:
     "{category} did not pass the check. The assistant would move and mark {category} mail on its own. You can undo a move for 7 days. Switch auto off again at any time.",
   anyway_text_quiet:
-    "This category is below the bar. The setting changes little for {category} mail today (see the line under the switch). You can switch auto off again at any time.",
+    "{category} did not pass the check. The setting changes little for {category} mail today (see the line under the switch). You can switch auto off again at any time.",
   anyway_submit: "Set anyway",
   folders_title: "Synced folders",
   folders_always: "Always synced",

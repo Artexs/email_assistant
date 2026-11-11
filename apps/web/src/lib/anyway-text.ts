@@ -2,7 +2,8 @@ import type { BarCategory } from "@ea/core/web";
 
 import type { TextKey } from "../i18n/en";
 
-// Auto changes nothing (urgent) or only sets a flag (needs_reply), so the move text would be false there.
+// Urgent mail only gets a flag, and that depends on the Flag switch, not on auto. Needs-reply mail gets no action.
+// So the move text would be false here. Auto only moves such mail back from the junk folder to INBOX.
 const quietCategories: readonly BarCategory[] = ["urgent", "needs_reply"];
 
 export function anywayTextKey(category: BarCategory): TextKey {
