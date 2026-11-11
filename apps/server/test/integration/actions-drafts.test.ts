@@ -631,6 +631,18 @@ describe("removeDraft", () => {
     });
   });
 
+  test("a reverse row with the reason expired marks the original undone with that reason", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const { draftId, reverseId } = await appliedWithReverse(trx, s, "expired");
+      const reverse = await claimOne(trx, s, reverseId);
+
+      expect(await applyAction(depsOf(s, trx), s.ctx, reverse, s.fake)).toEqual({ kind: "applied" });
+
+      expect(await actionState(trx, draftId)).toMatchObject({ status: "undone", status_reason: "expired" });
+    });
+  });
+
   test("another draft in the same folder stays", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
