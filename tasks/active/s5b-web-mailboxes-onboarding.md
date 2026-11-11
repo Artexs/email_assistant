@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — stages 1-10 built (stages 1-8 PASS; stage 9 FAIL, fix pending).** 15 stage files, B1–B17, 26 review findings fixed. Left: stages 1–15 with `run-task` (worktree `task/s5b-web-mailboxes-onboarding`), starting with user step 0. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5b-build.md`.
+> **Status 2026-11-11 — in progress — stages 1-11 built (stages 1-10 PASS, stage 9 after a fix).** 15 stage files, B1–B17, 26 review findings fixed. Left: stages 1–15 with `run-task` (worktree `task/s5b-web-mailboxes-onboarding`), starting with user step 0. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5b-build.md`.
 
 # S5b Web: mailboxes and onboarding
 
@@ -162,7 +162,7 @@ Each stage lives in its own file in [`s5b-web-mailboxes-onboarding/`](s5b-web-ma
 - [x] [Stage 8](s5b-web-mailboxes-onboarding/stage-08-connect-password-routes.md) — Connect and password routes, the host rule, the error map [risky] [written]
 - [x] [Stage 9](s5b-web-mailboxes-onboarding/stage-09-onboarding-me-home.md) — Onboarding state, `/api/me` fill, `keep-mode`, the `/` rule [risky] [written]
 - [x] [Stage 10](s5b-web-mailboxes-onboarding/stage-10-web-foundations.md) — `lib/poll.ts` with the visibility test, the strings, the shared components [written]
-- [ ] [Stage 11](s5b-web-mailboxes-onboarding/stage-11-mailboxes-page.md) — Mailboxes page: list, pause, resume, change password, remove [written]
+- [x] [Stage 11](s5b-web-mailboxes-onboarding/stage-11-mailboxes-page.md) — Mailboxes page: list, pause, resume, change password, remove [written]
 - [ ] [Stage 12](s5b-web-mailboxes-onboarding/stage-12-connect-dialog-telegram-card.md) — The connect dialog and the Telegram card [written]
 - [ ] [Stage 13](s5b-web-mailboxes-onboarding/stage-13-onboarding-page.md) — Onboarding page [written]
 - [ ] [Stage 14](s5b-web-mailboxes-onboarding/stage-14-playwright.md) — Playwright: the fake Telegram server, `mailboxes.spec.ts`, `onboarding.spec.ts` [written]
@@ -214,3 +214,4 @@ Scope: 26 [minor] the deleted `sending` digest's "lost the claim" line and the r
 - 2026-11-11: stage 7 review PASS, no findings. Pushed through stage 7 (fix commit 9fd3ca2 for stages 5-6 reviews pending). Stage 8 built, review pending (Opus high). Check: lint, typecheck, test:unit (1541), test:int (1119 pass). The Opus review hit a weekly-quota error once; a retry worked.
 - 2026-11-11: stage 9 built, review pending (Opus high). Check: lint, typecheck, test:unit (1542), test:int (1133 pass), web build, test:e2e (12 passed, S5a smoke).
 - 2026-11-11: stage 8 fix PASS; fix 9fd3ca2 PASS; pushed through d054e7f. Stage 9 review FAIL (major: no tenant test for recordAuditOnce; minors: assert its return, remove stray setLogLevel; question: homePathOf got an optional `botUsername` argument so `/` and `/api/me` use one telegramAvailable — kept, B13). Stage 10 built, review pending. Check: lint, typecheck, test:unit (1566), web build.
+- 2026-11-11: stage 9 fix PASS, stage 10 PASS (minors: TelegramLink `off` never resets — done in stage 12; question: unreachable block replaces the open link UI — intended per plan). Pushed through 661d6a1. Stage 11 built, review pending. Check: lint, typecheck, test:unit (1567), test:int (0 fail), web build; hand check at 1280 and 400 px (pause, resume, password, remove; no console errors).

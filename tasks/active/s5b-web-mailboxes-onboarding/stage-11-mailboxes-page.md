@@ -4,7 +4,7 @@ Part of [`../s5b-web-mailboxes-onboarding.md`](../s5b-web-mailboxes-onboarding.m
 
 ## Stage 11 — Mailboxes page: list, pause, resume, change password, remove
 
-- [ ] **11.1 The list and the card actions (S4, S7, S8, U4–U7)**
+- [x] **11.1 The list and the card actions (S4, S7, S8, U4–U7)**
   - Goal: `/mailboxes` shows every mailbox with its status, last sync, mode and scope badges; the owner pauses, resumes, changes a password and removes a mailbox; the page states follow U4.
   - Files: change `apps/web/src/islands/MailboxesPage.tsx`; create `apps/web/src/components/mailboxes/MailboxCard.tsx`, `PasswordDialog.tsx`, `RemoveDialog.tsx`.
   - Interfaces:
