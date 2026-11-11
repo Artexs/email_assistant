@@ -25,13 +25,14 @@ export {
   listDelegates,
   listDelegations,
   listDueDelegations,
+  listLatestDelegationsByEmailIds,
   lockDelegation,
   markAnsweredNotified,
   markDelegationOverdue,
   markDelegationSent,
   markReminderPlanned,
 } from "./repo";
-export type { DelegateRow, DelegationRow, DelegationStatus } from "./repo";
+export type { DelegateRow, DelegationRow, DelegationStatus, LatestDelegationRow } from "./repo";
 export {
   CHASER_LOCAL_TIME,
   CHASER_SET_LIMIT,

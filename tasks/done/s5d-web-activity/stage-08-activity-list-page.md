@@ -6,7 +6,7 @@ Part of [`../s5d-web-activity.md`](../s5d-web-activity.md). Read that file's "Do
 
 Two steps. The page shows the list; the panel and the buttons come in stage 9. Patterns: `islands/MailboxesPage.tsx` (the "Updated" line, Refresh, the states), `islands/SettingsPage.tsx` (the URL query with `history.replaceState`), `components/settings/MailboxSelector.tsx` (a shadcn `Select` with a label).
 
-- [ ] **8.1 The island, the filters and the URL (A2, A3, B10, B13)**
+- [x] **8.1 The island, the filters and the URL (A2, A3, B10, B13)**
   - Goal: the Activity page has the filter bar, the "Updated" line and Refresh, and keeps the filters in the URL.
   - Files: change `apps/web/src/islands/ActivityPage.tsx`; create `apps/web/src/components/activity/ActivityFilterBar.tsx`.
   - Interfaces:
@@ -32,7 +32,7 @@ Two steps. The page shows the list; the panel and the buttons come in stage 9. P
   - Done when: the checks pass; a filter change updates the URL (stage 10 checks it).
   - Out of scope: the rows (8.2).
 
-- [ ] **8.2 The list, the rows, load more, polling and the page states (A1, A8, B11, B13)**
+- [x] **8.2 The list, the rows, load more, polling and the page states (A1, A8, B11, B13)**
   - Goal: the list shows the rows of the filters, polls the first page, loads older pages and shows the U4 states.
   - Files: create `apps/web/src/components/activity/ActivityList.tsx`, `ActivityRow.tsx`; change `islands/ActivityPage.tsx`.
   - Interfaces:

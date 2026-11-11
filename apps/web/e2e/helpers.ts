@@ -1,7 +1,9 @@
+import { execFileSync } from "node:child_process";
+
 import { expect, type Page } from "@playwright/test";
 
 import { en } from "../src/i18n/en";
-import { E2E_BASE_URL, GREENMAIL } from "./env";
+import { E2E_BASE_URL, e2eEnv, GREENMAIL, repoRoot } from "./env";
 
 // An address range for documentation (RFC 5737). Every test gets its own, so the login rate limit counts per test.
 // The counter lives in the worker process and all spec files of that worker share it, so two files can use the same block.
@@ -104,4 +106,15 @@ export async function connectGreenMail(page: Page, project: string): Promise<voi
   await dialog.getByLabel(en.smtp_port_label).fill(`${GREENMAIL.smtpPort}`);
   await dialog.getByRole("button", { name: en.connect_submit }).click();
   await expect(page.getByText(en.connected_toast)).toBeVisible();
+}
+
+// Fills the connected mailbox with the activity rows (S5d B12). Runs the server script with the e2e env;
+// `execFileSync` throws with the script's stderr on a non-zero exit.
+export function seedActivity(mailboxId: string): void {
+  execFileSync("bun", ["apps/server/src/scripts/e2e-activity.ts", "--mailbox-id", mailboxId], {
+    cwd: repoRoot,
+    env: e2eEnv(),
+    stdio: "pipe",
+    timeout: 30_000,
+  });
 }

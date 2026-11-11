@@ -5,6 +5,7 @@ import { getConnInfo } from "@hono/bun";
 import type { Context } from "hono";
 
 import { settingsDeps } from "./composition";
+import type { ActionsScope } from "./modules/actions";
 import { auditEvents, hasAuditEvent, recordAudit, recordAuditOnce } from "./modules/audit";
 import { channelRoutes, getChatLinkForUser, queueMailboxRemovedNotices } from "./modules/channels";
 import { countSenderRules, rulesRoutes, settingsRoutes, type SettingsRouteDeps } from "./modules/config";
@@ -17,8 +18,9 @@ import {
   verifySmtpLogin,
   WEB_MAIL_TIMEOUTS,
 } from "./modules/mail";
+import { activityRoutes } from "./modules/reports";
 import { listMembershipsOfUser, tenancyRoutes, type TenancyRouteDeps } from "./modules/tenancy";
-import { goNoGoFor, setCategoryAutoWithGate } from "./modules/triage";
+import { goNoGoFor, setCategoryAutoWithGate, triageRoutes } from "./modules/triage";
 import { createAuth, type AuthDeps, type AuthEventKind } from "./platform/auth";
 import { webMailAllowLocal, webTrustedOrigins, webTrustedProxies, type Config } from "./platform/config";
 import type { SecretBox } from "./platform/crypto";
@@ -169,6 +171,7 @@ export function peerAddress(c: Context): string | undefined {
 
 export interface WebExtras {
   secrets: SecretBox;
+  actionsScope: ActionsScope;
   botUsername: (() => Promise<string>) | null; // null: Telegram is off
 }
 
@@ -246,6 +249,8 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
       );
       api.route("/", settingsRoutes(settingsRouteDeps(db, now)));
       api.route("/", rulesRoutes({ db, now }));
+      api.route("/", activityRoutes({ db, now }));
+      api.route("/", triageRoutes({ db, now, actionsScope: extras.actionsScope }));
       api.route("/", channelRoutes({ db, now, botUsername: extras.botUsername }));
     },
     close: () => handle.close(),

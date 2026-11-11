@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import type { ActionType, MoveTarget } from "../triage/planners";
 
-import { type ActionView, describeActions } from "./would-do";
+import { type ActionView, describeAction, describeActions } from "./would-do";
 
 function act(type: ActionType, status: string, folder: MoveTarget | null = null, reverse = false): ActionView {
   return {
@@ -121,5 +121,45 @@ describe("describeActions for drafts and sends", () => {
   test("two sends with the same phrase print it once", () => {
     expect(describeActions([send("applied"), send("applied")], names)).toBe("sent");
     expect(describeActions([draft("undone"), send("applied"), send("applied")], names)).toBe("sent");
+  });
+});
+
+describe("describeAction", () => {
+  const statuses = [
+    "ready",
+    "applying",
+    "applied",
+    "awaiting_approval",
+    "approved",
+    "rejected",
+    "expired",
+    "undone",
+    "logged",
+    "failed",
+  ];
+  const makers: [string, (status: string) => ActionView][] = [
+    ["flag", (status) => act("flag", status)],
+    ["mark_read", (status) => act("mark_read", status)],
+    ["move", (status) => act("move", status, "ai_notifications")],
+    ["create_draft", (status) => draft(status)],
+    ["send", (status) => send(status)],
+  ];
+
+  for (const [type, make] of makers) {
+    test(`${type} matches describeActions for every status`, () => {
+      for (const status of statuses) {
+        const action = make(status);
+        const line = describeActions([action], names);
+        expect(describeAction(action, names)).toBe(line.startsWith("stays in") ? null : line);
+      }
+    });
+  }
+
+  test("pinned phrases and nulls", () => {
+    expect(describeAction(act("move", "applied", "ai_notifications"))).toBe("done: move to AI/Notifications");
+    expect(describeAction(send("awaiting_approval"))).toBe("waits for your approval");
+    expect(describeAction(act("flag", "applied", null, true))).toBeNull();
+    expect(describeAction(act("save_summary", "applied"))).toBeNull();
+    expect(describeAction(draft("undone"))).toBeNull();
   });
 });

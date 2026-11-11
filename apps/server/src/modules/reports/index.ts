@@ -1,4 +1,11 @@
 export {
+  decodeActivityCursor,
+  encodeActivityCursor,
+  listActivity,
+  type ActivityCursor,
+  type ActivityQuery,
+} from "./activity";
+export {
   buildDigestMessage,
   DIGEST_ITEM_LIMIT,
   DIGEST_MAX_PERIOD_MS,
@@ -8,3 +15,4 @@ export {
   type DigestRequest,
 } from "./digest";
 export { insertDigest, lastDigestSlotKey, lastSentDigestEnd, markDigestSent } from "./repo";
+export { activityRoutes, type ActivityRouteDeps } from "./routes";

@@ -470,3 +470,39 @@ export async function markAnsweredNotified(db: DbOrTrx, ctx: TenantContext, id: 
     .executeTakeFirst();
   return result.numUpdatedRows > 0n;
 }
+
+export interface LatestDelegationRow {
+  status: DelegationStatus;
+  due_at: Date | null;
+  delegate_name: string | null;
+}
+
+// The newest delegation per mail (created_at desc, id desc) with the delegate name, in chunks of 500 ids.
+export async function listLatestDelegationsByEmailIds(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailIds: readonly string[]
+): Promise<Map<string, LatestDelegationRow>> {
+  const out = new Map<string, LatestDelegationRow>();
+  for (let i = 0; i < emailIds.length; i += 500) {
+    const rows = await db
+      .selectFrom("delegations as d")
+      .leftJoin("delegates as g", (join) => join.onRef("g.id", "=", "d.delegate_id").onRef("g.org_id", "=", "d.org_id"))
+      .distinctOn("d.email_id")
+      .select(["d.email_id", "d.status", "d.due_at", "g.name as delegate_name"])
+      .where("d.org_id", "=", ctx.orgId)
+      .where("d.email_id", "in", emailIds.slice(i, i + 500))
+      .orderBy("d.email_id")
+      .orderBy("d.created_at", "desc")
+      .orderBy("d.id", "desc")
+      .execute();
+    for (const row of rows) {
+      out.set(row.email_id, {
+        status: delegationStatusSchema.parse(row.status),
+        due_at: row.due_at,
+        delegate_name: row.delegate_name,
+      });
+    }
+  }
+  return out;
+}

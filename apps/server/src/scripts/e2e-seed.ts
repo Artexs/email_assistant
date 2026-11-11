@@ -11,13 +11,17 @@ import { describeError } from "../platform/errors";
 import { createLog } from "../platform/log";
 import { auditWebEvent } from "../web";
 
+import { seedOtherOrgMail } from "./e2e-activity-rows";
 import {
+  E2E_ACTIVITY_MEMBER_EMAILS,
   E2E_ASSISTANT_EMAILS,
   E2E_MEMBER_EMAILS,
   E2E_MEMBER_PASSWORD,
+  E2E_ORG_NAME,
+  E2E_OTHER_ORG_NAME,
+  E2E_OTHER_OWNER_EMAIL,
   E2E_OWNER_EMAIL,
   E2E_OWNER_PASSWORD,
-  E2E_ORG_NAME,
   E2E_PROJECTS,
   type E2eProject,
   type SeedFile,
@@ -34,13 +38,15 @@ async function wipe(migratorUrl: string): Promise<void> {
   await client.connect();
   try {
     // The organization cascade removes mailboxes, mail, actions, memberships and audit rows.
-    await client.query("DELETE FROM organizations WHERE name = $1", [E2E_ORG_NAME]);
+    await client.query("DELETE FROM organizations WHERE name = ANY($1)", [[E2E_ORG_NAME, E2E_OTHER_ORG_NAME]]);
     // Users are global: the cascade leaves them.
     await client.query("DELETE FROM users WHERE email = ANY($1)", [
       [
         E2E_OWNER_EMAIL,
         ...E2E_PROJECTS.map((project) => E2E_ASSISTANT_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_MEMBER_EMAILS[project]),
+        E2E_OTHER_OWNER_EMAIL,
+        ...E2E_PROJECTS.map((project) => E2E_ACTIVITY_MEMBER_EMAILS[project]),
       ],
     ]);
     // Tokens left by a half-failed run.
@@ -110,6 +116,25 @@ async function main(): Promise<number> {
         memberIds[project] = user.id;
       }
 
+      const activityIds = {} as Record<E2eProject, string>;
+      for (const project of E2E_PROJECTS) {
+        const user = await insertUser(db, {
+          email: E2E_ACTIVITY_MEMBER_EMAILS[project],
+          displayName: `E2E Activity ${project}`,
+        });
+        await insertMembership(db, { orgId: owner.orgId }, { userId: user.id, role: "assistant" });
+        activityIds[project] = user.id;
+      }
+
+      // The organization of the isolation checks: one mail that the E2E organization must never see.
+      const other = await createOrganizationWithOwner(db, {
+        orgName: E2E_OTHER_ORG_NAME,
+        timezone: "Europe/Warsaw",
+        email: E2E_OTHER_OWNER_EMAIL,
+        displayName: "E2E Other Owner",
+      });
+      const otherMail = await seedOtherOrgMail(db, { orgId: other.orgId }, new Date());
+
       // Takes the link of the last reset request for an e-mail address.
       const requestLink = async (email: string): Promise<string> => {
         resets.length = 0;
@@ -137,11 +162,21 @@ async function main(): Promise<number> {
         members[project] = { userId: memberIds[project], email, password: E2E_MEMBER_PASSWORD };
       }
 
+      const activityMembers = {} as SeedFile["activityMembers"];
+      for (const project of E2E_PROJECTS) {
+        const email = E2E_ACTIVITY_MEMBER_EMAILS[project];
+        const activityToken = new URL(await requestLink(email)).pathname.split("/").pop() ?? "";
+        await handle.auth.api.resetPassword({ body: { newPassword: E2E_MEMBER_PASSWORD, token: activityToken } });
+        activityMembers[project] = { userId: activityIds[project], email, password: E2E_MEMBER_PASSWORD };
+      }
+
       const seed: SeedFile = {
         orgId: owner.orgId,
         owner: { userId: owner.userId, email: E2E_OWNER_EMAIL, password: E2E_OWNER_PASSWORD },
         assistants,
         members,
+        otherOrg: { orgId: other.orgId, emailId: otherMail.emailId },
+        activityMembers,
       };
       const path = seedFilePath(repoRoot);
       await mkdir(dirname(path), { recursive: true });

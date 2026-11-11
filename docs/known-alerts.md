@@ -18,6 +18,22 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `web undo <kind> mail <id> by user <id>`
+
+- **First seen:** 2026-11-11 (S5d)
+- **Source:** `apps/server/src/modules/triage/routes.ts`, `POST /api/actions/undo`. Level `info`. One line for each web Undo. `<kind>` is `started`, `already`, `nothing`, `too_old` or `held`. Ids only, no mail text. There is no line for a 404 or for feedback.
+- **Cause:** a member tapped ↩️ on the Activity page. A `started` Undo also writes the `action.undo_requested` audit rows and, for a mail that is not `unsure`, a `wrong` feedback row with source `undo`.
+- **Fix:** none. It is a record, not an error. `held` means the mailbox is paused or `ACTIONS_SCOPE` does not admit the mail.
+- **Status:** won't fix (expected)
+
+### `action <id>: failed mail_not_found` (in an e2e run after the activity spec)
+
+- **First seen:** 2026-11-11 (S5d, from the code; not seen in the stage 10 run)
+- **Source:** the committer (`apps/server/src/modules/actions/apply.ts`), level `warn`, and an `action.failed` audit row. In an e2e run under `ACTIONS_SCOPE=synthetic` after `activity.spec.ts`.
+- **Cause:** the spec taps ↩️ on a seeded synthetic mail (Message-ID `…@ea-seed.test>`). The committer then claims the reverse move and the reverse `mark_read`, and looks for the mail in GreenMail, where it does not exist. Expected: at most two lines for each project (the reverse move and the reverse `mark_read` of M1). In the stage 10 run `cleanUpOrg` removed the mailbox before the committer ran, so no line appeared.
+- **Fix:** none. It may appear after the activity spec; it is harmless (the seeded mail is not in GreenMail). No retry follows. An `error` line in the same run is not expected: diagnose that one.
+- **Status:** won't fix (expected)
+
 ### `organization <id> timezone changed by <actor>` and `organization <id> signature changed by <actor>`
 
 - **First seen:** 2026-11-11 (S5c)

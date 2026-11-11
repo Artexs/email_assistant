@@ -1,5 +1,8 @@
-export { listForLabeling, recordFeedback } from "./feedback";
-export type { LabelItem, RecordFeedbackInput } from "./feedback";
+export { listForLabeling, recordFeedback, recordWebFeedback } from "./feedback";
+export type { LabelItem, RecordFeedbackInput, WebFeedbackResult } from "./feedback";
+export { undoWithFeedback } from "./undo";
+export { triageRoutes } from "./routes";
+export type { TriageRouteDeps } from "./routes";
 export { parseLabelInput } from "./label-input";
 export type { LabelInput } from "./label-input";
 export { classifyEmail } from "./classifier";
@@ -11,15 +14,20 @@ export {
   insertTriageResult,
   latestFeedback,
   latestTriageResult,
+  listActivityRows,
   listLabeledResults,
+  listLatestFeedbackByEmailIds,
   listLatestTriageByEmailIds,
   listTriagedBetween,
   listUnlabeled,
   listUsageSince,
 } from "./repo";
 export type {
+  ActivityRow,
+  ActivityRowsQuery,
   FeedbackInput,
   LabeledResult,
+  LatestFeedbackRow,
   LatestTriageResult,
   MailKind,
   TriageResultInput,

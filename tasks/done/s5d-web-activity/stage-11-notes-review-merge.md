@@ -4,7 +4,7 @@ Part of [`../s5d-web-activity.md`](../s5d-web-activity.md). Read that file's "Do
 
 ## Stage 11 — Notes, alerts, master plan lines, group review S5b–S5d, user checkpoint 2, merge
 
-- [ ] **11.1 Docs for the next agents**
+- [x] **11.1 Docs for the next agents**
   - Goal: what S5d learned and changed is findable without this chat.
   - Files: create `notes/<date>-web-activity-facts.md`; change `docs/known-alerts.md`, `docs/code-patterns.md`, `tasks/active/s5-web-panel.md`, `tasks/planned/s5e-web-deploy-docs.md`, `tasks/planned/retention-job.md` (pointer lines only).
   - Decisions:
@@ -16,7 +16,7 @@ Part of [`../s5d-web-activity.md`](../s5d-web-activity.md). Read that file's "Do
   - Check: `bunx prettier --check` on every changed Markdown file.
   - Done when: the files are written and pass Prettier.
 
-- [ ] **11.2 Group review, checkpoint 2, merge**
+- [x] **11.2 Group review, checkpoint 2, merge**
   - Goal: S5b–S5d are reviewed as one panel, the user tries the whole panel, and S5d lands on `master`.
   - Decisions:
     - Group review (master checkpoint 2: "Group review of S5b–S5d"): the `reviewer` subagent on `claude-bridge/claude-opus-5-5` high over the S5d range `<branch base>..HEAD` (all stages PASS first) plus a read of the S5b and S5c route files and pages for cross-page issues: a pre-mortem ("a bug of the panel reached the user: which stage let it through?"), the tenant rule over every `/api/*` route of S5b–S5d, the one Undo path (Telegram and web), no mail text in a log line or error body, the polling of every page (Mailboxes, Settings, Rules, Activity) and the drafts under polling, the e2e cleanup across the six specs. Findings → fix commits, then a review of the fix range.

@@ -173,7 +173,11 @@ if (config.TELEGRAM_BOT_TOKEN === undefined) {
 }
 void heartbeat.tick();
 
-const web = webDeps(config, db, { secrets, botUsername: telegram ? () => telegram.botUsername() : null });
+const web = webDeps(config, db, {
+  secrets,
+  actionsScope: scopeOfActions,
+  botUsername: telegram ? () => telegram.botUsername() : null,
+});
 const app = createApp({ checkDb: () => checkDb(db), web });
 // idleTimeout: the connect route runs a mailbox login inside the request; Bun's default is 10 s.
 const server = Bun.serve({ port: config.PORT, idleTimeout: 90, fetch: app.fetch });

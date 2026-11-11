@@ -68,6 +68,15 @@ function phrase(action: ActionView, names: ReadonlyMap<string, string>): string 
   }
 }
 
+// The phrase of one original action, or null when it has none. Same tense rules as `describeActions`.
+export function describeAction(action: ActionView, names: ReadonlyMap<string, string> = new Map()): string | null {
+  if (action.reverse) return null;
+  if (action.type === "send") return SEND_PHRASES[action.status] ?? null;
+  const tense = action.type === "create_draft" ? DRAFT_TENSES[action.status] : TENSES[action.status];
+  const text = phrase(action, names);
+  return tense === undefined || text === null ? null : `${tense} ${text}`;
+}
+
 // The "what the system does or would do" line of a digest or notice. `names` maps delegate ids to names.
 export function describeActions(
   actions: readonly ActionView[],

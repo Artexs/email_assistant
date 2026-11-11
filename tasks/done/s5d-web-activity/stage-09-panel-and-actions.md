@@ -6,7 +6,7 @@ Part of [`../s5d-web-activity.md`](../s5d-web-activity.md). Read that file's "Do
 
 Two steps. The buttons call the stage 6 routes; the words are the Telegram words (B2).
 
-- [ ] **9.1 `ActionButtons`, `CategoryPicker`, the row buttons (A1, A5, A6, A8, B13)**
+- [x] **9.1 `ActionButtons`, `CategoryPicker`, the row buttons (A1, A5, A6, A8, B13)**
   - Goal: every row has ✅, ✏️ and (when undoable) ↩️; each tap shows the Telegram toast and changes the row at once.
   - Files: create `apps/web/src/components/activity/ActionButtons.tsx`, `CategoryPicker.tsx`; change `ActivityRow.tsx`, `ActivityList.tsx`.
   - Interfaces:
@@ -46,7 +46,7 @@ Two steps. The buttons call the stage 6 routes; the words are the Telegram words
   - Done when: the checks pass.
   - Out of scope: the panel (9.2).
 
-- [ ] **9.2 `ActivityPanel` (A4, A7, B13)**
+- [x] **9.2 `ActivityPanel` (A4, A7, B13)**
   - Goal: a tap on a row opens the details with the reason, the actions, the delegation, the feedback state and the same buttons.
   - Files: create `apps/web/src/components/activity/ActivityPanel.tsx`; change `ActivityList.tsx`.
   - Interfaces:

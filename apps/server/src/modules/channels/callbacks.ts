@@ -1,6 +1,9 @@
 import {
-  categoryLabels,
+  UNDO_TEXTS as SHARED_UNDO_TEXTS,
   categoryTag,
+  pickAnswer,
+  pickedText,
+  rightAnswer,
   cleanSubject,
   encodeCallback,
   isFeedbackCallback,
@@ -27,7 +30,6 @@ import {
   sendAgain,
   sendFilterFor,
   sendScopeAdmits,
-  undo,
   type ActionsScope,
   type ApprovalDeps,
   type DelegationHooks,
@@ -37,7 +39,7 @@ import {
 import { closeDelegation } from "../delegation";
 import { getMailbox } from "../mail";
 import { getOrganization } from "../tenancy";
-import { getLabelTarget, recordFeedback } from "../triage";
+import { getLabelTarget, recordFeedback, undoWithFeedback } from "../triage";
 
 import type { CallbackResult, LinkedChat } from "./port";
 import { findOutboxByDedup } from "./repo";
@@ -53,13 +55,7 @@ export interface CallbackDeps {
   sendScope: SendScope;
 }
 
-export const UNDO_TEXTS: Record<Exclude<UndoResult["kind"], "not_found">, string> = {
-  started: "↩️ Undo started: the mail goes back within a minute.",
-  already: "Undo was already requested for this mail.",
-  nothing: "Nothing to undo.",
-  too_old: "Too old to undo (7 days).",
-  held: "Undo is not possible now: mailbox changes are off or the mailbox is paused.",
-};
+export const UNDO_TEXTS: Record<Exclude<UndoResult["kind"], "not_found">, string> = SHARED_UNDO_TEXTS;
 
 export const APPROVAL_TEXTS = {
   owner_only: "Only an owner can approve or reject a send.",
@@ -100,8 +96,6 @@ export const APPROVAL_TEXTS = {
 
 const NOT_FOUND_TEXT = APPROVAL_TEXTS.not_found;
 
-const label = (category: Category): string => categoryLabels[category].name;
-
 export function pickerMessage(emailId: string, subject: string | null, current: Category): OutMessage {
   const pick = (category: (typeof labelCategories)[number]) => ({
     text: categoryTag(category),
@@ -126,34 +120,17 @@ export async function handleCallback(deps: CallbackDeps, link: LinkedChat, data:
   if (callback.kind === "cancel") {
     return { answer: "", edit: { text: "✏️ Cancelled.", buttons: [] } };
   }
+  if (callback.kind === "undo") {
+    const result = await undoWithFeedback(deps.db, ctx, callback.emailId, {
+      now: deps.now(),
+      userId: link.userId,
+      scope: deps.actionsScope,
+    });
+    return { answer: result.kind === "not_found" ? NOT_FOUND_TEXT : UNDO_TEXTS[result.kind] };
+  }
   const target = await getLabelTarget(deps.db, ctx, callback.emailId);
   if (!target) {
     return { answer: NOT_FOUND_TEXT };
-  }
-  if (callback.kind === "undo") {
-    // One transaction: a feedback failure rolls back the reverse rows, so the user can tap again.
-    const run = async (trx: Transaction<DB>) => {
-      const undone = await undo(trx, ctx, callback.emailId, {
-        now: deps.now(),
-        userId: link.userId,
-        scope: deps.actionsScope,
-      });
-      // keepLabel: a ✏️ label with a true category stays the latest feedback row. An unsure mail has no wrong category to record.
-      if (undone.kind === "started" && target.category !== "unsure") {
-        await recordFeedback(trx, ctx, {
-          emailId: callback.emailId,
-          verdict: "wrong",
-          source: "undo",
-          userId: link.userId,
-          skipIfSame: true,
-          keepLabel: true,
-        });
-      }
-      return undone;
-    };
-    const result = await (deps.db.isTransaction ? run(deps.db as Transaction<DB>) : deps.db.transaction().execute(run));
-    if (result.kind === "not_found") return { answer: NOT_FOUND_TEXT };
-    return { answer: UNDO_TEXTS[result.kind] };
   }
   if (callback.kind === "edit") {
     return { answer: "", send: pickerMessage(callback.emailId, target.subject, target.category) };
@@ -166,11 +143,11 @@ export async function handleCallback(deps: CallbackDeps, link: LinkedChat, data:
     skipIfSame: true,
   });
   if (callback.kind === "right") {
-    return { answer: saved.saved ? `✅ Saved: ${label(callback.category)} is right.` : "Already saved." };
+    return { answer: rightAnswer(saved.saved, callback.category) };
   }
   return {
-    answer: saved.saved ? "Saved." : "Already saved.",
-    edit: { text: `✏️ Saved: ${label(callback.category)} (AI said ${label(target.category)}).`, buttons: [] },
+    answer: pickAnswer(saved.saved),
+    edit: { text: pickedText(callback.category, target.category), buttons: [] },
   };
 }
 

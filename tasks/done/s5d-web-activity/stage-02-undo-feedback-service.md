@@ -6,7 +6,7 @@ Part of [`../s5d-web-activity.md`](../s5d-web-activity.md). Read that file's "Do
 
 One step. The Undo changes a mailbox (the committer moves the mail back); a second path for it would drift from Telegram.
 
-- [ ] **2.1 The shared Undo and feedback services (B4, B5)**
+- [x] **2.1 The shared Undo and feedback services (B4, B5)**
   - Goal: the Telegram tap and the web button run one Undo + feedback transaction; the web feedback has one service with the 404 rule inside.
   - Files: create `apps/server/src/modules/triage/undo.ts`, `apps/server/test/integration/triage-undo-feedback.test.ts`; change `triage/feedback.ts`, `triage/index.ts`, `channels/callbacks.ts`.
   - Interfaces:

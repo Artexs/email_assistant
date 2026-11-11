@@ -164,7 +164,11 @@ describe("real webDeps getSession", () => {
         WEB_DIST: "/nonexistent/dist",
       }),
       db,
-      { secrets: createSecretBox(randomBytes(32).toString("base64"), 1), botUsername: null }
+      {
+        secrets: createSecretBox(randomBytes(32).toString("base64"), 1),
+        actionsScope: { kind: "off" },
+        botUsername: null,
+      }
     );
     if (web === null) throw new Error("webDeps returned null");
     try {

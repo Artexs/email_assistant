@@ -6,7 +6,7 @@ Part of [`../s5d-web-activity.md`](../s5d-web-activity.md). Read that file's "Do
 
 Three steps. Pure code with unit tests and two thin hooks; no page yet. The web imports core only through `@ea/core/web`.
 
-- [ ] **7.1 The S5d strings, `lib/activity-text.ts`, the unit-test scope (B2, B10, fact 14)**
+- [x] **7.1 The S5d strings, `lib/activity-text.ts`, the unit-test scope (B2, B10, fact 14)**
   - Goal: every activity string is a key in `en.ts`, and a test ties the toast and category words to the Telegram source.
   - Files: change `apps/web/src/i18n/en.ts`, `package.json` (root, the `test:unit` script); create `apps/web/src/lib/activity-text.ts`, `activity-text.test.ts`.
   - Interfaces:
@@ -50,7 +50,7 @@ Three steps. Pure code with unit tests and two thin hooks; no page yet. The web 
   - Done when: the tests pass; `bun run test:unit` output lists `en.test.ts`.
   - Out of scope: components.
 
-- [ ] **7.2 `lib/activity-filters.ts` and `lib/activity-list.ts` (B10, B11)**
+- [x] **7.2 `lib/activity-filters.ts` and `lib/activity-list.ts` (B10, B11)**
   - Goal: the URL, the API query and the list state are pure functions with tests.
   - Files: create `apps/web/src/lib/activity-filters.ts`, `activity-filters.test.ts`, `activity-list.ts`, `activity-list.test.ts`.
   - Interfaces:
@@ -116,7 +116,7 @@ Three steps. Pure code with unit tests and two thin hooks; no page yet. The web 
   - Done when: the tests pass.
   - Out of scope: the hook (7.3).
 
-- [ ] **7.3 `lib/activity-api.ts`, `lib/use-media.ts`, `lib/use-activity-list.ts`, the lint scope (B10, B11)**
+- [x] **7.3 `lib/activity-api.ts`, `lib/use-media.ts`, `lib/use-activity-list.ts`, the lint scope (B10, B11)**
   - Goal: the page has one data hook with polling, load more, refresh and patch, and a width hook for the panel side.
   - Files: create `apps/web/src/lib/activity-api.ts`, `use-media.ts`, `use-activity-list.ts`; change `eslint.config.js`.
   - Interfaces:

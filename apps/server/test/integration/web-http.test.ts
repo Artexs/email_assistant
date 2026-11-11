@@ -17,7 +17,11 @@ import { testDb } from "./helpers";
 
 const db = testDb();
 const checkDb = async () => true;
-const extras = { secrets: createSecretBox(randomBytes(32).toString("base64"), 1), botUsername: null };
+const extras = {
+  secrets: createSecretBox(randomBytes(32).toString("base64"), 1),
+  actionsScope: { kind: "off" } as const,
+  botUsername: null,
+};
 
 let dist = "";
 
