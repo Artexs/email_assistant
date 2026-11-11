@@ -30,12 +30,15 @@ function Activity() {
   const effective: ActivityFilters = {
     ...filters,
     mailboxId:
-      filters.mailboxId !== null && list.some((mailbox) => mailbox.id === filters.mailboxId) ? filters.mailboxId : null,
+      list.length >= 2 && filters.mailboxId !== null && list.some((mailbox) => mailbox.id === filters.mailboxId)
+        ? filters.mailboxId
+        : null,
   };
   const waitingForMailboxes = filters.mailboxId !== null && mailboxes.data === null && mailboxes.error === null;
 
   const onChange = (next: ActivityFilters) => {
     setFilters(next);
+    setLastLoad(null);
     history.replaceState(null, "", `${location.pathname}${filtersToSearch(next)}${location.hash}`);
   };
 
