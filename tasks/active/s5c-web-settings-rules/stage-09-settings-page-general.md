@@ -6,7 +6,7 @@ Part of [`../s5c-web-settings-rules.md`](../s5c-web-settings-rules.md). Read tha
 
 Two steps. `[risky]`: the Account card changes the password and ends sessions (auth); the signature goes into mail to third parties.
 
-- [ ] **9.1 Digest times, Signature, Timezone (S2, S6, S7, U8, B9–B12)**
+- [x] **9.1 Digest times, Signature, Timezone (S2, S6, S7, U8, B9–B12)**
   - Goal: a member sets their own digest times; the owner sets the signature and the timezone; an assistant sees the last two read-only.
   - Files: create `apps/web/src/components/settings/DigestTimesCard.tsx`, `SignatureCard.tsx`, `TimezoneCard.tsx`; change `apps/web/src/islands/SettingsPage.tsx`.
   - Interfaces:
@@ -39,7 +39,7 @@ Two steps. `[risky]`: the Account card changes the password and ends sessions (a
   - Done when: the build and the hand check pass.
   - Out of scope: the Account card (9.2).
 
-- [ ] **9.2 Account: change password, sign out everywhere (S9, B13)**
+- [x] **9.2 Account: change password, sign out everywhere (S9, B13)**
   - Goal: a member changes their password (other sessions end by default) and can end every session.
   - Files: create `apps/web/src/components/settings/AccountCard.tsx`, `apps/web/src/lib/password-errors.ts`, `password-errors.test.ts`; change `apps/web/src/islands/SettingsPage.tsx`.
   - Interfaces:

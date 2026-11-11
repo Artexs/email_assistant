@@ -1,4 +1,11 @@
-import { mailboxListSchema, settingsViewSchema, type MailboxView, type SettingsWebChange } from "@ea/core/web";
+import {
+  mailboxListSchema,
+  organizationSettingsSchema,
+  settingsViewSchema,
+  type MailboxView,
+  type OrganizationView,
+  type SettingsWebChange,
+} from "@ea/core/web";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -7,9 +14,13 @@ import { useMe } from "../components/shell/MeProvider";
 import { ScopeBadges } from "../components/mailboxes/ScopeBadges";
 import { StatusBadge } from "../components/mailboxes/StatusBadge";
 import { MailboxSelector } from "../components/settings/MailboxSelector";
+import { AccountCard } from "../components/settings/AccountCard";
 import { CategoriesCard } from "../components/settings/CategoriesCard";
+import { DigestTimesCard } from "../components/settings/DigestTimesCard";
 import { ModeCard } from "../components/settings/ModeCard";
+import { SignatureCard } from "../components/settings/SignatureCard";
 import { SyncFoldersCard } from "../components/settings/SyncFoldersCard";
+import { TimezoneCard } from "../components/settings/TimezoneCard";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { t, type TextKey } from "../i18n/en";
@@ -61,6 +72,51 @@ function MailboxSettings({ mailbox, isOwner, reloadMailboxes, reloadMe }: Mailbo
       <CategoriesCard settings={data} isOwner={isOwner} onChanged={onChanged} onMissing={reloadMailboxes} />
       <SyncFoldersCard settings={data} isOwner={isOwner} onChanged={onChanged} onMissing={reloadMailboxes} />
     </>
+  );
+}
+
+function GeneralSection({ isOwner }: { isOwner: boolean }) {
+  const { me, reload: reloadMe } = useMe();
+  const { data, error, loading, reload, mutate } = useResource(() =>
+    api("/api/organization", organizationSettingsSchema)
+  );
+
+  let content;
+  if (data === null || me === null) {
+    content =
+      error === null || loading ? (
+        <div aria-busy="true" className="flex flex-col gap-3">
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-40 w-full" />
+        </div>
+      ) : (
+        <div className="flex flex-col items-start gap-3">
+          <p>{t("set_load_error")}</p>
+          <Button onClick={reload}>{t("retry")}</Button>
+        </div>
+      );
+  } else {
+    // The PATCH answer goes into the resource at once, so a poll that started before the save cannot bring the old value back.
+    const saved = (view: OrganizationView) => {
+      mutate({ ...data, ...view });
+      reloadMe();
+    };
+    content = (
+      <>
+        <DigestTimesCard times={me.digestTimes} timeZone={me.organization.timezone} onSaved={reloadMe} />
+        <SignatureCard organization={data} isOwner={isOwner} onSaved={saved} />
+        <TimezoneCard organization={data} isOwner={isOwner} onSaved={saved} />
+        <AccountCard />
+      </>
+    );
+  }
+
+  return (
+    <section className="flex flex-col gap-4">
+      <h2 className="text-lg font-semibold">{t("set_section_general")}</h2>
+      {!isOwner && <p className="text-sm text-muted-foreground">{t("set_owner_only")}</p>}
+      {content}
+    </section>
   );
 }
 
@@ -138,7 +194,12 @@ function Settings() {
     );
   }
 
-  return <div className="flex max-w-3xl flex-col gap-4">{content}</div>;
+  return (
+    <div className="flex max-w-3xl flex-col gap-6">
+      <div className="flex flex-col gap-4">{content}</div>
+      <GeneralSection isOwner={isOwner} />
+    </div>
+  );
 }
 
 export default function SettingsPage() {

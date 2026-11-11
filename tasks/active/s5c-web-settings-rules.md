@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — build started (pipeline, worktree `task/s5c-web-settings-rules`, database `s5c`); stages 1–7 PASS, 8 built, review pending.** Left: stages 9–12 (stage 8 in review). Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5c-build.md`.
+> **Status 2026-11-11 — in progress — build started (pipeline, worktree `task/s5c-web-settings-rules`, database `s5c`); stages 1–8 PASS, 9 built, review pending.** Left: stages 10–12 (stage 9 in review). Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5c-build.md`.
 
 # S5c Web: settings and rules
 
@@ -163,7 +163,7 @@ Each stage lives in its own file in [`s5c-web-settings-rules/`](s5c-web-settings
 - [x] [Stage 5](s5c-web-settings-rules/stage-05-settings-routes.md) — Settings routes, the view composer, the composition [risky] [written]
 - [x] [Stage 6](s5c-web-settings-rules/stage-06-rules-routes.md) — Rules routes [risky] [written]
 - [x] [Stage 7](s5c-web-settings-rules/stage-07-web-foundations.md) — Web foundations: `ApiError.raw`, the helpers, `textarea`, the lint scope, the strings [written]
-- [ ] [Stage 8](s5c-web-settings-rules/stage-08-settings-page-mailbox.md) — Settings page part 1: selector, Mode and actions with the `assist` dialog, Categories with "Set anyway", Synced folders [written]
+- [x] [Stage 8](s5c-web-settings-rules/stage-08-settings-page-mailbox.md) — Settings page part 1: selector, Mode and actions with the `assist` dialog, Categories with "Set anyway", Synced folders [written]
 - [ ] [Stage 9](s5c-web-settings-rules/stage-09-settings-page-general.md) — Settings page part 2: Digest times, Signature, Timezone, Account [risky] [written]
 - [ ] [Stage 10](s5c-web-settings-rules/stage-10-rules-page.md) — Rules page [written]
 - [ ] [Stage 11](s5c-web-settings-rules/stage-11-playwright.md) — Playwright: the seed members, the cleanup, `settings.spec.ts`, `rules.spec.ts`, `account.spec.ts` [written]
@@ -229,3 +229,5 @@ Scope: 21 the "Owns" list missed five changed files and the `tenancy → audit` 
 - 2026-11-11: Fix commit for the stage 5 and 6 minors (tests only): the `mailbox.switch_changed` row, the other organization's owner gets 404 on M1, the POST 404 bodies. int 1210 pass. Reviewed in the group review.
 - 2026-11-11: Stage 7 review PASS (Sonnet high; 0 blocker, 0 major, 1 minor — the extra test and key are logged); pushed `17a24f8`.
 - 2026-11-11: Stage 8 built, review pending (Sonnet high): lint, typecheck clean; unit 1643 pass; `cd apps/web && bun run build` Complete; `git diff --exit-code bun.lock apps/web/package.json` exit 0. The browser hand check was skipped (Playwright in stage 11, the walk in stage 12). Deviations: `onMissing?()` prop on the three cards; `patchSettings` in `settings-api.ts`; `useResource` also ignores a load that started before a `mutate`.
+- 2026-11-11: Stage 8 review PASS (Sonnet high; 0 blocker, 0 major, 4 minor, 1 question); pushed `e00db74`. To fix: (1) derive the selected mailbox during render so `set_no_mailbox` never flashes (a Playwright check could flake); (3) a settings GET that keeps answering 404 shows the skeleton forever → `set_load_error` with Retry. Accepted: per-switch pending can reorder two answers until the next poll (2); no test for the `useResource` sequence ref (5, no React harness). Stage 11 must cover the 8.1 and 8.2 hand-check items (4).
+- 2026-11-11: Stage 9 built, review pending (Opus high): lint, typecheck clean; unit 1648 pass; `cd apps/web && bun run build` Complete; `git diff --exit-code bun.lock apps/web/package.json` exit 0. Browser hand check skipped (stage 11, 12). Deviations: new `lib/use-draft.ts` (hook over `nextDraft`), `lib/password-errors.ts` with 5 tests; the Account card renders only after `GET /api/organization` loads.
