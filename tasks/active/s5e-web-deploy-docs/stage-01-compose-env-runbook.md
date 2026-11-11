@@ -4,7 +4,7 @@ Part of [`../s5e-web-deploy-docs.md`](../s5e-web-deploy-docs.md). Read that file
 
 ## Stage 1 — Compose loopback port, `.env.example` server values, the runbook "Web panel" section, two alert statuses [risky]
 
-- [ ] **1.1 Compose port and env text**
+- [x] **1.1 Compose port and env text**
   - Goal: the server publishes its port on the host loopback only, and `.env.example` tells a server operator the value of each web key.
   - Files: change `deploy/compose.yaml`, `.env.example`.
   - Interfaces: none (no code).
@@ -24,7 +24,7 @@ Part of [`../s5e-web-deploy-docs.md`](../s5e-web-deploy-docs.md). Read that file
   - Done when: both checks pass; `git diff --stat` shows only the two files.
   - Out of scope: any other Compose change (no network subnet, E3), the `db` service, the Dockerfile (D21 is built, difference 3).
 
-- [ ] **1.2 Runbook "Web panel" section and alert statuses**
+- [x] **1.2 Runbook "Web panel" section and alert statuses**
   - Goal: a person with only `deploy/README.md` can turn the panel on, give the owner a password, check access, find a fault and turn the panel off.
   - Files: change `deploy/README.md`, `docs/known-alerts.md`.
   - Decisions:

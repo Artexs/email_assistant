@@ -9,7 +9,7 @@ Run the commands in bash (the default VPS shell).
 C="docker compose -f deploy/compose.yaml --env-file .env"
 ```
 
-The server has no inbound port. The `db` service has no host port.
+The server listens on `127.0.0.1:8080` on the host only (for Tailscale Serve, section Web panel). The `db` service has no host port.
 
 ## Requirements
 
@@ -28,6 +28,7 @@ The server has no inbound port. The `db` service has no host port.
    - `HEARTBEAT_URL` (see Heartbeat), `TEST_MAILBOX_ADDRESS` (test mailbox only), `LOG_LEVEL=info`.
    - `SEND_SCOPE=off` (default) and `SEND_TEST_ADDRESSES` (comma-separated, needed with `SEND_SCOPE=self`). See the section "Approvals and sends".
    - Compose sets `DATABASE_URL`, `MIGRATOR_DATABASE_URL` and `PORT` by itself. Their values in `.env` do not count for `server`.
+   - Web panel keys: see the section Web panel. Leave `WEB_BASE_URL` empty to keep the web off, and empty the dev value of `WEB_TRUSTED_ORIGINS` that `cp .env.example .env` copied.
 4. Start the database: `$C up -d --wait db`
 5. Build the image and migrate: `$C run --build --rm server bun run db:migrate`
 6. Create the organisation:
@@ -82,6 +83,92 @@ The server uses long polling (no inbound port). The VPS uses the pilot bot `@Ema
 A `409` in the log (`another process polls this bot token`) means that a second process uses the same token, for example the Mac with the pilot token. Stop the other process. The server tries again after 1, 2, 4 … at most 30 minutes. A `401` means that the token is wrong or revoked: fix `.env`, then run `$C up -d server`.
 
 For a mailbox in `auth_error` the owner gets a Telegram notice. Fix it as in the section "Login error (`auth_error`)". Alert texts and fixes: `docs/known-alerts.md`.
+
+## Web panel
+
+### What it is
+
+The web panel is at `https://<machine>.<tailnet>.ts.net`. Only devices in your tailnet can open it. Tailscale Serve on the host adds HTTPS and proxies to `127.0.0.1:8080`.
+See [ADR 0015](../docs/decisions/0015-web-panel-static-build-and-better-auth.md) and [ADR 0016](../docs/decisions/0016-web-access-tailscale-serve.md).
+The web is off while `WEB_BASE_URL` is empty.
+
+### Tailscale (once)
+
+1. Admin console, page DNS: turn MagicDNS on.
+2. Admin console, page DNS: turn HTTPS on. Machine names and the tailnet name go into a public certificate ledger. Accept this only if you agree.
+3. On the VPS, install Tailscale (you, sudo): `curl -fsSL https://tailscale.com/install.sh | sh`
+4. On the VPS, join the tailnet (you, sudo): `sudo tailscale up --accept-dns=false --hostname=email-assistant`
+   Open the login URL that the command prints.
+5. Admin console, page Machines: for `email-assistant`, choose Disable Key Expiry. Without this, the panel stops after some months.
+6. On each client device, install Tailscale and sign in with the same account. Phone: the App Store or Play Store app. Arch Linux PC: `sudo pacman -S tailscale`, then `sudo systemctl enable --now tailscaled`, then `sudo tailscale up`. Keep MagicDNS on, because the tailnet host names resolve only through it.
+
+Never run `tailscale up --force-reauth` over the tailnet. It cuts the connection that you use.
+
+### Turn it on
+
+1. Read the gateway of the Compose network (the network exists after the first `up`):
+   `docker network inspect email-assistant_default --format '{{(index .IPAM.Config 0).Gateway}}'`
+2. Set these keys in `.env`:
+   - `WEB_BASE_URL`: `https://<machine>.<tailnet>.ts.net` (no path, no trailing slash).
+   - `WEB_AUTH_SECRET`: make it with `openssl rand -base64 32`. Never print it.
+   - `WEB_TRUSTED_PROXIES`: the gateway from step 1.
+   - Leave `WEB_TRUSTED_ORIGINS`, `WEB_MAIL_ALLOW_LOCAL` and `WEB_DIST` empty.
+3. Do the section Update. The migrations of S5 run there.
+4. Check the log for the start line `web is on: https://…, dist /app/apps/web/dist`: `$C logs server | grep 'web'`
+   No `web:` warn line and no `WEB_BASE_URL` warn line must follow it.
+5. Start Tailscale Serve (you, sudo): `sudo tailscale serve --bg 8080`
+6. Check Serve: `tailscale serve status`
+
+Read the gateway again after each `docker compose down`. A new Compose network can get a new gateway.
+
+### Give a member a password
+
+1. Make the link: `$C exec server bun run web:invite --org-id <uuid> [--user-id <uuid>]`
+2. Open the link on a device in the tailnet. The link works once and for 24 hours.
+3. Set a password of 12 to 128 characters.
+
+The same command makes a reset link later. The link is a secret. Do not paste it into a chat with an agent or into a log.
+
+### Check access
+
+1. From a PC in the tailnet: `curl -sS -D - -o /dev/null "https://<machine>.<tailnet>.ts.net/health"`
+   The status is `200` and a `strict-transport-security` header is present.
+2. From the LAN, without the tunnel: `curl -m 5 http://<VPS LAN IP>:8080/health`
+   The connection is refused.
+3. From the phone with Tailscale off (mobile data): the page does not open.
+4. On the VPS: `ss -ltn`
+   One line shows `127.0.0.1:8080`. No line shows `0.0.0.0:8080`.
+
+### Troubleshooting
+
+| Symptom                                                                    | Cause                                                                    | Fix                                                                                                             |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| The page does not open on a device                                         | Tailscale is off on the device, or MagicDNS is off                       | Turn Tailscale on. Run `tailscale status`. Turn MagicDNS on in the admin console.                               |
+| `502` from Serve                                                           | The server is down, or it does not listen on `127.0.0.1:8080`            | Run `$C ps` and `ss -ltn`. Start the server with `$C up -d --wait server`.                                      |
+| Certificate error on the first visit                                       | HTTPS is off in the admin console, or the first certificate is not ready | Turn HTTPS on. Wait a short time. Do not retry in a loop: the certificate authority has a rate limit.           |
+| `403 bad_origin` on every save                                             | `WEB_BASE_URL` is not the URL in the browser bar                         | Set `WEB_BASE_URL` to the exact URL of the browser bar. Run `$C up -d --wait server`.                           |
+| All members share one rate limit, or `auth_sessions.ip_address` is `172.x` | `WEB_TRUSTED_PROXIES` is not the gateway of the Compose network          | Read the gateway again (section Turn it on, step 1). Set it in `.env`. Run `$C up -d --wait server`.            |
+| `web is off` in the log                                                    | `WEB_BASE_URL` is empty                                                  | Set `WEB_BASE_URL` in `.env`. Run `$C up -d --wait server`.                                                     |
+| `web: dist folder missing` in the log                                      | The image has no web build                                               | Rebuild: `$C up -d --build --wait`.                                                                             |
+| The setup link says "invalid"                                              | The link was used, or it is older than 24 hours                          | Make a new link (section Give a member a password).                                                             |
+| The panel stopped after some months                                        | Key expiry was not disabled for the VPS                                  | In the admin console, choose Disable Key Expiry for `email-assistant`. Run `sudo tailscale up` again if needed. |
+
+### Turn it off
+
+1. Stop Serve (you, sudo): `sudo tailscale serve reset`
+   Alternative: `sudo tailscale serve --https=443 off`
+2. Optional: empty `WEB_BASE_URL` in `.env`, then run `$C up -d --wait server`.
+
+The auth tables stay.
+
+### Roll back
+
+The rollback changes code only. There is no down migration, and the old code ignores the auth tables.
+
+1. Go to the previous commit: `git checkout <previous commit>`
+2. Rebuild and start: `$C up -d --build --wait`
+3. Stop Serve (you, sudo): `sudo tailscale serve reset`
+4. To return later: `git checkout master`
 
 ## Assist mode
 
