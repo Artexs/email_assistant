@@ -2,7 +2,8 @@ import type { Category } from "../triage/categories";
 
 import { categoryLabels } from "./labels";
 
-export type UndoAnswerKind = "started" | "already" | "nothing" | "too_old" | "held";
+export const undoAnswerKinds = ["started", "already", "nothing", "too_old", "held"] as const;
+export type UndoAnswerKind = (typeof undoAnswerKinds)[number];
 
 // The texts that Telegram and the web panel show for an undo.
 export const UNDO_TEXTS: Record<UndoAnswerKind, string> = {

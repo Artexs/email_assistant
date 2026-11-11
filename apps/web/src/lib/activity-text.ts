@@ -27,18 +27,19 @@ export function undoToast(kind: UndoWebResult["kind"]): string {
 export function feedbackStateText(feedback: ActivityItem["feedback"]): string {
   if (feedback === null) return t("act_fb_none");
   if (feedback.trueCategory === null) {
-    return feedback.verdict === "right" ? t("act_fb_right") : t("act_fb_undo");
+    if (feedback.verdict === "right") return t("act_fb_right");
+    return feedback.source === "undo" ? t("act_fb_undo") : t("act_fb_wrong");
   }
   if (feedback.verdict === "right") return t("act_fb_right");
   return t("act_fb_label", { category: categoryName(feedback.trueCategory) });
 }
 
 export function senderText(from: string | null): string {
-  return from ?? t("act_unknown_sender");
+  return from === null || from.trim() === "" ? t("act_unknown_sender") : from;
 }
 
 export function subjectText(subject: string | null): string {
-  return subject ?? t("act_no_subject");
+  return subject === null || subject.trim() === "" ? t("act_no_subject") : subject;
 }
 
 export function delegationText(delegation: NonNullable<ActivityItem["delegation"]>): string {

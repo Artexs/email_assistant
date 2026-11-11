@@ -378,6 +378,7 @@ export const en = {
   act_fb_right: "You said: right",
   act_fb_label: "You said: {category}",
   act_fb_undo: "You said: wrong (Undo)",
+  act_fb_wrong: "You said: wrong",
   act_fb_none: "Not rated yet",
   act_dlg_drafted: "Drafted",
   act_dlg_sent: "Sent",

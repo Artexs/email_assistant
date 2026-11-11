@@ -1,4 +1,4 @@
-import { feedbackBodySchema, undoBodySchema } from "@ea/core";
+import { feedbackBodySchema, undoBodySchema, type FeedbackResult, type UndoWebResult } from "@ea/core";
 import { Hono } from "hono";
 
 import type { Db } from "../../platform/db";
@@ -30,7 +30,8 @@ export function triageRoutes(deps: TriageRouteDeps): Hono<ApiEnv> {
     if (result.kind === "not_found") {
       return c.json({ error: "not_found" }, 404);
     }
-    return c.json({ saved: result.saved, verdict: result.verdict, aiCategory: result.aiCategory });
+    const answer: FeedbackResult = { saved: result.saved, verdict: result.verdict, aiCategory: result.aiCategory };
+    return c.json(answer);
   });
 
   app.post("/actions/undo", async (c) => {
@@ -45,9 +46,9 @@ export function triageRoutes(deps: TriageRouteDeps): Hono<ApiEnv> {
       return c.json({ error: "not_found" }, 404);
     }
     log.info(`web undo ${result.kind} mail ${body.emailId} by user ${userId}`);
-    return result.kind === "started"
-      ? c.json({ kind: "started", created: result.created })
-      : c.json({ kind: result.kind });
+    const answer: UndoWebResult =
+      result.kind === "started" ? { kind: "started", created: result.created } : { kind: result.kind };
+    return c.json(answer);
   });
 
   return app;

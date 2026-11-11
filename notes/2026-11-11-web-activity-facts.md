@@ -66,6 +66,7 @@ Source: `tasks/active/s5d-web-activity.md` (facts 1–14, B1–B15, Log). The ta
 - Stage 8: the "Updated" time resets on a filter change; the mailbox filter shows only with two or more mailboxes.
 - Stage 9: row lines are `span`s (a `button` holds phrasing content only); `CategoryPicker` has a `DialogDescription`; `SheetContent` has `aria-describedby={undefined}`.
 - Stage 10: test 3 uses an exact Undo button locator; M1 `mark_read` is at now − 1 h + 1 s.
+- Stage 10: the seed values differ from B12 (see `apps/server/src/scripts/e2e-activity-rows.ts`): received times M1 now − 3 h, M2 now − 4 h, M3 now − 5 h, M4 now − 6 h; M2 0.88 "Anna asks for an answer."; M3 0.4 "The AI is not sure."; M4 0.9; the action times and the filler reason are set. B12 now holds the code values.
 
 ## Review notes that stay open (accepted minors)
 
@@ -75,4 +76,5 @@ Source: `tasks/active/s5d-web-activity.md` (facts 1–14, B1–B15, Log). The ta
 - The optimistic `feedback.at` after a tap uses the client clock; the next poll replaces it with the server time.
 - With a failed `GET /api/mailboxes`, a mailbox id in the URL counts as "all mailboxes".
 - `en.test.ts` (fact 14) runs in `test:unit` now, but it checks only the messages of the core body schemas. The activity schemas have no custom messages, so it checks nothing new for S5d.
-- iOS Safari is not verified (the S5e hand check on the phone). The bottom Sheet with a long AI text was checked by Playwright on the Pixel 7 viewport only.
+- iOS Safari is not verified (the S5e hand check on the phone). The bottom Sheet with a long AI text was NOT checked by Playwright: the seeded text is one short sentence, and test 2 shows only that the panel buttons can be clicked at the phone width. The long-text check stays in the S5e hand smoke.
+- With "Only not rated" on, a tapped row stays in the list until the next poll (A8, S5c lesson 2). Accepted.

@@ -1,3 +1,4 @@
+import { undoAnswerKinds } from "../digest/answers";
 import { labelCategories } from "../digest/callback";
 import { categories, feedbackSources, feedbackVerdicts } from "../triage/categories";
 
@@ -112,7 +113,7 @@ export const undoBodySchema = z.object({ emailId: z.uuid() });
 export type UndoBody = z.infer<typeof undoBodySchema>;
 
 export const undoResultSchema = z.object({
-  kind: z.enum(["started", "already", "nothing", "too_old", "held"]),
+  kind: z.enum(undoAnswerKinds),
   created: z.number().int().min(0).optional(),
 });
 export type UndoWebResult = z.infer<typeof undoResultSchema>;

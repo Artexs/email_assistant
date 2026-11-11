@@ -63,7 +63,11 @@ describe("words tied to the Telegram source (U6)", () => {
 describe("row texts", () => {
   test("fallbacks and confidence", () => {
     expect(subjectText(null)).toBe("(no subject)");
+    expect(subjectText("")).toBe("(no subject)");
+    expect(subjectText("   ")).toBe("(no subject)");
     expect(subjectText("Hi")).toBe("Hi");
+    expect(senderText("")).toBe("(unknown sender)");
+    expect(senderText(" \t")).toBe("(unknown sender)");
     expect(senderText(null)).toBe("(unknown sender)");
     expect(senderText("a@x.test")).toBe("a@x.test");
     expect(confidenceText(0.934)).toBe("93 %");
@@ -74,7 +78,8 @@ describe("row texts", () => {
     expect(feedbackStateText(feedback({ verdict: "right", trueCategory: "info" }))).toBe("You said: right");
     expect(feedbackStateText(feedback({ verdict: "wrong", trueCategory: "info" }))).toBe("You said: Info");
     expect(feedbackStateText(feedback({ verdict: "wrong", source: "undo" }))).toBe("You said: wrong (Undo)");
-    expect(feedbackStateText(feedback({ verdict: "wrong", source: "telegram" }))).toBe("You said: wrong (Undo)");
+    expect(feedbackStateText(feedback({ verdict: "wrong", source: "telegram" }))).toBe("You said: wrong");
+    expect(feedbackStateText(feedback({ verdict: "wrong", source: "imap_move" }))).toBe("You said: wrong");
   });
 
   test("delegation text", () => {
