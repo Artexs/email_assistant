@@ -49,3 +49,4 @@ Which settings sit on one screen and which behind tabs on the phone; the wording
 
 - 2026-11-08: Created by the S5 master plan session (`tasks/active/s5-web-panel.md`, P11).
 - 2026-11-08: Cold review fix (finding 15): S5b is a hard dependency.
+- 2026-11-11: Pointer from S5b: the Settings page selector reads `GET /api/mailboxes` (`mailboxListSchema` in `@ea/core/web`). The mode change writes the audit event `mailbox.mode_changed`, which also closes the onboarding mode item. Facts: `notes/2026-11-11-web-mailboxes-facts.md`.

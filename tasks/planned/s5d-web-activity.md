@@ -47,3 +47,4 @@ The row density on the phone (two lines or three); which filters are default (la
 
 - 2026-11-08: Created by the S5 master plan session (`tasks/active/s5-web-panel.md`, P11).
 - 2026-11-08: Cold review fix (finding 17): keyset cursor on `(received_at, id)`.
+- 2026-11-11: Pointer from S5b: the e2e seed has no mailbox; the S5b specs connect their own and remove it in `afterEach` (`cleanUpOrg`). S5d adds the seeded mailbox and mail and must keep `cleanUpOrg` working. Facts: `notes/2026-11-11-web-mailboxes-facts.md`.

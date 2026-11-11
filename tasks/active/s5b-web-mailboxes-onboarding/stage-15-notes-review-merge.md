@@ -4,7 +4,7 @@ Part of [`../s5b-web-mailboxes-onboarding.md`](../s5b-web-mailboxes-onboarding.m
 
 ## Stage 15 — Notes, alerts, master plan lines, group review, checkpoint, merge
 
-- [ ] **15.1 Docs for the next agents**
+- [x] **15.1 Docs for the next agents**
   - Goal: what S5b learned and changed is findable without this chat.
   - Files: create `notes/<date>-web-mailboxes-facts.md`; change `docs/known-alerts.md`, `docs/code-patterns.md`, `tasks/active/s5-web-panel.md`, `tasks/planned/s5c-web-settings-rules.md`, `tasks/planned/s5d-web-activity.md`, `tasks/planned/s5e-web-deploy-docs.md` (pointer lines only).
   - Decisions:
