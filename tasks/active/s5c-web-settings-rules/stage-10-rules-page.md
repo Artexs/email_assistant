@@ -6,7 +6,7 @@ Part of [`../s5c-web-settings-rules.md`](../s5c-web-settings-rules.md). Read tha
 
 One step.
 
-- [ ] **10.1 `/rules`: the filter, the add form, three lists, delete (S2, S8, B14)**
+- [x] **10.1 `/rules`: the filter, the add form, three lists, delete (S2, S8, B14)**
   - Goal: the owner lists, adds and deletes sender rules; an assistant sees them read-only.
   - Files: change `apps/web/src/islands/RulesPage.tsx`; create `apps/web/src/components/rules/AddRuleForm.tsx`, `RuleList.tsx`, `apps/web/src/lib/rules-view.ts`, `rules-view.test.ts`.
   - Interfaces:
