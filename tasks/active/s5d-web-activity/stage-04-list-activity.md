@@ -6,7 +6,7 @@ Part of [`../s5d-web-activity.md`](../s5d-web-activity.md). Read that file's "Do
 
 One step. The page shows what the assistant did to a mail and offers Undo by this data: a wrong `undoable` or phrase misleads the user about changes in their mailbox.
 
-- [ ] **4.1 `reports/activity.ts` (B7)**
+- [x] **4.1 `reports/activity.ts` (B7)**
   - Goal: one service builds a page of activity items with the digest's words, in a fixed number of queries.
   - Files: create `apps/server/src/modules/reports/activity.ts`, `apps/server/test/integration/reports-activity.test.ts`; change `reports/index.ts`.
   - Interfaces:

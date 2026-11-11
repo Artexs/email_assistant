@@ -1,4 +1,11 @@
 export {
+  decodeActivityCursor,
+  encodeActivityCursor,
+  listActivity,
+  type ActivityCursor,
+  type ActivityQuery,
+} from "./activity";
+export {
   buildDigestMessage,
   DIGEST_ITEM_LIMIT,
   DIGEST_MAX_PERIOD_MS,
