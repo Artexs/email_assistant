@@ -63,7 +63,8 @@ export interface ActionEdge {
 
 // One row per writer variant. `from` lists, per type, the statuses that the guard admits for a row
 // that the database can hold (a `send` is never `ready`: `actions_send_never_ready_check`).
-// A type that is not a key is not admitted (or cannot exist in the status of the `to` list).
+// A type that is not a key is not admitted, cannot exist in the status of the `to` list, or has no caller for
+// this variant (the `finishAction` variants with an explicit `from`: see their comment). Tests check only the keys.
 // `to` lists the statuses that the variant can write. `held: "blocks"`: a row with a fresh `locked_at` is not changed.
 export interface WriterGuard {
   writer: ActionWriter;
