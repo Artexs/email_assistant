@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — S5a done; S5b done and merged (`tasks/done/s5b-web-mailboxes-onboarding.md`, merge `bd8dd77`); S5c built (`tasks/done/s5c-web-settings-rules.md`, merge pending); next: the S5d plan session.** The master plan (P1–P12, U1–U10, D1–D23, the API contract, the rules, five segments) is written and cold-reviewed. S5a (`tasks/done/s5a-web-foundation.md`) and S5b are merged into `master` (`8dfe857`). S5c is built and waits for the merge. Left: S5d and S5e, each with its own plan session (P11).
+> **Status 2026-11-11 — in progress — S5a done; S5b done and merged (`tasks/done/s5b-web-mailboxes-onboarding.md`, merge `bd8dd77`); S5c done and merged (`tasks/done/s5c-web-settings-rules.md`); next: the S5d plan session.** The master plan (P1–P12, U1–U10, D1–D23, the API contract, the rules, five segments) is written and cold-reviewed. S5a (`tasks/done/s5a-web-foundation.md`) and S5b are merged into `master` (`8dfe857`). S5c is merged too. Left: S5d and S5e, each with its own plan session (P11).
 
 # S5 Web panel (lite)
 

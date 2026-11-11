@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — code done, waiting for the user's go to merge — stages 1–12.1 PASS, group review PASS, walk-through done (Playwright, 30 passed, screenshots).** Left: the user's go; then `git merge origin/master` in the branch, the full check line, `git merge --no-ff` on `master`, push, CI, close (done-checklist, `tasks/done/`, remove worktree and branch, `db:worktree s5c --drop`). Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5c-build.md`.
+> **Status 2026-11-11 — done.** Merged into `master` (`--no-ff`) after the user's go. Next: the S5d plan session (`tasks/planned/s5d-web-activity.md`).
 
 # S5c Web: settings and rules
 
@@ -167,7 +167,7 @@ Each stage lives in its own file in [`s5c-web-settings-rules/`](s5c-web-settings
 - [x] [Stage 9](s5c-web-settings-rules/stage-09-settings-page-general.md) — Settings page part 2: Digest times, Signature, Timezone, Account [risky] [written]
 - [x] [Stage 10](s5c-web-settings-rules/stage-10-rules-page.md) — Rules page [written]
 - [x] [Stage 11](s5c-web-settings-rules/stage-11-playwright.md) — Playwright: the seed members, the cleanup, `settings.spec.ts`, `rules.spec.ts`, `account.spec.ts` [written]
-- [ ] [Stage 12](s5c-web-settings-rules/stage-12-notes-review-merge.md) — Notes, alerts, master plan lines, group review, checkpoint, merge [written]
+- [x] [Stage 12](s5c-web-settings-rules/stage-12-notes-review-merge.md) — Notes, alerts, master plan lines, group review, checkpoint, merge [written]
 
 Docker on this PC: every `docker` or `bun run dev:up` command runs inside `newgrp docker <<'EOF' … EOF` (`notes/2026-11-08-docker-socket-newgrp.md`). Git push from the agent shell: `export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/github -o IdentitiesOnly=yes"` (`notes/2026-11-10-git-ssh-push.md`). S5c adds no package and no migration (B16).
 
@@ -198,10 +198,10 @@ Scope: 21 the "Owns" list missed five changed files and the `tenancy → audit` 
 
 ## Done-checklist
 
-- [ ] Done-when checks pass (name the command and its output in the log).
-- [ ] `docs/` describe what was built (the S5 docs pass is S5e; this segment writes its notes and the dated master plan lines).
-- [ ] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
-- [ ] Follow-up ideas are in `planned/`.
+- [x] Done-when checks pass (name the command and its output in the log).
+- [x] `docs/` describe what was built (the S5 docs pass is S5e; this segment writes its notes and the dated master plan lines).
+- [x] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
+- [x] Follow-up ideas are in `planned/`.
 
 ## Log
 
@@ -241,3 +241,4 @@ Scope: 21 the "Owns" list missed five changed files and the `tenancy → audit` 
 - 2026-11-11: Group review PASS (Opus high, range f2696ed..ea49b20; 0 blocker, 0 major, 5 minor, 1 question). Fixed in one commit: a 400 test over the four PATCH settings routes; the facts note (stale item removed); the alerts text ("one or more digests"); the Set-anyway dialog text for `urgent` and `needs_reply` (new key `anyway_text_quiet`; the Q4 text said the assistant would move and mark such mail, which `cat_effect_*` contradicts); `kindTitles` moved to `lib/rules-view.ts`. Accepted: the `no-explicit-any` disable in three test `json()` helpers. Full check after the fix: unit 1660, int 1211, e2e 30 passed, web build Complete.
 - 2026-11-11: Review of the group fix `c716601` PASS (Opus high; 3 minor, 1 question); fixed in a text-only commit: the `anyway-text.ts` comment, `anyway_text_quiet` starts with "{category} did not pass the check.", `cat_effect_urgent` and `cat_effect_needs_reply` now say that junk-folder mail moves back to INBOX with auto on (checked in `planners.ts` and `policy.ts`), a line in the facts note. Self-checked, no further review (strings and a comment). The walk-through: a temporary Playwright spec (deleted, not committed) took screenshots of /settings, the assist dialog and /rules at both widths; the layout is right; zero console and CSP errors in the specs.
 - 2026-11-11: Final check in the worktree before the go: unit 1660 pass, int 1211 pass, e2e 30 passed, web build Complete (commit `c716601`; `3cb00fd` changed strings only, with lint, typecheck, unit, build and e2e 30 passed re-run). Waiting for the user's go to merge.
+- 2026-11-11: The user gave the go. `git merge origin/master` in the branch (docs only: the state-machine plan); full check on the merged branch: lint and typecheck clean, unit 1660 pass, int 1211 pass, `bun run web:build` Complete, `TELEGRAM_BOT_TOKEN= WEB_MAIL_ALLOW_LOCAL=true bun run test:e2e` 30 passed. Merged into `master` with `--no-ff`; task moved to `tasks/done/`.

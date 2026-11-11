@@ -1,6 +1,6 @@
 # S5c web settings and rules: facts and deviations
 
-Source: `tasks/active/s5c-web-settings-rules.md` (facts 1–14, B1–B16, Log). The task file moves to `tasks/done/` at the merge. Built 2026-11-11 in the worktree `task/s5c-web-settings-rules`. Read this note before you change the settings routes, the rules routes, the organization routes, the gate or the e2e setup.
+Source: `tasks/done/s5c-web-settings-rules.md` (facts 1–14, B1–B16, Log). The task file moves to `tasks/done/` at the merge. Built 2026-11-11 in the worktree `task/s5c-web-settings-rules`. Read this note before you change the settings routes, the rules routes, the organization routes, the gate or the e2e setup.
 
 ## The gate (fact 4, B2)
 
