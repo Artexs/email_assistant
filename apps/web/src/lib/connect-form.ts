@@ -35,8 +35,9 @@ export function initialConnectForm(): ConnectFormState {
 
 export function onAddressChange(state: ConnectFormState, address: string): ConnectFormState {
   if (state.providerTouched) return { ...state, address };
-  const provider = presetForAddress(address) ?? state.provider;
-  return { ...state, address, provider, appPassword: appPasswordFor(provider) };
+  const preset = presetForAddress(address);
+  if (preset === null) return { ...state, address };
+  return { ...state, address, provider: preset, appPassword: appPasswordFor(preset) };
 }
 
 export function onProviderChange(state: ConnectFormState, provider: ProviderChoice): ConnectFormState {
@@ -76,9 +77,10 @@ export function fieldErrorKeys(
     const head = Array.isArray(issue.path) ? String(issue.path[0]) : String(issue.path).split(".")[0];
     const field = fieldNames.find((name) => name === head);
     if (field === undefined || result[field] !== undefined) continue;
-    const required = issue.code === "too_small" || issue.message === "required";
+    const isPort = field === "imapPort" || field === "smtpPort";
+    const required = issue.message === "required" || (issue.code === "too_small" && !isPort);
     if (required) result[field] = "err_required";
-    else if (field === "imapPort" || field === "smtpPort") result[field] = "err_port";
+    else if (isPort) result[field] = "err_port";
     else if (field === "imapHost" || field === "smtpHost") result[field] = "err_host";
     else if (field === "address") result[field] = "email_invalid";
     else result[field] = "err_required";

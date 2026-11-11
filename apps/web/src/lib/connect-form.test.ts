@@ -43,6 +43,13 @@ describe("connect form", () => {
     expect(wp.appPassword).toBe(false);
   });
 
+  test("an address with no preset keeps the app-password switch", () => {
+    const on = { ...onAddressChange(initialConnectForm(), "a@exa"), appPassword: true };
+    const next = onAddressChange(on, "a@exam");
+    expect(next.appPassword).toBe(true);
+    expect(next.provider).toBe("interia");
+  });
+
   test("a picked provider is never changed by typing", () => {
     const picked = onProviderChange(initialConnectForm(), "onet");
     expect(onAddressChange(picked, "x@gmail.com").provider).toBe("onet");
@@ -65,6 +72,11 @@ describe("connect form", () => {
     const result = connectMailboxBodySchema.safeParse(toConnectBody(other({ smtpPort: "" })));
     expect(result.success).toBe(false);
     if (!result.success) expect(fieldErrorKeys(result.error.issues).smtpPort).toBe("err_port");
+  });
+
+  test("a port out of range gives err_port", () => {
+    expect(fieldErrorKeys([{ path: ["imapPort"], code: "too_small", message: "x" }]).imapPort).toBe("err_port");
+    expect(fieldErrorKeys([{ path: ["smtpPort"], code: "too_big", message: "x" }]).smtpPort).toBe("err_port");
   });
 
   test("a host with a space gives err_host", () => {
