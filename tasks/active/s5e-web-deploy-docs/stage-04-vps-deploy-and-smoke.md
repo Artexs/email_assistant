@@ -1,0 +1,58 @@
+# s5e-web-deploy-docs — Stage 4
+
+Part of [`../s5e-web-deploy-docs.md`](../s5e-web-deploy-docs.md). Read that file's "Done when", A1–A9, "Facts checked", E1–E11, "Rules for every step", "User steps" and "User checkpoints" first, and the stage 2 log (the rehearsal times and results).
+
+## Stage 4 — VPS deploy, Serve, access checks, the first password, the hand smoke [risky] — gated, main session with the user
+
+Starts only after checkpoint 3 (the user's go in this session) and with stage 3 done. `C="docker compose -f deploy/compose.yaml --env-file .env"` on the VPS (`ssh home_vm`, `cd ~/email_assistant`). The main session writes each command and its output (counts and ids only; the host as `$EA_HOST` or `email-assistant.<tailnet>.ts.net`, never the real name) into the step log. Stop at the first unexpected result; the rollback (E7) is written in step 4.1 before anything changes.
+
+- [ ] **4.1 Pre-checks, backup, rollback written** (agent, read-only except the backup and the prune)
+  - `date -u`; `git log -1 --format='%h %s'` → `0d39663`; `git status --short` → empty; `$C exec -T db psql -U postgres -d email_assistant -At -c "select max(version) from schema_migrations"` → `20261109083501`.
+  - Scopes by count: `grep -cE '^ACTIONS_SCOPE=all$' .env`, `grep -cE '^SEND_SCOPE=all$' .env`, `grep -cE '^TRIAGE_LLM_SCOPE=all$' .env` → 1 each (fact 11; a 0 means the state changed: ask the user before going on).
+  - Web keys by count (before the user sets them): `grep -cE '^WEB_' .env` → write the number (expected 0).
+  - Disk (A8): `df -h /`, `docker system df`; then `docker builder prune -f`, `docker image prune -f`; `df -h /` again. Free space ≥ 3 GB → go on; else stop and ask the user (fact 3: the build needs about 0.7 GB more).
+  - Memory: `free -m`; less than about 1.5 GB available → stop and ask the user (the Astro build runs next to the live `db` and `server`).
+  - Port: `ss -ltn | grep -c ':8080 '` → 0 (a taken port fails the bind after the old container is gone). The old container of another project (`notes/2026-11-03-pilot-vps.md`): `docker inspect astro-app-container --format '{{.HostConfig.RestartPolicy.Name}} {{json .HostConfig.PortBindings}}'` → write it; a restart policy other than `no` with a binding on 8080 → stop and ask the user.
+  - Onboarding state (E10 item 2): `select count(*) from audit_log where org_id = 'ac6ed6a2-ee37-461f-9632-cc08cf549e40' and event in ('mailbox.mode_changed','onboarding.mode_kept')` → write it; 0 means the Onboarding page shows the mode item open and `/` opens `/onboarding` (expected then, not a smoke failure).
+  - Health: `$C ps`; `$C logs --since 10m server | grep -ciE '\b(error|fatal)\b'` → 0 (else stop: a fault exists before the deploy).
+  - `ss -ltn` → compare with the stage 3 "before" list.
+  - Backup: `PATH=$HOME/bin:$PATH deploy/backup.sh` → the log names the file (`ea-<time>.dump.age`) and its size.
+  - Write into the log: the rollback commands of E7 with `<PREV>` = `0d39663`, and the rollback triggers.
+
+- [ ] **4.2 Keys** (the user edits `.env`; the agent checks by count)
+  - The user first copies the file: `cp -p .env .env.bak-s5e` (E7 restores it).
+  - The agent reads the gateway (not a secret): `docker network inspect email-assistant_default --format '{{(index .IPAM.Config 0).Gateway}}'` and tells the user the value.
+  - The user sets in the VPS `.env` (E2): `WEB_BASE_URL=https://email-assistant.<tailnet>.ts.net`, `WEB_AUTH_SECRET=<openssl rand -base64 32>`, `WEB_TRUSTED_PROXIES=<gateway>`; no `WEB_TRUSTED_ORIGINS`, `WEB_MAIL_ALLOW_LOCAL`, `WEB_DIST` values.
+  - Checks (counts only): `grep -cE '^WEB_BASE_URL=https://email-assistant\.[a-z0-9-]+\.ts\.net$' .env` → 1; `grep -cE '^WEB_AUTH_SECRET=.{32,}$' .env` → 1; `grep -cE '^WEB_TRUSTED_PROXIES=([0-9]{1,3}\.){3}[0-9]{1,3}$' .env` → 1; `grep -cE '^(WEB_TRUSTED_ORIGINS|WEB_MAIL_ALLOW_LOCAL|WEB_DIST)=.+' .env` → 0; `stat -c %a .env` → `600`.
+
+- [ ] **4.3 Update** (agent, E6)
+  - `git fetch && git merge --ff-only origin/master` → the stage 2 merge commit or later (write the hash; this is T's commit). The CI `image` job of that hash is green (`gh run list --commit <hash>` on this PC); else stop.
+  - `$C up -d --wait db`; `$C run --build --rm server bun run db:migrate` → exactly `20261110000001_web_panel.sql` and `20261111000001_delete_mailbox.sql` applied (any other list: stop). A migration error: do not run `up`; `git checkout 0d39663`; stop (E7).
+  - Config check before the start: `$C run --rm --no-deps server bun -e 'const m = await import("/app/apps/server/src/platform/config.ts"); m.loadConfig(); console.log("config ok")'` → `config ok` (on a failure `ConfigError` names only the keys; the user fixes `.env`, then the check runs again).
+  - `$C up -d --build --wait` → healthy. T = the time this command ends (UTC).
+  - Start lines: `$C logs --since 5m server | grep -E 'web|WEB_|listening|telegram: polling'` → `web is on: https://email-assistant.<…>.ts.net, dist /app/apps/web/dist` (write it with the name replaced by `<tailnet>`), `listening on port 8080`, the Telegram polling line; 0 lines with `dist folder missing`, `cookies are not Secure`, `WEB_MAIL_ALLOW_LOCAL`.
+  - `ss -ltn` → one new line, `127.0.0.1:8080` (fact 5).
+  - Watch 15 min: `$C logs --since 15m server | grep -ciE '\b(error|fatal)\b'` → 0; the sync, triage and committer tick lines appear as before the deploy. Any rollback trigger (E7) → roll back now and stop.
+  - After the watch: `docker image prune -f`; `df -h /`.
+
+- [ ] **4.4 Serve and access** (the user runs `sudo`; the agent checks)
+  - The user: `sudo tailscale serve --bg 8080`; `tailscale serve status` shows `https://email-assistant.<tailnet>.ts.net` → `http://127.0.0.1:8080`.
+  - The agent on this PC (E9): set `EA_HOST` from `tailscale status --json` (the peer whose `HostName` is `email-assistant`; its `DNSName` without the trailing dot) and `TAILNET` (the part between `email-assistant.` and `.ts.net`); never echo them. `curl -sS -D - -o /dev/null "https://$EA_HOST/health" | grep -iE '^HTTP|^strict-transport-security'` → a `200` status and the header (the HTTP version depends on ALPN; do not check it); write the time of the first request (certificate issue, fact 7; if the first request fails with a TLS error, wait 1 minute and try once more, never loop). LAN: `curl -m 5 http://<VPS LAN IP>:8080/health` → connection refused. The user: the phone with Tailscale off (mobile data) cannot open the URL; with Tailscale on, `/login` opens.
+
+- [ ] **4.5 First password and login** (the user, E8; the agent checks counts)
+  - The user, in an own terminal on the VPS: `docker compose -f deploy/compose.yaml --env-file .env exec server bun run web:invite --org-id ac6ed6a2-ee37-461f-9632-cc08cf549e40`; opens the link on this PC; sets the password; signs in on the PC; then signs in on the phone.
+  - Checks (agent): `select event, count(*) from audit_log where event in ('web.password_set','web.login') and created_at > '<T>' group by event` → `web.password_set` 1, `web.login` ≥ 2; the client address as booleans only (the column is `text`; print no address): `select (ip_address::inet <<= '100.64.0.0/10'::inet or ip_address::inet <<= 'fd7a:115c:a1e0::/48'::inet) and ip_address <> '<gateway>' from auth_sessions order by created_at desc limit 3` → `t` for each row. An `f` → `WEB_TRUSTED_PROXIES` is wrong (E3): stop, fix with the user, `$C up -d --wait server`, sign in again.
+
+- [ ] **4.6 Hand smoke** (the user, E10; the agent watches)
+  - The agent sends the E10 checklist to the user as a numbered list, one line per item (with the note: ✏️ only on a mail whose category is really wrong; the feedback counts in the week results); the user answers with the item numbers that failed (or "all ok") and any remark.
+  - The agent meanwhile: `$C logs -f --since 1m server` in the background into a file `/tmp/ea-s5e-smoke.log` on this PC (over SSH), then counts: `grep -ciE '\berror\b'` → 0; `grep -c 'web undo started'` → 1 (if the user did ↩️); `grep -c 'better-auth: Invalid password'` → the number of wrong-password tries; the pause and resume times (UTC, from the audit rows) for 4.7; audit counts since T (`select event, count(*) from audit_log where created_at > '<T>' and event in ('mailbox.paused','mailbox.resumed') group by event`): 1 each. The local file is deleted after the counts (it may hold ids only, but nothing more is needed).
+  - Each failed item: the main session finds the cause (logs, SQL counts, code). A small, safe fix (text, CSS, a config value) → a fix step in stage 5's branch, deployed with the stage 6 merge; a larger one → `tasks/planned/<name>.md`. Nothing is fixed on the VPS by hand.
+
+- [ ] **4.7 Pilot notes** (main session, `Git mode: master`, in the main checkout)
+  - Append the deploy facts to `notes/2026-11-03-pilot-vps.md` (section `## S5e web deploy (<date>)`: the commit, T, the migrations, the image size, the Tailscale version, `tailscaled` with `--accept-dns=false`, the machine name `email-assistant` (not the tailnet name), the gateway IP of `email-assistant_default` (a private Docker address, not secret), Serve on, the first certificate time; also the missing 2026-11-09 sync-sort deploy line (difference 1)). Under the old line "Only port 22 listens on the host. `db` and `server` have no host ports." add a dated correction: "<date> (S5e): `server` listens on `127.0.0.1:8080`; Tailscale Serve proxies to it."
+  - Add a section `## S5e deploy (<T>)` to `tasks/planned/s3-assist-week-result.md` and `tasks/planned/s4-pilot-week.md` (the restart at T, the pause and resume times of the pilot mailbox from the smoke, the new web feedback source `web` in `triage_feedback.source`: count it with `telegram` for the feedback numbers) and one log line to `tasks/active/sync-sort-folders.md` (A3).
+  - Tick the stage 3 and 4 boxes and write the log lines in `stage-03-*.md`, `stage-04-*.md` and the task file's stage list and Log (evidence rule, task file "Rules for every step").
+  - Commit these files on `master` in the main checkout by explicit path: `tasks: S5e deploy notes — VPS at <hash>, T <time>`; first `git diff --cached | grep -c "$TAILNET"` → 0; push.
+
+- Done when: 4.1–4.7 hold; the stage log has every check with its output; the done-when lines 1–4 of the task file have their evidence.
+- Out of scope: any `.env` change by the agent; a mode, `auto`, timezone, rule or mailbox change on the live pilot (A5); Funnel.
