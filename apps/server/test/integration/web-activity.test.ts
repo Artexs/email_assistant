@@ -114,6 +114,13 @@ describe("GET /activity", () => {
     const beforeBody = await json(before);
     expect(beforeBody.error).toBe("validation");
     expect(beforeBody.details[0]).toMatchObject({ path: "before", code: "invalid_cursor" });
+
+    const missingDay = Buffer.from("2026-02-30T10:00:00.000000Z|6f1c1f0e-3c5e-4a53-9d6f-2d6d6b0a9e11", "utf8").toString(
+      "base64url"
+    );
+    const missing = await app.request(`/api/activity?before=${missingDay}`, as("owner"));
+    expect(missing.status).toBe(400);
+    expect((await json(missing)).details[0]).toMatchObject({ path: "before", code: "invalid_cursor" });
   });
 
   test("returns the own organization's items newest first and nothing of another organization", async () => {
