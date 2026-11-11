@@ -18,6 +18,22 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `organization <id> timezone changed by <actor>` and `organization <id> signature changed by <actor>`
+
+- **First seen:** 2026-11-11 (S5c)
+- **Source:** `apps/server/src/modules/tenancy/service.ts`, `updateOrganizationSettings`. Level `info`. One line for each changed field. `<actor>` is the user id. The audit rows are `org.timezone_changed` (`from`, `to`) and `org.style_changed` (`set`, no text).
+- **Cause:** the owner changed the organization timezone or the signature in the panel. A timezone change can skip, delay or bring forward one digest on that day (`notes/2026-11-11-web-settings-rules-facts.md`). A signature change applies to every message built after it, also to the send of an older draft.
+- **Fix:** none. It is a record, not an error.
+- **Status:** won't fix (expected)
+
+### `refused: rule limit reached (1000)`
+
+- **First seen:** 2026-11-11 (S5c)
+- **Source:** the CLI `rules:add` (`apps/server/src/scripts/rules.ts`), on stderr, exit code 1. The web answers 409 `rule_limit` for the same case.
+- **Cause:** the organization has 1000 sender rules (`SENDER_RULE_LIMIT` in `packages/core/src/triage/rules.ts`; cap of B7). Two adds at the same time can pass the cap by one or two rows. At the cap, a duplicate also gives this answer, not "already there".
+- **Fix:** delete rules that are not needed (Rules page). Change `SENDER_RULE_LIMIT` only with a reason.
+- **Status:** won't fix (expected)
+
 ### `web: mailbox connect failed: <label>` and `web: mailbox password check failed: <label>`
 
 - **First seen:** 2026-11-11 (S5b)

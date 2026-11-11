@@ -4,7 +4,7 @@ Part of [`../s5c-web-settings-rules.md`](../s5c-web-settings-rules.md). Read tha
 
 ## Stage 12 — Notes, alerts, master plan lines, group review, checkpoint, merge
 
-- [ ] **12.1 Docs for the next agents**
+- [x] **12.1 Docs for the next agents**
   - Goal: what S5c learned and changed is findable without this chat.
   - Files: create `notes/<date>-web-settings-rules-facts.md`; change `docs/known-alerts.md`, `docs/code-patterns.md`, `tasks/active/s5-web-panel.md`, `tasks/planned/s5d-web-activity.md`, `tasks/planned/s5e-web-deploy-docs.md`, `tasks/planned/web-public-hardening.md` (pointer lines only).
   - Decisions:

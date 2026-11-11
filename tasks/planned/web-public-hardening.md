@@ -31,3 +31,4 @@ Written when the task starts.
 ## Log
 
 - 2026-11-08: Created by the S5 master plan session.
+- 2026-11-11: Pointer from S5c: "Sign out everywhere" (Better Auth `revokeSessions` from the Account card) writes no audit row: no `databaseHooks.session.delete` hook exists (B13). Add an audit row for it before the panel goes public. Facts: `notes/2026-11-11-web-settings-rules-facts.md`.
