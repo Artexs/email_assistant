@@ -1,4 +1,5 @@
-import type { ActionsScope, CommitterDeps, SendScope } from "./modules/actions";
+import { expireReady, type ActionsScope, type CommitterDeps, type SendScope } from "./modules/actions";
+import type { SettingsDeps } from "./modules/config";
 import { delegationHooks } from "./modules/delegation";
 import { composeMessage, mailboxHasUidplus, openImapProvider, openSmtpSender } from "./modules/mail";
 import { sendTestAddresses, type Config } from "./platform/config";
@@ -59,5 +60,19 @@ export function committerDeps(input: {
     scope: input.scope,
     sendScope: input.sendScope,
     now: () => new Date(),
+  };
+}
+
+// The one builder of the settings setters' deps: the CLI and the web call it, so both close the gate the same way.
+export function settingsDeps(db: Db, now: () => Date): SettingsDeps {
+  const hooks = delegationHooks({ db });
+  return {
+    db,
+    now,
+    expireReady: async (trx, trxCtx, filter, opts) =>
+      expireReady(trx, trxCtx, filter, {
+        ...opts,
+        sendClose: { hooks, uidplus: await mailboxHasUidplus(trx, trxCtx, filter.mailboxId) },
+      }),
   };
 }

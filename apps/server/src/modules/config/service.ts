@@ -21,6 +21,14 @@ import { auditEvents, recordAudit, type AuditData } from "../audit";
 
 import { getMovesSupported, lockMailboxSettings, updateMailboxSettings, type MailboxSettingsRow } from "./repo";
 
+// A route maps it to 404 (a mailbox removed between the check and the write).
+export class SettingsNotFoundError extends HardError {
+  constructor() {
+    super("no mailbox_settings row");
+    this.name = "SettingsNotFoundError";
+  }
+}
+
 export interface SettingsDeps {
   db: Db | Transaction<DB>;
   now(): Date;
@@ -111,7 +119,7 @@ export async function getSettingsView(
     .where("mailbox_id", "=", mailboxId)
     .executeTakeFirst();
   if (!row) {
-    throw new HardError("no mailbox_settings row");
+    throw new SettingsNotFoundError();
   }
   return toView(row, await getMovesSupported(deps.db, ctx, mailboxId));
 }
@@ -138,7 +146,7 @@ async function applyChange(
   return inTransaction(deps.db, async (trx) => {
     const row = await lockMailboxSettings(trx, ctx, mailboxId);
     if (!row) {
-      throw new HardError("no mailbox_settings row");
+      throw new SettingsNotFoundError();
     }
     const before = toView(row, await getMovesSupported(trx, ctx, mailboxId));
     const result = compute(before);

@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — build started (pipeline, worktree `task/s5c-web-settings-rules`, database `s5c`); stage 1 built, review pending.** Left: stages 2–12. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5c-build.md`.
+> **Status 2026-11-11 — in progress — build started (pipeline, worktree `task/s5c-web-settings-rules`, database `s5c`); stages 1 PASS, 2 built, review pending.** Left: stages 3–12 (stage 2 in review). Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5c-build.md`.
 
 # S5c Web: settings and rules
 
@@ -156,7 +156,7 @@ The stage files cite these as B<n>. A text in quotes is a UI string; its key liv
 
 Each stage lives in its own file in [`s5c-web-settings-rules/`](s5c-web-settings-rules/). An implementer or reviewer reads this file (Done when, Owns, S1–S11, Facts, B1–B16, the master plan's "Rules for every step") and only the stage file of its step. The main session ticks the step boxes in the stage file and the stage box here. `[written]` marks a stage file that is on disk.
 
-- [ ] [Stage 1](s5c-web-settings-rules/stage-01-core-schemas.md) — Core: the web schemas, the pattern rule, the gate constants, `rule_limit`, `me.digestTimes` [written]
+- [x] [Stage 1](s5c-web-settings-rules/stage-01-core-schemas.md) — Core: the web schemas, the pattern rule, the gate constants, `rule_limit`, `me.digestTimes` [written]
 - [ ] [Stage 2](s5c-web-settings-rules/stage-02-gate-service.md) — Gate service, `SettingsNotFoundError`, `settingsDeps`, the `mailbox:settings` refactor [risky] [written]
 - [ ] [Stage 3](s5c-web-settings-rules/stage-03-rules-service.md) — Rules service and repository, the rule audit events, `rules:add` refactor, the sync-folder actor [risky] [written]
 - [ ] [Stage 4](s5c-web-settings-rules/stage-04-organization-digest-times.md) — Organization service and routes, digest times route, `/api/me.digestTimes`, the timezone characterisation tests [risky] [written]
@@ -212,3 +212,5 @@ Scope: 21 the "Owns" list missed five changed files and the `tenancy → audit` 
 - 2026-11-11: Plan session 2 (Claude Code, Opus 5.5): S1–S11 recorded (S4 wording corrected: "rated mails at confidence ≥ x"), 4 more differences, 14 facts (probes `/tmp/ea-s5c-probe/sched.ts` and `la.ts`: the time-zone list and six digest-slot cases), B1–B16, 12 stage files. Cold review (Opus high, `reviewer` subagent): PASS, 21 findings (20 minor, 1 question), all fixed. Next: the user's approval, then commit and push the plan files.
 - 2026-11-11: The user approved the plan: "ok, proceed. so what is the next step? implementation? so start it in a handoff in new agent." Plan committed and pushed on `master`; build handoff `~/.pi/agent/notes/2026-11-11-handoff-s5c-build.md`.
 - 2026-11-11: Build session (Claude Code): worktree `../email_assistant-wt/s5c-web-settings-rules`, database `s5c` and `e2e`, `.env` keys set (user step 0 done by the agent); baseline lint, typecheck, unit pass, int 1134 pass. Stage 1 built, review pending: lint, typecheck clean; unit 1610 pass; int 1135 pass; `cd apps/web && bun run build` Complete. Deviation: the `web-me` test sets `[]` first, because the column default is 08:00 and 16:00.
+- 2026-11-11: Stage 1 review PASS (Sonnet high, 0 blocker, 0 major, 3 minor, 1 question); pushed `09351b8` on `task/s5c-web-settings-rules`. Minor notes for later: `timezone` in `organizationPatchSchema` has no i18n message (stage 4 and 9 must show `timezone_invalid`, never a Zod default); `GATE_BAR` and `GATE_MIN_KEPT` still exist in the CLI script and `triage/metrics.ts` (stage 2 switches the script); `SENDER_RULE_LIMIT` and the regexes leave `scripts/rules.ts` in stage 3.
+- 2026-11-11: Stage 2 built, review pending (Opus high): lint, typecheck clean; unit 1610 pass; int 1148 pass (13 new gate tests; `config-settings`, `mail-folders-cli`, `mailbox-settings-args` unchanged and green). The CLI uses `settingsDeps` and `setCategoryAutoWithGate`; the script's `BAR`/`MIN_KEPT` are gone.

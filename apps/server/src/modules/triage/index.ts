@@ -29,6 +29,8 @@ export type {
 } from "./repo";
 export { evalStateFileName, parseCaseResults, runEval, toClassifierInput, toPrediction } from "./eval";
 export type { CaseResult, CasesEvalReport, EvalReport, EvalReportBase, RealEvalReport } from "./eval";
+export { goNoGoFor, setCategoryAutoWithGate } from "./gate";
+export type { AutoGateResult } from "./gate";
 export { buildRealPredictions, buildRealReport } from "./eval-real";
 export { evalExitCode, renderEvalReport } from "./eval-report";
 export { PROMPT_VERSION } from "./prompts/classifier-v2";

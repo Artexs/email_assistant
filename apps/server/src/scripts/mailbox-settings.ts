@@ -1,17 +1,10 @@
 import { describeSettings, MAILBOX_ACTION_TYPES, type SettingsSnapshot } from "@ea/core";
 
+import { settingsDeps } from "../composition";
 import { countReadyOriginals, expireReady } from "../modules/actions";
-import {
-  getSettingsView,
-  setCategoryAuto,
-  setMode,
-  setToolSwitch,
-  type SettingsChange,
-  type SettingsDeps,
-} from "../modules/config";
-import { delegationHooks } from "../modules/delegation";
-import { listSyncFolders, mailboxHasUidplus, setSyncFolderEnabled } from "../modules/mail";
-import { buildRealReport, listLabeledResults } from "../modules/triage";
+import { getSettingsView, setMode, setToolSwitch, type SettingsChange } from "../modules/config";
+import { listSyncFolders, setSyncFolderEnabled } from "../modules/mail";
+import { setCategoryAutoWithGate } from "../modules/triage";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb, type Db } from "../platform/db";
 import { describeError } from "../platform/errors";
@@ -22,11 +15,6 @@ import { describeSyncFolder, parseSettingsArgs, usage, type SettingsCommand } fr
 const log = createLog("mailbox-settings");
 
 const ACTOR = "cli";
-const BAR = 0.98;
-const MIN_KEPT = 30;
-
-// Exit code 2: the go/no-go gate refused the change.
-class GateRefusal extends Error {}
 
 function printTable(before: SettingsSnapshot, after: SettingsSnapshot): void {
   const beforeLines = describeSettings(before);
@@ -54,16 +42,7 @@ function printChange(result: SettingsChange): void {
 }
 
 async function run(command: SettingsCommand, db: Db, now: Date): Promise<number> {
-  const hooks = delegationHooks({ db });
-  const deps: SettingsDeps = {
-    db,
-    now: () => now,
-    expireReady: async (trx, trxCtx, filter, opts) =>
-      expireReady(trx, trxCtx, filter, {
-        ...opts,
-        sendClose: { hooks, uidplus: await mailboxHasUidplus(trx, trxCtx, filter.mailboxId) },
-      }),
-  };
+  const deps = settingsDeps(db, () => now);
   const ctx = { orgId: command.orgId };
   const { mailboxId } = command;
   switch (command.kind) {
@@ -105,35 +84,24 @@ async function run(command: SettingsCommand, db: Db, now: Date): Promise<number>
       return 0;
     }
     case "auto": {
-      let gate: Parameters<typeof setCategoryAuto>[3]["gate"] = {
-        decision: "skipped",
-        precision: null,
-        kept: 0,
-        forced: false,
-      };
-      let threshold = command.threshold;
-      if (command.value) {
-        const rows = await listLabeledResults(db, ctx, mailboxId, { mail: "real" });
-        const report = buildRealReport(rows, { bar: BAR, minKept: MIN_KEPT, mail: "real", now });
-        const row = report.goNoGo[command.category];
-        log.info(
-          `go/no-go ${command.category}: ${row.decision}, precision ${row.precision ?? "n/a"}, kept ${row.kept}, threshold ${row.threshold ?? "n/a"}${command.force ? " FORCED" : ""}`
-        );
-        if (row.decision !== "go" && !command.force) {
-          log.error(`refused: ${command.category} did not pass go/no-go (use --force to set auto on anyway)`);
-          throw new GateRefusal();
-        }
-        gate = { decision: row.decision, precision: row.precision, kept: row.kept, forced: command.force };
-        threshold ??= row.decision === "go" ? (row.threshold ?? undefined) : undefined;
-      }
-      const result = await setCategoryAuto(deps, ctx, mailboxId, {
+      const result = await setCategoryAutoWithGate(deps, ctx, mailboxId, {
         category: command.category,
         auto: command.value,
-        ...(threshold === undefined ? {} : { threshold }),
-        gate,
+        force: command.force,
+        ...(command.threshold === undefined ? {} : { threshold: command.threshold }),
         actor: ACTOR,
       });
-      printChange(result);
+      if (result.gate) {
+        const { gate } = result;
+        log.info(
+          `go/no-go ${command.category}: ${gate.decision}, precision ${gate.precision ?? "n/a"}, kept ${gate.kept}, threshold ${gate.threshold ?? "n/a"}${command.force ? " FORCED" : ""}`
+        );
+      }
+      if (result.kind === "refused") {
+        log.error(`refused: ${command.category} did not pass go/no-go (use --force to set auto on anyway)`);
+        return 2;
+      }
+      printChange(result.change);
       return 0;
     }
     case "expire-ready": {
@@ -162,9 +130,6 @@ async function main(): Promise<number> {
     await assertAppRole(db);
     return await run(command, db, new Date());
   } catch (error) {
-    if (error instanceof GateRefusal) {
-      return 2;
-    }
     log.error("failed:", describeError(error));
     return 1;
   } finally {

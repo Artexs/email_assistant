@@ -16,6 +16,7 @@ export {
   setCategoryAuto,
   setMode,
   setToolSwitch,
+  SettingsNotFoundError,
   type SettingsChange,
   type SettingsDeps,
   type SettingsView,
