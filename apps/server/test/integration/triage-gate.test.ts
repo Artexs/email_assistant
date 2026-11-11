@@ -120,6 +120,20 @@ describe("goNoGoFor", () => {
     });
   });
 
+  test("40 right rows at 0.9 and 5 wrong at 0.75: go at the 0.8 sweep point", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      await addLabeled(trx, s, { category: "info", n: 40, confidence: 0.9 });
+      await addLabeled(trx, s, { category: "info", n: 5, wrong: 5, confidence: 0.75 });
+      expect((await goNoGoFor(trx, s.ctx, s.mailboxId, NOW)).info).toMatchObject({
+        decision: "go",
+        kept: 40,
+        atConfidence: 0.8,
+        threshold: 0.8,
+      });
+    });
+  });
+
   test("40 info rows, 4 wrong: no-go, the point is kept in atConfidence", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
@@ -198,6 +212,19 @@ describe("setCategoryAutoWithGate", () => {
         info: { auto: true, threshold: 0.5 },
       });
       expect((await policyAudit(trx, s.orgId))[0]?.data).toMatchObject({ forced: false });
+    });
+  });
+
+  test("go above 0.5: auto on writes the gate threshold, not the 0.7 default", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      await addLabeled(trx, s, { category: "info", n: 40, confidence: 0.9 });
+      await addLabeled(trx, s, { category: "info", n: 5, wrong: 5, confidence: 0.75 });
+      const result = await setCategoryAutoWithGate(s.deps, s.ctx, s.mailboxId, input);
+      expect(result.kind).toBe("changed");
+      expect((await policyRow(trx, s.mailboxId)).category_policy).toMatchObject({
+        info: { auto: true, threshold: 0.8 },
+      });
     });
   });
 
@@ -328,8 +355,12 @@ describe("committed rows", () => {
       const refused = await run([]);
       expect(refused.code).toBe(2);
       expect(refused.out).toContain("refused: info did not pass go/no-go");
+      expect(refused.out).toContain("go/no-go info: no-go: too few");
+      expect(refused.out).not.toContain("FORCED");
       const forced = await run(["--force"]);
       expect(forced.code).toBe(0);
+      expect(forced.out).toContain("go/no-go info: no-go: too few");
+      expect(forced.out).toContain("FORCED");
       const row = await db
         .selectFrom("mailbox_settings")
         .select("category_policy")
