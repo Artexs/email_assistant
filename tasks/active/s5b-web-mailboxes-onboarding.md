@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — stages 1-13 built (stages 1-12 PASS, stage 9 after a fix).** 15 stage files, B1–B17, 26 review findings fixed. Left: stages 1–15 with `run-task` (worktree `task/s5b-web-mailboxes-onboarding`), starting with user step 0. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5b-build.md`.
+> **Status 2026-11-11 — in progress — stages 1-14 built (stages 1-13 PASS, stage 9 after a fix).** 15 stage files, B1–B17, 26 review findings fixed. Left: stages 1–15 with `run-task` (worktree `task/s5b-web-mailboxes-onboarding`), starting with user step 0. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5b-build.md`.
 
 # S5b Web: mailboxes and onboarding
 
@@ -165,7 +165,7 @@ Each stage lives in its own file in [`s5b-web-mailboxes-onboarding/`](s5b-web-ma
 - [x] [Stage 11](s5b-web-mailboxes-onboarding/stage-11-mailboxes-page.md) — Mailboxes page: list, pause, resume, change password, remove [written]
 - [x] [Stage 12](s5b-web-mailboxes-onboarding/stage-12-connect-dialog-telegram-card.md) — The connect dialog and the Telegram card [written]
 - [x] [Stage 13](s5b-web-mailboxes-onboarding/stage-13-onboarding-page.md) — Onboarding page [written]
-- [ ] [Stage 14](s5b-web-mailboxes-onboarding/stage-14-playwright.md) — Playwright: the fake Telegram server, `mailboxes.spec.ts`, `onboarding.spec.ts` [written]
+- [x] [Stage 14](s5b-web-mailboxes-onboarding/stage-14-playwright.md) — Playwright: the fake Telegram server, `mailboxes.spec.ts`, `onboarding.spec.ts` [written]
 - [ ] [Stage 15](s5b-web-mailboxes-onboarding/stage-15-notes-review-merge.md) — Notes, alerts, master plan lines, group review, checkpoint, merge [written]
 
 Docker on this PC: every `docker` or `bun run dev:up` command runs inside `newgrp docker <<'EOF' … EOF` (`notes/2026-11-08-docker-socket-newgrp.md`). Git push from the agent shell: `export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/github -o IdentitiesOnly=yes"` (`notes/2026-11-10-git-ssh-push.md`). S5b adds no package (no `bun.lock` change) and one migration (stage 4).
@@ -217,3 +217,4 @@ Scope: 26 [minor] the deleted `sending` digest's "lost the claim" line and the r
 - 2026-11-11: stage 9 fix PASS, stage 10 PASS (minors: TelegramLink `off` never resets — done in stage 12; question: unreachable block replaces the open link UI — intended per plan). Pushed through 661d6a1. Stage 11 built, review pending. Check: lint, typecheck, test:unit (1567), test:int (0 fail), web build; hand check at 1280 and 400 px (pause, resume, password, remove; no console errors).
 - 2026-11-11: stage 11 PASS (minor: RemoveDialog repeats the ApiError check, fixed with stage 13). Pushed through a22b3b0. Stage 12 built, review pending. Check: lint, typecheck, test:unit (1576), test:int (1134 pass), web build; hand check (GreenMail through "Other", 409 on the second try, `?connect=1`, `tg_off`, 400 px no sideways scroll; the only console line is the browser log of the expected 409).
 - 2026-11-11: stage 12 PASS (minor: the address field resets the app-password switch while no preset matches — fix job next; fieldErrorKeys accepts a string path, kept). Pushed through ec24f02. Stage 13 built, review pending. Check: lint, typecheck, test:unit (1576), web build; hand check with the fake Telegram: four open items, connect via item 1, link with /start, keep shadow mode, `/` -> /activity, 400 px, zero console errors.
+- 2026-11-11: stage 13 PASS (minors: ChecklistItem `done` is `boolean | null` for Telegram off — intended; Alert keeps role=alert — accepted); stage 12 fix PASS. Pushed through 74fda9f. Stage 14 built, review pending. Check: lint, typecheck, test:unit (1578), test:int (1134 pass), web build, test:e2e (20 passed, run twice).

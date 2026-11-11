@@ -6,7 +6,7 @@ Part of [`../s5b-web-mailboxes-onboarding.md`](../s5b-web-mailboxes-onboarding.m
 
 Needs user step 1 (GreenMail runs: `newgrp docker` + `bun run dev:up`). Runs in the worktree by the main session (the review copies run only lint, typecheck and unit tests).
 
-- [ ] **14.1 The e2e environment with the fake Telegram (B16, D19)**
+- [x] **14.1 The e2e environment with the fake Telegram (B16, D19)**
   - Goal: `bun run test:e2e` starts the fake Telegram next to the app server, and the app server can connect GreenMail and link Telegram.
   - Files: change `apps/web/e2e/env.ts`, `apps/web/e2e/playwright.config.ts`, `apps/web/e2e/helpers.ts`, `apps/web/e2e/tests/auth.spec.ts` (line ~55: it expects `en.placeholder_text` on `/onboarding`, which stage 13 replaced; assert the checklist title `en.ob_mailbox_title` instead: cold review finding 1).
   - Interfaces:
@@ -38,7 +38,7 @@ Needs user step 1 (GreenMail runs: `newgrp docker` + `bun run dev:up`). Runs in 
   - Done when: 12 passed; the fake Telegram process ends with the run (no listener left on 8092: `ss -ltnp | grep 8092` is empty after the run).
   - Out of scope: the specs (14.2).
 
-- [ ] **14.2 `mailboxes.spec.ts` and `onboarding.spec.ts` (the segment's done-when)**
+- [x] **14.2 `mailboxes.spec.ts` and `onboarding.spec.ts` (the segment's done-when)**
   - Goal: the S5 done-when "set up a mailbox and link Telegram without the CLI" runs in both projects.
   - Files: create `apps/web/e2e/tests/mailboxes.spec.ts`, `apps/web/e2e/tests/onboarding.spec.ts`.
   - Decisions:

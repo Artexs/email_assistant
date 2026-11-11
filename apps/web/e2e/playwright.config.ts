@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-import { E2E_BASE_URL, e2eEnv, loadDotEnv, repoRoot } from "./env";
+import { E2E_BASE_URL, E2E_TELEGRAM_PORT, E2E_TELEGRAM_URL, e2eEnv, loadDotEnv, repoRoot } from "./env";
 
 loadDotEnv();
 // Fails with the setup command, or with `refusing: <reason>` for a database the seed would wipe, before any command runs.
@@ -27,16 +27,27 @@ export default defineConfig({
     { name: "mobile", use: { ...devices["Pixel 7"] } },
     { name: "desktop", use: { viewport: { width: 1280, height: 800 } } },
   ],
-  webServer: {
-    // Playwright starts the server before the global setup, and Better Auth keeps a schema mismatch it sees at
-    // start until a restart: so the server command migrates first.
-    command: "bun run db:migrate && bun apps/server/src/main.ts",
-    cwd: repoRoot,
-    url: `${E2E_BASE_URL}/health`,
-    reuseExistingServer: false,
-    timeout: 60_000,
-    env,
-    stdout: "pipe",
-    stderr: "pipe",
-  },
+  webServer: [
+    {
+      command: `bun tools/fake-telegram/src/cli.ts serve --port ${E2E_TELEGRAM_PORT}`,
+      cwd: repoRoot,
+      url: `${E2E_TELEGRAM_URL}/_fake/health`,
+      reuseExistingServer: false,
+      timeout: 30_000,
+      stdout: "pipe",
+      stderr: "pipe",
+    },
+    {
+      // Playwright starts the server before the global setup, and Better Auth keeps a schema mismatch it sees at
+      // start until a restart: so the server command migrates first.
+      command: "bun run db:migrate && bun apps/server/src/main.ts",
+      cwd: repoRoot,
+      url: `${E2E_BASE_URL}/health`,
+      reuseExistingServer: false,
+      timeout: 60_000,
+      env,
+      stdout: "pipe",
+      stderr: "pipe",
+    },
+  ],
 });
