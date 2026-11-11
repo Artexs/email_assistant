@@ -1,6 +1,6 @@
 # S5b web mailboxes and onboarding: facts and deviations
 
-Source: `tasks/active/s5b-web-mailboxes-onboarding.md` (facts 1–11, B1–B17, Log). Built 2026-11-11 in the worktree `task/s5b-web-mailboxes-onboarding`. Read this note before you change the mailbox routes, the delete function or the e2e setup.
+Source: `tasks/done/s5b-web-mailboxes-onboarding.md` (facts 1–11, B1–B17, Log). Built 2026-11-11 in the worktree `task/s5b-web-mailboxes-onboarding`. Read this note before you change the mailbox routes, the delete function or the e2e setup.
 
 ## Provider facts (fact 1)
 
