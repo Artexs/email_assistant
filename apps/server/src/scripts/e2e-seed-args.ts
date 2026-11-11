@@ -13,10 +13,19 @@ export const E2E_ASSISTANT_EMAILS: Record<E2eProject, string> = {
   desktop: "e2e-assistant-desktop@x.test",
 };
 
+export const E2E_MEMBER_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-member-mobile@x.test",
+  desktop: "e2e-member-desktop@x.test",
+};
+
+// A test value, not a secret.
+export const E2E_MEMBER_PASSWORD = "e2e-member-passphrase-one";
+
 export interface SeedFile {
   orgId: string;
   owner: { userId: string; email: string; password: string };
   assistants: Record<E2eProject, { userId: string; email: string; setupUrl: string }>;
+  members: Record<E2eProject, { userId: string; email: string; password: string }>;
 }
 
 // Reads the name the way `pg` does, so the guard and the connection agree. No connection is opened.

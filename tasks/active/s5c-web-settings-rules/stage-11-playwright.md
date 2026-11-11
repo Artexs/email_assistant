@@ -6,7 +6,7 @@ Part of [`../s5c-web-settings-rules.md`](../s5c-web-settings-rules.md). Read tha
 
 Needs user step 1 (GreenMail runs: `newgrp docker` + `bun run dev:up`). Runs in the worktree by the main session (the review copies run only lint, typecheck and unit tests).
 
-- [ ] **11.1 The seed members and the cleanup (B15, D19)**
+- [x] **11.1 The seed members and the cleanup (B15, D19)**
   - Goal: each project has a member with a known password for the account test; every spec leaves the organization as it found it.
   - Files: change `apps/server/src/scripts/e2e-seed-args.ts`, `apps/server/src/scripts/e2e-seed.ts`, `apps/web/e2e/helpers.ts`.
   - Interfaces:
@@ -39,7 +39,7 @@ Needs user step 1 (GreenMail runs: `newgrp docker` + `bun run dev:up`). Runs in 
   - Done when: the checks pass.
   - Out of scope: the specs (11.2).
 
-- [ ] **11.2 `settings.spec.ts`, `rules.spec.ts`, `account.spec.ts` (B15; the done-when)**
+- [x] **11.2 `settings.spec.ts`, `rules.spec.ts`, `account.spec.ts` (B15; the done-when)**
   - Goal: the S5c smoke tests run in both projects.
   - Files: create `apps/web/e2e/tests/settings.spec.ts`, `rules.spec.ts`, `account.spec.ts`.
   - Decisions (common): `test.describe.configure({ mode: "serial" })`; `beforeEach` sets `x-forwarded-for` from `nextAddress(base)` with the blocks of B15 (settings 60/160, rules 70/170, account 80/180), collects `cspErrors(page)`, signs in; `afterEach` runs `cleanUpOrg(page)` as the owner in the settings and rules specs (the account spec changes no organization data and skips it) and expects no CSP error. Texts come from `en` (no literal UI text in a spec, the S5b rule). `test.setTimeout(60_000)` where a GreenMail connect runs. Passwords come from `readSeed()` (`members[project].password`), never from an import of `e2e-seed-args.ts` (it imports `pg`; `seed.ts` imports it as a type only). Strict mode (cold review finding 17): a text that shows more than once needs a scope. The gate text shows in five category rows and in the dialog → assert it inside `page.getByRole("dialog")`; `set_owner_only` shows in two sections → `toHaveCount(2)`; `rules_all_mailboxes` shows in the filter, the scope select and a row → assert inside `page.locator("[data-kind=vip]")`; `en.save` shows in three cards → click it inside `page.locator("[data-card=digest]")` (and `signature`, `timezone`).
