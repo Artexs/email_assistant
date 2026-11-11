@@ -124,6 +124,28 @@ describe("route matrix", () => {
     expect(bad.status).toBe(404);
   });
 
+  test("another organization's owner gets 404 on GET and PATCH and changes nothing", async () => {
+    const { app, m1, org } = await setup();
+    const before = await json(await app.request(`/api/settings/${m1}`, as("owner")));
+    const bodies = [
+      { path: "mode", body: { mode: "assist", keepSwitches: false } },
+      { path: "auto/info", body: { auto: true } },
+      { path: "auto/info", body: { auto: true, force: true } },
+    ];
+    expect((await app.request(`/api/settings/${m1}`, as("other"))).status).toBe(404);
+    for (const item of bodies) {
+      const res = await app.request(
+        `/api/settings/${m1}/${item.path}`,
+        as("other", { method: "PATCH", body: item.body })
+      );
+      expect(res.status).toBe(404);
+    }
+    expect(await json(await app.request(`/api/settings/${m1}`, as("owner")))).toEqual(before);
+    for (const event of ["mailbox.mode_changed", "mailbox.policy_changed", "mailbox.switch_changed"]) {
+      expect(await auditRows(org.orgId, event)).toHaveLength(0);
+    }
+  });
+
   test("a bad :name, :category or :key → 404", async () => {
     const { app, m1 } = await setup();
     const cases = [
@@ -257,6 +279,23 @@ describe("PATCH mode and switches", () => {
       .where("id", "=", flag.actionIds[0] ?? "")
       .executeTakeFirstOrThrow();
     expect(flagRow.status).toBe("expired");
+  });
+
+  test("a switch change writes one mailbox.switch_changed audit row", async () => {
+    const { app, m1, org } = await setup();
+    await app.request(
+      `/api/settings/${m1}/mode`,
+      as("owner", { method: "PATCH", body: { mode: "assist", keepSwitches: false } })
+    );
+    const res = await app.request(
+      `/api/settings/${m1}/switches/move`,
+      as("owner", { method: "PATCH", body: { value: false } })
+    );
+    expect(res.status).toBe(200);
+    const rows = await auditRows(org.orgId, "mailbox.switch_changed");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.actor).toBe(org.ownerId);
+    expect(rows[0]?.data).toMatchObject({ field: "switch.move", from: true, to: false });
   });
 
   test("a paused and an auth_error mailbox still take a switch", async () => {

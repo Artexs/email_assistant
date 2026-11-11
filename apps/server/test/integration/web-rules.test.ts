@@ -145,11 +145,13 @@ describe("rules routes: add", () => {
       post("owner", { kind: "blocklist", pattern: "spam.test", mailboxId: m2 })
     );
     expect(foreign.status).toBe(404);
+    expect(await json(foreign)).toEqual({ error: "not_found" });
     const unknown = await app.request(
       "/api/rules",
       post("owner", { kind: "blocklist", pattern: "spam.test", mailboxId: randomUUID() })
     );
     expect(unknown.status).toBe(404);
+    expect(await json(unknown)).toEqual({ error: "not_found" });
   });
 
   test("the cap answers 409 rule_limit", async () => {
