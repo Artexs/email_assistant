@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — building; stage 8 built, review pending.** A1–A10 ("ok"), 14 facts, B1–B15, 11 stage files, cold-reviewed (all findings fixed). Left: the build with `run-task` in an own session (user step 0 first), stages 1–11.
+> **Status 2026-11-11 — in progress — building; stage 9 built, review pending.** A1–A10 ("ok"), 14 facts, B1–B15, 11 stage files, cold-reviewed (all findings fixed). Left: the build with `run-task` in an own session (user step 0 first), stages 1–11.
 
 # S5d Web: activity
 
@@ -157,7 +157,7 @@ Each stage lives in its own file in [`s5d-web-activity/`](s5d-web-activity/). An
 - [x] [Stage 6](s5d-web-activity/stage-06-write-routes.md) — `POST /api/feedback`, `POST /api/actions/undo` and their wiring [risky] [written]
 - [x] [Stage 7](s5d-web-activity/stage-07-web-foundations.md) — Web foundations: strings, filters, list state, texts, API, media hook, lint scope [written]
 - [x] [Stage 8](s5d-web-activity/stage-08-activity-list-page.md) — Activity page part 1: filters, list, rows, load more, refresh, polling, states [written]
-- [ ] [Stage 9](s5d-web-activity/stage-09-panel-and-actions.md) — Activity page part 2: panel, ✅ ✏️ ↩️, picker, toasts [written]
+- [x] [Stage 9](s5d-web-activity/stage-09-panel-and-actions.md) — Activity page part 2: panel, ✅ ✏️ ↩️, picker, toasts [written]
 - [ ] [Stage 10](s5d-web-activity/stage-10-playwright.md) — e2e data (second organization, activity script) and `activity.spec.ts` [written]
 - [ ] [Stage 11](s5d-web-activity/stage-11-notes-review-merge.md) — Notes, alerts, master plan lines, group review S5b–S5d, user checkpoint 2, merge [written]
 
@@ -221,3 +221,4 @@ Questions: 18 an empty poll with older pages loaded → `firstPage` (B11, stage 
 - 2026-11-11: Stage 4 review PASS (Opus high; 1 minor: `decodeActivityCursor` accepted dates that do not exist, which would give a 500; fixed in `567211f`, review pending); stage 5 review PASS (Opus high; 0 findings); pushed `cd1a4dc`. Stage 6 built, review pending (Opus high): lint, typecheck clean; unit 1677 pass; int 1258 pass (9 new in `web-feedback-undo`; `actionsScope` comes from `main.ts` through `WebExtras`; the two other `webDeps` test callers pass the scope).
 - 2026-11-11: Stage 7 built, review pending (Sonnet high): lint, typecheck clean; unit 1706 pass (29 new; `apps/web/src/i18n` joins `test:unit`); int 1258 pass; `cd apps/web && bun run build` 9 pages. Note: `patch()` bumps the first-page sequence, so a poll in flight at a tap is dropped; the next poll brings the data.
 - 2026-11-11: Stage 6 review PASS (Opus high; 1 minor, unused `post()` parameter); stage 4 fix and stage 7 review PASS (stage 7: 2 minor, 1 question: `use-media` `subscribe` identity and one missing pick-toast assertion, both for the stage 9 job; the filter change re-keys the list, so a failed refresh cannot show old-filter rows); fixes `0d62296` (cursor year 0000, test helper), review pending. Stage 8 built, review pending (Sonnet high): lint, typecheck clean; unit 1706 pass; int 1258 pass; `bun run web:build` 9 pages. Open: if `/api/mailboxes` fails, a mailbox in the URL counts as all.
+- 2026-11-11: Stage 7 fix `3134b4d` (stable `subscribe`, one more toast assertion), review pending. Stage 9 built, review pending (Sonnet high): lint, typecheck clean; unit 1706 pass; int 1258 pass; web build 9 pages. Deviations: row lines are `span`s (a `button` holds phrasing content only); `CategoryPicker` has a `DialogDescription`; `SheetContent` has `aria-describedby={undefined}`. Open: the panel empties at once on close (cosmetic).

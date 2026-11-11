@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { t } from "../../i18n/en";
@@ -7,6 +7,7 @@ import { useActivityList } from "../../lib/use-activity-list";
 import { useNow } from "../../lib/use-now";
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
+import { ActivityPanel } from "./ActivityPanel";
 import { ActivityRow } from "./ActivityRow";
 
 export interface ActivityListProps {
@@ -29,9 +30,16 @@ export function ActivityList({
   refreshSignal,
 }: ActivityListProps) {
   const now = useNow();
-  const { state, refresh, loadMore } = useActivityList((before) => activityQueryString(filters, new Date(), before), {
-    onLoadMoreError: () => toast.error(t("error_generic")),
-  });
+  const { state, refresh, loadMore, patch } = useActivityList(
+    (before) => activityQueryString(filters, new Date(), before),
+    {
+      onLoadMoreError: () => toast.error(t("error_generic")),
+    }
+  );
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Derived in render: when the mail leaves the list, the panel closes.
+  const selected = state.items.find((i) => i.emailId === selectedId) ?? null;
 
   // The first render does not refresh: the hook loads the first page itself.
   const seenSignal = useRef(refreshSignal);
@@ -89,10 +97,22 @@ export function ActivityList({
               timeZone={timeZone}
               now={now}
               mailboxAddress={showMailbox ? mailboxAddress(item.mailboxId) : null}
+              onOpen={setSelectedId}
+              onPatch={patch}
+              onGone={refresh}
             />
           </li>
         ))}
       </ul>
+      <ActivityPanel
+        item={selected}
+        timeZone={timeZone}
+        now={now}
+        mailboxAddress={selected !== null && showMailbox ? mailboxAddress(selected.mailboxId) : null}
+        onClose={() => setSelectedId(null)}
+        onPatch={patch}
+        onGone={refresh}
+      />
       {state.nextBefore !== null && (
         <Button variant="outline" className="self-center" disabled={state.loadingMore} onClick={loadMore}>
           {t("act_load_more")}
