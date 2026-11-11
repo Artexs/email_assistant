@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — build started (pipeline, worktree `task/s5c-web-settings-rules`, database `s5c`); stages 1–5 PASS, 6 built, review pending.** Left: stages 7–12 (stage 6 in review). Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5c-build.md`.
+> **Status 2026-11-11 — in progress — build started (pipeline, worktree `task/s5c-web-settings-rules`, database `s5c`); stages 1–6 PASS, 7 built, review pending.** Left: stages 8–12 (stage 7 in review). Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5c-build.md`.
 
 # S5c Web: settings and rules
 
@@ -161,7 +161,7 @@ Each stage lives in its own file in [`s5c-web-settings-rules/`](s5c-web-settings
 - [x] [Stage 3](s5c-web-settings-rules/stage-03-rules-service.md) — Rules service and repository, the rule audit events, `rules:add` refactor, the sync-folder actor [risky] [written]
 - [x] [Stage 4](s5c-web-settings-rules/stage-04-organization-digest-times.md) — Organization service and routes, digest times route, `/api/me.digestTimes`, the timezone characterisation tests [risky] [written]
 - [x] [Stage 5](s5c-web-settings-rules/stage-05-settings-routes.md) — Settings routes, the view composer, the composition [risky] [written]
-- [ ] [Stage 6](s5c-web-settings-rules/stage-06-rules-routes.md) — Rules routes [risky] [written]
+- [x] [Stage 6](s5c-web-settings-rules/stage-06-rules-routes.md) — Rules routes [risky] [written]
 - [ ] [Stage 7](s5c-web-settings-rules/stage-07-web-foundations.md) — Web foundations: `ApiError.raw`, the helpers, `textarea`, the lint scope, the strings [written]
 - [ ] [Stage 8](s5c-web-settings-rules/stage-08-settings-page-mailbox.md) — Settings page part 1: selector, Mode and actions with the `assist` dialog, Categories with "Set anyway", Synced folders [written]
 - [ ] [Stage 9](s5c-web-settings-rules/stage-09-settings-page-general.md) — Settings page part 2: Digest times, Signature, Timezone, Account [risky] [written]
@@ -224,3 +224,5 @@ Scope: 21 the "Owns" list missed five changed files and the `tenancy → audit` 
 - 2026-11-11: Stage 5 built, review pending (Opus high): lint, typecheck clean; unit 1616 pass; int 1201 pass (new `web-settings` 12 tests). Also: the stage 4 minor (a) is fixed in this commit (the owner's times are read before the PATCH). Deviation: `routes.ts` imports `z` from `zod` like `mail/connect.ts`.
 - 2026-11-11: Stage 5 review PASS (Opus high; 0 blocker, 0 major, 2 minor); pushed `da987c7`. Minor (test gaps, for the next fix commit): a `mailbox.switch_changed` audit row and actor assertion; the `other` organization's owner gets 404 on M1 GET and PATCH.
 - 2026-11-11: Stage 6 built, review pending (Opus high): lint, typecheck clean; unit 1616 pass; int 1208 pass (new `web-rules` 7 tests; `parseQuery` in `platform/http.ts`). Deviation: `parseQuery` parses the whole query object.
+- 2026-11-11: Stage 6 review PASS (Opus high; 0 blocker, 0 major, 1 minor, 1 question); pushed `f36a120`. Minor: the two POST 404 tests also assert the body `{ error: "not_found" }` (goes into the test fix commit with the two stage 5 minors). `parseQuery` needs a non-strict schema.
+- 2026-11-11: Stage 7 built, review pending (Sonnet high): lint, typecheck clean; unit 1637 pass; `cd apps/web && bun run build` Complete; `git diff --exit-code bun.lock apps/web/package.json` exit 0 (the shadcn `textarea` changed no package). Deviations: 7.1 added six keys that 7.2 then moved into the S5c block; new `en.test.ts` checks that every message of the core schemas has an `en` key; extra key `empty_patch`.

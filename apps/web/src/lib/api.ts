@@ -6,7 +6,9 @@ export class ApiError extends Error {
     readonly status: number,
     readonly code: string,
     message?: string,
-    readonly details?: { path: string; code: string; message: string }[]
+    readonly details?: { path: string; code: string; message: string }[],
+    // The parsed error body when it is a JSON object (the 409 gate of S5c reads it).
+    readonly raw: Record<string, unknown> = {}
   ) {
     super(message ?? code);
     this.name = "ApiError";
@@ -25,16 +27,19 @@ interface ApiInit {
 }
 
 async function readError(response: Response): Promise<ApiError> {
+  let raw: Record<string, unknown> = {};
   try {
-    const parsed = apiErrorSchema.safeParse(await response.json());
+    const body: unknown = await response.json();
+    if (typeof body === "object" && body !== null && !Array.isArray(body)) raw = body as Record<string, unknown>;
+    const parsed = apiErrorSchema.safeParse(body);
     if (parsed.success) {
       const { error, message, details } = parsed.data;
-      return new ApiError(response.status, error, message, details);
+      return new ApiError(response.status, error, message, details, raw);
     }
   } catch {
     // A body that is not JSON falls through to the generic error.
   }
-  return new ApiError(response.status, "internal");
+  return new ApiError(response.status, "internal", undefined, undefined, raw);
 }
 
 export function createApi(deps: ApiDeps) {

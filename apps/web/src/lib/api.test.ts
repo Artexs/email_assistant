@@ -68,6 +68,23 @@ describe("createApi", () => {
     expect(error.code).toBe("internal");
   });
 
+  test("a 409 keeps the parsed body as raw", async () => {
+    const body = {
+      error: "no_go",
+      gate: { decision: "no-go", precision: 0.9, kept: 40, atConfidence: 0.5, threshold: null },
+    };
+    const { api } = setup(Response.json(body, { status: 409 }));
+    const error = (await api("/api/x", okSchema).catch((e: unknown) => e)) as ApiError;
+    expect(error.code).toBe("no_go");
+    expect(error.raw.gate).toEqual(body.gate);
+  });
+
+  test("a 500 with a text body has an empty raw", async () => {
+    const { api } = setup(new Response("oops", { status: 500 }));
+    const error = (await api("/api/x", okSchema).catch((e: unknown) => e)) as ApiError;
+    expect(error.raw).toEqual({});
+  });
+
   test("a 401 calls onUnauthorized once and never settles", async () => {
     const { api, unauthorizedCount } = setup(Response.json({ error: "unauthorized" }, { status: 401 }));
     const pending = Symbol("pending");

@@ -6,7 +6,7 @@ Part of [`../s5c-web-settings-rules.md`](../s5c-web-settings-rules.md). Read tha
 
 Two steps. No page yet; stages 8–10 use what this stage adds.
 
-- [ ] **7.1 `ApiError.raw`, the error map, `gate-text`, `draft`, `timezones`, `textarea`, the lint scope (B11)**
+- [x] **7.1 `ApiError.raw`, the error map, `gate-text`, `draft`, `timezones`, `textarea`, the lint scope (B11)**
   - Goal: the pages get tested helpers for the 409 gate, the texts of a gate row, the form drafts under polling and the time-zone search.
   - Files: change `apps/web/src/lib/api.ts`, `api.test.ts`, `apps/web/src/lib/errors.ts`, `errors.test.ts`, `eslint.config.js`; create `apps/web/src/lib/gate-text.ts`, `gate-text.test.ts`, `apps/web/src/lib/draft.ts`, `draft.test.ts`, `apps/web/src/lib/timezones.ts`, `timezones.test.ts`; add `apps/web/src/components/ui/textarea.tsx` with the shadcn CLI.
   - Interfaces:
@@ -58,7 +58,7 @@ Two steps. No page yet; stages 8–10 use what this stage adds.
   - Done when: the tests pass; `apps/web/src/components/ui/textarea.tsx` exists; no package change.
   - Out of scope: the strings (7.2); the pages.
 
-- [ ] **7.2 The strings of S5c (`en.ts`; U1, S4–S9, B12–B14)**
+- [x] **7.2 The strings of S5c (`en.ts`; U1, S4–S9, B12–B14)**
   - Goal: every text of stages 8–10 is a key, so the page stages only use them.
   - Files: change `apps/web/src/i18n/en.ts`.
   - Decisions: add these keys after the S5b block, under a comment `// S5c: settings` and `// S5c: rules` (the texts are final; a page stage that needs one more key adds it in its own step). Existing keys that S5c reuses: `save`, `cancel`, `retry`, `refresh`, `updated_at`, `owner_only`, `error_generic`, `error_too_many`, `new_password_label`, `repeat_password_label`, `password_help`, `password_too_short`, `password_too_long`, `passwords_differ`, `password_required`, `title_settings`, `title_rules`, the status and scope badge keys of S5b.
