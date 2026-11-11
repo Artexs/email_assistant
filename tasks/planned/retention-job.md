@@ -47,3 +47,4 @@ Written when the task starts. Known input:
 ## Log
 
 - 2026-11-06: Created in S2 stage 22. The user decided the two outbox indexes at S2 checkpoint 2.
+- 2026-11-11: Pointer from S5d: when the job clears subjects and senders after 90 days, the Activity page shows "(no subject)" and "(unknown sender)" for them (`cleanSubject`, `senderLabel`). The 90-day window of the page never reaches such rows today, so no change is needed in the page. Facts: `notes/2026-11-11-web-activity-facts.md`.

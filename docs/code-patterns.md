@@ -55,6 +55,8 @@
 
 A route file (`routes.ts`) is thin: it parses the body with `parseBody` and a `@ea/core` schema, calls one service or repository function, and maps the result to JSON. No SQL, no business rule, no `org_id` from the request: `requireTenant` sets `ctx` from the session. Every route test covers 401 (no session), 403 (an assistant on an owner route, when the route is owner-only), 404 (another organization's id, when the route takes an id) and 400 (a bad body, `details` without the input). The platform (`platform/http.ts`) imports no module; the composition root (`apps/server/src/web.ts`) wires the module routers. A service that needs another module's write inside its own transaction gets it as an injected hook from the composition root (`removeMailbox.onRemoved`, which queues the owner notice of `channels`), and the onboarding state is injected into `tenancyRoutes` (S5b). A route that needs another module's service gets it as an injected dependency from the composition root: `settingsRoutes` gets the gate (`triage`) and the folder setter (`mail`) through `settingsRouteDeps` in `web.ts` (S5c). `config` reads `mailboxes` for `mailboxInOrg`, as it does for `getMovesSupported`, because it cannot import `mail`.
 
+An id in a body or a query that fails the schema is 400. An unknown or foreign id that passes the schema is 404 `{ error: "not_found" }`, with no row written (S5d, B8). The service decides the 404 (`recordWebFeedback`, `undoWithFeedback` return `not_found`), not the route. Telegram and the web call the same service for Undo, so both channels answer alike.
+
 ## Config and secrets
 
 - All config comes from env, checked with a Zod schema at start (`platform/config`). A missing key stops the start.
@@ -78,6 +80,7 @@ A route file (`routes.ts`) is thin: it parses the body with `parseBody` and a `@
 - One island per page. The shell is a React component inside the island.
 - Data comes from `/api/*` through `lib/api.ts`; only the auth paths (`/api/auth/*`) go through `lib/auth-client.ts`. The request and response shapes are the `@ea/core/web` schemas. The web imports core only through that subpath.
 - A form that sits under polling (`useResource` reloads every 30 s) keeps the user's typing with `lib/draft.ts` (`nextDraft`) and the hook `lib/use-draft.ts`: a new server value moves in only while the form has no change.
+- The Telegram answer words live in `packages/core/src/digest/answers.ts`. The web keeps its own keys in `en.ts` (every string stays there for S6), and `lib/activity-text.test.ts` ties each key to the core function (S5d, B2). Change a Telegram answer: the test fails until `en.ts` follows.
 
 ## Tests
 

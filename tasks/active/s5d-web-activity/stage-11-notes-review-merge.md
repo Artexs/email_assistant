@@ -4,7 +4,7 @@ Part of [`../s5d-web-activity.md`](../s5d-web-activity.md). Read that file's "Do
 
 ## Stage 11 — Notes, alerts, master plan lines, group review S5b–S5d, user checkpoint 2, merge
 
-- [ ] **11.1 Docs for the next agents**
+- [x] **11.1 Docs for the next agents**
   - Goal: what S5d learned and changed is findable without this chat.
   - Files: create `notes/<date>-web-activity-facts.md`; change `docs/known-alerts.md`, `docs/code-patterns.md`, `tasks/active/s5-web-panel.md`, `tasks/planned/s5e-web-deploy-docs.md`, `tasks/planned/retention-job.md` (pointer lines only).
   - Decisions:
