@@ -4,7 +4,7 @@ Part of [`../s5b-web-mailboxes-onboarding.md`](../s5b-web-mailboxes-onboarding.m
 
 ## Stage 12 — The connect dialog and the Telegram card
 
-- [ ] **12.1 `ConnectDialog`, `?connect=1`, the Telegram card (S5, S9, S10, B15)**
+- [x] **12.1 `ConnectDialog`, `?connect=1`, the Telegram card (S5, S9, S10, B15)**
   - Goal: the owner connects a mailbox from the page with a preset or with host fields; the page links and unlinks Telegram after onboarding.
   - Files: create `apps/web/src/components/mailboxes/ConnectDialog.tsx`, `apps/web/src/lib/connect-form.ts`, `apps/web/src/lib/connect-form.test.ts`; change `apps/web/src/islands/MailboxesPage.tsx`.
   - Interfaces:

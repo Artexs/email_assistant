@@ -1,10 +1,13 @@
 import { formatClock, mailboxListSchema } from "@ea/core/web";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AppShell } from "../components/shell/AppShell";
 import { useMe } from "../components/shell/MeProvider";
+import { ConnectDialog } from "../components/mailboxes/ConnectDialog";
 import { MailboxCard } from "../components/mailboxes/MailboxCard";
+import { TelegramLink } from "../components/telegram/TelegramLink";
 import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Skeleton } from "../components/ui/skeleton";
 import { t } from "../i18n/en";
 import { api } from "../lib/api";
@@ -15,11 +18,24 @@ function Mailboxes() {
   const { me, reload: reloadMe } = useMe();
   const now = useNow();
   const [lastLoad, setLastLoad] = useState<Date | null>(null);
+  const [connectOpen, setConnectOpen] = useState(false);
+  const isOwner = me?.role === "owner";
   const { data, error, loading, reload } = useResource(async () => {
     const list = await api("/api/mailboxes", mailboxListSchema);
     setLastLoad(new Date());
     return list;
   });
+
+  // `?connect=1` opens the dialog once; dropping the parameter keeps a reload from reopening it.
+  useEffect(() => {
+    if (!isOwner) return;
+    const params = new URLSearchParams(location.search);
+    if (params.get("connect") !== "1") return;
+    setConnectOpen(true);
+    params.delete("connect");
+    const query = params.toString();
+    history.replaceState(null, "", `${location.pathname}${query === "" ? "" : `?${query}`}${location.hash}`);
+  }, [isOwner]);
 
   if (me === null) return null;
   const timeZone = me.organization.timezone;
@@ -45,13 +61,18 @@ function Mailboxes() {
         </div>
       );
   } else if (data.length === 0) {
-    content = <p className="text-muted-foreground">{t("mb_empty")}</p>;
+    content = (
+      <div className="flex flex-col items-start gap-3">
+        <p className="text-muted-foreground">{t("mb_empty")}</p>
+        {isOwner && <Button onClick={() => setConnectOpen(true)}>{t("mb_connect")}</Button>}
+      </div>
+    );
   } else {
     content = data.map((mailbox) => (
       <MailboxCard
         key={mailbox.id}
         mailbox={mailbox}
-        isOwner={me.role === "owner"}
+        isOwner={isOwner}
         timeZone={timeZone}
         now={now}
         onChanged={onChanged}
@@ -65,11 +86,24 @@ function Mailboxes() {
         <p className="text-sm text-muted-foreground">
           {lastLoad !== null && t("updated_at", { time: formatClock(lastLoad, timeZone, now) })}
         </p>
-        <Button variant="outline" onClick={reload}>
-          {t("refresh")}
-        </Button>
+        <div className="flex gap-2">
+          {isOwner && <Button onClick={() => setConnectOpen(true)}>{t("mb_connect")}</Button>}
+          <Button variant="outline" onClick={reload}>
+            {t("refresh")}
+          </Button>
+        </div>
       </div>
       {content}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("tg_title")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TelegramLink timeZone={timeZone} onChange={reloadMe} />
+        </CardContent>
+      </Card>
+      <p className="text-sm text-muted-foreground">{t("mb_scopes_note")}</p>
+      {isOwner && <ConnectDialog open={connectOpen} onOpenChange={setConnectOpen} onConnected={onChanged} />}
     </div>
   );
 }

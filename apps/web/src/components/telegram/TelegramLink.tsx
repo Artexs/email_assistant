@@ -31,6 +31,7 @@ export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
 
   // A link is open and a poll says "linked": the user finished in Telegram. Never on every poll.
   const linked = data?.linked;
+  const available = data?.available;
   const linkOpen = link !== null;
   const onChangeRef = useRef(onChange);
   useEffect(() => {
@@ -43,6 +44,11 @@ export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
     }
     // A link cannot be made while linked, so `linkOpen` alone never fires this.
   }, [linked, linkOpen]);
+
+  // A poll that says "available" clears a `telegram_off` from an earlier 409.
+  useEffect(() => {
+    if (available === true) setOff(false);
+  }, [available]);
 
   const makeLink = async () => {
     setBusy(true);
