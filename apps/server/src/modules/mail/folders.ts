@@ -51,7 +51,7 @@ export async function setSyncFolderEnabled(
   mailboxId: string,
   key: Exclude<SyncFolderKey, "inbox">,
   enabled: boolean,
-  actor: "cli" | "system",
+  actor: string,
   at: Date
 ): Promise<SyncFolderSwitchResult> {
   const run = async (trx: Transaction<DB>): Promise<SyncFolderSwitchResult> => {

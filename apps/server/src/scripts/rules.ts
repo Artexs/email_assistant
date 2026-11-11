@@ -1,9 +1,15 @@
 import { parseArgs } from "node:util";
 
-import { senderRuleKinds, type SenderRuleKind } from "@ea/core";
+import {
+  isValidSenderPattern,
+  normalizeSenderPattern,
+  SENDER_RULE_LIMIT,
+  senderRuleKinds,
+  type SenderRuleKind,
+} from "@ea/core";
 import { z } from "zod";
 
-import { insertSenderRule, listSenderRules } from "../modules/config";
+import { addSenderRule, listSenderRules } from "../modules/config";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
@@ -18,14 +24,6 @@ const usage = [
 
 // No mailbox has this id: `listSenderRules` then returns the org-wide rules only.
 const noMailboxId = "00000000-0000-0000-0000-000000000000";
-
-// An address `local@domain` or a domain with a dot. A leading "@" or a domain without a dot never matches.
-const domainPattern = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/;
-const addressPattern = /^[^\s@]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/;
-
-function isValidPattern(pattern: string): boolean {
-  return domainPattern.test(pattern) || addressPattern.test(pattern);
-}
 
 type Options =
   | { command: "add"; orgId: string; mailboxId: string | null; pattern: string; kind: SenderRuleKind }
@@ -58,8 +56,8 @@ function readOptions(): Options | undefined {
     if (positionals[0] === "add") {
       const kind = z.enum(senderRuleKinds).safeParse(values.kind);
       if (!kind.success || values.pattern === undefined) return undefined;
-      const pattern = values.pattern.trim().toLowerCase();
-      if (!isValidPattern(pattern)) return undefined;
+      const pattern = normalizeSenderPattern(values.pattern);
+      if (!isValidSenderPattern(pattern)) return undefined;
       return { command: "add", orgId, mailboxId: mailboxId ?? null, pattern, kind: kind.data };
     }
     return undefined;
@@ -87,12 +85,23 @@ async function main(): Promise<number> {
     const ctx = { orgId: options.orgId };
 
     if (options.command === "add") {
-      const inserted = await insertSenderRule(db, ctx, {
+      const result = await addSenderRule(db, ctx, {
         mailboxId: options.mailboxId,
         pattern: options.pattern,
         kind: options.kind,
+        actor: "cli",
+        now: new Date(),
       });
-      out(inserted ? `added ${options.kind} ${options.pattern}` : `already there: ${options.kind} ${options.pattern}`);
+      if (result.kind === "added") out(`added ${options.kind} ${options.pattern}`);
+      if (result.kind === "exists") out(`already there: ${options.kind} ${options.pattern}`);
+      if (result.kind === "limit") {
+        log.error(`refused: rule limit reached (${SENDER_RULE_LIMIT})`);
+        return 1;
+      }
+      if (result.kind === "mailbox_not_found") {
+        log.error("refused: mailbox not found");
+        return 1;
+      }
       return 0;
     }
 

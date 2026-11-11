@@ -6,10 +6,13 @@ export {
   insertSenderRule,
   listSenderRules,
   lockSettingsForShare,
+  listSenderRuleRows,
   lockMailboxSettings,
   type MailboxSettingsRow,
+  type SenderRuleRow,
   updateMailboxSettings,
 } from "./repo";
+export { addSenderRule, removeSenderRule, type AddRuleResult } from "./rules";
 export {
   closedBy,
   getSettingsView,
