@@ -3,6 +3,20 @@ import { classifierCategories, DELEGATION_CATEGORY, type Category } from "./cate
 export const senderRuleKinds = ["whitelist", "blocklist", "vip"] as const;
 export type SenderRuleKind = (typeof senderRuleKinds)[number];
 
+export const SENDER_RULE_LIMIT = 1000;
+
+// An address `local@domain` or a domain with a dot. A leading "@" or a domain without a dot never matches.
+const domainPattern = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/;
+const addressPattern = /^[^\s@]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/;
+
+export function normalizeSenderPattern(raw: string): string {
+  return raw.trim().toLowerCase();
+}
+
+export function isValidSenderPattern(pattern: string): boolean {
+  return domainPattern.test(pattern) || addressPattern.test(pattern);
+}
+
 export interface SenderRule {
   pattern: string;
   kind: SenderRuleKind;

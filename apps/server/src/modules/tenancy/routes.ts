@@ -1,4 +1,4 @@
-import type { Me, Onboarding, ScopeInfo } from "@ea/core";
+import { parseDigestTimes, type Me, type Onboarding, type ScopeInfo } from "@ea/core";
 import { Hono } from "hono";
 
 import type { Db, TenantContext } from "../../platform/db";
@@ -39,6 +39,7 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
       scopes: deps.scopes,
       mailboxCount: mailboxes.total,
       mailboxesInAuthError: mailboxes.inAuthError,
+      digestTimes: parseDigestTimes(member.digest_times),
     };
     return c.json(me);
   });

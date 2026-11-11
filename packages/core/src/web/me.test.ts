@@ -12,6 +12,7 @@ const me = {
   scopes: { triage: scope, actions: scopeInfoOf("synthetic"), send: scopeInfoOf("self") },
   mailboxCount: 1,
   mailboxesInAuthError: 0,
+  digestTimes: ["08:00"],
 };
 
 describe("scopeInfoOf", () => {
@@ -26,6 +27,10 @@ describe("scopeInfoOf", () => {
 describe("meSchema", () => {
   test("accepts a full object", () => {
     expect(meSchema.safeParse(me).success).toBe(true);
+  });
+
+  test("refuses an object without digestTimes", () => {
+    expect(meSchema.safeParse({ ...me, digestTimes: undefined }).success).toBe(false);
   });
 
   test("refuses the old null fields", () => {

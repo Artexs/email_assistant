@@ -11,6 +11,7 @@ export const apiErrorCodes = [
   "not_found",
   "mailbox_exists",
   "rule_exists",
+  "rule_limit",
   "wrong_status",
   "no_go",
   "telegram_off",

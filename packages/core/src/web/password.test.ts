@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
-import { fieldErrors, loginFormSchema, passwordSchema, setPasswordFormSchema } from "./password";
+import {
+  changePasswordFormSchema,
+  fieldErrors,
+  loginFormSchema,
+  passwordSchema,
+  setPasswordFormSchema,
+} from "./password";
 
 describe("passwordSchema", () => {
   test("refuses 11 characters", () => {
@@ -39,5 +45,24 @@ describe("form schemas", () => {
 
   test("fieldErrors returns nothing on success", () => {
     expect(fieldErrors(loginFormSchema.safeParse({ email: "a@b.com", password: "x" }))).toEqual({});
+  });
+});
+
+describe("changePasswordFormSchema", () => {
+  const password = "x".repeat(12);
+
+  test("reports an empty current password", () => {
+    const result = changePasswordFormSchema.safeParse({ current: "", password, repeat: password });
+    expect(fieldErrors(result)).toEqual({ current: "password_required" });
+  });
+
+  test("reports a short new password", () => {
+    const result = changePasswordFormSchema.safeParse({ current: "old", password: "short", repeat: "short" });
+    expect(fieldErrors(result)).toEqual({ password: "password_too_short" });
+  });
+
+  test("reports a different repeat", () => {
+    const result = changePasswordFormSchema.safeParse({ current: "old", password, repeat: "other" });
+    expect(fieldErrors(result)).toEqual({ repeat: "passwords_differ" });
   });
 });

@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — plan approved by the user (12 stages, cold-reviewed); build not started.** Left: the build with `run-task` (pipeline, worktree `task/s5c-web-settings-rules`), from stage 1. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5c-build.md`.
+> **Status 2026-11-11 — in progress — build started (pipeline, worktree `task/s5c-web-settings-rules`, database `s5c`); stage 1 built, review pending.** Left: stages 2–12. Build handoff: `~/.pi/agent/notes/2026-11-11-handoff-s5c-build.md`.
 
 # S5c Web: settings and rules
 
@@ -211,3 +211,4 @@ Scope: 21 the "Owns" list missed five changed files and the `tenancy → audit` 
 - 2026-11-11: Plan session 1 (Claude Code, Sonnet 5.5): collect, 9 differences, the 11 questions; moved to `active/` (staged). The user answered "ok" (the defaults). Handoff `~/.pi/agent/notes/2026-11-11-handoff-s5c-plan.md`.
 - 2026-11-11: Plan session 2 (Claude Code, Opus 5.5): S1–S11 recorded (S4 wording corrected: "rated mails at confidence ≥ x"), 4 more differences, 14 facts (probes `/tmp/ea-s5c-probe/sched.ts` and `la.ts`: the time-zone list and six digest-slot cases), B1–B16, 12 stage files. Cold review (Opus high, `reviewer` subagent): PASS, 21 findings (20 minor, 1 question), all fixed. Next: the user's approval, then commit and push the plan files.
 - 2026-11-11: The user approved the plan: "ok, proceed. so what is the next step? implementation? so start it in a handoff in new agent." Plan committed and pushed on `master`; build handoff `~/.pi/agent/notes/2026-11-11-handoff-s5c-build.md`.
+- 2026-11-11: Build session (Claude Code): worktree `../email_assistant-wt/s5c-web-settings-rules`, database `s5c` and `e2e`, `.env` keys set (user step 0 done by the agent); baseline lint, typecheck, unit pass, int 1134 pass. Stage 1 built, review pending: lint, typecheck clean; unit 1610 pass; int 1135 pass; `cd apps/web && bun run build` Complete. Deviation: the `web-me` test sets `[]` first, because the column default is 08:00 and 16:00.

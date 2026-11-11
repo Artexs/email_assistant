@@ -24,4 +24,9 @@ describe("apiErrorSchema", () => {
     expect(apiErrorCodes).toContain("host_not_allowed");
     expect(apiErrorCodes).toContain("telegram_unreachable");
   });
+
+  test("lists rule_limit after rule_exists", () => {
+    expect(apiErrorCodes).toContain("rule_limit");
+    expect(apiErrorCodes.indexOf("rule_limit")).toBe(apiErrorCodes.indexOf("rule_exists") + 1);
+  });
 });

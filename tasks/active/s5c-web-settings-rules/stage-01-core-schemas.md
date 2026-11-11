@@ -6,7 +6,7 @@ Part of [`../s5c-web-settings-rules.md`](../s5c-web-settings-rules.md). Read tha
 
 Two steps. Pure code in `packages/core`; no database, no server change except what typecheck forces (step 1.2).
 
-- [ ] **1.1 The sender pattern rule and the settings, rules and organization schemas (B1)**
+- [x] **1.1 The sender pattern rule and the settings, rules and organization schemas (B1)**
   - Goal: the browser forms and the routes share one schema per body; the CLI and the web share one pattern rule.
   - Files: change `packages/core/src/triage/rules.ts`, `packages/core/src/triage/rules.test.ts`, `packages/core/src/digest/schedule.ts` (`DIGEST_TIME_PATTERN`), `packages/core/src/web/index.ts`, `packages/core/src/web/password.ts`, `packages/core/src/web/password.test.ts`; create `packages/core/src/web/settings.ts`, `settings.test.ts`, `rules.ts`, `rules.test.ts`, `organization.ts`, `organization.test.ts`.
   - Interfaces:
@@ -87,7 +87,7 @@ Two steps. Pure code in `packages/core`; no database, no server change except wh
   - Done when: the tests pass; `grep -n "domainPattern\|addressPattern" packages/core/src/triage/rules.ts` shows the two regexes; the web build passes.
   - Out of scope: the CLI switch to the core rule (stage 3); the server routes.
 
-- [ ] **1.2 `rule_limit` and `me.digestTimes` (B1, B9)**
+- [x] **1.2 `rule_limit` and `me.digestTimes` (B1, B9)**
   - Goal: the error code list and the `/api/me` shape carry what S5c adds.
   - Files: change `packages/core/src/web/errors.ts`, `errors.test.ts`, `packages/core/src/web/me.ts`, `me.test.ts`, `apps/server/src/modules/tenancy/routes.ts` (fill `digestTimes`), `apps/server/test/integration/web-me.test.ts` (expect the field).
   - Interfaces:
