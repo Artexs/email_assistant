@@ -112,7 +112,7 @@ export function AddRuleForm({ mailboxes, onAdded, onMissingMailbox }: AddRuleFor
               autoComplete="off"
               value={pattern}
               aria-invalid={error !== null}
-              aria-describedby="rule-pattern-help"
+              aria-describedby={error === null ? "rule-pattern-help" : "rule-pattern-help rule-pattern-error"}
               onChange={(event) => {
                 setError(null);
                 setPattern(event.target.value);
@@ -122,7 +122,7 @@ export function AddRuleForm({ mailboxes, onAdded, onMissingMailbox }: AddRuleFor
               {t("rules_pattern_help")}
             </p>
             {error !== null && (
-              <p role="alert" className="text-sm text-destructive">
+              <p id="rule-pattern-error" role="alert" className="text-sm text-destructive">
                 {t(error)}
               </p>
             )}

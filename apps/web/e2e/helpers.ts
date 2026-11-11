@@ -4,6 +4,7 @@ import { en } from "../src/i18n/en";
 import { E2E_BASE_URL, GREENMAIL } from "./env";
 
 // An address range for documentation (RFC 5737). Every test gets its own, so the login rate limit counts per test.
+// The counter lives in the worker process and all spec files of that worker share it, so two files can use the same block.
 // Playwright runs each project in its own worker process, where the counter starts at 1 again: the caller gives each a block.
 let addressCount = 0;
 
