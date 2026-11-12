@@ -1,5 +1,5 @@
-import { cancelPendingOutboxOfOrg } from "../modules/channels";
 import { resumeHook } from "../composition";
+import { cancelPendingOutboxOfOrg } from "../modules/channels";
 import { setOrgPlan, type SetOrgPlanResult } from "../modules/tenancy";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";

@@ -3,10 +3,10 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
+import { resumeHook } from "../../src/composition";
 import { SENT_COPY_PENDING_MAX_AGE_MS, getSend, listSendResultsToNotify } from "../../src/modules/actions";
 import { cancelPendingOutboxOfOrg } from "../../src/modules/channels";
 import { setOrgPlan } from "../../src/modules/tenancy";
-import { resumeHook } from "../../src/composition";
 import type { DB, TenantContext } from "../../src/platform/db";
 
 import { createOrgWithMailbox, insertDraftAndSend, pauseOtherMailboxes } from "./fixtures";
