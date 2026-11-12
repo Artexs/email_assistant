@@ -52,12 +52,19 @@ const orgIds: string[] = [];
 const userIds: string[] = [];
 
 let logSpies: ReturnType<typeof spyOn>[] = [];
+// N-b: every console line of the file, and every address and token it used, for the sweep at the end.
+const lines: string[] = [];
+const emails: string[] = [];
+const tokens: string[] = [];
+const capture = (...args: unknown[]): void => {
+  lines.push(args.map(String).join(" "));
+};
 
 beforeAll(() => {
   logSpies = [
-    spyOn(console, "log").mockImplementation((): void => undefined),
-    spyOn(console, "error").mockImplementation((): void => undefined),
-    spyOn(console, "warn").mockImplementation((): void => undefined),
+    spyOn(console, "log").mockImplementation(capture),
+    spyOn(console, "error").mockImplementation(capture),
+    spyOn(console, "warn").mockImplementation(capture),
   ];
 });
 
@@ -109,7 +116,10 @@ async function resetToken(email: string): Promise<string> {
   await handle.auth.api.requestPasswordReset({ body: { email, redirectTo: `${BASE_URL}/setup` } });
   const mail = resets[0];
   if (!mail) throw new Error("no reset mail captured");
-  return new URL(mail.url).pathname.split("/").pop() ?? "";
+  const token = new URL(mail.url).pathname.split("/").pop() ?? "";
+  emails.push(email);
+  tokens.push(token);
+  return token;
 }
 
 // A user whose password is PASSWORD (set through the handle without a check on a good password).
@@ -229,5 +239,19 @@ describe("leaked-password check", () => {
     expect(answer.status).toBe(200);
     expect(checked).toEqual([]);
     expect((await signIn(email, LISTED, plainHandle)).status).toBe(200);
+  });
+});
+
+describe("log", () => {
+  test("no log line holds a password, an address, a token or a reset link", () => {
+    expect(lines.length).toBeGreaterThan(0);
+    expect(emails.length).toBeGreaterThan(0);
+    expect(tokens.length).toBeGreaterThan(0);
+    for (const line of lines) {
+      expect(line).not.toContain("reset-password/");
+      for (const secret of [PASSWORD, LISTED, GOOD, ...emails, ...tokens]) {
+        expect(line).not.toContain(secret);
+      }
+    }
   });
 });
