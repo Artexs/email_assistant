@@ -31,6 +31,6 @@ Moved from the old `tasks/` flow to Limen on 2026-11-12 (user decision). Plan, d
 
 ## Progress and how to continue
 
-- Stages 1–9 landed on 2026-11-12 (jobs `2026-11-12-f077-s1…s9`). Stage 10 was running as `2026-11-12-f077-s10-0534fc73`.
+- Stages 1–10 landed on 2026-11-12. Stage 11 runs as `2026-11-12-f077-s11b-cfcaf509` (the job `…-s11-01ff7305` was stopped: wrong base). Start each stage only after the previous one is landed.
 - A coordinator continues like this: `limen status`. Land a done stage job with `limen land <job-id> --yes --keep-open`, then spawn the next stage with the standing route from `spec/build.md`, `--prepare 'bash scripts/limen-prepare.sh'`, `--label F077-sNN`, and this prompt: "Implement F077 slice NN (stage NN). Read ticket.md, plan.md and stages/stage-NN-*.md; build every step of that stage. Final proof: one bash call `mkdir -p /tmp/sNN && bun run lint > /tmp/sNN/lint.log 2>&1 && bun run typecheck > /tmp/sNN/typecheck.log 2>&1 && bun run test:unit > /tmp/sNN/unit.log 2>&1 && bun run test:int > /tmp/sNN/int.log 2>&1 && echo PROOF_OK` with nothing after it, run after the last commit; read the logs in a separate call."
 - One stage at a time. Stage 18 (checkpoint and deploy) needs the owner.
