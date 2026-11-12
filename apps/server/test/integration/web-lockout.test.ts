@@ -125,12 +125,13 @@ function signIn(
   email: string,
   password: string,
   via: AuthHandle = handle,
-  extra: Record<string, unknown> = {}
+  extra: Record<string, unknown> = {},
+  headers: Record<string, string> = { origin: BASE_URL }
 ): Promise<Response> {
   return via.auth.handler(
     new Request(`${BASE_URL}/api/auth/sign-in/email`, {
       method: "POST",
-      headers: { origin: BASE_URL, "content-type": "application/json", "x-client-ip": nextIp() },
+      headers: { "content-type": "application/json", "x-client-ip": nextIp(), ...headers },
       body: JSON.stringify({ email, password, ...extra }),
     })
   );
@@ -336,6 +337,31 @@ describe("lockout", () => {
         answers.push([answer.status, await answer.text()]);
       }
       expect(answers[0]?.[0]).toBe(400);
+      expect(answers[1]).toEqual(answers[0]);
+      expect(answers[2]).toEqual(answers[0]);
+    }
+    expect((await row(locked.userId))?.failed_count).toBe(0);
+    expect((await row(open.userId))?.failed_count).toBe(2);
+  });
+
+  // B1: Better Auth's own form-CSRF check refuses these requests for every address; the lock must not show through it.
+  test("a request that Better Auth refuses before the password check answers the same for a locked user, a free user and an unknown address", async () => {
+    const locked = await createOwner();
+    const open = await createOwner();
+    await lockUser(locked.email);
+    await wrong(open.email, 2);
+    const unknown = `nobody-${randomUUID()}@x.test`;
+    const probes: Record<string, Record<string, string>> = {
+      crossSiteNavigate: { origin: BASE_URL, "sec-fetch-site": "cross-site", "sec-fetch-mode": "navigate" },
+      badReferer: { "sec-fetch-site": "same-origin", referer: "http://evil.x.test/" },
+    };
+    for (const [name, headers] of Object.entries(probes)) {
+      const answers: [number, string][] = [];
+      for (const email of [locked.email, open.email, unknown]) {
+        const answer = await signIn(email, WRONG_PASSWORD, handle, {}, headers);
+        answers.push([answer.status, await answer.text()]);
+      }
+      expect({ name, status: answers[0]?.[0] }).toEqual({ name, status: 403 });
       expect(answers[1]).toEqual(answers[0]);
       expect(answers[2]).toEqual(answers[0]);
     }
