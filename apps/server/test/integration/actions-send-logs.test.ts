@@ -162,7 +162,7 @@ describe("send logs", () => {
           await detectNotices({ db: trx, now: () => clock, startedAt: new Date(T0.getTime() - 24 * HOUR) });
         };
         // `except`: the fixture inserts a `sent` request row for the stale send; the notifier did not queue it.
-        const outboxIds = async (kind: string, except: string = "") =>
+        const outboxIds = async (kind: string, except = "") =>
           (
             await trx
               .selectFrom("outbox")
