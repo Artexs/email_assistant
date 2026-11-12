@@ -615,7 +615,7 @@ export async function clearTriageTexts(
           .select("id")
           .where("org_id", "=", ctx.orgId)
           .where("created_at", "<", opts.before)
-          .where((eb) => eb.or([eb("reason", "is not", null), eb("fields", "<>", sql`'{}'::jsonb`)]))
+          .where((eb) => eb.or([eb("reason", "is not", null), sql<boolean>`fields <> '{}'::jsonb`]))
           .orderBy("id")
           .limit(batch)
           .forUpdate()
