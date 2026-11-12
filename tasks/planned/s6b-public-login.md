@@ -1,4 +1,4 @@
-> **Status 2026-11-12 — planned.** Left: the detailed stage plan (an own `plan-task` session), then the build with `run-task`.
+> **Status 2026-11-12 — planned as Limen ticket F082** (`spec/features/planned/F082-s6b-public-login/`: ticket, plan, 15 stage files). This file is history; the F082 plan wins where they differ. Stage 15 of F082 moves this file to `tasks/done/`.
 
 # S6b Login hardening: auth mail (off), invite, terms, lockout
 

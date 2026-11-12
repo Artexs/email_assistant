@@ -21,6 +21,8 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 ## NEXT
 
+- `F082-s6b-public-login` (🔴 PLANNED): S6b login hardening, 15 stages; build after F077 stage 18 (the S6a VPS deploy).
+
 ## PROVEN
 
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
