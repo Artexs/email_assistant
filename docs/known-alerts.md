@@ -403,8 +403,8 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 - **First seen:** 2026-11-07 (S4 code; not seen live)
 - **Source:** `apps/server/src/modules/actions/send.ts` (`[actions]`, level `warn`).
-- **Cause:** One of three: a hard error before the content (`connect`, `login` or `envelope`) three times; a 4xx or another non-5xx error after the content (`content`: the server may have the mail, so the system does not retry); or the mail could not be built three times (`compose`). The row is `failed` and the owners get a notice with 📤 Send again.
-- **Fix:** For `content`, look in `Wysłane` and ask the recipient before you tap Send again. Otherwise check `/status` and `bun run mailbox:check`, fix the cause, then tap Send again. The line `action <id>: send retry (stage <s>, code <c>)` (level `warn`) is a try that will repeat in 5 minutes; a soft error does not count.
+- **Cause:** One of four: a soft error before the content (`connect`, `login` or `envelope`) that comes 6 h or more after the tap (the soft cap, F044; `provider_result.cap` is `soft_retry`, the notice says "did not accept the mail for 6 hours", the mail was not sent); a hard error before the content (`connect`, `login` or `envelope`) three times; a 4xx or another non-5xx error after the content (`content`: the server may have the mail, so the system does not retry); or the mail could not be built three times (`compose`). The row is `failed` and the owners get a notice with 📤 Send again.
+- **Fix:** For `content`, look in `Wysłane` and ask the recipient before you tap Send again. Otherwise check `/status` and `bun run mailbox:check`, fix the cause, then tap Send again. The line `action <id>: send retry (stage <s>, code <c>)` (level `warn`) is a try that will repeat in 5 minutes; a soft error does not count, but the retries stop 6 hours after the tap. For the soft cap, check the mail server and the network first, then tap Send again.
 - **Status:** investigating
 
 ### `action <id>: failed smtp_rejected (stage <s>, code <n>)`

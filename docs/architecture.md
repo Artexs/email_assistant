@@ -173,17 +173,18 @@ Pipeline rules:
 
 **Outcomes of a send error (rule 6, `sendOutcomeOf`):**
 
-| Error                                                                               | The row goes to                              | `attempts`                                                          |
-| ----------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------- |
-| Login refused (`EAUTH`)                                                             | `approved`; the mailbox becomes `auth_error` | no change                                                           |
-| Soft error at `connect`, `login` or `envelope` (lost connection, timeout, DNS, 4xx) | `approved`, retry in 5 min, no notice        | no change (retry without a count)                                   |
-| Hard error at `connect`, `login` or `envelope` (not a 5xx at `envelope`)            | `approved`, retry in 5 min                   | + 1 (retry with a count); the third ends as `failed` / `smtp_error` |
-| 5xx at `envelope`, or 5xx after the content                                         | `failed` / `smtp_rejected`                   | no change                                                           |
-| 4xx or another error after the content (`content`)                                  | `failed` / `smtp_error`, no retry            | no change                                                           |
-| `unknown` stage, or an error that is not a `SmtpSendError`                          | `failed` / `outcome_unknown`                 | no change                                                           |
+| Error                                                                               | The row goes to                                                                                      | `attempts`                                                          |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Login refused (`EAUTH`)                                                             | `approved`; the mailbox becomes `auth_error`                                                         | no change                                                           |
+| Soft error at `connect`, `login` or `envelope` (lost connection, timeout, DNS, 4xx) | `approved`, retry in 5 min, no notice; from 6 h after the tap `failed` / `smtp_error` (the soft cap) | no change (retry without a count)                                   |
+| Hard error at `connect`, `login` or `envelope` (not a 5xx at `envelope`)            | `approved`, retry in 5 min                                                                           | + 1 (retry with a count); the third ends as `failed` / `smtp_error` |
+| 5xx at `envelope`, or 5xx after the content                                         | `failed` / `smtp_rejected`                                                                           | no change                                                           |
+| 4xx or another error after the content (`content`)                                  | `failed` / `smtp_error`, no retry                                                                    | no change                                                           |
+| `unknown` stage, or an error that is not a `SmtpSendError`                          | `failed` / `outcome_unknown`                                                                         | no change                                                           |
 
 A compose error before `applying` returns the row to `approved` with a count; the third ends as `failed` / `smtp_error`. Each `failed` send gets a result notice (§4.5).
-A soft `envelope` error (4xx) retries every 5 min without a count until `held_timeout` ends the send 48 h after the tap (§4.6; follow-up `spec/features/planned/F044-send-retry-cap/plan.md`).
+**The soft cap (F044):** a soft error before the content (`connect`, `login` or `envelope`) retries every 5 min without a count. A soft error that comes 6 h or more after the tap (`approved_at`, constant `SEND_SOFT_CAP_MS`) ends the send as `failed` / `smtp_error` with `provider_result.cap = "soft_retry"`, `attempts` unchanged, and the delegation `cancelled` (`send_failed`). The result notice has its own text ("did not accept the mail for 6 hours … nothing was sent") and the button 📤 Send again; the tap sets a new `approved_at`, so the new send gets its own 6 h.
+The cap does not touch a retry with a count (a hard error keeps its 3 tries) and there is no retry after `content`. A send that waits for another reason (a draft not applied, a mailbox in `auth_error`) also uses up the 6 h; the first soft error after that ends it. `held_timeout` (48 h, §4.6) still ends an `approved` send that no try reaches.
 
 7. **Retries live on the row that failed.** LLM errors retry the email (`emails.attempts`); mailbox errors retry the action (`actions.attempts`).
    Soft errors wait with backoff (`next_attempt_at`) and do not count; the row keeps its status.
@@ -641,16 +642,16 @@ Tenancy:
 - **Logs:** no mail bodies, no passwords, no keys. S3 logs and audit rows hold ids, counts, action types, folder keys (not paths from mail data or user input), codes and times; an error goes through `describeError`.
 - **Retention:**
 
-  | Data                                             | Where                                                               | Kept                                                                                       |
-  | ------------------------------------------------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-  | Mail body text                                   | `emails.body_text`                                                  | 30 days (`organizations.data_retention_days`)                                              |
-  | Subject, addresses                               | `emails`                                                            | 90 days, then cleared (the row stays for counts)                                           |
-  | Summaries, draft text, reasons, extracted fields | `actions.payload`, `triage_results.reason`, `triage_results.fields` | 90 days                                                                                    |
-  | Task text                                        | `delegations.task_summary`                                          | 90 days after the delegation is `done`, or 90 days after its last change                   |
-  | Error text                                       | `actions.last_error`                                                | 90 days (and no mail text in it)                                                           |
+  | Data                                             | Where                                                               | Kept                                                                                                         |
+  | ------------------------------------------------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+  | Mail body text                                   | `emails.body_text`                                                  | 30 days (`organizations.data_retention_days`)                                                                |
+  | Subject, addresses                               | `emails`                                                            | 90 days, then cleared (the row stays for counts)                                                             |
+  | Summaries, draft text, reasons, extracted fields | `actions.payload`, `triage_results.reason`, `triage_results.fields` | 90 days                                                                                                      |
+  | Task text                                        | `delegations.task_summary`                                          | 90 days after the delegation is `done`, or 90 days after its last change                                     |
+  | Error text                                       | `actions.last_error`                                                | 90 days (and no mail text in it)                                                                             |
   | Message text                                     | `outbox.text` (digests and notices)                                 | 90 days (the retention job does not exist yet: follow-up `spec/features/planned/F027-retention-job/plan.md`) |
-  | Audit events (ids, codes, numbers)               | `audit_log`                                                         | until the mailbox or organization is removed                                               |
-  | Labels (no mail text)                            | `triage_feedback`                                                   | until the mailbox or organization is removed                                               |
+  | Audit events (ids, codes, numbers)               | `audit_log`                                                         | until the mailbox or organization is removed                                                                 |
+  | Labels (no mail text)                            | `triage_feedback`                                                   | until the mailbox or organization is removed                                                                 |
 
 - **Delete:** removing a mailbox deletes the mailbox, its credentials, settings, mailbox-scoped sender rules, emails, results, feedback,
   actions, delegations and audit rows, and clears the text of the digest rows in `outbox` of the organization (digests mix mailboxes) — one privileged function.

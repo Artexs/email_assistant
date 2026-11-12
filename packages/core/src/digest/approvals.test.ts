@@ -268,6 +268,11 @@ describe("renderSendResult", () => {
       "The mail server refused the content for now (code 451); the system never retries after the content",
       true,
     ],
+    [
+      { kind: "failed", cause: "soft_cap", code: "450", tries: 0 },
+      "The mail server did not accept the mail for 6 hours (450); nothing was sent",
+      true,
+    ],
     [{ kind: "failed", cause: "compose", code: null, tries: 3 }, "The mail could not be built 3 times", true],
     [
       { kind: "failed", cause: "bad_payload", code: null, tries: 0 },

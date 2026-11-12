@@ -173,7 +173,7 @@ export type SendResultKind =
   | { kind: "rejected_by_server"; stage: string; responseCode: number | null }
   | {
       kind: "failed";
-      cause: "tries" | "content_soft" | "compose" | "bad_payload";
+      cause: "tries" | "content_soft" | "soft_cap" | "compose" | "bad_payload";
       code: string | null;
       tries: number;
     }
@@ -202,6 +202,8 @@ function causeLine(result: Extract<SendResultKind, { kind: "failed" }>): string 
       return `The send failed ${result.tries} times${code === "" ? "" : ` (${code})`}`;
     case "content_soft":
       return `The mail server refused the content for now (code ${code === "" ? "unknown" : code}); the system never retries after the content`;
+    case "soft_cap":
+      return `The mail server did not accept the mail for 6 hours${code === "" ? "" : ` (${code})`}; nothing was sent`;
     case "compose":
       return `The mail could not be built ${result.tries} times`;
     case "bad_payload":
