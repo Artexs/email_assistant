@@ -15,9 +15,40 @@ const FIELD_MAX_CHARS = 80;
 const BARE_DOMAIN = /\b(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/\S*)?/gi;
 const LONE_HIGH_SURROGATE = /[\ud800-\udbff]$/;
 
-// Telegram makes URLs, bare domains and addresses in a plain message tappable: the quote shows none of them.
+const HEADER_ADDRESS = /[\w.+-]+@(?:[a-z0-9-]+\.)+[a-z]{2,}/gi;
+const SENDER_LINE = /^(?:From|Od): /;
+
+function hideLinks(text: string): string {
+  return removeLinks(text).replace(BARE_DOMAIN, "[link]");
+}
+
+// An address stays whole; every other part of the line loses its links.
+function hideLinksKeepAddresses(line: string): string {
+  let out = "";
+  let last = 0;
+  for (const match of line.matchAll(HEADER_ADDRESS)) {
+    out += hideLinks(line.slice(last, match.index));
+    out += match[0];
+    last = match.index + match[0].length;
+  }
+  return out + hideLinks(line.slice(last));
+}
+
+// Telegram makes URLs, bare domains and addresses in a plain message tappable: the quote body shows none of them.
+// The sender line of the quote header keeps the bare address: the top "From:" line of the message has a label only.
 function chatQuoteText(text: string): { text: string; replaced: boolean } {
-  const clean = removeLinks(text).replace(BARE_DOMAIN, "[link]");
+  const headerEnd = text.indexOf("\n\n");
+  const lines = text.split("\n");
+  const headerLines = headerEnd === -1 ? lines.length : text.slice(0, headerEnd).split("\n").length;
+  const clean = lines
+    .map((line, index) => {
+      if (index < headerLines && SENDER_LINE.test(line)) {
+        const prefix = line.slice(0, line.indexOf(": ") + 2);
+        return `${prefix}${hideLinksKeepAddresses(line.slice(prefix.length))}`;
+      }
+      return hideLinks(line);
+    })
+    .join("\n");
   return { text: clean, replaced: clean !== text };
 }
 
