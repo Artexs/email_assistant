@@ -1,5 +1,7 @@
 # Tasks
 
+> Old flow. It applies only to the S6 family (`s6-pre-sale`, `s6a`–`s6f`) until S6 is done. All other work: `spec/features/` (Limen).
+
 All work in this repo is a task file here. One Markdown file per task: `tasks/<state>/<name>.md`.
 A new session reads `active/` first. The `done/` folder is the history of the work done in the project.
 
