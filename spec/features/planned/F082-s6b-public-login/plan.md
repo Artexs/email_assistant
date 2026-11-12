@@ -18,7 +18,7 @@ The resumed session reads this file, then continues at the first unticked item.
 - [x] Stage files written (15).
 - [x] Committed (explicit paths).
 - [x] Cold review (Limen scout job), filed as `plan-review-1.md`, findings fixed (2026-11-12).
-- [ ] End summary; the owner's OK.
+- [x] End summary; the owner's OK ("Ok, so the plan is finished, right?", 2026-11-12).
 
 ## Input
 
