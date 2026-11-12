@@ -192,6 +192,36 @@ describe("leaked-password check", () => {
     expect(checked).toEqual([GOOD]);
   });
 
+  // N-c: no outside call for a request that the endpoint refuses anyway.
+  test("an anonymous change-password and a reset with an invalid or expired token make no check call", async () => {
+    const { email } = await createOwner();
+    const anonymous = await post(handle, "change-password", { currentPassword: PASSWORD, newPassword: GOOD });
+    expect(anonymous.status).toBe(401);
+    const invalid = await post(handle, "reset-password", resetBody(GOOD, "not-a-token"));
+    expect(invalid.status).toBe(400);
+    expect(await code(invalid)).toBe("INVALID_TOKEN");
+    const noToken = await post(handle, "reset-password", {
+      newPassword: GOOD,
+      termsVersion: resetBody(GOOD, "x").termsVersion,
+    });
+    expect(noToken.status).toBe(400);
+    expect(await code(noToken)).toBe("INVALID_TOKEN");
+    const expired = await resetToken(email);
+    await sql`UPDATE auth_verifications SET expires_at = now() - interval '1 minute' WHERE value = ${userIds[0]}`.execute(
+      db
+    );
+    const late = await post(handle, "reset-password", resetBody(GOOD, expired));
+    expect(late.status).toBe(400);
+    expect(await code(late)).toBe("INVALID_TOKEN");
+    expect(checked).toEqual([]);
+    // The same requests with a session and a live token still reach the check.
+    const session = await signIn(email, PASSWORD);
+    const cookie = (session.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
+    await post(handle, "change-password", { currentPassword: PASSWORD, newPassword: GOOD }, cookie);
+    await post(handle, "reset-password", resetBody(GOOD, await resetToken(email)));
+    expect(checked).toEqual([GOOD, GOOD]);
+  });
+
   test("without pwnedCheck a listed 12+ character password is accepted (old behaviour)", async () => {
     const { email } = await createOwner();
     const token = await resetToken(email);
