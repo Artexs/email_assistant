@@ -60,6 +60,7 @@ async function setup(trx: Transaction<DB>) {
     delegates: [],
     timezone: "Europe/Warsaw",
     junkFolder: null,
+    resumedAt: null,
   };
   return { ctx, emailId, email, mailbox };
 }
@@ -1326,6 +1327,7 @@ describe("triageOne: the plan by the source folder (D11)", () => {
       policy: Object.fromEntries((opts.auto ?? []).map((category) => [category, { auto: true }])),
       delegates: [{ id: delegateId, name: "Anna", email: "anna@firma.test", tags: ["offers"] }],
       junkFolder: opts.junkRow === false ? null : await getJunkFolderPath(trx, base.ctx, base.mailbox.id),
+      resumedAt: null,
     };
     return { ...base, mailbox, delegateId };
   }

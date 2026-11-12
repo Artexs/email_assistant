@@ -124,10 +124,12 @@ async function detectUrgent(
   members: LinkedChat[],
   pausedMailboxIds: Set<string>,
   timeZone: string,
-  now: Date
+  now: Date,
+  resumedAt: Date | null
 ): Promise<void> {
   const lookbackStart = now.getTime() - URGENT_LOOKBACK_MS;
-  const sinceOf = (member: LinkedChat) => Math.max(member.linkedAt.getTime(), lookbackStart);
+  // S3: mail triaged before a resume gets no urgent notice.
+  const sinceOf = (member: LinkedChat) => Math.max(member.linkedAt.getTime(), lookbackStart, resumedAt?.getTime() ?? 0);
   const earliest = Math.min(...members.map(sinceOf));
   const triaged = (
     await listTriagedBetween(
@@ -294,7 +296,8 @@ async function detectSync(
   owners: LinkedChat[],
   mailbox: MailboxSummary,
   timeZone: string,
-  now: Date
+  now: Date,
+  resumedAt: Date | null
 ): Promise<void> {
   const { db } = deps;
   if (mailbox.status !== "active") {
@@ -304,7 +307,11 @@ async function detectSync(
   const within = (at: Date) => now.getTime() - at.getTime() <= SYNC_LATE_MS;
   const fresh = mailbox.last_synced_at !== null && within(mailbox.last_synced_at);
   // The mailbox became active again (resume, new password) or is new: give the sync time to run.
-  const grace = within(mailbox.status_changed_at) || (mailbox.last_synced_at === null && within(mailbox.created_at));
+  // After a pause (D4) the sync runs again from the resume: the same grace.
+  const grace =
+    within(mailbox.status_changed_at) ||
+    (mailbox.last_synced_at === null && within(mailbox.created_at)) ||
+    (resumedAt !== null && within(resumedAt));
 
   if (!fresh) {
     if (grace) {
@@ -682,11 +689,11 @@ async function detectForOrg(deps: NoticeDeps, orgId: string, members: LinkedChat
   const owners = members.filter((member) => member.role === "owner");
 
   const pausedIds = new Set(mailboxes.filter((mailbox) => mailbox.status === "paused").map((mailbox) => mailbox.id));
-  await detectUrgent(db, ctx, members, pausedIds, timeZone, now);
+  await detectUrgent(db, ctx, members, pausedIds, timeZone, now, organization.resumed_at);
   await detectActionFailed(db, ctx, owners, now);
   for (const mailbox of mailboxes) {
     await detectAuthError(db, ctx, owners, mailbox, timeZone, now);
-    await detectSync(deps, ctx, members, owners, mailbox, timeZone, now);
+    await detectSync(deps, ctx, members, owners, mailbox, timeZone, now, organization.resumed_at);
   }
   await detectApprovals(db, ctx, owners, timeZone, now);
   await detectApprovalSets(db, ctx, owners, timeZone, now);

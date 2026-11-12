@@ -259,6 +259,7 @@ describe("removeMailbox", () => {
       delegates: [],
       timezone: "Europe/Warsaw",
       junkFolder: null,
+      resumedAt: null,
     };
 
     const result = await removeMailbox(deps, s.ctx, s.mailboxId, {

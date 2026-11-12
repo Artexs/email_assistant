@@ -51,6 +51,8 @@ export interface TriageMailbox {
   timezone: string;
   // The path of the mailbox's junk folder row (null: none), read once per run with the snapshot (D11).
   junkFolder: string | null;
+  // `organizations.resumed_at` (null: never resumed). Drives the backlog rule of D4.
+  resumedAt: Date | null;
 }
 
 export interface TriageDecision {
@@ -357,15 +359,22 @@ async function handleClassifyError(
   return finishTriageError(deps, ctx, mailbox, email);
 }
 
+// Mail older than this before `resumed_at` is backlog of the pause (D4, A16).
+export const BACKLOG_GRACE_MS = 24 * 3_600_000;
+
+type SkipReason = "too_old" | "suspended_backlog";
+
 // One transaction: the email status `skipped` and its audit row. `false` in `finishEmail` means a lost claim.
-async function skipTooOld(
+// One function for both reasons, so the status and the audit code cannot drift.
+async function skipEmail(
   deps: TriageDeps,
   ctx: TenantContext,
   mailbox: TriageMailbox,
-  email: ClaimedEmail
+  email: ClaimedEmail,
+  reason: SkipReason
 ): Promise<TriageOutcome> {
   const run = async (trx: Transaction<DB>): Promise<TriageOutcome> => {
-    if (!(await finishEmail(trx, ctx, email.id, email.locked_at, { status: "skipped", skipReason: "too_old" }))) {
+    if (!(await finishEmail(trx, ctx, email.id, email.locked_at, { status: "skipped", skipReason: reason }))) {
       log.warn(`triage ${email.id}: lost the claim`);
       return { kind: "lost" };
     }
@@ -375,7 +384,7 @@ async function skipTooOld(
       emailId: email.id,
       actor: "system",
       event: auditEvents.emailSkipped,
-      reasonCode: "too_old",
+      reasonCode: reason,
       data: { mailbox_id: mailbox.id },
     });
     return { kind: "skipped" };
@@ -383,7 +392,7 @@ async function skipTooOld(
   return deps.db.isTransaction ? run(deps.db as Transaction<DB>) : deps.db.transaction().execute(run);
 }
 
-// Triage one claimed email: age rule, hard rules, daily cap, then the classifier, then `saveTriage`.
+// Triage one claimed email: age rules, hard rules, daily cap, then the classifier, then `saveTriage`.
 // The `llm.call` rows go to `deps.db` outside the save transaction: a call counts also when the mail is lost.
 export async function triageOne(
   deps: TriageDeps,
@@ -392,7 +401,17 @@ export async function triageOne(
   email: ClaimedEmail
 ): Promise<TriageOutcome> {
   if (email.backfilled_at === null && email.received_at.getTime() < deps.now().getTime() - MAX_AGE_MS) {
-    return skipTooOld(deps, ctx, mailbox, email);
+    return skipEmail(deps, ctx, mailbox, email, "too_old");
+  }
+  // After a pause: mail of before the pause that the first syncs after the resume stored (no LLM call).
+  // A mail stored later (for example a folder switched on later) is triaged as usual.
+  if (
+    email.backfilled_at === null &&
+    mailbox.resumedAt !== null &&
+    email.received_at.getTime() < mailbox.resumedAt.getTime() - BACKLOG_GRACE_MS &&
+    email.created_at.getTime() < mailbox.resumedAt.getTime() + BACKLOG_GRACE_MS
+  ) {
+    return skipEmail(deps, ctx, mailbox, email, "suspended_backlog");
   }
   const rules = applyHardRules(email.from_address, mailbox.rules, { delegation: mailbox.delegates.length > 0 });
   if (rules.kind === "spam") {

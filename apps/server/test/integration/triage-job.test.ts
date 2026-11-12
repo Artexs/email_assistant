@@ -17,6 +17,7 @@ import {
   insertDelegate,
   insertTestEmail,
   pauseOtherMailboxes,
+  resumeOrg,
   suspendOrg,
   testCapabilities,
 } from "./fixtures";
@@ -77,7 +78,7 @@ function fakeLlm(): FakeLlm {
   } as FakeLlm;
 }
 
-function job(trx: Transaction<DB>, llm: LlmClient, scope: TriageScope) {
+function job(trx: Transaction<DB>, llm: LlmClient, scope: TriageScope, at: Date = now) {
   return createTriageJob({
     db: trx,
     llm,
@@ -85,7 +86,7 @@ function job(trx: Transaction<DB>, llm: LlmClient, scope: TriageScope) {
     scope,
     batchSize: 5,
     dailyCap: 1000,
-    now: () => now,
+    now: () => at,
   });
 }
 
@@ -901,6 +902,107 @@ describe("suspended organizations", () => {
         .orderBy("status")
         .execute();
       expect(rows.map((row) => row.status)).toEqual(["pending", "triaged"]);
+    });
+  });
+
+  describe("after a resume (D4)", () => {
+    const resumedAt = new Date("2026-11-12T08:00:00Z");
+    const resumedNow = new Date("2026-11-12T08:05:00Z");
+    const hours = (count: number) => count * 3_600_000;
+
+    async function resumedMailbox(trx: Transaction<DB>, resumed: boolean) {
+      await pauseOtherMailboxes(trx);
+      const created = await mailboxWithSettings(trx);
+      if (resumed) await resumeOrg(trx, created.orgId, resumedAt);
+      return created;
+    }
+
+    async function skipState(trx: Transaction<DB>, id: string) {
+      return trx.selectFrom("emails").select(["status", "skip_reason"]).where("id", "=", id).executeTakeFirstOrThrow();
+    }
+
+    test("old mail of before the pause costs no LLM call; too_old wins", async () => {
+      await withRollback(db, async (trx) => {
+        const { ctx, mailboxId } = await resumedMailbox(trx, true);
+        const created_at = new Date(resumedAt.getTime() + 60_000);
+        const backlog = await insertTestEmail(trx, ctx, mailboxId, {
+          received_at: new Date(resumedAt.getTime() - hours(25)),
+          created_at,
+          subject: "backlog",
+        });
+        const recent = await insertTestEmail(trx, ctx, mailboxId, {
+          received_at: new Date(resumedAt.getTime() - hours(23)),
+          created_at,
+          subject: "recent",
+        });
+        const tooOld = await insertTestEmail(trx, ctx, mailboxId, {
+          received_at: new Date(resumedNow.getTime() - 8 * 24 * 3_600_000),
+          created_at,
+          subject: "tooold",
+        });
+
+        const llm = fakeLlm();
+        await job(trx, llm, { kind: "all" }, resumedNow).run();
+
+        expect(llm.prompts).toHaveLength(1);
+        expect(llm.prompts[0]).toContain("recent");
+        expect(await skipState(trx, backlog)).toEqual({ status: "skipped", skip_reason: "suspended_backlog" });
+        expect((await skipState(trx, recent)).status).toBe("triaged");
+        expect(await skipState(trx, tooOld)).toEqual({ status: "skipped", skip_reason: "too_old" });
+        const rows = await trx
+          .selectFrom("audit_log")
+          .select(["email_id", "reason_code"])
+          .where("org_id", "=", ctx.orgId)
+          .where("event", "=", auditEvents.emailSkipped)
+          .execute();
+        expect(rows).toHaveLength(2);
+        expect(rows.find((row) => row.email_id === backlog)?.reason_code).toBe("suspended_backlog");
+        expect(rows.find((row) => row.email_id === tooOld)?.reason_code).toBe("too_old");
+      });
+    });
+
+    test("without a resume, a mail of 3 days ago is triaged", async () => {
+      await withRollback(db, async (trx) => {
+        const { ctx, mailboxId } = await resumedMailbox(trx, false);
+        const id = await insertTestEmail(trx, ctx, mailboxId, {
+          received_at: new Date(resumedNow.getTime() - 3 * 24 * 3_600_000),
+          created_at: resumedAt,
+        });
+        const llm = fakeLlm();
+        await job(trx, llm, { kind: "all" }, resumedNow).run();
+        expect(llm.prompts).toHaveLength(1);
+        expect((await skipState(trx, id)).status).toBe("triaged");
+      });
+    });
+
+    test("a backfilled mail of before the pause is triaged", async () => {
+      await withRollback(db, async (trx) => {
+        const { ctx, mailboxId } = await resumedMailbox(trx, true);
+        const id = await insertTestEmail(trx, ctx, mailboxId, {
+          received_at: new Date(resumedAt.getTime() - hours(25)),
+          created_at: new Date(resumedAt.getTime() + 60_000),
+          backfilled_at: resumedNow,
+        });
+        const llm = fakeLlm();
+        await job(trx, llm, { kind: "all" }, resumedNow).run();
+        expect(llm.prompts).toHaveLength(1);
+        expect((await skipState(trx, id)).status).toBe("triaged");
+      });
+    });
+
+    test("a mail stored after the backlog window is triaged", async () => {
+      await withRollback(db, async (trx) => {
+        const { ctx, mailboxId } = await resumedMailbox(trx, true);
+        const later = new Date(resumedAt.getTime() + 2 * 24 * 3_600_000);
+        const id = await insertTestEmail(trx, ctx, mailboxId, {
+          received_at: new Date(resumedAt.getTime() - hours(25)),
+          created_at: later,
+        });
+        const llm = fakeLlm();
+        await job(trx, llm, { kind: "all" }, later).run();
+        expect(llm.prompts).toHaveLength(1);
+        expect((await skipState(trx, id)).status).toBe("triaged");
+      });
     });
   });
 });

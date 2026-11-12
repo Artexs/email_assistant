@@ -29,6 +29,23 @@ function tooOld(daysAgo: number, overrides?: Record<string, unknown>) {
 }
 
 describe("requeueBackfillWindow", () => {
+  test("a suspended_backlog mail in the window stays skipped (A16)", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId };
+      const backlog = await insertTestEmail(trx, ctx, a.mailboxId, tooOld(10, { skip_reason: "suspended_backlog" }));
+
+      expect(await requeueBackfillWindow(trx, ctx, a.mailboxId, { since, now })).toBe(0);
+
+      const row = await trx
+        .selectFrom("emails")
+        .select(["status", "skip_reason", "backfilled_at"])
+        .where("id", "=", backlog)
+        .executeTakeFirstOrThrow();
+      expect(row).toEqual({ status: "skipped", skip_reason: "suspended_backlog", backfilled_at: null });
+    });
+  });
+
   test("re-queues only real too_old INBOX mail of the window, once", async () => {
     await withRollback(db, async (trx) => {
       const a = await createOrgWithMailbox(trx);

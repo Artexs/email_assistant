@@ -67,6 +67,7 @@ export interface ClaimedEmail {
   attempts: number;
   next_attempt_at: Date | null;
   backfilled_at: Date | null;
+  created_at: Date;
   received_at: Date;
   from_address: string | null;
   to_addresses: string[];
@@ -948,6 +949,7 @@ export async function claimEmails(
       "e.attempts",
       "e.next_attempt_at",
       "e.backfilled_at",
+      "e.created_at",
       "e.received_at",
       "e.from_address",
       "e.to_addresses",
@@ -997,7 +999,7 @@ export async function finishEmail(
   ctx: TenantContext,
   emailId: string,
   lockedAt: Date,
-  next: { status: "triaged" } | { status: "skipped"; skipReason: "too_old" }
+  next: { status: "triaged" } | { status: "skipped"; skipReason: "too_old" | "suspended_backlog" }
 ): Promise<boolean> {
   const result = await trx
     .updateTable("emails")

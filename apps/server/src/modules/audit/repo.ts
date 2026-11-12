@@ -127,21 +127,23 @@ export async function countLlmCallsSince(
   return Number(row.count);
 }
 
-// Rows of one event in the window `after < created_at <= until`.
+// Rows of one event in the window `after < created_at <= until`, optionally of one `reason_code`.
 export async function countEventsBetween(
   db: DbOrTrx,
   ctx: TenantContext,
   event: string,
-  range: { after: Date; until: Date }
+  range: { after: Date; until: Date },
+  opts?: { reasonCode?: string }
 ): Promise<number> {
-  const row = await db
+  let query = db
     .selectFrom("audit_log")
     .select((eb) => eb.fn.countAll<string>().as("count"))
     .where("org_id", "=", ctx.orgId)
     .where("event", "=", event)
     .where("created_at", ">", range.after)
-    .where("created_at", "<=", range.until)
-    .executeTakeFirstOrThrow();
+    .where("created_at", "<=", range.until);
+  if (opts?.reasonCode !== undefined) query = query.where("reason_code", "=", opts.reasonCode);
+  const row = await query.executeTakeFirstOrThrow();
   return Number(row.count);
 }
 
