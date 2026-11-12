@@ -134,6 +134,7 @@ describe("telegram logs", () => {
           hooks: noDelegationHooks,
           uidplus: async () => true,
           sendScope: { kind: "off" },
+          operatorContact: null,
           apiRoot: fake.apiRoot,
           botInfo: testBotInfo,
         });

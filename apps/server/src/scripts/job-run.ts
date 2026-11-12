@@ -55,6 +55,7 @@ async function main(): Promise<number> {
         hooks,
         uidplus,
         sendScope: sendScope(config),
+        operatorContact: null,
       });
       await runtime.notify();
     }

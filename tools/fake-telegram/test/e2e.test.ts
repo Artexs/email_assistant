@@ -48,6 +48,7 @@ test("link, urgent notice, digest and undo run against the fake, the DB and Gree
       hooks,
       uidplus: (uidCtx, mailboxId) => mailboxHasUidplus(trx, uidCtx, mailboxId),
       sendScope: { kind: "off" },
+      operatorContact: null,
       apiRoot: fake.apiRoot,
     });
     const committer = createCommitterJob({

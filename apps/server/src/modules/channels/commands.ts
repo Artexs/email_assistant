@@ -15,6 +15,7 @@ import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
+import { createLog } from "../../platform/log";
 import {
   countActionsSince,
   countApprovals,
@@ -28,12 +29,12 @@ import { getMailboxSettings } from "../config";
 import { countOpenDelegations } from "../delegation";
 import { countWaiting, listMailboxes, switchMailboxStatus, type MailboxSummary } from "../mail";
 import { buildDigestMessage, digestPeriodStart, WAITING_WINDOW_MS } from "../reports";
-import { getMembership, getOrganization } from "../tenancy";
+import { getMembership, getOrganization, isOrgSuspended } from "../tenancy";
 
 import { handleCallback } from "./callbacks";
 import { SYNC_LATE_MS } from "./notices";
 import type { CommandName, LinkedChat, UpdateHandlers } from "./port";
-import { helpText } from "./texts";
+import { accountPausedText, helpText } from "./texts";
 
 export interface CommandDeps {
   db: Db | Transaction<DB>;
@@ -45,7 +46,11 @@ export interface CommandDeps {
   hooks: DelegationHooks;
   uidplus(ctx: TenantContext, mailboxId: string): Promise<boolean>;
   sendScope: SendScope;
+  // Public contact address for the paused answer. null = "the operator".
+  operatorContact: string | null;
 }
+
+const log = createLog("channels");
 
 const ADDRESS_MAX = 60;
 
@@ -265,9 +270,19 @@ export function runCommand(deps: CommandDeps, link: LinkedChat, name: CommandNam
 
 export function createUpdateHandlers(deps: CommandDeps): UpdateHandlers {
   return {
-    command: (link, name) => runCommand(deps, link, name),
-    callback: (link, data) =>
-      handleCallback(
+    command: async (link, name) => {
+      if (name !== "help" && (await isOrgSuspended(deps.db, { orgId: link.orgId }))) {
+        log.info(`telegram: org ${link.orgId} suspended: ${name} refused`);
+        return { text: accountPausedText(deps.operatorContact), buttons: [] };
+      }
+      return runCommand(deps, link, name);
+    },
+    callback: async (link, data) => {
+      if (await isOrgSuspended(deps.db, { orgId: link.orgId })) {
+        log.info(`telegram: org ${link.orgId} suspended: tap refused`);
+        return { answer: accountPausedText(deps.operatorContact) };
+      }
+      return handleCallback(
         {
           db: deps.db,
           now: deps.now,
@@ -278,6 +293,7 @@ export function createUpdateHandlers(deps: CommandDeps): UpdateHandlers {
         },
         link,
         data
-      ),
+      );
+    },
   };
 }

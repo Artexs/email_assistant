@@ -68,6 +68,9 @@ const mailSync = createMailSyncJob({
 });
 const heartbeat = createHeartbeat({ url: config.HEARTBEAT_URL, checkDb: () => checkDb(db) });
 if (config.HEARTBEAT_URL === undefined) log.warn("HEARTBEAT_URL is not set: the heartbeat is off");
+if (config.WEB_BASE_URL !== undefined && config.OPERATOR_CONTACT === undefined) {
+  log.warn("OPERATOR_CONTACT is empty: the paused banner names no contact");
+}
 
 const scheduler = createScheduler();
 scheduler.add("mail.sync", "*/5 * * * *", mailSync.run);
@@ -174,6 +177,7 @@ if (config.TELEGRAM_BOT_TOKEN === undefined) {
     hooks,
     uidplus,
     sendScope: scopeOfSends,
+    operatorContact: config.OPERATOR_CONTACT ?? null,
   });
   telegram = runtime;
   scheduler.add("channels.notifier", "*/15 * * * * *", () => {

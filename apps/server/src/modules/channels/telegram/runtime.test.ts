@@ -11,6 +11,7 @@ function runtimeFor(apiRoot: string) {
     token: "123:abc",
     now: () => new Date(),
     startedAt: new Date(),
+    operatorContact: null,
     apiRoot,
   } as unknown as TelegramRuntimeDeps;
   return createTelegramRuntime(deps);

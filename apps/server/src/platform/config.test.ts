@@ -120,6 +120,13 @@ describe("loadConfig", () => {
     expect(configError({ ...fullEnv, TEST_MAILBOX_ADDRESS: "nope" }).keys).toContain("TEST_MAILBOX_ADDRESS");
   });
 
+  test("parses OPERATOR_CONTACT, treats empty as unset and rejects a non-address", () => {
+    expect(loadConfig({ ...fullEnv, OPERATOR_CONTACT: "ops@example.test" }).OPERATOR_CONTACT).toBe("ops@example.test");
+    expect(loadConfig({ ...fullEnv, OPERATOR_CONTACT: "" }).OPERATOR_CONTACT).toBeUndefined();
+    expect(loadConfig(fullEnv).OPERATOR_CONTACT).toBeUndefined();
+    expect(configError({ ...fullEnv, OPERATOR_CONTACT: "not-an-address" }).keys).toContain("OPERATOR_CONTACT");
+  });
+
   test("sets the LLM defaults with only the S1a keys", () => {
     const config = loadConfig(geminiEnv);
     expect(config.GEMINI_API_KEY).toBeUndefined();

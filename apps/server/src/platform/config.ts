@@ -126,6 +126,8 @@ const baseSchema = z.object({
     emptyAsUndefined,
     z.string().refine(isOrigin, "must be http(s)://host[:port] with no path, query or hash").optional()
   ),
+  // Public contact address shown in the paused banner and the paused Telegram answer. Empty = none.
+  OPERATOR_CONTACT: z.preprocess(emptyAsUndefined, z.string().regex(addressPattern).optional()),
   // Secret: never print or log it.
   WEB_AUTH_SECRET: z.preprocess(emptyAsUndefined, z.string().min(32).optional()),
   // Comma list of origins.

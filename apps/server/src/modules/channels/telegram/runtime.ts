@@ -51,6 +51,7 @@ export interface TelegramRuntimeDeps {
   hooks: DelegationHooks;
   uidplus(ctx: TenantContext, mailboxId: string): Promise<boolean>;
   sendScope: SendScope;
+  operatorContact: string | null;
   // Tests, and TELEGRAM_API_ROOT (loopback only, platform/config).
   apiRoot?: string;
   // Only for tests.
@@ -83,6 +84,7 @@ export function createTelegramRuntime(deps: TelegramRuntimeDeps): TelegramRuntim
         hooks: deps.hooks,
         uidplus: deps.uidplus,
         sendScope: deps.sendScope,
+        operatorContact: deps.operatorContact,
       }),
     },
     { botInfo: deps.botInfo, apiRoot: deps.apiRoot }

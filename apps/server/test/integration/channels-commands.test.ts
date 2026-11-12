@@ -16,7 +16,7 @@ import {
   type CommandDeps,
   type LinkedChat,
 } from "../../src/modules/channels";
-import { helpText } from "../../src/modules/channels/texts";
+import { accountPausedText, helpText } from "../../src/modules/channels/texts";
 import { insertDefaultSettings } from "../../src/modules/config";
 import { insertMailbox, listSyncTargets, markSynced, setMailboxStatus } from "../../src/modules/mail/repo";
 import { insertDigest, markDigestSent } from "../../src/modules/reports";
@@ -31,6 +31,7 @@ import {
   insertDraftAndSend,
   insertTestEmail,
   insertTriaged,
+  suspendOrg,
   testCapabilities,
 } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -59,6 +60,7 @@ function depsAt(trx: Transaction<DB>, now: Date, extra: Partial<CommandDeps> = {
     hooks: noDelegationHooks,
     uidplus: async () => true,
     sendScope: { kind: "off" },
+    operatorContact: null,
     ...extra,
   };
 }
@@ -543,6 +545,42 @@ describe("pauseMailboxes and resumeMailboxes", () => {
 
       expect((await mailboxRow(trx, b.mailboxId)).status).toBe("active");
       expect(await auditRows(trx, b.orgId, auditEvents.mailboxPaused)).toEqual([]);
+    });
+  });
+});
+
+describe("commands of a suspended organization", () => {
+  const CONTACT = "ops@example.test";
+  const mailboxRow = (trx: Transaction<DB>, id: string) =>
+    trx.selectFrom("mailboxes").select("status").where("id", "=", id).executeTakeFirstOrThrow();
+  const auditRows = (trx: Transaction<DB>, orgId: string, event: string) =>
+    trx.selectFrom("audit_log").select("id").where("org_id", "=", orgId).where("event", "=", event).execute();
+
+  test("every command except /help answers paused and changes nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, link } = await setup(trx);
+      await suspendOrg(trx, a.orgId);
+      const handlers = createUpdateHandlers(depsAt(trx, T, { operatorContact: CONTACT }));
+
+      for (const name of ["digest", "status", "pause", "resume"] as const) {
+        expect(await handlers.command(link, name)).toEqual({ text: accountPausedText(CONTACT), buttons: [] });
+      }
+      expect((await handlers.command(link, "pause")).text).toEndWith(`contact ${CONTACT}.`);
+      expect((await mailboxRow(trx, a.mailboxId)).status).toBe("active");
+      expect(await auditRows(trx, a.orgId, auditEvents.mailboxPaused)).toEqual([]);
+      expect(await handlers.command(link, "help")).toEqual(helpMessage());
+    });
+  });
+
+  test("without a contact the text names the operator", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, link } = await setup(trx);
+      await suspendOrg(trx, a.orgId);
+      const handlers = createUpdateHandlers(depsAt(trx, T));
+
+      expect((await handlers.command(link, "status")).text).toBe(
+        "⏸ This account is paused. Nothing changes now. To resume it, contact the operator."
+      );
     });
   });
 });
