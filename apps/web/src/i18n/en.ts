@@ -106,6 +106,7 @@ export const en = {
   preset_onet: "Onet",
   preset_wp: "WP",
   preset_o2: "o2",
+  preset_icloud: "iCloud",
   preset_other: "Other",
   help_interia: "Use your Interia password.",
   help_gmail:
@@ -113,7 +114,10 @@ export const en = {
   help_onet: "Turn on IMAP and SMTP in the Onet mail settings first (Mail settings → Main account).",
   help_wp: "With two-step login, create a password for mail programs in the account settings.",
   help_o2: "With two-step login, create a password for mail programs in the account settings.",
-  help_other: "Enter the IMAP and SMTP servers of your provider. Both must use SSL/TLS (as a rule ports 993 and 465).",
+  help_icloud:
+    "iCloud needs an app password: create one at account.apple.com (Sign-In and Security → App-Specific Passwords).",
+  help_other:
+    "Enter the IMAP and SMTP servers of your provider. IMAP must use SSL/TLS (as a rule port 993). SMTP uses SSL/TLS (port 465) or STARTTLS (port 587). The server certificate is always checked.",
   address_label: "E-mail address",
   mb_password_label: "Password",
   mb_app_password_label: "App password",
@@ -122,6 +126,9 @@ export const en = {
   imap_port_label: "IMAP port",
   smtp_host_label: "SMTP host",
   smtp_port_label: "SMTP port",
+  smtp_security_label: "SMTP security",
+  smtp_security_tls: "SSL/TLS (port 465)",
+  smtp_security_starttls: "STARTTLS (port 587)",
   connect_submit: "Connect",
   checking_login: "Checking the login… (up to a minute)",
   err_mail_login_failed: "The server refused the login. Check the address and the password.",

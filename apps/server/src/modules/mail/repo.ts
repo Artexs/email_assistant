@@ -3,6 +3,7 @@ import {
   syncFolderKeys,
   syncFolderRoles,
   type FolderKey,
+  type SmtpSecurity,
   type SyncFolderDefault,
   type SyncFolderKey,
   type SyncFolderRole,
@@ -46,8 +47,9 @@ export interface Cursor {
 
 export type MailboxRow = Omit<
   Selectable<DB["mailboxes"]>,
-  "uidvalidity" | "last_uid" | "capabilities" | "folder_map"
+  "uidvalidity" | "last_uid" | "capabilities" | "folder_map" | "smtp_security"
 > & {
+  smtp_security: SmtpSecurity;
   uidvalidity: number | null;
   last_uid: number | null;
   capabilities: MailCapabilities | Record<string, never>;
@@ -89,6 +91,7 @@ function toInt8(value: number | null): string | null {
 function toMailboxRow(row: Selectable<DB["mailboxes"]>): MailboxRow {
   return {
     ...row,
+    smtp_security: row.smtp_security === "starttls" ? "starttls" : "tls",
     uidvalidity: row.uidvalidity === null ? null : Number(row.uidvalidity),
     last_uid: row.last_uid === null ? null : Number(row.last_uid),
     capabilities: row.capabilities as MailCapabilities | Record<string, never>,
@@ -106,6 +109,8 @@ export async function insertMailbox(
     imapPort: number;
     smtpHost: string;
     smtpPort: number;
+    /** Left out: the column default `tls`. */
+    smtpSecurity?: SmtpSecurity;
     capabilities: MailCapabilities;
     folderMap: Record<string, string>;
   }
@@ -120,6 +125,7 @@ export async function insertMailbox(
       imap_port: input.imapPort,
       smtp_host: input.smtpHost,
       smtp_port: input.smtpPort,
+      smtp_security: input.smtpSecurity,
       capabilities: JSON.stringify(input.capabilities),
       folder_map: JSON.stringify(input.folderMap),
     })

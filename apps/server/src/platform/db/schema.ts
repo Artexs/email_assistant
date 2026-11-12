@@ -218,6 +218,7 @@ export interface Mailboxes {
   protocol: Generated<string>;
   smtp_host: string;
   smtp_port: number;
+  smtp_security: Generated<string>;
   status: Generated<string>;
   status_changed_at: Generated<Timestamp>;
   uidvalidity: Int8 | null;

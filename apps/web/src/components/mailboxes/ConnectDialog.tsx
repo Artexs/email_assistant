@@ -1,4 +1,4 @@
-import { connectMailboxBodySchema, connectResultSchema } from "@ea/core/web";
+import { connectMailboxBodySchema, connectResultSchema, type SmtpSecurity } from "@ea/core/web";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -9,6 +9,7 @@ import {
   initialConnectForm,
   onAddressChange,
   onProviderChange,
+  onSmtpSecurityChange,
   toConnectBody,
   type ConnectFormState,
   type ProviderChoice,
@@ -35,6 +36,7 @@ const providers = [
   ["onet", "preset_onet"],
   ["wp", "preset_wp"],
   ["o2", "preset_o2"],
+  ["icloud", "preset_icloud"],
   ["other", "preset_other"],
 ] as const satisfies readonly (readonly [ProviderChoice, TextKey])[];
 
@@ -44,6 +46,7 @@ const helpTexts = {
   onet: "help_onet",
   wp: "help_wp",
   o2: "help_o2",
+  icloud: "help_icloud",
   other: "help_other",
 } as const satisfies Record<ProviderChoice, TextKey>;
 
@@ -226,6 +229,22 @@ export function ConnectDialog({ open, onOpenChange, onConnected }: ConnectDialog
                 disabled={pending}
                 onChange={(value) => edit({ smtpPort: value })}
               />
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="connect-smtp-security">{t("smtp_security_label")}</Label>
+                <Select
+                  value={form.smtpSecurity}
+                  disabled={pending}
+                  onValueChange={(value) => setForm((state) => onSmtpSecurityChange(state, value as SmtpSecurity))}
+                >
+                  <SelectTrigger id="connect-smtp-security" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tls">{t("smtp_security_tls")}</SelectItem>
+                    <SelectItem value="starttls">{t("smtp_security_starttls")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </>
           )}
           {error !== null && (

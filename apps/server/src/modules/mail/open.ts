@@ -43,6 +43,7 @@ export async function openMailboxProvider(
     const sender = await deps.openSender({
       host: mailbox.smtp_host,
       port: mailbox.smtp_port,
+      security: mailbox.smtp_security,
       user: mailbox.address,
       password,
     });

@@ -6,6 +6,7 @@ import {
   initialConnectForm,
   onAddressChange,
   onProviderChange,
+  onSmtpSecurityChange,
   toConnectBody,
   type ConnectFormState,
 } from "./connect-form";
@@ -31,6 +32,7 @@ describe("connect form", () => {
       imapPort: "993",
       smtpHost: "",
       smtpPort: "465",
+      smtpSecurity: "tls",
     });
   });
 
@@ -66,6 +68,27 @@ describe("connect form", () => {
     const body = toConnectBody(other({ imapPort: "3143", smtpPort: "3025" }));
     expect(body).toMatchObject({ imapPort: 3143, smtpPort: 3025, imapHost: "imap.example.com" });
     expect(connectMailboxBodySchema.safeParse(body).success).toBe(true);
+  });
+
+  test("the iCloud address picks the iCloud preset with an app password", () => {
+    const state = onAddressChange(initialConnectForm(), "anna@icloud.com");
+    expect(state.provider).toBe("icloud");
+    expect(state.appPassword).toBe(true);
+    expect(toConnectBody(state)).toMatchObject({ preset: "icloud" });
+  });
+
+  test("the SMTP mode goes into the body of other; a default port follows the mode, a custom port stays", () => {
+    const starttls = onSmtpSecurityChange(other({}), "starttls");
+    expect(starttls).toMatchObject({ smtpSecurity: "starttls", smtpPort: "587" });
+    const body = toConnectBody(starttls);
+    expect(body).toMatchObject({ smtpPort: 587, smtpSecurity: "starttls" });
+    expect(connectMailboxBodySchema.safeParse(body).success).toBe(true);
+    expect(onSmtpSecurityChange(starttls, "tls").smtpPort).toBe("465");
+    expect(onSmtpSecurityChange(other({ smtpPort: "2525" }), "starttls").smtpPort).toBe("2525");
+  });
+
+  test("the body of a preset has no SMTP mode", () => {
+    expect("smtpSecurity" in (toConnectBody(onProviderChange(initialConnectForm(), "icloud")) as object)).toBe(false);
   });
 
   test("an empty SMTP port gives err_port", () => {

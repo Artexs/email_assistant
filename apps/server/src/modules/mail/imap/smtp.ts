@@ -1,3 +1,4 @@
+import type { SmtpSecurity } from "@ea/core";
 import { createTransport, type SMTPTransportOptions } from "nodemailer";
 import SMTPConnection, { type SMTPConnectionOptions } from "nodemailer/lib/smtp-connection";
 
@@ -16,12 +17,31 @@ export interface SmtpConnectOptions {
   port: number;
   user: string;
   password: string;
+  /** `tls` (the default) = implicit TLS. `starttls` = start plain, then STARTTLS is required (port 587). */
+  security?: SmtpSecurity;
+  /** Only `false` to a loopback host (local test server): plain SMTP, no TLS. It must not be set with `starttls`. */
   secure?: boolean;
+  /** Extra trusted CA certificate (PEM). It adds trust for a private server; it never turns the check off. */
+  ca?: string;
   timeoutMs?: number;
 }
 
-/** TLS certificates are always checked: this never sets `tls`, so no option can turn the check off. */
+/** TLS certificates are always checked: no option sets `rejectUnauthorized`, so none can turn the check off. */
 export function smtpTransportOptions(opts: SmtpConnectOptions): SMTPTransportOptions {
+  const tlsCheck = opts.ca === undefined ? {} : { tls: { ca: opts.ca } };
+  if (opts.security === "starttls") {
+    if (opts.secure !== undefined) throw new HardError("secure cannot be set with STARTTLS");
+    // `requireTLS` ends the connection when the server offers no STARTTLS: the password never goes out in plain text.
+    return {
+      host: opts.host,
+      port: opts.port,
+      secure: false,
+      requireTLS: true,
+      auth: { user: opts.user, pass: opts.password },
+      ...timeoutOptions(opts),
+      ...tlsCheck,
+    };
+  }
   const secure = opts.secure ?? !isLoopbackHost(opts.host);
   if (!secure && !isLoopbackHost(opts.host)) {
     throw new HardError("plain SMTP is allowed only to a loopback host");
@@ -31,11 +51,16 @@ export function smtpTransportOptions(opts: SmtpConnectOptions): SMTPTransportOpt
     port: opts.port,
     secure,
     auth: { user: opts.user, pass: opts.password },
-    ...(opts.timeoutMs === undefined
-      ? {}
-      : { connectionTimeout: opts.timeoutMs, greetingTimeout: opts.timeoutMs, socketTimeout: opts.timeoutMs }),
+    ...timeoutOptions(opts),
     ...(secure ? {} : { ignoreTLS: true }),
+    ...tlsCheck,
   };
+}
+
+function timeoutOptions(opts: SmtpConnectOptions): SMTPTransportOptions {
+  return opts.timeoutMs === undefined
+    ? {}
+    : { connectionTimeout: opts.timeoutMs, greetingTimeout: opts.timeoutMs, socketTimeout: opts.timeoutMs };
 }
 
 /** Maps a nodemailer error to a typed error. The message never holds the password; the original is the `cause`. */

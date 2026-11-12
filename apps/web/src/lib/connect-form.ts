@@ -1,4 +1,4 @@
-import { MAIL_PRESETS, presetForAddress, type PresetKey } from "@ea/core/web";
+import { MAIL_PRESETS, presetForAddress, type PresetKey, type SmtpSecurity } from "@ea/core/web";
 
 import type { TextKey } from "../i18n/en";
 
@@ -14,6 +14,7 @@ export interface ConnectFormState {
   imapPort: string;
   smtpHost: string;
   smtpPort: string;
+  smtpSecurity: SmtpSecurity;
 }
 
 const appPasswordFor = (provider: ProviderChoice) =>
@@ -30,6 +31,7 @@ export function initialConnectForm(): ConnectFormState {
     imapPort: "993",
     smtpHost: "",
     smtpPort: "465",
+    smtpSecurity: "tls",
   };
 }
 
@@ -44,6 +46,15 @@ export function onProviderChange(state: ConnectFormState, provider: ProviderChoi
   return { ...state, provider, providerTouched: true, appPassword: appPasswordFor(provider) };
 }
 
+const defaultSmtpPort: Record<SmtpSecurity, string> = { tls: "465", starttls: "587" };
+
+/** Picks the SMTP mode. A port that still holds the default of the other mode follows the new mode. */
+export function onSmtpSecurityChange(state: ConnectFormState, smtpSecurity: SmtpSecurity): ConnectFormState {
+  const other: SmtpSecurity = smtpSecurity === "tls" ? "starttls" : "tls";
+  const smtpPort = state.smtpPort.trim() === defaultSmtpPort[other] ? defaultSmtpPort[smtpSecurity] : state.smtpPort;
+  return { ...state, smtpSecurity, smtpPort };
+}
+
 export function toConnectBody(state: ConnectFormState): unknown {
   const secretKind = state.appPassword ? "app_password" : "password";
   const address = state.address.trim();
@@ -56,6 +67,7 @@ export function toConnectBody(state: ConnectFormState): unknown {
     imapPort: Number(state.imapPort.trim() === "" ? Number.NaN : state.imapPort.trim()),
     smtpHost: state.smtpHost.trim(),
     smtpPort: Number(state.smtpPort.trim() === "" ? Number.NaN : state.smtpPort.trim()),
+    smtpSecurity: state.smtpSecurity,
   };
 }
 

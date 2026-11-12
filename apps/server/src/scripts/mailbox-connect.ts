@@ -21,6 +21,7 @@ const usage = [
   "usage: read -rs P && printf '%s' \"$P\" | bun run mailbox:connect --org-id <uuid> --address <email>",
   "  [--secret-kind password|app_password (default password)]",
   "  [--imap-host poczta.interia.pl] [--imap-port 993] [--smtp-host poczta.interia.pl] [--smtp-port 465]",
+  "  [--smtp-security tls|starttls (default tls; starttls is for SMTP port 587)]",
   "The password comes only from stdin, never from an argument.",
 ].join("\n");
 
@@ -45,6 +46,7 @@ function readOptions() {
         "imap-port": { type: "string", default: "993" },
         "smtp-host": { type: "string", default: "poczta.interia.pl" },
         "smtp-port": { type: "string", default: "465" },
+        "smtp-security": { type: "string", default: "tls" },
       },
       strict: true,
     });
@@ -53,6 +55,8 @@ function readOptions() {
     const secretKind = values["secret-kind"];
     if (orgId === undefined || address === undefined) return undefined;
     if (secretKind !== "password" && secretKind !== "app_password") return undefined;
+    const smtpSecurity = values["smtp-security"];
+    if (smtpSecurity !== "tls" && smtpSecurity !== "starttls") return undefined;
     if (!z.uuid().safeParse(orgId).success) return undefined;
     return {
       orgId,
@@ -62,6 +66,7 @@ function readOptions() {
       imapPort: Number(values["imap-port"]),
       smtpHost: values["smtp-host"],
       smtpPort: Number(values["smtp-port"]),
+      smtpSecurity,
     } as const;
   } catch {
     return undefined;

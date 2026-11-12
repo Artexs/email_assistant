@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { AI_FOLDER_NAMES } from "@ea/core";
+import { AI_FOLDER_NAMES, smtpSecurities, type SmtpSecurity } from "@ea/core";
 import type { Transaction } from "kysely";
 import { z } from "zod";
 
@@ -54,6 +54,7 @@ const connectInputSchema = z.object({
   imapPort: port,
   smtpHost: host,
   smtpPort: port,
+  smtpSecurity: z.enum(smtpSecurities).default("tls"),
 });
 
 export interface ConnectInput {
@@ -64,6 +65,8 @@ export interface ConnectInput {
   imapPort: number;
   smtpHost: string;
   smtpPort: number;
+  /** Defaults to `tls`. `starttls` is for port 587. */
+  smtpSecurity?: SmtpSecurity;
 }
 
 export interface ConnectDeps {
@@ -151,6 +154,7 @@ export async function connectMailbox(
     deps.verifySmtp({
       host: valid.smtpHost,
       port: valid.smtpPort,
+      security: valid.smtpSecurity,
       user: valid.address,
       password: valid.password,
       timeoutMs: timeouts?.socketMs,
@@ -175,6 +179,7 @@ export async function connectMailbox(
       imapPort: valid.imapPort,
       smtpHost: valid.smtpHost,
       smtpPort: valid.smtpPort,
+      smtpSecurity: valid.smtpSecurity,
       capabilities: info.capabilities,
       folderMap: buildFolderMap(info.folders),
     });
@@ -232,6 +237,7 @@ export async function updateMailboxPassword(
     deps.verifySmtp({
       host: mailbox.smtp_host,
       port: mailbox.smtp_port,
+      security: mailbox.smtp_security,
       user: mailbox.address,
       password,
       timeoutMs: timeouts?.socketMs,

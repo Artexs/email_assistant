@@ -1,4 +1,4 @@
-import { presetKeys, type PresetKey } from "../mail/providers";
+import { presetKeys, smtpSecurities, type PresetKey, type SmtpSecurity } from "../mail/providers";
 import { mailboxModes } from "../triage/categories";
 
 import { z } from "./zod";
@@ -24,6 +24,7 @@ export interface ConnectMailboxBody {
   imapPort?: number;
   smtpHost?: string;
   smtpPort?: number;
+  smtpSecurity?: SmtpSecurity;
 }
 
 export const connectMailboxBodySchema: z.ZodType<ConnectMailboxBody> = z
@@ -36,8 +37,12 @@ export const connectMailboxBodySchema: z.ZodType<ConnectMailboxBody> = z
     imapPort: portSchema.optional(),
     smtpHost: hostSchema.optional(),
     smtpPort: portSchema.optional(),
+    smtpSecurity: z.enum(smtpSecurities).optional(),
   })
   .superRefine((body, ctx) => {
+    if (body.preset !== undefined && body.smtpSecurity !== undefined) {
+      ctx.addIssue({ code: "custom", message: "not_with_preset", path: ["smtpSecurity"] });
+    }
     for (const field of serverFieldNames) {
       const present = body[field] !== undefined;
       if (body.preset !== undefined && present) {

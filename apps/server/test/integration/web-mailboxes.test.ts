@@ -325,6 +325,27 @@ describe("mailbox routes", () => {
     expect(rows[0]?.data).toEqual({ mailbox_id: result.id, via: "web" });
   });
 
+  test("connect by the iCloud preset: SMTP on 587 with STARTTLS, stored on the row", async () => {
+    const { org, app, smtpCalls } = await setup();
+    const res = await app.request(
+      "/api/mailboxes",
+      as("owner", {
+        method: "POST",
+        body: { address: "anna@icloud.com", password: "s3cret pass", secretKind: "app_password", preset: "icloud" },
+      })
+    );
+    expect(res.status).toBe(201);
+    const result = connectResultSchema.parse(await res.json());
+    expect(smtpCalls[0]).toMatchObject({ host: "smtp.mail.me.com", port: 587, security: "starttls" });
+    const row = await db
+      .selectFrom("mailboxes")
+      .select("smtp_security")
+      .where("id", "=", result.id)
+      .where("org_id", "=", org.orgId)
+      .executeTakeFirstOrThrow();
+    expect(row.smtp_security).toBe("starttls");
+  });
+
   test("connect with local hosts: refused before any login unless allowed", async () => {
     const other = {
       address: "local@x.test",
