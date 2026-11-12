@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-12
+landed: 2026-11-12
 ---
 
 # F083 · Retention and review minors of the S6a group review are fixed: stuck rows, delegation task text, backfilled mail body
