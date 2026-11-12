@@ -10,3 +10,7 @@ export const UNNOTIFIED_TTL_MS = 7 * 24 * 3_600_000;
 // S3 D7: a hard error is tried 3 times; a retry waits 5 min. Kept apart from apply.ts: drafts.ts and send.ts import them.
 export const HARD_ERROR_TRIES = 3;
 export const RETRY_WAIT_MS = 5 * 60_000;
+
+// F044: a send that gets only soft errors before the content ends as `failed` / `smtp_error` this long after the tap.
+// Shorter than APPROVAL_TTL_MS (`held_timeout`), so the user learns sooner. It does not touch a retry with a count.
+export const SEND_SOFT_CAP_MS = 6 * 3_600_000;
