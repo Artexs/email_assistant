@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-09
+landed: 2026-11-12
 ---
 
 # F059 · Store web reset tokens hashed
