@@ -10,6 +10,7 @@ export * from "./password";
 export * from "./rules";
 export * from "./settings";
 export * from "./telegram";
+export * from "./terms";
 export * from "../mail/providers";
 export { UNDO_TEXTS, rightAnswer, pickedText, pickAnswer, type UndoAnswerKind } from "../digest/answers";
 export { categoryLabels, categoryTag } from "../digest/labels";

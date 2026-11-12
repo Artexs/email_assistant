@@ -21,6 +21,7 @@ const me = {
   mailboxCount: 1,
   mailboxesInAuthError: 0,
   digestTimes: ["08:00"],
+  terms: { accepted: false, current: "2026-11-12" },
 };
 
 describe("scopeInfoOf", () => {
@@ -43,6 +44,10 @@ describe("meSchema", () => {
     const trial = { ...me.organization, plan: "trial", trialEndsAt: "2026-12-01T00:00:00.000Z" };
     expect(meSchema.safeParse({ ...me, organization: trial, operatorContact: "ops@example.test" }).success).toBe(true);
     expect(meSchema.safeParse({ ...me, organization: { ...me.organization, plan: "gold" } }).success).toBe(false);
+  });
+
+  test("refuses an object without terms", () => {
+    expect(meSchema.safeParse({ ...me, terms: undefined }).success).toBe(false);
   });
 
   test("refuses an object without operatorContact", () => {

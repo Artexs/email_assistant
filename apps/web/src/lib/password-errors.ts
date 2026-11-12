@@ -21,6 +21,16 @@ export function changePasswordError(
   return { field: null, key: "error_generic" };
 }
 
+// Maps a failed password-set request (`setPasswordWithTerms`) to a text, or to "invalid" when the link is dead.
+export function setupError(status: number, code: string | null): "invalid" | TextKey {
+  if (code === "INVALID_TOKEN") return "invalid";
+  if (status === 429) return "error_too_many";
+  if (code === "TERMS_REQUIRED") return "terms_required";
+  if (code === "PASSWORD_COMPROMISED") return "password_pwned";
+  if (status === 503 || code === "PASSWORD_CHECK_UNAVAILABLE") return "password_check_unavailable";
+  return "error_generic";
+}
+
 export type SignOutAllResult = { done: true } | { done: false; key: TextKey };
 
 // Decides what follows `revokeSessions`: a 401 means the session is already gone, so the user may go to login.

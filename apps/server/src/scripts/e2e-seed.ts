@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
+import { TERMS_VERSION } from "@ea/core";
 import { Client } from "pg";
 
 import { insertDefaultSettings } from "../modules/config";
@@ -13,7 +14,7 @@ import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 import { createLog } from "../platform/log";
-import { auditWebEvent } from "../web";
+import { auditWebEvent, termsAcceptedHandler } from "../web";
 
 import { seedOtherOrgMail } from "./e2e-activity-rows";
 import {
@@ -100,6 +101,7 @@ async function main(): Promise<number> {
       secret,
       trustedOrigins: [baseUrl, ...webTrustedOrigins(config)],
       onEvent: auditWebEvent(db),
+      onTermsAccepted: termsAcceptedHandler(db, () => new Date()),
       resetLinkTtlSeconds: 86_400,
       sendResetPassword: async (reset) => {
         resets.push(reset);
@@ -206,13 +208,19 @@ async function main(): Promise<number> {
         return url;
       };
 
+      // Every password set carries the current terms (F082 L16): the seeded users have accepted them.
+      const setPassword = async (newPassword: string, token: string): Promise<void> => {
+        const body = { newPassword, token, termsVersion: TERMS_VERSION };
+        await handle.auth.api.resetPassword({ body });
+      };
+
       const ownerLink = await requestLink(E2E_OWNER_EMAIL);
       const token = new URL(ownerLink).pathname.split("/").pop() ?? "";
-      await handle.auth.api.resetPassword({ body: { newPassword: E2E_OWNER_PASSWORD, token } });
+      await setPassword(E2E_OWNER_PASSWORD, token);
 
       for (const email of [E2E_TRIAL_OWNER_EMAIL, E2E_PAUSED_OWNER_EMAIL]) {
         const planToken = new URL(await requestLink(email)).pathname.split("/").pop() ?? "";
-        await handle.auth.api.resetPassword({ body: { newPassword: E2E_OWNER_PASSWORD, token: planToken } });
+        await setPassword(E2E_OWNER_PASSWORD, planToken);
       }
 
       const assistants = {} as SeedFile["assistants"];
@@ -225,7 +233,7 @@ async function main(): Promise<number> {
       for (const project of E2E_PROJECTS) {
         const email = E2E_MEMBER_EMAILS[project];
         const memberToken = new URL(await requestLink(email)).pathname.split("/").pop() ?? "";
-        await handle.auth.api.resetPassword({ body: { newPassword: E2E_MEMBER_PASSWORD, token: memberToken } });
+        await setPassword(E2E_MEMBER_PASSWORD, memberToken);
         members[project] = { userId: memberIds[project], email, password: E2E_MEMBER_PASSWORD };
       }
 
@@ -233,7 +241,7 @@ async function main(): Promise<number> {
       for (const project of E2E_PROJECTS) {
         const email = E2E_ACTIVITY_MEMBER_EMAILS[project];
         const activityToken = new URL(await requestLink(email)).pathname.split("/").pop() ?? "";
-        await handle.auth.api.resetPassword({ body: { newPassword: E2E_MEMBER_PASSWORD, token: activityToken } });
+        await setPassword(E2E_MEMBER_PASSWORD, activityToken);
         activityMembers[project] = { userId: activityIds[project], email, password: E2E_MEMBER_PASSWORD };
       }
 

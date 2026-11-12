@@ -7,6 +7,8 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { t, type TextKey } from "../i18n/en";
 import { authClient } from "../lib/auth-client";
+import { setPasswordWithTerms } from "../lib/auth-requests";
+import { setupError } from "../lib/password-errors";
 
 type Mode = "form" | "invalid" | "missing";
 type Field = "email" | "password" | "repeat";
@@ -51,14 +53,12 @@ export default function SetupPage() {
     setError(null);
     setPending(true);
     try {
-      const { error: resetError } = await authClient.resetPassword({ newPassword: password, token });
-      if (resetError !== null && resetError !== undefined) {
-        if (resetError.code === "INVALID_TOKEN") setMode("invalid");
-        else if (resetError.status === 429) setError("error_too_many");
-        else if (resetError.code === "PASSWORD_COMPROMISED") setFieldErrors({ password: "password_pwned" });
-        else if (resetError.status === 503 || resetError.code === "PASSWORD_CHECK_UNAVAILABLE") {
-          setError("password_check_unavailable");
-        } else setError("error_generic");
+      const result = await setPasswordWithTerms({ newPassword: password, token });
+      if (!result.ok) {
+        const key = setupError(result.status, result.code);
+        if (key === "invalid") setMode("invalid");
+        else if (key === "password_pwned") setFieldErrors({ password: key });
+        else setError(key);
         setPending(false);
         return;
       }

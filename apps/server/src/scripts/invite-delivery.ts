@@ -5,7 +5,7 @@ import { createAuthMailer } from "../platform/auth-mail";
 import { authMailSettings, type Config, webTrustedOrigins } from "../platform/config";
 import type { Db } from "../platform/db";
 import type { createLog } from "../platform/log";
-import { auditWebEvent } from "../web";
+import { auditWebEvent, termsAcceptedHandler } from "../web";
 
 export interface InviteDeliveryInput {
   /** WEB_BASE_URL and WEB_AUTH_SECRET are checked by the caller. */
@@ -37,6 +37,7 @@ export async function deliverInvite(input: InviteDeliveryInput): Promise<number>
     secret,
     trustedOrigins: [baseUrl, ...webTrustedOrigins(config)],
     onEvent: auditWebEvent(db),
+    onTermsAccepted: termsAcceptedHandler(db, () => new Date()),
     resetLinkTtlSeconds: 86_400,
     sendResetPassword: async ({ url }) => {
       link = url;

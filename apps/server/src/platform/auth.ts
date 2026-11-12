@@ -1,3 +1,4 @@
+import { TERMS_VERSION } from "@ea/core";
 import { betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware, isAPIError } from "better-auth/api";
 import { Pool } from "pg";
@@ -28,6 +29,8 @@ export interface AuthDeps {
   lockout?: LockoutStore;
   // Never throws, never awaited.
   sendLockoutMail?: (input: { userId: string; email: string }) => void;
+  // Records the accepted terms of a user after a password reset. Required; never throws into Better Auth.
+  onTermsAccepted: (userId: string, version: string) => Promise<void>;
   // Absent = no check (the CLIs and the tests that do not test it). Never rejects.
   pwnedCheck?: (password: string) => Promise<PwnedResult>;
 }
@@ -115,6 +118,7 @@ export function onAuthError(error: unknown): void {
 }
 
 const SIGN_IN_PATH = "/sign-in/email";
+const RESET_PASSWORD_PATH = "/reset-password";
 const NEW_PASSWORD_PATHS: ReadonlySet<string> = new Set(["/reset-password", "/change-password"]);
 const MIN_PASSWORD_LENGTH = 12;
 const MAX_PASSWORD_LENGTH = 128;
@@ -144,6 +148,14 @@ async function rejectLockedSignIn(ctx: HookContext, lockout: LockoutStore, now: 
   if (found && (await lockout.isLocked(found.user.id, now()))) {
     await ctx.context.password.hash(body.password);
     throw APIError.from("UNAUTHORIZED", { code: "INVALID_EMAIL_OR_PASSWORD", message: "Invalid email or password" });
+  }
+}
+
+// L16: no password is set without the current terms. This check runs before the leaked-password check: no outside call without the terms.
+function rejectMissingTerms(ctx: HookContext): void {
+  const version = (ctx.body as { termsVersion?: unknown } | undefined)?.termsVersion;
+  if (version !== TERMS_VERSION) {
+    throw APIError.from("BAD_REQUEST", { code: "TERMS_REQUIRED", message: "Accept the terms first." });
   }
 }
 
@@ -241,6 +253,12 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
         } catch (error) {
           log.error(`web: lockout clear failed: ${describeError(error)}`);
         }
+        // The `before` hook proved that the request held the current version (the body is not readable here).
+        try {
+          await deps.onTermsAccepted(user.id, TERMS_VERSION);
+        } catch (error) {
+          log.error(`web: terms record failed for user ${user.id}: ${describeError(error)}`);
+        }
       },
     },
     user: {
@@ -313,6 +331,7 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
         if (ctx.path === SIGN_IN_PATH && deps.lockout) {
           await rejectLockedSignIn(ctx, deps.lockout, now);
         }
+        if (ctx.path === RESET_PASSWORD_PATH) rejectMissingTerms(ctx);
         if (NEW_PASSWORD_PATHS.has(ctx.path) && deps.pwnedCheck) {
           await rejectLeakedPassword(ctx, deps.pwnedCheck);
         }

@@ -3,6 +3,8 @@ import {
   orgPlanSchema,
   organizationPatchSchema,
   parseDigestTimes,
+  TERMS_VERSION,
+  termsAcceptBodySchema,
   type Me,
   type Onboarding,
   type OrganizationSettings,
@@ -12,8 +14,9 @@ import { Hono } from "hono";
 
 import type { Db, TenantContext } from "../../platform/db";
 import { parseBody, requireOwner, ValidationError, type ApiEnv } from "../../platform/http";
+import { auditEvents, recordAudit } from "../audit";
 
-import { getMembership, getOrganization, setDigestTimes } from "./repo";
+import { getMembership, getOrganization, getUserAuthProfile, setDigestTimes, setUserTerms } from "./repo";
 import { organizationView, updateOrganizationSettings } from "./service";
 
 export interface TenancyRouteDeps {
@@ -41,6 +44,7 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
     if (!organization || !member) return c.json({ error: "not_found" }, 404);
     const mailboxes = await deps.countMailboxes(ctx);
     const [onboarding, telegram] = await Promise.all([deps.onboarding(ctx, userId), deps.telegram(ctx, userId)]);
+    const profile = await getUserAuthProfile(deps.db, userId);
     const organizationPlan = orgPlanSchema.parse(organization.plan);
     const me: Me = {
       user: { id: userId, email: member.email, displayName: member.display_name },
@@ -60,6 +64,7 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
       mailboxCount: mailboxes.total,
       mailboxesInAuthError: mailboxes.inAuthError,
       digestTimes: parseDigestTimes(member.digest_times),
+      terms: { accepted: profile?.termsVersion === TERMS_VERSION, current: TERMS_VERSION },
     };
     return c.json(me);
   });
@@ -92,6 +97,24 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
       return c.json({ error: "not_found" }, 404);
     }
     return c.json({ times });
+  });
+
+  // L17: any member accepts the current terms; an old version answers 409 so the dialog reloads.
+  app.post("/me/terms", async (c) => {
+    const body = await parseBody(c, termsAcceptBodySchema);
+    if (body.version !== TERMS_VERSION) return c.json({ error: "terms_outdated" }, 409);
+    const ctx = c.get("ctx");
+    const { userId } = c.get("session");
+    const at = deps.now();
+    await deps.db.transaction().execute(async (trx) => {
+      await setUserTerms(trx, userId, TERMS_VERSION, at);
+      await recordAudit(trx, ctx, {
+        event: auditEvents.webTermsAccepted,
+        actor: userId,
+        data: { via: "web", version: TERMS_VERSION },
+      });
+    });
+    return c.body(null, 204);
   });
 
   // D15: keep shadow mode once; a second call writes nothing and answers 204 too.

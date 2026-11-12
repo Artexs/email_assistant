@@ -1,11 +1,20 @@
 import { randomUUID } from "node:crypto";
 
+import { TERMS_VERSION } from "@ea/core";
 import type { Hono } from "hono";
 
 import { createOrganizationWithOwner, listMembershipsOfUser } from "../../src/modules/tenancy";
 import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
 import type { Db } from "../../src/platform/db";
 import { buildTrustedProxies, createApp, type ApiEnv, type WebDeps } from "../../src/platform/http";
+
+// The body of a password set: every `/reset-password` call carries the current terms (F082 L16).
+export function resetBody(
+  newPassword: string,
+  token: string
+): { newPassword: string; token: string; termsVersion: string } {
+  return { newPassword, token, termsVersion: TERMS_VERSION };
+}
 
 export const TEST_ORIGIN = "http://127.0.0.1:8080";
 

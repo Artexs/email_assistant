@@ -49,6 +49,7 @@ export const en = {
   password_too_short: "At least 12 characters.",
   password_too_long: "At most 128 characters.",
   password_pwned: "This password is in a list of leaked passwords. Choose another one.",
+  terms_required: "Accept the terms to continue.",
   password_check_unavailable: "We cannot check the password now. Try again in a few minutes.",
   passwords_differ: "The passwords do not match.",
   email_invalid: "Enter a valid e-mail address.",

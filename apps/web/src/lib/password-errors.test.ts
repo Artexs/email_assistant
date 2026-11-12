@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { changePasswordError, signOutAllResult } from "./password-errors";
+import { changePasswordError, setupError, signOutAllResult } from "./password-errors";
 
 describe("changePasswordError", () => {
   test("no error gives null", () => {
@@ -68,5 +68,29 @@ describe("signOutAllResult", () => {
     expect(signOutAllResult({ status: 429 })).toEqual({ done: false, key: "error_too_many" });
     expect(signOutAllResult({ status: 500 })).toEqual({ done: false, key: "error_generic" });
     expect(signOutAllResult({})).toEqual({ done: false, key: "error_generic" });
+  });
+});
+
+describe("setupError", () => {
+  test("INVALID_TOKEN means the link is dead", () => {
+    expect(setupError(400, "INVALID_TOKEN")).toBe("invalid");
+  });
+
+  test("429 is too many attempts, also with a code", () => {
+    expect(setupError(429, null)).toBe("error_too_many");
+    expect(setupError(429, "TERMS_REQUIRED")).toBe("error_too_many");
+  });
+
+  test("TERMS_REQUIRED, PASSWORD_COMPROMISED and the check outage have their texts", () => {
+    expect(setupError(400, "TERMS_REQUIRED")).toBe("terms_required");
+    expect(setupError(400, "PASSWORD_COMPROMISED")).toBe("password_pwned");
+    expect(setupError(503, "PASSWORD_CHECK_UNAVAILABLE")).toBe("password_check_unavailable");
+    expect(setupError(503, null)).toBe("password_check_unavailable");
+    expect(setupError(400, "PASSWORD_CHECK_UNAVAILABLE")).toBe("password_check_unavailable");
+  });
+
+  test("any other error is generic", () => {
+    expect(setupError(500, null)).toBe("error_generic");
+    expect(setupError(400, "SOMETHING_ELSE")).toBe("error_generic");
   });
 });

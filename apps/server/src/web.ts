@@ -23,6 +23,7 @@ import {
   getUserAuthProfile,
   isOrgSuspended,
   listMembershipsOfUser,
+  setUserTerms,
   tenancyRoutes,
   type TenancyRouteDeps,
 } from "./modules/tenancy";
@@ -71,6 +72,27 @@ export function auditWebEvent(db: Db): AuthDeps["onEvent"] {
       );
     } catch (error) {
       log.error(`web: audit ${kind} failed: ${describeError(error)}`);
+    }
+  };
+}
+
+// L16: the accepted terms and their audit row go in one transaction, in the user's oldest organization. It never throws.
+export function termsAcceptedHandler(db: Db, now: () => Date): AuthDeps["onTermsAccepted"] {
+  return async (userId, version) => {
+    try {
+      const [membership] = await listMembershipsOfUser(db, userId);
+      await db.transaction().execute(async (trx) => {
+        await setUserTerms(trx, userId, version, now());
+        if (membership) {
+          await recordAudit(
+            trx,
+            { orgId: membership.org_id },
+            { event: auditEvents.webTermsAccepted, actor: userId, data: { via: "web", version } }
+          );
+        }
+      });
+    } catch (error) {
+      log.error(`web: terms record failed for user ${userId}: ${describeError(error)}`);
     }
   };
 }
@@ -293,6 +315,7 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     secret: config.WEB_AUTH_SECRET ?? "", // the config check guarantees it
     trustedOrigins: origins,
     onEvent: auditWebEvent(db),
+    onTermsAccepted: termsAcceptedHandler(db, () => new Date()),
     resetLinkTtlSeconds: 3_600,
     lockout: createLockoutStore(db),
     ...(config.AUTH_PWNED_CHECK === "on"

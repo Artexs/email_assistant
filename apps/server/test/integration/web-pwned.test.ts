@@ -7,9 +7,10 @@ import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { createAuth, type AuthHandle } from "../../src/platform/auth";
 import { setLogLevel } from "../../src/platform/log";
 import type { PwnedResult } from "../../src/platform/pwned";
-import { auditWebEvent } from "../../src/web";
+import { auditWebEvent, termsAcceptedHandler } from "../../src/web";
 
 import { testDb } from "./helpers";
+import { resetBody } from "./web-helpers";
 
 const db = testDb();
 
@@ -29,6 +30,7 @@ const makeHandle = (withCheck: boolean): AuthHandle =>
     secret: "x".repeat(40),
     trustedOrigins: [BASE_URL],
     onEvent: auditWebEvent(db),
+    onTermsAccepted: termsAcceptedHandler(db, () => new Date()),
     resetLinkTtlSeconds: 3_600,
     sendResetPassword: async (input) => {
       resets.push(input);
@@ -122,7 +124,7 @@ async function createOwner() {
   orgIds.push(orgId);
   userIds.push(userId);
   const token = await resetToken(email);
-  await handle.auth.api.resetPassword({ body: { newPassword: PASSWORD, token } });
+  await handle.auth.api.resetPassword({ body: resetBody(PASSWORD, token) });
   checked.length = 0;
   return { email, userId };
 }
@@ -138,12 +140,12 @@ describe("leaked-password check", () => {
   test("a reset with a listed password is refused; the old password works; the token still works", async () => {
     const { email } = await createOwner();
     const token = await resetToken(email);
-    const refused = await post(handle, "reset-password", { newPassword: LISTED, token });
+    const refused = await post(handle, "reset-password", resetBody(LISTED, token));
     expect(refused.status).toBe(400);
     expect(await code(refused)).toBe("PASSWORD_COMPROMISED");
     expect((await signIn(email, PASSWORD)).status).toBe(200);
     expect((await signIn(email, LISTED)).status).toBe(401);
-    const accepted = await post(handle, "reset-password", { newPassword: GOOD, token });
+    const accepted = await post(handle, "reset-password", resetBody(GOOD, token));
     expect(accepted.status).toBe(200);
     expect((await signIn(email, GOOD)).status).toBe(200);
   });
@@ -166,7 +168,7 @@ describe("leaked-password check", () => {
     const { email } = await createOwner();
     const token = await resetToken(email);
     verdict = () => "unavailable";
-    const answer = await post(handle, "reset-password", { newPassword: GOOD, token });
+    const answer = await post(handle, "reset-password", resetBody(GOOD, token));
     expect(answer.status).toBe(503);
     expect(await code(answer)).toBe("PASSWORD_CHECK_UNAVAILABLE");
     expect((await signIn(email, PASSWORD)).status).toBe(200);
@@ -176,7 +178,7 @@ describe("leaked-password check", () => {
   test("a 5-character password is refused as too short and the check is not called", async () => {
     const { email } = await createOwner();
     const token = await resetToken(email);
-    const answer = await post(handle, "reset-password", { newPassword: "short", token });
+    const answer = await post(handle, "reset-password", resetBody("short", token));
     expect(answer.status).toBe(400);
     expect(await code(answer)).toBe("PASSWORD_TOO_SHORT");
     expect(checked).toEqual([]);
@@ -185,7 +187,7 @@ describe("leaked-password check", () => {
   test("a good password reaches the check once and is accepted", async () => {
     const { email } = await createOwner();
     const token = await resetToken(email);
-    const answer = await post(handle, "reset-password", { newPassword: GOOD, token });
+    const answer = await post(handle, "reset-password", resetBody(GOOD, token));
     expect(answer.status).toBe(200);
     expect(checked).toEqual([GOOD]);
   });
@@ -193,7 +195,7 @@ describe("leaked-password check", () => {
   test("without pwnedCheck a listed 12+ character password is accepted (old behaviour)", async () => {
     const { email } = await createOwner();
     const token = await resetToken(email);
-    const answer = await post(plainHandle, "reset-password", { newPassword: LISTED, token });
+    const answer = await post(plainHandle, "reset-password", resetBody(LISTED, token));
     expect(answer.status).toBe(200);
     expect(checked).toEqual([]);
     expect((await signIn(email, LISTED, plainHandle)).status).toBe(200);

@@ -57,6 +57,7 @@ export const auditEvents = {
   webPasswordSet: "web.password_set",
   webPasswordChanged: "web.password_changed",
   webLoginLocked: "web.login_locked", // data: via, locked_until
+  webTermsAccepted: "web.terms_accepted", // data: via, version
   operatorNotice: "operator.notice", // data: kind, key
 } as const;
 

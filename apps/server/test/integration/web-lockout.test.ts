@@ -7,9 +7,10 @@ import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { createAuth, type AuthHandle } from "../../src/platform/auth";
 import { createLockoutStore } from "../../src/platform/auth-lockout";
 import { setLogLevel } from "../../src/platform/log";
-import { auditWebEvent } from "../../src/web";
+import { auditWebEvent, termsAcceptedHandler } from "../../src/web";
 
 import { testDb } from "./helpers";
+import { resetBody } from "./web-helpers";
 
 const db = testDb();
 
@@ -30,6 +31,7 @@ const makeHandle = (withLockout: boolean): AuthHandle =>
     secret: "x".repeat(40),
     trustedOrigins: [BASE_URL],
     onEvent: auditWebEvent(db),
+    onTermsAccepted: termsAcceptedHandler(db, () => new Date()),
     resetLinkTtlSeconds: 86_400,
     now: () => clock,
     sendResetPassword: async (input) => {
@@ -116,7 +118,7 @@ async function setPassword(email: string, password: string): Promise<void> {
   if (!mail) throw new Error("no reset mail captured");
   const token = new URL(mail.url).pathname.split("/").pop() ?? "";
   tokens.push(token);
-  await auth.api.resetPassword({ body: { newPassword: password, token } });
+  await auth.api.resetPassword({ body: resetBody(password, token) });
 }
 
 function signIn(

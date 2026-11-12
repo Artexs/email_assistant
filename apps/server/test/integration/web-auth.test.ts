@@ -7,9 +7,10 @@ import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { insertUser } from "../../src/modules/tenancy/repo";
 import { createAuth, type AuthHandle } from "../../src/platform/auth";
 import { setLogLevel } from "../../src/platform/log";
-import { auditWebEvent } from "../../src/web";
+import { auditWebEvent, termsAcceptedHandler } from "../../src/web";
 
 import { testDb } from "./helpers";
+import { resetBody } from "./web-helpers";
 
 const db = testDb();
 
@@ -29,6 +30,7 @@ const handle = createAuth({
   secret: "x".repeat(40),
   trustedOrigins: [],
   onEvent: auditWebEvent(db),
+  onTermsAccepted: termsAcceptedHandler(db, () => new Date()),
   resetLinkTtlSeconds: 86_400,
   sendResetPassword: async (input) => {
     resets.push(input);
@@ -94,7 +96,7 @@ async function requestReset(authInstance: typeof auth, email: string): Promise<{
 
 async function setPassword(email: string, password: string): Promise<{ userId: string; token: string }> {
   const reset = await requestReset(auth, email);
-  await auth.api.resetPassword({ body: { newPassword: password, token: reset.token } });
+  await auth.api.resetPassword({ body: resetBody(password, reset.token) });
   return reset;
 }
 
@@ -135,10 +137,10 @@ describe("web auth", () => {
     expect(stored.startsWith("reset-password:")).toBe(false);
     expect(stored).toBe(createHash("sha256").update(`reset-password:${reset.token}`).digest("base64url"));
 
-    await auth.api.resetPassword({ body: { newPassword: PASSWORD, token: reset.token } });
+    await auth.api.resetPassword({ body: resetBody(PASSWORD, reset.token) });
     const left = await sql`SELECT 1 FROM auth_verifications WHERE value = ${userId}`.execute(db);
     expect(left.rows).toHaveLength(0);
-    expect(await errorCode(auth.api.resetPassword({ body: { newPassword: OTHER_PASSWORD, token: reset.token } }))).toBe(
+    expect(await errorCode(auth.api.resetPassword({ body: resetBody(OTHER_PASSWORD, reset.token) }))).toBe(
       "INVALID_TOKEN"
     );
   });
@@ -148,7 +150,7 @@ describe("web auth", () => {
     const reset = await requestReset(auth, email);
     expect(reset.userId).toBe(userId);
 
-    await auth.api.resetPassword({ body: { newPassword: PASSWORD, token: reset.token } });
+    await auth.api.resetPassword({ body: resetBody(PASSWORD, reset.token) });
 
     const accounts = await sql<{ provider_id: string; password: string | null }>`
       SELECT provider_id, password FROM auth_accounts WHERE user_id = ${userId}`.execute(db);
@@ -161,9 +163,7 @@ describe("web auth", () => {
     expect(rows[0]?.actor).toBe(userId);
     expect(rows[0]?.data).toEqual({ via: "web" });
 
-    expect(await errorCode(auth.api.resetPassword({ body: { newPassword: PASSWORD, token: reset.token } }))).toBe(
-      "INVALID_TOKEN"
-    );
+    expect(await errorCode(auth.api.resetPassword({ body: resetBody(PASSWORD, reset.token) }))).toBe("INVALID_TOKEN");
   });
 
   test("sign-in sets the session cookie and writes web.login", async () => {
@@ -245,12 +245,12 @@ describe("web auth", () => {
   test("the password length is checked", async () => {
     const { email } = await createOwner();
     const reset = await requestReset(auth, email);
-    expect(await errorCode(auth.api.resetPassword({ body: { newPassword: "short", token: reset.token } }))).toBe(
+    expect(await errorCode(auth.api.resetPassword({ body: resetBody("short", reset.token) }))).toBe(
       "PASSWORD_TOO_SHORT"
     );
-    expect(
-      await errorCode(auth.api.resetPassword({ body: { newPassword: "x".repeat(129), token: reset.token } }))
-    ).toBe("PASSWORD_TOO_LONG");
+    expect(await errorCode(auth.api.resetPassword({ body: resetBody("x".repeat(129), reset.token) }))).toBe(
+      "PASSWORD_TOO_LONG"
+    );
   });
 
   test("an onEvent failure does not fail the login", async () => {
@@ -261,6 +261,7 @@ describe("web auth", () => {
       baseUrl: BASE_URL,
       secret: "x".repeat(40),
       trustedOrigins: [],
+      onTermsAccepted: async () => undefined,
       onEvent: async () => {
         throw new Error("boom");
       },

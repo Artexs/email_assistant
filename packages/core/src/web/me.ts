@@ -52,5 +52,6 @@ export const meSchema = z.object({
   mailboxCount: z.number().int().min(0),
   mailboxesInAuthError: z.number().int().min(0),
   digestTimes: z.array(z.string()),
+  terms: z.object({ accepted: z.boolean(), current: z.string() }),
 });
 export type Me = z.infer<typeof meSchema>;

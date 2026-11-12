@@ -7,7 +7,7 @@ import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { createAuth, RESET_REQUEST_ANSWER, type AuthHandle } from "../../src/platform/auth";
 import { createAuthMailTasks, type AuthMail, type AuthMailer, type AuthMailResult } from "../../src/platform/auth-mail";
 import { setLogLevel } from "../../src/platform/log";
-import { auditWebEvent, authMailFailedHandler } from "../../src/web";
+import { auditWebEvent, authMailFailedHandler, termsAcceptedHandler } from "../../src/web";
 
 import { testDb } from "./helpers";
 
@@ -88,6 +88,7 @@ function makeAuth(options: {
     secret: "x".repeat(40),
     trustedOrigins: [BASE_URL],
     onEvent: auditWebEvent(db),
+    onTermsAccepted: termsAcceptedHandler(db, () => new Date()),
     resetLinkTtlSeconds: options.ttl ?? 3_600,
     sendResetPassword: async ({ userId, email, url }) => {
       tasks.start({ kind: "reset", userId, to: email, url });

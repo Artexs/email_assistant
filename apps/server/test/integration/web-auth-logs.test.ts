@@ -6,9 +6,10 @@ import { sql } from "kysely";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { createAuth } from "../../src/platform/auth";
 import { setLogLevel } from "../../src/platform/log";
-import { auditWebEvent } from "../../src/web";
+import { auditWebEvent, termsAcceptedHandler } from "../../src/web";
 
 import { testDb } from "./helpers";
+import { resetBody } from "./web-helpers";
 
 const db = testDb();
 
@@ -55,6 +56,7 @@ function make(sendResetPassword?: (input: { userId: string; url: string }) => Pr
     secret: MARKERS.secret,
     trustedOrigins: [BASE_URL],
     onEvent: auditWebEvent(db),
+    onTermsAccepted: termsAcceptedHandler(db, () => new Date()),
     resetLinkTtlSeconds: 86_400,
     ...(sendResetPassword ? { sendResetPassword } : {}),
   });
@@ -106,7 +108,7 @@ describe("web auth logs", () => {
       await auth.api.requestPasswordReset({ body: { email: MARKERS.email, redirectTo } });
       const token = tokenOf(captured[0] ?? "");
       forbidden.push(token);
-      await auth.api.resetPassword({ body: { newPassword: MARKERS.password, token } });
+      await auth.api.resetPassword({ body: resetBody(MARKERS.password, token) });
 
       const { headers } = await auth.api.signInEmail({
         body: { email: MARKERS.email.toUpperCase(), password: MARKERS.password },

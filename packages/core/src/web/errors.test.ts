@@ -37,4 +37,8 @@ describe("apiErrorSchema", () => {
   test("lists org_suspended", () => {
     expect(apiErrorCodes).toContain("org_suspended");
   });
+
+  test("lists terms_outdated", () => {
+    expect(apiErrorCodes).toContain("terms_outdated");
+  });
 });

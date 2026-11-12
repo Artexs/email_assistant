@@ -10,6 +10,7 @@ import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
 import { createAuth } from "../../src/platform/auth";
 
 import { testDb } from "./helpers";
+import { resetBody } from "./web-helpers";
 
 const db = testDb();
 const repoRoot = resolve(import.meta.dir, "../../../..");
@@ -135,10 +136,11 @@ describe("web:invite CLI", () => {
       secret: webEnv.WEB_AUTH_SECRET,
       trustedOrigins: [],
       onEvent: async () => undefined,
+      onTermsAccepted: async () => undefined,
       resetLinkTtlSeconds: 86_400,
     });
     try {
-      await handle.auth.api.resetPassword({ body: { newPassword: PASSWORD, token } });
+      await handle.auth.api.resetPassword({ body: resetBody(PASSWORD, token) });
       const { response } = await handle.auth.api.signInEmail({
         body: { email, password: PASSWORD },
         returnHeaders: true,

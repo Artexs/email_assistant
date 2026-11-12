@@ -215,7 +215,10 @@ export function requireTenant(deps: {
 
 // S6c adds { method: "DELETE", path: /^\/api\/organization$/ } (delete organization).
 // Sign-out and the password routes are Better Auth paths outside `api`: they need no entry.
-export const SUSPENDED_WRITE_ALLOW: readonly { method: string; path: RegExp }[] = [];
+// A paused account can still accept the terms: it changes no mail and no organization data.
+export const SUSPENDED_WRITE_ALLOW: readonly { method: string; path: RegExp }[] = [
+  { method: "POST", path: /^\/api\/me\/terms$/ },
+];
 
 const READ_METHODS: readonly string[] = ["GET", "HEAD", "OPTIONS"];
 
