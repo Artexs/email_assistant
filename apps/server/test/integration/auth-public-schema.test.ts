@@ -4,7 +4,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
 import { insertUser } from "../../src/modules/tenancy";
-import type { DB } from "../../src/platform/db";
+import type { DB, Db } from "../../src/platform/db";
 
 import { testDb, withRollback } from "./helpers";
 
@@ -15,7 +15,7 @@ afterAll(async () => {
   await db.destroy();
 });
 
-async function newUser(trx: Transaction<DB>) {
+async function newUser(trx: Db | Transaction<DB>) {
   return insertUser(trx, { email: `u-${randomUUID()}@x.test`, displayName: "U" });
 }
 
