@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-07
+landed: 2026-11-12
 ---
 
 # F045 · Keep the sender address in the approval quote header
