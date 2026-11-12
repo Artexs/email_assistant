@@ -3,9 +3,9 @@ import { parseArgs } from "node:util";
 import { buildCompareRows, renderCompareTable, targetInputSchema, type TargetInput } from "@ea/core";
 import { z } from "zod";
 
-import { deliverTestMail, listEmailsByMessageIds } from "../modules/mail";
+import { configureMailHosts, deliverTestMail, listEmailsByMessageIds } from "../modules/mail";
 import { buildRealReport, listLatestTriageByEmailIds, renderEvalReport, type LabeledResult } from "../modules/triage";
-import { loadConfig } from "../platform/config";
+import { loadConfig, mailAllowLocal } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError, HardError } from "../platform/errors";
@@ -96,6 +96,7 @@ async function runDeliver(options: NonNullable<ReturnType<typeof readOptions>>, 
     return 2;
   }
   const config = loadConfig();
+  configureMailHosts({ allowLocal: mailAllowLocal(config) });
   const db = createDb(config.DATABASE_URL);
   try {
     await assertAppRole(db);
@@ -119,6 +120,7 @@ async function runDeliver(options: NonNullable<ReturnType<typeof readOptions>>, 
 
 async function runCompare(options: NonNullable<ReturnType<typeof readOptions>>, input: TargetInput): Promise<number> {
   const config = loadConfig();
+  configureMailHosts({ allowLocal: mailAllowLocal(config) });
   const db = createDb(config.DATABASE_URL);
   try {
     await assertAppRole(db);

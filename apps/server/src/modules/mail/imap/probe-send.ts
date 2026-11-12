@@ -7,7 +7,7 @@ import { renderSeedMessage } from "../seed";
 import { connectImapClient, type ImapConnectOptions } from "./client";
 import { withCleanupNotes } from "./probe";
 import { describeFailure } from "./probe-move";
-import { createSmtpMarks, smtpTransportOptions, type SmtpConnectionLike, type SmtpConnectOptions } from "./smtp";
+import { createSmtpMarks, smtpConnectOptions, type SmtpConnectionLike, type SmtpConnectOptions } from "./smtp";
 
 const INBOX_PATH = "INBOX";
 const DAY_MS = 86_400_000;
@@ -288,7 +288,7 @@ async function runSend(
   makeConnection: (options: object) => SmtpConnectionLike
 ): Promise<void> {
   const { report, raw } = ctx;
-  const { auth, ...transport } = smtpTransportOptions(smtp);
+  const { auth, ...transport } = await smtpConnectOptions(smtp);
   const hook = createSendHook();
   const connection = makeConnection({
     ...transport,

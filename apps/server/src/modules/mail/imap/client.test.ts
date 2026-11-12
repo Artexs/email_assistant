@@ -20,7 +20,7 @@ describe("isLoopbackHost", () => {
 
 describe("imapFlowOptions", () => {
   test("a remote host gets TLS on, no tls key and no doSTARTTLS", () => {
-    const options = imapFlowOptions({ host: "poczta.interia.pl", port: 993, ...creds });
+    const options = imapFlowOptions({ host: "poczta.interia.pl", port: 993, ...creds }, { host: "poczta.interia.pl" });
     expect(options.secure).toBe(true);
     expect("tls" in options).toBe(false);
     expect("doSTARTTLS" in options).toBe(false);
@@ -34,37 +34,61 @@ describe("imapFlowOptions", () => {
     });
   });
 
+  test("a resolved target connects to the address and keeps the TLS name", () => {
+    const options = imapFlowOptions(
+      { host: "imap.x.test", port: 993, user: "u", password: "p" },
+      { host: "93.184.216.34", servername: "imap.x.test" }
+    );
+    expect(options).toMatchObject({ host: "93.184.216.34", servername: "imap.x.test", secure: true });
+    expect("tls" in options).toBe(false);
+  });
+
+  test("a loopback target has no servername", () => {
+    const options = imapFlowOptions(
+      { host: "127.0.0.1", port: 3143, secure: false, user: "u", password: "p" },
+      { host: "127.0.0.1" }
+    );
+    expect(options.host).toBe("127.0.0.1");
+    expect("servername" in options).toBe(false);
+  });
+
   test("a loopback host gets plain IMAP with doSTARTTLS false", () => {
-    const options = imapFlowOptions({ host: "127.0.0.1", port: 3143, ...creds });
+    const options = imapFlowOptions({ host: "127.0.0.1", port: 3143, ...creds }, { host: "127.0.0.1" });
     expect(options.secure).toBe(false);
     expect(options.doSTARTTLS).toBe(false);
     expect("tls" in options).toBe(false);
   });
 
   test("a loopback host with secure true keeps TLS on", () => {
-    const options = imapFlowOptions({ host: "127.0.0.1", port: 3993, secure: true, ...creds });
+    const options = imapFlowOptions({ host: "127.0.0.1", port: 3993, secure: true, ...creds }, { host: "127.0.0.1" });
     expect(options.secure).toBe(true);
     expect("doSTARTTLS" in options).toBe(false);
   });
 
   test("secure false with a remote host throws HardError", () => {
-    expect(() => imapFlowOptions({ host: "poczta.interia.pl", port: 143, secure: false, ...creds })).toThrow(
-      new HardError("plain IMAP is allowed only to a loopback host")
-    );
+    expect(() =>
+      imapFlowOptions({ host: "poczta.interia.pl", port: 143, secure: false, ...creds }, { host: "poczta.interia.pl" })
+    ).toThrow(new HardError("plain IMAP is allowed only to a loopback host"));
   });
 
   test("connectionTimeoutMs also sets the greeting and socket timeouts; without it they are absent", () => {
-    const set = imapFlowOptions({ host: "poczta.interia.pl", port: 993, connectionTimeoutMs: 20_000, ...creds });
+    const set = imapFlowOptions(
+      { host: "poczta.interia.pl", port: 993, connectionTimeoutMs: 20_000, ...creds },
+      { host: "poczta.interia.pl" }
+    );
     expect(set.connectionTimeout).toBe(20_000);
     expect(set.greetingTimeout).toBe(20_000);
     expect(set.socketTimeout).toBe(20_000);
-    const bare = imapFlowOptions({ host: "poczta.interia.pl", port: 993, ...creds });
+    const bare = imapFlowOptions({ host: "poczta.interia.pl", port: 993, ...creds }, { host: "poczta.interia.pl" });
     expect(bare.greetingTimeout).toBeUndefined();
     expect(bare.socketTimeout).toBeUndefined();
   });
 
   test("connectionTimeoutMs is passed on", () => {
-    const options = imapFlowOptions({ host: "poczta.interia.pl", port: 993, connectionTimeoutMs: 5_000, ...creds });
+    const options = imapFlowOptions(
+      { host: "poczta.interia.pl", port: 993, connectionTimeoutMs: 5_000, ...creds },
+      { host: "poczta.interia.pl" }
+    );
     expect(options.connectionTimeout).toBe(5_000);
   });
 });

@@ -9,7 +9,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
 import { HardError } from "../../../platform/errors";
 
-import { openSmtpSender, smtpTransportOptions, verifySmtpLogin, type SmtpConnectOptions } from "./smtp";
+import { buildSmtpTransportOptions, openSmtpSender, verifySmtpLogin, type SmtpConnectOptions } from "./smtp";
 
 // A scripted SMTP server that offers STARTTLS and AUTH only after the upgrade. Its certificate is self-signed
 // (made with openssl for the test): only a client that is given this certificate as a CA may trust it.
@@ -112,35 +112,52 @@ const RAW = Buffer.from(
 );
 const ENVELOPE = { from: "owner@x.test", to: ["d@x.test"] };
 
-describe("smtpTransportOptions with STARTTLS", () => {
+describe("buildSmtpTransportOptions with STARTTLS", () => {
   const creds = { user: "me@icloud.com", password: "pw" };
 
   test("a remote host gets secure false, requireTLS and no way to skip the certificate check", () => {
-    const options = smtpTransportOptions({ host: "smtp.mail.me.com", port: 587, security: "starttls", ...creds });
+    const options = buildSmtpTransportOptions(
+      { host: "smtp.mail.me.com", port: 587, security: "starttls", ...creds },
+      { host: "smtp.mail.me.com" }
+    );
     expect(options).toMatchObject({ host: "smtp.mail.me.com", port: 587, secure: false, requireTLS: true });
     expect("ignoreTLS" in options).toBe(false);
     expect("tls" in options).toBe(false);
   });
 
   test("a loopback host still requires TLS", () => {
-    const options = smtpTransportOptions({ host: "127.0.0.1", port: 3025, security: "starttls", ...creds });
+    const options = buildSmtpTransportOptions(
+      { host: "127.0.0.1", port: 3025, security: "starttls", ...creds },
+      { host: "127.0.0.1" }
+    );
     expect(options).toMatchObject({ secure: false, requireTLS: true });
     expect("ignoreTLS" in options).toBe(false);
   });
 
   test("a CA adds trust and never sets rejectUnauthorized", () => {
-    const options = smtpTransportOptions({ host: "h.test", port: 587, security: "starttls", ca: "PEM", ...creds });
+    const options = buildSmtpTransportOptions(
+      { host: "h.test", port: 587, security: "starttls", ca: "PEM", ...creds },
+      { host: "h.test" }
+    );
     expect(options.tls).toEqual({ ca: "PEM" });
   });
 
   test("the plain-loopback switch is refused with STARTTLS", () => {
     expect(() =>
-      smtpTransportOptions({ host: "127.0.0.1", port: 587, security: "starttls", secure: false, ...creds })
+      buildSmtpTransportOptions(
+        { host: "127.0.0.1", port: 587, security: "starttls", secure: false, ...creds },
+        { host: "127.0.0.1" }
+      )
     ).toThrow(HardError);
   });
 
   test("tls keeps implicit TLS", () => {
-    expect(smtpTransportOptions({ host: "smtp.gmail.com", port: 465, security: "tls", ...creds })).toMatchObject({
+    expect(
+      buildSmtpTransportOptions(
+        { host: "smtp.gmail.com", port: 465, security: "tls", ...creds },
+        { host: "smtp.gmail.com" }
+      )
+    ).toMatchObject({
       secure: true,
     });
   });

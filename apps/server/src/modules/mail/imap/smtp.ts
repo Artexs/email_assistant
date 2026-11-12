@@ -3,6 +3,7 @@ import { createTransport, type SMTPTransportOptions } from "nodemailer";
 import SMTPConnection, { type SMTPConnectionOptions } from "nodemailer/lib/smtp-connection";
 
 import { HardError, SoftError } from "../../../platform/errors";
+import { resolveMailHost, type MailTarget } from "../host-guard";
 import { MailAuthError, SmtpSendError, type MailSender, type SendResult, type SmtpStage } from "../port";
 
 import { isLoopbackHost } from "./client";
@@ -26,14 +27,21 @@ export interface SmtpConnectOptions {
   timeoutMs?: number;
 }
 
-/** TLS certificates are always checked: no option sets `rejectUnauthorized`, so none can turn the check off. */
-export function smtpTransportOptions(opts: SmtpConnectOptions): SMTPTransportOptions {
-  const tlsCheck = opts.ca === undefined ? {} : { tls: { ca: opts.ca } };
+/**
+ * `target` is the address the host guard checked (`resolveMailHost`). TLS certificates are always checked: no option
+ * sets `rejectUnauthorized`, so none can turn the check off. `tls.servername` keeps the check against the host name.
+ */
+export function buildSmtpTransportOptions(opts: SmtpConnectOptions, target: MailTarget): SMTPTransportOptions {
+  const tlsOptions = {
+    ...(opts.ca === undefined ? {} : { ca: opts.ca }),
+    ...(target.servername === undefined ? {} : { servername: target.servername }),
+  };
+  const tlsCheck = Object.keys(tlsOptions).length === 0 ? {} : { tls: tlsOptions };
   if (opts.security === "starttls") {
     if (opts.secure !== undefined) throw new HardError("secure cannot be set with STARTTLS");
     // `requireTLS` ends the connection when the server offers no STARTTLS: the password never goes out in plain text.
     return {
-      host: opts.host,
+      host: target.host,
       port: opts.port,
       secure: false,
       requireTLS: true,
@@ -47,7 +55,7 @@ export function smtpTransportOptions(opts: SmtpConnectOptions): SMTPTransportOpt
     throw new HardError("plain SMTP is allowed only to a loopback host");
   }
   return {
-    host: opts.host,
+    host: target.host,
     port: opts.port,
     secure,
     auth: { user: opts.user, pass: opts.password },
@@ -55,6 +63,11 @@ export function smtpTransportOptions(opts: SmtpConnectOptions): SMTPTransportOpt
     ...(secure ? {} : { ignoreTLS: true }),
     ...tlsCheck,
   };
+}
+
+/** Resolves the host once through the guard, then builds the options for that address. Throws `HostNotAllowedError`. */
+export async function smtpConnectOptions(opts: SmtpConnectOptions): Promise<SMTPTransportOptions> {
+  return buildSmtpTransportOptions(opts, await resolveMailHost(opts.host));
 }
 
 function timeoutOptions(opts: SmtpConnectOptions): SMTPTransportOptions {
@@ -84,7 +97,7 @@ export function toSmtpError(error: unknown, action = "verify"): Error {
 
 /** Connects, starts TLS and logs in, then closes. Sends no mail. */
 export async function verifySmtpLogin(opts: SmtpConnectOptions): Promise<void> {
-  const transport = createTransport(smtpTransportOptions(opts));
+  const transport = createTransport(await smtpConnectOptions(opts));
   try {
     await transport.verify();
   } catch (error) {
@@ -99,7 +112,7 @@ export async function sendProbeToSelf(
   opts: SmtpConnectOptions,
   input: { address: string; probeId: string }
 ): Promise<void> {
-  const transport = createTransport(smtpTransportOptions(opts));
+  const transport = createTransport(await smtpConnectOptions(opts));
   try {
     await transport.sendMail({
       from: input.address,
@@ -248,7 +261,7 @@ export async function openSmtpSender(
   opts: SmtpConnectOptions,
   deps: { connection?: (options: object) => SmtpConnectionLike } = {}
 ): Promise<MailSender> {
-  const { auth, ...transport } = smtpTransportOptions(opts);
+  const { auth, ...transport } = await smtpConnectOptions(opts);
   const makeConnection = deps.connection ?? defaultConnection;
   const credentials = { user: auth?.user ?? opts.user, pass: auth?.pass ?? opts.password };
   return {

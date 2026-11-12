@@ -6,10 +6,11 @@ import { TERMS_VERSION } from "@ea/core";
 import { Client } from "pg";
 
 import { insertDefaultSettings } from "../modules/config";
+import { configureMailHosts } from "../modules/mail";
 import { insertCredentials, insertInboxFolder, insertMailbox } from "../modules/mail/repo";
 import { createOrganizationWithOwner, insertMembership, insertUser, setOrgPlan } from "../modules/tenancy";
 import { createAuth } from "../platform/auth";
-import { loadConfig, webTrustedOrigins } from "../platform/config";
+import { loadConfig, mailAllowLocal, webTrustedOrigins } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
@@ -74,6 +75,7 @@ async function wipe(migratorUrl: string): Promise<void> {
 
 async function main(): Promise<number> {
   const config = loadConfig();
+  configureMailHosts({ allowLocal: mailAllowLocal(config) });
   const migratorUrl = process.env.MIGRATOR_DATABASE_URL ?? "";
   const target = seedTargetOk(config.DATABASE_URL, migratorUrl);
   if (!target.ok) {

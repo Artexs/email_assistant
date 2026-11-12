@@ -3,7 +3,8 @@ import { parseArgs } from "node:util";
 
 import { z } from "zod";
 
-import { assertTestAddress, probeMove, type ProbeMoveReport } from "../modules/mail";
+import { assertTestAddress, configureMailHosts, probeMove, type ProbeMoveReport } from "../modules/mail";
+import { mailAllowLocalFromEnv } from "../platform/config";
 import { createLog } from "../platform/log";
 
 const log = createLog("mailbox-probe-move");
@@ -57,6 +58,7 @@ async function main(): Promise<number> {
     log.error(usage);
     return 1;
   }
+  configureMailHosts({ allowLocal: mailAllowLocalFromEnv(process.env) });
   // Read here, not through loadConfig: the probe needs no DB and no other key.
   assertTestAddress(options.address, process.env.TEST_MAILBOX_ADDRESS);
   const report = await probeMove(

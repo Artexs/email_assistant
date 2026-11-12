@@ -3,9 +3,9 @@ import { parseArgs } from "node:util";
 import { z } from "zod";
 
 import { isOwnActionId } from "../modules/actions";
-import { backfillMailbox, CursorMovedError } from "../modules/mail";
+import { backfillMailbox, configureMailHosts, CursorMovedError } from "../modules/mail";
 import { requeueBackfillWindow } from "../modules/triage";
-import { loadConfig } from "../platform/config";
+import { loadConfig, mailAllowLocal } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
@@ -58,6 +58,8 @@ async function main(): Promise<number> {
   }
 
   const config = loadConfig();
+
+  configureMailHosts({ allowLocal: mailAllowLocal(config) });
   const db = createDb(config.DATABASE_URL);
   try {
     await assertAppRole(db);

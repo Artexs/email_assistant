@@ -10,7 +10,7 @@ import {
   classifySmtpError,
   createSmtpMarks,
   openSmtpSender,
-  smtpTransportOptions,
+  buildSmtpTransportOptions,
   toSmtpError,
   type SmtpConnectionLike,
   type SmtpConnectOptions,
@@ -19,9 +19,12 @@ import {
 
 const creds = { user: "me@interia.pl", password: "pw-secret-1" };
 
-describe("smtpTransportOptions", () => {
+describe("buildSmtpTransportOptions", () => {
   test("a remote host gets TLS on and no tls key", () => {
-    const options = smtpTransportOptions({ host: "poczta.interia.pl", port: 465, ...creds });
+    const options = buildSmtpTransportOptions(
+      { host: "poczta.interia.pl", port: 465, ...creds },
+      { host: "poczta.interia.pl" }
+    );
     expect(options.secure).toBe(true);
     expect("tls" in options).toBe(false);
     expect("ignoreTLS" in options).toBe(false);
@@ -32,34 +35,63 @@ describe("smtpTransportOptions", () => {
     });
   });
 
+  test("a resolved target connects to the address and puts the TLS name in tls.servername", () => {
+    const target = { host: "93.184.216.34", servername: "smtp.x.test" };
+    const options = buildSmtpTransportOptions({ host: "smtp.x.test", port: 465, ...creds }, target);
+    expect(options.host).toBe("93.184.216.34");
+    expect(options.tls).toEqual({ servername: "smtp.x.test" });
+    expect(options.secure).toBe(true);
+    expect(JSON.stringify(options)).not.toContain("rejectUnauthorized");
+    const withCa = buildSmtpTransportOptions({ host: "smtp.x.test", port: 465, ca: "PEM", ...creds }, target);
+    expect(withCa.tls).toEqual({ ca: "PEM", servername: "smtp.x.test" });
+    const starttls = buildSmtpTransportOptions(
+      { host: "smtp.x.test", port: 587, security: "starttls", ...creds },
+      target
+    );
+    expect(starttls).toMatchObject({ host: "93.184.216.34", secure: false, requireTLS: true });
+    expect(starttls.tls).toEqual({ servername: "smtp.x.test" });
+  });
+
   test("timeoutMs sets the three timeouts; without it none is set", () => {
-    const set = smtpTransportOptions({ host: "poczta.interia.pl", port: 465, timeoutMs: 20_000, ...creds });
+    const set = buildSmtpTransportOptions(
+      { host: "poczta.interia.pl", port: 465, timeoutMs: 20_000, ...creds },
+      { host: "poczta.interia.pl" }
+    );
     expect(set.connectionTimeout).toBe(20_000);
     expect(set.greetingTimeout).toBe(20_000);
     expect(set.socketTimeout).toBe(20_000);
-    const bare = smtpTransportOptions({ host: "poczta.interia.pl", port: 465, ...creds });
+    const bare = buildSmtpTransportOptions(
+      { host: "poczta.interia.pl", port: 465, ...creds },
+      { host: "poczta.interia.pl" }
+    );
     expect("connectionTimeout" in bare).toBe(false);
     expect("greetingTimeout" in bare).toBe(false);
     expect("socketTimeout" in bare).toBe(false);
   });
 
   test("a loopback host gets plain SMTP with ignoreTLS", () => {
-    const options = smtpTransportOptions({ host: "127.0.0.1", port: 3025, ...creds });
+    const options = buildSmtpTransportOptions({ host: "127.0.0.1", port: 3025, ...creds }, { host: "127.0.0.1" });
     expect(options.secure).toBe(false);
     expect(options.ignoreTLS).toBe(true);
     expect("tls" in options).toBe(false);
   });
 
   test("a loopback host with secure true keeps TLS on", () => {
-    const options = smtpTransportOptions({ host: "localhost", port: 3465, secure: true, ...creds });
+    const options = buildSmtpTransportOptions(
+      { host: "localhost", port: 3465, secure: true, ...creds },
+      { host: "localhost" }
+    );
     expect(options.secure).toBe(true);
     expect("ignoreTLS" in options).toBe(false);
   });
 
   test("secure false with a remote host throws HardError", () => {
-    expect(() => smtpTransportOptions({ host: "poczta.interia.pl", port: 587, secure: false, ...creds })).toThrow(
-      new HardError("plain SMTP is allowed only to a loopback host")
-    );
+    expect(() =>
+      buildSmtpTransportOptions(
+        { host: "poczta.interia.pl", port: 587, secure: false, ...creds },
+        { host: "poczta.interia.pl" }
+      )
+    ).toThrow(new HardError("plain SMTP is allowed only to a loopback host"));
   });
 });
 

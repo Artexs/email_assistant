@@ -6,8 +6,8 @@ import { parseArgs } from "node:util";
 import { type EvalCase, evalCaseSchema, selectCases, splitAddress } from "@ea/core";
 import { z } from "zod";
 
-import { SYNTHETIC_MESSAGE_ID_DOMAIN, seedMailbox, type SeedMessage } from "../modules/mail";
-import { loadConfig } from "../platform/config";
+import { configureMailHosts, seedMailbox, SYNTHETIC_MESSAGE_ID_DOMAIN, type SeedMessage } from "../modules/mail";
+import { loadConfig, mailAllowLocal } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { createLog } from "../platform/log";
@@ -82,6 +82,8 @@ async function main(): Promise<number> {
   }
 
   const config = loadConfig();
+
+  configureMailHosts({ allowLocal: mailAllowLocal(config) });
   const db = createDb(config.DATABASE_URL);
   try {
     await assertAppRole(db);

@@ -12,7 +12,8 @@ import {
   loadTestmailConfig,
   operatorChatId,
   sendTestAddresses,
-  webMailAllowLocal,
+  mailAllowLocal,
+  mailAllowLocalFromEnv,
   webTrustedOrigins,
   webTrustedProxies,
 } from "./config";
@@ -467,12 +468,25 @@ describe("web keys", () => {
     expect(configError({ ...fullEnv, WEB_TRUSTED_PROXIES: "gateway" }).keys).toEqual(["WEB_TRUSTED_PROXIES"]);
   });
 
-  test("WEB_MAIL_ALLOW_LOCAL is false by default and takes only true or false", () => {
-    const empty = loadConfig({ ...fullEnv, WEB_MAIL_ALLOW_LOCAL: "" });
-    expect(empty.WEB_MAIL_ALLOW_LOCAL).toBe("false");
-    expect(webMailAllowLocal(empty)).toBe(false);
-    expect(webMailAllowLocal(loadConfig({ ...fullEnv, WEB_MAIL_ALLOW_LOCAL: "true" }))).toBe(true);
+  test("MAIL_ALLOW_LOCAL_HOSTS wins over the old WEB_MAIL_ALLOW_LOCAL and takes only true or false", () => {
+    const load = (extra: Record<string, string>) => loadConfig({ ...fullEnv, ...extra });
+    expect(mailAllowLocal(load({ MAIL_ALLOW_LOCAL_HOSTS: "true" }))).toBe(true);
+    expect(mailAllowLocal(load({ WEB_MAIL_ALLOW_LOCAL: "true" }))).toBe(true);
+    expect(mailAllowLocal(load({ MAIL_ALLOW_LOCAL_HOSTS: "", WEB_MAIL_ALLOW_LOCAL: "" }))).toBe(false);
+    expect(mailAllowLocal(load({}))).toBe(false);
+    expect(mailAllowLocal(load({ MAIL_ALLOW_LOCAL_HOSTS: "false", WEB_MAIL_ALLOW_LOCAL: "true" }))).toBe(false);
+    expect(load({ WEB_MAIL_ALLOW_LOCAL: "" }).WEB_MAIL_ALLOW_LOCAL).toBeUndefined();
+    expect(configError({ ...fullEnv, MAIL_ALLOW_LOCAL_HOSTS: "yes" }).keys).toEqual(["MAIL_ALLOW_LOCAL_HOSTS"]);
     expect(configError({ ...fullEnv, WEB_MAIL_ALLOW_LOCAL: "yes" }).keys).toEqual(["WEB_MAIL_ALLOW_LOCAL"]);
+  });
+
+  test("mailAllowLocalFromEnv follows the same rule and counts an empty string as unset", () => {
+    expect(mailAllowLocalFromEnv({ MAIL_ALLOW_LOCAL_HOSTS: "true" })).toBe(true);
+    expect(mailAllowLocalFromEnv({ WEB_MAIL_ALLOW_LOCAL: "true" })).toBe(true);
+    expect(mailAllowLocalFromEnv({})).toBe(false);
+    expect(mailAllowLocalFromEnv({ MAIL_ALLOW_LOCAL_HOSTS: "false", WEB_MAIL_ALLOW_LOCAL: "true" })).toBe(false);
+    expect(mailAllowLocalFromEnv({ MAIL_ALLOW_LOCAL_HOSTS: "", WEB_MAIL_ALLOW_LOCAL: "true" })).toBe(true);
+    expect(mailAllowLocalFromEnv({ MAIL_ALLOW_LOCAL_HOSTS: "", WEB_MAIL_ALLOW_LOCAL: "" })).toBe(false);
   });
 });
 

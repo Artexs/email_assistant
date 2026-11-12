@@ -2,8 +2,14 @@ import { parseArgs } from "node:util";
 
 import { z } from "zod";
 
-import { MailAuthError, openImapProvider, updateMailboxPassword, verifySmtpLogin } from "../modules/mail";
-import { ConfigError, loadConfig, type Config } from "../platform/config";
+import {
+  configureMailHosts,
+  MailAuthError,
+  openImapProvider,
+  updateMailboxPassword,
+  verifySmtpLogin,
+} from "../modules/mail";
+import { ConfigError, loadConfig, mailAllowLocal, type Config } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError, HardError } from "../platform/errors";
@@ -50,7 +56,9 @@ async function readPassword(): Promise<string | undefined> {
 
 function readConfig(): Config | undefined {
   try {
-    return loadConfig();
+    const config = loadConfig();
+    configureMailHosts({ allowLocal: mailAllowLocal(config) });
+    return config;
   } catch (error) {
     if (error instanceof ConfigError) {
       log.error(`config error: missing or bad keys: ${error.keys.join(", ")}`);

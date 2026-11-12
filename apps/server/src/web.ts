@@ -32,13 +32,7 @@ import { createAuth, type AuthDeps, type AuthEventKind } from "./platform/auth";
 import { createLockoutStore } from "./platform/auth-lockout";
 import { createAuthMailer, createAuthMailTasks } from "./platform/auth-mail";
 import type { AuthMailKind } from "./platform/auth-mail-texts";
-import {
-  authMailSettings,
-  webMailAllowLocal,
-  webTrustedOrigins,
-  webTrustedProxies,
-  type Config,
-} from "./platform/config";
+import { authMailSettings, mailAllowLocal, webTrustedOrigins, webTrustedProxies, type Config } from "./platform/config";
 import type { SecretBox } from "./platform/crypto";
 import type { Db, TenantContext } from "./platform/db";
 import { describeError } from "./platform/errors";
@@ -240,7 +234,7 @@ export function apiRouters(
   now: () => Date
 ): NonNullable<WebDeps["routers"]> {
   const scopes = scopeInfos(config);
-  const allowLocalHosts = webMailAllowLocal(config);
+  const allowLocalHosts = mailAllowLocal(config);
   return (api) => {
     api.route(
       "/",
@@ -290,8 +284,6 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
   if (baseUrl.protocol === "http:" && !LOOPBACK_HOSTS.includes(baseUrl.hostname)) {
     log.warn("WEB_BASE_URL is http:// on a non-loopback host: cookies are not Secure");
   }
-  const allowLocalHosts = webMailAllowLocal(config);
-  if (allowLocalHosts) log.warn("web: WEB_MAIL_ALLOW_LOCAL=true: the connect form accepts local hosts");
   const origins = [baseUrl.origin, ...webTrustedOrigins(config)];
   const settings = authMailSettings(config);
   const mailer = settings === null ? null : createAuthMailer(settings);

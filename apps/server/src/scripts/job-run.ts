@@ -2,7 +2,8 @@ import { actionsScope, committerDeps, sendScope, uidplusOf } from "../compositio
 import { createCommitterJob, createExpiryJob } from "../modules/actions";
 import { createTelegramRuntime } from "../modules/channels";
 import { createChaserJob, delegationHooks } from "../modules/delegation";
-import { llmSettings, loadConfig } from "../platform/config";
+import { configureMailHosts } from "../modules/mail";
+import { llmSettings, loadConfig, mailAllowLocal } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
@@ -21,6 +22,7 @@ async function main(): Promise<number> {
     return 1;
   }
   const config = loadConfig();
+  configureMailHosts({ allowLocal: mailAllowLocal(config) });
   if (args.name === "channels.notifier" && config.TELEGRAM_BOT_TOKEN === undefined) {
     log.error("TELEGRAM_BOT_TOKEN is empty");
     return 1;
