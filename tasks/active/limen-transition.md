@@ -1,4 +1,4 @@
-> **Status 2026-11-12 — in progress — plan written, waiting for the user's answers to "Decisions" (D1–D9).** No install and no repo change yet. §4 holds the S5c build feedback as input for D3, D5–D7 and stages 2–5. Left: stages 0–5.
+> **Status 2026-11-12 — in progress — stage 1 plan approved by the user; build not started.** Plan: [`limen-transition/stage-1-out-of-box.md`](limen-transition/stage-1-out-of-box.md). Next: stage 1 steps 1.1–1.8; step 1.9 waits for an S6-quiet time.
 
 # Move the agent workflow to Limen
 
@@ -281,16 +281,73 @@ Source: the S5c build session, `~/.pi/agent/sessions/--home-artek-Documents-repo
 - **D8** Pilot feature (stage 4): candidates `testmail-mail-kind` (tooling, low risk) or `telegram-review-command` (product, small). Not `[risky]`.
 - **D9** Planning files committed (Limen default) or `limen planning private` during the pilot. (Recommendation: committed: `spec/` is the new `tasks/`.)
 
+## 5. What must change, and what can stay (user question 2026-11-12)
+
+User decisions 2026-11-12:
+
+- **U1** A worker job builds a few slices at once, not one slice per job (from the S5c feedback, §4).
+- **U2** Apply the other §4 findings: no double checks, light fix rounds, parallel tracks where slices are independent.
+- **U3** Keep the detailed plans of `plan-task` (closes the B.7 question in `limen-transition/target-harness.md`: detail stays in the plan, in the feature folder).
+
+Answer:
+
+- **Agent files (`implementer.md`, `reviewer.md`): no change needed.** Limen does not use them. Its jobs get Limen's own worker and reviewer prompts. The files stay for other repos.
+- **`planner.md`: no change needed** if `plan-task` keeps the stage-file format (below). Change it only if the format changes.
+- **`plan-task`: one small change.** Same depth, same format (task text + stage files), new place: `spec/features/active/FNNN-slug/plan.md` + `stage-NN-*.md` + a short `ticket.md` that points to them. Add one field per stage: `Batch:` (which stages build in one job) and `Track:` (which stages can run in parallel).
+- **`run-task`: must change.** It calls subagents, `bg-agent.sh` and pipeline mode. A Limen coordinator can loop without a skill (Limen's shop manual teaches spawn, review, land), but your policy (batches, 2 FAIL rounds, checkpoints, `[risky]` gates, who runs which check) must be written down somewhere. Proposal: a new skill `limen-run` (the B.4 loop); keep `run-task` unchanged for the old tasks in `tasks/active/`.
+- **`CLAUDE.md` and `~/.pi/agent/AGENTS.md`: must change, but only the conflicting lines.** If a job loads them (probe in stage 1), these rules make it act wrong: "subagents never commit", "Git mode: `task/<name>`", "create `tasks/active/<name>.md`", "update the status line". Fix: a short "Inside a Limen job" block that overrides them, and the coordinator part points to Limen. Code rules stay in `CLAUDE.md` and get a copy-free link from the styleguide (one source).
+- **Pi settings, extensions, other skills: no change.**
+
+Honest notes:
+
+- Limen does not need your agents to work. It needs your **rules** to not conflict with it. That is the real work: about 20 lines of rule text and one new skill, not a rewrite of the harness.
+- U1 and U2 can also be done without Limen (edit `run-task`). Limen adds what `run-task` cannot: jobs that run in parallel in the background, records that survive a crash, wakes, `land` and the proof check.
+- Batches make the review bigger. Limit: a `[risky]` stage is always its own job and its own review; normal stages 2–3 per job (about 600–900 lines). A job has a 90-minute limit and 900 tool calls by default: pass `--timeout` for a batch.
+- One review per batch (range `--base`/`--head`), not per stage. The reviewer stays read-only.
+- Checks run once per place: the worker runs the full line once at the end of the batch; the finish check proves it ran (exit 0); the coordinator does not run it again; the reviewer runs only the checks it needs.
+
+## 6. Re-scope to 3 stages (user decisions 2026-11-12, round 2)
+
+This section replaces the stage list of §5 "Plan" below (kept as history). Where §1–§5 conflict with §6, §6 wins.
+
+User's words:
+
+> "the most important thing that I want Limen to be working as author designed it. So I don't want to modify its behavior. So it should be just installed and started so it will work. So actually the whole plan can be divided into three stages. First stage is to just set up Limen so it will just work. So I can just see how it works just out of the box. Stage two will be to update all the sub-agents, agents and so on, to adjust it to my needs. Then I will be able to test it how it works. And stage 3 will be the point 6 that you proposed where we should wait before proceeding to just verify and decide whether I will keep first or second approach."
+
+> "So you can remove our blocking sessions about never committing or following the legacy folders path. I mean, Limen requires new folders, so move all the previous ones into new structure. And you can adjust the agents MD with the information about not committing. It's not necessary there."
+
+> "Perhaps it's okay to just prepare only partially implementation plan, then run another session of planning."
+
+Decisions:
+
+- **V1** Three stages. Stage 1: Limen out of the box (no overlay of `worker.md` / `reviewer.md`, no change of Limen behavior). Stage 2: adapt agents, subagents, skills to the user's needs; own plan session after stage 1 use. Stage 3: verify and decide (plain Limen vs adapted Limen; the fate of `run-task`, `implementer`, `reviewer`, `bg-agent.sh`).
+- **V2** Remove the rules that block a Limen worker: "subagents never commit", Git mode `task/<name>`, "create `tasks/active/<name>.md`", status-line rules, from `CLAUDE.md` and `~/.pi/agent/AGENTS.md`. Part of stage 1.
+- **V3** Move all task history to Limen's structure: `tasks/{planned,active,done}` → `spec/features/{planned,active,done/YYYY-MM}/FNNN-slug/`. Replaces D1 ("freeze `tasks/`"). Exception: `s6-pre-sale` stays in `tasks/active/` until the user says it can move or it is finished.
+- **V4** Herdr: the user has it installed and uses it. Fact check 2026-11-12: `/var/log/pacman.log` shows `removed herdr (0.9.1-2)` and `installed herdr-app (0.1.13-1)`, `herdr-core (0.1.18-1)` on 2026-11-05. Limen finds Herdr only as a `herdr` binary on `PATH` or `LIMEN_HERDR` (`src/integrations/herdr.ts:775`), and uses the `herdr` CLI (`herdr integration install pi`, `herdr agent start`). `herdr-app` has another CLI (`ls`, `do`, `commands`). So Limen runs without its Herdr integration now. Open: user decides (reinstall `herdr` 0.9.x next to `herdr-app`, or run Limen without Herdr).
+- **V5** Test feature: the user picks it at the time. Replaces D8.
+- **V6** Models: no new choice by the user. Fact check 2026-11-12 (`docs/setup.md` § Models): Limen does not use the pi default model; without `--model` or `LIMEN_WORKER_MODEL` it uses `openai-codex/gpt-6-astra:high`. By design the board `spec/build.md` holds model per role and the coordinator passes them. Proposal: copy the current agent-file choices (worker = `implementer.md`, reviewer = `reviewer.md`: `claude-bridge/claude-sonnet-5-5`). Bridge: Limen auto-adds the bridge only for provider `pi-claude` (`src/runtime/engine.ts:282`, verified); ours is `claude-bridge` (`convert.ts:8`, verified), so each spawn passes `--extension <bridge path>` (Limen's documented "personal model route"). Replaces D3.
+- **V8** Global `~/.pi/agent/AGENTS.md` moves to Limen's folder structure for all repos (user 2026-11-12: "we can move towards the idea of Limen and its folder structures. I will eventually install it on all other repositories here"). Remove the "never commit" and `tasks/` rules there too.
+- **V7** `run-task` and the old subagents: open until stage 3. Not changed in stage 1.
+- Open (agent recommendation, user to confirm): shared GreenMail → one job at a time runs `test:int`.
+- **V4 decision (agent, user delegated it 2026-11-12: "decision is up to you, so Limen will work properly as designed"):** install `omarchy/herdr` 0.9.1 next to `herdr-app`; fallback plain `LIMEN_COORDINATOR=1 pi`. Detail: stage 1 S1-D1.
+
+Stages:
+
+- [ ] **Stage 1 — Limen out of the box.** [`limen-transition/stage-1-out-of-box.md`](limen-transition/stage-1-out-of-box.md).
+- [ ] **Stage 2 — adapt agents, skills, rules to the user's needs.** Own plan session after real use of stage 1.
+- [ ] **Stage 3 — verify and decide; remove the leftovers of the approach not chosen.**
+
 ## Plan
 
-- [ ] **Stage 0 — clear the ground.** `sync-sort-folders` closes (stage 17). `s5a-web-foundation`: finish the build in the old flow, or pause it at a pushed stage boundary. Remove stale worktrees after a check: `~/ea-s3-test`, `~/.cache/ea-review/s5a-opus` (only when its review is done), `~/.cache/ea-testmail/82cf…`. Check: `git worktree list`.
-- [ ] **Stage 1 — install and route probe (no repo change).** Clone, `npm install`, `npm link`. `limen --help`. In a scratch repo (`/tmp/limen-probe`, one commit): `limen init`, then one detached spawn on the Claude route of 2.1 with the task "create hello.txt, commit". Check: `limen jobs <id>` shows `done`, one commit, `model` line names the Sonnet route. Also note the env variables a job gets (`LIMEN_CONTEXT_ROOT`, `LIMEN_JOB_ID`) for the prepare script. Write the result in this log and in `~/.pi/agent/notes/2026-11-04-limen.md`.
-- [ ] **Stage 2 — repo files.** `limen init` in the main checkout. Write `spec/vision.md`, `.agents/limen/styleguide.md`, `reminders.md`, `communication.md` (overlay), `scripts/limen-prepare.sh`, `.gitignore` line. User reviews vision and styleguide (they are injected into every call). Check: `limen status` runs; `bash scripts/limen-prepare.sh` in a test worktree gives `.env`, `node_modules`, own DB. Commit on master.
-- [ ] **Stage 3 — roles and board.** `spec/build.md` with TRACK bullets: standing models (D3), review policy (D5), checkpoint policy (D6), `[risky]` list link. Edit `planner.md` output (2.4). Add § Limen to `~/.pi/agent/AGENTS.md`. Start the coordinator: `LIMEN_COORDINATOR=1 pi` in the main checkout; check that the Limen hooks load (the coordinator answers with the board digest). Commit.
-- [ ] **Stage 4 — pilot (D8).** Ticket F001 via `plan-task` → commit → worker → review → land → push → user tries. Measure, in the log: spawn worked first time (y/n), steers needed, review rounds, open checks at finish, your attention time (rough minutes), DB/port conflicts, tokens (`limen jobs <id>` tokens line). Then one second feature with 2 independent workers in parallel.
-- [ ] **Stage 5 — switch rules and close.** Decide go / no-go from the pilot. Go: change the documents of 2.6, retire `bg-agent.sh` and pipeline mode, add the DB drop to the close step. No-go: remove `spec/`, `.agents/limen/`, the stubs; keep the ideas of option A in the analysis note. Done-checklist, `git mv` this file to `tasks/done/`.
+- [ ] **Stage 0 — clear the ground.** Old active tasks finish in the old flow (`run-task` unchanged). Remove stale worktrees after a check (`~/ea-s3-test`, `~/.cache/ea-testmail/82cf…`, old `~/.cache/ea-review/*`). Check: `git worktree list`.
+- [ ] **Stage 1 — install and probe (no repo change).** Clone Limen to `~/Documents/repos/limen`, `git checkout f1e3a54`, `npm install`, `npm link`. Scratch repo `/tmp/limen-probe`: `limen init`, one job on the Claude route (`--provider claude-bridge --extension ~/.pi/agent/npm/node_modules/pi-claude-bridge`). The probe job also answers: (a) does it see `CLAUDE.md` and `~/.pi/agent/AGENTS.md` (put one marker rule in the scratch `CLAUDE.md`), (b) which env variables it has (`LIMEN_JOB`, `LIMEN_JOB_ID`, `LIMEN_CONTEXT_ROOT`), (c) where its worktree is. Check: `limen jobs <id>` = done, 1 commit, served model = Sonnet. Results to the log and `~/.pi/agent/notes/2026-11-04-limen.md`.
+- [ ] **Stage 2 — repo install.** `limen init` in the main checkout. Write `spec/vision.md`, `.agents/limen/styleguide.md` (links `docs/code-patterns.md`), `reminders.md`, `scripts/limen-prepare.sh` (`.env`, `bun install`, own DB), `.gitignore` `.limen/`. You read vision and styleguide. Check: `limen status`; prepare script in a test worktree gives `.env`, `node_modules`, own DB. Commit.
+- [ ] **Stage 3 — rules.** `CLAUDE.md` and `~/.pi/agent/AGENTS.md`: the "Inside a Limen job" block and a coordinator pointer (only if stage 1 (a) shows jobs load them; else only the pointer). `spec/build.md` TRACK: models (D3), review per batch (D5), gates (D6), batch limits (§5). Add § Limen with the Claude route to `~/.pi/agent/AGENTS.md`. Check: `LIMEN_COORDINATOR=1 pi` in the main checkout loads the hooks and quotes the board. Commit.
+- [ ] **Stage 4 — skills.** `plan-task`: new place + `ticket.md` + `Batch:` and `Track:` fields. New skill `~/.pi/agent/skills/limen-run/` with the loop of `target-harness.md` B.4: spawn one job per batch (with `Ticket:`, the stage file list and `--timeout`), read the wake and the note check, review job per batch, `continue` for fixes (max 2), ask at checkpoints and `[risky]`, `land --keep-open`, push. `run-task` stays for the old tasks. Check: a dry read by a `reviewer` subagent of both skills against `target-harness.md` (gaps, conflicts).
+- [ ] **Stage 5 — pilot.** One small feature (D8) with `plan-task` → `limen-run`: at least 2 batches, one pair of parallel tracks. Measure in the log: first spawn ok, jobs per feature, review rounds, open checks, wall time, your attention time, DB/port conflicts.
+- [ ] **Stage 6 — decide and close.** Go: `tasks/README.md` and `CLAUDE.md` describe the new flow as the default; `bg-agent.sh` and pipeline mode retire when the last old task closes. No-go: remove `spec/`, `.agents/limen/`, the stubs and the rule block; keep U1–U2 as a `run-task` edit. Done-checklist, `git mv` to `tasks/done/`.
 
-Rollback at any stage: Limen adds files only (`spec/`, `.agents/limen/`, `.pi/extensions/limen.ts`, `.omp/extensions/limen.ts`, `.limen/`). Remove them and the old flow works again; `tasks/` is not touched until stage 5.
+Rollback at any stage: the old flow (`run-task`, `tasks/`) stays working until stage 6.
 
 ## Risks to watch
 
@@ -311,3 +368,7 @@ Rollback at any stage: Limen adds files only (`spec/`, `.agents/limen/`, `.pi/ex
 
 - 2026-11-10: User decided to move to Limen. Analysis note written; Limen `main` `f1e3a54` read; bridge provider mismatch found in code (not tested). This plan written. Waiting for D1–D9.
 - 2026-11-10: Added part 3 "Before and after" (what stays, what changes, epic loop ways 1–2, harness settings, why CLAUDE.md and AGENTS.md change, effort) on the user's question.
+- 2026-11-12: User asked to focus on two topics: the Limen install in this repo and the new SDLC (planning, build, review). Wrote `limen-transition/target-harness.md`. New: B.7 tension (Limen "no edit list" vs our detailed plans) with a proposal.
+- 2026-11-12: User decisions U1–U3 (batches of slices per job, apply §4, keep detailed plans). Added §5 (what must change: rules and two skills, not the agent files) and replaced the plan with stages 0–6.
+- 2026-11-12: User approved the direction: do stages 0–5, stop before stage 6, use Limen for real, then decide; stage 6 "go" removes the old flow. Handoff for the plan session written.
+- 2026-11-12: Re-scoped to 3 stages (§6, V1–V8). Read Limen `f1e3a54` again (Herdr detection, models, ticket check). Wrote the stage 1 plan `limen-transition/stage-1-out-of-box.md`. User approved it ("yes"); this includes the default for `~/.pi/agent/tasks/active/` (move to the Limen layout). The time for step 1.9 is still open.
