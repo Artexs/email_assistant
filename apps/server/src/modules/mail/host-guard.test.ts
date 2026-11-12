@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { SoftError } from "../../platform/errors";
+
 import {
   configureMailHosts,
   DEFAULT_MAIL_HOST_POLICY,

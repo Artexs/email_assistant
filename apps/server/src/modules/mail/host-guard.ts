@@ -2,6 +2,7 @@ import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 
 import { SoftError } from "../../platform/errors";
+
 import { isLocalAddress, isLocalMailHost } from "./host-check";
 import { HostNotAllowedError } from "./port";
 
