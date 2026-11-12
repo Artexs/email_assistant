@@ -1,4 +1,4 @@
-> **Status 2026-11-12 — in progress — steps 1.1–1.3 done.** Next: steps 1.4–1.8 (new session); step 1.9 waits for an S6-quiet time.
+> **Status 2026-11-12 — in progress — steps 1.1–1.4 done.** Next: steps 1.5–1.8; step 1.9 waits for an S6-quiet time.
 
 # Stage 1 — Limen out of the box
 
@@ -284,3 +284,4 @@ Revert the repo commits (1.4, 1.5–1.8, the 1.9 merge with `-m 1`), revert the 
 ## Log
 
 - 2026-11-12: 1.1 done: `~/ea-s3-test` and `~/.cache/ea-testmail/82cf…` worktrees removed, `email_assistant-wt` removed; `git worktree list` = main checkout only. 1.2 done: user installed `herdr` 0.9.1 (`herdr --version` → `herdr 0.9.1`; `herdr-app 0.1.13` unchanged); Limen cloned at `f1e3a54`, `npm link`, `limen --help` runs; `herdr integration install pi` → `~/.pi/agent/extensions/herdr-agent-state.ts`. 1.3 done: probe job without `--extension` FAILED (`Unknown provider "claude-bridge"`); with the bridge path DONE WITH OPEN CHECKS, commit `3fd536e Add hello.txt`, model `claude-bridge/claude-sonnet-5-5`. Jobs load `CLAUDE.md` and `~/.pi/agent/AGENTS.md` (marker `BLUE-17` and heading `## Harness` quoted without a read). So step 1.4 "Inside a Limen job" line is required, not optional. `LIMEN_CONTEXT_ROOT` = main checkout. Detail: `~/.pi/agent/notes/2026-11-04-limen.md` § "Install and probe 2026-11-12".
+- 2026-11-12: 1.4 done. `~/.pi/agent/AGENTS.md` as planned (Work items, Session start, § Limen; Replies → ticket folder); `~/.pi/agent` commit `d964223`, pushed. Open item done by default: `~/.pi/agent/tasks/active/{short-replies,harness-sync}.md` → `~/.pi/agent/spec/features/active/F001-short-replies/`, `F002-harness-sync/` (`plan.md` + `ticket.md`, by first-add date); `.gitignore` allowlist + `!/spec/`; link in `notes/2026-11-06-harness-migration.md` rewritten. `CLAUDE.md` as planned; one extra: `## Notes` grep line now names `spec/features/`, `tasks/` (S6 only). Check: `grep -nE "never commit|Git mode|tasks/active|status line" CLAUDE.md ~/.pi/agent/AGENTS.md` → only `CLAUDE.md:26` (the S6 old-flow line).
