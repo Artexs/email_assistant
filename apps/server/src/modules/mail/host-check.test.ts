@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { isLocalMailHost } from "./host-check";
+import { isLocalAddress, isLocalMailHost } from "./host-check";
 
 describe("isLocalMailHost", () => {
   test.each([
@@ -42,4 +42,29 @@ describe("isLocalMailHost", () => {
       expect(isLocalMailHost(host)).toBe(false);
     }
   );
+});
+
+describe("isLocalAddress", () => {
+  test.each([
+    "100.64.0.1",
+    "100.127.255.255",
+    "198.18.0.1",
+    "198.19.255.255",
+    "192.0.0.8",
+    "::ffff:100.64.0.1",
+    "127.0.0.1",
+    "10.1.2.3",
+    "fe80::1",
+    "not-an-ip",
+  ])("refuses %s", (ip) => {
+    expect(isLocalAddress(ip)).toBe(true);
+  });
+
+  test.each(["100.128.0.1", "198.20.0.1", "192.0.1.1", "8.8.8.8", "2001:4860:4860::8888"])("allows %s", (ip) => {
+    expect(isLocalAddress(ip)).toBe(false);
+  });
+
+  test("isLocalMailHost refuses a Tailscale literal", () => {
+    expect(isLocalMailHost("100.64.0.1")).toBe(true);
+  });
 });
