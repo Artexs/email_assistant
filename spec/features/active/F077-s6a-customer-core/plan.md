@@ -1,9 +1,9 @@
-> **Status 2026-11-12 — in progress — plan approved by the user ("ok", with the scope change of the same day).** Left: the build with `run-task` (`Git mode: worktree`, `Run mode: pipeline`); no user step blocks it.
+> **Status 2026-11-12 — in progress in Limen (ticket F077).** Left: stages 6–18, one Limen worker job per stage, landed with `limen land --keep-open`. The old `run-task` flow, its worktree and its pipeline mode are not used (user decision 2026-11-12).
 
 # S6a Customer core: scopes, consent, plan state, retention
 
 Scope: the S6 master plan `tasks/active/s6-pre-sale.md` (findings 1 and 2, P3, D1–D6, D29, D31 (frame, trial, cap and `auth_error` events), "Rules for every step"). Also replaces the Limen tickets `spec/features/planned/F031-actions-scope-removal/` and `spec/features/planned/F027-retention-job/` (the old `actions-scope-removal.md` and `retention-job.md`, moved by the Limen migration `67cca12`; stage 18.5 closes them). Needs: S5 (done). No user step blocks the build (the scope change of 2026-11-12 dropped U0; master plan § "Scope change": local production on the home VPS, no outside customers; S6a stays whole, P17).
-Git mode: master for this plan (task files only). The build: worktree (`task/s6a-customer-core`). Run mode: pipeline. Review model: stronger reviewer (Opus, high) for every stage.
+Build: Limen worker jobs (standing models in `spec/build.md`), one per stage, each in its own worktree and DB from `scripts/limen-prepare.sh`. Not `run-task`.
 
 ## Goal
 
