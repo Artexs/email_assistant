@@ -1543,9 +1543,19 @@ export async function markResultNotified(db: DbOrTrx, ctx: TenantContext, id: st
   return result.numUpdatedRows > 0n;
 }
 
-type ExpiredReason = "timeout" | "draft_missing" | "not_notified" | "held_timeout";
+type ExpiredReason = "timeout" | "draft_missing" | "not_notified" | "not_seen" | "held_timeout";
+
+// F079: true when an owner received the approval request of the send (one `sent` outbox row of it).
+const requestSent = sql<boolean>`exists (
+  select 1 from outbox o2
+  where o2.org_id = a.org_id and o2.status = 'sent'
+    and ((o2.kind = 'approval' and o2.dedup_key = 'approval:' || a.id::text)
+      or (o2.kind = 'approval_set' and o2.dedup_key = 'approval_set:' || (a.payload->>'set_id')))
+)`;
 
 // D22: the sends of one mailbox that the expiry job closes, each with the first reason that applies.
+// `timeout` needs a delivered request. An old request that no owner received ends as `not_seen`, except in a suspended
+// organization: there the send waits and the resume hook ends it (F079, `expireUnseenApprovals`).
 export async function listExpiredApprovals(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -1558,15 +1568,17 @@ export async function listExpiredApprovals(
     select id, reason from (
       select a.id, a.created_at,
         case
-          when a.status = 'awaiting_approval' and a.notified_at < ${ttlBefore} then 'timeout'
+          when a.status = 'awaiting_approval' and a.notified_at < ${ttlBefore} and ${requestSent} then 'timeout'
           when a.status = 'awaiting_approval' and d.status in ('failed', 'undone') then 'draft_missing'
           when a.status = 'awaiting_approval' and a.notified_at is null and a.created_at < ${createdBefore}
             then 'not_notified'
+          when a.status = 'awaiting_approval' and a.notified_at < ${ttlBefore} and o.plan <> 'suspended' then 'not_seen'
           when a.status = 'approved' and a.approved_at < ${ttlBefore}
             and (a.locked_at is null or a.locked_at < ${opts.staleBefore}) then 'held_timeout'
         end as reason
       from actions a
       join emails e on e.id = a.email_id and e.org_id = a.org_id
+      join organizations o on o.id = a.org_id
       left join actions d on d.id = a.depends_on_action_id and d.org_id = a.org_id
       where a.org_id = ${ctx.orgId} and e.org_id = ${ctx.orgId} and e.mailbox_id = ${mailboxId}
         and a.type = 'send' and a.status in ('awaiting_approval', 'approved')

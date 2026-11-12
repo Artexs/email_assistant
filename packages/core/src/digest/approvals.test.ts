@@ -349,7 +349,11 @@ describe("renderSendResult", () => {
       "⌛ Not sent: no approval request could go out within 7 days (no linked owner, or the draft was not created) · Fwd: Offer",
       "both",
     ],
-    ["not_seen", "⌛ Not sent: the account was paused before you saw the approval request · Fwd: Offer", "both"],
+    [
+      "not_seen",
+      "⌛ Not sent: you did not receive the approval request (the account was paused, or it did not go out) · Fwd: Offer",
+      "both",
+    ],
     [
       "held_timeout",
       "⌛ Not sent: it waited 48 h after your approval and was not sent (held by SEND_SCOPE or the mailbox state) · Fwd: Offer",

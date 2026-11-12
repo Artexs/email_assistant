@@ -104,6 +104,7 @@ describe("send logs", () => {
         const stale = await mail({
           sendStatus: "awaiting_approval",
           notifiedAt: new Date(T0.getTime() - 49 * HOUR),
+          requestSent: true,
           draftProviderResult: { uid: 3, folder: "Drafts" },
         });
         // A delegation that was sent and is overdue: the chaser plans a reminder.
@@ -160,16 +161,23 @@ describe("send logs", () => {
             .execute();
           await detectNotices({ db: trx, now: () => clock, startedAt: new Date(T0.getTime() - 24 * HOUR) });
         };
-        const outboxIds = async (kind: string) =>
+        // `except`: the fixture inserts a `sent` request row for the stale send; the notifier did not queue it.
+        const outboxIds = async (kind: string, except: string = "") =>
           (
-            await trx.selectFrom("outbox").select("id").where("org_id", "=", orgId).where("kind", "=", kind).execute()
+            await trx
+              .selectFrom("outbox")
+              .select("id")
+              .where("org_id", "=", orgId)
+              .where("kind", "=", kind)
+              .where("status", "<>", except)
+              .execute()
           ).map((row) => row.id);
 
         // The drafts, then the approval requests.
         await committer.run();
         advance(1);
         await notices();
-        const approvals = await outboxIds("approval");
+        const approvals = await outboxIds("approval", "sent");
         expect(approvals.length).toBeGreaterThanOrEqual(2);
 
         // The taps.
@@ -239,7 +247,7 @@ describe("send logs", () => {
         for (const id of approvals) expect(output).toContain(`notice approval queued: outbox ${id}`);
         for (const id of results) expect(output).toContain(`notice send_result queued: outbox ${id}`);
         expect(output).toContain(
-          `expiry ${mailboxId}: expired 1 (timeout 1, draft_missing 0, not_notified 0, held_timeout 0)`
+          `expiry ${mailboxId}: expired 1 (timeout 1, draft_missing 0, not_notified 0, not_seen 0, held_timeout 0)`
         );
         expect(output).toContain(`chaser ${mailboxId}: due 1, overdue 1, reminders 1`);
       });

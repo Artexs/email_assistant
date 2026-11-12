@@ -178,17 +178,17 @@ export function createExpiryJob(deps: ExpiryDeps): { run(): Promise<void> } {
     });
     if (rows.length === 0) return;
     const uidplus = await deps.uidplus(ctx, mailboxId);
-    const counts = { timeout: 0, draft_missing: 0, not_notified: 0, held_timeout: 0 };
+    const counts = { timeout: 0, draft_missing: 0, not_notified: 0, not_seen: 0, held_timeout: 0 };
     for (const row of rows) {
       const closed = await inTransaction(deps.db, (trx) =>
         expireSend(trx, ctx, row.id, { reason: row.reason, now, actor: "system", hooks: deps.hooks, uidplus })
       );
       if (closed) counts[row.reason] += 1;
     }
-    const total = counts.timeout + counts.draft_missing + counts.not_notified + counts.held_timeout;
+    const total = counts.timeout + counts.draft_missing + counts.not_notified + counts.not_seen + counts.held_timeout;
     if (total > 0) {
       log.info(
-        `expiry ${mailboxId}: expired ${total} (timeout ${counts.timeout}, draft_missing ${counts.draft_missing}, not_notified ${counts.not_notified}, held_timeout ${counts.held_timeout})`
+        `expiry ${mailboxId}: expired ${total} (timeout ${counts.timeout}, draft_missing ${counts.draft_missing}, not_notified ${counts.not_notified}, not_seen ${counts.not_seen}, held_timeout ${counts.held_timeout})`
       );
     }
   }

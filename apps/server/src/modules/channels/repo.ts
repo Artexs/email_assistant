@@ -447,12 +447,19 @@ export async function cancelPendingOutboxOfOrg(db: DbOrTrx, ctx: TenantContext):
   return Number(result.numUpdatedRows);
 }
 
-// F079: the resume hook. A `pending` approval request whose send no longer waits never goes out: its buttons would answer "expired".
-// A request of a send that still waits stays. `sending` rows finish.
-export async function cancelPendingApprovalRequestsOfClosedSends(db: DbOrTrx, ctx: TenantContext): Promise<number> {
+// F079: the resume hook. An approval request whose send no longer waits never goes out: its buttons would answer "expired".
+// A `pending` row, and a `sending` row whose claim is stale (`locked_at` before `staleBefore`: a crash left it, and the
+// sender would claim it again), become `failed` / `outdated`. A `sending` row with a fresh claim is in flight: it finishes.
+// A request of a send that still waits stays.
+export async function cancelPendingApprovalRequestsOfClosedSends(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { staleBefore: Date }
+): Promise<number> {
   const result = await sql`
     update outbox set status = 'failed', error_code = 'outdated', locked_at = null
-    where org_id = ${ctx.orgId} and status = 'pending' and kind in ('approval', 'approval_set')
+    where org_id = ${ctx.orgId} and kind in ('approval', 'approval_set')
+      and (status = 'pending' or (status = 'sending' and locked_at < ${opts.staleBefore}))
       and not exists (
         select 1 from actions a
         where a.org_id = outbox.org_id and a.type = 'send' and a.status = 'awaiting_approval'

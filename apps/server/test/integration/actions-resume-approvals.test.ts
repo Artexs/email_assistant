@@ -1,12 +1,18 @@
 import { randomUUID } from "node:crypto";
 
 import { afterAll, describe, expect, test } from "bun:test";
-import type { Transaction } from "kysely";
+import { sql, type Transaction } from "kysely";
 
 import { resumeHook } from "../../src/composition";
-import { SENT_COPY_PENDING_MAX_AGE_MS, getSend, listSendResultsToNotify } from "../../src/modules/actions";
-import { cancelPendingOutboxOfOrg } from "../../src/modules/channels";
-import { setOrgPlan } from "../../src/modules/tenancy";
+import {
+  SENT_COPY_PENDING_MAX_AGE_MS,
+  createExpiryJob,
+  getSend,
+  listSendResultsToNotify,
+  noDelegationHooks,
+} from "../../src/modules/actions";
+import { SENDER_STALE_MS, cancelPendingOutboxOfOrg } from "../../src/modules/channels";
+import { getOrgPlan, setOrgPlan } from "../../src/modules/tenancy";
 import type { DB, TenantContext } from "../../src/platform/db";
 
 import { createOrgWithMailbox, insertDraftAndSend, pauseOtherMailboxes } from "./fixtures";
@@ -22,6 +28,7 @@ afterAll(async () => {
 const HOUR = 3_600_000;
 const pausedAt = new Date("2026-11-10T08:00:00Z");
 const resumedAt = new Date(pausedAt.getTime() + 30 * HOUR);
+const resumedAfter60h = () => new Date(pausedAt.getTime() + 72 * HOUR);
 const APPLIED = { folder: "Drafts", uid: 7 };
 const hooks = { onSuspended: cancelPendingOutboxOfOrg, onResumed: resumeHook(db) };
 
@@ -195,6 +202,114 @@ describe("resume of a suspended organization (F079)", () => {
         status: "failed",
         error_code: "outdated",
       });
+    });
+  });
+
+  test("a pause of more than 48 h: the expiry job during the pause keeps an unseen send; the resume ends it as not_seen with a notice", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const unseen = await waiting(trx, s);
+      // A request that an owner received before the pause still times out by the 48 h rule.
+      const seen = await waiting(trx, s, { requestSent: true });
+      await queueRequest(trx, s, { kind: "approval", key: unseen.sendId, emailId: unseen.emailId, status: "pending" });
+      await setOrgPlan(trx, s.ctx, { plan: "suspended", actor: "operator", now: pausedAt }, hooks);
+
+      const duringPause = new Date(pausedAt.getTime() + 60 * HOUR);
+      const job = createExpiryJob({
+        db: trx,
+        now: () => duringPause,
+        hooks: noDelegationHooks,
+        uidplus: async () => true,
+      });
+      await job.run();
+
+      expect(await getSend(trx, s.ctx, unseen.sendId)).toMatchObject({ status: "awaiting_approval" });
+      expect(await getSend(trx, s.ctx, seen.sendId)).toMatchObject({ status: "expired", status_reason: "timeout" });
+
+      const result = await setOrgPlan(trx, s.ctx, { plan: "active", actor: "operator", now: resumedAfter60h() }, hooks);
+
+      expect(result).toMatchObject({ kind: "changed", expiredSends: 1 });
+      expect(await getSend(trx, s.ctx, unseen.sendId)).toMatchObject({ status: "expired", status_reason: "not_seen" });
+      const toNotify = await listSendResultsToNotify(trx, s.ctx, {
+        limit: 10,
+        now: resumedAfter60h(),
+        pendingCopyMaxAgeMs: SENT_COPY_PENDING_MAX_AGE_MS,
+      });
+      expect(toNotify.map((row) => [row.id, row.status_reason]).sort()).toEqual(
+        [
+          [unseen.sendId, "not_seen"],
+          [seen.sendId, "timeout"],
+        ].sort()
+      );
+    });
+  });
+
+  test("outside a pause, a request that no owner received for 48 h ends as not_seen, not as timeout", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const unseen = await waiting(trx, s);
+      const job = createExpiryJob({
+        db: trx,
+        now: () => new Date(pausedAt.getTime() + 60 * HOUR),
+        hooks: noDelegationHooks,
+        uidplus: async () => true,
+      });
+
+      await job.run();
+
+      expect(await getSend(trx, s.ctx, unseen.sendId)).toMatchObject({ status: "expired", status_reason: "not_seen" });
+    });
+  });
+
+  test("a throw in the resume hook rolls the resume back: the plan stays suspended and the send stays", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const unseen = await waiting(trx, s);
+      await setOrgPlan(trx, s.ctx, { plan: "suspended", actor: "operator", now: pausedAt }, hooks);
+      // The hook closes the send first, then throws: the savepoint of the failed change must undo both.
+      const failing = {
+        onResumed: async (...args: Parameters<typeof hooks.onResumed>) => {
+          await hooks.onResumed(...args);
+          throw new Error("hook failed");
+        },
+      };
+
+      await sql`savepoint resume_try`.execute(trx);
+      await expect(
+        setOrgPlan(trx, s.ctx, { plan: "active", actor: "operator", now: resumedAt }, failing)
+      ).rejects.toThrow("hook failed");
+      await sql`rollback to savepoint resume_try`.execute(trx);
+
+      expect(await getOrgPlan(trx, s.ctx)).toMatchObject({ plan: "suspended", resumedAt: null });
+      expect(await getSend(trx, s.ctx, unseen.sendId)).toMatchObject({ status: "awaiting_approval" });
+    });
+  });
+
+  test("a stale `sending` request of an ended send is cancelled; a fresh `sending` request is left to finish", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const stale = await waiting(trx, s);
+      const live = await waiting(trx, s);
+      await queueRequest(trx, s, { kind: "approval", key: stale.sendId, emailId: stale.emailId, status: "pending" });
+      await queueRequest(trx, s, { kind: "approval", key: live.sendId, emailId: live.emailId, status: "pending" });
+      await setOrgPlan(trx, s.ctx, { plan: "suspended", actor: "operator", now: pausedAt }, hooks);
+      const claim = (key: string, lockedAt: Date) =>
+        trx
+          .updateTable("outbox")
+          .set({ status: "sending", locked_at: lockedAt })
+          .where("org_id", "=", s.orgId)
+          .where("dedup_key", "=", `approval:${key}`)
+          .execute();
+      await claim(stale.sendId, new Date(resumedAt.getTime() - SENDER_STALE_MS - 60_000));
+      await claim(live.sendId, new Date(resumedAt.getTime() - 60_000));
+
+      await setOrgPlan(trx, s.ctx, { plan: "active", actor: "operator", now: resumedAt }, hooks);
+
+      expect(await outboxStatus(trx, s.ctx, `approval:${stale.sendId}`)).toEqual({
+        status: "failed",
+        error_code: "outdated",
+      });
+      expect(await outboxStatus(trx, s.ctx, `approval:${live.sendId}`)).toMatchObject({ status: "sending" });
     });
   });
 });

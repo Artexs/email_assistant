@@ -359,12 +359,12 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
   Read `<error>` and the row, and fix the cause (a bug: file it with the action type, never with the payload). To stop the retries you can set `notified_at` (approval), `result_notified_at` (send_result) or `answered_notified_at` (delegation_answered) by hand: this writes to the database, so do it only after the user says go.
 - **Status:** investigating
 
-### `expiry <mailboxId>: expired <n> (timeout <t>, draft_missing <d>, not_notified <u>, held_timeout <h>)`
+### `expiry <mailboxId>: expired <n> (timeout <t>, draft_missing <d>, not_notified <u>, not_seen <s>, held_timeout <h>)`
 
 - **First seen:** 2026-11-07 (S4 code; not seen live: the hourly timing is checked in the dev run, stage 19, which is open)
 - **Source:** `apps/server/src/modules/actions/expiry.ts` (`[actions]`, level `info`; job `actions.expiry`, every hour).
-- **Cause:** The job closed `<n>` sends as `expired`: `timeout` (48 h after the approval request), `draft_missing` (its draft failed or was removed), `not_notified` (no request went out within 7 days) and `held_timeout` (approved, but held for 48 h after the tap). Each gives the owners a result notice.
-- **Fix:** No action for `timeout`. A high `held_timeout` means sends were held: check `SEND_SCOPE`, a paused mailbox or a login error. A high `not_notified` means no owner is linked. The line `expiry <mailboxId> failed: <label>` (level `error`) means one mailbox failed; the next hour tries again.
+- **Cause:** The job closed `<n>` sends as `expired`: `timeout` (48 h after the approval request), `draft_missing` (its draft failed or was removed), `not_notified` (no request went out within 7 days), `not_seen` (the request is older than 48 h and no owner received it: no `sent` outbox row) and `held_timeout` (approved, but held for 48 h after the tap). Each gives the owners a result notice.
+- **Fix:** No action for `timeout`. A high `held_timeout` means sends were held: check `SEND_SCOPE`, a paused mailbox or a login error. A high `not_notified` means no owner is linked. A high `not_seen` means requests did not go out: check the owner chat link (`telegram:link`) and `outbox` rows with `failed`. The same reason `not_seen` also appears at the resume of a suspended organization (`bun run org:plan`, no log line from the job): the owner gets the result notice "you did not receive the approval request (the account was paused, or it did not go out)". The line `expiry <mailboxId> failed: <label>` (level `error`) means one mailbox failed; the next hour tries again.
 - **Status:** won't fix (expected behaviour)
 
 ### `committer <mailboxId>: SEND_SCOPE=<kind>, <n> approved sends wait`

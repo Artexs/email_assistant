@@ -320,7 +320,7 @@ export function renderSendResult(input: {
           rest = both;
           break;
         case "not_seen":
-          first = `⌛ Not sent: the account was paused before you saw the approval request · ${subject}`;
+          first = `⌛ Not sent: you did not receive the approval request (the account was paused, or it did not go out) · ${subject}`;
           rest = both;
           break;
         case "held_timeout":

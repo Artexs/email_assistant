@@ -7,7 +7,7 @@ import {
   type CommitterDeps,
   type SendScope,
 } from "./modules/actions";
-import { cancelPendingApprovalRequestsOfClosedSends } from "./modules/channels";
+import { cancelPendingApprovalRequestsOfClosedSends, SENDER_STALE_MS } from "./modules/channels";
 import type { SettingsDeps } from "./modules/config";
 import { delegationHooks } from "./modules/delegation";
 import { composeMessage, mailboxHasUidplus, openImapProvider, openSmtpSender } from "./modules/mail";
@@ -99,7 +99,9 @@ export function resumeHook(
       hooks,
       uidplus: mailboxHasUidplus,
     });
-    await cancelPendingApprovalRequestsOfClosedSends(trx, ctx);
+    await cancelPendingApprovalRequestsOfClosedSends(trx, ctx, {
+      staleBefore: new Date(input.now.getTime() - SENDER_STALE_MS),
+    });
     return expired;
   };
 }
