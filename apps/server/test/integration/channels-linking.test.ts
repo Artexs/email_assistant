@@ -16,7 +16,7 @@ import { insertMembership } from "../../src/modules/tenancy/repo";
 import type { DB } from "../../src/platform/db";
 import { HardError } from "../../src/platform/errors";
 
-import { addMember, createOrgWithMailbox, linkChat, randomChatId } from "./fixtures";
+import { addMember, createOrgWithMailbox, linkChat, randomChatId, suspendOrg } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -266,9 +266,25 @@ describe("chat linking", () => {
       const chatB = randomChatId();
       await linkChat(trx, { orgId }, userId, chatA, now);
       await linkChat(trx, { orgId }, second, chatB, now);
-      const all = await listLinkedChats(trx);
+      const all = await listLinkedChats(trx, { includeSuspended: true });
       expect(all).toContainEqual({ orgId, userId, role: "owner", chatId: chatA, linkedAt: now });
       expect(all).toContainEqual({ orgId, userId: second, role: "assistant", chatId: chatB, linkedAt: now });
+    });
+  });
+
+  test("listLinkedChats skips a suspended organization unless asked", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const b = await createOrgWithMailbox(trx);
+      await linkChat(trx, { orgId: a.orgId }, a.userId, randomChatId(), now);
+      await linkChat(trx, { orgId: b.orgId }, b.userId, randomChatId(), now);
+      await suspendOrg(trx, b.orgId);
+      const active = (await listLinkedChats(trx, { includeSuspended: false })).map((link) => link.orgId);
+      expect(active).toContain(a.orgId);
+      expect(active).not.toContain(b.orgId);
+      const all = (await listLinkedChats(trx, { includeSuspended: true })).map((link) => link.orgId);
+      expect(all).toContain(a.orgId);
+      expect(all).toContain(b.orgId);
     });
   });
 });

@@ -7,7 +7,15 @@ import { markDigestSent } from "../../src/modules/reports";
 import { setDigestTimes } from "../../src/modules/tenancy";
 import type { DB, TenantContext } from "../../src/platform/db";
 
-import { addMember, createOrgWithMailbox, insertTriaged, isolateChannels, linkChat, randomChatId } from "./fixtures";
+import {
+  addMember,
+  createOrgWithMailbox,
+  insertTriaged,
+  isolateChannels,
+  linkChat,
+  randomChatId,
+  suspendOrg,
+} from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -85,6 +93,22 @@ describe("scheduleDigests", () => {
       await run(trx, "2026-11-06T06:59:00Z");
       expect(await digests(trx, o.orgId)).toHaveLength(0);
       expect(await outbox(trx, o.orgId)).toHaveLength(0);
+    });
+  });
+
+  test("a suspended organization gets no digest; the active one does", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const a = await org(trx);
+      const b = await org(trx);
+      await suspendOrg(trx, b.orgId);
+
+      await run(trx, "2026-11-06T07:00:00Z");
+
+      expect(await digests(trx, a.orgId)).toHaveLength(1);
+      expect(await outbox(trx, a.orgId)).toHaveLength(1);
+      expect(await digests(trx, b.orgId)).toHaveLength(0);
+      expect(await outbox(trx, b.orgId)).toHaveLength(0);
     });
   });
 

@@ -24,6 +24,7 @@ import {
   isolateChannels,
   linkChat,
   randomChatId,
+  suspendOrg,
   testCapabilities,
 } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -107,6 +108,23 @@ async function rows(trx: Transaction<DB>, orgId: string, kind?: string) {
 }
 
 describe("urgent notices", () => {
+  test("a suspended organization gets no row; the active one does", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const a = await org(trx);
+      const b = await org(trx);
+      await suspendOrg(trx, b.orgId);
+      for (const o of [a, b]) {
+        await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
+      }
+
+      await run(trx);
+
+      expect(await rows(trx, a.orgId, "urgent")).toHaveLength(2);
+      expect(await rows(trx, b.orgId)).toEqual([]);
+    });
+  });
+
   test("every linked member gets one row per urgent mail; a repeat adds none", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);

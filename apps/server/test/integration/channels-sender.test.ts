@@ -6,7 +6,15 @@ import { createFakeChannel } from "../../src/modules/channels/fake/channel";
 import { insertDigest } from "../../src/modules/reports";
 import type { DB, TenantContext } from "../../src/platform/db";
 
-import { addMember, createOrgWithMailbox, insertTestEmail, isolateChannels, linkChat, randomChatId } from "./fixtures";
+import {
+  addMember,
+  createOrgWithMailbox,
+  insertTestEmail,
+  isolateChannels,
+  linkChat,
+  randomChatId,
+  suspendOrg,
+} from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -81,8 +89,11 @@ async function addRow(
     dedupKey: `sender:${counter}`,
     mailboxId: t.mailboxId,
     digestId: opts.digestId,
-    // An `urgent` row needs its e-mail (check constraint of the table).
-    emailId: kind === "urgent" ? await insertTestEmail(trx, t.ctx, t.mailboxId) : undefined,
+    // An `urgent` or approval row needs its e-mail (check constraint of the table).
+    emailId:
+      kind === "urgent" || kind === "approval" || kind === "approval_set"
+        ? await insertTestEmail(trx, t.ctx, t.mailboxId)
+        : undefined,
     message: { text: `${SECRET} ${counter}`, buttons: [[{ text: "OK", data: `ok:${counter}` }]] },
     createdAt: opts.createdAt ?? T,
     nextAttemptAt: opts.nextAttemptAt ?? T,
@@ -129,6 +140,39 @@ describe("outbox sender", () => {
       expect(allLines().some((line) => line.includes(SECRET))).toBe(false);
       await s.run(at(MINUTE));
       expect(s.channel.sent).toHaveLength(1);
+    });
+  });
+
+  test("a suspended organization's rows wait, approval rows too; the active one is sent in the same run", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const a = await tenant(trx);
+      const b = await tenant(trx);
+      const rowA = await addRow(trx, a);
+      const waiting = [
+        await addRow(trx, b),
+        await addRow(trx, b, { kind: "approval" }),
+        await addRow(trx, b, { kind: "approval_set" }),
+      ];
+      // A row that a crashed run left in `sending` is not taken back either.
+      const stale = await addRow(trx, b);
+      await trx
+        .updateTable("outbox")
+        .set({ status: "sending", locked_at: at(-HOUR) })
+        .where("id", "=", stale)
+        .execute();
+      await suspendOrg(trx, b.ctx.orgId);
+
+      const s = senderFor(trx);
+      await s.run(T);
+
+      expect(s.channel.sent).toHaveLength(1);
+      expect(s.channel.sent[0]?.chatId).toBe(a.chatId);
+      expect((await rowState(trx, rowA)).status).toBe("sent");
+      for (const id of waiting) {
+        expect(await rowState(trx, id)).toMatchObject({ status: "pending", locked_at: null, attempts: 0 });
+      }
+      expect(await rowState(trx, stale)).toMatchObject({ status: "sending", locked_at: at(-HOUR) });
     });
   });
 

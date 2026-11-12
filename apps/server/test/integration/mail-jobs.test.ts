@@ -6,12 +6,12 @@ import { sql, type Transaction } from "kysely";
 import { MailAuthError, type ImapConnectOptions, type SeedMessage } from "../../src/modules/mail";
 import { createFakeMailProvider, type FakeMailProvider } from "../../src/modules/mail/fake";
 import { createMailSyncJob } from "../../src/modules/mail/jobs";
-import { insertCredentials, setMailboxStatus } from "../../src/modules/mail/repo";
+import { countSyncTargets, insertCredentials, insertMailbox, setMailboxStatus } from "../../src/modules/mail/repo";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { DB } from "../../src/platform/db";
 import { SoftError } from "../../src/platform/errors";
 
-import { createOrgWithMailbox } from "./fixtures";
+import { createOrgWithMailbox, pauseOtherMailboxes, suspendOrg, testCapabilities } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -268,6 +268,58 @@ describe("mail sync job", () => {
         error.mockRestore();
         info.mockRestore();
       }
+    });
+  });
+});
+
+describe("suspended organizations", () => {
+  test("a sync run opens the provider of the active organization only", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const a = await addBox(trx);
+      const b = await addBox(trx);
+      await suspendOrg(trx, b.orgId);
+      const o = openers();
+      for (const box of [a, b]) {
+        const fake = createFakeMailProvider({ uidValidity: 7 });
+        fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - 3_600_000) });
+        o.fakes.set(box.address, fake);
+      }
+
+      await jobFor(trx, o).run();
+
+      expect(o.opened).toHaveLength(1);
+      expect(o.opened[0]).toBe(o.fakes.get(a.address) as FakeMailProvider);
+      expect((await mailboxRow(trx, a.mailboxId)).last_synced_at).toEqual(NOW);
+      expect((await mailboxRow(trx, b.mailboxId)).last_synced_at).toBeNull();
+      expect(await emailCount(trx, b.mailboxId)).toBe(0);
+    });
+  });
+
+  test("countSyncTargets counts active mailboxes of organizations that are not suspended", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const a = await addBox(trx);
+      const b = await addBox(trx);
+      // A second mailbox of A, paused.
+      const pausedId = randomUUID();
+      await insertMailbox(
+        trx,
+        { orgId: a.orgId },
+        {
+          id: pausedId,
+          address: `paused-${randomUUID()}@x.test`,
+          imapHost: "imap.x.test",
+          imapPort: 993,
+          smtpHost: "smtp.x.test",
+          smtpPort: 465,
+          capabilities: testCapabilities,
+          folderMap: {},
+        }
+      );
+      await setMailboxStatus(trx, { orgId: a.orgId }, pausedId, "paused", NOW);
+      await suspendOrg(trx, b.orgId);
+      expect(await countSyncTargets(trx)).toEqual({ mailboxes: 1, organizations: 1 });
     });
   });
 });

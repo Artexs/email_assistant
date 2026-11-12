@@ -2,11 +2,13 @@ import { actionsScope, committerDeps, sendScope, uidplusOf } from "./composition
 import { createCommitterJob, createExpiryJob, isOwnActionId } from "./modules/actions";
 import { createTelegramRuntime } from "./modules/channels";
 import { createChaserJob, delegationHooks } from "./modules/delegation";
-import { createMailSyncJob, openImapProvider } from "./modules/mail";
+import { countSyncTargets, createMailSyncJob, openImapProvider } from "./modules/mail";
+import { listOrganizations } from "./modules/tenancy";
 import { createLlmPause, createReturnedJob, createTriageJob, type TriageScope } from "./modules/triage";
 import { ConfigError, llmSettings, loadConfig, type Config } from "./platform/config";
 import { createSecretBox } from "./platform/crypto";
 import { assertAppRole, checkDb, createDb } from "./platform/db";
+import { describeError } from "./platform/errors";
 import { createHeartbeat } from "./platform/heartbeat";
 import { createApp } from "./platform/http";
 import { createLlmClient, llmProviders } from "./platform/llm";
@@ -70,6 +72,19 @@ if (config.HEARTBEAT_URL === undefined) log.warn("HEARTBEAT_URL is not set: the 
 const scheduler = createScheduler();
 scheduler.add("mail.sync", "*/5 * * * *", mailSync.run);
 scheduler.add("platform.heartbeat", "*/5 * * * *", heartbeat.tick);
+
+// A3: when a scope is `all`, one start line says whom the jobs act on (counts only, no ids). A DB error does not stop the start.
+if (config.TRIAGE_LLM_SCOPE === "all" || config.ACTIONS_SCOPE === "all" || config.SEND_SCOPE === "all") {
+  try {
+    const targets = await countSyncTargets(db);
+    const suspended = (await listOrganizations(db)).filter((org) => org.plan === "suspended").length;
+    log.warn(
+      `scope targets: ${targets.mailboxes} active mailboxes in ${targets.organizations} organizations, ${suspended} suspended organizations`
+    );
+  } catch (error) {
+    log.warn(`scope targets: count failed (${describeError(error)})`);
+  }
+}
 
 // The run of the triage worker that is going now. Shutdown waits for it.
 let triageRun: Promise<void> = Promise.resolve();

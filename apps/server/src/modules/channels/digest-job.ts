@@ -70,7 +70,7 @@ async function scheduleForLink(db: Db | Transaction<DB>, link: LinkedChat, now: 
 export async function scheduleDigests(deps: DigestJobDeps): Promise<void> {
   try {
     const now = deps.now();
-    for (const link of await listLinkedChats(deps.db)) {
+    for (const link of await listLinkedChats(deps.db, { includeSuspended: false })) {
       try {
         await scheduleForLink(deps.db, link, now);
       } catch (error) {

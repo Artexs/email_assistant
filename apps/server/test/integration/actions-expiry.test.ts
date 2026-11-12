@@ -1,7 +1,10 @@
+import { randomBytes } from "node:crypto";
+
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import {
+  createCommitterJob,
   createExpiryJob,
   expireSend,
   getDraft,
@@ -11,10 +14,13 @@ import {
   STALE_AFTER_MS,
   type DelegationHooks,
 } from "../../src/modules/actions";
-import { setMailboxStatus } from "../../src/modules/mail/repo";
+import { createFakeMailProvider } from "../../src/modules/mail/fake";
+import { createFakeMailSender } from "../../src/modules/mail/fake/sender";
+import { insertCredentials, setMailboxStatus } from "../../src/modules/mail/repo";
+import { createSecretBox } from "../../src/platform/crypto";
 import type { DB, TenantContext } from "../../src/platform/db";
 
-import { createOrgWithMailbox, insertDraftAndSend, pauseOtherMailboxes } from "./fixtures";
+import { createOrgWithMailbox, insertDraftAndSend, pauseOtherMailboxes, resumeOrg, suspendOrg } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -395,6 +401,74 @@ describe("createExpiryJob", () => {
         await expireSend(trx, a.ctx, pb.sendId, { reason: "timeout", now, actor: "system", hooks, uidplus: true })
       ).toBe(false);
       expect((await getSend(trx, { orgId: b.orgId }, pb.sendId))?.status).toBe("awaiting_approval");
+    });
+  });
+});
+
+describe("suspended organizations", () => {
+  test("(12) the expiry runs for a suspended organization; a resume does not send an approval older than 48 h", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const secret = createSecretBox(randomBytes(32).toString("base64"), 1);
+      const box = secret.encrypt("pw", `mailbox:${s.mailboxId}`);
+      await insertCredentials(trx, s.ctx, {
+        mailboxId: s.mailboxId,
+        encryptedSecret: box.ciphertext,
+        secretKind: "password",
+        keyVersion: box.keyVersion,
+      });
+      await suspendOrg(trx, s.orgId);
+      const { hooks } = recordingHooks();
+      const awaiting = await waiting(trx, s.ctx, s.mailboxId, { notifiedAt: ago(49 * HOUR) });
+
+      await jobFor(trx, hooks).run();
+
+      expect(await getSend(trx, s.ctx, awaiting.sendId)).toMatchObject({ status: "expired", status_reason: "timeout" });
+
+      // A send that was approved 49 h ago, before the pause. The resume does not revive it.
+      const approved = await waiting(trx, s.ctx, s.mailboxId, {
+        delegationId: undefined,
+        sendStatus: "approved",
+        approved: { userId: s.userId, at: ago(49 * HOUR) },
+      });
+      await resumeOrg(trx, s.orgId, now);
+      // The committer still applies the reverse draft row of the first expiry: it opens the provider, not the sender.
+      const opened: string[] = [];
+      const smtpCalls: string[] = [];
+      const sender = createFakeMailSender();
+      const committer = createCommitterJob({
+        db: trx,
+        secrets: secret,
+        openProvider: async (opts) => {
+          opened.push(opts.user);
+          return createFakeMailProvider();
+        },
+        openSender: async (opts) => {
+          smtpCalls.push(opts.user);
+          return sender;
+        },
+        scope: { kind: "all" },
+        sendScope: { kind: "all" },
+        now: () => now,
+      });
+
+      await committer.run();
+
+      expect(opened).toHaveLength(1);
+      expect(smtpCalls).toEqual([]);
+      expect(sender.sent).toEqual([]);
+      expect(await getSend(trx, s.ctx, approved.sendId)).toMatchObject({
+        status: "approved",
+        locked_at: null,
+        attempts: 0,
+      });
+
+      await jobFor(trx, hooks).run();
+
+      expect(await getSend(trx, s.ctx, approved.sendId)).toMatchObject({
+        status: "expired",
+        status_reason: "held_timeout",
+      });
     });
   });
 });

@@ -47,6 +47,7 @@ export {
   changeMailboxStatus,
   claimEmails,
   clearReturned,
+  countSyncTargets,
   countWaiting,
   finishEmail,
   forceRescan,

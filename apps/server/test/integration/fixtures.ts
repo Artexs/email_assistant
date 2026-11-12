@@ -100,6 +100,15 @@ export async function pauseOtherMailboxes(trx: Transaction<DB>): Promise<void> {
   await trx.updateTable("mailboxes").set({ status: "paused" }).where("status", "=", "active").execute();
 }
 
+// The plan state of the stage 6 tests: a direct update, as the CLI's service does it (the hooks are not part of these tests).
+export async function suspendOrg(trx: Transaction<DB>, orgId: string): Promise<void> {
+  await trx.updateTable("organizations").set({ plan: "suspended" }).where("id", "=", orgId).execute();
+}
+
+export async function resumeOrg(trx: Transaction<DB>, orgId: string, at: Date): Promise<void> {
+  await trx.updateTable("organizations").set({ plan: "active", resumed_at: at }).where("id", "=", orgId).execute();
+}
+
 // A new user with a membership in the org; returns the user id.
 export async function addMember(
   trx: Transaction<DB>,
