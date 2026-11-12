@@ -47,6 +47,12 @@ From 2026-11-09 15:21 UTC the server also syncs `Oferty`, `Społeczności`, `Rac
 
 (empty until the week ends)
 
+## S5e deploy (2026-11-11 23:37:21 UTC)
+
+- The web panel deploy restarted the server at T = 2026-11-11 23:37:21 UTC (commit `8f6a8b2`). The jobs are crash-safe; sync ticks ran as before and there were 0 `error` lines in the first 150 minutes (digest and committer ticks were not checked one by one).
+- The pilot mailbox was paused at 23:46:15 UTC and resumed at 23:46:17 UTC (smoke of the panel; 2 seconds).
+- New feedback source: `triage_feedback.source = 'web'` (the panel's ✅, ✏️ and ↩️). Count it together with `telegram` for the feedback numbers. 39 `web` ✅ rows (verdict `right`) exist from the smoke at 23:54–00:03 UTC.
+
 ## Log
 
 - 2026-11-07: Created when S3 closed; the week started at `<START>`.
