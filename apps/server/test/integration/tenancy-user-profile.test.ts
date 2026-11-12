@@ -25,7 +25,7 @@ describe("user auth profile", () => {
     });
   });
 
-  test("setUserTerms stores version and time; an unknown id gives false", async () => {
+  test("setUserTerms stores version and time; a stored version or an unknown id gives false", async () => {
     await withRollback(db, async (trx) => {
       const user = await insertUser(trx, { email: `u-${randomUUID()}@x.test`, displayName: "U" });
       const at = new Date("2026-11-20T10:00:00Z");
@@ -35,6 +35,9 @@ describe("user auth profile", () => {
         termsVersion: "2026-11-12",
         termsAcceptedAt: at,
       });
+      expect(await setUserTerms(trx, user.id, "2026-11-12", new Date("2026-11-21T10:00:00Z"))).toBe(false);
+      expect((await getUserAuthProfile(trx, user.id))?.termsAcceptedAt).toEqual(at);
+      expect(await setUserTerms(trx, user.id, "2026-12-01", at)).toBe(true);
       expect(await setUserTerms(trx, randomUUID(), "2026-11-12", at)).toBe(false);
     });
   });

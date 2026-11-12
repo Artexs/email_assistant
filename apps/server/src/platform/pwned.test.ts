@@ -73,6 +73,13 @@ describe("checkPwnedPassword", () => {
     expect(await checkPwnedPassword(LISTED, { fetch: fake, timeoutMs: 1000 })).toBe("pwned");
   });
 
+  test("a 200 body without a SUFFIX:COUNT line (HTML, empty) is unavailable", async () => {
+    for (const body of ["<html><body>Sign in to the network</body></html>", "", "AAAA:1\r\nnot a line\r\n"]) {
+      const { fake } = fakeFetch(body);
+      expect(await checkPwnedPassword(GOOD, { fetch: fake, timeoutMs: 1000 })).toBe("unavailable");
+    }
+  });
+
   test("status 503, a rejected fetch and a timeout are unavailable", async () => {
     const down = fakeFetch("", 503);
     expect(await checkPwnedPassword(LISTED, { fetch: down.fake, timeoutMs: 1000 })).toBe("unavailable");

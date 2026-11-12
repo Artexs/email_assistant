@@ -3,7 +3,7 @@ import { randomInt, randomUUID } from "node:crypto";
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import { sql } from "kysely";
 
-import { createOrganizationWithOwner } from "../../src/modules/tenancy";
+import { createOrganizationWithOwner, insertMembership } from "../../src/modules/tenancy";
 import { createAuth, RESET_REQUEST_ANSWER, type AuthHandle } from "../../src/platform/auth";
 import { createAuthMailTasks, type AuthMail, type AuthMailer, type AuthMailResult } from "../../src/platform/auth-mail";
 import { setLogLevel } from "../../src/platform/log";
@@ -162,6 +162,10 @@ describe("reset request", () => {
       statuses.push((await request(handle, `nobody-${randomUUID()}@x.test`, ip)).status);
     }
     expect(statuses).toEqual([200, 200, 200, 429]);
+    // Better Auth's own rule for this path is 60 s; the 900 s custom rule must be the one that answers.
+    const blocked = await request(handle, `nobody-${randomUUID()}@x.test`, ip);
+    expect(blocked.status).toBe(429);
+    expect(Number(blocked.headers.get("x-retry-after"))).toBeGreaterThanOrEqual(61);
   });
 
   test("the server link lives one hour", async () => {
@@ -228,6 +232,12 @@ describe("reset request", () => {
 describe("authMailFailedHandler", () => {
   test("calls notify with the oldest organization", async () => {
     const { orgId, userId } = await createOwner();
+    // A second, newer membership: the first organization must still be chosen.
+    const newer = { id: (await createOwner()).orgId };
+    await insertMembership(db, { orgId: newer.id }, { userId, role: "assistant" });
+    await sql`UPDATE memberships SET created_at = now() + interval '1 day' WHERE org_id = ${newer.id} AND user_id = ${userId}`.execute(
+      db
+    );
     const calls: unknown[][] = [];
     authMailFailedHandler(db, (...args) => calls.push(args))(userId, "reset", "EAUTH");
     await waitFor(() => calls.length > 0);

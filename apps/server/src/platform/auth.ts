@@ -1,6 +1,6 @@
 import { TERMS_VERSION } from "@ea/core";
 import { betterAuth } from "better-auth";
-import { APIError, createAuthMiddleware, isAPIError } from "better-auth/api";
+import { APIError, createAuthMiddleware, getSessionFromCtx, isAPIError } from "better-auth/api";
 import { Pool } from "pg";
 import { z } from "zod";
 
@@ -119,6 +119,7 @@ export function onAuthError(error: unknown): void {
 
 const SIGN_IN_PATH = "/sign-in/email";
 const RESET_PASSWORD_PATH = "/reset-password";
+const CHANGE_PASSWORD_PATH = "/change-password";
 const NEW_PASSWORD_PATHS: ReadonlySet<string> = new Set(["/reset-password", "/change-password"]);
 const MIN_PASSWORD_LENGTH = 12;
 const MAX_PASSWORD_LENGTH = 128;
@@ -140,15 +141,37 @@ function signInBody(ctx: HookContext): { email: string; password: string } | nul
   return parsed.success ? { email: parsed.data.email, password: parsed.data.password } : null;
 }
 
-// L13: a locked user gets the answer and the time of a wrong password. An error of `isLocked` is not caught (fail closed).
-async function rejectLockedSignIn(ctx: HookContext, lockout: LockoutStore, now: () => Date): Promise<void> {
+// L13: a locked user gets the answer and the time of a wrong password, also for a request that the endpoint refuses before it checks the password
+// (the form-CSRF middleware, the e-mail and length checks). The hook does not throw: the endpoint runs all its own checks,
+// and its password check always fails. An error of `isLocked` is not caught (fail closed).
+type PasswordApi = HookContext["context"]["password"];
+interface SignInOverride {
+  context: { context: { password: PasswordApi } };
+}
+
+async function lockSignIn(
+  ctx: HookContext,
+  lockout: LockoutStore,
+  now: () => Date
+): Promise<SignInOverride | undefined> {
   const body = signInBody(ctx);
-  if (body === null) return;
+  if (body === null) return undefined;
   const found = await ctx.context.internalAdapter.findUserByEmail(body.email.toLowerCase());
-  if (found && (await lockout.isLocked(found.user.id, now()))) {
-    await ctx.context.password.hash(body.password);
-    throw APIError.from("UNAUTHORIZED", { code: "INVALID_EMAIL_OR_PASSWORD", message: "Invalid email or password" });
-  }
+  if (!found || !(await lockout.isLocked(found.user.id, now()))) return undefined;
+  const password = ctx.context.password;
+  return {
+    context: {
+      context: {
+        password: {
+          ...password,
+          verify: async (input) => {
+            await password.verify(input);
+            return false;
+          },
+        },
+      },
+    },
+  };
 }
 
 // L16: no password is set without the current terms. This check runs before the leaked-password check: no outside call without the terms.
@@ -159,6 +182,20 @@ function rejectMissingTerms(ctx: HookContext): void {
   }
 }
 
+// The endpoint refuses a request without a session (`/change-password`) or without a live token (`/reset-password`) anyway.
+// For such a request no outside call goes out: the endpoint gives its own answer.
+async function mayChangePassword(ctx: HookContext): Promise<boolean> {
+  if (ctx.path === CHANGE_PASSWORD_PATH) {
+    return (await getSessionFromCtx(ctx)) !== null;
+  }
+  const body = ctx.body as { token?: unknown } | undefined;
+  const query = ctx.query as { token?: unknown } | undefined;
+  const token = body?.token || query?.token;
+  if (typeof token !== "string") return false;
+  const verification = await ctx.context.internalAdapter.findVerificationValue(`reset-password:${token}`);
+  return verification !== null && verification.expiresAt >= new Date();
+}
+
 // L14: a leaked or unchecked password is never stored. Other lengths are refused by Better Auth itself.
 // A check that is down fails closed: no password changes.
 async function rejectLeakedPassword(ctx: HookContext, pwnedCheck: NonNullable<AuthDeps["pwnedCheck"]>): Promise<void> {
@@ -166,6 +203,7 @@ async function rejectLeakedPassword(ctx: HookContext, pwnedCheck: NonNullable<Au
   if (typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
     return;
   }
+  if (!(await mayChangePassword(ctx))) return;
   const result = await pwnedCheck(password);
   if (result === "pwned") {
     throw APIError.from("BAD_REQUEST", {
@@ -197,6 +235,8 @@ async function countSignIn(
     if (typeof email !== "string") return;
     const found = await ctx.context.internalAdapter.findUserByEmail(email.toLowerCase());
     if (!found) return;
+    // Stage 5: a failure during a lock is not counted.
+    if (await lockout.isLocked(found.user.id, now())) return;
     const lock = await lockout.recordFailure(found.user.id, now());
     if (lock === null) return;
     await report("login_locked", found.user.id, { locked_until: lock.lockedUntil.toISOString() });
@@ -329,7 +369,8 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
           }
         }
         if (ctx.path === SIGN_IN_PATH && deps.lockout) {
-          await rejectLockedSignIn(ctx, deps.lockout, now);
+          const locked = await lockSignIn(ctx, deps.lockout, now);
+          if (locked) return locked;
         }
         if (ctx.path === RESET_PASSWORD_PATH) rejectMissingTerms(ctx);
         if (NEW_PASSWORD_PATHS.has(ctx.path) && deps.pwnedCheck) {
