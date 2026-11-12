@@ -119,7 +119,10 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
     undoable: isUndoable(actions.get(row.email_id) ?? [], request.now),
   }));
 
-  const skippedTooOld = await countEventsBetween(db, ctx, auditEvents.emailSkipped, range);
+  const skippedTooOld = await countEventsBetween(db, ctx, auditEvents.emailSkipped, range, { reasonCode: "too_old" });
+  const skippedBacklog = await countEventsBetween(db, ctx, auditEvents.emailSkipped, range, {
+    reasonCode: "suspended_backlog",
+  });
   const waiting = await countWaiting(db, ctx, { receivedSince: new Date(request.now.getTime() - WAITING_WINDOW_MS) });
 
   return renderDigest({
@@ -132,6 +135,7 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
     counts,
     items,
     skippedTooOld,
+    skippedBacklog,
     waiting,
     delegations,
   });

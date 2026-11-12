@@ -71,6 +71,7 @@ async function committedSetup() {
       delegates: [],
       timezone: "Europe/Warsaw",
       junkFolder: null,
+      resumedAt: null,
     };
     return { created, ctx, emailId, email, mailbox };
   } catch (error) {

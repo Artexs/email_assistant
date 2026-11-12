@@ -48,8 +48,8 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
     async run() {
       // The client is paused: no claim, no log line.
       if (deps.pause.isPaused(deps.now())) return;
-      // The zone of an organization, read once per run.
-      const timezones = new Map<string, string>();
+      // The zone and the resume time of an organization, read once per run.
+      const orgs = new Map<string, { timezone: string; resumedAt: Date | null }>();
       try {
         const targets = await listSyncTargets(deps.db);
         for (const { orgId, mailboxId } of targets) {
@@ -75,8 +75,8 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
               continue;
             }
 
-            let timezone = timezones.get(orgId);
-            if (timezone === undefined) {
+            let org = orgs.get(orgId);
+            if (org === undefined) {
               const organization = await getOrganization(deps.db, ctx);
               if (organization === undefined) {
                 if (!warnedNoOrganization.has(mailboxId)) {
@@ -85,8 +85,8 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
                 }
                 continue;
               }
-              timezone = organization.timezone;
-              timezones.set(orgId, timezone);
+              org = { timezone: organization.timezone, resumedAt: organization.resumed_at };
+              orgs.set(orgId, org);
             }
             const delegates = (await listDelegates(deps.db, ctx, { activeOnly: true })).map((delegate) => ({
               id: delegate.id,
@@ -105,8 +105,9 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
               rules: await listSenderRules(deps.db, ctx, mailboxId),
               movesSupported: capabilities.move === true || capabilities.uidplus === true,
               delegates,
-              timezone,
+              timezone: org.timezone,
               junkFolder: await getJunkFolderPath(deps.db, ctx, mailboxId),
+              resumedAt: org.resumedAt,
             };
             log.debug(`triage ${mailboxId}: delegates ${delegates.length}`);
 

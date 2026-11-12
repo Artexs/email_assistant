@@ -24,6 +24,7 @@ import {
   isolateChannels,
   linkChat,
   randomChatId,
+  resumeOrg,
   suspendOrg,
   testCapabilities,
 } from "./fixtures";
@@ -1358,6 +1359,72 @@ describe("urgent notice with a delegate", () => {
       const found = await rows(trx, o.orgId, "urgent");
       expect(found.length).toBeGreaterThan(0);
       expect(found[0]?.text).toContain("draft a delegation to Anna Nowak");
+    });
+  });
+});
+
+describe("after a resume (D4)", () => {
+  const resumedAt = new Date("2026-11-12T08:00:00Z");
+  const DAY = 24 * HOUR;
+
+  function later(offsetMs: number): Date {
+    return new Date(resumedAt.getTime() + offsetMs);
+  }
+
+  // An organization resumed at `resumedAt`; members linked and the mailbox known 10 days before it.
+  async function resumedOrg(trx: Transaction<DB>, lastSyncedAt: Date): Promise<Org> {
+    const o = await org(trx);
+    await resumeOrg(trx, o.orgId, resumedAt);
+    await trx
+      .updateTable("chat_links")
+      .set({ linked_at: later(-10 * DAY) })
+      .where("org_id", "=", o.orgId)
+      .execute();
+    await trx
+      .updateTable("mailboxes")
+      .set({
+        status: "active",
+        status_changed_at: later(-10 * DAY),
+        created_at: later(-10 * DAY),
+        last_synced_at: lastSyncedAt,
+      })
+      .where("id", "=", o.mailboxId)
+      .execute();
+    return o;
+  }
+
+  async function runAt(trx: Transaction<DB>, now: Date): Promise<void> {
+    await detectNotices({ db: trx, now: () => now, startedAt: new Date(now.getTime() - HOUR) });
+  }
+
+  test("no sync-late row in the first 30 minutes after the resume; one after, unless the sync is fresh", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const stale = await resumedOrg(trx, later(-3 * DAY));
+      const fresh = await resumedOrg(trx, later(2 * MINUTE));
+
+      await runAt(trx, later(5 * MINUTE));
+      expect(await rows(trx, stale.orgId, "sync_stale")).toHaveLength(0);
+
+      await runAt(trx, later(31 * MINUTE));
+      expect(await rows(trx, stale.orgId, "sync_stale")).toHaveLength(1);
+      expect(await rows(trx, fresh.orgId, "sync_stale")).toHaveLength(0);
+    });
+  });
+
+  test("urgent mail of before the resume gets no notice; mail after it does", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await resumedOrg(trx, later(2 * MINUTE));
+      const before = await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: later(-2 * HOUR) });
+      const after = await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: later(MINUTE) });
+
+      await runAt(trx, later(3 * MINUTE));
+
+      const found = await rows(trx, o.orgId, "urgent");
+      expect(found.length).toBeGreaterThan(0);
+      expect(found.every((row) => row.email_id === after)).toBe(true);
+      expect(found.some((row) => row.email_id === before)).toBe(false);
     });
   });
 });

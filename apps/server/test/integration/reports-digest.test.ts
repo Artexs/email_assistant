@@ -242,6 +242,24 @@ describe("buildDigestMessage", () => {
     });
   });
 
+  test("skipped mail is counted by reason_code: too_old and suspended_backlog have their own lines", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId };
+      for (const reasonCode of ["too_old", "suspended_backlog"]) {
+        await recordAudit(trx, ctx, {
+          actor: "system",
+          event: auditEvents.emailSkipped,
+          reasonCode,
+          at: at(-HOUR),
+        });
+      }
+      const message = await buildDigestMessage(trx, ctx, request);
+      expect(message.text).toContain("(older than 7 days): 1");
+      expect(message.text).toContain("(from the account pause): 1");
+    });
+  });
+
   test("the folder tag and the stay folder come from the mail's folders", async () => {
     await withRollback(db, async (trx) => {
       const a = await createOrgWithMailbox(trx);

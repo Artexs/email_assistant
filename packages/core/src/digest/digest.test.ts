@@ -50,6 +50,7 @@ function input(extra: Partial<DigestInput> = {}): DigestInput {
     counts: {},
     items: [],
     skippedTooOld: 0,
+    skippedBacklog: 0,
     waiting: 0,
     ...extra,
   };
@@ -240,6 +241,15 @@ describe("renderDigest", () => {
     const none = renderDigest(input()).text;
     expect(none).not.toContain("📭");
     expect(none).not.toContain("⏳");
+  });
+
+  test("backlog skips have their own footer line after the too-old line", () => {
+    const text = renderDigest(input({ skippedTooOld: 2, skippedBacklog: 3 })).text;
+    const tooOld = text.indexOf("📭 Not processed (older than 7 days): 2");
+    const backlog = text.indexOf("📭 Not processed (from the account pause): 3");
+    expect(tooOld).toBeGreaterThanOrEqual(0);
+    expect(backlog).toBeGreaterThan(tooOld);
+    expect(renderDigest(input({ skippedTooOld: 2, skippedBacklog: 0 })).text).not.toContain("from the account pause");
   });
 
   test("no shadow line in assist mode", () => {

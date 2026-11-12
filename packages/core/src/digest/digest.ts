@@ -54,7 +54,10 @@ export interface DigestInput {
   mailboxes: readonly DigestMailbox[];
   counts: Partial<Record<Category, number>>;
   items: readonly DigestItem[];
+  // `email.skipped` rows by `reason_code`: `too_old` only.
   skippedTooOld: number;
+  // `reason_code` `suspended_backlog`: mail of before an account pause.
+  skippedBacklog: number;
   waiting: number;
   delegations?: { open: number; overdue: number };
   maxLines?: number;
@@ -146,6 +149,7 @@ function renderListed(input: DigestInput, listed: readonly DigestItem[]): OutMes
   const more = parts.reduce((sum, part) => sum + part.rest, 0);
   if (more > 0) footer.push(`+${more} more: ${parts.map((part) => `${part.rest} ${part.name}`).join(", ")}`);
   if (input.skippedTooOld > 0) footer.push(`📭 Not processed (older than 7 days): ${input.skippedTooOld}`);
+  if (input.skippedBacklog > 0) footer.push(`📭 Not processed (from the account pause): ${input.skippedBacklog}`);
   if (input.waiting > 0) footer.push(`⏳ Waiting for triage: ${input.waiting}`);
   if (input.delegations !== undefined && input.delegations.open + input.delegations.overdue > 0) {
     footer.push(`👥 Delegations: ${input.delegations.open} waiting for a reply, ${input.delegations.overdue} overdue`);
