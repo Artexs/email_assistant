@@ -1,4 +1,4 @@
-> **Status 2026-11-09 — in progress — stage 16 done: merged (`0d39663`) and deployed to the VPS at T = 2026-11-09 15:21 UTC; the first checks pass. Stage 17 left: at T + 24 h (2026-11-10 15:21 UTC) or later, the live checks, the user's checkpoint 3 (optional ↩️ on a moved `Oferty` mail), unblock `test-mail-traffic`, close.** Handoff: `~/.pi/agent/notes/2026-11-09-handoff-sync-sort-folders-finish.md`.
+> **Status 2026-11-12 — done.** Merged `0d39663`, on the VPS since 2026-11-09 15:21Z. Live checks after 72 h pass (Log). The optional ↩️ tap on a moved `Oferty` mail was not done; the GreenMail run covers the Undo path.
 
 # Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci)
 
@@ -422,7 +422,7 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - [x] [Stage 14](sync-sort-folders/stage-14-dev-run-greenmail.md) [written] — Dev run on GreenMail with the fake Telegram [risky] — main session
 - [x] [Stage 15](sync-sort-folders/stage-15-docs-adr-followups.md) [written] — Docs, ADR 0014, notes, follow-up tasks — group review 12–15 + branch
 - [x] [Stage 16](sync-sort-folders/stage-16-merge-and-vps-deploy.md) [written] — Merge into `master` and VPS deploy [risky] — main session; checkpoint 2 before it
-- [ ] [Stage 17](sync-sort-folders/stage-17-live-checks-and-close.md) [written] — Live checks, unblock `test-mail-traffic`, close [risky] — main session; checkpoint 3
+- [x] [Stage 17](sync-sort-folders/stage-17-live-checks-and-close.md) [written] — Live checks, unblock `test-mail-traffic`, close [risky] — main session; checkpoint 3
 
 ### Results
 
@@ -493,10 +493,10 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 
 ## Done-checklist
 
-- [ ] Done-when checks pass (name the command and its output in the log).
-- [ ] `docs/` describe what was built; ADR 0014 is accepted; ADR 0010 says "amended by 0014".
-- [ ] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
-- [ ] Follow-up ideas are in `planned/` (`drop-mailbox-cursor-columns.md`, `junk-llm-cap.md`, `classifier-folder-hint.md`, `sync-return-to-other-folder.md`, `backfill-per-folder.md`).
+- [x] Done-when checks pass (name the command and its output in the log).
+- [x] `docs/` describe what was built; ADR 0014 is accepted; ADR 0010 says "amended by 0014".
+- [x] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
+- [x] Follow-up ideas are in `planned/` (`drop-mailbox-cursor-columns.md`, `junk-llm-cap.md`, `classifier-folder-hint.md`, `sync-return-to-other-folder.md`, `backfill-per-folder.md`).
 
 ## Log
 
@@ -508,7 +508,7 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
   Local GreenMail probe (F6–F7). Design D1–D22 written. D3: the migration only adds, so a code rollback stays possible during the pilot weeks.
 - 2026-11-08: Stage files written (1–17; stage 7 as 7a and 7b). Cold review: FAIL (4 majors, 17 minors), fixed; M3 changed D11/D12 (spam folder mail gets the
   normal move gate, no flag, no urgent notice: D23) and needs the user's yes (Q6). Re-review: FAIL (2 majors, 10 minors), fixed. Second re-review: PASS (8 minors, fixed). Q6 and Q7 wait for the approval.
-  The `test-mail-traffic` status line now links `tasks/active/sync-sort-folders.md`.
+  The `test-mail-traffic` status line now links `tasks/done/sync-sort-folders.md`.
 - 2026-11-08: The user approved the plan (Q6 and Q7: defaults) and asked for a handoff: an independent review of the plan by another agent before the build.
 - 2026-11-08: Independent review (Claude Code, claude-opus-5-5, separate session): 1 major open for the user, 13 minors fixed or decided
   (stage 1 in two runs, `listedExactly`, `TRANSFER_DROP_FLAGS`, test fixes in stages 2, 5, 10, 13, D24 (d) and (g), docs in stage 15, where the master-mode commits run).
@@ -595,3 +595,4 @@ Each stage lives in its own file in [`sync-sort-folders/`](sync-sort-folders/). 
 - 2026-11-09: Stage 15 built (implementer, 15.1 + 15.2) and reviewed (Sonnet, high): round 1 FAIL (2 major doc claims: audit compares by `folder`; returned-below-cursor looks up only the source folder S; 3 minors), fixed in round 2 (main session checked the fixes; the group review 12–15 reads the docs again). `docs/diagrams/code-map.html` rebuilt with `bun ~/.pi/agent/skills/explainer/scripts/explainer.ts build docs/diagrams/code-map.md -o docs/diagrams/code-map.html` (exit 1 on a label-spacing warning; file written). Prettier on `docs/modules.md`, `docs/roadmap.md`, `docs/decisions/README.md` re-padded tables (real change small: `git diff -w`).
 - 2026-11-09: Stage 16 done by the main session after the user's "deploy" (checkpoint 2, "yes, you can deploy and proceed…"): merged `0d39663`, VPS deployed at 15:21 UTC, first sync as expected (§ Results "Stage 16"). Stage 17 waits for T + 24 h.
 - 2026-11-12: Pointer from S5e: the web panel deploy restarted the VPS server at 2026-11-11 23:37:21 UTC (commit `8f6a8b2`, two migrations; crash-safe jobs). Details: `notes/2026-11-03-pilot-vps.md` section "S5e web deploy".
+- 2026-11-12: Stage 17 live checks on the VPS (72 h): error-pattern grep count 0; `folder offers: incremental` 8; "next tick tries again" 0; `mailbox:audit --since 2026-11-09T15:21Z`: inbox 4/4, offers 29/29, junk 1/1, social 0, bills 0, missing=0 duplicates=0 cross=0. test-mail-traffic already done. Optional user ↩️ tap on Oferty skipped. Closed; worktree DB dropped.

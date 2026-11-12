@@ -1,5 +1,5 @@
-> **Status 2026-11-07 — blocked until 2026-11-08T06:00Z (part A), 2026-11-14T22:40Z (part B).** S4 code is done and deployed (`tasks/done/s4-drafts-approvals-delegation.md`). Left: the real-mail checks that S4 closed without: part A (the first real round trip), part B (the one-week counts).
-> **Blocked until:** part A from 2026-11-08T06:00Z (07:00 Warsaw: quiet hours 22:00–07:00 hold approval messages before then). Part B from 2026-11-14T22:40Z (7 × 24 h after `<START>`). Before then an agent may only watch (`/status`, the server log, read-only SQL) and help the user stop sends (`SEND_SCOPE=off` + restart, or `/pause`). Check `date -u` first.
+> **Status 2026-11-12 — part A open (needs the user's phone); part B blocked until 2026-11-14T22:40Z.** S4 code is done and deployed (`tasks/done/s4-drafts-approvals-delegation.md`). Left: the real-mail checks that S4 closed without: part A (the first real round trip, no result yet), part B (the one-week counts).
+> **Blocked until:** part A: nothing (since 2026-11-08T06:00Z; keep approvals out of quiet hours 22:00–07:00 Warsaw). Part B from 2026-11-14T22:40Z (7 × 24 h after `<START>`). Before part B an agent may only watch (`/status`, the server log, read-only SQL) and help the user stop sends (`SEND_SCOPE=off` + restart, or `/pause`). Check `date -u` first.
 
 # S4 pilot week: real-mail checks of drafts, approvals, delegation
 
@@ -36,7 +36,7 @@ an approval message. Never approve a send for a test mail: reject it (`✖️ Re
 
 ## Sort-folder sync (2026-11-09 15:21 UTC)
 
-From 2026-11-09 15:21 UTC the server also syncs `Oferty`, `Społeczności`, `Rachunki` and `Wiadomości-śmieci` (`tasks/active/sync-sort-folders.md`). Their mail can get moves into `AI/*` (and spam folder mail into INBOX). Count drafts, approvals and sends for all mail and with `e.source_folder = 'INBOX'`.
+From 2026-11-09 15:21 UTC the server also syncs `Oferty`, `Społeczności`, `Rachunki` and `Wiadomości-śmieci` (`tasks/done/sync-sort-folders.md`). Their mail can get moves into `AI/*` (and spam folder mail into INBOX). Count drafts, approvals and sends for all mail and with `e.source_folder = 'INBOX'`.
 
 ## Plan
 

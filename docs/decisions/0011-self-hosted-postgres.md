@@ -30,4 +30,4 @@ Local Supabase starts about 10 containers. The server needs plain Postgres with 
 - The VPS owner runs backups and updates. External customers (S6) need a hosted EU server, not a home machine.
 - Old Supabase files (`backend/supabase/`, `@supabase/supabase-js`, migration `20251202212208_…`) are removed in S0.
 - 2026-11-03: S0 picked dbmate as the migration runner (user decision 2026-11-02).
-- 2026-11-12 (S5): the web login (Better Auth, ADR 0015) keeps its tables `auth_sessions`, `auth_accounts` and `auth_verifications` in the same database. There is no second database. The line adds a fact; it changes no decision.
+- 2026-11-12 (S5): the web login (Better Auth, ADR 0016) keeps its tables `auth_sessions`, `auth_accounts` and `auth_verifications` in the same database. There is no second database. The line adds a fact; it changes no decision.

@@ -26,7 +26,7 @@
 
 ### Sellable MVP (+ S5, S6)
 
-- Web panel (lite): login, connect mailbox, link Telegram, settings, rules, activity (built and deployed 2026-11-11, ADR 0015, 0016).
+- Web panel (lite): login, connect mailbox, link Telegram, settings, rules, activity (built and deployed 2026-11-11, ADR 0016, 0017).
 - Sign-up, billing, account and data deletion, hosted EU production, Vertex AI EU, privacy policy and DPA, cost model.
 
 ### Not in the MVP (Phase 2)
@@ -59,7 +59,7 @@ S3 state (2026-11-07): done (task file `tasks/done/s3-assist-actions.md`): the w
 
 S4 state (2026-11-07): done (`tasks/done/s4-drafts-approvals-delegation.md`, 23 stages): delegates and delegations with CLIs, prompt `classifier-v2` (eval: one accepted miss, `info` precision −5.8), delegation and clarification drafts, approval with Telegram buttons, SMTP send behind `SEND_SCOPE`, the Sent copy, the expiry job, the chaser and `job:run`. Deployed on the VPS (`fa60c7b`, `SEND_SCOPE=all` since 2026-11-07 22:40Z; the only delegate is the user's own Gmail). The real-mail round trip and the week counts: `tasks/planned/s4-pilot-week.md`.
 
-S5 state (2026-11-12): built in S5a–S5e and deployed on the VPS at 2026-11-11 23:37 UTC, behind Tailscale Serve (ADR 0015, 0016; facts: `notes/2026-11-12-web-panel-deploy.md`). Open: the phone sign-in and the phone cut-off check, and the ↩️ and ✏️ buttons on real mail. The market check (which mail the customers use) was not done (P9); the question stays for S6.
+S5 state (2026-11-12): built in S5a–S5e and deployed on the VPS at 2026-11-11 23:37 UTC, behind Tailscale Serve (ADR 0016, 0017; facts: `notes/2026-11-12-web-panel-deploy.md`). Open: the phone sign-in and the phone cut-off check, and the ↩️ and ✏️ buttons on real mail. The market check (which mail the customers use) was not done (P9); the question stays for S6.
 
 Order: `S0 → S1a → S1b → S2 → S3 → S4 → S5 → S6`.
 
@@ -96,12 +96,12 @@ Before each start (user steps):
 | DB tables                 | 17                                                                                                      |
 | HTTP route groups         | 8                                                                                                       |
 | Web pages                 | 6 in S5-lite (+ account page in S6; 3 more in Phase 2)                                                  |
-| External services (pilot) | 3: the IMAP/SMTP provider, Telegram Bot API, Google Gemini API                                          |
+| External services (pilot) | 3: the IMAP/SMTP provider, Telegram Bot API, the LLM API (Gemini or OpenAI)                             |
 | Source files              | about 160–200 (with tests)                                                                              |
 | Lines of TypeScript       | about 10–16 thousand (with tests)                                                                       |
 
 Server runtime libraries (about 11): `hono`, `imapflow`, `mailparser`, `nodemailer`, `html-to-text`, `@google/genai`, `zod`,
-`kysely` + `pg`, `croner`, `grammy`, and the migration runner (chosen in S0). Web: Astro static build with React islands, Better Auth (ADR 0015).
+`kysely` + `pg`, `croner`, `grammy`, and the migration runner (chosen in S0). Web: Astro static build with React islands, Better Auth (ADR 0016).
 
 Hardest parts (most risk):
 
@@ -125,11 +125,11 @@ Hardest parts (most risk):
 - Code rules for agents: `docs/code-patterns.md`.
 - Each slice has a task file in `tasks/`. It gets a file-level plan in `tasks/active/` before code starts (`tasks/README.md`).
 
-## 5. LLM: Google Gemini (ADR 0007, ADR 0012, ADR 0013)
+## 5. LLM: Gemini and OpenAI (ADR 0007, ADR 0012, ADR 0013, ADR 0015)
 
-- SDK `@google/genai`, key `GEMINI_API_KEY`, model from config `GEMINI_MODEL` (dev: `gemini-3.8-flash`), `GEMINI_MODEL_CLASSIFIER` (default `gemini-3.5-flash-lite`, provisional: `docs/architecture.md` §6.3), `GEMINI_RPM`, `LLM_DAILY_CAP`, `TRIAGE_LLM_SCOPE`.
-- All calls go through `platform/llm.ts` (`classify`; `write` comes in S4): timeout 30 s, rate limiter, 429 / 5xx / timeout = soft errors (pause: `docs/architecture.md` §4.1 rule 7).
-- Setup check: `bun run gemini:test` from the repo root (script `apps/server/src/scripts/gemini-check.ts`, env in the root `.env`). On 2026-11-02 the key worked, but the model returned `503 high demand`.
+- `LLM_PROVIDER` = `gemini` or `openai` (ADR 0015; the pilot VPS uses `openai`, `gpt-6-luna`). SDKs `@google/genai` and `openai`. Gemini: key `GEMINI_API_KEY`, model from config `GEMINI_MODEL` (dev: `gemini-3.8-flash`), `GEMINI_MODEL_CLASSIFIER` (default `gemini-3.5-flash-lite`, provisional: `docs/architecture.md` §6.3), `GEMINI_RPM`, `LLM_DAILY_CAP`, `TRIAGE_LLM_SCOPE`.
+- All calls go through `platform/llm/` (`classify`; `write` comes in S4): timeout 30 s, rate limiter, 429 / 5xx / timeout = soft errors (pause: `docs/architecture.md` §4.1 rule 7).
+- Setup check: `bun run llm:check --provider <gemini|openai>` from the repo root (script `apps/server/src/scripts/llm-check.ts`; `gemini:test` is an alias; env in the root `.env`). On 2026-11-02 the key worked, but the model returned `503 high demand`.
 - **Billing gate:** free tier only with test data. The temporary pilot Interia mailbox counts as test data (ADR 0013, user 2026-11-04). Cloud Billing (or Vertex AI) on before any other person's mail.
 - **Data:** pilot = Gemini API free tier for the temporary pilot mailbox (ADR 0013; the free-tier terms allow human review and training; accepted by the user 2026-11-04); the paid tier (55-day abuse logging, no EU location, accepted 2026-11-02) when billing goes on; Vertex AI EU before the first external customer (S6).
 - **Cost:** about $20 per mailbox per month at 200 mails/day with `gemini-3.8-flash` now, about $40 from 2027-01-01 (price doubles).

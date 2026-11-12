@@ -1,4 +1,4 @@
-# 0015 — Web panel: Astro static build with React islands, login with Better Auth
+# 0016 — Web panel: Astro static build with React islands, login with Better Auth
 
 - Status: accepted
 - Date: 2026-11-12

@@ -152,25 +152,25 @@ Code rules: `docs/code-patterns.md`.
 
 ### 3.0 `platform` — technical base (not a business module)
 
-| Part              | Does                                                                                                                                | Tech                                                   |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| `config`          | Reads and checks env at start; fails fast on a missing key                                                                          | Zod                                                    |
-| `db`              | Postgres pool, transactions, `TenantContext`, generated types, migration runner                                                     | Kysely + kysely-codegen, `pg`; `dbmate` (chosen in S0) |
-| `llm`             | Roles `classifier` / `writer`, structured output, timeout, rate limiter, soft-error rules                                           | `@google/genai` (Gemini), Zod                          |
-| `crypto`          | AES-256-GCM encrypt / decrypt with key version                                                                                      | `node:crypto`                                          |
-| `log`             | Levels, `[module]` prefix, no mail bodies or secrets                                                                                | own `log` util                                         |
-| `http`            | Hono app: session and tenant middleware, hardening (origin check, body limit, headers, CSP), static pages, error handler, `/health` | Hono                                                   |
-| `auth`            | Better Auth instance (`platform/auth.ts`): login, sessions, password change; the `/api/auth/*` allow-list                           | Better Auth (ADR 0015)                                 |
-| `scheduler`       | Cron-like timers for jobs; one tick never overlaps the next                                                                         | croner                                                 |
-| `retention` (job) | Clears text columns after their retention time (`docs/architecture.md` §7)                                                          | —                                                      |
-| `heartbeat` (job) | Pings the external dead-man's-switch service                                                                                        | —                                                      |
+| Part              | Does                                                                                                                                | Tech                                                                |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `config`          | Reads and checks env at start; fails fast on a missing key                                                                          | Zod                                                                 |
+| `db`              | Postgres pool, transactions, `TenantContext`, generated types, migration runner                                                     | Kysely + kysely-codegen, `pg`; `dbmate` (chosen in S0)              |
+| `llm`             | Roles `classifier` / `writer`, structured output, timeout, rate limiter, soft-error rules                                           | `@google/genai` (Gemini), `openai` (OpenAI), Zod; provider registry |
+| `crypto`          | AES-256-GCM encrypt / decrypt with key version                                                                                      | `node:crypto`                                                       |
+| `log`             | Levels, `[module]` prefix, no mail bodies or secrets                                                                                | own `log` util                                                      |
+| `http`            | Hono app: session and tenant middleware, hardening (origin check, body limit, headers, CSP), static pages, error handler, `/health` | Hono                                                                |
+| `auth`            | Better Auth instance (`platform/auth.ts`): login, sessions, password change; the `/api/auth/*` allow-list                           | Better Auth (ADR 0016)                                              |
+| `scheduler`       | Cron-like timers for jobs; one tick never overlaps the next                                                                         | croner                                                              |
+| `retention` (job) | Clears text columns after their retention time (`docs/architecture.md` §7)                                                          | —                                                                   |
+| `heartbeat` (job) | Pings the external dead-man's-switch service                                                                                        | —                                                                   |
 
 ### 3.1 `tenancy` — who is who (S0)
 
 - **Owns:** `organizations`, `users`, `memberships`.
 - **Does:** creates the pilot organization and user (CLI `bun run org:create`, S0); owns style text and digest times; resolves `TenantContext` from a session (web) or a linked chat (Telegram); checks roles.
 - **Built in S2:** `getMembership` (a member's role by `org_id` and `user_id`) and `setDigestTimes` (CLI `bun run digest:times`; the new default of `digest_times` is `{08:00,16:00}`).
-- **Built in S5:** login through Better Auth (`platform/auth.ts`, ADR 0015; no sign-up). `web:invite` (CLI `bun run web:invite --org-id <uuid> [--user-id <uuid>]`) makes the first-password link for a member. `listMembershipsOfUser` (the user gives the tenant; the oldest membership wins). `updateOrganizationSettings` (timezone and style text; writes `org.timezone_changed` and `org.style_changed`). Routes: §3.10.
+- **Built in S5:** login through Better Auth (`platform/auth.ts`, ADR 0016; no sign-up). `web:invite` (CLI `bun run web:invite --org-id <uuid> [--user-id <uuid>]`) makes the first-password link for a member. `listMembershipsOfUser` (the user gives the tenant; the oldest membership wins). `updateOrganizationSettings` (timezone and style text; writes `org.timezone_changed` and `org.style_changed`). Routes: §3.10.
 - **Later:** self sign-up (S6), invite assistant (Phase 2).
 
 ### 3.2 `mail` — access to mailboxes (S1a)
@@ -388,7 +388,7 @@ Built in S5. The routers are mounted under `/api` (`api.route("/", …)` in `app
 
 | Page                 | Content                                                                                                                                                                   | Slice       |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| Login                | E-mail and password (Better Auth, ADR 0015); `/login`                                                                                                                     | S5a         |
+| Login                | E-mail and password (Better Auth, ADR 0016); `/login`                                                                                                                     | S5a         |
 | Setup                | First password and password reset from a `web:invite` link; `/setup`                                                                                                      | S5a         |
 | Onboarding checklist | Connect mailbox → link Telegram → choose mode → optional lists                                                                                                            | S5b         |
 | Mailboxes            | Status, connect (address + password), pause, remove                                                                                                                       | S5b         |

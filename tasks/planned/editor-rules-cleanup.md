@@ -6,7 +6,7 @@ Scope: `.cursor/rules/{api-supabase-astro-init,backend,db-supabase-migrations,sh
 
 ## Goal
 
-The editor and Copilot rule files describe the real stack (Bun, Hono, Postgres 17, dbmate, Kysely, Astro static build with Better Auth; ADR 0011, ADR 0015), so an editor agent does not write Supabase code.
+The editor and Copilot rule files describe the real stack (Bun, Hono, Postgres 17, dbmate, Kysely, Astro static build with Better Auth; ADR 0011, ADR 0016), so an editor agent does not write Supabase code.
 
 ## Done when
 

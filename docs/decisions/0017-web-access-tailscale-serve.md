@@ -1,4 +1,4 @@
-# 0016 — Web access only through Tailscale Serve
+# 0017 — Web access only through Tailscale Serve
 
 - Status: accepted
 - Date: 2026-11-12

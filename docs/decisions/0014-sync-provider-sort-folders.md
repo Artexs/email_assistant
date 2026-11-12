@@ -19,7 +19,7 @@ Facts (checked 2026-11-08 and 2026-11-09; the task file holds them, one source):
 - F12: a COPY into `Oferty` is sorted into INBOX; an APPEND into `Oferty` stays; a COPY into `AI/*` and into `Wiadomości-śmieci` stays.
 - Notes: `notes/2026-11-03-interia-imap-capabilities.md` (§ "Sort-folder probe") and `notes/2026-11-07-agentmail-test-mail.md` §10.
 
-Task file with all decisions (D1–D24), user decisions (U1–U11) and the stage results: `tasks/active/sync-sort-folders.md`.
+Task file with all decisions (D1–D24), user decisions (U1–U11) and the stage results: `tasks/done/sync-sort-folders.md`.
 
 ## Decision
 

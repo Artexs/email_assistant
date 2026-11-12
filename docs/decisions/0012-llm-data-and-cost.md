@@ -1,19 +1,23 @@
 # 0012 — LLM: data rules, endpoint per stage, cost and failure limits
-- Status: accepted (user, 2026-11-02); amended by 0013 (pilot mailbox on the free tier, 2026-11-04)
+
+- Status: accepted (user, 2026-11-02); amended by 0013 (pilot mailbox on the free tier, 2026-11-04); amended by 0015 (second provider OpenAI behind LLM_PROVIDER, 2026-11-06)
 - Date: 2026-11-02
 - Amends: 0007 (Gemini and `@google/genai` stay)
 
 ## Context
+
 The product brief promised "zero retention" and "EU data location". The Gemini Developer API gives neither (checked 2026-11-02,
 `notes/2026-11-02-external-facts-gmail-gemini-telegram.md`):
+
 - Paid tier: Google logs prompts and responses for 55 days for abuse checks. Staff can review flagged content.
 - Data "may be stored transiently or cached in any country in which Google or its agents maintain facilities".
 - Google: for guaranteed zero data retention or enterprise data terms, use Vertex AI. Vertex AI has an EU endpoint.
 - Only Paid Services are allowed when an app serves users in the EEA.
-Price of `gemini-3.8-flash` (per 1M tokens, paid): $0.75 input / $3.75 output until 2026-12-31, then $1.50 / $7.50.
-Output includes thinking tokens. On 2026-11-02 the model returned `503 high demand`, and one call hung for more than 90 s.
+  Price of `gemini-3.8-flash` (per 1M tokens, paid): $0.75 input / $3.75 output until 2026-12-31, then $1.50 / $7.50.
+  Output includes thinking tokens. On 2026-11-02 the model returned `503 high demand`, and one call hung for more than 90 s.
 
 ## Decision
+
 - **Billing gate point:** ADR 0007 names "slice S1 on the user's real Gmail". It is now slice S1b on the user's Interia mail.
 - **Pilot (the user's own Interia mail):** Gemini Developer API, paid tier. The user accepts the 55-day abuse logging
   and no EU location (user, 2026-11-02). Cloud Billing must be on before real mail (ADR 0007 gate stays).
@@ -29,6 +33,7 @@ Output includes thinking tokens. On 2026-11-02 the model returned `503 high dema
   and these errors do not count toward the 3 tries. A rate limiter in `platform/llm.ts` keeps calls under the tier limit.
 
 ## Consequences
+
 - The privacy text in the brief and the privacy policy say what really happens to mail at each stage.
 - Moving to Vertex AI needs a Google Cloud project with billing and a service account (S6).
 - Overload of a new model does not push mail into `AI/Manual`; it only delays it.

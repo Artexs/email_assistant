@@ -2,7 +2,7 @@
 
 # Pin the Compose network subnet
 
-Scope: `deploy/compose.yaml`, `deploy/README.md` "Web panel", `docs/decisions/0016-web-access-tailscale-serve.md`. Needs: S5e deployed.
+Scope: `deploy/compose.yaml`, `deploy/README.md` "Web panel", `docs/decisions/0017-web-access-tailscale-serve.md`. Needs: S5e deployed.
 
 ## Goal
 
@@ -18,7 +18,7 @@ Scope: `deploy/compose.yaml`, `deploy/README.md` "Web panel", `docs/decisions/00
 
 - Pick a range that does not clash with the LAN (`192.168.1.0/24`), the Tailscale ranges and the other Docker networks on the VPS (`docker network ls`, `docker network inspect`).
 - Changing the subnet recreates the network, and the running `db`. It is a planned `down` and `up` of the live stack: do it outside a pilot week, after a backup, with the user's go. Rollback: the old compose file and `WEB_TRUSTED_PROXIES` with the old gateway.
-- Update `.env` (`WEB_TRUSTED_PROXIES`, the user edits it), the runbook, ADR 0016 Consequences (a dated line) and `notes/2026-11-12-web-panel-deploy.md`.
+- Update `.env` (`WEB_TRUSTED_PROXIES`, the user edits it), the runbook, ADR 0017 Consequences (a dated line) and `notes/2026-11-12-web-panel-deploy.md`.
 
 ## Log
 

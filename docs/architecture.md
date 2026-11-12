@@ -2,7 +2,7 @@
 
 > **Accepted 2026-11-02** (user). Revised 2026-11-02 after the cold review (`tasks/done/mvp-plan-review.md`), the user's answers and a second review of the rewrite (`tasks/done/docs-and-adr-review.md`):
 > pilot mailbox = Interia over IMAP, pilot host = home VPS, own Postgres. Based on `docs/product-brief.md`.
-> Decisions are in `docs/decisions/` (ADR 0001–0016). The old specs in `.ai/architecture/` are history. When they disagree with this file, this file wins.
+> Decisions are in `docs/decisions/` (ADR 0001–0017). The old specs in `.ai/architecture/` are history. When they disagree with this file, this file wins.
 
 ## 1. Goals and constraints
 
@@ -31,7 +31,7 @@ graph LR
 
     Mail[Mail provider<br/>IMAP 993 + SMTP 465<br/>Interia first]
     TG[Telegram Bot API]
-    LLM[Google Gemini API<br/>Vertex AI EU before customers]
+    LLM[Gemini or OpenAI API<br/>Vertex AI EU before customers]
 
     Exec <-->|notices, digest, buttons| TG
     Exec -->|browser, phone| TS[Tailscale Serve<br/>HTTPS, tailnet only]
@@ -44,7 +44,7 @@ graph LR
     Server -->|structured output| LLM
 ```
 
-All connections from the server go out, except the web panel: Tailscale Serve on the host proxies tailnet requests to `127.0.0.1:8080` (ADR 0016).
+All connections from the server go out, except the web panel: Tailscale Serve on the host proxies tailnet requests to `127.0.0.1:8080` (ADR 0017).
 The server port is bound to the loopback address of the host. The router has no open port.
 
 ## 3. Repository layout
@@ -65,8 +65,8 @@ apps/
       config/          per-mailbox mode and switches, category policy, sender rules, style text
       audit/           append-only action log
     src/platform/      db, llm client, crypto, logger, env config, scheduler, http, auth
-                       (`auth.ts`: Better Auth on our Postgres, ADR 0015)
-  web/                 Astro static build with React islands; served by the server; talks only to `/api` (ADR 0015).
+                       (`auth.ts`: Better Auth on our Postgres, ADR 0016)
+  web/                 Astro static build with React islands; served by the server; talks only to `/api` (ADR 0016).
 packages/
   core/                Pure TypeScript: domain types, Zod schemas, categories, rules, policy, planners, digest. No I/O.
 db/migrations/         SQL migrations (source of truth)
@@ -439,7 +439,7 @@ erDiagram
 | Table                 | Key columns                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Slice    |
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | `organizations`       | id, name, timezone, data_retention_days (default 30), style_text                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | S0       |
-| `users`               | id, email (stored lower-case: a check `users_email_lower_check`), display_name, email_verified, image, updated_at (the login columns of Better Auth, ADR 0015)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | S0       |
+| `users`               | id, email (stored lower-case: a check `users_email_lower_check`), display_name, email_verified, image, updated_at (the login columns of Better Auth, ADR 0016)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | S0       |
 | `auth_sessions`       | id, user_id, token (unique), expires_at, ip_address, user_agent, created_at, updated_at. Written only by Better Auth; no `org_id`, keyed by user (ON DELETE CASCADE)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | S5       |
 | `auth_accounts`       | id, user_id, account_id, provider_id (`credential` for a password), password (hash), token columns (unused), created_at, updated_at; unique (provider_id, account_id). Written only by Better Auth; no `org_id`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | S5       |
 | `auth_verifications`  | id, identifier, value, expires_at, created_at, updated_at (the one-time password-reset token). Written only by Better Auth; no `org_id`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | S5       |
@@ -472,7 +472,7 @@ Tenancy:
   and the VPS, a `psql` step in CI. Migrations grant `app` its rights (default privileges for new tables; on `audit_log` only INSERT and SELECT).
   The server connects as `app`, never as `migrator` or the superuser.
 - The three Better Auth tables (`auth_sessions`, `auth_accounts`, `auth_verifications`) have no `org_id`: they are keyed by user. Only the library reads and writes them.
-  The server finds the tenant of a web request with `listMembershipsOfUser` (the oldest membership of the session user), never from the request (ADR 0015).
+  The server finds the tenant of a web request with `listMembershipsOfUser` (the oldest membership of the session user), never from the request (ADR 0016).
 - No client reads the DB directly. Option for S6: RLS for the server role with `set_config('app.org_id', …)` per transaction.
 
 ## 6. Integrations
@@ -582,9 +582,10 @@ Tenancy:
 - Content on Telegram: notices, digest lines (sender, subject, AI summary), draft text for approval. No raw mail bodies.
   Bot chats are not end-to-end encrypted; the user accepts this content on Telegram servers.
 
-### 6.3 LLM (ADR 0007, ADR 0012, ADR 0013)
+### 6.3 LLM (ADR 0007, ADR 0012, ADR 0013, ADR 0015)
 
-- Google Gemini through `@google/genai`, only inside `platform/llm.ts`. Model ids from config: `GEMINI_MODEL` (writer role; dev: `gemini-3.8-flash`),
+- Two providers behind one switch (ADR 0015): `LLM_PROVIDER` = `gemini` (code default) or `openai`; a restart applies it. The shared client is `platform/llm/`; the adapters are `platform/llm/providers/gemini.ts` (the only file that imports `@google/genai`) and `providers/openai.ts` (the only file that imports `openai`; Responses API, strict JSON schema, `store: false`). The pilot VPS runs `openai` with `OPENAI_MODEL_CLASSIFIER` = `gpt-6-luna` (default pick, user 2026-11-07). OpenAI keys: `OPENAI_API_KEY`, `OPENAI_MODEL` (writer), `OPENAI_MODEL_CLASSIFIER`, `OPENAI_TIMEOUT_MS`, `OPENAI_RPM`, `OPENAI_REASONING_EFFORT`. A third provider = one adapter file, one registry row, one config block, price rows and one eval run. No automatic fallback.
+- Gemini model ids from config: `GEMINI_MODEL` (writer role; dev: `gemini-3.8-flash`),
   `GEMINI_MODEL_CLASSIFIER` (default `gemini-3.5-flash-lite`). Two roles: `classifier` (one call per mail, summary included) and `writer`.
   **The writer role is not used in S4:** drafts are templates (`packages/core/src/outgoing/templates.ts`); the fields (delegate id, task, due date, question) come from the classifier (prompt `classifier-v2`).
 - **Classifier model (provisional, stage 34, 2026-11-05):** `gemini-3.5-flash-lite`. The eval on the 92 synthetic and injection cases ran with it:
@@ -603,10 +604,10 @@ Tenancy:
   Error classes (soft, config, safety block, hard) and the pause: §4.1 rule 7.
 - `triage_results` stores model, prompt version, tokens in/out and latency. Output tokens include thinking tokens.
 - **Triage config keys:** `TRIAGE_LLM_SCOPE` (default `off`): `off` = no triage worker; `synthetic` = only the seeded test mail of every mailbox;
-  `all` = also real mail, only of the mailbox `TEST_MAILBOX_ADDRESS`. The server refuses to start with `synthetic` or `all` and no `GEMINI_API_KEY`,
+  `all` = also real mail, only of the mailbox `TEST_MAILBOX_ADDRESS`. The server refuses to start with `synthetic` or `all` and no key for the chosen provider (`GEMINI_API_KEY` or `OPENAI_API_KEY`),
   and with `all` and no `TEST_MAILBOX_ADDRESS`. `LLM_DAILY_CAP` (default 300): the cap of §4.1 rule 8.
   `GEMINI_RPM` (default 12). The LLM pause (§4.1 rule 7) has no key: 5 min, doubling to 60 min.
-- **Data by stage:** pilot = Gemini API free tier for the temporary pilot mailbox (ADR 0013; the free-tier terms allow human review and training;
+- **Data by stage:** OpenAI (pilot, since 2026-11-06): paid API terms, no training on API data, abuse logs up to 30 days, no EU location; accepted by the user for their own mail (ADR 0015). Gemini: pilot = Gemini API free tier for the temporary pilot mailbox (ADR 0013; the free-tier terms allow human review and training;
   accepted by the user 2026-11-04); the paid tier (55-day abuse logging, no EU location, accepted 2026-11-02) when billing goes on.
   Vertex AI with the EU endpoint and its zero-data-retention setup before the first external customer.
 - **Billing gate:** free tier only with test data. The temporary pilot Interia mailbox counts as test data (ADR 0013, user 2026-11-04).
@@ -618,8 +619,8 @@ Tenancy:
 - **Credentials (ADR 0009):** AES-256-GCM in the server, key `CREDENTIALS_KEY` from env with a key version. The secret is decrypted only in memory.
   It never goes to logs, to the web app or to Telegram. The Telegram bot token (`TELEGRAM_BOT_TOKEN`) is also a secret: env only, never in a log line, error text or DB row (§6.2). Prefer an app password: the stored secret opens the whole mailbox.
 - **TLS:** IMAP and SMTP always check certificates.
-- **Web access (ADR 0016):** the panel is reachable only through Tailscale Serve (HTTPS, tailnet members only, no Funnel). The server listens on `127.0.0.1:8080` of the host. The code still treats the panel as public (S6 moves it to a public proxy).
-- **Web security (ADR 0015):** the server runs these checks. The list is by topic, not in the order of the code.
+- **Web access (ADR 0017):** the panel is reachable only through Tailscale Serve (HTTPS, tailnet members only, no Funnel). The server listens on `127.0.0.1:8080` of the host. The code still treats the panel as public (S6 moves it to a public proxy).
+- **Web security (ADR 0016):** the server runs these checks. The list is by topic, not in the order of the code.
   - **Secret:** `WEB_AUTH_SECRET` (at least 32 characters, env only, never in a log) signs the session. The config check needs it when `WEB_BASE_URL` is set. An empty `WEB_BASE_URL` turns the web off.
   - **Session cookie:** Better Auth sets it (prefix `ea`): `HttpOnly`, `SameSite=Lax`, `Secure` when `WEB_BASE_URL` starts with `https://`. The session lasts 30 days and renews after one day of use (sliding). There is no cookie cache, so a revoked session ends at the next request. A password reset ends all sessions of the user.
   - **Origin check:** every method except GET, HEAD and OPTIONS under `/api` needs an `Origin` that is `WEB_BASE_URL` or in `WEB_TRUSTED_ORIGINS`. Without an `Origin` (or with `null`), the header `Sec-Fetch-Site` must be `same-origin`. Else the answer is `403 bad_origin`.
@@ -706,6 +707,7 @@ Tenancy:
 - **Test mailbox:** there is no second Interia account; the pilot mailbox is the test mailbox (user 2026-11-04). A seed script APPENDs the synthetic eval mails
   (`@ea-seed.test` Message-IDs) into its INBOX (APPEND does not send). Use them for the eval and the 48-hour sync test (S1a).
 - **Evals** (`evals/`): synthetic and injection cases in git; real labels only in the DB. Report per category: precision and recall; whitelist rule 100%.
+  `bun run llm:check --provider <gemini|openai>` sends the real triage schema to one provider. `bun run eval --provider <id> --model <id>` runs the cases per provider (results in `evals/results/`).
   `bun run eval` options: `--per-category n` (a subset), `--retries n` (soft-error retries per case), resume from a state file in `evals/.runs/`
   (`<model>-<prompt-version>-<set>[-pc<n>].jsonl`, outside git; `--state` sets another file, `--fresh` starts again),
   a minimum support of 30 kept rows per category (`--min-kept`), a confidence histogram, and `--real` (labels from `triage_feedback`, no LLM call).
@@ -737,7 +739,7 @@ Tenancy:
     Restart after a reboot: `systemctl enable docker` + `restart: unless-stopped` (reboot test passed 2026-11-03). Facts: `notes/2026-11-03-pilot-vps.md`.
     No inbound port: IMAP, SMTP, Telegram long polling and Gemini are outbound connections.
     The web panel is the one inbound path, and it does not open a port on the router: the server port is published on `127.0.0.1:8080` only (`ports: ["127.0.0.1:8080:8080"]`).
-    Tailscale on the host (`tailscale serve --bg 8080`) gives HTTPS at `https://<machine>.<tailnet>.ts.net` to tailnet members only (ADR 0016). `WEB_BASE_URL`, `WEB_AUTH_SECRET` and `WEB_TRUSTED_PROXIES` are the env keys of the web.
+    Tailscale on the host (`tailscale serve --bg 8080`) gives HTTPS at `https://<machine>.<tailnet>.ts.net` to tailnet members only (ADR 0017). `WEB_BASE_URL`, `WEB_AUTH_SECRET` and `WEB_TRUSTED_PROXIES` are the env keys of the web.
     The steps (Tailscale, turn on, first password, access checks, roll back) are in `deploy/README.md`, section Web panel.
 - **Production for external customers (S6):** a hosted EU VPS with the same Compose files (availability, physical security, GDPR duties of a processor).
 - **azyl dev server:** demos with test data only. Its home folder is shared with other projects (skill `vps-ssh`).
@@ -761,16 +763,16 @@ Detail, scope, sizes and dependencies: `docs/roadmap.md`. Goal, done-when, plan 
 
 ## 12. What happens to the current code
 
-| Current                                                                                             | Decision                                                                                                                    |
-| --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `backend/` (Bun package)                                                                            | Becomes `apps/server/` (S0).                                                                                                |
-| `src/` Astro starter                                                                                | Becomes `apps/web/` (S0); the web stack is decided: Astro static build with React islands, served by the server (ADR 0015). |
-| `backend/supabase/` and migration `20251202212208_…`                                                | Removed in S0 (ADR 0011). New SQL migrations in `db/migrations/`.                                                           |
-| `IDatabaseProvider` / `SupabaseAdapter` (generic CRUD)                                              | Removed. Typed repositories per module with transactions.                                                                   |
-| `ImapEmailProvider`                                                                                 | Deleted in S0. S1a reads it from git if needed: `git show 29e9522:backend/src/adapters/providers/email.provider.ts`.        |
-| `get_provider.ts` (`Providers` factory)                                                             | Removed. It turns off the TLS check for Interia (line 35).                                                                  |
-| `OpenAIAdapter` / `ILLMProvider`                                                                    | Replaced by `platform/llm.ts` (Gemini).                                                                                     |
-| `backend/src/scripts/gemini_test.ts`                                                                | Moved in S0 to `apps/server/src/scripts/gemini-check.ts`; `bun run gemini:test` runs from the repo root.                    |
-| Dependencies `openai`, `express`, `helmet`, `cors`, `googleapis`, `@supabase/supabase-js`, `dotenv` | Removed in S0 (Bun reads `.env`). `imapflow` and `@google/genai` stay.                                                      |
-| `utils/log.ts`                                                                                      | Kept and extended (levels, module prefix).                                                                                  |
-| `.ai/` docs                                                                                         | Kept as history. Code rules for agents: `docs/code-patterns.md`.                                                            |
+| Current                                                                                             | Decision                                                                                                                                                        |
+| --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `backend/` (Bun package)                                                                            | Becomes `apps/server/` (S0).                                                                                                                                    |
+| `src/` Astro starter                                                                                | Becomes `apps/web/` (S0); the web stack is decided: Astro static build with React islands, served by the server (ADR 0016).                                     |
+| `backend/supabase/` and migration `20251202212208_…`                                                | Removed in S0 (ADR 0011). New SQL migrations in `db/migrations/`.                                                                                               |
+| `IDatabaseProvider` / `SupabaseAdapter` (generic CRUD)                                              | Removed. Typed repositories per module with transactions.                                                                                                       |
+| `ImapEmailProvider`                                                                                 | Deleted in S0. S1a reads it from git if needed: `git show 29e9522:backend/src/adapters/providers/email.provider.ts`.                                            |
+| `get_provider.ts` (`Providers` factory)                                                             | Removed. It turns off the TLS check for Interia (line 35).                                                                                                      |
+| `OpenAIAdapter` / `ILLMProvider`                                                                    | Replaced by `platform/llm/` (Gemini and OpenAI adapters; ADR 0015).                                                                                             |
+| `backend/src/scripts/gemini_test.ts`                                                                | Moved in S0, replaced by `apps/server/src/scripts/llm-check.ts`; `bun run llm:check --provider <id>` runs from the repo root (`gemini:test` stays as an alias). |
+| Dependencies `openai`, `express`, `helmet`, `cors`, `googleapis`, `@supabase/supabase-js`, `dotenv` | Removed in S0 (Bun reads `.env`). `imapflow` and `@google/genai` stay.                                                                                          |
+| `utils/log.ts`                                                                                      | Kept and extended (levels, module prefix).                                                                                                                      |
+| `.ai/` docs                                                                                         | Kept as history. Code rules for agents: `docs/code-patterns.md`.                                                                                                |

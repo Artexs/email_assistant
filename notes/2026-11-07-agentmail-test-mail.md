@@ -146,7 +146,7 @@ Read-only check on the VPS: SQL on `emails`, and a one-off IMAP script (`/tmp/ea
   INBOX (uid 38963, same INTERNALDATE). After 45 s and after the next sync it was still in INBOX; the VPS stored it (`stored 1`) and triaged it
   (`needs_reply`, `question`). The `Oferty` copy (uid 38960) is still there.
 - **Finding: `\Junk` is `AI/Spam` now** (S3 set the flag), and `Wiadomości-śmieci` has no flag. Deliver's `junk` key resolves to `AI/Spam`, a product folder.
-- **Update (sync-sort-folders, 2026-11-09):** the sync reads `Oferty` now (and `Społeczności`, `Rachunki`, `Wiadomości-śmieci`; `tasks/active/sync-sort-folders.md`). AgentMail mail that Interia sorts into `Oferty` is stored and triaged there, so the `deliver` step is not needed. A COPY into INBOX does not work at Interia (finding above); APPEND does.
+- **Update (sync-sort-folders, 2026-11-09):** the sync reads `Oferty` now (and `Społeczności`, `Rachunki`, `Wiadomości-śmieci`; `tasks/done/sync-sort-folders.md`). AgentMail mail that Interia sorts into `Oferty` is stored and triaged there, so the `deliver` step is not needed. A COPY into INBOX does not work at Interia (finding above); APPEND does.
 - Probe scripts (not in git): `/tmp/ea-tmt-inspect/` (read-only inspect; APPEND probe).
 
 ## 11. Stage 9 with the sort-folder sync (2026-11-09/10)

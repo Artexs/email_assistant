@@ -8,8 +8,8 @@ Product description: [docs/product-brief.md](docs/product-brief.md).
 - Bun workspaces: `apps/server`, `apps/web`, `packages/core`.
 - Server: Hono on Bun.
 - Database: Postgres 17, migrations with dbmate, queries with Kysely.
-- AI: Gemini.
-- Web: Astro static build with React islands, served by the server (ADR 0015).
+- AI: Gemini or OpenAI (`LLM_PROVIDER`).
+- Web: Astro static build with React islands, served by the server (ADR 0016).
 
 Details: [docs/architecture.md](docs/architecture.md). Decisions: `docs/decisions/`.
 
@@ -48,7 +48,7 @@ Dev URLs in `.env.example` use port 5433.
 | `bun run db:rollback`                                        | Rolls back the last migration                        |
 | `bun run db:types`                                           | Generates the Kysely types from the database         |
 | `bun run org:create --org-name … --email … --display-name …` | Creates an organization and its first user           |
-| `bun run gemini:test`                                        | Checks the Gemini API key                            |
+| `bun run llm:check --provider <id>`                          | Checks the LLM key and model (`gemini:test` = alias) |
 | `bun run web:dev`                                            | Starts the Astro dev server                          |
 | `bun run web:build`                                          | Builds the Astro app                                 |
 

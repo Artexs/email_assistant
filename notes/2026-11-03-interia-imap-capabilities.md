@@ -108,7 +108,7 @@ Script `/tmp/ea-ssf-spike/spike.ts` (not in git), run `249f9b84` on the VPS (`fa
 
 ## Folder facts for the sort-folder sync (sync-sort-folders, read-only VPS count 2026-11-08)
 
-Source of the full text: `tasks/active/sync-sort-folders.md`, "Facts checked" (F1–F4, F12). Short form for later agents:
+Source of the full text: `tasks/done/sync-sort-folders.md`, "Facts checked" (F1–F4, F12). Short form for later agents:
 
 - **F1 Folders.** Delimiter `/`. `Wiadomości-śmieci` has the LIST attribute `\Spam`, but imapflow gives it no special use. `AI/Spam` gets `\Junk` (by name). `Oferty` and `Społeczności` are `\Noinferiors`.
 - **F2 UIDVALIDITY and UIDNEXT.** UIDVALIDITY is 1 in all 12 folders. SELECT and EXAMINE give no UIDNEXT. STATUS gives `UIDNEXT 1` for every folder, which is wrong. The sync uses the highest UID + 1 (D4).

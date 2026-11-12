@@ -11,7 +11,7 @@ The first external customer can sign up: sign-up, billing, account and data dele
 ## Done when
 
 - The first external customer can sign up and connect a mailbox.
-- `platform/llm.ts` uses Vertex AI with the EU endpoint and the zero-data-retention setup.
+- `platform/llm/` uses Vertex AI with the EU endpoint and the zero-data-retention setup. Open question (ADR 0015, Q6b): also allow an OpenAI EU project with zero data retention (needs OpenAI approval), or keep Vertex AI EU as the only path?
 - A deletion test removes every row of an organization; mailbox removal tells the user to change the mailbox password.
 - The privacy policy names Google as the LLM processor; the DPA with Google is in place.
 - A one-page cost model (LLM + hosting + optional CASA if Gmail comes) gives a price per mailbox.
@@ -26,7 +26,7 @@ From the S5 plan (2026-11-08, `tasks/active/s5-web-panel.md`):
 
 - Polish UI translation: S5 ships English strings in `apps/web/src/i18n/en.ts` (U1); S6 adds `pl.ts` and a per-user language choice.
 - An e-mail sender for the login: `sendResetPassword` (and the sign-up verification) sends mail in S6; S5 prints the link in the CLI (D2). `tasks/planned/web-public-hardening.md` lists what must hold before the panel leaves Tailscale.
-- Public access: ADR 0016 (S5e) names Tailscale Serve for the pilot; S6 moves to a public proxy with TLS (Cloudflare Tunnel or Caddy on the hosted EU VPS) with no code change (P3).
+- Public access: ADR 0017 (S5e) names Tailscale Serve for the pilot; S6 moves to a public proxy with TLS (Cloudflare Tunnel or Caddy on the hosted EU VPS) with no code change (P3).
 
 ## Done-checklist
 
