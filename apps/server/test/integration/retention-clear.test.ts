@@ -92,6 +92,33 @@ describe("clearMailBodies", () => {
     });
   });
 
+  test("clears a stuck processing mail whose lock is older than both periods; keeps a younger lock and a lock without time", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await newOrg(trx);
+      const b = await newOrg(trx);
+      async function seed(org: Org) {
+        const add = (lockedAt: Date | null) =>
+          insertTestEmail(trx, org.ctx, org.mailboxId, { ...bodyRow("processing", over30), locked_at: lockedAt });
+        return {
+          stuck: await add(over30),
+          youngerThanBefore: await add(ago(29 * DAY_MS)),
+          youngerThanPending: await add(ago(3 * DAY_MS)),
+          noLock: await add(null),
+        };
+      }
+      const rowsA = await seed(a);
+      const rowsB = await seed(b);
+
+      expect(await clearMailBodies(trx, a.ctx, { before: before30, pendingBefore })).toBe(1);
+      expect(await bodies(trx, Object.values(rowsA))).toEqual([null, "Body text", "Body text", "Body text"]);
+      expect(await bodies(trx, Object.values(rowsB))).toEqual(Array(4).fill("Body text"));
+      // A short retention does not shorten the wait of a lock younger than the pending period: only the 29-day lock goes.
+      expect(await clearMailBodies(trx, a.ctx, { before: ago(DAY_MS), pendingBefore })).toBe(1);
+      expect(await bodies(trx, [rowsA.youngerThanPending, rowsA.noLock])).toEqual(["Body text", "Body text"]);
+      expect(await clearMailBodies(trx, a.ctx, { before: before30, pendingBefore })).toBe(0);
+    });
+  });
+
   test("has no filter on the mailbox status or the plan: paused mailbox and suspended organization", async () => {
     await withRollback(db, async (trx) => {
       const a = await newOrg(trx);
@@ -301,6 +328,87 @@ describe("clearActionPayloads", () => {
   });
 });
 
+describe("clearActionPayloads: applying rows and open delegations (F083)", () => {
+  async function setUpdatedAt(trx: Transaction<DB>, id: string, at: Date) {
+    await trx.updateTable("actions").set({ updated_at: at }).where("id", "=", id).execute();
+  }
+  const read = async (trx: Transaction<DB>, id: string) =>
+    (await trx.selectFrom("actions").select("payload").where("id", "=", id).executeTakeFirstOrThrow()).payload;
+
+  test("clears an applying create_draft or send over 90 days after its last change; keeps a younger one; org B is untouched", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await newOrg(trx);
+      const b = await newOrg(trx);
+      const payload = { text: "Mail text" };
+      async function seed(org: Org) {
+        const emailId = await insertTestEmail(trx, org.ctx, org.mailboxId);
+        const add = async (type: "create_draft" | "send", updatedAt: Date) => {
+          const id = await insertAction(trx, org.ctx, emailId, {
+            type,
+            status: "applying",
+            createdAt: over90,
+            lockedAt: over90,
+            approvedAt: type === "send" ? over90 : null,
+            payload,
+          });
+          await setUpdatedAt(trx, id, updatedAt);
+          return id;
+        };
+        return {
+          draftOver: await add("create_draft", over90),
+          sendOver: await add("send", over90),
+          sendRecent: await add("send", ago(DAY_MS)),
+        };
+      }
+      const rowsA = await seed(a);
+      const rowsB = await seed(b);
+
+      expect(await clearActionPayloads(trx, a.ctx, { before: before90 })).toBe(2);
+      expect(await read(trx, rowsA.draftOver)).toEqual({});
+      expect(await read(trx, rowsA.sendOver)).toEqual({});
+      expect(await read(trx, rowsA.sendRecent)).toEqual(payload);
+      for (const id of Object.values(rowsB)) expect(await read(trx, id)).toEqual(payload);
+      expect(await clearActionPayloads(trx, a.ctx, { before: before90 })).toBe(0);
+    });
+  });
+
+  test("keeps the applied draft payload of an open delegation; clears it when the delegation is closed or has no reminder left", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await newOrg(trx);
+      async function draftOf(status: string, remindersSent: number): Promise<string> {
+        const delegateId = await insertDelegate(trx, a.ctx);
+        const { emailId, draftId, sendId } = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+          delegateId,
+          createdAt: over90,
+          dueDate: "2027-03-01",
+          language: "pl",
+        });
+        await insertDelegation(trx, a.ctx, {
+          mailboxId: a.mailboxId,
+          emailId,
+          delegateId,
+          draftActionId: draftId,
+          sendActionId: sendId,
+          status,
+          remindersSent,
+        });
+        return draftId;
+      }
+      const sent = await draftOf("sent", 0);
+      const overdueOne = await draftOf("overdue", 1);
+      const overdueSpent = await draftOf("overdue", 2);
+      const done = await draftOf("done", 1);
+      const answered = await draftOf("answered", 0);
+
+      await clearActionPayloads(trx, a.ctx, { before: before90 });
+
+      expect(await read(trx, sent)).toMatchObject({ due_date: "2027-03-01", language: "pl" });
+      expect(await read(trx, overdueOne)).toMatchObject({ due_date: "2027-03-01", language: "pl" });
+      for (const id of [overdueSpent, done, answered]) expect(await read(trx, id)).toEqual({});
+    });
+  });
+});
+
 describe("clearActionErrors", () => {
   test("clears last_error when updated_at is over 90 days; keeps at-limit rows; org B is untouched", async () => {
     await withRollback(db, async (trx) => {
@@ -338,39 +446,65 @@ describe("clearActionErrors", () => {
 });
 
 describe("clearDelegationTasks", () => {
-  test("replaces the task text when updated_at is over 90 days; keeps at-limit rows; org B is untouched", async () => {
+  async function one(
+    trx: Transaction<DB>,
+    org: Org,
+    status: string,
+    updatedAt: Date,
+    opts: { remindersSent?: number; dueAt?: Date | null } = {}
+  ): Promise<string> {
+    const delegateId = await insertDelegate(trx, org.ctx);
+    const { emailId, draftId, sendId } = await insertDraftAndSend(trx, org.ctx, org.mailboxId, { delegateId });
+    const id = await insertDelegation(trx, org.ctx, {
+      mailboxId: org.mailboxId,
+      emailId,
+      delegateId,
+      draftActionId: draftId,
+      sendActionId: sendId,
+      status,
+      taskSummary: "Prepare the offer",
+      remindersSent: opts.remindersSent,
+      dueAt: opts.dueAt,
+    });
+    await trx.updateTable("delegations").set({ updated_at: updatedAt }).where("id", "=", id).execute();
+    return id;
+  }
+  const read = async (trx: Transaction<DB>, id: string) =>
+    (await trx.selectFrom("delegations").select("task_summary").where("id", "=", id).executeTakeFirstOrThrow())
+      .task_summary;
+
+  test("replaces the task text of a closed delegation when updated_at is over 90 days; keeps at-limit rows; org B is untouched", async () => {
     await withRollback(db, async (trx) => {
       const a = await newOrg(trx);
       const b = await newOrg(trx);
-      async function one(org: Org, status: string, updatedAt: Date): Promise<string> {
-        const delegateId = await insertDelegate(trx, org.ctx);
-        const { emailId, draftId, sendId } = await insertDraftAndSend(trx, org.ctx, org.mailboxId, { delegateId });
-        const id = await insertDelegation(trx, org.ctx, {
-          mailboxId: org.mailboxId,
-          emailId,
-          delegateId,
-          draftActionId: draftId,
-          sendActionId: sendId,
-          status,
-          taskSummary: "Prepare the offer",
-        });
-        await trx.updateTable("delegations").set({ updated_at: updatedAt }).where("id", "=", id).execute();
-        return id;
-      }
-      const doneOver = await one(a, "done", over90);
-      const sentOver = await one(a, "sent", over90);
-      const sentAt = await one(a, "sent", before90);
-      const otherOrg = await one(b, "done", over90);
-      const read = async (id: string) =>
-        (await trx.selectFrom("delegations").select("task_summary").where("id", "=", id).executeTakeFirstOrThrow())
-          .task_summary;
+      const doneOver = await one(trx, a, "done", over90);
+      const answeredOver = await one(trx, a, "answered", over90);
+      const cancelledOver = await one(trx, a, "cancelled", over90);
+      const doneAt = await one(trx, a, "done", before90);
+      const otherOrg = await one(trx, b, "done", over90);
 
-      expect(await clearDelegationTasks(trx, a.ctx, { before: before90 })).toBe(2);
-      expect(await read(doneOver)).toBe("[removed]");
-      expect(await read(sentOver)).toBe("[removed]");
-      expect(await read(sentAt)).toBe("Prepare the offer");
-      expect(await read(otherOrg)).toBe("Prepare the offer");
+      expect(await clearDelegationTasks(trx, a.ctx, { before: before90 })).toBe(3);
+      for (const id of [doneOver, answeredOver, cancelledOver]) expect(await read(trx, id)).toBe("[removed]");
+      expect(await read(trx, doneAt)).toBe("Prepare the offer");
+      expect(await read(trx, otherOrg)).toBe("Prepare the offer");
       expect(await clearDelegationTasks(trx, a.ctx, { before: before90 })).toBe(0);
+    });
+  });
+
+  test("keeps the task text of an open delegation, also with a due date more than 90 days ahead; clears an overdue one with no reminder left", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await newOrg(trx);
+      const farDue = new Date(now.getTime() + 120 * DAY_MS);
+      const drafted = await one(trx, a, "drafted", over90);
+      const sentFar = await one(trx, a, "sent", over90, { dueAt: farDue });
+      const overdueNone = await one(trx, a, "overdue", over90, { remindersSent: 0 });
+      const overdueOne = await one(trx, a, "overdue", over90, { remindersSent: 1 });
+      const overdueSpent = await one(trx, a, "overdue", over90, { remindersSent: 2 });
+
+      expect(await clearDelegationTasks(trx, a.ctx, { before: before90 })).toBe(1);
+      for (const id of [drafted, sentFar, overdueNone, overdueOne])
+        expect(await read(trx, id)).toBe("Prepare the offer");
+      expect(await read(trx, overdueSpent)).toBe("[removed]");
     });
   });
 });

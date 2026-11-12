@@ -3,7 +3,7 @@ import type { Transaction } from "kysely";
 import { clearActionErrors, clearActionPayloads } from "./modules/actions";
 import { clearOutboxTexts, deleteOldLinkTokens } from "./modules/channels";
 import { clearDelegationTasks } from "./modules/delegation";
-import { clearMailBodies, clearMailHeaders } from "./modules/mail";
+import { clearMailBodies, clearMailHeaders, PENDING_BODY_DAYS } from "./modules/mail";
 import { listOrganizations } from "./modules/tenancy";
 import { clearTriageTexts } from "./modules/triage";
 import type { DB, Db } from "./platform/db";
@@ -17,8 +17,6 @@ const DAY_MS = 24 * HOUR_MS;
 
 // A23: every text of the §7 list goes after this period, except the mail body (the organization's `data_retention_days`).
 export const RETENTION_TEXT_DAYS = 90;
-// A pending mail that no job took in this time loses its body at the same run.
-const PENDING_BODY_DAYS = 7;
 export const LINK_TOKEN_GRACE_MS = 24 * HOUR_MS;
 
 export interface RetentionCounts {

@@ -8,6 +8,16 @@ type DbOrTrx = Db | Transaction<DB>;
 const delegationStatusSchema = z.enum(["drafted", "sent", "answered", "overdue", "done", "cancelled"]);
 export type DelegationStatus = z.infer<typeof delegationStatusSchema>;
 
+// The chaser sends at most this many reminders for one delegation (D23).
+export const MAX_REMINDER_SENDS = 2;
+
+// A delegation is open while the chaser can still act on it: the draft waits, the task is out, or it is overdue with a
+// reminder left. Retention keeps the task text and the applied draft payload of an open delegation (A23, F083).
+export const openDelegationFilter = sql<boolean>`(
+  delegations.status in ('drafted', 'sent')
+  or (delegations.status = 'overdue' and delegations.reminders_sent < ${sql.lit(MAX_REMINDER_SENDS)})
+)`;
+
 export interface DelegateRow {
   id: string;
   name: string;
@@ -373,7 +383,7 @@ export async function listDueDelegations(
     .where("d.mailbox_id", "=", mailboxId)
     .where("d.status", "in", ["sent", "overdue"])
     // An overdue row with both reminders sent gets no more (D23): it would only fill the batch.
-    .where((eb) => eb.not(eb.and([eb("d.status", "=", "overdue"), eb("d.reminders_sent", ">=", 2)])))
+    .where((eb) => eb.not(eb.and([eb("d.status", "=", "overdue"), eb("d.reminders_sent", ">=", MAX_REMINDER_SENDS)])))
     .where("d.due_at", "<", opts.now)
     .orderBy("d.due_at")
     .orderBy("d.id")
@@ -509,7 +519,8 @@ export async function listLatestDelegationsByEmailIds(
 
 const RETENTION_BATCH = 1000;
 
-// Retention (A23): the task text goes 90 days after the last change (this covers 90 days after `done`).
+// Retention (A23): the task text of a delegation that is not open goes 90 days after the last change (this covers 90 days
+// after `done`). An open delegation keeps its text until it closes: its reminders read it, and its due date can be far ahead.
 // Batches by id; a locked row waits for a later day. A repeat call changes nothing.
 export async function clearDelegationTasks(
   db: DbOrTrx,
@@ -532,6 +543,7 @@ export async function clearDelegationTasks(
           .where("org_id", "=", ctx.orgId)
           .where("updated_at", "<", opts.before)
           .where("task_summary", "<>", "[removed]")
+          .where(sql<boolean>`not ${openDelegationFilter}`)
           .orderBy("id")
           .limit(batch)
           .forUpdate()

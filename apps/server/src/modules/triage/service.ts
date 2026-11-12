@@ -27,7 +27,14 @@ import { createPlanned, setDelegationId, type CreatedAction, type PlannedActionI
 import { auditEvents, countLlmCallsSince, recordAudit } from "../audit";
 import { lockSettingsForShare } from "../config";
 import { createDelegation, detectReply, markAnswered } from "../delegation";
-import { finishEmail, isSyntheticMessageId, listThreadContext, releaseEmail, type ClaimedEmail } from "../mail";
+import {
+  finishEmail,
+  isSyntheticMessageId,
+  listThreadContext,
+  PENDING_BODY_DAYS,
+  releaseEmail,
+  type ClaimedEmail,
+} from "../mail";
 
 import { classifyEmail, type ClassifierEmail } from "./classifier";
 import type { LlmPause } from "./pause";
@@ -362,7 +369,7 @@ async function handleClassifyError(
 // Mail older than this before `resumed_at` is backlog of the pause (D4, A16).
 export const BACKLOG_GRACE_MS = 24 * 3_600_000;
 
-type SkipReason = "too_old" | "suspended_backlog";
+type SkipReason = "too_old" | "suspended_backlog" | "body_expired";
 
 // One transaction: the email status `skipped` and its audit row. `false` in `finishEmail` means a lost claim.
 // One function for both reasons, so the status and the audit code cannot drift.
@@ -412,6 +419,15 @@ export async function triageOne(
     email.created_at.getTime() < mailbox.resumedAt.getTime() + BACKLOG_GRACE_MS
   ) {
     return skipEmail(deps, ctx, mailbox, email, "suspended_backlog");
+  }
+  // A backfilled mail is exempt from the age rules, so it can wait in `pending` past the retention period (a suspended
+  // organization, scope `off`) and lose its body there. Without the body the classification is poor: no LLM call (F083).
+  if (
+    email.backfilled_at !== null &&
+    email.body_text === null &&
+    email.created_at.getTime() < deps.now().getTime() - PENDING_BODY_DAYS * 24 * 3_600_000
+  ) {
+    return skipEmail(deps, ctx, mailbox, email, "body_expired");
   }
   const rules = applyHardRules(email.from_address, mailbox.rules, { delegation: mailbox.delegates.length > 0 });
   if (rules.kind === "spam") {

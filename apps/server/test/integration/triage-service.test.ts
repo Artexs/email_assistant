@@ -802,6 +802,44 @@ describe("triageOne: cost gates", () => {
     });
   });
 
+  test("a backfilled mail that lost its body to retention is skipped as body_expired; no LLM call (F083)", async () => {
+    await withRollback(db, async (trx) => {
+      const { ctx, emailId, email, mailbox } = await setupMail(trx, {
+        received_at: eightDaysAgo,
+        created_at: new Date(now.getTime() - 40 * 24 * 3_600_000),
+        backfilled_at: now,
+        body_text: null,
+      });
+      const llm = fakeLlm(analysis());
+
+      expect(await triageOne(deps(trx, llm), ctx, mailbox, email)).toEqual({ kind: "skipped" });
+
+      expect(llm.requests).toHaveLength(0);
+      const mail = await trx
+        .selectFrom("emails")
+        .select(["status", "skip_reason", "locked_at"])
+        .where("id", "=", emailId)
+        .executeTakeFirstOrThrow();
+      expect(mail).toEqual({ status: "skipped", skip_reason: "body_expired", locked_at: null });
+      const skipped = (await audit(trx, emailId)).filter((r) => r.event === "email.skipped");
+      expect(skipped.map((row) => row.reason_code)).toEqual(["body_expired"]);
+      expect(await llmRows(trx, emailId)).toHaveLength(0);
+    });
+  });
+
+  test("a backfilled mail with a body, or without a body but stored under 7 days ago, is triaged", async () => {
+    await withRollback(db, async (trx) => {
+      const old = new Date(now.getTime() - 40 * 24 * 3_600_000);
+      const withBody = await setupMail(trx, { created_at: old, backfilled_at: now, body_text: "Body" });
+      const fresh = await setupMail(trx, { created_at: now, backfilled_at: now, body_text: null });
+      for (const one of [withBody, fresh]) {
+        const llm = fakeLlm(analysis());
+        expect(await triageOne(deps(trx, llm), one.ctx, one.mailbox, one.email)).toEqual({ kind: "triaged" });
+        expect(llm.requests).toHaveLength(1);
+      }
+    });
+  });
+
   test("at the daily cap the mail waits for the next quota day; no LLM call", async () => {
     await withRollback(db, async (trx) => {
       const { ctx, emailId, email, mailbox } = await setupMail(trx);

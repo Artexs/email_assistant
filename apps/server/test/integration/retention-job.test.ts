@@ -207,6 +207,128 @@ describe("retention job: runOrg", () => {
   });
 });
 
+// F083 (minor-4): the job reads no mailbox status, plan or triage scope. Scope `off` means the triage worker does not run,
+// so for the retention job it is the same as a stuck mail in a mailbox that no worker visits. Each §7 row, with the
+// stuck `processing` mail and the stuck `applying` payload, must clear in every state; open work must stay.
+describe("retention job: every §7 row in a paused mailbox, a suspended organization and with triage off", () => {
+  const variants: { name: string; paused: boolean; suspended: boolean }[] = [
+    { name: "paused mailbox", paused: true, suspended: false },
+    { name: "suspended organization", paused: false, suspended: true },
+    { name: "triage off: active mailbox, active organization, no worker run", paused: false, suspended: false },
+    { name: "paused mailbox of a suspended organization", paused: true, suspended: true },
+  ];
+
+  for (const variant of variants) {
+    test(variant.name, async () => {
+      await withRollback(db, async (trx) => {
+        const a = await newOrg(trx, 30, variant.suspended);
+        if (variant.paused) {
+          await trx.updateTable("mailboxes").set({ status: "paused" }).where("id", "=", a.mailboxId).execute();
+        }
+        const ctx = { orgId: a.orgId };
+        const text = "secret";
+        const mail = (created: Date, extra: Record<string, unknown> = {}) =>
+          insertTestEmail(trx, ctx, a.mailboxId, { created_at: created, body_text: text, ...extra });
+        const doneOld = await mail(over90, { status: "done", subject: text, from_address: `${text}@x.test` });
+        const pendingOld = await mail(ago(40 * DAY_MS), { status: "pending" });
+        const stuckProcessing = await mail(ago(40 * DAY_MS), { status: "processing", locked_at: ago(40 * DAY_MS) });
+        const youngProcessing = await mail(ago(40 * DAY_MS), { status: "processing", locked_at: ago(DAY_MS) });
+        const fresh = await insertTestEmail(trx, ctx, a.mailboxId, { status: "done", created_at: ago(DAY_MS) });
+        await insertTriaged(trx, ctx, a.mailboxId, { category: "info", createdAt: over90, reason: text });
+        await insertAction(trx, ctx, fresh, {
+          type: "save_summary",
+          status: "applied",
+          createdAt: over90,
+          payload: { text },
+        });
+        const stuckSend = await insertAction(trx, ctx, fresh, {
+          type: "send",
+          status: "applying",
+          createdAt: over90,
+          lockedAt: over90,
+          approvedAt: over90,
+          payload: { text },
+        });
+        await trx.updateTable("actions").set({ updated_at: over90 }).where("id", "=", stuckSend).execute();
+        const failedMove = await insertAction(trx, ctx, fresh, { type: "move", status: "failed", createdAt: over90 });
+        await trx
+          .updateTable("actions")
+          .set({ last_error: text, updated_at: over90 })
+          .where("id", "=", failedMove)
+          .execute();
+        const delegations: Record<string, string> = {};
+        for (const status of ["done", "sent"]) {
+          const delegateId = await insertDelegate(trx, ctx);
+          const pair = await insertDraftAndSend(trx, ctx, a.mailboxId, { delegateId, createdAt: ago(DAY_MS) });
+          delegations[status] = await insertDelegation(trx, ctx, {
+            mailboxId: a.mailboxId,
+            emailId: pair.emailId,
+            delegateId,
+            draftActionId: pair.draftId,
+            sendActionId: pair.sendId,
+            status,
+            taskSummary: text,
+          });
+          await trx
+            .updateTable("delegations")
+            .set({ updated_at: over90 })
+            .where("id", "=", delegations[status] ?? "")
+            .execute();
+        }
+        await trx
+          .insertInto("outbox")
+          .values({
+            org_id: a.orgId,
+            user_id: a.userId,
+            kind: "sync_ok",
+            dedup_key: `key-${randomUUID()}`,
+            mailbox_id: a.mailboxId,
+            text,
+            buttons: "[]",
+            status: "sent",
+            created_at: over90,
+            next_attempt_at: over90,
+            sent_at: over90,
+          })
+          .execute();
+        await trx
+          .insertInto("chat_link_tokens")
+          .values({
+            org_id: a.orgId,
+            user_id: a.userId,
+            token_hash: `${randomUUID()}${randomUUID()}`.replaceAll("-", ""),
+            expires_at: ago(2 * DAY_MS),
+          })
+          .execute();
+
+        const job = createRetentionJob({ db: trx, now: () => NOW });
+        const org = { id: a.orgId, dataRetentionDays: 30 };
+
+        expect(await job.runOrg(org, NOW)).toEqual({
+          body: 3,
+          headers: 1,
+          triage: 1,
+          payloads: 2,
+          errors: 1,
+          tasks: 1,
+          outbox: 1,
+          tokens: 1,
+        });
+        expect(await body(trx, doneOld)).toBeNull();
+        expect(await body(trx, pendingOld)).toBeNull();
+        expect(await body(trx, stuckProcessing)).toBeNull();
+        expect(await body(trx, youngProcessing)).toBe(text);
+        const task = async (id: string) =>
+          (await trx.selectFrom("delegations").select("task_summary").where("id", "=", id).executeTakeFirstOrThrow())
+            .task_summary;
+        expect(await task(delegations.done ?? "")).toBe("[removed]");
+        expect(await task(delegations.sent ?? "")).toBe(text);
+        expect(await job.runOrg(org, NOW)).toEqual(ZERO);
+      });
+    });
+  }
+});
+
 describe("retention job: log", () => {
   test("the lines hold counts and the organization id; no subject, address or body text", async () => {
     await withRollback(db, async (trx) => {

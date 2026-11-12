@@ -49,6 +49,7 @@ export {
   changeMailboxStatus,
   claimEmails,
   clearMailBodies,
+  PENDING_BODY_DAYS,
   clearMailHeaders,
   clearReturned,
   countSyncTargets,
