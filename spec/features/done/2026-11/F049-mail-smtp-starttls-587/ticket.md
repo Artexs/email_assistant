@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-08
+landed: 2026-11-12
 ---
 
 # F049 · SMTP on port 587 with STARTTLS

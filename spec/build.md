@@ -18,7 +18,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F077-s6a-customer-core` (🟠 ACTIVE): S6a Customer core: a second organization runs next to the pilot
 - `F071-limen-transition` (🟠 ACTIVE): Move the agent workflow to Limen
 - `F069-compose-network-subnet` (🟠 ACTIVE): Pin the Compose network subnet
-- `F049-mail-smtp-starttls-587` (🟠 ACTIVE): SMTP on port 587 with STARTTLS
 
 ## NEXT
 
@@ -29,11 +28,11 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F070-editor-rules-cleanup` (🟢 PROVEN): Editor rule files still name Supabase; landed 2026-11-12
 - `F058-sync-sort-folders` (🟢 PROVEN): Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci); landed 2026-11-12
 - `F054-s5e-web-deploy-docs` (🟢 PROVEN): S5e Web: deploy and docs; landed 2026-11-12
+- `F049-mail-smtp-starttls-587` (🟢 PROVEN): SMTP on port 587 with STARTTLS; landed 2026-11-12
 - `F045-approval-quote-address` (🟢 PROVEN): Keep the sender address in the approval quote header; landed 2026-11-12
 - `F044-send-retry-cap` (🟢 PROVEN): A shorter cap for send retries; landed 2026-11-12
 - `F041-delegation-went-out-button` (🟢 PROVEN): A button 'It went out' after outcome_unknown; landed 2026-11-12
 - `F026-llm-provider-switch` (🟢 PROVEN): LLM provider switch: Gemini and OpenAI; landed 2026-11-12
 - `F007-s5-web-panel` (🟢 PROVEN): S5 Web panel (lite); landed 2026-11-12
 - `F067-state-machine-transitions` (🟢 PROVEN): Explicit state machine for `actions.status`; landed 2026-11-11
-- `F053-s5d-web-activity` (🟢 PROVEN): S5d Web: activity; landed 2026-11-11
-- 2026-11: 38 landed. spec/features/done/2026-11/
+- 2026-11: 39 landed. spec/features/done/2026-11/
