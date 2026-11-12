@@ -19,7 +19,7 @@ Probes: `notes/2026-11-08-s5-probes/` and `notes/2026-11-08-s5a-probes/`.
   - Better Auth uses our `users` row as its user. Its tables are `auth_sessions`, `auth_accounts` and `auth_verifications`.
   - E-mail and password only. `disableSignUp` is on. The password has 12 to 128 characters.
   - The first password and every reset use the reset flow. `bun run web:invite` prints a one-time link (24 hours).
-  - Only these `/api/auth/*` routes are open: `sign-in/email`, `sign-out`, `get-session`, `reset-password`, `change-password`, `revoke-other-sessions`, `revoke-sessions`, `list-sessions`. Every other path answers 404.
+  - Only these `/api/auth/*` routes are open: `sign-in/email`, `sign-out`, `get-session`, `reset-password` (POST, and GET `reset-password/<token>`), `change-password`, `revoke-other-sessions`, `revoke-sessions`, `list-sessions`. Every other path answers 404.
   - The session lasts 30 days and renews every day. There is no cookie cache, so a revoked session ends at the next request.
   - `better-auth` has an exact version pin. Dependabot opens a weekly pull request. The upgrade path is in `docs/known-alerts.md`.
 - **Web = Astro static build with React islands** (P2, D6, D17).
@@ -41,6 +41,7 @@ Probes: `notes/2026-11-08-s5-probes/` and `notes/2026-11-08-s5a-probes/`.
   - We write no own crypto. Later login methods are plugins (Google, magic link, passkeys, the Organization plugin).
   - One container serves the panel and the API.
 - Bad:
+  - The database dump (and so each backup) holds live `auth_sessions` tokens, password hashes and reset tokens. After a real restore, run `delete from auth_sessions;` and ask the members to sign in again.
   - A library upgrade needs the auth integration tests and the Playwright login test (known-alerts entry).
   - The hashed CSP depends on the Astro `experimental.csp` flag.
   - A static build shows a loading state on each page, because the page arrives before its data.

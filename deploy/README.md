@@ -39,8 +39,12 @@ The server listens on `127.0.0.1:8080` on the host only (for Tailscale Serve, se
 
 ## Update
 
+1. Make a backup first: `deploy/backup.sh`. The last line is `backup ok <name> <bytes>`.
+2. Check the disk: `df -h /`. Stop if less than 3 GB is free. Run `docker builder prune -f` first, then check again.
+3. Update and start:
+
 ```sh
-git pull
+git fetch && git merge --ff-only origin/master
 $C up -d --wait db
 $C run --build --rm server bun run db:migrate
 $C up -d --build --wait
@@ -88,7 +92,7 @@ For a mailbox in `auth_error` the owner gets a Telegram notice. Fix it as in the
 
 ### What it is
 
-The web panel is at `https://<machine>.<tailnet>.ts.net`. Only devices in your tailnet can open it. Tailscale Serve on the host adds HTTPS and proxies to `127.0.0.1:8080`.
+The web panel is at `https://<machine>.<tailnet>.ts.net`. Tailscale Serve is open to every device that the tailnet policy (ACL) allows. The default policy of a one-user tailnet allows the owner's own devices only. Run `tailscale status` and look for foreign users before you rely on this. Tailscale Serve on the host adds HTTPS and proxies to `127.0.0.1:8080`.
 See [ADR 0015](../docs/decisions/0015-web-panel-static-build-and-better-auth.md) and [ADR 0016](../docs/decisions/0016-web-access-tailscale-serve.md).
 The web is off while `WEB_BASE_URL` is empty.
 Deploy facts and results of the first VPS install: [`notes/2026-11-12-web-panel-deploy.md`](../notes/2026-11-12-web-panel-deploy.md).
@@ -100,6 +104,8 @@ Deploy facts and results of the first VPS install: [`notes/2026-11-12-web-panel-
 3. On the VPS, install Tailscale (you, sudo): `curl -fsSL https://tailscale.com/install.sh | sh`
 4. On the VPS, join the tailnet (you, sudo): `sudo tailscale up --accept-dns=false --hostname=email-assistant`
    Open the login URL that the command prints.
+   Check the machine name: `tailscale status` must show `email-assistant`. If it shows another name (the first run registered it as `ubuntu`), run `sudo tailscale set --hostname=email-assistant`. A wrong name gives a wrong panel URL.
+   Check the host resolver: `resolvectl status | grep -c 100.100.100.100` must print `0`. If it prints more, run `sudo tailscale set --accept-dns=false`.
 5. Admin console, page Machines: for `email-assistant`, choose Disable Key Expiry. Without this, the panel stops after some months.
 6. On each client device, install Tailscale and sign in with the same account. Phone: the App Store or Play Store app. Arch Linux PC: `sudo pacman -S tailscale`, then `sudo systemctl enable --now tailscaled`, then `sudo tailscale up`. Keep MagicDNS on, because the tailnet host names resolve only through it.
 
@@ -109,7 +115,8 @@ Never run `tailscale up --force-reauth` over the tailnet. It cuts the connection
 
 1. Read the gateway of the Compose network (the network exists after the first `up`):
    `docker network inspect email-assistant_default --format '{{(index .IPAM.Config 0).Gateway}}'`
-2. Set these keys in `.env`:
+2. Make a copy of `.env` first: `cp -p .env .env.bak-s5e`. The copy holds every secret. Delete it when the panel works: `rm .env.bak-s5e`.
+   Then set these keys in `.env`:
    - `WEB_BASE_URL`: `https://<machine>.<tailnet>.ts.net` (no path, no trailing slash).
    - `WEB_AUTH_SECRET`: make it with `openssl rand -base64 32`. Never print it.
    - `WEB_TRUSTED_PROXIES`: the gateway from step 1.
@@ -127,6 +134,8 @@ Read the gateway again after each `docker compose down`. A new Compose network c
 1. Make the link: `$C exec server bun run web:invite --org-id <uuid> [--user-id <uuid>]`
 2. Open the link on a device in the tailnet. The link works once and for 24 hours.
 3. Set a password of 12 to 128 characters.
+
+The login e-mail is the address that you gave to `org:create` (`users.email`), not any other address of the person. A wrong e-mail shows only "Wrong e-mail or password." The log says `better-auth: User not found`.
 
 The same command makes a reset link later. The link is a secret. Do not paste it into a chat with an agent or into a log.
 
@@ -152,6 +161,9 @@ The same command makes a reset link later. The link is a secret. Do not paste it
 | `web is off` in the log                                                     | `WEB_BASE_URL` is empty                                                  | Set `WEB_BASE_URL` in `.env`. Run `$C up -d --wait server`.                                                     |
 | `web: dist folder missing` in the log                                       | The image has no web build                                               | Rebuild: `$C up -d --build --wait`.                                                                             |
 | The setup link says `This link was used or has expired. Ask for a new one.` | The link was used, or it is older than 24 hours                          | Make a new link (section Give a member a password).                                                             |
+| The panel URL is wrong, or the name is `ubuntu`                             | The first `tailscale up` registered the machine under the host name      | Run `sudo tailscale set --hostname=email-assistant`. Set `WEB_BASE_URL` to the new URL.                         |
+| Lookups for IMAP, SMTP or Telegram fail after Tailscale starts              | Tailscale changed the host resolver                                      | Run `sudo tailscale set --accept-dns=false`. Check: `resolvectl status \| grep -c 100.100.100.100` prints `0`.  |
+| Login shows only "Wrong e-mail or password.", log: `User not found`         | The e-mail is not the address of `org:create` (`users.email`)            | Use the address that you gave to `org:create`.                                                                  |
 | The panel stopped after some months                                         | Key expiry was not disabled for the VPS                                  | In the admin console, choose Disable Key Expiry for `email-assistant`. Run `sudo tailscale up` again if needed. |
 
 ### Turn it off
@@ -174,6 +186,8 @@ Before an Update, write down the current commit: `git rev-parse HEAD`.
 2. Rebuild and start: `$C up -d --build --wait`
 3. Stop Serve (you, sudo): `sudo tailscale serve reset`
 4. To return later: `git checkout master`
+
+Restore the copy `.env.bak-s5e` only if the edit of `.env` broke another key.
 
 ## Assist mode
 
@@ -367,6 +381,8 @@ Start time `T0`. Use the test mailbox only.
 `deploy/backup.sh` runs every night. It writes an `age`-encrypted `pg_dump` to `BACKUP_DIR` and copies it to a Backblaze B2 bucket with `rclone`.
 The `age` private key never lives on the VPS. The VPS has only the public recipient and a bucket key that can only write.
 If somebody steals the VPS, they cannot read or delete old backups.
+
+The dump holds live `auth_sessions` tokens, password hashes and reset tokens. After a real restore, run `delete from auth_sessions;` and ask the members to sign in again.
 
 ### Bucket (once, in the Backblaze B2 web UI)
 

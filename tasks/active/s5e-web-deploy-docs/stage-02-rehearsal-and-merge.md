@@ -24,7 +24,7 @@ No implementer. The main session runs every step and writes each command with it
   - Done when: every step's expected result holds; the log line lists the measured times (the build, the migration, `--wait`) for the stage 4 time plan.
   - Out of scope: Tailscale (no account on this PC yet, stage 3), HTTPS, the browser pages (Playwright covers them).
 
-- [ ] **2.2 Merge stages 1–2 into `master` (A7)**
+- [x] **2.2 Merge stages 1–2 into `master` (A7)**
   - Goal: `master` has the loopback port and the runbook before the VPS pulls it.
   - Steps: the stage 1 review is PASS and pushed on the branch; `git fetch`; `git merge origin/master` in the branch (expect no migration from others: `git log HEAD..origin/master -- db/migrations` empty; if a new migration came, stop and ask); `bun run lint && bun run typecheck && bun run test:unit`; in the main checkout `git merge --no-ff task/s5e-web-deploy-docs -m "Merge branch 'task/s5e-web-deploy-docs' — S5e stages 1–2 (compose port, runbook)"`, push (`GIT_SSH_COMMAND` note). The branch and the worktree stay for stages 5–6. CI on the merge commit: `image` and `e2e` green; `ci` may be red only on the known timing tests (`docs/known-alerts.md`). Wait for the `image` job before checkpoint 3: the VPS builds the same Dockerfile. Before the merge, commit the stage 2 log lines on the branch (task file "Rules for every step", evidence).
   - Then **checkpoint 3** (task file "User checkpoints"): show the user the rehearsal result, the stage 4 plan and rollback, the hand-smoke list; ask whether stage 3 is done; wait for the go.
@@ -42,3 +42,4 @@ No implementer. The main session runs every step and writes each command with it
   7. Cleanup: `$R down -v`; volumes and networks of `ea-rehearsal` → 0; `rm -rf /tmp/ea-s5e-rehearsal`.
      Measured times for the stage 4 plan: migrate ≈ 10 s, `up --build --wait` ≈ 35–40 s with cached layers.
 - Stage 1 review: Opus high, `7e2995c`, VERDICT PASS (5 minor, 1 question accepted: dead ADR links until stage 5); fixed in `8f51c59`.
+- 2026-11-11, step 2.2: `git fetch`; `git log HEAD..origin/master` empty (no new migration); `bun run lint && bun run typecheck && bun run test:unit` → 1719 pass, 0 fail; main checkout `git merge --no-ff task/s5e-web-deploy-docs` → `8f6a8b2`, pushed. CI run 43111108388: `image` success, `e2e` success, `ci` red on `runSend > 3: a lost response is repeated with the same key` and `AgentMail fake > holdResponseNext` (the known timing tests). Checkpoint 3: the plan and rollback were shown; the user answered "go, And tell me if I need to do anything there." (the go for the VPS pre-checks) and then ran the key and Serve steps in stage 4 as the plan says.
