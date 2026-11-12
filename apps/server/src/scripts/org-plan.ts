@@ -1,7 +1,8 @@
 import { resumeHook } from "../composition";
 import { cancelPendingOutboxOfOrg } from "../modules/channels";
+import { configureMailHosts } from "../modules/mail";
 import { setOrgPlan, type SetOrgPlanResult } from "../modules/tenancy";
-import { loadConfig } from "../platform/config";
+import { loadConfig, mailAllowLocal } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 import { createLog } from "../platform/log";
@@ -52,6 +53,8 @@ async function main(): Promise<number> {
   }
 
   const config = loadConfig();
+  // The resume hook can reach mail code; without a policy the guard refuses local hosts (F082 stage 9).
+  configureMailHosts({ allowLocal: mailAllowLocal(config) });
   const db = createDb(config.DATABASE_URL);
   try {
     await assertAppRole(db);
