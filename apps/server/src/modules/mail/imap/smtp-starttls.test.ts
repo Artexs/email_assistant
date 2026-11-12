@@ -1,10 +1,11 @@
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { createServer, type Server, type Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { TLSSocket } from "node:tls";
+
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
 import { HardError } from "../../../platform/errors";
 
@@ -106,7 +107,9 @@ function startServer(opts: { offerStartTls: boolean }): Promise<Fake> {
 }
 
 const base = { host: "127.0.0.1", user: "owner@x.test", password: "pw-secret-1", security: "starttls" } as const;
-const RAW = Buffer.from("Message-ID: <x@ea.local>\r\nFrom: owner@x.test\r\nTo: d@x.test\r\nSubject: p\r\n\r\nhello\r\n");
+const RAW = Buffer.from(
+  "Message-ID: <x@ea.local>\r\nFrom: owner@x.test\r\nTo: d@x.test\r\nSubject: p\r\n\r\nhello\r\n"
+);
 const ENVELOPE = { from: "owner@x.test", to: ["d@x.test"] };
 
 describe("smtpTransportOptions with STARTTLS", () => {
@@ -131,9 +134,9 @@ describe("smtpTransportOptions with STARTTLS", () => {
   });
 
   test("the plain-loopback switch is refused with STARTTLS", () => {
-    expect(() => smtpTransportOptions({ host: "127.0.0.1", port: 587, security: "starttls", secure: false, ...creds })).toThrow(
-      HardError
-    );
+    expect(() =>
+      smtpTransportOptions({ host: "127.0.0.1", port: 587, security: "starttls", secure: false, ...creds })
+    ).toThrow(HardError);
   });
 
   test("tls keeps implicit TLS", () => {
