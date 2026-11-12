@@ -1,11 +1,15 @@
+import { randomUUID } from "node:crypto";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
 import { Client } from "pg";
 
-import { createOrganizationWithOwner, insertMembership, insertUser } from "../modules/tenancy";
+import { insertDefaultSettings } from "../modules/config";
+import { insertCredentials, insertInboxFolder, insertMailbox } from "../modules/mail/repo";
+import { createOrganizationWithOwner, insertMembership, insertUser, setOrgPlan } from "../modules/tenancy";
 import { createAuth } from "../platform/auth";
 import { loadConfig, webTrustedOrigins } from "../platform/config";
+import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 import { createLog } from "../platform/log";
@@ -22,7 +26,11 @@ import {
   E2E_OTHER_OWNER_EMAIL,
   E2E_OWNER_EMAIL,
   E2E_OWNER_PASSWORD,
+  E2E_PAUSED_ORG_NAME,
+  E2E_PAUSED_OWNER_EMAIL,
   E2E_PROJECTS,
+  E2E_TRIAL_ORG_NAME,
+  E2E_TRIAL_OWNER_EMAIL,
   type E2eProject,
   type SeedFile,
   seedFilePath,
@@ -31,6 +39,9 @@ import {
 
 const log = createLog("e2e-seed");
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const TRIAL_DAYS = 10;
+
 const repoRoot = resolve(import.meta.dir, "../../../..");
 
 async function wipe(migratorUrl: string): Promise<void> {
@@ -38,7 +49,9 @@ async function wipe(migratorUrl: string): Promise<void> {
   await client.connect();
   try {
     // The organization cascade removes mailboxes, mail, actions, memberships and audit rows.
-    await client.query("DELETE FROM organizations WHERE name = ANY($1)", [[E2E_ORG_NAME, E2E_OTHER_ORG_NAME]]);
+    await client.query("DELETE FROM organizations WHERE name = ANY($1)", [
+      [E2E_ORG_NAME, E2E_OTHER_ORG_NAME, E2E_TRIAL_ORG_NAME, E2E_PAUSED_ORG_NAME],
+    ]);
     // Users are global: the cascade leaves them.
     await client.query("DELETE FROM users WHERE email = ANY($1)", [
       [
@@ -46,6 +59,8 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map((project) => E2E_ASSISTANT_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_MEMBER_EMAILS[project]),
         E2E_OTHER_OWNER_EMAIL,
+        E2E_TRIAL_OWNER_EMAIL,
+        E2E_PAUSED_OWNER_EMAIL,
         ...E2E_PROJECTS.map((project) => E2E_ACTIVITY_MEMBER_EMAILS[project]),
       ],
     ]);
@@ -135,6 +150,52 @@ async function main(): Promise<number> {
       });
       const otherMail = await seedOtherOrgMail(db, { orgId: other.orgId }, new Date());
 
+      // The trial organization: the panel shows the trial line to its owner.
+      const now = new Date();
+      const trialEndsAt = new Date(now.getTime() + TRIAL_DAYS * DAY_MS);
+      const trial = await createOrganizationWithOwner(db, {
+        orgName: E2E_TRIAL_ORG_NAME,
+        timezone: "Europe/Warsaw",
+        email: E2E_TRIAL_OWNER_EMAIL,
+        displayName: "E2E Trial Owner",
+        plan: { kind: "trial", endsAt: trialEndsAt },
+      });
+
+      // The paused organization: one mailbox, so the read-only mirror has controls to check. No sync reaches it.
+      // The org has no outbox rows, so the suspend needs no hook.
+      const paused = await createOrganizationWithOwner(db, {
+        orgName: E2E_PAUSED_ORG_NAME,
+        timezone: "Europe/Warsaw",
+        email: E2E_PAUSED_OWNER_EMAIL,
+        displayName: "E2E Paused Owner",
+      });
+      const pausedCtx = { orgId: paused.orgId };
+      const pausedMailboxId = randomUUID();
+      await insertMailbox(db, pausedCtx, {
+        id: pausedMailboxId,
+        address: "e2e-paused-box@x.test",
+        imapHost: "127.0.0.1",
+        imapPort: 3143,
+        smtpHost: "127.0.0.1",
+        smtpPort: 3025,
+        capabilities: { move: true, uidplus: true, idle: false, condstore: false, specialUse: false, keywords: false },
+        folderMap: { drafts: "Drafts" },
+      });
+      await insertInboxFolder(db, pausedCtx, pausedMailboxId);
+      const secret = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION).encrypt(
+        "e2e-paused-box-password",
+        `mailbox:${pausedMailboxId}`
+      );
+      await insertCredentials(db, pausedCtx, {
+        mailboxId: pausedMailboxId,
+        encryptedSecret: secret.ciphertext,
+        secretKind: "password",
+        keyVersion: secret.keyVersion,
+      });
+      await insertDefaultSettings(db, pausedCtx, pausedMailboxId);
+      const suspended = await setOrgPlan(db, pausedCtx, { plan: "suspended", actor: "e2e-seed", now });
+      if (suspended.kind !== "changed") throw new Error(`suspending the paused organization gave ${suspended.kind}`);
+
       // Takes the link of the last reset request for an e-mail address.
       const requestLink = async (email: string): Promise<string> => {
         resets.length = 0;
@@ -147,6 +208,11 @@ async function main(): Promise<number> {
       const ownerLink = await requestLink(E2E_OWNER_EMAIL);
       const token = new URL(ownerLink).pathname.split("/").pop() ?? "";
       await handle.auth.api.resetPassword({ body: { newPassword: E2E_OWNER_PASSWORD, token } });
+
+      for (const email of [E2E_TRIAL_OWNER_EMAIL, E2E_PAUSED_OWNER_EMAIL]) {
+        const planToken = new URL(await requestLink(email)).pathname.split("/").pop() ?? "";
+        await handle.auth.api.resetPassword({ body: { newPassword: E2E_OWNER_PASSWORD, token: planToken } });
+      }
 
       const assistants = {} as SeedFile["assistants"];
       for (const project of E2E_PROJECTS) {
@@ -177,6 +243,20 @@ async function main(): Promise<number> {
         members,
         otherOrg: { orgId: other.orgId, emailId: otherMail.emailId },
         activityMembers,
+        trialOwner: {
+          userId: trial.userId,
+          email: E2E_TRIAL_OWNER_EMAIL,
+          password: E2E_OWNER_PASSWORD,
+          orgId: trial.orgId,
+          trialEndsAt: trialEndsAt.toISOString(),
+        },
+        pausedOwner: {
+          userId: paused.userId,
+          email: E2E_PAUSED_OWNER_EMAIL,
+          password: E2E_OWNER_PASSWORD,
+          orgId: paused.orgId,
+          mailboxId: pausedMailboxId,
+        },
       };
       const path = seedFilePath(repoRoot);
       await mkdir(dirname(path), { recursive: true });
@@ -185,7 +265,7 @@ async function main(): Promise<number> {
       await writeFile(path, `${JSON.stringify(seed, null, 2)}\n`, { mode: 0o600 });
 
       log.info(
-        `seeded org ${seed.orgId} owner ${seed.owner.userId} assistants ${E2E_PROJECTS.map((project) => assistantIds[project]).join(",")} members ${E2E_PROJECTS.map((project) => memberIds[project]).join(",")}`
+        `seeded org ${seed.orgId} owner ${seed.owner.userId} assistants ${E2E_PROJECTS.map((project) => assistantIds[project]).join(",")} members ${E2E_PROJECTS.map((project) => memberIds[project]).join(",")} trial org ${trial.orgId} paused org ${paused.orgId}`
       );
       return 0;
     } finally {

@@ -66,6 +66,7 @@ async function setup(options: SetupOptions = {}) {
           now: () => NOW,
           scopes: { triage: off, actions: off, send: off },
           countMailboxes: countMailboxes(db),
+          operatorContact: null,
           ...onboardingDeps(db, botUsername),
         })
       ),

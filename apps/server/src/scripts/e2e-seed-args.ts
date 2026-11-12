@@ -24,6 +24,11 @@ export const E2E_MEMBER_PASSWORD = "e2e-member-passphrase-one";
 export const E2E_OTHER_ORG_NAME = "E2E Other";
 export const E2E_OTHER_OWNER_EMAIL = "e2e-other-owner@x.test";
 
+export const E2E_TRIAL_ORG_NAME = "E2E Trial";
+export const E2E_TRIAL_OWNER_EMAIL = "e2e-trial-owner@x.test";
+export const E2E_PAUSED_ORG_NAME = "E2E Paused";
+export const E2E_PAUSED_OWNER_EMAIL = "e2e-paused-owner@x.test";
+
 export const E2E_ACTIVITY_MEMBER_EMAILS: Record<E2eProject, string> = {
   mobile: "e2e-activity-mobile@x.test",
   desktop: "e2e-activity-desktop@x.test",
@@ -46,6 +51,8 @@ export interface SeedFile {
   members: Record<E2eProject, { userId: string; email: string; password: string }>;
   otherOrg: { orgId: string; emailId: string };
   activityMembers: Record<E2eProject, { userId: string; email: string; password: string }>;
+  trialOwner: { userId: string; email: string; password: string; orgId: string; trialEndsAt: string };
+  pausedOwner: { userId: string; email: string; password: string; orgId: string; mailboxId: string };
 }
 
 // Reads the name the way `pg` does, so the guard and the connection agree. No connection is opened.

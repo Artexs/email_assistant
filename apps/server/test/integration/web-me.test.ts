@@ -5,7 +5,7 @@ import { hashPassword } from "better-auth/crypto";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { insertMailbox, setMailboxStatus } from "../../src/modules/mail/repo";
-import { setDigestTimes, tenancyRoutes } from "../../src/modules/tenancy";
+import { isOrgSuspended, setDigestTimes, tenancyRoutes } from "../../src/modules/tenancy";
 import { insertUser } from "../../src/modules/tenancy/repo";
 import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
@@ -58,10 +58,14 @@ async function setup() {
   return { ownerEmail: owner.email, orgId: org.orgId, ownerId: org.ownerId, assistantId: org.assistantId, nobodyId };
 }
 
-function appFor(ids: { ownerId: string; assistantId: string; nobodyId: string }) {
+function appFor(
+  ids: { ownerId: string; assistantId: string; nobodyId: string },
+  operatorContact: string | null = null
+) {
   return webTestApp({
     db,
     sessions: { "good-owner": ids.ownerId, "good-assistant": ids.assistantId, "good-nobody": ids.nobodyId },
+    isOrgSuspended: (orgId) => isOrgSuspended(db, { orgId }),
     routers: (api) =>
       api.route(
         "/",
@@ -70,6 +74,7 @@ function appFor(ids: { ownerId: string; assistantId: string; nobodyId: string })
           now: () => new Date(),
           scopes: { triage: off, actions: off, send: off },
           countMailboxes: countMailboxes(db),
+          operatorContact,
           ...onboardingDeps(db, async () => "fake_ea_bot"),
         })
       ),
@@ -84,7 +89,15 @@ describe("GET /api/me", () => {
     const me = meSchema.parse(await res.json());
     expect(me.role).toBe("owner");
     expect(me.user).toEqual({ id: ids.ownerId, email: ids.ownerEmail, displayName: "Owner" });
-    expect(me.organization).toEqual({ id: ids.orgId, name: "Web org", timezone: "Europe/Warsaw" });
+    expect(me.organization).toEqual({
+      id: ids.orgId,
+      name: "Web org",
+      timezone: "Europe/Warsaw",
+      plan: "active",
+      trialEndsAt: null,
+      maxMailboxes: 2,
+    });
+    expect(me.operatorContact).toBeNull();
     expect(me.mailboxCount).toBe(2);
     expect(me.mailboxesInAuthError).toBe(1);
     expect(me.scopes.triage).toEqual({ kind: "off", reason: "env_off" });
@@ -97,6 +110,36 @@ describe("GET /api/me", () => {
       rules: 0,
       done: false,
     });
+  });
+
+  test("returns the trial end and the plan to every member", async () => {
+    const ids = await setup();
+    await db
+      .updateTable("organizations")
+      .set({ plan: "trial", trial_ends_at: new Date("2026-12-01T00:00:00Z") })
+      .where("id", "=", ids.orgId)
+      .execute();
+    const app = appFor(ids);
+    for (const cookie of ["good-owner", "good-assistant"]) {
+      const me = meSchema.parse(await (await app.request("/api/me", as(cookie))).json());
+      expect(me.organization.plan).toBe("trial");
+      expect(me.organization.trialEndsAt).toBe("2026-12-01T00:00:00.000Z");
+      expect(me.organization.maxMailboxes).toBe(2);
+    }
+  });
+
+  test("answers 200 with plan suspended for a suspended organization", async () => {
+    const ids = await setup();
+    await db.updateTable("organizations").set({ plan: "suspended" }).where("id", "=", ids.orgId).execute();
+    const res = await appFor(ids).request("/api/me", as("good-owner"));
+    expect(res.status).toBe(200);
+    expect(meSchema.parse(await res.json()).organization.plan).toBe("suspended");
+  });
+
+  test("returns the operator contact of the deps", async () => {
+    const ids = await setup();
+    const res = await appFor(ids, "ops@example.test").request("/api/me", as("good-owner"));
+    expect(meSchema.parse(await res.json()).operatorContact).toBe("ops@example.test");
   });
 
   test("returns the digest times sorted, and [] when the member has none", async () => {

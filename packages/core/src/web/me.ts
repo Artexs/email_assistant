@@ -1,4 +1,4 @@
-import { membershipRoleSchema } from "../tenancy";
+import { membershipRoleSchema, orgPlanSchema } from "../tenancy";
 
 import { onboardingSchema } from "./onboarding";
 import { z } from "./zod";
@@ -36,7 +36,15 @@ export function scopeInfoOf(
 
 export const meSchema = z.object({
   user: z.object({ id: z.uuid(), email: z.string(), displayName: z.string() }),
-  organization: z.object({ id: z.uuid(), name: z.string(), timezone: z.string() }),
+  organization: z.object({
+    id: z.uuid(),
+    name: z.string(),
+    timezone: z.string(),
+    plan: orgPlanSchema,
+    trialEndsAt: z.iso.datetime().nullable(),
+    maxMailboxes: z.number().int().min(0),
+  }),
+  operatorContact: z.string().nullable(),
   role: membershipRoleSchema,
   telegram: z.object({ available: z.boolean(), linked: z.boolean(), botUsername: z.string().nullable() }),
   onboarding: onboardingSchema,

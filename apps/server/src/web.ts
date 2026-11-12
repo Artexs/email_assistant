@@ -190,6 +190,7 @@ export function apiRouters(
         now,
         scopes,
         countMailboxes: countMailboxes(db),
+        operatorContact: config.OPERATOR_CONTACT ?? null,
         ...onboardingDeps(db, extras.botUsername),
       })
     );

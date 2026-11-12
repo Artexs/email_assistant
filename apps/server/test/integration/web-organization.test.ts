@@ -48,6 +48,7 @@ async function setup() {
           now: () => new Date(),
           scopes: { triage: off, actions: off, send: off },
           countMailboxes: countMailboxes(db),
+          operatorContact: null,
           ...onboardingDeps(db, async () => "fake_ea_bot"),
         })
       ),

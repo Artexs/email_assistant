@@ -5,7 +5,15 @@ import { meSchema, scopeInfoOf } from "./me";
 const scope = scopeInfoOf("triage", "off");
 const me = {
   user: { id: "0190f5a0-0000-7000-8000-000000000001", email: "a@b.com", displayName: "Ann" },
-  organization: { id: "0190f5a0-0000-7000-8000-000000000002", name: "Org", timezone: "Europe/Warsaw" },
+  organization: {
+    id: "0190f5a0-0000-7000-8000-000000000002",
+    name: "Org",
+    timezone: "Europe/Warsaw",
+    plan: "active",
+    trialEndsAt: null,
+    maxMailboxes: 2,
+  },
+  operatorContact: null,
   role: "owner",
   telegram: { available: true, linked: false, botUsername: "ea_bot" },
   onboarding: { mailbox: true, telegram: false, telegramAvailable: true, mode: false, rules: 0, done: false },
@@ -29,6 +37,16 @@ describe("scopeInfoOf", () => {
 describe("meSchema", () => {
   test("accepts a full object", () => {
     expect(meSchema.safeParse(me).success).toBe(true);
+  });
+
+  test("accepts a trial plan with a date, and refuses an unknown plan", () => {
+    const trial = { ...me.organization, plan: "trial", trialEndsAt: "2026-12-01T00:00:00.000Z" };
+    expect(meSchema.safeParse({ ...me, organization: trial, operatorContact: "ops@example.test" }).success).toBe(true);
+    expect(meSchema.safeParse({ ...me, organization: { ...me.organization, plan: "gold" } }).success).toBe(false);
+  });
+
+  test("refuses an object without operatorContact", () => {
+    expect(meSchema.safeParse({ ...me, operatorContact: undefined }).success).toBe(false);
   });
 
   test("refuses an object without digestTimes", () => {

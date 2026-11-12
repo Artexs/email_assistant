@@ -1,5 +1,6 @@
 import {
   digestTimesBodySchema,
+  orgPlanSchema,
   organizationPatchSchema,
   parseDigestTimes,
   type Me,
@@ -25,6 +26,7 @@ export interface TenancyRouteDeps {
     ctx: TenantContext,
     userId: string
   ) => Promise<{ available: boolean; linked: boolean; botUsername: string | null }>;
+  operatorContact: string | null; // the public OPERATOR_CONTACT value (D29), not a secret
   keepMode: (ctx: TenantContext, userId: string, now: Date) => Promise<void>;
 }
 
@@ -39,9 +41,18 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
     if (!organization || !member) return c.json({ error: "not_found" }, 404);
     const mailboxes = await deps.countMailboxes(ctx);
     const [onboarding, telegram] = await Promise.all([deps.onboarding(ctx, userId), deps.telegram(ctx, userId)]);
+    const organizationPlan = orgPlanSchema.parse(organization.plan);
     const me: Me = {
       user: { id: userId, email: member.email, displayName: member.display_name },
-      organization: { id: organization.id, name: organization.name, timezone: organization.timezone },
+      organization: {
+        id: organization.id,
+        name: organization.name,
+        timezone: organization.timezone,
+        plan: organizationPlan,
+        trialEndsAt: organization.trial_ends_at?.toISOString() ?? null,
+        maxMailboxes: organization.max_mailboxes,
+      },
+      operatorContact: deps.operatorContact,
       role: c.get("role"),
       telegram,
       onboarding,

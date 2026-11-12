@@ -193,6 +193,7 @@ describe("api", () => {
               now: () => new Date(),
               scopes: { triage: offScope, actions: offScope, send: offScope },
               countMailboxes: async () => ({ total: 0, inAuthError: 0 }),
+              operatorContact: null,
               ...onboardingDeps(db, null),
             })
           ),

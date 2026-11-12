@@ -1,8 +1,16 @@
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { afterAll, describe, expect, test } from "bun:test";
 
-import { E2E_OWNER_EMAIL } from "../../src/scripts/e2e-seed-args";
+import { createDb } from "../../src/platform/db";
+import {
+  E2E_ORG_NAME,
+  E2E_OWNER_EMAIL,
+  E2E_PAUSED_ORG_NAME,
+  E2E_TRIAL_ORG_NAME,
+  type SeedFile,
+} from "../../src/scripts/e2e-seed-args";
 
 import { testDb } from "./helpers";
 
@@ -70,4 +78,59 @@ describe("e2e seed guards", () => {
     expect(result.stderr).toContain("refusing: MIGRATOR_DATABASE_URL is not an e2e database");
     expect(result.stderr).not.toMatch(/ECONNREFUSED|does not exist|password authentication|connect/i);
   });
+});
+
+// The seed wipes and fills the e2e database: it runs only where E2E_DATABASE_URL names one (a `_e2e` database).
+const e2eAppUrl = process.env.E2E_DATABASE_URL ?? "";
+const e2eMigratorUrl = process.env.E2E_MIGRATOR_DATABASE_URL ?? "";
+
+describe.skipIf(e2eAppUrl === "" || e2eMigratorUrl === "")("e2e seed of the plan states", () => {
+  test("seeds a trial and a paused organization, and a second run works", async () => {
+    const env = { DATABASE_URL: e2eAppUrl, MIGRATOR_DATABASE_URL: e2eMigratorUrl };
+    const first = await runSeed(env);
+    expect(first.stderr).toBe("");
+    expect(first.code).toBe(0);
+    const second = await runSeed(env);
+    expect(second.code).toBe(0);
+
+    const seed = JSON.parse(readFileSync(resolve(repoRoot, "apps/web/e2e/.seed.json"), "utf8")) as SeedFile;
+    const e2e = createDb(e2eAppUrl);
+    try {
+      const orgOf = (name: string) =>
+        e2e
+          .selectFrom("organizations")
+          .select(["id", "plan", "trial_ends_at"])
+          .where("name", "=", name)
+          .executeTakeFirstOrThrow();
+
+      const main = await orgOf(E2E_ORG_NAME);
+      expect(main.plan).toBe("active");
+
+      const trial = await orgOf(E2E_TRIAL_ORG_NAME);
+      expect(trial.plan).toBe("trial");
+      const aheadMs = (trial.trial_ends_at as Date).getTime() - Date.now();
+      expect(Math.abs(aheadMs - 10 * 24 * 60 * 60 * 1000)).toBeLessThan(60_000);
+      expect(seed.trialOwner.orgId).toBe(trial.id);
+      expect(seed.trialOwner.trialEndsAt).toBe((trial.trial_ends_at as Date).toISOString());
+
+      const paused = await orgOf(E2E_PAUSED_ORG_NAME);
+      expect(paused.plan).toBe("suspended");
+      expect(seed.pausedOwner.orgId).toBe(paused.id);
+      const mailboxes = await e2e.selectFrom("mailboxes").select("id").where("org_id", "=", paused.id).execute();
+      expect(mailboxes.map((row) => row.id)).toEqual([seed.pausedOwner.mailboxId]);
+      const settings = await e2e
+        .selectFrom("mailbox_settings")
+        .select("mailbox_id")
+        .where("org_id", "=", paused.id)
+        .execute();
+      expect(settings).toHaveLength(1);
+
+      expect(seed.trialOwner.userId).not.toBe(seed.pausedOwner.userId);
+      for (const owner of [seed.trialOwner, seed.pausedOwner]) {
+        expect(owner.email).toMatch(/^e2e-(trial|paused)-owner@x\.test$/);
+      }
+    } finally {
+      await e2e.destroy();
+    }
+  }, 60_000);
 });
