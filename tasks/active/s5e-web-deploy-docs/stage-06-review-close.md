@@ -4,7 +4,7 @@ Part of [`../s5e-web-deploy-docs.md`](../s5e-web-deploy-docs.md). Read that file
 
 ## Stage 6 — Group review, checkpoint 4, close of S5, follow-up, handoff for S6
 
-- [ ] **6.1 Group review** (main session calls the `reviewer` subagent on `claude-bridge/claude-opus-5-5` high)
+- [x] **6.1 Group review** (main session calls the `reviewer` subagent on `claude-bridge/claude-opus-5-5` high)
   - Scope: the S5e branch range (`<branch base>..HEAD`, stages 1 and 5 and any smoke fixes) plus the stage 2 and 4 logs as evidence. Questions: a pre-mortem ("a month after the deploy the panel failed the user or leaked data: which S5e decision let it through?"); the runbook against the real deploy log (a step that differs from what ran); the ADRs and docs against the code (a claim the code does not hold); a tailnet name anywhere in the diff; the done-when lines and their evidence.
   - FAIL → fix steps (max 2 rounds, then the user decides). Smoke-fix code (stage 4.6) gets the full check line: `bun run lint && bun run typecheck && bun run test:unit && bun run test:int && bun run web:build` and, if a page changed, `TELEGRAM_BOT_TOKEN= WEB_MAIL_ALLOW_LOCAL=true bun run test:e2e` (needs an e2e database; see `tasks/done/s5d-web-activity.md` user step 0 for the keys).
   - Done when: PASS.
@@ -31,3 +31,4 @@ Part of [`../s5e-web-deploy-docs.md`](../s5e-web-deploy-docs.md). Read that file
 - [ ] **6.4 Handoff for S6**
   - With the `handoff` skill: a handoff file `~/.pi/agent/notes/<date>-handoff-s6-plan.md` for the S6 plan session (`tasks/planned/s6-pre-sale.md`; the Polish translation and the e-mail sender lines; `tasks/planned/web-public-hardening.md` before the panel leaves Tailscale; ADR 0016's S6 path). Show it to the user; open the new session only when the user asks.
   - Done when: the handoff file exists and the user saw it.
+- 2026-11-12, 6.1: group review round 1 FAIL (2 major, 8 minor, 1 question, Opus high, `69b78d6..38c4151`), fixed in `72cc424` and `28f0b28`; round 2 PASS (Opus high). 6.2 changed by the user: "Can we skip all those steps? As they are not necessary and not relevant. I want to keep it as it is right now." The day of use, the phone items and the cleanup items of 6.2 are skipped; the merge and the close go on.
