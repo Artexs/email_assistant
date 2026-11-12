@@ -75,6 +75,7 @@ export async function insertTestEmail(
     next_attempt_at?: Date | null;
     locked_at?: Date | null;
     backfilled_at?: Date | null;
+    created_at?: Date;
   }
 ): Promise<string> {
   const row = await trx
