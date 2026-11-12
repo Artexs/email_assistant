@@ -47,6 +47,9 @@ const WRITE_ROUTES = [
   "POST /api/rules",
 ];
 
+// Write routes in `SUSPENDED_WRITE_ALLOW`: a paused account may still call them (web-terms.test.ts proves it).
+const ALLOWED_WHEN_SUSPENDED = ["POST /api/me/terms"];
+
 let org: WebOrg;
 const sessions = () => ({ owner: org.ownerId, assistant: org.assistantId, other: org.otherOwnerId });
 const routers = () => apiRouters(testConfig, db, extras, () => new Date());
@@ -78,9 +81,10 @@ describe("a suspended organization on the web (D4, S2)", () => {
       if (["GET", "HEAD", "ALL"].includes(route.method)) continue;
       found.add(`${route.method} ${route.path}`);
     }
-    expect([...found].sort()).toEqual([...WRITE_ROUTES].sort());
+    expect([...found].sort()).toEqual([...WRITE_ROUTES, ...ALLOWED_WHEN_SUSPENDED].sort());
 
     for (const entry of found) {
+      if (ALLOWED_WHEN_SUSPENDED.includes(entry)) continue;
       const [method = "", pattern = ""] = entry.split(" ");
       const path = pattern.replace(/:[A-Za-z]+/g, () => randomUUID());
       for (const who of ["owner", "assistant"]) {
