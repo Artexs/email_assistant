@@ -1,4 +1,11 @@
-import { membershipRoleSchema, orgPlanSchema, type MembershipRole, type OrgPlan } from "@ea/core";
+import {
+  membershipRoleSchema,
+  orgPlanSchema,
+  userLocaleSchema,
+  type MembershipRole,
+  type OrgPlan,
+  type UserLocale,
+} from "@ea/core";
 import type { Selectable, Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -210,13 +217,58 @@ export async function insertOrganization(
 // Users are global (they join organizations through memberships), so it takes no TenantContext.
 export async function insertUser(
   db: Db | Transaction<DB>,
-  input: { email: string; displayName: string }
+  input: { email: string; displayName: string; locale?: UserLocale }
 ): Promise<{ id: string }> {
   return db
     .insertInto("users")
-    .values({ email: input.email, display_name: input.displayName })
+    .values({
+      email: input.email,
+      display_name: input.displayName,
+      ...(input.locale ? { locale: input.locale } : {}),
+    })
     .returning("id")
     .executeTakeFirstOrThrow();
+}
+
+export interface UserAuthProfile {
+  locale: UserLocale | null;
+  termsVersion: string | null;
+  termsAcceptedAt: Date | null;
+}
+
+// No TenantContext: the user gives the row; the web resolves the user from the session (S6b).
+export async function getUserAuthProfile(
+  db: Db | Transaction<DB>,
+  userId: string
+): Promise<UserAuthProfile | undefined> {
+  const row = await db
+    .selectFrom("users")
+    .select(["locale", "terms_version", "terms_accepted_at"])
+    .where("id", "=", userId)
+    .executeTakeFirst();
+  if (!row) {
+    return undefined;
+  }
+  return {
+    locale: userLocaleSchema.nullable().parse(row.locale),
+    termsVersion: row.terms_version,
+    termsAcceptedAt: row.terms_accepted_at,
+  };
+}
+
+// No TenantContext: the user gives the row. True when one row changed.
+export async function setUserTerms(
+  db: Db | Transaction<DB>,
+  userId: string,
+  version: string,
+  at: Date
+): Promise<boolean> {
+  const result = await db
+    .updateTable("users")
+    .set({ terms_version: version, terms_accepted_at: at })
+    .where("id", "=", userId)
+    .executeTakeFirst();
+  return Number(result.numUpdatedRows) === 1;
 }
 
 export async function setDigestTimes(

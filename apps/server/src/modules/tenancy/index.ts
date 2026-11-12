@@ -2,6 +2,7 @@ export {
   getMembership,
   getOrganization,
   getOrgPlan,
+  getUserAuthProfile,
   insertMembership,
   insertUser,
   isOrgSuspended,
@@ -9,9 +10,11 @@ export {
   listMembershipsOfUser,
   listOrganizations,
   setDigestTimes,
+  setUserTerms,
   type MembershipWithUser,
   type OrganizationRow,
   type OrgPlanState,
+  type UserAuthProfile,
   type UserMembership,
 } from "./repo";
 export { tenancyRoutes, type TenancyRouteDeps } from "./routes";

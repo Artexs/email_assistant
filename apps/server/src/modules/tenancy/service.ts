@@ -1,4 +1,4 @@
-import type { OrganizationView, OrgPlan } from "@ea/core";
+import { userLocaleSchema, type OrganizationView, type OrgPlan } from "@ea/core";
 import type { Transaction } from "kysely";
 import { z } from "zod";
 
@@ -39,6 +39,7 @@ const createOrganizationInputSchema = z.object({
   timezone: z.string().refine(isSupportedTimeZone, "invalid timezone"),
   email: z.email().transform((email) => email.toLowerCase()),
   displayName: z.string().trim().min(1),
+  locale: userLocaleSchema.optional(),
 });
 
 export type OrgPlanInput = { kind: "active" } | { kind: "trial"; endsAt: Date };
@@ -60,7 +61,11 @@ export async function createOrganizationWithOwner(
       timezone: valid.timezone,
       ...(plan?.kind === "trial" ? { plan: "trial" as const, trialEndsAt: plan.endsAt } : {}),
     });
-    const user = await insertUser(trx, { email: valid.email, displayName: valid.displayName });
+    const user = await insertUser(trx, {
+      email: valid.email,
+      displayName: valid.displayName,
+      ...(valid.locale ? { locale: valid.locale } : {}),
+    });
     await insertMembership(trx, { orgId: org.id }, { userId: user.id, role: "owner" });
     return { orgId: org.id, userId: user.id };
   };

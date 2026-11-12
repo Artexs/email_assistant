@@ -7,3 +7,7 @@ export const membershipRoleSchema = z.enum(membershipRoles);
 export const orgPlans = ["trial", "active", "suspended"] as const;
 export const orgPlanSchema = z.enum(orgPlans);
 export type OrgPlan = z.infer<typeof orgPlanSchema>;
+
+export const userLocales = ["pl", "en"] as const;
+export type UserLocale = (typeof userLocales)[number];
+export const userLocaleSchema = z.enum(userLocales);

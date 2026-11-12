@@ -80,6 +80,16 @@ export interface AuthAccounts {
   user_id: string;
 }
 
+export interface AuthLockouts {
+  failed_count: Generated<number>;
+  locked_until: Timestamp | null;
+  mail_count: Generated<number>;
+  mail_day: Timestamp | null;
+  updated_at: Generated<Timestamp>;
+  user_id: string;
+  window_started_at: Timestamp;
+}
+
 export interface AuthSessions {
   created_at: Generated<Timestamp>;
   expires_at: Timestamp;
@@ -334,6 +344,9 @@ export interface Users {
   email_verified: Generated<boolean>;
   id: Generated<string>;
   image: string | null;
+  locale: string | null;
+  terms_accepted_at: Timestamp | null;
+  terms_version: string | null;
   updated_at: Generated<Timestamp>;
 }
 
@@ -341,6 +354,7 @@ export interface DB {
   actions: Actions;
   audit_log: AuditLog;
   auth_accounts: AuthAccounts;
+  auth_lockouts: AuthLockouts;
   auth_sessions: AuthSessions;
   auth_verifications: AuthVerifications;
   chat_link_tokens: ChatLinkTokens;
