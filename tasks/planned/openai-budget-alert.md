@@ -2,7 +2,7 @@
 
 # OpenAI budget alert
 
-Scope: ADR 0015. The user set a $3 per month budget for the OpenAI project (`tasks/active/llm-provider-switch.md` stage 0). Read `tasks/planned/gemini-billing-budget-alert.md` for the shape.
+Scope: ADR 0015. The user set a $3 per month budget for the OpenAI project (`tasks/done/llm-provider-switch.md` stage 0). Read `tasks/planned/gemini-billing-budget-alert.md` for the shape.
 
 ## Goal
 

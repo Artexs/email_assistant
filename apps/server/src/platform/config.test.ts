@@ -20,6 +20,8 @@ const fullEnv = {
   CREDENTIALS_KEY: randomBytes(32).toString("base64"),
 };
 
+const geminiEnv = { ...fullEnv, LLM_PROVIDER: "gemini" };
+
 function configError(env: Record<string, string | undefined>): ConfigError {
   try {
     loadConfig(env);
@@ -119,7 +121,7 @@ describe("loadConfig", () => {
   });
 
   test("sets the LLM defaults with only the S1a keys", () => {
-    const config = loadConfig(fullEnv);
+    const config = loadConfig(geminiEnv);
     expect(config.GEMINI_API_KEY).toBeUndefined();
     expect(config.GEMINI_MODEL).toBe("gemini-3.8-flash");
     expect(config.GEMINI_MODEL_CLASSIFIER).toBe("gemini-3.5-flash-lite");
@@ -135,14 +137,14 @@ describe("loadConfig", () => {
   });
 
   test("throws ConfigError when TRIAGE_LLM_SCOPE=synthetic has no GEMINI_API_KEY", () => {
-    expect(configError({ ...fullEnv, TRIAGE_LLM_SCOPE: "synthetic" }).keys).toContain("GEMINI_API_KEY");
-    expect(configError({ ...fullEnv, TRIAGE_LLM_SCOPE: "synthetic", GEMINI_API_KEY: "" }).keys).toContain(
+    expect(configError({ ...geminiEnv, TRIAGE_LLM_SCOPE: "synthetic" }).keys).toContain("GEMINI_API_KEY");
+    expect(configError({ ...geminiEnv, TRIAGE_LLM_SCOPE: "synthetic", GEMINI_API_KEY: "" }).keys).toContain(
       "GEMINI_API_KEY"
     );
   });
 
   test("accepts TRIAGE_LLM_SCOPE=synthetic with a GEMINI_API_KEY", () => {
-    const config = loadConfig({ ...fullEnv, TRIAGE_LLM_SCOPE: "synthetic", GEMINI_API_KEY: "test-key" });
+    const config = loadConfig({ ...geminiEnv, TRIAGE_LLM_SCOPE: "synthetic", GEMINI_API_KEY: "test-key" });
     expect(config.TRIAGE_LLM_SCOPE).toBe("synthetic");
     expect(config.GEMINI_API_KEY).toBe("test-key");
   });
@@ -168,14 +170,14 @@ describe("loadConfig", () => {
   });
 
   test("throws ConfigError with both keys when TRIAGE_LLM_SCOPE=all has neither", () => {
-    const error = configError({ ...fullEnv, TRIAGE_LLM_SCOPE: "all" });
+    const error = configError({ ...geminiEnv, TRIAGE_LLM_SCOPE: "all" });
     expect(error.keys).toContain("GEMINI_API_KEY");
     expect(error.keys).toContain("TEST_MAILBOX_ADDRESS");
   });
 
   test("accepts TRIAGE_LLM_SCOPE=all with a GEMINI_API_KEY and a TEST_MAILBOX_ADDRESS", () => {
     const config = loadConfig({
-      ...fullEnv,
+      ...geminiEnv,
       TRIAGE_LLM_SCOPE: "all",
       GEMINI_API_KEY: "test-key",
       TEST_MAILBOX_ADDRESS: "test@interia.pl",
@@ -198,7 +200,7 @@ describe("loadConfig", () => {
   });
 
   test("classifierModel returns the set GEMINI_MODEL_CLASSIFIER", () => {
-    const config = loadConfig({ ...fullEnv, GEMINI_MODEL_CLASSIFIER: "gemini-3.1-flash-lite" });
+    const config = loadConfig({ ...geminiEnv, GEMINI_MODEL_CLASSIFIER: "gemini-3.1-flash-lite" });
     expect(classifierModel(config)).toBe("gemini-3.1-flash-lite");
   });
 
@@ -225,9 +227,9 @@ describe("loadConfig", () => {
     expect(configError({ ...fullEnv, GEMINI_TIMEOUT_MS: "1.5" }).keys).toContain("GEMINI_TIMEOUT_MS");
   });
 
-  test("sets LLM_PROVIDER to gemini when unset or empty, and rejects an unknown one", () => {
-    expect(loadConfig(fullEnv).LLM_PROVIDER).toBe("gemini");
-    expect(loadConfig({ ...fullEnv, LLM_PROVIDER: "" }).LLM_PROVIDER).toBe("gemini");
+  test("sets LLM_PROVIDER to openai when unset or empty, and rejects an unknown one", () => {
+    expect(loadConfig(fullEnv).LLM_PROVIDER).toBe("openai");
+    expect(loadConfig({ ...fullEnv, LLM_PROVIDER: "" }).LLM_PROVIDER).toBe("openai");
     const error = configError({ ...fullEnv, LLM_PROVIDER: "foo" });
     expect(error.keys).toEqual(["LLM_PROVIDER"]);
     expect(error.message).not.toContain("foo");
@@ -253,12 +255,12 @@ describe("loadConfig", () => {
 
   test("accepts TRIAGE_LLM_SCOPE=synthetic with a GEMINI_API_KEY and no OPENAI_API_KEY", () => {
     expect(() =>
-      loadConfig({ ...fullEnv, TRIAGE_LLM_SCOPE: "synthetic", GEMINI_API_KEY: "test-key", OPENAI_API_KEY: "" })
+      loadConfig({ ...geminiEnv, TRIAGE_LLM_SCOPE: "synthetic", GEMINI_API_KEY: "test-key", OPENAI_API_KEY: "" })
     ).not.toThrow();
   });
 
-  test("llmSettings returns the Gemini settings by default", () => {
-    const config = loadConfig({ ...fullEnv, GEMINI_API_KEY: "test-key" });
+  test("llmSettings returns the Gemini settings when LLM_PROVIDER=gemini", () => {
+    const config = loadConfig({ ...geminiEnv, GEMINI_API_KEY: "test-key" });
     expect(llmSettings(config)).toEqual({
       provider: "gemini",
       apiKeyName: "GEMINI_API_KEY",

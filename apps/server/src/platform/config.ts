@@ -83,7 +83,7 @@ const baseSchema = z.object({
       .optional()
   ),
   // One switch for both LLM roles (classifier, S4 writer). A restart applies it.
-  LLM_PROVIDER: z.preprocess(emptyAsUndefined, z.enum(llmProviderIds).default("gemini")),
+  LLM_PROVIDER: z.preprocess(emptyAsUndefined, z.enum(llmProviderIds).default("openai")),
   GEMINI_API_KEY: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
   // Empty or missing = Telegram off. Secret: never print or log it.
   TELEGRAM_BOT_TOKEN: z.preprocess(

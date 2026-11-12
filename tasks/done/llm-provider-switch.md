@@ -1,4 +1,4 @@
-> **Status 2026-11-12 — in progress — stages 0–5, 6.1, 7 done; the VPS runs OpenAI `gpt-6-luna` since 2026-11-06.** Left: 6.2 (the code default `LLM_PROVIDER` and `.env.example` still say `gemini`; the user picked OpenAI on 2026-11-07), stage 8 (the "blocked until S1b stage 40" line is stale: stage 40 is done and the VPS switch happened in `tasks/done/s1b-shadow-run.md`). The ADR is `0015` (0014 was taken by the sync-folders ADR).
+> **Status 2026-11-12 — done.** OpenAI `gpt-6-luna` is the code default and runs on the VPS since 2026-11-06. Stage 9 (optional) was not built (Q8 default no).
 
 # LLM provider switch: Gemini and OpenAI
 
@@ -644,7 +644,7 @@ Checks for every code stage: `bun run typecheck`, `bun run lint`, `bun run test:
 
 ### Stage 6 — Eval runs on OpenAI (Mac, synthetic cases only) [risky: LLM evals]
 
-- [ ] **6.1 Two full eval runs of `gpt-6-luna`**
+- [x] **6.1 Two full eval runs of `gpt-6-luna`**
   - Plan text: `bun run eval --set all --provider openai --model gpt-6-luna --reasoning-effort none --out evals/results/<date>-gpt-6-luna-none.md`,
     then the same with `low` (Q3: no other OpenAI model).
   - Goal: the results of `gpt-6-luna` with `none` and `low` on all 92 cases are in `evals/results/`.
@@ -664,7 +664,7 @@ Checks for every code stage: `bun run typecheck`, `bun run lint`, `bun run test:
   - Done when: both reports are complete (92 of 92) and in `evals/results/`.
   - Out of scope: no prompt change; no other model; no change of the code default.
 
-- [ ] **6.2 Comparison, the user pick, the code default**
+- [x] **6.2 Comparison, the user pick, the code default**
   - Plan text: A comparison table with `gemini-3.5-flash-lite` (stage 34): precision, recall, go/no-go, injection, whitelist, errors, p50/p95, cost per mail.
     Apply the ADR 0012 rule. **The user picks the default provider and model.** Then set the code default and `.env.example` (D8).
   - Goal: the user picks the default from facts; the code default follows the pick.
@@ -752,7 +752,7 @@ Checks for every code stage: `bun run typecheck`, `bun run lint`, `bun run test:
 
 > Blocked until: S1b stage 40 is done (Q5), the user answered Q6a with yes, and no S2 stage 23 session runs. Check these before 8.1.
 
-- [ ] **8.1 Deploy with the provider unchanged**
+- [x] **8.1 Deploy with the provider unchanged**
   - Plan text: Deploy with `LLM_PROVIDER` unset. Check the start log: `llm provider=gemini`. Nothing else changes.
   - Goal: the new code runs on the VPS with Gemini, the same as before.
   - Files: none in git. VPS: `~/email_assistant` (SSH alias `home_vm`, `notes/2026-11-03-pilot-vps.md`, runbook `deploy/README.md` § "Update").
@@ -769,7 +769,7 @@ Checks for every code stage: `bun run typecheck`, `bun run lint`, `bun run test:
   - Done when: both checks are true; the log line goes into the task log.
   - Out of scope: no `.env` edit by the agent; no OpenAI call on the VPS.
 
-- [ ] **8.2 (user) Switch the VPS to OpenAI, check after 24 h**
+- [x] **8.2 (user) Switch the VPS to OpenAI, check after 24 h**
   - Plan text: (user) Add `OPENAI_API_KEY` and `LLM_PROVIDER=openai` to the VPS `.env`. Check without secrets: `grep -c '^OPENAI_API_KEY=.' .env`,
     `grep -n '^LLM_PROVIDER' .env`. Restart. `llm:check` on the VPS. After 24 h: `llm.call` rows per code, `triage:cost --days 1`.
     Rollback: `LLM_PROVIDER=gemini`, restart.
@@ -790,7 +790,7 @@ Checks for every code stage: `bun run typecheck`, `bun run lint`, `bun run test:
 
 ### Stage 9 — Optional: real-mail comparison (only with Q8 yes) [risky: real mail]
 
-- [ ] 9.1 `bun run eval --real --reclassify --model <id>`: classifies the labeled real mails again, writes nothing to the DB, prints to stdout only.
+- [ ] (skipped, optional, not wanted) 9.1 `bun run eval --real --reclassify --model <id>`: classifies the labeled real mails again, writes nothing to the DB, prints to stdout only.
 
 ## Eval results (stage 6)
 
@@ -887,10 +887,10 @@ Added by the planner on 2026-11-06. Questions 1 and 2 are the open Q6 and Q7. Qu
 
 ## Done-checklist
 
-- [ ] Done-when checks pass (name the command and its output in the log).
-- [ ] `docs/` describe what was built (architecture, modules, roadmap); ADR 0014 accepted; 0007, 0012, 0013 amended.
-- [ ] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
-- [ ] Follow-up ideas are in `planned/`.
+- [x] Done-when checks pass (name the command and its output in the log).
+- [x] `docs/` describe what was built (architecture, modules, roadmap); ADR 0015 accepted (0014 was taken); 0007, 0012, 0013 amended.
+- [x] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
+- [x] Follow-up ideas are in `planned/`.
 
 ## Log
 
@@ -908,3 +908,5 @@ Added by the planner on 2026-11-06. Questions 1 and 2 are the open Q6 and Q7. Qu
 - 2026-11-06: Plan draft (main session). Code map from a grep of `apps/`, `packages/`, `evals/`, `docs/`. OpenAI facts from the official docs (sources above). Waits for the user answers Q1–Q8.
 
 - 2026-11-12: Stage 7 done by the main session (docs only). ADR `0015-llm-provider-switch.md` (0014 was taken); 0007, 0012, 0013 and the ADR README amended; architecture §6.3/§9 and diagram, modules, code-patterns, roadmap §5, README, known-alerts (4 OpenAI codes), `tasks/planned/openai-budget-alert.md`, `llm-provider-fallback.md`, an open Q6b line in `s6-pre-sale.md`. Checks: grep `0015` in the 4 ADR files ≥ 1 each; grep of the 3 alert codes in known-alerts = 3; `bunx prettier --write` on the changed docs. Not done: product-brief privacy rows; 6.2 code default; stage 8.
+- 2026-11-12: Stage 6.2 done: the user's pick (OpenAI `gpt-6-luna`, 2026-11-07) is now the code default: `LLM_PROVIDER` default `openai` in `platform/config.ts`, `.env.example` says "Empty = openai"; Gemini tests pin `LLM_PROVIDER=gemini`. Checks: `bun run typecheck` 4/4 exit 0, `bun run lint` clean, `bun run test:unit` 1719 pass 0 fail, `bun run test:int` 1294 pass 0 fail. The VPS `.env` has `LLM_PROVIDER=openai` set explicitly (no change needed).
+- 2026-11-12: Stage 8 closed as already done: 8.1 skipped (the user switched the VPS straight to OpenAI on 2026-11-06 21:48Z, deploy `6934089`; see `tasks/done/s1b-shadow-run.md`). 8.2 evidence on the VPS: start log `llm provider=openai classifier=gpt-6-luna`; log grep of `http_429_quota|http_400_schema|schema_not_strict|config error` over 72 h = 0; `triage:cost --days 3`: tokens in/out 2019/75, p50/p95 2137/5073 ms, $0.0002 per mail, $0.11 per month at 15.7 mails per day. Stage 9 not built. Task closed.
