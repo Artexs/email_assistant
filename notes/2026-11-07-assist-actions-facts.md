@@ -1,6 +1,6 @@
 # S3 assist actions: facts and their outcomes
 
-Written 2026-11-07 (stage 18.2 of `tasks/done/s3-assist-actions.md`).
+Written 2026-11-07 (stage 18.2 of `spec/features/done/2026-11/F005-s3-assist-actions/plan.md`).
 Sources: the stage 1 probe, the GreenMail tests, the dev mailbox connect and the code.
 Stages 16, 17, 19 and 20 are not done on this date. Their facts are marked `open`. Nobody invented a result.
 
@@ -46,6 +46,6 @@ Open: stage 19 (the real paths of the `AI/*` folders at Interia, the UID behavio
 | The restore test result                                                    | open: stage 17                                                                                                                      |
 | The real `AI/*` paths at Interia, UID behaviour seen by the committer      | open: stage 19                                                                                                                      |
 | The one-week result of `assist` mode (N = 3 wrong moves)                   | open: stage 20                                                                                                                      |
-| The `copies <c>` values of the `returned below cursor` lines               | open: stage 20 (input for `tasks/planned/copy-below-cursor.md`)                                                                     |
+| The `copies <c>` values of the `returned below cursor` lines               | open: stage 20 (input for `spec/features/planned/F032-copy-below-cursor/plan.md`)                                                                     |
 
 Update this note when those stages finish.

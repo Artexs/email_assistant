@@ -1,6 +1,6 @@
 # Product brief — AI Email Assistant
 
-> **Accepted 2026-11-01; changed 2026-11-02** (user answers Q9–Q11 after the cold review, `tasks/done/mvp-plan-review.md`). Built from the old docs in `.ai/` and the user's answers (section 4).
+> **Accepted 2026-11-01; changed 2026-11-02** (user answers Q9–Q11 after the cold review, `spec/features/done/2026-11/F016-mvp-plan-review/plan.md`). Built from the old docs in `.ai/` and the user's answers (section 4).
 > This file is the product source of truth. The `.ai/` files are history: read them for detail, not for decisions.
 
 ## 1. Problem and users

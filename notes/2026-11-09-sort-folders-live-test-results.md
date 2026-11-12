@@ -1,13 +1,13 @@
 # Live test results of the sort-folder sync with AgentMail test mail
 
-> Written 2026-11-10 by the `test-mail-traffic` session, for `tasks/done/sync-sort-folders.md` stage 17. Procedure: `notes/2026-11-09-sort-folders-live-test-with-testmail.md`.
+> Written 2026-11-10 by the `test-mail-traffic` session, for `spec/features/done/2026-11/F058-sync-sort-folders/plan.md` stage 17. Procedure: `notes/2026-11-09-sort-folders-live-test-with-testmail.md`.
 > Counts only: no subject, no address. Last check: **2026-11-10 11:46Z**. Result: **pass, no finding for the sync.**
 
 ## Batches
 
 - `2026-11-09-smoke`: 3 mails sent 2026-11-09 16:41Z (needs_reply 2, notification 1).
 - `2026-11-09-batch-01`: 25 mails sent 2026-11-10 10:30–10:47Z (5 each: urgent, needs_reply, info, notification, spam).
-- Compare: smoke "triaged 3 of 3 sent; ok 2; wrong 1"; batch-01 "triaged 25 of 25 sent; ok 24; wrong 1" (`tasks/done/test-mail-traffic.md` § Results).
+- Compare: smoke "triaged 3 of 3 sent; ok 2; wrong 1"; batch-01 "triaged 25 of 25 sent; ok 24; wrong 1" (`spec/features/done/2026-11/F036-test-mail-traffic/plan.md` § Results).
 - No test mail had VIP-like sender rules (the tool has one sender address; runbook § 3 forbids `rules:add` for it).
 
 ## Landing folder × category × action × status (28 test mails)

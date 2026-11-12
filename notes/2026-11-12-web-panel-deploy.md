@@ -1,7 +1,7 @@
 # Web panel on the VPS: deploy facts and results (2026-11-12)
 
 Built in S5a–S5e. Deployed on the VPS at T = 2026-11-11 23:37 UTC, behind Tailscale Serve.
-Task: `tasks/done/s5e-web-deploy-docs.md` (the stage 2, 3 and 4 logs hold the full evidence). ADRs: 0016, 0017.
+Task: `spec/features/done/2026-11/F054-s5e-web-deploy-docs/plan.md` (the stage 2, 3 and 4 logs hold the full evidence). ADRs: 0016, 0017.
 The repo is public. Never write the tailnet name or the full `ts.net` host name. Write `email-assistant.<tailnet>.ts.net`.
 
 ## How the request reaches the server
@@ -16,7 +16,7 @@ The repo is public. Never write the tailnet name or the full `ts.net` host name.
 - Leave `WEB_TRUSTED_ORIGINS`, `WEB_MAIL_ALLOW_LOCAL` and `WEB_DIST` out of the VPS `.env`.
 - A wrong or empty `WEB_TRUSTED_PROXIES` is not a security hole. The login works. But the Better Auth rate limit counts all clients as one, and `auth_sessions.ip_address` holds the gateway.
 - `docker compose down` can give the network a new gateway. Read it again after each `down`: `docker network inspect email-assistant_default --format '{{(index .IPAM.Config 0).Gateway}}'`.
-- A pinned subnet is a follow-up (`tasks/planned/compose-network-subnet.md`). It recreates the network and the running `db`: not during the pilot weeks.
+- A pinned subnet is a follow-up (`spec/features/planned/F069-compose-network-subnet/plan.md`). It recreates the network and the running `db`: not during the pilot weeks.
 - Backup copy of the old `.env`: `~/email_assistant/.env.bak-s5e` on the VPS (mode 600). Delete it when the panel is accepted.
 
 ## Rehearsal results (stage 2, test PC, 2026-11-11)

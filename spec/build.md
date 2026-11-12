@@ -15,8 +15,22 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F071-limen-transition` (🟠 ACTIVE): Move the agent workflow to Limen
+
 ## NEXT
 
 ## PROVEN
 
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
+
+- `F058-sync-sort-folders` (🟢 PROVEN): Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci); landed 2026-11-12
+- `F054-s5e-web-deploy-docs` (🟢 PROVEN): S5e Web: deploy and docs; landed 2026-11-12
+- `F026-llm-provider-switch` (🟢 PROVEN): LLM provider switch: Gemini and OpenAI; landed 2026-11-12
+- `F007-s5-web-panel` (🟢 PROVEN): S5 Web panel (lite); landed 2026-11-12
+- `F067-state-machine-transitions` (🟢 PROVEN): Explicit state machine for `actions.status`; landed 2026-11-11
+- `F053-s5d-web-activity` (🟢 PROVEN): S5d Web: activity; landed 2026-11-11
+- `F052-s5c-web-settings-rules` (🟢 PROVEN): S5c Web: settings and rules; landed 2026-11-11
+- `F051-s5b-web-mailboxes-onboarding` (🟢 PROVEN): S5b Web: mailboxes and onboarding; landed 2026-11-11
+- `F050-s5a-web-foundation` (🟢 PROVEN): S5a Web foundation; landed 2026-11-10
+- `F036-test-mail-traffic` (🟢 PROVEN): Test mail traffic: AgentMail synthetic mail utility; landed 2026-11-10
+- 2026-11: 34 landed. spec/features/done/2026-11/

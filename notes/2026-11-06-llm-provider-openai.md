@@ -1,6 +1,6 @@
 # LLM provider: add OpenAI next to Gemini (overview)
 
-Status 2026-11-06: overview only. The plan is in `tasks/planned/llm-provider-switch.md`. It has the checked OpenAI facts (prices, strict schema rules, data terms) with sources; they replace the facts from memory below.
+Status 2026-11-06: overview only. The plan is in `spec/features/done/2026-11/F026-llm-provider-switch/plan.md`. It has the checked OpenAI facts (prices, strict schema rules, data terms) with sources; they replace the facts from memory below.
 
 ## Short answer
 

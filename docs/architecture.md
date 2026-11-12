@@ -1,6 +1,6 @@
 # Architecture — AI Email Assistant
 
-> **Accepted 2026-11-02** (user). Revised 2026-11-02 after the cold review (`tasks/done/mvp-plan-review.md`), the user's answers and a second review of the rewrite (`tasks/done/docs-and-adr-review.md`):
+> **Accepted 2026-11-02** (user). Revised 2026-11-02 after the cold review (`spec/features/done/2026-11/F016-mvp-plan-review/plan.md`), the user's answers and a second review of the rewrite (`spec/features/done/2026-11/F009-docs-and-adr-review/plan.md`):
 > pilot mailbox = Interia over IMAP, pilot host = home VPS, own Postgres. Based on `docs/product-brief.md`.
 > Decisions are in `docs/decisions/` (ADR 0001–0017). The old specs in `.ai/architecture/` are history. When they disagree with this file, this file wins.
 
@@ -183,7 +183,7 @@ Pipeline rules:
 | `unknown` stage, or an error that is not a `SmtpSendError`                          | `failed` / `outcome_unknown`                 | no change                                                           |
 
 A compose error before `applying` returns the row to `approved` with a count; the third ends as `failed` / `smtp_error`. Each `failed` send gets a result notice (§4.5).
-A soft `envelope` error (4xx) retries every 5 min without a count until `held_timeout` ends the send 48 h after the tap (§4.6; follow-up `tasks/planned/send-retry-cap.md`).
+A soft `envelope` error (4xx) retries every 5 min without a count until `held_timeout` ends the send 48 h after the tap (§4.6; follow-up `spec/features/planned/F044-send-retry-cap/plan.md`).
 
 7. **Retries live on the row that failed.** LLM errors retry the email (`emails.attempts`); mailbox errors retry the action (`actions.attempts`).
    Soft errors wait with backoff (`next_attempt_at`) and do not count; the row keeps its status.
@@ -311,7 +311,7 @@ The known limits of the folder sync are in ADR 0014 (D24).
 - **Success metric** ("share of mail handled without the user", target 80–90%):
   handled = mail in `spam`, `notification`, `info`, or `delegation` sent after one tap, with an applied plan
   that the user did not undo or correct within 7 days. Share = handled ÷ all triaged mail. One line in the weekly digest.
-  The weekly line is not built yet (follow-up `tasks/planned/handled-share-metric.md`, `tasks/planned/handled-share-delegations.md`).
+  The weekly line is not built yet (follow-up `spec/features/planned/F033-handled-share-metric/plan.md`, `spec/features/planned/F042-handled-share-delegations/plan.md`).
 - **Digest lines for delegations (S4):** a `logged` send reads "would ask you to send it"; the phrases for the other statuses are `waits for your approval`, `approved, sending`, `sending`, `sent`, `rejected`, `not sent (approval expired)` and `not sent (failed)`. The footer shows `👥 Delegations: <n> waiting for a reply, <m> overdue` when there are open delegations.
 
 ### 4.5 Approval flow (Telegram)
@@ -350,11 +350,11 @@ sequenceDiagram
   `approve` refuses while the draft is not `applied` (`draft_not_ready`), and a tap later than 48 h after `notified_at` expires the send (the hourly job can be late by up to an hour).
 - **The edit after the tap:** the approval message keeps its text and gets one line: `⏳ Approved HH:MM, sending.`, `✖️ Rejected HH:MM.`, `⌛ Expired HH:MM. The mail was not sent.` or `✅ Done HH:MM.` An approved send that is held (by `SEND_SCOPE`, a paused mailbox or a login error) says so, keeps the ✖️ Reject button and expires 48 h after the tap.
 - **The result notice** is a new message (outbox kind `send_result`), one per owner, when the send ends: `✅ Sent to …`, `❌ Not sent …` (`smtp_rejected`, `smtp_error`), `⚠️ Unknown whether the mail … went out` (`outcome_unknown`; "Check Sent or ask the recipient before you send again"), `⌛ Not sent: …` for each `expired` reason, `✖️ Rejected`.
-  A `sent` notice adds "No copy in Sent" when the copy failed and "The draft stays in Drafts" when the server has no UIDPLUS. A `pending` Sent copy older than 10 min counts as failed. An edit of the approval message instead of a new message is a follow-up (`tasks/planned/approval-edit-in-place.md`).
+  A `sent` notice adds "No copy in Sent" when the copy failed and "The draft stays in Drafts" when the server has no UIDPLUS. A `pending` Sent copy older than 10 min counts as failed. An edit of the approval message instead of a new message is a follow-up (`spec/features/planned/F039-approval-edit-in-place/plan.md`).
 - **Notice kinds (S4):** `approval`, `approval_set`, `send_result` (owners only) and `delegation_answered` (every linked member, with a ✅ Done button). The notifier queues a request only after the draft is `applied`, and only for an `active` mailbox.
   With no linked owner it queues nothing and sets nothing: `notified_at` stays null, and after 7 days from creation the expiry job ends the send as `not_notified`.
 - A `send` action has `depends_on_action_id` = its `create_draft` action. The policy makes the send `log_only` when its draft is `log_only`. The expiry job (§8) ends a send that nobody answered, and a send whose draft is `failed` or `undone` (`draft_missing`).
-- The send uses the text that the user approved (the draft payload in the DB). Edits of the draft in the mail client do not count in MVP (Phase 2: send the edited draft, `tasks/planned/send-draft-edits.md`). The approval record is `approved_by`, `approved_at` and `approved_via`; a database check refuses `approved`, `applying` and `applied` sends without `approved_at`, and a send is never `ready`.
+- The send uses the text that the user approved (the draft payload in the DB). Edits of the draft in the mail client do not count in MVP (Phase 2: send the edited draft, `spec/features/planned/F043-send-draft-edits/plan.md`). The approval record is `approved_by`, `approved_at` and `approved_via`; a database check refuses `approved`, `applying` and `applied` sends without `approved_at`, and a send is never `ready`.
 - After a send is `applied`, a reverse `create_draft` row removes the draft from Drafts when the server has UIDPLUS; else the draft stays, and the notice says so. A reject or an expiry removes the draft the same way. A send that the server refused (`smtp_rejected`) or that failed keeps its draft, so the user can read it.
 - Never retry a send by itself (§4.1 rule 6).
 - "Send all reminders" (brief, follow-up) is one approval for a listed set of reminder actions (above).
@@ -506,7 +506,7 @@ Tenancy:
   It skips every message with `\Deleted` and every UID that another `emails` row of the same identity holds in that folder (`listFolderUids`), so identical copies are never taken for one mail.
 - **Returned below the cursor (D4):** at the end of each incremental sync, the mail that the system moved in the last 7 days (at most 500, newest `moved_at` first) is looked up only in the folder that it came from
   (in the pass of folder S: the mail that the system moved and whose source folder is S; `listRecentlyMoved({ sourceFolder })`), by its `inbox_uid` and its folder `uid`. An identity match that is no longer in the system folder means the user put the mail back: `emails.returned_at` is set (§4.4).
-  A match that is still in the system folder is a copy below the cursor: the sync logs and counts it, and stores nothing (follow-up `tasks/planned/copy-below-cursor.md`).
+  A match that is still in the system folder is a copy below the cursor: the sync logs and counts it, and stores nothing (follow-up `spec/features/planned/F032-copy-below-cursor/plan.md`).
   An RFC server puts a returned mail above the cursor; the rule above marks it first, and this check then does nothing.
 - **First connect:** only mail of the last 24 hours, in INBOX and in every new synced folder (a folder with no cursor yet, also one that is switched on again).
 - **After an outage:** the next sync takes all UIDs above the cursor (IMAP keeps them). Mail older than 7 days is stored but not sent to the LLM.
@@ -594,7 +594,7 @@ Tenancy:
   The model choice lives here and not in ADR 0013.
 - **Real-mail result (S1b stage 40, 2026-11-06):** 123 labeled real pilot mails (Gemini 36, `gpt-6-luna` 87). Every category is no-go:
   notification 96.2%, spam 83.6% precision; urgent, needs_reply and info have 1 kept row each. The pilot VPS uses OpenAI `gpt-6-luna` since 2026-11-06.
-  Detail: `tasks/done/s1b-shadow-run.md` "Results".
+  Detail: `spec/features/done/2026-11/F025-s1b-shadow-run/plan.md` "Results".
 - Structured output: JSON schema from the Zod schema in `packages/core`; the result is checked with Zod again.
 - **`classifier-v2` (S4):** the prompt adds the category `delegation` (only when the mailbox has active delegates), a `Delegates` block (id, name, tags) after the sender context, and the fields `delegate_id` (an enum of the listed ids, or null), `task` (at most 300 characters) and `clarification` (at most 200 characters).
   A real-provider check with the delegates block passed on Gemini and OpenAI (a nullable field with an empty list is accepted by both).
@@ -648,7 +648,7 @@ Tenancy:
   | Summaries, draft text, reasons, extracted fields | `actions.payload`, `triage_results.reason`, `triage_results.fields` | 90 days                                                                                    |
   | Task text                                        | `delegations.task_summary`                                          | 90 days after the delegation is `done`, or 90 days after its last change                   |
   | Error text                                       | `actions.last_error`                                                | 90 days (and no mail text in it)                                                           |
-  | Message text                                     | `outbox.text` (digests and notices)                                 | 90 days (the retention job does not exist yet: follow-up `tasks/planned/retention-job.md`) |
+  | Message text                                     | `outbox.text` (digests and notices)                                 | 90 days (the retention job does not exist yet: follow-up `spec/features/planned/F027-retention-job/plan.md`) |
   | Audit events (ids, codes, numbers)               | `audit_log`                                                         | until the mailbox or organization is removed                                               |
   | Labels (no mail text)                            | `triage_feedback`                                                   | until the mailbox or organization is removed                                               |
 

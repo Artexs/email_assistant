@@ -1,6 +1,6 @@
 # External facts for the MVP plan: Gmail, Gemini, Telegram (checked 2026-11-02)
 
-Source of the check: the cold review of the MVP plan (`tasks/done/mvp-plan-review.md`).
+Source of the check: the cold review of the MVP plan (`spec/features/done/2026-11/F016-mvp-plan-review/plan.md`).
 Each fact has its source URL. Check the facts again if they are older than about 3 months.
 
 ## Google OAuth and Gmail

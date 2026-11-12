@@ -43,10 +43,10 @@ The probe mail `EA probe 6a8a502f-…` stayed in INBOX; the user deletes it by h
 - **`SEARCH HEADER Message-ID` also finds nothing** (checked 2026-11-03 with a one-off read-only script in the server container:
   3 stored INBOX mails, raw id and id without `<>` → 0 matches; `SEARCH HEADER Subject "EA seed"` → 1 match).
   So `findByMessageId` always returns null at Interia. S1a is not affected; S3 must change it before the first move
-  (`tasks/planned/s3-assist-actions.md`, "Input from S1a").
+  (`spec/features/done/2026-11/F005-s3-assist-actions/plan.md`, "Input from S1a").
 - **A move keeps the UID** (checked 2026-11-04). The user moved stored mail UID 38829 to a new folder `EA-test` and back: it came back as 38829.
   The probe mail moved from INBOX (UID 38831) into the new folder kept UID 38831 there (the folder had only that mail).
-  This breaks the RFC 3501 rule that UIDs only grow. The sync cursor never sees a mail that comes back to INBOX. S3 input: `tasks/planned/s3-assist-actions.md`.
+  This breaks the RFC 3501 rule that UIDs only grow. The sync cursor never sees a mail that comes back to INBOX. S3 input: `spec/features/done/2026-11/F005-s3-assist-actions/plan.md`.
 - **SMTP does not save sent mail.** After a send (S4), the committer must APPEND a copy to `Wysłane`.
 - **IDLE works.** Push sync can come later.
 
@@ -108,7 +108,7 @@ Script `/tmp/ea-ssf-spike/spike.ts` (not in git), run `249f9b84` on the VPS (`fa
 
 ## Folder facts for the sort-folder sync (sync-sort-folders, read-only VPS count 2026-11-08)
 
-Source of the full text: `tasks/done/sync-sort-folders.md`, "Facts checked" (F1–F4, F12). Short form for later agents:
+Source of the full text: `spec/features/done/2026-11/F058-sync-sort-folders/plan.md`, "Facts checked" (F1–F4, F12). Short form for later agents:
 
 - **F1 Folders.** Delimiter `/`. `Wiadomości-śmieci` has the LIST attribute `\Spam`, but imapflow gives it no special use. `AI/Spam` gets `\Junk` (by name). `Oferty` and `Społeczności` are `\Noinferiors`.
 - **F2 UIDVALIDITY and UIDNEXT.** UIDVALIDITY is 1 in all 12 folders. SELECT and EXAMINE give no UIDNEXT. STATUS gives `UIDNEXT 1` for every folder, which is wrong. The sync uses the highest UID + 1 (D4).

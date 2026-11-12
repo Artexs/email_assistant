@@ -183,7 +183,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **First seen:** 2026-11-09 (S5a code; a wrong sign-in makes it, for example in the Playwright smoke of stage 13)
 - **Source:** `apps/server/src/platform/auth.ts` (Better Auth `sign-in.mjs` text through the logger, level `warn`, `cleanLogText` applied).
 - **Cause:** One sign-in came with a wrong password. The answer is the same 401 `INVALID_EMAIL_OR_PASSWORD` as for an unknown e-mail, so the text never says which of the two is wrong.
-- **Fix:** No action for one line. Many lines per minute from one address mean someone guesses: the rate limit answers 429 after 3 tries in 10 s (W9). S6 adds the lockout (`tasks/planned/web-public-hardening.md`).
+- **Fix:** No action for one line. Many lines per minute from one address mean someone guesses: the rate limit answers 429 after 3 tries in 10 s (W9). S6 adds the lockout (`spec/features/planned/F056-web-public-hardening/plan.md`).
 - **Status:** won't fix (expected behaviour)
 
 ### `better-auth: User not found`
@@ -287,7 +287,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **First seen:** 2026-11-10 (stage 15.1; the first weekly run follows the merge)
 - **Source:** a Dependabot pull request from `.github/dependabot.yml` (ecosystem `bun`, `directory: /`, weekly, `better-auth` only, at most 2 open PRs).
 - **Cause:** Dependabot found a newer `better-auth`. The pins are exact, so one PR holds `apps/server/package.json`, `apps/web/package.json` and `bun.lock` together.
-- **Fix:** Read the release notes (security releases are listed on better-auth.com/blog), run `bun run test:int` (the `web-auth*` tests) and `bun run web:build && bun run test:e2e`, then merge and deploy (S5e runbook). Never merge a bump with a red auth test. If no PR arrives, see user step 4 of `tasks/done/s5a-web-foundation.md`: the fallback is a second entry with `directory: /apps/server`.
+- **Fix:** Read the release notes (security releases are listed on better-auth.com/blog), run `bun run test:int` (the `web-auth*` tests) and `bun run web:build && bun run test:e2e`, then merge and deploy (S5e runbook). Never merge a bump with a red auth test. If no PR arrives, see user step 4 of `spec/features/done/2026-11/F050-s5a-web-foundation/plan.md`: the fallback is a second entry with `directory: /apps/server`.
 - **Status:** won't fix (a process entry, not a fault)
 
 ### `runSend > 3: a lost response is repeated with the same key` and `AgentMail fake > holdResponseNext: … ^ this test timed out after 5000ms`
@@ -303,7 +303,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **First seen:** 2026-11-07
 - **Source:** CI `bun run test:int`, `apps/server/test/integration/mail-seed.test.ts` (runs 42414616787 on `master`, 42417654598 on PR #1).
 - **Cause:** the test starts six CLI processes one after the other. Their sum is near the 5 s default test timeout (3.9 s locally) and above it on a CI runner.
-- **Fix:** the test has its own timeout of 30 s (`tasks/done/flaky-mail-seed-cli-test.md`). Local run: 3.9 s. It failed in 4 of 6 CI runs on 2026-11-07, so a re-run is not a fix.
+- **Fix:** the test has its own timeout of 30 s (`spec/features/done/2026-11/F046-flaky-mail-seed-cli-test/plan.md`). Local run: 3.9 s. It failed in 4 of 6 CI runs on 2026-11-07, so a re-run is not a fix.
 - **Status:** fixed
 
 ### `job:run: TELEGRAM_BOT_TOKEN is empty`
@@ -396,7 +396,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **First seen:** 2026-11-07 (S4 code; not seen live)
 - **Source:** `apps/server/src/modules/actions/send.ts` (`[actions]`, level `warn`).
 - **Cause:** The system cannot tell if the mail went out. Either the SMTP error had stage `unknown` (a connection that broke during or after the content, or an error that is not a typed SMTP error), or the process stopped while the send was `applying` and the recovery found no copy in `Wysłane`. The row is `failed`, the delegation is `cancelled` (`outcome_unknown`), and the system does not send again by itself.
-- **Fix:** Look in `Wysłane` and ask the recipient. If the mail did not go out, tap 📤 Send again in the result notice. If it went out, do nothing (the delegation stays `cancelled`: follow-up `tasks/planned/delegation-went-out-button.md`).
+- **Fix:** Look in `Wysłane` and ask the recipient. If the mail did not go out, tap 📤 Send again in the result notice. If it went out, do nothing (the delegation stays `cancelled`: follow-up `spec/features/planned/F041-delegation-went-out-button/plan.md`).
 - **Status:** investigating
 
 ### `action <id>: failed smtp_error (stage <s>, code <c>)`
@@ -460,7 +460,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
 - **Source:** `apps/server/src/modules/mail/sync.ts` (`[mail]`, level `info`; one line per sync that has moved mails).
 - **Cause:** <n> mails moved in the last 7 days were looked up in INBOX below the UID cursor, <m> of them came back (Interia keeps the UID). `copies` > 0 means a copy of a moved mail sits below the cursor while the original is still in its folder. The same copy counts again on every sync for 7 days. The debug line `sync <mailboxId> copy below cursor: email <id>` names the row.
-- **Fix:** `returned` > 0 is normal after a user move back. `copies` > 0: no loss, but the system does not store or triage the copy. Switch the log level to debug to see the rows. Follow-up: `tasks/planned/copy-below-cursor.md`.
+- **Fix:** `returned` > 0 is normal after a user move back. `copies` > 0: no loss, but the system does not store or triage the copy. Switch the log level to debug to see the rows. Follow-up: `spec/features/planned/F032-copy-below-cursor/plan.md`.
 - **Status:** investigating
 
 ### `committer <mailboxId>: <Class code>; the next tick tries again`
@@ -636,7 +636,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **First seen:** 2026-11-05 (S1a 48-hour test, `~/ea-logs/audit.log` on the VPS)
 - **Source:** `bun run mailbox:audit` (`apps/server/src/modules/mail/tools.ts`, `auditMailbox`).
 - **Cause:** "duplicates" counts stored INBOX rows whose `(Message-ID, content hash)` key is not in the IMAP INBOX now. The sync never deletes rows, so a mail that the user deletes or moves out of INBOX after the sync stored it counts as a duplicate. On 2026-11-05 both rows were real mails deleted from the mailbox (not found in any folder).
-- **Fix:** Check for a real double store first: `SELECT message_id_header, content_hash, count(*) FROM emails WHERE mailbox_id = '<MB>' AND folder = 'INBOX' AND received_at >= '<since>' GROUP BY 1, 2 HAVING count(*) > 1;`. 0 rows and `missing=0` = no problem. To name the rows, compare the `fetchSince` keys with `listFolderEmailKeys` in a one-off read-only script. Since the sort-folder sync the tool also prints one `folder=<key> …` line per enabled synced folder. A `cross` count is no problem: it counts mail that has a row in another synced folder (the mail is not lost; independent review m10, `tasks/done/sync-sort-folders.md`).
+- **Fix:** Check for a real double store first: `SELECT message_id_header, content_hash, count(*) FROM emails WHERE mailbox_id = '<MB>' AND folder = 'INBOX' AND received_at >= '<since>' GROUP BY 1, 2 HAVING count(*) > 1;`. 0 rows and `missing=0` = no problem. To name the rows, compare the `fetchSince` keys with `listFolderEmailKeys` in a one-off read-only script. Since the sort-folder sync the tool also prints one `folder=<key> …` line per enabled synced folder. A `cross` count is no problem: it counts mail that has a row in another synced folder (the mail is not lost; independent review m10, `spec/features/done/2026-11/F058-sync-sort-folders/plan.md`).
 - **Status:** won't fix (audit limit; expected after a delete)
 
 ### `daily LLM cap reached for mailbox <mailboxId>: <cap> calls since <dayStart> (America/Los_Angeles day); mail waits until <time>`
@@ -741,7 +741,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **First seen:** 2026-11-03
 - **Source:** `[mail]` sync job, first sync of the Interia mailbox.
 - **Cause:** Interia sends no `UIDNEXT` in the SELECT reply. The old `inboxStatus()` returned `NaN`, and the cursor update failed in Postgres. (Later finding, 2026-11-08: STATUS gives `UIDNEXT 1` for every folder, which is wrong too.)
-- **Fix:** the status call (`folderStatus()` in `apps/server/src/modules/mail/imap/client.ts`; the sort-folder sync removed `inboxStatus`, `searchInboxSince` and `fetchByUids`) asks `STATUS (UIDNEXT)`, then uses the highest UID + 1, then 1. With STATUS at 1, the fix is D4 of `tasks/done/sync-sort-folders.md` (cursor from the highest UID + 1, per folder).
+- **Fix:** the status call (`folderStatus()` in `apps/server/src/modules/mail/imap/client.ts`; the sort-folder sync removed `inboxStatus`, `searchInboxSince` and `fetchByUids`) asks `STATUS (UIDNEXT)`, then uses the highest UID + 1, then 1. With STATUS at 1, the fix is D4 of `spec/features/done/2026-11/F058-sync-sort-folders/plan.md` (cursor from the highest UID + 1, per folder).
   A missing `UIDVALIDITY` now gives `IMAP INBOX gave no valid UIDVALIDITY`.
 - **Status:** fixed
 

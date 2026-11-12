@@ -1,6 +1,6 @@
 # S5c web settings and rules: facts and deviations
 
-Source: `tasks/done/s5c-web-settings-rules.md` (facts 1–14, B1–B16, Log). The task file moves to `tasks/done/` at the merge. Built 2026-11-11 in the worktree `task/s5c-web-settings-rules`. Read this note before you change the settings routes, the rules routes, the organization routes, the gate or the e2e setup.
+Source: `spec/features/done/2026-11/F052-s5c-web-settings-rules/plan.md` (facts 1–14, B1–B16, Log). The task file moves to `tasks/done/` at the merge. Built 2026-11-11 in the worktree `task/s5c-web-settings-rules`. Read this note before you change the settings routes, the rules routes, the organization routes, the gate or the e2e setup.
 
 ## The gate (fact 4, B2)
 
@@ -64,7 +64,7 @@ Better Auth 1.7.18.
 - `POST /revoke-sessions` deletes every session, also the current one. `/revoke-other-sessions` keeps the current one. Both need a valid session.
 - `AUTH_ALLOWED_PATHS` holds `/change-password`, `/revoke-other-sessions`, `/revoke-sessions`, `/list-sessions`. The rate rule for `/change-password` is 5 per 60 s.
 - The Account card calls Better Auth directly (no wrapper route). "Sign out everywhere" goes to `/login` only when `revokeSessions` succeeded or answered 401 (`signOutAllResult` in `lib/password-errors.ts`). On another error the card shows an inline error, because the login page sends a live session back to the dashboard (stage 9 fix).
-- **"Sign out everywhere" writes no audit row.** No `databaseHooks.session.delete` hook exists. The follow-up is in `tasks/planned/web-public-hardening.md`.
+- **"Sign out everywhere" writes no audit row.** No `databaseHooks.session.delete` hook exists. The follow-up is in `spec/features/planned/F056-web-public-hardening/plan.md`.
 
 ## The e2e members (B15)
 
@@ -115,6 +115,6 @@ Better Auth 1.7.18.
 3. **No e2e assertion of `web.password_changed`.** The S5a integration test covers the row.
 4. **The sender and chaser half of the timezone fact has no test.**
 5. **`atConfidence` of a `no-go` row is always 0.5.** The web text says "at confidence ≥ 0.5".
-6. **Stage 4: `docs/modules.md` needs the `tenancy → audit` edge** (`tenancy/service.ts` imports `../audit`). S5e owns `docs/modules.md`. The line is in `tasks/planned/s5e-web-deploy-docs.md`.
+6. **Stage 4: `docs/modules.md` needs the `tenancy → audit` edge** (`tenancy/service.ts` imports `../audit`). S5e owns `docs/modules.md`. The line is in `spec/features/done/2026-11/F054-s5e-web-deploy-docs/plan.md`.
 7. **Stage 8 (accepted):** a per-switch pending state can reorder two answers until the next poll. No test for the `useResource` sequence ref (no React harness).
 8. **Checked and not tested.** Checked: the shadcn `textarea` changed no package (`git diff --exit-code bun.lock apps/web/package.json` exit 0). Not tested: `<input type="time">` on iOS Safari (the S5e hand check on the phone covers it).

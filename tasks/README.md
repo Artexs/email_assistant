@@ -1,5 +1,7 @@
 # Tasks
 
+> Old flow. It applies only to the S6 family (`s6-pre-sale`, `s6a`–`s6f`) until S6 is done. All other work: `spec/features/` (Limen).
+
 All work in this repo is a task file here. One Markdown file per task: `tasks/<state>/<name>.md`.
 A new session reads `active/` first. The `done/` folder is the history of the work done in the project.
 
@@ -64,7 +66,7 @@ isolation, sending to people, LLM prompts and evals, migrations.
 **Big plans: one file per stage.** When a plan has more than about 15 stages, keep the task file small (status, goal, done when,
 input, rules, checkpoints, a stage list with one box per stage, results, log) and put each stage in `tasks/<state>/<name>/stage-NN-<slug>.md`.
 Each subagent call then reads the task file and one stage file, not the whole plan. Tick the steps in the stage file and the stage box
-in the task file. Move the folder together with the task file (`git mv`). Example: `tasks/active/s1b-shadow-triage/`.
+in the task file. Move the folder together with the task file (`git mv`). Example: `spec/features/done/2026-11/F018-s1b-shadow-triage/stages/`.
 
 ### Pipeline mode (user decision 2026-11-07)
 

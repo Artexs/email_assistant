@@ -1,6 +1,6 @@
 # S4 plan against the final S3 code (step 0 of the S4 build)
 
-Date: 2026-11-07. Who: `reviewer` subagent (Opus 5.5, high), read-only, at HEAD `279387b`. Asked by the main session (Claude Code) as the first build step of `tasks/active/s4-drafts-approvals-delegation.md` (handoff `notes/2026-11-07-handoff-s4-build.md`, "Decisions").
+Date: 2026-11-07. Who: `reviewer` subagent (Opus 5.5, high), read-only, at HEAD `279387b`. Asked by the main session (Claude Code) as the first build step of `spec/features/done/2026-11/F006-s4-drafts-approvals-delegation/plan.md` (handoff `notes/2026-11-07-handoff-s4-build.md`, "Decisions").
 Result: 0 blockers, 5 majors (M6, M12, M13, M16, M18), 22 minors, 8 S3 features the plan did not know. `bun run typecheck` passed (exit 0).
 Most affected stages: 7, 17, 9, 3, 12, then 13 and 16.
 

@@ -4,7 +4,7 @@
 
 ## Start here (for the new agent)
 
-1. `git pull`. Read `tasks/active/s3-assist-actions.md`: the status line, D1–D22, "Rules for every step", the Log. Then read only the stage file you work on (start: `tasks/active/s3-assist-actions/stage-10-undo-service-and-reverse-actions.md`, its "Checkpoint 2 addendum" first).
+1. `git pull`. Read `spec/features/done/2026-11/F005-s3-assist-actions/plan.md`: the status line, D1–D22, "Rules for every step", the Log. Then read only the stage file you work on (start: `spec/features/done/2026-11/F005-s3-assist-actions/stages/stage-10-undo-service-and-reverse-actions.md`, its "Checkpoint 2 addendum" first).
 2. Check: `git status`, `git log --oneline -12`, `bun install`, `bun run dev:up && bun run db:migrate`, `bun run lint && bun run typecheck && bun run test:unit && bun run test:int`. At HEAD `26025eb`: lint 0, typecheck 0, 725 unit pass, 478 int pass, 0 fail.
 3. Build with the run-task loop (`~/.pi/agent/skills/run-task/SKILL.md`), planner skipped, in **pipeline mode** (user decision 2026-11-07, `tasks/README.md` § "Pipeline mode"): implementer per step → checks → local commit (`Review: pending`) → background reviewer on a detached worktree (`~/.pi/agent/bin/bg-agent.sh`) → next stage at once. Push a stage only after its PASS; fixes in own commits; at most 2 stages ahead of the last PASS.
 

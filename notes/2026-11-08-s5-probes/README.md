@@ -1,6 +1,6 @@
 # S5 plan probes (2026-11-08)
 
-Scripts that checked the facts behind the S5 plan (`tasks/done/s5-web-panel.md`, "Facts checked"). The files end in `.txt` so `eslint .` and `tsc` skip them. Copy them into a temp folder and remove the `.txt` suffix to run them again. None of them touches the repo database `email_assistant`.
+Scripts that checked the facts behind the S5 plan (`spec/features/done/2026-11/F007-s5-web-panel/plan.md`, "Facts checked"). The files end in `.txt` so `eslint .` and `tsc` skip them. Copy them into a temp folder and remove the `.txt` suffix to run them again. None of them touches the repo database `email_assistant`.
 
 ## Better Auth on Bun + Hono + Postgres (`auth.ts`, `server.ts`, `client.ts`, `setup-db.ts`, `schema.sql`)
 

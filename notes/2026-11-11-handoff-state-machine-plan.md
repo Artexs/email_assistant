@@ -5,12 +5,12 @@
 1. Read this file. Then read every file under "Files and links", in that order.
 2. Check the claims under "Current state" and "Key data" against the code and `git status`. Write down each difference. The inventory was made by reading code only; nothing was run.
 3. Reply to the user in max 4 lines: the goal in your own words, the differences you found, your first step.
-4. Then do the first step: write the implementation plan as `tasks/planned/state-machine-transitions.md` (template in `tasks/README.md`). **Do not change application code.** Your output is the plan only. The user approves the stages before any build.
+4. Then do the first step: write the implementation plan as `spec/features/done/2026-11/F067-state-machine-transitions/plan.md` (template in `tasks/README.md`). **Do not change application code.** Your output is the plan only. The user approves the stages before any build.
 If this file does not answer a question, search the session file for the topic word. Do not guess.
 
 ## Goal of the next agent
 Write a file-level implementation plan for a refactor: make the implicit state machines of the app explicit, starting with `actions.status`. The refactor must not change behavior.
-Done when: `tasks/planned/state-machine-transitions.md` exists in the README template, has stages (each 1 `[risky]` step or 2–4 normal steps, about 300 changed lines or less), each step has Goal / Files / Interfaces / Decisions / Test / Check / Done when / Out of scope, the open questions below are answered by the user or listed as decisions with a recommendation, and the status line says `planned`. Commit it to `master` (task file = small change, `Git mode: master` for the plan; the build itself uses `Git mode: worktree`, say so in the file).
+Done when: `spec/features/done/2026-11/F067-state-machine-transitions/plan.md` exists in the README template, has stages (each 1 `[risky]` step or 2–4 normal steps, about 300 changed lines or less), each step has Goal / Files / Interfaces / Decisions / Test / Check / Done when / Out of scope, the open questions below are answered by the user or listed as decisions with a recommendation, and the status line says `planned`. Commit it to `master` (task file = small change, `Git mode: master` for the plan; the build itself uses `Git mode: worktree`, say so in the file).
 
 ## Background
 The user asked "find all of the implicit state machines in my app". I found 15 (inventory in the note below). None has a transition table in code. Each lives in a `status` column, CHECK constraints and `UPDATE … WHERE status IN (…)` guards in `repo.ts` files. `docs/architecture.md` §4.6 "Status flows" describes some as ASCII; that is the only written map, and nothing checks code against it.
@@ -30,7 +30,7 @@ The user writes Polish; chat replies to them are in simple Polish when they writ
 - DONE: the inventory of 15 machines, ranked: `notes/2026-11-11-implicit-state-machines.md` (untracked in git; commit it with the plan or before).
 - DONE: my recommendation (4 steps, `actions` first), below under "Decisions".
 - NOT STARTED: the plan file, any `transitions.ts`, any test. No code changed. No task file exists yet.
-- The working tree has other untracked files (`notes/2026-11-10-limen-adoption.md`, `notes/decision-docs/`, `tasks/active/limen-transition.md`) that belong to other work. Stage only your own files by explicit path.
+- The working tree has other untracked files (`notes/2026-11-10-limen-adoption.md`, `notes/decision-docs/`, `spec/features/active/F071-limen-transition/plan.md`) that belong to other work. Stage only your own files by explicit path.
 
 ## Decisions (and why)
 - **Scope: `actions` first** — most states (10), most guards (about 12 functions in a 1600-line `actions/repo.ts`), sends mail. Other machines (emails location flags, mailboxes.status, delegations) are later tasks. Put them in the plan as "Not in this task" or as separate `tasks/planned/` ideas.
@@ -80,7 +80,7 @@ The user writes Polish; chat replies to them are in simple Polish when they writ
 - `/home/artek/Documents/repos/email_assistant/apps/server/src/modules/actions/` — `repo.ts`, `apply.ts`, `drafts.ts`, `send.ts`, `expiry.ts`, `expire.ts`, `undo.ts`, `approvals.ts`, `committer.ts`, `hooks.ts`, `constants.ts`.
 - `/home/artek/Documents/repos/email_assistant/packages/core/src/triage/policy.ts` — initial status of an action.
 - `/home/artek/Documents/repos/email_assistant/db/migrations/20261104000001_triage.sql`, `20261107000001_assist_actions.sql`, `20261108000001_delegation.sql` — status CHECKs.
-- `/home/artek/Documents/repos/email_assistant/tasks/planned/actions-scope-removal.md` — another planned task that touches `actions`; check for overlap.
+- `/home/artek/Documents/repos/email_assistant/spec/features/planned/F031-actions-scope-removal/plan.md` — another planned task that touches `actions`; check for overlap.
 - `/home/artek/Documents/repos/email_assistant/tasks/active/` — read at session start. Other work in progress: `s5c-web-settings-rules.md` (web, build not started), `sync-sort-folders.md` (stage 17 left; touches emails location flags), `llm-provider-switch.md`, `limen-transition.md`. Check for file or migration conflicts with your plan.
 
 ## Open questions

@@ -19,7 +19,7 @@ Facts (checked 2026-11-08 and 2026-11-09; the task file holds them, one source):
 - F12: a COPY into `Oferty` is sorted into INBOX; an APPEND into `Oferty` stays; a COPY into `AI/*` and into `Wiadomości-śmieci` stays.
 - Notes: `notes/2026-11-03-interia-imap-capabilities.md` (§ "Sort-folder probe") and `notes/2026-11-07-agentmail-test-mail.md` §10.
 
-Task file with all decisions (D1–D24), user decisions (U1–U11) and the stage results: `tasks/done/sync-sort-folders.md`.
+Task file with all decisions (D1–D24), user decisions (U1–U11) and the stage results: `spec/features/done/2026-11/F058-sync-sort-folders/plan.md`.
 
 ## Decision
 
@@ -40,7 +40,7 @@ Short form. The task file has the full text of each decision.
 - **Transfer (D12, U11, F7, F8, F12).** The rescue and an Undo into a `sort` folder use `transferByAppend` (APPEND of the raw source, then `UID EXPUNGE` of the source),
   because Interia sorts a COPY back. Other moves use MOVE or COPY as before. Undo returns a mail to its `source_folder`, not to INBOX (D10).
 - **No push for spam folder mail (D23).** The urgent notice skips mail from the spam folder. The mail shows in the digest.
-- **No separate LLM limit (D14).** The spam folder gets almost no mail (F4), so the daily cap of 300 is enough. Follow-up: `tasks/planned/junk-llm-cap.md`.
+- **No separate LLM limit (D14).** The spam folder gets almost no mail (F4), so the daily cap of 300 is enough. Follow-up: `spec/features/planned/F063-junk-llm-cap/plan.md`.
 - **Off switch and tools (D16).** `mailbox:settings sync-folder --key offers|social|bills|junk --value on|off`. INBOX has no switch.
   `mailbox:audit` and `mailbox:rescan` work per folder. `mailbox:backfill` stays INBOX-only.
 - **Migration (D3, D17).** `sync_folders` only adds (the table, `emails.source_folder`, a new index). The INBOX cursor is also written to
@@ -52,7 +52,7 @@ Short form. The task file has the full text of each decision.
 - One cursor per folder. A new sort folder row starts with the last 24 hours (U3). A UIDVALIDITY change rescans only that folder (7 days).
 - The Interia `UIDNEXT` rule (D4) applies to every folder. A new provider needs its own `SYNC_FOLDER_DEFAULTS` and its own check of the `UIDNEXT` and COPY behavior.
 - The columns `mailboxes.uidvalidity` and `mailboxes.last_uid` and the names `emails.inbox_uid` and `emails.undo_pending_at` stay for now
-  (`inbox_uid` means "the last known UID in `source_folder`"). The follow-up `tasks/planned/drop-mailbox-cursor-columns.md` renames and drops them after the pilot weeks.
+  (`inbox_uid` means "the last known UID in `source_folder`"). The follow-up `spec/features/planned/F062-drop-mailbox-cursor-columns/plan.md` renames and drops them after the pilot weeks.
 - The pipeline rule 1 of `docs/architecture.md` is now: the system reads INBOX and the synced folders of `mailbox_folders`.
   It never reads `AI/*`, Sent, Drafts, Trash or the user's own folders.
 - **Known limits (D24).** The system does not fix them in this change.
@@ -64,7 +64,7 @@ Short form. The task file has the full text of each decision.
   - (e) `mailbox:audit` shows a cross copy as `cross`, not as `missing`.
   - (f) A spam folder mail that the user moves into INBOX by hand keeps its UID, so it is below the INBOX cursor. The row keeps the old folder; the mail is fine.
   - (g) A user move between two synced folders, of a mail that the system did not move, is not seen when its UID is below the target cursor.
-    The row keeps its old folder, and an action on it ends `mail_not_found`. Follow-up: `tasks/planned/sync-return-to-other-folder.md` (covers (a) and (g)).
+    The row keeps its old folder, and an action on it ends `mail_not_found`. Follow-up: `spec/features/planned/F064-sync-return-to-other-folder/plan.md` (covers (a) and (g)).
   - (i) A rescue that goes back to `ready` and then expires (`expireStaleReady`, or `mailbox:settings switch --name move --value off`) keeps `undo_pending_at` for up to 24 h.
     The sync stores no copy of that mail meanwhile. Rare; accepted.
   - (h) The Interia SEARCH misses a mail that its sorter moved after a COPY. A locate without a UID hit, `fetchSince` and `mailbox:audit` do not see it.

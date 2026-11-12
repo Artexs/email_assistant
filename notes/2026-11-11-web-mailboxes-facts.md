@@ -1,6 +1,6 @@
 # S5b web mailboxes and onboarding: facts and deviations
 
-Source: `tasks/done/s5b-web-mailboxes-onboarding.md` (facts 1–11, B1–B17, Log). Built 2026-11-11 in the worktree `task/s5b-web-mailboxes-onboarding`. Read this note before you change the mailbox routes, the delete function or the e2e setup.
+Source: `spec/features/done/2026-11/F051-s5b-web-mailboxes-onboarding/plan.md` (facts 1–11, B1–B17, Log). Built 2026-11-11 in the worktree `task/s5b-web-mailboxes-onboarding`. Read this note before you change the mailbox routes, the delete function or the e2e setup.
 
 ## Provider facts (fact 1)
 
@@ -80,5 +80,5 @@ Every stage had one review. Stage 9 failed its first review (a major finding), t
 
 ## Follow-ups
 
-- A DNS-level host check (a name that resolves to a local address): `tasks/planned/web-public-hardening.md`.
+- A DNS-level host check (a name that resolves to a local address): `spec/features/planned/F056-web-public-hardening/plan.md`.
 - `WEB_MAIL_ALLOW_LOCAL` must stay empty or `false` on the VPS (S5e).

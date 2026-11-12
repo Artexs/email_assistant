@@ -9,7 +9,7 @@
 If this file does not answer a question, search the session file for the topic word. Do not guess.
 
 ## Goal of the next agent
-Build S3 stages 10–18 of `tasks/active/s3-assist-actions.md` in **pipeline mode**: the implementers run one after the other, each stage gets a local commit when its checks pass, a reviewer checks each stage in the background, and a stage is pushed only after its PASS. Run the group review of stages 8–15 at checkpoint 3 (Opus, high).
+Build S3 stages 10–18 of `spec/features/done/2026-11/F005-s3-assist-actions/plan.md` in **pipeline mode**: the implementers run one after the other, each stage gets a local commit when its checks pass, a reviewer checks each stage in the background, and a stage is pushed only after its PASS. Run the group review of stages 8–15 at checkpoint 3 (Opus, high).
 Done when: stages 10–15 and 18 have PASS and are pushed; the checkpoint 3 group review has PASS (or its fixes are pushed with PASS); stages 16 and 17 are done or written down as blocked with the reason. Stages 19–20 are out of scope (VPS, user's go, checkpoint 4).
 
 ## Background
@@ -51,7 +51,7 @@ Done when: stages 10–15 and 18 have PASS and are pushed; the checkpoint 3 grou
   git worktree add --detach ~/.cache/ea-review/stage-N <sha>
   (cd ~/.cache/ea-review/stage-N && bun install)
   ~/.pi/agent/bin/bg-agent.sh reviewer ~/.cache/ea-review/stage-N ~/.cache/ea-review/stage-N.md \
-    "Task file tasks/active/s3-assist-actions.md, stage N, stage file <path>. Scope: commit range <sha>^..<sha>. Run only lint, typecheck and unit tests here (worktree; the main session runs test:int)." \
+    "Task file spec/features/done/2026-11/F005-s3-assist-actions/plan.md, stage N, stage file <path>. Scope: commit range <sha>^..<sha>. Run only lint, typecheck and unit tests here (worktree; the main session runs test:int)." \
     claude-bridge/claude-opus-5-5 high
   # done when ~/.cache/ea-review/stage-N.md.done exists; answer in stage-N.md, errors in stage-N.md.err
   ```
@@ -60,8 +60,8 @@ Done when: stages 10–15 and 18 have PASS and are pushed; the checkpoint 3 grou
 - Stage 16 (dev run with the dev bot) and stage 17 (restore test with the `age` key at `~/.config/ea-backup/age-key.txt`) need machine-local things; check whether this PC has them `[not verified]`.
 
 ## Files and links
-- `tasks/active/s3-assist-actions.md` — status, D1–D22, rules, checkpoints, Review model, Run mode, Log.
-- `tasks/active/s3-assist-actions/stage-10-undo-service-and-reverse-actions.md` … `stage-18-docs-notes-follow-ups.md` — one stage file per stage.
+- `spec/features/done/2026-11/F005-s3-assist-actions/plan.md` — status, D1–D22, rules, checkpoints, Review model, Run mode, Log.
+- `spec/features/done/2026-11/F005-s3-assist-actions/stages/stage-10-undo-service-and-reverse-actions.md` … `stage-18-docs-notes-follow-ups.md` — one stage file per stage.
 - `tasks/README.md` § "Pipeline mode" — the loop (steps 1–7).
 - `CLAUDE.md` § Rules — the commit exception for pipeline mode.
 - `~/.pi/agent/skills/run-task/SKILL.md` — the base loop (pipeline pointer added).
