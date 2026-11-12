@@ -128,6 +128,17 @@ export class MailboxExistsError extends HardError {
   }
 }
 
+/** The organization has `max` mailboxes already (any status). */
+export class MailboxLimitError extends HardError {
+  constructor(
+    readonly max: number,
+    options?: ErrorOptions
+  ) {
+    super("mailbox limit reached", options);
+    this.name = "MailboxLimitError";
+  }
+}
+
 /** The web refuses a local or private mail host (B12). */
 export class HostNotAllowedError extends HardError {
   constructor(options?: { cause?: unknown }) {

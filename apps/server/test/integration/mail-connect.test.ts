@@ -10,12 +10,19 @@ import {
   connectMailbox,
   MailAuthError,
   MailboxExistsError,
+  MailboxLimitError,
   type ConnectDeps,
   type ConnectInput,
   type MailFolder,
 } from "../../src/modules/mail";
 import { createFakeMailProvider, type FakeMailProvider } from "../../src/modules/mail/fake";
-import { findMailboxIdByAddress, getMailbox, insertMailbox } from "../../src/modules/mail/repo";
+import {
+  findMailboxIdByAddress,
+  getMailbox,
+  insertMailbox,
+  lockMailboxLimit,
+  setMailboxStatus,
+} from "../../src/modules/mail/repo";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { DB, Db } from "../../src/platform/db";
@@ -482,5 +489,139 @@ describe("mailbox:connect CLI", () => {
     const proc = runConnect(["--org-id", randomUUID(), "--address", "u@localhost"]);
     expect(await proc.exited).toBe(1);
     expect(await new Response(proc.stderr).text()).toContain("usage");
+  });
+});
+
+describe("connectMailbox: mailbox limit", () => {
+  function depsFor(trx: Db | Transaction<DB>, extra: Partial<ConnectDeps> = {}) {
+    const calls = { open: 0, smtp: 0 };
+    const deps: ConnectDeps = {
+      db: trx,
+      secrets,
+      openProvider: async () => {
+        calls.open += 1;
+        return fakeWithFolders();
+      },
+      verifySmtp: async () => {
+        calls.smtp += 1;
+      },
+      ...extra,
+    };
+    return { deps, calls };
+  }
+
+  async function seedMailbox(trx: Db | Transaction<DB>, orgId: string, status?: "paused"): Promise<void> {
+    const id = randomUUID();
+    await insertMailbox(
+      trx,
+      { orgId },
+      {
+        id,
+        address: `seed-${randomUUID()}@x.test`,
+        imapHost: "imap.x.test",
+        imapPort: 993,
+        smtpHost: "smtp.x.test",
+        smtpPort: 465,
+        capabilities: (await fakeWithFolders().serverInfo()).capabilities,
+        folderMap: {},
+      }
+    );
+    if (status !== undefined) await setMailboxStatus(trx, { orgId }, id, status, new Date());
+  }
+
+  const setMax = (trx: Db | Transaction<DB>, orgId: string, max: number) =>
+    trx.updateTable("organizations").set({ max_mailboxes: max }).where("id", "=", orgId).execute();
+
+  test("a mailbox above max_mailboxes is refused before any login", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId } = await createOrg(trx);
+      await setMax(trx, orgId, 1);
+      await seedMailbox(trx, orgId);
+      const { deps, calls } = depsFor(trx);
+      const error = await connectMailbox(deps, { orgId }, input("pw")).catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(MailboxLimitError);
+      expect((error as MailboxLimitError).max).toBe(1);
+      expect(calls).toEqual({ open: 0, smtp: 0 });
+    });
+  });
+
+  test("max_mailboxes = 2 allows the second connect and refuses the third", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId } = await createOrg(trx);
+      await setMax(trx, orgId, 2);
+      await seedMailbox(trx, orgId);
+      const { deps } = depsFor(trx);
+      await connectMailbox(deps, { orgId }, input("pw"));
+      await expect(connectMailbox(deps, { orgId }, input("pw"))).rejects.toBeInstanceOf(MailboxLimitError);
+      expect(await countMailboxes(trx, orgId)).toBe(2);
+    });
+  });
+
+  test("a paused mailbox counts", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId } = await createOrg(trx);
+      await setMax(trx, orgId, 1);
+      await seedMailbox(trx, orgId, "paused");
+      const { deps, calls } = depsFor(trx);
+      await expect(connectMailbox(deps, { orgId }, input("pw"))).rejects.toBeInstanceOf(MailboxLimitError);
+      expect(calls.open).toBe(0);
+    });
+  });
+
+  test("max_mailboxes = 0 refuses before any login", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId } = await createOrg(trx);
+      await setMax(trx, orgId, 0);
+      const { deps, calls } = depsFor(trx);
+      const error = await connectMailbox(deps, { orgId }, input("pw")).catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(MailboxLimitError);
+      expect((error as MailboxLimitError).max).toBe(0);
+      expect(calls).toEqual({ open: 0, smtp: 0 });
+    });
+  });
+
+  test("lockMailboxLimit refuses to run outside a transaction", async () => {
+    await expect(lockMailboxLimit(db, { orgId: randomUUID() })).rejects.toThrow("needs a transaction");
+  });
+
+  test("two connects at once with max_mailboxes = 1 give one success and one MailboxLimitError", async () => {
+    const { orgId, userId } = await createOrg(db);
+    try {
+      await setMax(db, orgId, 1);
+      // Both logins wait here until both connects reached them: both passed the pre-check, none inserted yet.
+      let opened = 0;
+      let release: () => void = () => undefined;
+      const barrier = new Promise<void>((resolveBarrier) => {
+        release = resolveBarrier;
+      });
+      const { deps } = depsFor(db, {
+        openProvider: async () => {
+          opened += 1;
+          if (opened === 2) release();
+          await barrier;
+          return fakeWithFolders();
+        },
+      });
+      const results = await Promise.allSettled([
+        connectMailbox(deps, { orgId }, input("pw-a")),
+        connectMailbox(deps, { orgId }, input("pw-b")),
+      ]);
+      expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+      const rejected = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+      expect(rejected).toHaveLength(1);
+      expect(rejected[0]?.reason).toBeInstanceOf(MailboxLimitError);
+      const rows = await db.selectFrom("mailboxes").select("id").where("org_id", "=", orgId).execute();
+      expect(rows).toHaveLength(1);
+      const audit = await db
+        .selectFrom("audit_log")
+        .select("id")
+        .where("org_id", "=", orgId)
+        .where("event", "=", "mailbox.connected")
+        .execute();
+      expect(audit).toHaveLength(1);
+    } finally {
+      await db.deleteFrom("organizations").where("id", "=", orgId).execute();
+      await db.deleteFrom("users").where("id", "=", userId).execute();
+    }
   });
 });

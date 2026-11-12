@@ -30,6 +30,10 @@ describe("apiErrorSchema", () => {
     expect(apiErrorCodes.indexOf("rule_limit")).toBe(apiErrorCodes.indexOf("rule_exists") + 1);
   });
 
+  test("lists mailbox_limit", () => {
+    expect(apiErrorCodes).toContain("mailbox_limit");
+  });
+
   test("lists org_suspended", () => {
     expect(apiErrorCodes).toContain("org_suspended");
   });

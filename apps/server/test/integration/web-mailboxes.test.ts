@@ -64,6 +64,7 @@ async function addMailbox(orgId: string, address: string, createdAt: Date): Prom
 
 interface SetupOptions {
   allowLocalHosts?: boolean;
+  maxMailboxes?: number;
   openProvider?: (opts: ImapConnectOptions) => Promise<MailProvider>;
   verifySmtp?: (opts: SmtpConnectOptions) => Promise<void>;
 }
@@ -74,6 +75,12 @@ async function setup(options: SetupOptions = {}) {
   const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
   const org = await webOrg(db);
   orgs.push(org);
+  // The default limit (2) is already used by the two seeded mailboxes.
+  await db
+    .updateTable("organizations")
+    .set({ max_mailboxes: options.maxMailboxes ?? 10 })
+    .where("id", "=", org.orgId)
+    .execute();
   const suffix = randomUUID();
   const address1 = `box-one-${suffix}@x.test`;
   const address2 = `box-two-${suffix}@x.test`;
@@ -384,6 +391,24 @@ describe("mailbox routes", () => {
         .execute();
       expect(rows).toHaveLength(0);
     }
+  });
+
+  test("connect at the mailbox limit gives 409 mailbox_limit, no login and no row", async () => {
+    const { org, app, imapCalls, smtpCalls } = await setup({ maxMailboxes: 2 });
+    const address = `over-${randomUUID()}@x.test`;
+    const res = await app.request(
+      "/api/mailboxes",
+      as("owner", {
+        method: "POST",
+        body: { address, password: "s3cret pass", secretKind: "password", preset: "interia" },
+      })
+    );
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "mailbox_limit" });
+    expect(imapCalls).toHaveLength(0);
+    expect(smtpCalls).toHaveLength(0);
+    const rows = await db.selectFrom("mailboxes").select("id").where("org_id", "=", org.orgId).execute();
+    expect(rows).toHaveLength(2);
   });
 
   test("connect of a known address in another case gives 409 and no login", async () => {
