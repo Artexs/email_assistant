@@ -22,7 +22,7 @@ Written when the task starts (files to change, steps, tests).
 
 If Gmail customers come (Phase 2 adapter): Google verification and a yearly CASA assessment are an external wait of weeks. Start them early.
 
-From the S5 plan (2026-11-08, `tasks/active/s5-web-panel.md`):
+From the S5 plan (2026-11-08, `tasks/done/s5-web-panel.md`):
 
 - Polish UI translation: S5 ships English strings in `apps/web/src/i18n/en.ts` (U1); S6 adds `pl.ts` and a per-user language choice.
 - An e-mail sender for the login: `sendResetPassword` (and the sign-up verification) sends mail in S6; S5 prints the link in the CLI (D2). `tasks/planned/web-public-hardening.md` lists what must hold before the panel leaves Tailscale.

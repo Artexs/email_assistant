@@ -1,7 +1,7 @@
 # Web panel on the VPS: deploy facts and results (2026-11-12)
 
 Built in S5a–S5e. Deployed on the VPS at T = 2026-11-11 23:37 UTC, behind Tailscale Serve.
-Task: `tasks/active/s5e-web-deploy-docs.md` (the stage 2, 3 and 4 logs hold the full evidence). ADRs: 0016, 0017.
+Task: `tasks/done/s5e-web-deploy-docs.md` (the stage 2, 3 and 4 logs hold the full evidence). ADRs: 0016, 0017.
 The repo is public. Never write the tailnet name or the full `ts.net` host name. Write `email-assistant.<tailnet>.ts.net`.
 
 ## How the request reaches the server

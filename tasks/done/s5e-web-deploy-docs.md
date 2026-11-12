@@ -1,4 +1,4 @@
-> **Status 2026-11-12 — in progress — deployed to the VPS at T = 2026-11-11 23:37:21 UTC (`8f6a8b2`); panel live behind Tailscale Serve. Stages 1, 2, 4.1–4.3, 4.7 and 5 done; the group review round 1 FAILed (2 major, fixed in docs; the open items moved to 6.2); open: phone sign-in, ↩️, ✏️ and the phone checks (3.4, 4.4, 4.5, 4.6), the day of use, stage 6.** Worktree `../email_assistant-wt/s5e-web-deploy-docs` on `task/s5e-web-deploy-docs`. Left: the user's phone items, the day of use, stage 6 (6.1 re-check, 6.2–6.4) (handoff `~/.pi/agent/notes/2026-11-11-handoff-s5e-build.md`). Every VPS step needs the user's go (master checkpoint 3).
+> **Status 2026-11-12 — done — built, merged (`c2c8eba`) and deployed to the VPS (T = 2026-11-11 23:37:21 UTC, `8f6a8b2`).** Skipped by the user: the phone checks, the rest of the hand smoke, the day of use and the cleanup items (`tasks/planned/s5e-open-checks.md`). Left: the handoff for S6.
 
 # S5e Web: deploy and docs
 
@@ -194,10 +194,10 @@ Questions: 4 the old `astro-app-container` could take port 8080 after a restart 
 
 ## Done-checklist
 
-- [ ] Done-when checks pass (name the command and its output in the log).
-- [ ] `docs/` describe what was built (architecture, modules, roadmap); related ADRs set to accepted or superseded.
-- [ ] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
-- [ ] Follow-up ideas are in `planned/`.
+- [x] Done-when checks pass. Met with evidence in the stage logs: line 1 except the phone (stage 4.4: HTTP/2 200 and HSTS from `omarchy`, LAN refused, `ss -ltn` one new line); line 2 (3 of 3 sessions in the tailnet ranges, booleans); line 3 in part (the password set through `web:invite` and used on the PC, the agent's Playwright pass; the phone and the hand items 3–8 skipped by the user); line 4 in part (0 `error` lines in 200 minutes, sync running; the digest of 07:00 UTC and the committer not evidenced at the close); the docs line (ADR 0016 and 0017 accepted, ADR 0011 line, `deploy/README.md`, `known-alerts.md`); the follow-up files; the master plan lines. **Not met, skipped by the user ("Can we skip all those steps? As they are not necessary and not relevant. I want to keep it as it is right now."):** the phone sign-in and cut-off check, ↩️ and ✏️ on the live pilot, the 24 h day of use. Tracked in `tasks/planned/s5e-open-checks.md`.
+- [x] `docs/` describe what was built (architecture, modules, roadmap); related ADRs set to accepted or superseded. Group review PASS (round 2).
+- [x] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`. `notes/2026-11-12-web-panel-deploy.md`, `notes/2026-11-03-pilot-vps.md`.
+- [x] Follow-up ideas are in `planned/`. `compose-network-subnet`, `editor-rules-cleanup`, `s5e-open-checks`.
 
 ## Log
 
@@ -215,3 +215,4 @@ Questions: 4 the old `astro-app-container` could take port 8080 after a restart 
 - 2026-11-12: Stage 5 built (implementer, 5.1–5.4): ADR 0015 and 0016, the ADR 0011 line, architecture, modules (27 routes cross-checked against the code), roadmap, `notes/2026-11-12-web-panel-deploy.md`. Review: round 1 FAIL (1 major CSP text in ADR 0015, 5 minor, 2 questions), fixed in `be8f1d2`; fix review PASS. Findings 7 (`tasks/planned/compose-network-subnet.md`) and 8 (`README.md` line 12) were done in the stage 5 closing commit.
 - 2026-11-12: Group review (Opus high, `69b78d6..38c4151`): FAIL, 2 major + 8 minor + 1 question. Docs fixed in one commit (runbook: Tailscale name and resolver checks, `.env.bak-s5e`, Update with backup and disk rule, login e-mail; `.gitignore` `.env.*`; backups hold auth secrets; ADR 0015 allow-list; ADR 0016 ACL and proxy notes). The temporary password, `.env.bak-s5e`, the digest evidence, the 39 ✅ rows and the ACL count are stage 6.2 items. Step 2.2 ticked with its log; 4.4 and 4.5 unticked until the phone parts pass.
 - 2026-11-12: **ADR numbers shifted.** `llm-provider-switch` took `0015` on `master` (`0015-llm-provider-switch.md`) while this branch was open. The web panel ADR is now `0016-web-panel-static-build-and-better-auth.md` and the Tailscale ADR is `0017-web-access-tailscale-serve.md`. In this task, the stage files and the S5 master plan, the old numbers "ADR 0015" (web panel) and "ADR 0016" (Tailscale) stay as history; the docs, the runbook, `deploy/compose.yaml`, `.env.example` and the notes use the new numbers. The branch merge with `origin/master` needed conflict fixes in `README.md`, `docs/architecture.md`, `docs/modules.md` and `docs/decisions/README.md`.
+- 2026-11-12: Closed. S5e merged as `c2c8eba` (the merge needed conflict fixes after `llm-provider-switch` landed; the ADR numbers became 0016 and 0017). Stage 6.2: the user skipped the day of use and the open items (quote in the stage 6 log). The task and the master plan moved to `tasks/done/`.

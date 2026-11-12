@@ -8,7 +8,7 @@
 One user works with the panel. The server runs on a home VPS. There is no domain and no open router port (P3).
 The code still treats the panel as public, because S6 moves it to a public proxy.
 
-Decisions and facts: the S5 master plan, `tasks/active/s5-web-panel.md` (P3, D22). Deploy results: `tasks/active/s5e-web-deploy-docs.md`.
+Decisions and facts: the S5 master plan, `tasks/done/s5-web-panel.md` (P3, D22). Deploy results: `tasks/done/s5e-web-deploy-docs.md`.
 
 ## Decision
 

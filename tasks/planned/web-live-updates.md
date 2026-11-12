@@ -2,7 +2,7 @@
 
 # Live updates in the web panel (server-sent events)
 
-Scope: `tasks/active/s5-web-panel.md` U7, D17 (`lib/use-resource.ts` has one `invalidate()` entry). Needs: S5d built; useful before the Phase 2 approvals page.
+Scope: `tasks/done/s5-web-panel.md` U7, D17 (`lib/use-resource.ts` has one `invalidate()` entry). Needs: S5d built; useful before the Phase 2 approvals page.
 
 ## Goal
 

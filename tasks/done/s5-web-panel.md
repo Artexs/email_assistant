@@ -1,4 +1,4 @@
-> **Status 2026-11-11 — in progress — S5a done; S5b done and merged (`tasks/done/s5b-web-mailboxes-onboarding.md`, merge `bd8dd77`); S5c done and merged (`tasks/done/s5c-web-settings-rules.md`); S5d done and merged (`tasks/done/s5d-web-activity.md`); next: the S5e plan session.** The master plan (P1–P12, U1–U10, D1–D23, the API contract, the rules, five segments) is written and cold-reviewed. S5a (`tasks/done/s5a-web-foundation.md`) and S5b are merged into `master` (`8dfe857`). S5c is merged too. S5d is built, group-reviewed (PASS) and merged; the user approved the merge on 2026-11-11 without a walk of his own (the e2e covers the activity page). Left after it: S5e, with its own plan session (P11).
+> **Status 2026-11-12 — done — S5a–S5e built, merged and deployed.** The panel runs on the home VPS behind Tailscale Serve since 2026-11-11 23:37 UTC (`master` `8f6a8b2`); S5e merged as `c2c8eba`. The user skipped the phone checks, the rest of the hand smoke and the day of use; they are in `tasks/planned/s5e-open-checks.md`. Details per segment: `s5a-…` to `s5e-…` in this folder.
 
 # S5 Web panel (lite)
 
@@ -11,10 +11,10 @@ Setup and control without the CLI: login, onboarding, mailboxes, settings, rules
 
 ## Done when
 
-- The user can set up a mailbox and link Telegram without the CLI.
-- The activity page shows each mail's decision and reason, with Undo and ✅ / ✏️ feedback.
-- Playwright smoke tests pass.
-- The panel is reachable from outside the home network only through TLS (reverse proxy or tunnel).
+- The user can set up a mailbox and link Telegram without the CLI. Evidence: S5b Playwright specs (connect, Telegram link) and the Onboarding page; the live pilot has the mailbox and the chat linked already, so on the VPS an agent run (2026-11-12, Playwright, read-only) only opened the Onboarding and Mailboxes pages without errors. Nobody repeated the connect flow by hand or read the item states.
+- The activity page shows each mail's decision and reason, with Undo and ✅ / ✏️ feedback. Evidence: S5d Playwright (40 tests in total at the S5d merge); on the VPS the user pressed ✅ on 39 mails (`triage_feedback` source `web`, 2026-11-11 23:54–2026-11-12 00:03 UTC); ✏️ and ↩️ were not tried on the live pilot (skipped by the user, `tasks/planned/s5e-open-checks.md`).
+- Playwright smoke tests pass. Evidence: 40 passed at the S5d merge; CI run 43111108388 on `8f6a8b2` (`e2e` and `image` success; `ci` red only on the two known timing tests).
+- The panel is reachable from outside the home network only through TLS (reverse proxy or tunnel). Evidence (E9, S5e stage 4.4): `https://email-assistant.<tailnet>.ts.net/health` → HTTP/2 200 with `strict-transport-security`; `http://<VPS LAN IP>:8080/health` refused; `ss -ltn` shows one new line, `127.0.0.1:8080`. The phone cut-off check (mobile data) was skipped by the user.
 
 ## Plan
 
@@ -232,7 +232,8 @@ The segment plan sessions refine these lines into stage steps. A segment session
 **Deploy and access**
 
 - **D22 VPS** (S5e; user steps marked). `deploy/compose.yaml`: `server.ports: ["127.0.0.1:8080:8080"]` (loopback only). User steps: install Tailscale on the VPS and the phone and laptop; `sudo tailscale up`; enable HTTPS certificates and MagicDNS in the tailnet admin console; `tailscale serve --bg 8080`; read the machine name (`tailscale status`). `.env` (user): `WEB_BASE_URL=https://<machine>.<tailnet>.ts.net`, `WEB_AUTH_SECRET`, `WEB_TRUSTED_PROXIES=<the source address the container sees>` (the S5e stage reads it from one request's `x-forwarded-for` test or from `docker network inspect`; expected: the Compose bridge gateway). Then the standard update (`git pull`, `db:migrate`, `up -d --build --wait`), `web:invite` for the owner, the setup link on the phone, the first login, a hand smoke of every page. Risk to the running pilot: one restart (the jobs are crash-safe) and the `users` columns with defaults; roll back = code only (the auth tables stay empty). Why: P3.
-- **D23 ADRs** (S5e): `0015-web-panel-static-build-and-better-auth.md` (P1, P2, D1–D9, the one tenant-filter exception for the auth tables) and `0016-web-access-tailscale-serve.md` (P3 and the S6 path to a public proxy). `0014` is reserved by `tasks/done/llm-provider-switch.md`. Docs updated by S5e: architecture §2 (the web box), §3 (`platform/auth`), §5 (the tables), §7 (web secrets and the delete function), §10 (Tailscale); modules §3.0 (`http`, `auth`), §3.1 (login), §3.10 (routes as built), §4 (pages as built); roadmap §2 S5 state; `deploy/README.md` section "Web panel"; `docs/known-alerts.md` for the new log lines; `docs/code-patterns.md` (the routes rule, the `listMembershipsOfUser` and Better Auth tables exceptions, the i18n rule).
+  - 2026-11-12 (S5e): built as planned with three differences. (1) The `.env` keys were set after the checkpoint 3 go, in stage 4.2, because the gateway (`172.18.0.1`) is read on the VPS first. (2) The first password was set on the PC, not on the phone (A4: the link never leaves the user's terminal and browser). (3) Tailscale on the VPS needed two fixes after `tailscale up`: the machine registered as `ubuntu` (`sudo tailscale set --hostname=email-assistant`) and the host resolver changed (`sudo tailscale set --accept-dns=false`); both are now in the runbook. Checkpoint 4 (a day of use on the phone) was skipped by the user on 2026-11-12.
+- **D23 ADRs** (S5e): `0016-web-panel-static-build-and-better-auth.md` (was planned as 0015; P1, P2, D1–D9, the one tenant-filter exception for the auth tables) and `0017-web-access-tailscale-serve.md` (was planned as 0016; P3 and the S6 path to a public proxy). `0014` is the sync folders ADR (`0014-sync-provider-sort-folders.md`) and `0015` is the LLM provider switch (`llm-provider-switch`), so S5e wrote the web panel ADR as `0016-web-panel-static-build-and-better-auth.md` and the Tailscale ADR as `0017-web-access-tailscale-serve.md` (dated line 2026-11-12). Docs updated by S5e: architecture §2 (the web box), §3 (`platform/auth`), §5 (the tables), §7 (web secrets and the delete function), §10 (Tailscale); modules §3.0 (`http`, `auth`), §3.1 (login), §3.10 (routes as built), §4 (pages as built); roadmap §2 S5 state; `deploy/README.md` section "Web panel"; `docs/known-alerts.md` for the new log lines; `docs/code-patterns.md` (the routes rule, the `listMembershipsOfUser` and Better Auth tables exceptions, the i18n rule).
 
 ### API contract (owned by the segment in the last column)
 
@@ -310,11 +311,11 @@ Implementers run on default Sonnet. `[risky]` stages get the reviewer on Opus hi
 
 One task file per segment in `tasks/planned/`; a segment moves to `tasks/active/` when its plan session starts. Order and dependencies are fixed; sizes are estimates for the segment plan sessions.
 
-- [x] [S5a Web foundation](../done/s5a-web-foundation.md) — Better Auth, migration, session middleware, hardening, static serving, Astro static shell, login and setup pages, `/api/me`, `web:invite`, Playwright setup, CI `e2e` job, image build. 15 stages (plan session 2026-11-08, cold-reviewed twice; the probes of the sketch's stage 1 ran in the plan session), 9 reviewed on Opus high. Needs: nothing new.
-- [x] [S5b Mailboxes and onboarding](../done/s5b-web-mailboxes-onboarding.md) — provider presets, `switchMailboxStatus`, `/api/mailboxes` with connect, pause, resume, password, remove (the delete function), `/api/channels/telegram`, the Mailboxes page, the Onboarding page, scope badges. About 6 stages. Needs: S5a.
-- [x] [S5c Settings and rules](../done/s5c-web-settings-rules.md) — the gate service, tenancy setters, rule delete and audit, `/api/settings`, `/api/rules`, `/api/organization`, digest times, change password, the Settings and Rules pages. About 6 stages. Needs: S5a and S5b (the Settings page selector reads `GET /api/mailboxes`; the cold review made this a hard dependency, finding 15).
-- [x] [S5d Activity](../done/s5d-web-activity.md) — `undoWithFeedback`, the activity read model, `/api/activity`, `/api/feedback`, `/api/actions/undo`, the Activity page with filters, side panel, ✅ / ✏️ / ↩️ and polling. About 5 stages. Needs: S5a. **Built 2026-11-11: checkpoint 2 and the merge pending; the file moves to `tasks/done/` at the merge; the final wording is set then.**
-- [ ] [S5e Deploy and docs](../planned/s5e-web-deploy-docs.md) — Compose port, env keys, Tailscale Serve (user steps), deploy, the owner's setup link, the hand smoke on the phone, ADRs 0015 and 0016, docs, known alerts, notes, follow-ups, close of S5. About 5 stages, all gated. Needs: S5a–S5d.
+- [x] [S5a Web foundation](./s5a-web-foundation.md) — Better Auth, migration, session middleware, hardening, static serving, Astro static shell, login and setup pages, `/api/me`, `web:invite`, Playwright setup, CI `e2e` job, image build. 15 stages (plan session 2026-11-08, cold-reviewed twice; the probes of the sketch's stage 1 ran in the plan session), 9 reviewed on Opus high. Needs: nothing new.
+- [x] [S5b Mailboxes and onboarding](./s5b-web-mailboxes-onboarding.md) — provider presets, `switchMailboxStatus`, `/api/mailboxes` with connect, pause, resume, password, remove (the delete function), `/api/channels/telegram`, the Mailboxes page, the Onboarding page, scope badges. About 6 stages. Needs: S5a.
+- [x] [S5c Settings and rules](./s5c-web-settings-rules.md) — the gate service, tenancy setters, rule delete and audit, `/api/settings`, `/api/rules`, `/api/organization`, digest times, change password, the Settings and Rules pages. About 6 stages. Needs: S5a and S5b (the Settings page selector reads `GET /api/mailboxes`; the cold review made this a hard dependency, finding 15).
+- [x] [S5d Activity](./s5d-web-activity.md) — `undoWithFeedback`, the activity read model, `/api/activity`, `/api/feedback`, `/api/actions/undo`, the Activity page with filters, side panel, ✅ / ✏️ / ↩️ and polling. About 5 stages. Needs: S5a. **Built and merged 2026-11-11 (checkpoint 2 approved without a hand walk of the user; the e2e covers the activity page).**
+- [x] [S5e Deploy and docs](./s5e-web-deploy-docs.md) — Compose port, env keys, Tailscale Serve (user steps), deploy, the owner's setup link, the hand smoke on the phone, ADRs 0015 and 0016, docs, known alerts, notes, follow-ups, close of S5. About 5 stages, all gated. Needs: S5a–S5d.
 
 S5b and S5d can run in any order after S5a, S5c after S5b, or in parallel in separate worktrees with own databases (`db:worktree`); only one of them adds a migration (S5b) and only one at a time changes `bun.lock` (S5a adds `better-auth`, `@hono/bun`, `@playwright/test` and, through the shadcn CLI, `radix-ui`; the later segments add shadcn components, which need no new package once S5a installs the D17 list).
 
@@ -354,10 +355,10 @@ Rounds 1 and 2 are answered above. Open: none. The segment plan sessions ask the
 
 ## Done-checklist
 
-- [ ] Done-when checks pass (name the command and its output in the log).
-- [ ] `docs/` describe what was built (architecture, modules, roadmap); related ADRs set to accepted or superseded.
-- [ ] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
-- [ ] Follow-up ideas are in `planned/`.
+- [x] Done-when checks pass (name the command and its output in the log). The evidence is under "Done when" above; the phone, ↩️, ✏️ and the day of use were skipped by the user (`tasks/planned/s5e-open-checks.md`).
+- [x] `docs/` describe what was built (architecture, modules, roadmap); related ADRs set to accepted or superseded. ADR 0016 and 0017 accepted, ADR 0011 has a dated line.
+- [x] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`. `notes/2026-11-12-web-panel-deploy.md`, `notes/2026-11-03-pilot-vps.md`; the alert statuses changed in S5e stage 1.
+- [x] Follow-up ideas are in `planned/`. `web-live-updates`, `mail-smtp-starttls-587`, `mail-oauth-adapters`, `web-public-hardening`, `compose-network-subnet`, `editor-rules-cleanup`, `s5e-open-checks`, and the two `s6-pre-sale.md` lines.
 
 ## Log
 
@@ -374,3 +375,4 @@ Rounds 1 and 2 are answered above. Open: none. The segment plan sessions ask the
 - 2026-11-11: S5b build: dated lines on D9, D10 (c), D11, D14, D15, D19 and the contract rows; facts in `notes/2026-11-11-web-mailboxes-facts.md`; the segment box links to `tasks/done/s5b-web-mailboxes-onboarding.md` (the file moves at the merge). Next: the S5c plan session.
 - 2026-11-11: S5c build: dated lines on P7, U8, D8, D9, D10 (b) (d), D10 (e), D16, round 1 question 7 and the contract rows; facts in `notes/2026-11-11-web-settings-rules-facts.md`; the segment box links to `tasks/done/s5c-web-settings-rules.md` (the file moves at the merge). Next: the S5d plan session.
 - 2026-11-11: S5d build (stages 1–11.1): dated lines on U6, U7, D9, D10 (a), D12, D13, D19 and the three contract rows; facts in `notes/2026-11-11-web-activity-facts.md`; the segment box links to `tasks/done/s5d-web-activity.md` (the file moved at the merge). Group review PASS; the user approved checkpoint 2 and the merge on 2026-11-11 without a hand walk. Next: the S5e plan session.
+- 2026-11-12: S5e built, merged (`c2c8eba`) and deployed (T = 2026-11-11 23:37:21 UTC). The S5 master plan is done and moves to `tasks/done/`. The ADR numbers shifted (0016 web panel, 0017 Tailscale) because `llm-provider-switch` took 0015. Skipped by the user: phone checks, the rest of the hand smoke, the day of use, the cleanup items (`tasks/planned/s5e-open-checks.md`).

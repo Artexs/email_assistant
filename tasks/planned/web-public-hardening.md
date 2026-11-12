@@ -2,7 +2,7 @@
 
 # Web panel hardening before public exposure
 
-Scope: `tasks/active/s5-web-panel.md` D1, D2, D5; `apps/server/src/platform/{auth,http}.ts`. Needs: S5a. Blocks: the S6 move to a public proxy.
+Scope: `tasks/done/s5-web-panel.md` D1, D2, D5; `apps/server/src/platform/{auth,http}.ts`. Needs: S5a. Blocks: the S6 move to a public proxy.
 
 ## Goal
 
