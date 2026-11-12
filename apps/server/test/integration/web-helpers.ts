@@ -15,6 +15,7 @@ export interface WebTestOptions {
   routers: WebDeps["routers"];
   dist?: string; // default: a folder that does not exist
   homePath?: WebDeps["homePath"];
+  isOrgSuspended?: WebDeps["isOrgSuspended"];
 }
 
 export function webTestApp(opts: WebTestOptions): Hono<ApiEnv> {
@@ -37,6 +38,7 @@ export function webTestApp(opts: WebTestOptions): Hono<ApiEnv> {
     listMembershipsOfUser: (userId) => listMembershipsOfUser(db, userId),
     ...(opts.homePath ? { homePath: opts.homePath } : {}),
     routers: opts.routers,
+    ...(opts.isOrgSuspended ? { isOrgSuspended: opts.isOrgSuspended } : {}),
   };
   return createApp({ checkDb: async () => true, web });
 }

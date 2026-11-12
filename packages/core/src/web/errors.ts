@@ -6,6 +6,7 @@ export const apiErrorCodes = [
   "confirm_mismatch",
   "unauthorized",
   "owner_only",
+  "org_suspended",
   "no_organization",
   "bad_origin",
   "not_found",

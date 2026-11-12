@@ -29,4 +29,8 @@ describe("apiErrorSchema", () => {
     expect(apiErrorCodes).toContain("rule_limit");
     expect(apiErrorCodes.indexOf("rule_limit")).toBe(apiErrorCodes.indexOf("rule_exists") + 1);
   });
+
+  test("lists org_suspended", () => {
+    expect(apiErrorCodes).toContain("org_suspended");
+  });
 });

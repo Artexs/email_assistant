@@ -39,6 +39,7 @@ export interface WebDeps {
   listMembershipsOfUser: (userId: string) => Promise<{ org_id: string; role: MembershipRole }[]>;
   homePath?: (userId: string) => Promise<"/onboarding" | "/activity">; // where "/" goes; default "/onboarding"
   routers?: (api: Hono<ApiEnv>) => void; // web.ts mounts the module routers (after requireTenant)
+  isOrgSuspended?: (orgId: string) => Promise<boolean>; // absent: no organization is suspended (old tests)
 }
 
 export interface HttpDeps {
@@ -211,6 +212,27 @@ export function requireTenant(deps: {
   };
 }
 
+// S6c adds { method: "DELETE", path: /^\/api\/organization$/ } (delete organization).
+// Sign-out and the password routes are Better Auth paths outside `api`: they need no entry.
+export const SUSPENDED_WRITE_ALLOW: readonly { method: string; path: RegExp }[] = [];
+
+const READ_METHODS: readonly string[] = ["GET", "HEAD", "OPTIONS"];
+
+// D4, S2: a suspended organization reads, it does not write. A throw goes to onError (500): fail closed.
+export const refuseSuspendedWrites: MiddlewareHandler<ApiEnv> = async (c, next) => {
+  const web = c.get("web");
+  if (
+    web.isOrgSuspended === undefined ||
+    READ_METHODS.includes(c.req.method) ||
+    SUSPENDED_WRITE_ALLOW.some((entry) => entry.method === c.req.method && entry.path.test(c.req.path))
+  ) {
+    await next();
+    return;
+  }
+  if (await web.isOrgSuspended(c.get("ctx").orgId)) return c.json({ error: "org_suspended" }, 403);
+  await next();
+};
+
 export const requireOwner: MiddlewareHandler<ApiEnv> = async (c, next) => {
   if (c.get("role") !== "owner") return c.json({ error: "owner_only" }, 403);
   await next();
@@ -289,6 +311,7 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
   const api = new Hono<ApiEnv>();
   api.use("*", requireSession);
   api.use("*", requireTenant({ listMembershipsOfUser: web.listMembershipsOfUser }));
+  api.use("*", refuseSuspendedWrites);
   web.routers?.(api);
   api.all("*", (c) => c.json({ error: "not_found" }, 404));
   app.route("/api", api);

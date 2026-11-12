@@ -19,7 +19,7 @@ import {
   WEB_MAIL_TIMEOUTS,
 } from "./modules/mail";
 import { activityRoutes } from "./modules/reports";
-import { listMembershipsOfUser, tenancyRoutes, type TenancyRouteDeps } from "./modules/tenancy";
+import { isOrgSuspended, listMembershipsOfUser, tenancyRoutes, type TenancyRouteDeps } from "./modules/tenancy";
 import { goNoGoFor, setCategoryAutoWithGate, triageRoutes } from "./modules/triage";
 import { createAuth, type AuthDeps, type AuthEventKind } from "./platform/auth";
 import { webMailAllowLocal, webTrustedOrigins, webTrustedProxies, type Config } from "./platform/config";
@@ -174,6 +174,52 @@ export interface WebExtras {
   botUsername: (() => Promise<string>) | null; // null: Telegram is off
 }
 
+export function apiRouters(
+  config: Config,
+  db: Db,
+  extras: WebExtras,
+  now: () => Date
+): NonNullable<WebDeps["routers"]> {
+  const scopes = scopeInfos(config);
+  const allowLocalHosts = webMailAllowLocal(config);
+  return (api) => {
+    api.route(
+      "/",
+      tenancyRoutes({
+        db,
+        now,
+        scopes,
+        countMailboxes: countMailboxes(db),
+        ...onboardingDeps(db, extras.botUsername),
+      })
+    );
+    api.route(
+      "/",
+      mailRoutes({
+        db,
+        now,
+        scopeEnv: scopeEnvOf(config),
+        connect: {
+          db,
+          secrets: extras.secrets,
+          openProvider: openImapProvider,
+          verifySmtp: verifySmtpLogin,
+          timeouts: WEB_MAIL_TIMEOUTS,
+        },
+        allowLocalHosts,
+        onRemoved: async (trx, ctx, input) => {
+          await queueMailboxRemovedNotices(trx, ctx, input);
+        },
+      })
+    );
+    api.route("/", settingsRoutes(settingsRouteDeps(db, now)));
+    api.route("/", rulesRoutes({ db, now }));
+    api.route("/", activityRoutes({ db, now }));
+    api.route("/", triageRoutes({ db, now, actionsScope: extras.actionsScope }));
+    api.route("/", channelRoutes({ db, now, botUsername: extras.botUsername }));
+  };
+}
+
 // null: the web is off.
 export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime | null {
   if (config.WEB_BASE_URL === undefined) {
@@ -195,7 +241,6 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     onEvent: auditWebEvent(db),
   });
   const dist = distPath(config);
-  const scopes = scopeInfos(config);
   const now = () => new Date();
 
   const getSession = async (headers: Headers): Promise<WebSession | null> => {
@@ -216,42 +261,8 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     connInfo: peerAddress,
     listMembershipsOfUser: (userId) => listMembershipsOfUser(db, userId),
     homePath: homePathOf(db, extras.botUsername),
-    routers: (api) => {
-      api.route(
-        "/",
-        tenancyRoutes({
-          db,
-          now,
-          scopes,
-          countMailboxes: countMailboxes(db),
-          ...onboardingDeps(db, extras.botUsername),
-        })
-      );
-      api.route(
-        "/",
-        mailRoutes({
-          db,
-          now,
-          scopeEnv: scopeEnvOf(config),
-          connect: {
-            db,
-            secrets: extras.secrets,
-            openProvider: openImapProvider,
-            verifySmtp: verifySmtpLogin,
-            timeouts: WEB_MAIL_TIMEOUTS,
-          },
-          allowLocalHosts,
-          onRemoved: async (trx, ctx, input) => {
-            await queueMailboxRemovedNotices(trx, ctx, input);
-          },
-        })
-      );
-      api.route("/", settingsRoutes(settingsRouteDeps(db, now)));
-      api.route("/", rulesRoutes({ db, now }));
-      api.route("/", activityRoutes({ db, now }));
-      api.route("/", triageRoutes({ db, now, actionsScope: extras.actionsScope }));
-      api.route("/", channelRoutes({ db, now, botUsername: extras.botUsername }));
-    },
+    routers: apiRouters(config, db, extras, now),
+    isOrgSuspended: (orgId) => isOrgSuspended(db, { orgId }),
     close: () => handle.close(),
   };
 }
