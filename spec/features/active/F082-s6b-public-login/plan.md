@@ -220,16 +220,16 @@ limen spawn --engine pi --provider claude-bridge --model claude-opus-5-5 --think
 
 `[risky]` = one step per stage.
 
-- [ ] Stage 1 — **lane A, first** — Migration `auth_public`, `db:types`, tenancy user columns `[risky]` — [`stage-01-migration.md`](stages/stage-01-migration.md)
-- [ ] Stage 2 — lane A — Auth-mail config, sender, texts, operator event `auth_mail_failed` — [`stage-02-auth-mail.md`](stages/stage-02-auth-mail.md)
-- [ ] Stage 3 — lane A — Reset request: open with the sender, same answer, limits, not awaited, 1 h `[risky]` — [`stage-03-reset-request.md`](stages/stage-03-reset-request.md)
-- [ ] Stage 4 — lane A, **parallel with 5 or 6** — `org:invite`, `web:invite` mails or prints, 24 h `[risky]` — [`stage-04-invite.md`](stages/stage-04-invite.md)
-- [ ] Stage 5 — lane A — Lockout `[risky]` — [`stage-05-lockout.md`](stages/stage-05-lockout.md)
-- [ ] Stage 6 — lane A — Leaked-password check `[risky]` — [`stage-06-pwned.md`](stages/stage-06-pwned.md)
-- [ ] Stage 7 — lane A, last — Terms on the server: `TERMS_VERSION`, the reset hook, `/api/me` terms, `POST /api/me/terms` `[risky]` — [`stage-07-terms-server.md`](stages/stage-07-terms-server.md)
-- [ ] Stage 8 — lane B, **parallel with 1–7** — Mail host guard: ranges, `resolveMailHost`, policy `[risky]` — [`stage-08-host-guard.md`](stages/stage-08-host-guard.md)
-- [ ] Stage 9 — joins A and B (after 7 and 8) — Mail host guard on every IMAP and SMTP connect, config key, scripts `[risky]` — [`stage-09-host-guard-wiring.md`](stages/stage-09-host-guard-wiring.md)
-- [ ] Checkpoint A (coordinator, owner)
+- [x] Stage 1 — **lane A, first** — Migration `auth_public`, `db:types`, tenancy user columns `[risky]` — [`stage-01-migration.md`](stages/stage-01-migration.md)
+- [x] Stage 2 — lane A — Auth-mail config, sender, texts, operator event `auth_mail_failed` — [`stage-02-auth-mail.md`](stages/stage-02-auth-mail.md)
+- [x] Stage 3 — lane A — Reset request: open with the sender, same answer, limits, not awaited, 1 h `[risky]` — [`stage-03-reset-request.md`](stages/stage-03-reset-request.md)
+- [x] Stage 4 — lane A, **parallel with 5 or 6** — `org:invite`, `web:invite` mails or prints, 24 h `[risky]` — [`stage-04-invite.md`](stages/stage-04-invite.md)
+- [x] Stage 5 — lane A — Lockout `[risky]` — [`stage-05-lockout.md`](stages/stage-05-lockout.md)
+- [x] Stage 6 — lane A — Leaked-password check `[risky]` — [`stage-06-pwned.md`](stages/stage-06-pwned.md)
+- [x] Stage 7 — lane A, last — Terms on the server: `TERMS_VERSION`, the reset hook, `/api/me` terms, `POST /api/me/terms` `[risky]` — [`stage-07-terms-server.md`](stages/stage-07-terms-server.md)
+- [x] Stage 8 — lane B, **parallel with 1–7** — Mail host guard: ranges, `resolveMailHost`, policy `[risky]` — [`stage-08-host-guard.md`](stages/stage-08-host-guard.md)
+- [x] Stage 9 — joins A and B (after 7 and 8) — Mail host guard on every IMAP and SMTP connect, config key, scripts `[risky]` — [`stage-09-host-guard-wiring.md`](stages/stage-09-host-guard-wiring.md)
+- [x] Checkpoint A review (coordinator): round 1 FAIL (B1), fixes landed, round 2 PASS; the owner's go before stage 10 is open
 - [ ] Stage 10 — lane C, **parallel with 13** — `/forgot` page and the login link — [`stage-10-forgot-page.md`](stages/stage-10-forgot-page.md)
 - [ ] Stage 11 — lane C, **parallel with 13** — Setup terms checkbox and legal stub pages — [`stage-11-setup-terms.md`](stages/stage-11-setup-terms.md)
 - [ ] Stage 12 — lane C, **parallel with 13** — Terms dialog after sign-in — [`stage-12-terms-dialog.md`](stages/stage-12-terms-dialog.md)

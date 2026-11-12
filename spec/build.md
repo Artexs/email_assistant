@@ -22,7 +22,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 ## NEXT
 
-- `F082-s6b-public-login` (🔴 PLANNED): S6b login hardening, 15 stages; build after F077 stage 18 (the S6a VPS deploy).
+- `F084-the-mail-host-guard-also-refuses-multicast-broadcast-reserved-nat64-site-local-and-6to4-addresses-and-its-default-policy-is-frozen` (🔴 PLANNED): more blocked ranges; after F082 stage 9 (landed).
 
 ## PROVEN
 
