@@ -133,6 +133,8 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
     },
     verification: {
       modelName: "auth_verifications",
+      // The stored identifier is a SHA-256 hash, so a database reader cannot rebuild the reset link.
+      storeIdentifier: "hashed",
       fields: {
         expiresAt: "expires_at",
         createdAt: "created_at",

@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import { sql } from "kysely";
@@ -38,14 +38,12 @@ const extraHandles: AuthHandle[] = [];
 
 const orgIds: string[] = [];
 const userIds: string[] = [];
-const tokens: string[] = [];
 
 afterEach(async () => {
   setLogLevel("info");
-  if (tokens.length > 0) {
-    // Better Auth stores `identifier = "reset-password:<token>"`.
-    const identifiers = tokens.map((token) => `reset-password:${token}`);
-    await sql`DELETE FROM auth_verifications WHERE identifier IN (${sql.join(identifiers)})`.execute(db);
+  if (userIds.length > 0) {
+    // The identifier is hashed, so the rows are found by `value` (the user id).
+    await sql`DELETE FROM auth_verifications WHERE value IN (${sql.join(userIds)})`.execute(db);
   }
   for (const orgId of orgIds) {
     await db.deleteFrom("organizations").where("id", "=", orgId).execute();
@@ -55,7 +53,6 @@ afterEach(async () => {
   }
   orgIds.length = 0;
   userIds.length = 0;
-  tokens.length = 0;
   resets.length = 0;
 });
 
@@ -91,7 +88,6 @@ async function requestReset(authInstance: typeof auth, email: string): Promise<{
   }
   expect(mail.url.startsWith(`${BASE_URL}/api/auth/reset-password/`)).toBe(true);
   const token = new URL(mail.url).pathname.split("/").pop() ?? "";
-  tokens.push(token);
   return { userId: mail.userId, token };
 }
 
@@ -126,6 +122,26 @@ async function errorCode(promise: Promise<unknown>): Promise<unknown> {
 }
 
 describe("web auth", () => {
+  test("the reset token is stored hashed: the row holds no token and the hash opens the link", async () => {
+    const { email, userId } = await createOwner();
+    const reset = await requestReset(auth, email);
+
+    const rows = await sql<{ identifier: string }>`
+      SELECT identifier FROM auth_verifications WHERE value = ${userId}`.execute(db);
+    expect(rows.rows).toHaveLength(1);
+    const stored = rows.rows[0]?.identifier ?? "";
+    expect(stored).not.toContain(reset.token);
+    expect(stored.startsWith("reset-password:")).toBe(false);
+    expect(stored).toBe(createHash("sha256").update(`reset-password:${reset.token}`).digest("base64url"));
+
+    await auth.api.resetPassword({ body: { newPassword: PASSWORD, token: reset.token } });
+    const left = await sql`SELECT 1 FROM auth_verifications WHERE value = ${userId}`.execute(db);
+    expect(left.rows).toHaveLength(0);
+    expect(await errorCode(auth.api.resetPassword({ body: { newPassword: OTHER_PASSWORD, token: reset.token } }))).toBe(
+      "INVALID_TOKEN"
+    );
+  });
+
   test("the first password comes from a reset link and is audited once", async () => {
     const { email, orgId, userId } = await createOwner();
     const reset = await requestReset(auth, email);
