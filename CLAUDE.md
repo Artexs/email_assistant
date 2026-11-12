@@ -17,6 +17,7 @@ Before you diagnose an alert, grep docs/known-alerts.md.
 - `const` / `let` only, no `var`.
 - Before each commit, review the staged changes (`git diff --staged`). Look for bugs, secrets, debug code, and changes that are not part of the task. Fix all problems, then commit.
 - Never force-push (`--force`, `-f`, `--force-with-lease`). Never rewrite pushed history.
+- On the owner's Omarchy machine, a local git hook pushes `master` after each commit or merge (`.git/hooks/post-commit`, `post-merge` → same file; log `.git/auto-push.log`). A `PUSH FAILED` line there needs `git pull --rebase && git push`.
 - Shared runtime: one dev DB, GreenMail and the ports in `.env`. A Limen job gets its own DB from `scripts/limen-prepare.sh`. Only one checkout at a time runs `bun run test:int`. Only one at a time adds a DB migration or changes `bun.lock`.
 
 ## Work
