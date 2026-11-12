@@ -86,6 +86,16 @@ const mailEnv = {
   AUTH_MAIL_FROM: "noreply@x.test",
 };
 
+type Result = Awaited<ReturnType<typeof runInvite>>;
+
+// Test 9: only the printed link block holds the link; no line holds the address.
+function expectNoLeak(result: Result, email: string, printed: boolean) {
+  const lines = `${result.stdout}\n${result.stderr}`.split("\n");
+  const linkLines = lines.filter((line) => line.includes("reset-password/"));
+  expect(linkLines).toHaveLength(printed ? 1 : 0);
+  expect(lines.filter((line) => line.includes(email))).toEqual([]);
+}
+
 async function inboxSubjects(email: string): Promise<(string | null)[]> {
   const inbox = await openImapProvider({
     host: process.env.TEST_IMAP_HOST ?? "127.0.0.1",
@@ -181,9 +191,7 @@ describe("web:invite CLI", () => {
     const result = await runInvite(["--org-id", orgId], mailEnv);
 
     expect(result.code).toBe(0);
-    expect(result.stdout).not.toContain("reset-password/");
-    expect(result.stderr).not.toContain("reset-password/");
-    expect(result.stdout).not.toContain(email);
+    expectNoLeak(result, email, false);
     expect(await inboxSubjects(email)).toHaveLength(1);
   });
 
@@ -194,6 +202,7 @@ describe("web:invite CLI", () => {
 
     expect(result.code).toBe(0);
     expect(result.stdout).toContain(`${BASE_URL}/api/auth/reset-password/`);
+    expectNoLeak(result, email, true);
     expect(await inboxSubjects(email)).toEqual([]);
   });
 });

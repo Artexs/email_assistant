@@ -171,7 +171,9 @@ describe("org:invite CLI", () => {
 
   test("an address that exists fails and creates no organization", async () => {
     const first = newTarget();
-    expect((await runInvite(argsFor(first), noMailEnv)).code).toBe(0);
+    const firstRun = await runInvite(argsFor(first), noMailEnv);
+    expect(firstRun.code).toBe(0);
+    expectNoLeak(firstRun, first.email, true);
     const second = { orgName: `Invite ${randomUUID()}`, email: first.email };
     orgNames.push(second.orgName);
 
@@ -180,6 +182,7 @@ describe("org:invite CLI", () => {
     expect(result.code).toBe(1);
     expect(result.stderr).toContain("user with this email already exists");
     expect(await findOrg(second.orgName)).toBeUndefined();
+    expectNoLeak(result, first.email, false);
   });
 
   test("a mail failure exits 1, names web:invite with the new organization id, and keeps the organization", async () => {
@@ -204,5 +207,6 @@ describe("org:invite CLI", () => {
     expect(result.code).toBe(1);
     expect(result.stderr).toContain("WEB_BASE_URL is empty: the web is off");
     expect(await findOrg(target.orgName)).toBeUndefined();
+    expectNoLeak(result, target.email, false);
   });
 });
