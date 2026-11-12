@@ -15,7 +15,7 @@ const HOUR_MS = 3_600_000;
 const DAY_MS = 24 * HOUR_MS;
 const TRIAL_WARNING_MS = 3 * DAY_MS;
 
-export type OperatorNoticeKind = "trial_ending" | "llm_cap" | "auth_error_24h";
+export type OperatorNoticeKind = "trial_ending" | "llm_cap" | "auth_error_24h" | "auth_mail_failed";
 
 export interface OperatorNoticeDeps {
   db: Db | Transaction<DB>;
@@ -29,6 +29,14 @@ export interface OperatorNotices {
   run(): Promise<void>;
   // Called by the triage job. Never throws, never blocks.
   capReached(ctx: TenantContext, mailboxId: string, dayStart: Date, cap: number): void;
+  // Called by the web wiring (reset request) and the lockout. Never throws, never blocks.
+  authMailFailed(
+    ctx: TenantContext,
+    userId: string,
+    kind: "invite" | "reset" | "lockout",
+    code: string,
+    now: Date
+  ): void;
   // Tests only: resolves when no notify is in flight.
   idle(): Promise<void>;
 }
@@ -175,6 +183,20 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
         );
       } catch (error) {
         log.error(`operator notice llm_cap: ${describeError(error)}`);
+      }
+    },
+
+    authMailFailed(ctx, userId, kind, code, now) {
+      try {
+        const key = `auth_mail_failed:${userId}:${code}:${now.toISOString().slice(0, 10)}`;
+        void start(
+          ctx,
+          "auth_mail_failed",
+          key,
+          `Auth mail ${kind} to user ${userId} of org ${ctx.orgId} failed (${code}).`
+        );
+      } catch (error) {
+        log.error(`operator notice auth_mail_failed: ${describeError(error)}`);
       }
     },
 

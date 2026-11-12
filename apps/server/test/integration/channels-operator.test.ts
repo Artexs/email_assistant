@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -263,6 +265,57 @@ describe("operator notices: capReached", () => {
       await notices.run();
       expect(texts).toHaveLength(1);
       expect(await noticeRows(trx, org.orgId)).toHaveLength(1);
+    });
+  });
+});
+
+describe("operator notices: authMailFailed", () => {
+  const day = new Date("2026-11-20T10:00:00Z");
+
+  test("one text per user, code and UTC day, with an audit row", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await createOrgWithMailbox(trx);
+      const userId = randomUUID();
+      const { texts, send } = recorder();
+      const notices = createOperatorNotices({ db: trx, now: () => NOW, send });
+      notices.authMailFailed({ orgId: org.orgId }, userId, "reset", "EAUTH", day);
+      notices.authMailFailed({ orgId: org.orgId }, userId, "reset", "EAUTH", day);
+      await notices.idle();
+      expect(texts).toEqual([`Auth mail reset to user ${userId} of org ${org.orgId} failed (EAUTH).`]);
+      expect(await noticeRows(trx, org.orgId)).toEqual([
+        { kind: "auth_mail_failed", key: `auth_mail_failed:${userId}:EAUTH:2026-11-20` },
+      ]);
+
+      notices.authMailFailed({ orgId: org.orgId }, userId, "reset", "ETIMEDOUT", day);
+      await notices.idle();
+      expect(texts).toHaveLength(2);
+
+      notices.authMailFailed({ orgId: org.orgId }, userId, "reset", "EAUTH", new Date("2026-11-21T00:30:00Z"));
+      await notices.idle();
+      expect(texts).toHaveLength(3);
+    });
+  });
+
+  test("without a send function: a warn line and the audit row", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await createOrgWithMailbox(trx);
+      const userId = randomUUID();
+      const notices = createOperatorNotices({ db: trx, now: () => NOW, send: null });
+      notices.authMailFailed({ orgId: org.orgId }, userId, "invite", "EAUTH", day);
+      await notices.idle();
+      expect(lines.filter((line) => line.startsWith("[channels] operator notice auth_mail_failed: "))).toHaveLength(1);
+      expect(await noticeRows(trx, org.orgId)).toHaveLength(1);
+    });
+  });
+
+  test("a send that throws: the call returns, no audit row", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await createOrgWithMailbox(trx);
+      const send = (): Promise<void> => Promise.reject(new Error("boom"));
+      const notices = createOperatorNotices({ db: trx, now: () => NOW, send });
+      expect(() => notices.authMailFailed({ orgId: org.orgId }, randomUUID(), "lockout", "EAUTH", day)).not.toThrow();
+      await notices.idle();
+      expect(await noticeRows(trx, org.orgId)).toEqual([]);
     });
   });
 });
