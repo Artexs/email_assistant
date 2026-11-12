@@ -1,6 +1,6 @@
 # Tasks
 
-> Old flow. It applies only to the S6 family (`s6-pre-sale`, `s6b`–`s6f`; S6a moved to Limen ticket F077) until S6 is done. All other work: `spec/features/` (Limen).
+> History. The `run-task` skill and the `planner`, `implementer` and `reviewer` subagents were removed on 2026-11-12; this procedure no longer runs. The S6 files left here (`s6-pre-sale`, `s6b`–`s6f`) wait for a Limen plan (`plan-task` skill). All work: `spec/features/` (Limen).
 
 All work in this repo is a task file here. One Markdown file per task: `tasks/<state>/<name>.md`.
 A new session reads `active/` first. The `done/` folder is the history of the work done in the project.

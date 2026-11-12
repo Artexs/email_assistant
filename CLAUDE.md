@@ -23,7 +23,8 @@ Before you diagnose an alert, grep docs/known-alerts.md.
 
 - Work runs through Limen. Tickets: `spec/features/<lane>/FNNN-slug/`. Board and standing choices (models, prepare): `spec/build.md`. Product intent: `spec/vision.md`. Code style: `.agents/limen/styleguide.md`.
 - Old tasks are in `spec/features/` too: `plan.md` in each folder is the old task file.
-- Old flow, until S6 is done: `tasks/active/s6-pre-sale.md` and its sub-tasks `s6b`–`s6f` run with `run-task` and `tasks/README.md`. S6a moved to Limen: `spec/features/active/F077-s6a-customer-core/`.
+- Detailed implementation plans: the `plan-task` skill writes them as a Limen feature folder (`ticket.md`, `plan.md`, `stages/`); the coordinator builds them stage by stage.
+- Not moved yet: `tasks/active/s6-pre-sale.md` (S6 master plan) and `tasks/planned/s6b`–`s6f`. The old `run-task` flow is removed (2026-11-12): plan each segment with `plan-task` into `spec/features/`. S6a is Limen ticket F077.
 
 ## Notes
 
