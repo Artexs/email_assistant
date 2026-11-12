@@ -60,6 +60,7 @@ export async function checkMailbox(
   const smtp: SmtpConnectOptions = {
     host: mailbox.smtp_host,
     port: mailbox.smtp_port,
+    security: mailbox.smtp_security,
     user: mailbox.address,
     password,
   };

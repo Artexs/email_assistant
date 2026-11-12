@@ -32,6 +32,15 @@ describe("connectMailboxBodySchema", () => {
     ]);
   });
 
+  test("takes an SMTP security mode only without a preset", () => {
+    const custom = { ...plainBody, imapHost: "h", imapPort: 993, smtpHost: "h", smtpPort: 587 };
+    expect(connectMailboxBodySchema.safeParse({ ...custom, smtpSecurity: "starttls" }).success).toBe(true);
+    expect(connectMailboxBodySchema.safeParse({ ...custom, smtpSecurity: "plain" }).success).toBe(false);
+    expect(issuesOf({ ...presetBody, smtpSecurity: "tls" })).toEqual([
+      { path: "smtpSecurity", message: "not_with_preset" },
+    ]);
+  });
+
   test("refuses a bad port, host, address and preset", () => {
     const custom = { ...plainBody, imapHost: "h", imapPort: 993, smtpHost: "h", smtpPort: 465 };
     expect(connectMailboxBodySchema.safeParse(custom).success).toBe(true);

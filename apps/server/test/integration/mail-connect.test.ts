@@ -108,6 +108,30 @@ describe("buildFolderMap", () => {
 });
 
 describe("connectMailbox", () => {
+  test("keeps the SMTP security mode: starttls reaches the login check and the row; the default is tls", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId } = await createOrg(trx);
+      const smtpCalls: { security?: string }[] = [];
+      const deps: ConnectDeps = {
+        db: trx,
+        secrets,
+        openProvider: async () => fakeWithFolders(),
+        verifySmtp: async (opts) => {
+          smtpCalls.push(opts);
+        },
+      };
+      const starttls = await connectMailbox(
+        deps,
+        { orgId },
+        { ...input("pw-a"), smtpPort: 587, smtpSecurity: "starttls" }
+      );
+      const plain = await connectMailbox(deps, { orgId }, input("pw-b"));
+      expect(smtpCalls.map((call) => call.security)).toEqual(["starttls", "tls"]);
+      expect((await getMailbox(trx, { orgId }, starttls.mailboxId))?.smtp_security).toBe("starttls");
+      expect((await getMailbox(trx, { orgId }, plain.mailboxId))?.smtp_security).toBe("tls");
+    });
+  });
+
   test("stores the mailbox, the encrypted password and the default settings", async () => {
     await withRollback(db, async (trx) => {
       const { orgId } = await createOrg(trx);
@@ -128,7 +152,7 @@ describe("connectMailbox", () => {
       const { mailboxId, info } = await connectMailbox(deps, ctx, data);
 
       expect(fake.closed).toBe(true);
-      expect(smtpCalls).toEqual([{ host: "smtp.x.test", port: 465, user: data.address, password }]);
+      expect(smtpCalls).toEqual([{ host: "smtp.x.test", port: 465, security: "tls", user: data.address, password }]);
 
       const raw = await trx
         .selectFrom("mailbox_credentials")
