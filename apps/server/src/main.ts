@@ -14,6 +14,7 @@ import { createApp } from "./platform/http";
 import { createLlmClient, llmProviders } from "./platform/llm";
 import { createLog, setLogLevel } from "./platform/log";
 import { createScheduler } from "./platform/scheduler";
+import { createRetentionJob } from "./retention";
 import { webDeps } from "./web";
 
 const log = createLog("main");
@@ -180,6 +181,15 @@ scheduler.add("triage.returned", "*/15 * * * * *", () => {
   return returnedRun;
 });
 
+// The daily retention run (A23). Shutdown waits for it.
+let retentionRun: Promise<void> = Promise.resolve();
+const retention = createRetentionJob({ db, now: () => new Date() });
+scheduler.add("platform.retention", "0 40 2 * * *", () => {
+  retentionRun = retention.run();
+  return retentionRun;
+});
+log.info("retention: daily at 02:40");
+
 // The runs of the notifier and the digest job that are going now. Shutdown waits for them.
 let channelRun: Promise<void> = Promise.resolve();
 let digestRun: Promise<void> = Promise.resolve();
@@ -256,6 +266,7 @@ async function shutdown(): Promise<void> {
       channelRun,
       digestRun,
       operatorRun,
+      retentionRun,
     ]),
     sleep(SHUTDOWN_WAIT_MS),
   ]);

@@ -9,6 +9,11 @@ describe("parseJobRunArgs", () => {
     expect(parseJobRunArgs(["--name", "channels.notifier"])).toEqual({ name: "channels.notifier", force: false });
   });
 
+  test("parses platform.retention and refuses --force for it", () => {
+    expect(parseJobRunArgs(["--name", "platform.retention"])).toEqual({ name: "platform.retention", force: false });
+    expect(parseJobRunArgs(["--name", "platform.retention", "--force"])).toBeNull();
+  });
+
   test("rejects an unknown or missing name", () => {
     expect(parseJobRunArgs(["--name", "nope"])).toBeNull();
     expect(parseJobRunArgs([])).toBeNull();

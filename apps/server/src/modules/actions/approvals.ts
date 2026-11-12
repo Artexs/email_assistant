@@ -1,3 +1,4 @@
+import { sendPayloadSchema } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -245,6 +246,8 @@ export async function sendAgain(
     ) {
       return { kind: "not_failed" };
     }
+    // A24: retention cleared the payload of an old failed send; there is nothing to send again.
+    if (!sendPayloadSchema.safeParse(failed.payload).success) return { kind: "draft_gone" };
     const draft =
       failed.depends_on_action_id === null ? undefined : await getDraft(trx, ctx, failed.depends_on_action_id);
     if (draft === undefined || draft.status !== "applied") return { kind: "draft_gone" };

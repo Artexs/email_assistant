@@ -451,6 +451,26 @@ describe("sendAgain", () => {
     });
   });
 
+  test("a failed send with a cleared payload ({}) → draft_gone and no new row (A24)", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const p = await failedPair(trx, s, "smtp_error");
+      await trx.updateTable("actions").set({ payload: "{}" }).where("id", "=", p.sendId).execute();
+      expect((await row(trx, p.draftId)).status).toBe("applied");
+
+      expect(await sendAgain(depsOf(trx, openHooks), s.ctx, p.sendId, input(s.userId))).toEqual({ kind: "draft_gone" });
+
+      const sends = await trx
+        .selectFrom("actions")
+        .select("id")
+        .where("depends_on_action_id", "=", p.draftId)
+        .where("type", "=", "send")
+        .execute();
+      expect(sends).toHaveLength(1);
+      expect(await auditRows(trx, s.ctx, "action.send_again")).toHaveLength(0);
+    });
+  });
+
   test("not_failed, draft_gone and not_found", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);

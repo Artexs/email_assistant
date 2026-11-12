@@ -368,6 +368,30 @@ describe("applyDraft", () => {
     });
   });
 
+  test("a mail with a cleared body (body_text null) still gets its draft: the template and the no-text marker, no quote of text (A24)", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const p = await insertDraftAndSend(trx, s.ctx, s.mailboxId, { ...MAIL, draftStatus: "ready" });
+      await trx
+        .updateTable("emails")
+        .set({ body_text: null })
+        .where("id", "=", p.emailId)
+        .where("org_id", "=", s.ctx.orgId)
+        .execute();
+      const action = await claimOne(trx, s, p.draftId);
+
+      expect(await applyDraft(depsOf(s, trx), s.ctx, action, s.fake)).toEqual({ kind: "applied" });
+
+      expect(appendCalls(s)).toBe(1);
+      const raw = s.appended[0]?.toString("utf8") ?? "";
+      expect(raw).toContain("Owner");
+      expect(raw).not.toContain("Please prepare the offer");
+      // The builder quotes the marker "(no text)" for a null body and nothing else.
+      expect(raw).toContain("> (no text)");
+      expect(raw.match(/^> .*$/gm)).toEqual(["> (no text)"]);
+    });
+  });
+
   test("a reminder draft quotes nothing and keeps the thread of the delegation", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);

@@ -7,6 +7,7 @@ import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 import { createLog } from "../platform/log";
+import { createRetentionJob } from "../retention";
 
 import { parseJobRunArgs, usage } from "./job-run-args";
 
@@ -40,6 +41,8 @@ async function main(): Promise<number> {
       await createCommitterJob(
         committerDeps({ db, secrets, scope: actionsScope(config), sendScope: sendScope(config) })
       ).run();
+    } else if (args.name === "platform.retention") {
+      await createRetentionJob({ db, now }).run();
     } else {
       const settings = llmSettings(config);
       const runtime = createTelegramRuntime({
