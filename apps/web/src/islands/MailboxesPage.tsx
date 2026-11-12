@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Skeleton } from "../components/ui/skeleton";
 import { t } from "../i18n/en";
 import { api } from "../lib/api";
+import { canWrite } from "../lib/can-write";
 import { useNow } from "../lib/use-now";
 import { useResource } from "../lib/use-resource";
 
@@ -19,7 +20,8 @@ function Mailboxes() {
   const now = useNow();
   const [lastLoad, setLastLoad] = useState<Date | null>(null);
   const [connectOpen, setConnectOpen] = useState(false);
-  const isOwner = me?.role === "owner";
+  // Edit right: the owner of an organization that is not paused. No text here depends on the role alone.
+  const isOwner = me?.role === "owner" && canWrite(me);
   const { data, error, loading, reload } = useResource(async () => {
     const list = await api("/api/mailboxes", mailboxListSchema);
     setLastLoad(new Date());

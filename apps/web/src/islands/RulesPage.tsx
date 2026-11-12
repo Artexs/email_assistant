@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Skeleton } from "../components/ui/skeleton";
 import { t } from "../i18n/en";
 import { api } from "../lib/api";
+import { canWrite } from "../lib/can-write";
 import { groupRules, ruleKindOrder, rulesPath } from "../lib/rules-view";
 import { useNow } from "../lib/use-now";
 import { useResource } from "../lib/use-resource";
@@ -22,12 +23,13 @@ interface RulesBodyProps {
   filter: string | null;
   mailboxes: MailboxView[];
   isOwner: boolean;
+  isOwnerRole: boolean; // the "only the owner" text depends on the role, not on the write right
   timeZone: string;
   reloadMe(): void;
   reloadMailboxes(): void;
 }
 
-function RulesBody({ filter, mailboxes, isOwner, timeZone, reloadMe, reloadMailboxes }: RulesBodyProps) {
+function RulesBody({ filter, mailboxes, isOwner, isOwnerRole, timeZone, reloadMe, reloadMailboxes }: RulesBodyProps) {
   const now = useNow();
   const [lastLoad, setLastLoad] = useState<Date | null>(null);
   const { data, error, loading, reload } = useResource(async () => {
@@ -84,7 +86,7 @@ function RulesBody({ filter, mailboxes, isOwner, timeZone, reloadMe, reloadMailb
       {isOwner ? (
         <AddRuleForm mailboxes={mailboxes} onAdded={onChanged} onMissingMailbox={reloadMailboxes} />
       ) : (
-        <p className="text-sm text-muted-foreground">{t("set_owner_only")}</p>
+        !isOwnerRole && <p className="text-sm text-muted-foreground">{t("set_owner_only")}</p>
       )}
       {content}
     </>
@@ -102,7 +104,8 @@ function Rules() {
   } = useResource(() => api("/api/mailboxes", mailboxListSchema));
 
   if (me === null) return null;
-  const isOwner = me.role === "owner";
+  const isOwner = me.role === "owner" && canWrite(me);
+  const isOwnerRole = me.role === "owner";
 
   if (mailboxes === null) {
     return (
@@ -149,6 +152,7 @@ function Rules() {
         filter={selected === ALL ? null : selected}
         mailboxes={mailboxes}
         isOwner={isOwner}
+        isOwnerRole={isOwnerRole}
         timeZone={me.organization.timezone}
         reloadMe={reloadMe}
         reloadMailboxes={reloadMailboxes}

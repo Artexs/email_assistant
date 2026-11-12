@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "../components/ui/alert";
 import { Button, buttonVariants } from "../components/ui/button";
 import { t } from "../i18n/en";
 import { api } from "../lib/api";
+import { canWrite } from "../lib/can-write";
 import { errorText } from "../lib/errors";
 
 function Onboarding() {
@@ -18,7 +19,9 @@ function Onboarding() {
 
   if (me === null) return null;
   const { onboarding } = me;
-  const isOwner = me.role === "owner";
+  // `isOwnerRole` picks the text (the paused banner explains the rest); `isOwner` is the edit right.
+  const isOwnerRole = me.role === "owner";
+  const isOwner = isOwnerRole && canWrite(me);
 
   const keepShadow = async () => {
     setPending(true);
@@ -36,7 +39,7 @@ function Onboarding() {
   if (onboarding.mailbox) {
     mailboxText =
       me.mailboxCount === 1 ? t("ob_mailbox_done_one") : t("ob_mailbox_done_many", { count: me.mailboxCount });
-  } else if (!isOwner) {
+  } else if (!isOwnerRole) {
     mailboxText = t("ob_mailbox_assistant");
   }
 
@@ -71,7 +74,7 @@ function Onboarding() {
         </ChecklistItem>
         <ChecklistItem title="ob_mode_title" done={onboarding.mode}>
           <p className="text-sm">
-            {onboarding.mode ? t("ob_mode_done") : isOwner ? t("ob_mode_open") : t("ob_mode_assistant")}
+            {onboarding.mode ? t("ob_mode_done") : isOwnerRole ? t("ob_mode_open") : t("ob_mode_assistant")}
           </p>
           {!onboarding.mode && isOwner && (
             <div className="flex flex-wrap gap-2">

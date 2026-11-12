@@ -5,9 +5,11 @@ import { toast } from "sonner";
 
 import { t, type TextKey } from "../../i18n/en";
 import { api } from "../../lib/api";
+import { canWrite } from "../../lib/can-write";
 import { isDirty } from "../../lib/draft";
 import { errorText } from "../../lib/errors";
 import { useDraft } from "../../lib/use-draft";
+import { useMe } from "../shell/MeProvider";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
@@ -23,7 +25,10 @@ export interface DigestTimesCardProps {
 
 export function DigestTimesCard({ times, timeZone, onSaved }: DigestTimesCardProps) {
   const { draft, setValue, reset } = useDraft(times);
-  const [pending, setPending] = useState(false);
+  const { me } = useMe();
+  const [pendingSave, setPending] = useState(false);
+  // A paused organization takes no write: every control is off.
+  const pending = pendingSave || !canWrite(me);
   const [error, setError] = useState<TextKey | null>(null);
   const rows = draft.value;
 

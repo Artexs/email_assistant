@@ -6,6 +6,8 @@ import { t } from "../../i18n/en";
 import { postFeedback, postUndo } from "../../lib/activity-api";
 import { categoryName, feedbackToast, undoToast } from "../../lib/activity-text";
 import { ApiError } from "../../lib/api";
+import { canWrite } from "../../lib/can-write";
+import { useMe } from "../shell/MeProvider";
 import { Button } from "../ui/button";
 import { CategoryPicker } from "./CategoryPicker";
 
@@ -18,7 +20,9 @@ export interface ActionButtonsProps {
 export function ActionButtons({ item, onPatch, onGone }: ActionButtonsProps) {
   const [pending, setPending] = useState<"right" | "pick" | "undo" | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const busy = pending !== null;
+  const { me } = useMe();
+  // A paused organization takes no feedback and no undo (the server refuses them).
+  const busy = pending !== null || !canWrite(me);
   const emailId = item.emailId;
 
   const fail = (error: unknown) => {

@@ -252,6 +252,7 @@ export function ConnectDialog({ open, onOpenChange, onConnected }: ConnectDialog
               {t(error)}
             </p>
           )}
+          <p className="text-sm text-muted-foreground">{t("connect_consent")}</p>
           <DialogFooter>
             <Button type="button" variant="outline" disabled={pending} onClick={() => changeOpen(false)}>
               {t("cancel")}

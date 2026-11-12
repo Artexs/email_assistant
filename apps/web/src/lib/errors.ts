@@ -13,6 +13,8 @@ const codeTexts: Record<string, TextKey> = {
   rule_exists: "err_rule_exists",
   rule_limit: "err_rule_limit",
   not_found: "err_not_found",
+  org_suspended: "err_org_suspended",
+  mailbox_limit: "err_mailbox_limit",
 };
 
 export function errorText(error: unknown): TextKey {

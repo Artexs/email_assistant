@@ -17,6 +17,9 @@ export const en = {
   auth_error_banner_one: "1 mailbox has a login error.",
   auth_error_banner_many: "{count} mailboxes have a login error.",
   auth_error_banner_link: "Open Mailboxes",
+  trial_ends_on: "Trial ends on {date}.",
+  paused_banner: "This account is paused. Contact {contact} to resume it.",
+  paused_banner_no_contact: "This account is paused. Contact the operator to resume it.",
   placeholder_text: "Not built yet. It comes with the next update.",
   no_organization_title: "No organization",
   no_organization_text: "Your account is not in any organization. Ask the owner for an invitation.",
@@ -130,6 +133,8 @@ export const en = {
   smtp_security_tls: "SSL/TLS (port 465)",
   smtp_security_starttls: "STARTTLS (port 587)",
   connect_submit: "Connect",
+  connect_consent:
+    "Your mail goes to our AI provider to sort it. Nothing in the mailbox changes until you set the mode to assist.",
   checking_login: "Checking the login… (up to a minute)",
   err_mail_login_failed: "The server refused the login. Check the address and the password.",
   err_mail_unreachable: "Could not reach the mail server. Check the host and the port, or try again later.",
@@ -333,6 +338,8 @@ export const en = {
   err_rule_exists: "This rule exists already.",
   err_rule_limit: "You have reached the limit of 1000 rules.",
   err_not_found: "It is gone already.",
+  err_org_suspended: "This account is paused. Nothing can change now.",
+  err_mailbox_limit: "Your plan allows no more mailboxes. Remove one, or contact us to raise the limit.",
   // activity (S5d)
   act_filter_mailbox: "Mailbox",
   act_all_mailboxes: "All mailboxes",

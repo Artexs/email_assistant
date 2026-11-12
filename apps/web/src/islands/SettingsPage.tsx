@@ -25,6 +25,7 @@ import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { t, type TextKey } from "../i18n/en";
 import { api, ApiError } from "../lib/api";
+import { canWrite } from "../lib/can-write";
 import { selectedMailboxId, settingsPath } from "../lib/settings-api";
 import { useResource } from "../lib/use-resource";
 
@@ -81,7 +82,7 @@ function MailboxSettings({ mailbox, isOwner, listLoading, reloadMailboxes, reloa
   );
 }
 
-function GeneralSection({ isOwner }: { isOwner: boolean }) {
+function GeneralSection({ isOwner, isOwnerRole }: { isOwner: boolean; isOwnerRole: boolean }) {
   const { me, reload: reloadMe } = useMe();
   const { data, error, loading, reload, mutate } = useResource(() =>
     api("/api/organization", organizationSettingsSchema)
@@ -118,7 +119,7 @@ function GeneralSection({ isOwner }: { isOwner: boolean }) {
   return (
     <section className="flex flex-col gap-4">
       <h2 className="text-lg font-semibold">{t("set_section_general")}</h2>
-      {!isOwner && <p className="text-sm text-muted-foreground">{t("set_owner_only")}</p>}
+      {!isOwnerRole && <p className="text-sm text-muted-foreground">{t("set_owner_only")}</p>}
       {me !== null && <DigestTimesCard times={me.digestTimes} timeZone={me.organization.timezone} onSaved={reloadMe} />}
       {organizationCards}
       <AccountCard />
@@ -130,7 +131,8 @@ function Settings() {
   const { me, reload: reloadMe } = useMe();
   const [selected, setSelected] = useState<string | null>(null);
   const { data, error, loading, reload } = useResource(() => api("/api/mailboxes", mailboxListSchema));
-  const isOwner = me?.role === "owner";
+  const isOwner = me?.role === "owner" && canWrite(me);
+  const isOwnerRole = me?.role === "owner";
 
   // The selection is derived in render, so no frame shows "no mailbox" for a listed one (the first load reads `?mailbox=`).
   const current =
@@ -186,7 +188,7 @@ function Settings() {
   } else {
     content = (
       <>
-        {!isOwner && <p className="text-sm text-muted-foreground">{t("set_owner_only")}</p>}
+        {!isOwnerRole && <p className="text-sm text-muted-foreground">{t("set_owner_only")}</p>}
         <MailboxSelector mailboxes={data} value={mailbox.id} onChange={choose} />
         <div className="flex flex-wrap items-start gap-2">
           <StatusBadge status={mailbox.status} />
@@ -207,7 +209,7 @@ function Settings() {
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <div className="flex flex-col gap-4">{content}</div>
-      <GeneralSection isOwner={isOwner} />
+      <GeneralSection isOwner={isOwner} isOwnerRole={isOwnerRole} />
     </div>
   );
 }

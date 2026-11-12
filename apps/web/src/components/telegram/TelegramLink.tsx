@@ -5,9 +5,11 @@ import { z } from "zod";
 
 import { t } from "../../i18n/en";
 import { api, ApiError } from "../../lib/api";
+import { canWrite } from "../../lib/can-write";
 import { errorText } from "../../lib/errors";
 import { useNow } from "../../lib/use-now";
 import { useResource } from "../../lib/use-resource";
+import { useMe } from "../shell/MeProvider";
 import { Button, buttonVariants } from "../ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
@@ -22,7 +24,10 @@ export interface TelegramLinkProps {
 export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
   const [link, setLink] = useState<LinkState | null>(null);
   const [off, setOff] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const { me } = useMe();
+  const [working, setBusy] = useState(false);
+  // A paused organization takes no link and no unlink: the buttons are off.
+  const busy = working || !canWrite(me);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const now = useNow();
   const { data, loading, reload } = useResource(() => api("/api/channels/telegram", telegramStateSchema), {
@@ -99,7 +104,7 @@ export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
             ? t("tg_linked")
             : t("tg_linked_since", { date: formatClock(new Date(data.linkedAt), timeZone, now) })}
         </p>
-        <Button variant="outline" onClick={() => setConfirmOpen(true)}>
+        <Button variant="outline" disabled={busy} onClick={() => setConfirmOpen(true)}>
           {t("tg_unlink")}
         </Button>
         <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
