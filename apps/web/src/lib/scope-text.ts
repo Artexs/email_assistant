@@ -25,13 +25,15 @@ function reasonKey(scope: Scope, reason: ScopeBadge["reason"]): TextKey | null {
   switch (reason) {
     case "env_off":
       return envOffKeys[scope];
-    case "other_mailbox":
-      return "reason_other_mailbox";
     case "synthetic_only":
       return "reason_synthetic_only";
     case "test_addresses_only":
       return "reason_test_addresses_only";
-    case "test_mailbox_only":
+    case "by_mode":
+      return "reason_by_mode";
+    case "after_approval":
+      return "reason_after_approval";
+    case "all_mailboxes":
       return null;
   }
 }

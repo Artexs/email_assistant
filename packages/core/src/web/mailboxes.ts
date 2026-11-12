@@ -63,8 +63,9 @@ export const badgeReasons = [
   "env_off",
   "synthetic_only",
   "test_addresses_only",
-  "test_mailbox_only",
-  "other_mailbox",
+  "all_mailboxes",
+  "by_mode",
+  "after_approval",
 ] as const;
 
 export const scopeBadgeSchema = z.object({ state: z.enum(badgeStates), reason: z.enum(badgeReasons) });
@@ -74,29 +75,26 @@ export interface ScopeEnv {
   triage: "off" | "synthetic" | "all";
   actions: "off" | "synthetic" | "all";
   send: "off" | "self" | "all";
-  testMailboxAddress: string | null;
 }
 
 export function sameAddress(a: string, b: string): boolean {
   return a.trim().toLowerCase() === b.trim().toLowerCase();
 }
 
-function badgeOf(kind: "off" | "synthetic" | "self" | "all", isTestMailbox: boolean): ScopeBadge {
+const allReasons = { triage: "all_mailboxes", actions: "by_mode", send: "after_approval" } as const;
+
+function badgeOf(scope: keyof typeof allReasons, kind: "off" | "synthetic" | "self" | "all"): ScopeBadge {
   if (kind === "off") return { state: "off", reason: "env_off" };
   if (kind === "synthetic") return { state: "synthetic", reason: "synthetic_only" };
   if (kind === "self") return { state: "self", reason: "test_addresses_only" };
-  return isTestMailbox ? { state: "on", reason: "test_mailbox_only" } : { state: "off", reason: "other_mailbox" };
+  return { state: "on", reason: allReasons[scope] };
 }
 
-export function mailboxScopeBadges(
-  env: ScopeEnv,
-  address: string
-): { triage: ScopeBadge; actions: ScopeBadge; send: ScopeBadge } {
-  const isTestMailbox = env.testMailboxAddress !== null && sameAddress(env.testMailboxAddress, address);
+export function mailboxScopeBadges(env: ScopeEnv): { triage: ScopeBadge; actions: ScopeBadge; send: ScopeBadge } {
   return {
-    triage: badgeOf(env.triage, isTestMailbox),
-    actions: badgeOf(env.actions, isTestMailbox),
-    send: badgeOf(env.send, isTestMailbox),
+    triage: badgeOf("triage", env.triage),
+    actions: badgeOf("actions", env.actions),
+    send: badgeOf("send", env.send),
   };
 }
 

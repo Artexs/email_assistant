@@ -21,7 +21,7 @@ async function viewOf(db: Db, ctx: TenantContext, row: MailboxSummary, env: Scop
     mode: settings ? modeSchema.parse(settings.mode) : null,
     movesSupported,
     secretKind: credentials?.secret_kind === "app_password" ? "app_password" : "password",
-    scopes: mailboxScopeBadges(env, row.address),
+    scopes: mailboxScopeBadges(env),
   };
 }
 

@@ -52,19 +52,19 @@ const ADDRESS_MAX = 60;
 const SCOPE_TEXTS: Record<CommandDeps["triageScope"], string> = {
   off: "off",
   synthetic: "test mail only (TRIAGE_LLM_SCOPE=synthetic)",
-  all: "real mail of the test mailbox (TRIAGE_LLM_SCOPE=all)",
+  all: "real mail of every active mailbox (TRIAGE_LLM_SCOPE=all)",
 };
 
 const ACTIONS_SCOPE_TEXTS: Record<ActionsScope["kind"], string> = {
   off: "off",
   synthetic: "test mail only (ACTIONS_SCOPE=synthetic)",
-  all: "real mail of the test mailbox (ACTIONS_SCOPE=all)",
+  all: "real mail, by the mode of each mailbox (ACTIONS_SCOPE=all)",
 };
 
 const SEND_SCOPE_TEXTS: Record<SendScope["kind"], string> = {
   off: "off",
   self: "only to your test addresses (SEND_SCOPE=self)",
-  all: "real delegates of the test mailbox (SEND_SCOPE=all)",
+  all: "real recipients, after an owner's tap (SEND_SCOPE=all)",
 };
 
 const ACTIONS_WINDOW_MS = 24 * 3_600_000;

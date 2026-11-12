@@ -64,9 +64,9 @@ const LOOPBACK_HOSTS = ["localhost", "127.0.0.1", "[::1]"];
 
 export function scopeInfos(config: Config): TenancyRouteDeps["scopes"] {
   return {
-    triage: scopeInfoOf(config.TRIAGE_LLM_SCOPE),
-    actions: scopeInfoOf(config.ACTIONS_SCOPE),
-    send: scopeInfoOf(config.SEND_SCOPE),
+    triage: scopeInfoOf("triage", config.TRIAGE_LLM_SCOPE),
+    actions: scopeInfoOf("actions", config.ACTIONS_SCOPE),
+    send: scopeInfoOf("send", config.SEND_SCOPE),
   };
 }
 
@@ -75,7 +75,6 @@ export function scopeEnvOf(config: Config): ScopeEnv {
     triage: config.TRIAGE_LLM_SCOPE,
     actions: config.ACTIONS_SCOPE,
     send: config.SEND_SCOPE,
-    testMailboxAddress: config.TEST_MAILBOX_ADDRESS ?? null,
   };
 }
 

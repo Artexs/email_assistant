@@ -124,7 +124,8 @@ describe("statusMessage", () => {
       expect(message.text).not.toContain("(late)");
       expect(message.text).toContain("LLM calls since 09:00: 3 of 300");
       expect(message.text).toContain("Waiting for triage: 1");
-      expect(message.text).toContain("Triage: real mail of the test mailbox (TRIAGE_LLM_SCOPE=all)");
+      expect(message.text).toContain("Triage: real mail of every active mailbox (TRIAGE_LLM_SCOPE=all)");
+      expect(message.text).not.toContain("test mailbox");
       expect(message.text).toContain("LLM: gemini · gemini-3.5-flash-lite");
       expect(message.text).toContain("Next digest: 16:00");
       expect(message.text).toContain("Quiet hours: 22:00–07:00 (notices wait until 07:00)");
@@ -146,7 +147,7 @@ describe("statusMessage", () => {
 
       const all = await statusMessage(depsAt(trx, T, { actionsScope: { kind: "all" } }), link);
       expect(all.text).toContain(
-        "Actions: real mail of the test mailbox (ACTIONS_SCOPE=all) · last 24 h: applied 2, undone 0, failed 1"
+        "Actions: real mail, by the mode of each mailbox (ACTIONS_SCOPE=all) · last 24 h: applied 2, undone 0, failed 1"
       );
       const synthetic = await statusMessage(depsAt(trx, T, { actionsScope: { kind: "synthetic" } }), link);
       expect(synthetic.text).toContain("Actions: test mail only (ACTIONS_SCOPE=synthetic) · last 24 h: applied 2");
@@ -177,7 +178,7 @@ describe("statusMessage", () => {
       expect(self.text).toContain("1 approved, held by SEND_SCOPE=self");
 
       const all = await statusMessage(depsAt(trx, T, { sendScope: { kind: "all" } }), link);
-      expect(all.text).toContain("Send: real delegates of the test mailbox (SEND_SCOPE=all)");
+      expect(all.text).toContain("Send: real recipients, after an owner's tap (SEND_SCOPE=all)");
       expect(all.text).toContain("1 approved, sending");
 
       await trx.updateTable("mailboxes").set({ status: "paused" }).where("id", "=", a.mailboxId).execute();

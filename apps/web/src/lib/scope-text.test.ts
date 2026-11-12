@@ -7,23 +7,14 @@ import { badgeKey, reasonKeys } from "./scope-text";
 type Scopes = MailboxView["scopes"];
 
 const allOn: Scopes = {
-  triage: { state: "on", reason: "test_mailbox_only" },
-  actions: { state: "on", reason: "test_mailbox_only" },
-  send: { state: "on", reason: "test_mailbox_only" },
+  triage: { state: "on", reason: "all_mailboxes" },
+  actions: { state: "on", reason: "by_mode" },
+  send: { state: "on", reason: "after_approval" },
 };
 
 describe("reasonKeys", () => {
-  test("all on gives no reason", () => {
-    expect(reasonKeys(allOn)).toEqual([]);
-  });
-
-  test("triage and actions other_mailbox give one line", () => {
-    const scopes: Scopes = {
-      triage: { state: "off", reason: "other_mailbox" },
-      actions: { state: "off", reason: "other_mailbox" },
-      send: { state: "on", reason: "test_mailbox_only" },
-    };
-    expect(reasonKeys(scopes)).toEqual(["reason_other_mailbox"]);
+  test("all on gives the by-mode and after-approval lines", () => {
+    expect(reasonKeys(allOn)).toEqual(["reason_by_mode", "reason_after_approval"]);
   });
 
   test("three env_off give three keys in order", () => {
@@ -38,7 +29,7 @@ describe("reasonKeys", () => {
   test("send self gives its badge and reason", () => {
     const scopes: Scopes = { ...allOn, send: { state: "self", reason: "test_addresses_only" } };
     expect(badgeKey("send", "self")).toBe("badge_send_self");
-    expect(reasonKeys(scopes)).toEqual(["reason_test_addresses_only"]);
+    expect(reasonKeys(scopes)).toEqual(["reason_by_mode", "reason_test_addresses_only"]);
   });
 });
 

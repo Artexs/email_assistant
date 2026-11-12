@@ -94,9 +94,10 @@ export const en = {
   reason_triage_env_off: "Triage is off on this server (TRIAGE_LLM_SCOPE=off).",
   reason_actions_env_off: "Mailbox changes are off on this server (ACTIONS_SCOPE=off).",
   reason_send_env_off: "Sends are off on this server (SEND_SCOPE=off).",
-  reason_other_mailbox: "Only the test mailbox is covered (TEST_MAILBOX_ADDRESS).",
   reason_synthetic_only: "Only synthetic test mail is covered.",
   reason_test_addresses_only: "Sends go only to the test addresses (SEND_TEST_ADDRESSES).",
+  reason_by_mode: "Mailbox changes follow the mode of each mailbox: none in shadow mode.",
+  reason_after_approval: "A mail goes out only after an owner taps Send.",
   // connect form
   connect_title: "Connect a mailbox",
   provider_label: "Provider",

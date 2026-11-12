@@ -84,7 +84,6 @@ async function setup(options: SetupOptions = {}) {
     triage: "all",
     actions: "synthetic",
     send: "off",
-    testMailboxAddress: address1.toUpperCase(),
   };
   const app = webTestApp({
     db,
@@ -177,10 +176,10 @@ describe("mailbox routes", () => {
     expect(views.map((v) => v.id)).toEqual([m1, m2]);
     expect(views.map((v) => v.address)).toEqual([address1, address2]);
     const [first, second] = views;
-    expect(first?.scopes.triage).toEqual({ state: "on", reason: "test_mailbox_only" });
+    expect(first?.scopes.triage).toEqual({ state: "on", reason: "all_mailboxes" });
     expect(first?.scopes.actions).toEqual({ state: "synthetic", reason: "synthetic_only" });
     expect(first?.scopes.send).toEqual({ state: "off", reason: "env_off" });
-    expect(second?.scopes.triage).toEqual({ state: "off", reason: "other_mailbox" });
+    expect(second?.scopes.triage).toEqual({ state: "on", reason: "all_mailboxes" });
     expect(first?.mode).toBe("shadow");
     expect(first?.lastSyncedAt).toBeNull();
     expect(first?.secretKind).toBe("password");

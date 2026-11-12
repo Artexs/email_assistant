@@ -49,19 +49,17 @@ describe("connectMailboxBodySchema", () => {
 });
 
 describe("mailboxScopeBadges", () => {
-  const env: ScopeEnv = { triage: "all", actions: "synthetic", send: "self", testMailboxAddress: "Test@X.pl" };
-
-  test("the test mailbox", () => {
-    expect(mailboxScopeBadges(env, "test@x.pl")).toEqual({
-      triage: { state: "on", reason: "test_mailbox_only" },
-      actions: { state: "synthetic", reason: "synthetic_only" },
-      send: { state: "self", reason: "test_addresses_only" },
+  test("all gives the reasons of the scope", () => {
+    expect(mailboxScopeBadges({ triage: "all", actions: "all", send: "all" })).toEqual({
+      triage: { state: "on", reason: "all_mailboxes" },
+      actions: { state: "on", reason: "by_mode" },
+      send: { state: "on", reason: "after_approval" },
     });
   });
 
-  test("a second mailbox", () => {
-    expect(mailboxScopeBadges(env, "other@x.pl")).toEqual({
-      triage: { state: "off", reason: "other_mailbox" },
+  test("off, synthetic and self keep their reasons", () => {
+    expect(mailboxScopeBadges({ triage: "off", actions: "synthetic", send: "self" })).toEqual({
+      triage: { state: "off", reason: "env_off" },
       actions: { state: "synthetic", reason: "synthetic_only" },
       send: { state: "self", reason: "test_addresses_only" },
     });
@@ -69,15 +67,10 @@ describe("mailboxScopeBadges", () => {
 
   test("everything off", () => {
     const off = { state: "off", reason: "env_off" } as const;
-    expect(
-      mailboxScopeBadges({ triage: "off", actions: "off", send: "off", testMailboxAddress: null }, "a@x.pl")
-    ).toEqual({ triage: off, actions: off, send: off });
-  });
-
-  test("all without a test mailbox", () => {
-    expect(mailboxScopeBadges({ ...env, send: "all", testMailboxAddress: null }, "a@x.pl").send).toEqual({
-      state: "off",
-      reason: "other_mailbox",
+    expect(mailboxScopeBadges({ triage: "off", actions: "off", send: "off" })).toEqual({
+      triage: off,
+      actions: off,
+      send: off,
     });
   });
 });
