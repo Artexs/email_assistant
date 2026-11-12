@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { describe, expect, test } from "bun:test";
 
 import {
+  authMailSettings,
   classifierModel,
   ConfigError,
   isLoopbackApiRoot,
@@ -465,5 +466,53 @@ describe("web keys", () => {
     expect(webMailAllowLocal(empty)).toBe(false);
     expect(webMailAllowLocal(loadConfig({ ...fullEnv, WEB_MAIL_ALLOW_LOCAL: "true" }))).toBe(true);
     expect(configError({ ...fullEnv, WEB_MAIL_ALLOW_LOCAL: "yes" }).keys).toEqual(["WEB_MAIL_ALLOW_LOCAL"]);
+  });
+});
+
+describe("auth mail settings", () => {
+  const mailEnv = {
+    AUTH_SMTP_HOST: "smtp.x.test",
+    AUTH_SMTP_USER: "u",
+    AUTH_SMTP_PASSWORD: "p",
+    AUTH_MAIL_FROM: "noreply@x.test",
+  };
+
+  test("none of the keys: the sender is off", () => {
+    expect(authMailSettings(loadConfig(fullEnv))).toBeNull();
+    expect(authMailSettings(loadConfig({ ...fullEnv, AUTH_SMTP_HOST: "", AUTH_SMTP_PORT: "" }))).toBeNull();
+  });
+
+  test("the four keys give settings with port 465 and tls", () => {
+    expect(authMailSettings(loadConfig({ ...fullEnv, ...mailEnv }))).toEqual({
+      host: "smtp.x.test",
+      port: 465,
+      security: "tls",
+      user: "u",
+      password: "p",
+      from: "noreply@x.test",
+    });
+  });
+
+  test("port and security are read", () => {
+    const settings = authMailSettings(
+      loadConfig({ ...fullEnv, ...mailEnv, AUTH_SMTP_PORT: "587", AUTH_SMTP_SECURITY: "starttls" })
+    );
+    expect(settings?.port).toBe(587);
+    expect(settings?.security).toBe("starttls");
+  });
+
+  test("a partial set names every missing key", () => {
+    const { keys } = configError({ ...fullEnv, AUTH_SMTP_HOST: "smtp.x.test" });
+    expect([...keys].sort()).toEqual(["AUTH_MAIL_FROM", "AUTH_SMTP_PASSWORD", "AUTH_SMTP_USER"]);
+  });
+
+  test("a bad security value is refused", () => {
+    expect(configError({ ...fullEnv, ...mailEnv, AUTH_SMTP_SECURITY: "ssl" }).keys).toContain("AUTH_SMTP_SECURITY");
+  });
+
+  test("a bad from address is refused, with no value in the message", () => {
+    const error = configError({ ...fullEnv, ...mailEnv, AUTH_MAIL_FROM: "not-an-address" });
+    expect(error.keys).toContain("AUTH_MAIL_FROM");
+    expect(error.message).not.toContain("not-an-address");
   });
 });

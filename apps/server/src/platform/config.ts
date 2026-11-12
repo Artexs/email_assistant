@@ -146,6 +146,14 @@ const baseSchema = z.object({
   WEB_DIST: z.preprocess(emptyAsUndefined, z.string().default("apps/web/dist")),
   // true = the web connect form may name localhost or a private-network IP (dev, e2e).
   WEB_MAIL_ALLOW_LOCAL: z.preprocess(emptyAsUndefined, z.enum(["true", "false"]).default("false")),
+  // Auth mail (S6b): host, user, password and from are set together. None set = the sender is off.
+  AUTH_SMTP_HOST: z.preprocess(emptyAsUndefined, z.string().min(1).optional()),
+  AUTH_SMTP_PORT: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(65535).default(465)),
+  AUTH_SMTP_SECURITY: z.preprocess(emptyAsUndefined, z.enum(["tls", "starttls"]).default("tls")),
+  AUTH_SMTP_USER: z.preprocess(emptyAsUndefined, z.string().min(1).optional()),
+  // Secret: never print or log it.
+  AUTH_SMTP_PASSWORD: z.preprocess(emptyAsUndefined, z.string().min(1).optional()),
+  AUTH_MAIL_FROM: z.preprocess(emptyAsUndefined, z.string().regex(addressPattern).optional()),
 });
 
 type BaseConfig = z.infer<typeof baseSchema>;
@@ -207,6 +215,19 @@ export const configSchema = baseSchema.superRefine((config, ctx) => {
   if (config.WEB_BASE_URL !== undefined && config.WEB_AUTH_SECRET === undefined) {
     ctx.addIssue({ code: "custom", path: ["WEB_AUTH_SECRET"], message: "needed when WEB_BASE_URL is set" });
   }
+  const authMailKeys = ["AUTH_SMTP_HOST", "AUTH_SMTP_USER", "AUTH_SMTP_PASSWORD", "AUTH_MAIL_FROM"] as const;
+  const authMailSet = authMailKeys.filter((key) => config[key] !== undefined).length;
+  if (authMailSet > 0 && authMailSet < authMailKeys.length) {
+    for (const key of authMailKeys) {
+      if (config[key] === undefined) {
+        ctx.addIssue({
+          code: "custom",
+          path: [key],
+          message: "AUTH_SMTP_HOST, AUTH_SMTP_USER, AUTH_SMTP_PASSWORD and AUTH_MAIL_FROM are set together",
+        });
+      }
+    }
+  }
   if (!parseList(config.WEB_TRUSTED_ORIGINS).every(isOrigin)) {
     ctx.addIssue({
       code: "custom",
@@ -223,6 +244,23 @@ export type Config = z.infer<typeof configSchema>;
 
 export function llmSettings(config: Config, provider: LlmProviderId = config.LLM_PROVIDER): LlmSettings {
   return { provider, ...providerBlocks[provider](config) };
+}
+
+export interface AuthMailSettings {
+  host: string;
+  port: number;
+  security: "tls" | "starttls";
+  user: string;
+  /** Secret: never print or log it. */
+  password: string;
+  from: string;
+}
+
+// null = the sender is off (none of the four keys set; `configSchema` refuses a half set).
+export function authMailSettings(config: Config): AuthMailSettings | null {
+  const { AUTH_SMTP_HOST: host, AUTH_SMTP_USER: user, AUTH_SMTP_PASSWORD: password, AUTH_MAIL_FROM: from } = config;
+  if (host === undefined || user === undefined || password === undefined || from === undefined) return null;
+  return { host, port: config.AUTH_SMTP_PORT, security: config.AUTH_SMTP_SECURITY, user, password, from };
 }
 
 export function sendTestAddresses(config: Config): string[] {
