@@ -137,3 +137,10 @@ Size: about 30 stages, 7k lines (E2a ≈ 14 / 3k, E2b ≈ 16 / 4k); corpus writi
 | A scripted tap reaches a real person | Separate stack; GreenMail does not relay; the executive script has no access to production |
 | Owner attention for audits | Fixed cap of 50 cases per corpus version |
 | Urgency profile shape drifts from the later product setting | One shape, defined in E2a, read by E3 and E4 |
+
+## Input from the E3 discovery (2026-11-13, PD-056–PD-068)
+
+- The E2b week scorer calls the E3a metric module (`packages/core`): one definition per metric (PD-056).
+- E3b tunes prompt v3 only on the dev set; the holdout runs only as the gate (PD-015, PD-061).
+- The week plants phishing cases that try an urgent push, a delegation and an unsubscribe; M3 counts an unwarned urgent push (PD-057, PD-063).
+- The week also checks the PD-044 send limits (PD-068).

@@ -41,3 +41,8 @@ E3 (metrics and simulator), E6 (drafts use the contact context). E5 (thread mode
 
 - On the simulator: `urgent` recall improves with contact context against the E3 baseline, or the feature stays off by default.
 - VIP suggestions appear in the panel with reasons; the sanitizer or local model passes the eval within the accepted loss.
+
+## Input from the E3 discovery (2026-11-13, PD-062, PD-063)
+
+- E3b may ship a counts-only sender history hint (past labels and corrections per sender); the contacts model replaces it and must beat it on the E2a holdout.
+- The look-alike rule of the phishing flag compares against known domains; the contacts model becomes its source of "known senders".

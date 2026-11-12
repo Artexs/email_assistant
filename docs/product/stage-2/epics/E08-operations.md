@@ -133,3 +133,9 @@ All other items: the default in brackets above is the decision. Planned tickets:
 | Alert noise makes the operator ignore alerts | Hysteresis, 6 h repeat, "resolved" notice, thresholds as config |
 | vlagent reads Docker's own files (Docker advises against it) | Read-only mount; probe in E8a stage 1; fallback Vector `docker_logs` behind a read-only socket proxy |
 | Removed: "a Grafana stack can take 1–2 GB" | No Grafana in Stage 2 |
+
+## Input from the E3 discovery (2026-11-13, PD-056–PD-068)
+
+- E3a sets the sync to every 2 min (PD-065); IDLE later replaces it (PD-054).
+- The "urgent mail not notified" alert and the E3 M5 query use the same arrival and notice times (`emails.received_at`, `outbox.sent_at`).
+- The degraded-mode notice (VIP mail during an LLM pause, PD-067) goes to the user; the LLM-failure alert of PD-052 goes to the operator.

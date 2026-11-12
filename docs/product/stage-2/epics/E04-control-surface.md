@@ -129,3 +129,11 @@ Owner: "The rest is fine. Use the default values." with one change: user labels 
 | F034 own-mail header check | Dropped: already built (`main.ts:72`) |
 | F028 `/review` | Not E4: stays in E2a (PD-018); E4 builds only the optional panel review |
 | F055 live updates | Not absorbed; polling stays |
+
+## Input from the E3 discovery (2026-11-13, PD-056–PD-068)
+
+- Approvals page: the reject action offers the reason select "wrong person / wrong content / not needed" (optional); E3a builds the command and the Telegram buttons (PD-057).
+- The autonomy page reads the E3a stats route (PD-066).
+- `List-Unsubscribe` and the IMAP flags come from the E3a header capture; the E4-B history check and bulk unsubscribe read them, no second capture (PD-063, PD-068).
+- History-check and tripwire numbers: the ADR 0028 defaults, adopted by E3 (PD-068).
+- The urgency editor writes through the E3b urgency-profile command (PD-061).

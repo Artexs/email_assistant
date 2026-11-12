@@ -135,3 +135,10 @@ About 65 stages, 9k source lines (page said 75, 10k): F082 15 (9 landed), Polish
 ### Second pass (trigger: the OIDC spike, first stage of identity B)
 
 Only PD-040 and PD-041 wait. The spike checks: `@better-auth/sso` with the renamed tables and the `pg` pool (`resolveUser` transactions), `trustedOrigins` discovery, the TXT record format, the Entra test tenant sign-up path, the session length per sign-in method. A failed check changes ADR 0026 points 2–5. All other tickets (Polish UI, platform controls, account data, papers and cost, VPS production, identity A) are ready to plan.
+
+## Input from the E3 discovery (2026-11-13, PD-056–PD-068)
+
+- `docs/cost-model.md` reads the weekly M7: all LLM calls + hosting share (CX23 €5.99 ÷ 20 mailboxes until the E8 load test) + backup (PD-059).
+- The operator console reads the E3a stats route per organization (PD-066).
+- E3 owns F023 and F073 (PD-067); F072 leaves Stage 2.
+- New E3 user-visible behaviour (weekly report, phishing warning, degraded-mode notice) ships behind flags (PD-045, PD-068).
