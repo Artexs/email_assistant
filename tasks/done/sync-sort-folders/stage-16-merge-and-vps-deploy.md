@@ -15,7 +15,7 @@ Gate: user checkpoint 2 (the group review of stages 12–15 and the branch is PA
   - Interfaces: none (operations). `C="docker compose -f deploy/compose.yaml --env-file .env"` in `~/email_assistant` on `ssh home_vm`; never print `.env`.
     Pilot ids: `<ORG>` = `ac6ed6a2-ee37-461f-9632-cc08cf549e40`, `<MB>` = `8bc7f572-a7f5-4fa5-aaab-db16dc663e96`.
   - Decisions:
-    - The note text (S3): "From <T> the server also syncs `Oferty`, `Społeczności`, `Rachunki` and `Wiadomości-śmieci` (`tasks/active/sync-sort-folders.md`).
+    - The note text (S3): "From <T> the server also syncs `Oferty`, `Społeczności`, `Rachunki` and `Wiadomości-śmieci` (`tasks/done/sync-sort-folders.md`).
       Their mail can get moves into `AI/*` (and spam folder mail into INBOX). Report N (wrong moves) twice: for all real mail, and with
       `and e.source_folder = 'INBOX'` in every `emails e` join (the mail that the week started with). Spam folder mail with a `spam` result has no action."
       (S4): the same first two sentences, then "Count drafts, approvals and sends for all mail and with `e.source_folder = 'INBOX'`."

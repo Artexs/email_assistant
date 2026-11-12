@@ -1,6 +1,6 @@
 # Live test results of the sort-folder sync with AgentMail test mail
 
-> Written 2026-11-10 by the `test-mail-traffic` session, for `tasks/active/sync-sort-folders.md` stage 17. Procedure: `notes/2026-11-09-sort-folders-live-test-with-testmail.md`.
+> Written 2026-11-10 by the `test-mail-traffic` session, for `tasks/done/sync-sort-folders.md` stage 17. Procedure: `notes/2026-11-09-sort-folders-live-test-with-testmail.md`.
 > Counts only: no subject, no address. Last check: **2026-11-10 11:46Z**. Result: **pass, no finding for the sync.**
 
 ## Batches
