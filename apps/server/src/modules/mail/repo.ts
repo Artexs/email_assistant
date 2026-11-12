@@ -150,6 +150,23 @@ export async function findMailboxIdByAddress(
   return row?.id;
 }
 
+// Every status counts: a paused or auth_error mailbox holds credentials and can be resumed.
+export async function countMailboxesOfOrg(db: DbOrTrx, ctx: TenantContext): Promise<number> {
+  const row = await db
+    .selectFrom("mailboxes")
+    .select((eb) => eb.fn.countAll<string>().as("n"))
+    .where("org_id", "=", ctx.orgId)
+    .executeTakeFirstOrThrow();
+  return Number(row.n);
+}
+
+// Serializes the connects of one organization until the transaction ends (D6). It needs a transaction:
+// outside one, the lock ends with its own statement.
+export async function lockMailboxLimit(db: DbOrTrx, ctx: TenantContext): Promise<void> {
+  if (!db.isTransaction) throw new Error("lockMailboxLimit needs a transaction");
+  await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`mailbox_limit:${ctx.orgId}`}, 0))`.execute(db);
+}
+
 export async function lockMailbox(
   trx: Transaction<DB>,
   ctx: TenantContext,

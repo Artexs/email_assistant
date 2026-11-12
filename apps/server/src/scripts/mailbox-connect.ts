@@ -5,6 +5,7 @@ import { z } from "zod";
 import {
   connectMailbox,
   MailboxExistsError,
+  MailboxLimitError,
   openImapProvider,
   verifySmtpLogin,
   type MailCapabilities,
@@ -102,6 +103,8 @@ async function main(): Promise<number> {
   } catch (error) {
     if (error instanceof MailboxExistsError) {
       log.error("mailbox with this address already exists");
+    } else if (error instanceof MailboxLimitError) {
+      log.error(`mailbox limit reached (max ${error.max})`);
     } else if (error instanceof z.ZodError) {
       log.error(`invalid input: ${error.issues.map((issue) => issue.path.join(".")).join(", ")}`);
       log.error(usage);

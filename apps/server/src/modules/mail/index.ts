@@ -27,6 +27,7 @@ export {
   HostNotAllowedError,
   MailAuthError,
   MailboxExistsError,
+  MailboxLimitError,
   MailboxNotFoundError,
   MailFolderMissingError,
   MailNotFoundError,

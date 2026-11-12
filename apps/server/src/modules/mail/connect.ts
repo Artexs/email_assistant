@@ -9,17 +9,20 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError, SoftError } from "../../platform/errors";
 import { auditEvents, recordAudit } from "../audit";
 import { insertDefaultSettings } from "../config";
+import { getOrgPlan } from "../tenancy";
 
 import type { ImapConnectOptions } from "./imap/client";
 import type { SmtpConnectOptions } from "./imap/smtp";
 import {
   MailboxExistsError,
+  MailboxLimitError,
   MailboxNotFoundError,
   type MailFolder,
   type MailProvider,
   type MailServerInfo,
 } from "./port";
 import {
+  countMailboxesOfOrg,
   findMailboxIdByAddress,
   getCredentials,
   getMailbox,
@@ -27,6 +30,7 @@ import {
   insertInboxFolder,
   insertMailbox,
   lockMailbox,
+  lockMailboxLimit,
   setMailboxStatus,
   updateCredentials,
   type MailboxStatus,
@@ -127,6 +131,11 @@ export async function connectMailbox(
   // Before any login: a duplicate never opens a connection.
   if ((await findMailboxIdByAddress(deps.db, ctx, valid.address)) !== undefined) throw new MailboxExistsError();
 
+  // Before any login, without a lock: an organization at its limit never opens a connection.
+  const plan = await getOrgPlan(deps.db, ctx);
+  if (plan === undefined) throw new HardError("organization not found");
+  if ((await countMailboxesOfOrg(deps.db, ctx)) >= plan.maxMailboxes) throw new MailboxLimitError(plan.maxMailboxes);
+
   const { timeouts } = deps;
   const info = await withDeadline(
     readServerInfo(deps, {
@@ -153,6 +162,12 @@ export async function connectMailbox(
   const secret = deps.secrets.encrypt(valid.password, `mailbox:${mailboxId}`);
 
   const run = async (trx: Db | Transaction<DB>) => {
+    // The lock covers only the check and the inserts, never a login (D6).
+    await lockMailboxLimit(trx, ctx);
+    const current = await getOrgPlan(trx, ctx);
+    if (current === undefined) throw new HardError("organization not found");
+    if ((await countMailboxesOfOrg(trx, ctx)) >= current.maxMailboxes)
+      throw new MailboxLimitError(current.maxMailboxes);
     await insertMailbox(trx, ctx, {
       id: mailboxId,
       address: valid.address,

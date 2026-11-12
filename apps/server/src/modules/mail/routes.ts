@@ -15,7 +15,13 @@ import { createLog } from "../../platform/log";
 
 import { updateMailboxPassword, type ConnectDeps } from "./connect";
 import { connectMailboxRequest } from "./connect-request";
-import { HostNotAllowedError, MailAuthError, MailboxExistsError, MailboxNotFoundError } from "./port";
+import {
+  HostNotAllowedError,
+  MailAuthError,
+  MailboxExistsError,
+  MailboxLimitError,
+  MailboxNotFoundError,
+} from "./port";
 import { removeMailbox, type RemoveDeps } from "./remove";
 import { switchMailboxStatus } from "./status";
 import { getMailboxView, listMailboxViews } from "./views";
@@ -35,11 +41,12 @@ export interface MailRouteDeps {
 }
 
 // B11: the status and code of a connect or password failure; null for an unknown error (the route rethrows: 500).
-// The order matters: the first four are HardErrors. The body never holds the error message (it may name a host).
+// The order matters: the first five are HardErrors. The body never holds the error message (it may name a host).
 export function mailErrorBody(error: unknown): { status: 400 | 404 | 409 | 422 | 502; error: ApiErrorCode } | null {
   if (error instanceof HostNotAllowedError) return { status: 400, error: "host_not_allowed" };
   if (error instanceof MailboxNotFoundError) return { status: 404, error: "not_found" };
   if (error instanceof MailboxExistsError) return { status: 409, error: "mailbox_exists" };
+  if (error instanceof MailboxLimitError) return { status: 409, error: "mailbox_limit" };
   if (error instanceof MailAuthError) return { status: 422, error: "mail_login_failed" };
   if (error instanceof SoftError || error instanceof HardError) return { status: 502, error: "mail_unreachable" };
   return null;
