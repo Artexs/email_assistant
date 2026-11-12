@@ -1,6 +1,8 @@
 # F082 stage 07 — Terms on the server: `TERMS_VERSION`, the reset hook, `/api/me` terms, `POST /api/me/terms` [risky]
 
-Part of [`../plan.md`](../plan.md). Read its F2, F5, L15–L17, L29, L30, B5 and "Rules for every stage" first. Needs stages 1 (`setUserTerms`) and 6 (the hook order).
+Part of [`../plan.md`](../plan.md). Read its F2, F5, L15–L17, L29, L30, B5 and "Rules for every stage" first. Needs stages 1 (`setUserTerms`), 4 (`invite-delivery.ts`) and 6 (the hook order).
+
+Parallel: lane A, last; after stages 4 and 6. Stage 8 may run at the same time.
 
 One step. After this stage every `/reset-password` call must carry `termsVersion`; this stage updates every caller, so the web setup keeps working before stage 11 adds the checkbox. Until stage 11 lands, the setup page sends the version without a checkbox; that is accepted because no deploy happens before stage 15.
 
@@ -13,7 +15,7 @@ One step. After this stage every `/reset-password` call must carry `termsVersion
     - change `apps/server/src/modules/tenancy/routes.ts` (`/me` terms, `POST /me/terms`);
     - change `apps/server/src/platform/http.ts` (`SUSPENDED_WRITE_ALLOW`);
     - change `apps/server/src/web.ts` (`termsAcceptedHandler`, wiring);
-    - change every `createAuth` caller (`onTermsAccepted`) and every `resetPassword` caller (`termsVersion`): `grep -rln "createAuth(\|resetPassword" apps packages` — at least `scripts/invite-delivery.ts`, `scripts/e2e-seed.ts`, `platform/auth.test.ts`, `web-auth.test.ts`, `web-auth-logs.test.ts`, `web-invite-cli.test.ts`, `web-schema.test.ts`, `web-http.test.ts`, `web-reset-request.test.ts`, `web-lockout.test.ts`, `web-pwned.test.ts`, and every test or web file that builds a `Me` object;
+    - change every `createAuth` caller (`onTermsAccepted`) and every `resetPassword` caller (`termsVersion`): `grep -rln "createAuth(\|resetPassword\|reset-password" apps packages --include=*.ts --include=*.tsx` — at least `scripts/invite-delivery.ts`, `scripts/e2e-seed.ts`, `platform/auth.test.ts`, `web-auth.test.ts`, `web-auth-logs.test.ts`, `web-invite-cli.test.ts`, `web-schema.test.ts`, `web-http.test.ts`, `web-reset-request.test.ts`, `web-lockout.test.ts`, `web-pwned.test.ts`, and every test or web file that builds a `Me` object;
     - add `apps/web/src/lib/auth-requests.ts`; change `apps/web/src/lib/password-errors.ts` (+ test), `apps/web/src/islands/SetupPage.tsx`, `apps/web/src/i18n/en.ts`;
     - add `apps/server/test/integration/web-terms.test.ts`.
   - Interfaces:
@@ -43,6 +45,7 @@ One step. After this stage every `/reset-password` call must carry `termsVersion
     - `GET /me`: `terms: { accepted: profile?.termsVersion === TERMS_VERSION, current: TERMS_VERSION }` (`getUserAuthProfile`).
     - `POST /me/terms` (any member, in `tenancyRoutes`): `parseBody(c, termsAcceptBodySchema)`; `version !== TERMS_VERSION` → `409 { error: "terms_outdated" }`; else one transaction: `setUserTerms(trx, userId, TERMS_VERSION, deps.now())` and the audit row in the session's organization (`c.get("ctx")`); answer `204`.
     - `SUSPENDED_WRITE_ALLOW` gets `{ method: "POST", path: /^\/api\/me\/terms$/ }` (a paused account can still accept the terms; it changes no mail and no organization data).
+    - Every `createAuth` caller passes `onTermsAccepted: termsAcceptedHandler(db, () => new Date())` — the server, `invite-delivery.ts`, the e2e seed (so the seeded users get `TERMS_VERSION`, which stage 12 needs) and the tests (or a recording fake where the test checks it).
     - Callers of `auth.api.resetPassword` build the body in a variable first, so the extra field passes the type check: `const body = { newPassword, token, termsVersion: TERMS_VERSION }; await auth.api.resetPassword({ body });`.
     - `setPasswordWithTerms` (L29): `fetch("/api/auth/reset-password", { method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ newPassword, token, termsVersion: TERMS_VERSION }) })`; `res.ok` → `{ ok: true }`; else read the JSON `code` (or `null`). `SetupPage` uses it in place of `authClient.resetPassword`. `lib/password-errors.ts` gets `setupError(status, code)` → `"invalid"` (code `INVALID_TOKEN`) or a `TextKey`: 429 → `error_too_many`, `TERMS_REQUIRED` → `terms_required`, `PASSWORD_COMPROMISED` → `password_pwned`, 503 / `PASSWORD_CHECK_UNAVAILABLE` → `password_check_unavailable`, else `error_generic`. `en.ts`: `terms_required: "Accept the terms to continue."`.
   - Test (`web-terms.test.ts`, `createAuth` as in `web-auth.test.ts`, plus route tests with `webTestApp`):
@@ -57,6 +60,6 @@ One step. After this stage every `/reset-password` call must carry `termsVersion
     9. `packages/core`: `meSchema` parses an object with `terms`; `termsAcceptBodySchema` refuses `{ version: "" }`.
     10. `password-errors.test.ts`: every `setupError` mapping above.
     11. `e2e-seed.test.ts` (existing) still passes: the seed sets passwords with the terms.
-  - Check: Proof (server form, `/tmp/f082-s07`). Also `bun run web:build` passes (paste its last line).
-  - Done when: the tests pass, `grep -rn "resetPassword(" apps --include=*.ts --include=*.tsx` shows no call without `termsVersion`, and the Proof printed `PROOF_OK`.
+  - Check: Proof (web form, `/tmp/f082-s07`, specs `auth.spec.ts`; the job's own e2e DB): the setup page now posts through `setPasswordWithTerms`.
+  - Done when: the tests pass, every hit of `grep -rn "resetPassword(\|reset-password\"" apps --include=*.ts --include=*.tsx` sends `termsVersion` (or is the route itself), and the Proof printed `PROOF_OK`.
   - Out of scope: the checkbox and the legal pages (stage 11); the dialog (stage 12).

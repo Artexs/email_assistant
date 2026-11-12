@@ -2,6 +2,8 @@
 
 Part of [`../plan.md`](../plan.md). Read its F5, F7, L14, L30 and "Rules for every stage" first. Needs stage 3 (the `hooks.before` dispatcher).
 
+Parallel: lane A, after stage 5. Stage 4 and stage 8 may run at the same time.
+
 One step.
 
 - [ ] **6.1 A password from the Have I Been Pwned list is refused on setup, reset and change**

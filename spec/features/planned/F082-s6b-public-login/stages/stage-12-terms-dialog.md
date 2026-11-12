@@ -2,6 +2,8 @@
 
 Part of [`../plan.md`](../plan.md). Read its L15, L17, L18 and "Rules for every stage" (the Playwright rules) first. Needs stages 7 (`/api/me` terms, `POST /api/me/terms`) and 11 (`lib/legal.ts`).
 
+Parallel: lane C, after stage 11. Stage 13 may run at the same time.
+
 Two steps.
 
 - [ ] **12.1 The dialog**

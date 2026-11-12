@@ -17,7 +17,7 @@ The resumed session reads this file, then continues at the first unticked item.
 - [x] Decisions L1–L32.
 - [x] Stage files written (15).
 - [x] Committed (explicit paths).
-- [ ] Cold review (Limen scout job), filed as `plan-review-1.md`, findings fixed.
+- [x] Cold review (Limen scout job), filed as `plan-review-1.md`, findings fixed (2026-11-12).
 - [ ] End summary; the owner's OK.
 
 ## Input
@@ -41,6 +41,14 @@ The owner's words (word for word):
 - **B6 Lane and stops.** The plan stays in `planned/`; the build starts after F077 stage 18. Checkpoint A (review) after the server stages 1–9; checkpoint B (review, VPS deploy with the owner's go) at stage 15.
 - **B7 Publish.** The plan is committed on `master`; the owner's auto-push hook publishes it. It holds no secret.
 
+### Owner decisions after the cold review (2026-11-12, "obviously continue your job with preparing a plan" — the agent's proposed answers stand)
+
+- **B8 Repeated locks are accepted.** Anyone who knows an address can lock that account again every 15 minutes. The operator ends a lock with a new `web:invite` link (a reset clears the lock). Each lock writes one audit row.
+- **B9 `/list-sessions` leaves the allow-list** (stage 13): it returns session tokens, and the panel uses its own route.
+- **B10 Terms are enforced in the panel only.** A user with old terms can still use the API and Telegram until the next panel sign-in. Accepted for the home-VPS setup.
+- **B11 `/change-password` gets no lockout.** It needs a signed-in session and has the rate limit of 5 per minute.
+- **B12 Parallel build.** "if there is possibility, then for each step add some node, whether it can be run in parallel with other ones or it have to be done sequentially. So the orchestrator in the alignment will be able to run implementation on those all tasks, possibly in parallel." → § "Parallel plan" and a "Parallel:" line in every stage file.
+
 ## Differences found at collect (2026-11-12)
 
 1. The handoff says S6a stage 11 runs and stages 12–18 are left. `master` has stages 1–17 landed (`117e268`). Only F077 stage 18 (group review, VPS deploy, owner) is left. The stage files cite the real code.
@@ -57,14 +65,14 @@ The owner's words (word for word):
 
 - **F1 Sign-in answers.** A wrong password, an unknown address and an error thrown from `hooks.before` with `APIError.from("UNAUTHORIZED", { code: "INVALID_EMAIL_OR_PASSWORD", message: "Invalid email or password" })` give the same answer: `401 {"message":"Invalid email or password","code":"INVALID_EMAIL_OR_PASSWORD"}`, no cookie. Times in the probe: 53, 48 and 46 ms (the locked case called `ctx.context.password.hash(password)` first). An unknown address hashes the password (`api/routes/sign-in.mjs`), so its time matches a wrong password.
 - **F2 Hooks.** `hooks.before` (`createAuthMiddleware` from `better-auth/api`) gets `ctx.path` and the parsed `ctx.body` (on `/reset-password` also extra fields such as `termsVersion`; the endpoint's Zod schema strips them later). `hooks.after` gets `ctx.context.returned`: the `APIError` (with `statusCode` and `body.code`) of a failed call, or the result of a successful one; on a successful sign-in `ctx.context.newSession.user.id` is set. An error thrown in `hooks.before` skips the endpoint and `hooks.after`. A value returned from `hooks.before` (`return ctx.json({...})`) becomes the answer (status 200) and skips the endpoint. `ctx.context.internalAdapter.findUserByEmail(email)` works in a hook.
-- **F3 Reset request.** `/request-password-reset` answers `200 {"status":true,"message":"If this email exists in our system, check your email for the reset link"}` for a known and an unknown address; for an unknown one it writes no row and sends nothing. It awaits `sendResetPassword` (probe: 1 504 ms with a 1.5 s send). A rejected send is logged by Better Auth with the error text, and the probe's error text held the reset URL: our send function never rejects (L8). This route does not lower-case the address (sign-in does); `users.email` is lower-case (`users_email_lower_check`).
+- **F3 Reset request.** `/request-password-reset` answers `200 {"status":true,"message":"If this email exists in our system, check your email for the reset link"}` for a known and an unknown address; for an unknown one it writes no row and sends nothing. It awaits `sendResetPassword` (probe: 1 504 ms with a 1.5 s send). A rejected send is logged by Better Auth with the error text, and the probe's error text held the reset URL: our send function never rejects (L8). `findUserByEmail` lower-cases the address (`db/internal-adapter.mjs:620,626-627`; corrected after the cold review); `users.email` is lower-case (`users_email_lower_check`).
 - **F4 Reset expiry is global**: `emailAndPassword.resetPasswordTokenExpiresIn` (default 3 600 s), no per-call value (`api/routes/password.mjs:73`).
 - **F5 `/reset-password`.** Order: token check → length check → `ctx.context.password.hash(newPassword)` → write → `onPasswordReset({ user })`. Inside `onPasswordReset`, `getCurrentAuthEndpointContext()` has `path` but no `body`. A `hooks.before` error (probe: `TERMS_REQUIRED`, 400) stops the request before anything is written.
 - **F6 Sessions.** `/list-sessions` answers `403 SESSION_NOT_FRESH` when the session is older than `session.freshAge` (default 1 day), and it returns each session's `token`. `ctx.context.internalAdapter.listSessions(userId)` reads the sessions without that check (`db/internal-adapter.mjs:190`). `/revoke-sessions` and `/revoke-other-sessions` run `hooks.after` with `ctx.context.session.user.id` set (probe).
 - **F7 Leaked-password plugin.** `plugins/haveibeenpwned` uses `betterFetch` with no timeout and no way to inject `fetch`. The real range API (2026-11-12, header `Add-Padding: true`): `200`, about 79 kB of lines `SUFFIX:COUNT` (35 hex, upper-case, CRLF); padding lines have count `0`. `password1234` (SHA-1 `E6B6A…`) is listed (count 443 397); `correct-horse-battery-staple` (SHA-1 `DD606…`) is not listed.
 - **F8 IMAP connect.** imapflow passes `{ host, servername, port, ...options.tls }` to `net.connect` / `tls.connect`; the option `servername` sets the TLS name; without it the name is `host` when `host` is not an IP literal (`lib/imap-flow.js:455`, `:2366`).
-- **F9 SMTP connect.** nodemailer resolves a host name itself (`shared/index.js` `resolveHostname`, a process-wide cache) and skips that for an IP literal. The option `servername` sets the TLS name (`smtp-connection/index.js:138`, `:280`). nodemailer has no `lookup` option, so the only way to control the address is to pass an IP.
-- **F10 Repo.** `request-password-reset` is not in `AUTH_ALLOWED_PATHS` (404, the S5 block). `PUBLIC_PAGE_PATHS` holds `/login`, `/setup`, `/404.html`, assets. `host-check.ts` lacks `100.64.0.0/10`, `198.18.0.0/15`, `192.0.0.0/24`; only the web connect form calls `isLocalMailHost`. Every IMAP connect goes through `connectImapClient`; every SMTP connect builds its options with `smtpTransportOptions` (`verifySmtpLogin`, `sendProbeToSelf`, `openSmtpSender`, `imap/probe-send.ts`). `createOperatorNotices` is built in `main.ts` before `webDeps`. GreenMail gives plain SMTP on `127.0.0.1:3025` and IMAP on `3143`. Callers of `resetPassword`: `scripts/e2e-seed.ts`, `platform/auth.test.ts`, `web-auth.test.ts`, `web-auth-logs.test.ts`, `web-invite-cli.test.ts`, `web-schema.test.ts`, `web-http.test.ts`, `islands/SetupPage.tsx`. Scripts that open mail connections and call `loadConfig`: `job-run`, `mailbox-audit`, `mailbox-backfill`, `mailbox-check`, `mailbox-connect`, `mailbox-password`, `mailbox-probe-move`, `mailbox-probe-send`, `mailbox-rescan`, `mailbox-seed`, `mailbox-settings`, `testmail-target`, and `main.ts`.
+- **F9 SMTP connect.** nodemailer resolves a host name itself (`dist/esm/shared/index.js` `resolveHostname`, a process-wide cache) and skips that for an IP literal. The option `servername` sets the TLS name (`dist/esm/smtp-connection/index.js:138`, `:280`; `dist/cjs/smtp-connection/index.js:176`, `:317`). nodemailer has no `lookup` option, so the only way to control the address is to pass an IP.
+- **F10 Repo.** `request-password-reset` is not in `AUTH_ALLOWED_PATHS` (404, the S5 block). `PUBLIC_PAGE_PATHS` holds `/login`, `/setup`, `/404.html`, assets. `host-check.ts` lacks `100.64.0.0/10`, `198.18.0.0/15`, `192.0.0.0/24`; only the web connect form calls `isLocalMailHost`. Every IMAP connect goes through `connectImapClient`; every SMTP connect builds its options with `smtpTransportOptions` (`verifySmtpLogin`, `sendProbeToSelf`, `openSmtpSender`, `imap/probe-send.ts`). `createOperatorNotices` is built in `main.ts` before `webDeps`. GreenMail gives plain SMTP on `127.0.0.1:3025` and IMAP on `3143`. Callers of `resetPassword` or the `/reset-password` path: `scripts/e2e-seed.ts`, `web-auth.test.ts`, `web-auth-logs.test.ts`, `web-invite-cli.test.ts`, `islands/SetupPage.tsx` (corrected after the cold review); S6b's own tests add more. Entry scripts that import `../modules/mail` or `../composition`: `e2e-seed`, `job-run`, `mailbox-audit`, `mailbox-backfill`, `mailbox-check`, `mailbox-connect`, `mailbox-password`, `mailbox-probe-move`, `mailbox-probe-send`, `mailbox-rescan`, `mailbox-seed`, `mailbox-settings`, `testmail-target`, and `main.ts`. The two probe scripts read `process.env` and do not call `loadConfig`. Bun's `Bun.spawn` without `env` inherits the parent env; GreenMail ports come from `TEST_SMTP_PORT`, `TEST_IMAP_PORT`, `TEST_IMAP_HOST` (defaults 3025, 3143, 127.0.0.1).
 
 ## Not verified (the stage that checks it)
 
@@ -87,7 +95,7 @@ The owner's words (word for word):
 - **L7 Operator event (D31).** `OperatorNoticeKind` gets `auth_mail_failed`; `OperatorNotices.authMailFailed(ctx, userId, kind, code, now)`: never throws, never blocks. Key `auth_mail_failed:<userId>:<code>:<YYYY-MM-DD UTC>`. Text `Auth mail <kind> to user <userId> of org <orgId> failed (<code>).` The organization is the user's oldest membership (`listMembershipsOfUser`); no membership → only the `warn` line. Why: D31 (one notice per user, code and day).
 - **L8 The server never waits for the mail.** The server's `sendResetPassword` starts the send in a tracked background set (`createAuthMailTasks`) and returns at once; the task reads the locale, sends, and on failure logs and calls the operator event. It never rejects (F3). Rejected: `advanced.backgroundTasks.handler` (it changes every Better Auth background task, and its error log can hold the URL). Why: D8.
 - **L9 Reset request open only with the sender on.** `isAllowedAuthPath(method, path, { resetRequest })`: `/request-password-reset` (POST) passes only when `resetRequest` is true. `WebDeps.resetRequestOpen` (absent = false). `web.ts` sets it to `authMailSettings(config) !== null`. Without the sender: 404 as in S5. Why: D7, P18.
-- **L10 Reset request limits and answer.** Better Auth `customRules["/request-password-reset"] = { window: 900, max: 3 }` (per client address). Per address: an in-memory map in `createBetterAuth`, key = trimmed lower-case address, at most 3 requests in a sliding hour; the 4th returns the same 200 body from `hooks.before` (`RESET_REQUEST_ANSWER`, F2, F3) and sends nothing. The map is per process (one server). Link expiry: `AuthDeps.resetLinkTtlSeconds` (required): 3 600 in the server, 86 400 in the CLIs and the e2e seed. The `/forgot` form lower-cases the address. Why: D8, F3, F4.
+- **L10 Reset request limits and answer.** Better Auth `customRules["/request-password-reset"] = { window: 900, max: 3 }` (per client address). Per address: an in-memory map in `createBetterAuth`, key = trimmed lower-case address, at most 3 requests in a sliding hour; the 4th returns the same 200 body from `hooks.before` (`RESET_REQUEST_ANSWER`, F2, F3) and sends nothing. The map is per process (one server). Link expiry: `AuthDeps.resetLinkTtlSeconds` (required): 3 600 in the server, 86 400 in the CLIs and the e2e seed. The `/forgot` form lower-cases the address too (the limiter key and Better Auth agree). Why: D8, F3, F4.
 
 **Lockout (stage 5)**
 
@@ -122,7 +130,7 @@ The owner's words (word for word):
 - **L24 Resolve once, connect to the checked address.** `mail/host-guard.ts` `resolveMailHost(host, policy)` → `{ host, servername? }`: `allowLocal` → `{ host }` unchanged; an IP literal → refused when local; a name → refused when `isLocalMailHost`; else `lookup(host)` (all addresses); any local address → refused (`HostNotAllowedError`); else `{ host: <first address>, servername: <name> }`. A lookup error → `SoftError` `mail host lookup failed (<code>)`. IMAP connects to that address with `servername` (F8); SMTP the same (F9). So a DNS change after the connect form (rebinding) is caught at the next sync or send, and no second lookup happens between check and connect. Why: D11, F8, F9.
 - **L25 Every connect goes through the check.** `imapFlowOptions(opts, target)` and the renamed `buildSmtpTransportOptions(opts, target)` take a required `target: MailTarget`, so the typecheck finds every caller; `connectImapClient` and the new async `smtpConnectOptions(opts)` resolve first. Why: D11 ("every IMAP and SMTP connect").
 - **L26 One process-wide policy, fail closed.** `configureMailHosts({ allowLocal, lookup? })` sets it; before any call the policy refuses local hosts. `main.ts` and every script of F10 call it after `loadConfig`; a unit test checks those files. The test runs set `allowLocal: true` in a preload (`bunfig.toml` `[test] preload`), because GreenMail runs on `127.0.0.1`; the guard's own tests pass an explicit policy. Rejected: a policy field on every connect option (about 40 call sites and test builders). Why: D11.
-- **L27 One config key.** `MAIL_ALLOW_LOCAL_HOSTS` (`true` / `false`, default `false`) for the form and every connect. `WEB_MAIL_ALLOW_LOCAL` stays an accepted old name: `mailAllowLocal(config)` = `MAIL_ALLOW_LOCAL_HOSTS ?? WEB_MAIL_ALLOW_LOCAL ?? "false"`; with only the old key, the server logs `warn` `WEB_MAIL_ALLOW_LOCAL is an old name: use MAIL_ALLOW_LOCAL_HOSTS`. Why: dev and the VPS keep working with no `.env` change.
+- **L27 One config key.** `MAIL_ALLOW_LOCAL_HOSTS` (`true` / `false`, no schema default; unset counts as `false`) for the form and every connect. `WEB_MAIL_ALLOW_LOCAL` stays an accepted old name (its schema default goes): `mailAllowLocal(config)` = `(MAIL_ALLOW_LOCAL_HOSTS ?? WEB_MAIL_ALLOW_LOCAL) === "true"`; with only the old key, the server logs `warn` `WEB_MAIL_ALLOW_LOCAL is an old name: use MAIL_ALLOW_LOCAL_HOSTS`. Why: dev and the VPS keep working with no `.env` change.
 
 **Web (stages 10–13)**
 
@@ -162,23 +170,23 @@ Every line maps to a stage test or check (stage in brackets).
 - A stage that changes a type or a required field fixes every caller and test in the same stage, so all checks pass at its commit.
 - Stage files by explicit path (`git add <paths>`), never `git add -A`.
 - Only stage 1 adds a migration. No stage changes `bun.lock` or `package.json` dependencies. If you think you need one, stop and ask.
-- Playwright (stages 9–13): this machine has no Playwright browser; run `CHROMIUM_PATH=/usr/bin/chromium bun run test:e2e -- <spec>`. Before the first e2e run, give the job its own e2e database: first remove the copied lines with `sed -i -E '/^E2E_(MIGRATOR_)?DATABASE_URL=/d' .env`, then `bun run db:worktree f082_sNN_e2e | grep -E '^(DATABASE_URL|MIGRATOR_DATABASE_URL)=' | sed 's/^/E2E_/' >> .env` (NN = your stage; the name must end in `_e2e`). Never point e2e at the shared `email_assistant_e2e`.
+- Playwright (stages 7, 9–13): this machine has no Playwright browser; run `CHROMIUM_PATH=/usr/bin/chromium bun run test:e2e -- <spec>`. Before the first e2e run, give the job its own e2e database: first remove the copied lines with `sed -i -E '/^E2E_(MIGRATOR_)?DATABASE_URL=/d' .env`, then `bun run db:worktree f082_sNN_e2e | grep -E '^(DATABASE_URL|MIGRATOR_DATABASE_URL)=' | sed 's/^/E2E_/' >> .env` (NN = your stage; the name must end in `_e2e`). Never point e2e at the shared `email_assistant_e2e`. Run every `test:int` and `test:e2e` (also outside the Proof) under `flock /tmp/email-assistant-shared-tests.lock`.
 - A gap or a deviation is a question in your final message, not a choice.
 
 ## Proof
 
-Run after the last commit, as one bash call with nothing after it; read the logs in a separate call. In the final message list as proven only what a saved log shows.
+Run after the last commit, as one bash call with nothing after it; read the logs in a separate call. In the final message list as proven only what a saved log shows. `test:int` and `test:e2e` run under one machine-wide lock (`flock /tmp/email-assistant-shared-tests.lock`), because parallel jobs share GreenMail and the e2e ports 8081 and 8092 (CLAUDE.md: one `test:int` at a time). A job may wait at the lock; that is normal.
 
-Server stages (1–9, 14):
-
-```
-mkdir -p /tmp/f082-sNN && bun run lint > /tmp/f082-sNN/lint.log 2>&1 && bun run typecheck > /tmp/f082-sNN/typecheck.log 2>&1 && bun run test:unit > /tmp/f082-sNN/unit.log 2>&1 && bun run test:int > /tmp/f082-sNN/int.log 2>&1 && echo PROOF_OK
-```
-
-Web stages (10–13) add the build and the stage's Playwright specs (named in the stage file) to the same chain:
+Server stages (1–6, 8, 14):
 
 ```
-mkdir -p /tmp/f082-sNN && bun run lint > /tmp/f082-sNN/lint.log 2>&1 && bun run typecheck > /tmp/f082-sNN/typecheck.log 2>&1 && bun run test:unit > /tmp/f082-sNN/unit.log 2>&1 && bun run test:int > /tmp/f082-sNN/int.log 2>&1 && bun run web:build > /tmp/f082-sNN/build.log 2>&1 && CHROMIUM_PATH=/usr/bin/chromium bun run test:e2e -- <specs> > /tmp/f082-sNN/e2e.log 2>&1 && echo PROOF_OK
+mkdir -p /tmp/f082-sNN && bun run lint > /tmp/f082-sNN/lint.log 2>&1 && bun run typecheck > /tmp/f082-sNN/typecheck.log 2>&1 && bun run test:unit > /tmp/f082-sNN/unit.log 2>&1 && flock /tmp/email-assistant-shared-tests.lock bun run test:int > /tmp/f082-sNN/int.log 2>&1 && echo PROOF_OK
+```
+
+Web stages (7, 9–13) add the build and the stage's Playwright specs (named in the stage file) to the same chain:
+
+```
+mkdir -p /tmp/f082-sNN && bun run lint > /tmp/f082-sNN/lint.log 2>&1 && bun run typecheck > /tmp/f082-sNN/typecheck.log 2>&1 && bun run test:unit > /tmp/f082-sNN/unit.log 2>&1 && flock /tmp/email-assistant-shared-tests.lock bun run test:int > /tmp/f082-sNN/int.log 2>&1 && bun run web:build > /tmp/f082-sNN/build.log 2>&1 && flock /tmp/email-assistant-shared-tests.lock env CHROMIUM_PATH=/usr/bin/chromium bun run test:e2e -- <specs> > /tmp/f082-sNN/e2e.log 2>&1 && echo PROOF_OK
 ```
 
 ## User checkpoints
@@ -212,24 +220,52 @@ limen spawn --engine pi --provider claude-bridge --model claude-opus-5-5 --think
 
 `[risky]` = one step per stage.
 
-- [ ] Stage 1 — Migration `auth_public`, `db:types`, tenancy user columns `[risky]` — [`stage-01-migration.md`](stages/stage-01-migration.md)
-- [ ] Stage 2 — Auth-mail config, sender, texts, operator event `auth_mail_failed` — [`stage-02-auth-mail.md`](stages/stage-02-auth-mail.md)
-- [ ] Stage 3 — Reset request: open with the sender, same answer, limits, not awaited, 1 h `[risky]` — [`stage-03-reset-request.md`](stages/stage-03-reset-request.md)
-- [ ] Stage 4 — `org:invite`, `web:invite` mails or prints, 24 h `[risky]` — [`stage-04-invite.md`](stages/stage-04-invite.md)
-- [ ] Stage 5 — Lockout `[risky]` — [`stage-05-lockout.md`](stages/stage-05-lockout.md)
-- [ ] Stage 6 — Leaked-password check `[risky]` — [`stage-06-pwned.md`](stages/stage-06-pwned.md)
-- [ ] Stage 7 — Terms on the server: `TERMS_VERSION`, the reset hook, `/api/me` terms, `POST /api/me/terms` `[risky]` — [`stage-07-terms-server.md`](stages/stage-07-terms-server.md)
-- [ ] Stage 8 — Mail host guard: ranges, `resolveMailHost`, policy `[risky]` — [`stage-08-host-guard.md`](stages/stage-08-host-guard.md)
-- [ ] Stage 9 — Mail host guard on every IMAP and SMTP connect, config key, scripts `[risky]` — [`stage-09-host-guard-wiring.md`](stages/stage-09-host-guard-wiring.md)
+- [ ] Stage 1 — **lane A, first** — Migration `auth_public`, `db:types`, tenancy user columns `[risky]` — [`stage-01-migration.md`](stages/stage-01-migration.md)
+- [ ] Stage 2 — lane A — Auth-mail config, sender, texts, operator event `auth_mail_failed` — [`stage-02-auth-mail.md`](stages/stage-02-auth-mail.md)
+- [ ] Stage 3 — lane A — Reset request: open with the sender, same answer, limits, not awaited, 1 h `[risky]` — [`stage-03-reset-request.md`](stages/stage-03-reset-request.md)
+- [ ] Stage 4 — lane A, **parallel with 5 or 6** — `org:invite`, `web:invite` mails or prints, 24 h `[risky]` — [`stage-04-invite.md`](stages/stage-04-invite.md)
+- [ ] Stage 5 — lane A — Lockout `[risky]` — [`stage-05-lockout.md`](stages/stage-05-lockout.md)
+- [ ] Stage 6 — lane A — Leaked-password check `[risky]` — [`stage-06-pwned.md`](stages/stage-06-pwned.md)
+- [ ] Stage 7 — lane A, last — Terms on the server: `TERMS_VERSION`, the reset hook, `/api/me` terms, `POST /api/me/terms` `[risky]` — [`stage-07-terms-server.md`](stages/stage-07-terms-server.md)
+- [ ] Stage 8 — lane B, **parallel with 1–7** — Mail host guard: ranges, `resolveMailHost`, policy `[risky]` — [`stage-08-host-guard.md`](stages/stage-08-host-guard.md)
+- [ ] Stage 9 — joins A and B (after 7 and 8) — Mail host guard on every IMAP and SMTP connect, config key, scripts `[risky]` — [`stage-09-host-guard-wiring.md`](stages/stage-09-host-guard-wiring.md)
 - [ ] Checkpoint A (coordinator, owner)
-- [ ] Stage 10 — `/forgot` page and the login link — [`stage-10-forgot-page.md`](stages/stage-10-forgot-page.md)
-- [ ] Stage 11 — Setup terms checkbox and legal stub pages — [`stage-11-setup-terms.md`](stages/stage-11-setup-terms.md)
-- [ ] Stage 12 — Terms dialog after sign-in — [`stage-12-terms-dialog.md`](stages/stage-12-terms-dialog.md)
-- [ ] Stage 13 — Session list and the sign-out audit rows — [`stage-13-sessions.md`](stages/stage-13-sessions.md)
-- [ ] Stage 14 — Docs, ADR 0016 amendment, note — [`stage-14-docs.md`](stages/stage-14-docs.md)
+- [ ] Stage 10 — lane C, **parallel with 13** — `/forgot` page and the login link — [`stage-10-forgot-page.md`](stages/stage-10-forgot-page.md)
+- [ ] Stage 11 — lane C, **parallel with 13** — Setup terms checkbox and legal stub pages — [`stage-11-setup-terms.md`](stages/stage-11-setup-terms.md)
+- [ ] Stage 12 — lane C, **parallel with 13** — Terms dialog after sign-in — [`stage-12-terms-dialog.md`](stages/stage-12-terms-dialog.md)
+- [ ] Stage 13 — lane D, **parallel with 10–12**; review job, not `[risky]` — Session list and the sign-out audit rows — [`stage-13-sessions.md`](stages/stage-13-sessions.md)
+- [ ] Stage 14 — after all of 1–13 — Docs, ADR 0016 amendment, note — [`stage-14-docs.md`](stages/stage-14-docs.md)
 - [ ] Stage 15 — Checkpoint B: review, VPS deploy and checks, close (coordinator, owner) — [`stage-15-checkpoint.md`](stages/stage-15-checkpoint.md)
 
-Order: strictly 1 → 15. Dependencies: 2 needs 1 (locale); 3 needs 2; 4 needs 2, 3; 5 needs 1, 3; 6 needs 3; 7 needs 1, 6; 9 needs 8; 10 needs 3; 11 needs 7; 12 needs 7, 11; 13 needs 3; 14 after 13; 15 last. No stage runs in parallel with another S6b stage (they share `platform/auth.ts`). Stage 1 must not run next to another job that adds a migration.
+## Parallel plan
+
+Lanes run side by side; inside a lane the stages run in order. A stage starts only when every stage it needs is landed on `master`.
+
+| Stage | Needs (landed) | May run at the same time as | Why not more                                                                                                |
+| ----- | -------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 1     | —              | 8                           | the only migration; no other migration or `bun.lock` job next to it                                         |
+| 2     | 1              | 8                           | lane A stages share `platform/auth.ts`, `web.ts`, `config.ts`                                               |
+| 3     | 2              | 8                           | as above                                                                                                    |
+| 4     | 3              | 5 or 6, 8                   | touches only scripts and `package.json` `scripts`; stage 7 edits `invite-delivery.ts` later                 |
+| 5     | 3              | 4, 8                        | shares `auth.ts` with 6                                                                                     |
+| 6     | 5              | 4, 8                        | shares `auth.ts` with 7                                                                                     |
+| 7     | 4, 6           | 8                           | edits `invite-delivery.ts` (4) and `auth.ts` (6)                                                            |
+| 8     | —              | 1–7                         | files only in `modules/mail/host-check.ts`, `host-guard.ts`, `mail/index.ts`                                |
+| 9     | 7, 8           | —                           | edits `config.ts`, `web.ts`, `main.ts`, `e2e-seed.ts`, `e2e/env.ts` of lane A                               |
+| A     | 9              | —                           | checkpoint: the coordinator stops                                                                           |
+| 10    | A              | 13                          | shares `PUBLIC_PAGE_PATHS` with 11                                                                          |
+| 11    | 10             | 13                          | shares `SetupPage` and `lib/legal.ts` with 12                                                               |
+| 12    | 11             | 13                          | —                                                                                                           |
+| 13    | A              | 10, 11, 12                  | its `en.ts` keys go in the `acct_` group, its `http.ts` change is `WebSession`: no shared lines with lane C |
+| 14    | 1–13           | —                           | reads the built code                                                                                        |
+| 15    | 14             | —                           | owner, VPS                                                                                                  |
+
+Rules for parallel jobs:
+
+- `test:int` and `test:e2e` run under the shared lock (§ "Proof"); the rest of the Proof runs in parallel.
+- Two parallel jobs never change the same lines. When `limen land` of the second job reports a conflict, run `limen continue <job-id> "Run git merge master in your worktree, fix the conflict, run the Proof again."` with the same engine flags, then land again.
+- New `en.ts` keys go into the group the stage file names, never at the end of the file (two jobs that both add at the end conflict).
+- Before checkpoint A at most two S6b jobs run at once (lane A and lane B); after it at most two (lane C and lane D).
 
 ## How to run (coordinator)
 
@@ -245,13 +281,23 @@ Order: strictly 1 → 15. Dependencies: 2 needs 1 (locale); 3 needs 2; 4 needs 2
 
 3. When the job finishes: read its final message and `/tmp/f082-sNN/*.log`. For a stage in "Review", spawn the review job and wait for it; a finding → `limen continue <job-id> "<fix>"` with the same engine flags (use the full job id), then review again (at most 2 rounds, then the owner decides).
 4. Land: `limen land <job-id> --yes --keep-open`. Drop the job DB from the main checkout: `bun run db:worktree <YYYY-MM-DD>-<hash> --drop`; for stages 9–13 also `bun run db:worktree f082_sNN_e2e --drop`.
-5. Only after the land, spawn the next stage. Stop after stage 1 (S6b-U1), after stage 9 (checkpoint A, S6b-U2, S6b-U3), and at stage 15.
+5. Spawn a stage only when every stage it needs is landed (§ "Parallel plan"). Start: spawn stage 1 and stage 8 together. Stop after stage 1 lands (S6b-U1: `db:migrate` on the dev DB; lane B may go on), after stage 9 (checkpoint A, S6b-U2, S6b-U3), and at stage 15. Stage 9 gets `--timeout 120m`.
 6. Workers often break the one-`&&` proof form. Accept a check when its saved log shows the pass. A check with no proof at all → `limen continue`.
 
 ## Cold review
 
-Not run yet.
+Scout job `2026-11-12-f082-plan-review-39de5ac0` (Sonnet 5.5, high; base `2e7d800`). Its packet is filed whole in [`plan-review-1.md`](plan-review-1.md). Result: blocker 0, major 3, minor 15, question 6 (4 product questions, 2 design gaps). What changed:
+
+1. Major, lockout leak (stage 5): the `before` hook now runs Better Auth's own input checks first (raw `z.email()`, password ≤ 128) and returns when they fail; test 13 compares a locked and a free user on both 400 answers.
+2. Major, script list (stage 9, F10): the selection rule is now "imports `../modules/mail…` or `../composition`" (`job-run` sends mail through `committerDeps`); the two probe scripts use `mailAllowLocalFromEnv(process.env)`; the static test asserts its selection is not empty.
+3. Major, stage 9 size: not split (the guard and its configuration must land together); the 16 spawn tests need no edit because the preload sets `process.env.MAIL_ALLOW_LOCAL_HOSTS`; spawn with `--timeout 120m`.
+4. Minor: F3 corrected (Better Auth lower-cases the address); F8/F9 paths name `dist/esm` and `dist/cjs`; F10 caller list corrected; L27 has no schema default; stage 13 template typo; `tasks/done` is made in stage 15; GreenMail ports from `TEST_*` env; the outer mail timer is 20 s so the error code stays stable; stage 7 names `termsAcceptedHandler` for the e2e seed, greps `reset-password` too, and runs `auth.spec`; stage 3 test 8 blanks the `AUTH_*` keys; `known-alerts.md` is in stage 14; the mail-task wait at shutdown is capped at 5 s.
+5. Design gaps: the guard pins the first IPv4 address, else the first address (stage 8 test 11); a refused host stays a log line, and stage 14 opens a follow-up ticket.
+6. Questions: answered as B8–B11.
+
+Not changed: stages 3 and 7 stay one stage each (their size is many one-line caller updates); the timing test of stage 5 keeps its 3-runs rule.
 
 ## Log
 
-- 2026-11-12: Planned with the `plan-task` skill (handoff `~/.pi/agent/notes/2026-11-12-handoff-s6b-stage-plan.md`). Collect, probes, Q1–Q7 (owner: "Okay, approve the defaults."), L1–L32, 15 stage files.
+- 2026-11-12: Planned with the `plan-task` skill (handoff `~/.pi/agent/notes/2026-11-12-handoff-s6b-stage-plan.md`). Collect, probes, Q1–Q7 (owner: "Okay, approve the defaults."), L1–L32, 15 stage files; committed `2e7d800`.
+- 2026-11-12: Cold review (scout job): 3 major, 15 minor, 6 questions; all handled (§ "Cold review"). B8–B12; the parallel plan (owner's request) and the shared-test lock in the Proof.

@@ -2,6 +2,8 @@
 
 Part of [`../plan.md`](../plan.md). Read its F8–F10, L23, L24, L26 and "Rules for every stage" first, and `apps/server/src/modules/mail/host-check.ts`.
 
+Parallel: lane B; needs nothing. It may run at the same time as any of stages 1–7 (its files are only in `modules/mail/`).
+
 One step. This stage builds and tests the guard; nothing calls it yet (stage 9 wires it into every connect).
 
 - [ ] **8.1 The address check of a mail host**
@@ -35,7 +37,7 @@ One step. This stage builds and tests the guard; nothing calls it yet (stage 9 w
 
   - Decisions (L23, L24):
     - Add `["100.64.0.0", 10]`, `["198.18.0.0", 15]`, `["192.0.0.0", 24]` to the IPv4 list.
-    - `resolveMailHost` order: (1) `policy.allowLocal` → `{ host }` unchanged, no lookup. (2) `isLocalMailHost(host)` → `throw new HostNotAllowedError()` (from `./port`), no lookup. (3) `name = host.trim().replace(/\.+$/, "")`; `literal = name.replace(/^\[/, "").replace(/\]$/, "")`; `isIP(literal) !== 0` → `{ host: literal }` (no lookup; step 2 already refused a local literal). (4) `addresses = await policy.lookup(name)`; a rejection → `throw new SoftError(\`mail host lookup failed (${code})\`, { cause })`with`code`= the error's string`code`or`UNKNOWN`. (5) no address → `SoftError("mail host lookup failed (ENODATA)")`. (6) any address with `isLocalAddress(address)`→`throw new HostNotAllowedError()`. (7) `{ host: addresses[0].address, servername: name }`.
+    - `resolveMailHost` order: (1) `policy.allowLocal` → `{ host }` unchanged, no lookup. (2) `isLocalMailHost(host)` → `throw new HostNotAllowedError()` (from `./port`), no lookup. (3) `name = host.trim().replace(/\.+$/, "")`; `literal = name.replace(/^\[/, "").replace(/\]$/, "")`; `isIP(literal) !== 0` → `{ host: literal }` (no lookup; step 2 already refused a local literal). (4) `addresses = await policy.lookup(name)`; a rejection → `throw new SoftError(\`mail host lookup failed (${code})\`, { cause })`with`code`= the error's string`code`or`UNKNOWN`. (5) no address → `SoftError("mail host lookup failed (ENODATA)")`. (6) any address with `isLocalAddress(address)`→`throw new HostNotAllowedError()`. (7) the first IPv4 address, else the first address: `{ host: <that address>, servername: name }`. Why IPv4 first: the old code let `net.connect`pick, and most mail hosts (the pilot's`poczta.interia.pl` too) answer IPv4; a host whose chosen address is dead fails the connect (accepted; cold review finding 5).
     - No log line in this module. Error texts hold no host name and no address.
     - `index.ts` exports `configureMailHosts`, `mailHostPolicy`, `resolveMailHost`, `isLocalAddress`, `type MailTarget`, `type LookupAll`.
   - Test:
@@ -49,6 +51,7 @@ One step. This stage builds and tests the guard; nothing calls it yet (stage 9 w
     8. A fake that rejects with `{ code: "ENOTFOUND" }` → `SoftError` with message `mail host lookup failed (ENOTFOUND)`; the message holds no `x.test`.
     9. `allowLocal: true` → `resolveMailHost("localhost")` → `{ host: "localhost" }`, no lookup.
     10. `DEFAULT_MAIL_HOST_POLICY.allowLocal === false`; `configureMailHosts({ allowLocal: true })` → `mailHostPolicy().allowLocal === true`; the test restores the previous policy in `finally`.
+    11. Fake → `[{ address: "2001:4860:4860::8888", family: 6 }, { address: "93.184.216.34", family: 4 }]` → `{ host: "93.184.216.34", servername: … }`; fake → only the IPv6 address → that address.
   - Check: Proof (server form, `/tmp/f082-s08`).
   - Done when: the tests pass and the Proof printed `PROOF_OK`.
   - Out of scope: the connect wiring, the config key and the scripts (stage 9).

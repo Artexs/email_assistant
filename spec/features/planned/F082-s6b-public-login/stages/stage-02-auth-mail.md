@@ -2,6 +2,8 @@
 
 Part of [`../plan.md`](../plan.md). Read its L3–L7, B1, B2 and "Rules for every stage" first.
 
+Parallel: lane A, after stage 1. Stage 8 may run at the same time.
+
 Three steps. Nothing calls the sender yet (stages 3–5 wire it). Needs stage 1 (`UserLocale`).
 
 - [ ] **2.1 Config keys**
@@ -74,8 +76,8 @@ Three steps. Nothing calls the sender yet (stages 3–5 wire it). Needs stage 1 
     ```
 
   - Decisions:
-    - `authMailTransportOptions` (L4): `host`, `port`, `auth: { user, pass }`, `connectionTimeout`, `greetingTimeout`, `socketTimeout` = `timeoutMs`. Host `127.0.0.1`, `localhost` or `::1` → `secure: false, ignoreTLS: true`. Else `security "tls"` → `secure: true`; `"starttls"` → `secure: false, requireTLS: true`. Never set `tls.rejectUnauthorized`.
-    - `send`: one transport per mail; `sendMail({ from: { name: "Email Assistant", address: settings.from }, to: mail.to, subject, text })` raced against a `timeoutMs` timer (timer → code `TIMEOUT`); `close()` in `finally`. Success → `{ ok: true }` and `log.info` `auth mail <kind> sent to user <userId>`. Failure → `{ ok: false, code }` and `log.warn` `auth mail <kind> to user <userId> failed: <code>` (L6). Nothing else of the error goes to the log.
+    - `authMailTransportOptions` (L4): `host`, `port`, `auth: { user, pass }`, `connectionTimeout`, `greetingTimeout`, `socketTimeout` = `timeoutMs` (15 000). Host `127.0.0.1`, `localhost` or `::1` → `secure: false, ignoreTLS: true`. Else `security "tls"` → `secure: true`; `"starttls"` → `secure: false, requireTLS: true`. Never set `tls.rejectUnauthorized`.
+    - `send`: one transport per mail; `sendMail({ from: { name: "Email Assistant", address: settings.from }, to: mail.to, subject, text })` raced against an outer timer of `timeoutMs + 5_000` ms (20 000; it only catches a hang, so nodemailer's own `ETIMEDOUT` normally wins and the notice key stays stable; timer → code `TIMEOUT`); `close()` in `finally`. Success → `{ ok: true }` and `log.info` `auth mail <kind> sent to user <userId>`. Failure → `{ ok: false, code }` and `log.warn` `auth mail <kind> to user <userId> failed: <code>` (L6). Nothing else of the error goes to the log.
     - `authMailErrorCode` (L6): an object with a string `code` matching `^[A-Z][A-Z_]{1,19}$` → that code; the timeout → `TIMEOUT` (the caller passes it); anything else → `UNKNOWN`.
     - Texts (L5; exact; `{url}` is replaced by the link, nothing else changes):
 
@@ -92,9 +94,9 @@ Three steps. Nothing calls the sender yet (stages 3–5 wire it). Needs stage 1 
     1. unit: `authMailTransportOptions` for host `127.0.0.1` → `secure false`, `ignoreTLS true`; `smtp.x.test` + `tls` → `secure true`; + `starttls` → `secure false`, `requireTLS true`; no result has a `tls` key; the three timeouts equal the argument.
     2. unit: `authMailErrorCode({ code: "EAUTH" }) === "EAUTH"`; `({ code: "weird code" })` → `UNKNOWN`; `new Error("x")` → `UNKNOWN`.
     3. unit: for each of the 6 kind/locale pairs, `text` holds `https://x.test/link` exactly once, no `{url}` is left, `subject` is the table value.
-    4. unit: a fake `createTransport` whose `sendMail` never settles, `timeoutMs: 50` → `{ ok: false, code: "TIMEOUT" }` and `close` was called.
+    4. unit: a fake `createTransport` whose `sendMail` never settles, `timeoutMs: 50` (outer timer 5 050 ms) → `{ ok: false, code: "TIMEOUT" }` within 6 s, and `close` was called.
     5. unit: a fake whose `sendMail` rejects with `{ code: "EAUTH", message: "secret https://x.test/link" }` → `{ ok: false, code: "EAUTH" }`; the captured log has one `warn` line with the user id and `EAUTH`, and no line holds `x.test`.
-    6. integration (GreenMail): settings `{ host: "127.0.0.1", port: 3025, security: "tls", user: "auth", password: "greenmail-test", from: "noreply@x.test" }`, an invite to `auth-mail-<uuid>@x.test` → `{ ok: true }`; open that address's INBOX on IMAP `127.0.0.1:3143` as `smtp-send.test.ts` does → one message with subject `Twoje konto w Email Assistant` (locale `pl`).
+    6. integration (GreenMail): settings `{ host: TEST_IMAP_HOST ?? "127.0.0.1", port: Number(TEST_SMTP_PORT ?? "3025"), security: "tls", user: "auth", password: "greenmail-test", from: "noreply@x.test" }`, an invite to `auth-mail-<uuid>@x.test` → `{ ok: true }`; open that address's INBOX on IMAP (`TEST_IMAP_PORT`, default 3143) as `smtp-send.test.ts` does → one message with subject `Twoje konto w Email Assistant` (locale `pl`).
     7. integration: port 1 (nothing listens) → `{ ok: false }` with a code matching `^[A-Z][A-Z_]{1,19}$`.
   - Check: Proof (server form).
   - Done when: the tests pass.

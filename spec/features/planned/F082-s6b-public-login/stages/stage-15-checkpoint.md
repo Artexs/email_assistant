@@ -2,6 +2,8 @@
 
 Part of [`../plan.md`](../plan.md). Read its "User checkpoints", "User steps", L32 and the master plan's "User checkpoints" item 2 and `deploy/README.md` § "Update" first.
 
+Parallel: none. Last; the coordinator and the owner.
+
 The coordinator runs this stage with the owner; it is not a worker job. Steps 15.2–15.4 touch the real system: each needs the owner's fresh yes in the chat (S6b-U4). The agent never reads or prints `.env`, a secret or a link.
 
 - [ ] **15.1 Group review of the segment**
@@ -32,7 +34,7 @@ The coordinator runs this stage with the owner; it is not a worker job. Steps 15
 - [ ] **15.4 Close**
   - Decisions:
     - `spec/features/planned/F056-web-public-hardening/`: add `outcome.md` (3–6 sentences: "Replaced by F082 (S6b); built: lockout, leaked-password check, session list with audit, mail host check, the reset request without enumeration; not built: captcha (P9), the public proxy (scope change, P18). Merge commit <sha>."); `git mv` the folder to `spec/features/done/<YYYY-MM>/`.
-    - `git mv tasks/planned/s6b-public-login.md tasks/done/`; its status line: "Done <date>: built as Limen ticket F082."
+    - `mkdir -p tasks/done && git mv tasks/planned/s6b-public-login.md tasks/done/`; its status line: "Done <date>: built as Limen ticket F082."
     - The master plan `tasks/active/s6-pre-sale.md`: status line and log ("S6b done, F082").
     - `limen ticket done F082` (the ticket was in `active/` since the first spawn), then `limen board --write`.
     - Commit by explicit paths. Drop the job databases that are left: `bun run db:worktree <YYYY-MM-DD>-<hash> --drop` for each S6b job id (`limen jobs --all | grep F082`) and `bun run db:worktree f082_sNN_e2e --drop` for stages 9–13 (`db:worktree` has no list flag; a missing database is a harmless error).

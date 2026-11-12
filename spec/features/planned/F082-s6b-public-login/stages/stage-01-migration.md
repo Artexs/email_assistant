@@ -2,6 +2,8 @@
 
 Part of [`../plan.md`](../plan.md). Read its L1, L2, L11 and "Rules for every stage" first.
 
+Parallel: lane A, first. Stage 8 may run at the same time. No other job that adds a migration or changes `bun.lock` may run at the same time.
+
 One step. The only migration of S6b: no other job that adds a migration or changes `bun.lock` runs at the same time.
 
 - [ ] **1.1 New user columns and the lockout table**

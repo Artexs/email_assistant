@@ -2,6 +2,8 @@
 
 Part of [`../plan.md`](../plan.md). Read its L15, L16, L18, B5 and "Rules for every stage" (the Playwright rules) first. Needs stage 7 (`setPasswordWithTerms`, `TERMS_VERSION`).
 
+Parallel: lane C, after stage 10. Stage 13 may run at the same time.
+
 Two steps.
 
 - [ ] **11.1 Stub pages and the checkbox**

@@ -2,6 +2,8 @@
 
 Part of [`../plan.md`](../plan.md). Read its F1, F2, L11–L13, B4 and "Rules for every stage" first. Needs stages 1–3 (`auth_lockouts`, the mail tasks, the `hooks.before` dispatcher, `AuthDeps.now`).
 
+Parallel: lane A, after stage 3. Stage 4 and stage 8 may run at the same time.
+
 One step.
 
 - [ ] **5.1 10 failed sign-ins in 15 minutes lock the user for 15 minutes**
@@ -71,9 +73,9 @@ One step.
     ```
 
   - Decisions:
-    - `hooks.before`, path `/sign-in/email`, only when `deps.lockout` is set (L13): `email = String(ctx.body?.email ?? "").trim().toLowerCase()`; `found = email === "" ? null : await ctx.context.internalAdapter.findUserByEmail(email)`; when `found` and `await deps.lockout.isLocked(found.user.id, now())`: `await ctx.context.password.hash(String(ctx.body?.password ?? ""))`, then `throw APIError.from("UNAUTHORIZED", { code: "INVALID_EMAIL_OR_PASSWORD", message: "Invalid email or password" })` (F1). An error of `isLocked` is not caught (fail closed: 500).
+    - `hooks.before`, path `/sign-in/email`, only when `deps.lockout` is set (L13). First the input checks of Better Auth's endpoint (`api/routes/sign-in.mjs`: `z.email()` on the raw address, then `assertPasswordNotTooLong`): when `typeof ctx.body?.email !== "string"`, `typeof ctx.body?.password !== "string"`, `!z.email().safeParse(ctx.body.email).success` (no trim: Better Auth does not trim) or `ctx.body.password.length > 128` → return and let the endpoint answer its own 400. Else `found = await ctx.context.internalAdapter.findUserByEmail(ctx.body.email.toLowerCase())`; when `found` and `await deps.lockout.isLocked(found.user.id, now())`: `await ctx.context.password.hash(ctx.body.password)`, then `throw APIError.from("UNAUTHORIZED", { code: "INVALID_EMAIL_OR_PASSWORD", message: "Invalid email or password" })` (F1). An error of `isLocked` is not caught (fail closed: 500). Why the input checks first: without them a locked user would get 401 where any other user gets 400, and that shows the lock (cold review finding 1).
     - `hooks.after`, path `/sign-in/email`, only with `deps.lockout`, inside `try { … } catch (error) { log.error(\`web: lockout: ${describeError(error)}\`) }` (the answer never changes):
-      - `ctx.context.returned` is an `APIError` with `statusCode === 401` and `body?.code === "INVALID_EMAIL_OR_PASSWORD"` → find the user as above; none → nothing; else `lock = await recordFailure(id, now())`; `lock !== null` → `await report("login_locked", id, { locked_until: lock.lockedUntil.toISOString() })`, then, when `deps.sendLockoutMail` is set and `await claimMail(id, now())`, `deps.sendLockoutMail({ userId: id, email: found.user.email })`.
+      - `ctx.context.returned` is an `APIError` with `statusCode === 401` and `body?.code === "INVALID_EMAIL_OR_PASSWORD"` → find the user with `ctx.body.email.toLowerCase()`; none → nothing; else `lock = await recordFailure(id, now())`; `lock !== null` → `await report("login_locked", id, { locked_until: lock.lockedUntil.toISOString() })`, then, when `deps.sendLockoutMail` is set and `await claimMail(id, now())`, `deps.sendLockoutMail({ userId: id, email: found.user.email })`.
       - not an error and `ctx.context.newSession?.user.id` set → `recordSuccess(that id, now())`.
     - `onPasswordReset`: after `report("password_set", …)`, `await deps.lockout?.clear(user.id, now())` inside `try`/`catch` with `log.error`.
     - `report(kind, userId, data?)` passes `data` to `deps.onEvent`. `auditWebEvent` writes `data: { via: "web", ...data }`; `eventNames.login_locked = auditEvents.webLoginLocked`.
@@ -92,6 +94,7 @@ One step.
     10. Parallel: `failed_count = 9` (9 failures), then two wrong sign-ins with `Promise.all` → one `web.login_locked` row; `sendLockoutMail` called once.
     11. Without `deps.lockout` (the `web-auth.test.ts` handle): 11 wrong passwords, then the correct one → `200`.
     12. The log of tests 1–10 has no line with the test password or the address.
+    13. Input checks: for a locked user and for a user who is not locked, the address `" <address>"` (a leading space) gives the same `400 INVALID_EMAIL`, and a 129-character password gives the same `400 PASSWORD_TOO_LONG`; neither request counts as a failure.
   - Check: Proof (server form, `/tmp/f082-s05`).
   - Done when: the tests pass, test 9 passes 3 runs in a row (`for i in 1 2 3; do bun test apps/server/test/integration/web-lockout.test.ts -t "median" || break; done`; paste the result), and the Proof printed `PROOF_OK`.
   - Out of scope: a lock of the client address (Better Auth's rate limit does that); a notice to other owners (B4); the lockout text in the panel (the answer stays "Wrong e-mail or password.").

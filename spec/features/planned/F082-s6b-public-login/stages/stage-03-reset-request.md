@@ -2,6 +2,8 @@
 
 Part of [`../plan.md`](../plan.md). Read its F2–F4, L7–L10 and "Rules for every stage" first. Needs stages 1 and 2.
 
+Parallel: lane A, after stage 2. Stage 8 may run at the same time.
+
 One step.
 
 - [ ] **3.1 `/request-password-reset` behind the sender, with the D8 rules**
@@ -60,7 +62,7 @@ One step.
     - `rateLimit.customRules` gets `"/request-password-reset": { window: 900, max: 3 }`. `resetPasswordTokenExpiresIn: deps.resetLinkTtlSeconds`.
     - `sendResetPassword` of Better Auth passes `{ userId: user.id, email: user.email, url }` to `deps.sendResetPassword`.
     - `createAuthMailTasks` (L8): `start` creates one promise `(async () => { const locale = await localeOf(userId).catch(() => "pl"); const result = await mailer.send({ ...mail, locale }); if (!result.ok) onFailed(mail.userId, mail.kind, result.code); })()`, wrapped so it never rejects (a throw → `log.error` with `describeError`, no address); it is kept in a `Set` until it settles; `idle` waits for the set to be empty.
-    - `webDeps` (`web.ts`): `const settings = authMailSettings(config)`; `const mailer = settings === null ? null : createAuthMailer(settings)`; with a mailer, `mailTasks = createAuthMailTasks({ mailer, localeOf: async (userId) => (await getUserAuthProfile(db, userId))?.locale ?? "pl", onFailed: authMailFailedHandler(db, extras.onAuthMailFailed) })`. `createAuth({ …, resetLinkTtlSeconds: 3_600, sendResetPassword: mailTasks === null ? undefined : async ({ userId, email, url }) => { mailTasks.start({ kind: "reset", userId, to: email, url }); } })`. `resetRequestOpen: mailer !== null`. Log once: `auth mail: on (reset by e-mail is open)` or `auth mail: off (the CLI prints invite and reset links)`. `close()` awaits `mailTasks?.idle()` and then `handle.close()`.
+    - `webDeps` (`web.ts`): `const settings = authMailSettings(config)`; `const mailer = settings === null ? null : createAuthMailer(settings)`; with a mailer, `mailTasks = createAuthMailTasks({ mailer, localeOf: async (userId) => (await getUserAuthProfile(db, userId))?.locale ?? "pl", onFailed: authMailFailedHandler(db, extras.onAuthMailFailed) })`. `createAuth({ …, resetLinkTtlSeconds: 3_600, sendResetPassword: mailTasks === null ? undefined : async ({ userId, email, url }) => { mailTasks.start({ kind: "reset", userId, to: email, url }); } })`. `resetRequestOpen: mailer !== null`. Log once: `auth mail: on (reset by e-mail is open)` or `auth mail: off (the CLI prints invite and reset links)`. `close()` (when `mailTasks` is set) awaits `Promise.race([mailTasks.idle(), new Promise((resolve) => setTimeout(resolve, 5_000))])` (the shutdown of `main.ts` already waits up to 40 s; its whole grace is 45 s) and then `handle.close()`.
     - `main.ts`: `webDeps(config, db, { …, onAuthMailFailed: (ctx, userId, kind, code) => operator.authMailFailed(ctx, userId, kind, code, new Date()) })`.
     - CLIs and the e2e seed pass `resetLinkTtlSeconds: 86_400` (their links stay 24 h). Tests that call `createAuth` pass `86_400` unless the test is about the 1 h value.
   - Test (`web-reset-request.test.ts` uses `createAuth` and `auth.handler(new Request(…))` as `web-auth.test.ts` does, with `origin: BASE_URL` and a distinct `x-client-ip` per request unless the test says otherwise):
@@ -71,7 +73,7 @@ One step.
     5. Expiry: with `resetLinkTtlSeconds: 3_600`, the new `auth_verifications` row of the user (`WHERE value = <user id>`) has `expires_at − created_at` between 3 595 and 3 605 seconds.
     6. A fake mailer that returns `{ ok: false, code: "EAUTH" }` → `onFailed` called once with `(userId, "reset", "EAUTH")`.
     7. `authMailFailedHandler`: a user with a membership → `notify` called with the oldest organization; a user without one → not called, no throw.
-    8. `web-http.test.ts`: `webDeps(loadConfig(env), …)` without the `AUTH_*` keys → `POST /api/auth/request-password-reset` answers `404 {"error":"not_found"}`; with the four keys (`AUTH_SMTP_HOST=127.0.0.1`, `AUTH_SMTP_PORT=1`, user, password, from) → `200` and the body of test 1.
+    8. `web-http.test.ts`: `webDeps(loadConfig(env), …)` with the six `AUTH_*` keys set to `""` on top of `...process.env` (a dev `.env` may hold real keys) → `POST /api/auth/request-password-reset` answers `404 {"error":"not_found"}`; with the four keys (`AUTH_SMTP_HOST=127.0.0.1`, `AUTH_SMTP_PORT=1`, user, password, from) → `200` and the body of test 1.
     9. `auth.test.ts`: `isAllowedAuthPath("POST", "/request-password-reset")` → `false`; with `{ resetRequest: true }` → `true`; `GET` with `{ resetRequest: true }` → `false`; `AUTH_ALLOWED_PATHS.size === 8`.
     10. `auth.test.ts`: `createAddressLimiter({ max: 3, windowMs: 3_600_000, now })`: three `take("a")` → `true`, the 4th → `false`; `take("b")` → `true`; with `now` + 61 min → `take("a")` → `true`.
     11. The log captured during tests 1–6 has no line holding the test address, `reset-password/` or a token.

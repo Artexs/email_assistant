@@ -2,6 +2,8 @@
 
 Part of [`../plan.md`](../plan.md). Read its L31, "Done when" and "Rules for every stage" first, and the code of stages 1–13 (`git log --oneline` of the S6b commits). Needs stages 1–13.
 
+Parallel: none. It needs stages 1–13 landed.
+
 Three steps. Docs only: no code change. Write in the style of the file you change (short sentences, active voice).
 
 - [ ] **14.1 `docs/architecture.md` §7 and `docs/code-patterns.md`**
@@ -23,7 +25,7 @@ Three steps. Docs only: no code change. Write in the style of the file you chang
   - Done when: every bullet above is in §7 and matches the code.
 
 - [ ] **14.2 `deploy/README.md` and `.env.example`**
-  - Files: change `deploy/README.md` (§ "Web panel"), `.env.example` (check the blocks of stages 2, 6, 9).
+  - Files: change `deploy/README.md` (§ "Web panel"), `.env.example` (check the blocks of stages 2, 6, 9), `docs/known-alerts.md`.
   - Decisions:
     - In "Turn it on" step 2: "Leave `WEB_TRUSTED_ORIGINS`, `MAIL_ALLOW_LOCAL_HOSTS`, `WEB_MAIL_ALLOW_LOCAL`, `WEB_DIST` and the six `AUTH_*` keys empty. Leave `AUTH_PWNED_CHECK` empty (on)."
     - New subsection "Invite a customer (S6b)": `$C exec server bun run org:invite --org-name <name> --email <email> --display-name <name> [--lang pl|en] [--trial-days N]`; without the sender it prints the link (24 h); the link is a secret; an existing address stops with `user with this email already exists`.
@@ -32,7 +34,8 @@ Three steps. Docs only: no code change. Write in the style of the file you chang
     - New subsection "Sign-in lock": a user who typed a wrong password 10 times waits 15 minutes, or gets a new link from `web:invite` (a reset ends the lock).
     - New subsection "Leaked-password check": the server needs outbound HTTPS to `api.pwnedpasswords.com`; when it is down, password sets fail with "try again later".
     - "After the first deploy of S6b": every member sees the terms dialog once at the next sign-in.
-  - Check: `bunx prettier --check deploy/README.md .env.example`.
+    - `docs/known-alerts.md` entry `better-auth: Invalid password`: its Fix line points to F056 for the lockout; change it to "S6b (F082) locks a user after 10 failures in 15 minutes; see `docs/architecture.md` §7." Add an entry `operator notice auth_mail_failed` (cause: the auth-mail sender failed; fix: check the `AUTH_SMTP_*` keys and the provider; status: open while the sender is off).
+  - Check: `bunx prettier --check deploy/README.md .env.example docs/known-alerts.md`.
   - Done when: every new key of `.env.example` is named in `deploy/README.md`.
 
 - [ ] **14.3 ADR 0016 amendment, roadmap, note**
@@ -41,6 +44,7 @@ Three steps. Docs only: no code change. Write in the style of the file you chang
     - ADR 0016: a section `## Amendment (S6b, <build day>)` with: D7 (an SMTP auth-mail sender with env keys, off without them, no provider in code), D8 (`request-password-reset` opens only with the sender; same answer; limits; 1 h server link, 24 h CLI link), the new public pages, the lockout, the own leaked-password check (and why not the plugin: F7), terms acceptance, the session list through the internal adapter (and why not `/list-sessions`: F6). The "Only these routes are open" line of the Decision gets "(S6b: plus `request-password-reset` with the sender on; see Amendment)". Status stays `accepted`.
     - `docs/roadmap.md`: under the S6 state line add "S6 state (<build day>): S6b built (login hardening: lockout, leaked-password check, terms, session list, mail host check; the auth-mail sender built and off)."
     - The note: the facts a later agent needs: F1–F9 of `plan.md` (one line each, with the file of Better Auth, imapflow or nodemailer); the test preload of `bunfig.toml`; how to turn the sender on; what S6c must do (translate the stub page texts and the auth-mail texts are already in Polish; `users.locale` exists and is set by `org:invite`); what S6e must do (fill the legal pages, change `TERMS_VERSION`); F078 can start (tokens are hashed since F059).
+    - Open one planned Limen ticket with `limen ticket new "A mailbox whose host the guard refuses gets a status and a notice" --lane planned` (cold review finding 5: today a refused host is only a `sync <id> failed: host not allowed` log line on every run). Two to four sentences of outcome, no plan.
   - Check: Proof (server form, `/tmp/f082-s14`).
   - Done when: the Proof printed `PROOF_OK`.
   - Out of scope: the legal texts (S6e); the VPS (stage 15).

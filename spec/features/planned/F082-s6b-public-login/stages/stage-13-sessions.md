@@ -1,6 +1,8 @@
 # F082 stage 13 — Session list and the sign-out audit rows
 
-Part of [`../plan.md`](../plan.md). Read its F6, L21, L22, B3 and "Rules for every stage" (the Playwright rules) first. Needs stage 3. Gets a review job (audit rows of the auth routes).
+Part of [`../plan.md`](../plan.md). Read its F6, L21, L22, B3 and "Rules for every stage" (the Playwright rules) first. Needs stage 3. Not `[risky]`, but it gets a review job (audit rows of the auth routes, the allow-list).
+
+Parallel: lane D, after checkpoint A. Stages 10, 11, 12 may run at the same time. Put the new `en.ts` keys in the `acct_` group.
 
 Three steps.
 
@@ -66,18 +68,31 @@ Three steps.
     - `deviceOf` order (first match wins): browser `/Edg\//` edge, `/OPR\/|Opera/` opera, `/Firefox\//` firefox, `/Chrome\//` chrome (also matches `HeadlessChrome/`), `/Safari\//` safari, else unknown; system `/Android/` android, `/iPhone|iPad|iPod/` ios, `/Windows/` windows, `/Mac OS X|Macintosh/` macos, `/Linux/` linux, else unknown.
     - `hooks.after` (L22): path `/revoke-sessions` → `report("sessions_revoked", id)`, `/revoke-other-sessions` → `report("other_sessions_revoked", id)`, only when `ctx.context.returned` is not an `APIError` and `ctx.context.session?.user.id` is set. Events `web.sessions_revoked`, `web.other_sessions_revoked` (data `{ via: "web" }`).
     - `web.ts` `getSession` returns `sessionId: response.response.session.id`.
+    - Remove `/list-sessions` from `AUTH_ALLOWED_PATHS` (it returns session tokens, F6; the panel does not call it; B9). The set has 7 entries now; update `auth.test.ts` ("allows the seven paths") and `docs/architecture.md` is updated in stage 14.
   - Test:
     1. `sessions.test.ts` (core): `deviceOf` for a Firefox-on-Linux UA → `firefox`/`linux`; Chrome on Windows → `chrome`/`windows`; Safari on iPhone → `safari`/`ios`; Edge on Windows → `edge`/`windows`; Chrome on Android → `chrome`/`android`; `null` and `""` → `unknown`/`unknown`.
     2. `web-sessions`: a user signs in twice (`createAuth`, two cookies) → `listUserSessions` gives 2 rows; no row object has a `token` key; another user's sessions are not in the list.
     3. The route (with `webTestApp` and a fake `sessions` dep): 3 rows, one expired → 2 rows, newest first, `current` true only for the row whose id equals the session id; no session → `401`.
     4. `POST /api/auth/revoke-sessions` with a valid cookie → `200`; one `web.sessions_revoked` row with `actor` = the user id. `/revoke-other-sessions` → one `web.other_sessions_revoked` row. Without a cookie → `401` and no row.
+    5. `auth.test.ts`: `AUTH_ALLOWED_PATHS.size === 7`; `isAllowedAuthPath("GET", "/list-sessions")` → `false`.
   - Check: `bun run typecheck && bun run test:unit && bun run test:int`.
   - Done when: the tests pass.
   - Out of scope: ending one chosen session (B3).
 
 - [ ] **13.2 Web: the list in the Account card**
   - Files: change `apps/web/src/components/settings/AccountCard.tsx`, `apps/web/src/i18n/en.ts`.
-  - Decisions: above the "sign out everywhere" button, a section `acct_sessions_title` with one row per session: `t("device_on", { browser: t(\`browser*${device.browser}\`), os: t(\`os*${device.os}\`) })`, the address or `acct_unknown_address`, `t("acct_last_active", { date })`(date only,`Intl.DateTimeFormat`with`dateStyle: "medium"`), and a `Badge` `acct_this_device`on the current row. Data through`useResource(() => api("/api/me/sessions", sessionsSchema))`; loading → `Skeleton`; error → `load_error_text`and`retry`. `en.ts`keys (exact):`acct_sessions_title: "Signed-in devices"`, `acct_this_device: "This device"`, `acct_last_active: "Last active {date}"`, `acct_unknown_address: "Unknown address"`, `device_on: "{browser} on {os}"`, `browser_edge: "Edge"`, `browser_opera: "Opera"`, `browser_firefox: "Firefox"`, `browser_chrome: "Chrome"`, `browser_safari: "Safari"`, `browser_unknown: "Unknown browser"`, `os_android: "Android"`, `os_ios: "iOS"`, `os_windows: "Windows"`, `os_macos: "macOS"`, `os_linux: "Linux"`, `os_unknown: "unknown system"`.
+  - Decisions: above the "sign out everywhere" button, a section `acct_sessions_title` with one row per session. Each row shows:
+    - the device text, built as below;
+    - the address, or `acct_unknown_address`;
+    - `t("acct_last_active", { date })`, date only (`Intl.DateTimeFormat` with `dateStyle: "medium"`);
+    - a `Badge` `acct_this_device` on the current row.
+
+    ```ts
+    const deviceText = t("device_on", { browser: t(`browser_${device.browser}`), os: t(`os_${device.os}`) });
+    ```
+
+    Data through `useResource(() => api("/api/me/sessions", sessionsSchema))`; loading → `Skeleton`; error → `load_error_text` and `retry`. `en.ts` keys (exact), in the `acct_` group: `acct_sessions_title: "Signed-in devices"`, `acct_this_device: "This device"`, `acct_last_active: "Last active {date}"`, `acct_unknown_address: "Unknown address"`, `device_on: "{browser} on {os}"`, `browser_edge: "Edge"`, `browser_opera: "Opera"`, `browser_firefox: "Firefox"`, `browser_chrome: "Chrome"`, `browser_safari: "Safari"`, `browser_unknown: "Unknown browser"`, `os_android: "Android"`, `os_ios: "iOS"`, `os_windows: "Windows"`, `os_macos: "macOS"`, `os_linux: "Linux"`, `os_unknown: "unknown system"`.
+
   - Check: `bun run web:build`.
   - Done when: the build passes.
 

@@ -2,6 +2,8 @@
 
 Part of [`../plan.md`](../plan.md). Read its L9, L10, L28 and "Rules for every stage" (the Playwright rules) first. Needs stage 3. Starts after checkpoint A.
 
+Parallel: lane C, after checkpoint A. Stage 13 may run at the same time.
+
 Two steps.
 
 - [ ] **10.1 The page and its request**
