@@ -26,7 +26,7 @@
 
 ### Sellable MVP (+ S5, S6)
 
-- Web panel (lite): login, connect mailbox, link Telegram, settings, rules, activity.
+- Web panel (lite): login, connect mailbox, link Telegram, settings, rules, activity (built and deployed 2026-11-11, ADR 0016, 0017).
 - Sign-up, billing, account and data deletion, hosted EU production, Vertex AI EU, privacy policy and DPA, cost model.
 
 ### Not in the MVP (Phase 2)
@@ -48,7 +48,7 @@ Each slice ends with something that works end to end and that the user can try.
 | **S2 Telegram**                                  | Bot (dev + pilot), chat linking, shadow digest with ✅ / ✏️ buttons, urgent and `auth_error` notices, "last sync" line, `/digest` `/pause` `/resume` `/status`                                                                                                                                                           | Digest and urgent notices on your phone; you correct the AI with one tap                | M             | S1b                         |
 | **S3 Assist actions**                            | Committer with retries on the action row (idempotent actions go `ready → applied`; `applying` is for S4 drafts and send); folder moves, mark read, flag, summaries; Undo button; automatic moves only for categories that passed go/no-go; mode switch                                                                   | Your inbox gets cleaner for real; every change has Undo                                 | L             | S2                          |
 | **S4 Drafts, approvals, delegation**             | Delegates (CLI), delegation + clarification drafts (quote the original), approval with Telegram buttons, SMTP send after approval, delegation tracking, chaser, injection guards                                                                                                                                         | Delegations go out after one tap and are followed up                                    | L (23 stages) | S3                          |
-| **S5 Web panel (lite)**                          | Market check first (which mail the customers use); login; pages: onboarding, mailboxes, settings, rules, activity; API routes; web reachable from outside (proxy or tunnel)                                                                                                                                              | Setup and control without the CLI                                                       | M             | S3 (S4 for delegation data) |
+| **S5 Web panel (lite)**                          | Login; pages: onboarding, mailboxes, settings, rules, activity; API routes; web reachable only on the tailnet (Tailscale Serve); the market check was not done (P9)                                                                                                                                                      | Setup and control without the CLI                                                       | M             | S3 (S4 for delegation data) |
 | **S6 Pre-sale**                                  | Sign-up, billing, deletion, hosted EU production, Vertex AI EU, privacy policy + DPA, cost model                                                                                                                                                                                                                         | The first external customer can sign up                                                 | L             | S5                          |
 
 S1b state (2026-11-05): built and tested (task file `tasks/done/s1b-shadow-triage.md`, stages 0–35, code done): hard rules, classifier `classifier-v1`, planners, policy, triage worker with LLM pause and daily cap, audit, feedback table and labeling CLI, eval runner (synthetic, injection, `--real`), cost report, backfill and re-queue, sender rules CLI, docs and notes (stage 35). First eval run (stage 34, `gemini-3.5-flash-lite`): whitelist and injection 12/12, no category at the 98% bar yet. Waiting, in `tasks/done/s1b-shadow-run.md`: the model comparison (stage 36) and the VPS stages 37–40 (deploy, one week of real mail in shadow mode, labels, cost, final eval and go/no-go table). S1b is not done until the go/no-go table exists. Update 2026-11-06: done (`tasks/done/s1b-shadow-run.md`). 123 real labels (180-day backfill), every category no-go (notification 96.2%, spam 83.6%; urgent, needs_reply, info too few). Pilot classifier: OpenAI `gpt-6-luna`.
@@ -58,6 +58,8 @@ S2 state (2026-11-07): done (task file `tasks/done/s2-telegram.md`, stages 0–2
 S3 state (2026-11-07): done (task file `tasks/done/s3-assist-actions.md`): the write port and the identity locate, the committer with the ensure rule and `ACTIONS_SCOPE`, the returned check below the UID cursor, Undo with reverse actions, the `triage.returned` job, the `action_failed` notice, the ↩️ digest button, and `mailbox:settings`. The dev run (stage 16), the restore test (stage 17) and the VPS seed-mail run on Interia (stage 19) passed. Since 2026-11-07T19:55:16Z the pilot mailbox runs `assist` on real mail (`urgent` flag, `notification` moves); the one-week result is in `tasks/planned/s3-assist-week-result.md` (blocked until 2026-11-14T20:00Z).
 
 S4 state (2026-11-07): done (`tasks/done/s4-drafts-approvals-delegation.md`, 23 stages): delegates and delegations with CLIs, prompt `classifier-v2` (eval: one accepted miss, `info` precision −5.8), delegation and clarification drafts, approval with Telegram buttons, SMTP send behind `SEND_SCOPE`, the Sent copy, the expiry job, the chaser and `job:run`. Deployed on the VPS (`fa60c7b`, `SEND_SCOPE=all` since 2026-11-07 22:40Z; the only delegate is the user's own Gmail). The real-mail round trip and the week counts: `tasks/planned/s4-pilot-week.md`.
+
+S5 state (2026-11-12): built in S5a–S5e and deployed on the VPS at 2026-11-11 23:37 UTC, behind Tailscale Serve (ADR 0016, 0017; facts: `notes/2026-11-12-web-panel-deploy.md`). Open: the phone sign-in and the phone cut-off check, and the ↩️ and ✏️ buttons on real mail. The market check (which mail the customers use) was not done (P9); the question stays for S6.
 
 Order: `S0 → S1a → S1b → S2 → S3 → S4 → S5 → S6`.
 
@@ -99,7 +101,7 @@ Before each start (user steps):
 | Lines of TypeScript       | about 10–16 thousand (with tests)                                                                       |
 
 Server runtime libraries (about 11): `hono`, `imapflow`, `mailparser`, `nodemailer`, `html-to-text`, `@google/genai`, `zod`,
-`kysely` + `pg`, `croner`, `grammy`, and the migration runner (chosen in S0). Web: decided at the S5 start.
+`kysely` + `pg`, `croner`, `grammy`, and the migration runner (chosen in S0). Web: Astro static build with React islands, Better Auth (ADR 0016).
 
 Hardest parts (most risk):
 

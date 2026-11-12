@@ -26,7 +26,7 @@ From the S5 plan (2026-11-08, `tasks/active/s5-web-panel.md`):
 
 - Polish UI translation: S5 ships English strings in `apps/web/src/i18n/en.ts` (U1); S6 adds `pl.ts` and a per-user language choice.
 - An e-mail sender for the login: `sendResetPassword` (and the sign-up verification) sends mail in S6; S5 prints the link in the CLI (D2). `tasks/planned/web-public-hardening.md` lists what must hold before the panel leaves Tailscale.
-- Public access: ADR 0016 (S5e) names Tailscale Serve for the pilot; S6 moves to a public proxy with TLS (Cloudflare Tunnel or Caddy on the hosted EU VPS) with no code change (P3).
+- Public access: ADR 0017 (S5e) names Tailscale Serve for the pilot; S6 moves to a public proxy with TLS (Cloudflare Tunnel or Caddy on the hosted EU VPS) with no code change (P3).
 
 ## Done-checklist
 

@@ -109,6 +109,7 @@ graph TD
     reports --> mail
     reports --> config
     reports --> core
+    tenancy --> audit
     delegation --> actions
     delegation --> mail
     delegation --> config
@@ -134,6 +135,7 @@ graph TD
 `channels → triage`: the ✅ / ✏️ buttons and the Undo button write feedback through `triage.recordFeedback()`.
 `channels → actions`: the Undo tap calls `actions.undo()` (S3); the notifier reads the failed actions (`listFailedUnnotified`, `markNotified`); `/status` counts the actions (`countActionsSince`).
 `actions → mail`: the committer and Undo use `locateMessage`, `listFolderUids`, `openMailboxProvider`, `updateEmailLocation` and the port (S3).
+`tenancy → audit`: `tenancy/service.ts` writes the `org.timezone_changed` and `org.style_changed` audit rows in the transaction of `updateOrganizationSettings` (S5c). S5d adds no edge.
 `config → audit`: the setters write the `mailbox.*_changed` audit rows in their transaction (S3).
 `config` gets `expireReady` as a dependency (`SettingsDeps.expireReady`, passed by the caller from the `actions` index) and never imports `actions` at run time:
 `config → actions → mail → config` would be a cycle (`mail/connect.ts` imports `insertDefaultSettings`).
@@ -150,24 +152,26 @@ Code rules: `docs/code-patterns.md`.
 
 ### 3.0 `platform` — technical base (not a business module)
 
-| Part              | Does                                                                                      | Tech                                                                |
-| ----------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `config`          | Reads and checks env at start; fails fast on a missing key                                | Zod                                                                 |
-| `db`              | Postgres pool, transactions, `TenantContext`, generated types, migration runner           | Kysely + kysely-codegen, `pg`; `dbmate` (chosen in S0)              |
-| `llm`             | Roles `classifier` / `writer`, structured output, timeout, rate limiter, soft-error rules | `@google/genai` (Gemini), `openai` (OpenAI), Zod; provider registry |
-| `crypto`          | AES-256-GCM encrypt / decrypt with key version                                            | `node:crypto`                                                       |
-| `log`             | Levels, `[module]` prefix, no mail bodies or secrets                                      | own `log` util                                                      |
-| `http`            | Hono app, session check (S5), error handler, `/health`                                    | Hono                                                                |
-| `scheduler`       | Cron-like timers for jobs; one tick never overlaps the next                               | croner                                                              |
-| `retention` (job) | Clears text columns after their retention time (`docs/architecture.md` §7)                | —                                                                   |
-| `heartbeat` (job) | Pings the external dead-man's-switch service                                              | —                                                                   |
+| Part              | Does                                                                                                                                | Tech                                                                |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `config`          | Reads and checks env at start; fails fast on a missing key                                                                          | Zod                                                                 |
+| `db`              | Postgres pool, transactions, `TenantContext`, generated types, migration runner                                                     | Kysely + kysely-codegen, `pg`; `dbmate` (chosen in S0)              |
+| `llm`             | Roles `classifier` / `writer`, structured output, timeout, rate limiter, soft-error rules                                           | `@google/genai` (Gemini), `openai` (OpenAI), Zod; provider registry |
+| `crypto`          | AES-256-GCM encrypt / decrypt with key version                                                                                      | `node:crypto`                                                       |
+| `log`             | Levels, `[module]` prefix, no mail bodies or secrets                                                                                | own `log` util                                                      |
+| `http`            | Hono app: session and tenant middleware, hardening (origin check, body limit, headers, CSP), static pages, error handler, `/health` | Hono                                                                |
+| `auth`            | Better Auth instance (`platform/auth.ts`): login, sessions, password change; the `/api/auth/*` allow-list                           | Better Auth (ADR 0016)                                              |
+| `scheduler`       | Cron-like timers for jobs; one tick never overlaps the next                                                                         | croner                                                              |
+| `retention` (job) | Clears text columns after their retention time (`docs/architecture.md` §7)                                                          | —                                                                   |
+| `heartbeat` (job) | Pings the external dead-man's-switch service                                                                                        | —                                                                   |
 
 ### 3.1 `tenancy` — who is who (S0)
 
 - **Owns:** `organizations`, `users`, `memberships`.
 - **Does:** creates the pilot organization and user (CLI `bun run org:create`, S0); owns style text and digest times; resolves `TenantContext` from a session (web) or a linked chat (Telegram); checks roles.
 - **Built in S2:** `getMembership` (a member's role by `org_id` and `user_id`) and `setDigestTimes` (CLI `bun run digest:times`; the new default of `digest_times` is `{08:00,16:00}`).
-- **Later:** login (S5), self sign-up (S6), invite assistant (Phase 2).
+- **Built in S5:** login through Better Auth (`platform/auth.ts`, ADR 0016; no sign-up). `web:invite` (CLI `bun run web:invite --org-id <uuid> [--user-id <uuid>]`) makes the first-password link for a member. `listMembershipsOfUser` (the user gives the tenant; the oldest membership wins). `updateOrganizationSettings` (timezone and style text; writes `org.timezone_changed` and `org.style_changed`). Routes: §3.10.
+- **Later:** self sign-up (S6), invite assistant (Phase 2).
 
 ### 3.2 `mail` — access to mailboxes (S1a)
 
@@ -333,20 +337,43 @@ Built in S1b: `createPlanned`, `listActionsForEmail`, `listSummaries`. The triag
   - `chaser.ts`: `createChaserJob`, `runChaserForMailbox`, `reminderDecision`. Rules: architecture §8.
   - CLIs: `delegates:add|list|disable|enable`, `delegations:list|done` (§4; runbook `deploy/README.md` "Delegates").
 
-### 3.10 HTTP API (routes from each module, composed in `platform/http`)
+### 3.10 HTTP API (routes from each module, composed in `platform/http` and `web.ts`)
 
-| Route group                                  | Used by               | Slice                             |
-| -------------------------------------------- | --------------------- | --------------------------------- |
-| `GET /health`                                | heartbeat, monitoring | S0                                |
-| `/auth/*` (login method decided in S5)       | web                   | S5                                |
-| `/me`, `/mailboxes` (connect, pause, remove) | web                   | S5                                |
-| `/settings`, `/rules`                        | web                   | S5                                |
-| `/actions` (list, approve, reject, undo)     | web, mobile later     | S5                                |
-| `/activity`, `/feedback`                     | web                   | S5                                |
-| `/channels/telegram/link`                    | web                   | S5 (CLI before)                   |
-| `/delegates`, `/delegations`                 | web                   | Phase 2 web; Telegram + CLI in S4 |
+Built in S5. The routers are mounted under `/api` (`api.route("/", …)` in `apps/server/src/web.ts`); the paths below have no `/api` prefix, except the `/api/auth/*` row. Every `/api` route needs a session and a tenant (`requireSession`, `requireTenant`). An unknown `/api` path is 404 `not_found` only with a session; without a session it is 401. Role `owner` = `requireOwner`; `member` = any member.
 
-Before S5, the CLI scripts call the module services directly (no HTTP).
+| Method and path                                       | Role   | Module     | Slice |
+| ----------------------------------------------------- | ------ | ---------- | ----- |
+| `GET /health` (no session)                            | public | `platform` | S0    |
+| `GET, POST /api/auth/*` (allow-list only; no session) | public | `platform` | S5a   |
+| `GET /me`                                             | member | `tenancy`  | S5a   |
+| `GET /mailboxes`                                      | member | `mail`     | S5b   |
+| `POST /mailboxes`                                     | owner  | `mail`     | S5b   |
+| `POST /mailboxes/:id/password`                        | owner  | `mail`     | S5b   |
+| `POST /mailboxes/:id/pause`                           | owner  | `mail`     | S5b   |
+| `POST /mailboxes/:id/resume`                          | owner  | `mail`     | S5b   |
+| `DELETE /mailboxes/:id`                               | owner  | `mail`     | S5b   |
+| `GET /channels/telegram`                              | member | `channels` | S5b   |
+| `POST /channels/telegram/link`                        | member | `channels` | S5b   |
+| `DELETE /channels/telegram/link`                      | member | `channels` | S5b   |
+| `POST /onboarding/keep-mode`                          | owner  | `tenancy`  | S5b   |
+| `GET /organization`                                   | member | `tenancy`  | S5c   |
+| `PATCH /organization`                                 | owner  | `tenancy`  | S5c   |
+| `PATCH /me/digest-times`                              | member | `tenancy`  | S5c   |
+| `GET /settings/:mailboxId`                            | member | `config`   | S5c   |
+| `PATCH /settings/:mailboxId/mode`                     | owner  | `config`   | S5c   |
+| `PATCH /settings/:mailboxId/switches/:name`           | owner  | `config`   | S5c   |
+| `PATCH /settings/:mailboxId/auto/:category`           | owner  | `config`   | S5c   |
+| `PATCH /settings/:mailboxId/sync-folders/:key`        | owner  | `config`   | S5c   |
+| `GET /rules`                                          | member | `config`   | S5c   |
+| `POST /rules`                                         | owner  | `config`   | S5c   |
+| `DELETE /rules/:id`                                   | owner  | `config`   | S5c   |
+| `GET /activity`                                       | member | `reports`  | S5d   |
+| `POST /feedback`                                      | member | `triage`   | S5d   |
+| `POST /actions/undo`                                  | member | `triage`   | S5d   |
+
+- `/api/auth/*` allow-list (`AUTH_ALLOWED_PATHS` in `platform/auth.ts`): `/sign-in/email`, `/sign-out`, `/get-session`, `/reset-password`, `/change-password`, `/revoke-other-sessions`, `/revoke-sessions`, `/list-sessions`, and `GET /reset-password/<token>`. Every other path is 404.
+- Pages are not routes of a module: `platform/http` serves the Astro build (`WEB_DIST`) with a session check. `/login`, `/setup` and the assets are public; `/` redirects to `/onboarding` or `/activity`.
+- **Phase 2 web (not built):** `/actions` list, approve and reject (Telegram has them from S4), `/delegates`, `/delegations` (Telegram and CLI from S4).
 
 ### 3.11 Phase 2 modules (not built in MVP)
 
@@ -359,20 +386,21 @@ Before S5, the CLI scripts call the module services directly (no HTTP).
 
 ## 4. `apps/web` — pages
 
-| Page                 | Content                                                           | Slice       |
-| -------------------- | ----------------------------------------------------------------- | ----------- |
-| Login                | Method decided at the S5 start (own `users` table)                | S5          |
-| Onboarding checklist | Connect mailbox → link Telegram → choose mode → optional lists    | S5          |
-| Mailboxes            | Status, connect (address + password), pause, remove               | S5          |
-| Settings             | Mode, tool switches, category policy, digest times, style text    | S5          |
-| Rules                | Whitelist, blocklist, VIP                                         | S5          |
-| Activity             | What happened to each mail and why; Undo; ✅ / ✏️ feedback        | S5          |
-| Approvals            | Pending actions with approve / reject (Telegram has them from S4) | Phase 2 web |
-| Digests              | Past reports (Telegram has them from S2)                          | Phase 2 web |
-| Delegation           | Delegates and open delegations                                    | Phase 2 web |
-| Account              | Delete mailbox / account and data                                 | S6          |
+| Page                 | Content                                                                                                                                                                   | Slice       |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| Login                | E-mail and password (Better Auth, ADR 0016); `/login`                                                                                                                     | S5a         |
+| Setup                | First password and password reset from a `web:invite` link; `/setup`                                                                                                      | S5a         |
+| Onboarding checklist | Connect mailbox → link Telegram → choose mode → optional lists                                                                                                            | S5b         |
+| Mailboxes            | Status, connect (address + password), pause, remove                                                                                                                       | S5b         |
+| Settings             | Per mailbox: mode, tool switches, category policy, sync folders. Digest times. Organization card: timezone, signature. Account card: change password, sign out everywhere | S5a, S5c    |
+| Rules                | Whitelist, blocklist, VIP                                                                                                                                                 | S5c         |
+| Activity             | What happened to each mail and why; Undo; ✅ / ✏️ feedback                                                                                                                | S5d         |
+| Approvals            | Pending actions with approve / reject (Telegram has them from S4)                                                                                                         | Phase 2 web |
+| Digests              | Past reports (Telegram has them from S2)                                                                                                                                  | Phase 2 web |
+| Delegation           | Delegates and open delegations                                                                                                                                            | Phase 2 web |
+| Account page         | Delete mailbox / account and data (the Account card in Settings is S5a)                                                                                                   | S6          |
 
-Until S5 the user works through Telegram and CLI scripts (`org:create`, `mailbox:connect`, `triage:label`, `delegates:add`, and the S2 scripts below).
+Before S5 the user worked through Telegram and CLI scripts (`org:create`, `mailbox:connect`, `triage:label`, `delegates:add`, and the S2 scripts below).
 
 S2 scripts (`package.json`):
 
@@ -381,6 +409,10 @@ S2 scripts (`package.json`):
 - `telegram:unlink` — removes the chat link of a member.
 - `digest:times` — sets the digest times of a member (`--times 08:00,16:00` or `none`).
 - `mailbox:password` — new mailbox password on stdin; tests the login and leaves `auth_error`.
+
+S5 scripts (`package.json`):
+
+- `web:invite` — prints a one-time first-password link for a member (`--org-id`, optional `--user-id`).
 
 S3 scripts (`package.json`):
 
