@@ -49,6 +49,7 @@ const approvals: [Callback, string][] = [
   [{ kind: "approve_set", setId: ID }, `as:${ID}`],
   [{ kind: "reject_set", setId: ID }, `rs:${ID}`],
   [{ kind: "send_again", actionId: ID }, `ag:${ID}`],
+  [{ kind: "went_out", actionId: ID }, `gw:${ID}`],
   [{ kind: "delegation_done", delegationId: ID }, `dd:${ID}`],
 ];
 

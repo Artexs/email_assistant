@@ -10,3 +10,6 @@ export const UNNOTIFIED_TTL_MS = 7 * 24 * 3_600_000;
 // S3 D7: a hard error is tried 3 times; a retry waits 5 min. Kept apart from apply.ts: drafts.ts and send.ts import them.
 export const HARD_ERROR_TRIES = 3;
 export const RETRY_WAIT_MS = 5 * 60_000;
+
+// A delegation without a due date gets one this long after its send (F041 uses it too).
+export const DELEGATION_DUE_AFTER_MS = 3 * 24 * 3_600_000;

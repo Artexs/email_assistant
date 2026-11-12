@@ -1392,6 +1392,20 @@ export async function listSetSends(trx: Transaction<DB>, ctx: TenantContext, set
   return rows.map(toSendRow);
 }
 
+export async function findSendByKey(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  key: string
+): Promise<{ id: string } | undefined> {
+  return trx
+    .selectFrom("actions")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where("type", "=", "send")
+    .where("idempotency_key", "=", key)
+    .executeTakeFirst();
+}
+
 // "Send again" (D18): one new `approved` send per failed row, same draft. Null when the key exists.
 export async function insertSendAgain(
   trx: Transaction<DB>,

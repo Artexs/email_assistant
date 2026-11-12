@@ -4,10 +4,19 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 import { auditEvents, recordAudit } from "../audit";
 
-import { APPROVAL_TTL_MS, STALE_AFTER_MS } from "./constants";
+import { APPROVAL_TTL_MS, DELEGATION_DUE_AFTER_MS, STALE_AFTER_MS } from "./constants";
 import { closeDraftOfSend, expireSend } from "./expiry";
 import type { DelegationHooks } from "./hooks";
-import { getDraft, insertSendAgain, listSetSends, lockSend, setApproved, setRejected, type SendRow } from "./repo";
+import {
+  findSendByKey,
+  getDraft,
+  insertSendAgain,
+  listSetSends,
+  lockSend,
+  setApproved,
+  setRejected,
+  type SendRow,
+} from "./repo";
 
 export interface ApprovalDeps {
   db: Db | Transaction<DB>;
@@ -41,6 +50,14 @@ export type SendAgainResult =
   | { kind: "draft_gone" }
   | { kind: "delegation_closed" }
   | { kind: "not_failed" }
+  | { kind: "not_found" };
+
+export type WentOutResult =
+  | { kind: "went_out" }
+  | { kind: "already" }
+  | { kind: "sent_again" }
+  | { kind: "not_unknown" }
+  | { kind: "delegation_not_open" }
   | { kind: "not_found" };
 
 function inTransaction<T>(db: Db | Transaction<DB>, run: (trx: Transaction<DB>) => Promise<T>): Promise<T> {
@@ -248,5 +265,49 @@ export async function sendAgain(
       at: input.now,
     });
     return { kind: "created", actionId };
+  });
+}
+
+// "It went out" (F041): a delegation send ended `failed` / `outcome_unknown`, and the owner says that the mail reached the delegate.
+// The delegation goes `cancelled` -> `sent` with the message id that the send stored. No SMTP call; the send row stays `failed`.
+// A send that was sent again, or a delegation in another state, changes nothing (lock order: send, then delegation).
+export async function markWentOut(
+  deps: ApprovalDeps,
+  ctx: TenantContext,
+  failedActionId: string,
+  input: ApprovalInput
+): Promise<WentOutResult> {
+  return inTransaction(deps.db, async (trx) => {
+    const failed = await lockSend(trx, ctx, failedActionId);
+    if (failed === undefined) return { kind: "not_found" };
+    const delegationId = failed.payload.delegation_id;
+    if (
+      failed.status !== "failed" ||
+      failed.status_reason !== "outcome_unknown" ||
+      failed.payload.kind !== "delegation" ||
+      typeof delegationId !== "string" ||
+      failed.outgoing_message_id === null
+    ) {
+      return { kind: "not_unknown" };
+    }
+    if ((await findSendByKey(trx, ctx, `${failedActionId}:again`)) !== undefined) return { kind: "sent_again" };
+    const result = await deps.hooks.onWentOut(trx, ctx, {
+      delegationId,
+      sentMessageId: failed.outgoing_message_id,
+      at: input.now,
+      dueAtWhenNull: new Date(input.now.getTime() + DELEGATION_DUE_AFTER_MS),
+      actor: input.userId,
+    });
+    if (result === "already") return { kind: "already" };
+    if (result === "not_open") return { kind: "delegation_not_open" };
+    await recordAudit(trx, ctx, {
+      emailId: failed.email_id,
+      actionId: failedActionId,
+      actor: input.userId,
+      event: auditEvents.actionWentOut,
+      data: { delegation_id: delegationId, outgoing_message_id: failed.outgoing_message_id, via: input.via },
+      at: input.now,
+    });
+    return { kind: "went_out" };
   });
 }

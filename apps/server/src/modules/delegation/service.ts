@@ -264,6 +264,29 @@ export function delegationHooks(_deps: { db: Db }): DelegationHooks {
     },
     onReminderSent: (trx, ctx, input) => bumpReminder(trx, ctx, input.delegationId, input.at),
     onCancelled: (trx, ctx, input) => cancelDelegation(trx, ctx, input.delegationId, input),
+    onWentOut: async (trx, ctx, input) => {
+      const delegation = await lockDelegation(trx, ctx, input.delegationId);
+      if (delegation === undefined) return "not_open";
+      if (delegation.status !== "cancelled") {
+        return delegation.sent_message_id === input.sentMessageId ? "already" : "not_open";
+      }
+      if (delegation.status_reason !== "outcome_unknown") return "not_open";
+      const changed = await markDelegationSent(trx, ctx, input.delegationId, {
+        sentMessageId: input.sentMessageId,
+        sentAt: input.at,
+        dueAtWhenNull: input.dueAtWhenNull,
+      });
+      if (!changed) return "not_open";
+      await recordAudit(trx, ctx, {
+        emailId: delegation.email_id,
+        actionId: delegation.send_action_id,
+        actor: input.actor,
+        event: auditEvents.delegationSent,
+        data: { delegation_id: input.delegationId, delegate_id: delegation.delegate_id, went_out: true },
+        at: input.at,
+      });
+      return "changed";
+    },
     isOpen: async (trx, ctx, delegationId, kind) => {
       const delegation = await lockDelegation(trx, ctx, delegationId);
       if (delegation === undefined) return false;

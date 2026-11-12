@@ -25,6 +25,7 @@ import {
   approve,
   approveSet,
   getSend,
+  markWentOut,
   reject,
   rejectSet,
   sendAgain,
@@ -92,6 +93,11 @@ export const APPROVAL_TEXTS = {
   done_already: "Already done.",
   done_not_closable: "This delegation is not answered yet.",
   send_again_delegation_closed: "The delegation is closed: no resend.",
+  went_out: "✅ The delegation is marked as sent. A reply from the delegate is matched now.",
+  went_out_already: "Already marked as sent.",
+  went_out_sent_again: "The mail was sent again: no change.",
+  went_out_not_unknown: "This send is not in the unknown state: no change.",
+  went_out_delegation_not_open: "The delegation is not waiting for this answer any more: no change.",
 };
 
 const NOT_FOUND_TEXT = APPROVAL_TEXTS.not_found;
@@ -297,6 +303,27 @@ async function handleApprovalCallback(
           return { answer: APPROVAL_TEXTS.send_again_draft_gone };
         case "delegation_closed":
           return { answer: APPROVAL_TEXTS.send_again_delegation_closed };
+        case "not_found":
+          return { answer: NOT_FOUND_TEXT };
+      }
+      break;
+    }
+    case "went_out": {
+      const result = await markWentOut(approvals, ctx, callback.actionId, input);
+      switch (result.kind) {
+        case "went_out":
+          return {
+            answer: APPROVAL_TEXTS.went_out,
+            edit: await edit(`send_result:${callback.actionId}`, "went_out"),
+          };
+        case "already":
+          return { answer: APPROVAL_TEXTS.went_out_already };
+        case "sent_again":
+          return { answer: APPROVAL_TEXTS.went_out_sent_again };
+        case "not_unknown":
+          return { answer: APPROVAL_TEXTS.went_out_not_unknown };
+        case "delegation_not_open":
+          return { answer: APPROVAL_TEXTS.went_out_delegation_not_open };
         case "not_found":
           return { answer: NOT_FOUND_TEXT };
       }

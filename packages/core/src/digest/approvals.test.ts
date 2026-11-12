@@ -299,6 +299,14 @@ describe("renderSendResult", () => {
       `⚠️ Unknown whether the mail to ${to} went out · Fwd: Offer\n${joined("The connection broke after the content was sent. Check Sent or ask the recipient before you send again.", closings[sendKind])}`
     );
     expect(parseCallback(message.buttons[0]?.[0]?.data ?? "")).toEqual({ kind: "send_again", actionId: ID });
+    // F041: only a delegation send has the "It went out" button; it is the second button.
+    const second = message.buttons[1]?.[0];
+    if (sendKind === "delegation") {
+      expect(second?.text).toBe("✅ It went out");
+      expect(parseCallback(second?.data ?? "")).toEqual({ kind: "went_out", actionId: ID });
+    } else {
+      expect(message.buttons).toHaveLength(1);
+    }
   });
 
   const expired: [Extract<SendResultKind, { kind: "expired" }>["reason"], string, "both" | "closing" | "draft"][] = [
@@ -409,6 +417,7 @@ describe("approvalEdit", () => {
     ["expired", "⌛ Expired 11:07. The mail was not sent."],
     ["approved_set", "⏳ Approved 11:07: 2 sending, 1 skipped."],
     ["rejected_set", "✖️ Skipped 11:07: 2 rejected, 1 skipped."],
+    ["went_out", "✅ Marked as sent 11:07."],
     ["done", "✅ Done 11:07."],
   ];
 

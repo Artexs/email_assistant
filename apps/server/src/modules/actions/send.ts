@@ -8,7 +8,7 @@ import { auditEvents, recordAudit, type AuditData } from "../audit";
 import { locateByActionId, MailAuthError, SmtpSendError, type MailProvider } from "../mail";
 
 import type { ApplyDeps, ApplyOutcome } from "./apply";
-import { HARD_ERROR_TRIES, RETRY_WAIT_MS } from "./constants";
+import { DELEGATION_DUE_AFTER_MS, HARD_ERROR_TRIES, RETRY_WAIT_MS } from "./constants";
 import { buildDraftMessage } from "./drafts";
 import {
   finishAction,
@@ -27,7 +27,6 @@ export const SEND_RETRY_WAIT_MS = RETRY_WAIT_MS;
 export const SEND_HARD_TRIES = HARD_ERROR_TRIES;
 // The notifier treats an older `pending` Sent copy as failed (D20).
 export const SENT_COPY_PENDING_MAX_AGE_MS = 10 * 60_000;
-const DELEGATION_DUE_AFTER_MS = 3 * 24 * 3_600_000;
 
 type ProviderResult = Record<string, string | number | boolean | null>;
 

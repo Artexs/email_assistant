@@ -21,6 +21,7 @@ export type Callback =
   | { kind: "approve_set"; setId: string }
   | { kind: "reject_set"; setId: string }
   | { kind: "send_again"; actionId: string }
+  | { kind: "went_out"; actionId: string }
   | { kind: "delegation_done"; delegationId: string };
 
 export function isFeedbackCallback(callback: Callback): callback is FeedbackCallback {
@@ -41,7 +42,7 @@ const CODE_TO_CATEGORY = Object.fromEntries(
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const WITH_CODE = new RegExp(`^(fr|fc):([urins]):(${UUID})$`);
 const WITHOUT_CODE = new RegExp(`^(fe|fx|fu):(${UUID})$`);
-const APPROVAL = new RegExp(`^(ap|ar|as|rs|ag|dd):(${UUID})$`);
+const APPROVAL = new RegExp(`^(ap|ar|as|rs|ag|gw|dd):(${UUID})$`);
 
 // Button data is at most 64 bytes (Telegram); the longest value here is 41.
 export function encodeCallback(callback: Callback): string {
@@ -56,6 +57,8 @@ export function encodeCallback(callback: Callback): string {
       return `rs:${checkedId(callback.setId)}`;
     case "send_again":
       return `ag:${checkedId(callback.actionId)}`;
+    case "went_out":
+      return `gw:${checkedId(callback.actionId)}`;
     case "delegation_done":
       return `dd:${checkedId(callback.delegationId)}`;
     default:
@@ -100,6 +103,8 @@ export function parseCallback(data: string): Callback | null {
         return { kind: "reject_set", setId: id };
       case "ag":
         return { kind: "send_again", actionId: id };
+      case "gw":
+        return { kind: "went_out", actionId: id };
       default:
         return { kind: "delegation_done", delegationId: id };
     }

@@ -8,6 +8,7 @@ import { auditEvents } from "../../src/modules/audit";
 import { handleCallback, insertOutbox, type CallbackDeps } from "../../src/modules/channels";
 import type { LinkedChat } from "../../src/modules/channels";
 import { APPROVAL_TEXTS, UNDO_TEXTS } from "../../src/modules/channels/callbacks";
+import { delegationHooks, detectReply } from "../../src/modules/delegation";
 import { listLabeledResults } from "../../src/modules/triage";
 import type { DB } from "../../src/platform/db";
 
@@ -640,6 +641,161 @@ describe("approval taps", () => {
       });
       const notFailed = await handleCallback(s.deps, s.owner1, `ag:${applied.sendId}`);
       expect(notFailed).toEqual({ answer: APPROVAL_TEXTS.send_again_not_failed });
+    });
+  });
+
+  // F041: a delegation send that ended `outcome_unknown`, its delegation `cancelled`, and the result notice in the outbox.
+  async function unknownDelegationSend(trx: Transaction<DB>, s: Awaited<ReturnType<typeof approvalSetup>>) {
+    const delegateId = await insertDelegate(trx, s.ctx, { email: "anna@x.test" });
+    const messageId = `<out-${randomUUID()}@x.test>`;
+    const send = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, {
+      sendStatus: "failed",
+      notifiedAt: T,
+      createdAt: T,
+      delegateId,
+      outgoingMessageId: messageId,
+    });
+    await trx.updateTable("actions").set({ status_reason: "outcome_unknown" }).where("id", "=", send.sendId).execute();
+    const id = await insertDelegation(trx, s.ctx, {
+      mailboxId: s.a.mailboxId,
+      emailId: send.emailId,
+      delegateId,
+      draftActionId: send.draftId,
+      sendActionId: send.sendId,
+      status: "cancelled",
+    });
+    await trx.updateTable("delegations").set({ status_reason: "outcome_unknown" }).where("id", "=", id).execute();
+    await trx
+      .updateTable("actions")
+      .set({ payload: sql`jsonb_set(payload, '{delegation_id}', to_jsonb(${id}::text))` })
+      .where("id", "=", send.sendId)
+      .execute();
+    await queueFor(trx, s.ctx, s.o1, "send_result", send.sendId, send.emailId, "⚠️ Unknown whether the mail went out");
+    return { ...send, delegationId: id, messageId };
+  }
+
+  async function delegationRow(trx: Transaction<DB>, id: string) {
+    return trx.selectFrom("delegations").selectAll().where("id", "=", id).executeTakeFirstOrThrow();
+  }
+
+  test("(8d) 'It went out' sets the delegation to sent, once, without a new send; a reply is then matched", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      s.deps.hooks = delegationHooks({ db: trx });
+      const u = await unknownDelegationSend(trx, s);
+      const actionsBefore = await trx.selectFrom("actions").select("id").where("org_id", "=", s.a.orgId).execute();
+
+      const tap = await handleCallback(s.deps, s.owner1, `gw:${u.sendId}`);
+      expect(tap.answer).toBe(APPROVAL_TEXTS.went_out);
+      expect(tap.edit).toEqual({
+        text: "⚠️ Unknown whether the mail went out\n\n✅ Marked as sent 11:00.",
+        buttons: [],
+      });
+      expect(await delegationRow(trx, u.delegationId)).toMatchObject({
+        status: "sent",
+        status_reason: null,
+        sent_message_id: u.messageId,
+      });
+      // The send row stays failed; no row is added (no new send, so no SMTP call).
+      expect(await sendRow(trx, u.sendId)).toMatchObject({ status: "failed", status_reason: "outcome_unknown" });
+      expect(await trx.selectFrom("actions").select("id").where("org_id", "=", s.a.orgId).execute()).toHaveLength(
+        actionsBefore.length
+      );
+      const audit = await trx
+        .selectFrom("audit_log")
+        .select(["event", "actor"])
+        .where("org_id", "=", s.a.orgId)
+        .where("event", "in", [auditEvents.actionWentOut, auditEvents.delegationSent])
+        .orderBy("event")
+        .execute();
+      expect(audit).toEqual([
+        { event: auditEvents.actionWentOut, actor: s.o1 },
+        { event: auditEvents.delegationSent, actor: s.o1 },
+      ]);
+
+      // A reply of the delegate is matched now.
+      expect(
+        await detectReply(trx, s.ctx, s.a.mailboxId, {
+          fromAddress: "anna@x.test",
+          inReplyTo: u.messageId,
+          referencesHeader: null,
+        })
+      ).toMatchObject({ delegationId: u.delegationId });
+
+      // The second tap, by any owner, changes nothing.
+      const again = await handleCallback(s.deps, s.owner2, `gw:${u.sendId}`);
+      expect(again).toEqual({ answer: APPROVAL_TEXTS.went_out_already });
+      const auditAfter = await trx
+        .selectFrom("audit_log")
+        .select("id")
+        .where("org_id", "=", s.a.orgId)
+        .where("event", "in", [auditEvents.actionWentOut, auditEvents.delegationSent])
+        .execute();
+      expect(auditAfter).toHaveLength(2);
+    });
+  });
+
+  test("(8e) 'It went out': an assistant, a send sent again, another state and another send change nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      s.deps.hooks = delegationHooks({ db: trx });
+      const u = await unknownDelegationSend(trx, s);
+      const unchanged = async () =>
+        expect(await delegationRow(trx, u.delegationId)).toMatchObject({
+          status: "cancelled",
+          status_reason: "outcome_unknown",
+          sent_message_id: null,
+        });
+
+      expect(await handleCallback(s.deps, s.assistantLink, `gw:${u.sendId}`)).toEqual({
+        answer: APPROVAL_TEXTS.owner_only,
+      });
+      await unchanged();
+
+      // Another organization's owner sees the mail as not found.
+      const foreign = await createOrgWithMailbox(trx);
+      const foreignLink: LinkedChat = {
+        orgId: foreign.orgId,
+        userId: foreign.userId,
+        role: "owner",
+        chatId: 2,
+        linkedAt: T,
+      };
+      expect(await handleCallback(s.deps, foreignLink, `gw:${u.sendId}`)).toEqual({ answer: NOT_FOUND });
+      await unchanged();
+
+      // The delegation was closed by another path (a failed resend): no change.
+      await trx
+        .updateTable("delegations")
+        .set({ status_reason: "send_failed" })
+        .where("id", "=", u.delegationId)
+        .execute();
+      expect(await handleCallback(s.deps, s.owner1, `gw:${u.sendId}`)).toEqual({
+        answer: APPROVAL_TEXTS.went_out_delegation_not_open,
+      });
+      await trx
+        .updateTable("delegations")
+        .set({ status_reason: "outcome_unknown" })
+        .where("id", "=", u.delegationId)
+        .execute();
+
+      // A send that is not in the unknown state.
+      const applied = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, {
+        sendStatus: "applied",
+        approved: { userId: s.o1, at: T },
+        createdAt: T,
+      });
+      expect(await handleCallback(s.deps, s.owner1, `gw:${applied.sendId}`)).toEqual({
+        answer: APPROVAL_TEXTS.went_out_not_unknown,
+      });
+
+      // The send was sent again: the resend decides.
+      const resend = await handleCallback(s.deps, s.owner1, `ag:${u.sendId}`);
+      expect(resend.answer).toBe(APPROVAL_TEXTS.send_again);
+      expect(await handleCallback(s.deps, s.owner1, `gw:${u.sendId}`)).toEqual({
+        answer: APPROVAL_TEXTS.went_out_sent_again,
+      });
+      await unchanged();
     });
   });
 

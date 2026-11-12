@@ -21,12 +21,14 @@ export {
   approveSet,
   reject,
   rejectSet,
+  markWentOut,
   sendAgain,
   type ApprovalDeps,
   type ApprovalInput,
   type ApproveResult,
   type RejectResult,
   type SendAgainResult,
+  type WentOutResult,
 } from "./approvals";
 export { ensureMoved, type EnsureExclude, type EnsureResult } from "./move";
 export { MAILBOX_ACTION_TYPES, type MailboxActionType } from "@ea/core";

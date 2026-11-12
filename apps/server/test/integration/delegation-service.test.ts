@@ -335,6 +335,46 @@ describe("delegationHooks", () => {
     });
   });
 
+  test("onWentOut: only cancelled + outcome_unknown becomes sent; the same message id again is already", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const hooks = delegationHooks({ db });
+      const input = (delegationId: string, sentMessageId = "<out@x.test>") => ({
+        delegationId,
+        sentMessageId,
+        at: now,
+        dueAtWhenNull: new Date(now.getTime() + 3 * 24 * 3_600_000),
+        actor: "owner-1",
+      });
+      const make = async (status: string, reason: string | null) => {
+        const d = await delegationWithPair(trx, s.ctx, s.mailboxId, status);
+        await trx.updateTable("delegations").set({ status_reason: reason }).where("id", "=", d.id).execute();
+        return d.id;
+      };
+
+      const unknown = await make("cancelled", "outcome_unknown");
+      expect(await hooks.onWentOut(trx, s.ctx, input(unknown))).toBe("changed");
+      expect(await getDelegation(trx, s.ctx, unknown)).toMatchObject({
+        status: "sent",
+        status_reason: null,
+        sent_message_id: "<out@x.test>",
+        sent_at: now,
+      });
+      expect(await hooks.onWentOut(trx, s.ctx, input(unknown))).toBe("already");
+      expect(await hooks.onWentOut(trx, s.ctx, input(unknown, "<other@x.test>"))).toBe("not_open");
+
+      for (const [status, reason] of [
+        ["cancelled", "send_failed"],
+        ["cancelled", "rejected"],
+        ["drafted", null],
+        ["answered", null],
+      ] as const) {
+        expect(await hooks.onWentOut(trx, s.ctx, input(await make(status, reason)))).toBe("not_open");
+      }
+      expect(await hooks.onWentOut(trx, s.ctx, input(randomUUID()))).toBe("not_open");
+    });
+  });
+
   test("isOpen: a reminder needs sent | overdue; a delegation send needs drafted or cancelled by a failed send", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);

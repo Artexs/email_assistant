@@ -257,7 +257,11 @@ export function renderSendResult(input: {
           closing
         ),
       ];
-      buttons = sendAgain;
+      // A delegation send that went out stays `cancelled` until the owner says so: only it has a delegation to restore.
+      buttons =
+        sendKind === "delegation"
+          ? [...sendAgain, [{ text: "✅ It went out", data: encodeCallback({ kind: "went_out", actionId }) }]]
+          : sendAgain;
       break;
     case "expired": {
       const draft = draftText(result.draftRemoved);
@@ -330,6 +334,7 @@ export type ApprovalEditOutcome =
   | "expired"
   | "approved_set"
   | "rejected_set"
+  | "went_out"
   | "done";
 
 const HELD_TEXTS = {
@@ -376,6 +381,9 @@ export function approvalEdit(input: {
       break;
     case "rejected_set":
       line = `✖️ Skipped ${time}: ${counts.done} rejected, ${counts.skipped} skipped.`;
+      break;
+    case "went_out":
+      line = `✅ Marked as sent ${time}.`;
       break;
     case "done":
       line = `✅ Done ${time}.`;

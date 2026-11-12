@@ -169,6 +169,10 @@ Pipeline rules:
      An error that is not a `SmtpSendError` is `unknown` too. `content` and `unknown` mean that the server may have the mail: the committer never retries after them.
    - **"Send again":** after `smtp_error` and `outcome_unknown` the notice has the button 📤 Send again (callback `ag:<action id>`).
      The tap is the approval: it inserts one new `approved` send for the same draft (key `<failed id>:again`, so one resend per failed row) when the draft is still `applied` and the delegation, if any, is open.
+   - **"It went out":** after `outcome_unknown` of a delegation send the notice has a second button ✅ It went out (callback `gw:<action id>`). Only an owner can tap it.
+     It makes no SMTP call and no new send row. In one transaction (lock order: send, then delegation) it checks that the send is `failed` / `outcome_unknown`, has a stored `outgoing_message_id` and has no resend (key `<failed id>:again`).
+     Then the `onWentOut` hook sets the delegation from `cancelled` (`outcome_unknown`) to `sent` with `sent_message_id` = that message id, so a reply of the delegate is matched and the chaser works. The send row stays `failed`.
+     Audit: `action.went_out` and `delegation.sent` (`went_out: true`), both with the owner as actor. A second tap, a delegation in another state, a resent send and a send that is not `outcome_unknown` answer with a toast and change nothing. Reminder and clarification sends have no such button: a failed reminder does not cancel the delegation.
      After `smtp_rejected` there is no button: the address is wrong, so the user fixes the delegate and the mail is a new one.
 
 **Outcomes of a send error (rule 6, `sendOutcomeOf`):**
@@ -348,7 +352,7 @@ sequenceDiagram
 - **Taps:** the callback data is a kind and a UUID: `ap:` approve, `ar:` reject, `as:` send all, `rs:` skip all, `ag:` send again, `dd:` done. The handler checks the chat link, then the role: **only an owner can approve, reject or send again**; `dd:` (Done) works for every linked member.
   An unknown id and an id of another organization get the same answer. A second tap finds the status changed and answers with it. An expired or rejected action cannot send.
   `approve` refuses while the draft is not `applied` (`draft_not_ready`), and a tap later than 48 h after `notified_at` expires the send (the hourly job can be late by up to an hour).
-- **The edit after the tap:** the approval message keeps its text and gets one line: `⏳ Approved HH:MM, sending.`, `✖️ Rejected HH:MM.`, `⌛ Expired HH:MM. The mail was not sent.` or `✅ Done HH:MM.` An approved send that is held (by `SEND_SCOPE`, a paused mailbox or a login error) says so, keeps the ✖️ Reject button and expires 48 h after the tap.
+- **The edit after the tap:** the approval message keeps its text and gets one line: `⏳ Approved HH:MM, sending.`, `✖️ Rejected HH:MM.`, `⌛ Expired HH:MM. The mail was not sent.` or `✅ Done HH:MM.` or `✅ Marked as sent HH:MM.` (after ✅ It went out). An approved send that is held (by `SEND_SCOPE`, a paused mailbox or a login error) says so, keeps the ✖️ Reject button and expires 48 h after the tap.
 - **The result notice** is a new message (outbox kind `send_result`), one per owner, when the send ends: `✅ Sent to …`, `❌ Not sent …` (`smtp_rejected`, `smtp_error`), `⚠️ Unknown whether the mail … went out` (`outcome_unknown`; "Check Sent or ask the recipient before you send again"), `⌛ Not sent: …` for each `expired` reason, `✖️ Rejected`.
   A `sent` notice adds "No copy in Sent" when the copy failed and "The draft stays in Drafts" when the server has no UIDPLUS. A `pending` Sent copy older than 10 min counts as failed. An edit of the approval message instead of a new message is a follow-up (`spec/features/planned/F039-approval-edit-in-place/plan.md`).
 - **Notice kinds (S4):** `approval`, `approval_set`, `send_result` (owners only) and `delegation_answered` (every linked member, with a ✅ Done button). The notifier queues a request only after the draft is `applied`, and only for an `active` mailbox.
@@ -401,7 +405,7 @@ actions.status:  (code map: apps/server/src/modules/actions/transitions.ts; test
 
 delegations.status: drafted → sent                                    (the delegation send is applied; due_at = 3 days later when the mail states no date)
                  drafted → cancelled                                  (reason: rejected | expired | draft_missing | send_failed | outcome_unknown)
-                 cancelled → sent                                     ("Send again" after send_failed | outcome_unknown, when the new send is applied)
+                 cancelled → sent                                     ("Send again" after send_failed | outcome_unknown, when the new send is applied; or "It went out" after outcome_unknown, with the stored outgoing_message_id and no new send)
                  sent → overdue                                       (the chaser, after due_at)
                  sent | overdue → answered                            (a mail from the delegate in the thread of the sent mail; the pending reminders expire)
                  answered | overdue → done                            (the Done tap, or bun run delegations:done; the pending reminders expire)

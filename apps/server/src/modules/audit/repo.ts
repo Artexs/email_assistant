@@ -30,6 +30,7 @@ export const auditEvents = {
   actionApproved: "action.approved",
   actionRejected: "action.rejected",
   actionSendAgain: "action.send_again",
+  actionWentOut: "action.went_out", // data: delegation_id, outgoing_message_id
   actionSentCopyFailed: "action.sent_copy_failed",
   emailReturned: "email.returned",
   mailboxFolderCreated: "mailbox.folder_created",
