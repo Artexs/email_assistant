@@ -39,7 +39,7 @@ The server listens on `127.0.0.1:8080` on the host only (for Tailscale Serve, se
 
 ## Update
 
-1. Make a backup first: `deploy/backup.sh`. The last line is `backup ok <name> <bytes>`.
+1. Make a backup first: `deploy/backup.sh` (`PATH=$HOME/bin:$PATH deploy/backup.sh` if rclone is in `~/bin`, see Backups). The last line is `backup ok <name> <bytes>`.
 2. Check the disk: `df -h /`. Stop if less than 3 GB is free. Run `docker builder prune -f` first, then check again.
 3. Update and start:
 

@@ -146,7 +146,7 @@ The stage files cite these as E<n>.
 Each stage lives in its own file in [`s5e-web-deploy-docs/`](s5e-web-deploy-docs/). An implementer or reviewer reads this file (Done when, Owns, A1–A9, Facts, E1–E14, "Rules for every step") and only the stage file of its step. The main session ticks the step boxes in the stage file and the stage box here. `[written]` marks a stage file that is on disk.
 
 - [x] [Stage 1](s5e-web-deploy-docs/stage-01-compose-env-runbook.md) — Compose loopback port, `.env.example` server values, the runbook "Web panel" section, two alert statuses [risky] [written]
-- [ ] [Stage 2](s5e-web-deploy-docs/stage-02-rehearsal-and-merge.md) — Deploy rehearsal on this PC (upgrade from `0d39663` with data, the trusted proxy, the old code on the new schema), merge stages 1–2 into `master` [risky] — main session [written]
+- [x] [Stage 2](s5e-web-deploy-docs/stage-02-rehearsal-and-merge.md) — Deploy rehearsal on this PC (upgrade from `0d39663` with data, the trusted proxy, the old code on the new schema), merge stages 1–2 into `master` [risky] — main session [written]
 - [ ] [Stage 3](s5e-web-deploy-docs/stage-03-tailscale-user-steps.md) — User steps: the Tailscale account, the VPS, this PC, the phone [risky] — gated, user and main session [written]
 - [ ] [Stage 4](s5e-web-deploy-docs/stage-04-vps-deploy-and-smoke.md) — VPS deploy, Serve, access checks, the first password, the hand smoke [risky] — gated, main session with the user [written]
 - [x] [Stage 5](s5e-web-deploy-docs/stage-05-adrs-and-docs.md) — ADR 0015, ADR 0016, ADR 0011 line, architecture, modules, roadmap, code patterns, notes [written]

@@ -32,7 +32,7 @@ Decisions and facts: the S5 master plan, `tasks/active/s5-web-panel.md` (P3, D22
   - Every device needs the Tailscale app and an account.
   - The machine name and the tailnet name go to the public Certificate Transparency ledger. The repo is public, so docs write `<machine>.<tailnet>.ts.net`.
   - The panel depends on the Tailscale service.
-  - Serve is open to every device that the tailnet policy (ACL) allows. The default policy of a one-user tailnet allows the owner's own devices only. Check `tailscale status` for foreign users before you rely on it.
+  - Serve is open to every device that the tailnet policy (ACL) allows. The default policy of a one-user tailnet allows the owner's own devices only. Check `tailscale status` for foreign users before you rely on it. Also check in the admin console that the machine is not shared with another tailnet.
   - Any process on the VPS host that reaches `127.0.0.1:8080` appears as the trusted Compose gateway and can set `x-forwarded-for`. This affects only the audit address and the rate limit.
   - A recreated Compose network (`docker compose down`, a Docker upgrade) can change the gateway. Read it again, then set `WEB_TRUSTED_PROXIES`.
     A wrong value does not open the panel. Every client then shares one rate-limit counter, and `auth_sessions.ip_address` holds the gateway.
