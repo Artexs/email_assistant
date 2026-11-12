@@ -36,6 +36,7 @@ Template:
 | 0021 | Simulator stack: separate Compose project with GreenMail, fake Telegram | proposed                              |
 | 0022 | Report mail goes into the user's own INBOX by IMAP APPEND               | proposed                              |
 | 0023 | Every user action is a typed HTTP command described in OpenAPI           | proposed                              |
+| 0024 | Structured logs, tailnet log store, operator alerts checked by the app   | proposed                              |
 | 0026 | Identity tier 1: OIDC per organization, TOTP, break-glass owner         | proposed                              |
 | 0027 | Operator role in the panel and per-organization feature flags           | proposed                              |
 | 0028 | Autonomy earned from global evidence and a history check, not labels   | proposed                              |

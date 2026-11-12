@@ -28,6 +28,8 @@ Real pricing, payment, a company, marketing campaigns, SEO work.
 
 E2a (numbers for the pages), E2b (demo organization in the sim stack with its reset command, PD-027), E3 (numbers), E7 (papers, cost model). E8 for operator docs.
 
+From E8 discovery (2026-11-13, PD-051–PD-055): the operator docs (runbooks per alert, release and rollback, restore drill with its measured time, VPS-lost runbook) come from E8. The security-and-data page states: logs hold ids, codes and counts only (a canary test proves it), stay on the server, 30 days; no hosted log or error service; Healthchecks.io receives timing pings only, no data. The public changelog builds on E8's `CHANGELOG.md` (SemVer `0.y.z`, `1.0.0` at the Stage 2 exit).
+
 ## Open product questions
 
 1. Docs site tool (Astro Starlight fits the existing stack) and where it is served (tailnet only, or a public static site with no product behind it).
