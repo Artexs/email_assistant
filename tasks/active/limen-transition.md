@@ -1,4 +1,4 @@
-> **Status 2026-11-10 — in progress — plan written, waiting for the user's answers to "Decisions" (D1–D9).** No install and no repo change yet. Left: stages 0–5.
+> **Status 2026-11-12 — in progress — plan written, waiting for the user's answers to "Decisions" (D1–D9).** No install and no repo change yet. §4 holds the S5c build feedback as input for D3, D5–D7 and stages 2–5. Left: stages 0–5.
 
 # Move the agent workflow to Limen
 
@@ -39,6 +39,7 @@ You ──talk──▶ Coordinator (pi, LIMEN_COORDINATOR=1, Opus, main checkou
 ```
 
 Three ideas carry the change:
+
 1. **The job is the unit.** Each worker run has a durable record in `.limen/jobs/<id>/` (task, log, state, session, result, note). Today this lives in handoff notes and `~/.cache/ea-review/*.md.done`.
 2. **The ticket is the brief.** Short (~300 words): outcome, scope, out of scope, acceptance. No step list, no status, no log. Depth goes into `plan.md` next to the ticket, only where risk needs it.
 3. **Proof, not claims.** Each job writes `note.md` (Done means / Easy to miss / Not proven yet). At finish, Limen checks that each "proven" line names a command that ran with exit 0, or a file. Else the job is `done with open checks`. This is our "name the command and its output" rule, enforced.
@@ -55,23 +56,24 @@ Three ideas carry the change:
 
 ### 2.2 Repo files
 
-| File                              | Content                                                                                                  | Source now                                      | Injected where                          |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | --------------------------------------- |
-| `spec/vision.md`                  | Product principles + current direction, ~30 lines                                                       | `docs/product-brief.md`, `docs/roadmap.md`      | Every coordinator model call            |
-| `.agents/limen/styleguide.md`     | Shape / Prefer / Avoid, ~40 lines                                                                         | `docs/code-patterns.md`, `CLAUDE.md` § Rules    | Every call of every role                |
-| `.agents/limen/reminders.md`      | Binding repo rules (list below)                                                                           | `CLAUDE.md`, `tasks/README.md` § Git mode       | First prompt of each job + finish check |
-| `.agents/limen/communication.md`  | Overlay: Limen register + our STE and "max 4 lines to the user" rules                                    | Package `templates/communication.md` + AGENTS.md | Every call                              |
-| `spec/build.md`                   | Board: TRACK, NEXT, PARKED, DROPPED (prose) + NOW, PROVEN (generated) + model and review policy in TRACK | `docs/roadmap.md` (order), `tasks/README.md` (models) | Coordinator (board digest)       |
-| `spec/features/{planned,active,done,dropped}/` | Feature folders `FNNN-slug/` with `ticket.md`, optional `plan.md`, `review-N.md`, `outcome.md` | `tasks/`                                        | Workers read by `Ticket:` pointer       |
-| `.pi/extensions/limen.ts`, `.omp/extensions/limen.ts` | Stubs that load Limen hooks from the installed package (written by `limen init`)     | —                                               | Coordinator session                     |
-| `.agents/limen/limits.json`       | Only if `bun install` or prepare needs > 5 min                                                            | —                                               | —                                       |
-| `scripts/limen-prepare.sh`        | Prepare per job (below)                                                                                   | `tasks/README.md` § Git mode step 1             | Run by Limen before the engine          |
-| `.gitignore`                      | Add `.limen/`                                                                                             | —                                               | —                                       |
+| File                                                  | Content                                                                                                  | Source now                                            | Injected where                          |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | --------------------------------------- |
+| `spec/vision.md`                                      | Product principles + current direction, ~30 lines                                                        | `docs/product-brief.md`, `docs/roadmap.md`            | Every coordinator model call            |
+| `.agents/limen/styleguide.md`                         | Shape / Prefer / Avoid, ~40 lines                                                                        | `docs/code-patterns.md`, `CLAUDE.md` § Rules          | Every call of every role                |
+| `.agents/limen/reminders.md`                          | Binding repo rules (list below)                                                                          | `CLAUDE.md`, `tasks/README.md` § Git mode             | First prompt of each job + finish check |
+| `.agents/limen/communication.md`                      | Overlay: Limen register + our STE and "max 4 lines to the user" rules                                    | Package `templates/communication.md` + AGENTS.md      | Every call                              |
+| `spec/build.md`                                       | Board: TRACK, NEXT, PARKED, DROPPED (prose) + NOW, PROVEN (generated) + model and review policy in TRACK | `docs/roadmap.md` (order), `tasks/README.md` (models) | Coordinator (board digest)              |
+| `spec/features/{planned,active,done,dropped}/`        | Feature folders `FNNN-slug/` with `ticket.md`, optional `plan.md`, `review-N.md`, `outcome.md`           | `tasks/`                                              | Workers read by `Ticket:` pointer       |
+| `.pi/extensions/limen.ts`, `.omp/extensions/limen.ts` | Stubs that load Limen hooks from the installed package (written by `limen init`)                         | —                                                     | Coordinator session                     |
+| `.agents/limen/limits.json`                           | Only if `bun install` or prepare needs > 5 min                                                           | —                                                     | —                                       |
+| `scripts/limen-prepare.sh`                            | Prepare per job (below)                                                                                  | `tasks/README.md` § Git mode step 1                   | Run by Limen before the engine          |
+| `.gitignore`                                          | Add `.limen/`                                                                                            | —                                                     | —                                       |
 
 Do **not** add `AGENTS.md` to the repo root: a project `AGENTS.md` replaces Limen's whole shop manual. Keep project rules in `CLAUDE.md` (stage 3 checks that the coordinator and the jobs load it) and in the files above.
 Do **not** add overlays `.agents/limen/worker.md` or `reviewer.md` at first: an overlay replaces the whole package prompt and stops upstream fixes. Use `reminders.md` for repo rules. Add an overlay only when a rule cannot live in reminders.
 
 `reminders.md` draft:
+
 - Never commit or print secrets or `.env`. Read them from env/config.
 - Template literals for strings with variables; `const`/`let` only.
 - One commit message form: `<area>: FNNN <slice> — <what>`; body: the check command and its result.
@@ -82,12 +84,13 @@ Do **not** add overlays `.agents/limen/worker.md` or `reviewer.md` at first: an 
 - Before done: `bun run lint && bun run typecheck && bun run test:unit` passed at the final commit, run as one `&&` chain (the finish check counts only `&&` chains with exit 0).
 
 `scripts/limen-prepare.sh` draft (runs in the new worktree):
+
 1. Copy `.env` from the main checkout (`$LIMEN_CONTEXT_ROOT` or `git worktree list` first entry; check which variable Limen gives in stage 1).
 2. `bun install --frozen-lockfile`.
 3. `bun run db:worktree <job-id>` and append the two printed env lines to the worktree `.env`.
 4. Optional: `PORT=8080+N` offset. GreenMail stays shared (open item since 2026-11-07).
 5. Exit non-zero on failure. Limen logs a prepare failure but still starts the job, so `reminders.md` tells the worker to check `.env` and `node_modules` first.
-Cleanup: `limen prune` removes worktrees, not databases. A weekly `bun run db:worktree --drop` for retired jobs is needed (stage 5 adds it to the close step).
+   Cleanup: `limen prune` removes worktrees, not databases. A weekly `bun run db:worktree --drop` for retired jobs is needed (stage 5 adds it to the close step).
 
 ### 2.3 Tasks folder (small decision, D1)
 
@@ -102,20 +105,21 @@ Cleanup: `limen prune` removes worktrees, not databases. A weekly `bun run db:wo
 ### 2.4 Agents and subagents (roles)
 
 Two mechanisms after the move:
+
 - **Limen jobs** (`limen spawn`): own process, own worktree and branch, durable record, wake at the end, runs with `--no-extensions` (only the extensions you pass). For work that edits code or must survive a crash.
 - **pi subagents** (`~/.pi/agent/extensions/subagent/`, foreground in the coordinator): no worktree, no record. Keep only for short, read-only or planning work inside the coordinator's turn.
 
-| Role now                              | Role after                                                    | Mechanism                         | Model (recommendation, D3)            | Prompt                                                           |
-| ------------------------------------- | ------------------------------------------------------------- | --------------------------------- | ------------------------------------- | ---------------------------------------------------------------- |
-| Main session (Opus)                   | **Coordinator**                                               | pi session, `LIMEN_COORDINATOR=1` | `claude-bridge/claude-opus-5-5`, high | Limen shop manual + `CLAUDE.md` + vision/styleguide/register     |
-| `planner` subagent (Opus, medium)     | **planner**, only for `[risky]` or > ~5 slices: writes `plan.md` (slices, interfaces, risky decisions, tests) | pi subagent (keep)                | Opus, medium                          | `~/.pi/agent/agents/planner.md`, edited: output = `plan.md` slices, not stage files |
-| `implementer` subagent (Sonnet)       | **worker**                                                    | `limen spawn` (detached)          | Sonnet 5.5, high; Opus for `[risky]`  | Package `templates/worker.md` + reminders                        |
-| `reviewer` subagent + `bg-agent.sh`   | **reviewer**                                                  | `limen spawn --review --detached` | Sonnet 5.5, high; Opus for `[risky]` (other model than the worker) | Package `templates/reviewer.md`                     |
-| — (main session reads code)           | **scout**: one read-only question before a spawn              | `limen spawn --role scout`        | Haiku 5.5, medium                     | Package `templates/scout.md`                                     |
-| — (plan cold reviews)                 | **researcher** / **judge** for open design questions          | `limen spawn --role researcher`   | Opus                                  | Package templates                                                |
-| — (`docs-review` tasks)               | **quality** pass after 10 landings                            | `limen spawn --role quality`      | Sonnet                                | Package `templates/quality.md`                                   |
-| `testmail-writer`, `testmail-checker` | keep as pi subagents (they are not code jobs); later optional custom roles `.agents/limen/testmail-*.md` | pi subagent | as now (Sonnet, Haiku)        | `~/.pi/agent/agents/testmail-*.md`                               |
-| — (manual worktree cleanup)           | **keeper** + `limen prune --retire`                           | Limen                             | Haiku or Sonnet                       | Package `templates/keeper.md`                                    |
+| Role now                              | Role after                                                                                                    | Mechanism                         | Model (recommendation, D3)                                         | Prompt                                                                              |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| Main session (Opus)                   | **Coordinator**                                                                                               | pi session, `LIMEN_COORDINATOR=1` | `claude-bridge/claude-opus-5-5`, high                              | Limen shop manual + `CLAUDE.md` + vision/styleguide/register                        |
+| `planner` subagent (Opus, medium)     | **planner**, only for `[risky]` or > ~5 slices: writes `plan.md` (slices, interfaces, risky decisions, tests) | pi subagent (keep)                | Opus, medium                                                       | `~/.pi/agent/agents/planner.md`, edited: output = `plan.md` slices, not stage files |
+| `implementer` subagent (Sonnet)       | **worker**                                                                                                    | `limen spawn` (detached)          | Sonnet 5.5, high; Opus for `[risky]`                               | Package `templates/worker.md` + reminders                                           |
+| `reviewer` subagent + `bg-agent.sh`   | **reviewer**                                                                                                  | `limen spawn --review --detached` | Sonnet 5.5, high; Opus for `[risky]` (other model than the worker) | Package `templates/reviewer.md`                                                     |
+| — (main session reads code)           | **scout**: one read-only question before a spawn                                                              | `limen spawn --role scout`        | Haiku 5.5, medium                                                  | Package `templates/scout.md`                                                        |
+| — (plan cold reviews)                 | **researcher** / **judge** for open design questions                                                          | `limen spawn --role researcher`   | Opus                                                               | Package templates                                                                   |
+| — (`docs-review` tasks)               | **quality** pass after 10 landings                                                                            | `limen spawn --role quality`      | Sonnet                                                             | Package `templates/quality.md`                                                      |
+| `testmail-writer`, `testmail-checker` | keep as pi subagents (they are not code jobs); later optional custom roles `.agents/limen/testmail-*.md`      | pi subagent                       | as now (Sonnet, Haiku)                                             | `~/.pi/agent/agents/testmail-*.md`                                                  |
+| — (manual worktree cleanup)           | **keeper** + `limen prune --retire`                                                                           | Limen                             | Haiku or Sonnet                                                    | Package `templates/keeper.md`                                                       |
 
 Model choices live in `spec/build.md` TRACK as one "Standing models" bullet (Limen's own board does it the same way). The coordinator passes `--engine pi --provider claude-bridge --model <m> --thinking <t> --extension <bridge>` on every spawn and continue. `model:` in `~/.pi/agent/agents/implementer.md` and `reviewer.md` stops being used for code work.
 
@@ -154,25 +158,26 @@ Short answer: it is **not** "install, move the tasks, start". Three layers chang
 
 ### 3.2 What changes
 
-| Area                    | Now                                                              | After                                                                                         |
-| ----------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Where work is written   | `tasks/<state>/<name>.md` + stage files                          | `spec/features/<lane>/FNNN-slug/` (`ticket.md`, `plan.md`, `review-N.md`, `outcome.md`)       |
-| Status of work          | Status line + log in the task file                               | Lane folder + `spec/build.md` board + `.limen/jobs/<id>/` records. No status line in tickets  |
-| Who builds              | `implementer` pi subagent, foreground, in the main checkout or task worktree | Limen worker job, background, own worktree + branch `limen/<id>`                  |
-| Who commits             | Main session, after PASS                                         | The worker, on its branch. The coordinator only lands (merges) and pushes                     |
-| How the loop moves      | The main session waits for each subagent call                    | Event-driven: the job ends → a wake starts the coordinator's next turn                        |
-| Review                  | `reviewer` subagent / `bg-agent.sh` on a frozen copy             | Review job on the job's branch; first line `PASS <sha>`                                        |
-| Plan detail             | Planner writes step detail for every stage                       | Short ticket; planner `plan.md` only for `[risky]` or big work                                |
-| Proof of done           | Rule in `AGENTS.md`, checked by the reviewer                     | Also checked by Limen at finish (`note.md`, `open-checks`)                                     |
-| Crash / new session     | Handoff note                                                     | `limen status` / `limen jobs` (handoff still useful for the coordinator's own context)       |
-| Cleanup                 | By hand                                                          | `limen prune`, `limen prune --retire` (DBs still by hand)                                      |
-| Your approvals          | Plan, each user checkpoint, end                                  | Risky tickets, `plan.md`, risky lands, end (D6)                                               |
+| Area                  | Now                                                                          | After                                                                                        |
+| --------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Where work is written | `tasks/<state>/<name>.md` + stage files                                      | `spec/features/<lane>/FNNN-slug/` (`ticket.md`, `plan.md`, `review-N.md`, `outcome.md`)      |
+| Status of work        | Status line + log in the task file                                           | Lane folder + `spec/build.md` board + `.limen/jobs/<id>/` records. No status line in tickets |
+| Who builds            | `implementer` pi subagent, foreground, in the main checkout or task worktree | Limen worker job, background, own worktree + branch `limen/<id>`                             |
+| Who commits           | Main session, after PASS                                                     | The worker, on its branch. The coordinator only lands (merges) and pushes                    |
+| How the loop moves    | The main session waits for each subagent call                                | Event-driven: the job ends → a wake starts the coordinator's next turn                       |
+| Review                | `reviewer` subagent / `bg-agent.sh` on a frozen copy                         | Review job on the job's branch; first line `PASS <sha>`                                      |
+| Plan detail           | Planner writes step detail for every stage                                   | Short ticket; planner `plan.md` only for `[risky]` or big work                               |
+| Proof of done         | Rule in `AGENTS.md`, checked by the reviewer                                 | Also checked by Limen at finish (`note.md`, `open-checks`)                                   |
+| Crash / new session   | Handoff note                                                                 | `limen status` / `limen jobs` (handoff still useful for the coordinator's own context)       |
+| Cleanup               | By hand                                                                      | `limen prune`, `limen prune --retire` (DBs still by hand)                                    |
+| Your approvals        | Plan, each user checkpoint, end                                              | Risky tickets, `plan.md`, risky lands, end (D6)                                              |
 
 ### 3.3 Multi-step epics with implement → review loops
 
 Yes, this still works. Two ways:
 
 **Way 1 (recommended): the coordinator loops over Limen jobs.**
+
 1. `plan.md` lists the slices of the epic (what `stage-NN` files hold now, shorter).
 2. The coordinator spawns slice 1 and ends its turn.
 3. The wake (job done) starts its next turn: it reads the result, spawns the review job.
@@ -187,37 +192,38 @@ Difference to now: the coordinator does not wait inside one long turn. Each step
 
 ### 3.4 Harness settings: what to change
 
-| Item                                   | Change? | What                                                                                                                                       |
-| -------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `~/.pi/agent/settings.json`            | No      | —                                                                                                                                          |
-| `~/.pi/agent/extensions/*`             | No      | They load in the coordinator. Jobs get only the ones passed with `--extension` (D4)                                                        |
-| `~/.pi/agent/agents/planner.md`        | Yes     | Output = `plan.md` slice list (not stage files, not the task file)                                                                         |
-| `~/.pi/agent/agents/implementer.md`, `reviewer.md` | No (unused here) | Limen's worker/reviewer prompts replace them in this repo. Keep for other repos                                                |
-| `~/.pi/agent/agents/testmail-*.md`     | No      | Coordinator still calls them as subagents                                                                                                  |
-| `~/.pi/agent/skills/run-task/`         | Rewrite | Way 1 loop with `limen` commands (D7)                                                                                                      |
-| `~/.pi/agent/skills/plan-task/`        | Small   | Output: `ticket.md` (~300 words) + optional `plan.md`; use `limen ticket new`                                                             |
-| `~/.pi/agent/bin/bg-agent.sh`          | Retire  | After the pilot                                                                                                                            |
-| `~/.pi/agent/AGENTS.md` (global)       | Yes     | Add § Limen: Claude route; and "in a Limen job (`LIMEN_JOB=1`): do not create task or note files, follow the ticket" (else the Knowledge rules tell workers to write `tasks/active/…`) |
-| `CLAUDE.md` (repo)                     | Yes     | See 3.5                                                                                                                                    |
-| `tasks/README.md`                      | Yes     | Old flow becomes history; new "Limen flow" section                                                                                          |
+| Item                                               | Change?          | What                                                                                                                                                                                   |
+| -------------------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `~/.pi/agent/settings.json`                        | No               | —                                                                                                                                                                                      |
+| `~/.pi/agent/extensions/*`                         | No               | They load in the coordinator. Jobs get only the ones passed with `--extension` (D4)                                                                                                    |
+| `~/.pi/agent/agents/planner.md`                    | Yes              | Output = `plan.md` slice list (not stage files, not the task file)                                                                                                                     |
+| `~/.pi/agent/agents/implementer.md`, `reviewer.md` | No (unused here) | Limen's worker/reviewer prompts replace them in this repo. Keep for other repos                                                                                                        |
+| `~/.pi/agent/agents/testmail-*.md`                 | No               | Coordinator still calls them as subagents                                                                                                                                              |
+| `~/.pi/agent/skills/run-task/`                     | Rewrite          | Way 1 loop with `limen` commands (D7)                                                                                                                                                  |
+| `~/.pi/agent/skills/plan-task/`                    | Small            | Output: `ticket.md` (~300 words) + optional `plan.md`; use `limen ticket new`                                                                                                          |
+| `~/.pi/agent/bin/bg-agent.sh`                      | Retire           | After the pilot                                                                                                                                                                        |
+| `~/.pi/agent/AGENTS.md` (global)                   | Yes              | Add § Limen: Claude route; and "in a Limen job (`LIMEN_JOB=1`): do not create task or note files, follow the ticket" (else the Knowledge rules tell workers to write `tasks/active/…`) |
+| `CLAUDE.md` (repo)                                 | Yes              | See 3.5                                                                                                                                                                                |
+| `tasks/README.md`                                  | Yes              | Old flow becomes history; new "Limen flow" section                                                                                                                                     |
 
 ### 3.5 Why `CLAUDE.md` and `AGENTS.md` must change
 
 A Limen worker is a normal pi process in a worktree of this repo. Pi will most likely load `~/.pi/agent/AGENTS.md` and the repo `CLAUDE.md` into it too (to prove in stage 1). Today these files say things that conflict with the Limen worker prompt:
+
 - "Subagents never commit" / "commit after reviewer PASS" vs Limen: "the worker commits".
 - "Git mode: worktree, branch `task/<name>`, merge --no-ff" vs Limen branches `limen/<id>` and `limen land`.
 - "Create `tasks/active/<name>.md`", "update the status line before each commit" vs Limen: "never edit the board or ticket status".
 - "Max 4 lines" is for replies to you; a worker's final message is a report to the coordinator.
-A model that reads two rule sets that conflict acts at random. So each rule must live in one place:
+  A model that reads two rule sets that conflict acts at random. So each rule must live in one place:
 
-| Rule kind                                       | Lives in (after)                                 |
-| ----------------------------------------------- | ------------------------------------------------ |
-| Code rules (template literals, const/let, patterns) | `.agents/limen/styleguide.md` (all roles); `CLAUDE.md` points to it |
-| Repo safety rules (secrets, migrations, shared DB, risky list, no force-push) | `.agents/limen/reminders.md`; `CLAUDE.md` points to it |
-| Product intent                                  | `spec/vision.md` (short) → `docs/product-brief.md` (long) |
-| Coordinator workflow (tickets, spawn, review, land, push, your checkpoints) | `CLAUDE.md` § Workflow + `spec/build.md` TRACK |
-| Your reply style (STE, 4 lines)                 | `~/.pi/agent/AGENTS.md` + `.agents/limen/communication.md` overlay |
-| Knowledge rules (notes, alerts)                 | `~/.pi/agent/AGENTS.md`, with "not inside Limen jobs, except a notes file the ticket asks for" |
+| Rule kind                                                                     | Lives in (after)                                                                               |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Code rules (template literals, const/let, patterns)                           | `.agents/limen/styleguide.md` (all roles); `CLAUDE.md` points to it                            |
+| Repo safety rules (secrets, migrations, shared DB, risky list, no force-push) | `.agents/limen/reminders.md`; `CLAUDE.md` points to it                                         |
+| Product intent                                                                | `spec/vision.md` (short) → `docs/product-brief.md` (long)                                      |
+| Coordinator workflow (tickets, spawn, review, land, push, your checkpoints)   | `CLAUDE.md` § Workflow + `spec/build.md` TRACK                                                 |
+| Your reply style (STE, 4 lines)                                               | `~/.pi/agent/AGENTS.md` + `.agents/limen/communication.md` overlay                             |
+| Knowledge rules (notes, alerts)                                               | `~/.pi/agent/AGENTS.md`, with "not inside Limen jobs, except a notes file the ticket asks for" |
 
 ### 3.6 Effort
 
@@ -225,6 +231,43 @@ A model that reads two rule sets that conflict acts at random. So each rule must
 - Stages 2–3 (repo files, rule rewrite, skill rewrite): ~half a day, mostly writing and your review of vision/styleguide.
 - Stage 4 (pilot): one small feature, then one with 2 parallel workers.
 - Moving tasks: no bulk move. Each planned task moves when it starts.
+
+## 4. Input: S5c build feedback (2026-11-11)
+
+Context only: this section makes no decision. The user decided on 2026-11-12 to adopt Limen, and to bring the build feedback into this plan instead of editing the current harness first. Use it when you answer D1–D9 and when you write stages 2–5.
+
+Source: the S5c build session, `~/.pi/agent/sessions/--home-artek-Documents-repos-email_assistant--/2026-11-11T12-49-29-870Z_01a1caa7-ff0e-7455-8d98-ecb9d555cee6.jsonl`, the last 3 user/assistant messages. The user asked why the build is slow and how to change the implementer, reviewer and planner. Read them there for the full text.
+
+### What the S5c build measured
+
+- Stages 1–11 took about 2 h 20 min (14:00–16:20), plus the group review.
+- 12 stages, 25 steps, one implementer call per step: 27 implementer calls, 17 reviews, 6 fix commits.
+- Almost no `BLOCKED`. The one FAIL (stage 9) was a real bug. The detailed plan and the reviews pay off in quality.
+- Times are partly estimates: no per-call timings were measured.
+
+### Bottlenecks found
+
+1. **One call per step.** Each call is a new process that reads the task file, the master plan and the stage file again.
+2. **Checks run twice.** The implementer runs lint, typecheck, unit and int, then the main session runs the same line again. `test:int` alone takes 140 s. Cost: about 35 min over 14 commits.
+3. **Heavy fix rounds.** Most of the 6 fix commits were one-line items. Each cost an implementer call, a full check and a commit.
+4. **Everything in series.** The backend stages (2–6) and the web stages (7–10) did not need each other until the Playwright stage. Two worktrees with two databases could cut wall time by about 30–40 %.
+5. **Review ritual.** The Opus reviews of stages 2–6 gave mostly minor findings. The "two stages ahead" limit, the review worktree and `bun install` each time add small waits.
+
+### Proposals and where they land in Limen
+
+| Proposal (S5c build)                                                | Limen equivalent                                                       | Where in this plan                                      |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------- |
+| One implementer call per stage, not per step                        | One worker job per stage (or per small ticket)                         | Stage 4 pilot: measure calls per feature                |
+| Implementer runs only the affected tests, full check line once      | Worker runs affected tests; the finish check needs proof (exit 0)      | Stage 2: `reminders.md`; D5 says who runs the full line |
+| Trivial fixes inline or with the next call, not as a full fix round | `limen continue <id>` with the findings, or the coordinator fixes them | D5/D6: write a policy line for trivial findings         |
+| Review risky stages one by one, UI stages in pairs                  | Review job per land; batch by landing two slices at once               | D5 (review policy), D3 (Opus only for `[risky]`)        |
+| Parallel tracks: backend and web in two worktrees and two databases | Parallel worker jobs, seat start queue, `scripts/limen-prepare.sh`     | Stage 2 (own DB per job), stage 4 second pilot (2 jobs) |
+| Edit `run-task/SKILL.md` and `agents/implementer.md`                | Not done on purpose: D7 retires or rewrites `run-task`                 | D7, stage 5                                             |
+
+### Keep as is (confirmed by the S5c build)
+
+- **The reviewer stays read-only.** If it fixes its own findings, nobody reviews the fix. Limen's reviewer is also read-only.
+- **Sub-agents (jobs), not one long thread.** The main session's context grows with each stage, and the S5c thread already needed a resume. Coarser units are the middle path.
 
 ## Decisions (user)
 
