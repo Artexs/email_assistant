@@ -836,6 +836,72 @@ describe("createTriageJob: daily cap", () => {
       );
     });
   });
+
+  test("the cap hook gets (ctx, mailbox id, quota day start) for a capped mail", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const { ctx, mailboxId } = await mailboxWithSettings(trx);
+      await insertTestEmail(trx, ctx, mailboxId, { received_at: minutesFromNow(-30) });
+      await insertTestEmail(trx, ctx, mailboxId, { received_at: minutesFromNow(-20) });
+      const llm = fakeLlm();
+      const calls: { ctx: TenantContext; mailboxId: string; dayStart: Date }[] = [];
+      await createTriageJob({
+        db: trx,
+        llm,
+        pause: createLlmPause(),
+        scope: { kind: "all" },
+        batchSize: 5,
+        dailyCap: 1,
+        now: () => now,
+        onCapReached: (hookCtx, hookMailboxId, hookDayStart) =>
+          calls.push({ ctx: hookCtx, mailboxId: hookMailboxId, dayStart: hookDayStart }),
+      }).run();
+
+      expect(llm.prompts).toHaveLength(1);
+      expect(calls).toEqual([{ ctx: { orgId: ctx.orgId }, mailboxId, dayStart }]);
+    });
+  });
+
+  test("a cap hook that starts a promise that never settles does not stop the run or the next organization", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const a = await mailboxWithSettings(trx);
+      const b = await mailboxWithSettings(trx);
+      await trx
+        .insertInto("sender_rules")
+        .values({ org_id: a.orgId, mailbox_id: a.mailboxId, pattern: "x.test", kind: "blocklist" })
+        .execute();
+      // The cap of org A is reached; org B has the cap too, so it needs no call of its own: give B room by its own audit count.
+      await recordAudit(trx, a.ctx, {
+        actor: "system",
+        event: auditEvents.llmCall,
+        reasonCode: "ok",
+        data: { mailbox_id: a.mailboxId },
+        at: minutesFromNow(-10),
+      });
+      await insertTestEmail(trx, a.ctx, a.mailboxId, { received_at: minutesFromNow(-30) });
+      const mailB = await insertTestEmail(trx, b.ctx, b.mailboxId, { received_at: minutesFromNow(-20) });
+      const llm = fakeLlm();
+      let hookCalls = 0;
+      await createTriageJob({
+        db: trx,
+        llm,
+        pause: createLlmPause(),
+        scope: { kind: "all" },
+        batchSize: 5,
+        dailyCap: 1,
+        now: () => now,
+        onCapReached: () => {
+          hookCalls += 1;
+          void new Promise<void>(() => undefined);
+        },
+      }).run();
+
+      expect(hookCalls).toBe(1);
+      expect((await emailRow(trx, mailB)).status).toBe("triaged");
+      expect(llm.prompts).toHaveLength(1);
+    });
+  });
 });
 
 describe("suspended organizations", () => {

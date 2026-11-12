@@ -128,6 +128,14 @@ const baseSchema = z.object({
   ),
   // Public contact address shown in the paused banner and the paused Telegram answer. Empty = none.
   OPERATOR_CONTACT: z.preprocess(emptyAsUndefined, z.string().regex(addressPattern).optional()),
+  // The operator's own Telegram chat id for operator notices (ids only). Needs TELEGRAM_BOT_TOKEN. Empty = log lines only. Private: never log it.
+  OPERATOR_TELEGRAM_CHAT_ID: z.preprocess(
+    emptyAsUndefined,
+    z
+      .string()
+      .regex(/^-?\d{1,15}$/)
+      .optional()
+  ),
   // Secret: never print or log it.
   WEB_AUTH_SECRET: z.preprocess(emptyAsUndefined, z.string().min(32).optional()),
   // Comma list of origins.
@@ -193,6 +201,9 @@ export const configSchema = baseSchema.superRefine((config, ctx) => {
       });
     }
   }
+  if (config.OPERATOR_TELEGRAM_CHAT_ID !== undefined && config.TELEGRAM_BOT_TOKEN === undefined) {
+    ctx.addIssue({ code: "custom", path: ["OPERATOR_TELEGRAM_CHAT_ID"], message: "needs TELEGRAM_BOT_TOKEN" });
+  }
   if (config.WEB_BASE_URL !== undefined && config.WEB_AUTH_SECRET === undefined) {
     ctx.addIssue({ code: "custom", path: ["WEB_AUTH_SECRET"], message: "needed when WEB_BASE_URL is set" });
   }
@@ -216,6 +227,11 @@ export function llmSettings(config: Config, provider: LlmProviderId = config.LLM
 
 export function sendTestAddresses(config: Config): string[] {
   return parseAddressList(config.SEND_TEST_ADDRESSES);
+}
+
+// The operator's chat id for operator notices; null = log lines only.
+export function operatorChatId(config: Config): number | null {
+  return config.OPERATOR_TELEGRAM_CHAT_ID === undefined ? null : Number(config.OPERATOR_TELEGRAM_CHAT_ID);
 }
 
 export function webTrustedOrigins(config: Config): string[] {

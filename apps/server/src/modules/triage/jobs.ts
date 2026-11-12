@@ -32,6 +32,8 @@ export interface TriageJobDeps {
   batchSize: number;
   dailyCap: number;
   now(): Date;
+  // The operator notice of a reached cap. Called on every capped mail, never awaited: it must not block the loop.
+  onCapReached?: (ctx: TenantContext, mailboxId: string, dayStart: Date) => void;
   // Only for tests of an error outside the LLM call.
   triageOne?: typeof triageOne;
 }
@@ -135,6 +137,7 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
                     `daily LLM cap reached for mailbox ${mailboxId}: ${deps.dailyCap} calls since ${dayStart} (${QUOTA_TIMEZONE} day); mail waits until ${outcome.until.toISOString()}`
                   );
                 }
+                deps.onCapReached?.(ctx, mailboxId, outcome.dayStart);
                 continue;
               }
               if (outcome.kind === "settings_changed") {

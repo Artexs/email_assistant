@@ -43,6 +43,12 @@ export { createTelegramBot, type BotDeps } from "./telegram/bot";
 export { BOT_COMMANDS, startPolling, type Polling, type PollingDeps } from "./telegram/polling";
 export { createTelegramRuntime, type TelegramRuntime, type TelegramRuntimeDeps } from "./telegram/runtime";
 export { telegramErrorLabel } from "./telegram/errors";
+export {
+  createOperatorNotices,
+  type OperatorNoticeDeps,
+  type OperatorNoticeKind,
+  type OperatorNotices,
+} from "./operator";
 export { createOutboxSender, type SenderDeps } from "./sender";
 export { detectNotices, queueMailboxRemovedNotices, type NoticeDeps } from "./notices";
 export { scheduleDigests, type DigestJobDeps } from "./digest-job";

@@ -5,6 +5,7 @@ export {
   countMailboxEventsBetween,
   findActionActor,
   hasAuditEvent,
+  hasAuditKey,
   recordAudit,
   recordAuditOnce,
   type AuditData,

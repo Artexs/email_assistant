@@ -56,6 +56,7 @@ export const auditEvents = {
   webLogin: "web.login",
   webPasswordSet: "web.password_set",
   webPasswordChanged: "web.password_changed",
+  operatorNotice: "operator.notice", // data: kind, key
 } as const;
 
 export interface AuditEvent {
@@ -93,6 +94,19 @@ export async function hasAuditEvent(db: DbOrTrx, ctx: TenantContext, events: rea
     .select("id")
     .where("org_id", "=", ctx.orgId)
     .where("event", "in", [...events])
+    .limit(1)
+    .executeTakeFirst();
+  return row !== undefined;
+}
+
+// True when the organization has a row of this event with `data.key = key` (the dedup of the operator notices).
+export async function hasAuditKey(db: DbOrTrx, ctx: TenantContext, event: string, key: string): Promise<boolean> {
+  const row = await db
+    .selectFrom("audit_log")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where("event", "=", event)
+    .where(sql<string>`data->>'key'`, "=", key)
     .limit(1)
     .executeTakeFirst();
   return row !== undefined;
