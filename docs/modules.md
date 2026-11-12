@@ -55,7 +55,7 @@ flowchart LR
     A3 --> J5
 ```
 
-Small jobs (not in the picture): `actions.expiry` (hourly, S4), `platform.retention` (daily, not built), `platform.heartbeat` (every 5 min).
+Small jobs (not in the picture): `actions.expiry` (hourly, S4), `platform.retention` (daily at 02:40, S6a; composed in `apps/server/src/retention.ts`), `channels.operator` (hourly at minute 13, S6a), `platform.heartbeat` (every 5 min).
 
 Why:
 
@@ -101,6 +101,9 @@ graph TD
     config --> tenancy
     config --> audit
     mail --> config
+    mail --> tenancy
+    triage --> tenancy
+    actions --> tenancy
     reports --> tenancy
     reports --> actions
     reports --> triage
@@ -143,6 +146,8 @@ graph TD
 `reports → mail`, `reports → config`: the digest reads the mailboxes (status, last sync, waiting mail) and their mode. `channels → reports`; `reports` never imports `channels` (no cycle).
 `mail → audit`: a status change (`updateMailboxPassword`) and its audit row go in one transaction.
 `mail → config`, `mail → audit` (`mail/connect.ts`): `insertDefaultSettings` and `recordAudit`.
+`mail → tenancy`, `triage → tenancy`, `actions → tenancy` (S6a): the sync, triage and committer loops call `isOrgSuspended` before each mailbox; `connectMailbox` calls `getOrgPlan` for the mailbox limit. `tenancy` imports only `audit` and `platform`, so there is no cycle. `channels → tenancy | mail` (S6a): the Telegram handlers call `isOrgSuspended`; `channels/operator.ts` calls `listOrganizations` and `listAuthErrorMailboxesBefore`.
+**Composition file `retention.ts` (S6a):** `apps/server/src/retention.ts` sits beside `web.ts` and `composition.ts`. It imports the clear functions of `mail`, `triage`, `actions`, `delegation` and `channels` and `listOrganizations` of `tenancy`, and builds the job `platform.retention`. `platform` imports no module, so the job cannot live in `platform`.
 `actions` never calls `triage`, and `mail` never calls `triage`: they set columns that the triage worker reads (no import cycles).
 
 ## 3. Modules in `apps/server`
@@ -152,18 +157,18 @@ Code rules: `docs/code-patterns.md`.
 
 ### 3.0 `platform` — technical base (not a business module)
 
-| Part              | Does                                                                                                                                | Tech                                                                |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `config`          | Reads and checks env at start; fails fast on a missing key                                                                          | Zod                                                                 |
-| `db`              | Postgres pool, transactions, `TenantContext`, generated types, migration runner                                                     | Kysely + kysely-codegen, `pg`; `dbmate` (chosen in S0)              |
-| `llm`             | Roles `classifier` / `writer`, structured output, timeout, rate limiter, soft-error rules                                           | `@google/genai` (Gemini), `openai` (OpenAI), Zod; provider registry |
-| `crypto`          | AES-256-GCM encrypt / decrypt with key version                                                                                      | `node:crypto`                                                       |
-| `log`             | Levels, `[module]` prefix, no mail bodies or secrets                                                                                | own `log` util                                                      |
-| `http`            | Hono app: session and tenant middleware, hardening (origin check, body limit, headers, CSP), static pages, error handler, `/health` | Hono                                                                |
-| `auth`            | Better Auth instance (`platform/auth.ts`): login, sessions, password change; the `/api/auth/*` allow-list                           | Better Auth (ADR 0016)                                              |
-| `scheduler`       | Cron-like timers for jobs; one tick never overlaps the next                                                                         | croner                                                              |
-| `retention` (job) | Clears text columns after their retention time (`docs/architecture.md` §7)                                                          | —                                                                   |
-| `heartbeat` (job) | Pings the external dead-man's-switch service                                                                                        | —                                                                   |
+| Part              | Does                                                                                                                                      | Tech                                                                |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `config`          | Reads and checks env at start; fails fast on a missing key                                                                                | Zod                                                                 |
+| `db`              | Postgres pool, transactions, `TenantContext`, generated types, migration runner                                                           | Kysely + kysely-codegen, `pg`; `dbmate` (chosen in S0)              |
+| `llm`             | Roles `classifier` / `writer`, structured output, timeout, rate limiter, soft-error rules                                                 | `@google/genai` (Gemini), `openai` (OpenAI), Zod; provider registry |
+| `crypto`          | AES-256-GCM encrypt / decrypt with key version                                                                                            | `node:crypto`                                                       |
+| `log`             | Levels, `[module]` prefix, no mail bodies or secrets                                                                                      | own `log` util                                                      |
+| `http`            | Hono app: session and tenant middleware, hardening (origin check, body limit, headers, CSP), static pages, error handler, `/health`       | Hono                                                                |
+| `auth`            | Better Auth instance (`platform/auth.ts`): login, sessions, password change; the `/api/auth/*` allow-list                                 | Better Auth (ADR 0016)                                              |
+| `scheduler`       | Cron-like timers for jobs; one tick never overlaps the next                                                                               | croner                                                              |
+| `retention` (job) | `platform.retention`, built in `apps/server/src/retention.ts`: clears text columns after their retention time (`docs/architecture.md` §7) | —                                                                   |
+| `heartbeat` (job) | Pings the external dead-man's-switch service                                                                                              | —                                                                   |
 
 ### 3.1 `tenancy` — who is who (S0)
 
@@ -171,6 +176,7 @@ Code rules: `docs/code-patterns.md`.
 - **Does:** creates the pilot organization and user (CLI `bun run org:create`, S0); owns style text and digest times; resolves `TenantContext` from a session (web) or a linked chat (Telegram); checks roles.
 - **Built in S2:** `getMembership` (a member's role by `org_id` and `user_id`) and `setDigestTimes` (CLI `bun run digest:times`; the new default of `digest_times` is `{08:00,16:00}`).
 - **Built in S5:** login through Better Auth (`platform/auth.ts`, ADR 0016; no sign-up). `web:invite` (CLI `bun run web:invite --org-id <uuid> [--user-id <uuid>]`) makes the first-password link for a member. `listMembershipsOfUser` (the user gives the tenant; the oldest membership wins). `updateOrganizationSettings` (timezone and style text; writes `org.timezone_changed` and `org.style_changed`). Routes: §3.10.
+- **Built in S6a:** the plan state: `organizations.plan`, `trial_ends_at`, `max_mailboxes`, `resumed_at`. `getOrgPlan`, `isOrgSuspended`, `listOrganizations` (repo) and `setOrgPlan` (service: one transaction, audit row `org.plan_changed`, an injected `onSuspended` hook; `resumed_at` is set when the plan leaves `suspended`). `createOrganizationWithOwner` takes an optional plan. CLIs: `bun run org:create --plan trial|active [--trial-days N]`, `bun run org:plan --org-id <uuid> [--plan …] [--trial-days N] [--max-mailboxes N]`, `bun run org:status [--org-id <uuid>]` (ids, codes, dates and counts only). Rules of `suspended`: `docs/architecture.md` §8.
 - **Later:** self sign-up (S6), invite assistant (Phase 2).
 
 ### 3.2 `mail` — access to mailboxes (S1a)
@@ -205,6 +211,7 @@ Code rules: `docs/code-patterns.md`.
   `findByMessageId` is removed. CLI `bun run mailbox:probe-move` (test address only).
 - **Built in S4:** `appendMessage` (port, IMAP adapter and fake); `MailSender`, `openSmtpSender`, `SmtpSendError` and the stage rule; `composeMessage`; `locateByActionId`; `listMailboxTargets` (active, paused and auth_error mailboxes for the expiry job; `listSyncTargets` stays as a wrapper for active ones); `mailboxHasUidplus`;
   the own-mail skip wired (`isOwnActionId` from `actions`, passed by `main.ts` to the sync and to `backfillMailbox`). CLI `bun run mailbox:probe-send` (test address only). Facts: `notes/2026-11-07-send-approval-facts.md`.
+- **Built in S6a:** the mailbox limit: `connectMailbox` refuses a mailbox above `organizations.max_mailboxes` with `MailboxLimitError` (web `409 mailbox_limit`; the count runs under an advisory lock after the IMAP check). `listMailboxTargets` and `listSyncTargets` skip mailboxes of `suspended` organizations (`includeSuspended`); `countSyncTargets` and `listAuthErrorMailboxesBefore`; the retention clear functions `clearMailBodies` and `clearMailHeaders`; the skip reason `suspended_backlog`.
 - **Rules:** `docs/architecture.md` §6.1.
 - **Later:** `gmail/` and `graph/` (Microsoft 365) adapters with OAuth (Phase 2); IMAP IDLE.
 
@@ -242,6 +249,7 @@ Code rules: `docs/code-patterns.md`.
   - **Built in S4:** `jobs.ts` reads the active delegates once per mailbox run (debug line `triage <mailboxId>: delegates <n>`) and passes them to the classifier and the planner; with no delegate the category `delegation` is not allowed. `service.ts`: `createPlanned` writes the draft and the send with `dependsOn`; `createDelegationRow` makes the `delegations` row and merges its id into both payloads; `markReply` marks the delegation `answered` when the mail comes from the delegate in the thread of the sent mail. `classifier-v2` is the prompt. `eval*.ts`: `delegation.json` (12 cases), `inj-13` to `inj-16`, the check `injectionHolds`.
   - `backfill.ts`: `requeueBackfillWindow` (`skipped / too_old` real mail of the window → `pending`, one `email.requeued` audit row for each mail, one transaction).
   - `eval*.ts`: `runEval`, `buildRealReport`, `renderEvalReport`; CLI `bun run eval`. `bun run triage:cost` prints tokens, latency and cost per mail and per mailbox per month from stored results.
+  - **Built in S6a:** `suspended_backlog` (`triageOne`: mail from before a pause is `skipped` after a resume, no LLM call); `triage.worker` skips mailboxes of `suspended` organizations and calls the operator hook `onCapReached` when a mailbox reaches the daily cap; the scope `all` has no address (`TriageScope` = `synthetic` or `all`); the retention clear function `clearTriageTexts`.
 
 ### 3.5 `actions` — the only place that changes the mailbox (S3; S1b writes `logged` rows)
 
@@ -276,6 +284,7 @@ Built in S1b: `createPlanned`, `listActionsForEmail`, `listSummaries`. The triag
 - **ACTIONS_SCOPE:** the committer reads `ACTIONS_SCOPE` (`off`, `synthetic`, `all`; architecture §4.3) and reads no mailbox settings: the policy decided at triage time.
 - **Rule:** a `send` action is applied only with an approval record (ADR 0003): the committer claims only `approved` sends with `approved_at` set, and the database refuses a `send` in `approved`, `applying` or `applied` without it.
 - **SEND_SCOPE:** the committer reads `SEND_SCOPE` (`off`, `self`, `all`; architecture §4.3) for the send only. A draft is made under `ACTIONS_SCOPE`.
+- **Built in S6a:** the scopes `all` carry no mailbox address (`ActionsScope`, `SendScope`): every active mailbox of a not `suspended` organization, by the mode and the switches. The committer skips `suspended` organizations (the approval expiry still runs for them). The retention clear functions `clearActionPayloads` and `clearActionErrors`; "Send again" on a failed send with a cleared payload answers `draft_gone`.
 
 ### 3.6 `audit` — what happened and why (S1b)
 
@@ -318,6 +327,7 @@ Built in S1b: `createPlanned`, `listActionsForEmail`, `listSummaries`. The triag
 - **Built in S3:** the digest keyboard gets a third button ↩️ per line whose mail has an applied move, mark read or flag (`isUndoable` in `core/digest/undo.ts`); `/status` shows the `ACTIONS_SCOPE` and the applied, undone and failed counts of the last 24 hours; the outbox kind `action_failed`.
 - **Built in S4:** the four notice kinds `approval`, `approval_set`, `send_result`, `delegation_answered` (texts from `packages/core/src/digest/approvals.ts`: `renderApprovalRequest`, `renderApprovalSetRequest`, `renderSendResult`, `renderDelegationAnswered`, `approvalEdit`); the six taps above; `/status` lines `Approvals: <n> waiting for your tap`, `Send: <scope>`, `Delegations: <n> waiting for a reply, <m> overdue`; `/help` lines for the buttons. `CallbackDeps` carries `hooks`, `uidplus` and `sendScope`.
 - **Jobs (started by `main.ts`):** `channels.notifier` every 15 s (`detectNotices`, then the sender) and `channels.digest` every minute (`scheduleDigests`). Without `TELEGRAM_BOT_TOKEN` neither job and no polling runs (`telegram is off`).
+- **Built in S6a:** the operator notices (`operator.ts`, `createOperatorNotices`): `trial_ending`, `llm_cap`, `auth_error_24h` by a direct send to `OPERATOR_TELEGRAM_CHAT_ID`, or a `warn` line; the dedup is an audit row `operator.notice`. Job `channels.operator` (hourly at minute 13). `suspended` in the Telegram handlers (`createUpdateHandlers`: the answer "account paused" with `OPERATOR_CONTACT`), `listLinkedChats` and `claimDueOutbox` skip `suspended` organizations, `cancelPendingOutboxOfOrg` (the suspend hook), and the retention clear functions `clearOutboxTexts` and `deleteOldLinkTokens`. Rules: `docs/architecture.md` §8.
 - **Entry points without a `TenantContext`:** listed in `docs/code-patterns.md`.
 - **Later:** `mobile/` (push to the app), `whatsapp/`, and the `assistant` module (intents, chat state, voice).
 
@@ -336,6 +346,7 @@ Built in S1b: `createPlanned`, `listActionsForEmail`, `listSummaries`. The triag
   - `service.ts`: `addDelegate` (refuses a mailbox address of the organization), `setDelegateState`, `createDelegation`, `detectReply`, `markAnswered`, `cancelDelegation`, `closeDelegation`, and `delegationHooks` (the implementation of `DelegationHooks`). Each closing function locks the delegation first, then its reminder sends.
   - `chaser.ts`: `createChaserJob`, `runChaserForMailbox`, `reminderDecision`. Rules: architecture §8.
   - CLIs: `delegates:add|list|disable|enable`, `delegations:list|done` (§4; runbook `deploy/README.md` "Delegates").
+  - **Built in S6a:** the chaser skips `suspended` organizations (`listSyncTargets`); the retention clear function `clearDelegationTasks`.
 
 ### 3.10 HTTP API (routes from each module, composed in `platform/http` and `web.ts`)
 
@@ -423,7 +434,7 @@ S4 scripts (`package.json`):
 
 - `delegates:add` / `delegates:list` / `delegates:disable` / `delegates:enable` — manage the delegates of an organization (`--org-id`; `add` takes `--name`, `--email`, `--tags`; `list --all` shows disabled ones).
 - `delegations:list` (`--status`, `--limit`) / `delegations:done` — list delegations, close an answered or overdue one.
-- `job:run --name actions.expiry|delegation.chaser|actions.committer|channels.notifier [--force]` — runs one job once with the deps of `main.ts`. `--force` is only for the chaser and skips its time gate. Do not run the committer while the server runs on the same database.
+- `job:run --name actions.expiry|delegation.chaser|actions.committer|channels.notifier|platform.retention [--force]` — runs one job once with the deps of `main.ts`. `--force` is only for the chaser and skips its time gate. Do not run the committer while the server runs on the same database.
 - `mailbox:probe-send` — checks the Interia draft, SMTP, Sent and own-mail facts with one synthetic mail on the test mailbox (`TEST_MAILBOX_ADDRESS` only; the password on stdin).
 
 ## 5. `packages/core` — shared pure logic

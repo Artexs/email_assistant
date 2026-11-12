@@ -25,14 +25,16 @@ The server listens on `127.0.0.1:8080` on the host only (for Tailscale Serve, se
    - `POSTGRES_PASSWORD`, `MIGRATOR_PASSWORD`, `APP_PASSWORD`: URL-safe. Make each with `openssl rand -hex 24`.
    - `CREDENTIALS_KEY`: `openssl rand -base64 32`. Keep a copy in a password manager. If you lose the key, you lose all stored mailbox passwords.
    - `CREDENTIALS_KEY_VERSION=1`
-   - `HEARTBEAT_URL` (see Heartbeat), `TEST_MAILBOX_ADDRESS` (test mailbox only), `LOG_LEVEL=info`.
+   - `HEARTBEAT_URL` (see Heartbeat), `TEST_MAILBOX_ADDRESS` (only for the `testmail` and probe tools), `LOG_LEVEL=info`.
    - `SEND_SCOPE=off` (default) and `SEND_TEST_ADDRESSES` (comma-separated, needed with `SEND_SCOPE=self`). See the section "Approvals and sends".
+   - `TRIAGE_LLM_SCOPE`, `ACTIONS_SCOPE` and `SEND_SCOPE` stay `off` until you decide. `all` acts on every active mailbox of the server: read "Customers (S6a)" first.
+   - `OPERATOR_CONTACT` and `OPERATOR_TELEGRAM_CHAT_ID` (optional, see "Customers (S6a)").
    - Compose sets `DATABASE_URL`, `MIGRATOR_DATABASE_URL` and `PORT` by itself. Their values in `.env` do not count for `server`.
    - Web panel keys: see the section Web panel. Leave `WEB_BASE_URL` empty to keep the web off, and empty the dev value of `WEB_TRUSTED_ORIGINS` that `cp .env.example .env` copied.
 4. Start the database: `$C up -d --wait db`
 5. Build the image and migrate: `$C run --build --rm server bun run db:migrate`
 6. Create the organisation:
-   `$C run --rm server bun run org:create --org-name <name> --email <email> --display-name <name>`
+   `$C run --rm server bun run org:create --org-name <name> --email <email> --display-name <name> --plan active`
 7. Connect the mailbox. The password goes on stdin. Use `-T`, because the command has no terminal on stdin:
    `read -rsp 'IMAP password: ' P && printf '%s' "$P" | $C run --rm -T server bun run mailbox:connect --org-id <uuid> --address <email>; unset P`
 8. Start the server: `$C up -d --build --wait`
@@ -226,7 +228,7 @@ $C run --rm server bun run mailbox:settings auto --org-id <uuid> --mailbox-id <u
 
 - `off` (default): the committer changes no mailbox. `/status` says so. The `ready` actions wait and expire after 24 hours.
 - `synthetic`: the committer changes only seed mail (`@ea-seed.test` message ids), in every mailbox.
-- `all`: the committer changes every mail of the mailbox `TEST_MAILBOX_ADDRESS` and no other mailbox. The server refuses to start with `all` and no `TEST_MAILBOX_ADDRESS`.
+- `all`: the committer acts on every active mailbox of every organization that is not `suspended`, by the mode, the switches and the `auto` flags of each mailbox. A mailbox in `shadow` mode changes nothing. Before you set `all` on a server with more than one mailbox, run `org:status` and pause every mailbox whose owner did not agree (see "Customers (S6a)").
 
 The go/no-go gate: on 2026-11-06 every category was no-go (`spec/features/done/2026-11/F025-s1b-shadow-run/plan.md`). Without an `auto` category, only `flag` actions apply. Use `auto … --force` only when you accept the precision of that category.
 
@@ -303,7 +305,7 @@ How a delegation goes (details: `docs/architecture.md` §4.5):
 
 - `off` (default): no mail goes out. A tap still works, and the approved send waits. `/status` says `approved, held by SEND_SCOPE=off`. It expires 48 hours after the tap (`held_timeout`).
 - `self`: a mail goes out only when every recipient is in `SEND_TEST_ADDRESSES` (your own addresses, comma-separated). The server refuses to start with `self` and no valid list.
-- `all`: every approved send of the mailbox `TEST_MAILBOX_ADDRESS` goes out: delegations and reminders to real delegates, and also clarification questions to the original sender of a mail. No other mailbox sends. The server refuses to start with `all` and no `TEST_MAILBOX_ADDRESS`. Each mail still needs your tap.
+- `all`: every approved send of every active mailbox of an organization that is not `suspended` goes out: delegations and reminders to real delegates, and also clarification questions to the original sender of a mail. Each mail still needs the owner's tap.
 
 ### Result notices
 
@@ -337,9 +339,10 @@ Run one job once, with the same settings as the server. Add `--force` only to th
 $C run --rm server bun run job:run --name actions.expiry
 $C run --rm server bun run job:run --name delegation.chaser [--force]
 $C run --rm server bun run job:run --name channels.notifier
+$C run --rm server bun run job:run --name platform.retention
 ```
 
-`channels.notifier` needs `TELEGRAM_BOT_TOKEN`. Do not run `--name actions.committer` while the server runs on the same database: the log lines double.
+`channels.notifier` needs `TELEGRAM_BOT_TOKEN`. `platform.retention` clears the old texts of every organization (the server runs it daily at 02:40); the log line `retention org <id>: …` holds counts only. Do not run `--name actions.committer` while the server runs on the same database: the log lines double.
 
 ### What the system never does
 
@@ -353,6 +356,31 @@ $C run --rm server bun run job:run --name channels.notifier
 ### Roll back
 
 Roll back the code, not the migration. A `db:rollback` of `20261108000001_delegation` deletes all `create_draft` and `send` rows, all delegations and all delegates.
+
+## Customers (S6a)
+
+Each customer is one organization with a plan. The operator manages the plan with the commands below. The output holds ids, codes, dates and counts only, never a name or an address.
+
+```sh
+$C run --rm server bun run org:create --org-name <name> --email <email> --display-name <name> --plan trial --trial-days 30
+$C run --rm server bun run org:plan --org-id <org id> --plan suspended
+$C run --rm server bun run org:plan --org-id <org id> --plan active
+$C run --rm server bun run org:plan --org-id <org id> --plan trial --trial-days 14
+$C run --rm server bun run org:plan --org-id <org id> --max-mailboxes 5
+$C run --rm server bun run org:status [--org-id <org id>]
+```
+
+- `org:create --plan trial|active`: the default is `trial` with `--trial-days 30` (1 to 365). The database default of an organization that exists already is `active`.
+- `org:plan` changes the plan, the trial end or the mailbox limit (0 to 100) and writes an audit row. Moving a `trial` organization to `active` or `suspended` clears the trial end. Moving to `trial` from another plan needs `--trial-days`.
+- `org:status` prints, for each organization: the plan, the trial end, `max_mailboxes`, `resumed_at`, the mailbox counts by status, the last sync, the LLM calls of today and the number of linked Telegram chats.
+- `suspended` pauses the customer: no sync, no triage, no action, no send, no reminder, no digest and no notice. Telegram taps and commands answer "account paused". Every write in the web panel answers `403 org_suspended`. The member can still read, sign out and change the password. The approval expiry and the retention job still run. The change to `suspended` cancels the queued messages, except approval requests.
+- After a resume (`--plan active` or `--plan trial`), mail from more than 24 hours before the resume is not triaged (`suspended_backlog`). A send that an owner approved before the pause waits at most 48 hours after the tap.
+- The mailbox limit: an organization connects at most `max_mailboxes` mailboxes (default 2). The web and `mailbox:connect` refuse more with `mailbox_limit`. A lower limit does not remove a mailbox that exists.
+- `OPERATOR_CONTACT` (an address, set only in the server `.env`): the paused banner and the paused Telegram answer show it. Empty: "contact the operator", and the start log says so when the web is on.
+- `OPERATOR_TELEGRAM_CHAT_ID` (your own chat id, needs `TELEGRAM_BOT_TOKEN`): the server sends you three events: a trial that ends in 3 days or has ended, a mailbox that reached the daily LLM cap, and a mailbox in `auth_error` for 24 hours. The texts hold ids only. Empty: the server writes the same text as a `warn` log line. A notice can arrive twice after a crash.
+- The start log line `scope targets: <n> active mailboxes in <m> organizations, <k> suspended organizations` shows whom a scope `all` acts on.
+
+**Before you set a scope to `all` on a server with more than one mailbox, run `org:status` and pause every mailbox whose owner did not agree (D2).** The modes are the consent: a mailbox in `shadow` mode changes nothing in the mailbox, and a send always needs a tap. Pause a mailbox with the Pause button of an owner in the panel or with `/pause` in Telegram. Or move the whole organization to `suspended` with `org:plan`.
 
 ## Reboot
 
