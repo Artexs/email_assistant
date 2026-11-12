@@ -1,4 +1,4 @@
-> **Status 2026-11-06 — in progress.** Plan approved by the user (all recommendations). Plan committed. Left: stages 0–8 (stage 0.1 budget part is the user's; stage 8 waits for S1b stage 40; Q6 recommendation accepted).
+> **Status 2026-11-12 — in progress — stages 0–5, 6.1, 7 done; the VPS runs OpenAI `gpt-6-luna` since 2026-11-06.** Left: 6.2 (the code default `LLM_PROVIDER` and `.env.example` still say `gemini`; the user picked OpenAI on 2026-11-07), stage 8 (the "blocked until S1b stage 40" line is stale: stage 40 is done and the VPS switch happened in `tasks/done/s1b-shadow-run.md`). The ADR is `0015` (0014 was taken by the sync-folders ADR).
 
 # LLM provider switch: Gemini and OpenAI
 
@@ -688,7 +688,7 @@ Checks for every code stage: `bun run typecheck`, `bun run lint`, `bun run test:
 
 ### Stage 7 — Docs and ADR
 
-- [ ] **7.1 ADR 0014 and the docs**
+- [x] **7.1 ADR 0014 and the docs** (written as ADR 0015; the product-brief privacy rows were not touched: they need the user's own words)
   - Plan text: ADR 0014 "LLM providers: Gemini and OpenAI behind one switch". Status lines of ADR 0007, 0012, 0013 say "amended by 0014".
     Data rules per provider (Q6). Architecture §6.3 and §9, the diagram line; `docs/modules.md`; `docs/code-patterns.md`; roadmap §5 and the
     external services row; `README.md`; product brief privacy row (only with the user answer Q6).
@@ -722,7 +722,7 @@ Checks for every code stage: `bun run typecheck`, `bun run lint`, `bun run test:
   - Done when: the checks pass and the Q6 parts are written or listed as waiting in the task log.
   - Out of scope: no code change; no edit of the S1b lines in §6.3 except the provider names.
 
-- [ ] **7.2 Known alerts and follow-up tasks**
+- [x] **7.2 Known alerts and follow-up tasks**
   - Plan text: `docs/known-alerts.md`: the new config-error text, `http_429_quota`, `http_400_schema`. Planned tasks: an OpenAI budget alert next to
     `gemini-billing-budget-alert.md`; `s6-pre-sale.md` names the EU option of Q6b; follow-up file for the automatic fallback (D10).
   - Goal: a later agent finds each new alert text with its cause and fix; the follow-up work has files.
@@ -906,3 +906,5 @@ Added by the planner on 2026-11-06. Questions 1 and 2 are the open Q6 and Q7. Qu
 - 2026-11-06: The user put `OPENAI_API_KEY` in the Mac `.env` (count check → 1).
 - 2026-11-06: User answers: proposed values accepted, only `gpt-6-luna` (Q3). Q6 and Q7 open. Repo state checked (section "Coordination").
 - 2026-11-06: Plan draft (main session). Code map from a grep of `apps/`, `packages/`, `evals/`, `docs/`. OpenAI facts from the official docs (sources above). Waits for the user answers Q1–Q8.
+
+- 2026-11-12: Stage 7 done by the main session (docs only). ADR `0015-llm-provider-switch.md` (0014 was taken); 0007, 0012, 0013 and the ADR README amended; architecture §6.3/§9 and diagram, modules, code-patterns, roadmap §5, README, known-alerts (4 OpenAI codes), `tasks/planned/openai-budget-alert.md`, `llm-provider-fallback.md`, an open Q6b line in `s6-pre-sale.md`. Checks: grep `0015` in the 4 ADR files ≥ 1 each; grep of the 3 alert codes in known-alerts = 3; `bunx prettier --write` on the changed docs. Not done: product-brief privacy rows; 6.2 code default; stage 8.

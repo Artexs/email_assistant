@@ -1,6 +1,6 @@
 # 0013 — LLM: the temporary pilot mailbox on the Gemini free tier
 
-- Status: accepted (user, 2026-11-04)
+- Status: accepted (user, 2026-11-04); amended by 0015 (second provider OpenAI behind LLM_PROVIDER, 2026-11-06)
 - Date: 2026-11-04
 - Amends: 0007, 0012
 

@@ -94,7 +94,7 @@ Before each start (user steps):
 | DB tables                 | 17                                                                                                      |
 | HTTP route groups         | 8                                                                                                       |
 | Web pages                 | 6 in S5-lite (+ account page in S6; 3 more in Phase 2)                                                  |
-| External services (pilot) | 3: the IMAP/SMTP provider, Telegram Bot API, Google Gemini API                                          |
+| External services (pilot) | 3: the IMAP/SMTP provider, Telegram Bot API, the LLM API (Gemini or OpenAI)                             |
 | Source files              | about 160–200 (with tests)                                                                              |
 | Lines of TypeScript       | about 10–16 thousand (with tests)                                                                       |
 
@@ -123,11 +123,11 @@ Hardest parts (most risk):
 - Code rules for agents: `docs/code-patterns.md`.
 - Each slice has a task file in `tasks/`. It gets a file-level plan in `tasks/active/` before code starts (`tasks/README.md`).
 
-## 5. LLM: Google Gemini (ADR 0007, ADR 0012, ADR 0013)
+## 5. LLM: Gemini and OpenAI (ADR 0007, ADR 0012, ADR 0013, ADR 0015)
 
-- SDK `@google/genai`, key `GEMINI_API_KEY`, model from config `GEMINI_MODEL` (dev: `gemini-3.8-flash`), `GEMINI_MODEL_CLASSIFIER` (default `gemini-3.5-flash-lite`, provisional: `docs/architecture.md` §6.3), `GEMINI_RPM`, `LLM_DAILY_CAP`, `TRIAGE_LLM_SCOPE`.
-- All calls go through `platform/llm.ts` (`classify`; `write` comes in S4): timeout 30 s, rate limiter, 429 / 5xx / timeout = soft errors (pause: `docs/architecture.md` §4.1 rule 7).
-- Setup check: `bun run gemini:test` from the repo root (script `apps/server/src/scripts/gemini-check.ts`, env in the root `.env`). On 2026-11-02 the key worked, but the model returned `503 high demand`.
+- `LLM_PROVIDER` = `gemini` or `openai` (ADR 0015; the pilot VPS uses `openai`, `gpt-6-luna`). SDKs `@google/genai` and `openai`. Gemini: key `GEMINI_API_KEY`, model from config `GEMINI_MODEL` (dev: `gemini-3.8-flash`), `GEMINI_MODEL_CLASSIFIER` (default `gemini-3.5-flash-lite`, provisional: `docs/architecture.md` §6.3), `GEMINI_RPM`, `LLM_DAILY_CAP`, `TRIAGE_LLM_SCOPE`.
+- All calls go through `platform/llm/` (`classify`; `write` comes in S4): timeout 30 s, rate limiter, 429 / 5xx / timeout = soft errors (pause: `docs/architecture.md` §4.1 rule 7).
+- Setup check: `bun run llm:check --provider <gemini|openai>` from the repo root (script `apps/server/src/scripts/llm-check.ts`; `gemini:test` is an alias; env in the root `.env`). On 2026-11-02 the key worked, but the model returned `503 high demand`.
 - **Billing gate:** free tier only with test data. The temporary pilot Interia mailbox counts as test data (ADR 0013, user 2026-11-04). Cloud Billing (or Vertex AI) on before any other person's mail.
 - **Data:** pilot = Gemini API free tier for the temporary pilot mailbox (ADR 0013; the free-tier terms allow human review and training; accepted by the user 2026-11-04); the paid tier (55-day abuse logging, no EU location, accepted 2026-11-02) when billing goes on; Vertex AI EU before the first external customer (S6).
 - **Cost:** about $20 per mailbox per month at 200 mails/day with `gemini-3.8-flash` now, about $40 from 2027-01-01 (price doubles).

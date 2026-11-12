@@ -7,7 +7,7 @@
 
 - Packages: `@ea/server` (`apps/server`), `@ea/web` (`apps/web`), `@ea/core` (`packages/core`).
 - Server code lives in `apps/server/src/modules/<module>/` and `apps/server/src/platform/`. Shared pure code lives in `packages/core/`.
-- Real platform paths: `platform/config.ts`, `platform/log.ts`, `platform/http.ts`, `platform/db/`, `platform/crypto.ts`, `platform/errors.ts`, `platform/auth.ts`, `platform/scheduler.ts`, `platform/heartbeat.ts`.
+- Real platform paths: `platform/config.ts`, `platform/log.ts`, `platform/http.ts`, `platform/db/`, `platform/llm/`, `platform/crypto.ts`, `platform/errors.ts`, `platform/auth.ts`, `platform/scheduler.ts`, `platform/heartbeat.ts`.
 - A module exposes one `index.ts`. Other modules import only from it, never from its inner files.
 - Module files: `index.ts` (public API), `service.ts`, `repo.ts` (DB), `routes.ts` (HTTP), `jobs.ts` (workers), `*.test.ts` next to the code.
 - `packages/core` has no I/O: no DB, no network, no `process.env`, no imports from `apps/*`.
@@ -18,7 +18,7 @@
 - A port (interface) lives in the module that owns it: `MailProvider` in `mail/port.ts`, `ChatChannel` in `channels/port.ts`.
 - Each adapter is a folder in its module (`mail/imap/`, `mail/fake/`, `channels/telegram/`). A module builds its adapters from config.
 - No central factory, no generic CRUD wrapper, no table names as strings.
-- Only `platform/llm.ts` imports `@google/genai`. Only `mail/imap/` imports `imapflow`, `mailparser`, `nodemailer`. Only `channels/telegram/` imports `grammy`.
+- Only `platform/llm/providers/gemini.ts` imports `@google/genai`; only `platform/llm/providers/openai.ts` imports `openai` (ESLint enforces it). The shared client and the registry are in `platform/llm/`. Only `mail/imap/` imports `imapflow`, `mailparser`, `nodemailer`. Only `channels/telegram/` imports `grammy`.
 
 ## Data access
 

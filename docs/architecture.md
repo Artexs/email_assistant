@@ -31,7 +31,7 @@ graph LR
 
     Mail[Mail provider<br/>IMAP 993 + SMTP 465<br/>Interia first]
     TG[Telegram Bot API]
-    LLM[Google Gemini API<br/>Vertex AI EU before customers]
+    LLM[Gemini or OpenAI API<br/>Vertex AI EU before customers]
 
     Exec <-->|notices, digest, buttons| TG
     Exec -->|browser, S5| Web
@@ -574,9 +574,10 @@ Tenancy:
 - Content on Telegram: notices, digest lines (sender, subject, AI summary), draft text for approval. No raw mail bodies.
   Bot chats are not end-to-end encrypted; the user accepts this content on Telegram servers.
 
-### 6.3 LLM (ADR 0007, ADR 0012, ADR 0013)
+### 6.3 LLM (ADR 0007, ADR 0012, ADR 0013, ADR 0015)
 
-- Google Gemini through `@google/genai`, only inside `platform/llm.ts`. Model ids from config: `GEMINI_MODEL` (writer role; dev: `gemini-3.8-flash`),
+- Two providers behind one switch (ADR 0015): `LLM_PROVIDER` = `gemini` (code default) or `openai`; a restart applies it. The shared client is `platform/llm/`; the adapters are `platform/llm/providers/gemini.ts` (the only file that imports `@google/genai`) and `providers/openai.ts` (the only file that imports `openai`; Responses API, strict JSON schema, `store: false`). The pilot VPS runs `openai` with `OPENAI_MODEL_CLASSIFIER` = `gpt-6-luna` (default pick, user 2026-11-07). OpenAI keys: `OPENAI_API_KEY`, `OPENAI_MODEL` (writer), `OPENAI_MODEL_CLASSIFIER`, `OPENAI_TIMEOUT_MS`, `OPENAI_RPM`, `OPENAI_REASONING_EFFORT`. A third provider = one adapter file, one registry row, one config block, price rows and one eval run. No automatic fallback.
+- Gemini model ids from config: `GEMINI_MODEL` (writer role; dev: `gemini-3.8-flash`),
   `GEMINI_MODEL_CLASSIFIER` (default `gemini-3.5-flash-lite`). Two roles: `classifier` (one call per mail, summary included) and `writer`.
   **The writer role is not used in S4:** drafts are templates (`packages/core/src/outgoing/templates.ts`); the fields (delegate id, task, due date, question) come from the classifier (prompt `classifier-v2`).
 - **Classifier model (provisional, stage 34, 2026-11-05):** `gemini-3.5-flash-lite`. The eval on the 92 synthetic and injection cases ran with it:
@@ -595,10 +596,10 @@ Tenancy:
   Error classes (soft, config, safety block, hard) and the pause: §4.1 rule 7.
 - `triage_results` stores model, prompt version, tokens in/out and latency. Output tokens include thinking tokens.
 - **Triage config keys:** `TRIAGE_LLM_SCOPE` (default `off`): `off` = no triage worker; `synthetic` = only the seeded test mail of every mailbox;
-  `all` = also real mail, only of the mailbox `TEST_MAILBOX_ADDRESS`. The server refuses to start with `synthetic` or `all` and no `GEMINI_API_KEY`,
+  `all` = also real mail, only of the mailbox `TEST_MAILBOX_ADDRESS`. The server refuses to start with `synthetic` or `all` and no key for the chosen provider (`GEMINI_API_KEY` or `OPENAI_API_KEY`),
   and with `all` and no `TEST_MAILBOX_ADDRESS`. `LLM_DAILY_CAP` (default 300): the cap of §4.1 rule 8.
   `GEMINI_RPM` (default 12). The LLM pause (§4.1 rule 7) has no key: 5 min, doubling to 60 min.
-- **Data by stage:** pilot = Gemini API free tier for the temporary pilot mailbox (ADR 0013; the free-tier terms allow human review and training;
+- **Data by stage:** OpenAI (pilot, since 2026-11-06): paid API terms, no training on API data, abuse logs up to 30 days, no EU location; accepted by the user for their own mail (ADR 0015). Gemini: pilot = Gemini API free tier for the temporary pilot mailbox (ADR 0013; the free-tier terms allow human review and training;
   accepted by the user 2026-11-04); the paid tier (55-day abuse logging, no EU location, accepted 2026-11-02) when billing goes on.
   Vertex AI with the EU endpoint and its zero-data-retention setup before the first external customer.
 - **Billing gate:** free tier only with test data. The temporary pilot Interia mailbox counts as test data (ADR 0013, user 2026-11-04).
@@ -683,6 +684,7 @@ Tenancy:
 - **Test mailbox:** there is no second Interia account; the pilot mailbox is the test mailbox (user 2026-11-04). A seed script APPENDs the synthetic eval mails
   (`@ea-seed.test` Message-IDs) into its INBOX (APPEND does not send). Use them for the eval and the 48-hour sync test (S1a).
 - **Evals** (`evals/`): synthetic and injection cases in git; real labels only in the DB. Report per category: precision and recall; whitelist rule 100%.
+  `bun run llm:check --provider <gemini|openai>` sends the real triage schema to one provider. `bun run eval --provider <id> --model <id>` runs the cases per provider (results in `evals/results/`).
   `bun run eval` options: `--per-category n` (a subset), `--retries n` (soft-error retries per case), resume from a state file in `evals/.runs/`
   (`<model>-<prompt-version>-<set>[-pc<n>].jsonl`, outside git; `--state` sets another file, `--fresh` starts again),
   a minimum support of 30 kept rows per category (`--min-kept`), a confidence histogram, and `--real` (labels from `triage_feedback`, no LLM call).
@@ -734,16 +736,16 @@ Detail, scope, sizes and dependencies: `docs/roadmap.md`. Goal, done-when, plan 
 
 ## 12. What happens to the current code
 
-| Current                                                                                             | Decision                                                                                                             |
-| --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `backend/` (Bun package)                                                                            | Becomes `apps/server/` (S0).                                                                                         |
-| `src/` Astro starter                                                                                | Becomes `apps/web/` (S0); the web stack is decided at the S5 start (static build served by the server is preferred). |
-| `backend/supabase/` and migration `20251202212208_…`                                                | Removed in S0 (ADR 0011). New SQL migrations in `db/migrations/`.                                                    |
-| `IDatabaseProvider` / `SupabaseAdapter` (generic CRUD)                                              | Removed. Typed repositories per module with transactions.                                                            |
-| `ImapEmailProvider`                                                                                 | Deleted in S0. S1a reads it from git if needed: `git show 29e9522:backend/src/adapters/providers/email.provider.ts`. |
-| `get_provider.ts` (`Providers` factory)                                                             | Removed. It turns off the TLS check for Interia (line 35).                                                           |
-| `OpenAIAdapter` / `ILLMProvider`                                                                    | Replaced by `platform/llm.ts` (Gemini).                                                                              |
-| `backend/src/scripts/gemini_test.ts`                                                                | Moved in S0 to `apps/server/src/scripts/gemini-check.ts`; `bun run gemini:test` runs from the repo root.             |
-| Dependencies `openai`, `express`, `helmet`, `cors`, `googleapis`, `@supabase/supabase-js`, `dotenv` | Removed in S0 (Bun reads `.env`). `imapflow` and `@google/genai` stay.                                               |
-| `utils/log.ts`                                                                                      | Kept and extended (levels, module prefix).                                                                           |
-| `.ai/` docs                                                                                         | Kept as history. Code rules for agents: `docs/code-patterns.md`.                                                     |
+| Current                                                                                             | Decision                                                                                                                                                        |
+| --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `backend/` (Bun package)                                                                            | Becomes `apps/server/` (S0).                                                                                                                                    |
+| `src/` Astro starter                                                                                | Becomes `apps/web/` (S0); the web stack is decided at the S5 start (static build served by the server is preferred).                                            |
+| `backend/supabase/` and migration `20251202212208_…`                                                | Removed in S0 (ADR 0011). New SQL migrations in `db/migrations/`.                                                                                               |
+| `IDatabaseProvider` / `SupabaseAdapter` (generic CRUD)                                              | Removed. Typed repositories per module with transactions.                                                                                                       |
+| `ImapEmailProvider`                                                                                 | Deleted in S0. S1a reads it from git if needed: `git show 29e9522:backend/src/adapters/providers/email.provider.ts`.                                            |
+| `get_provider.ts` (`Providers` factory)                                                             | Removed. It turns off the TLS check for Interia (line 35).                                                                                                      |
+| `OpenAIAdapter` / `ILLMProvider`                                                                    | Replaced by `platform/llm/` (Gemini and OpenAI adapters; ADR 0015).                                                                                             |
+| `backend/src/scripts/gemini_test.ts`                                                                | Moved in S0, replaced by `apps/server/src/scripts/llm-check.ts`; `bun run llm:check --provider <id>` runs from the repo root (`gemini:test` stays as an alias). |
+| Dependencies `openai`, `express`, `helmet`, `cors`, `googleapis`, `@supabase/supabase-js`, `dotenv` | Removed in S0 (Bun reads `.env`). `imapflow` and `@google/genai` stay.                                                                                          |
+| `utils/log.ts`                                                                                      | Kept and extended (levels, module prefix).                                                                                                                      |
+| `.ai/` docs                                                                                         | Kept as history. Code rules for agents: `docs/code-patterns.md`.                                                                                                |

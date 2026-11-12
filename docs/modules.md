@@ -150,17 +150,17 @@ Code rules: `docs/code-patterns.md`.
 
 ### 3.0 `platform` — technical base (not a business module)
 
-| Part              | Does                                                                                      | Tech                                                   |
-| ----------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| `config`          | Reads and checks env at start; fails fast on a missing key                                | Zod                                                    |
-| `db`              | Postgres pool, transactions, `TenantContext`, generated types, migration runner           | Kysely + kysely-codegen, `pg`; `dbmate` (chosen in S0) |
-| `llm`             | Roles `classifier` / `writer`, structured output, timeout, rate limiter, soft-error rules | `@google/genai` (Gemini), Zod                          |
-| `crypto`          | AES-256-GCM encrypt / decrypt with key version                                            | `node:crypto`                                          |
-| `log`             | Levels, `[module]` prefix, no mail bodies or secrets                                      | own `log` util                                         |
-| `http`            | Hono app, session check (S5), error handler, `/health`                                    | Hono                                                   |
-| `scheduler`       | Cron-like timers for jobs; one tick never overlaps the next                               | croner                                                 |
-| `retention` (job) | Clears text columns after their retention time (`docs/architecture.md` §7)                | —                                                      |
-| `heartbeat` (job) | Pings the external dead-man's-switch service                                              | —                                                      |
+| Part              | Does                                                                                      | Tech                                                                |
+| ----------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `config`          | Reads and checks env at start; fails fast on a missing key                                | Zod                                                                 |
+| `db`              | Postgres pool, transactions, `TenantContext`, generated types, migration runner           | Kysely + kysely-codegen, `pg`; `dbmate` (chosen in S0)              |
+| `llm`             | Roles `classifier` / `writer`, structured output, timeout, rate limiter, soft-error rules | `@google/genai` (Gemini), `openai` (OpenAI), Zod; provider registry |
+| `crypto`          | AES-256-GCM encrypt / decrypt with key version                                            | `node:crypto`                                                       |
+| `log`             | Levels, `[module]` prefix, no mail bodies or secrets                                      | own `log` util                                                      |
+| `http`            | Hono app, session check (S5), error handler, `/health`                                    | Hono                                                                |
+| `scheduler`       | Cron-like timers for jobs; one tick never overlaps the next                               | croner                                                              |
+| `retention` (job) | Clears text columns after their retention time (`docs/architecture.md` §7)                | —                                                                   |
+| `heartbeat` (job) | Pings the external dead-man's-switch service                                              | —                                                                   |
 
 ### 3.1 `tenancy` — who is who (S0)
 
