@@ -28,6 +28,7 @@ import {
   insertDelegation,
   insertDraftAndSend,
   pauseOtherMailboxes,
+  suspendOrg,
 } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
@@ -495,6 +496,31 @@ describe("createChaserJob", () => {
       expect(await reminderRows(trx, s.ctx, d.emailId)).toEqual([]);
       await job.run({ force: true });
       expect(await reminderRows(trx, s.ctx, d.emailId)).toHaveLength(2);
+    });
+  });
+});
+
+describe("createChaserJob with a suspended organization", () => {
+  test("a suspended organization gets no reminder and no run marker; the active one does", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await setup(trx);
+      // The second organization: the same setup, without pausing the first mailbox.
+      const org = await createOrgWithMailbox(trx);
+      const ctxB = { orgId: org.orgId };
+      await insertDefaultSettings(trx, ctxB, org.mailboxId);
+      await enableAssist(trx, ctxB, org.mailboxId);
+      const b = { ...org, ctx: ctxB };
+      const delegationA = await openDelegation(trx, a);
+      const delegationB = await openDelegation(trx, b);
+      await suspendOrg(trx, b.orgId);
+
+      await createChaserJob({ db: trx, now: () => at0730 }).run();
+
+      expect(await reminderRows(trx, a.ctx, delegationA.emailId)).toHaveLength(2);
+      expect(await auditRows(trx, a.ctx, "delegation.chaser_run")).toHaveLength(1);
+      expect((await getDelegation(trx, b.ctx, delegationB.id))?.status).toBe("sent");
+      expect(await reminderRows(trx, b.ctx)).toEqual([]);
+      expect(await auditRows(trx, b.ctx, "delegation.chaser_run")).toEqual([]);
     });
   });
 });

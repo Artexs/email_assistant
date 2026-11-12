@@ -25,6 +25,7 @@ import {
   insertDraftAndSend,
   insertTriagedWithActions,
   pauseOtherMailboxes,
+  suspendOrg,
   testCapabilities,
 } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -645,12 +646,14 @@ describe("createCommitterJob with sends", () => {
       const box = await addBox(trx);
       const smtp = senderOpener();
       const ready = await pairOf(trx, box);
+      // The first organizations read is the suspend re-check of the loop; the facts read after it fails.
+      let organizationReads = 0;
       const failing = new Proxy(trx, {
         get(target, prop) {
           const value = Reflect.get(target, prop, target) as unknown;
           if (prop === "selectFrom") {
             return (table: string) => {
-              if (table === "organizations") throw new Error("db read failed");
+              if (table === "organizations" && ++organizationReads > 1) throw new Error("db read failed");
               return (value as (name: string) => unknown).call(target, table);
             };
           }
@@ -902,6 +905,36 @@ describe("the Undo of a move into a sort folder (U11)", () => {
         provider_result: { by_append: false },
       });
       expect((await emailState(trx, mail.emailId)).folder).toBe(JUNK);
+    });
+  });
+});
+
+describe("createCommitterJob with a suspended organization", () => {
+  test("mailbox changes and sends of a suspended organization wait; the active one is served in the same run", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const a = await addBox(trx);
+      const b = await addBox(trx);
+      await suspendOrg(trx, b.orgId);
+      const mailA = await addMail(trx, a, { messageId: "<a1@x.test>", actions: [{ type: "flag" }] });
+      const mailB = await addMail(trx, b, { messageId: "<b1@x.test>", actions: [{ type: "flag" }] });
+      const sendA = await pairOf(trx, a);
+      const sendB = await pairOf(trx, b, {
+        approved: { userId: b.userId as string, at: new Date(NOW.getTime() - HOUR) },
+      });
+      const opener = openerFor([a, b]);
+      const smtp = senderOpener();
+
+      await sendJob(trx, opener, smtp, a).run();
+
+      expect((await actionState(trx, mailA.actionIds[0] as string)).status).toBe("applied");
+      expect(await flagsOf(a, mailA.uid)).toContain("\\Flagged");
+      expect((await actionState(trx, sendA.sendId)).status).toBe("applied");
+      expect(await actionState(trx, mailB.actionIds[0] as string)).toMatchObject({ status: "ready", locked_at: null });
+      expect(await flagsOf(b, mailB.uid)).not.toContain("\\Flagged");
+      expect(await actionState(trx, sendB.sendId)).toMatchObject({ status: "approved", locked_at: null });
+      expect(opener.calls).toEqual([a.address]);
+      expect(smtp.calls).toEqual([a.address]);
     });
   });
 });

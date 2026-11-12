@@ -721,7 +721,7 @@ export async function detectNotices(deps: NoticeDeps): Promise<void> {
   try {
     const now = deps.now();
     const byOrg = new Map<string, LinkedChat[]>();
-    for (const link of await listLinkedChats(deps.db)) {
+    for (const link of await listLinkedChats(deps.db, { includeSuspended: false })) {
       byOrg.set(link.orgId, [...(byOrg.get(link.orgId) ?? []), link]);
     }
     for (const [orgId, members] of byOrg) {

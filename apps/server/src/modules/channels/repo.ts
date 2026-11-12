@@ -147,8 +147,15 @@ export async function findChatLink(db: DbOrTrx, chatId: number): Promise<LinkedC
 }
 
 // Scheduler entry point (D18): it walks all organizations.
-export async function listLinkedChats(db: DbOrTrx): Promise<LinkedChat[]> {
-  const rows = await selectLinkedChats(db).orderBy("chat_links.org_id").orderBy("chat_links.user_id").execute();
+// A `suspended` organization is skipped unless `includeSuspended` (D4: no notice and no digest for it).
+export async function listLinkedChats(db: DbOrTrx, opts: { includeSuspended: boolean }): Promise<LinkedChat[]> {
+  let query = selectLinkedChats(db);
+  if (!opts.includeSuspended) {
+    query = query
+      .innerJoin("organizations", "organizations.id", "chat_links.org_id")
+      .where("organizations.plan", "<>", "suspended");
+  }
+  const rows = await query.orderBy("chat_links.org_id").orderBy("chat_links.user_id").execute();
   return rows.map(toLinkedChat);
 }
 
@@ -291,6 +298,18 @@ export async function claimDueOutbox(
             eb.and([eb("status", "=", "pending"), eb("next_attempt_at", "<=", opts.now)]),
             eb.and([eb("status", "=", "sending"), eb("locked_at", "<", opts.staleBefore)]),
           ])
+        )
+        // D4: a suspended organization gets no message, approval requests included; its rows wait (A12, A17).
+        .where((eb) =>
+          eb.not(
+            eb.exists(
+              eb
+                .selectFrom("organizations")
+                .select("organizations.id")
+                .whereRef("organizations.id", "=", "outbox.org_id")
+                .where("organizations.plan", "=", "suspended")
+            )
+          )
         );
       if (orgIds) query = query.where("org_id", "in", orgIds);
       return query.orderBy("created_at").orderBy("id").limit(opts.limit).forUpdate().skipLocked();

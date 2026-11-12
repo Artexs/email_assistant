@@ -4,6 +4,7 @@ import type { SecretBox } from "../../platform/crypto";
 import type { DB, Db, TenantContext } from "../../platform/db";
 import { SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
+import { isOrgSuspended } from "../tenancy";
 
 import type { ImapConnectOptions } from "./imap/client";
 import { openMailboxProvider } from "./open";
@@ -63,6 +64,8 @@ export function createMailSyncJob(deps: MailSyncJobDeps): { run(): Promise<void>
       for (const { orgId, mailboxId } of targets) {
         const ctx = { orgId };
         try {
+          // D4: a suspend during the run stops the next mailbox, not only the next run.
+          if (await isOrgSuspended(deps.db, ctx)) continue;
           await syncOne(deps, ctx, mailboxId, failures);
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);

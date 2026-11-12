@@ -7,7 +7,13 @@ import { createFakeMailProvider } from "../../src/modules/mail/fake";
 import { createReturnedJob, processReturned, recordFeedback } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
 
-import { createOrgWithMailbox, insertAction, insertTriagedWithActions, pauseOtherMailboxes } from "./fixtures";
+import {
+  createOrgWithMailbox,
+  insertAction,
+  insertTriagedWithActions,
+  pauseOtherMailboxes,
+  suspendOrg,
+} from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -364,6 +370,24 @@ describe("createReturnedJob", () => {
       expect(await returnedAt(trx, mailB.emailId)).not.toBeNull();
       expect(await feedbackRows(trx, mailB.emailId)).toHaveLength(0);
       expect((await actionState(trx, mailB.actionIds[0] as string)).status).toBe("applied");
+    });
+  });
+
+  test("a suspended organization's returned mail stays flagged; the active one gets its feedback row", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const a = await tenant(trx);
+      const b = await tenant(trx);
+      const mailA = await returnedMail(trx, a);
+      const mailB = await returnedMail(trx, b);
+      await suspendOrg(trx, b.ctx.orgId);
+
+      await createReturnedJob({ db: trx, now: () => NOW }).run();
+
+      expect(await feedbackRows(trx, mailA.emailId)).toHaveLength(1);
+      expect(await returnedAt(trx, mailA.emailId)).toBeNull();
+      expect(await returnedAt(trx, mailB.emailId)).not.toBeNull();
+      expect(await feedbackRows(trx, mailB.emailId)).toHaveLength(0);
     });
   });
 

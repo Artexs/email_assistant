@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -5,11 +7,19 @@ import { listActionsForEmail } from "../../src/modules/actions";
 import { auditEvents, recordAudit } from "../../src/modules/audit";
 import { insertDefaultSettings } from "../../src/modules/config";
 import { ensureSyncFolders } from "../../src/modules/mail";
+import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { createLlmPause, createTriageJob, triageOne, type TriageScope } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
 import { LlmConfigError, LlmSoftError, type LlmClient } from "../../src/platform/llm";
 
-import { createOrgWithMailbox, insertDelegate, insertTestEmail, pauseOtherMailboxes } from "./fixtures";
+import {
+  createOrgWithMailbox,
+  insertDelegate,
+  insertTestEmail,
+  pauseOtherMailboxes,
+  suspendOrg,
+  testCapabilities,
+} from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -823,6 +833,74 @@ describe("createTriageJob: daily cap", () => {
       expect(lines[0]).toBe(
         `daily LLM cap reached for mailbox ${mailboxId}: 2 calls since ${dayStart.toISOString()} (America/Los_Angeles day); mail waits until 2026-11-06T08:00:00.000Z`
       );
+    });
+  });
+});
+
+describe("suspended organizations", () => {
+  test("a suspended organization gets no claim, no prompt and no llm.call row", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const a = await mailboxWithSettings(trx);
+      const b = await mailboxWithSettings(trx);
+      await suspendOrg(trx, b.orgId);
+      const mailA = await insertTestEmail(trx, a.ctx, a.mailboxId);
+      const mailB = await insertTestEmail(trx, b.ctx, b.mailboxId);
+
+      const llm = fakeLlm();
+      await job(trx, llm, { kind: "all" }).run();
+
+      expect(llm.prompts).toHaveLength(1);
+      expect((await emailRow(trx, mailA)).status).toBe("triaged");
+      expect(await emailRow(trx, mailB)).toEqual({ status: "pending", attempts: 0 });
+      const calls = await trx
+        .selectFrom("audit_log")
+        .select("id")
+        .where("org_id", "=", b.orgId)
+        .where("event", "=", auditEvents.llmCall)
+        .execute();
+      expect(calls).toHaveLength(0);
+    });
+  });
+
+  test("a suspend during the run stops the next mailbox of the run", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const first = await mailboxWithSettings(trx);
+      // A second mailbox of the same organization.
+      const secondId = randomUUID();
+      await insertMailbox(trx, first.ctx, {
+        id: secondId,
+        address: `second-${randomUUID()}@x.test`,
+        imapHost: "imap.x.test",
+        imapPort: 993,
+        smtpHost: "smtp.x.test",
+        smtpPort: 465,
+        capabilities: testCapabilities,
+        folderMap: {},
+      });
+      await insertInboxFolder(trx, first.ctx, secondId);
+      await insertDefaultSettings(trx, first.ctx, secondId);
+      await insertTestEmail(trx, first.ctx, first.mailboxId);
+      await insertTestEmail(trx, first.ctx, secondId);
+
+      const llm = fakeLlm();
+      const classify = llm.classify.bind(llm);
+      llm.classify = (async (req) => {
+        const result = await classify(req);
+        await suspendOrg(trx, first.orgId);
+        return result;
+      }) as LlmClient["classify"];
+      await job(trx, llm, { kind: "all" }).run();
+
+      expect(llm.prompts).toHaveLength(1);
+      const rows = await trx
+        .selectFrom("emails")
+        .select("status")
+        .where("org_id", "=", first.orgId)
+        .orderBy("status")
+        .execute();
+      expect(rows.map((row) => row.status)).toEqual(["pending", "triaged"]);
     });
   });
 });

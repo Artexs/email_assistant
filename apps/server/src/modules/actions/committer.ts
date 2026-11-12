@@ -23,7 +23,7 @@ import {
   type MailSender,
   type SmtpConnectOptions,
 } from "../mail";
-import { getOrganization, listMemberships } from "../tenancy";
+import { getOrganization, isOrgSuspended, listMemberships } from "../tenancy";
 
 import { applyAction, type ApplyDeps, type FolderResolver, type ResolvableFolderKey } from "./apply";
 import { STALE_AFTER_MS } from "./constants";
@@ -384,6 +384,8 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
       const facts = new Map<string, TenantFacts>();
       for (const { orgId, mailboxId } of targets) {
         try {
+          // D4: a suspend during the run stops the next mailbox, not only the next run.
+          if (await isOrgSuspended(deps.db, { orgId })) continue;
           await processMailbox({ orgId }, mailboxId, facts);
         } catch (error) {
           log.error(`committer ${mailboxId} failed: ${describeError(error)}`);
