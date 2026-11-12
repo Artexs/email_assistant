@@ -1635,3 +1635,85 @@ export async function countApprovals(
     approvedSending: Number(row.sending),
   };
 }
+
+const RETENTION_BATCH = 1000;
+
+// Types whose payload holds text of the mail or of a draft (A23).
+const PAYLOAD_TYPES = ["save_summary", "create_draft", "send"];
+const CLOSED_STATUSES = ["applied", "expired", "failed", "rejected", "undone", "logged"];
+
+// Retention (A23): the payload of a closed `save_summary`, `create_draft` or `send` row, and of a `ready` `save_summary`, goes after the period.
+// Open `create_draft` and `send` rows are not touched. Status and `updated_at` stay. Batches by id; a locked row waits for a later day.
+export async function clearActionPayloads(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { before: Date; batch?: number }
+): Promise<number> {
+  const batch = opts.batch ?? RETENTION_BATCH;
+  let total = 0;
+  for (;;) {
+    const result = await db
+      .updateTable("actions")
+      .set({ payload: sql`'{}'::jsonb` })
+      .where("org_id", "=", ctx.orgId)
+      .where(
+        "id",
+        "in",
+        db
+          .selectFrom("actions")
+          .select("id")
+          .where("org_id", "=", ctx.orgId)
+          .where("created_at", "<", opts.before)
+          .where(sql<boolean>`payload <> '{}'::jsonb`)
+          .where("type", "in", PAYLOAD_TYPES)
+          .where((eb) =>
+            eb.or([
+              eb("status", "in", CLOSED_STATUSES),
+              eb.and([eb("type", "=", "save_summary"), eb("status", "=", "ready")]),
+            ])
+          )
+          .orderBy("id")
+          .limit(batch)
+          .forUpdate()
+          .skipLocked()
+      )
+      .executeTakeFirstOrThrow();
+    const changed = Number(result.numUpdatedRows);
+    total += changed;
+    if (changed === 0) return total;
+  }
+}
+
+// Retention (A23): the error text goes 90 days after the last change. Status and `updated_at` stay.
+export async function clearActionErrors(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { before: Date; batch?: number }
+): Promise<number> {
+  const batch = opts.batch ?? RETENTION_BATCH;
+  let total = 0;
+  for (;;) {
+    const result = await db
+      .updateTable("actions")
+      .set({ last_error: null })
+      .where("org_id", "=", ctx.orgId)
+      .where(
+        "id",
+        "in",
+        db
+          .selectFrom("actions")
+          .select("id")
+          .where("org_id", "=", ctx.orgId)
+          .where("updated_at", "<", opts.before)
+          .where("last_error", "is not", null)
+          .orderBy("id")
+          .limit(batch)
+          .forUpdate()
+          .skipLocked()
+      )
+      .executeTakeFirstOrThrow();
+    const changed = Number(result.numUpdatedRows);
+    total += changed;
+    if (changed === 0) return total;
+  }
+}

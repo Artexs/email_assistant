@@ -506,3 +506,40 @@ export async function listLatestDelegationsByEmailIds(
   }
   return out;
 }
+
+const RETENTION_BATCH = 1000;
+
+// Retention (A23): the task text goes 90 days after the last change (this covers 90 days after `done`).
+// Batches by id; a locked row waits for a later day. A repeat call changes nothing.
+export async function clearDelegationTasks(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { before: Date; batch?: number }
+): Promise<number> {
+  const batch = opts.batch ?? RETENTION_BATCH;
+  let total = 0;
+  for (;;) {
+    const result = await db
+      .updateTable("delegations")
+      .set({ task_summary: "[removed]" })
+      .where("org_id", "=", ctx.orgId)
+      .where(
+        "id",
+        "in",
+        db
+          .selectFrom("delegations")
+          .select("id")
+          .where("org_id", "=", ctx.orgId)
+          .where("updated_at", "<", opts.before)
+          .where("task_summary", "<>", "[removed]")
+          .orderBy("id")
+          .limit(batch)
+          .forUpdate()
+          .skipLocked()
+      )
+      .executeTakeFirstOrThrow();
+    const changed = Number(result.numUpdatedRows);
+    total += changed;
+    if (changed === 0) return total;
+  }
+}

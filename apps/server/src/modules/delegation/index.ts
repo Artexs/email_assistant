@@ -12,6 +12,7 @@ export {
 } from "./service";
 export {
   bumpReminder,
+  clearDelegationTasks,
   countOpenDelegations,
   countPendingReminderSends,
   findDelegationBySendAction,

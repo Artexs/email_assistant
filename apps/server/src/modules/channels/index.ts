@@ -12,6 +12,8 @@ export {
   cancelPendingOutbox,
   cancelPendingOutboxOfOrg,
   claimDueOutbox,
+  clearOutboxTexts,
+  deleteOldLinkTokens,
   failOutbox,
   findChatLink,
   getChatLinkForUser,

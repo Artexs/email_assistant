@@ -37,6 +37,8 @@ export {
   CLAIM_MAX_AGE_MS,
   CLAIM_MAX_MAIL_AGE_MS,
   claimActions,
+  clearActionErrors,
+  clearActionPayloads,
   countActionsSince,
   countClaimable,
   countHeldSends,
