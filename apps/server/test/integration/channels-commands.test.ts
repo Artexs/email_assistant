@@ -133,7 +133,7 @@ describe("statusMessage", () => {
 
   test("the actions line shows the scope and the counts of the last 24 h", async () => {
     await withRollback(db, async (trx) => {
-      const { ctx, link, a, address } = await setup(trx);
+      const { ctx, link, a } = await setup(trx);
       const off = await statusMessage(depsAt(trx, T), link);
       expect(off.text).toContain("Actions: off · last 24 h: applied 0, undone 0, failed 0");
 
@@ -144,7 +144,7 @@ describe("statusMessage", () => {
       await insertAction(trx, ctx, emailId, { type: "save_summary", status: "applied", appliedAt: at(-HOUR) });
       await insertAction(trx, ctx, emailId, { type: "flag", status: "applied", appliedAt: at(-30 * HOUR) });
 
-      const all = await statusMessage(depsAt(trx, T, { actionsScope: { kind: "all", mailboxAddress: address } }), link);
+      const all = await statusMessage(depsAt(trx, T, { actionsScope: { kind: "all" } }), link);
       expect(all.text).toContain(
         "Actions: real mail of the test mailbox (ACTIONS_SCOPE=all) · last 24 h: applied 2, undone 0, failed 1"
       );
@@ -155,7 +155,7 @@ describe("statusMessage", () => {
 
   test("status shows approvals, the send scope and the delegations", async () => {
     await withRollback(db, async (trx) => {
-      const { ctx, link, a, address } = await setup(trx);
+      const { ctx, link, a } = await setup(trx);
       const empty = await statusMessage(depsAt(trx, T), link);
       expect(empty.text).toContain("Approvals: 0 waiting for your tap");
       expect(empty.text).toContain("Send: off");
@@ -176,12 +176,12 @@ describe("statusMessage", () => {
       expect(self.text).toContain("Send: only to your test addresses (SEND_SCOPE=self)");
       expect(self.text).toContain("1 approved, held by SEND_SCOPE=self");
 
-      const all = await statusMessage(depsAt(trx, T, { sendScope: { kind: "all", mailboxAddress: address } }), link);
+      const all = await statusMessage(depsAt(trx, T, { sendScope: { kind: "all" } }), link);
       expect(all.text).toContain("Send: real delegates of the test mailbox (SEND_SCOPE=all)");
       expect(all.text).toContain("1 approved, sending");
 
       await trx.updateTable("mailboxes").set({ status: "paused" }).where("id", "=", a.mailboxId).execute();
-      const paused = await statusMessage(depsAt(trx, T, { sendScope: { kind: "all", mailboxAddress: address } }), link);
+      const paused = await statusMessage(depsAt(trx, T, { sendScope: { kind: "all" } }), link);
       expect(paused.text).toContain("1 approved, held: the mailbox is paused");
       await trx.updateTable("mailboxes").set({ status: "auth_error" }).where("id", "=", a.mailboxId).execute();
       const broken = await statusMessage(depsAt(trx, T), link);

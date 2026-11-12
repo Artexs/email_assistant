@@ -86,7 +86,7 @@ async function setup(trx: Transaction<DB>, options: FakeMailProviderOptions = {}
     mailboxId: box.mailboxId,
     address,
     fake: createFakeMailProvider(options),
-    scope: { kind: "all", mailboxAddress: address },
+    scope: { kind: "all" },
   };
 }
 

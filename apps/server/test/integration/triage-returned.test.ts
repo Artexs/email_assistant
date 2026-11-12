@@ -421,7 +421,7 @@ describe("processReturned and Undo on two connections (M8)", () => {
         const result = await undo(trx1, t.ctx, mail.emailId, {
           now: NOW,
           userId,
-          scope: { kind: "all", mailboxAddress: t.address },
+          scope: { kind: "all" },
         });
         expect(result).toEqual({ kind: "started", created: 1 });
         // The second connection waits on the row lock of the original move.

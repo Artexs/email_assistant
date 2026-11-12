@@ -856,8 +856,8 @@ describe("applySend: crashes and the recovery of an applying send", () => {
         secrets,
         openProvider: async () => s.fake,
         openSender: async () => s.sender,
-        scope: { kind: "all", mailboxAddress: s.address },
-        sendScope: { kind: "all", mailboxAddress: s.address },
+        scope: { kind: "all" },
+        sendScope: { kind: "all" },
         now: () => NOW,
       });
       await job.run();
@@ -1035,8 +1035,8 @@ describe("send end to end", () => {
         secrets,
         openProvider: async () => s.fake,
         openSender: async () => s.sender,
-        scope: { kind: "all", mailboxAddress: s.address },
-        sendScope: { kind: "all", mailboxAddress: s.address },
+        scope: { kind: "all" },
+        sendScope: { kind: "all" },
         hooks: delegationHooks({ db }),
         now: () => NOW,
       });

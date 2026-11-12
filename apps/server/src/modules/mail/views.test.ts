@@ -10,12 +10,12 @@ describe("mailboxScopeBadges follows the committer filters", () => {
   const actionsScopes: ActionsScope[] = [
     { kind: "off" },
     { kind: "synthetic" },
-    { kind: "all", mailboxAddress: TEST_ADDRESS },
+    // stage 3 (S6a) adds the all entries back with the new badge reasons
   ];
   const sendScopes: SendScope[] = [
     { kind: "off" },
     { kind: "self", addresses: ["me@example.test"] },
-    { kind: "all", mailboxAddress: TEST_ADDRESS },
+    // stage 3 (S6a) adds the all entries back with the new badge reasons
   ];
 
   test("actions badge matches claimFilterFor", () => {
@@ -23,7 +23,7 @@ describe("mailboxScopeBadges follows the committer filters", () => {
       for (const address of addresses) {
         const env: ScopeEnv = { triage: "off", actions: scope.kind, send: "off", testMailboxAddress: TEST_ADDRESS };
         const badge = mailboxScopeBadges(env, address).actions;
-        const filter = claimFilterFor(scope, address);
+        const filter = claimFilterFor(scope);
         expect(badge.state === "on").toBe(filter.kind === "all");
         expect(badge.state === "synthetic").toBe(filter.kind === "synthetic");
       }
@@ -35,7 +35,7 @@ describe("mailboxScopeBadges follows the committer filters", () => {
       for (const address of addresses) {
         const env: ScopeEnv = { triage: "off", actions: "off", send: scope.kind, testMailboxAddress: TEST_ADDRESS };
         const badge = mailboxScopeBadges(env, address).send;
-        const filter = sendFilterFor(scope, address);
+        const filter = sendFilterFor(scope);
         expect(badge.state === "on").toBe(filter.kind === "all");
         expect(badge.state === "self").toBe(filter.kind === "self");
       }

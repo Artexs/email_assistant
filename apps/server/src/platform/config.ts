@@ -113,11 +113,11 @@ const baseSchema = z.object({
   OPENAI_REASONING_EFFORT: z.preprocess(emptyAsUndefined, z.enum(openAiReasoningEfforts).default("none")),
   // LLM call attempts per mailbox per America/Los_Angeles day.
   LLM_DAILY_CAP: z.coerce.number().int().positive().default(defaultLlmDailyCap),
-  // off = no triage worker; synthetic = only synthetic mail; all = also real mail, only of TEST_MAILBOX_ADDRESS (ADR 0013).
+  // off = no triage worker; synthetic = only synthetic mail; all = real mail of every active mailbox of an organization that is not suspended (S6a).
   TRIAGE_LLM_SCOPE: z.enum(["off", "synthetic", "all"]).default("off"),
-  // off = the committer changes nothing in any mailbox; synthetic = only synthetic mail; all = also real mail, only of TEST_MAILBOX_ADDRESS.
+  // off = no mailbox change; synthetic = only synthetic mail; all = real mail, by the mode and the switches of each mailbox.
   ACTIONS_SCOPE: z.enum(["off", "synthetic", "all"]).default("off"),
-  // off = no send goes out; self = only to SEND_TEST_ADDRESSES; all = real delegates, only for the TEST_MAILBOX_ADDRESS mailbox.
+  // off = no send; self = only to SEND_TEST_ADDRESSES; all = real recipients, always after an owner's tap.
   SEND_SCOPE: z.enum(["off", "self", "all"]).default("off"),
   // Comma-separated; needed with SEND_SCOPE=self.
   SEND_TEST_ADDRESSES: z.preprocess(emptyAsUndefined, z.string().optional()),
@@ -181,12 +181,6 @@ export const configSchema = baseSchema.superRefine((config, ctx) => {
   if (config.TRIAGE_LLM_SCOPE !== "off" && block.apiKey === undefined) {
     ctx.addIssue({ code: "custom", path: [block.apiKeyName], message: "needed when TRIAGE_LLM_SCOPE is not off" });
   }
-  if (config.TRIAGE_LLM_SCOPE === "all" && config.TEST_MAILBOX_ADDRESS === undefined) {
-    ctx.addIssue({ code: "custom", path: ["TEST_MAILBOX_ADDRESS"], message: "needed when TRIAGE_LLM_SCOPE is all" });
-  }
-  if (config.ACTIONS_SCOPE === "all" && config.TEST_MAILBOX_ADDRESS === undefined) {
-    ctx.addIssue({ code: "custom", path: ["TEST_MAILBOX_ADDRESS"], message: "needed when ACTIONS_SCOPE is all" });
-  }
   if (config.SEND_SCOPE === "self") {
     const raw = (config.SEND_TEST_ADDRESSES ?? "").split(",").filter((item) => item.trim() !== "");
     if (raw.length === 0 || !raw.every((item) => addressPattern.test(item.trim()))) {
@@ -196,9 +190,6 @@ export const configSchema = baseSchema.superRefine((config, ctx) => {
         message: "needed when SEND_SCOPE is self: one or more valid addresses",
       });
     }
-  }
-  if (config.SEND_SCOPE === "all" && config.TEST_MAILBOX_ADDRESS === undefined) {
-    ctx.addIssue({ code: "custom", path: ["TEST_MAILBOX_ADDRESS"], message: "needed when SEND_SCOPE is all" });
   }
   if (config.WEB_BASE_URL !== undefined && config.WEB_AUTH_SECRET === undefined) {
     ctx.addIssue({ code: "custom", path: ["WEB_AUTH_SECRET"], message: "needed when WEB_BASE_URL is set" });

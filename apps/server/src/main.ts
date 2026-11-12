@@ -30,7 +30,7 @@ function loadConfigOrExit() {
   }
 }
 
-// null: the worker is off. The config check guarantees the keys that the other scopes need.
+// null: the worker is off.
 function triageScope(config: Config, providerLabel: string): TriageScope | null {
   if (config.TRIAGE_LLM_SCOPE === "off") {
     log.info("triage worker is off (TRIAGE_LLM_SCOPE=off)");
@@ -40,8 +40,8 @@ function triageScope(config: Config, providerLabel: string): TriageScope | null 
     log.info("triage takes only synthetic mail (TRIAGE_LLM_SCOPE=synthetic)");
     return { kind: "synthetic" };
   }
-  log.warn(`triage sends the real mail of the TEST_MAILBOX_ADDRESS mailbox to ${providerLabel} (TRIAGE_LLM_SCOPE=all)`);
-  return { kind: "all", mailboxAddress: config.TEST_MAILBOX_ADDRESS ?? "" };
+  log.warn(`triage sends the real mail of every active mailbox to ${providerLabel} (TRIAGE_LLM_SCOPE=all)`);
+  return { kind: "all" };
 }
 
 const config = loadConfigOrExit();

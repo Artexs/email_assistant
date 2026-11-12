@@ -21,8 +21,8 @@ const RETRY_WAIT_MS = 5 * 60_000;
 
 const modeSchema = z.enum(mailboxModes);
 
-// `synthetic`: only the seeded test mail of every mailbox. `all`: all mail, but only of one mailbox.
-export type TriageScope = { kind: "synthetic" } | { kind: "all"; mailboxAddress: string };
+// `synthetic`: only the seeded test mail of every mailbox. `all`: all mail of every active mailbox.
+export type TriageScope = { kind: "synthetic" } | { kind: "all" };
 
 export interface TriageJobDeps {
   db: Db | Transaction<DB>;
@@ -43,7 +43,6 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
   // The quota day (ISO start) for which a mailbox already got the cap warning.
   const warnedCap = new Map<string, string>();
   const triage = deps.triageOne ?? triageOne;
-  const scopeAddress = deps.scope.kind === "all" ? deps.scope.mailboxAddress.trim().toLowerCase() : null;
 
   return {
     async run() {
@@ -64,7 +63,6 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
           try {
             const row = await getMailbox(deps.db, ctx, mailboxId);
             if (row === undefined) continue;
-            if (scopeAddress !== null && row.address.toLowerCase() !== scopeAddress) continue;
 
             const settings = await getMailboxSettings(deps.db, ctx, mailboxId);
             if (settings === undefined) {

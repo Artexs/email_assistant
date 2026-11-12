@@ -10,7 +10,7 @@ import { createLog } from "./platform/log";
 // The parts that `main.ts` and `scripts/job-run.ts` build the same way.
 const log = createLog("main");
 
-// The one value goes to the committer and to the Telegram runtime. The config check guarantees the key that `all` needs.
+// The one value goes to the committer and to the Telegram runtime.
 export function actionsScope(config: Config): ActionsScope {
   if (config.ACTIONS_SCOPE === "off") {
     log.info("actions committer: mailbox changes are off (ACTIONS_SCOPE=off)");
@@ -21,12 +21,12 @@ export function actionsScope(config: Config): ActionsScope {
     return { kind: "synthetic" };
   }
   log.warn(
-    "actions committer applies mailbox changes to the real mail of the TEST_MAILBOX_ADDRESS mailbox (ACTIONS_SCOPE=all)"
+    "actions committer applies mailbox changes to the real mail of every active mailbox, by its mode (ACTIONS_SCOPE=all)"
   );
-  return { kind: "all", mailboxAddress: config.TEST_MAILBOX_ADDRESS ?? "" };
+  return { kind: "all" };
 }
 
-// D16, D31. The config check guarantees the list for `self` and the key that `all` needs.
+// D16, D31. The config check guarantees the list for `self`.
 export function sendScope(config: Config): SendScope {
   if (config.SEND_SCOPE === "off") {
     log.info("sends: off (SEND_SCOPE=off)");
@@ -36,8 +36,8 @@ export function sendScope(config: Config): SendScope {
     log.warn("sends go only to the SEND_TEST_ADDRESSES list (SEND_SCOPE=self)");
     return { kind: "self", addresses: sendTestAddresses(config) };
   }
-  log.warn("sends go to real delegates of the TEST_MAILBOX_ADDRESS mailbox (SEND_SCOPE=all)");
-  return { kind: "all", mailboxAddress: config.TEST_MAILBOX_ADDRESS ?? "" };
+  log.warn("sends go to real recipients after an owner's tap (SEND_SCOPE=all)");
+  return { kind: "all" };
 }
 
 export function uidplusOf(db: Db): (ctx: TenantContext, mailboxId: string) => Promise<boolean> {
