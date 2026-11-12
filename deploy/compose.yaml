@@ -44,5 +44,15 @@ services:
       interval: 30s
       retries: 3
 
+# The subnet is pinned, so the gateway never changes after a `down` or a Docker upgrade.
+# WEB_TRUSTED_PROXIES in .env is this gateway (deploy/README.md "Web panel", ADR 0017).
+# Keep it apart from the LAN (192.168.1.0/24), the Tailscale ranges and the other Docker networks of the host.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+          gateway: 172.30.0.1
+
 volumes:
   db-data: {}

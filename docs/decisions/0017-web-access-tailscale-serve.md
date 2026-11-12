@@ -34,8 +34,8 @@ Decisions and facts: the S5 master plan, `spec/features/done/2026-11/F007-s5-web
   - The panel depends on the Tailscale service.
   - Serve is open to every device that the tailnet policy (ACL) allows. The default policy of a one-user tailnet allows the owner's own devices only. Check `tailscale status` for foreign users before you rely on it. Also check in the admin console that the machine is not shared with another tailnet.
   - Any process on the VPS host that reaches `127.0.0.1:8080` appears as the trusted Compose gateway and can set `x-forwarded-for`. This affects only the audit address and the rate limit.
-  - A recreated Compose network (`docker compose down`, a Docker upgrade) can change the gateway. Read it again, then set `WEB_TRUSTED_PROXIES`.
+  - A recreated Compose network (`docker compose down`, a Docker upgrade) used to change the gateway. Since 2026-11-12 (F069) `deploy/compose.yaml` pins the subnet `172.30.0.0/24` and the gateway `172.30.0.1`. `WEB_TRUSTED_PROXIES` is `172.30.0.1` and stays stable.
+    A host that started before the pin moves once: `deploy/README.md` "Move a running stack to the pinned subnet". It recreates the network and `db`.
     A wrong value does not open the panel. Every client then shares one rate-limit counter, and `auth_sessions.ip_address` holds the gateway.
-    A pinned subnet is the follow-up `spec/features/planned/F069-compose-network-subnet/plan.md`.
 - S6 path: a public reverse proxy, or Cloudflare Tunnel with a domain. It changes only `WEB_BASE_URL`, `WEB_TRUSTED_PROXIES` and the proxy.
   Before that, do `spec/features/planned/F056-web-public-hardening/plan.md`.

@@ -113,13 +113,13 @@ Never run `tailscale up --force-reauth` over the tailnet. It cuts the connection
 
 ### Turn it on
 
-1. Read the gateway of the Compose network (the network exists after the first `up`):
+1. Check the gateway of the Compose network. `deploy/compose.yaml` pins it to `172.30.0.1`. After the first `up` with the pinned file, this command must print `172.30.0.1`:
    `docker network inspect email-assistant_default --format '{{(index .IPAM.Config 0).Gateway}}'`
 2. Make a copy of `.env` first: `cp -p .env .env.bak-s5e`. The copy holds every secret. Delete it when the panel works: `rm .env.bak-s5e`.
    Then set these keys in `.env`:
    - `WEB_BASE_URL`: `https://<machine>.<tailnet>.ts.net` (no path, no trailing slash).
    - `WEB_AUTH_SECRET`: make it with `openssl rand -base64 32`. Never print it.
-   - `WEB_TRUSTED_PROXIES`: the gateway from step 1.
+   - `WEB_TRUSTED_PROXIES`: `172.30.0.1` (the gateway from step 1).
    - Leave `WEB_TRUSTED_ORIGINS`, `WEB_MAIL_ALLOW_LOCAL` and `WEB_DIST` empty.
 3. Do the section Update. The migrations of S5 run there.
 4. Check the log for the start line `web is on: https://…, dist /app/apps/web/dist`: `$C logs server | grep 'web'`
@@ -127,7 +127,19 @@ Never run `tailscale up --force-reauth` over the tailnet. It cuts the connection
 5. Start Tailscale Serve (you, sudo): `sudo tailscale serve --bg 8080`
 6. Check Serve: `tailscale serve status`
 
-Read the gateway again after each `docker compose down`. A new Compose network can get a new gateway.
+The gateway does not change after `docker compose down` or a Docker upgrade, because the subnet is pinned.
+
+#### Move a running stack to the pinned subnet (once)
+
+A stack that started before the pin has another subnet (`172.18.0.0/16` on the VPS). The change recreates the network and the `db` container. It stops the stack for a short time.
+
+1. Do it outside a pilot week and ask the owner first.
+2. Check that `172.30.0.0/24` is free on the host: `docker network ls`, `ip -4 route`. Choose another range in `deploy/compose.yaml` if it clashes.
+3. Make a backup of the database: `deploy/backup.sh` (section Backups). Make a copy of `.env`: `cp -p .env .env.bak-f069`.
+4. Pull the new compose file. Set `WEB_TRUSTED_PROXIES=172.30.0.1` in `.env`.
+5. `$C down && $C up -d --wait`
+6. Check: `docker network inspect email-assistant_default --format '{{(index .IPAM.Config 0).Gateway}}'` prints `172.30.0.1`. After the first sign-in, `auth_sessions.ip_address` is a tailnet address.
+7. Rollback: restore the old compose file and set `WEB_TRUSTED_PROXIES` to the old gateway (from `.env.bak-f069`). Run `$C down && $C up -d --wait`. Delete `.env.bak-f069` when the move works.
 
 ### Give a member a password
 
@@ -157,7 +169,7 @@ The same command makes a reset link later. The link is a secret. Do not paste it
 | `502` from Serve                                                            | The server is down, or it does not listen on `127.0.0.1:8080`            | Run `$C ps` and `ss -ltn`. Start the server with `$C up -d --wait server`.                                      |
 | Certificate error on the first visit                                        | HTTPS is off in the admin console, or the first certificate is not ready | Turn HTTPS on. Wait a short time. Do not retry in a loop: the certificate authority has a rate limit.           |
 | `403 bad_origin` on every save                                              | `WEB_BASE_URL` is not the URL in the browser bar                         | Set `WEB_BASE_URL` to the exact URL of the browser bar. Run `$C up -d --wait server`.                           |
-| All members share one rate limit, or `auth_sessions.ip_address` is `172.x`  | `WEB_TRUSTED_PROXIES` is not the gateway of the Compose network          | Read the gateway again (section Turn it on, step 1). Set it in `.env`. Run `$C up -d --wait server`.            |
+| All members share one rate limit, or `auth_sessions.ip_address` is `172.x`  | `WEB_TRUSTED_PROXIES` is not the gateway of the Compose network          | Set it to `172.30.0.1` in `.env`, as the pinned file says. Run `$C up -d --wait server`.                        |
 | `web is off` in the log                                                     | `WEB_BASE_URL` is empty                                                  | Set `WEB_BASE_URL` in `.env`. Run `$C up -d --wait server`.                                                     |
 | `web: dist folder missing` in the log                                       | The image has no web build                                               | Rebuild: `$C up -d --build --wait`.                                                                             |
 | The setup link says `This link was used or has expired. Ask for a new one.` | The link was used, or it is older than 24 hours                          | Make a new link (section Give a member a password).                                                             |
