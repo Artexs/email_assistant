@@ -619,7 +619,7 @@ Tenancy:
   It never goes to logs, to the web app or to Telegram. The Telegram bot token (`TELEGRAM_BOT_TOKEN`) is also a secret: env only, never in a log line, error text or DB row (§6.2). Prefer an app password: the stored secret opens the whole mailbox.
 - **TLS:** IMAP and SMTP always check certificates.
 - **Web access (ADR 0016):** the panel is reachable only through Tailscale Serve (HTTPS, tailnet members only, no Funnel). The server listens on `127.0.0.1:8080` of the host. The code still treats the panel as public (S6 moves it to a public proxy).
-- **Web security (ADR 0015):** the checks run in the server, in this order, for every request.
+- **Web security (ADR 0015):** the server runs these checks. The list is by topic, not in the order of the code.
   - **Secret:** `WEB_AUTH_SECRET` (at least 32 characters, env only, never in a log) signs the session. The config check needs it when `WEB_BASE_URL` is set. An empty `WEB_BASE_URL` turns the web off.
   - **Session cookie:** Better Auth sets it (prefix `ea`): `HttpOnly`, `SameSite=Lax`, `Secure` when `WEB_BASE_URL` starts with `https://`. The session lasts 30 days and renews after one day of use (sliding). There is no cookie cache, so a revoked session ends at the next request. A password reset ends all sessions of the user.
   - **Origin check:** every method except GET, HEAD and OPTIONS under `/api` needs an `Origin` that is `WEB_BASE_URL` or in `WEB_TRUSTED_ORIGINS`. Without an `Origin` (or with `null`), the header `Sec-Fetch-Site` must be `same-origin`. Else the answer is `403 bad_origin`.
@@ -654,7 +654,7 @@ Tenancy:
   actions, delegations and audit rows, and clears the text of the digest rows in `outbox` of the organization (digests mix mailboxes) — one privileged function.
   Then it tells the user to change the mailbox password.
   The web calls the function `delete_mailbox(org_id, mailbox_id)` (migration `20261111000001`): `SECURITY DEFINER`, owned by `migrator` (it runs the migration), `EXECUTE` only for `app`, a fixed `search_path`.
-  It is the only path that deletes `audit_log` rows, because `app` may not. The function also drops pending and sending digest rows and sets the text of sent digest rows to `[removed]`.
+  It is the only path that deletes `audit_log` rows, because `app` may not. The function also drops pending and sending digest rows and sets the text of sent and failed digest rows to `[removed]`.
   The web then queues a `mailbox_removed` notice to every owner (no address in the text).
   Removing an organization deletes everything.
 - **Privacy by stage:**

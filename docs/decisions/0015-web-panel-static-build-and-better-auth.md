@@ -28,7 +28,7 @@ Probes: `notes/2026-11-08-s5-probes/` and `notes/2026-11-08-s5a-probes/`.
   - The routes are thin: parse, call one service, map to JSON (D8). The session middleware gives the tenant (D3). The client never sends an `org_id`.
   - The web, Telegram and the CLI call the same services (D10). Undo, feedback, the go/no-go gate and the settings use one code path.
 - **Hardening on every request** (D5).
-  - The header CSP holds `frame-ancestors 'none'` and the other fixed directives. Astro writes a meta CSP with hashes for the inline island scripts.
+  - The header CSP holds only `frame-ancestors 'none'`. The Astro meta CSP holds `default-src 'self'` and the other fixed directives, with hashes for the inline island scripts.
   - `style-src` has `'unsafe-inline'`, because the Radix scroll lock injects a style. `script-src` never has it.
   - The origin check covers every non-safe method under `/api`. `bodyLimit` is 64 KB. `Referrer-Policy` is `same-origin`.
   - HSTS is on only when `WEB_BASE_URL` starts with `https://`.

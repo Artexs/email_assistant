@@ -339,7 +339,7 @@ Built in S1b: `createPlanned`, `listActionsForEmail`, `listSummaries`. The triag
 
 ### 3.10 HTTP API (routes from each module, composed in `platform/http` and `web.ts`)
 
-Built in S5. The routers are mounted under `/api` (`api.route("/", …)` in `apps/server/src/web.ts`); the paths below have no `/api` prefix, except the first three rows. Every `/api` route needs a session and a tenant (`requireSession`, `requireTenant`); an unknown `/api` path is 404 `not_found`. Role `owner` = `requireOwner`; `member` = any member.
+Built in S5. The routers are mounted under `/api` (`api.route("/", …)` in `apps/server/src/web.ts`); the paths below have no `/api` prefix, except the `/api/auth/*` row. Every `/api` route needs a session and a tenant (`requireSession`, `requireTenant`). An unknown `/api` path is 404 `not_found` only with a session; without a session it is 401. Role `owner` = `requireOwner`; `member` = any member.
 
 | Method and path                                       | Role   | Module     | Slice |
 | ----------------------------------------------------- | ------ | ---------- | ----- |
