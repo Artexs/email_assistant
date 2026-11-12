@@ -115,7 +115,16 @@ const restrictImports = (patterns) => ({ "no-restricted-imports": ["error", { pa
 
 export default tseslint.config(
   includeIgnoreFile(gitignorePath),
-  { ignores: ["**/dist/**", "apps/web/.astro/**", "apps/server/src/platform/db/schema.ts"] },
+  {
+    ignores: [
+      "**/dist/**",
+      "apps/web/.astro/**",
+      "apps/server/src/platform/db/schema.ts",
+      // Limen hook stubs (`limen init`): package code, kept as Limen writes it.
+      ".pi/**",
+      ".omp/**",
+    ],
+  },
   baseConfig,
   jsxA11yConfig,
   reactConfig,
