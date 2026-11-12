@@ -334,8 +334,8 @@ describe("lockout", () => {
         answers.push([answer.status, await answer.text()]);
       }
       expect(answers[0]?.[0]).toBe(400);
-      expect(answers[1]).toEqual(answers[0]!);
-      expect(answers[2]).toEqual(answers[0]!);
+      expect(answers[1]).toEqual(answers[0]);
+      expect(answers[2]).toEqual(answers[0]);
     }
     expect((await row(locked.userId))?.failed_count).toBe(0);
     expect((await row(open.userId))?.failed_count).toBe(2);
