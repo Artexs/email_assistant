@@ -333,7 +333,7 @@ Decisions:
 
 Stages:
 
-- [ ] **Stage 1 — Limen out of the box.** [`stages/stage-1-out-of-box.md`](stages/stage-1-out-of-box.md).
+- [x] **Stage 1 — Limen out of the box.** Done 2026-11-12. [`stages/stage-1-out-of-box.md`](stages/stage-1-out-of-box.md).
 - [ ] **Stage 2 — adapt agents, skills, rules to the user's needs.** Own plan session after real use of stage 1.
 - [ ] **Stage 3 — verify and decide; remove the leftovers of the approach not chosen.**
 
