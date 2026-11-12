@@ -15,6 +15,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F077-s6a-customer-core` (🟠 ACTIVE): S6a Customer core: a second organization runs next to the pilot
 - `F071-limen-transition` (🟠 ACTIVE): Move the agent workflow to Limen
 - `F041-delegation-went-out-button` (🟠 ACTIVE): A button 'It went out' after outcome_unknown
 
