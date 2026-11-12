@@ -154,6 +154,8 @@ const baseSchema = z.object({
   // Secret: never print or log it.
   AUTH_SMTP_PASSWORD: z.preprocess(emptyAsUndefined, z.string().min(1).optional()),
   AUTH_MAIL_FROM: z.preprocess(emptyAsUndefined, z.string().regex(addressPattern).optional()),
+  // on = a new password is checked against the Have I Been Pwned list; off = tests only.
+  AUTH_PWNED_CHECK: z.preprocess(emptyAsUndefined, z.enum(["on", "off"]).default("on")),
 });
 
 type BaseConfig = z.infer<typeof baseSchema>;

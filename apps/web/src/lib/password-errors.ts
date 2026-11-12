@@ -14,6 +14,10 @@ export function changePasswordError(
   if (error.code === "INVALID_PASSWORD") return { field: "current", key: "acct_wrong_current" };
   if (error.code === "PASSWORD_TOO_SHORT") return { field: "password", key: "password_too_short" };
   if (error.code === "PASSWORD_TOO_LONG") return { field: "password", key: "password_too_long" };
+  if (error.code === "PASSWORD_COMPROMISED") return { field: "password", key: "password_pwned" };
+  if (error.status === 503 || error.code === "PASSWORD_CHECK_UNAVAILABLE") {
+    return { field: null, key: "password_check_unavailable" };
+  }
   return { field: null, key: "error_generic" };
 }
 

@@ -6,6 +6,7 @@ import { z } from "zod";
 import type { LockoutStore } from "./auth-lockout";
 import { describeError } from "./errors";
 import { createLog } from "./log";
+import type { PwnedResult } from "./pwned";
 
 const log = createLog("auth");
 
@@ -27,6 +28,8 @@ export interface AuthDeps {
   lockout?: LockoutStore;
   // Never throws, never awaited.
   sendLockoutMail?: (input: { userId: string; email: string }) => void;
+  // Absent = no check (the CLIs and the tests that do not test it). Never rejects.
+  pwnedCheck?: (password: string) => Promise<PwnedResult>;
 }
 
 export type Auth = ReturnType<typeof createBetterAuth>;
@@ -112,6 +115,8 @@ export function onAuthError(error: unknown): void {
 }
 
 const SIGN_IN_PATH = "/sign-in/email";
+const NEW_PASSWORD_PATHS: ReadonlySet<string> = new Set(["/reset-password", "/change-password"]);
+const MIN_PASSWORD_LENGTH = 12;
 const MAX_PASSWORD_LENGTH = 128;
 const emailSchema = z.email();
 
@@ -139,6 +144,28 @@ async function rejectLockedSignIn(ctx: HookContext, lockout: LockoutStore, now: 
   if (found && (await lockout.isLocked(found.user.id, now()))) {
     await ctx.context.password.hash(body.password);
     throw APIError.from("UNAUTHORIZED", { code: "INVALID_EMAIL_OR_PASSWORD", message: "Invalid email or password" });
+  }
+}
+
+// L14: a leaked or unchecked password is never stored. Other lengths are refused by Better Auth itself.
+// A check that is down fails closed: no password changes.
+async function rejectLeakedPassword(ctx: HookContext, pwnedCheck: NonNullable<AuthDeps["pwnedCheck"]>): Promise<void> {
+  const password = (ctx.body as { newPassword?: unknown } | undefined)?.newPassword;
+  if (typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
+    return;
+  }
+  const result = await pwnedCheck(password);
+  if (result === "pwned") {
+    throw APIError.from("BAD_REQUEST", {
+      code: "PASSWORD_COMPROMISED",
+      message: "This password is in a list of leaked passwords. Choose another one.",
+    });
+  }
+  if (result === "unavailable") {
+    throw APIError.from("SERVICE_UNAVAILABLE", {
+      code: "PASSWORD_CHECK_UNAVAILABLE",
+      message: "The password check is not available. Try again later.",
+    });
   }
 }
 
@@ -285,6 +312,9 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
         }
         if (ctx.path === SIGN_IN_PATH && deps.lockout) {
           await rejectLockedSignIn(ctx, deps.lockout, now);
+        }
+        if (NEW_PASSWORD_PATHS.has(ctx.path) && deps.pwnedCheck) {
+          await rejectLeakedPassword(ctx, deps.pwnedCheck);
         }
         return undefined;
       }),

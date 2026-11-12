@@ -25,6 +25,20 @@ describe("changePasswordError", () => {
     });
   });
 
+  test("PASSWORD_COMPROMISED is the new-password field", () => {
+    expect(changePasswordError({ status: 400, code: "PASSWORD_COMPROMISED" })).toEqual({
+      field: "password",
+      key: "password_pwned",
+    });
+  });
+
+  test("503 and PASSWORD_CHECK_UNAVAILABLE are a form error", () => {
+    const expected = { field: null, key: "password_check_unavailable" } as const;
+    expect(changePasswordError({ status: 503, code: "PASSWORD_CHECK_UNAVAILABLE" })).toEqual(expected);
+    expect(changePasswordError({ status: 503 })).toEqual(expected);
+    expect(changePasswordError({ code: "PASSWORD_CHECK_UNAVAILABLE" })).toEqual(expected);
+  });
+
   test("429 is too many attempts, also with a code", () => {
     expect(changePasswordError({ status: 429 })).toEqual({ field: null, key: "error_too_many" });
     expect(changePasswordError({ status: 429, code: "INVALID_PASSWORD" })).toEqual({

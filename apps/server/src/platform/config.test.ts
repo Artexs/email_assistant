@@ -210,6 +210,13 @@ describe("loadConfig", () => {
     expect(classifierModel(config)).toBe("gemini-3.1-flash-lite");
   });
 
+  test("AUTH_PWNED_CHECK defaults to on, accepts off and refuses other values", () => {
+    expect(loadConfig(fullEnv).AUTH_PWNED_CHECK).toBe("on");
+    expect(loadConfig({ ...fullEnv, AUTH_PWNED_CHECK: "" }).AUTH_PWNED_CHECK).toBe("on");
+    expect(loadConfig({ ...fullEnv, AUTH_PWNED_CHECK: "off" }).AUTH_PWNED_CHECK).toBe("off");
+    expect(configError({ ...fullEnv, AUTH_PWNED_CHECK: "maybe" }).keys).toEqual(["AUTH_PWNED_CHECK"]);
+  });
+
   test("accepts a TELEGRAM_BOT_TOKEN and treats an empty one as missing", () => {
     const token = "123456:ABCdefGhIJKlmNoPQRstuVWxyZ_-12345";
     expect(loadConfig({ ...fullEnv, TELEGRAM_BOT_TOKEN: token }).TELEGRAM_BOT_TOKEN).toBe(token);

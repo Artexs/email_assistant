@@ -69,6 +69,8 @@ export function e2eEnv(): Record<string, string> {
     TRIAGE_LLM_SCOPE: "off",
     SEND_SCOPE: "off",
     WEB_MAIL_ALLOW_LOCAL: "true",
+    // The e2e server has no internet: the leaked-password check would fail closed.
+    AUTH_PWNED_CHECK: "off",
     // The fake Telegram keeps the e2e server away from the dev bot; the empty heartbeat keeps it away from the monitor (fact 21).
     TELEGRAM_BOT_TOKEN: FAKE_TOKEN,
     TELEGRAM_API_ROOT: E2E_TELEGRAM_URL,

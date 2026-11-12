@@ -55,7 +55,10 @@ export default function SetupPage() {
       if (resetError !== null && resetError !== undefined) {
         if (resetError.code === "INVALID_TOKEN") setMode("invalid");
         else if (resetError.status === 429) setError("error_too_many");
-        else setError("error_generic");
+        else if (resetError.code === "PASSWORD_COMPROMISED") setFieldErrors({ password: "password_pwned" });
+        else if (resetError.status === 503 || resetError.code === "PASSWORD_CHECK_UNAVAILABLE") {
+          setError("password_check_unavailable");
+        } else setError("error_generic");
         setPending(false);
         return;
       }

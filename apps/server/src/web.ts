@@ -43,6 +43,7 @@ import type { Db, TenantContext } from "./platform/db";
 import { describeError } from "./platform/errors";
 import { buildTrustedProxies, type WebDeps, type WebSession } from "./platform/http";
 import { createLog } from "./platform/log";
+import { checkPwnedPassword } from "./platform/pwned";
 
 // The composition root of the web: the parts that need more than one module.
 const log = createLog("web");
@@ -285,6 +286,7 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
       ? "auth mail: off (the CLI prints invite and reset links)"
       : "auth mail: on (reset by e-mail is open)"
   );
+  if (config.AUTH_PWNED_CHECK === "off") log.warn("AUTH_PWNED_CHECK=off: leaked passwords are not refused");
   const handle = createAuth({
     databaseUrl: config.DATABASE_URL,
     baseUrl: config.WEB_BASE_URL,
@@ -293,6 +295,9 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     onEvent: auditWebEvent(db),
     resetLinkTtlSeconds: 3_600,
     lockout: createLockoutStore(db),
+    ...(config.AUTH_PWNED_CHECK === "on"
+      ? { pwnedCheck: (password: string) => checkPwnedPassword(password, { fetch, timeoutMs: 5_000 }) }
+      : {}),
     sendLockoutMail:
       mailTasks === null
         ? undefined
