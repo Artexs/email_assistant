@@ -6,7 +6,7 @@ import {
   type OrgPlan,
   type UserLocale,
 } from "@ea/core";
-import type { Selectable, Transaction } from "kysely";
+import { sql, type Selectable, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 
@@ -256,7 +256,7 @@ export async function getUserAuthProfile(
   };
 }
 
-// No TenantContext: the user gives the row. True when one row changed.
+// No TenantContext: the user gives the row. True when the row changed; false for an unknown user or when the version is already stored.
 export async function setUserTerms(
   db: Db | Transaction<DB>,
   userId: string,
@@ -267,6 +267,7 @@ export async function setUserTerms(
     .updateTable("users")
     .set({ terms_version: version, terms_accepted_at: at })
     .where("id", "=", userId)
+    .where(sql<boolean>`terms_version IS DISTINCT FROM ${version}`)
     .executeTakeFirst();
   return Number(result.numUpdatedRows) === 1;
 }

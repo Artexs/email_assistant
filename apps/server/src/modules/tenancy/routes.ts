@@ -100,6 +100,7 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
   });
 
   // L17: any member accepts the current terms; an old version answers 409 so the dialog reloads.
+  // A repeat call answers 204 and writes nothing.
   app.post("/me/terms", async (c) => {
     const body = await parseBody(c, termsAcceptBodySchema);
     if (body.version !== TERMS_VERSION) return c.json({ error: "terms_outdated" }, 409);
@@ -107,7 +108,8 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
     const { userId } = c.get("session");
     const at = deps.now();
     await deps.db.transaction().execute(async (trx) => {
-      await setUserTerms(trx, userId, TERMS_VERSION, at);
+      // A repeat call changes nothing and writes no audit row.
+      if (!(await setUserTerms(trx, userId, TERMS_VERSION, at))) return;
       await recordAudit(trx, ctx, {
         event: auditEvents.webTermsAccepted,
         actor: userId,

@@ -294,6 +294,17 @@ describe("terms in the panel", () => {
     expect(rows[0]?.data).toMatchObject({ via: "web", version: TERMS_VERSION });
   });
 
+  test("a second POST /api/me/terms answers 204 and changes nothing: one audit row, the same time", async () => {
+    const org = await setup();
+    const app = appFor(org);
+    const send = () => app.request("/api/me/terms", as("owner", { method: "POST", body: { version: TERMS_VERSION } }));
+    expect((await send()).status).toBe(204);
+    const first = await termsOf(org.ownerId);
+    expect((await send()).status).toBe(204);
+    expect(await termsOf(org.ownerId)).toEqual(first);
+    expect(await termsRows(org.orgId)).toHaveLength(1);
+  });
+
   test("a suspended organization still takes the terms, and still refuses other writes", async () => {
     const org = await setup();
     await db.updateTable("organizations").set({ plan: "suspended" }).where("id", "=", org.orgId).execute();
