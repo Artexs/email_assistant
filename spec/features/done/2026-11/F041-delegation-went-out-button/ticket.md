@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-07
+landed: 2026-11-12
 ---
 
 # F041 · A button 'It went out' after outcome_unknown
