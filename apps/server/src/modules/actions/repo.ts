@@ -1578,6 +1578,33 @@ export async function listExpiredApprovals(
   return result.rows;
 }
 
+// F079: the `awaiting_approval` sends of an organization whose approval request no owner saw before `before`.
+// A request counts as seen when one `outbox` row of it is `sent`. `notified_at` set means the notifier queued it.
+// A send with `notified_at` null is not listed: the notifier queues it at its next run, with a fresh text.
+// The caller locks each one (`expireSend`).
+export async function listUnseenApprovalSends(
+  trx: DbOrTrx,
+  ctx: TenantContext,
+  opts: { before: Date }
+): Promise<{ id: string; mailboxId: string }[]> {
+  const result = await sql<{ id: string; mailbox_id: string }>`
+    select a.id, e.mailbox_id
+    from actions a
+    join emails e on e.id = a.email_id and e.org_id = a.org_id
+    where a.org_id = ${ctx.orgId} and e.org_id = ${ctx.orgId}
+      and a.type = 'send' and a.status = 'awaiting_approval'
+      and a.notified_at is not null and a.notified_at < ${opts.before}
+      and not exists (
+        select 1 from outbox o
+        where o.org_id = a.org_id and o.status = 'sent'
+          and ((o.kind = 'approval' and o.dedup_key = 'approval:' || a.id::text)
+            or (o.kind = 'approval_set' and o.dedup_key = 'approval_set:' || (a.payload->>'set_id')))
+      )
+    order by a.created_at, a.id
+  `.execute(trx);
+  return result.rows.map((row) => ({ id: row.id, mailboxId: row.mailbox_id }));
+}
+
 // The `awaiting_approval` sends of one mailbox, oldest first. The caller locks each one (`expireSend`).
 export async function listAwaitingSendIds(
   trx: DbOrTrx,

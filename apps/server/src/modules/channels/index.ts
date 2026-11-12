@@ -9,6 +9,7 @@ export {
   type UpdateHandlers,
 } from "./port";
 export {
+  cancelPendingApprovalRequestsOfClosedSends,
   cancelPendingOutbox,
   cancelPendingOutboxOfOrg,
   claimDueOutbox,

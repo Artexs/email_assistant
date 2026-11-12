@@ -103,7 +103,7 @@ export {
   type ActionsScope,
   type SendScope,
 } from "./scope";
-export { expireReady } from "./expire";
+export { expireReady, expireUnseenApprovals } from "./expire";
 export {
   closeDraftOfSend,
   createExpiryJob,

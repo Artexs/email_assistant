@@ -24,6 +24,7 @@ export type SendCloseReason =
   | "timeout"
   | "draft_missing"
   | "not_notified"
+  | "not_seen"
   | "held_timeout"
   | "policy_changed"
   | "delegation_closed";

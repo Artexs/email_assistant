@@ -434,7 +434,8 @@ export async function cancelPendingOutbox(
 
 // The suspend hook: queued messages of the organization never go out. `sending` rows finish.
 // Approval requests stay `pending`: the notifier queues them once, so a cancelled request would time out unseen.
-// They wait for a resume (the sender does not claim them while suspended); the 24 h rule ends them later.
+// They wait for a resume (the sender does not claim them while suspended). At the resume, the sends whose request no owner
+// saw end as `not_seen` and their requests are cancelled (F079, `cancelPendingApprovalRequestsOfClosedSends`).
 export async function cancelPendingOutboxOfOrg(db: DbOrTrx, ctx: TenantContext): Promise<number> {
   const result = await db
     .updateTable("outbox")
@@ -444,6 +445,22 @@ export async function cancelPendingOutboxOfOrg(db: DbOrTrx, ctx: TenantContext):
     .where("kind", "not in", ["approval", "approval_set"])
     .executeTakeFirst();
   return Number(result.numUpdatedRows);
+}
+
+// F079: the resume hook. A `pending` approval request whose send no longer waits never goes out: its buttons would answer "expired".
+// A request of a send that still waits stays. `sending` rows finish.
+export async function cancelPendingApprovalRequestsOfClosedSends(db: DbOrTrx, ctx: TenantContext): Promise<number> {
+  const result = await sql`
+    update outbox set status = 'failed', error_code = 'outdated', locked_at = null
+    where org_id = ${ctx.orgId} and status = 'pending' and kind in ('approval', 'approval_set')
+      and not exists (
+        select 1 from actions a
+        where a.org_id = outbox.org_id and a.type = 'send' and a.status = 'awaiting_approval'
+          and ((outbox.kind = 'approval' and outbox.dedup_key = 'approval:' || a.id::text)
+            or (outbox.kind = 'approval_set' and outbox.dedup_key = 'approval_set:' || (a.payload->>'set_id')))
+      )
+  `.execute(db);
+  return Number(result.numAffectedRows ?? 0);
 }
 
 // Members that got a "sync is late" notice for an episode and no "sync works again" notice yet.

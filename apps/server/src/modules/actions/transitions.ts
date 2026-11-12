@@ -303,7 +303,7 @@ export const ACTION_EDGES: readonly ActionEdge[] = [
     to: "expired",
     types: ["send"],
     writer: "setExpired",
-    reasons: ["timeout", "draft_missing", "not_notified", "policy_changed", "delegation_closed"],
+    reasons: ["timeout", "draft_missing", "not_notified", "not_seen", "policy_changed", "delegation_closed"],
     callers: ["expiry.ts"], // through `expireSend`: approvals.ts, drafts.ts, expire.ts, expiry.ts
   },
   {
