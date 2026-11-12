@@ -9,7 +9,7 @@ Product description: [docs/product-brief.md](docs/product-brief.md).
 - Server: Hono on Bun.
 - Database: Postgres 17, migrations with dbmate, queries with Kysely.
 - AI: Gemini.
-- Web: Astro starter (stays until S5).
+- Web: Astro static build with React islands, served by the server (ADR 0015).
 
 Details: [docs/architecture.md](docs/architecture.md). Decisions: `docs/decisions/`.
 
