@@ -43,6 +43,7 @@ export const auditEvents = {
   ruleRemoved: "rule.removed", // data: the same
   orgTimezoneChanged: "org.timezone_changed", // data: from, to
   orgStyleChanged: "org.style_changed", // data: set
+  orgPlanChanged: "org.plan_changed", // data: from, to, max_from, max_to, trial_ends_at
   delegateAdded: "delegate.added",
   delegateChanged: "delegate.changed",
   delegationCreated: "delegation.created",

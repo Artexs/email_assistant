@@ -1,13 +1,17 @@
 export {
   getMembership,
   getOrganization,
+  getOrgPlan,
   insertMembership,
   insertUser,
+  isOrgSuspended,
   listMemberships,
   listMembershipsOfUser,
+  listOrganizations,
   setDigestTimes,
   type MembershipWithUser,
   type OrganizationRow,
+  type OrgPlanState,
   type UserMembership,
 } from "./repo";
 export { tenancyRoutes, type TenancyRouteDeps } from "./routes";
@@ -15,7 +19,12 @@ export {
   createOrganizationWithOwner,
   isSupportedTimeZone,
   organizationView,
+  setOrgPlan,
   updateOrganizationSettings,
   type CreateOrganizationInput,
+  type OrgPlanInput,
+  type SetOrgPlanHooks,
+  type SetOrgPlanInput,
+  type SetOrgPlanResult,
   type UpdateOrganizationResult,
 } from "./service";

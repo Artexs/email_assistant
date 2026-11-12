@@ -258,9 +258,13 @@ export interface Organizations {
   created_at: Generated<Timestamp>;
   data_retention_days: Generated<number>;
   id: Generated<string>;
+  max_mailboxes: Generated<number>;
   name: string;
+  plan: Generated<string>;
+  resumed_at: Timestamp | null;
   style_text: string | null;
   timezone: string;
+  trial_ends_at: Timestamp | null;
 }
 
 export interface Outbox {
