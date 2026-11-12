@@ -5,6 +5,7 @@ import type { Transaction } from "kysely";
 
 import {
   cancelPendingOutbox,
+  cancelPendingOutboxOfOrg,
   claimDueOutbox,
   failOutbox,
   insertOutbox,
@@ -298,6 +299,38 @@ describe("cancelPendingOutbox", () => {
       for (const id of [keep, otherKind, elsewhere, sameOrgOtherBox])
         expect((await state(trx, id)).status).toBe("pending");
       expect((await state(trx, sending)).status).toBe("sending");
+    });
+  });
+});
+
+describe("cancelPendingOutboxOfOrg", () => {
+  test("cancels the pending rows of the organization except approvals", async () => {
+    await withRollback(db, async (trx) => {
+      const t = await tenant(trx);
+      const other = await createOrgWithMailbox(trx);
+      const otherBox = { ctx: { orgId: other.orgId }, userId: other.userId, mailboxId: other.mailboxId };
+      const emailId = await insertTestEmail(trx, t.ctx, t.mailboxId);
+      const urgent = await insert(trx, t, { kind: "urgent", emailId });
+      const approval = await insert(trx, t, { kind: "approval", emailId });
+      const approvalSet = await insert(trx, t, { kind: "approval_set", emailId });
+      const sending = await insert(trx, t, { kind: "sync_ok" });
+      await setState(trx, sending, "sending", T);
+      const sent = await insert(trx, t, { kind: "sync_ok" });
+      await setState(trx, sent, "sending", T);
+      await markOutboxSent(trx, t.ctx, sent, T, { messageId: 1, at: T });
+      const otherEmail = await insertTestEmail(trx, otherBox.ctx, other.mailboxId);
+      const elsewhere = await insert(trx, otherBox, { kind: "urgent", emailId: otherEmail });
+
+      expect(await cancelPendingOutboxOfOrg(trx, t.ctx)).toBe(1);
+
+      const cancelled = await state(trx, urgent);
+      expect(cancelled.status).toBe("failed");
+      expect(cancelled.error_code).toBe("outdated");
+      expect((await state(trx, approval)).status).toBe("pending");
+      expect((await state(trx, approvalSet)).status).toBe("pending");
+      expect((await state(trx, sending)).status).toBe("sending");
+      expect((await state(trx, sent)).status).toBe("sent");
+      expect((await state(trx, elsewhere)).status).toBe("pending");
     });
   });
 });

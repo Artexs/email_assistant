@@ -10,6 +10,7 @@ export {
 } from "./port";
 export {
   cancelPendingOutbox,
+  cancelPendingOutboxOfOrg,
   claimDueOutbox,
   failOutbox,
   findChatLink,

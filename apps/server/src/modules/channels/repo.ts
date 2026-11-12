@@ -413,6 +413,20 @@ export async function cancelPendingOutbox(
   return Number(result.numUpdatedRows);
 }
 
+// The suspend hook: queued messages of the organization never go out. `sending` rows finish.
+// Approval requests stay `pending`: the notifier queues them once, so a cancelled request would time out unseen.
+// They wait for a resume (the sender does not claim them while suspended); the 24 h rule ends them later.
+export async function cancelPendingOutboxOfOrg(db: DbOrTrx, ctx: TenantContext): Promise<number> {
+  const result = await db
+    .updateTable("outbox")
+    .set({ status: "failed", error_code: "outdated", locked_at: null })
+    .where("org_id", "=", ctx.orgId)
+    .where("status", "=", "pending")
+    .where("kind", "not in", ["approval", "approval_set"])
+    .executeTakeFirst();
+  return Number(result.numUpdatedRows);
+}
+
 // Members that got a "sync is late" notice for an episode and no "sync works again" notice yet.
 export async function listSentStaleEpisodes(
   db: DbOrTrx,

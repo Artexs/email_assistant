@@ -1,12 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-  connectMailboxBodySchema,
-  mailboxScopeBadges,
-  mailboxViewSchema,
-  sameAddress,
-  type ScopeEnv,
-} from "./mailboxes";
+import { connectMailboxBodySchema, mailboxScopeBadges, mailboxViewSchema, sameAddress } from "./mailboxes";
 import { telegramLinkSchema } from "./telegram";
 
 const plainBody = { address: "a@gmail.com", password: "p w", secretKind: "app_password" };
