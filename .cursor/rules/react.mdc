@@ -1,6 +1,6 @@
 ---
 description: 
-globs: *.tsx
+globs: apps/web/**/*.tsx
 alwaysApply: false
 ---
 ### Guidelines for React
