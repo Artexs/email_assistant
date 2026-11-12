@@ -1,6 +1,6 @@
 # AgentMail as the source of synthetic test mail for the Interia test mailbox
 
-Written 2026-11-07. Idea approved by the user; plan: `tasks/done/test-mail-traffic.md` (stage files in `tasks/done/test-mail-traffic/`).
+Written 2026-11-07. Idea approved by the user; plan: `spec/features/done/2026-11/F036-test-mail-traffic/plan.md` (stage files in `spec/features/done/2026-11/F036-test-mail-traffic/stages/`).
 Runbook: evals/testmail/README.md
 
 ## 1. The idea (user, 2026-11-07)
@@ -21,7 +21,7 @@ Each mail has an expected category, so the triage result can be compared with it
 - `evals/cases/*.json`: `synthetic.json` = 80 cases, 16 per category (urgent, needs_reply, info, notification, spam);
   `injection.json` = 12. Schema `evalCaseSchema` (`packages/core/src/triage/eval-case.ts`). `bun run eval` classifies them with the LLM,
   no mailbox needed. `bun run eval --real` reads labels from `triage_feedback`.
-- S1b go/no-go needs at least 30 kept rows per category (`--min-kept 30`, bar 0.98). `tasks/done/s1b-shadow-triage.md`: every category is
+- S1b go/no-go needs at least 30 kept rows per category (`--min-kept 30`, bar 0.98). `spec/features/done/2026-11/F018-s1b-shadow-triage/plan.md`: every category is
   `no-go: too few`. So the S3 automatic moves cannot pass the gate with the current data.
 - Scope gates: `TRIAGE_LLM_SCOPE` and `ACTIONS_SCOPE` value `synthetic` select mail by the `@ea-seed.test>` Message-ID suffix.
   `TRIAGE_LLM_SCOPE=all` triages all mail of `TEST_MAILBOX_ADDRESS` only (ADR 0013).
@@ -146,7 +146,7 @@ Read-only check on the VPS: SQL on `emails`, and a one-off IMAP script (`/tmp/ea
   INBOX (uid 38963, same INTERNALDATE). After 45 s and after the next sync it was still in INBOX; the VPS stored it (`stored 1`) and triaged it
   (`needs_reply`, `question`). The `Oferty` copy (uid 38960) is still there.
 - **Finding: `\Junk` is `AI/Spam` now** (S3 set the flag), and `Wiadomości-śmieci` has no flag. Deliver's `junk` key resolves to `AI/Spam`, a product folder.
-- **Update (sync-sort-folders, 2026-11-09):** the sync reads `Oferty` now (and `Społeczności`, `Rachunki`, `Wiadomości-śmieci`; `tasks/done/sync-sort-folders.md`). AgentMail mail that Interia sorts into `Oferty` is stored and triaged there, so the `deliver` step is not needed. A COPY into INBOX does not work at Interia (finding above); APPEND does.
+- **Update (sync-sort-folders, 2026-11-09):** the sync reads `Oferty` now (and `Społeczności`, `Rachunki`, `Wiadomości-śmieci`; `spec/features/done/2026-11/F058-sync-sort-folders/plan.md`). AgentMail mail that Interia sorts into `Oferty` is stored and triaged there, so the `deliver` step is not needed. A COPY into INBOX does not work at Interia (finding above); APPEND does.
 - Probe scripts (not in git): `/tmp/ea-tmt-inspect/` (read-only inspect; APPEND probe).
 
 ## 11. Stage 9 with the sort-folder sync (2026-11-09/10)

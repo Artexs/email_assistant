@@ -29,11 +29,11 @@ providers, to switch between them, and to allow more providers later.
   - Gemini: as in ADR 0012 and 0013.
   - OpenAI, pilot: the paid API terms (no training on API data, abuse logs up to 30 days, no EU location). The user accepted this for their own mail on 2026-11-06.
   - Customers (S6): Vertex AI EU stays the planned path; an OpenAI EU project with zero data retention (needs OpenAI approval) is an open option in `tasks/planned/s6-pre-sale.md`.
-- Budget: the user set a $3 per month budget for the OpenAI project (stage 0 of the task). The alert is a follow-up (`tasks/planned/openai-budget-alert.md`).
+- Budget: the user set a $3 per month budget for the OpenAI project (stage 0 of the task). The alert is a follow-up (`spec/features/planned/F073-openai-budget-alert/plan.md`).
 
 ## Consequences
 
 - A new provider = one adapter file, one registry row, one config block, price rows and one eval run.
 - `triage_results.model` mixes models after a switch. Read real-mail results with `eval --real --model`.
-- No automatic fallback from one provider to the other (`tasks/planned/llm-provider-fallback.md`).
+- No automatic fallback from one provider to the other (`spec/features/planned/F072-llm-provider-fallback/plan.md`).
 - ADR 0007, 0012 and 0013 stay valid for Gemini; this ADR adds the second provider.

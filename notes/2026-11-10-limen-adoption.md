@@ -4,7 +4,7 @@ Question from the user: how to apply Limen (github.com/overment/limen) to this r
 
 Sources (read 2026-11-10):
 - Limen `main` at `f1e3a54` (2026-11-05), version 0.1.0: `README.md`, `SECURITY.md`, `docs/setup.md`, `docs/jobs.md`, `docs/commands.md`, `templates/{agents,worker,reviewer,capability}.md`, `templates/spec/**`, `src/runtime/engine.ts`, `src/project/git.ts`.
-- Earlier notes: `~/.pi/agent/notes/2026-11-04-limen.md` (what Limen is), `notes/2026-11-07-parallel-agents-worktrees.md` (options A–D, shared-runtime trap), `tasks/done/subagents-setup.md` ("not now: Limen").
+- Earlier notes: `~/.pi/agent/notes/2026-11-04-limen.md` (what Limen is), `notes/2026-11-07-parallel-agents-worktrees.md` (options A–D, shared-runtime trap), `spec/features/done/2026-11/F019-subagents-setup/plan.md` ("not now: Limen").
 - Current setup: `tasks/README.md` (run-task loop, pipeline mode, git mode), `~/.pi/agent/skills/run-task/`, `~/.pi/agent/agents/{planner,implementer,reviewer}.md`, `~/.pi/agent/bin/bg-agent.sh`.
 
 ## Short answer

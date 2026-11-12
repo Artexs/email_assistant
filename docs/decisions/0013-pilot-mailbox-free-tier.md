@@ -19,7 +19,7 @@ It is temporary and holds nothing important. On 2026-11-04 the Flash-Lite models
 3. `TRIAGE_LLM_SCOPE` (`off` | `synthetic` | `all`, default `off`) is the safety switch. With `all`, the worker triages only
    the mailbox whose address equals `TEST_MAILBOX_ADDRESS`, until a paid-tier key exists. `synthetic` is not a security boundary:
    it picks mail by the Message-ID suffix `@ea-seed.test>`, and any sender can write such a Message-ID. Use `synthetic` only on a test mailbox.
-4. The Cloud Billing budget alert waits until billing is on (`tasks/planned/gemini-billing-budget-alert.md`).
+4. The Cloud Billing budget alert waits until billing is on (`spec/features/planned/F023-gemini-billing-budget-alert/plan.md`).
    The in-app daily cap `LLM_DAILY_CAP` (default 300) stays.
 5. Start value of the classifier model: `gemini-3.5-flash-lite`. The S1b eval result goes to `docs/architecture.md` §6.3
    and the S1b task file, not into this ADR.
@@ -53,4 +53,4 @@ Source for the terms: https://ai.google.dev/gemini-api/terms ("Gemini API Additi
   [Reading of the terms, not legal advice; not verified with Google.]
 - **Quota:** the free-tier daily request quota is per project and shared by the worker and the eval runner. 429 is a soft error (ADR 0012).
 - **End of this ADR:** when Cloud Billing goes on for the project, this ADR ends for that project
-  (`tasks/planned/gemini-billing-budget-alert.md` sets the docs back to the paid tier).
+  (`spec/features/planned/F023-gemini-billing-budget-alert/plan.md` sets the docs back to the paid tier).

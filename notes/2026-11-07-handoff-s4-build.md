@@ -4,8 +4,8 @@
 
 ## Start here (for the new agent)
 
-1. Read this file. Then read the task file `tasks/active/s4-drafts-approvals-delegation.md` in full and `tasks/README.md` § "How to run a slice".
-2. Check the claims under "Current state" against `git log`, `git status` and `tasks/active/s3-assist-actions.md` (its status line). Write down each difference.
+1. Read this file. Then read the task file `spec/features/done/2026-11/F006-s4-drafts-approvals-delegation/plan.md` in full and `tasks/README.md` § "How to run a slice".
+2. Check the claims under "Current state" against `git log`, `git status` and `spec/features/done/2026-11/F005-s3-assist-actions/plan.md` (its status line). Write down each difference.
 3. Reply to the user in max 4 lines: the goal in your own words, the differences you found, your first step.
 4. **Wait for the user** before you build: S4 may start only when S3 is done (see "Current state").
 
@@ -25,7 +25,7 @@ S4 = the assistant hands tasks from the user's mail to the user's delegates: it 
 
 ## Current state
 
-- DONE: the S4 plan (task file + 23 stage files in `tasks/active/s4-drafts-approvals-delegation/`), three cold reviews (round 3: no blocker or major open), the user's approval. Probe scripts in `notes/2026-11-07-s4-probes/` (`.ts.txt`, README).
+- DONE: the S4 plan (task file + 23 stage files in `spec/features/done/2026-11/F006-s4-drafts-approvals-delegation/stages/`), three cold reviews (round 3: no blocker or major open), the user's approval. Probe scripts in `notes/2026-11-07-s4-probes/` (`.ts.txt`, README).
 - NOT STARTED: the S4 build. No S4 code exists.
 - S3 (the base of S4), status on 2026-11-07 15:53 CET: stages 1–15 and 18 done and pushed; stage 16 (dev run with the user's phone) and stage 17 (restore test, needs the `age` key and a backup file) are blocked; stages 19–20 (VPS) wait for the user's go. S4 stage 22 needs S3 stages 19–20 on the VPS.
 
@@ -47,9 +47,9 @@ S4 = the assistant hands tasks from the user's mail to the user's delegates: it 
 
 ## Files and links
 
-- `tasks/active/s4-drafts-approvals-delegation.md` — the plan: P1–P8, D1–D33, facts, rules, checkpoints, the stage list, the review log.
-- `tasks/active/s4-drafts-approvals-delegation/stage-01…23-*.md` — one file per stage.
-- `tasks/active/s3-assist-actions.md` — the S3 status and interfaces.
+- `spec/features/done/2026-11/F006-s4-drafts-approvals-delegation/plan.md` — the plan: P1–P8, D1–D33, facts, rules, checkpoints, the stage list, the review log.
+- `spec/features/done/2026-11/F006-s4-drafts-approvals-delegation/stages/stage-01…23-*.md` — one file per stage.
+- `spec/features/done/2026-11/F005-s3-assist-actions/plan.md` — the S3 status and interfaces.
 - `notes/2026-11-07-s4-probes/README.md` — how to run the SMTP/IMAP probes again.
 - `notes/2026-11-07-parallel-agents-worktrees.md` — proposal: one worktree per agent and what it does not isolate.
 - `notes/2026-11-07-telegram-test-accounts.md` — Telegram test environment recon.

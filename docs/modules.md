@@ -1,6 +1,6 @@
 # Module catalog — AI Email Assistant
 
-> **Accepted 2026-11-02** (user). Revised 2026-11-02 after the cold review (IMAP first, own Postgres, feedback and Undo) and a second review (`tasks/done/docs-and-adr-review.md`).
+> **Accepted 2026-11-02** (user). Revised 2026-11-02 after the cold review (IMAP first, own Postgres, feedback and Undo) and a second review (`spec/features/done/2026-11/F009-docs-and-adr-review/plan.md`).
 > Detail for `docs/architecture.md` sections 3–5. Decisions: `docs/decisions/`.
 
 ## 1. Big picture
@@ -296,7 +296,7 @@ Built in S1b: `createPlanned`, `listActionsForEmail`, `listSummaries`. The triag
 - **Owns:** `digests`.
 - **Built in S2** (`apps/server/src/modules/reports/`):
   - `repo.ts`: `insertDigest` (slot key unique per member), `lastDigestSlotKey`, `lastSentDigestEnd`, `markDigestSent`. A digest row holds the slot key, the period and `sent_at`; the text is in `outbox.text`.
-  - **Built in S4:** the digest reads the delegate names (so a line says `draft a delegation to <name>`), the draft task per mail and the open delegations. A `logged` send reads "would ask you to send it". The footer shows `Delegations: <n> waiting for a reply, <m> overdue`. The weekly handled-share line is still open (`tasks/planned/handled-share-delegations.md`).
+  - **Built in S4:** the digest reads the delegate names (so a line says `draft a delegation to <name>`), the draft task per mail and the open delegations. A `logged` send reads "would ask you to send it". The footer shows `Delegations: <n> waiting for a reply, <m> overdue`. The weekly handled-share line is still open (`spec/features/planned/F042-handled-share-delegations/plan.md`).
   - `digest.ts`: `digestPeriodStart` (since the last sent digest of the member; the first digest: link time − 24 h; never more than 7 days back) and `buildDigestMessage` (reads triaged mail, actions, mailboxes, settings and the audit count, then calls `renderDigest`).
 
 ### 3.8 `channels` — talk to the user (S2)

@@ -1,15 +1,15 @@
 # Live test of the sort-folder sync with AgentMail test mail
 
-> Written 2026-11-09 by the sync-sort-folders session. For the agent that runs `tasks/done/test-mail-traffic.md` stage 9 and verifies the new sync on real Interia mail.
+> Written 2026-11-09 by the sync-sort-folders session. For the agent that runs `spec/features/done/2026-11/F036-test-mail-traffic/plan.md` stage 9 and verifies the new sync on real Interia mail.
 
 ## Why this exists
 
-The server now also syncs the Interia folders `Oferty`, `Społeczności`, `Rachunki` and the spam folder `Wiadomości-śmieci` (task `tasks/done/sync-sort-folders.md`, ADR `docs/decisions/0014-sync-provider-sort-folders.md`). It is deployed on the VPS since **2026-11-09 15:21 UTC** (`master` `0d39663`; this note on a later commit). Only 4 spam mails have arrived in `Oferty` since. No move on a synced-folder mail has run on Interia yet. Your test mail is the first real traffic that can show whether the sync, the triage plan and the moves work, and whether Interia sorts a moved mail back (F12). One task needs your results to close: `sync-sort-folders` stage 17.
+The server now also syncs the Interia folders `Oferty`, `Społeczności`, `Rachunki` and the spam folder `Wiadomości-śmieci` (task `spec/features/done/2026-11/F058-sync-sort-folders/plan.md`, ADR `docs/decisions/0014-sync-provider-sort-folders.md`). It is deployed on the VPS since **2026-11-09 15:21 UTC** (`master` `0d39663`; this note on a later commit). Only 4 spam mails have arrived in `Oferty` since. No move on a synced-folder mail has run on Interia yet. Your test mail is the first real traffic that can show whether the sync, the triage plan and the moves work, and whether Interia sorts a moved mail back (F12). One task needs your results to close: `sync-sort-folders` stage 17.
 
 ## What the user decided
 
 - The `test-mail-traffic` block is lifted (user, 2026-11-09: use the test mail to verify the new sync). `deliver` is not needed: the sync reads the folders. Stage 9 of your task starts now. Q1 is answered (option b, "Run it now.", log of 2026-11-08): the exclusion lines are in both pilot-week files. Check them once.
-- Never tap approve for a test mail in Telegram. The rest of the sync-sort-folders task is closed by another agent; you do not edit `tasks/done/sync-sort-folders.md`.
+- Never tap approve for a test mail in Telegram. The rest of the sync-sort-folders task is closed by another agent; you do not edit `spec/features/done/2026-11/F058-sync-sort-folders/plan.md`.
 
 ## What to do (in this order)
 

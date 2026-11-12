@@ -8,7 +8,7 @@
 One user works with the panel. The server runs on a home VPS. There is no domain and no open router port (P3).
 The code still treats the panel as public, because S6 moves it to a public proxy.
 
-Decisions and facts: the S5 master plan, `tasks/done/s5-web-panel.md` (P3, D22). Deploy results: `tasks/done/s5e-web-deploy-docs.md`.
+Decisions and facts: the S5 master plan, `spec/features/done/2026-11/F007-s5-web-panel/plan.md` (P3, D22). Deploy results: `spec/features/done/2026-11/F054-s5e-web-deploy-docs/plan.md`.
 
 ## Decision
 
@@ -36,6 +36,6 @@ Decisions and facts: the S5 master plan, `tasks/done/s5-web-panel.md` (P3, D22).
   - Any process on the VPS host that reaches `127.0.0.1:8080` appears as the trusted Compose gateway and can set `x-forwarded-for`. This affects only the audit address and the rate limit.
   - A recreated Compose network (`docker compose down`, a Docker upgrade) can change the gateway. Read it again, then set `WEB_TRUSTED_PROXIES`.
     A wrong value does not open the panel. Every client then shares one rate-limit counter, and `auth_sessions.ip_address` holds the gateway.
-    A pinned subnet is the follow-up `tasks/planned/compose-network-subnet.md`.
+    A pinned subnet is the follow-up `spec/features/planned/F069-compose-network-subnet/plan.md`.
 - S6 path: a public reverse proxy, or Cloudflare Tunnel with a domain. It changes only `WEB_BASE_URL`, `WEB_TRUSTED_PROXIES` and the proxy.
-  Before that, do `tasks/planned/web-public-hardening.md`.
+  Before that, do `spec/features/planned/F056-web-public-hardening/plan.md`.

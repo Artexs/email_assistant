@@ -4,7 +4,7 @@
 
 ## Start here (for the new agent)
 
-1. Read this file. Then read the task file `tasks/active/s4-drafts-approvals-delegation.md` (status line, "Results", the last 20 log lines) and the stage files 20, 22, 23 in `tasks/active/s4-drafts-approvals-delegation/`.
+1. Read this file. Then read the task file `spec/features/done/2026-11/F006-s4-drafts-approvals-delegation/plan.md` (status line, "Results", the last 20 log lines) and the stage files 20, 22, 23 in `spec/features/done/2026-11/F006-s4-drafts-approvals-delegation/stages/`.
 2. Check the claims under "Current state" against `git log`, `git status` and the task file. Write down each difference.
 3. Reply to the user in max 4 lines: the goal in your own words, the differences, the first step.
 4. **Wait for the user**: the first step needs the user's decision on the eval miss (Open questions), and stages 22–23 touch the VPS and send real mail.
@@ -42,21 +42,21 @@ S4 = the assistant writes a delegation draft, sends it only after the owner's Te
 ## Dead ends and traps
 
 - The stage 20 comparison went wrong twice: the v1 "Metrics per category" table holds only the **86 LLM rows** (6 rule rows left out) of 92 cases. Compare v2 on the same basis: leave out the 12 delegation cases, `inj-13`…`inj-16` and the rule rows. The v2 per-case data is in `evals/.runs/gpt-6-luna-none-classifier-v2-all.jsonl` (this PC, not in git).
-- Other chats work in this repo at the same time (fake-telegram is done and merged; test-mail-traffic plan is active). They committed in this checkout and pushed S4 commits. Stage by explicit path; never `git add -A`. `tasks/done/test-mail-traffic*` changes are not S4's.
+- Other chats work in this repo at the same time (fake-telegram is done and merged; test-mail-traffic plan is active). They committed in this checkout and pushed S4 commits. Stage by explicit path; never `git add -A`. `spec/features/done/2026-11/F036-test-mail-traffic*` changes are not S4's.
 - Quiet hours (22:00–07:00 Warsaw) hold approval messages: a dev run at night needs another org timezone (stage 19 used `America/New_York`).
 - Docker socket: this shell has no docker group; `dev:up` fails. The containers db (5433) and GreenMail (3143/3025) were up. SQL went through `psql` as `postgres`.
 
 ## Key data
 
 - LLM provider in the local `.env`: `openai` (`gpt-6-luna`, reasoning effort none). The eval: `bun run eval --set all --fresh --out evals/results/<date>-<model>-classifier-v2.md`.
-- Stage 22 needs from the user: the second address the user owns in the VPS `.env` (`SEND_TEST_ADDRESSES`), `SEND_SCOPE=self`, and the go. The user edits the VPS `.env`; the agent never prints or edits it. VPS shell: `ssh home_vm` (see `deploy/README.md` and S3 stage 19 in `tasks/done/s3-assist-actions/`).
+- Stage 22 needs from the user: the second address the user owns in the VPS `.env` (`SEND_TEST_ADDRESSES`), `SEND_SCOPE=self`, and the go. The user edits the VPS `.env`; the agent never prints or edits it. VPS shell: `ssh home_vm` (see `deploy/README.md` and S3 stage 19 in `spec/features/done/2026-11/F005-s3-assist-actions/stages/`).
 - Stage 23 needs: a real delegate (`delegates:add`), `SEND_SCOPE=all` (only after one `self` round trip: send, reply, answered), the user's go; stage 23.1 step 0 checks held `approved` sends first.
 - Pilot ids (from S3 stage 19): org `ac6ed6a2-ee37-461f-9632-cc08cf549e40`, mailbox `8bc7f572-a7f5-4fa5-aaab-db16dc663e96`.
 
 ## Files and links
 
-- `tasks/active/s4-drafts-approvals-delegation.md` — status, Results (stages 1, 19, 20), rules, checkpoints, log.
-- `tasks/active/s4-drafts-approvals-delegation/stage-20-eval-prompt-v2.md`, `stage-22-vps-deploy-self-send.md`, `stage-23-first-real-delegation.md` — the open steps.
+- `spec/features/done/2026-11/F006-s4-drafts-approvals-delegation/plan.md` — status, Results (stages 1, 19, 20), rules, checkpoints, log.
+- `spec/features/done/2026-11/F006-s4-drafts-approvals-delegation/stages/stage-20-eval-prompt-v2.md`, `stage-22-vps-deploy-self-send.md`, `stage-23-first-real-delegation.md` — the open steps.
 - `evals/results/2026-11-07-gpt-6-luna-classifier-v2.md` (v2 run 2), `evals/results/2026-11-06-gpt-6-luna-none.md` (v1).
 - `notes/2026-11-07-send-approval-facts.md` — S4 facts; `notes/2026-11-03-interia-imap-capabilities.md` § "Send probe (S4 stage 1)".
 - `deploy/README.md` — approvals, sends, jobs, rollback (S4 sections).

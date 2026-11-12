@@ -1,6 +1,6 @@
 # S5d web activity: facts and deviations
 
-Source: `tasks/done/s5d-web-activity.md` (facts 1–14, B1–B15, Log). Built 2026-11-11 in the worktree `task/s5d-web-activity`. Read this note before you change the Undo path, the feedback path, the activity read model, the activity page or the e2e data.
+Source: `spec/features/done/2026-11/F053-s5d-web-activity/plan.md` (facts 1–14, B1–B15, Log). Built 2026-11-11 in the worktree `task/s5d-web-activity`. Read this note before you change the Undo path, the feedback path, the activity read model, the activity page or the e2e data.
 
 ## The shared words (B2, U6)
 

@@ -6,7 +6,7 @@ Read this file in full before you write, send or compare a batch. You need no ch
 
 Testmail sends made-up mail from one AgentMail inbox to the Interia test mailbox. The mails have an expected category.
 The VPS triages them with the real LLM. `compare` then checks the triage result against the expected category.
-Plan: `tasks/done/test-mail-traffic.md`. Notes: `notes/2026-11-07-agentmail-test-mail.md`.
+Plan: `spec/features/done/2026-11/F036-test-mail-traffic/plan.md`. Notes: `notes/2026-11-07-agentmail-test-mail.md`.
 
 - The one AgentMail inbox is `ea-testmail-75wd` (see `evals/testmail/personas.json`). All personas send from its address,
   `ea-testmail-75wd@agentmail.to`. This is the sender that the classifier sees.
@@ -33,7 +33,7 @@ Plan: `tasks/done/test-mail-traffic.md`. Notes: `notes/2026-11-07-agentmail-test
   Rule for agents: never tap approve for a test mail. Tell the user before you send a batch.
 - The VPS triages the mail with the real LLM (`TRIAGE_LLM_SCOPE=all`). Each mail costs one classifier call.
 - Urgent mails make Telegram urgent notices for the user. Every mail shows in the digest.
-- AgentMail mail is not "synthetic" for the scope gates (D14 in the task file). The follow-up is `tasks/planned/testmail-mail-kind.md`.
+- AgentMail mail is not "synthetic" for the scope gates (D14 in the task file). The follow-up is `spec/features/planned/F057-testmail-mail-kind/plan.md`.
 - A triage result `delegation` (only with active delegates) or `unsure` counts as `WRONG` in `compare`.
 - The VPS can run an older prompt version than `origin/master`. `compare` prints the versions.
 - The send logs live in `~/.local/state/ea-testmail/`. Every checkout (main or worktree) sees the same logs, cap and lock.

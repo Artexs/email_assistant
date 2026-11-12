@@ -26,7 +26,7 @@ for (const [net, prefix] of [
 
 /**
  * True for a host that names this machine or a private network (B12). A name other than `localhost` is
- * public here: the DNS-level check is a follow-up (`tasks/planned/web-public-hardening.md`).
+ * public here: the DNS-level check is a follow-up (`spec/features/planned/F056-web-public-hardening/plan.md`).
  */
 export function isLocalMailHost(host: string): boolean {
   let value = host.trim().toLowerCase().replace(/\.+$/, ""); // the root dot: `localhost.` still resolves to loopback

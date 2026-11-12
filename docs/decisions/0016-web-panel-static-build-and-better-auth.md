@@ -9,7 +9,7 @@ S5 gives the owner a web panel: login, mailboxes, settings, rules and activity.
 ADR 0011 puts the data in our own Postgres and removes Supabase, so Supabase Auth is not available.
 Today one user works with the panel. External customers come in S6 (sign-up is not in S5).
 
-Decisions and facts: the S5 master plan, `tasks/done/s5-web-panel.md` (lines P1, P2, D1–D9).
+Decisions and facts: the S5 master plan, `spec/features/done/2026-11/F007-s5-web-panel/plan.md` (lines P1, P2, D1–D9).
 Probes: `notes/2026-11-08-s5-probes/` and `notes/2026-11-08-s5a-probes/`.
 
 ## Decision
