@@ -18,7 +18,7 @@
 - A port (interface) lives in the module that owns it: `MailProvider` in `mail/port.ts`, `ChatChannel` in `channels/port.ts`.
 - Each adapter is a folder in its module (`mail/imap/`, `mail/fake/`, `channels/telegram/`). A module builds its adapters from config.
 - No central factory, no generic CRUD wrapper, no table names as strings.
-- Only `platform/llm/providers/gemini.ts` imports `@google/genai`; only `platform/llm/providers/openai.ts` imports `openai` (ESLint enforces it). The shared client and the registry are in `platform/llm/`. Only `mail/imap/` imports `imapflow`, `mailparser`, `nodemailer`. Only `channels/telegram/` imports `grammy`.
+- Only `platform/llm/providers/gemini.ts` imports `@google/genai`; only `platform/llm/providers/openai.ts` imports `openai` (ESLint enforces it). The shared client and the registry are in `platform/llm/`. Only `mail/imap/` imports `imapflow` and `mailparser`. Only `mail/imap/` and `platform/auth-mail.ts` (the auth-mail sender, S6b) import `nodemailer`. Only `channels/telegram/` imports `grammy`.
 
 ## Data access
 
