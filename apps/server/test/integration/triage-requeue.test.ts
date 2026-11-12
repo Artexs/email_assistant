@@ -24,6 +24,7 @@ function tooOld(daysAgo: number, overrides?: Record<string, unknown>) {
     skip_reason: "too_old",
     received_at: new Date(now.getTime() - daysAgo * day),
     message_id_header: `<r-${daysAgo}@x.test>`,
+    body_text: "Body",
     ...overrides,
   };
 }
@@ -43,6 +44,26 @@ describe("requeueBackfillWindow", () => {
         .where("id", "=", backlog)
         .executeTakeFirstOrThrow();
       expect(row).toEqual({ status: "skipped", skip_reason: "suspended_backlog", backfilled_at: null });
+    });
+  });
+
+  test("a too_old mail whose body retention cleared stays skipped; one with a body is re-queued", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId };
+      const cleared = await insertTestEmail(trx, ctx, a.mailboxId, tooOld(10, { body_text: null }));
+      const withBody = await insertTestEmail(trx, ctx, a.mailboxId, tooOld(11));
+
+      expect(await requeueBackfillWindow(trx, ctx, a.mailboxId, { since, now })).toBe(1);
+
+      const rows = await trx
+        .selectFrom("emails")
+        .select(["id", "status", "skip_reason"])
+        .where("id", "in", [cleared, withBody])
+        .execute();
+      const byId = new Map(rows.map((row) => [row.id, row]));
+      expect(byId.get(cleared)).toMatchObject({ status: "skipped", skip_reason: "too_old" });
+      expect(byId.get(withBody)).toMatchObject({ status: "pending", skip_reason: null });
     });
   });
 

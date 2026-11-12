@@ -591,3 +591,39 @@ export async function listLatestFeedbackByEmailIds(
   }
   return out;
 }
+
+const RETENTION_BATCH = 1000;
+
+// Retention (A23): the reason text and the extracted fields go after the period. Batches by id; a locked row waits for a later day.
+export async function clearTriageTexts(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { before: Date; batch?: number }
+): Promise<number> {
+  const batch = opts.batch ?? RETENTION_BATCH;
+  let total = 0;
+  for (;;) {
+    const result = await db
+      .updateTable("triage_results")
+      .set({ reason: null, fields: sql`'{}'::jsonb` })
+      .where("org_id", "=", ctx.orgId)
+      .where(
+        "id",
+        "in",
+        db
+          .selectFrom("triage_results")
+          .select("id")
+          .where("org_id", "=", ctx.orgId)
+          .where("created_at", "<", opts.before)
+          .where((eb) => eb.or([eb("reason", "is not", null), eb("fields", "<>", sql`'{}'::jsonb`)]))
+          .orderBy("id")
+          .limit(batch)
+          .forUpdate()
+          .skipLocked()
+      )
+      .executeTakeFirstOrThrow();
+    const changed = Number(result.numUpdatedRows);
+    total += changed;
+    if (changed === 0) return total;
+  }
+}

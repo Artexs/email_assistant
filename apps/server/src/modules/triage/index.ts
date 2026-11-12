@@ -8,6 +8,7 @@ export type { LabelInput } from "./label-input";
 export { classifyEmail } from "./classifier";
 export type { ClassifierEmail, SenderContext } from "./classifier";
 export {
+  clearTriageTexts,
   countTriagedBetween,
   insertFeedback,
   getLabelTarget,
