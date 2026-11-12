@@ -132,10 +132,13 @@ export interface SetOrgPlanInput {
 export interface SetOrgPlanHooks {
   // Runs in the same transaction when the plan moves to suspended; returns the number of cancelled messages.
   onSuspended?: (trx: Transaction<DB>, ctx: TenantContext) => Promise<number>;
+  // Runs in the same transaction when the plan leaves suspended (F079); `now` is the new `resumed_at`.
+  // Returns the number of sends that it closed.
+  onResumed?: (trx: Transaction<DB>, ctx: TenantContext, input: { now: Date; actor: string }) => Promise<number>;
 }
 
 export type SetOrgPlanResult =
-  | { kind: "changed"; before: OrgPlanState; after: OrgPlanState; cancelledMessages: number }
+  | { kind: "changed"; before: OrgPlanState; after: OrgPlanState; cancelledMessages: number; expiredSends: number }
   | { kind: "unchanged"; state: OrgPlanState }
   | { kind: "not_found" }
   | { kind: "trial_days_needed" }
@@ -146,7 +149,7 @@ export type SetOrgPlanResult =
 
 const dayMs = 24 * 60 * 60 * 1000;
 
-// One transaction: the lock, the new state, one audit row, then the suspend hook. A throw in the hook rolls back all.
+// One transaction: the lock, the new state, one audit row, then the suspend or resume hook. A throw in a hook rolls back all.
 export async function setOrgPlan(
   db: Db | Transaction<DB>,
   ctx: TenantContext,
@@ -215,7 +218,11 @@ export async function setOrgPlan(
 
     const cancelledMessages =
       before.plan !== "suspended" && after.plan === "suspended" ? ((await hooks.onSuspended?.(trx, ctx)) ?? 0) : 0;
-    return { kind: "changed", before, after, cancelledMessages };
+    const expiredSends =
+      before.plan === "suspended" && after.plan !== "suspended"
+        ? ((await hooks.onResumed?.(trx, ctx, { now: input.now, actor: input.actor })) ?? 0)
+        : 0;
+    return { kind: "changed", before, after, cancelledMessages, expiredSends };
   };
 
   return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);

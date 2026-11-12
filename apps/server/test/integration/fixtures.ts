@@ -388,6 +388,8 @@ export async function insertDraftAndSend(
     setId?: string;
     delegationId?: string;
     reminder?: 1 | 2;
+    // F079: also insert the `sent` outbox row of the approval request, for the first member of the organization.
+    requestSent?: boolean;
   }
 ): Promise<{ emailId: string; draftId: string; sendId: string }> {
   const createdAt = opts.createdAt ?? new Date();
@@ -464,5 +466,31 @@ export async function insertDraftAndSend(
     lockedAt: opts.lockedAt ?? null,
     createdAt,
   });
+  if (opts.requestSent === true) {
+    const member = await trx
+      .selectFrom("memberships")
+      .select("user_id")
+      .where("org_id", "=", ctx.orgId)
+      .orderBy("user_id")
+      .executeTakeFirstOrThrow();
+    const at = opts.notifiedAt ?? createdAt;
+    await trx
+      .insertInto("outbox")
+      .values({
+        org_id: ctx.orgId,
+        user_id: member.user_id,
+        kind: opts.setId === undefined ? "approval" : "approval_set",
+        dedup_key: opts.setId === undefined ? `approval:${sendId}` : `approval_set:${opts.setId}`,
+        email_id: emailId,
+        text: "Approve?",
+        buttons: "[]",
+        status: "sent",
+        created_at: at,
+        next_attempt_at: at,
+        sent_at: at,
+      })
+      .onConflict((oc) => oc.doNothing())
+      .execute();
+  }
   return { emailId, draftId, sendId };
 }

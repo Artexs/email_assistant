@@ -1,3 +1,4 @@
+import { resumeHook } from "../composition";
 import { cancelPendingOutboxOfOrg } from "../modules/channels";
 import { setOrgPlan, type SetOrgPlanResult } from "../modules/tenancy";
 import { loadConfig } from "../platform/config";
@@ -16,7 +17,12 @@ function report(orgId: string, result: SetOrgPlanResult, hookRan: boolean): numb
   switch (result.kind) {
     case "changed": {
       const { before, after } = result;
-      const cancelled = hookRan ? `, cancelled ${result.cancelledMessages} queued messages` : "";
+      const resumed = before.plan === "suspended" && after.plan !== "suspended";
+      const cancelled = hookRan
+        ? `, cancelled ${result.cancelledMessages} queued messages`
+        : resumed
+          ? `, expired ${result.expiredSends} sends with an unseen approval request`
+          : "";
       log.info(
         `org ${orgId}: plan ${before.plan} → ${after.plan}, max_mailboxes ${before.maxMailboxes} → ${after.maxMailboxes}, trial_ends_at ${iso(after.trialEndsAt)}, resumed_at ${iso(after.resumedAt)}${cancelled}`
       );
@@ -53,7 +59,7 @@ async function main(): Promise<number> {
       db,
       { orgId: args.orgId },
       { ...args, actor: "cli", now: new Date() },
-      { onSuspended: cancelPendingOutboxOfOrg }
+      { onSuspended: cancelPendingOutboxOfOrg, onResumed: resumeHook(db) }
     );
     return report(
       args.orgId,

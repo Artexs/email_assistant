@@ -169,6 +169,25 @@ describe("setOrgPlan", () => {
     });
   });
 
+  test("suspended to active calls the resume hook once with now and the actor; other changes do not", async () => {
+    await withRollback(db, async (trx) => {
+      const ctx = await newOrg(trx);
+      const calls: { now: Date; actor: string }[] = [];
+      const hooks = {
+        onResumed: async (_trx: Transaction<DB>, _ctx: unknown, args: { now: Date; actor: string }) => {
+          calls.push(args);
+          return 2;
+        },
+      };
+      await setOrgPlan(trx, ctx, { ...input, plan: "trial", trialDays: 5 }, hooks);
+      await setOrgPlan(trx, ctx, { ...input, plan: "suspended" }, hooks);
+      expect(calls).toEqual([]);
+      const result = await setOrgPlan(trx, ctx, { ...input, plan: "active" }, hooks);
+      expect(result).toMatchObject({ kind: "changed", expiredSends: 2 });
+      expect(calls).toEqual([{ now, actor: "operator" }]);
+    });
+  });
+
   test("suspended to trial with trialDays sets the end and resumed_at", async () => {
     await withRollback(db, async (trx) => {
       const ctx = await newOrg(trx);

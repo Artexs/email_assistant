@@ -211,7 +211,14 @@ export type SendResultKind =
   | { kind: "outcome_unknown" }
   | {
       kind: "expired";
-      reason: "timeout" | "draft_missing" | "not_notified" | "held_timeout" | "delegation_closed" | "policy_changed";
+      reason:
+        | "timeout"
+        | "draft_missing"
+        | "not_notified"
+        | "not_seen"
+        | "held_timeout"
+        | "delegation_closed"
+        | "policy_changed";
       draftRemoved: boolean;
     }
   | { kind: "rejected"; byName: string | null; draftRemoved: boolean };
@@ -310,6 +317,10 @@ export function renderSendResult(input: {
           break;
         case "not_notified":
           first = `⌛ Not sent: no approval request could go out within 7 days (no linked owner, or the draft was not created) · ${subject}`;
+          rest = both;
+          break;
+        case "not_seen":
+          first = `⌛ Not sent: you did not receive the approval request (the account was paused, or it did not go out) · ${subject}`;
           rest = both;
           break;
         case "held_timeout":

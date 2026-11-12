@@ -9,6 +9,7 @@ export {
   type UpdateHandlers,
 } from "./port";
 export {
+  cancelPendingApprovalRequestsOfClosedSends,
   cancelPendingOutbox,
   cancelPendingOutboxOfOrg,
   claimDueOutbox,
@@ -51,7 +52,7 @@ export {
   type OperatorNoticeKind,
   type OperatorNotices,
 } from "./operator";
-export { createOutboxSender, type SenderDeps } from "./sender";
+export { createOutboxSender, SENDER_STALE_MS, type SenderDeps } from "./sender";
 export { detectNotices, queueMailboxRemovedNotices, type NoticeDeps } from "./notices";
 export { scheduleDigests, type DigestJobDeps } from "./digest-job";
 export { handleCallback, pickerMessage, type CallbackDeps } from "./callbacks";

@@ -601,8 +601,10 @@ describe("expiry queries", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       const approved = (hours: number) => ({ userId: s.userId, at: ago(hours * HOUR) });
-      const timeout = await pair(trx, s, { notifiedAt: ago(49 * HOUR) });
-      const both = await pair(trx, s, { notifiedAt: ago(49 * HOUR), draftStatus: "failed" });
+      const timeout = await pair(trx, s, { notifiedAt: ago(49 * HOUR), requestSent: true });
+      const both = await pair(trx, s, { notifiedAt: ago(49 * HOUR), draftStatus: "failed", requestSent: true });
+      // F079: the request of this one never reached an owner: it is not a timeout.
+      const unseen = await pair(trx, s, { notifiedAt: ago(49 * HOUR) });
       const missing = await pair(trx, s, { draftStatus: "failed" });
       const undone = await pair(trx, s, { draftStatus: "undone" });
       const unnotified = await pair(trx, s, { notifiedAt: null, createdAt: ago(8 * DAY) });
@@ -625,13 +627,14 @@ describe("expiry queries", () => {
       const byId = new Map(found.map((r) => [r.id, r.reason]));
       expect(byId.get(timeout.sendId)).toBe("timeout");
       expect(byId.get(both.sendId)).toBe("timeout");
+      expect(byId.get(unseen.sendId)).toBe("not_seen");
       expect(byId.get(missing.sendId)).toBe("draft_missing");
       expect(byId.get(undone.sendId)).toBe("draft_missing");
       expect(byId.get(unnotified.sendId)).toBe("not_notified");
       expect(byId.get(held.sendId)).toBe("held_timeout");
       expect(byId.get(heldStale.sendId)).toBe("held_timeout");
       for (const p of [recent, fresh, young, inFlight]) expect(byId.has(p.sendId)).toBe(false);
-      expect(found).toHaveLength(7);
+      expect(found).toHaveLength(8);
 
       const limited = await listExpiredApprovals(trx, s.ctx, s.mailboxId, { ...opts, limit: 2 });
       expect(limited).toHaveLength(2);

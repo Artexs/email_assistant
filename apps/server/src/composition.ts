@@ -1,10 +1,19 @@
-import { expireReady, type ActionsScope, type CommitterDeps, type SendScope } from "./modules/actions";
+import type { Transaction } from "kysely";
+
+import {
+  expireReady,
+  expireUnseenApprovals,
+  type ActionsScope,
+  type CommitterDeps,
+  type SendScope,
+} from "./modules/actions";
+import { cancelPendingApprovalRequestsOfClosedSends, SENDER_STALE_MS } from "./modules/channels";
 import type { SettingsDeps } from "./modules/config";
 import { delegationHooks } from "./modules/delegation";
 import { composeMessage, mailboxHasUidplus, openImapProvider, openSmtpSender } from "./modules/mail";
 import { sendTestAddresses, type Config } from "./platform/config";
 import type { SecretBox } from "./platform/crypto";
-import type { Db, TenantContext } from "./platform/db";
+import type { DB, Db, TenantContext } from "./platform/db";
 import { createLog } from "./platform/log";
 
 // The parts that `main.ts` and `scripts/job-run.ts` build the same way.
@@ -74,5 +83,25 @@ export function settingsDeps(db: Db, now: () => Date): SettingsDeps {
         ...opts,
         sendClose: { hooks, uidplus: await mailboxHasUidplus(trx, trxCtx, filter.mailboxId) },
       }),
+  };
+}
+
+// F079: the resume hook of `setOrgPlan`. Sends whose approval request no owner saw before the pause end as `not_seen`
+// (the owner gets the result notice); their queued requests are cancelled. Returns the number of closed sends.
+export function resumeHook(
+  db: Db
+): (trx: Transaction<DB>, ctx: TenantContext, input: { now: Date; actor: string }) => Promise<number> {
+  const hooks = delegationHooks({ db });
+  return async (trx, ctx, input) => {
+    const expired = await expireUnseenApprovals(trx, ctx, {
+      resumedAt: input.now,
+      actor: input.actor,
+      hooks,
+      uidplus: mailboxHasUidplus,
+    });
+    await cancelPendingApprovalRequestsOfClosedSends(trx, ctx, {
+      staleBefore: new Date(input.now.getTime() - SENDER_STALE_MS),
+    });
+    return expired;
   };
 }

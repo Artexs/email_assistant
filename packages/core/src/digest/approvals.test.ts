@@ -350,6 +350,11 @@ describe("renderSendResult", () => {
       "both",
     ],
     [
+      "not_seen",
+      "⌛ Not sent: you did not receive the approval request (the account was paused, or it did not go out) · Fwd: Offer",
+      "both",
+    ],
+    [
       "held_timeout",
       "⌛ Not sent: it waited 48 h after your approval and was not sent (held by SEND_SCOPE or the mailbox state) · Fwd: Offer",
       "both",

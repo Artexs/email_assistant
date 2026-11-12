@@ -519,6 +519,7 @@ const EXPIRY_REASONS = [
   "timeout",
   "draft_missing",
   "not_notified",
+  "not_seen",
   "held_timeout",
   "delegation_closed",
   "policy_changed",
