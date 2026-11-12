@@ -1123,7 +1123,7 @@ describe("send result notices", () => {
       expect(found.filter((r) => r.dedup_key === `send_result:${again}`)).toHaveLength(2);
       const result = await resultText(trx, o, again);
       expect(result.text).toContain("⚠️ Unknown whether the mail to");
-      expect(result.data).toEqual([`ag:${again}`]);
+      expect(result.data).toEqual([`ag:${again}`, `gw:${again}`]);
       expect(await rows(trx, o.orgId, "action_failed")).toHaveLength(0);
     });
   });
