@@ -92,7 +92,7 @@ For a mailbox in `auth_error` the owner gets a Telegram notice. Fix it as in the
 
 ### What it is
 
-The web panel is at `https://<machine>.<tailnet>.ts.net`. Tailscale Serve is open to every device that the tailnet policy (ACL) allows. The default policy of a one-user tailnet allows the owner's own devices only. Run `tailscale status` and look for foreign users before you rely on this. Tailscale Serve on the host adds HTTPS and proxies to `127.0.0.1:8080`.
+The web panel is at `https://<machine>.<tailnet>.ts.net`. Tailscale Serve is open to every device that the tailnet policy (ACL) allows. The default policy of a one-user tailnet allows the owner's own devices only. Run `tailscale status` and look for foreign users before you rely on this. Also check in the admin console that `email-assistant` is not shared with another tailnet. Tailscale Serve on the host adds HTTPS and proxies to `127.0.0.1:8080`.
 See [ADR 0015](../docs/decisions/0015-web-panel-static-build-and-better-auth.md) and [ADR 0016](../docs/decisions/0016-web-access-tailscale-serve.md).
 The web is off while `WEB_BASE_URL` is empty.
 Deploy facts and results of the first VPS install: [`notes/2026-11-12-web-panel-deploy.md`](../notes/2026-11-12-web-panel-deploy.md).
