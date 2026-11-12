@@ -76,7 +76,7 @@ One session each, top to bottom, one at a time (never two at once: each session 
 | --- | --- | --- | --- | --- | --- |
 | — | E1 Close the MVP | no discovery | — (PD-007 stays the owner's call) | — | Planning (`plan-task`) and build run now, next to this queue |
 | 1 | E2 Quality lab | ready to plan | generator model, default scenario volume and languages, the arbiter labels, run budget | — | Done 2026-11-13 (PD-013–PD-028). Two `plan-task` runs: E2a Offline lab, then E2b Live lab. E3, E6, E10 need only E2a |
-| 2 | E4 Control surface | in session | approvals surface, the "what I would have done" report form, accessibility bar; split into 2 tickets | — | |
+| 2 | E4 Control surface | ready to plan | approvals surface, the "what I would have done" report form, accessibility bar; split into 2 tickets | — | Done 2026-11-13 (PD-029–PD-036, ADR 0022, 0023, 0028 drafts). Two `plan-task` runs: E4-A Act from the panel, then E4-B Earn trust. PD-030 changes the E3 gate: E3 sets the history-check numbers |
 | 3 | E7 Platform and trust | in session | Polish UI keep or defer, data-subject request flow, Google and Microsoft both or Microsoft first | identity tier 1: OIDC spike result | S6c, S6e, S6f get their own `plan-task` runs later |
 | 4 | E8 Operations | in session | log store choice, alert channel | — | Needs the owner's go for a read-only look at the VPS (RAM, Docker config); the session asks first |
 | 5 | E3 Measured core | in session | M3 definition, cost target, per-category model | first E2 report (classifier work list, cost numbers) | |

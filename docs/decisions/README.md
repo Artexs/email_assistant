@@ -34,3 +34,6 @@ Template:
 | 0016 | Web panel: Astro static build with React islands, login with Better Auth | accepted                              |
 | 0017 | Web access only through Tailscale Serve                                  | accepted                              |
 | 0021 | Simulator stack: separate Compose project with GreenMail, fake Telegram | proposed                              |
+| 0022 | Report mail goes into the user's own INBOX by IMAP APPEND               | proposed                              |
+| 0023 | Every user action is a typed HTTP command described in OpenAPI           | proposed                              |
+| 0028 | Autonomy earned from global evidence and a history check, not labels   | proposed                              |
