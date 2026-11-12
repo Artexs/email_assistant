@@ -318,8 +318,8 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
 
     const sendScope = deps.sendScope ?? { kind: "off" };
     const filter = {
-      mailbox: claimFilterFor(deps.scope, mailbox.address),
-      send: sendFilterFor(sendScope, mailbox.address),
+      mailbox: claimFilterFor(deps.scope),
+      send: sendFilterFor(sendScope),
     };
     await warnWhenHeldBack(ctx, mailboxId, now);
     await warnWhenSendsHeld(ctx, mailboxId, sendScope, filter.send);

@@ -756,21 +756,17 @@ export async function getEmailMailbox(
   db: DbOrTrx,
   ctx: TenantContext,
   emailId: string
-): Promise<
-  | { mailboxId: string; mailboxAddress: string; mailboxStatus: MailboxStatus; messageIdHeader: string | null }
-  | undefined
-> {
+): Promise<{ mailboxId: string; mailboxStatus: MailboxStatus; messageIdHeader: string | null } | undefined> {
   const row = await db
     .selectFrom("emails")
     .innerJoin("mailboxes", "mailboxes.id", "emails.mailbox_id")
-    .select(["emails.mailbox_id", "mailboxes.address", "mailboxes.status", "emails.message_id_header"])
+    .select(["emails.mailbox_id", "mailboxes.status", "emails.message_id_header"])
     .where("emails.org_id", "=", ctx.orgId)
     .where("emails.id", "=", emailId)
     .executeTakeFirst();
   if (row === undefined) return undefined;
   return {
     mailboxId: row.mailbox_id,
-    mailboxAddress: row.address,
     mailboxStatus: mailboxStatusSchema.parse(row.status),
     messageIdHeader: row.message_id_header,
   };

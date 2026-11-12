@@ -370,7 +370,7 @@ async function heldReason(
   const to = Array.isArray(send.payload.to) ? send.payload.to.filter((item) => typeof item === "string") : [];
   if (mailbox.status === "paused") return "paused";
   if (mailbox.status === "auth_error") return "auth_error";
-  if (!sendScopeAdmits(sendFilterFor(deps.sendScope, mailbox.address), to)) return "scope";
+  if (!sendScopeAdmits(sendFilterFor(deps.sendScope), to)) return "scope";
   return undefined;
 }
 

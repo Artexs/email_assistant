@@ -105,7 +105,7 @@ function committerFor(trx: Transaction<DB>, s: Setup) {
     db: trx,
     secrets,
     openProvider: async () => s.fake,
-    scope: { kind: "all", mailboxAddress: s.address },
+    scope: { kind: "all" },
     now: () => NOW,
   });
 }
@@ -140,7 +140,7 @@ describe("actions end to end", () => {
         {
           db: trx,
           now: () => NOW,
-          actionsScope: { kind: "all", mailboxAddress: s.address },
+          actionsScope: { kind: "all" },
           hooks: noDelegationHooks,
           uidplus: async () => true,
           sendScope: { kind: "off" },

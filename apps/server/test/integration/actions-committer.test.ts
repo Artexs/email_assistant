@@ -197,7 +197,7 @@ describe("createCommitterJob", () => {
     });
   });
 
-  test("scope all: the test mailbox gets everything, another address acts like off", async () => {
+  test("scope all: every mailbox gets its mailbox changes", async () => {
     await withRollback(db, async (trx) => {
       await pauseOtherMailboxes(trx);
       const box = await addBox(trx);
@@ -212,13 +212,13 @@ describe("createCommitterJob", () => {
       });
       const opener = openerFor([box, other]);
 
-      await jobFor(trx, opener, { kind: "all", mailboxAddress: box.address.toUpperCase() }).run();
+      await jobFor(trx, opener, { kind: "all" }).run();
 
       for (const id of mail.actionIds) expect((await actionState(trx, id)).status).toBe("applied");
       expect(await flagsOf(box, mail.uid)).toEqual(expect.arrayContaining(["\\Flagged", "\\Seen"]));
       expect((await actionState(trx, otherMail.actionIds[0] as string)).status).toBe("applied");
-      expect((await actionState(trx, otherMail.actionIds[1] as string)).status).toBe("ready");
-      expect(opener.calls).toEqual([box.address]);
+      expect((await actionState(trx, otherMail.actionIds[1] as string)).status).toBe("applied");
+      expect([...opener.calls].sort()).toEqual([box.address, other.address].sort());
     });
   });
 
@@ -243,7 +243,7 @@ describe("createCommitterJob", () => {
       const opener = openerFor([box]);
       opener.failures.set(box.address, new MailAuthError("bad login"));
 
-      await jobFor(trx, opener, { kind: "all", mailboxAddress: box.address }).run();
+      await jobFor(trx, opener, { kind: "all" }).run();
 
       const mailbox = await trx
         .selectFrom("mailboxes")
@@ -273,7 +273,7 @@ describe("createCommitterJob", () => {
       box.fake.failOn("setFlags", new SoftError("lost connection"));
       const opener = openerFor([box]);
 
-      await jobFor(trx, opener, { kind: "all", mailboxAddress: box.address }).run();
+      await jobFor(trx, opener, { kind: "all" }).run();
 
       const firstState = await actionState(trx, first.actionIds[0] as string);
       expect(firstState).toMatchObject({ status: "ready", locked_at: null, attempts: 0 });
@@ -339,7 +339,7 @@ describe("createCommitterJob", () => {
       box.fake.failOn("setFlags", new MailAuthError("login"));
       const opener = openerFor([box]);
 
-      await jobFor(trx, opener, { kind: "all", mailboxAddress: box.address }).run();
+      await jobFor(trx, opener, { kind: "all" }).run();
 
       const mailbox = await trx
         .selectFrom("mailboxes")
@@ -389,9 +389,7 @@ describe("createCommitterJob", () => {
         armed = true;
       };
 
-      await expect(
-        jobFor(trx, opener, { kind: "all", mailboxAddress: box.address }, failing).run()
-      ).resolves.toBeUndefined();
+      await expect(jobFor(trx, opener, { kind: "all" }, failing).run()).resolves.toBeUndefined();
 
       const held = await actionState(trx, throwing.actionIds[0] as string);
       expect(held).toMatchObject({ status: "ready", attempts: 0 });
@@ -417,7 +415,7 @@ describe("createCommitterJob", () => {
         .execute();
       const opener = openerFor([box]);
 
-      await jobFor(trx, opener, { kind: "all", mailboxAddress: box.address }).run();
+      await jobFor(trx, opener, { kind: "all" }).run();
 
       expect((await actionState(trx, mail.actionIds[0] as string)).status).toBe("applied");
     });
@@ -430,7 +428,7 @@ describe("createCommitterJob", () => {
       await addMail(trx, box, { messageId: "<r9@x.test>", actions: [{ type: "mark_read" }] });
       const opener = openerFor([box]);
 
-      await jobFor(trx, opener, { kind: "all", mailboxAddress: box.address }).run();
+      await jobFor(trx, opener, { kind: "all" }).run();
 
       expect(box.fake.closed).toBe(true);
     });
@@ -448,7 +446,7 @@ describe("createCommitterJob", () => {
       });
       const opener = openerFor([box]);
 
-      await jobFor(trx, opener, { kind: "all", mailboxAddress: box.address }).run();
+      await jobFor(trx, opener, { kind: "all" }).run();
 
       expect((await actionState(trx, mail.actionIds[0] as string)).status).toBe("applied");
       expect(await actionState(trx, mail.actionIds[1] as string)).toMatchObject({
@@ -497,14 +495,14 @@ function sendJob(
   opener: Opener,
   smtp: SendOpener,
   box: Box,
-  sendScope: Parameters<typeof createCommitterJob>[0]["sendScope"] = { kind: "all", mailboxAddress: box.address }
+  sendScope: Parameters<typeof createCommitterJob>[0]["sendScope"] = { kind: "all" }
 ) {
   return createCommitterJob({
     db: trx,
     secrets,
     openProvider: opener.openProvider,
     openSender: smtp.openSender,
-    scope: { kind: "all", mailboxAddress: box.address },
+    scope: { kind: "all" },
     sendScope,
     now: () => NOW,
   });
@@ -664,8 +662,8 @@ describe("createCommitterJob with sends", () => {
         secrets,
         openProvider: openerFor([box]).openProvider,
         openSender: smtp.openSender,
-        scope: { kind: "all", mailboxAddress: box.address },
-        sendScope: { kind: "all", mailboxAddress: box.address },
+        scope: { kind: "all" },
+        sendScope: { kind: "all" },
         now: () => NOW,
       });
 
@@ -779,7 +777,7 @@ describe("the Undo of a move into a sort folder (U11)", () => {
         const { box, mail, reverseId } = await movedFromOffers(trx, enabled);
         box.fake.calls.length = 0;
 
-        await jobFor(trx, openerFor([box]), { kind: "all", mailboxAddress: box.address }).run();
+        await jobFor(trx, openerFor([box]), { kind: "all" }).run();
 
         expect(box.fake.calls).toContain("transferByAppend");
         expect(box.fake.calls).not.toContain("moveMessage");
@@ -803,7 +801,7 @@ describe("the Undo of a move into a sort folder (U11)", () => {
       const { box, mail, reverseId } = await movedFromOffers(trx, true);
       const opener = openerFor([box]);
       box.fake.failOn("deleteMessage", new HardError("x"));
-      const scope = { kind: "all", mailboxAddress: box.address } as const;
+      const scope = { kind: "all" } as const;
 
       await jobFor(trx, opener, scope).run();
 
@@ -847,9 +845,7 @@ describe("the Undo of a move into a sort folder (U11)", () => {
       });
       box.fake.calls.length = 0;
 
-      await expect(
-        jobFor(trx, opener, { kind: "all", mailboxAddress: box.address }, failing).run()
-      ).resolves.toBeUndefined();
+      await expect(jobFor(trx, opener, { kind: "all" }, failing).run()).resolves.toBeUndefined();
 
       expect(await actionState(trx, reverseId)).toMatchObject({ status: "ready", locked_at: null, attempts: 0 });
       expect(opener.calls).toEqual([]);
@@ -897,7 +893,7 @@ describe("the Undo of a move into a sort folder (U11)", () => {
       });
       box.fake.calls.length = 0;
 
-      await jobFor(trx, openerFor([box]), { kind: "all", mailboxAddress: box.address }).run();
+      await jobFor(trx, openerFor([box]), { kind: "all" }).run();
 
       expect(box.fake.calls).toContain("moveMessage");
       expect(box.fake.calls).not.toContain("transferByAppend");

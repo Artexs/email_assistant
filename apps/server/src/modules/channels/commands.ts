@@ -158,12 +158,12 @@ async function approvalLines(
   };
   if (mailboxes.length <= 1) {
     const mailbox = mailboxes[0];
-    const send = mailbox === undefined ? { kind: "none" as const } : sendFilterFor(deps.sendScope, mailbox.address);
+    const send = mailbox === undefined ? { kind: "none" as const } : sendFilterFor(deps.sendScope);
     return [line("Approvals", await countApprovals(deps.db, ctx, { send }), mailbox)];
   }
   const lines: string[] = [];
   for (const mailbox of mailboxes) {
-    const send = sendFilterFor(deps.sendScope, mailbox.address);
+    const send = sendFilterFor(deps.sendScope);
     const count = await countApprovals(deps.db, ctx, { send, mailboxId: mailbox.id });
     lines.push(line(`Approvals ${cutText(mailbox.address, ADDRESS_MAX)}`, count, mailbox));
   }

@@ -40,9 +40,7 @@ export async function undo(
 
     if (undoable.length > 0) {
       // M9: the committer would never claim the reverse, so the toast "within a minute" would be false.
-      const applies =
-        mail.mailboxStatus === "active" &&
-        scopeAdmits(claimFilterFor(opts.scope, mail.mailboxAddress), mail.messageIdHeader);
+      const applies = mail.mailboxStatus === "active" && scopeAdmits(claimFilterFor(opts.scope), mail.messageIdHeader);
       if (!applies) return { kind: "held" };
 
       let created = 0;

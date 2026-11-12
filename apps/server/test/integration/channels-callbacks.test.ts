@@ -63,10 +63,10 @@ async function setup(trx: Transaction<DB>) {
   const deps: CallbackDeps = {
     db: trx,
     now: () => T,
-    actionsScope: { kind: "all", mailboxAddress: address },
+    actionsScope: { kind: "all" },
     hooks: noDelegationHooks,
     uidplus: async () => true,
-    sendScope: { kind: "all", mailboxAddress: address },
+    sendScope: { kind: "all" },
   };
   return { a, ctxA, info, unsure, other, link, deps };
 }
@@ -365,7 +365,7 @@ describe("approval taps", () => {
       actionsScope: { kind: "off" },
       hooks,
       uidplus: async () => true,
-      sendScope: opts?.sendScope?.(address) ?? { kind: "all", mailboxAddress: address },
+      sendScope: opts?.sendScope?.(address) ?? { kind: "all" },
     };
     return {
       a,

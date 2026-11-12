@@ -149,39 +149,36 @@ describe("loadConfig", () => {
     expect(config.GEMINI_API_KEY).toBe("test-key");
   });
 
-  test("throws ConfigError when TRIAGE_LLM_SCOPE=all has no TEST_MAILBOX_ADDRESS", () => {
-    const error = configError({ ...fullEnv, TRIAGE_LLM_SCOPE: "all", GEMINI_API_KEY: "test-key" });
-    expect(error.keys).toContain("TEST_MAILBOX_ADDRESS");
-    expect(error.keys).not.toContain("GEMINI_API_KEY");
-    expect(error.message).not.toContain("test-key");
-  });
-
   test("defaults ACTIONS_SCOPE to off and accepts the other two values", () => {
     expect(loadConfig(fullEnv).ACTIONS_SCOPE).toBe("off");
     expect(loadConfig({ ...fullEnv, ACTIONS_SCOPE: "synthetic" }).ACTIONS_SCOPE).toBe("synthetic");
   });
 
-  test("throws ConfigError when ACTIONS_SCOPE=all has no TEST_MAILBOX_ADDRESS", () => {
-    expect(configError({ ...fullEnv, ACTIONS_SCOPE: "all" }).keys).toContain("TEST_MAILBOX_ADDRESS");
+  test("all scopes start without TEST_MAILBOX_ADDRESS", () => {
+    const config = loadConfig({
+      ...geminiEnv,
+      TRIAGE_LLM_SCOPE: "all",
+      ACTIONS_SCOPE: "all",
+      SEND_SCOPE: "all",
+      GEMINI_API_KEY: "test-key",
+    });
+    expect(config.TRIAGE_LLM_SCOPE).toBe("all");
+    expect(config.ACTIONS_SCOPE).toBe("all");
+    expect(config.SEND_SCOPE).toBe("all");
+    expect(config.TEST_MAILBOX_ADDRESS).toBeUndefined();
   });
 
   test("throws ConfigError when ACTIONS_SCOPE has a bad value", () => {
     expect(configError({ ...fullEnv, ACTIONS_SCOPE: "maybe" }).keys).toContain("ACTIONS_SCOPE");
   });
 
-  test("throws ConfigError with both keys when TRIAGE_LLM_SCOPE=all has neither", () => {
+  test("throws ConfigError for the provider key when TRIAGE_LLM_SCOPE=all has none", () => {
     const error = configError({ ...geminiEnv, TRIAGE_LLM_SCOPE: "all" });
-    expect(error.keys).toContain("GEMINI_API_KEY");
-    expect(error.keys).toContain("TEST_MAILBOX_ADDRESS");
+    expect(error.keys).toEqual(["GEMINI_API_KEY"]);
   });
 
-  test("accepts TRIAGE_LLM_SCOPE=all with a GEMINI_API_KEY and a TEST_MAILBOX_ADDRESS", () => {
-    const config = loadConfig({
-      ...geminiEnv,
-      TRIAGE_LLM_SCOPE: "all",
-      GEMINI_API_KEY: "test-key",
-      TEST_MAILBOX_ADDRESS: "test@interia.pl",
-    });
+  test("accepts TRIAGE_LLM_SCOPE=all with a GEMINI_API_KEY", () => {
+    const config = loadConfig({ ...geminiEnv, TRIAGE_LLM_SCOPE: "all", GEMINI_API_KEY: "test-key" });
     expect(config.TRIAGE_LLM_SCOPE).toBe("all");
   });
 
@@ -362,9 +359,8 @@ describe("SEND_SCOPE", () => {
     expect(sendTestAddresses(config)).toEqual(["a@x.test", "b@x.test"]);
   });
 
-  test("all needs TEST_MAILBOX_ADDRESS", () => {
-    expect(configError({ ...fullEnv, SEND_SCOPE: "all" }).keys).toEqual(["TEST_MAILBOX_ADDRESS"]);
-    expect(loadConfig({ ...fullEnv, SEND_SCOPE: "all", TEST_MAILBOX_ADDRESS: "t@x.test" }).SEND_SCOPE).toBe("all");
+  test("all needs no other key", () => {
+    expect(loadConfig({ ...fullEnv, SEND_SCOPE: "all" }).SEND_SCOPE).toBe("all");
   });
 
   test("an empty SEND_TEST_ADDRESSES counts as missing", () => {

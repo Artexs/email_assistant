@@ -99,7 +99,7 @@ describe("triage logs", () => {
             sleep: async () => undefined,
           }),
           pause: createLlmPause(),
-          scope: { kind: "all", mailboxAddress: MARKERS.address },
+          scope: { kind: "all" },
           batchSize: 5,
           dailyCap: 1000,
           now: () => clock.at,

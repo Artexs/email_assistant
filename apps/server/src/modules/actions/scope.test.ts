@@ -5,19 +5,16 @@ import { claimFilterFor, scopeAdmits, sendFilterFor, sendScopeAdmits } from "./s
 
 describe("claimFilterFor", () => {
   test("off holds back every mailbox change", () => {
-    expect(claimFilterFor({ kind: "off" }, "box@x.test")).toEqual({ kind: "none" });
+    expect(claimFilterFor({ kind: "off" })).toEqual({ kind: "none" });
   });
 
   test("synthetic applies to every mailbox", () => {
-    expect(claimFilterFor({ kind: "synthetic" }, "box@x.test")).toEqual({ kind: "synthetic" });
+    expect(claimFilterFor({ kind: "synthetic" })).toEqual({ kind: "synthetic" });
   });
 
-  test("all matches the test mailbox address in any case", () => {
-    expect(claimFilterFor({ kind: "all", mailboxAddress: "Box@X.test" }, "box@x.TEST")).toEqual({ kind: "all" });
-  });
-
-  test("all gives no mailbox change in another mailbox", () => {
-    expect(claimFilterFor({ kind: "all", mailboxAddress: "box@x.test" }, "other@x.test")).toEqual({ kind: "none" });
+  test("all gives `all` for every mailbox", () => {
+    expect(claimFilterFor({ kind: "all" })).toEqual({ kind: "all" });
+    expect(sendFilterFor({ kind: "all" })).toEqual({ kind: "all" });
   });
 });
 
@@ -46,22 +43,18 @@ describe("scopeAdmits", () => {
 
 describe("sendFilterFor", () => {
   test("off holds back every send", () => {
-    expect(sendFilterFor({ kind: "off" }, "box@x.test")).toEqual({ kind: "none" });
+    expect(sendFilterFor({ kind: "off" })).toEqual({ kind: "none" });
   });
 
   test("self keeps the address list in lower case", () => {
-    expect(sendFilterFor({ kind: "self", addresses: ["Me@X.test", "b@x.test"] }, "box@x.test")).toEqual({
+    expect(sendFilterFor({ kind: "self", addresses: ["Me@X.test", "b@x.test"] })).toEqual({
       kind: "self",
       addresses: ["me@x.test", "b@x.test"],
     });
   });
 
-  test("all matches the test mailbox address in any case", () => {
-    expect(sendFilterFor({ kind: "all", mailboxAddress: "Box@X.test" }, "box@x.TEST")).toEqual({ kind: "all" });
-  });
-
-  test("all sends nothing from another mailbox", () => {
-    expect(sendFilterFor({ kind: "all", mailboxAddress: "box@x.test" }, "other@x.test")).toEqual({ kind: "none" });
+  test("all admits every mailbox", () => {
+    expect(sendFilterFor({ kind: "all" })).toEqual({ kind: "all" });
   });
 });
 

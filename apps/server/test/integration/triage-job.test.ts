@@ -103,7 +103,7 @@ describe("createTriageJob", () => {
       });
 
       const llm = fakeLlm();
-      await job(trx, llm, { kind: "all", mailboxAddress: await addressOf(trx, mailboxId) }).run();
+      await job(trx, llm, { kind: "all" }).run();
 
       expect(llm.prompts).toHaveLength(3);
       expect(llm.prompts[0]).toContain("first");
@@ -133,7 +133,7 @@ describe("createTriageJob", () => {
           };
         },
       } as LlmClient;
-      await job(trx, spamLlm, { kind: "all", mailboxAddress: await addressOf(trx, mailboxId) }).run();
+      await job(trx, spamLlm, { kind: "all" }).run();
 
       expect((await emailRow(trx, junkMail)).status).toBe("triaged");
       expect((await emailRow(trx, inboxMail)).status).toBe("triaged");
@@ -152,7 +152,7 @@ describe("createTriageJob", () => {
       await insertTestEmail(trx, ctx, mailboxId);
 
       const llm = fakeLlm();
-      await job(trx, llm, { kind: "all", mailboxAddress: await addressOf(trx, mailboxId) }).run();
+      await job(trx, llm, { kind: "all" }).run();
       expect(llm.allowed).toHaveLength(1);
       expect(llm.allowed[0]).toHaveLength(6);
       expect(llm.allowed[0]).toContain("delegation");
@@ -171,13 +171,13 @@ describe("createTriageJob", () => {
       await insertTestEmail(trx, ctx, mailboxId);
 
       const llm = fakeLlm();
-      await job(trx, llm, { kind: "all", mailboxAddress: await addressOf(trx, mailboxId) }).run();
+      await job(trx, llm, { kind: "all" }).run();
       expect(llm.allowed[0]).toHaveLength(5);
       expect(llm.allowed[0]).not.toContain("delegation");
     });
   });
 
-  test("scope all: only the mailbox with the scope address (any case) is triaged", async () => {
+  test("scope all: every active mailbox is triaged", async () => {
     await withRollback(db, async (trx) => {
       await pauseOtherMailboxes(trx);
       const own = await mailboxWithSettings(trx, { address: "Boss@Scope.test" });
@@ -186,11 +186,11 @@ describe("createTriageJob", () => {
       const otherMail = await insertTestEmail(trx, other.ctx, other.mailboxId);
 
       const llm = fakeLlm();
-      await job(trx, llm, { kind: "all", mailboxAddress: " boss@scope.TEST " }).run();
+      await job(trx, llm, { kind: "all" }).run();
 
-      expect(llm.prompts).toHaveLength(1);
+      expect(llm.prompts).toHaveLength(2);
       expect((await emailRow(trx, ownMail)).status).toBe("triaged");
-      expect((await emailRow(trx, otherMail)).status).toBe("pending");
+      expect((await emailRow(trx, otherMail)).status).toBe("triaged");
     });
   });
 
@@ -251,7 +251,7 @@ describe("createTriageJob", () => {
       });
 
       const llm = fakeLlm();
-      await job(trx, llm, { kind: "all", mailboxAddress: await addressOf(trx, mailboxId) }).run();
+      await job(trx, llm, { kind: "all" }).run();
 
       expect(llm.prompts).toHaveLength(1);
       expect(await emailRow(trx, stale)).toEqual({ status: "triaged", attempts: 2 });
@@ -270,7 +270,7 @@ describe("createTriageJob", () => {
       });
 
       const llm = fakeLlm();
-      await job(trx, llm, { kind: "all", mailboxAddress: await addressOf(trx, mailboxId) }).run();
+      await job(trx, llm, { kind: "all" }).run();
 
       expect(llm.prompts).toHaveLength(0);
       expect(await emailRow(trx, stale)).toEqual({ status: "triaged", attempts: 3 });
@@ -826,8 +826,3 @@ describe("createTriageJob: daily cap", () => {
     });
   });
 });
-
-async function addressOf(trx: Transaction<DB>, mailboxId: string): Promise<string> {
-  const row = await trx.selectFrom("mailboxes").select("address").where("id", "=", mailboxId).executeTakeFirstOrThrow();
-  return row.address;
-}

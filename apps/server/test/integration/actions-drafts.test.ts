@@ -529,7 +529,7 @@ describe("committer job with drafts", () => {
       db: trx,
       secrets,
       openProvider: async () => s.fake,
-      scope: { kind: "all", mailboxAddress: s.address },
+      scope: { kind: "all" },
       now: () => NOW,
     });
     return { s, job };
