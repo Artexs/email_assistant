@@ -1,4 +1,4 @@
-> **Status 2026-11-12 — in progress — stage 1 plan approved by the user; build not started.** Plan: [`stages/stage-1-out-of-box.md`](stages/stage-1-out-of-box.md). Next: stage 1 steps 1.1–1.8; step 1.9 waits for an S6-quiet time.
+> **Status 2026-11-12 — in progress — stage 1 done.** Plan: [`stages/stage-1-out-of-box.md`](stages/stage-1-out-of-box.md). Next: the user uses Limen for real work (first task to the coordinator), then a stage 2 plan session (adapt agents, skills, rules).
 
 # Move the agent workflow to Limen
 
