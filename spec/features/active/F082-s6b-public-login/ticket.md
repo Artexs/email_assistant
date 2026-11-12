@@ -29,7 +29,7 @@ A person gets into the panel only through an invite link. A reset request tells 
 
 ## Slices
 
-One worker job per stage, in order (`stages/stage-01` to `stage-15`), each landed with `limen land --keep-open`. No two S6b stages run at once. Stage 1 is the only migration: it must not run next to another migration or `bun.lock` change. The coordinator stops after stage 1 (`db:migrate` on the dev database), at checkpoint A after stage 9, and at stage 15 (VPS). Spawn and review commands: [plan.md](plan.md) § "How to run".
+One worker job per stage (`stages/stage-01` to `stage-15`), each landed with `limen land --keep-open`. Two lanes may run at once: the auth stages 1–7 next to the mail-host stage 8, and after checkpoint A the web stages 10–12 next to stage 13; the table is in [plan.md](plan.md) § "Parallel plan". Stage 1 is the only migration: it must not run next to another migration or `bun.lock` change. The coordinator stops after stage 1 (`db:migrate` on the dev database), at checkpoint A after stage 9, and at stage 15 (VPS). Spawn and review commands: [plan.md](plan.md) § "How to run".
 
 ## Notes
 
