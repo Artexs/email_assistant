@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-12
+landed: 2026-11-12
 ---
 
 # F080 · The `mailbox:backfill` CLI refuses a suspended organization

@@ -25,6 +25,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F080-backfill-suspended-gate` (🟢 PROVEN): The `mailbox:backfill` CLI refuses a suspended organization; landed 2026-11-12
 - `F070-editor-rules-cleanup` (🟢 PROVEN): Editor rule files still name Supabase; landed 2026-11-12
 - `F059-web-hashed-reset-tokens` (🟢 PROVEN): Store web reset tokens hashed; landed 2026-11-12
 - `F058-sync-sort-folders` (🟢 PROVEN): Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci); landed 2026-11-12
@@ -34,5 +35,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F044-send-retry-cap` (🟢 PROVEN): A shorter cap for send retries; landed 2026-11-12
 - `F041-delegation-went-out-button` (🟢 PROVEN): A button 'It went out' after outcome_unknown; landed 2026-11-12
 - `F026-llm-provider-switch` (🟢 PROVEN): LLM provider switch: Gemini and OpenAI; landed 2026-11-12
-- `F007-s5-web-panel` (🟢 PROVEN): S5 Web panel (lite); landed 2026-11-12
-- 2026-11: 40 landed. spec/features/done/2026-11/
+- 2026-11: 41 landed. spec/features/done/2026-11/
