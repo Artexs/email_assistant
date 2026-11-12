@@ -1,56 +1,51 @@
-> **Status 2026-11-12 — planned.** Left: user steps U1, U4, the detailed stage plan (an own `plan-task` session), then the build and the deploy with `run-task`.
+> **Status 2026-11-12 — planned.** Left: the detailed stage plan (an own `plan-task` session), then the build and the VPS steps with `run-task`.
 
-# S6f Hosted EU production
+# S6f Production on the home VPS
 
-Scope: the S6 master plan `tasks/active/s6-pre-sale.md` (P4, P5, P6, findings 3 and 6, D11 (the Tailscale ACL), D21–D26, D30, D31 (backup event, key on production), D33, "Rules for every step"); ADR 0017. Also replaces `tasks/planned/compose-network-subnet.md` and `tasks/planned/server-env-scope.md` (move them to `done/` with a pointer when this segment is done). Needs: S6a–S6e merged; U1, U2, U3, U4, U10 done; U6 and U7 only before stage 7.
-Git mode: worktree (`task/s6f-hosted-production`). Run mode: pipeline, but every stage on a real host waits for the user's go. Review model: stronger reviewer (Opus, high).
+> **Scope change 2026-11-12:** this segment was "Hosted EU production" (Hetzner, domain, Caddy, image registry, pilot move, staging). The user cut it (master plan § "Scope change", P22, P23): production stays on the home VPS behind Tailscale. The old plan is in Git history (`9cdada6`). The file name stays so that the links in the master plan keep working.
+
+Scope: the S6 master plan `tasks/active/s6-pre-sale.md` (finding 3, P22, P23, D23 (only the timing-test fix), D25, D30, D31 (backup event), D28 (ADR 0019 as changed), "Rules for every step"); ADR 0017 stays as it is. Also replaces the Limen ticket `spec/features/planned/F021-server-env-scope/` (close it with an `outcome.md` when this segment is done). Needs: S6a–S6e merged. Every step on the VPS waits for the user's go.
+Git mode: worktree (`task/s6f-vps-production`). Run mode: pipeline. Review model: stronger reviewer (Opus, high).
 
 ## Goal
 
-The service runs on a hosted EU server behind Caddy on the public domain, the pilot runs there, the home VPS is staging, and the first customer gets an invite.
+The home VPS runs the application as a production system: CI is green, the running server holds only the keys it needs, the backups reach Backblaze and can be restored, a failed backup reaches the operator, and an ADR records that production stays on the home VPS behind Tailscale.
 
 ## Done when
 
-- The two known timing tests are fixed and `ci` is green; CI pushes `ghcr.io/<owner>/email-assistant:<sha>` for each `master` commit (the push job needs `ci`, `image` and `e2e`); staging and production pull a pinned `<sha>`; no host builds the image.
-- The production VM: SSH only through Tailscale (a public port scan of the address shows only 80 and 443), key login only, `unattended-upgrades` on, Docker on at boot; a reboot test passes. The Tailscale ACL lets the production host start no connection to other tailnet devices (a test from the host to the PC fails).
-- `https://<domain>/health` → 200 with HSTS; `http://<domain>` redirects to HTTPS; the `server` has no host port; `docker network inspect` shows the pinned subnet; after a sign-in `auth_sessions.ip_address` holds a public client address, not the Caddy address (checked as a boolean).
-- The running `server` env has no `POSTGRES_PASSWORD` and no `MIGRATOR_PASSWORD` (`docker compose exec server env` key names only); migrations run in the one-off service.
-- Backups: the nightly `age` dump reaches the EU B2 bucket; one restore test on a short-lived Hetzner VM, deleted after the test (D24); a failed backup is an operator notice (D31).
-- The pilot move (D26) passed its checks in order: the restore with owners and privileges and the grant checks; the start with the scopes off; the rollback point; then the scopes on, one triage on Vertex, the digest, the owner linked to the production bot (D33); the panel sign-in on the domain.
-- After the 7-day rollback window: the home VPS pilot state is wiped (`down -v`, local dumps, old `.env`, no `.env.bak-*`), and staging runs there: Tailscale Serve, `TRIAGE_LLM_SCOPE=synthetic`, `ACTIONS_SCOPE=synthetic`, `SEND_SCOPE=off`, the old pilot bot as the staging bot, a new `CREDENTIALS_KEY`, its own backup bucket or prefix, test data only.
-- Checkpoint 6: a second test organization on production went through invite, setup, connect (a test mailbox), triage, and delete; then the first customer got the invite.
-- ADR 0019 (accepted; amends 0017), `docs/architecture.md` §10, `deploy/README.md` (production and staging runbooks), notes.
+- The two known timing tests (`runSend > 3`, `AgentMail fake > holdResponseNext`, `docs/known-alerts.md`) are fixed, and the `ci` job is green on `master`; the alert entry is closed.
+- The running `server` env has no `POSTGRES_PASSWORD` and no `MIGRATOR_PASSWORD` (`docker compose exec server env` key names only); migrations run in a one-off service with the migrator URL (D25).
+- Backups (P23): on the VPS (read only first, the user's go), `deploy/backup.sh` runs nightly, the last run printed `backup ok <name> <bytes>`, and the object is in the Backblaze bucket (`rclone ls` names and sizes only); the bucket lifecycle rule is read and logged. One restore test on the dev machine with `deploy/restore-test.sh` passes (the runbook says "the Mac"; use the machine the user names) (row counts, then the local copy is deleted). A failed backup run is an operator notice (D31, the S6a frame).
+- No `.env.bak-*` file is left on the VPS (D30; S5e left one).
+- ADR 0019 "Production stays on the home VPS behind Tailscale" (accepted; it records why there is no public domain, hosted server or image registry, and what a move would need: the old S6f plan in `9cdada6`).
+- Final checkpoint (master plan checkpoint 3): a second test organization on the VPS goes through `org:invite` (printed link), set password with the terms, connect a test mailbox of the user, triage, `org:plan --plan suspended` (no triage, the banner, Telegram "paused"), `--plan active` (backlog rule), delete organization; then the pilot still works.
+- `docs/architecture.md` §10, `deploy/README.md`, notes.
 
 ## Owns (from the master plan)
 
-- Decisions D21 (host), D22 (Caddy, pinned subnet, trusted proxy), D23 (GHCR, timing-test fix), D24 (staging, restore-test VM), D25 (env split), D26 (pilot move), D30 (secrets on the host), D31 (backup event), D33 (production bot), the Tailscale ACL of D11.
-- Files (expected): `.github/workflows/ci.yml` (push job with `packages: write`, on `master` only), `deploy/compose.yaml` (pinned subnet, image by tag), `deploy/compose.prod.yaml`, `deploy/Caddyfile`, `deploy/README.md`, `.env.example` (split), `docs/decisions/0019-*.md`, `docs/architecture.md`.
+- Decisions D23 (only the timing-test fix), D25 (env split), D30 (no secret copies on the host), D31 (backup event), D28 (ADR 0019 as changed).
+- Files (expected): the two timing tests and their code, `deploy/compose.yaml` (the one-off migrate service, the server env list), `.env.example` (which keys the server gets), `deploy/backup.sh` (the notice hook), `deploy/README.md`, `docs/decisions/0019-*.md`, `docs/architecture.md`.
 
 ## Stage sketch
 
-1. **Timing tests and image push**: fix the two known timing tests (`docs/known-alerts.md`); the CI push job, the tag rule, the pull on staging; the image content check stays.
-2. **Compose for production** `[risky]`: pinned subnet, the Caddy service and file, the overlay, the env split and the one-off migrate service; a local run with a fake domain (Caddy internal CA) and a probe of the `X-Forwarded-For` handling.
-3. **Home VPS on the new compose** `[risky]` (real host, user's go): the home VPS to the pinned subnet and the pulled image; the pilot keeps running there until stage 6.
-4. **Production VM** (user step U4, then the agent with the user's go): VM, firewall, Tailscale SSH and ACL, Docker, the `.env` by the user (mode 600), the key file (U3), DNS (U1), a first start with an empty test DB for `/health`, the scan, the reboot test; then the test DB volume is removed.
-5. **Backups on production**: `backup.sh`, the timer, the EU bucket, the failed-backup notice; the restore test on a short-lived VM.
-6. **Pilot move** `[risky]` (checkpoint 5, outside a pilot week): D26 steps 1–6 with the rollback point; the checks.
-   6b. **Staging** (after the 7-day window): D26 step 7 and D24.
-7. **Second-organization run and first invite** (checkpoint 6): the run of checkpoint 6 of the master plan; delete the test organization; `org:invite` for the customer.
-8. **Docs**: ADR 0019, architecture §10, runbooks, notes, known alerts.
+1. **Timing tests**: find the cause of each flaky test (fake timers or a fixed clock), fix it, CI green three runs in a row.
+2. **Env split** `[risky]`: the server's env list, the one-off migrate service, the local run, the VPS deploy (user's go); the `env` key-name check.
+3. **Backups** (user's go): read-only check on the VPS and in the bucket; the failed-backup operator notice; the restore test on the dev machine; remove `.env.bak-*` (user's go).
+4. **ADR 0019 and docs.**
+5. **Final checkpoint** (checkpoint 3): the second-organization run on the VPS; group review; close S6.
 
 ## Questions for the plan session
 
-- The VM type and the Hetzner location after the price check (U4).
-- The SSH route: Tailscale SSH or OpenSSH over the tailnet (default: OpenSSH, bound to the tailnet address).
-- The GHCR package visibility (default: public; the repo is public and the image holds no secret).
+- How a failed backup reaches the operator: `backup.sh` writes a status file that the server reads, or the script calls the bot API itself (default: a status file; the server's operator job reads it, so no token goes into the script).
 
 ## Done-checklist
 
 - [ ] Done-when checks pass (name the command and its output in the log).
 - [ ] `docs/` describe what was built (architecture, modules, roadmap); related ADRs set to accepted or superseded.
 - [ ] Learned facts are in `notes/`; new alerts in `docs/known-alerts.md`.
-- [ ] Follow-up ideas are in `planned/`.
+- [ ] Follow-up ideas are Limen tickets in `spec/features/planned/`.
 
 ## Log
 
 - 2026-11-12: Created by the S6 master plan session (`tasks/active/s6-pre-sale.md`).
+- 2026-11-12: Rewritten for the scope change (P22, P23): production on the home VPS; Hetzner, domain, Caddy, GHCR, pilot move and staging dropped.

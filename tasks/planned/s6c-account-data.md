@@ -2,12 +2,14 @@
 
 # S6c Account and data: delete, export, Polish UI
 
-Scope: the S6 master plan `tasks/active/s6-pre-sale.md` (P10, P12, D12–D14, D27 (Telegram consent text), D32, "Rules for every step"). Needs: S6b merged (the Account card, the auth mails and `users.locale`); the U0 answer (the lawyer's view on Telegram; if it is "no", stop and plan `tasks/planned/telegram-content-minimal.md` first).
+> **Scope change 2026-11-12:** local production on the home VPS, no outside customers (master plan § "Scope change", P16–P24). This file is updated for it; the plan session reads that section first.
+
+Scope: the S6 master plan `tasks/active/s6-pre-sale.md` (P10, P12, D12–D14, D27 (Telegram consent text, draft), "Rules for every step"). Needs: S6b merged (the Account card, the auth mails and `users.locale`). No lawyer step (P19): the Telegram consent text is the agent's draft.
 Git mode: worktree (`task/s6c-account-data`). Run mode: pipeline. Review model: stronger reviewer (Opus, high) for the delete stages; Sonnet, high for the i18n stages.
 
 ## Goal
 
-A customer deletes their organization from the panel, the operator can export or delete an organization from the CLI, and the panel and the auth mails speak Polish.
+An owner deletes their organization from the panel, the operator can export or delete an organization from the CLI, and the panel and the auth mails speak Polish.
 
 ## Done when
 
@@ -21,7 +23,7 @@ A customer deletes their organization from the panel, the operator can export or
 
 ## Owns (from the master plan)
 
-- Decisions D12 (Polish UI), D13 (`delete_organization`, the web route, `org:delete`, the deletion log line), D14 (`org:export`), D27 (the Telegram consent text in the link step), D32 (depends on U0).
+- Decisions D12 (Polish UI), D13 (`delete_organization`, the web route, `org:delete`, the deletion log line), D14 (`org:export`), D27 (the Telegram consent text in the link step; draft, P19). D32 is dropped.
 - Files (expected): `db/migrations/<version>_delete_organization.sql`, `modules/tenancy/{remove,export,routes}.ts`, `scripts/org-delete.ts`, `scripts/org-export.ts`, `apps/web/src/components/settings/AccountCard.tsx`, `apps/web/src/i18n/{pl,en,index}.ts`, the language read in the web shell, `platform/auth-mail.ts` (Polish texts exist from S6b; check them).
 
 ## Stage sketch
@@ -29,7 +31,7 @@ A customer deletes their organization from the panel, the operator can export or
 1. **Delete function** `[risky]`: the migration, the grants, the order inside the transaction (D13), the `information_schema` test, the second-organization test.
 2. **Delete route and CLI** `[risky]`: owner check, password check (Better Auth `verifyPassword` or a sign-in check; the plan session reads the source), typed name, session end, the address list; `org:delete`; route matrix.
 3. **Export CLI**: the JSON shape (all D14 tables), the mounted path, `age` encryption, file mode 600, the no-secret test.
-   3b. **Telegram consent**: the text in the link step (from the U0 answer), the stored acceptance per user, the refusal without it.
+   3b. **Telegram consent**: the text in the link step (the agent's draft: what goes to Telegram — sender, subject, AI summary, draft text — and that Telegram is outside the EU), the stored acceptance per user, the refusal without it.
 4. **i18n frame**: `pl.ts` type, the language rule, `users.locale` route, the Account card choice.
 5. **Polish texts**: every string; the auth mails checked; Playwright at both widths.
 6. **Docs, notes and group review.**

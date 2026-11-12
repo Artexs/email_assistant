@@ -1,8 +1,8 @@
-> **Status 2026-11-12 — in progress — plan written and cold-reviewed (18 stages); waiting for the user's OK.** Left: the user's OK (and answers to the two questions in the end summary), then the build with `run-task` (`Git mode: worktree`, `Run mode: pipeline`); user step U0 before the build.
+> **Status 2026-11-12 — in progress — plan approved by the user ("ok", with the scope change of the same day).** Left: the build with `run-task` (`Git mode: worktree`, `Run mode: pipeline`); no user step blocks it.
 
 # S6a Customer core: scopes, consent, plan state, retention
 
-Scope: the S6 master plan `tasks/active/s6-pre-sale.md` (findings 1 and 2, P3, D1–D6, D29, D31 (frame, trial, cap and `auth_error` events), "Rules for every step"). Also replaces the Limen tickets `spec/features/planned/F031-actions-scope-removal/` and `spec/features/planned/F027-retention-job/` (the old `actions-scope-removal.md` and `retention-job.md`, moved by the Limen migration `67cca12`; stage 18.5 closes them). Needs: S5 (done); user step U0 sent (the lawyer question; the answer is needed by S6c, not here).
+Scope: the S6 master plan `tasks/active/s6-pre-sale.md` (findings 1 and 2, P3, D1–D6, D29, D31 (frame, trial, cap and `auth_error` events), "Rules for every step"). Also replaces the Limen tickets `spec/features/planned/F031-actions-scope-removal/` and `spec/features/planned/F027-retention-job/` (the old `actions-scope-removal.md` and `retention-job.md`, moved by the Limen migration `67cca12`; stage 18.5 closes them). Needs: S5 (done). No user step blocks the build (the scope change of 2026-11-12 dropped U0; master plan § "Scope change": local production on the home VPS, no outside customers; S6a stays whole, P17).
 Git mode: master for this plan (task files only). The build: worktree (`task/s6a-customer-core`). Run mode: pipeline. Review model: stronger reviewer (Opus, high) for every stage.
 
 ## Goal
@@ -45,7 +45,7 @@ The resumed session reads this file, then continues at the first unticked item.
 - [x] Cold review (2026-11-12, `reviewer` subagent, Opus, high): VERDICT FAIL; blocker 0, major 5, minor 13, question 3. The full report is in the session; the fix list is below.
 - [x] Cold review findings fixed (2026-11-12; result in "Cold review result" below). The session was paused once by the user in the middle and resumed ("Yes, continue, finish it now.").
 - [x] `bunx prettier --check` on the plan files; commit and push on `master` (2026-11-12).
-- [ ] The user's OK.
+- [x] The user's OK ("ok", 2026-11-12, together with the scope change; the two open questions took the defaults).
 
 ### Input
 
@@ -202,12 +202,11 @@ S6a additions:
 
 ### User steps
 
-| #      | Step                                                                                                                                     | Needed by                   |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| U0     | (master plan) The Telegram question to a lawyer, sent.                                                                                   | before the S6a build starts |
-| U9     | (master plan) The operator contact address and, optionally, the operator Telegram chat id, into the VPS `.env` (agent never reads them). | stage 18 (deploy)           |
-| S6a-U1 | Give the go for the VPS read of the mailbox list, then pause or remove each mailbox that is not the pilot mailbox (D2).                  | stage 18, before the deploy |
-| S6a-U2 | Give the go for the deploy to the home VPS.                                                                                              | stage 18                    |
+| #      | Step                                                                                                                                                                                                   | Needed by                   |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------- |
+| U9     | Optional (master plan): `OPERATOR_CONTACT` (any address of the user) and `OPERATOR_TELEGRAM_CHAT_ID` into the VPS `.env` (agent never reads them). Without them: "contact the operator" and log lines. | stage 18 (deploy)           |
+| S6a-U1 | Give the go for the VPS read of the mailbox list, then pause or remove each mailbox that is not the pilot mailbox (D2).                                                                                | stage 18, before the deploy |
+| S6a-U2 | Give the go for the deploy to the home VPS.                                                                                                                                                            | stage 18                    |
 
 ### User checkpoint
 
@@ -280,3 +279,4 @@ Pre-mortem: the reviewer found no path where a suspended organization's mail goe
 - 2026-11-12: Created by the S6 master plan session (`tasks/active/s6-pre-sale.md`).
 - 2026-11-12: S6a plan session (`plan-task`): moved to `active/`; collect done (differences 1–8); the user answered "proceed" (defaults S1–S4); decisions A1–A30.
 - 2026-11-12: Stage files written (16). Cold review (reviewer, Opus high): FAIL, blocker 0, major 5, minor 13, question 3; all fixed (18 stages after two splits; "Cold review result"). The other session merged the Limen migration into `master` during this session (`67cca12`); the plan follows it (difference 1).
+- 2026-11-12: The user cut the S6 scope (local production, no customers; master plan P16–P24) and answered "ok". S6a stays whole (P17); U0 dropped, U9 optional. The two open questions (A6 default `active`, the kept identifier columns) took the defaults.
