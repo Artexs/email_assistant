@@ -1,11 +1,11 @@
 import { actionsScope, committerDeps, sendScope, uidplusOf } from "./composition";
 import { createCommitterJob, createExpiryJob, isOwnActionId } from "./modules/actions";
-import { createTelegramRuntime } from "./modules/channels";
+import { createOperatorNotices, createTelegramRuntime } from "./modules/channels";
 import { createChaserJob, delegationHooks } from "./modules/delegation";
 import { countSyncTargets, createMailSyncJob, openImapProvider } from "./modules/mail";
 import { listOrganizations } from "./modules/tenancy";
 import { createLlmPause, createReturnedJob, createTriageJob, type TriageScope } from "./modules/triage";
-import { ConfigError, llmSettings, loadConfig, type Config } from "./platform/config";
+import { ConfigError, llmSettings, loadConfig, operatorChatId, type Config } from "./platform/config";
 import { createSecretBox } from "./platform/crypto";
 import { assertAppRole, checkDb, createDb } from "./platform/db";
 import { describeError } from "./platform/errors";
@@ -89,6 +89,33 @@ if (config.TRIAGE_LLM_SCOPE === "all" || config.ACTIONS_SCOPE === "all" || confi
   }
 }
 
+// The Telegram runtime; set below when TELEGRAM_BOT_TOKEN is set. The operator notices read it at call time.
+let telegram: ReturnType<typeof createTelegramRuntime> | null = null;
+
+// Operator notices (D31): the chat id is private data and never reaches a log line.
+const operatorChat = operatorChatId(config);
+const operator = createOperatorNotices({
+  db,
+  now: () => new Date(),
+  send:
+    operatorChat === null
+      ? null
+      : async (text) => {
+          if (telegram === null) throw new Error("telegram is off");
+          await telegram.sendDirect(operatorChat, text);
+        },
+});
+let operatorRun: Promise<void> = Promise.resolve();
+scheduler.add("channels.operator", "0 13 * * * *", () => {
+  operatorRun = operator.run();
+  return operatorRun;
+});
+log.info(
+  operatorChat === null
+    ? "operator notices: hourly; log lines only (OPERATOR_TELEGRAM_CHAT_ID is empty)"
+    : "operator notices: hourly; telegram"
+);
+
 // The run of the triage worker that is going now. Shutdown waits for it.
 let triageRun: Promise<void> = Promise.resolve();
 const settings = llmSettings(config);
@@ -112,6 +139,7 @@ if (scope !== null) {
     batchSize: 5,
     dailyCap: config.LLM_DAILY_CAP,
     now: () => new Date(),
+    onCapReached: (ctx, mailboxId, dayStart) => operator.capReached(ctx, mailboxId, dayStart, config.LLM_DAILY_CAP),
   });
   scheduler.add("triage.worker", "*/15 * * * * *", () => {
     triageRun = triage.run();
@@ -155,7 +183,6 @@ scheduler.add("triage.returned", "*/15 * * * * *", () => {
 // The runs of the notifier and the digest job that are going now. Shutdown waits for them.
 let channelRun: Promise<void> = Promise.resolve();
 let digestRun: Promise<void> = Promise.resolve();
-let telegram: ReturnType<typeof createTelegramRuntime> | null = null;
 if (config.TELEGRAM_BOT_TOKEN === undefined) {
   log.info("telegram is off (TELEGRAM_BOT_TOKEN is empty)");
 } else {
@@ -220,7 +247,16 @@ async function shutdown(): Promise<void> {
   }
   // A kill in the middle of a batch makes the next start count an attempt for each claimed mail. Wait for the batch, but not for ever.
   await Promise.race([
-    Promise.allSettled([triageRun, committerRun, returnedRun, expiryRun, chaserRun, channelRun, digestRun]),
+    Promise.allSettled([
+      triageRun,
+      committerRun,
+      returnedRun,
+      expiryRun,
+      chaserRun,
+      channelRun,
+      digestRun,
+      operatorRun,
+    ]),
     sleep(SHUTDOWN_WAIT_MS),
   ]);
   await server.stop();

@@ -57,6 +57,7 @@ export {
   getJunkFolderPath,
   getMailbox,
   getMailboxSummary,
+  listAuthErrorMailboxesBefore,
   listEmailsByMessageIds,
   listFolderUids,
   listMailboxes,

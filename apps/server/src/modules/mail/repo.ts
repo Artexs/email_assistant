@@ -882,6 +882,24 @@ export async function listMailboxTargets(
   return rows.map((row) => ({ orgId: row.org_id, mailboxId: row.id }));
 }
 
+// Operator job entry point: no TenantContext. Mailboxes in `auth_error` since `before` or earlier, of organizations that are not `suspended`.
+export async function listAuthErrorMailboxesBefore(
+  db: DbOrTrx,
+  before: Date
+): Promise<{ orgId: string; mailboxId: string; statusChangedAt: Date }[]> {
+  const rows = await db
+    .selectFrom("mailboxes")
+    .innerJoin("organizations", "organizations.id", "mailboxes.org_id")
+    .select(["mailboxes.org_id", "mailboxes.id", "mailboxes.status_changed_at"])
+    .where("mailboxes.status", "=", "auth_error")
+    .where("mailboxes.status_changed_at", "<=", before)
+    .where("organizations.plan", "<>", "suspended")
+    .orderBy("mailboxes.created_at")
+    .orderBy("mailboxes.id")
+    .execute();
+  return rows.map((row) => ({ orgId: row.org_id, mailboxId: row.id, statusChangedAt: row.status_changed_at }));
+}
+
 // The gate of sync, triage, committer, returned and chaser: active mailboxes of organizations that are not `suspended`.
 export function listSyncTargets(db: DbOrTrx): Promise<{ orgId: string; mailboxId: string }[]> {
   return listMailboxTargets(db, { statuses: ["active"], includeSuspended: false });

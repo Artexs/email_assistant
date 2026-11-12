@@ -9,6 +9,7 @@ import {
   llmSettings,
   loadConfig,
   loadTestmailConfig,
+  operatorChatId,
   sendTestAddresses,
   webMailAllowLocal,
   webTrustedOrigins,
@@ -219,6 +220,17 @@ describe("loadConfig", () => {
     const error = configError({ ...fullEnv, TELEGRAM_BOT_TOKEN: "abc" });
     expect(error.keys).toEqual(["TELEGRAM_BOT_TOKEN"]);
     expect(error.message).not.toContain("abc");
+  });
+
+  test("OPERATOR_TELEGRAM_CHAT_ID needs TELEGRAM_BOT_TOKEN and a number", () => {
+    const token = "123456:ABCdefGhIJKlmNoPQRstuVWxyZ_-12345";
+    expect(configError({ ...fullEnv, OPERATOR_TELEGRAM_CHAT_ID: "42" }).keys).toEqual(["OPERATOR_TELEGRAM_CHAT_ID"]);
+    const config = loadConfig({ ...fullEnv, TELEGRAM_BOT_TOKEN: token, OPERATOR_TELEGRAM_CHAT_ID: "-1001234" });
+    expect(operatorChatId(config)).toBe(-1001234);
+    expect(configError({ ...fullEnv, TELEGRAM_BOT_TOKEN: token, OPERATOR_TELEGRAM_CHAT_ID: "abc" }).keys).toEqual([
+      "OPERATOR_TELEGRAM_CHAT_ID",
+    ]);
+    expect(operatorChatId(loadConfig({ ...fullEnv, OPERATOR_TELEGRAM_CHAT_ID: "" }))).toBeNull();
   });
 
   test("reads the LLM numbers and rejects bad ones", () => {

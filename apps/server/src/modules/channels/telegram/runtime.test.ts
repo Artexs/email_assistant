@@ -98,3 +98,38 @@ describe("botUsername", () => {
     }
   });
 });
+
+describe("sendDirect", () => {
+  test("sends the text to the chat with no reply markup", async () => {
+    const bodies: { path: string; body: Record<string, unknown> }[] = [];
+    const server = Bun.serve({
+      port: 0,
+      fetch: async (request) => {
+        bodies.push({ path: new URL(request.url).pathname, body: (await request.json()) as Record<string, unknown> });
+        return Response.json({
+          ok: true,
+          result: { message_id: 1, date: 1, chat: { id: 42, type: "private" }, text: "x" },
+        });
+      },
+    });
+    try {
+      await runtimeFor(`http://127.0.0.1:${server.port}`).sendDirect(42, "x");
+      expect(bodies).toHaveLength(1);
+      expect(bodies[0]?.path.endsWith("/sendMessage")).toBe(true);
+      expect(bodies[0]?.body).toEqual({ chat_id: 42, text: "x" });
+    } finally {
+      await server.stop(true);
+    }
+  });
+
+  test("a sendMessage that never answers rejects after the timeout", async () => {
+    const server = Bun.serve({ port: 0, fetch: () => new Promise<Response>((): void => undefined) });
+    try {
+      const start = Date.now();
+      await expect(runtimeFor(`http://127.0.0.1:${server.port}`).sendDirect(42, "x", 100)).rejects.toBeDefined();
+      expect(Date.now() - start).toBeLessThan(1000);
+    } finally {
+      await server.stop(true);
+    }
+  }, 15_000);
+});
