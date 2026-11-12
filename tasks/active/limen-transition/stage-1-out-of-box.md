@@ -1,4 +1,4 @@
-> **Status 2026-11-12 — planned — approved by the user ("yes"); not started.** Next: steps 1.1–1.8; step 1.9 (task move) waits for a time when the S6 session does not commit.
+> **Status 2026-11-12 — in progress — steps 1.1–1.3 done.** Next: steps 1.4–1.8 (new session); step 1.9 waits for an S6-quiet time.
 
 # Stage 1 — Limen out of the box
 
@@ -280,3 +280,7 @@ Revert the repo commits (1.4, 1.5–1.8, the 1.9 merge with `-m 1`), revert the 
 
 - **Stage 2 (after the user used stage 1):** adapt `plan-task` (ticket + `plan.md` in the feature folder, `Batch:` / `Track:` fields), a `limen-run` skill or none, `handoff` (task file → ticket folder), `reminders.md` (S5c findings, U1–U2), maybe overlays, the job-DB cleanup step. Input: the user's notes from real use.
 - **Stage 3 (decide):** plain Limen vs adapted Limen. Then remove what is not used: `run-task`, `bg-agent.sh`, `~/.cache/ea-review/`, `tasks/README.md` and `tasks/` (after S6 is done and moved), `scripts/one-off/`, the `implementer` / `reviewer` / `planner` agent files if no repo uses them.
+
+## Log
+
+- 2026-11-12: 1.1 done: `~/ea-s3-test` and `~/.cache/ea-testmail/82cf…` worktrees removed, `email_assistant-wt` removed; `git worktree list` = main checkout only. 1.2 done: user installed `herdr` 0.9.1 (`herdr --version` → `herdr 0.9.1`; `herdr-app 0.1.13` unchanged); Limen cloned at `f1e3a54`, `npm link`, `limen --help` runs; `herdr integration install pi` → `~/.pi/agent/extensions/herdr-agent-state.ts`. 1.3 done: probe job without `--extension` FAILED (`Unknown provider "claude-bridge"`); with the bridge path DONE WITH OPEN CHECKS, commit `3fd536e Add hello.txt`, model `claude-bridge/claude-sonnet-5-5`. Jobs load `CLAUDE.md` and `~/.pi/agent/AGENTS.md` (marker `BLUE-17` and heading `## Harness` quoted without a read). So step 1.4 "Inside a Limen job" line is required, not optional. `LIMEN_CONTEXT_ROOT` = main checkout. Detail: `~/.pi/agent/notes/2026-11-04-limen.md` § "Install and probe 2026-11-12".
