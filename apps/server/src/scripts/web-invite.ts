@@ -76,6 +76,7 @@ async function main(): Promise<number> {
       secret,
       trustedOrigins: [baseUrl, ...webTrustedOrigins(config)],
       onEvent: auditWebEvent(db),
+      resetLinkTtlSeconds: 86_400,
       sendResetPassword: async ({ url }) => {
         link = url;
       },

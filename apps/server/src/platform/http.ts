@@ -40,6 +40,7 @@ export interface WebDeps {
   homePath?: (userId: string) => Promise<"/onboarding" | "/activity">; // where "/" goes; default "/onboarding"
   routers?: (api: Hono<ApiEnv>) => void; // web.ts mounts the module routers (after requireTenant)
   isOrgSuspended?: (orgId: string) => Promise<boolean>; // absent: no organization is suspended (old tests)
+  resetRequestOpen?: boolean; // absent = false: /request-password-reset answers 404
 }
 
 export interface HttpDeps {
@@ -303,7 +304,8 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
 
   app.on(["GET", "POST"], "/api/auth/*", async (c) => {
     const path = new URL(c.req.url).pathname.slice("/api/auth".length);
-    if (!isAllowedAuthPath(c.req.method, path)) return c.json({ error: "not_found" }, 404);
+    if (!isAllowedAuthPath(c.req.method, path, { resetRequest: web.resetRequestOpen === true }))
+      return c.json({ error: "not_found" }, 404);
     const address = clientAddress(web.connInfo(c), c.req.header("x-forwarded-for"), web.trustedProxies);
     return web.auth.handler(authRequest(c.req.raw, address));
   });

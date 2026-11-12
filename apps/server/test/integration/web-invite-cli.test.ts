@@ -93,6 +93,7 @@ describe("web:invite CLI", () => {
       secret: webEnv.WEB_AUTH_SECRET,
       trustedOrigins: [],
       onEvent: async () => undefined,
+      resetLinkTtlSeconds: 86_400,
     });
     try {
       await handle.auth.api.resetPassword({ body: { newPassword: PASSWORD, token } });

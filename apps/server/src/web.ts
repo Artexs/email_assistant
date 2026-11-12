@@ -19,10 +19,24 @@ import {
   WEB_MAIL_TIMEOUTS,
 } from "./modules/mail";
 import { activityRoutes } from "./modules/reports";
-import { isOrgSuspended, listMembershipsOfUser, tenancyRoutes, type TenancyRouteDeps } from "./modules/tenancy";
+import {
+  getUserAuthProfile,
+  isOrgSuspended,
+  listMembershipsOfUser,
+  tenancyRoutes,
+  type TenancyRouteDeps,
+} from "./modules/tenancy";
 import { goNoGoFor, setCategoryAutoWithGate, triageRoutes } from "./modules/triage";
 import { createAuth, type AuthDeps, type AuthEventKind } from "./platform/auth";
-import { webMailAllowLocal, webTrustedOrigins, webTrustedProxies, type Config } from "./platform/config";
+import { createAuthMailer, createAuthMailTasks } from "./platform/auth-mail";
+import type { AuthMailKind } from "./platform/auth-mail-texts";
+import {
+  authMailSettings,
+  webMailAllowLocal,
+  webTrustedOrigins,
+  webTrustedProxies,
+  type Config,
+} from "./platform/config";
 import type { SecretBox } from "./platform/crypto";
 import type { Db, TenantContext } from "./platform/db";
 import { describeError } from "./platform/errors";
@@ -55,6 +69,25 @@ export function auditWebEvent(db: Db): AuthDeps["onEvent"] {
     } catch (error) {
       log.error(`web: audit ${kind} failed: ${describeError(error)}`);
     }
+  };
+}
+
+// L7: a failed auth mail is an operator notice in the user's oldest organization. It never throws.
+export function authMailFailedHandler(
+  db: Db,
+  notify: WebExtras["onAuthMailFailed"]
+): (userId: string, kind: AuthMailKind, code: string) => void {
+  return (userId, kind, code) => {
+    if (!notify) return;
+    void (async () => {
+      try {
+        const [membership] = await listMembershipsOfUser(db, userId);
+        if (!membership) return;
+        notify({ orgId: membership.org_id }, userId, kind, code);
+      } catch (error) {
+        log.error(`web: auth mail notice for user ${userId} failed: ${describeError(error)}`);
+      }
+    })();
   };
 }
 
@@ -172,6 +205,7 @@ export interface WebExtras {
   secrets: SecretBox;
   actionsScope: ActionsScope;
   botUsername: (() => Promise<string>) | null; // null: Telegram is off
+  onAuthMailFailed?: (ctx: TenantContext, userId: string, kind: AuthMailKind, code: string) => void;
 }
 
 export function apiRouters(
@@ -234,12 +268,34 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
   const allowLocalHosts = webMailAllowLocal(config);
   if (allowLocalHosts) log.warn("web: WEB_MAIL_ALLOW_LOCAL=true: the connect form accepts local hosts");
   const origins = [baseUrl.origin, ...webTrustedOrigins(config)];
+  const settings = authMailSettings(config);
+  const mailer = settings === null ? null : createAuthMailer(settings);
+  const mailTasks =
+    mailer === null
+      ? null
+      : createAuthMailTasks({
+          mailer,
+          localeOf: async (userId) => (await getUserAuthProfile(db, userId))?.locale ?? "pl",
+          onFailed: authMailFailedHandler(db, extras.onAuthMailFailed),
+        });
+  log.info(
+    mailTasks === null
+      ? "auth mail: off (the CLI prints invite and reset links)"
+      : "auth mail: on (reset by e-mail is open)"
+  );
   const handle = createAuth({
     databaseUrl: config.DATABASE_URL,
     baseUrl: config.WEB_BASE_URL,
     secret: config.WEB_AUTH_SECRET ?? "", // the config check guarantees it
     trustedOrigins: origins,
     onEvent: auditWebEvent(db),
+    resetLinkTtlSeconds: 3_600,
+    sendResetPassword:
+      mailTasks === null
+        ? undefined
+        : async ({ userId, email, url }) => {
+            mailTasks.start({ kind: "reset", userId, to: email, url });
+          },
   });
   const dist = distPath(config);
   const now = () => new Date();
@@ -264,6 +320,12 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     homePath: homePathOf(db, extras.botUsername),
     routers: apiRouters(config, db, extras, now),
     isOrgSuspended: (orgId) => isOrgSuspended(db, { orgId }),
-    close: () => handle.close(),
+    resetRequestOpen: mailTasks !== null,
+    close: async () => {
+      if (mailTasks !== null) {
+        await Promise.race([mailTasks.idle(), new Promise((resolve) => setTimeout(resolve, 5_000))]);
+      }
+      await handle.close();
+    },
   };
 }

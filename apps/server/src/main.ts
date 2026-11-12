@@ -233,6 +233,7 @@ const web = webDeps(config, db, {
   secrets,
   actionsScope: scopeOfActions,
   botUsername: telegram ? () => telegram.botUsername() : null,
+  onAuthMailFailed: (ctx, userId, kind, code) => operator.authMailFailed(ctx, userId, kind, code, new Date()),
 });
 const app = createApp({ checkDb: () => checkDb(db), web });
 // idleTimeout: the connect route runs a mailbox login inside the request; Bun's default is 10 s.

@@ -420,13 +420,73 @@ describe("http logs", () => {
   });
 });
 
+const AUTH_MAIL_OFF = {
+  AUTH_SMTP_HOST: "",
+  AUTH_SMTP_PORT: "",
+  AUTH_SMTP_SECURITY: "",
+  AUTH_SMTP_USER: "",
+  AUTH_SMTP_PASSWORD: "",
+  AUTH_MAIL_FROM: "",
+};
+
 describe("real webDeps", () => {
+  test("the reset request is open only with the auth-mail sender on", async () => {
+    const base = {
+      ...process.env,
+      WEB_BASE_URL: "http://127.0.0.1:8080",
+      WEB_AUTH_SECRET: "x".repeat(40),
+      WEB_DIST: dist,
+    };
+    const post = (app: ReturnType<typeof createApp>) =>
+      app.request("/api/auth/request-password-reset", {
+        method: "POST",
+        headers: { ...ORIGIN, "content-type": "application/json", "x-forwarded-for": "203.0.113.7" },
+        body: JSON.stringify({ email: `nobody-${randomUUID()}@x.test` }),
+      });
+    const logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
+    const off = webDeps(loadConfig({ ...base, ...AUTH_MAIL_OFF }), db, extras);
+    const on = webDeps(
+      loadConfig({
+        ...base,
+        ...AUTH_MAIL_OFF,
+        AUTH_SMTP_HOST: "127.0.0.1",
+        AUTH_SMTP_PORT: "1",
+        AUTH_SMTP_USER: "u",
+        AUTH_SMTP_PASSWORD: "p",
+        AUTH_MAIL_FROM: "noreply@x.test",
+      }),
+      db,
+      extras
+    );
+    logSpy.mockRestore();
+    if (off === null || on === null) throw new Error("webDeps returned null");
+    try {
+      expect(off.resetRequestOpen).toBe(false);
+      const closed = await post(createApp({ checkDb, web: off }));
+      expect(closed.status).toBe(404);
+      expect(await closed.json()).toEqual({ error: "not_found" });
+      expect(on.resetRequestOpen).toBe(true);
+      const open = await post(createApp({ checkDb, web: on }));
+      expect(open.status).toBe(200);
+      expect(await open.text()).toBe(
+        JSON.stringify({
+          status: true,
+          message: "If this email exists in our system, check your email for the reset link",
+        })
+      );
+    } finally {
+      await off.close();
+      await on.close();
+    }
+  });
+
   test("serves the real Better Auth instance and keeps the markers out of the logs", async () => {
     const env = {
       ...process.env,
       WEB_BASE_URL: "http://127.0.0.1:8080",
       WEB_AUTH_SECRET: "x".repeat(40),
       WEB_DIST: dist,
+      ...AUTH_MAIL_OFF,
     };
     const web = webDeps(loadConfig(env), db, extras);
     if (web === null) throw new Error("webDeps returned null");
@@ -461,6 +521,7 @@ describe("real webDeps", () => {
         body: JSON.stringify({ email: "nobody@x.test" }),
       });
       expect(reset.status).toBe(404);
+      expect(await reset.json()).toEqual({ error: "not_found" });
 
       expect((await app.request("/api/me")).status).toBe(401);
 

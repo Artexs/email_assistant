@@ -29,6 +29,7 @@ const handle = createAuth({
   secret: "x".repeat(40),
   trustedOrigins: [],
   onEvent: auditWebEvent(db),
+  resetLinkTtlSeconds: 86_400,
   sendResetPassword: async (input) => {
     resets.push(input);
   },
@@ -263,6 +264,7 @@ describe("web auth", () => {
       onEvent: async () => {
         throw new Error("boom");
       },
+      resetLinkTtlSeconds: 86_400,
     });
     extraHandles.push(failing);
     const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);

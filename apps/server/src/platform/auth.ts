@@ -1,5 +1,5 @@
 import { betterAuth } from "better-auth";
-import { isAPIError } from "better-auth/api";
+import { createAuthMiddleware, isAPIError } from "better-auth/api";
 import { Pool } from "pg";
 
 import { describeError } from "./errors";
@@ -16,7 +16,11 @@ export interface AuthDeps {
   trustedOrigins: readonly string[];
   // The caller's audit. Never throws into Better Auth: `report` catches.
   onEvent: (kind: AuthEventKind, userId: string) => Promise<void>;
-  sendResetPassword?: (input: { userId: string; url: string }) => Promise<void>;
+  // Required: the server uses 3_600, the CLIs and the e2e seed 86_400.
+  resetLinkTtlSeconds: number;
+  // The clock of the address limit.
+  now?: () => Date;
+  sendResetPassword?: (input: { userId: string; email: string; url: string }) => Promise<void>;
 }
 
 export type Auth = ReturnType<typeof createBetterAuth>;
@@ -38,8 +42,49 @@ export const AUTH_ALLOWED_PATHS: ReadonlySet<string> = new Set([
   "/list-sessions",
 ]);
 
-export function isAllowedAuthPath(method: string, path: string): boolean {
+export const RESET_REQUEST_PATH = "/request-password-reset";
+
+// Better Auth's own answer for a known and an unknown address.
+export const RESET_REQUEST_ANSWER = {
+  status: true,
+  message: "If this email exists in our system, check your email for the reset link",
+} as const;
+
+// L9: the reset request is open only when the caller says so (the auth-mail sender is on).
+export function isAllowedAuthPath(method: string, path: string, opts?: { resetRequest: boolean }): boolean {
+  if (path === RESET_REQUEST_PATH) return method === "POST" && opts?.resetRequest === true;
   return AUTH_ALLOWED_PATHS.has(path) || (method === "GET" && path.startsWith("/reset-password/"));
+}
+
+export interface AddressLimiter {
+  // true = allowed; it records the request.
+  take(key: string): boolean;
+}
+
+const LIMITER_SWEEP_KEYS = 10_000;
+
+// A sliding window per key, in memory (one server process).
+export function createAddressLimiter(opts: { max: number; windowMs: number; now: () => Date }): AddressLimiter {
+  const seen = new Map<string, number[]>();
+  return {
+    take(key) {
+      const at = opts.now().getTime();
+      const cutoff = at - opts.windowMs;
+      if (seen.size > LIMITER_SWEEP_KEYS) {
+        for (const [other, times] of seen) {
+          if (times.every((time) => time <= cutoff)) seen.delete(other);
+        }
+      }
+      const recent = (seen.get(key) ?? []).filter((time) => time > cutoff);
+      if (recent.length >= opts.max) {
+        seen.set(key, recent);
+        return false;
+      }
+      recent.push(at);
+      seen.set(key, recent);
+      return true;
+    },
+  };
 }
 
 // Better Auth can log raw request text (`Invalid callbackURL: <query value>`), so the log gets a cleaned copy.
@@ -69,6 +114,12 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
     }
   };
 
+  const resetLimiter = createAddressLimiter({
+    max: 3,
+    windowMs: 3_600_000,
+    now: deps.now ?? (() => new Date()),
+  });
+
   return betterAuth({
     appName: "Email Assistant",
     baseURL: deps.baseUrl,
@@ -81,11 +132,11 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
       disableSignUp: true,
       minPasswordLength: 12,
       maxPasswordLength: 128,
-      resetPasswordTokenExpiresIn: 60 * 60 * 24,
+      resetPasswordTokenExpiresIn: deps.resetLinkTtlSeconds,
       revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ user, url }) => {
         if (deps.sendResetPassword) {
-          await deps.sendResetPassword({ userId: user.id, url });
+          await deps.sendResetPassword({ userId: user.id, email: user.email, url });
           return;
         }
         log.info(`web: reset requested for user ${user.id}`);
@@ -148,9 +199,26 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
       database: { generateId: "uuid" },
       ipAddress: { ipAddressHeaders: ["x-client-ip"] },
     },
+    hooks: {
+      // One dispatcher: later stages add their paths here.
+      before: createAuthMiddleware(async (ctx) => {
+        if (ctx.path === RESET_REQUEST_PATH) {
+          const body = ctx.body as { email?: unknown } | undefined;
+          const key = String(body?.email ?? "")
+            .trim()
+            .toLowerCase();
+          if (!resetLimiter.take(key)) {
+            log.info("web: reset request over the address limit");
+            return ctx.json(RESET_REQUEST_ANSWER);
+          }
+        }
+        return undefined;
+      }),
+    },
     rateLimit: {
       enabled: true,
       customRules: {
+        [RESET_REQUEST_PATH]: { window: 900, max: 3 },
         "/reset-password": { window: 60, max: 5 },
         "/change-password": { window: 60, max: 5 },
       },

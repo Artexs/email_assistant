@@ -55,6 +55,7 @@ function make(sendResetPassword?: (input: { userId: string; url: string }) => Pr
     secret: MARKERS.secret,
     trustedOrigins: [BASE_URL],
     onEvent: auditWebEvent(db),
+    resetLinkTtlSeconds: 86_400,
     ...(sendResetPassword ? { sendResetPassword } : {}),
   });
   closers.push(handle.close);

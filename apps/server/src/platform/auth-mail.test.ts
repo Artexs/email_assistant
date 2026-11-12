@@ -6,6 +6,7 @@ import {
   authMailTransportOptions,
   type AuthMailerDeps,
   createAuthMailer,
+  createAuthMailTasks,
 } from "./auth-mail";
 import { type AuthMailKind, authMailText } from "./auth-mail-texts";
 import type { AuthMailSettings } from "./config";
@@ -161,5 +162,82 @@ describe("createAuthMailer", () => {
       subject: "Reset your Email Assistant password",
     });
     expect(lines.some((line) => line.text.includes("x.test"))).toBe(false);
+  });
+});
+
+describe("createAuthMailTasks", () => {
+  const input = { kind: "reset", userId: "user-1", to: "who@x.test", url: LINK } as const;
+
+  test("start returns at once; idle waits for the send; the mail gets the locale", async () => {
+    const sent: AuthMail[] = [];
+    const tasks = createAuthMailTasks({
+      mailer: {
+        send: async (m) => {
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          sent.push(m);
+          return { ok: true };
+        },
+      },
+      localeOf: async () => "en",
+      onFailed: () => undefined,
+    });
+    tasks.start(input);
+    expect(sent).toHaveLength(0);
+    await tasks.idle();
+    expect(sent).toEqual([{ ...input, locale: "en" }]);
+  });
+
+  test("a failed locale read falls back to pl", async () => {
+    const sent: AuthMail[] = [];
+    const tasks = createAuthMailTasks({
+      mailer: {
+        send: async (m) => {
+          sent.push(m);
+          return { ok: true };
+        },
+      },
+      localeOf: async () => {
+        throw new Error("db down");
+      },
+      onFailed: () => undefined,
+    });
+    tasks.start(input);
+    await tasks.idle();
+    expect(sent[0]?.locale).toBe("pl");
+  });
+
+  test("a failed send calls onFailed once with the code", async () => {
+    const failed: [string, string, string][] = [];
+    const tasks = createAuthMailTasks({
+      mailer: { send: async () => ({ ok: false, code: "EAUTH" }) },
+      localeOf: async () => "pl",
+      onFailed: (userId, kind, code) => failed.push([userId, kind, code]),
+    });
+    tasks.start(input);
+    await tasks.idle();
+    expect(failed).toEqual([["user-1", "reset", "EAUTH"]]);
+  });
+
+  test("a throwing mailer or callback never rejects and logs no address", async () => {
+    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    try {
+      const tasks = createAuthMailTasks({
+        mailer: {
+          send: async () => {
+            throw new Error("boom");
+          },
+        },
+        localeOf: async () => "pl",
+        onFailed: () => undefined,
+      });
+      tasks.start(input);
+      await tasks.idle();
+      const text = errorSpy.mock.calls.map((call) => call.join(" ")).join("\n");
+      expect(text).toContain("user-1");
+      expect(text).not.toContain("who@x.test");
+      expect(text).not.toContain(LINK);
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 });

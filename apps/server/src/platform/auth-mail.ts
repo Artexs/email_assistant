@@ -3,6 +3,7 @@ import { createTransport, type SMTPTransportOptions } from "nodemailer";
 
 import { type AuthMailKind, authMailText } from "./auth-mail-texts";
 import type { AuthMailSettings } from "./config";
+import { describeError } from "./errors";
 import { createLog } from "./log";
 
 const log = createLog("auth-mail");
@@ -103,6 +104,45 @@ export function createAuthMailer(settings: AuthMailSettings, deps: AuthMailerDep
         return { ok: false, code };
       } finally {
         if (timer !== undefined) clearTimeout(timer);
+      }
+    },
+  };
+}
+
+export interface AuthMailTasks {
+  /** Never throws: reads the locale, sends, reports a failure. */
+  start(mail: Omit<AuthMail, "locale">): void;
+  /** Resolves when no send is running (tests, shutdown). */
+  idle(): Promise<void>;
+}
+
+/** L8: the caller never waits for the mail. A task never rejects and stays in a set until it settles. */
+export function createAuthMailTasks(deps: {
+  mailer: AuthMailer;
+  localeOf: (userId: string) => Promise<UserLocale>;
+  onFailed: (userId: string, kind: AuthMailKind, code: string) => void;
+}): AuthMailTasks {
+  const running = new Set<Promise<void>>();
+
+  return {
+    start(mail) {
+      const task: Promise<void> = (async () => {
+        try {
+          const locale = await deps.localeOf(mail.userId).catch((): UserLocale => "pl");
+          const result = await deps.mailer.send({ ...mail, locale });
+          if (!result.ok) deps.onFailed(mail.userId, mail.kind, result.code);
+        } catch (error) {
+          // Never the address or the link.
+          log.error(`auth mail ${mail.kind} task for user ${mail.userId} failed: ${describeError(error)}`);
+        }
+      })().finally(() => {
+        running.delete(task);
+      });
+      running.add(task);
+    },
+    async idle() {
+      while (running.size > 0) {
+        await Promise.all([...running]);
       }
     },
   };
