@@ -2,19 +2,18 @@ import { parseArgs } from "node:util";
 
 import { z } from "zod";
 
-import { getMembership } from "../modules/tenancy";
-import { type AuthHandle, createAuth } from "../platform/auth";
-import { loadConfig, webTrustedOrigins } from "../platform/config";
+import { getMembership, getUserAuthProfile } from "../modules/tenancy";
+import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError, HardError } from "../platform/errors";
 import { createLog } from "../platform/log";
-import { auditWebEvent } from "../web";
 
+import { deliverInvite } from "./invite-delivery";
 import { pickMemberId } from "./pick-member";
 
 const log = createLog("web-invite");
 
-const usage = "usage: bun run web:invite --org-id <uuid> [--user-id <uuid>]";
+const usage = "usage: bun run web:invite --org-id <uuid> [--user-id <uuid>] [--print]";
 
 function readOptions() {
   try {
@@ -23,6 +22,7 @@ function readOptions() {
       options: {
         "org-id": { type: "string" },
         "user-id": { type: "string" },
+        print: { type: "boolean", default: false },
       },
       strict: true,
     });
@@ -30,7 +30,7 @@ function readOptions() {
     const userId = values["user-id"];
     if (orgId === undefined || !z.uuid().safeParse(orgId).success) return undefined;
     if (userId !== undefined && !z.uuid().safeParse(userId).success) return undefined;
-    return { orgId, userId };
+    return { orgId, userId, print: values.print };
   } catch {
     return undefined;
   }
@@ -57,7 +57,6 @@ async function main(): Promise<number> {
   }
 
   const db = createDb(config.DATABASE_URL);
-  let handle: AuthHandle | undefined;
   try {
     await assertAppRole(db);
     const userId = await pickMemberId(db, options.orgId, options.userId, log);
@@ -68,42 +67,21 @@ async function main(): Promise<number> {
       return 1;
     }
 
-    // The link goes to stdout only, never to the log.
-    let link: string | undefined;
-    handle = createAuth({
-      databaseUrl: config.DATABASE_URL,
-      baseUrl,
-      secret,
-      trustedOrigins: [baseUrl, ...webTrustedOrigins(config)],
-      onEvent: auditWebEvent(db),
-      resetLinkTtlSeconds: 86_400,
-      sendResetPassword: async ({ url }) => {
-        link = url;
-      },
+    const profile = await getUserAuthProfile(db, userId);
+    return await deliverInvite({
+      config,
+      db,
+      orgId: options.orgId,
+      userId,
+      email: membership.email,
+      locale: profile?.locale ?? "pl",
+      print: options.print,
+      log,
     });
-    await handle.auth.api.requestPasswordReset({
-      body: { email: membership.email, redirectTo: `${baseUrl}/setup` },
-    });
-    if (link === undefined) {
-      log.error("no link was produced");
-      return 1;
-    }
-
-    process.stdout.write(
-      [
-        "Open this link within 24 hours:",
-        link,
-        "The link works once. Do not share it. If this user already has a password, the link replaces it and ends every signed-in session.",
-        "",
-      ].join("\n")
-    );
-    log.info(`invite link made for user ${userId}`);
-    return 0;
   } catch (error) {
     log.error(describeFailure(error));
     return 1;
   } finally {
-    await handle?.close();
     await db.destroy();
   }
 }

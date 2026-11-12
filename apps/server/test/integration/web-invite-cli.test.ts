@@ -6,6 +6,7 @@ import { sql } from "kysely";
 
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
+import { INBOX, openImapProvider } from "../../src/modules/mail";
 import { createAuth } from "../../src/platform/auth";
 
 import { testDb } from "./helpers";
@@ -66,7 +67,38 @@ async function runInvite(args: string[], env: Record<string, string>) {
   };
 }
 
-const webEnv = { WEB_BASE_URL: BASE_URL, WEB_AUTH_SECRET: "x".repeat(40) };
+const webEnv = {
+  WEB_BASE_URL: BASE_URL,
+  WEB_AUTH_SECRET: "x".repeat(40),
+  AUTH_SMTP_HOST: "",
+  AUTH_SMTP_PORT: "",
+  AUTH_SMTP_SECURITY: "",
+  AUTH_SMTP_USER: "",
+  AUTH_SMTP_PASSWORD: "",
+  AUTH_MAIL_FROM: "",
+};
+const mailEnv = {
+  ...webEnv,
+  AUTH_SMTP_HOST: process.env.TEST_IMAP_HOST ?? "127.0.0.1",
+  AUTH_SMTP_PORT: process.env.TEST_SMTP_PORT ?? "3025",
+  AUTH_SMTP_USER: "auth",
+  AUTH_SMTP_PASSWORD: "greenmail-test",
+  AUTH_MAIL_FROM: "noreply@x.test",
+};
+
+async function inboxSubjects(email: string): Promise<(string | null)[]> {
+  const inbox = await openImapProvider({
+    host: process.env.TEST_IMAP_HOST ?? "127.0.0.1",
+    port: Number(process.env.TEST_IMAP_PORT ?? "3143"),
+    user: email,
+    password: "greenmail-test",
+  });
+  try {
+    return (await inbox.fetchAbove(INBOX, 0)).map((meta) => meta.subject);
+  } finally {
+    await inbox.close();
+  }
+}
 
 describe("web:invite CLI", () => {
   test("prints a real one-time link and no address", async () => {
@@ -141,5 +173,27 @@ describe("web:invite CLI", () => {
     const result = await runInvite(["--org-id", "nope"], webEnv);
     expect(result.code).toBe(1);
     expect(result.stderr).toContain("usage: bun run web:invite --org-id <uuid> [--user-id <uuid>]");
+  });
+
+  test("with the sender on, the link goes by mail and not to stdout", async () => {
+    const { email, orgId } = await createOwner();
+
+    const result = await runInvite(["--org-id", orgId], mailEnv);
+
+    expect(result.code).toBe(0);
+    expect(result.stdout).not.toContain("reset-password/");
+    expect(result.stderr).not.toContain("reset-password/");
+    expect(result.stdout).not.toContain(email);
+    expect(await inboxSubjects(email)).toHaveLength(1);
+  });
+
+  test("--print prints the link with the sender on and sends no mail", async () => {
+    const { email, orgId } = await createOwner();
+
+    const result = await runInvite(["--org-id", orgId, "--print"], mailEnv);
+
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain(`${BASE_URL}/api/auth/reset-password/`);
+    expect(await inboxSubjects(email)).toEqual([]);
   });
 });
