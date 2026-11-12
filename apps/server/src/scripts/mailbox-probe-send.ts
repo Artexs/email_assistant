@@ -3,7 +3,14 @@ import { parseArgs } from "node:util";
 
 import { z } from "zod";
 
-import { assertTestAddress, isAllowedRecipient, probeSend, type ProbeSendReport } from "../modules/mail";
+import {
+  assertTestAddress,
+  configureMailHosts,
+  isAllowedRecipient,
+  probeSend,
+  type ProbeSendReport,
+} from "../modules/mail";
+import { mailAllowLocalFromEnv } from "../platform/config";
 import { createLog } from "../platform/log";
 
 const log = createLog("mailbox-probe-send");
@@ -86,6 +93,7 @@ async function main(): Promise<number> {
     log.error(usage);
     return 1;
   }
+  configureMailHosts({ allowLocal: mailAllowLocalFromEnv(process.env) });
   // Read here, not through loadConfig: the probe needs no DB and no other key (the config key comes in S4 stage 18).
   assertTestAddress(options.address, process.env.TEST_MAILBOX_ADDRESS);
   if (!isAllowedRecipient(options.to, options.address, process.env.SEND_TEST_ADDRESSES)) {

@@ -8,6 +8,7 @@ import {
 
 import { HardError, SoftError } from "../../../platform/errors";
 import { createLog } from "../../../platform/log";
+import { resolveMailHost, type MailTarget } from "../host-guard";
 import {
   INBOX,
   MailAuthError,
@@ -69,14 +70,18 @@ export function isLoopbackHost(host: string): boolean {
   return LOOPBACK_HOSTS.has(host.toLowerCase());
 }
 
-/** TLS certificates are always checked: this never sets `tls`, so no option can turn the check off. */
-export function imapFlowOptions(opts: ImapConnectOptions): ImapFlowOptions {
+/**
+ * `target` is the address the host guard checked (`resolveMailHost`). TLS certificates are always checked: this never
+ * sets `tls`, so no option can turn the check off. `servername` keeps the check against the host name.
+ */
+export function imapFlowOptions(opts: ImapConnectOptions, target: MailTarget): ImapFlowOptions {
   const secure = opts.secure ?? !isLoopbackHost(opts.host);
   if (!secure && !isLoopbackHost(opts.host)) {
     throw new HardError("plain IMAP is allowed only to a loopback host");
   }
   return {
-    host: opts.host,
+    host: target.host,
+    ...(target.servername === undefined ? {} : { servername: target.servername }),
     port: opts.port,
     secure,
     auth: { user: opts.user, pass: opts.password },
@@ -117,7 +122,8 @@ async function guard<T>(action: string, fn: () => Promise<T>): Promise<T> {
 
 /** Connects and logs in. Used by the provider and by `tools.ts`. */
 export async function connectImapClient(opts: ImapConnectOptions): Promise<ImapFlow> {
-  const client = new ImapFlow(imapFlowOptions(opts));
+  const target = await resolveMailHost(opts.host);
+  const client = new ImapFlow(imapFlowOptions(opts, target));
   // Without a listener, an "error" event would end the process.
   client.on("error", (error: Error) => {
     const { code } = error as { code?: unknown };

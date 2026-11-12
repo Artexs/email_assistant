@@ -3,9 +3,9 @@ import { describeSettings, MAILBOX_ACTION_TYPES, type SettingsSnapshot } from "@
 import { settingsDeps } from "../composition";
 import { countReadyOriginals, expireReady } from "../modules/actions";
 import { getSettingsView, setMode, setToolSwitch, type SettingsChange } from "../modules/config";
-import { listSyncFolders, setSyncFolderEnabled } from "../modules/mail";
+import { configureMailHosts, listSyncFolders, setSyncFolderEnabled } from "../modules/mail";
 import { setCategoryAutoWithGate } from "../modules/triage";
-import { loadConfig } from "../platform/config";
+import { loadConfig, mailAllowLocal } from "../platform/config";
 import { assertAppRole, createDb, type Db } from "../platform/db";
 import { describeError } from "../platform/errors";
 import { createLog } from "../platform/log";
@@ -125,6 +125,8 @@ async function main(): Promise<number> {
   }
 
   const config = loadConfig();
+
+  configureMailHosts({ allowLocal: mailAllowLocal(config) });
   const db = createDb(config.DATABASE_URL);
   try {
     await assertAppRole(db);

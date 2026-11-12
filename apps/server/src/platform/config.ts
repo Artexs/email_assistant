@@ -144,8 +144,10 @@ const baseSchema = z.object({
   WEB_TRUSTED_PROXIES: z.preprocess(emptyAsUndefined, z.string().optional()),
   // Relative to the process working directory.
   WEB_DIST: z.preprocess(emptyAsUndefined, z.string().default("apps/web/dist")),
-  // true = the web connect form may name localhost or a private-network IP (dev, e2e).
-  WEB_MAIL_ALLOW_LOCAL: z.preprocess(emptyAsUndefined, z.enum(["true", "false"]).default("false")),
+  // Old name of MAIL_ALLOW_LOCAL_HOSTS; read only while that key is unset. No default: "unset" must stay visible.
+  WEB_MAIL_ALLOW_LOCAL: z.preprocess(emptyAsUndefined, z.enum(["true", "false"]).optional()),
+  // true = mail hosts on localhost or a private network are allowed for the connect form, sync and send (dev, e2e).
+  MAIL_ALLOW_LOCAL_HOSTS: z.preprocess(emptyAsUndefined, z.enum(["true", "false"]).optional()),
   // Auth mail (S6b): host, user, password and from are set together. None set = the sender is off.
   AUTH_SMTP_HOST: z.preprocess(emptyAsUndefined, z.string().min(1).optional()),
   AUTH_SMTP_PORT: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(65535).default(465)),
@@ -282,8 +284,15 @@ export function webTrustedProxies(config: Config): string[] {
   return parseList(config.WEB_TRUSTED_PROXIES);
 }
 
-export function webMailAllowLocal(config: Config): boolean {
-  return config.WEB_MAIL_ALLOW_LOCAL === "true";
+/** `MAIL_ALLOW_LOCAL_HOSTS` wins; the old `WEB_MAIL_ALLOW_LOCAL` counts only while the new key is unset. */
+export function mailAllowLocal(config: Config): boolean {
+  return (config.MAIL_ALLOW_LOCAL_HOSTS ?? config.WEB_MAIL_ALLOW_LOCAL) === "true";
+}
+
+/** The same rule on raw env, for the probe scripts that do not call `loadConfig`. An empty string counts as unset. */
+export function mailAllowLocalFromEnv(env: Record<string, string | undefined>): boolean {
+  const pick = (key: string) => (env[key] === undefined || env[key] === "" ? undefined : env[key]);
+  return (pick("MAIL_ALLOW_LOCAL_HOSTS") ?? pick("WEB_MAIL_ALLOW_LOCAL")) === "true";
 }
 
 export function classifierModel(config: Config): string {

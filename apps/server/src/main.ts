@@ -2,10 +2,10 @@ import { actionsScope, committerDeps, sendScope, uidplusOf } from "./composition
 import { createCommitterJob, createExpiryJob, isOwnActionId } from "./modules/actions";
 import { createOperatorNotices, createTelegramRuntime } from "./modules/channels";
 import { createChaserJob, delegationHooks } from "./modules/delegation";
-import { countSyncTargets, createMailSyncJob, openImapProvider } from "./modules/mail";
+import { configureMailHosts, countSyncTargets, createMailSyncJob, openImapProvider } from "./modules/mail";
 import { listOrganizations } from "./modules/tenancy";
 import { createLlmPause, createReturnedJob, createTriageJob, type TriageScope } from "./modules/triage";
-import { ConfigError, llmSettings, loadConfig, operatorChatId, type Config } from "./platform/config";
+import { ConfigError, llmSettings, loadConfig, mailAllowLocal, operatorChatId, type Config } from "./platform/config";
 import { createSecretBox } from "./platform/crypto";
 import { assertAppRole, checkDb, createDb } from "./platform/db";
 import { describeError } from "./platform/errors";
@@ -49,6 +49,11 @@ function triageScope(config: Config, providerLabel: string): TriageScope | null 
 
 const config = loadConfigOrExit();
 setLogLevel(config.LOG_LEVEL);
+configureMailHosts({ allowLocal: mailAllowLocal(config) });
+if (config.MAIL_ALLOW_LOCAL_HOSTS === undefined && config.WEB_MAIL_ALLOW_LOCAL !== undefined) {
+  log.warn("WEB_MAIL_ALLOW_LOCAL is an old name: use MAIL_ALLOW_LOCAL_HOSTS");
+}
+if (mailAllowLocal(config)) log.warn("mail: MAIL_ALLOW_LOCAL_HOSTS=true: local mail hosts are allowed");
 
 const db = createDb(config.DATABASE_URL);
 try {
