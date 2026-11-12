@@ -117,12 +117,18 @@ const emailSchema = z.email();
 
 type HookContext = Parameters<Parameters<typeof createAuthMiddleware>[0]>[0];
 
-// The sign-in body, when Better Auth's own endpoint would accept its shape. Otherwise null: the endpoint answers its own 400.
+// Better Auth validates the body after the hooks, so the shape check is the endpoint's own schema (`api/routes/sign-in.mjs`).
+// A body the endpoint would refuse gives null: the endpoint answers its own 400 for every user.
+const signInShape = z.object({
+  email: emailSchema,
+  password: z.string().max(MAX_PASSWORD_LENGTH),
+  callbackURL: z.string().optional(),
+  rememberMe: z.boolean().optional(),
+});
+
 function signInBody(ctx: HookContext): { email: string; password: string } | null {
-  const body = ctx.body as { email?: unknown; password?: unknown } | undefined;
-  if (typeof body?.email !== "string" || typeof body.password !== "string") return null;
-  if (!emailSchema.safeParse(body.email).success || body.password.length > MAX_PASSWORD_LENGTH) return null;
-  return { email: body.email, password: body.password };
+  const parsed = signInShape.safeParse(ctx.body);
+  return parsed.success ? { email: parsed.data.email, password: parsed.data.password } : null;
 }
 
 // L13: a locked user gets the answer and the time of a wrong password. An error of `isLocked` is not caught (fail closed).

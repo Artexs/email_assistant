@@ -52,6 +52,7 @@ const { auth } = handle;
 const orgIds: string[] = [];
 const userIds: string[] = [];
 const emails: string[] = [];
+const tokens: string[] = [];
 
 let logSpy: ReturnType<typeof spyOn>;
 let errorSpy: ReturnType<typeof spyOn>;
@@ -114,15 +115,21 @@ async function setPassword(email: string, password: string): Promise<void> {
   const mail = resets[0];
   if (!mail) throw new Error("no reset mail captured");
   const token = new URL(mail.url).pathname.split("/").pop() ?? "";
+  tokens.push(token);
   await auth.api.resetPassword({ body: { newPassword: password, token } });
 }
 
-function signIn(email: string, password: string, via: AuthHandle = handle): Promise<Response> {
+function signIn(
+  email: string,
+  password: string,
+  via: AuthHandle = handle,
+  extra: Record<string, unknown> = {}
+): Promise<Response> {
   return via.auth.handler(
     new Request(`${BASE_URL}/api/auth/sign-in/email`, {
       method: "POST",
       headers: { origin: BASE_URL, "content-type": "application/json", "x-client-ip": nextIp() },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, ...extra }),
     })
   );
 }
@@ -282,9 +289,12 @@ describe("lockout", () => {
 
   test("no log line holds the password or an address", () => {
     const lines = [...logSpy.mock.calls, ...errorSpy.mock.calls, ...warnSpy.mock.calls].map((call) => call.join(" "));
+    expect(lines.length).toBeGreaterThan(0);
     expect(emails.length).toBeGreaterThan(0);
+    expect(tokens.length).toBeGreaterThan(0);
     for (const line of lines) {
-      for (const secret of [PASSWORD, WRONG_PASSWORD, NEW_PASSWORD, ...emails]) {
+      expect(line).not.toContain("reset-password/");
+      for (const secret of [PASSWORD, WRONG_PASSWORD, NEW_PASSWORD, ...emails, ...tokens]) {
         expect(line).not.toContain(secret);
       }
     }
@@ -307,6 +317,26 @@ describe("lockout", () => {
     expect(lockedAnswers.space[1]).toContain("INVALID_EMAIL");
     expect(lockedAnswers.long[0]).toBe(400);
     expect(lockedAnswers.long[1]).toContain("PASSWORD_TOO_LONG");
+    expect((await row(locked.userId))?.failed_count).toBe(0);
+    expect((await row(open.userId))?.failed_count).toBe(2);
+  });
+
+  test("a body the endpoint refuses answers the same 400 for a locked user, a free user and an unknown address", async () => {
+    const locked = await createOwner();
+    const open = await createOwner();
+    await lockUser(locked.email);
+    await wrong(open.email, 2);
+    const unknown = `nobody-${randomUUID()}@x.test`;
+    for (const extra of [{ rememberMe: "x" }, { callbackURL: 5 }]) {
+      const answers: [number, string][] = [];
+      for (const email of [locked.email, open.email, unknown]) {
+        const answer = await signIn(email, PASSWORD, handle, extra);
+        answers.push([answer.status, await answer.text()]);
+      }
+      expect(answers[0]?.[0]).toBe(400);
+      expect(answers[1]).toEqual(answers[0]!);
+      expect(answers[2]).toEqual(answers[0]!);
+    }
     expect((await row(locked.userId))?.failed_count).toBe(0);
     expect((await row(open.userId))?.failed_count).toBe(2);
   });
