@@ -52,5 +52,5 @@ How a coordinator continues:
    ```
 
 5. Open checks: workers often break the "one `&&` call" form. Accept a check when its saved log shows the pass. When a check has no proof at all (for example a repeated race test), send the worker back with `limen continue <job-id> "…"` and the same engine flags. Use the full job id: a label can match more than one job.
-6. Stages 12–17 remain after stage 11: 12 and 13 retention clear functions, 14 retention job, 15 panel server, 16 panel web, 17 docs. Stage 17 also closes the old planned tickets F027 and F031.
+6. Stages 12–17 remain after stage 11: 12 and 13 retention clear functions, 14 retention job, 15 panel server, 16 panel web, 17 docs. Stage 18 closes the old planned tickets F027 and F031 (step 18.5).
 7. Stage 18 (checkpoint and deploy to the home VPS) needs the owner. Stop there and ask. The owner also must run `bun run db:migrate` on the shared dev DB (the stage 4 migration and any later one).
