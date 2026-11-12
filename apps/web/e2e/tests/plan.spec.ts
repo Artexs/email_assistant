@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import { en } from "../../src/i18n/en";
 import { trialDateText } from "../../src/lib/trial-date";
@@ -21,6 +21,12 @@ test.afterEach(() => {
   expect(errors).toEqual([]);
 });
 
+// The sign-in lands on /onboarding (nothing is set up in these organizations): wait for it, so a `goto` cannot cut the sign-in off.
+async function signInAndWait(page: Page, user: { email: string; password: string }): Promise<void> {
+  await signInAs(page, user);
+  await expect(page).toHaveURL(/\/onboarding$/);
+}
+
 const pausedText = (): string => {
   const contact = e2eEnv().OPERATOR_CONTACT;
   return contact === undefined || contact === ""
@@ -30,7 +36,7 @@ const pausedText = (): string => {
 
 test("the trial owner sees the end date and no paused banner", async ({ page }) => {
   const { trialOwner } = readSeed();
-  await signInAs(page, trialOwner);
+  await signInAndWait(page, trialOwner);
   await page.goto("/activity");
   const date = trialDateText(trialOwner.trialEndsAt, "Europe/Warsaw");
   await expect(page.getByText(en.trial_ends_on.replace("{date}", date))).toBeVisible();
@@ -39,7 +45,7 @@ test("the trial owner sees the end date and no paused banner", async ({ page }) 
 
 test("the paused owner sees the banner and a read-only panel", async ({ page }) => {
   const { pausedOwner } = readSeed();
-  await signInAs(page, pausedOwner);
+  await signInAndWait(page, pausedOwner);
 
   await page.goto("/activity");
   await expect(page.getByText(pausedText())).toBeVisible();
@@ -56,16 +62,21 @@ test("the paused owner sees the banner and a read-only panel", async ({ page }) 
   await page.goto("/settings");
   await expect(page.getByText("e2e-paused-box@x.test").first()).toBeVisible();
   await expect(page.getByRole("button", { name: en.mode_to_assist })).toHaveCount(0);
-  const switches = page.getByRole("switch");
-  const count = await switches.count();
-  for (let index = 0; index < count; index += 1) {
-    await expect(switches.nth(index)).toBeDisabled();
+  // The switches of the mailbox cards, not the account card's own switch. The folders card has none: the seed has only the inbox.
+  for (const card of ["mode", "categories"]) {
+    await expect(page.locator(`[data-card=${card}]`)).toBeVisible();
+    const switches = page.locator(`[data-card=${card}]`).getByRole("switch");
+    expect(await switches.count()).toBeGreaterThan(0);
+    for (const item of await switches.all()) await expect(item).toBeDisabled();
+  }
+  for (const item of await page.locator("[data-card=folders]").getByRole("switch").all()) {
+    await expect(item).toBeDisabled();
   }
   await expect(page.locator("[data-card=digest]").getByRole("button", { name: en.digest_add })).toBeDisabled();
 });
 
 test("a write of the paused owner gets 403 org_suspended", async ({ page }) => {
-  await signInAs(page, readSeed().pausedOwner);
+  await signInAndWait(page, readSeed().pausedOwner);
   await page.goto("/activity");
   const response = await page.request.patch("/api/me/digest-times", {
     headers: { origin: E2E_BASE_URL },
@@ -76,7 +87,7 @@ test("a write of the paused owner gets 403 org_suspended", async ({ page }) => {
 });
 
 test("the paused owner can sign out", async ({ page }, testInfo) => {
-  await signInAs(page, readSeed().pausedOwner);
+  await signInAndWait(page, readSeed().pausedOwner);
   await page.goto("/activity");
   await expect(page.getByText(pausedText())).toBeVisible();
   if (testInfo.project.name === "mobile") {
@@ -90,7 +101,7 @@ test("the paused owner can sign out", async ({ page }, testInfo) => {
 });
 
 test("the active owner sees neither line", async ({ page }) => {
-  await signInAs(page, readSeed().owner);
+  await signInAndWait(page, readSeed().owner);
   await page.goto("/activity");
   await expect(page.getByRole("heading", { name: en.title_activity }).first()).toBeVisible();
   await expect(page.getByText(/Trial ends on/)).toHaveCount(0);
