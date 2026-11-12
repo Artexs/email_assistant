@@ -1,4 +1,4 @@
-> **Status 2026-11-12 — in progress — master plan written and cold-reviewed (22 findings fixed), waiting for the user's approval.** The user accepted all defaults (Q1–Q15). Left: the user's OK; user step U0 (the Telegram question to a lawyer); then the `plan-task` session of S6a (detailed stage files) and its build with `run-task`. The other user steps (U1–U10) can start now.
+> **Status 2026-11-12 — in progress — master plan approved by the user ("ok").** Left: user step U0 (the Telegram question to a lawyer, before the S6a build); the `plan-task` session of S6a (detailed stage files), then its build with `run-task`; then S6b–S6f the same way. The user steps U1–U10 can start now.
 
 # S6 Pre-sale
 
@@ -34,7 +34,7 @@ The resumed session reads this file, then continues at the first unticked item.
 - [x] Design decisions D1–D33 (D31–D33 from the cold review), rules, user steps, checkpoints, review model, segments (2026-11-12).
 - [x] Segment task files written: `tasks/planned/s6a-customer-core.md`, `s6b-public-login.md`, `s6c-account-data.md`, `s6d-vertex-eu.md`, `s6e-papers-cost.md`, `s6f-hosted-production.md` (2026-11-12).
 - [x] Cold review by the `reviewer` subagent (Opus, high): VERDICT FAIL, 22 findings; all fixed in the plan text; result in "Cold review result" (2026-11-12).
-- [ ] Commit and push; the user's OK.
+- [x] Commit and push (`61022bc`); the user's OK ("ok", 2026-11-12).
 
 ### Input
 
@@ -310,3 +310,4 @@ Pre-mortem areas: the pilot move and the staging switch (1–3), the `suspended`
 - 2026-11-12: Moved to `active/` by the S6 plan session (`plan-task`). Current state checked; questions Q1–Q15 sent; the user answered "Go with defaults".
 - 2026-11-12: Facts checked (V1–V8), findings 1–8, decisions P1–P15 and D1–D30, six segment files written.
 - 2026-11-12: Cold review (reviewer subagent, Opus, high): FAIL, 22 findings; fixed: findings 9–11, D31–D33, U0, U10, changes to D2–D4, D6–D11, D13–D16, D18, D23, D24, D26, D27; segment files updated.
+- 2026-11-12: The user approved the master plan ("ok"). Next: U0, then the S6a `plan-task` session.
