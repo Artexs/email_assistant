@@ -8,7 +8,8 @@ export {
   type ConnectMeta,
 } from "./connect";
 export { connectMailboxRequest } from "./connect-request";
-export { isLocalMailHost } from "./host-check";
+export { isLocalAddress, isLocalMailHost } from "./host-check";
+export { configureMailHosts, mailHostPolicy, resolveMailHost, type LookupAll, type MailTarget } from "./host-guard";
 export { removeMailbox, type RemoveDeps, type RemoveResult } from "./remove";
 export { mailErrorBody, mailRoutes, WEB_MAIL_TIMEOUTS, type MailRouteDeps } from "./routes";
 export { getMailboxView, listMailboxViews } from "./views";
