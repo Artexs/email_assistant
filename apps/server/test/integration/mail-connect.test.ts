@@ -426,6 +426,8 @@ describe("mailbox:connect CLI", () => {
       stdin: stdin === undefined ? "ignore" : new Response(stdin),
       stdout: "pipe",
       stderr: "pipe",
+      // Bun.spawn without `env` does not see the preload's change of process.env.
+      env: { ...process.env, MAIL_ALLOW_LOCAL_HOSTS: "true" },
     });
   }
 
