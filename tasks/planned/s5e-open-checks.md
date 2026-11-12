@@ -26,3 +26,4 @@ Each item is one command or one tap; the agent counts the audit rows and log lin
 ## Log
 
 - 2026-11-12: Created at the S5e close; the items come from the stage 3.4, 4.4, 4.5, 4.6 and 6.2 lists and the group review (findings 2, 3, 8, 9).
+- 2026-11-12: S6 plan session, decision P14 (user: "Go with defaults"): the 39 `web` ✅ rows are excluded from the go/no-go counts, unless the user later says that each one was checked (`tasks/active/s6-pre-sale.md`).
