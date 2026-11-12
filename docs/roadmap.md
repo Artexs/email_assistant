@@ -26,7 +26,7 @@
 
 ### Sellable MVP (+ S5, S6)
 
-- Web panel (lite): login, connect mailbox, link Telegram, settings, rules, activity.
+- Web panel (lite): login, connect mailbox, link Telegram, settings, rules, activity (built and deployed 2026-11-11, ADR 0015, 0016).
 - Sign-up, billing, account and data deletion, hosted EU production, Vertex AI EU, privacy policy and DPA, cost model.
 
 ### Not in the MVP (Phase 2)
@@ -58,6 +58,8 @@ S2 state (2026-11-07): done (task file `tasks/done/s2-telegram.md`, stages 0–2
 S3 state (2026-11-07): done (task file `tasks/done/s3-assist-actions.md`): the write port and the identity locate, the committer with the ensure rule and `ACTIONS_SCOPE`, the returned check below the UID cursor, Undo with reverse actions, the `triage.returned` job, the `action_failed` notice, the ↩️ digest button, and `mailbox:settings`. The dev run (stage 16), the restore test (stage 17) and the VPS seed-mail run on Interia (stage 19) passed. Since 2026-11-07T19:55:16Z the pilot mailbox runs `assist` on real mail (`urgent` flag, `notification` moves); the one-week result is in `tasks/planned/s3-assist-week-result.md` (blocked until 2026-11-14T20:00Z).
 
 S4 state (2026-11-07): done (`tasks/done/s4-drafts-approvals-delegation.md`, 23 stages): delegates and delegations with CLIs, prompt `classifier-v2` (eval: one accepted miss, `info` precision −5.8), delegation and clarification drafts, approval with Telegram buttons, SMTP send behind `SEND_SCOPE`, the Sent copy, the expiry job, the chaser and `job:run`. Deployed on the VPS (`fa60c7b`, `SEND_SCOPE=all` since 2026-11-07 22:40Z; the only delegate is the user's own Gmail). The real-mail round trip and the week counts: `tasks/planned/s4-pilot-week.md`.
+
+S5 state (2026-11-12): built in S5a–S5e and deployed on the VPS at 2026-11-11 23:37 UTC, behind Tailscale Serve (ADR 0015, 0016; facts: `notes/2026-11-12-web-panel-deploy.md`). Open: the phone sign-in and the phone cut-off check, and the ↩️ and ✏️ buttons on real mail. The market check (which mail the customers use) was not done (P9); the question stays for S6.
 
 Order: `S0 → S1a → S1b → S2 → S3 → S4 → S5 → S6`.
 
@@ -99,7 +101,7 @@ Before each start (user steps):
 | Lines of TypeScript       | about 10–16 thousand (with tests)                                                                       |
 
 Server runtime libraries (about 11): `hono`, `imapflow`, `mailparser`, `nodemailer`, `html-to-text`, `@google/genai`, `zod`,
-`kysely` + `pg`, `croner`, `grammy`, and the migration runner (chosen in S0). Web: decided at the S5 start.
+`kysely` + `pg`, `croner`, `grammy`, and the migration runner (chosen in S0). Web: Astro static build with React islands, Better Auth (ADR 0015).
 
 Hardest parts (most risk):
 
