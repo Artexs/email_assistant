@@ -1,12 +1,11 @@
 ---
 description: 
-globs: src/db/*.ts,src/middleware/*.ts,src/lib/*.ts
+globs: apps/server/**/*.ts,packages/core/**/*.ts,db/**/*.sql
 alwaysApply: false
 ---
 ### Backend and Database
 
-- Use Supabase for backend services, including authentication and database interactions.
-- Follow Supabase guidelines for security and performance.
-- Use Zod schemas to validate data exchanged with the backend.
-- Use supabase from context.locals in Astro routes instead of importing supabaseClient directly
-- Use SupabaseClient type from `src/db/supabase.client.ts`, not from `@supabase/supabase-js`
+- Server: Bun + Hono in `apps/server`. Pure code: `packages/core` (no I/O).
+- Data: Postgres 17, Kysely repositories, dbmate migrations (ADR 0011). There is no Supabase.
+- Follow `docs/code-patterns.md` for layout, data access (`TenantContext`, `org_id` filter), side effects and HTTP routes.
+- Check request bodies with Zod schemas from `@ea/core`.
