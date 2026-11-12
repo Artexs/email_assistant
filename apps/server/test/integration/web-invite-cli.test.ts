@@ -4,9 +4,9 @@ import { resolve } from "node:path";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
+import { INBOX, openImapProvider } from "../../src/modules/mail";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
-import { INBOX, openImapProvider } from "../../src/modules/mail";
 import { createAuth } from "../../src/platform/auth";
 
 import { testDb } from "./helpers";
