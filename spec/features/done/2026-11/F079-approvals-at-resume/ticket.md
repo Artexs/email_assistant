@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-12
+landed: 2026-11-13
 ---
 
 # F079 · After a pause, an approval request from before the pause cannot go out unseen or late
