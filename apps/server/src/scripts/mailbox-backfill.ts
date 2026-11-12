@@ -11,13 +11,15 @@ import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 import { createLog } from "../platform/log";
 
+import { backfillRefusal } from "./mailbox-backfill-gate";
+
 const log = createLog("mailbox-backfill");
 
 const usage = [
   "usage: bun run mailbox:backfill --org-id <uuid> --mailbox-id <uuid> [--days 30]",
   "  One-off, read-only on the mailbox. Stores INBOX mail of the last 1-180 days that the sync missed.",
   "  Then re-queues stored real mail of that window that the worker skipped as too old.",
-  "  Exit 0: done. Exit 1: usage error or failure.",
+  "  Exit 0: done. Exit 1: usage error, suspended organization (org_suspended) or failure.",
 ].join("\n");
 
 function readOptions() {
@@ -59,6 +61,11 @@ async function main(): Promise<number> {
   const db = createDb(config.DATABASE_URL);
   try {
     await assertAppRole(db);
+    const refusal = await backfillRefusal(db, options.orgId);
+    if (refusal !== undefined) {
+      log.error(refusal);
+      return 1;
+    }
     const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
     const now = new Date();
     const result = await backfillMailbox(
