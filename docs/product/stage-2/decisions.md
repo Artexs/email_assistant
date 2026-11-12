@@ -1,0 +1,34 @@
+# Product decisions (Stage 2)
+
+> One row per decision: id, date, decision, owner words or source. Architecture decisions stay ADRs in `docs/decisions/`. A later decision that changes an earlier one names it.
+
+| Id | Date | Decision | Source |
+| --- | --- | --- | --- |
+| PD-001 | 2026-11-12 | Boundary: sell-ready, not sold. The `02` §7 text goes into `spec/vision.md` "Current direction" and `docs/product-brief.md` Q1 (E1 applies it). | Owner: "make it to the point where it will be just standalone product ready to sell. However, I am not going to sell it"; "looks like the plan is approved" (04 §6 item 1) |
+| PD-002 | 2026-11-12 | Thesis and target user: "nothing slips, on any mailbox"; Polish or EU SME executive on own-domain IMAP, Interia or Microsoft 365 (`03` §2–3). | 04 §6 item 2, approved with defaults |
+| PD-003 | 2026-11-12 | Metrics M1–M8 (`03` §5); M1 missed important mail, M2 open loops on time, M3 serious mistakes per week are the headline. Handled share stays as M4. | 04 §6 item 3 |
+| PD-004 | 2026-11-12 | Epic structure E1–E12 with tiers Must, Should, Later (`04` §5, README). New epics E5 Open loops and E6 Reply drafts. | 04 §6 item 4 |
+| PD-005 | 2026-11-12 | Reach order: Microsoft 365 OAuth before Gmail; Gmail in "testing" mode only (no CASA). | 04 §6 item 5 |
+| PD-006 | 2026-11-12 | The simulator (E2) uses a separate test mailbox, not the pilot mailbox. | 04 §6 item 6 |
+| PD-007 | 2026-11-12 | Five conversations with target executives: an optional E1 item. Open: the owner decides when and whether. | 04 §6 item 7, left open |
+| PD-008 | 2026-11-12 | Out of Stage 2: EA review flow, calendar and meetings, agent and voice, native mobile before PWA, SAML and SCIM. Never: auto-send, auto-booking, event sourcing, attachment auto-filing (`04` §8). | 04 §6 item 8, §8 |
+| PD-009 | 2026-11-12 | Documentation: capability map in E1; rule "a landed feature updates its capability page in the same change"; user docs and docs site in E10. | 04 §6 item 9 |
+| PD-010 | 2026-11-12 | Findings R1–R18 of `04` accepted as written. | 04 §6 item 10 |
+| PD-011 | 2026-11-12 | Size baseline for Stage 2 planning: the MVP (S0–S6a) = about 250 Limen stages, 45k source lines, 12 calendar days. Must tier ≈ 0.9 × MVP, Should tier ≈ 0.3 × MVP (`04` §9). | Review session |
+| PD-012 | 2026-11-12 | Route change: product discovery runs for every epic first, one session at a time, in the queue of `05` §3; planning (`plan-task`) starts when the queue is empty. Exceptions: E1 needs no discovery and goes through planning and build in parallel; E12 is deferred until the E9 PWA is in use. Questions that need E2/E3 numbers or a provider spike get a default now and a short second pass later. Changes the rolling A → B order of `05` §1. | Owner: "So I can run the discovery for all epics, then wait and then start running planning sessions for each of them, right?"; "But let's go with this discovery through all of those epics. update the plan so I will be able to easily start those discoveries for following epics." |
+| PD-013 | 2026-11-13 | E2 splits into two tickets: E2a Offline lab (scenario, corpora, `eval --sim`, report, draft judge, model gate, real labels) and E2b Live lab (sim stack, injector, delegate bots, scripted executive, week scorer, demo). E3, E6 and E10 wait only for E2a. | Owner: "Looks like a good plan, so yes, go with defaults." (E2 discovery decision 1) |
+| PD-014 | 2026-11-13 | Generator: Claude Sonnet in agent sessions writes the text; ground truth comes from the planned slot ("label first"); Claude Haiku labels blind; the owner audits 30 random + up to 20 contested cases per corpus version. The classifier family (OpenAI, Gemini) stays different from the generator. | Same answer (decision 2) |
+| PD-015 | 2026-11-13 | Two frozen corpora in git: a category bank of 250 per value category (50 dev + 200 holdout) plus the hard cases, and a realistic week (150 mails per weekday, 40 per weekend day). E3 tickets may not open the holdout. | Same answer (decision 3) |
+| PD-016 | 2026-11-13 | Languages: week 70% Polish / 30% English; bank 60/40; a few German mails as hard cases. | Same answer (decision 4) |
+| PD-017 | 2026-11-13 | Urgency context: one profile per scenario executive (VIP people as VIP rules, topics, deadlines); each urgent case carries its source (`text`, `vip`, `context`); the report gives urgent recall per source. E2a defines the shape; E3 owns the prompt; E4 owns the "what is urgent for me" editor. | Same answer (decision 5) |
+| PD-018 | 2026-11-13 | Arbiter: only real labels on the pilot mailbox decide `auto` on real mail. F028 (`/review`) and F057 (testmail mail kind) move into E2a. | Same answer (decision 6) |
+| PD-019 | 2026-11-13 | The Enron corpus leaves Stage 2. A sim-vs-real gap check on `notification` and `spam` replaces it. | Same answer (decision 7) |
+| PD-020 | 2026-11-13 | The live lab runs on a separate sim stack (second Compose project: own DB, GreenMail, fake Telegram, no outbound mail), ADR 0021. If the VPS is too small (E8 check), live days run on the owner's PC. Changes the E2 page "dedicated test mailbox" of PD-006 to a GreenMail mailbox. | Same answer (decision 8) |
+| PD-021 | 2026-11-13 | Delegates in the live lab are GreenMail bots (done, late, out of office, other address, silent); a scripted executive taps through the fake Telegram, later through E4 API commands. AgentMail leaves the lab; F066 is replaced. | Same answer (decision 9) |
+| PD-022 | 2026-11-13 | The live lab runs in real time: a live day is the routine smoke; the live week runs before the Stage 2 exit and after a large E3, E5 or E6 change. | Same answer (decision 10) |
+| PD-023 | 2026-11-13 | Lab budget caps (the runner stops): $1 per offline run, $5 per live week, $20 per month. | Same answer (decision 11) |
+| PD-024 | 2026-11-13 | Sim gate statistics: at least 200 holdout cases per category; the report shows the Wilson 95% lower bound. The real-label gate keeps at least 30 rows. | Same answer (decision 12) |
+| PD-025 | 2026-11-13 | Model-upgrade gate: a release-checklist step (E8) and a rule for every ticket that changes a prompt or model; the holdout report goes to `evals/results/`. No LLM key in GitHub CI. | Same answer (decision 13) |
+| PD-026 | 2026-11-13 | E2a builds a draft judge: code checks plus a rubric from another model family than the drafter (Gemini judges OpenAI drafts). It scores delegation drafts now; E6 reuses it. | Same answer (decision 14) |
+| PD-027 | 2026-11-13 | The demo organization lives in the sim stack: fed from the realistic week, 3 days shadow then assist, one reset command, tailnet only. | Same answer (decision 15) |
+| PD-028 | 2026-11-13 | Hard-case list adds auto-replies and bounces, calendar invites, CC-only and list mail, a thread the executive already answered, German mail. | Same answer (decision 16) |

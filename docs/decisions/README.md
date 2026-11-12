@@ -33,3 +33,4 @@ Template:
 | 0015 | LLM: Gemini and OpenAI behind one switch                                 | accepted                              |
 | 0016 | Web panel: Astro static build with React islands, login with Better Auth | accepted                              |
 | 0017 | Web access only through Tailscale Serve                                  | accepted                              |
+| 0021 | Simulator stack: separate Compose project with GreenMail, fake Telegram | proposed                              |
