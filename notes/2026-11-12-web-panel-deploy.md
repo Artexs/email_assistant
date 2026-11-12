@@ -15,8 +15,8 @@ The repo is public. Never write the tailnet name or the full `ts.net` host name.
 - `.env` on the VPS has three new keys: `WEB_BASE_URL` (the `https://` Serve address, no path), `WEB_AUTH_SECRET` (`openssl rand -base64 32`), `WEB_TRUSTED_PROXIES` (the gateway of `email-assistant_default`; one IPv4 address, no CIDR; `172.18.0.1` on the VPS).
 - Leave `WEB_TRUSTED_ORIGINS`, `WEB_MAIL_ALLOW_LOCAL` and `WEB_DIST` out of the VPS `.env`.
 - A wrong or empty `WEB_TRUSTED_PROXIES` is not a security hole. The login works. But the Better Auth rate limit counts all clients as one, and `auth_sessions.ip_address` holds the gateway.
-- `docker compose down` can give the network a new gateway. Read it again after each `down`: `docker network inspect email-assistant_default --format '{{(index .IPAM.Config 0).Gateway}}'`.
-- A pinned subnet is a follow-up (`spec/features/planned/F069-compose-network-subnet/plan.md`). It recreates the network and the running `db`: not during the pilot weeks.
+- Until F069: `docker compose down` could give the network a new gateway. To read it: `docker network inspect email-assistant_default --format '{{(index .IPAM.Config 0).Gateway}}'`.
+- 2026-11-12 (F069): `deploy/compose.yaml` pins the subnet `172.30.0.0/24`, gateway `172.30.0.1`. After the move, `WEB_TRUSTED_PROXIES` is `172.30.0.1`. The VPS has not moved yet: it needs a planned `down` and `up` (recreates the network and `db`), outside a pilot week, after a backup, with the owner's go. Steps: `deploy/README.md` "Move a running stack to the pinned subnet".
 - Backup copy of the old `.env`: `~/email_assistant/.env.bak-s5e` on the VPS (mode 600). Delete it when the panel is accepted.
 
 ## Rehearsal results (stage 2, test PC, 2026-11-11)
