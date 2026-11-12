@@ -28,6 +28,7 @@ import {
 } from "./modules/tenancy";
 import { goNoGoFor, setCategoryAutoWithGate, triageRoutes } from "./modules/triage";
 import { createAuth, type AuthDeps, type AuthEventKind } from "./platform/auth";
+import { createLockoutStore } from "./platform/auth-lockout";
 import { createAuthMailer, createAuthMailTasks } from "./platform/auth-mail";
 import type { AuthMailKind } from "./platform/auth-mail-texts";
 import {
@@ -50,11 +51,12 @@ const eventNames = {
   login: auditEvents.webLogin,
   password_set: auditEvents.webPasswordSet,
   password_changed: auditEvents.webPasswordChanged,
+  login_locked: auditEvents.webLoginLocked,
 } satisfies Record<AuthEventKind, string>;
 
 // D4: a login or a password change is a row in the audit log of the user's oldest organization. It never throws.
 export function auditWebEvent(db: Db): AuthDeps["onEvent"] {
-  return async (kind, userId) => {
+  return async (kind, userId, data) => {
     try {
       const [membership] = await listMembershipsOfUser(db, userId);
       if (!membership) {
@@ -64,7 +66,7 @@ export function auditWebEvent(db: Db): AuthDeps["onEvent"] {
       await recordAudit(
         db,
         { orgId: membership.org_id },
-        { event: eventNames[kind], actor: userId, data: { via: "web" } }
+        { event: eventNames[kind], actor: userId, data: { via: "web", ...data } }
       );
     } catch (error) {
       log.error(`web: audit ${kind} failed: ${describeError(error)}`);
@@ -290,6 +292,13 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     trustedOrigins: origins,
     onEvent: auditWebEvent(db),
     resetLinkTtlSeconds: 3_600,
+    lockout: createLockoutStore(db),
+    sendLockoutMail:
+      mailTasks === null
+        ? undefined
+        : ({ userId, email }) => {
+            mailTasks.start({ kind: "lockout", userId, to: email, url: `${baseUrl.origin}/forgot` });
+          },
     sendResetPassword:
       mailTasks === null
         ? undefined

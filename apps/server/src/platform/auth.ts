@@ -1,13 +1,15 @@
 import { betterAuth } from "better-auth";
-import { createAuthMiddleware, isAPIError } from "better-auth/api";
+import { APIError, createAuthMiddleware, isAPIError } from "better-auth/api";
 import { Pool } from "pg";
+import { z } from "zod";
 
+import type { LockoutStore } from "./auth-lockout";
 import { describeError } from "./errors";
 import { createLog } from "./log";
 
 const log = createLog("auth");
 
-export type AuthEventKind = "login" | "password_set" | "password_changed";
+export type AuthEventKind = "login" | "password_set" | "password_changed" | "login_locked";
 
 export interface AuthDeps {
   databaseUrl: string;
@@ -15,12 +17,16 @@ export interface AuthDeps {
   secret: string;
   trustedOrigins: readonly string[];
   // The caller's audit. Never throws into Better Auth: `report` catches.
-  onEvent: (kind: AuthEventKind, userId: string) => Promise<void>;
+  onEvent: (kind: AuthEventKind, userId: string, data?: Record<string, string>) => Promise<void>;
   // Required: the server uses 3_600, the CLIs and the e2e seed 86_400.
   resetLinkTtlSeconds: number;
   // The clock of the address limit.
   now?: () => Date;
   sendResetPassword?: (input: { userId: string; email: string; url: string }) => Promise<void>;
+  // Absent = no lockout (the CLIs and the tests that do not test it).
+  lockout?: LockoutStore;
+  // Never throws, never awaited.
+  sendLockoutMail?: (input: { userId: string; email: string }) => void;
 }
 
 export type Auth = ReturnType<typeof createBetterAuth>;
@@ -105,10 +111,70 @@ export function onAuthError(error: unknown): void {
   log.error(`better-auth: ${cleanLogText(describeError(error))}`);
 }
 
+const SIGN_IN_PATH = "/sign-in/email";
+const MAX_PASSWORD_LENGTH = 128;
+const emailSchema = z.email();
+
+type HookContext = Parameters<Parameters<typeof createAuthMiddleware>[0]>[0];
+
+// Better Auth validates the body after the hooks, so the shape check is the endpoint's own schema (`api/routes/sign-in.mjs`).
+// A body the endpoint would refuse gives null: the endpoint answers its own 400 for every user.
+const signInShape = z.object({
+  email: emailSchema,
+  password: z.string().max(MAX_PASSWORD_LENGTH),
+  callbackURL: z.string().optional(),
+  rememberMe: z.boolean().optional(),
+});
+
+function signInBody(ctx: HookContext): { email: string; password: string } | null {
+  const parsed = signInShape.safeParse(ctx.body);
+  return parsed.success ? { email: parsed.data.email, password: parsed.data.password } : null;
+}
+
+// L13: a locked user gets the answer and the time of a wrong password. An error of `isLocked` is not caught (fail closed).
+async function rejectLockedSignIn(ctx: HookContext, lockout: LockoutStore, now: () => Date): Promise<void> {
+  const body = signInBody(ctx);
+  if (body === null) return;
+  const found = await ctx.context.internalAdapter.findUserByEmail(body.email.toLowerCase());
+  if (found && (await lockout.isLocked(found.user.id, now()))) {
+    await ctx.context.password.hash(body.password);
+    throw APIError.from("UNAUTHORIZED", { code: "INVALID_EMAIL_OR_PASSWORD", message: "Invalid email or password" });
+  }
+}
+
+async function countSignIn(
+  ctx: HookContext,
+  deps: AuthDeps,
+  now: () => Date,
+  report: (kind: AuthEventKind, userId: string, data?: Record<string, string>) => Promise<void>
+): Promise<void> {
+  const lockout = deps.lockout;
+  if (!lockout) return;
+  const returned = ctx.context.returned;
+  if (isAPIError(returned)) {
+    const body = returned.body as { code?: unknown } | undefined;
+    if (returned.statusCode !== 401 || body?.code !== "INVALID_EMAIL_OR_PASSWORD") return;
+    const email = (ctx.body as { email?: unknown } | undefined)?.email;
+    if (typeof email !== "string") return;
+    const found = await ctx.context.internalAdapter.findUserByEmail(email.toLowerCase());
+    if (!found) return;
+    const lock = await lockout.recordFailure(found.user.id, now());
+    if (lock === null) return;
+    await report("login_locked", found.user.id, { locked_until: lock.lockedUntil.toISOString() });
+    if (deps.sendLockoutMail && (await lockout.claimMail(found.user.id, now()))) {
+      deps.sendLockoutMail({ userId: found.user.id, email: found.user.email });
+    }
+    return;
+  }
+  const userId = ctx.context.newSession?.user.id;
+  if (userId) await lockout.recordSuccess(userId, now());
+}
+
 function createBetterAuth(deps: AuthDeps, pool: Pool) {
-  const report = async (kind: AuthEventKind, userId: string): Promise<void> => {
+  const now = deps.now ?? (() => new Date());
+  const report = async (kind: AuthEventKind, userId: string, data?: Record<string, string>): Promise<void> => {
     try {
-      await deps.onEvent(kind, userId);
+      await deps.onEvent(kind, userId, data);
     } catch (error) {
       log.error(`web: onEvent ${kind} failed: ${describeError(error)}`);
     }
@@ -117,7 +183,7 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
   const resetLimiter = createAddressLimiter({
     max: 3,
     windowMs: 3_600_000,
-    now: deps.now ?? (() => new Date()),
+    now,
   });
 
   return betterAuth({
@@ -143,6 +209,11 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
       },
       onPasswordReset: async ({ user }) => {
         await report("password_set", user.id);
+        try {
+          await deps.lockout?.clear(user.id, now());
+        } catch (error) {
+          log.error(`web: lockout clear failed: ${describeError(error)}`);
+        }
       },
     },
     user: {
@@ -212,7 +283,19 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
             return ctx.json(RESET_REQUEST_ANSWER);
           }
         }
+        if (ctx.path === SIGN_IN_PATH && deps.lockout) {
+          await rejectLockedSignIn(ctx, deps.lockout, now);
+        }
         return undefined;
+      }),
+      after: createAuthMiddleware(async (ctx) => {
+        if (ctx.path === SIGN_IN_PATH && deps.lockout) {
+          try {
+            await countSignIn(ctx, deps, now, report);
+          } catch (error) {
+            log.error(`web: lockout: ${describeError(error)}`);
+          }
+        }
       }),
     },
     rateLimit: {
