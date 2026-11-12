@@ -1150,6 +1150,12 @@ describe("send result notices", () => {
         attempts: 5,
         providerResult: { stage: "connect", code: "ETIMEDOUT" },
       });
+      const capped = await ended(trx, o, {
+        status: "failed",
+        reason: "smtp_error",
+        attempts: 0,
+        providerResult: { stage: "envelope", response_code: 450, code: "EENVELOPE", cap: "soft_retry" },
+      });
       const bad = await ended(trx, o, { status: "failed", reason: "bad_payload", attempts: 1 });
 
       await run(trx);
@@ -1163,6 +1169,9 @@ describe("send result notices", () => {
       const t = await resultText(trx, o, tries.sendId);
       expect(t.text).toContain("The send failed 5 times (ETIMEDOUT)");
       expect(t.data).toEqual([`ag:${tries.sendId}`]);
+      const cap = await resultText(trx, o, capped.sendId);
+      expect(cap.text).toContain("The mail server did not accept the mail for 6 hours (450); nothing was sent");
+      expect(cap.data).toEqual([`ag:${capped.sendId}`]);
       const b = await resultText(trx, o, bad.sendId);
       expect(b.text).toContain("The stored send data is not valid; nothing was sent");
       expect(b.data).toEqual([]);

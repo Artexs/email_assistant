@@ -1,4 +1,4 @@
-> **Status 2026-11-12 — in progress — master plan approved by the user ("ok").** Left: user step U0 (the Telegram question to a lawyer, before the S6a build); the `plan-task` session of S6a (detailed stage files), then its build with `run-task`; then S6b–S6f the same way. The user steps U1–U10 can start now.
+> **Status 2026-11-12 — in progress — scope cut by the user: local production on the home VPS, no outside customers** (section "Scope change"). Left: the S6a build (plan approved: `tasks/active/s6a-customer-core.md`); then S6b, S6c, S6e, S6f, each with its own `plan-task` session and build. S6d is dropped (Limen ticket F076). No user step blocks S6a.
 
 # S6 Pre-sale
 
@@ -7,18 +7,18 @@ Git mode: master (this plan). Each segment builds in `worktree` mode on its own 
 
 ## Goal
 
-The first external customer can sign up: sign-up, billing, account and data deletion, hosted EU production, Vertex AI EU, privacy policy and DPA, cost model.
+**Since the scope change (2026-11-12):** the application has the full production shape (several organizations, plan state, hardened login, account deletion and export, retention, Polish UI, draft legal pages, verified backups), but it runs only on the user's home VPS behind Tailscale, for the user's own organization and test organizations. No outside customer, no public domain, no hosted server, no lawyer, no new LLM provider. It is an educational project.
+
+Before the change: the first external customer can sign up (sign-up, billing, deletion, hosted EU production, Vertex AI EU, papers, cost model). That goal is history; the sections below keep its decisions, and "Scope change" says which of them still apply.
 
 ## Done when
 
-- The first external customer got an invite, set a password on the public domain, accepted the terms, connected a mailbox, and gets triage results (S6b, S6f).
-- Every mailbox of a customer is processed without `TEST_MAILBOX_ADDRESS`; a mailbox in `shadow` mode never gets a mailbox action; a `suspended` organization gets no sync, triage, action, send or digest (S6a tests).
-- The retention job clears the texts after the periods of `docs/architecture.md` §7 (S6a tests, and one run on production).
-- `platform/llm/` calls Vertex AI in an EU region with caching off and request logging off; the eval passes the gate of D16 (S6d).
-- A deletion test removes every row of an organization; the panel tells the user to change the mailbox passwords (S6c).
-- The privacy policy, the terms and the customer DPA are public pages in Polish and English, reviewed by a lawyer, and they name every sub-processor (S6e, user step).
-- A one-page cost model gives the price per mailbox (`docs/cost-model.md`, S6e; the user sets the price).
-- The pilot organization runs on the hosted EU production; the home VPS runs staging (S6f).
+- Every mailbox of every organization is processed without `TEST_MAILBOX_ADDRESS`; a mailbox in `shadow` mode never gets a mailbox change; a `suspended` organization gets no sync, triage, action, send or digest; the retention job clears the texts after the periods of `docs/architecture.md` §7 (S6a).
+- The login is hardened: lockout, leaked-password check, hashed reset tokens, session list, terms acceptance; invite and reset links come from the CLI; the SMTP auth-mail sender is built and tested against GreenMail, and stays off on the VPS (S6b).
+- A deletion test removes every row of an organization; `org:export` writes the export; the panel speaks Polish (S6c).
+- The privacy policy, terms and DPA are in-app pages in Polish and English, marked "DRAFT, not legal advice", and they describe the real setup; `docs/cost-model.md` gives the cost per mailbox from real data, with the price as a placeholder (S6e).
+- On the home VPS: the running server has no database admin password in its env; CI is green; a backup upload to Backblaze and a restore test are verified; ADR 0019 records "production stays on the home VPS behind Tailscale" (S6f).
+- Final checkpoint: a second test organization on the VPS goes through invite, set password, connect a test mailbox, triage, pause, resume, delete.
 
 ## Plan
 
@@ -35,6 +35,40 @@ The resumed session reads this file, then continues at the first unticked item.
 - [x] Segment task files written: `tasks/planned/s6a-customer-core.md`, `s6b-public-login.md`, `s6c-account-data.md`, `s6d-vertex-eu.md`, `s6e-papers-cost.md`, `s6f-hosted-production.md` (2026-11-12).
 - [x] Cold review by the `reviewer` subagent (Opus, high): VERDICT FAIL, 22 findings; all fixed in the plan text; result in "Cold review result" (2026-11-12).
 - [x] Commit and push (`61022bc`); the user's OK ("ok", 2026-11-12).
+
+### Scope change (user, 2026-11-12) — read this first
+
+User words (word for word): "whole idea with this application is to make a production ready application but hosted locally only on my machine. It's an educational purpose and for now it has to have full shape of the application but it's not necessary to run it for other users. So I am fine with getting access to it via tailscale as it is now. No need to buy domain DNS and everything about it. It's okay to use my current LLM provider. No need to buy complicated infrastructure for it. And also some documentation from layers and all of that. You can prepare by yourself the drafts so it will be just the placeholder in the application as there is no need to contact lawyer. so as I can see from the list from above it's okay to run the back blaze backup bucket or this can be already prepared you have to verify it you have access to the telegram bot even on the production there are both bots for local and for for both machines" — then "Looks like this changes the scope drastically, so update the whole plan for it. Ask me more product questions if you are not sure". The agent asked nine questions with defaults; the user answered "ok" (= the defaults, P16–P24).
+
+- **P16** Users: only the user's own (pilot) organization, plus test organizations that prove the multi-tenant rules. No outside customer.
+- **P17** S6a stays whole (plan state, operator notices included) as the production shape; the lawyer step U0 is dropped.
+- **P18** S6b keeps the hardening (lockout, leaked-password check, hashed reset tokens, session list, terms acceptance, the mail host check); no public domain. The SMTP auth-mail sender is built with its env keys and tests, but stays off: the CLI prints the invite and reset links, as in S5.
+- **P19** S6c keeps "delete organization", the export and the Polish UI; the Telegram consent text is the agent's draft.
+- **P20** S6d (Vertex AI) is dropped; the current provider (OpenAI) stays. The idea is the Limen ticket `spec/features/planned/F076-vertex-ai-eu/` (the old segment file is its `plan.md`).
+- **P21** S6e: the agent writes the privacy policy, terms and DPA as in-app pages marked "DRAFT, not legal advice", describing the real setup (home VPS, OpenAI, Telegram, Backblaze, Tailscale); the cost model uses real data; the price is a placeholder.
+- **P22** S6f becomes "Production on the home VPS": fix the two CI timing tests, the env split (`spec/features/planned/F021-server-env-scope/`), verify the Backblaze upload and run a restore test, ADR 0019. No Hetzner, domain, Caddy, image registry, pilot move or staging.
+- **P23** Backblaze: the agent checks `deploy/backup.sh` and the last upload on the VPS (read only, with the user's go) in S6f.
+- **P24** Telegram: one bot per machine (dev and VPS) as now; no production bot.
+
+**What still applies** (the decisions below stay as history; this table wins where they disagree):
+
+| Decision                | Now                                                                                                                                                                 |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P1, P4, P5, P6, P7, P8  | Dropped (no customer, no hosted server, no domain, no Vertex, no auth-mail provider).                                                                               |
+| P2 invite only          | Kept; the invite link is printed by the CLI (P18).                                                                                                                  |
+| P3 billing              | Only the plan state (`trial`, `active`, `suspended`) as the shape; no invoicing, no KSeF.                                                                           |
+| P9 hardening            | Kept, except the pinned Compose subnet (F069 stays a Limen ticket; it served the Caddy proxy rule).                                                                 |
+| P10, P12, P14, P15      | Kept. P11, P13: changed by P21.                                                                                                                                     |
+| D1–D6, D29, D31         | Kept (S6a). D29: `OPERATOR_CONTACT` is any address of the user, optional. D31: the auth-mail event fires only when the sender is on; the backup event moves to S6f. |
+| D7                      | Changed: the sender is built and tested, off on the VPS; no provider account, no DNS records; the ADR 0016 amendment still records it.                              |
+| D8, D9, D10, D11        | Kept, except: D9 mails only when the sender is on; D11's Tailscale ACL of the production host is dropped.                                                           |
+| D12, D13, D14           | Kept.                                                                                                                                                               |
+| D15, D16, D17           | Dropped (F076).                                                                                                                                                     |
+| D18                     | Kept (pages); D19 changed: the texts state the real setup and carry the draft line for good; D20 changed: hosting cost = the home VPS, price placeholder.           |
+| D21, D22, D24, D26, D33 | Dropped. D23: only the timing-test fix stays. D25: kept. D30: kept for the VPS (no `.env.bak-*` left).                                                              |
+| D27                     | Changed: the sub-processor list of the drafts = OpenAI, Telegram, Backblaze, Tailscale; the Telegram consent text is the agent's draft.                             |
+| D28                     | 0018 dropped; 0019 = "production stays on the home VPS behind Tailscale" (S6f); 0020 kept (S6e).                                                                    |
+| D32                     | Dropped (no lawyer); F075 (`telegram-content-minimal`) stays an idea.                                                                                               |
 
 ### Input
 
@@ -197,49 +231,41 @@ Each line is the default of the question with the same number (the questions wit
 - The two known timing tests fail in CI (`docs/known-alerts.md`); every other failure is a stop.
 - Checks per stage: `bun run lint && bun run typecheck && bun run test:unit && bun run test:int`; web stages also `bun run web:build` and the Playwright specs of the stage.
 
-### User steps (start early; the agent never reads or prints a secret)
+### User steps (since the scope change; the agent never reads or prints a secret)
 
-| #   | Step                                                                                                                                                                                                                                                                                                                  | Needed by                |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| U0  | Ask a lawyer the Telegram question of D32 (one paragraph; the agent drafts it on request).                                                                                                                                                                                                                            | before the S6a build     |
-| U1  | Buy the domain; give the agent the name (it is public).                                                                                                                                                                                                                                                               | S6b (sender), S6f        |
-| U2  | Make a Brevo (or other EU provider) account; verify the domain (SPF, DKIM, DMARC records); turn off click and open tracking; put the `AUTH_SMTP_*` values in `.env`.                                                                                                                                                  | S6b checks on staging    |
-| U3  | Make a Google Cloud project with billing, turn on Vertex AI, make a service account with `roles/aiplatform.user` (check that the organization policy allows key creation), put its key file on the hosts (mode 600); turn off caching (the `PATCH cacheConfig`), send the agent the `GET` answer; set a budget alert. | S6d                      |
-| U4  | Make a Hetzner Cloud account and project; the agent gives the VM and firewall settings.                                                                                                                                                                                                                               | S6f                      |
-| U5  | Choose the invoicing service with KSeF; ask the accountant about the business form and VAT.                                                                                                                                                                                                                           | before the first invoice |
-| U6  | Lawyer review of the papers (S6e drafts).                                                                                                                                                                                                                                                                             | S6f go-live              |
-| U7  | Set the price (S6e cost model).                                                                                                                                                                                                                                                                                       | first invite             |
-| U8  | Set the B2 bucket lifecycle (delete after 30 days) and check that the bucket region is in the EU.                                                                                                                                                                                                                     | S6e papers               |
-| U9  | Give the operator contact address (D29) and, optionally, the operator Telegram chat (D31).                                                                                                                                                                                                                            | S6a banner               |
-| U10 | Make the production bot with BotFather (D33); put its token in the production `.env`.                                                                                                                                                                                                                                 | S6f                      |
+U0–U8 and U10 are dropped (P16–P24). What is left:
+
+| #   | Step                                                                                                                                                                                                                         | Needed by   |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| U9  | Optional: put `OPERATOR_CONTACT` (any address of yours) and `OPERATOR_TELEGRAM_CHAT_ID` (your chat with the VPS bot) into the VPS `.env`. Without them the banner says "contact the operator" and the notices are log lines. | S6a deploy  |
+| U11 | Give the go for each VPS action: the S6a mailbox list and deploy, the later deploys, the S6f backup check and restore test.                                                                                                  | each deploy |
 
 ### User checkpoints (each with a group review)
 
-1. After S6a: the gates (D1–D6) on the dev stack; before the S6a deploy the mailbox list of D2 (every mailbox that is not the pilot mailbox is paused or removed); the pilot still works on the home VPS after the deploy (one day).
-2. After S6b: the login on staging with real mail (invite, reset, lockout, Have I Been Pwned); security group review with the stronger reviewer.
-3. After the S6d eval: the user accepts the model (D16) before production switches.
-4. Before S6f go-live: the lawyer review is logged (U6), the price is set (U7).
-5. Before the pilot move (D26): the user's go, outside a pilot week.
-6. Before the first customer invite: a full run on production with a second test organization (invite, connect, triage, delete).
+1. After S6a: the gates on the dev stack; before its deploy the mailbox list of D2 (every mailbox that is not the pilot mailbox is paused or removed); the pilot still works on the home VPS after the deploy.
+2. After S6b: the login hardening on the VPS (lockout, leaked password, CLI links); security group review with the stronger reviewer.
+3. After S6f (final): a second test organization on the VPS goes through invite, set password, connect a test mailbox, triage, pause, resume, delete.
 
 ### Review model
 
-- Stronger reviewer (Opus, high): S6a (gates, migration), S6b (auth), S6c (the delete function), S6f (deploy and the pilot move).
-- Sonnet, high: S6d, S6e, the i18n stages.
-- Cold review of each segment plan in its own `plan-task` session, as in S5.
+- Stronger reviewer (Opus, high): S6a (gates, migration), S6b (auth), S6c (the delete function), S6f (VPS changes).
+- Sonnet, high: S6e, the i18n stages.
+- Cold review of each segment plan in its own `plan-task` session.
 
-### Segments
+### Segments (since the scope change)
 
-| Segment               | File                                     | Content                                                                                                                                                                                                                                                               | Decisions                             | Needs                                         |
-| --------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | --------------------------------------------- |
-| S6a Customer core     | `tasks/planned/s6a-customer-core.md`     | Scopes without `TEST_MAILBOX_ADDRESS`, consent by mode, plan state, `org:plan`, `org:status`, `suspended` gate in every job, mailbox limit, retention job, trial banner, operator notices frame                                                                       | D1–D6, D29, D31                       | S5, U0 sent                                   |
-| S6b Public login      | `tasks/planned/s6b-public-login.md`      | Auth mail sender, `/forgot` and reset by e-mail without enumeration, `org:invite`, terms acceptance with `TERMS_VERSION` and stub legal pages, lockout, Have I Been Pwned, session list, address check on every mail connect, hashed reset tokens, ADR 0016 amendment | D7–D11, D31 (auth mail event)         | S6a                                           |
-| S6c Account and data  | `tasks/planned/s6c-account-data.md`      | `delete_organization` and the Account card delete, `org:delete`, `org:export`, Polish UI and language choice, Telegram consent text                                                                                                                                   | D12–D14, D27 (consent), D32           | S6b, U0 answer                                |
-| S6d Vertex AI EU      | `tasks/planned/s6d-vertex-eu.md`         | Spike, `vertex` provider, config, prices, eval gate, budget alert, ADR 0018                                                                                                                                                                                           | D15–D17                               | S5 (can run beside S6b and S6c; no migration) |
-| S6e Papers and cost   | `tasks/planned/s6e-papers-cost.md`       | Privacy policy, terms, DPA (pl, en) as pages, `TERMS_VERSION`, cost model, ADR 0020                                                                                                                                                                                   | D18–D20, D27, D28                     | S6c, S6d (the facts that the texts state)     |
-| S6f Hosted production | `tasks/planned/s6f-hosted-production.md` | Timing-test fix, GHCR image, Hetzner VM, Tailscale SSH and ACL, Caddy, pinned subnet, env split, backups, restore test VM, pilot move, staging on the home VPS, second-organization run, first invite, ADR 0019                                                       | D21–D26, D30, D31 (backup event), D33 | S6a–S6e; U6, U7 before stage 7 only           |
+| Segment                        | File                                                 | Content                                                                                                                                                                                                                                 | Decisions                           | Needs   |
+| ------------------------------ | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | ------- |
+| S6a Customer core              | `tasks/active/s6a-customer-core.md` (plan approved)  | Scopes for every mailbox, consent by mode, plan state, `org:plan`, `org:status`, `suspended` gate everywhere, mailbox limit, retention job, trial line and paused banner, operator notices                                              | D1–D6, D29, D31                     | S5      |
+| S6b Login hardening            | `tasks/planned/s6b-public-login.md`                  | SMTP auth-mail sender (off on the VPS), `/forgot` and reset without enumeration, `org:invite`, terms acceptance with draft legal page stubs, lockout, leaked-password check, session list, mail host address check, hashed reset tokens | D7–D11 (as changed)                 | S6a     |
+| S6c Account and data           | `tasks/planned/s6c-account-data.md`                  | `delete_organization` and the Account card delete, `org:delete`, `org:export`, Polish UI, Telegram consent text (draft)                                                                                                                 | D12–D14, D27 (as changed)           | S6b     |
+| ~~S6d Vertex AI EU~~           | dropped → `spec/features/planned/F076-vertex-ai-eu/` | —                                                                                                                                                                                                                                       | —                                   | —       |
+| S6e Papers and cost            | `tasks/planned/s6e-papers-cost.md`                   | Draft privacy policy, terms, DPA (pl, en) as pages, `TERMS_VERSION`, cost model with a price placeholder, ADR 0020                                                                                                                      | D18–D20, D27, D28 (as changed)      | S6c     |
+| S6f Production on the home VPS | `tasks/planned/s6f-hosted-production.md`             | CI timing tests, env split, backup and restore check, backup operator event, ADR 0019, final checkpoint                                                                                                                                 | D23 (tests), D25, D30, D31 (backup) | S6a–S6e |
 
-Order: `S6a → S6b → S6c → S6e → S6f`, with `S6d` beside S6b or S6c.
+Order: `S6a → S6b → S6c → S6e → S6f`. Expected size: about 18 + 8 + 7 + 4 + 5 stages.
+
+The old segment table (before the scope change) is in Git history (`9cdada6`).
 
 ### Follow-ups (`tasks/planned/`; not in S6)
 
@@ -311,3 +337,4 @@ Pre-mortem areas: the pilot move and the staging switch (1–3), the `suspended`
 - 2026-11-12: Facts checked (V1–V8), findings 1–8, decisions P1–P15 and D1–D30, six segment files written.
 - 2026-11-12: Cold review (reviewer subagent, Opus, high): FAIL, 22 findings; fixed: findings 9–11, D31–D33, U0, U10, changes to D2–D4, D6–D11, D13–D16, D18, D23, D24, D26, D27; segment files updated.
 - 2026-11-12: The user approved the master plan ("ok"). Next: U0, then the S6a `plan-task` session.
+- 2026-11-12: S6a stage plan written and cold-reviewed (`9cdada6`). Then the user cut the scope ("Scope change" section): local production on the home VPS, no customers; P16–P24 by "ok" to the agent's defaults. S6d dropped (F076); S6b, S6c, S6e, S6f rewritten.

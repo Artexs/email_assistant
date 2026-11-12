@@ -97,6 +97,33 @@ describe("renderApprovalRequest", () => {
     expect(clean.text).not.toContain("links shown as");
   });
 
+  test("the quote header keeps the sender address; links in the subject and body become [link]", () => {
+    const header = (from: string, subject: string) =>
+      `--- Original message ---\nFrom: ${from}\nDate: Sat 7 Nov 10:00\nSubject: ${subject}\n\n`;
+    const quote = `${header("anna@example.com", "see evil.test/x")}> pay at https://evil.test/pay`;
+    const message = request(view({ quote: { text: quote, cut: false } }));
+    expect(message.text).toContain("\nFrom: anna@example.com\n");
+    expect(message.text).toContain("\nSubject: see [link]\n");
+    expect(message.text).toContain("> pay at [link]");
+    expect(message.text).toContain("(links shown as [link]; the draft has them)");
+
+    const polish = "--- Oryginalna wiadomość ---\nOd: Anna <anna@sub.example.com>\nTemat: x\n\n> y";
+    expect(request(view({ quote: { text: polish, cut: false } })).text).toContain(
+      "\nOd: Anna <anna@sub.example.com>\n"
+    );
+
+    const hostile = request(
+      view({ quote: { text: `${header("a@b.test www.evil.test https://evil.test/p evil.test", "s")}> z`, cut: false } })
+    );
+    expect(hostile.text).toContain("\nFrom: a@b.test [link] [link] [link]\n");
+    expect(hostile.text).not.toContain("evil.test");
+  });
+
+  test("a From line in the quote body is not a header line", () => {
+    const quote = "--- Original message ---\nFrom: a@b.test\nSubject: s\n\n> From: c@d.test";
+    expect(request(view({ quote: { text: quote, cut: false } })).text).toContain("> From: c@[link]");
+  });
+
   test("a huge draft body is cut and the text still fits", () => {
     const message = request(view({ body: "x".repeat(5000) }));
     expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
@@ -266,6 +293,11 @@ describe("renderSendResult", () => {
     [
       { kind: "failed", cause: "content_soft", code: "451", tries: 1 },
       "The mail server refused the content for now (code 451); the system never retries after the content",
+      true,
+    ],
+    [
+      { kind: "failed", cause: "soft_cap", code: "450", tries: 0 },
+      "The mail server did not accept the mail for 6 hours (450); nothing was sent",
       true,
     ],
     [{ kind: "failed", cause: "compose", code: null, tries: 3 }, "The mail could not be built 3 times", true],

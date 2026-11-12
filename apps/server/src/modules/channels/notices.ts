@@ -38,6 +38,7 @@ import {
   markNotified,
   markResultNotified,
   SENT_COPY_PENDING_MAX_AGE_MS,
+  SOFT_CAP_MARK,
   type SendRow,
 } from "../actions";
 import { auditEvents, findActionActor } from "../audit";
@@ -553,7 +554,14 @@ async function resultKindOf(
         case "bad_payload":
           return { kind: "failed", cause: "bad_payload", code: null, tries: row.attempts };
         default: {
-          const cause = stage === "content" ? "content_soft" : stage === "compose" ? "compose" : "tries";
+          const cause =
+            result.cap === SOFT_CAP_MARK
+              ? "soft_cap"
+              : stage === "content"
+                ? "content_soft"
+                : stage === "compose"
+                  ? "compose"
+                  : "tries";
           return { kind: "failed", cause, code: code === null ? null : String(code), tries: row.attempts };
         }
       }

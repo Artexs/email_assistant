@@ -1,17 +1,19 @@
 > **Status 2026-11-12 — planned.** Left: the detailed stage plan (an own `plan-task` session), then the build with `run-task`.
 
-# S6b Public login: auth mail, invite, terms, hardening
+# S6b Login hardening: auth mail (off), invite, terms, lockout
 
-Scope: the S6 master plan `tasks/active/s6-pre-sale.md` (findings 10 and 11, P2, P8, P9, P11, D7–D11, D31 (auth mail event), "Rules for every step"). Also replaces `tasks/planned/web-public-hardening.md` and `tasks/planned/web-hashed-reset-tokens.md` (move them to `done/` with a pointer when this segment is done). Needs: S6a merged.
+> **Scope change 2026-11-12:** local production on the home VPS, no outside customers (master plan § "Scope change", P16–P24). This file is updated for it; the plan session reads that section first.
+
+Scope: the S6 master plan `tasks/active/s6-pre-sale.md` (findings 10 and 11, P2, P8, P9, P11, D7–D11, D31 (auth mail event), "Rules for every step"). Also replaces the Limen tickets `spec/features/planned/F056-web-public-hardening/` and `F059-web-hashed-reset-tokens/` (close them with an `outcome.md` when this segment is done). The scope change keeps P18: hardening yes, public domain no, the sender built but off. Needs: S6a merged.
 Git mode: worktree (`task/s6b-public-login`). Run mode: pipeline. Review model: stronger reviewer (Opus, high) for every stage; security group review at the end.
 
 ## Goal
 
-The login holds up on the public internet, and a customer gets in only through an e-mailed invite: the server sends invite, reset and lockout mails, the reset request leaks nothing, failed sign-ins lock the account for a short time, leaked passwords are refused, and the first password set records the accepted terms.
+The login has the production shape, although the panel stays behind Tailscale: a user gets in only through an invite link, the reset request leaks nothing, failed sign-ins lock the account for a short time, leaked passwords are refused, and the first password set records the accepted terms. The auth-mail sender exists and is tested, but stays off on the VPS: the CLI prints the invite and reset links (P18).
 
 ## Done when
 
-- With the `AUTH_SMTP_*` keys set, `org:invite` makes the organization and the owner and mails the setup link (GreenMail in tests); without the keys the server starts and works as in S5 (`request-password-reset` 404, the CLI prints the link).
+- With the `AUTH_SMTP_*` keys set, `org:invite` makes the organization and the owner and mails the setup link (GreenMail in tests); without the keys (the VPS) the server starts and works as in S5 (`request-password-reset` 404, `org:invite` and `web:invite` print the link).
 - `/forgot` opens without a session (no redirect; test). `POST /api/auth/request-password-reset` gives the same status and body for a known and an unknown address, and the request does not wait for the mail send (test with a slow fake SMTP), the rate limits of D8 hold (test), and the link of a reset is valid 1 h (server) and of an invite 24 h (CLI), through an `AuthDeps` field.
 - A failed auth mail is a `warn` line with the user id and the code, and an operator notice (D31).
 - 10 failed sign-ins in 15 min lock the user for 15 min; the answer and about the time are the same as a wrong password (a locked attempt hashes a dummy password); one lockout mail per lock, at most 3 per user per day; a correct password during the lock fails; after 15 min it works; a password reset clears the lock (fixed-clock tests).
@@ -20,7 +22,7 @@ The login holds up on the public internet, and a customer gets in only through a
 - `host-check.ts` also refuses `100.64.0.0/10`, `198.18.0.0/15` and `192.0.0.0/24`; every IMAP and SMTP connect (form, sync, send) uses a `lookup` that refuses a local answer, so a host name that resolves to a local address later is refused at the next sync (tests with a fake resolver).
 - Reset tokens are stored hashed (a DB read in the test finds no raw token).
 - `/setup` needs the terms checkbox; the same request sets the password and `users.terms_version` and `terms_accepted_at` (a request without the acceptance changes nothing; test); a newer `TERMS_VERSION` shows the blocking dialog after sign-in (Playwright). `TERMS_VERSION` is in `packages/core`; the stub pages `/legal/{pl,en}/{privacy,terms,dpa}` exist and open without a session (S6e fills them).
-- `docs/architecture.md` §7 lists the controls; `deploy/README.md` lists the new env keys, the DNS records of the sender (SPF, DKIM, DMARC) and "tracking off"; ADR 0016 has the amendment of D7 and D8.
+- `docs/architecture.md` §7 lists the controls; `deploy/README.md` lists the new env keys (empty on the VPS) and says what a real sender would need (SPF, DKIM, DMARC, tracking off) without a provider account; ADR 0016 has the amendment of D7 and D8.
 
 ## Owns (from the master plan)
 
@@ -38,11 +40,11 @@ The login holds up on the public internet, and a customer gets in only through a
 6. **Terms acceptance** `[risky]`: columns, `TERMS_VERSION`, the stub legal pages, the setup checkbox and the hooks (one request), the blocking dialog, audit row; Playwright without a session for the stubs.
 7. **Sessions**: the session list and the audit row of "sign out everywhere" (B13); tests.
 8. **Mail host address check** `[risky]`: the new ranges in `host-check.ts`, the `lookup` for every IMAP and SMTP connect; tests with a fake resolver.
-9. **Docs, staging check and group review** (checkpoint 2): architecture §7, runbook, ADR 0016 amendment, notes; a run on staging with the real sender (U2): invite, reset, lockout mail arrive; SPF, DKIM, DMARC pass in the received headers; the link in the mail is not rewritten (tracking off).
+9. **Docs, VPS check and group review** (checkpoint 2): architecture §7, runbook, ADR 0016 amendment, notes; the deploy to the home VPS with the user's go; on the VPS: `org:invite` prints a link, the setup with the terms checkbox works, 10 wrong passwords lock the test user, a leaked password is refused. No real mail provider (P18).
 
 ## Questions for the plan session
 
-- The texts of the three mails (pl, en) and the sender name.
+- The texts of the three mails (pl, en) and the sender name (used only in tests and when someone turns the sender on).
 - The Account card session list layout (default: one row per session, "this device" mark, no per-session revoke in S6).
 - Whether the lockout mail goes also to the other owners of the organization (default: no).
 

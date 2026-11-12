@@ -17,6 +17,7 @@ import {
   type ClaimedAction,
   type DelegationHooks,
 } from "../../src/modules/actions";
+import { SEND_SOFT_CAP_MS } from "../../src/modules/actions/constants";
 import { buildDraftMessage } from "../../src/modules/actions/drafts";
 import { getMailboxSettings, insertDefaultSettings } from "../../src/modules/config";
 import { delegationHooks } from "../../src/modules/delegation";
@@ -350,6 +351,71 @@ describe("applySend", () => {
     });
   });
 
+  test("(4b) soft errors retry every 5 min until 6 h after the tap, then the send fails as smtp_error with Send again", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const { hooks, calls } = recordingHooks();
+      const p = await pair(trx, s);
+      // The tap is at(-1). A scripted soft envelope error repeats on every try.
+      s.sender.failNext(smtp("envelope", "EENVELOPE", 450, false, true), 100);
+
+      const beforeCap = at(-1 + 6 * 60 - 5);
+      expect(await applyOnce(trx, s, p.sendId, beforeCap, { hooks })).toEqual({ kind: "retry", soft: true });
+      expect(await row(trx, p.sendId)).toMatchObject({ status: "approved", attempts: 0, locked_at: null });
+      expect((await row(trx, p.sendId)).next_attempt_at).toEqual(new Date(beforeCap.getTime() + 5 * MINUTE));
+
+      const atCap = at(-1 + 6 * 60);
+      expect(await applyOnce(trx, s, p.sendId, atCap, { hooks })).toEqual({ kind: "failed", reason: "smtp_error" });
+
+      expect(await row(trx, p.sendId)).toMatchObject({
+        status: "failed",
+        status_reason: "smtp_error",
+        attempts: 0,
+        last_error: "smtp_450",
+        result_notified_at: null,
+        provider_result: { stage: "envelope", response_code: 450, code: "EENVELOPE", cap: "soft_retry" },
+      });
+      expect(s.sender.sent).toHaveLength(0);
+      expect(calls.cancelled).toEqual([{ delegationId: DELEGATION_ID, reason: "send_failed", at: atCap }]);
+      const failed = (await auditOf(trx, p.sendId)).find((entry) => entry.event === "action.failed");
+      expect(failed).toMatchObject({
+        reason_code: "smtp_error",
+        data: { stage: "envelope", response_code: 450, cap: "soft_retry" },
+      });
+      // The row is gone from the claim queue: no retry after the cap.
+      expect(await claimWhere(trx, s, at(-1 + 6 * 60 + 10))).toEqual([]);
+    });
+  });
+
+  test("(4c) the cap does not touch a retry with a count: a hard error after 7 h counts a try and retries", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const p = await pair(trx, s);
+      s.sender.failNext(smtp("connect", "ETLS", null, false, false));
+
+      const late = at(7 * 60);
+      expect(await applyOnce(trx, s, p.sendId, late)).toEqual({ kind: "retry", soft: false });
+
+      const send = await row(trx, p.sendId);
+      expect(send).toMatchObject({ status: "approved", attempts: 1, locked_at: null });
+      expect(send.next_attempt_at).toEqual(new Date(late.getTime() + 5 * MINUTE));
+    });
+  });
+
+  test("(4d) a 4xx after the content past the cap fails with the content text, not the cap text", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const p = await pair(trx, s);
+      s.sender.failNext(smtp("content", "EMESSAGE", 451, false, true));
+
+      expect(await applyOnce(trx, s, p.sendId, at(7 * 60))).toEqual({ kind: "failed", reason: "smtp_error" });
+
+      const send = await row(trx, p.sendId);
+      expect(send.provider_result).toEqual({ stage: "content", response_code: 451, code: "EMESSAGE" });
+      expect(s.sender.calls.filter((call) => call === "send")).toHaveLength(1);
+    });
+  });
+
   test("(5) a permanent envelope error fails the send as smtp_rejected and keeps the draft", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
@@ -636,6 +702,21 @@ describe("applySend", () => {
       kind: "retry",
       soft: true,
       count: false,
+    });
+    expect(sendOutcomeOf(smtp("envelope", "EENVELOPE", 450, false, true), 0, SEND_SOFT_CAP_MS - 1)).toEqual({
+      kind: "retry",
+      soft: true,
+      count: false,
+    });
+    expect(sendOutcomeOf(smtp("connect", "ECONNECTION", null, false, true), 0, SEND_SOFT_CAP_MS)).toEqual({
+      kind: "failed",
+      reason: "smtp_error",
+      capped: true,
+    });
+    expect(sendOutcomeOf(smtp("connect", "ETLS", null, false, false), 0, SEND_SOFT_CAP_MS)).toEqual({
+      kind: "retry",
+      soft: false,
+      count: true,
     });
     expect(sendOutcomeOf(smtp("envelope", "EENVELOPE", 550, true, false), 0)).toEqual({
       kind: "failed",

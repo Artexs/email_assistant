@@ -13,3 +13,7 @@ export const RETRY_WAIT_MS = 5 * 60_000;
 
 // A delegation without a due date gets one this long after its send (F041 uses it too).
 export const DELEGATION_DUE_AFTER_MS = 3 * 24 * 3_600_000;
+
+// F044: a send that gets only soft errors before the content ends as `failed` / `smtp_error` this long after the tap.
+// Shorter than APPROVAL_TTL_MS (`held_timeout`), so the user learns sooner. It does not touch a retry with a count.
+export const SEND_SOFT_CAP_MS = 6 * 3_600_000;
