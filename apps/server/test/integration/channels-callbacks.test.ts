@@ -400,12 +400,18 @@ describe("approval taps", () => {
       kind,
       dedupKey: `${kind}:${key}`,
       emailId,
-      message: { text, buttons: [] },
       view: {},
       locale: "en",
       createdAt: T,
       nextAttemptAt: T,
     });
+    // The card text as the sender stores it after the send.
+    await trx
+      .updateTable("outbox")
+      .set({ text })
+      .where("dedup_key", "=", `${kind}:${key}`)
+      .where("user_id", "=", userId)
+      .execute();
   }
 
   async function sendRow(trx: Transaction<DB>, id: string) {
@@ -474,6 +480,39 @@ describe("approval taps", () => {
       const rejected = await handleCallback(s.deps, s.owner1, `ar:${sendId}`);
       expect(rejected.answer).toBe(APPROVAL_TEXTS.rejected_now);
       expect(await sendRow(trx, sendId)).toMatchObject({ status: "rejected" });
+    });
+  });
+
+  test("(5e) a tap on a card that was never sent answers and gives no edit", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const { sendId, emailId } = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, { notifiedAt: T, createdAt: T });
+      await insertOutbox(trx, s.ctx, {
+        userId: s.o1,
+        kind: "approval",
+        dedupKey: `approval:${sendId}`,
+        emailId,
+        view: {},
+        locale: "en",
+        createdAt: T,
+        nextAttemptAt: T,
+      });
+
+      const tap = await handleCallback(s.deps, s.owner1, `ap:${sendId}`);
+      expect(tap.answer).toBe(APPROVAL_TEXTS.approved);
+      expect(tap.edit).toBeUndefined();
+      expect(await sendRow(trx, sendId)).toMatchObject({ status: "approved" });
+    });
+  });
+
+  test("(5f) the edit keeps the stored card bytes and adds the status line", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const { sendId, emailId } = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, { notifiedAt: T, createdAt: T });
+      await queueFor(trx, s.ctx, s.o1, "approval", sendId, emailId, "📤 Send? Card");
+
+      const tap = await handleCallback(s.deps, s.owner1, `ap:${sendId}`);
+      expect(tap.edit?.text.startsWith("📤 Send? Card\n\n")).toBe(true);
     });
   });
 

@@ -9,7 +9,7 @@ import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { insertDigest } from "../../src/modules/reports";
 import type { DB, TenantContext } from "../../src/platform/db";
 
-import { createOrgWithMailbox, linkChat, randomChatId, testCapabilities } from "./fixtures";
+import { createOrgWithMailbox, linkChat, randomChatId, renderedOf, testCapabilities } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { countMailboxRows, fillMailbox } from "./mailbox-rows";
 
@@ -50,7 +50,6 @@ async function insertDigestOutbox(
     kind: "digest",
     dedupKey: `digest:${digestId}`,
     digestId: digestId ?? undefined,
-    message: { text, buttons: [] },
     view: { text, buttons: [] },
     locale: "en",
     createdAt: now,
@@ -134,8 +133,12 @@ async function outboxView(trx: Transaction<DB>, id: string): Promise<unknown> {
 }
 
 async function outboxText(trx: Transaction<DB>, id: string): Promise<string | undefined> {
-  const row = await trx.selectFrom("outbox").select("text").where("id", "=", id).executeTakeFirst();
-  return row?.text ?? undefined;
+  const row = await trx
+    .selectFrom("outbox")
+    .select(["kind", "view", "channel", "detail", "locale", "text", "buttons"])
+    .where("id", "=", id)
+    .executeTakeFirst();
+  return row === undefined ? undefined : renderedOf(row).text;
 }
 
 describe("delete_mailbox", () => {
@@ -250,7 +253,6 @@ describe("delete_mailbox", () => {
         userId,
         kind: kind as OutboxKind,
         dedupKey: `${kind}:${randomUUID()}`,
-        message: { text: "Mailbox removed", buttons: [] },
         view: {},
         locale: "en" as const,
         createdAt: now,
