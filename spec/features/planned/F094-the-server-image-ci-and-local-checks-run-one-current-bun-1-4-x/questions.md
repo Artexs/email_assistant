@@ -6,7 +6,7 @@ None of these blocks the stages. Each default is a decision in `plan.md`.
 
 - **Fact:** CI runs on `master` and `task/**` only; Limen job branches (`limen/…`) get no CI (`plan.md` F11). The pin change moves the runtime of CI, the image and every job's proof at once.
 - **Options:** (a) push the job branch to `task/f094-bun-pin` (a normal push of a new branch, never force), wait for green `ci`, `e2e` and `image`, land, delete the remote branch; (b) land first and watch the `master` run; a red run is reverted with `git revert` the same day.
-- **Default:** (a), decision D7. It keeps `master` green; the cost is one extra CI run (about 5 minutes).
+- **Default:** (a), decision D7. It keeps `master` green; the cost is one extra CI run (about 5 minutes). The push publishes the branch on GitHub (the owner's repository); the cold review asked that the owner confirm this.
 
 ## Q2 Build after F086 lands, or next to it?
 
@@ -21,3 +21,9 @@ None of these blocks the stages. Each default is a decision in `plan.md`.
 ## Q4 Exact `1.4.4`, not the floating tag `1.4`?
 
 - **Default:** exact `1.4.4`, decision D1. The latest stable release and the PC's Bun; the `image` job compares exact text.
+
+## Q5 Stop the VPS deploy when less than 5 GB is free after the prune?
+
+- **Fact:** the new base image forces a cold build that needs 2–3 GB of build cache; the root volume had 3.2 GB free on 2026-11-13, with about 23 GB unallocated in the volume group (`plan.md` F15). The disk also holds the Postgres volume.
+- **Options:** (a) always prune, stop under 5 GB free, grow the volume first (owner, sudo; the planned PD-055 step); (b) prune and build at 3 GB as `deploy/README.md` says.
+- **Default:** (a), decision D8. A full disk stops Postgres writes and the sync. Growing the volume is already an owner step before E8b and E2b.
