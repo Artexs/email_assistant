@@ -30,6 +30,16 @@ A module that has something to tell the user queues `{ kind, view, locale }` and
 - Retention clears `view` with `text` (`clearOutboxTexts`, `docs/architecture.md` §7 row).
 - `docs/code-patterns.md` has the standard "notices are facts" and the checklist "add a notice kind".
 
+## Slices
+
+Six stages, in order, one job each: registry in core; `[risky]` migration and repository; producers queue views; `[risky]` the sender renders; detector registry; docs. Reviews, the owner step and the checkpoint: [plan.md](plan.md) § "How to run (coordinator)".
+
+## Sequenced
+
+- Plan after: the module borders ticket (F086), whose plan sets the lint and the standards sections this plan builds on; it has `stages/`.
+- Build after: the module borders ticket (F086) in `spec/features/done/` (`docs/product/stage-2/07-foundation-plan.md` §1 row 4).
+- Gate: stage 02 never runs next to another migration stage (F087 stage 1, F092 stage 1); at most two Stage 2 tickets in build (`05-execution-plan.md` §2.4).
+
 ## Notes
 
-Design and stages: [plan.md](plan.md). Source: review §3.4, §3.10, part of §3.3; ADR 0032, PD-033, PD-037.
+Design and stages: [plan.md](plan.md). Source: review §3.4, §3.10, part of §3.3; ADR 0032, PD-033, PD-037. Open defaults: [questions.md](questions.md).
