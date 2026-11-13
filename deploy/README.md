@@ -122,7 +122,7 @@ Never run `tailscale up --force-reauth` over the tailnet. It cuts the connection
    - `WEB_BASE_URL`: `https://<machine>.<tailnet>.ts.net` (no path, no trailing slash).
    - `WEB_AUTH_SECRET`: make it with `openssl rand -base64 32`. Never print it.
    - `WEB_TRUSTED_PROXIES`: `172.30.0.1` (the gateway from step 1).
-   - Leave `WEB_TRUSTED_ORIGINS`, `WEB_MAIL_ALLOW_LOCAL` and `WEB_DIST` empty.
+   - Leave `WEB_TRUSTED_ORIGINS`, `MAIL_ALLOW_LOCAL_HOSTS`, `WEB_MAIL_ALLOW_LOCAL`, `WEB_DIST` and the six `AUTH_*` keys empty. Leave `AUTH_PWNED_CHECK` empty (on).
 3. Do the section Update. The migrations of S5 run there.
 4. Check the log for the start line `web is on: https://…, dist /app/apps/web/dist`: `$C logs server | grep 'web'`
    The output must show no other line with `web:` or `WEB_BASE_URL is http://`.
@@ -143,15 +143,49 @@ A stack that started before the pin has another subnet (`172.18.0.0/16` on the V
 6. Check: `docker network inspect email-assistant_default --format '{{(index .IPAM.Config 0).Gateway}}'` prints `172.30.0.1`. After the first sign-in, `auth_sessions.ip_address` is a tailnet address.
 7. Rollback: restore the old compose file and set `WEB_TRUSTED_PROXIES` to the old gateway (from `.env.bak-f069`). Run `$C down && $C up -d --wait`. Delete `.env.bak-f069` when the move works.
 
+### Invite a customer (S6b)
+
+1. Make the organization, the owner and the link:
+   `$C exec server bun run org:invite --org-name <name> --email <email> --display-name <name> [--lang pl|en] [--trial-days N]`
+2. Without the auth-mail sender, the command prints the setup link (it works once and for 24 hours). The link is a secret. Do not paste it into a chat with an agent or into a log. Send it to the customer yourself.
+3. An address that already has an account stops the command with `user with this email already exists`. Nothing is created.
+4. The customer opens the link on a device in the tailnet, accepts the terms and sets a password.
+
 ### Give a member a password
 
-1. Make the link: `$C exec server bun run web:invite --org-id <uuid> [--user-id <uuid>]`
+1. Make the link: `$C exec server bun run web:invite --org-id <uuid> [--user-id <uuid>] [--print]`
 2. Open the link on a device in the tailnet. The link works once and for 24 hours.
-3. Set a password of 12 to 128 characters.
+3. Set a password of 12 to 128 characters and accept the terms.
+
+With the auth-mail sender on, the link goes by mail. `--print` prints it instead.
 
 The login e-mail is the address that you gave to `org:create` (`users.email`), not any other address of the person. A wrong e-mail shows only "Wrong e-mail or password." The log says `better-auth: User not found`.
 
 The same command makes a reset link later. The link is a secret. Do not paste it into a chat with an agent or into a log.
+
+### Auth mail sender (off on the home VPS)
+
+The sender mails invite, reset and lock messages. It turns on only when all six keys are set: `AUTH_SMTP_HOST`, `AUTH_SMTP_PORT`, `AUTH_SMTP_SECURITY`, `AUTH_SMTP_USER`, `AUTH_SMTP_PASSWORD`, `AUTH_MAIL_FROM`. With the keys empty, `/forgot` shows "Reset by e-mail is off" and the CLI prints the links.
+
+A real sender needs these first:
+
+- A domain, with SPF, DKIM and DMARC records for it.
+- Click tracking and open tracking off at the provider. A tracked link stores the setup link at a third party.
+- Port 465 (`AUTH_SMTP_SECURITY=tls`) or 587 (`starttls`).
+
+No provider is chosen (P18). A failed auth mail writes a `warn` log line and the operator notice `auth_mail_failed` (`docs/known-alerts.md`).
+
+### Sign-in lock
+
+A user who types a wrong password 10 times in 15 minutes waits 15 minutes. The answer is the same as for a wrong password. To end the lock sooner, make a new link with `web:invite`: a password reset ends the lock. Each lock writes the audit row `web.login_locked`.
+
+### Leaked-password check
+
+Every password set or change asks `api.pwnedpasswords.com` (5 hex characters of the SHA-1 leave the server, not the password). The server needs outbound HTTPS to that host. When it is down, password sets fail with "try again later" and nothing changes. `AUTH_PWNED_CHECK=off` is for tests only.
+
+### After the first deploy of S6b
+
+Every member sees the terms dialog once at the next sign-in. The legal pages are drafts until S6e.
 
 ### Check access
 

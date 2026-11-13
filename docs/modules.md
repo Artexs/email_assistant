@@ -370,6 +370,8 @@ Built in S5. The routers are mounted under `/api` (`api.route("/", …)` in `app
 | `GET /organization`                                   | member | `tenancy`  | S5c   |
 | `PATCH /organization`                                 | owner  | `tenancy`  | S5c   |
 | `PATCH /me/digest-times`                              | member | `tenancy`  | S5c   |
+| `GET /me/sessions`                                    | member | `tenancy`  | S6b   |
+| `POST /me/terms`                                      | member | `tenancy`  | S6b   |
 | `GET /settings/:mailboxId`                            | member | `config`   | S5c   |
 | `PATCH /settings/:mailboxId/mode`                     | owner  | `config`   | S5c   |
 | `PATCH /settings/:mailboxId/switches/:name`           | owner  | `config`   | S5c   |
@@ -382,7 +384,7 @@ Built in S5. The routers are mounted under `/api` (`api.route("/", …)` in `app
 | `POST /feedback`                                      | member | `triage`   | S5d   |
 | `POST /actions/undo`                                  | member | `triage`   | S5d   |
 
-- `/api/auth/*` allow-list (`AUTH_ALLOWED_PATHS` in `platform/auth.ts`): `/sign-in/email`, `/sign-out`, `/get-session`, `/reset-password`, `/change-password`, `/revoke-other-sessions`, `/revoke-sessions`, `/list-sessions`, and `GET /reset-password/<token>`. Every other path is 404.
+- `/api/auth/*` allow-list (`AUTH_ALLOWED_PATHS` in `platform/auth.ts`): `/sign-in/email`, `/sign-out`, `/get-session`, `/reset-password`, `/change-password`, `/revoke-other-sessions`, `/revoke-sessions`, and `GET /reset-password/<token>`; `POST /request-password-reset` too, only when the auth-mail sender is on (S6b). Every other path is 404. `/list-sessions` is not open: it returns tokens (use `GET /me/sessions`).
 - Pages are not routes of a module: `platform/http` serves the Astro build (`WEB_DIST`) with a session check. `/login`, `/setup` and the assets are public; `/` redirects to `/onboarding` or `/activity`.
 - **Phase 2 web (not built):** `/actions` list, approve and reject (Telegram has them from S4), `/delegates`, `/delegations` (Telegram and CLI from S4).
 

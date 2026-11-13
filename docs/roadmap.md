@@ -61,6 +61,8 @@ S4 state (2026-11-07): done (`spec/features/done/2026-11/F006-s4-drafts-approval
 
 S5 state (2026-11-12): built in S5a–S5e and deployed on the VPS at 2026-11-11 23:37 UTC, behind Tailscale Serve (ADR 0016, 0017; facts: `notes/2026-11-12-web-panel-deploy.md`). Open: the phone sign-in and the phone cut-off check, and the ↩️ and ✏️ buttons on real mail. The market check (which mail the customers use) was not done (P9); the question stays for S6.
 
+S6 state (2026-11-13): S6b built (login hardening: lockout, leaked-password check, terms, session list, mail host check; the auth-mail sender built and off).
+
 Order: `S0 → S1a → S1b → S2 → S3 → S4 → S5 → S6`.
 
 ```mermaid

@@ -178,12 +178,20 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Investigate: a line means a code path changed or a new `createAuth` caller exists. Check who builds the auth instance without `sendResetPassword` (`webDeps` in `web.ts`, `web-invite.ts`).
 - **Status:** investigating
 
+### `operator notice auth_mail_failed`
+
+- **First seen:** 2026-11-13 (S6b code; not seen live)
+- **Source:** `apps/server/src/modules/channels/operator.ts` (`authMailFailed`). The operator chat gets `Auth mail <kind> to user <id> of org <id> failed (<code>).` One notice per user, code and day. The same failure is a `warn` line `auth mail <kind> to user <id> failed: <code>` from `platform/auth-mail.ts`.
+- **Cause:** The auth-mail sender could not send an invite, reset or lock mail. `<code>` is the nodemailer code (for example `EAUTH`, `ECONNECTION`), `TIMEOUT` or `UNKNOWN`.
+- **Fix:** Check the six `AUTH_SMTP_*` and `AUTH_MAIL_FROM` keys and the provider (login, port 465 or 587, `AUTH_SMTP_SECURITY`). Make a new link by hand: `bun run web:invite --org-id <uuid> --user-id <uuid> --print`.
+- **Status:** open while the sender is off (the home VPS prints the links; no notice fires there)
+
 ### `better-auth: Invalid password`
 
 - **First seen:** 2026-11-09 (S5a code; a wrong sign-in makes it, for example in the Playwright smoke of stage 13)
 - **Source:** `apps/server/src/platform/auth.ts` (Better Auth `sign-in.mjs` text through the logger, level `warn`, `cleanLogText` applied).
 - **Cause:** One sign-in came with a wrong password. The answer is the same 401 `INVALID_EMAIL_OR_PASSWORD` as for an unknown e-mail, so the text never says which of the two is wrong.
-- **Fix:** No action for one line. Many lines per minute from one address mean someone guesses: the rate limit answers 429 after 3 tries in 10 s (W9). S6 adds the lockout (`spec/features/planned/F056-web-public-hardening/plan.md`).
+- **Fix:** No action for one line. Many lines per minute from one address mean someone guesses: the rate limit answers 429 after 3 tries in 10 s (W9). S6b (F082) locks a user after 10 failures in 15 minutes; see `docs/architecture.md` §7.
 - **Status:** won't fix (expected behaviour)
 
 ### `better-auth: User not found`
@@ -253,7 +261,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `web: audit <kind> failed: <label>`
 
 - **First seen:** 2026-11-09 (S5a code; not seen live)
-- **Source:** `apps/server/src/web.ts` (`auditWebEvent`, level `error`). `<kind>` is `login`, `password_set` or `password_changed`.
+- **Source:** `apps/server/src/web.ts` (`auditWebEvent`, level `error`). `<kind>` is `login`, `password_set`, `password_changed`, `login_locked`, `sessions_revoked` or `other_sessions_revoked`.
 - **Cause:** The audit row of a login or a password change was not written: a database error in `recordAudit` or in the membership query. The login itself succeeded, because the composer catches every `onEvent` error.
 - **Fix:** Read the label and check the DB (connection, migration state, the `audit_log` rows). One row is missing for that event; the next login writes its own.
 - **Status:** investigating

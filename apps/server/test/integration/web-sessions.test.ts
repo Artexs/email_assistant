@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
 
 import { sessionsSchema } from "@ea/core";
-import { afterAll, afterEach, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
 
 import { createOrganizationWithOwner, tenancyRoutes } from "../../src/modules/tenancy";
 import { createAuth, listUserSessions, type AuthSessionRow } from "../../src/platform/auth";
+import { setLogLevel } from "../../src/platform/log";
 import { auditWebEvent, onboardingDeps, termsAcceptedHandler } from "../../src/web";
 
 import { testDb } from "./helpers";
@@ -35,7 +36,18 @@ const orgIds: string[] = [];
 const userIds: string[] = [];
 const orgs: WebOrg[] = [];
 
+let logSpy: ReturnType<typeof spyOn>;
+let errorSpy: ReturnType<typeof spyOn>;
+let warnSpy: ReturnType<typeof spyOn>;
+
+beforeAll(() => {
+  logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
+  errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+  warnSpy = spyOn(console, "warn").mockImplementation((): void => undefined);
+});
+
 afterEach(async () => {
+  setLogLevel("info");
   for (const orgId of orgIds) await db.deleteFrom("organizations").where("id", "=", orgId).execute();
   if (userIds.length > 0) await db.deleteFrom("users").where("id", "in", userIds).execute();
   orgIds.length = 0;
@@ -45,6 +57,9 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
+  logSpy.mockRestore();
+  errorSpy.mockRestore();
+  warnSpy.mockRestore();
   await handle.close();
   await db.destroy();
 });
@@ -220,5 +235,42 @@ describe("sign out everywhere: the audit rows", () => {
     expect(await auditRows(member.orgId, "web.sessions_revoked")).toHaveLength(0);
     expect(await auditRows(member.orgId, "web.other_sessions_revoked")).toHaveLength(0);
     expect(await listUserSessions(handle, member.userId)).toHaveLength(1);
+  });
+});
+
+describe("logs", () => {
+  test("sign-in, reset and the revoke routes put no password, token or reset link in a log line", async () => {
+    logSpy.mockClear();
+    errorSpy.mockClear();
+    warnSpy.mockClear();
+
+    const member = await createMember();
+    const resetToken = new URL(resets[0]?.url ?? "").pathname.split("/").pop() ?? "";
+    const cookie = await member.signIn();
+    const otherCookie = await member.signIn();
+    // A wrong password makes Better Auth log a warning: the capture sees real lines.
+    await handle.auth.handler(
+      new Request(`${BASE_URL}/api/auth/sign-in/email`, {
+        method: "POST",
+        headers: { origin: BASE_URL, "content-type": "application/json" },
+        body: JSON.stringify({ email: member.email, password: `wrong-${PASSWORD}` }),
+      })
+    );
+    expect((await authPost("/revoke-other-sessions", cookie)).status).toBe(200);
+    expect((await authPost("/revoke-sessions", cookie)).status).toBe(200);
+
+    // The session token is the cookie value before the signature dot.
+    const sessionTokens = [cookie, otherCookie].map(
+      (value) => decodeURIComponent(value.split("=")[1] ?? "").split(".")[0] ?? ""
+    );
+    const secrets = [PASSWORD, `wrong-${PASSWORD}`, resetToken, ...sessionTokens, member.email];
+    for (const secret of secrets) expect(secret.length).toBeGreaterThan(10);
+
+    const lines = [...logSpy.mock.calls, ...errorSpy.mock.calls, ...warnSpy.mock.calls].map((call) => call.join(" "));
+    expect(lines.length).toBeGreaterThan(0);
+    for (const line of lines) {
+      expect(line).not.toContain("reset-password/");
+      for (const secret of secrets) expect(line).not.toContain(secret);
+    }
   });
 });
