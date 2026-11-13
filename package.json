@@ -18,6 +18,7 @@
     "test:int:ci": "bash scripts/ci-bun.sh run test:int",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "graph:modules": "bun apps/server/src/scripts/module-graph.ts",
     "format": "prettier --write .",
     "fake-tg": "bun tools/fake-telegram/src/cli.ts",
     "web:dev": "bun run --filter @ea/web dev",
