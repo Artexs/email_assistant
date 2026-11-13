@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-13
 ---
 
 # F093 · CI on master is green and a flaky test is quarantined the same day

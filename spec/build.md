@@ -39,6 +39,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F093-ci-green` (🟢 PROVEN): CI on master is green and a flaky test is quarantined the same day; landed 2026-11-13
 - `F084-the-mail-host-guard-also-refuses-multicast-broadcast-reserved-nat64-site-local-and-6to4-addresses-and-its-default-policy-is-frozen` (🟢 PROVEN): The mail host guard also refuses multicast, broadcast, reserved, NAT64, site-local and 6to4 addresses, and its default policy is frozen; landed 2026-11-13
 - `F079-approvals-at-resume` (🟢 PROVEN): After a pause, an approval request from before the pause cannot go out unseen or late; landed 2026-11-13
 - `F077-s6a-customer-core` (🟢 PROVEN): S6a Customer core: a second organization runs next to the pilot; landed 2026-11-13
@@ -48,5 +49,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F059-web-hashed-reset-tokens` (🟢 PROVEN): Store web reset tokens hashed; landed 2026-11-12
 - `F058-sync-sort-folders` (🟢 PROVEN): Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci); landed 2026-11-12
 - `F054-s5e-web-deploy-docs` (🟢 PROVEN): S5e Web: deploy and docs; landed 2026-11-12
-- `F049-mail-smtp-starttls-587` (🟢 PROVEN): SMTP on port 587 with STARTTLS; landed 2026-11-12
-- 2026-11: 47 landed. spec/features/done/2026-11/
+- 2026-11: 48 landed. spec/features/done/2026-11/
