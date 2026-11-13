@@ -98,6 +98,8 @@ const baseSchema = z.object({
   DATABASE_URL: z.string().url(),
   PORT: z.coerce.number().int().positive().default(8080),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
+  // json = one JSON object per line (the VPS); text = "[module] event key=value" (dev). ADR 0024.
+  LOG_FORMAT: z.preprocess(emptyAsUndefined, z.enum(["json", "text"]).default("json")),
   CREDENTIALS_KEY: z.string().refine(isCredentialsKey, "must be base64 of 32 bytes"),
   CREDENTIALS_KEY_VERSION: z.coerce.number().int().positive().default(1),
   HEARTBEAT_URL: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional()),

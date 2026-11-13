@@ -12,7 +12,7 @@ import { describeError } from "./platform/errors";
 import { createHeartbeat } from "./platform/heartbeat";
 import { createApp } from "./platform/http";
 import { createLlmClient, llmProviders } from "./platform/llm";
-import { createLog, setLogLevel } from "./platform/log";
+import { createLog, setLogFormat, setLogLevel } from "./platform/log";
 import { createScheduler } from "./platform/scheduler";
 import { createRetentionJob } from "./retention";
 import { webDeps } from "./web";
@@ -49,6 +49,7 @@ function triageScope(config: Config, providerLabel: string): TriageScope | null 
 
 const config = loadConfigOrExit();
 setLogLevel(config.LOG_LEVEL);
+setLogFormat(config.LOG_FORMAT);
 configureMailHosts({ allowLocal: mailAllowLocal(config) });
 if (config.MAIL_ALLOW_LOCAL_HOSTS === undefined && config.WEB_MAIL_ALLOW_LOCAL !== undefined) {
   log.warn("WEB_MAIL_ALLOW_LOCAL is an old name: use MAIL_ALLOW_LOCAL_HOSTS");
