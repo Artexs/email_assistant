@@ -86,7 +86,8 @@ describe("createRoleLlmClient", () => {
     const { data, usage } = await llm.generate(classifierCall);
     expect(data).toEqual({ category: "a", confidence: 1 });
     expect(fake.requests).toHaveLength(1);
-    const { req } = fake.requests[0]!;
+    const req = fake.requests[0]?.req;
+    if (req === undefined) throw new Error("no request");
     expect(req.model).toBe("gpt-c");
     expect(req.system).toBe("S");
     expect(req.prompt).toBe("P");
@@ -189,7 +190,7 @@ describe("createRoleLlmClient", () => {
     const fake = fakeProviders(() => okText);
     const llm = createRoleLlmClient({ table: twoProviderTable(), providers: fake.providers, ...fakeClock() });
     const { usage } = await llm.generate({ ...classifierCall, model: "gpt-other" });
-    expect(fake.requests[0]!.req.model).toBe("gpt-other");
+    expect(fake.requests[0]?.req.model).toBe("gpt-other");
     expect(usage.model).toBe("gpt-other");
   });
 
