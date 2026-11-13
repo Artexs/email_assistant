@@ -553,6 +553,16 @@ describe("queueNotice", () => {
       await expect(tooLong).rejects.toBeInstanceOf(NoticeViewError);
       expect(await rowOf(trx, t.userId, "queue:long")).toHaveLength(0);
 
+      // A button with an empty text fails the view schema (outButtonsSchema).
+      const badButtons = queueNotice(trx, t.ctx, {
+        ...base,
+        kind: "digest",
+        view: { text: "hello", buttons: [[{ text: "", data: "ok" }]] },
+        dedupKey: "queue:buttons",
+      });
+      await expect(badButtons).rejects.toBeInstanceOf(NoticeViewError);
+      expect(await rowOf(trx, t.userId, "queue:buttons")).toHaveLength(0);
+
       // The check render throws on an e-mail id that is not a UUID.
       const badId = queueNotice(trx, t.ctx, {
         ...base,

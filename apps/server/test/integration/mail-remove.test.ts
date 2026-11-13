@@ -227,7 +227,7 @@ describe("removeMailbox", () => {
       .selectFrom("outbox")
       .select("id")
       .where("org_id", "=", s.orgId)
-      .where(sql<boolean>`text ILIKE '%' || ${address} || '%' OR view::text ILIKE '%' || ${address} || '%'`)
+      .where(sql<boolean>`(text ILIKE '%' || ${address} || '%' OR view::text ILIKE '%' || ${address} || '%')`)
       .execute();
     expect(leaks).toEqual([]);
   });
