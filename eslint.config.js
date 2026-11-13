@@ -228,6 +228,12 @@ export default tseslint.config(
     rules: { "no-restricted-syntax": ["warn", ...logEventSelectors] },
   },
   {
+    // Converted to events (F089): an old-form log line here fails the lint. E8a adds each module when it converts it.
+    files: ["apps/server/src/platform/**/*.ts", "apps/server/src/main.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: { "no-restricted-syntax": ["error", ...logEventSelectors] },
+  },
+  {
     files: ["apps/server/src/**/*.ts", "packages/**/*.ts"],
     ignores: [
       "apps/server/src/modules/channels/telegram/**",
