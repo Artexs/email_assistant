@@ -254,4 +254,17 @@ describe("PUBLIC_PAGE_PATHS", () => {
     expect(isPublic("/forgotten")).toBe(false);
     expect(isPublic("/forgot/x")).toBe(false);
   });
+
+  test("the six legal pages are public, with or without a trailing slash", () => {
+    expect(isPublic("/legal/pl/privacy")).toBe(true);
+    expect(isPublic("/legal/en/dpa/")).toBe(true);
+    expect(isPublic("/legal/en/terms")).toBe(true);
+  });
+
+  test("other legal paths are not public", () => {
+    expect(isPublic("/legal/de/privacy")).toBe(false);
+    expect(isPublic("/legal/pl/cookies")).toBe(false);
+    expect(isPublic("/legal/pl/privacy/x")).toBe(false);
+    expect(isPublic("/legal/pl")).toBe(false);
+  });
 });

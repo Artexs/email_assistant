@@ -124,6 +124,7 @@ export const PUBLIC_PAGE_PATHS: readonly RegExp[] = [
   /^\/login\/?$/,
   /^\/setup\/?$/,
   /^\/forgot\/?$/,
+  /^\/legal\/(pl|en)\/(privacy|terms|dpa)\/?$/,
   /^\/404\.html$/,
   /^\/_astro\//,
   /^\/favicon\./,

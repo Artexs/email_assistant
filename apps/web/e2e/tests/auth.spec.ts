@@ -112,9 +112,25 @@ test("the setup link works once", async ({ page }) => {
   await page.getByRole("button", { name: en.set_password }).click();
   await expect(page.locator("#repeat-error")).toHaveText(en.passwords_differ);
 
+  // The three links under the box open the legal pages in the browser language (Playwright's default is `en-US`).
+  await expect(page.getByRole("link", { name: en.legal_terms_title })).toHaveAttribute("href", "/legal/en/terms");
+  await expect(page.getByRole("link", { name: en.legal_privacy_title })).toHaveAttribute("href", "/legal/en/privacy");
+  await expect(page.getByRole("link", { name: en.legal_dpa_title })).toHaveAttribute("href", "/legal/en/dpa");
+
+  // The box is empty: the error shows and the page sends no password request.
+  const resetRequests: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("reset-password")) resetRequests.push(request.url());
+  });
   await repeat.fill("a-good-passphrase-for-e2e");
   await page.getByRole("button", { name: en.set_password }).click();
+  await expect(page.locator("#terms-error")).toHaveText(en.terms_required);
+  expect(resetRequests).toEqual([]);
+
+  await page.getByLabel(en.setup_terms_label).check();
+  await page.getByRole("button", { name: en.set_password }).click();
   await expect(page).toHaveURL(/\/onboarding$/);
+  expect(resetRequests).toHaveLength(1);
   await expectShellEmail(page, assistant.email);
 
   // The token is used: the same link is an error, and a page without a token says so.
