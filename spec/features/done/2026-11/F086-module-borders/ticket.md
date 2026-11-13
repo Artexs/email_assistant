@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-13
 ---
 
 # F086 · Module borders are linted: layers, allowed edges, no deep imports, a generated module graph
