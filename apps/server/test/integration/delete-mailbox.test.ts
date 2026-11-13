@@ -52,6 +52,7 @@ async function insertDigestOutbox(
     digestId: digestId ?? undefined,
     message: { text, buttons: [] },
     view: { text, buttons: [] },
+    locale: "en",
     createdAt: now,
     nextAttemptAt: now,
   });
@@ -250,6 +251,8 @@ describe("delete_mailbox", () => {
         kind: kind as OutboxKind,
         dedupKey: `${kind}:${randomUUID()}`,
         message: { text: "Mailbox removed", buttons: [] },
+        view: {},
+        locale: "en" as const,
         createdAt: now,
         nextAttemptAt: now,
       });

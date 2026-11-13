@@ -1,25 +1,16 @@
 import {
-  aiTextFor,
   approvalViewOf,
   buildOutgoingMessage,
-  describeActions,
   draftPayloadSchema,
   isExternalSender,
   MAILBOX_ACTION_TYPES,
   matchSender,
   MOVE_TARGET_NAMES,
   outgoingSubject,
-  renderActionFailedNotice,
-  renderApprovalRequest,
-  renderApprovalSetRequest,
-  renderAuthErrorNotice,
-  renderDelegationAnswered,
-  renderSendResult,
-  renderSyncOkNotice,
-  renderSyncStaleNotice,
-  renderUrgentNotice,
   type ApprovalView,
   type DraftPayload,
+  type NoticeKind,
+  type NoticeView,
   type SendResultKind,
 } from "@ea/core";
 import type { Transaction } from "kysely";
@@ -63,16 +54,9 @@ import {
 import { getOrganization, listMemberships } from "../tenancy";
 import { listTriagedBetween } from "../triage";
 
+import { queueNotice, type QueueNoticeInput } from "./notice-queue";
 import type { LinkedChat } from "./port";
-import {
-  cancelPendingOutbox,
-  insertOutbox,
-  listLinkedChats,
-  listLinkedChatsOfOrg,
-  listSentStaleEpisodes,
-  type NewOutboxRow,
-} from "./repo";
-import { MAILBOX_REMOVED_TEXT } from "./texts";
+import { cancelPendingOutbox, listLinkedChats, listLinkedChatsOfOrg, listSentStaleEpisodes } from "./repo";
 
 const log = createLog("channels");
 
@@ -107,14 +91,14 @@ function inTransaction<T>(db: DbOrTrx, run: (trx: Transaction<DB>) => Promise<T>
   return db.isTransaction ? run(db as Transaction<DB>) : (db as Db).transaction().execute(run);
 }
 
-async function queue(
+async function queue<K extends NoticeKind>(
   db: DbOrTrx,
   ctx: TenantContext,
-  row: Omit<NewOutboxRow, "createdAt" | "nextAttemptAt">,
+  input: Omit<QueueNoticeInput<K>, "now">,
   now: Date
 ): Promise<void> {
-  const id = await insertOutbox(db, ctx, { ...row, createdAt: now, nextAttemptAt: now });
-  if (id !== null) log.info(`notice ${row.kind} queued: outbox ${id}`);
+  const id = await queueNotice(db, ctx, { ...input, now });
+  if (id !== null) log.info(`notice ${input.kind} queued: outbox ${id}`);
 }
 
 // D13: every linked member gets an urgent notice for mail that was triaged after the link.
@@ -163,36 +147,52 @@ async function detectUrgent(
     const since = sinceOf(member);
     for (const row of rows) {
       if (row.triaged_at.getTime() < since) continue;
-      await queue(
-        db,
-        ctx,
-        {
-          userId: member.userId,
-          kind: "urgent",
-          dedupKey: `urgent:${row.email_id}`,
-          emailId: row.email_id,
-          message: renderUrgentNotice({
+      try {
+        const rowActions = (actions.get(row.email_id) ?? []).map(
+          ({ type, status, folder, reverse, kind, delegateId }) => ({
+            type,
+            status,
+            folder,
+            reverse,
+            kind,
+            delegateId,
+          })
+        );
+        const delegateNames = Object.fromEntries(
+          rowActions.flatMap(({ delegateId }) => {
+            const name = delegateId === null ? undefined : names.get(delegateId);
+            return delegateId !== null && name !== undefined ? [[delegateId, name] as const] : [];
+          })
+        );
+        await queue(
+          db,
+          ctx,
+          {
+            userId: member.userId,
+            locale: member.locale,
+            kind: "urgent",
+            dedupKey: `urgent:${row.email_id}`,
             emailId: row.email_id,
-            from: row.from_address,
-            subject: row.subject,
-            aiText: aiTextFor({
-              category: "urgent",
-              reasonCode: row.reason_code,
-              reason: row.reason,
-              summary: null,
-              modelCategory: row.model_category,
-              confidence: row.confidence,
-            }),
-            receivedAt: row.received_at,
-            synthetic: isSyntheticMessageId(row.message_id_header),
-            folderTag: row.source_folder === INBOX ? null : row.source_folder,
-            wouldDo: describeActions(actions.get(row.email_id) ?? [], names, { stayFolder: row.folder }),
-            now,
-            timeZone,
-          }),
-        },
-        now
-      );
+            view: {
+              emailId: row.email_id,
+              from: row.from_address,
+              subject: row.subject,
+              ai: { reasonCode: row.reason_code, reason: row.reason },
+              receivedAt: row.received_at,
+              synthetic: isSyntheticMessageId(row.message_id_header),
+              folderTag: row.source_folder === INBOX ? null : row.source_folder,
+              actions: rowActions,
+              delegateNames,
+              stayFolder: row.folder,
+              now,
+              timeZone,
+            },
+          },
+          now
+        );
+      } catch (error) {
+        warnSkipped("urgent", row.email_id, error);
+      }
     }
   }
 }
@@ -220,7 +220,7 @@ async function detectActionFailed(db: DbOrTrx, ctx: TenantContext, owners: Linke
           (action.status_reason === "mail_not_found" || action.status_reason === "bad_payload")
             ? action.status_reason
             : "other";
-        const message = renderActionFailedNotice({
+        const view: NoticeView<"action_failed"> = {
           actionType: action.type,
           reverse: action.reverse,
           reason,
@@ -231,17 +231,18 @@ async function detectActionFailed(db: DbOrTrx, ctx: TenantContext, owners: Linke
           subject: action.subject,
           synthetic: isSyntheticMessageId(action.message_id_header),
           attempts: action.attempts,
-        });
+        };
         for (const owner of owners) {
           await queue(
             trx,
             ctx,
             {
               userId: owner.userId,
+              locale: owner.locale,
               kind: "action_failed",
               dedupKey: `action_failed:${action.id}`,
               emailId: action.email_id,
-              message,
+              view,
             },
             now
           );
@@ -249,7 +250,11 @@ async function detectActionFailed(db: DbOrTrx, ctx: TenantContext, owners: Linke
       }
       await markNotified(trx, ctx, action.id, now);
     };
-    await (db.isTransaction ? run(db) : (db as Db).transaction().execute(run));
+    try {
+      await (db.isTransaction ? run(db) : (db as Db).transaction().execute(run));
+    } catch (error) {
+      warnSkipped("action_failed", action.id, error);
+    }
   }
 }
 
@@ -266,25 +271,24 @@ async function detectAuthError(
     return;
   }
   const key = `auth_error:${mailbox.id}:${mailbox.status_changed_at.getTime()}`;
-  for (const owner of owners) {
-    await queue(
-      db,
-      ctx,
-      {
-        userId: owner.userId,
-        kind: "auth_error",
-        dedupKey: key,
-        mailboxId: mailbox.id,
-        message: renderAuthErrorNotice({
-          address: mailbox.address,
+  try {
+    for (const owner of owners) {
+      await queue(
+        db,
+        ctx,
+        {
+          userId: owner.userId,
+          locale: owner.locale,
+          kind: "auth_error",
+          dedupKey: key,
           mailboxId: mailbox.id,
-          since: mailbox.status_changed_at,
-          now,
-          timeZone,
-        }),
-      },
-      now
-    );
+          view: { address: mailbox.address, mailboxId: mailbox.id, since: mailbox.status_changed_at, now, timeZone },
+        },
+        now
+      );
+    }
+  } catch (error) {
+    warnSkipped("auth_error", mailbox.id, error);
   }
   await cancelPendingOutbox(db, ctx, { kind: "auth_error", mailboxId: mailbox.id, exceptDedupKey: key });
 }
@@ -320,24 +324,24 @@ async function detectSync(
     }
     if (now.getTime() - deps.startedAt.getTime() < STALE_GRACE_AFTER_START_MS) return;
     const key = `sync_stale:${mailbox.id}:${mailbox.last_synced_at?.getTime() ?? "never"}`;
-    for (const owner of owners) {
-      await queue(
-        db,
-        ctx,
-        {
-          userId: owner.userId,
-          kind: "sync_stale",
-          dedupKey: key,
-          mailboxId: mailbox.id,
-          message: renderSyncStaleNotice({
-            address: mailbox.address,
-            lastSyncedAt: mailbox.last_synced_at,
-            now,
-            timeZone,
-          }),
-        },
-        now
-      );
+    try {
+      for (const owner of owners) {
+        await queue(
+          db,
+          ctx,
+          {
+            userId: owner.userId,
+            locale: owner.locale,
+            kind: "sync_stale",
+            dedupKey: key,
+            mailboxId: mailbox.id,
+            view: { address: mailbox.address, lastSyncedAt: mailbox.last_synced_at, now, timeZone },
+          },
+          now
+        );
+      }
+    } catch (error) {
+      warnSkipped("sync_stale", mailbox.id, error);
     }
     await cancelPendingOutbox(db, ctx, { kind: "sync_stale", mailboxId: mailbox.id, exceptDedupKey: key });
     return;
@@ -345,26 +349,28 @@ async function detectSync(
 
   await cancelPendingOutbox(db, ctx, { kind: "sync_stale", mailboxId: mailbox.id });
   if (mailbox.last_synced_at === null) return;
-  const memberIds = new Set(members.map((member) => member.userId));
-  for (const { userId, episode } of await listSentStaleEpisodes(db, ctx, mailbox.id)) {
-    if (!memberIds.has(userId)) continue;
-    await queue(
-      db,
-      ctx,
-      {
-        userId,
-        kind: "sync_ok",
-        dedupKey: `sync_ok:${mailbox.id}:${episode}`,
-        mailboxId: mailbox.id,
-        message: renderSyncOkNotice({
-          address: mailbox.address,
-          lastSyncedAt: mailbox.last_synced_at,
-          now,
-          timeZone,
-        }),
-      },
-      now
-    );
+  const lastSyncedAt = mailbox.last_synced_at;
+  const episodes = await listSentStaleEpisodes(db, ctx, mailbox.id);
+  try {
+    for (const { userId, episode } of episodes) {
+      const member = members.find((candidate) => candidate.userId === userId);
+      if (member === undefined) continue;
+      await queue(
+        db,
+        ctx,
+        {
+          userId,
+          locale: member.locale,
+          kind: "sync_ok",
+          dedupKey: `sync_ok:${mailbox.id}:${episode}`,
+          mailboxId: mailbox.id,
+          view: { address: mailbox.address, lastSyncedAt, now, timeZone },
+        },
+        now
+      );
+    }
+  } catch (error) {
+    warnSkipped("sync_ok", mailbox.id, error);
   }
 }
 
@@ -435,7 +441,7 @@ async function detectApprovals(
   for (const row of await listSendsToNotify(db, ctx, { limit: APPROVAL_LIMIT })) {
     try {
       const { view } = await approvalViewFor(db, ctx, row);
-      const message = renderApprovalRequest({ actionId: row.id, view, now, timeZone });
+      const noticeView = { actionId: row.id, view, now, timeZone };
       await inTransaction(db, async (trx) => {
         for (const owner of owners) {
           await queue(
@@ -443,10 +449,11 @@ async function detectApprovals(
             ctx,
             {
               userId: owner.userId,
+              locale: owner.locale,
               kind: "approval",
               dedupKey: `approval:${row.id}`,
               emailId: row.email_id,
-              message,
+              view: noticeView,
             },
             now
           );
@@ -490,7 +497,7 @@ async function detectApprovalSets(
           task: draft.task,
         });
       }
-      const message = renderApprovalSetRequest({ setId, items, timeZone });
+      const noticeView = { setId, items, timeZone };
       await inTransaction(db, async (trx) => {
         for (const owner of owners) {
           await queue(
@@ -498,10 +505,11 @@ async function detectApprovalSets(
             ctx,
             {
               userId: owner.userId,
+              locale: owner.locale,
               kind: "approval_set",
               dedupKey: `approval_set:${setId}`,
               emailId: first.email_id,
-              message,
+              view: noticeView,
             },
             now
           );
@@ -604,14 +612,14 @@ async function detectSendResults(db: DbOrTrx, ctx: TenantContext, owners: Linked
       const sendKind = SEND_KINDS.find((known) => known === row.payload.kind) ?? "delegation";
       const to = Array.isArray(row.payload.to) ? stringOf(row.payload.to[0]) : null;
       const draftTo = Array.isArray(draftRow?.payload.to) ? stringOf(draftRow.payload.to[0]) : null;
-      const message = renderSendResult({
+      const view = {
         actionId: row.id,
         sendKind,
         result: await resultKindOf(db, ctx, row, draftRemoved, names),
-        recipient: { name: stringOf(draftRow?.payload.delegate_name), address: to ?? draftTo ?? "(unknown)" },
+        recipient: { name: stringOf(draftRow?.payload.delegate_name), address: to ?? draftTo },
         subject: outgoingSubject(sendKind, row.email.subject),
         synthetic: isSyntheticMessageId(row.email.message_id_header),
-      });
+      };
       await inTransaction(db, async (trx) => {
         for (const owner of owners) {
           await queue(
@@ -619,10 +627,11 @@ async function detectSendResults(db: DbOrTrx, ctx: TenantContext, owners: Linked
             ctx,
             {
               userId: owner.userId,
+              locale: owner.locale,
               kind: "send_result",
               dedupKey: `send_result:${row.id}`,
               emailId: row.email_id,
-              message,
+              view,
             },
             now
           );
@@ -647,7 +656,7 @@ async function detectDelegationAnswered(
   for (const row of await listAnsweredUnnotified(db, ctx, { limit: APPROVAL_LIMIT })) {
     try {
       const answer = row.answered_email_id === null ? undefined : await getEmailMeta(db, ctx, row.answered_email_id);
-      const message = renderDelegationAnswered({
+      const view = {
         delegationId: row.id,
         delegateName: row.delegate_name,
         subject: row.subject,
@@ -655,7 +664,7 @@ async function detectDelegationAnswered(
         now,
         timeZone,
         synthetic: isSyntheticMessageId(answer?.message_id_header ?? null),
-      });
+      };
       await inTransaction(db, async (trx) => {
         for (const member of members) {
           await queue(
@@ -663,11 +672,12 @@ async function detectDelegationAnswered(
             ctx,
             {
               userId: member.userId,
+              locale: member.locale,
               kind: "delegation_answered",
               dedupKey: `delegation_answered:${row.id}`,
               // The delegation's own mail: the answer mail can be gone after a retention delete.
               emailId: row.email_id,
-              message,
+              view,
             },
             now
           );
@@ -711,13 +721,13 @@ export async function queueMailboxRemovedNotices(
   let queued = 0;
   for (const chat of await listLinkedChatsOfOrg(trx, ctx)) {
     if (chat.role !== "owner") continue;
-    const id = await insertOutbox(trx, ctx, {
+    const id = await queueNotice(trx, ctx, {
       userId: chat.userId,
+      locale: chat.locale,
       kind: "mailbox_removed",
       dedupKey: `mailbox_removed:${input.mailboxId}`,
-      message: { text: MAILBOX_REMOVED_TEXT, buttons: [] },
-      createdAt: input.now,
-      nextAttemptAt: input.now,
+      view: {},
+      now: input.now,
     });
     if (id !== null) queued += 1;
   }

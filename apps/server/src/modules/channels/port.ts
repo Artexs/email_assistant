@@ -1,4 +1,4 @@
-import type { MembershipRole, OutMessage } from "@ea/core";
+import type { MembershipRole, OutMessage, UserLocale } from "@ea/core";
 
 export type ChannelErrorKind = "soft" | "rate_limited" | "config" | "blocked" | "bad_request" | "other";
 
@@ -26,6 +26,7 @@ export interface LinkedChat {
   role: MembershipRole;
   chatId: number;
   linkedAt: Date;
+  locale: UserLocale;
 }
 
 export const commandNames = ["help", "digest", "status", "pause", "resume"] as const;

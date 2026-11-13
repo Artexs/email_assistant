@@ -1,6 +1,8 @@
+export { configureFeatures, featureSettings, featureStates, isFeatureOn } from "./features";
 export {
   getMembership,
   getOrganization,
+  getOrgFeature,
   getOrgPlan,
   getUserAuthProfile,
   insertMembership,
@@ -9,8 +11,10 @@ export {
   listMemberships,
   listMembershipsOfUser,
   listOrganizations,
+  listOrgFeatureRows,
   setDigestTimes,
   setUserTerms,
+  upsertOrgFeature,
   type MembershipWithUser,
   type OrganizationRow,
   type OrgPlanState,

@@ -100,7 +100,20 @@ async function setStatus(trx: Transaction<DB>, o: Org, status: MailboxStatus, ch
 async function rows(trx: Transaction<DB>, orgId: string, kind?: string) {
   let query = trx
     .selectFrom("outbox")
-    .select(["id", "user_id", "kind", "dedup_key", "text", "buttons", "status", "error_code", "email_id", "mailbox_id"])
+    .select([
+      "id",
+      "user_id",
+      "kind",
+      "dedup_key",
+      "text",
+      "buttons",
+      "view",
+      "locale",
+      "status",
+      "error_code",
+      "email_id",
+      "mailbox_id",
+    ])
     .where("org_id", "=", orgId)
     .orderBy("created_at")
     .orderBy("id");
@@ -434,20 +447,19 @@ describe("organizations", () => {
     });
   });
 
-  test("an error in one organization does not stop the next", async () => {
+  test("a view that does not render skips its event; the next organization still gets its rows", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const a = await org(trx);
       const b = await org(trx);
-      await insertTriaged(trx, a.ctx, a.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
+      const skipped = await insertTriaged(trx, a.ctx, a.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
       await insertTriaged(trx, b.ctx, b.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
       await trx.updateTable("organizations").set({ timezone: "Mars/Base" }).where("id", "=", a.orgId).execute();
 
       await run(trx);
       expect(await rows(trx, b.orgId, "urgent")).toHaveLength(2);
       expect(await rows(trx, a.orgId)).toHaveLength(0);
-      const failed = errorLines.filter((line) => line.includes(a.orgId));
-      expect(failed).toHaveLength(1);
+      expect(errorLines.filter((line) => line.includes(`notice urgent ${skipped}: skipped:`))).toHaveLength(1);
       expect(errorLines.filter((line) => line.includes(b.orgId))).toHaveLength(0);
     });
   });
@@ -1262,6 +1274,8 @@ describe("send result notices", () => {
       for (const row of [...(await rows(trx, a.orgId, "send_result")), ...(await rows(trx, b.orgId, "send_result"))]) {
         expect(row.text).not.toContain(SENDER);
         expect(row.text).not.toContain(BODY);
+        expect(JSON.stringify(row.view)).not.toContain(SENDER);
+        expect(JSON.stringify(row.view)).not.toContain(BODY);
       }
       expect((await resultText(trx, a, mine.sendId)).text).toContain(mine.to);
     });
@@ -1425,6 +1439,93 @@ describe("after a resume (D4)", () => {
       expect(found.length).toBeGreaterThan(0);
       expect(found.every((row) => row.email_id === after)).toBe(true);
       expect(found.some((row) => row.email_id === before)).toBe(false);
+    });
+  });
+});
+
+describe("stored views and locales", () => {
+  async function setLocale(trx: Transaction<DB>, userId: string, locale: string | null) {
+    await trx.updateTable("users").set({ locale }).where("id", "=", userId).execute();
+  }
+
+  test("every kind stores a view and the locale of its member", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await sendOrg(trx);
+      for (const userId of [o.ownerId, o.secondOwnerId, o.assistantId]) await setLocale(trx, userId, "en");
+      await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
+      const failedMail = await insertTriaged(trx, o.ctx, o.mailboxId, { category: "info", createdAt: at(-2 * HOUR) });
+      const failed = await insertAction(trx, o.ctx, failedMail, {
+        type: "move",
+        status: "failed",
+        payload: { folder: "ai_info" },
+      });
+      await trx
+        .updateTable("actions")
+        .set({ status_reason: "hard_error", attempts: 3, updated_at: at(-MINUTE) })
+        .where("id", "=", failed)
+        .execute();
+      await waiting(trx, o);
+      await ended(trx, o, {
+        status: "applied",
+        appliedAt: at(-20 * MINUTE),
+        providerResult: { sent_copy: "appended" },
+      });
+      await setStatus(trx, o, "auth_error", at(-HOUR));
+      await run(trx);
+      await setStatus(trx, o, "active", at(-HOUR));
+      await markSynced(trx, o.ctx, o.mailboxId, at(-40 * MINUTE));
+      await run(trx);
+
+      const found = await rows(trx, o.orgId);
+      const kinds = new Set(found.map((row) => row.kind));
+      for (const kind of ["urgent", "action_failed", "auth_error", "sync_stale", "approval", "send_result"]) {
+        expect(kinds.has(kind)).toBe(true);
+      }
+      for (const row of found) {
+        expect(Object.keys(row.view as object).length).toBeGreaterThan(0);
+        expect(row.locale).toBe("en");
+      }
+    });
+  });
+
+  test("a member without a locale gets Polish rows with the same English text", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      await setLocale(trx, o.ownerId, "en");
+      await setLocale(trx, o.assistantId, null);
+      await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
+
+      await run(trx);
+
+      const found = await rows(trx, o.orgId, "urgent");
+      const english = found.find((row) => row.user_id === o.ownerId);
+      const polish = found.find((row) => row.user_id === o.assistantId);
+      expect(english?.locale).toBe("en");
+      expect(polish?.locale).toBe("pl");
+      expect(polish?.text).toBe(english?.text);
+    });
+  });
+
+  test("the urgent view holds the AI reason and plain actions, not a rendered text", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      const p = await waiting(trx, o, { sendStatus: "logged" });
+      await trx.updateTable("triage_results").set({ category: "urgent" }).where("email_id", "=", p.emailId).execute();
+
+      await run(trx);
+
+      const view = (await rows(trx, o.orgId, "urgent"))[0]?.view as Record<string, unknown>;
+      for (const key of ["ai", "actions", "delegateNames", "stayFolder"]) expect(view).toHaveProperty(key);
+      expect(view).not.toHaveProperty("wouldDo");
+      expect(view).not.toHaveProperty("aiText");
+      const actions = view.actions as Record<string, unknown>[];
+      expect(actions.length).toBeGreaterThan(0);
+      for (const action of actions) {
+        expect(Object.keys(action).sort()).toEqual(["delegateId", "folder", "kind", "reverse", "status", "type"]);
+      }
     });
   });
 });

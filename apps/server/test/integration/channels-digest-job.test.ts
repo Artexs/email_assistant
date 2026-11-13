@@ -78,7 +78,7 @@ async function digests(trx: Transaction<DB>, orgId: string, userId?: string) {
 async function outbox(trx: Transaction<DB>, orgId: string, userId?: string) {
   let query = trx
     .selectFrom("outbox")
-    .select(["id", "user_id", "kind", "dedup_key", "text", "digest_id", "status"])
+    .select(["id", "user_id", "kind", "dedup_key", "text", "view", "digest_id", "status"])
     .where("org_id", "=", orgId)
     .orderBy("dedup_key");
   if (userId !== undefined) query = query.where("user_id", "=", userId);
@@ -129,6 +129,7 @@ describe("scheduleDigests", () => {
       expect(sent[0]?.dedup_key).toBe("digest:2026-11-06T08:00");
       expect(sent[0]?.digest_id).toBe(found[0]?.id ?? "");
       expect(sent[0]?.text?.startsWith("📬 Digest 08:00 · Fri 6 Nov")).toBe(true);
+      expect((sent[0]?.view as { text?: string }).text).toBe(sent[0]?.text ?? "");
 
       await run(trx, "2026-11-06T07:01:00Z");
       expect(await digests(trx, o.orgId)).toHaveLength(1);
