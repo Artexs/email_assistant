@@ -5,7 +5,7 @@ import { listFailedUnnotified, markNotified } from "../../actions";
 import { isSyntheticMessageId } from "../../mail";
 import { type LinkedChat } from "../port";
 
-import { DbOrTrx, queue, warnSkipped } from "./run";
+import { DbOrTrx, queue, warnSkipped, type Detector } from "./run";
 
 export const ACTION_FAILED_LOOKBACK_MS = 24 * 3_600_000;
 export const ACTION_FAILED_LIMIT = 50;
@@ -15,12 +15,7 @@ function isMailboxActionType(type: string): type is (typeof MAILBOX_ACTION_TYPES
 }
 
 // D11: owners get one notice per failed action; the dedup key and `notified_at` keep it single.
-export async function detectActionFailed(
-  db: DbOrTrx,
-  ctx: TenantContext,
-  owners: LinkedChat[],
-  now: Date
-): Promise<void> {
+async function detectActionFailed(db: DbOrTrx, ctx: TenantContext, owners: LinkedChat[], now: Date): Promise<void> {
   const failed = await listFailedUnnotified(db, ctx, { limit: ACTION_FAILED_LIMIT });
   for (const action of failed) {
     const run = async (trx: DbOrTrx) => {
@@ -75,3 +70,9 @@ export async function detectActionFailed(
     }
   }
 }
+
+export const actionFailedDetector: Detector = {
+  name: "action-failed",
+  kinds: ["action_failed"],
+  detect: (run) => detectActionFailed(run.db, run.ctx, run.owners, run.now),
+};

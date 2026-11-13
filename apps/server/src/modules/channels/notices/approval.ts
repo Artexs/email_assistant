@@ -15,7 +15,7 @@ import { getMailbox, isSyntheticMessageId, listMailboxes } from "../../mail";
 import { getOrganization, listMemberships } from "../../tenancy";
 import { type LinkedChat } from "../port";
 
-import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped } from "./run";
+import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped, type Detector } from "./run";
 
 // D19: the text the owner sees is the text the committer sends (same builder, same inputs).
 export async function approvalViewFor(
@@ -73,7 +73,7 @@ export async function approvalViewFor(
 }
 
 // D19: one request per owner for each send that waits, after its draft is applied. No owner: nothing is queued or marked.
-export async function detectApprovals(
+async function detectApprovals(
   db: DbOrTrx,
   ctx: TenantContext,
   owners: LinkedChat[],
@@ -108,3 +108,9 @@ export async function detectApprovals(
     }
   }
 }
+
+export const approvalDetector: Detector = {
+  name: "approval",
+  kinds: ["approval"],
+  detect: (run) => detectApprovals(run.db, run.ctx, run.owners, run.timeZone, run.now),
+};

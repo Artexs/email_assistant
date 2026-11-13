@@ -15,7 +15,7 @@ import { isSyntheticMessageId } from "../../mail";
 import { listMemberships } from "../../tenancy";
 import { type LinkedChat } from "../port";
 
-import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped } from "./run";
+import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped, type Detector } from "./run";
 
 const SEND_KINDS: readonly DraftPayload["kind"][] = ["delegation", "clarification", "reminder"];
 const EXPIRY_REASONS = [
@@ -90,12 +90,7 @@ async function resultKindOf(
 }
 
 // D20: every end state of a send gives one notice per owner. A pending Sent copy counts as lost after 10 minutes.
-export async function detectSendResults(
-  db: DbOrTrx,
-  ctx: TenantContext,
-  owners: LinkedChat[],
-  now: Date
-): Promise<void> {
+async function detectSendResults(db: DbOrTrx, ctx: TenantContext, owners: LinkedChat[], now: Date): Promise<void> {
   if (owners.length === 0) return;
   const rows = await listSendResultsToNotify(db, ctx, {
     limit: APPROVAL_LIMIT,
@@ -143,3 +138,9 @@ export async function detectSendResults(
     }
   }
 }
+
+export const sendResultDetector: Detector = {
+  name: "send-result",
+  kinds: ["send_result"],
+  detect: (run) => detectSendResults(run.db, run.ctx, run.owners, run.now),
+};

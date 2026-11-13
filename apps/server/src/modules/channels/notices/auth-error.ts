@@ -3,9 +3,9 @@ import { type MailboxSummary } from "../../mail";
 import { type LinkedChat } from "../port";
 import { cancelPendingOutbox } from "../repo";
 
-import { DbOrTrx, queue, warnSkipped } from "./run";
+import { DbOrTrx, queue, warnSkipped, type Detector } from "./run";
 
-export async function detectAuthError(
+async function detectAuthError(
   db: DbOrTrx,
   ctx: TenantContext,
   owners: LinkedChat[],
@@ -39,3 +39,12 @@ export async function detectAuthError(
   }
   await cancelPendingOutbox(db, ctx, { kind: "auth_error", mailboxId: mailbox.id, exceptDedupKey: key });
 }
+
+export const authErrorDetector: Detector = {
+  name: "auth-error",
+  kinds: ["auth_error"],
+  async detect(run) {
+    for (const mailbox of run.mailboxes)
+      await detectAuthError(run.db, run.ctx, run.owners, mailbox, run.timeZone, run.now);
+  },
+};

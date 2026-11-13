@@ -4,7 +4,9 @@ import { type Transaction } from "kysely";
 import { type DB, type Db, type TenantContext } from "../../../platform/db";
 import { describeError } from "../../../platform/errors";
 import { createLog } from "../../../platform/log";
+import { type MailboxSummary } from "../../mail";
 import { queueNotice, type QueueNoticeInput } from "../notice-queue";
+import { type LinkedChat } from "../port";
 
 export const log = createLog("channels");
 
@@ -18,6 +20,27 @@ export interface NoticeDeps {
 }
 
 export type DbOrTrx = Db | Transaction<DB>;
+
+// What one organization's detectors share: read once per tick by `detectForOrg`.
+export interface OrgRun {
+  deps: NoticeDeps;
+  db: DbOrTrx;
+  ctx: TenantContext;
+  now: Date;
+  timeZone: string;
+  resumedAt: Date | null;
+  members: LinkedChat[];
+  owners: LinkedChat[];
+  mailboxes: MailboxSummary[];
+  pausedMailboxIds: Set<string>;
+}
+
+/** One notice source. `kinds` are the outbox kinds it may queue. */
+export interface Detector {
+  name: string;
+  kinds: readonly NoticeKind[];
+  detect(run: OrgRun): Promise<void>;
+}
 
 // A row that fails every tick warns once per process, not every 15 s.
 const warnedRows = new Set<string>();

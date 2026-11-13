@@ -5,13 +5,13 @@ import { getJunkFolderPath, INBOX, isSyntheticMessageId } from "../../mail";
 import { listTriagedBetween } from "../../triage";
 import { type LinkedChat } from "../port";
 
-import { DbOrTrx, queue, warnSkipped } from "./run";
+import { DbOrTrx, queue, warnSkipped, type Detector } from "./run";
 
 export const URGENT_LOOKBACK_MS = 24 * 3_600_000;
 export const URGENT_LIMIT = 200;
 
 // D13: every linked member gets an urgent notice for mail that was triaged after the link.
-export async function detectUrgent(
+async function detectUrgent(
   db: DbOrTrx,
   ctx: TenantContext,
   members: LinkedChat[],
@@ -105,3 +105,10 @@ export async function detectUrgent(
     }
   }
 }
+
+export const urgentDetector: Detector = {
+  name: "urgent",
+  kinds: ["urgent"],
+  detect: (run) =>
+    detectUrgent(run.db, run.ctx, run.members, run.pausedMailboxIds, run.timeZone, run.now, run.resumedAt),
+};

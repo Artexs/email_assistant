@@ -5,10 +5,10 @@ import { getDraft, listSetsToNotify, markNotified } from "../../actions";
 import { getDelegation } from "../../delegation";
 import { type LinkedChat } from "../port";
 
-import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped } from "./run";
+import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped, type Detector } from "./run";
 
 // D21: one request per owner for a whole reminder set.
-export async function detectApprovalSets(
+async function detectApprovalSets(
   db: DbOrTrx,
   ctx: TenantContext,
   owners: LinkedChat[],
@@ -62,3 +62,9 @@ export async function detectApprovalSets(
     }
   }
 }
+
+export const approvalSetDetector: Detector = {
+  name: "approval-set",
+  kinds: ["approval_set"],
+  detect: (run) => detectApprovalSets(run.db, run.ctx, run.owners, run.timeZone, run.now),
+};

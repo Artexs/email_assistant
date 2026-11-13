@@ -3,12 +3,12 @@ import { type MailboxSummary } from "../../mail";
 import { type LinkedChat } from "../port";
 import { cancelPendingOutbox, listSentStaleEpisodes } from "../repo";
 
-import { NoticeDeps, queue, warnSkipped } from "./run";
+import { NoticeDeps, queue, warnSkipped, type Detector } from "./run";
 
 export const SYNC_LATE_MS = 30 * 60_000;
 export const STALE_GRACE_AFTER_START_MS = 10 * 60_000;
 
-export async function detectSync(
+async function detectSync(
   deps: NoticeDeps,
   ctx: TenantContext,
   members: LinkedChat[],
@@ -88,3 +88,12 @@ export async function detectSync(
     warnSkipped("sync_ok", mailbox.id, error);
   }
 }
+
+export const syncDetector: Detector = {
+  name: "sync",
+  kinds: ["sync_stale", "sync_ok"],
+  async detect(run) {
+    for (const mailbox of run.mailboxes)
+      await detectSync(run.deps, run.ctx, run.members, run.owners, mailbox, run.timeZone, run.now, run.resumedAt);
+  },
+};

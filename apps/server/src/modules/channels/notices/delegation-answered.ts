@@ -3,10 +3,10 @@ import { listAnsweredUnnotified, markAnsweredNotified } from "../../delegation";
 import { getEmailMeta, isSyntheticMessageId } from "../../mail";
 import { type LinkedChat } from "../port";
 
-import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped } from "./run";
+import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped, type Detector } from "./run";
 
 // D24: every linked member hears that a delegate answered.
-export async function detectDelegationAnswered(
+async function detectDelegationAnswered(
   db: DbOrTrx,
   ctx: TenantContext,
   members: LinkedChat[],
@@ -50,3 +50,9 @@ export async function detectDelegationAnswered(
     }
   }
 }
+
+export const delegationAnsweredDetector: Detector = {
+  name: "delegation-answered",
+  kinds: ["delegation_answered"],
+  detect: (run) => detectDelegationAnswered(run.db, run.ctx, run.members, run.timeZone, run.now),
+};

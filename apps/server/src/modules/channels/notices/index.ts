@@ -1,43 +1,63 @@
+import { type NoticeKind } from "@ea/core";
+
 import { describeError } from "../../../platform/errors";
 import { listMailboxes } from "../../mail";
 import { getOrganization } from "../../tenancy";
 import { type LinkedChat } from "../port";
 import { listLinkedChats } from "../repo";
 
-import { detectActionFailed } from "./action-failed";
-import { detectApprovals } from "./approval";
-import { detectApprovalSets } from "./approval-set";
-import { detectAuthError } from "./auth-error";
-import { detectDelegationAnswered } from "./delegation-answered";
-import { NoticeDeps, log } from "./run";
-import { detectSendResults } from "./send-result";
-import { detectSync, SYNC_LATE_MS } from "./sync";
-import { detectUrgent } from "./urgent";
+import { actionFailedDetector } from "./action-failed";
+import { approvalDetector } from "./approval";
+import { approvalSetDetector } from "./approval-set";
+import { authErrorDetector } from "./auth-error";
+import { delegationAnsweredDetector } from "./delegation-answered";
+import { log, type Detector, type NoticeDeps, type OrgRun } from "./run";
+import { sendResultDetector } from "./send-result";
+import { SYNC_LATE_MS, syncDetector } from "./sync";
+import { urgentDetector } from "./urgent";
 
 export { queueMailboxRemovedNotices } from "./mailbox-removed";
 export { SYNC_LATE_MS };
 export type { NoticeDeps };
+
+// The run order of one organization. Auth errors and syncs run one after the other for all mailboxes; that changes
+// no row, because each row has its own dedup key and the same created_at.
+export const detectors: readonly Detector[] = [
+  urgentDetector,
+  actionFailedDetector,
+  authErrorDetector,
+  syncDetector,
+  approvalDetector,
+  approvalSetDetector,
+  sendResultDetector,
+  delegationAnsweredDetector,
+];
+
+// Kinds that a producer outside the detector list queues.
+export const queuedBy = {
+  digest: "channels/digest-job.ts",
+  mailbox_removed: "channels/notices/mailbox-removed.ts",
+} as const satisfies Partial<Record<NoticeKind, string>>;
 
 async function detectForOrg(deps: NoticeDeps, orgId: string, members: LinkedChat[], now: Date): Promise<void> {
   const { db } = deps;
   const ctx = { orgId };
   const organization = await getOrganization(db, ctx);
   if (organization === undefined) throw new Error("organization not found");
-  const timeZone = organization.timezone;
   const mailboxes = await listMailboxes(db, ctx);
-  const owners = members.filter((member) => member.role === "owner");
-
-  const pausedIds = new Set(mailboxes.filter((mailbox) => mailbox.status === "paused").map((mailbox) => mailbox.id));
-  await detectUrgent(db, ctx, members, pausedIds, timeZone, now, organization.resumed_at);
-  await detectActionFailed(db, ctx, owners, now);
-  for (const mailbox of mailboxes) {
-    await detectAuthError(db, ctx, owners, mailbox, timeZone, now);
-    await detectSync(deps, ctx, members, owners, mailbox, timeZone, now, organization.resumed_at);
-  }
-  await detectApprovals(db, ctx, owners, timeZone, now);
-  await detectApprovalSets(db, ctx, owners, timeZone, now);
-  await detectSendResults(db, ctx, owners, now);
-  await detectDelegationAnswered(db, ctx, members, timeZone, now);
+  const run: OrgRun = {
+    deps,
+    db,
+    ctx,
+    now,
+    timeZone: organization.timezone,
+    resumedAt: organization.resumed_at,
+    members,
+    owners: members.filter((member) => member.role === "owner"),
+    mailboxes,
+    pausedMailboxIds: new Set(mailboxes.filter((mailbox) => mailbox.status === "paused").map((mailbox) => mailbox.id)),
+  };
+  for (const detector of detectors) await detector.detect(run);
 }
 
 // Never throws. One organization that fails does not stop the next one.
