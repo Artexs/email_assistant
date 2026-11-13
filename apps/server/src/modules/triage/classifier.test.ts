@@ -5,6 +5,7 @@ import type { z } from "zod";
 import { LlmBlockedError, type LlmCall, type LlmClient, LlmOutputError, type LlmUsage } from "../../platform/llm";
 
 import { type ClassifierEmail, classifyEmail, type SenderContext } from "./classifier";
+import { prompts } from "./prompts";
 import type { ClassifierDelegate } from "./prompts/classifier-v2";
 
 const usage: LlmUsage = {
@@ -17,6 +18,8 @@ const usage: LlmUsage = {
 };
 
 interface Recorded {
+  role: LlmRole;
+  promptVersion: string;
   schema: z.ZodType<unknown>;
   system: string;
   prompt: string;
@@ -88,6 +91,13 @@ function nonceOf(prompt: string): string {
 }
 
 describe("classifyEmail", () => {
+  test("the call names the classifier role and the registry version", async () => {
+    const { result, call } = await run();
+    expect(call.role).toBe("classifier");
+    expect(call.promptVersion).toBe(prompts.classifier.version);
+    expect(result.promptVersion).toBe("classifier-v2");
+  });
+
   test("puts the body inside the nonce markers", async () => {
     const { call } = await run();
     const nonce = nonceOf(call.prompt);

@@ -40,7 +40,8 @@ import {
 import { createLog } from "../../platform/log";
 
 import { type ClassifierEmail, classifyEmail } from "./classifier";
-import { type ClassifierDelegate, EXCERPT_CHARS, PROMPT_VERSION } from "./prompts/classifier-v2";
+import { prompts } from "./prompts";
+import { type ClassifierDelegate, EXCERPT_CHARS } from "./prompts/classifier-v2";
 import type { MailKind } from "./repo";
 
 const log = createLog("eval");
@@ -523,7 +524,7 @@ export async function runEval(
     model: input.model,
     provider: input.provider,
     reasoningEffort: input.reasoningEffort ?? null,
-    promptVersion: PROMPT_VERSION,
+    promptVersion: prompts.classifier.version,
     cases,
     complete: stoppedReason === null,
     stoppedReason,
