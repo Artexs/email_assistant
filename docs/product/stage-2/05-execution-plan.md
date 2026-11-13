@@ -30,6 +30,7 @@ One row per `plan-task` run. "Plan name" is the working name until `plan-task` g
 
 | # | Plan name | Epic page | Stages | Needs (landed) | Gate | F-number |
 | --- | --- | --- | --- | --- | --- | --- |
+| 0 | Foundation group: CI green, module borders, feature flags, notices as facts, event logs, LLM roles, repo split, RLS (`07-foundation-plan.md`; tickets exist, `plan.md` written) | `06-architecture-review.md` | ≈ 28 | —; runs next to E1. F087 is the first slice of E7-T2, F089 the first stage of E8a | Owner: start the group; F092 RLS yes or no | F093, F086, F087, F088, F089, F090, F091, F092 |
 | 1 | E1 Close the MVP (capability map, docs boundary, NEXT sweep of the old planned tickets) | E01 | ≈ 10 | — (F077 landed) | Owner: F047 A phone test; vision text OK (owner-owned) | |
 | 2 | E8-LR Log rotation | E08 (PD-054) | ≈ 1 | — | — | |
 | 3 | E2a Offline lab | E02 | ≈ 14 | E1 | Owner audit of 50 cases per corpus version | |

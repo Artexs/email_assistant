@@ -21,7 +21,17 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 ## NEXT
 
+- `F093-ci-green` (🔴 PLANNED): CI on master is green again; first of the Stage 2 foundation group (`docs/product/stage-2/07-foundation-plan.md`).
+- `F086-module-borders` (🔴 PLANNED): module borders linted, two violations fixed, the standards in the styleguide; after F093.
+- `F087-feature-flags` (🔴 PLANNED): `isFeatureOn`, `org_features`, the operator check; after F086.
+- `F088-notices-as-facts` (🔴 PLANNED): the outbox stores the view, a renderer and a detector registry; after F086.
+- `F089-structured-logs` (🔴 PLANNED): event logs with run ids and a warn lint; after F086.
+- `F090-llm-roles` (🔴 PLANNED): `generate({ role })`, a role table, a prompt registry; after F086.
+- `F091-repo-split` (🔴 PLANNED): the two big repositories split, table-driven apply; after F088 and F090.
+- `F092-rls-safety-net` (🔴 PLANNED): RLS under the tenant filter; waits for the owner's yes, after F087.
+
 - Stage 2 order: `docs/product/stage-2/05-execution-plan.md` §2. Plan its §2.1 rows in order with `plan-task`; each planned ticket gets a `## Sequenced` section (tickets that must land first, and its gate) and a line here. Start the first line here whose `Sequenced` tickets are all landed and whose gate is done; at most two Stage 2 tickets in build; a ticket with a second-pass gate stops at that stage and asks the owner (§2.4).
+- Planning: a NEXT ticket with `plan.md`, no `stages/` and no `needs-adam` gets a `--role planner` job (at most three at once; command, review, questions and auto-build rule in `notes/2026-11-13-limen-planner-role.md`).
 - E1 Close the MVP (§2.1 row 1): not planned yet; plan it first (handoff `~/.pi/agent/notes/2026-11-12-handoff-stage2-e01-close-the-mvp.md`). Every other Stage 2 ticket is sequenced after it.
 
 ## PROVEN

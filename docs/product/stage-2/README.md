@@ -15,6 +15,7 @@ MVP = slices S0–S6a (`docs/roadmap.md`). Stage 2 makes the product sell-ready,
 | `discovery-prompt.md` | The one prompt for every epic's product discovery session and its second pass; started by a one-line launch |
 | `05-execution-plan.md` | The route per epic (discovery, `plan-task`, Limen), the ticket table, dependency graph, planning order and coordinator start rule (§2), the discovery queue (tracker, §3), parallel rules, owner time |
 | `06-architecture-review.md` | Architecture review of the code against the epic plans (2026-11-13): what stays, 17 findings with evidence, a foundation ticket group P0–P10 to build before the feature epics, 12 proposed code standards, 6 owner decisions |
+| `07-foundation-plan.md` | The eight foundation tickets (F093, F086–F092) with order, parallel rules, how to run one, and where the code standards live. Diagram: `docs/diagrams/architecture-2026-11.html` |
 | `epics/E<nn>-<slug>.md` | One page per epic: outcome, users, in scope, out of scope, dependencies, open product questions, risks, exit, size |
 | `decisions.md` | Product decision log: PD-NNN, date, decision, owner words. Architecture decisions stay ADRs in `docs/decisions/` |
 
