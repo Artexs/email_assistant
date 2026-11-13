@@ -9,7 +9,7 @@
 - [x] Decisions D7–D27.
 - [x] stage-01-writer [written]
 - [x] stage-02-format-and-context [written]
-- [ ] stage-03-run-and-request-ids (not written yet)
+- [x] stage-03-run-and-request-ids [written]
 - [ ] stage-04-lint-rule (not written yet)
 - [ ] stage-05-convert-platform (not written yet)
 - [ ] stage-06-convert-main (not written yet)
