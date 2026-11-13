@@ -1,0 +1,40 @@
+{
+  "$comment": "Server module layers, lowest first. platform sits below layer 1; the composition roots (apps/server/src/*.ts, apps/server/src/scripts/) sit above the last layer. A module imports only the index.ts of a module in a lower layer, or of a module in its own layer when sameLayerEdges names the pair. Read by eslint.config.js and apps/server/src/modules/layers.test.ts. Rules: docs/code-patterns.md § Layers and borders.",
+  "layers": [
+    ["audit", "tenancy"],
+    ["config", "mail"],
+    ["triage", "actions", "delegation"],
+    ["reports", "channels", "testmail"]
+  ],
+  "sameLayerEdges": [
+    {
+      "from": "tenancy",
+      "to": "audit",
+      "why": "Organization settings changes write their audit row in the same transaction."
+    },
+    {
+      "from": "mail",
+      "to": "config",
+      "why": "Connecting a mailbox inserts its default settings; the mailbox views read the settings."
+    },
+    { "from": "triage", "to": "actions", "why": "The triage worker writes the planned actions in its transaction." },
+    {
+      "from": "triage",
+      "to": "delegation",
+      "why": "The triage worker creates delegations and detects a delegate's reply."
+    },
+    {
+      "from": "delegation",
+      "to": "actions",
+      "why": "The chaser plans reminder actions; the service closes reminder sends."
+    },
+    { "from": "channels", "to": "reports", "why": "The digest job and /status build the digest text from reports." }
+  ],
+  "rootDeepImportExceptions": [
+    {
+      "file": "scripts/e2e-seed.ts",
+      "why": "E2E test seed: writes a mailbox, its credentials and its inbox folder with the mail repository."
+    },
+    { "file": "scripts/e2e-activity-rows.ts", "why": "E2E test seed: writes an inbox folder with the mail repository." }
+  ]
+}
