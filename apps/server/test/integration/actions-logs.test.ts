@@ -143,7 +143,14 @@ describe("actions logs", () => {
         expect(await fake.searchSinceIn("AI/Info", new Date(RECEIVED.getTime() - HOUR))).toHaveLength(1);
 
         // The Undo tap on the mail with applied changes.
-        const link: LinkedChat = { orgId, userId, role: "owner", chatId: 1, linkedAt: new Date(T0.getTime() - HOUR) };
+        const link: LinkedChat = {
+          orgId,
+          userId,
+          role: "owner",
+          chatId: 1,
+          linkedAt: new Date(T0.getTime() - HOUR),
+          locale: "en",
+        };
         const tap = await handleCallback(
           {
             db: trx,
