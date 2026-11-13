@@ -5,7 +5,6 @@ import {
   type ActionType,
   type ActionView,
   type ExpireFilter,
-  type MailboxActionType,
 } from "@ea/core";
 import { sql, type Expression, type ExpressionBuilder, type SqlBool, type Transaction } from "kysely";
 import { z } from "zod";
