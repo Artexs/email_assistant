@@ -467,6 +467,29 @@ describe("organizations", () => {
       expect(errorLines.filter((line) => line.includes(b.orgId))).toHaveLength(0);
     });
   });
+
+  test("an error of one organization is logged by id and the next organization still gets its rows", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const a = await org(trx);
+      const b = await org(trx);
+      for (const o of [a, b]) {
+        await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
+      }
+      // An infinite resume time is not a Date: the run of this organization throws before any detector queues a row.
+      await trx
+        .updateTable("organizations")
+        .set({ resumed_at: sql`'infinity'::timestamptz` })
+        .where("id", "=", a.orgId)
+        .execute();
+
+      await run(trx);
+      expect(await rows(trx, b.orgId, "urgent")).toHaveLength(2);
+      expect(await rows(trx, a.orgId)).toHaveLength(0);
+      expect(errorLines.filter((line) => line.includes(`notices for org ${a.orgId} failed`))).toHaveLength(1);
+      expect(errorLines.filter((line) => line.includes(b.orgId))).toHaveLength(0);
+    });
+  });
 });
 
 describe("action_failed notices", () => {
