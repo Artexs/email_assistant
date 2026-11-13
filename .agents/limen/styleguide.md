@@ -4,7 +4,7 @@
 
 Full rules: `docs/code-patterns.md` (accepted, wins on conflict). Architecture: `docs/architecture.md`, `docs/modules.md`, ADRs in `docs/decisions/`.
 
-Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit && bun run test:int`. Only one checkout at a time runs `bun run test:int` (shared GreenMail).
+Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit:ci && bun run test:int:ci`. The `:ci` scripts run the Bun of `.bun-version` (CI and the server image). Each Limen job has its own DB, so `test:int:ci` needs no lock; `test:e2e` runs under `flock /tmp/email-assistant-shared-tests.lock` (`CLAUDE.md`).
 
 ## Shape
 
@@ -25,6 +25,7 @@ Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit 
 - `log` from `platform/log` with a `[module]` prefix; `describeError(error)`; for Telegram only `telegramErrorLabel(error)`.
 - Config from env through the Zod schema in `platform/config`; every key in `.env.example`.
 - Tests: pure core logic without mocks; repos against Postgres in a transaction that rolls back; fake and real adapters pass one contract suite. Route tests cover 401, 403, 404, 400.
+- A test that waits for time-driven code polls its condition with `waitFor` (`apps/server/test/wait-for.ts`); a fake releases its holds in `stop()`.
 - A prompt or model change runs `bun run eval` and must pass the go/no-go table.
 
 ## Avoid
@@ -37,3 +38,4 @@ Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit 
 - `console.log`, secrets or mail bodies in logs, paths from mail data in logs.
 - Literal text in web components, inline `<script>`, hand-written `<style>`, hand-made shadcn components.
 - Committing `.env`, keys, passwords or tokens.
+- A fixed sleep over 100 ms in a test; `test.skip`, a CI retry or a longer timeout as a fix. A test that fails twice in CI without a code change is quarantined the same day with a ticket (`docs/code-patterns.md` § Tests); only the coordinator quarantines.

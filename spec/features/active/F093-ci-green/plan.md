@@ -206,3 +206,4 @@ Not changed: the NV1 and NV2 items stay open; stages 1 and 2 check them.
 
 - 2026-11-13: Planned by a planner job (Opus 5.5). Collect, CI history, probes on Bun 1.3.14 and 1.4.4 (F1–F13); D5–D14; three stage files.
 - 2026-11-13: Cold review (Opus 5.5): PASS, 4 major, 5 minor, 2 questions; all handled (§ Cold review).
+- 2026-11-13: CI green on master, run 43449221495 (cb25ab8): ci 4m56s (test:unit 30 s, test:int 191 s), e2e 3m0s, image 34 s.
