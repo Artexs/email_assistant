@@ -4,7 +4,7 @@ import { classifierCategories } from "@ea/core";
 import { z } from "zod";
 
 import { type ClassifierDelegate, type ClassifierEmail, classifyEmail } from "../modules/triage";
-import { llmSettings, loadConfig } from "../platform/config";
+import { llmRoleTable, loadConfig } from "../platform/config";
 import { describeError } from "../platform/errors";
 import { createLlmClient, type LlmProviderId, llmProviderIds, type LlmUsage } from "../platform/llm";
 import { createLog } from "../platform/log";
@@ -60,28 +60,25 @@ function readArgs(): { provider: LlmProviderId | undefined; delegates: boolean }
 async function main() {
   const config = loadConfig();
   const args = readArgs();
-  const settings = llmSettings(config, args.provider ?? config.LLM_PROVIDER);
+  const table = llmRoleTable(config, { classifier: { provider: args.provider } });
+  const row = table.roles.classifier;
+  const keys = table.providers[row.provider];
 
-  if (settings.apiKey === undefined) {
-    log.error(`${settings.apiKeyName} is missing`);
+  if (keys.apiKey === undefined) {
+    log.error(`${keys.apiKeyName} is missing`);
     process.exit(1);
   }
 
-  const llm = createLlmClient({
-    provider: settings.provider,
-    apiKey: settings.apiKey,
-    classifierModel: settings.classifierModel,
-    timeoutMs: settings.timeoutMs,
-    rpm: settings.rpm,
-    reasoningEffort: settings.reasoningEffort,
-  });
+  const llm = createLlmClient({ table });
 
   const line = (check: string, used: LlmUsage, extra = "") =>
     log.info(
-      `provider=${settings.provider} model=${used.model} effort=${settings.reasoningEffort ?? "-"} check=${check} latencyMs=${used.latencyMs} tokensIn=${used.tokensIn} tokensOut=${used.tokensOut}${extra}`
+      `provider=${row.provider} model=${used.model} effort=${row.reasoningEffort ?? "-"} check=${check} latencyMs=${used.latencyMs} tokensIn=${used.tokensIn} tokensOut=${used.tokensOut}${extra}`
     );
 
-  const greeting = await llm.classify({
+  const greeting = await llm.generate({
+    role: "classifier",
+    promptVersion: "classifier-v0",
     schema: z.object({ greeting: z.string() }),
     system: "Answer with a JSON object.",
     prompt: "Say hello in the field greeting.",

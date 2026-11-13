@@ -1,13 +1,20 @@
-import { classifierCategories, type Category } from "@ea/core";
+import { classifierCategories, type Category, type LlmRole } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 import type { z } from "zod";
 
-import { LlmBlockedError, type LlmClient, LlmOutputError, type LlmUsage } from "../../platform/llm";
+import { LlmBlockedError, type LlmCall, type LlmClient, LlmOutputError, type LlmUsage } from "../../platform/llm";
 
 import { type ClassifierEmail, classifyEmail, type SenderContext } from "./classifier";
 import type { ClassifierDelegate } from "./prompts/classifier-v2";
 
-const usage: LlmUsage = { model: "fake-model", tokensIn: 10, tokensOut: 5, latencyMs: 7 };
+const usage: LlmUsage = {
+  role: "classifier",
+  promptVersion: "classifier-v2",
+  model: "fake-model",
+  tokensIn: 10,
+  tokensOut: 5,
+  latencyMs: 7,
+};
 
 interface Recorded {
   schema: z.ZodType<unknown>;
@@ -19,8 +26,8 @@ interface Recorded {
 function fakeLlm(answer: unknown | (() => never)): { llm: LlmClient; calls: Recorded[] } {
   const calls: Recorded[] = [];
   const llm: LlmClient = {
-    classifierModel: "fake-model",
-    async classify<T>(req: { schema: z.ZodType<T>; system: string; prompt: string; model?: string }) {
+    modelOf: () => "fake-model",
+    async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
       calls.push(req);
       if (typeof answer === "function") answer();
       return { data: answer as T, usage };

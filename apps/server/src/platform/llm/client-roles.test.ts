@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { setLogLevel } from "../log";
 
-import { createRoleLlmClient, type GenerateFn, type GenerateRequest } from "./client";
+import { createLlmClient, type GenerateFn, type GenerateRequest } from "./client";
 import { LlmSoftError, llmErrorCode } from "./errors";
 import type { LlmProviderId } from "./providers";
 import { type LlmRoleSettings, type LlmRoleTable, uniformRoleTable } from "./settings";
@@ -79,10 +79,10 @@ const classifierCall = {
 const judgeCall = { role: "judge", promptVersion: "judge-v1", schema, system: "S", prompt: "P" } as const;
 const drafterCall = { ...classifierCall, role: "drafter", promptVersion: "drafter-v1" } as const;
 
-describe("createRoleLlmClient", () => {
+describe("createLlmClient", () => {
   test("a classifier call builds the request from the role row and returns the usage", async () => {
     const fake = fakeProviders(() => okText);
-    const llm = createRoleLlmClient({ table: twoProviderTable(), providers: fake.providers, ...fakeClock() });
+    const llm = createLlmClient({ table: twoProviderTable(), providers: fake.providers, ...fakeClock() });
     const { data, usage } = await llm.generate(classifierCall);
     expect(data).toEqual({ category: "a", confidence: 1 });
     expect(fake.requests).toHaveLength(1);
@@ -106,7 +106,7 @@ describe("createRoleLlmClient", () => {
 
   test("a second role on another provider uses that provider's generate", async () => {
     const fake = fakeProviders(() => okText);
-    const llm = createRoleLlmClient({ table: twoProviderTable(), providers: fake.providers, ...fakeClock() });
+    const llm = createLlmClient({ table: twoProviderTable(), providers: fake.providers, ...fakeClock() });
     await llm.generate(classifierCall);
     const judge = await llm.generate(judgeCall);
     expect(fake.requests.map((r) => [r.provider, r.req.model])).toEqual([
@@ -129,7 +129,7 @@ describe("createRoleLlmClient", () => {
       starts.push([provider, clock.now()]);
       return okText;
     });
-    const llm = createRoleLlmClient({ table: twoProviderTable(), providers: fake.providers, ...clock });
+    const llm = createLlmClient({ table: twoProviderTable(), providers: fake.providers, ...clock });
     await llm.generate(classifierCall);
     await llm.generate(judgeCall);
     await llm.generate(drafterCall);
@@ -149,7 +149,7 @@ describe("createRoleLlmClient", () => {
       starts.push(clock.now());
       return okText;
     });
-    const llm = createRoleLlmClient({ table: twoProviderTable({ rpm: 6 }), providers: fake.providers, ...clock });
+    const llm = createLlmClient({ table: twoProviderTable({ rpm: 6 }), providers: fake.providers, ...clock });
     await llm.generate(judgeCall);
     await llm.generate(judgeCall);
     expect(starts).toEqual([0, 10_000]);
@@ -157,7 +157,7 @@ describe("createRoleLlmClient", () => {
 
   test("a role has its own timeout", async () => {
     const fake = fakeProviders((provider) => (provider === "gemini" ? new Promise<string>(() => undefined) : okText));
-    const llm = createRoleLlmClient({ table: twoProviderTable(), providers: fake.providers });
+    const llm = createLlmClient({ table: twoProviderTable(), providers: fake.providers });
     const started = Date.now();
     const error = await llm.generate(judgeCall).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(LlmSoftError);
@@ -169,7 +169,7 @@ describe("createRoleLlmClient", () => {
     const fake = fakeProviders(() => okText);
     const table = twoProviderTable();
     table.roles.drafter = { ...classifierRow, reasoningEffort: "medium" };
-    const llm = createRoleLlmClient({ table, providers: fake.providers, ...fakeClock() });
+    const llm = createLlmClient({ table, providers: fake.providers, ...fakeClock() });
     await llm.generate(classifierCall);
     await llm.generate({ ...classifierCall, role: "extractor", promptVersion: "extractor-v1" });
     await llm.generate(drafterCall);
@@ -180,7 +180,7 @@ describe("createRoleLlmClient", () => {
     const fake = fakeProviders(() => okText);
     const table = twoProviderTable();
     table.providers.gemini.apiKey = undefined;
-    const llm = createRoleLlmClient({ table, providers: fake.providers, ...fakeClock() });
+    const llm = createLlmClient({ table, providers: fake.providers, ...fakeClock() });
     const error = await llm.generate(judgeCall).catch((e: unknown) => e);
     expect(llmErrorCode(error)).toBe("missing_key");
     expect(fake.built).toEqual([]);
@@ -188,14 +188,14 @@ describe("createRoleLlmClient", () => {
 
   test("the request model overrides the row model", async () => {
     const fake = fakeProviders(() => okText);
-    const llm = createRoleLlmClient({ table: twoProviderTable(), providers: fake.providers, ...fakeClock() });
+    const llm = createLlmClient({ table: twoProviderTable(), providers: fake.providers, ...fakeClock() });
     const { usage } = await llm.generate({ ...classifierCall, model: "gpt-other" });
     expect(fake.requests[0]?.req.model).toBe("gpt-other");
     expect(usage.model).toBe("gpt-other");
   });
 
   test("a prompt version of another role, or an unknown role, is a type error", () => {
-    const llm = createRoleLlmClient({ table: twoProviderTable(), providers: fakeProviders(() => okText).providers });
+    const llm = createLlmClient({ table: twoProviderTable(), providers: fakeProviders(() => okText).providers });
     const wrongVersion = () =>
       // @ts-expect-error the version belongs to the judge, not to the classifier
       llm.generate({ ...classifierCall, promptVersion: "judge-v1" });
@@ -214,7 +214,7 @@ describe("createRoleLlmClient", () => {
     setLogLevel("debug");
     try {
       const fake = fakeProviders(() => okText);
-      const llm = createRoleLlmClient({ table: twoProviderTable(), providers: fake.providers, ...fakeClock() });
+      const llm = createLlmClient({ table: twoProviderTable(), providers: fake.providers, ...fakeClock() });
       await llm.generate({ ...judgeCall, prompt: "MARKER-PROMPT" });
       const text = lines.join("\n");
       expect(text).toContain("role=judge");

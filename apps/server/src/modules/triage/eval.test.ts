@@ -1,17 +1,31 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { delegateIdOf, type EvalCase, EVAL_RECEIVED_AT, evalCaseSchema, selectCases } from "@ea/core";
+import { delegateIdOf, type EvalCase, EVAL_RECEIVED_AT, evalCaseSchema, type LlmRole, selectCases } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 import { z } from "zod";
 
-import { LlmBlockedError, LlmConfigError, type LlmClient, LlmSoftError, type LlmUsage } from "../../platform/llm";
+import {
+  LlmBlockedError,
+  type LlmCall,
+  LlmConfigError,
+  type LlmClient,
+  LlmSoftError,
+  type LlmUsage,
+} from "../../platform/llm";
 
 import { type CaseResult, evalStateFileName, parseCaseResults, runEval, toClassifierInput, toPrediction } from "./eval";
 import { evalExitCode } from "./eval-report";
 import { PROMPT_VERSION } from "./prompts/classifier-v2";
 
-const usage: LlmUsage = { model: "gemini-3.5-flash-lite", tokensIn: 100, tokensOut: 20, latencyMs: 50 };
+const usage: LlmUsage = {
+  role: "classifier",
+  promptVersion: "classifier-v2",
+  model: "gemini-3.5-flash-lite",
+  tokensIn: 100,
+  tokensOut: 20,
+  latencyMs: 50,
+};
 
 type Step = Record<string, unknown> | Error;
 
@@ -35,8 +49,8 @@ function answer(category: string, confidence = 0.9): Record<string, unknown> {
 function fakeLlm(script: Step[] | ((c: Recorded, n: number) => Step)): { llm: LlmClient; calls: Recorded[] } {
   const calls: Recorded[] = [];
   const llm: LlmClient = {
-    classifierModel: "gemini-3.5-flash-lite",
-    async classify<T>(req: { schema: z.ZodType<T>; system: string; prompt: string }) {
+    modelOf: () => "gemini-3.5-flash-lite",
+    async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
       const n = calls.length;
       calls.push({ prompt: req.prompt, system: req.system });
       const step =

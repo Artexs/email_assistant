@@ -3,7 +3,8 @@ import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import { insertDefaultSettings } from "../../src/modules/config";
 import { tenancyRoutes } from "../../src/modules/tenancy";
 import { createLlmPause, createTriageJob } from "../../src/modules/triage";
-import { createLlmClient, type GenerateFn } from "../../src/platform/llm";
+import type { GenerateFn } from "../../src/platform/llm";
+import { createFixedLlmClient } from "../../src/platform/llm/testing";
 import { setLogFormat, setLogLevel } from "../../src/platform/log";
 import { runJobTick } from "../../src/platform/scheduler";
 import { countMailboxes, onboardingDeps } from "../../src/web";
@@ -77,13 +78,11 @@ describe("log context", () => {
           Promise.resolve({ text: classifierAnswer, tokensIn: 10, tokensOut: 5, blocked: false });
         const triage = createTriageJob({
           db: trx,
-          llm: createLlmClient({
-            provider: "gemini",
+          llm: createFixedLlmClient(generate, {
+            model: "fake-model",
             apiKey: "fake-key",
-            classifierModel: "fake-model",
             timeoutMs: 1000,
             rpm: 1000,
-            generate,
             sleep: async () => undefined,
           }),
           pause: createLlmPause(),

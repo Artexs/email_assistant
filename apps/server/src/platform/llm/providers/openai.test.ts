@@ -4,8 +4,8 @@ import OpenAI from "openai";
 import { z } from "zod";
 
 import { setLogLevel } from "../../log";
-import { createLlmClient } from "../client";
 import { LlmConfigError, LlmHardError, LlmSoftError } from "../errors";
+import { createFixedLlmClient } from "../testing";
 
 import {
   classifyOpenAiError,
@@ -203,15 +203,14 @@ describe("toOpenAiResult", () => {
 
 describe("through the shared client", () => {
   const classify = (response: Parameters<typeof toOpenAiResult>[0]) => {
-    const llm = createLlmClient({
-      provider: "gemini",
-      apiKey: "k",
-      classifierModel: MODEL,
-      timeoutMs: 1000,
-      rpm: 6000,
-      generate: async () => toOpenAiResult(response),
+    const llm = createFixedLlmClient(async () => toOpenAiResult(response), { model: MODEL, rpm: 6000 });
+    return llm.generate({
+      role: "classifier",
+      promptVersion: "classifier-v2",
+      schema: buildTriageAnalysisSchema(classifierCategories),
+      system: "s",
+      prompt: "p",
     });
-    return llm.classify({ schema: buildTriageAnalysisSchema(classifierCategories), system: "s", prompt: "p" });
   };
 
   test("a refusal gives llm_blocked", async () => {
@@ -396,21 +395,22 @@ describe("classifyOpenAiError", () => {
 describe("OpenAI through the shared client", () => {
   const schema = buildTriageAnalysisSchema(classifierCategories);
   const clientFor = (create: OpenAiLike["responses"]["create"], timeoutMs = 1000) =>
-    createLlmClient({
-      provider: "openai",
-      apiKey: "MARKER-KEY",
-      classifierModel: MODEL,
-      timeoutMs,
-      rpm: 6000,
-      reasoningEffort: "none",
-      generate: createOpenAiGenerate({ apiKey: "MARKER-KEY", reasoningEffort: "none", client: fakeClient(create) }),
-    });
-  const input = { schema, system: "s", prompt: "prompt MARKER-PROMPT" };
+    createFixedLlmClient(
+      createOpenAiGenerate({ apiKey: "MARKER-KEY", reasoningEffort: "none", client: fakeClient(create) }),
+      { provider: "openai", model: MODEL, timeoutMs, rpm: 6000, reasoningEffort: "none" }
+    );
+  const input = {
+    role: "classifier",
+    promptVersion: "classifier-v2",
+    schema,
+    system: "s",
+    prompt: "prompt MARKER-PROMPT",
+  } as const;
 
   test("the 30 s guard: a call that never ends gives timeout", async () => {
     const llm = clientFor(() => new Promise(() => undefined), 50);
     const started = Date.now();
-    await expect(llm.classify(input)).rejects.toMatchObject({ code: "timeout" });
+    await expect(llm.generate(input)).rejects.toMatchObject({ code: "timeout" });
     expect(Date.now() - started).toBeLessThan(1000);
   });
 
@@ -418,7 +418,7 @@ describe("OpenAI through the shared client", () => {
     const llm = clientFor(async () => {
       throw OpenAI.APIError.generate(401, { error: { message: "MARKER-BODY" } }, undefined, new Headers());
     });
-    await expect(llm.classify(input)).rejects.toMatchObject({ code: "http_401", model: MODEL });
+    await expect(llm.generate(input)).rejects.toMatchObject({ code: "http_401", model: MODEL });
   });
 
   describe("no leak", () => {
@@ -460,7 +460,7 @@ describe("OpenAI through the shared client", () => {
         const llm = clientFor(async () => {
           throw failure;
         });
-        const error = await llm.classify(input).catch((e: unknown) => e);
+        const error = await llm.generate(input).catch((e: unknown) => e);
         const lines = [String((error as Error).message), String(error)];
         for (const call of [...out.mock.calls, ...err.mock.calls]) lines.push(call.map(String).join(" "));
         for (const line of lines) {

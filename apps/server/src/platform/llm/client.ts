@@ -5,26 +5,9 @@ import { createLog } from "../log";
 
 import { isLlmError, LlmBlockedError, LlmConfigError, LlmOutputError, LlmSoftError } from "./errors";
 import { type LlmProvider, type LlmProviderId, llmProviders } from "./providers";
-import { type LlmRoleSettings, type LlmRoleTable, uniformRoleTable } from "./settings";
+import type { LlmRoleSettings, LlmRoleTable } from "./settings";
 
 const log = createLog("llm");
-
-export interface LlmUsage {
-  model: string;
-  tokensIn: number;
-  tokensOut: number;
-  latencyMs: number;
-}
-
-export interface LlmClient {
-  readonly classifierModel: string;
-  classify<T>(req: {
-    schema: z.ZodType<T>;
-    system: string;
-    prompt: string;
-    model?: string;
-  }): Promise<{ data: T; usage: LlmUsage }>;
-}
 
 export interface GenerateRequest {
   model: string;
@@ -90,7 +73,11 @@ async function withTimeout<T>(work: Promise<T>, timeoutMs: number, model: string
 }
 
 /** The usage of one call: it goes into the `llm.call` audit row and `triage_results`. */
-export interface LlmCallUsage extends LlmUsage {
+export interface LlmUsage {
+  model: string;
+  tokensIn: number;
+  tokensOut: number;
+  latencyMs: number;
   role: LlmRole;
   promptVersion: string;
 }
@@ -106,22 +93,22 @@ export interface LlmCall<T, R extends LlmRole> {
   model?: string;
 }
 
-export interface RoleLlmClient {
+export interface LlmClient {
   /** The model of the role's row in the role table. */
   modelOf(role: LlmRole): string;
-  generate<T, R extends LlmRole>(call: LlmCall<T, R>): Promise<{ data: T; usage: LlmCallUsage }>;
+  generate<T, R extends LlmRole>(call: LlmCall<T, R>): Promise<{ data: T; usage: LlmUsage }>;
 }
 
 type RateLimiter = ReturnType<typeof createRateLimiter>;
 type ProviderRegistry = Record<LlmProviderId, Pick<LlmProvider, "createGenerate" | "classifyError">>;
 
-export function createRoleLlmClient(opts: {
+export function createLlmClient(opts: {
   table: LlmRoleTable;
   /** Tests: fake providers. Default: the provider registry. */
   providers?: Partial<ProviderRegistry>;
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
-}): RoleLlmClient {
+}): LlmClient {
   const now = opts.now ?? (() => Date.now());
   const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const providerOf = (id: LlmProviderId) => opts.providers?.[id] ?? llmProviders[id];
@@ -182,7 +169,7 @@ export function createRoleLlmClient(opts: {
           model
         );
         const data = parseOutput(result, call.schema, model);
-        const usage: LlmCallUsage = {
+        const usage: LlmUsage = {
           role: call.role,
           promptVersion: call.promptVersion,
           model,
@@ -199,46 +186,6 @@ export function createRoleLlmClient(opts: {
         log.debug(`failed role=${call.role} model=${model} code=${llmError.code}`);
         throw llmError;
       }
-    },
-  };
-}
-
-/** Deprecated: the classifier-only client over the role client. The next stage of this ticket removes it. */
-export function createLlmClient(opts: {
-  provider: LlmProviderId;
-  apiKey: string;
-  classifierModel: string;
-  timeoutMs: number;
-  rpm: number;
-  reasoningEffort?: string | null;
-  generate?: GenerateFn;
-  now?: () => number;
-  sleep?: (ms: number) => Promise<void>;
-}): LlmClient {
-  const table = uniformRoleTable(
-    {
-      provider: opts.provider,
-      model: opts.classifierModel,
-      timeoutMs: opts.timeoutMs,
-      rpm: null,
-      reasoningEffort: opts.reasoningEffort ?? null,
-    },
-    { apiKeyName: "", apiKey: opts.apiKey, rpm: opts.rpm }
-  );
-  const fixed = opts.generate;
-  const providers =
-    fixed === undefined
-      ? undefined
-      : { [opts.provider]: { createGenerate: () => fixed, classifyError: llmProviders[opts.provider].classifyError } };
-  const inner = createRoleLlmClient({ table, providers, now: opts.now, sleep: opts.sleep });
-  return {
-    classifierModel: opts.classifierModel,
-    async classify(req) {
-      const { data, usage } = await inner.generate({ ...req, role: "classifier", promptVersion: "classifier-v0" });
-      return {
-        data,
-        usage: { model: usage.model, tokensIn: usage.tokensIn, tokensOut: usage.tokensOut, latencyMs: usage.latencyMs },
-      };
     },
   };
 }

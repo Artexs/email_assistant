@@ -2,7 +2,8 @@ import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 
 import { insertDefaultSettings } from "../../src/modules/config";
 import { createLlmPause, createTriageJob } from "../../src/modules/triage";
-import { createLlmClient, type GenerateFn } from "../../src/platform/llm";
+import type { GenerateFn } from "../../src/platform/llm";
+import { createFixedLlmClient } from "../../src/platform/llm/testing";
 import { setLogLevel } from "../../src/platform/log";
 
 import { createOrgWithMailbox, insertTestEmail, pauseOtherMailboxes } from "./fixtures";
@@ -89,13 +90,11 @@ describe("triage logs", () => {
         const clock = { at: now };
         const triage = createTriageJob({
           db: trx,
-          llm: createLlmClient({
-            provider: "gemini",
+          llm: createFixedLlmClient(generate, {
+            model: "fake-model",
             apiKey: MARKERS.key,
-            classifierModel: "fake-model",
             timeoutMs: 1000,
             rpm: 1000,
-            generate,
             sleep: async () => undefined,
           }),
           pause: createLlmPause(),

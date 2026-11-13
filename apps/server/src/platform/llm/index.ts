@@ -1,14 +1,5 @@
-export type {
-  GenerateFn,
-  GenerateRequest,
-  GenerateResult,
-  LlmCall,
-  LlmCallUsage,
-  LlmClient,
-  LlmUsage,
-  RoleLlmClient,
-} from "./client";
-export { createLlmClient, createRateLimiter, createRoleLlmClient } from "./client";
+export type { GenerateFn, GenerateRequest, GenerateResult, LlmCall, LlmClient, LlmUsage } from "./client";
+export { createLlmClient, createRateLimiter } from "./client";
 export { LlmBlockedError, LlmConfigError, llmErrorCode, LlmHardError, LlmOutputError, LlmSoftError } from "./errors";
 export type { LlmProvider, LlmProviderId } from "./providers";
 export { llmProviderIds, llmProviders } from "./providers";

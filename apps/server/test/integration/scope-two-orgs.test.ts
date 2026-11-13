@@ -79,13 +79,20 @@ const infoAnswer = {
 function fakeLlm(): FakeLlm {
   const prompts: string[] = [];
   return {
-    classifierModel: "fake-model",
+    modelOf: () => "fake-model",
     prompts,
-    async classify(req) {
+    async generate(req) {
       prompts.push(req.prompt);
       return {
         data: req.schema.parse(infoAnswer),
-        usage: { model: "fake-model", tokensIn: 100, tokensOut: 20, latencyMs: 300 },
+        usage: {
+          role: req.role,
+          promptVersion: req.promptVersion,
+          model: "fake-model",
+          tokensIn: 100,
+          tokensOut: 20,
+          latencyMs: 300,
+        },
       };
     },
   } as FakeLlm;

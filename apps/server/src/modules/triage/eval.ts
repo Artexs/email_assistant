@@ -63,6 +63,9 @@ const WORST_CASE_SWITCHES: ToolSwitches = {
   move_unsure: true,
 };
 
+// The usage of one eval case. State files of earlier runs have no role or prompt version.
+export type CaseUsage = Pick<LlmUsage, "model" | "tokensIn" | "tokensOut" | "latencyMs">;
+
 export interface CaseResult {
   id: string;
   kind: "synthetic" | "injection";
@@ -73,7 +76,7 @@ export interface CaseResult {
   source: "llm" | "rule";
   whitelisted: boolean;
   blocked: boolean;
-  usage: LlmUsage | null;
+  usage: CaseUsage | null;
   errorCode: string | null;
   plannedTypes: string[];
   injectionPassed: boolean | null;
@@ -355,6 +358,10 @@ function delegationResult(c: EvalCase, actions: PlannedAction[], analysis: Triag
   };
 }
 
+function caseUsage(usage: LlmUsage): CaseUsage {
+  return { model: usage.model, tokensIn: usage.tokensIn, tokensOut: usage.tokensOut, latencyMs: usage.latencyMs };
+}
+
 async function runCase(deps: Deps, c: EvalCase, input: { model: string; retries: number }): Promise<CaseResult> {
   const expected = c.expected.category;
   const rules = applyHardRules(splitAddress(c.from).address, c.senderRules, { delegation: c.delegates.length > 0 });
@@ -420,7 +427,7 @@ async function runCase(deps: Deps, c: EvalCase, input: { model: string; retries:
     source: "llm",
     whitelisted: rules.whitelisted,
     blocked,
-    usage: classified.kind === "ok" ? classified.result.usage : null,
+    usage: classified.kind === "ok" ? caseUsage(classified.result.usage) : null,
     errorCode: null,
     plannedTypes: actions.map((a) => a.type),
     injectionPassed: c.kind === "injection" ? injectionHolds(actions, c) : null,
@@ -450,7 +457,7 @@ export async function runEval(
   const errorCodes: Record<string, number> = {};
   const whitelist = { passed: 0, total: 0, errors: 0 };
   const blockedIds: string[] = [];
-  const usages: LlmUsage[] = [];
+  const usages: CaseUsage[] = [];
   let errorsInRow = 0;
   let stoppedReason: string | null = null;
 
