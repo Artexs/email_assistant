@@ -167,6 +167,8 @@ const baseSchema = z.object({
   ),
   // Comma list of flag keys (packages/core/src/features.ts) that read off for every organization. Empty = none.
   FEATURES_OFF: z.preprocess(emptyAsUndefined, z.string().optional()),
+  // Comma list of user ids (users.id, UUID) who may use /api/operator/*. Empty = no operator. Never log the ids.
+  OPERATOR_USER_IDS: z.preprocess(emptyAsUndefined, z.string().optional()),
   // Secret: never print or log it.
   WEB_AUTH_SECRET: z.preprocess(emptyAsUndefined, z.string().min(32).optional()),
   // Comma list of origins.
@@ -307,6 +309,9 @@ export const configSchema = baseSchema.superRefine((config, ctx) => {
       message: "each entry must be a flag key of packages/core/src/features.ts",
     });
   }
+  if (!parseList(config.OPERATOR_USER_IDS).every((id) => z.uuid().safeParse(id).success)) {
+    ctx.addIssue({ code: "custom", path: ["OPERATOR_USER_IDS"], message: "each entry must be a user id (UUID)" });
+  }
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -434,6 +439,11 @@ export function featuresOffFromEnv(env: Record<string, string | undefined>): Fea
   const items = parseList(env.FEATURES_OFF);
   if (!items.every(isFeatureKey)) throw new ConfigError(["FEATURES_OFF"]);
   return items;
+}
+
+/** User ids of the operator (`OPERATOR_USER_IDS`), lower-cased and unique. `configSchema` refuses an entry that is not a UUID. */
+export function operatorUserIds(config: Config): ReadonlySet<string> {
+  return new Set(parseList(config.OPERATOR_USER_IDS).map((id) => id.toLowerCase()));
 }
 
 /** `MAIL_ALLOW_LOCAL_HOSTS` wins; the old `WEB_MAIL_ALLOW_LOCAL` counts only while the new key is unset. */

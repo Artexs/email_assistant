@@ -43,6 +43,7 @@ export interface WebDeps {
   routers?: (api: Hono<ApiEnv>) => void; // web.ts mounts the module routers (after requireTenant)
   isOrgSuspended?: (orgId: string) => Promise<boolean>; // absent: no organization is suspended (old tests)
   resetRequestOpen?: boolean; // absent = false: /request-password-reset answers 404
+  operatorUserIds?: ReadonlySet<string>; // D16: absent = nobody is an operator
 }
 
 export interface HttpDeps {
@@ -254,6 +255,16 @@ export const refuseSuspendedWrites: MiddlewareHandler<ApiEnv> = async (c, next) 
   await next();
 };
 
+// D15: every path under /api/operator answers a non-operator like a path that does not exist. The log holds the user id only.
+export const requireOperator: MiddlewareHandler<ApiEnv> = async (c, next) => {
+  const { userId } = c.get("session");
+  if (c.get("web").operatorUserIds?.has(userId) !== true) {
+    log.warn(`operator route refused for user ${userId}`);
+    return c.json({ error: "not_found" }, 404);
+  }
+  await next();
+};
+
 export const requireOwner: MiddlewareHandler<ApiEnv> = async (c, next) => {
   if (c.get("role") !== "owner") return c.json({ error: "owner_only" }, 403);
   await next();
@@ -342,6 +353,7 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
   const api = new Hono<ApiEnv>();
   api.use("*", requireSession);
   api.use("*", requireTenant({ listMembershipsOfUser: web.listMembershipsOfUser }));
+  api.use("/operator/*", requireOperator);
   api.use("*", refuseSuspendedWrites);
   web.routers?.(api);
   api.all("*", (c) => c.json({ error: "not_found" }, 404));
