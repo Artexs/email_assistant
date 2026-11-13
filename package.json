@@ -14,6 +14,8 @@
     "start": "bun apps/server/src/main.ts",
     "test:unit": "bun test packages/core apps/server/src tools/fake-telegram/src apps/web/src/lib apps/web/src/i18n apps/web/integrations",
     "test:int": "bun test apps/server/test tools/fake-telegram/test",
+    "test:unit:ci": "bash scripts/ci-bun.sh run test:unit",
+    "test:int:ci": "bash scripts/ci-bun.sh run test:int",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
