@@ -278,6 +278,14 @@ export interface Organizations {
   trial_ends_at: Timestamp | null;
 }
 
+export interface OrgFeatures {
+  enabled: boolean;
+  flag: string;
+  org_id: string;
+  set_at: Timestamp;
+  set_by: string;
+}
+
 export interface Outbox {
   attempts: Generated<number>;
   buttons: Generated<Json>;
@@ -372,6 +380,7 @@ export interface DB {
   mailbox_settings: MailboxSettings;
   mailboxes: Mailboxes;
   memberships: Memberships;
+  org_features: OrgFeatures;
   organizations: Organizations;
   outbox: Outbox;
   sender_rules: SenderRules;

@@ -3,9 +3,17 @@ import { createCommitterJob, createExpiryJob, isOwnActionId } from "./modules/ac
 import { createOperatorNotices, createTelegramRuntime } from "./modules/channels";
 import { createChaserJob, delegationHooks } from "./modules/delegation";
 import { configureMailHosts, countSyncTargets, createMailSyncJob, openImapProvider } from "./modules/mail";
-import { listOrganizations } from "./modules/tenancy";
+import { configureFeatures, listOrganizations } from "./modules/tenancy";
 import { createLlmPause, createReturnedJob, createTriageJob, type TriageScope } from "./modules/triage";
-import { ConfigError, llmSettings, loadConfig, mailAllowLocal, operatorChatId, type Config } from "./platform/config";
+import {
+  ConfigError,
+  featuresOff,
+  llmSettings,
+  loadConfig,
+  mailAllowLocal,
+  operatorChatId,
+  type Config,
+} from "./platform/config";
 import { createSecretBox } from "./platform/crypto";
 import { assertAppRole, checkDb, createDb } from "./platform/db";
 import { describeError } from "./platform/errors";
@@ -51,6 +59,9 @@ const config = loadConfigOrExit();
 setLogLevel(config.LOG_LEVEL);
 setLogFormat(config.LOG_FORMAT);
 configureMailHosts({ allowLocal: mailAllowLocal(config) });
+const featuresOffList = featuresOff(config);
+configureFeatures({ off: featuresOffList });
+log.info(`features off by FEATURES_OFF: ${featuresOffList.length === 0 ? "none" : featuresOffList.join(", ")}`);
 if (config.MAIL_ALLOW_LOCAL_HOSTS === undefined && config.WEB_MAIL_ALLOW_LOCAL !== undefined) {
   log.warn("WEB_MAIL_ALLOW_LOCAL is an old name: use MAIL_ALLOW_LOCAL_HOSTS");
 }
