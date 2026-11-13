@@ -514,6 +514,40 @@ describe("real webDeps", () => {
     }
   });
 
+  test("the operator ids come from OPERATOR_USER_IDS and the start log holds the count only", async () => {
+    const operatorId = "0b0f3b3e-6f1c-4d57-9d0e-3f0a8f6f2a11";
+    const lines: string[] = [];
+    const logSpy = spyOn(console, "log").mockImplementation((...args: unknown[]): void => {
+      lines.push(args.join(" "));
+    });
+    const errorSpy = spyOn(console, "error").mockImplementation((...args: unknown[]): void => {
+      lines.push(args.join(" "));
+    });
+    let web: ReturnType<typeof webDeps> = null;
+    try {
+      web = webDeps(
+        loadConfig({
+          ...process.env,
+          WEB_BASE_URL: "http://127.0.0.1:8080",
+          WEB_AUTH_SECRET: "x".repeat(40),
+          WEB_DIST: dist,
+          ...AUTH_MAIL_OFF,
+          OPERATOR_USER_IDS: operatorId,
+        }),
+        db,
+        extras
+      );
+      if (web === null) throw new Error("webDeps returned null");
+      expect([...(web.operatorUserIds ?? [])]).toEqual([operatorId]);
+      expect(lines.some((line) => line.includes("operator ids: 1"))).toBe(true);
+      expect(lines.filter((line) => line.includes(operatorId))).toEqual([]);
+    } finally {
+      logSpy.mockRestore();
+      errorSpy.mockRestore();
+      await web?.close();
+    }
+  });
+
   test("serves the real Better Auth instance and keeps the markers out of the logs", async () => {
     const env = {
       ...process.env,

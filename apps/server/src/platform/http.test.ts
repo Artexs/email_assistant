@@ -391,6 +391,59 @@ describe("requireOperator", () => {
       errorSpy.mockRestore();
     }
   });
+
+  // The guard order of createApp: requireTenant, then requireOperator, then refuseSuspendedWrites (D15, D17).
+  const orderApp = (extra: Partial<WebDeps>) => {
+    const web = {
+      auth: {
+        handler: async () => new Response(null),
+        getSession: async () => ({ userId: "u-owner", sessionId: "s1" }),
+      },
+      db: {} as WebDeps["db"],
+      now: () => new Date("2026-11-20T10:00:00Z"),
+      dist: "/nonexistent/dist",
+      baseUrl: new URL("http://127.0.0.1:8080"),
+      trustedOrigins: new Set(["http://127.0.0.1:8080"]),
+      trustedProxies: buildTrustedProxies([]),
+      connInfo: () => undefined,
+      listMembershipsOfUser: async () => [{ org_id: "org-1", role: "owner" as const }],
+      operatorUserIds: new Set(["u-op"]),
+      routers: (api) => {
+        api.get("/operator/x", (c) => c.json({ ok: true }));
+        api.post("/operator/x", (c) => c.json({ ok: true }));
+      },
+      ...extra,
+    } satisfies WebDeps;
+    return createApp({ checkDb: async () => true, web });
+  };
+
+  test("a non-operator with no membership gets 403 no_organization: the tenant check runs first", async () => {
+    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    try {
+      const app = orderApp({ listMembershipsOfUser: async () => [] });
+      const res = await app.request("/api/operator/x");
+      expect(res.status).toBe(403);
+      expect(await res.json()).toEqual({ error: "no_organization" });
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test("a non-operator in a suspended organization gets 404 not_found on a write: the operator guard runs before the suspend check", async () => {
+    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    try {
+      const app = orderApp({ isOrgSuspended: async () => true });
+      const res = await app.request("/api/operator/x", {
+        method: "POST",
+        headers: { origin: "http://127.0.0.1:8080", "content-type": "application/json" },
+        body: "{}",
+      });
+      expect(res.status).toBe(404);
+      expect(await res.json()).toEqual({ error: "not_found" });
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
 });
 
 describe("PUBLIC_PAGE_PATHS", () => {

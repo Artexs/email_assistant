@@ -1,10 +1,11 @@
 import { featureFlags, featureKeys, resolveFeature, type FeatureKey, type FeatureSource } from "@ea/core";
+import type { OperatorFlagRow } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import { featuresOffFromEnv } from "../../platform/config";
 import type { DB, Db, TenantContext } from "../../platform/db";
 
-import { getOrgFeature, listOrgFeatureRows } from "./repo";
+import { getOrgFeature, listOrganizations, listOrgFeatureRows, listOrgFeatureRowsOfAll } from "./repo";
 
 // The process kill list (FEATURES_OFF, D9). null = not set yet: the first read parses process.env once.
 let off: ReadonlySet<FeatureKey> | null = null;
@@ -39,4 +40,27 @@ export async function featureStates(
     flag,
     ...resolveFeature({ defaultOn: featureFlags[flag].default, killed: killedKeys.has(flag), row: rows.get(flag) }),
   }));
+}
+
+/** D18: every organization (listOrganizations order) × every registry key (registry order), effective values. Rows with an unknown key are skipped. */
+export async function featureStatesOfAll(db: Db | Transaction<DB>): Promise<OperatorFlagRow[]> {
+  const { off: killedKeys } = featureSettings();
+  const [orgs, rows] = await Promise.all([listOrganizations(db), listOrgFeatureRowsOfAll(db)]);
+  const byOrg = new Map<string, Map<string, boolean>>();
+  for (const row of rows) {
+    const flags = byOrg.get(row.org_id) ?? new Map<string, boolean>();
+    flags.set(row.flag, row.enabled);
+    byOrg.set(row.org_id, flags);
+  }
+  return orgs.flatMap((org) =>
+    featureKeys.map((flag) => ({
+      orgId: org.id,
+      flag,
+      enabled: resolveFeature({
+        defaultOn: featureFlags[flag].default,
+        killed: killedKeys.has(flag),
+        row: byOrg.get(org.id)?.get(flag),
+      }).enabled,
+    }))
+  );
 }

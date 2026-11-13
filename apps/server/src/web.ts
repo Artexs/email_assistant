@@ -24,6 +24,7 @@ import {
   isOrgSuspended,
   listMembershipsOfUser,
   setUserTerms,
+  operatorRoutes,
   tenancyRoutes,
   type TenancyRouteDeps,
 } from "./modules/tenancy";
@@ -32,7 +33,14 @@ import { createAuth, listUserSessions, type AuthDeps, type AuthEventKind } from 
 import { createLockoutStore } from "./platform/auth-lockout";
 import { createAuthMailer, createAuthMailTasks } from "./platform/auth-mail";
 import type { AuthMailKind } from "./platform/auth-mail-texts";
-import { authMailSettings, mailAllowLocal, webTrustedOrigins, webTrustedProxies, type Config } from "./platform/config";
+import {
+  authMailSettings,
+  mailAllowLocal,
+  operatorUserIds,
+  webTrustedOrigins,
+  webTrustedProxies,
+  type Config,
+} from "./platform/config";
 import type { SecretBox } from "./platform/crypto";
 import type { Db, TenantContext } from "./platform/db";
 import { describeError } from "./platform/errors";
@@ -251,6 +259,7 @@ export function apiRouters(
         ...onboardingDeps(db, extras.botUsername),
       })
     );
+    api.route("/operator", operatorRoutes({ db }));
     api.route(
       "/",
       mailRoutes({
@@ -343,6 +352,8 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     };
   };
 
+  const operators = operatorUserIds(config);
+  log.info(`operator ids: ${operators.size}`);
   log.info(`web is on: ${baseUrl.origin}, dist ${dist}`);
   return {
     auth: { handler: (req) => handle.auth.handler(req), getSession },
@@ -356,6 +367,7 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     listMembershipsOfUser: (userId) => listMembershipsOfUser(db, userId),
     homePath: homePathOf(db, extras.botUsername),
     routers: apiRouters(config, db, extras, now, (userId) => listUserSessions(handle, userId)),
+    operatorUserIds: operators,
     isOrgSuspended: (orgId) => isOrgSuspended(db, { orgId }),
     resetRequestOpen: mailTasks !== null,
     close: async () => {

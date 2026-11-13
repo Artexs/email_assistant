@@ -1,4 +1,4 @@
-export { configureFeatures, featureSettings, featureStates, isFeatureOn } from "./features";
+export { configureFeatures, featureSettings, featureStates, featureStatesOfAll, isFeatureOn } from "./features";
 export {
   getMembership,
   getOrganization,
@@ -12,6 +12,7 @@ export {
   listMembershipsOfUser,
   listOrganizations,
   listOrgFeatureRows,
+  listOrgFeatureRowsOfAll,
   setDigestTimes,
   setUserTerms,
   upsertOrgFeature,
@@ -21,6 +22,7 @@ export {
   type UserAuthProfile,
   type UserMembership,
 } from "./repo";
+export { operatorRoutes, type OperatorRouteDeps } from "./operator-routes";
 export { tenancyRoutes, type TenancyRouteDeps } from "./routes";
 export {
   createOrganizationWithOwner,
