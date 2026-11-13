@@ -8,7 +8,7 @@
 - [x] Facts checked (probes P1–P5).
 - [x] Decisions D7–D27.
 - [x] stage-01-writer [written]
-- [ ] stage-02-format-and-context (not written yet)
+- [x] stage-02-format-and-context [written]
 - [ ] stage-03-run-and-request-ids (not written yet)
 - [ ] stage-04-lint-rule (not written yet)
 - [ ] stage-05-convert-platform (not written yet)
