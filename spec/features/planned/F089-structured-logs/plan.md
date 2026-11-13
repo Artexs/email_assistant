@@ -5,14 +5,14 @@
 ## Planning progress
 
 - [x] Collect: ticket, plan input, ADR 0024, `07-foundation-plan.md`, `05-execution-plan.md` §2, the plans of F086 and F087, the code of `platform/{log,scheduler,http,config,errors,auth,auth-mail,heartbeat,pwned}.ts`, `platform/llm/client.ts`, `main.ts`, `scripts/job-run.ts`, `eslint.config.js`, the test preload and the log tests.
-- [x] Facts checked (probes P1–P5).
+- [x] Facts checked (probes P1–P6).
 - [x] Decisions D7–D27.
 - [x] stage-01-writer [written]
 - [x] stage-02-format-and-context [written]
 - [x] stage-03-run-and-request-ids [written]
 - [x] stage-04-lint-rule [written]
 - [x] stage-05-convert-platform [written]
-- [ ] stage-06-convert-main (not written yet)
+- [x] stage-06-convert-main [written]
 - [ ] stage-07-standards (not written yet)
 - [ ] Cold review (`plan-review-1.md`), fixes logged in § "Cold review".
 
@@ -79,13 +79,14 @@ A gap or a deviation that a worker finds is a question in its final message, not
 
 ## Facts checked (2026-11-13, at commit `88df1c5`)
 
-Probes ran in `.probe-f089/` in this worktree with the `node_modules` of the main checkout (deleted before the commit; their code is in the stage files where it matters). Bun 1.4.4, Hono 4.13.16, croner 11.0.0, ESLint 9.23.0, typescript-eslint 8.28.0, esquery 1.6.0.
+Probes P1–P6 ran in `.probe-f089/` in this worktree with the `node_modules` of the main checkout (deleted before the commit; their code is in the stage files where it matters). Bun 1.4.4, Hono 4.13.16, croner 11.0.0, ESLint 9.23.0, typescript-eslint 8.28.0, esquery 1.6.0.
 
 - **P1 `AsyncLocalStorage` in Bun.** Two `als.run` calls at once (`Promise.all`), each awaiting: a TCP round trip on one socket opened outside any context (the shape of a `pg` pool connection), a `setTimeout`, a promise resolved from an `EventEmitter` listener registered outside the context, and a nested `als.run`. After each `await`, `getStore()` returned the own store; the nested run saw the merged store and the outer store came back after it; outside, `getStore()` was `undefined`. A croner job whose callback calls `als.run` per tick saw `run_id` 1, then 2.
 - **P2 Hono header.** A first middleware that sets `x-request-id` with `c.header` after `await next()` put the header on 12 of 12 response kinds (listed in D17). Set before `next()`, 3 kinds lost it (`HTTPException` with `res`, a raw `Response`, `Response.redirect`). Under `Bun.serve`, a store opened around `next()` was visible in the handler, in a later middleware after its `next()`, and in `onError`; two requests at once kept their own ids.
 - **P3 Lint selectors.** With `typescript-eslint`'s parser and `no-restricted-syntax` (selectors of D18 / stage 04), 18 of 18 cases gave the expected count: template literal, free text, `${` in a string, `"config error:", e`, three arguments, identifier, concatenation, a `mailboxLog` child, no argument, a capital letter, a number → 1 warning each; `log.info("sync_done", { mailbox_id })`, `log.info("sync_done")`, `mailboxLog.info("sync_done", {})`, `log.with({…}).info("sync_done")`, `blog.info(…)`, `catalog.info(…)`, `console.info(…)` → 0. `:first-child` in esquery picks `arguments[0]`, not the callee (`log.info()` gave only the "no argument" warning). On `apps/server/src/**/*.ts` the rule gives 428 warnings at 428 call positions (counts in § Differences).
 - **P4 Lint does not fail on warnings.** `package.json` `lint` is `eslint .` (no `--max-warnings`); `lint-staged` runs `eslint --fix` (no `--max-warnings`); CI runs `bun run lint` (`.github/workflows/ci.yml:47`). So 428 warnings do not fail a commit or CI.
 - **P5 Value rule.** `/^[A-Za-z0-9_.:/-]{0,64}$/.test("Error 503")` is `false`. `util.format("a\nb")` keeps the newline; `JSON.stringify` writes it as `\n`, so a JSON line stays one line. `util.format` applies `%s` in the first argument like `console.log`.
+- **P6 Child env.** A `bun` process spawned with `env: { FOO: "" }` in a folder whose `.env` has `FOO=fromfile` sees `FOO` as `""` (the file does not replace a given value) and sees the other `.env` keys; with `bun --no-env-file` it sees no `.env` key (Bun 1.4.4). Stage 06 spawns the server with `--no-env-file` and the test's own env.
 - `createLog` is imported by 75 files, always as `const log = createLog("<module>")`. `ReturnType<typeof createLog>` is a parameter type in `scripts/invite-delivery.ts:20` and `scripts/pick-member.ts:10`; no test passes a fake logger.
 - `bunfig.toml` preloads `apps/server/test/preload.ts` for every `bun test` run; it sets `process.env.MAIL_ALLOW_LOCAL_HOSTS` and calls `configureMailHosts`.
 - `scripts/limen-prepare.sh` copies the main checkout's `.env` into the job worktree (without the DB URLs), so a worker's `.env` may hold a real `TELEGRAM_BOT_TOKEN`; the stage 06 test sets it empty for the spawned server.
@@ -205,4 +206,4 @@ Not run yet.
 
 ## Log
 
-- 2026-11-13: planned by a planning job (Opus 5.5) from the author's input; probes P1–P5.
+- 2026-11-13: planned by a planning job (Opus 5.5) from the author's input; probes P1–P6.
