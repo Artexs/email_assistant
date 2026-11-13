@@ -1,11 +1,10 @@
 import { featureFlags, featureKeys, resolveFeature, type FeatureKey, type FeatureSource } from "@ea/core";
+import type { Transaction } from "kysely";
 
 import { featuresOffFromEnv } from "../../platform/config";
 import type { DB, Db, TenantContext } from "../../platform/db";
 
 import { getOrgFeature, listOrgFeatureRows } from "./repo";
-
-import type { Transaction } from "kysely";
 
 // The process kill list (FEATURES_OFF, D9). null = not set yet: the first read parses process.env once.
 let off: ReadonlySet<FeatureKey> | null = null;
