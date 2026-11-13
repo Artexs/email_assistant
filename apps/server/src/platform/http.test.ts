@@ -12,6 +12,7 @@ import {
   normalizeAddress,
   originAllowed,
   parseBody,
+  PUBLIC_PAGE_PATHS,
   requireOwner,
   requireTenant,
   ValidationError,
@@ -241,5 +242,16 @@ describe("requireOwner", () => {
   test("lets an owner through", async () => {
     const res = await appWithRole("owner").request("/x");
     expect(res.status).toBe(200);
+  });
+});
+
+describe("PUBLIC_PAGE_PATHS", () => {
+  const isPublic = (path: string) => PUBLIC_PAGE_PATHS.some((pattern) => pattern.test(path));
+
+  test("the forgot page is public, with or without a trailing slash", () => {
+    expect(isPublic("/forgot")).toBe(true);
+    expect(isPublic("/forgot/")).toBe(true);
+    expect(isPublic("/forgotten")).toBe(false);
+    expect(isPublic("/forgot/x")).toBe(false);
   });
 });

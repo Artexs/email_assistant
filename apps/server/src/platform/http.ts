@@ -123,6 +123,7 @@ export function authRequest(req: Request, address: string | null): Request {
 export const PUBLIC_PAGE_PATHS: readonly RegExp[] = [
   /^\/login\/?$/,
   /^\/setup\/?$/,
+  /^\/forgot\/?$/,
   /^\/404\.html$/,
   /^\/_astro\//,
   /^\/favicon\./,

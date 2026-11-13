@@ -11,6 +11,8 @@ export const loginFormSchema = z.object({
   password: z.string().min(1, "password_required"),
 });
 
+export const forgotFormSchema = z.object({ email: z.string().trim().toLowerCase().pipe(z.email("email_invalid")) });
+
 export const setPasswordFormSchema = z
   .object({ email: z.email("email_invalid"), password: passwordSchema, repeat: z.string() })
   .refine((v) => v.password === v.repeat, { path: ["repeat"], message: "passwords_differ" });
