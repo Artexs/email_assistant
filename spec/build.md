@@ -17,7 +17,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟠 ACTIVE): The server image, CI and local checks run one current Bun (1.4.x)
-- `F090-llm-roles` (🟠 ACTIVE): LLM calls name a role; provider, model, cap share and prompt version follow the role
 - `F089-structured-logs` (🟠 ACTIVE): Logs are events with allow-listed fields and run ids, with a lint rule in warn mode
 - `F088-notices-as-facts` (🟠 ACTIVE): Notices are stored as facts and rendered per channel, detail and locale by a renderer registry
 - `F082-s6b-public-login` (🟠 ACTIVE): The panel login has the production shape: invite only, lockout, leaked-password check, terms, session list
@@ -35,7 +34,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F092-rls-safety-net` (🔴 PLANNED, needs plan): RLS under the tenant filter; waits for the owner's yes, after F087.
 - `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🔴 PLANNED, plan landed): one Bun 1.4.4 in CI, image and VPS; stage 1 builds, stage 2 is the owner VPS deploy (needs your go); the stage 1 job branch is pushed to GitHub for CI (Q1, owner confirms).
 
-- Stage 2 order: `docs/product/stage-2/05-execution-plan.md` §2. Plan its §2.1 rows in order with `plan-task`; each planned ticket gets a `## Sequenced` section (tickets that must land first, and its gate) and a line here. Start the first line here whose `Sequenced` tickets are all landed and whose gate is done; no cap on parallel builds (owner decision 2026-11-13); only one migration in build at a time; file overlaps named in the plan gates are advisory: start the stages anyway, and when a land conflicts, resume the worker to merge `master` and re-prove; a ticket with a second-pass gate on numbers stops at that stage and asks the owner (§2.4). Owner checkpoints and owner steps (U1, U2, ...) are NOT a stop (owner decision 2026-11-13): after the review PASS of the stage before a checkpoint, build the next stages with the plan defaults. Stop and ask the owner only for: a VPS or ssh action, a deploy, spending real money or using a real secret, an irreversible data change, or a product choice with no plan default.
+- Stage 2 order: `docs/product/stage-2/05-execution-plan.md` §2. Plan its §2.1 rows in order with `plan-task`; each planned ticket gets a `## Sequenced` section (tickets that must land first, and its gate) and a line here. Start the first line here whose `Sequenced` tickets are all landed and whose gate is done; no cap on parallel builds (owner decision 2026-11-13); only one migration in build at a time; file overlaps named in the plan gates are advisory: start the stages anyway, and when a land conflicts, resume the worker to merge `master` and re-prove; a ticket with a second-pass gate on numbers stops at that stage and asks the owner (§2.4). Owner checkpoints and owner steps (U1, U2, ...) are NOT a stop (owner decision 2026-11-13): after the review PASS of the stage before a checkpoint, build the next stages with the plan defaults. Owner decision 2026-11-13 (later): VPS, ssh and deploy steps are pre-approved; the coordinator does them (backup first, name the rollback target, verify after). Stop for the owner only when a step needs an API key or secret the coordinator cannot get itself.
 - Planning: a NEXT line that says `needs plan` gets a `--role planner` job (at most three at once); when the plan lands, drop `needs plan` and the ticket builds stage by stage. A ticket without `needs plan` builds directly from `ticket.md` (and an old one-job `plan.md`). Command, review, questions, auto-build: `notes/2026-11-13-limen-planner-role.md`.
 - E1 Close the MVP (§2.1 row 1): not planned yet; plan it first (handoff `~/.pi/agent/notes/2026-11-12-handoff-stage2-e01-close-the-mvp.md`). Every other Stage 2 ticket is sequenced after it.
 
@@ -44,6 +43,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F093-ci-green` (🟢 PROVEN): CI on master is green and a flaky test is quarantined the same day; landed 2026-11-13
+- `F090-llm-roles` (🟢 PROVEN): LLM calls name a role; provider, model, cap share and prompt version follow the role; landed 2026-11-13
 - `F087-feature-flags` (🟢 PROVEN): Feature flags per organization and the operator check exist before the first Stage 2 feature; landed 2026-11-13
 - `F086-module-borders` (🟢 PROVEN): Module borders are linted: layers, allowed edges, no deep imports, a generated module graph; landed 2026-11-13
 - `F084-the-mail-host-guard-also-refuses-multicast-broadcast-reserved-nat64-site-local-and-6to4-addresses-and-its-default-policy-is-frozen` (🟢 PROVEN): The mail host guard also refuses multicast, broadcast, reserved, NAT64, site-local and 6to4 addresses, and its default policy is frozen; landed 2026-11-13
@@ -52,5 +52,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F083-retention-and-review-minors-of-the-s6a-group-review-are-fixed-stuck-rows-delegation-task-text-backfilled-mail-body` (🟢 PROVEN): Retention and review minors of the S6a group review are fixed: stuck rows, delegation task text, backfilled mail body; landed 2026-11-12
 - `F080-backfill-suspended-gate` (🟢 PROVEN): The `mailbox:backfill` CLI refuses a suspended organization; landed 2026-11-12
 - `F070-editor-rules-cleanup` (🟢 PROVEN): Editor rule files still name Supabase; landed 2026-11-12
-- `F059-web-hashed-reset-tokens` (🟢 PROVEN): Store web reset tokens hashed; landed 2026-11-12
-- 2026-11: 50 landed. spec/features/done/2026-11/
+- 2026-11: 51 landed. spec/features/done/2026-11/
