@@ -14,6 +14,8 @@ export interface ActionView {
   delegateId: string | null;
 }
 
+export type WouldDoAction = Pick<ActionView, "type" | "status" | "folder" | "reverse" | "kind" | "delegateId">;
+
 const TENSES: Record<string, string> = {
   logged: "would",
   ready: "will",
@@ -46,13 +48,13 @@ const SEND_PHRASES: Record<string, string> = {
   failed: "not sent (failed)",
 };
 
-function draftPhrase(action: ActionView, names: ReadonlyMap<string, string>): string {
+function draftPhrase(action: WouldDoAction, names: ReadonlyMap<string, string>): string {
   const name = (action.delegateId === null ? undefined : names.get(action.delegateId)) ?? "a delegate";
   if (action.kind === "clarification") return "draft a question to the sender";
   return action.kind === "reminder" ? `draft a reminder to ${name}` : `draft a delegation to ${name}`;
 }
 
-function phrase(action: ActionView, names: ReadonlyMap<string, string>): string | null {
+function phrase(action: WouldDoAction, names: ReadonlyMap<string, string>): string | null {
   switch (action.type) {
     case "flag":
       return "flag";
@@ -69,7 +71,7 @@ function phrase(action: ActionView, names: ReadonlyMap<string, string>): string 
 }
 
 // The phrase of one original action, or null when it has none. Same tense rules as `describeActions`.
-export function describeAction(action: ActionView, names: ReadonlyMap<string, string> = new Map()): string | null {
+export function describeAction(action: WouldDoAction, names: ReadonlyMap<string, string> = new Map()): string | null {
   if (action.reverse) return null;
   if (action.type === "send") return SEND_PHRASES[action.status] ?? null;
   const tense = action.type === "create_draft" ? DRAFT_TENSES[action.status] : TENSES[action.status];
@@ -79,7 +81,7 @@ export function describeAction(action: ActionView, names: ReadonlyMap<string, st
 
 // The "what the system does or would do" line of a digest or notice. `names` maps delegate ids to names.
 export function describeActions(
-  actions: readonly ActionView[],
+  actions: readonly WouldDoAction[],
   names: ReadonlyMap<string, string> = new Map(),
   opts: { stayFolder?: string } = {}
 ): string {

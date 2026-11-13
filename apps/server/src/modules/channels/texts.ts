@@ -18,7 +18,7 @@ export const ALREADY_LINKED_TEXT = `✅ This chat is linked already.\n${helpText
 export const LINK_USED_TEXT = "This link was used already. Ask for a new link.";
 export const LINK_EXPIRED_TEXT = "This link has expired (a link works for 15 minutes). Ask for a new link.";
 export const ERROR_TEXT = "Something went wrong. Try again later.";
-export const MAILBOX_REMOVED_TEXT = "Mailbox removed. Change its password in your mail provider's settings now.";
+export { MAILBOX_REMOVED_TEXT } from "@ea/core";
 
 export function accountPausedText(operatorContact: string | null): string {
   const base = "⏸ This account is paused. Nothing changes now. To resume it, contact";
