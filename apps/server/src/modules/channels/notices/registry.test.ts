@@ -1,6 +1,5 @@
-import { describe, expect, test } from "bun:test";
-
 import { noticeKinds, noticeRenderers } from "@ea/core";
+import { describe, expect, test } from "bun:test";
 
 import { detectors, queuedBy } from "./index";
 
