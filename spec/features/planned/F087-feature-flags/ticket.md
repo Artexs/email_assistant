@@ -23,11 +23,21 @@ Code can ask `isFeatureOn(ctx, flag)` and get the answer for one organization: t
 
 - `isFeatureOn(db, ctx, flag)` follows the order env kill list → `org_features` row → registry default (unit and integration tests).
 - `bun run org:flag --org-id <id> --flag <key> --on|--off` writes the row and an `org.flag_changed` audit row; an unknown key is refused.
-- `org_features` cascades on organization delete and is in the tenant-filter test list.
+- `org_features` rows are deleted with their organization (cascade test), and each new repository function has a tenant-filter test.
 - A non-operator, also an owner, gets 404 on `GET /api/operator/flags` (route-matrix test).
 - An operator gets the flag list of every organization from that route, ids and keys only.
 - A unit test fails when a registry flag is past its remove-by date (the cleanup reminder).
 
+## Slices
+
+Five worker jobs, one per stage in `stages/`, run one after another: the registry, the table and read path (the only migration: not next to another migration or `bun.lock` change), the write path and CLI, the operator check, the standards. Stages 2 and 4 get a review job. The coordinator stops after stage 4 (checkpoint 1: the owner runs `org:flag` on the dev database) before the last stage. Commands: [plan.md](plan.md) § "How to run".
+
+## Sequenced
+
+- Plan after: none (F086's plan already fixes the layer list; this ticket adds no module).
+- Build after: F086, the module borders lint (it changes the lint every later job runs).
+- Gate: the owner's go for the foundation group (`docs/product/stage-2/07-foundation-plan.md` §4 decision 1). No other migration in build at stage 2 (F088 stage 1, F092 stage 1); no F089 or F090 stage that edits `platform/config.ts` in build at stages 1 and 4.
+
 ## Notes
 
-Design and stages: [plan.md](plan.md). Source: ADR 0027, PD-045, PD-046, review §3.5.
+Design and stages: [plan.md](plan.md); open defaults: [questions.md](questions.md). Source: ADR 0027, PD-045, PD-046, review §3.5.
