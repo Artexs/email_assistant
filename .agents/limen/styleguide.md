@@ -9,7 +9,7 @@ Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit:
 ## Shape
 
 - Bun workspaces: `@ea/server` (`apps/server`), `@ea/web` (`apps/web`), `@ea/core` (`packages/core`), test tools in `tools/<name>/`. App code never imports `tools/`.
-- Server modules: `apps/server/src/modules/<module>/` with `index.ts` (public API), `service.ts`, `repo.ts`, `routes.ts`, `jobs.ts`, `*.test.ts` next to the code. Other modules import only from `index.ts`. No import cycles.
+- Server modules: `apps/server/src/modules/<module>/` with `index.ts` (public API), `service.ts`, `repo.ts`, `routes.ts`, `jobs.ts`, `*.test.ts` next to the code. Layers, lowest first: `platform` → `audit`, `tenancy` → `config`, `mail` → `triage`, `actions`, `delegation` → `reports`, `channels`, `testmail` → composition roots (`apps/server/src/*.ts`, `scripts/`). A module imports only the `index.ts` of a lower layer, or of its own layer when `apps/server/src/modules/layers.json` names the pair. `bun run lint` enforces it; a reverse need is a hook or a parameter filled in a composition root (`docs/code-patterns.md` § Layers and borders). A new module gets a layer in `layers.json`; a new or removed import between modules needs a run of `bun run graph:modules` (on a conflict in its files, run it again).
 - `packages/core` is pure: no DB, no network, no `process.env`, no imports from `apps/*`. Planners and the policy live there.
 - Ports and adapters: the port lives in the module that owns it (`mail/port.ts`); each adapter is a folder (`mail/imap/`, `mail/fake/`). Each SDK is imported only in its adapter (ESLint enforces it).
 - Routes are thin: parse with `parseBody` and a `@ea/core` schema, call one service or repo function, map to JSON. The tenant comes from the session (`requireTenant`), never from the request.
@@ -27,6 +27,9 @@ Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit:
 - Tests: pure core logic without mocks; repos against Postgres in a transaction that rolls back; fake and real adapters pass one contract suite. Route tests cover 401, 403, 404, 400.
 - A test that waits for time-driven code polls its condition with `waitFor` (`apps/server/test/wait-for.ts`); a fake releases its holds in `stop()`.
 - A prompt or model change runs `bun run eval` and must pass the go/no-go table.
+- Files under about 400 lines and one aggregate; a bigger repository becomes `repo/<aggregate>.ts` behind the same index.
+- Registries (a typed record keyed by the enum, with a test against the enum and the CHECK list) over if-chains for handlers, detectors, renderers, roles, prompts and jobs.
+- A new table with `org_id` gets tenant-filter tests, retention (if it holds text) and a note for the organization delete and DSR map (`docs/code-patterns.md` § Data access).
 
 ## Avoid
 
@@ -39,3 +42,5 @@ Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit:
 - Literal text in web components, inline `<script>`, hand-written `<style>`, hand-made shadcn components.
 - Committing `.env`, keys, passwords or tokens.
 - A fixed sleep over 100 ms in a test; `test.skip`, a CI retry or a longer timeout as a fix. A test that fails twice in CI without a code change is quarantined the same day with a ticket (`docs/code-patterns.md` § Tests); only the coordinator quarantines.
+- Bare codes in comments (`S3`, `D29`, `A23`, `F079`): name the rule, an ADR or a ticket folder path.
+- A CLI that queries a repository directly: a CLI that uses the DB calls the service function that a route calls.
