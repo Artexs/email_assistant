@@ -33,6 +33,8 @@ services:
       MIGRATOR_DATABASE_URL: postgres://migrator:${MIGRATOR_PASSWORD:?}@db:5432/email_assistant?sslmode=disable
       PORT: "8080"
       WEB_DIST: /app/apps/web/dist
+      # The VPS log is JSON lines whatever .env says: a new install copies .env.example, which sets text (ADR 0024).
+      LOG_FORMAT: json
     # Loopback only: Tailscale Serve on the host proxies to it (ADR 0017). Never publish on 0.0.0.0.
     ports:
       - "127.0.0.1:8080:8080"

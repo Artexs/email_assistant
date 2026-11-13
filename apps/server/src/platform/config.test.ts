@@ -574,3 +574,18 @@ describe("FEATURES_OFF", () => {
     }
   });
 });
+
+describe("LOG_FORMAT", () => {
+  test("defaults to json", () => {
+    expect(loadConfig(fullEnv).LOG_FORMAT).toBe("json");
+  });
+
+  test("accepts text, and treats an empty value as json", () => {
+    expect(loadConfig({ ...fullEnv, LOG_FORMAT: "text" }).LOG_FORMAT).toBe("text");
+    expect(loadConfig({ ...fullEnv, LOG_FORMAT: "" }).LOG_FORMAT).toBe("json");
+  });
+
+  test("throws ConfigError for another value", () => {
+    expect(configError({ ...fullEnv, LOG_FORMAT: "xml" }).keys).toContain("LOG_FORMAT");
+  });
+});

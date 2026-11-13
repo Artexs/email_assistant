@@ -1,11 +1,22 @@
-import { afterEach, beforeEach, expect, spyOn, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
-import { createLog, droppedLogFields, logFormatFromEnv, setLogFormat, setLogLevel, type LogFields } from "./log";
+import {
+  createLog,
+  droppedLogFields,
+  logFormatFromEnv,
+  setLogFormat,
+  setLogLevel,
+  withLogContext,
+  type LogFields,
+} from "./log";
 
 let out: ReturnType<typeof spyOn>;
 let err: ReturnType<typeof spyOn>;
 
 const M = "7d0c2a8e-5b1f-4c3d-9e2a-0f1b2c3d4e5f";
+const O = "3b9c1e7a-2d4f-4a60-8b1c-5e6f7a8b9c0d";
+const R = "0f0e0d0c-0b0a-4908-8706-050403020100";
+const Q = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
 
 const jsonLine = (spy: ReturnType<typeof spyOn>): Record<string, unknown> =>
   JSON.parse(String(spy.mock.calls.at(-1)?.[0])) as Record<string, unknown>;
@@ -228,4 +239,129 @@ test("a throwing getter is a drop and does not throw", () => {
   };
   expect(() => createLog("mail").info("sync_done", fields as never)).not.toThrow();
   expect(jsonLine(out).dropped_fields).toBe(1);
+});
+
+describe("context", () => {
+  const log = createLog("mail");
+  const keysAfterMsg = (spy: ReturnType<typeof spyOn>): string[] => Object.keys(jsonLine(spy)).slice(5);
+
+  beforeEach(() => {
+    setLogFormat("json");
+  });
+
+  test("a line inside a run carries job and run_id, also after await", async () => {
+    await withLogContext({ job: "mail.sync", run_id: R }, async () => {
+      await Bun.sleep(1);
+      log.info("sync_done", { count: 1 });
+    });
+    const line = jsonLine(out);
+    expect(Object.keys(line)).toEqual(["time", "level", "module", "event", "msg", "job", "run_id", "count"]);
+    expect(line.job).toBe("mail.sync");
+    expect(line.run_id).toBe(R);
+  });
+
+  test("a line outside any context has no context keys", () => {
+    log.info("a");
+    const line = jsonLine(out);
+    expect(line).not.toHaveProperty("job");
+    expect(line).not.toHaveProperty("run_id");
+    expect(line).not.toHaveProperty("request_id");
+  });
+
+  test("a nested context adds keys and ends with its call", async () => {
+    await withLogContext({ job: "mail.sync", run_id: R }, async () => {
+      await withLogContext({ request_id: Q }, async () => log.info("a"));
+      expect(keysAfterMsg(out)).toEqual(["job", "run_id", "request_id"]);
+      log.info("b");
+      expect(jsonLine(out)).not.toHaveProperty("request_id");
+    });
+  });
+
+  test("an outer context key wins over a nested one, with no drop", () => {
+    withLogContext({ run_id: R }, () => {
+      withLogContext({ run_id: Q }, () => log.info("a"));
+    });
+    const line = jsonLine(out);
+    expect(line.run_id).toBe(R);
+    expect(line).not.toHaveProperty("dropped_fields");
+  });
+
+  test("a call cannot replace a context key; outside a context it may name the job", () => {
+    withLogContext({ run_id: R }, () => log.info("a", { run_id: Q }));
+    let line = jsonLine(out);
+    expect(line.run_id).toBe(R);
+    expect(line.dropped_fields).toBe(1);
+    log.info("a", { job: "mail.sync" });
+    line = jsonLine(out);
+    expect(line.job).toBe("mail.sync");
+    expect(line).not.toHaveProperty("dropped_fields");
+  });
+
+  test("two runs at once do not mix", async () => {
+    await Promise.all([
+      withLogContext({ run_id: R }, async () => {
+        await Bun.sleep(5);
+        log.info("a");
+      }),
+      withLogContext({ request_id: Q }, async () => {
+        await Bun.sleep(1);
+        log.info("b");
+      }),
+    ]);
+    const lines = out.mock.calls.map((call: unknown[]) => JSON.parse(String(call[0])) as Record<string, unknown>);
+    const a = lines.find((line: Record<string, unknown>) => line.event === "a");
+    const b = lines.find((line: Record<string, unknown>) => line.event === "b");
+    expect(b?.request_id).toBe(Q);
+    expect(b).not.toHaveProperty("run_id");
+    expect(a?.run_id).toBe(R);
+    expect(a).not.toHaveProperty("request_id");
+  });
+
+  test("a child logger adds its fields before the call fields", () => {
+    createLog("mail").with({ org_id: O }).info("a", { mailbox_id: M });
+    expect(keysAfterMsg(out)).toEqual(["org_id", "mailbox_id"]);
+    log.with({ org_id: O }).with({ mailbox_id: M }).info("a");
+    expect(keysAfterMsg(out)).toEqual(["org_id", "mailbox_id"]);
+    log.with({ subject: "s" } as never).info("a");
+    const line = jsonLine(out);
+    expect(line).not.toHaveProperty("subject");
+    expect(line.dropped_fields).toBe(1);
+  });
+
+  test("a child logger in a run writes context, then child fields", () => {
+    withLogContext({ job: "mail.sync", run_id: R }, () => log.with({ org_id: O }).info("a"));
+    expect(keysAfterMsg(out)).toEqual(["job", "run_id", "org_id"]);
+  });
+
+  test("the old form in JSON carries the context", () => {
+    withLogContext({ run_id: R }, () => log.info("free text 1"));
+    const line = jsonLine(out);
+    expect(line.event).toBe("legacy_text");
+    expect(line.msg).toBe("free text 1");
+    expect(line.run_id).toBe(R);
+  });
+
+  test("the old form in text stays unchanged, with no context", () => {
+    setLogFormat("text");
+    withLogContext({ run_id: R }, () => log.info("free text 1"));
+    expect(out.mock.calls[0]).toEqual(["[mail]", "free text 1"]);
+  });
+
+  test("the text event form shows the context keys", () => {
+    setLogFormat("text");
+    withLogContext({ job: "mail.sync", run_id: R }, () => log.info("sync_done", { count: 1 }));
+    expect(out.mock.calls[0]).toEqual(["[mail]", `sync_done job=mail.sync run_id=${R} count=1`]);
+  });
+
+  test("a bad context value is dropped and counted", () => {
+    withLogContext({ job: "bad job" }, () => log.info("a"));
+    const line = jsonLine(out);
+    expect(line).not.toHaveProperty("job");
+    expect(line.dropped_fields).toBe(1);
+  });
+
+  test("withLogContext returns the result of fn", async () => {
+    expect(withLogContext({ run_id: R }, () => 7)).toBe(7);
+    expect(await withLogContext({ run_id: R }, async () => 8)).toBe(8);
+  });
 });
