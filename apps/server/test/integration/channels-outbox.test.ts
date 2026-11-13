@@ -20,7 +20,14 @@ import { findOutboxByDedup } from "../../src/modules/channels/repo";
 import { insertMailbox } from "../../src/modules/mail/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
 
-import { addMember, createOrgWithMailbox, insertTestEmail, isolateChannels, testCapabilities } from "./fixtures";
+import {
+  addMember,
+  createOrgWithMailbox,
+  insertTestEmail,
+  isolateChannels,
+  renderedOf,
+  testCapabilities,
+} from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -48,7 +55,6 @@ function rowFor(
     userId,
     kind: "sync_ok" as OutboxKind,
     dedupKey: `test:${counter}`,
-    message: { text: `text ${counter}`, buttons: [[{ text: "OK", data: "ok" }]] },
     view: {},
     locale: "en",
     createdAt: minutesFromT(-60 + counter),
@@ -140,24 +146,13 @@ describe("insertOutbox", () => {
       });
     }
   );
-
-  test("rejects bad buttons and inserts no row", async () => {
-    await withRollback(db, async (trx) => {
-      const t = await tenant(trx);
-      const message = { text: "hello", buttons: [[{ text: "", data: "ok" }]] };
-      const row = rowFor(t.userId, { mailboxId: t.mailboxId, message });
-      await expect(insertOutbox(trx, t.ctx, row)).rejects.toThrow();
-      const rows = await trx.selectFrom("outbox").select("id").where("org_id", "=", t.orgId).execute();
-      expect(rows).toHaveLength(0);
-    });
-  });
 });
 
 describe("outbox view columns (F088)", () => {
   test("insertOutbox stores view and locale; the claim returns them with channel and detail", async () => {
     await withRollback(db, async (trx) => {
       const t = await tenant(trx);
-      const id = await insert(trx, t, { view: { a: 1 }, locale: "pl", message: { text: "stored text", buttons: [] } });
+      const id = await insert(trx, t, { view: { a: 1 }, locale: "pl" });
       const claimed = await claimDueOutbox(trx, opts(t));
       expect(claimed).toHaveLength(1);
       expect(claimed[0]?.id).toBe(id);
@@ -165,7 +160,7 @@ describe("outbox view columns (F088)", () => {
       expect(claimed[0]?.channel).toBe("telegram");
       expect(claimed[0]?.detail).toBe("full");
       expect(claimed[0]?.locale).toBe("pl");
-      expect(claimed[0]?.text).toBe("stored text");
+      expect(claimed[0]?.text).toBeNull();
     });
   });
 
@@ -208,9 +203,9 @@ describe("outbox view columns (F088)", () => {
       const id = await insert(trx, t, { dedupKey: "find:1", locale: "pl" });
       const found = await findOutboxByDedup(trx, t.ctx, t.userId, "find:1");
       expect(found).toMatchObject({ id, channel: "telegram", detail: "full", locale: "pl" });
-      expect(found?.text).toStartWith("text ");
-      await trx.updateTable("outbox").set({ text: null }).where("id", "=", id).execute();
-      expect((await findOutboxByDedup(trx, t.ctx, t.userId, "find:1"))?.text).toBeNull();
+      expect(found?.text).toBeNull();
+      await trx.updateTable("outbox").set({ text: "sent text" }).where("id", "=", id).execute();
+      expect((await findOutboxByDedup(trx, t.ctx, t.userId, "find:1"))?.text).toBe("sent text");
     });
   });
 });
@@ -229,7 +224,7 @@ describe("claimDueOutbox", () => {
         expect(row.wasStale).toBe(false);
         expect(row.lockedAt).toEqual(T);
         expect(row.kind).toBe("sync_ok");
-        expect(row.buttons).toEqual([[{ text: "OK", data: "ok" }]]);
+        expect(row.buttons).toEqual([]);
         expect(row.orgId).toBe(t.orgId);
         expect(row.attempts).toBe(0);
         expect(row.digestId).toBeNull();
@@ -515,13 +510,13 @@ describe("queueNotice", () => {
   async function rowOf(trx: Transaction<DB>, userId: string, dedupKey: string) {
     return trx
       .selectFrom("outbox")
-      .select(["view", "locale", "text"])
+      .select(["kind", "view", "channel", "detail", "locale", "text", "buttons"])
       .where("user_id", "=", userId)
       .where("dedup_key", "=", dedupKey)
       .execute();
   }
 
-  test("stores the view, the locale and the registry text", async () => {
+  test("stores the view and the locale, and no text until the send", async () => {
     await withRollback(db, async (trx) => {
       const t = await tenant(trx);
       const input = syncOk("box@example.test");
@@ -539,7 +534,9 @@ describe("queueNotice", () => {
       expect(rows).toHaveLength(1);
       expect(rows[0]?.locale).toBe("pl");
       expect(rows[0]?.view).toMatchObject({ lastSyncedAt: "2026-11-06T09:30:00.123Z" });
-      expect(rows[0]?.text).toBe(renderSyncOkNotice(input).text);
+      expect(rows[0]?.text).toBeNull();
+      expect(rows[0]?.buttons).toEqual([]);
+      expect(rows[0] && renderedOf(rows[0]).text).toBe(renderSyncOkNotice(input).text);
     });
   });
 

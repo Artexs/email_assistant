@@ -27,6 +27,7 @@ import {
   resumeOrg,
   suspendOrg,
   testCapabilities,
+  renderedOf,
 } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
@@ -113,12 +114,15 @@ async function rows(trx: Transaction<DB>, orgId: string, kind?: string) {
       "error_code",
       "email_id",
       "mailbox_id",
+      "channel",
+      "detail",
     ])
     .where("org_id", "=", orgId)
     .orderBy("created_at")
     .orderBy("id");
   if (kind !== undefined) query = query.where("kind", "=", kind);
-  return query.execute();
+  // `text` and `buttons` are the registry render of the view (the row stores them after the send).
+  return (await query.execute()).map((row) => ({ ...row, ...renderedOf(row) }));
 }
 
 describe("urgent notices", () => {

@@ -15,6 +15,7 @@ import {
   linkChat,
   randomChatId,
   suspendOrg,
+  renderedOf,
 } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
@@ -78,11 +79,25 @@ async function digests(trx: Transaction<DB>, orgId: string, userId?: string) {
 async function outbox(trx: Transaction<DB>, orgId: string, userId?: string) {
   let query = trx
     .selectFrom("outbox")
-    .select(["id", "user_id", "kind", "dedup_key", "text", "view", "digest_id", "status"])
+    .select([
+      "id",
+      "user_id",
+      "kind",
+      "dedup_key",
+      "text",
+      "buttons",
+      "view",
+      "channel",
+      "detail",
+      "locale",
+      "digest_id",
+      "status",
+    ])
     .where("org_id", "=", orgId)
     .orderBy("dedup_key");
   if (userId !== undefined) query = query.where("user_id", "=", userId);
-  return query.execute();
+  // `text` and `buttons` are the registry render of the view (the row stores them after the send).
+  return (await query.execute()).map((row) => ({ ...row, ...renderedOf(row) }));
 }
 
 describe("scheduleDigests", () => {
