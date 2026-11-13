@@ -5,6 +5,7 @@ import type { Transaction } from "kysely";
 
 import { clearMailBodies } from "../../src/modules/mail";
 import { listOrganizations } from "../../src/modules/tenancy";
+import { deleteExpiredVerifications } from "../../src/platform/auth";
 import type { DB } from "../../src/platform/db";
 import { createRetentionJob, type RetentionCounts } from "../../src/retention";
 
@@ -412,6 +413,79 @@ describe("retention job: an error in one organization", () => {
       expect(lines.filter((line) => line.includes(`retention org ${firstOrg.orgId} failed: `))).toHaveLength(1);
       expect(await body(trx, firstMail)).toBe("Body text");
       expect(await body(trx, secondMail)).toBeNull();
+    });
+  });
+});
+
+describe("retention job: auth_verifications", () => {
+  const HOUR_MS = 3_600_000;
+
+  async function insertVerification(trx: Transaction<DB>, tag: string, expiresAt: Date): Promise<void> {
+    await trx
+      .insertInto("auth_verifications")
+      .values({ identifier: `hash-${tag}`, value: `user-${tag}`, expires_at: expiresAt })
+      .execute();
+  }
+
+  async function tagsLeft(trx: Transaction<DB>, tags: string[]): Promise<string[]> {
+    const rows = await trx
+      .selectFrom("auth_verifications")
+      .select("identifier")
+      .where(
+        "identifier",
+        "in",
+        tags.map((tag) => `hash-${tag}`)
+      )
+      .orderBy("identifier")
+      .execute();
+    return rows.map((row) => row.identifier.slice("hash-".length));
+  }
+
+  test("deletes a row that expired over a day ago, keeps a row in the grace period and a live row; a second run changes nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const tags = ["Secret1expired", "Secret2grace", "Secret3live"];
+      await insertVerification(trx, tags[0] ?? "", ago(25 * HOUR_MS));
+      await insertVerification(trx, tags[1] ?? "", ago(23 * HOUR_MS));
+      await insertVerification(trx, tags[2] ?? "", new Date(NOW.getTime() + HOUR_MS));
+
+      await createRetentionJob({ db: trx, now: () => NOW }).run();
+
+      expect(await tagsLeft(trx, tags)).toEqual(["Secret2grace", "Secret3live"]);
+      const countLines = lines.filter((line) => line.includes("retention_auth_verifications_deleted"));
+      expect(countLines).toHaveLength(1);
+      expect(countLines[0]).toMatch(/count=\d+|"count":\d+/);
+      const joined = lines.join("\n");
+      expect(joined).not.toContain("Secret");
+      expect(joined).not.toContain("hash-");
+      expect(joined).not.toContain("user-");
+
+      lines.length = 0;
+      await createRetentionJob({ db: trx, now: () => NOW }).run();
+
+      expect(await tagsLeft(trx, tags)).toEqual(["Secret2grace", "Secret3live"]);
+      expect(lines.some((line) => line.includes("retention_auth_verifications_deleted"))).toBe(false);
+      expect(await deleteExpiredVerifications(trx, { before: ago(24 * HOUR_MS) })).toBe(0);
+    });
+  });
+
+  test("an error in the delete is logged by code; the organizations still run", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await newOrg(trx, 30);
+      const mail = await doneMail(trx, a, 40 * DAY_MS);
+
+      await createRetentionJob({
+        db: trx,
+        now: () => NOW,
+        clearers: {
+          deleteExpiredVerifications: async () => {
+            throw new Error("secret-token-text");
+          },
+        },
+      }).run();
+
+      expect(lines.filter((line) => line.includes("retention_auth_verifications_failed"))).toHaveLength(1);
+      expect(lines.join("\n")).not.toContain("secret-token-text");
+      expect(await body(trx, mail)).toBeNull();
     });
   });
 });
