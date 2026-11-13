@@ -16,7 +16,7 @@ Follow `/home/artek/.pi/agent/skills/plan-task/SKILL.md` and its `references/pla
 - **§6:** commit the ticket folder with explicit paths after each finished stage file. Never `git add -A`.
 - **§7 cold review:** you run it yourself, as a separate job, before you finish. Commit the complete plan first. Then start one review job on your own branch (`git branch --show-current`) and wait for it:
   ```
-  limen spawn --review --detached --branch <your branch> --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thinking high \
+  limen spawn --review --detached --branch <your branch> --engine pi --provider claude-bridge --model claude-opus-5-5 --thinking high \
     --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --timeout 40m \
     --label "plan review · FNNN" '<the §7 pre-mortem text, with this ticket folder>'
   limen wait <id>; limen jobs <id>

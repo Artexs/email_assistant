@@ -5,7 +5,7 @@
 - Spawn (Opus plans, Sonnet builds):
   `limen spawn --role planner --engine pi --provider claude-bridge --model claude-opus-5-5 --thinking high --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --label "plan · FNNN" "Plan FNNN: write stages/ for spec/features/planned/FNNN-slug/"`
 - No `--prepare` needed: planning uses no DB.
-- Review (owner decision 2026-11-13: not the coordinator's work): the planner job commits the plan, starts its own `--review --branch <own branch>` job (Sonnet, fresh context), waits, files `plan-review-1.md`, fixes the findings, commits. The coordinator only starts the planner and lands it. Spawn the planner with `--timeout 3h`, so the review fits in its deadline.
+- Review (owner decision 2026-11-13: not the coordinator's work): the planner job commits the plan, starts its own `--review --branch <own branch>` job (Opus 5.5, high, fresh context; owner decision 2026-11-13, was Sonnet), waits, files `plan-review-1.md`, fixes the findings, commits. The coordinator only starts the planner and lands it. Spawn the planner with `--timeout 3h`, so the review fits in its deadline.
 - Alternative for a high-risk ticket: `limen group start <ticket> --team <Opus> --team <other model> --rounds draft,critique,revise,final` (docs/groups.md in the limen repo). Two independent plans, cross critique, one merged result. Needs the interactive coordinator pane as lead.
 - Not verified: a job's nested `limen spawn --review` on its own branch. Limen does not refuse spawn under LIMEN_JOB=1 (only `group start`), but no run has proved it.
 - Trap: a job worktree starts from HEAD. Uncommitted ticket folders do not exist there. Commit the ticket folder first.
