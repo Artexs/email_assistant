@@ -5,14 +5,13 @@ const CONTROL = /[\u0000-\u001f\u007f-\u009f]/g;
 const INVISIBLE = /[\u061c\u200b\u200e\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/g;
 const LONE_SURROGATE = /[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g;
 
+export function wellFormedText(text: string): string {
+  return text.replace(LONE_SURROGATE, "\ufffd");
+}
+
 // Makes mail text safe for a chat message: one line, no control or bidi characters, at most `max` code points.
 export function cutText(text: string, max: number): string {
-  const clean = text
-    .replace(CONTROL, " ")
-    .replace(INVISIBLE, "")
-    .replace(LONE_SURROGATE, "\ufffd")
-    .replace(/\s+/g, " ")
-    .trim();
+  const clean = wellFormedText(text.replace(CONTROL, " ").replace(INVISIBLE, "")).replace(/\s+/g, " ").trim();
   const points = Array.from(clean);
   if (points.length <= max) return clean;
   return `${points.slice(0, max - 1).join("")}…`;
