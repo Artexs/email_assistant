@@ -8,7 +8,7 @@ Part of [`../plan.md`](../plan.md). Scripts: [`../tools.md`](../tools.md). Decis
 
 **Files.** Deleted: `apps/server/src/modules/mail/repo.ts`. New: `apps/server/src/modules/mail/repo/{shared,mailboxes,folders,credentials,copies,emails,targets,claims,lookup,retention,index}.ts`. No other file.
 
-**Interfaces.** `repo/index.ts` exports exactly the names that `repo.ts` exported (values and types), each from its new file (D11). These keep their imports and resolve to `repo/index.ts` (D6): the 12 files in `mail/` that import `./repo` (`check.ts`, `connect.ts`, `folders.ts`, `index.ts`, `jobs.ts`, `open.ts`, `remove.ts`, `status.ts`, `sync-rules.ts`, `sync.ts`, `tools.ts`, `views.ts`) and `sync-rules.test.ts`, the two e2e seed scripts (`apps/server/src/scripts/e2e-seed.ts`, `e2e-activity-rows.ts`, named in `rootDeepImportExceptions` of `apps/server/src/modules/layers.json`), and the integration tests that import `…/modules/mail/repo`. `copies.ts` imports `../sync-rules`, and `sync-rules.ts` keeps `import type { MovedRow } from "./repo"`: the type-only cycle stays as it is today (plan.md Facts, madge).
+**Interfaces.** `repo/index.ts` exports exactly the names that `repo.ts` exported (values and types), each from its new file (D11). These keep their imports and resolve to `repo/index.ts` (D6): the 12 files in `mail/` that import `./repo` (`check.ts`, `connect.ts`, `folders.ts`, `index.ts`, `jobs.ts`, `open.ts`, `remove.ts`, `status.ts`, `sync-rules.ts`, `sync.ts`, `tools.ts`, `views.ts`) and `sync-rules.test.ts`, the two e2e seed scripts (`apps/server/src/scripts/e2e-seed.ts`, `e2e-activity-rows.ts`, named in `rootDeepImportExceptions` of `apps/server/src/modules/layers.json`), `tools/fake-telegram/test/setup.ts`, and the integration tests that import `…/modules/mail/repo`. `copies.ts` imports `../sync-rules`, and `sync-rules.ts` keeps `import type { MovedRow } from "./repo"`: the type-only cycle stays as it is today (plan.md Facts, madge).
 
 **Procedure.** Run from the worktree root, in this order. The tree must be clean before item 4.
 
@@ -43,6 +43,8 @@ Part of [`../plan.md`](../plan.md). Scripts: [`../tools.md`](../tools.md). Decis
    bunx prettier --write apps/server/src/modules/mail/repo/*.ts
    ```
 
+   If anything in items 5–6 fails and you cannot fix it by an import line, start again at item 2 after `git reset --hard "$(cat /tmp/f091-s02/base.txt)"` (plan.md § Rules).
+
 6. Commit at once:
 
    ```
@@ -61,7 +63,7 @@ Part of [`../plan.md`](../plan.md). Scripts: [`../tools.md`](../tools.md). Decis
 3. `bun /tmp/f091-s02/same-bodies.ts /tmp/f091-s02/mail-repo.ts apps/server/src/modules/mail` prints `SAME_BODIES <n>` (`n` = 77 at `37e7239`) and exits 0.
 4. `bun /tmp/f091-s02/exports-of.ts apps/server/src/modules/mail/repo/index.ts > /tmp/f091-s02/exports-new.txt && diff /tmp/f091-s02/exports-old.txt /tmp/f091-s02/exports-new.txt && echo EXPORTS_SAME` prints `EXPORTS_SAME`.
 5. `for f in apps/server/src/modules/mail/repo/*.ts; do [ "$(basename "$f")" = index.ts ] && continue; git log --format=%h --follow -- "$f" | grep -q '^b786f27' || echo "NO HISTORY $f"; done` prints nothing.
-6. `git diff --stat "$(cat /tmp/f091-s02/base.txt)" HEAD -- apps/server/test apps/server/src/scripts apps/server/src/modules/mail/index.ts apps/server/src/modules/mail/sync-rules.ts apps/server/src/modules/actions` prints nothing.
+6. `git log --no-merges --name-only --format= HEAD ^master -- apps/server/test apps/server/src/scripts tools apps/server/src/modules/mail/index.ts apps/server/src/modules/mail/sync-rules.ts apps/server/src/modules/actions` prints nothing (only the branch's own commits count, also after a `git merge master`).
 7. `bun run graph:modules && git status --short docs/diagrams` prints nothing.
 
 **Done when.** Checks 1–7 hold; the branch has the history merge commit and the trim commit on top. The final message lists any map change and the outputs of checks 3–5.

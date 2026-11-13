@@ -165,7 +165,7 @@ Equality with today, per type (the test of step 3 pins this table):
 1. `sed -n '/^export async function applyAction/,/^}/p' apps/server/src/modules/actions/apply.ts | grep -c "action.type ==="` prints `0`.
 2. `grep -n 'action.type ===' apps/server/src/modules/actions/committer.ts` prints only the `counts.sent` line.
 3. `wc -l apps/server/src/modules/actions/apply.ts` prints a number under 400 (about 375).
-4. `mkdir -p /tmp/f091-s03 && bunx madge@8.0.0 --circular --extensions ts --ts-config apps/server/tsconfig.json apps/server/src > /tmp/f091-s03/madge.log 2>&1; grep -c "actions/apply" /tmp/f091-s03/madge.log` prints `0`; then `git status --short bun.lock` prints nothing.
+4. `mkdir -p /tmp/f091-s03 && bunx madge@8.0.0 --circular --extensions ts --ts-config apps/server/tsconfig.json apps/server/src > /tmp/f091-s03/madge.log 2>&1; grep -cE "actions/apply(-shared)?\.ts" /tmp/f091-s03/madge.log` prints `0`; then `git status --short bun.lock` prints nothing.
 
 **Done when.** Checks 1–4 hold and `bun run typecheck` passes.
 
@@ -196,14 +196,14 @@ const NO_PHRASE: readonly ActionType[] = ["save_summary"];
 2. "each type has one apply handler": `sorted(Object.keys(APPLY_HANDLERS))` equals `sorted(actionTypes)` (6 names).
 3. "each type has an entry that createPlanned writes": `sorted(ACTION_ENTRIES.filter((e) => e.writer === "createPlanned").flatMap((e) => e.types))` equals `sorted(actionTypes)`.
 4. "each type has at least one edge": `sorted(ACTION_EDGES.flatMap((e) => e.types))` equals `sorted(actionTypes)`.
-5. "each type has a digest phrase": for each type `t`, `describeAction({ id: "a1", type: t, status: "logged", folder: t === "move" ? "ai_info" : null, reverse: false, reversesActionId: null, appliedAt: null, kind: t === "create_draft" || t === "send" ? "delegation" : null, delegateId: null })`. For `t` in `NO_PHRASE` it is `null`; for every other type it is a string that does not contain `"undefined"`. Expected at `37e7239`: `move` → `"would move to AI/Info"`, `mark_read` → `"would mark read"`, `flag` → `"would flag"`, `create_draft` → `"would draft a delegation to a delegate"`, `send` → `"would ask you to send it"`; assert these five strings exactly.
+5. "each type has a digest phrase": first read the parameter type of `describeAction` in `packages/core/src/digest/would-do.ts` (F088 may have narrowed it to `WouldDoAction`); pass only the fields of that type. For each type `t`, `describeAction({ id: "a1", type: t, status: "logged", folder: t === "move" ? "ai_info" : null, reverse: false, reversesActionId: null, appliedAt: null, kind: t === "create_draft" || t === "send" ? "delegation" : null, delegateId: null })`. For `t` in `NO_PHRASE` it is `null`; for every other type it is a string that does not contain `"undefined"`. Expected at `37e7239`: `move` → `"would move to AI/Info"`, `mark_read` → `"would mark read"`, `flag` → `"would flag"`, `create_draft` → `"would draft a delegation to a delegate"`, `send` → `"would ask you to send it"`; assert these five strings exactly.
 6. "the needs of each type": `Object.fromEntries(actionTypes.map((t) => [t, APPLY_HANDLERS[t].needs]))` equals the table of step 2 (six entries, four fields each).
 7. "only send opens SMTP": `actionTypes.filter((t) => APPLY_HANDLERS[t].needs.sender)` equals `["send"]` (the system never sends without an approved send row; `spec/vision.md`).
 
 **Check.**
 
 1. `bun test apps/server/src/modules/actions/completeness.test.ts`: 7 pass.
-2. Mutation (revert at once): add `"follow_up"` to the end of `actionTypes` in `packages/core/src/triage/planners.ts`. `bun test apps/server/src/modules/actions/completeness.test.ts` fails cases 2, 3, 4 and 5; `bun run typecheck` fails with an error in `completeness.test.ts` (the `Same` line) and in `apply.ts` (the record). Revert; `git status --short packages` prints nothing.
+2. Mutation (revert at once): add `"follow_up"` to the end of `actionTypes` in `packages/core/src/triage/planners.ts`. `bun test apps/server/src/modules/actions/completeness.test.ts` fails cases 2–7 (cases 6 and 7 throw a `TypeError`: the new type has no entry); `bun run typecheck` fails at least in `completeness.test.ts` (the `Same` line) and `apply.ts` (the record), and also in `would-do.ts`, `policy.ts` and `repo/claims.ts` (`TYPE_RANK`). Revert; `git status --short packages` prints nothing.
 3. Mutation (revert at once): change `mark_read: { needs: NEEDS_IMAP, …` to `needs: { ...NEEDS_IMAP, facts: true }`. Case 6 fails. Revert; `git status --short apps` shows only this stage's files.
 
 **Done when.** Checks 1–3 hold.

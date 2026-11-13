@@ -130,7 +130,7 @@ No `default`. A missing type is TS2366 ("Function lacks ending return statement"
 **Check.**
 
 1. `bun test packages/core/src/triage/draft-kinds.test.ts`: 4 pass.
-2. Mutation (revert at once): add `"follow_up"` to `draftKinds`. `bun test packages/core/src/triage/draft-kinds.test.ts` fails cases 1 and 3 (case 2 fails too: `follow_up` parses); `bun run typecheck` fails in `templates.ts`. Revert; `git status --short packages` shows only this stage's files.
+2. Mutation (revert at once): add `"follow_up"` to `draftKinds`. `bun test packages/core/src/triage/draft-kinds.test.ts` fails cases 1–4 (case 2: `follow_up` parses; case 4: `DRAFT_TEMPLATES[kind]` is not a function); `bun run typecheck` fails in `templates.ts`. Revert; `git status --short packages` shows only this stage's files.
 
 **Done when.** Checks 1–2 hold.
 

@@ -29,7 +29,7 @@ opened: 2026-11-13
 
 ## Slices
 
-Five stages, one worker job each: 01 split `actions/repo.ts`; 02 split `mail/repo.ts`; 03 the handler table and the action-type completeness test; 04 one list of draft kinds; 05 the checklist and the docs. 01 and 02 may run at the same time; 03, 04, 05 run in order after 01. No migration, no `bun.lock` change, no owner checkpoint. Stages 01–03 get a review job before the land. Commands: [plan.md](plan.md) § "How to run (coordinator)".
+Five stages, one worker job each: 01 split `actions/repo.ts`; 02 split `mail/repo.ts`; 03 the handler table and the action-type completeness test; 04 one list of draft kinds; 05 the checklist and the docs. 01 and 02 may run at the same time; 03 and 04 run in order after 01; 05 after 02 and 04. No migration, no `bun.lock` change, no owner checkpoint. Stages 01–03 get a review job before the land. Commands: [plan.md](plan.md) § "How to run (coordinator)".
 
 ## Sequenced
 

@@ -12,7 +12,7 @@ Precondition: F086 is landed (`grep -c "openDelegationFilter\|delegation/repo" a
 
 **Interfaces.** `repo/index.ts` exports exactly the names that `repo.ts` exported (values and types), each from its new file (D11). The 12 files in `actions/` that import `./repo` (`index.ts` and `scope.test.ts` included), `actions/index.ts`, `delegation`'s import of `PayloadKeepRule` through `../actions`, and the tests resolve to `repo/index.ts` without an edit (D6).
 
-**Procedure.** Run from the worktree root, in this order. The tree must be clean before item 3.
+**Procedure.** Run from the worktree root, in this order. The tree must be clean before item 4.
 
 1. `mkdir -p /tmp/f091-s01` and copy the four scripts and `actions-map.json` of `tools.md` into it, one file per block: `history-copies.sh`, `split-repo.ts`, `same-bodies.ts`, `exports-of.ts`, `actions-map.json`.
 2. Save the old file and its export list (the scripts read these copies; the file is gone after item 3):
@@ -49,7 +49,7 @@ Precondition: F086 is landed (`grep -c "openDelegationFilter\|delegation/repo" a
    bunx prettier --write apps/server/src/modules/actions/repo/*.ts
    ```
 
-   `eslint --fix` sorts the import groups (`import/order`); Prettier wraps long lines. Neither changes a body. Do not edit a file by hand except an import line that `bun run typecheck` names.
+   `eslint --fix` sorts the import groups (`import/order`); Prettier wraps long lines. Neither changes a body. Do not edit a file by hand except an import line that `bun run typecheck` names. If anything in items 5–6 fails and you cannot fix it by an import line, go back to the base and start again at item 2: `git reset --hard "$(cat /tmp/f091-s01/base.txt)"` (plan.md § Rules).
 6. Commit at once (the merge commit does not build; the trim commit must follow it with nothing between):
 
    ```
@@ -68,7 +68,7 @@ Precondition: F086 is landed (`grep -c "openDelegationFilter\|delegation/repo" a
 3. `bun /tmp/f091-s01/same-bodies.ts /tmp/f091-s01/actions-repo.ts apps/server/src/modules/actions` prints `SAME_BODIES <n>` (`n` = 92 at `37e7239`, plus any declaration that F086 added, minus `ExpireFilter`) and exits 0.
 4. `bun /tmp/f091-s01/exports-of.ts apps/server/src/modules/actions/repo/index.ts > /tmp/f091-s01/exports-new.txt && diff /tmp/f091-s01/exports-old.txt /tmp/f091-s01/exports-new.txt && echo EXPORTS_SAME` prints `EXPORTS_SAME`.
 5. `for f in apps/server/src/modules/actions/repo/*.ts; do [ "$(basename "$f")" = index.ts ] && continue; git log --format=%h --follow -- "$f" | grep -q '^cca481b' || echo "NO HISTORY $f"; done` prints nothing.
-6. `git diff --stat "$(cat /tmp/f091-s01/base.txt)" HEAD -- apps/server/test apps/server/src/scripts apps/server/src/modules/actions/index.ts apps/server/src/modules/mail apps/server/src/modules/delegation` prints nothing.
+6. `git log --no-merges --name-only --format= HEAD ^master -- apps/server/test apps/server/src/scripts tools apps/server/src/modules/actions/index.ts apps/server/src/modules/mail apps/server/src/modules/delegation` prints nothing (only the branch's own commits count, also after a `git merge master`).
 7. `bun run typecheck > /tmp/f091-s01/typecheck-step1.log 2>&1 && echo TYPECHECK_OK` prints `TYPECHECK_OK`.
 
 **Done when.** Checks 1–7 hold; the branch has the history merge commit and the trim commit on top.

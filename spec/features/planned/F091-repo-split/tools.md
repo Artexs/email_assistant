@@ -6,7 +6,7 @@ A worker copies each block into `/tmp/f091-sNN/<name>` (never into the worktree:
 
 ## `history-copies.sh`
 
-Makes one commit per new file that renames the old file to that file (a full copy), then one merge commit that holds all copies and not the old file, and fast-forwards the branch to it (plan.md D3). It needs a clean tree. It runs no hooks (plumbing commands only). The next normal commit trims the copies.
+Makes one commit per new file that renames the old file to that file (a full copy), then one merge commit that holds all copies and not the old file, and fast-forwards the branch to it (plan.md D7). It needs a clean tree. It runs no hooks (plumbing commands only). The next normal commit trims the copies.
 
 ```bash
 #!/usr/bin/env bash
@@ -290,7 +290,7 @@ for (const name of checker.getExportsOfModule(symbol).map((s) => s.name).sort())
 
 ## `actions-map.json` (stage 01)
 
-Names as of `master` after F086 stages 01 and 02 (plan.md D5): `ExpireFilter` is gone from `actions/repo.ts` (it moved to `@ea/core`), `PayloadKeepRule` is new. Order of keys = order of the files in `index.ts`.
+Names as of `master` after F086 stages 01 and 02 (plan.md D21): `ExpireFilter` is gone from `actions/repo.ts` (it moved to `@ea/core`), `PayloadKeepRule` is new. Order of keys = order of the files in `index.ts`.
 
 ```json
 {

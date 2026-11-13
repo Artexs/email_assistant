@@ -1,8 +1,8 @@
 # F091 stage 05 — The checklist and the docs
 
-Part of [`../plan.md`](../plan.md). Decisions: D5, D9, D10, D16, D17, D20. Needs stages 01–04 landed (the text names their files) and F086 stage 05 and F088 stage 07 landed (§ "Size and shape" and § "Notices are facts" exist). Docs only, no code. Two steps.
+Part of [`../plan.md`](../plan.md). Decisions: D5, D9, D10, D16, D17, D20. Needs stages 01, 02, 03 and 04 landed (the text names their files) and F086 stage 05 and F088 stage 07 landed (§ "Size and shape" and § "Notices are facts" exist). Docs only, no code. Two steps.
 
-Precondition: `grep -n "## Size and shape\|## Notices are facts" docs/code-patterns.md` prints two lines. If not, stop and report which is missing.
+Precondition: `grep -n "## Size and shape\|## Notices are facts" docs/code-patterns.md` prints two lines, and `ls apps/server/src/modules/actions/repo/claims.ts apps/server/src/modules/mail/repo/targets.ts apps/server/src/modules/actions/completeness.test.ts packages/core/src/triage/draft-kinds.test.ts` lists four files. If not, stop and report what is missing.
 
 ## Step 1 — `docs/code-patterns.md`
 
@@ -17,7 +17,8 @@ Precondition: `grep -n "## Size and shape\|## Notices are facts" docs/code-patte
 3. § "Size and shape", add as the last bullet:
 
 ```markdown
-- Split a file by moves, not rewrites. A repository becomes `repo/<aggregate>.ts` plus `repo/index.ts`, which re-exports by name every export of the old file and nothing else; importers keep `./repo` (it resolves to `repo/index.ts`), so no import path changes. A helper that two files need stays in the file of its topic with an internal export; `repo/shared.ts` holds only what has no topic (`DbOrTrx`). Keep `git log --follow` for every new file with the history merge of `spec/features/*/F091-repo-split/tools.md` (`history-copies.sh`: one rename commit per new file, one merge, then the trim commit), and prove the move with its `same-bodies.ts` and `exports-of.ts`. Never rebase or squash such a branch; merge `master` into it.
+- Split a file by moves, not rewrites. A repository becomes `repo/<aggregate>.ts` plus `repo/index.ts`, which re-exports by name every export of the old file and nothing else; importers keep `./repo` (it resolves to `repo/index.ts`), so no import path changes. A helper that two files need stays in the file of its topic with an internal export; `repo/shared.ts` holds only what has no topic (`DbOrTrx`, `actionTypeSchema`). Keep `git log --follow` for every new file with the history merge of `spec/features/*/F091-repo-split/tools.md` (`history-copies.sh`: one rename commit per new file, one merge, then the trim commit), and prove the move with its `same-bodies.ts` and `exports-of.ts`. Never rebase or squash such a branch; merge `master` into it. After its land, fix a failed push with `git pull --no-rebase`, not `git pull --rebase` (a rebase replays the copy commits and conflicts).
+- A typed record keyed by the enum is the default for a per-kind choice. Where each case is a few lines inside a larger function (`decidePolicy`, `payloadOf`, `phrase`), an exhaustive `switch` with no `default` is allowed: typecheck fails on a missing case, as with a record. A `default` branch or an `if` chain that falls through to one kind is not.
 ```
 
 4. A new section directly after § "Size and shape":
@@ -51,17 +52,17 @@ A new draft kind, in this order:
 | 1 | `draftKinds` and a `draftPayloadSchema` member (`core/triage/payloads.ts`) | `draft-kinds.test.ts` case 1; the send schema, `sendKindSchema` (`actions/repo/reads.ts`) and the notice views follow the list |
 | 2 | `DRAFT_TEMPLATES` (`core/outgoing/templates.ts`) | typecheck; `draft-kinds.test.ts` case 3 |
 | 3 | The planner or the job that creates it (`core/triage/planners.ts`, `delegation/chaser.ts`) | its own tests |
-| 4 | The lines that branch on `kind` and fall through to a default: `core/outgoing/message.ts` (quote, `In-Reply-To`), `core/outgoing/sender.ts` (sender label), `core/digest/approvals.ts` (card title), `core/digest/would-do.ts` (`draftPhrase`), `actions/approvals.ts`, `actions/expiry.ts`, `delegation/service.ts`, `channels/notices/` | no test: read each hit of `grep -rn 'kind === "' packages/core/src apps/server/src` |
+| 4 | The lines that branch on `kind` and fall through to a default: `core/outgoing/message.ts` (quote, `In-Reply-To`), `core/outgoing/sender.ts` (sender label), `core/digest/approvals.ts` (card title), `core/digest/would-do.ts` (`draftPhrase`), `actions/approvals.ts`, `actions/expiry.ts`, `delegation/service.ts`, `channels/notices/` | no test: read each hit of `grep -rnE '(kind\|\.kind) (===\|!==) "(delegation\|clarification\|reminder)"\|"reminder" in' packages/core/src apps/server/src --include=*.ts` |
 | 5 | A prompt or model change for it | `bun run eval` and its go/no-go table |
 ````
 
-**Decisions.** D5 (the checklist), D16, D17. D20: the files over 400 lines that stay (`actions/send.ts`, `mail/sync.ts`, `actions/transitions.ts`) are not named in the rule text.
+**Decisions.** D5 (the checklist), D16, D17, D22 (no rebase after the land), D23 (exhaustive `switch` allowed). D20: the files over 400 lines that stay (`actions/send.ts`, `mail/sync.ts`, `actions/transitions.ts`) are not named in the rule text.
 
 **Test.** Markdown only.
 
 1. `grep -n "## Add an action type or a draft kind" docs/code-patterns.md` prints one line.
 2. `grep -c "mail/repo\.ts" docs/code-patterns.md` prints `0`.
-3. Each path in the two tables exists: `ls packages/core/src/triage/planners.ts packages/core/src/triage/policy.ts packages/core/src/triage/payloads.ts apps/server/src/modules/triage/service.ts apps/server/src/modules/actions/transitions.ts apps/server/src/modules/actions/apply.ts apps/server/src/modules/actions/apply-shared.ts apps/server/src/modules/actions/repo/claims.ts apps/server/src/modules/actions/repo/reads.ts packages/core/src/digest/would-do.ts apps/server/src/modules/actions/completeness.test.ts packages/core/src/triage/draft-kinds.test.ts packages/core/src/outgoing/templates.ts packages/core/src/outgoing/message.ts packages/core/src/outgoing/sender.ts packages/core/src/digest/approvals.ts apps/server/src/modules/delegation/chaser.ts apps/server/src/modules/delegation/service.ts` lists every file with no error; `ls -d apps/server/src/modules/channels/notices` too.
+3. Each path in the two tables exists: `ls packages/core/src/triage/planners.ts packages/core/src/triage/policy.ts packages/core/src/triage/payloads.ts apps/server/src/modules/triage/service.ts apps/server/src/modules/actions/transitions.ts apps/server/src/modules/actions/apply.ts apps/server/src/modules/actions/apply-shared.ts apps/server/src/modules/actions/repo/claims.ts apps/server/src/modules/actions/repo/reads.ts packages/core/src/digest/would-do.ts apps/server/src/modules/actions/completeness.test.ts packages/core/src/triage/draft-kinds.test.ts packages/core/src/outgoing/templates.ts packages/core/src/outgoing/message.ts packages/core/src/outgoing/sender.ts packages/core/src/digest/approvals.ts apps/server/src/modules/delegation/chaser.ts apps/server/src/modules/delegation/service.ts apps/server/src/modules/mail/repo/targets.ts` lists every file with no error; `ls -d apps/server/src/modules/channels/notices` too.
 
 **Check.** `bunx prettier --write docs/code-patterns.md` then `bunx prettier --check docs/code-patterns.md` passes.
 
