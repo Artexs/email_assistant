@@ -71,6 +71,11 @@ export const en = {
   legal_terms_title: "Terms of service",
   legal_dpa_title: "Data processing agreement",
   legal_stub_text: "Draft. The text follows.",
+  terms_dialog_title: "Accept the terms",
+  terms_dialog_text:
+    "Before you go on, read the terms of service, the privacy policy and the data processing agreement, then accept them.",
+  terms_dialog_accept: "I accept",
+  terms_dialog_accepting: "Saving…",
   // 404
   not_found_title: "Page not found",
   not_found_text: "This page does not exist.",

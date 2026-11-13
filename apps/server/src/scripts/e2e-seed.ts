@@ -8,7 +8,13 @@ import { Client } from "pg";
 import { insertDefaultSettings } from "../modules/config";
 import { configureMailHosts } from "../modules/mail";
 import { insertCredentials, insertInboxFolder, insertMailbox } from "../modules/mail/repo";
-import { createOrganizationWithOwner, insertMembership, insertUser, setOrgPlan } from "../modules/tenancy";
+import {
+  createOrganizationWithOwner,
+  insertMembership,
+  insertUser,
+  setOrgPlan,
+  setUserTerms,
+} from "../modules/tenancy";
 import { createAuth } from "../platform/auth";
 import { loadConfig, mailAllowLocal, webTrustedOrigins } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
@@ -31,6 +37,8 @@ import {
   E2E_PAUSED_ORG_NAME,
   E2E_PAUSED_OWNER_EMAIL,
   E2E_PROJECTS,
+  E2E_TERMS_EMAILS,
+  e2eTermsOrgName,
   E2E_TRIAL_ORG_NAME,
   E2E_TRIAL_OWNER_EMAIL,
   type E2eProject,
@@ -52,7 +60,7 @@ async function wipe(migratorUrl: string): Promise<void> {
   try {
     // The organization cascade removes mailboxes, mail, actions, memberships and audit rows.
     await client.query("DELETE FROM organizations WHERE name = ANY($1)", [
-      [E2E_ORG_NAME, E2E_OTHER_ORG_NAME, E2E_TRIAL_ORG_NAME, E2E_PAUSED_ORG_NAME],
+      [E2E_ORG_NAME, E2E_OTHER_ORG_NAME, E2E_TRIAL_ORG_NAME, E2E_PAUSED_ORG_NAME, ...E2E_PROJECTS.map(e2eTermsOrgName)],
     ]);
     // Users are global: the cascade leaves them.
     await client.query("DELETE FROM users WHERE email = ANY($1)", [
@@ -63,6 +71,7 @@ async function wipe(migratorUrl: string): Promise<void> {
         E2E_OTHER_OWNER_EMAIL,
         E2E_TRIAL_OWNER_EMAIL,
         E2E_PAUSED_OWNER_EMAIL,
+        ...E2E_PROJECTS.map((project) => E2E_TERMS_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_ACTIVITY_MEMBER_EMAILS[project]),
       ],
     ]);
@@ -144,6 +153,18 @@ async function main(): Promise<number> {
         });
         await insertMembership(db, { orgId: owner.orgId }, { userId: user.id, role: "assistant" });
         activityIds[project] = user.id;
+      }
+
+      // One organization per project with an owner whose accepted terms are old: the panel shows the terms dialog.
+      const termsIds = {} as Record<E2eProject, string>;
+      for (const project of E2E_PROJECTS) {
+        const termsOwner = await createOrganizationWithOwner(db, {
+          orgName: e2eTermsOrgName(project),
+          timezone: "Europe/Warsaw",
+          email: E2E_TERMS_EMAILS[project],
+          displayName: `E2E Terms ${project}`,
+        });
+        termsIds[project] = termsOwner.userId;
       }
 
       // The organization of the isolation checks: one mail that the E2E organization must never see.
@@ -247,6 +268,16 @@ async function main(): Promise<number> {
         activityMembers[project] = { userId: activityIds[project], email, password: E2E_MEMBER_PASSWORD };
       }
 
+      // The reset stores the current terms; the terms owners then go back to an old version.
+      const termsOwners = {} as SeedFile["termsOwners"];
+      for (const project of E2E_PROJECTS) {
+        const email = E2E_TERMS_EMAILS[project];
+        const termsToken = new URL(await requestLink(email)).pathname.split("/").pop() ?? "";
+        await setPassword(E2E_MEMBER_PASSWORD, termsToken);
+        await setUserTerms(db, termsIds[project], "2000-01-01", new Date());
+        termsOwners[project] = { userId: termsIds[project], email, password: E2E_MEMBER_PASSWORD };
+      }
+
       const seed: SeedFile = {
         orgId: owner.orgId,
         owner: { userId: owner.userId, email: E2E_OWNER_EMAIL, password: E2E_OWNER_PASSWORD },
@@ -254,6 +285,7 @@ async function main(): Promise<number> {
         members,
         otherOrg: { orgId: other.orgId, emailId: otherMail.emailId },
         activityMembers,
+        termsOwners,
         trialOwner: {
           userId: trial.userId,
           email: E2E_TRIAL_OWNER_EMAIL,

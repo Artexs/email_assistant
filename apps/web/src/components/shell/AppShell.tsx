@@ -11,6 +11,7 @@ import { useMe, MeProvider } from "./MeProvider";
 import { BottomTabs, MenuSheet, Sidebar } from "./Nav";
 import type { NavKey } from "./nav-items";
 import { PausedBanner } from "./PausedBanner";
+import { TermsDialog } from "./TermsDialog";
 import { TrialLine } from "./TrialLine";
 
 export interface AppShellProps {
@@ -81,6 +82,9 @@ function Frame({ active, title, children }: AppShellProps) {
         {me?.organization.plan === "suspended" && <PausedBanner contact={me.operatorContact} />}
         {me?.organization.plan === "trial" && me.role === "owner" && me.organization.trialEndsAt !== null && (
           <TrialLine endsAt={me.organization.trialEndsAt} timeZone={me.organization.timezone} />
+        )}
+        {me !== null && !me.terms.accepted && (
+          <TermsDialog current={me.terms.current} onAccepted={reload} onLogOut={onLogOut} />
         )}
         <main className="px-4 py-4 pb-24 lg:pb-8">
           <h1 className="mb-4 hidden text-xl font-semibold lg:block">{t(title)}</h1>
