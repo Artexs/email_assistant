@@ -1,19 +1,19 @@
 # F090 · LLM roles: plan
 
-> **Status 2026-11-13 — planned.** Six stages written; cold review 1 done (§ "Cold review"). Builds after F086 is in `done/`. Nothing is built yet. Ticket: [ticket.md](ticket.md). Open defaults for the owner: [questions.md](questions.md).
+> **Status 2026-11-13 — planned.** Six stages written; cold review 1 (FAIL: 2 blocking, 8 notes) filed as `plan-review-1.md`; both blocking findings and the notes are fixed or answered (§ "Cold review"). Builds after F086 is in `done/`. Nothing is built yet. Ticket: [ticket.md](ticket.md). Open defaults for the owner: [questions.md](questions.md).
 
 ## Planning progress
 
 - [x] Collect: ticket, plan input, review §3.6, `07-foundation-plan.md`, ADR 0015, ADR 0033, PD-025/026/059, the F086 and F087 plans, the code of `platform/llm`, `platform/config.ts`, `modules/triage`, `modules/audit`, the scripts and every test that fakes the LLM client.
 - [x] Facts checked (probes P1–P4 in `.probe-f090/`, deleted before the commit).
-- [x] Decisions D8–D28.
+- [x] Decisions D8–D28 (D11 and D17 changed after cold review 1).
 - [x] stage-01-role-table [written]
 - [x] stage-02-role-client [written]
 - [x] stage-03-callers [written]
 - [x] stage-04-audit-and-registry [written]
 - [x] stage-05-tools [written]
 - [x] stage-06-standards [written]
-- [x] Cold review (`plan-review-1.md`), findings handled in § "Cold review".
+- [x] Cold review 1 (`plan-review-1.md`), findings handled in § "Cold review".
 
 ## Input
 
@@ -60,13 +60,13 @@ D1–D7 stay. These decisions make them exact after the fact checks. "Default, o
 - **D8 The table holds roles and providers.** `llmRoleTable(config, overrides?)` in `platform/config.ts` returns `LlmRoleTable = { roles: Record<LlmRole, LlmRoleSettings>; providers: Record<LlmProviderId, LlmProviderSettings> }`. A role row is `{ provider, model, timeoutMs, rpm: number | null, reasoningEffort: string | null }`; a provider row is `{ apiKeyName, apiKey, rpm }`. The types live in `platform/llm/settings.ts`, so the client does not import the config. Reason: D3's shared provider limiter and D2's provider key need the provider rows. Rejected: `Record<LlmRole, RoleSettings>` alone (each role row would copy the key and the provider rpm). The old `llmSettings` stays until stage 5 (D16).
 - **D9 The classifier keeps the provider keys.** The classifier row reads only today's keys: `LLM_PROVIDER`, that provider's `*_MODEL_CLASSIFIER`, `*_TIMEOUT_MS` and effort (`OPENAI_REASONING_EFFORT`; Gemini has none). It has no `LLM_CLASSIFIER_*` keys and no own rpm. The other four roles get the five D2 keys each (20 keys). Reason: one key per setting, and the VPS `.env` does not change. Default, owner to confirm (Q1).
 - **D10 Fallback rule.** A missing key of a role takes the classifier row's value when the role uses the classifier's provider, else the value of its own provider's keys (`*_MODEL_CLASSIFIER`, `*_TIMEOUT_MS`, the effort default). A missing `LLM_<ROLE>_RPM` means no role limiter. Reason: a model id of one provider is not valid on the other one. An empty value counts as missing (the repo's `emptyAsUndefined` rule).
-- **D11 Start checks.** `loadConfig` refuses: a set `LLM_<ROLE>_PROVIDER` whose provider key is empty (`ConfigError` names the key, for example `GEMINI_API_KEY`); `LLM_<ROLE>_REASONING` when the role's provider takes no effort (Gemini); a bad value of any role key. The classifier key rule stays as today (needed when `TRIAGE_LLM_SCOPE` is not `off`). Reason: a role that points at a provider without a key fails loud at start, not on the first call of a later epic. Default, owner to confirm (Q2).
+- **D11 Start checks.** `loadConfig` refuses: a set `LLM_<ROLE>_PROVIDER` whose provider key is empty (`ConfigError` names the key, for example `GEMINI_API_KEY`); `LLM_<ROLE>_REASONING` when the role's provider takes no effort (Gemini); a bad value of any role key. Also refused: a set `LLM_<ROLE>_MODEL` without `LLM_<ROLE>_PROVIDER` (`ConfigError` names `LLM_<ROLE>_PROVIDER`), because a model id belongs to one provider and would otherwise follow a later `LLM_PROVIDER` switch (cold review N3). The classifier key rule stays as today (needed when `TRIAGE_LLM_SCOPE` is not `off`). Reason: a role that points at a provider without a key, or a model at the wrong provider, fails loud at start, not on the first call of a later epic. Default, owner to confirm (Q2).
 - **D12 Two limiter levels.** One limiter per provider at its `*_RPM` (D3: the provider's limit is shared by all roles), plus one limiter per role when `LLM_<ROLE>_RPM` is set (D2). A call waits for its role limiter first, then for the provider limiter. Reason: D2 and D3 both hold; the role rpm caps the share of one role.
 - **D13 One generate per provider and effort, built at the first call.** The client keeps one `GenerateFn` per `(provider, reasoningEffort)` pair; the provider interface `createGenerate({ apiKey, reasoningEffort })` does not change. A role whose provider has no key fails at call time with `LlmConfigError("missing_key")` (a new `ConfigCode`), so the triage pause handles it like a bad key. Rejected: the effort in each `GenerateRequest` (it changes both adapters and the OpenAI snapshot test, for no behaviour gain). Note: today the SDK client is built at start; after this stage it is built at the first call of the provider.
 - **D14 The call names its prompt version.** `generate<T, R extends LlmRole>({ role: R, promptVersion: PromptVersion<NoInfer<R>>, schema, system, prompt, model? })` with `PromptVersion<R> = \`${R}-v${number}\`` (core). A version of another role, or an unknown role, is a type error (probe P2). Reason: `LlmUsage` must carry the version (D4), and `platform/llm` cannot import a module's registry (F086 layer rule: platform imports no module). `model?` stays for `bun run eval --model` only.
 - **D15 Usage.** `LlmUsage = { role, promptVersion, model, tokensIn, tokensOut, latencyMs }`. The client's two debug log lines add `role=<role>`; they never hold the prompt, the answer or the key (the existing marker tests stay).
 - **D16 Expand, then contract.** Stage 2 adds `createRoleLlmClient` beside the old `createLlmClient`; the old function becomes a thin wrapper over the new one (the deprecated alias of D3). At stage 2 every old test, the OpenAI snapshot and every caller run unchanged through the new code: that is the proof of "the same request". Stage 3 moves every caller to `generate`, removes the wrapper, and renames `createRoleLlmClient` → `createLlmClient`, `RoleLlmClient` → `LlmClient`, `LlmCallUsage` → `LlmUsage`. Stage 5 removes the old `llmSettings`.
-- **D17 "Pass unchanged" means the cases and assertions.** The interface changes, so each test file's fake LLM client and its usage fixtures change shape (`modelOf`, `generate`, usage with `role` and `promptVersion`). The test names, inputs and assertions stay. One intended change: stage 4 adds `role: "classifier"` to the expected `llm.call` data in `triage-service.test.ts`. Default, owner to confirm (Q3).
+- **D17 "Pass unchanged" means the cases and assertions.** The interface changes, so each test file's fake LLM client and its usage fixtures change shape (`modelOf`, `generate`, usage with `role` and `promptVersion`). The test names, inputs and assertions stay. A shared usage constant in a test file is test data: it gains `role: "classifier", promptVersion: "classifier-v2"`, and the fake returns it unchanged, so `classifier.test.ts:185` (`expect(result.usage).toEqual(usage)`) passes as it is (cold review B2). One intended assertion change: stage 4 adds `role: "classifier"` to the expected `llm.call` data in `triage-service.test.ts`. Default, owner to confirm (Q3).
 - **D18 A test helper for a fixed client.** `createFixedLlmClient(generate, opts)` in `platform/llm/testing.ts` (stage 3) builds a client whose every role calls one `GenerateFn` with the provider's error rules. Tests use it instead of copying a role table. Production code never imports it.
 - **D19 Every role has a schema.** `generate` always takes a Zod schema (vision: "A Zod schema checks every LLM answer"). A free-text role (the drafter) puts its text into a schema field; ADR 0033 already has `no_draft` with a reason code. No `generate` without a schema.
 - **D20 One writer of `llm.call` rows.** `recordLlmCall(db, ctx, record)` in `modules/audit` writes every `llm.call` row with data `{ mailbox_id, role, model, prompt_version, tokens_in, tokens_out, latency_ms }` and `reason_code` = `ok` or the LLM error code. The triage service uses it for the success row and the error row. In the error row, role and version come from the classifier's registry entry and the model from `modelOf("classifier")`, as today.
@@ -91,9 +91,9 @@ A gap or a deviation that a worker finds is a question in its final message, not
 
 ## Facts checked (2026-11-13, at commit `c554497`)
 
-- **P1 (stage 1 code).** In a copy of the repo with the main checkout's `node_modules`: the role keys of D9 built from `llmRoles` keep their static types (`config.LLM_JUDGE_PROVIDER` is `"gemini" | "openai" | undefined`; `config.LLM_CLASSIFIER_MODEL` is a type error). The nine `llmRoleTable` cases of stage 1 and the three core cases pass; `tsc --noEmit` passes; ESLint reports only Prettier fixes.
+- **P1 (stage 1 code).** In a copy of the repo with the main checkout's `node_modules`: the role keys of D9 built from `llmRoles` keep their static types (`config.LLM_JUDGE_PROVIDER` is `"gemini" | "openai" | undefined`; `config.LLM_CLASSIFIER_MODEL` is a type error). The ten `llmRoleTable` cases of stage 1 (case 10, the model-without-provider check, added after cold review 1) and the three core cases pass; `tsc --noEmit` passes; ESLint reports only Prettier fixes.
 - **P2 (stage 2 code).** With `createRoleLlmClient` and the old `createLlmClient` as a wrapper: the 96 existing tests of `platform/llm` (client, Gemini, OpenAI with its snapshot) pass with no change; the ten new cases of stage 2 pass. Without `NoInfer` the "version of another role" case compiles (TypeScript infers `R` from both fields), so `NoInfer` is required. TypeScript 5.9.3, Zod 4.6.7 (main checkout `node_modules`).
-- **P3 (stage 3 shape).** After the rename: the port of `client.test.ts` changes 79 lines, `openai.test.ts` 44. `tsc` then lists exactly these callers: `main.ts`, `scripts/eval.ts`, `scripts/llm-check.ts`, `triage/classifier.ts`, `triage/service.ts`, `triage/eval.ts` (`CaseResult.usage`), and the fakes in `classifier.test.ts`, `eval.test.ts`, `eval-report.test.ts`, `actions-send.test.ts`, `scope-two-orgs.test.ts`, `triage-job.test.ts`, `triage-logs.test.ts`, `triage-service.test.ts` (also its `decision()` usage fixture).
+- **P3 (stage 3 shape).** After the rename: the port of `client.test.ts` changes 79 lines, `openai.test.ts` 44. The callers to move: `main.ts`, `scripts/eval.ts`, `scripts/llm-check.ts`, `triage/classifier.ts`, `triage/service.ts`, `triage/eval.ts` (`CaseResult.usage`), and the fakes in `classifier.test.ts`, `eval.test.ts`, `eval-report.test.ts`, `actions-send.test.ts`, `scope-two-orgs.test.ts`, `triage-job.test.ts`, `triage-logs.test.ts`, `triage-service.test.ts` (also its `decision()` usage fixture) and `tools/fake-telegram/test/setup.ts`. Source: a repo-wide grep for `classifierModel`, `.classify(`, `LlmClient`, `createLlmClient`, `LlmUsage` (the probe's `tsc` covered only `apps/server`; cold review B1 found the `tools/` fake). `tsc` does not report `actions-send.test.ts` (its fake is cast `as unknown as LlmClient`).
 - **P4 (types).** `` `${role}-v0` `` with `role: LlmRole` fits `PromptVersion<NoInfer<R>>`, also through a generic helper `checkVersion<R>(role: R): PromptVersion<R>`.
 - Old `llm.call` rows have no `role` key (`triage/service.ts:497–533`); `countLlmCallsSince` filters by org, event, `data->>'mailbox_id'` and time (`audit/repo.ts:131`).
 - `deploy/compose.yaml` loads the app env with `env_file: ../.env`: new keys need no compose change.
@@ -182,7 +182,7 @@ Order: 1 → 2 → 3 → 4 → 5 → checkpoint 1 → 6. No parallel stages: eac
 ## How to run (coordinator)
 
 1. Before the first spawn: F086 is in `spec/features/done/` and the owner gave the go for the foundation group (ticket § Sequenced). Move the ticket: `git mv spec/features/planned/F090-llm-roles spec/features/active/`, commit (the worktrees see only committed files).
-2. Before stages 1 and 5 (they edit `platform/config.ts` and `.env.example`): no F087 stage 1 or 4 and no F089 stage 1 is in build. Before stages 2 and 3: no F089 stage that converts `platform/` log calls is in build.
+2. Before stages 1 and 5 (they edit `platform/config.ts` and `.env.example`): no F087 stage 1 or 4 and no F089 stage that edits `platform/config.ts` is in build. Before stages 2 and 3: no F089 stage that converts `platform/` log calls is in build (F089 has no `stages/` yet; read its stage files for the content, not the number). Also not at the same time (shared files, cold review N4): F090 stage 3 and F087 stage 2 (`main.ts`); F090 stage 4 and F087 stage 3 (`modules/audit/repo.ts`); F090 stage 6 and F087 stage 6 or F086 stage 5 (`docs/code-patterns.md` § Side effects and the styleguide § Prefer). When one of them lands first, the other rebases before its proof.
 3. Spawn one stage (`NN` = two digits, `<slug>` from the stage list):
 
    ```
@@ -207,8 +207,20 @@ Order: 1 → 2 → 3 → 4 → 5 → checkpoint 1 → 6. No parallel stages: eac
 
 ## Cold review
 
-Not run yet.
+Review 1 ([plan-review-1.md](plan-review-1.md), job `2026-11-13-f090-plan-review-564c16e4`, Opus 5.5 high, candidate `f46f709`): FAIL, 2 blocking findings, 8 notes. It applied stages 1 and 2 in a scratch copy: stage 1 and 2 code compiles; the 211 old unit tests of `platform/llm` and triage pass unchanged through the stage 2 wrapper; the classifier request does not change (N7). Not run: `test:int` (no DB). What changed:
+
+- B1 (stage 3 misses the fake in `tools/fake-telegram/test/setup.ts`): fixed. Stage 3 step 4 lists it, its check runs `bun test tools/fake-telegram/test` and greps `apps tools`; P3 now names its source (a repo-wide grep) and says that `tsc` does not report `actions-send.test.ts`.
+- B2 (the stage 3 fake rule breaks `classifier.test.ts:185`): fixed. A shared usage constant gains `role` and `promptVersion` as test data and the fake returns it unchanged (stage 3 step 4, D17, Q3). No assertion changes.
+- N1 (status contradiction): fixed in the status line, "Planning progress" and this section.
+- N2 (stage 4 test 3 "has no `calls` variable"): rejected; the case already has `const calls = await llmRows(trx, emailId)` at `triage-service.test.ts:471`. Stage 4 now names those lines.
+- N3 (a role model without its provider follows a later `LLM_PROVIDER` switch): fixed. D11 refuses `LLM_<ROLE>_MODEL` without `LLM_<ROLE>_PROVIDER`; stage 1 has the check, case 10, and the `.env.example` comment; cases 4 and 9 set the provider (probe: 10 pass).
+- N4 (shared files with F087 that the gate does not cover): fixed in § How to run step 2 (no parallel run of those stage pairs; rebase before the proof).
+- N5 (F089 stage numbers can change): fixed; the gate in `ticket.md` and § How to run names the F089 stage by its content.
+- N6 (the `--real` report has no prompt version): answered. The acceptance line is met by the case run (`bun run eval`), whose report has both lines; the `--real` report gets `role`. A prompt-version count for `--real` needs a new query field and is left to E2a (D24). `ticket.md` Notes says so.
+- N7 (request unchanged): no change needed.
+- N8 (stage 3 has about 19 files): accepted; most edits are the same mechanical change.
 
 ## Log
 
 - 2026-11-13: planned by a planner job (Opus 5.5) from the plan input; probes P1–P4.
+- 2026-11-13: cold review 1 FAIL (B1, B2); both fixed, N3 adopted as a start check, N4/N5 gate wording, N2 rejected with a line reference.

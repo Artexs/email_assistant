@@ -86,8 +86,8 @@ Export `recordLlmCall` and `type LlmCallRecord` from `audit/index.ts`.
 **Test** (`triage-service.test.ts`):
 
 1. "an info mail is triaged with one ok llm.call row": the expected `data` (`toEqual`, line 331) gains `role: "classifier"`. Nothing else in the case changes.
-2. "a 429 …" (the soft-error case, line 422): the `toMatchObject` gains `role: "classifier", prompt_version: "classifier-v2"`.
-3. "a safety block goes to unsure at once …": add `expect(calls[0]?.data).toMatchObject({ role: "classifier", prompt_version: "classifier-v2", model: "fake-model" })`.
+2. "a soft error pauses, releases the mail without a count and writes no result" (line 422): the `toMatchObject` gains `role: "classifier", prompt_version: "classifier-v2"`.
+3. "a safety block goes to unsure at once …": after its existing `const calls = await llmRows(trx, emailId);` and the two `expect(calls…)` lines (lines 471–473 today), add `expect(calls[0]?.data).toMatchObject({ role: "classifier", prompt_version: "classifier-v2", model: "fake-model" })`.
 4. The case "a failed llm.call audit write does not hide the LLM error from the rules" passes unchanged (its proxy intercepts `insertInto("audit_log")`, which `recordLlmCall` reaches through `recordAudit`).
 
 **Check.** `bun test apps/server/test/integration/triage-service.test.ts apps/server/test/integration/triage-job.test.ts`

@@ -36,8 +36,8 @@ Six worker jobs, one per stage in `stages/`, run one after another: the role tab
 
 - Plan after: none (the plan reads the module layer list of the border-lint ticket F086 and the config stages of the feature-flag ticket F087; it uses no interface of either).
 - Build after: F086, the module borders lint (it changes the lint every later job runs), in `spec/features/done/`.
-- Gate: the owner's go for the foundation group (`docs/product/stage-2/07-foundation-plan.md` §4 decision 1). Stages 1 and 5 edit `platform/config.ts`: not while the feature-flag stages 1 or 4 (F087) or the structured-log stage 1 (F089) are in build. Stages 2 and 3 not while the F089 stage that converts `platform/` log calls is in build.
+- Gate: the owner's go for the foundation group (`docs/product/stage-2/07-foundation-plan.md` §4 decision 1). Stages 1 and 5 edit `platform/config.ts`: not while the feature-flag stages 1 or 4 (F087) or the structured-log stage (F089) that edits `platform/config.ts` are in build. Stages 2 and 3 not while the F089 stage that converts `platform/` log calls is in build. Other shared files: [plan.md](plan.md) § How to run step 2.
 
 ## Notes
 
-Design and stages: [plan.md](plan.md); open defaults: [questions.md](questions.md). "Pass unchanged" means the test cases and assertions; the test fakes change shape (plan D17). Source: review §3.6; ADR 0015 (provider switch), PD-025, PD-026, PD-059.
+Design and stages: [plan.md](plan.md); open defaults: [questions.md](questions.md). "Pass unchanged" means the test cases and assertions; the test fakes change shape (plan D17). The `eval --real` report records the role; only the case-run report also has the prompt version (plan D24). Source: review §3.6; ADR 0015 (provider switch), PD-025, PD-026, PD-059.

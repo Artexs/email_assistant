@@ -163,6 +163,14 @@ In `configSchema.superRefine`, after the existing `TRIAGE_LLM_SCOPE` key check:
       const keyName = providerBlocks[provider](config).apiKeyName;
       ctx.addIssue({ code: "custom", path: [keyName], message: `needed by ${roleKey(role, "PROVIDER")}` });
     }
+    // A model id belongs to one provider: without its provider it would follow a later LLM_PROVIDER switch.
+    if (config[roleKey(role, "MODEL")] !== undefined && provider === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: [roleKey(role, "PROVIDER")],
+        message: `needed by ${roleKey(role, "MODEL")}`,
+      });
+    }
     const effective = provider ?? config.LLM_PROVIDER;
     if (
       config[roleKey(role, "REASONING")] !== undefined &&
@@ -265,16 +273,17 @@ export function llmRoleTable(config: Config, overrides: Partial<Record<LlmRole, 
 1. For three envs — `openaiEnv`; `openaiEnv` + `OPENAI_REASONING_EFFORT: "low"`, `OPENAI_TIMEOUT_MS: "20000"`, `OPENAI_RPM: "30"`, `OPENAI_MODEL_CLASSIFIER: "m-1"`; `fullEnv` + `LLM_PROVIDER: "gemini"`, `GEMINI_API_KEY: "g-key"`, `GEMINI_MODEL_CLASSIFIER: "g-1"`, `GEMINI_RPM: "7"` — with `old = llmSettings(config)`: `table.roles.classifier` equals `{ provider: old.provider, model: old.classifierModel, timeoutMs: old.timeoutMs, rpm: null, reasoningEffort: old.reasoningEffort }` and `table.providers[old.provider]` equals `{ apiKeyName: old.apiKeyName, apiKey: old.apiKey, rpm: old.rpm }`. (Acceptance 1: the classifier row is today's setting.)
 2. `openaiEnv`, no role keys: every role in `llmRoles` has a row equal to the classifier row.
 3. `openaiEnv` + `GEMINI_API_KEY: "g-key"`, `LLM_JUDGE_PROVIDER: "gemini"`, `GEMINI_TIMEOUT_MS: "15000"`: judge = `{ provider: "gemini", model: "gemini-3.5-flash-lite", timeoutMs: 15000, rpm: null, reasoningEffort: null }`; drafter's provider is `openai`.
-4. `openaiEnv` + `LLM_DRAFTER_MODEL: "gpt-x"`, `LLM_DRAFTER_TIMEOUT_MS: "60000"`, `LLM_DRAFTER_RPM: "10"`, `LLM_DRAFTER_REASONING: "medium"`: drafter = `{ provider: "openai", model: "gpt-x", timeoutMs: 60000, rpm: 10, reasoningEffort: "medium" }`; classifier model stays `gpt-6-luna`.
+4. `openaiEnv` + `LLM_DRAFTER_PROVIDER: "openai"`, `LLM_DRAFTER_MODEL: "gpt-x"`, `LLM_DRAFTER_TIMEOUT_MS: "60000"`, `LLM_DRAFTER_RPM: "10"`, `LLM_DRAFTER_REASONING: "medium"`: drafter = `{ provider: "openai", model: "gpt-x", timeoutMs: 60000, rpm: 10, reasoningEffort: "medium" }`; classifier model stays `gpt-6-luna`.
 5. `openaiEnv` + `LLM_JUDGE_PROVIDER: ""`, `LLM_JUDGE_MODEL: ""`, `LLM_JUDGE_RPM: ""`: judge equals the classifier row.
 6. `keysOf(openaiEnv + LLM_JUDGE_PROVIDER: "gemini")` equals `["GEMINI_API_KEY"]` (no Gemini key).
 7. `keysOf(openaiEnv + GEMINI_API_KEY: "g", LLM_JUDGE_PROVIDER: "gemini", LLM_JUDGE_REASONING: "low")` equals `["LLM_JUDGE_REASONING"]`; `keysOf(fullEnv + LLM_PROVIDER: "gemini", LLM_EXTRACTOR_REASONING: "low")` equals `["LLM_EXTRACTOR_REASONING"]`.
 8. Bad values, each alone on `openaiEnv`: `LLM_JUDGE_PROVIDER: "vertex"` → `["LLM_JUDGE_PROVIDER"]`; `LLM_JUDGE_RPM: "0"` → `["LLM_JUDGE_RPM"]`; `LLM_DRAFTER_TIMEOUT_MS: "x"` → `["LLM_DRAFTER_TIMEOUT_MS"]`; `LLM_DRAFTER_REASONING: "huge"` → `["LLM_DRAFTER_REASONING"]`.
-9. Overrides on `openaiEnv` + `GEMINI_API_KEY: "g-key"`, `LLM_JUDGE_MODEL: "gpt-judge"`, with `{ classifier: { provider: "gemini", model: "g-2" }, judge: { provider: "openai" } }`: classifier = `{ provider: "gemini", model: "g-2", timeoutMs: 30000, rpm: null, reasoningEffort: null }`; judge = `{ provider: "openai", model: "gpt-6-luna", timeoutMs: 30000, rpm: null, reasoningEffort: "none" }` (the provider override drops `LLM_JUDGE_MODEL`); drafter's provider is `gemini` (it follows the classifier). `llmRoleTable(config, { classifier: { provider: "gemini", reasoningEffort: "low" } })` throws `ConfigError`.
+9. Overrides on `openaiEnv` + `GEMINI_API_KEY: "g-key"`, `LLM_JUDGE_PROVIDER: "openai"`, `LLM_JUDGE_MODEL: "gpt-judge"`, with `{ classifier: { provider: "gemini", model: "g-2" }, judge: { provider: "openai" } }`: classifier = `{ provider: "gemini", model: "g-2", timeoutMs: 30000, rpm: null, reasoningEffort: null }`; judge = `{ provider: "openai", model: "gpt-6-luna", timeoutMs: 30000, rpm: null, reasoningEffort: "none" }` (the provider override drops `LLM_JUDGE_MODEL`); drafter's provider is `gemini` (it follows the classifier). `llmRoleTable(config, { classifier: { provider: "gemini", reasoningEffort: "low" } })` throws `ConfigError`.
+10. `keysOf(openaiEnv + LLM_JUDGE_MODEL: "gpt-judge")` equals `["LLM_JUDGE_PROVIDER"]` (a role model without its provider; cold review N3).
 
 **Check.** `bun test apps/server/src/platform/config-roles.test.ts apps/server/src/platform/config.test.ts && bun run typecheck && bunx eslint apps/server/src/platform packages/core/src`
 
-**Done when.** The nine cases pass; `config.test.ts` passes unchanged.
+**Done when.** The ten cases pass; `config.test.ts` passes unchanged.
 
 **Out of scope.** Any caller of `llmRoleTable` (stage 3). Removing `llmSettings` (stage 5).
 
@@ -289,7 +298,8 @@ export function llmRoleTable(config: Config, overrides: Partial<Record<LlmRole, 
 ```
 # LLM roles other than the classifier (judge, drafter, extractor, escalation). Each key is optional; empty = the
 # classifier's value when the role uses the classifier's provider, else the role provider's own keys.
-# LLM_<ROLE>_PROVIDER needs that provider's API key. LLM_<ROLE>_REASONING only for openai. LLM_<ROLE>_RPM empty = no own limit.
+# LLM_<ROLE>_PROVIDER needs that provider's API key; LLM_<ROLE>_MODEL needs LLM_<ROLE>_PROVIDER. LLM_<ROLE>_REASONING only for openai.
+# LLM_<ROLE>_RPM empty = no own limit.
 LLM_JUDGE_PROVIDER=
 LLM_JUDGE_MODEL=
 LLM_JUDGE_TIMEOUT_MS=

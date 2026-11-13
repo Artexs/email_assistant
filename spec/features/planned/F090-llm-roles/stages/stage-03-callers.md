@@ -141,17 +141,19 @@ Do not export `testing.ts` from `index.ts`; tests import it by path.
 
 **Goal.** Every test that fakes or builds the LLM client compiles and passes with unchanged assertions (D17).
 
-**Files** (from probe P3; `tsc` lists exactly these): `apps/server/src/modules/triage/classifier.test.ts`, `eval.test.ts`, `eval-report.test.ts`; `apps/server/test/integration/actions-send.test.ts`, `scope-two-orgs.test.ts`, `triage-job.test.ts`, `triage-logs.test.ts`, `triage-service.test.ts`.
+**Files** (a repo-wide grep for `classifierModel`, `.classify(`, `LlmClient`, `createLlmClient`, `LlmUsage` outside `node_modules`, 2026-11-13; cold review B1): `apps/server/src/modules/triage/classifier.test.ts`, `eval.test.ts`, `eval-report.test.ts`; `apps/server/test/integration/actions-send.test.ts`, `scope-two-orgs.test.ts`, `triage-job.test.ts`, `triage-logs.test.ts`, `triage-service.test.ts`; `tools/fake-telegram/test/setup.ts` (`urgentLlm()`, lines 123–133; `bun run test:int` runs `tools/fake-telegram/test`). `tsc` does not report `actions-send.test.ts` (it casts `as unknown as LlmClient`, line 945), so a clean typecheck alone does not prove this file: change it by hand and run it.
 
 **Interfaces.** The same change in each fake:
 
 - `classifierModel: "<model>"` → `modelOf: () => "<model>"`.
 - `async classify(req) { … }` → `async generate(req) { … }` (keep the body; the recorded fields stay).
-- A returned usage `{ model, tokensIn, tokensOut, latencyMs }` gets `role: req.role, promptVersion: req.promptVersion` in front. Where the usage is a shared constant typed `LlmUsage` (`classifier.test.ts:10`, `eval.test.ts:14`), type the constant as `Omit<LlmUsage, "role" | "promptVersion">` and return `{ ...usage, role: req.role, promptVersion: req.promptVersion }`.
+- A usage object written inline in a fake's return (`{ model, tokensIn, tokensOut, latencyMs }`) gets `role: req.role, promptVersion: req.promptVersion` in front.
+- A shared usage constant (`classifier.test.ts:10` and `eval.test.ts:14`, typed `LlmUsage`; `eval-report.test.ts:255`, untyped) is test data: add `role: "classifier", promptVersion: "classifier-v2"` to the constant itself and keep returning the constant unchanged. Do not spread it with the call's fields: `classifier.test.ts:185` asserts `expect(result.usage).toEqual(usage)`, and `classifyEmail` passes the usage through, so the constant must equal what the fake returns (cold review B2; the reviewer saw this case fail with the spread form).
 - A generic fake method (`async classify<T>(req: { schema: z.ZodType<T>; … })` in `classifier.test.ts`, `eval.test.ts`; `async classify<T>()` in `eval-report.test.ts`) becomes `async generate<T, R extends LlmRole>(req: LlmCall<T, R>)` (import `LlmCall` from `platform/llm`, `LlmRole` from `@ea/core`). In `classifier.test.ts` the recorded `Recorded` type keeps `schema`, `system`, `prompt`, `model?`; `calls.push(req)` still works.
 - Wrappers that replace the method (`triage-job.test.ts:307–314`, `:955–960`): `llm.classify.bind(llm)` → `llm.generate.bind(llm)`, `llm.classify = …` → `llm.generate = …`, `as LlmClient["classify"]` → `as LlmClient["generate"]`.
 - `triage-logs.test.ts:92`: `createLlmClient({ provider: "gemini", apiKey: MARKERS.key, classifierModel: "fake-model", timeoutMs: 1000, rpm: 1000, generate, sleep })` → `createFixedLlmClient(generate, { model: "fake-model", apiKey: MARKERS.key, timeoutMs: 1000, rpm: 1000, sleep: async () => undefined })` from `../../src/platform/llm/testing`. The key marker stays in the client, so the case "no log line holds … a key" keeps its meaning.
 - `triage-service.test.ts`: also the `decision()` fixture's `usage` (line 80) gets `role: "classifier", promptVersion: "classifier-v1"` (test data, not an assertion).
+- `tools/fake-telegram/test/setup.ts` `urgentLlm()`: the same change as the other fakes (`modelOf`, `generate`, inline usage with `role: req.role, promptVersion: req.promptVersion`). `tools/fake-telegram/test/e2e.test.ts:47` passes the Telegram display value `llm: { provider, classifierModel }` and does not change.
 
 The `toEqual` on the `llm.call` data at `triage-service.test.ts:331` stays as it is in this stage: the service writes no `role` yet (stage 4).
 
@@ -159,7 +161,7 @@ The `toEqual` on the `llm.call` data at `triage-service.test.ts:331` stays as it
 
 **Test.** All listed files pass with unchanged assertions.
 
-**Check.** `bun test apps/server/src/modules/triage && bun test apps/server/test/integration/triage-service.test.ts apps/server/test/integration/triage-job.test.ts apps/server/test/integration/triage-logs.test.ts apps/server/test/integration/scope-two-orgs.test.ts apps/server/test/integration/actions-send.test.ts`, then `grep -rn "classifierModel\|\.classify(\|createRoleLlmClient\|RoleLlmClient\|LlmCallUsage" apps/server/src apps/server/test --include=*.ts` prints only the Telegram display field `classifierModel` in `channels/commands.ts`, `channels/telegram/runtime.ts`, `main.ts`, `scripts/job-run.ts` and their tests (`llm: { provider, classifierModel }`, a display value, not the client).
+**Check.** `bun test apps/server/src/modules/triage && bun test apps/server/test/integration/triage-service.test.ts apps/server/test/integration/triage-job.test.ts apps/server/test/integration/triage-logs.test.ts apps/server/test/integration/scope-two-orgs.test.ts apps/server/test/integration/actions-send.test.ts && bun test tools/fake-telegram/test`, then `grep -rn "classifierModel\|\.classify(\|createRoleLlmClient\|RoleLlmClient\|LlmCallUsage" apps tools --include=*.ts` prints only the Telegram display field `classifierModel` in `channels/commands.ts`, `channels/telegram/runtime.ts`, `main.ts`, `scripts/job-run.ts` and their tests (also `tools/fake-telegram/test/e2e.test.ts`) (`llm: { provider, classifierModel }`, a display value, not the client).
 
 **Done when.** The grep shows no client use of `classify` or `classifierModel`, and the listed tests pass.
 
@@ -168,5 +170,5 @@ The `toEqual` on the `llm.call` data at `triage-service.test.ts:331` stays as it
 ## Stage done when
 
 - Steps 1–4 are done; `git diff --stat` shows only the files of this stage.
-- `git diff <stage base> -- '*.test.ts'` changes no `expect(` line except in `client.test.ts` (usage gains `role`, `promptVersion`; `modelOf`), `openai.test.ts` (none expected) and none in the triage tests.
+- `git diff <stage base> -- '*.test.ts' tools/fake-telegram/test` changes no `expect(` line except in `client.test.ts` (usage gains `role`, `promptVersion`; `modelOf`); none in `openai.test.ts`, the triage tests or `tools/fake-telegram/test`.
 - The proof of `plan.md` passes: `mkdir -p /tmp/f090-s03 && bun run lint > /tmp/f090-s03/lint.log 2>&1 && bun run typecheck > /tmp/f090-s03/typecheck.log 2>&1 && bun run test:unit > /tmp/f090-s03/unit.log 2>&1 && bun run test:int > /tmp/f090-s03/int.log 2>&1 && echo PROOF_OK`
