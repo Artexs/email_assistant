@@ -30,12 +30,14 @@ function selectLinkedChats(db: DbOrTrx) {
     .innerJoin("memberships", (join) =>
       join.onRef("memberships.org_id", "=", "chat_links.org_id").onRef("memberships.user_id", "=", "chat_links.user_id")
     )
+    .innerJoin("users", "users.id", "chat_links.user_id")
     .select([
       "chat_links.org_id",
       "chat_links.user_id",
       "chat_links.external_chat_id",
       "chat_links.linked_at",
       "memberships.role",
+      "users.locale",
     ])
     .where("chat_links.channel", "=", CHANNEL);
 }
@@ -46,6 +48,7 @@ function toLinkedChat(row: {
   external_chat_id: string;
   linked_at: Date;
   role: string;
+  locale: string | null;
 }): LinkedChat {
   return {
     orgId: row.org_id,
@@ -54,6 +57,8 @@ function toLinkedChat(row: {
     // bigint comes back as a string; a chat id has at most 52 bits, so Number is exact.
     chatId: Number(row.external_chat_id),
     linkedAt: row.linked_at,
+    // A user without a locale gets Polish, as the auth mails do (localeOf in apps/server/src/web.ts).
+    locale: userLocaleSchema.nullable().parse(row.locale) ?? "pl",
   };
 }
 
