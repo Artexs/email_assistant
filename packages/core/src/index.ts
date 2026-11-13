@@ -6,3 +6,4 @@ export * from "./mail";
 export * from "./outgoing";
 export * from "./testmail";
 export * from "./web";
+export * from "./features";
