@@ -128,7 +128,7 @@ describe("scheduleDigests", () => {
       expect(sent[0]?.kind).toBe("digest");
       expect(sent[0]?.dedup_key).toBe("digest:2026-11-06T08:00");
       expect(sent[0]?.digest_id).toBe(found[0]?.id ?? "");
-      expect(sent[0]?.text.startsWith("📬 Digest 08:00 · Fri 6 Nov")).toBe(true);
+      expect(sent[0]?.text?.startsWith("📬 Digest 08:00 · Fri 6 Nov")).toBe(true);
 
       await run(trx, "2026-11-06T07:01:00Z");
       expect(await digests(trx, o.orgId)).toHaveLength(1);

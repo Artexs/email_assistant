@@ -1,4 +1,18 @@
-import { membershipRoleSchema, outButtonsSchema, type OutButton, type OutMessage } from "@ea/core";
+import {
+  membershipRoleSchema,
+  noticeChannels,
+  noticeDetails,
+  noticeKindSchema,
+  noticeKinds,
+  outButtonsSchema,
+  userLocaleSchema,
+  type NoticeChannel,
+  type NoticeDetail,
+  type NoticeKind,
+  type OutButton,
+  type OutMessage,
+  type UserLocale,
+} from "@ea/core";
 import { sql, type Transaction } from "kysely";
 import { z } from "zod";
 
@@ -190,23 +204,18 @@ export async function deleteChatLinks(db: DbOrTrx, ctx: TenantContext, userId: s
   return Number(result.numDeletedRows);
 }
 
-export const outboxKinds = [
-  "digest",
-  "urgent",
-  "auth_error",
-  "sync_stale",
-  "sync_ok",
-  "action_failed",
-  "approval",
-  "approval_set",
-  "send_result",
-  "delegation_answered",
-  "mailbox_removed",
-] as const;
-export type OutboxKind = (typeof outboxKinds)[number];
-const outboxKindSchema = z.enum(outboxKinds);
+export const outboxKinds = noticeKinds;
+export type OutboxKind = NoticeKind;
 
-export const outboxFailCodes = ["blocked", "bad_request", "expired", "no_chat", "outdated", "too_many_errors"] as const;
+export const outboxFailCodes = [
+  "blocked",
+  "bad_request",
+  "expired",
+  "no_chat",
+  "outdated",
+  "too_many_errors",
+  "bad_view",
+] as const;
 export type OutboxFailCode = (typeof outboxFailCodes)[number];
 
 export interface NewOutboxRow {
@@ -217,6 +226,8 @@ export interface NewOutboxRow {
   mailboxId?: string;
   digestId?: string;
   message: OutMessage;
+  view?: Record<string, unknown>;
+  locale?: UserLocale;
   createdAt: Date;
   nextAttemptAt: Date;
 }
@@ -237,6 +248,8 @@ export async function insertOutbox(db: DbOrTrx, ctx: TenantContext, row: NewOutb
       digest_id: row.digestId ?? null,
       text: row.message.text,
       buttons: JSON.stringify(buttons),
+      view: JSON.stringify(row.view ?? {}),
+      locale: row.locale ?? "en",
       status: "pending",
       attempts: 0,
       created_at: row.createdAt,
@@ -254,14 +267,24 @@ export async function findOutboxByDedup(
   ctx: TenantContext,
   userId: string,
   dedupKey: string
-): Promise<{ id: string; text: string } | undefined> {
-  return db
+): Promise<
+  { id: string; text: string | null; channel: NoticeChannel; detail: NoticeDetail; locale: UserLocale } | undefined
+> {
+  const row = await db
     .selectFrom("outbox")
-    .select(["id", "text"])
+    .select(["id", "text", "channel", "detail", "locale"])
     .where("org_id", "=", ctx.orgId)
     .where("user_id", "=", userId)
     .where("dedup_key", "=", dedupKey)
     .executeTakeFirst();
+  if (!row) return undefined;
+  return {
+    id: row.id,
+    text: row.text,
+    channel: z.enum(noticeChannels).parse(row.channel),
+    detail: z.enum(noticeDetails).parse(row.detail),
+    locale: userLocaleSchema.parse(row.locale),
+  };
 }
 
 export interface ClaimedOutbox {
@@ -269,7 +292,12 @@ export interface ClaimedOutbox {
   orgId: string;
   userId: string;
   kind: OutboxKind;
-  text: string;
+  view: unknown;
+  channel: NoticeChannel;
+  detail: NoticeDetail;
+  locale: UserLocale;
+  // null: the row holds facts only and the sender renders it (ADR 0032 point 5).
+  text: string | null;
   buttons: OutButton[][];
   attempts: number;
   lockedAt: Date;
@@ -323,6 +351,10 @@ export async function claimDueOutbox(
       "o.org_id",
       "o.user_id",
       "o.kind",
+      "o.view",
+      "o.channel",
+      "o.detail",
+      "o.locale",
       "o.text",
       "o.buttons",
       "o.attempts",
@@ -337,7 +369,11 @@ export async function claimDueOutbox(
       id: row.id,
       orgId: row.org_id,
       userId: row.user_id,
-      kind: outboxKindSchema.parse(row.kind),
+      kind: noticeKindSchema.parse(row.kind),
+      view: row.view,
+      channel: z.enum(noticeChannels).parse(row.channel),
+      detail: z.enum(noticeDetails).parse(row.detail),
+      locale: userLocaleSchema.parse(row.locale),
       text: row.text,
       buttons: outButtonsSchema.parse(row.buttons),
       attempts: row.attempts,
@@ -354,7 +390,7 @@ export async function markOutboxSent(
   ctx: TenantContext,
   id: string,
   lockedAt: Date,
-  sent: { messageId: number; at: Date }
+  sent: { messageId: number; at: Date; message: OutMessage }
 ): Promise<boolean> {
   const result = await db
     .updateTable("outbox")
@@ -362,6 +398,9 @@ export async function markOutboxSent(
       status: "sent",
       sent_at: sent.at,
       external_message_id: sent.messageId,
+      // The cache of the sent message (ADR 0032 point 5): the stored text is the sent text.
+      text: sent.message.text,
+      buttons: JSON.stringify(outButtonsSchema.parse(sent.message.buttons)),
       locked_at: null,
       error_code: null,
     })
@@ -504,7 +543,7 @@ export async function listSentStaleEpisodes(
 
 const RETENTION_BATCH = 1000;
 
-// Retention (A23): the text of an old message goes after the period. Two rules:
+// Retention (A23): the text and the view of an old message go after the period. Two rules:
 // - a `sent` or `failed` row gets the text `[removed]` (its `error_code` stays);
 // - a `pending` or `sending` row also becomes `failed` / `expired`: the row of a suspended organization is never claimed,
 //   and a message of that age must not go out at a resume.
@@ -519,7 +558,7 @@ export async function clearOutboxTexts(
   for (;;) {
     const result = await db
       .updateTable("outbox")
-      .set({ text: "[removed]" })
+      .set({ text: "[removed]", view: JSON.stringify({}) })
       .where("org_id", "=", ctx.orgId)
       .where(
         "id",
@@ -530,7 +569,7 @@ export async function clearOutboxTexts(
           .where("org_id", "=", ctx.orgId)
           .where("created_at", "<", opts.before)
           .where("status", "in", ["sent", "failed"])
-          .where("text", "<>", "[removed]")
+          .where((eb) => eb.or([eb("text", "is distinct from", "[removed]"), sql<boolean>`view <> '{}'::jsonb`]))
           .orderBy("id")
           .limit(batch)
           .forUpdate()
@@ -544,7 +583,7 @@ export async function clearOutboxTexts(
   for (;;) {
     const result = await db
       .updateTable("outbox")
-      .set({ status: "failed", error_code: "expired", locked_at: null, text: "[removed]" })
+      .set({ status: "failed", error_code: "expired", locked_at: null, text: "[removed]", view: JSON.stringify({}) })
       .where("org_id", "=", ctx.orgId)
       .where(
         "id",

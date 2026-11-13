@@ -1,3 +1,4 @@
+import { encodeNoticeView, type NoticeView } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -108,6 +109,50 @@ async function rowState(trx: Transaction<DB>, id: string) {
     .select(["status", "attempts", "next_attempt_at", "locked_at", "external_message_id", "error_code"])
     .where("id", "=", id)
     .executeTakeFirstOrThrow();
+}
+
+// A row that holds facts only (stage 05 makes the queue write these): the text and the buttons are cleared by hand.
+async function addFactsRow(
+  trx: Transaction<DB>,
+  t: Tenant,
+  opts: { subject?: string; locale?: "pl" | "en"; view?: Record<string, unknown> } = {}
+): Promise<string> {
+  const id = await addRow(trx, t, { kind: "urgent" });
+  const { email_id: emailId } = await trx
+    .selectFrom("outbox")
+    .select("email_id")
+    .where("id", "=", id)
+    .executeTakeFirstOrThrow();
+  if (!emailId) throw new Error("no email id");
+  const view: NoticeView<"urgent"> = {
+    emailId,
+    from: "boss@example.test",
+    subject: opts.subject ?? "Contract",
+    ai: { reasonCode: "llm", reason: "Deadline today" },
+    receivedAt: new Date("2026-11-06T08:15:00Z"),
+    synthetic: false,
+    folderTag: null,
+    actions: [],
+    delegateNames: {},
+    stayFolder: "INBOX",
+    now: T,
+    timeZone: "Europe/Warsaw",
+  };
+  await trx
+    .updateTable("outbox")
+    .set({
+      text: null,
+      buttons: "[]",
+      view: JSON.stringify(opts.view ?? encodeNoticeView("urgent", view)),
+      locale: opts.locale ?? "en",
+    })
+    .where("id", "=", id)
+    .execute();
+  return id;
+}
+
+async function storedMessage(trx: Transaction<DB>, id: string) {
+  return trx.selectFrom("outbox").select(["text", "buttons"]).where("id", "=", id).executeTakeFirstOrThrow();
 }
 
 function senderFor(trx: Transaction<DB>, channel = createFakeChannel()) {
@@ -445,6 +490,105 @@ describe("outbox sender", () => {
       expect(errorLines.filter((line) => line.includes("lost the claim after the send"))).toHaveLength(1);
       expect((await rowState(trx, first)).status).toBe("sending");
       expect((await rowState(trx, second)).status).toBe("sent");
+    });
+  });
+});
+
+describe("outbox sender, rows without text (F088)", () => {
+  test("renders the row from its view; the stored text is the sent text; the log has no mail text", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const id = await addFactsRow(trx, t, { subject: "MARKER-F088" });
+      const s = senderFor(trx);
+      await s.run(T);
+      expect(s.channel.sent).toHaveLength(1);
+      const message = s.channel.sent[0]?.message;
+      expect(message?.text).toContain("MARKER-F088");
+      expect((await rowState(trx, id)).status).toBe("sent");
+      const stored = await storedMessage(trx, id);
+      expect(stored.text).toBe(message?.text ?? null);
+      expect(stored.buttons as unknown).toEqual(message?.buttons ?? []);
+      expect(allLines().some((line) => line.includes("MARKER-F088"))).toBe(false);
+    });
+  });
+
+  test("a view the renderer rejects fails as bad_view and logs ids only", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const id = await addFactsRow(trx, t, { view: {} });
+      const s = senderFor(trx);
+      await s.run(T);
+      expect(s.channel.sent).toHaveLength(0);
+      const row = await rowState(trx, id);
+      expect(row.status).toBe("failed");
+      expect(row.error_code).toBe("bad_view");
+      expect(allLines().filter((line) => line.includes("bad view (urgent)") && line.includes(id))).toHaveLength(1);
+    });
+  });
+
+  test("a row with a text is sent with its stored text and buttons", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const id = await addRow(trx, t);
+      const before = await storedMessage(trx, id);
+      const s = senderFor(trx);
+      await s.run(T);
+      expect(s.channel.sent[0]?.message).toEqual({ text: before.text as string, buttons: before.buttons as never });
+      expect(await storedMessage(trx, id)).toEqual(before);
+    });
+  });
+
+  test("a stale sending row without text is rendered and sent again with a warning", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const id = await addFactsRow(trx, t, { subject: "MARKER-F088" });
+      await trx
+        .updateTable("outbox")
+        .set({ status: "sending", locked_at: at(-6 * MINUTE) })
+        .where("id", "=", id)
+        .execute();
+      const s = senderFor(trx);
+      await s.run(T);
+      expect((await rowState(trx, id)).status).toBe("sent");
+      expect(errorLines.filter((line) => line.includes("sent again after a stale send"))).toHaveLength(1);
+      expect((await storedMessage(trx, id)).text).toBe(s.channel.sent[0]?.message.text ?? null);
+    });
+  });
+
+  test("the pl row renders the same text as the en row (D16, until E7-T1)", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      await addFactsRow(trx, t, { locale: "pl" });
+      await addFactsRow(trx, t, { locale: "en" });
+      const s = senderFor(trx);
+      await s.run(T);
+      expect(s.channel.sent).toHaveLength(2);
+      expect(s.channel.sent[0]?.message.text).toBe(s.channel.sent[1]?.message.text as string);
+    });
+  });
+
+  test("the quiet hours hold a row without text; it is rendered after them", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const night = new Date("2026-11-06T21:30:00Z");
+      const id = await addFactsRow(trx, t);
+      const s = senderFor(trx);
+      await s.run(night);
+      const held = await rowState(trx, id);
+      expect(held.status).toBe("pending");
+      expect(held.next_attempt_at.toISOString()).toBe("2026-11-07T06:00:00.000Z");
+      expect((await storedMessage(trx, id)).text).toBeNull();
+      expect(s.channel.sent).toHaveLength(0);
+      await s.run(new Date("2026-11-07T06:00:00Z"));
+      expect((await rowState(trx, id)).status).toBe("sent");
+      expect(s.channel.sent).toHaveLength(1);
+      expect((await storedMessage(trx, id)).text).toBe(s.channel.sent[0]?.message.text ?? null);
     });
   });
 });

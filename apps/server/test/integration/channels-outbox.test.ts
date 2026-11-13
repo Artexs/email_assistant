@@ -14,6 +14,7 @@ import {
   releaseOutbox,
   type OutboxKind,
 } from "../../src/modules/channels";
+import { findOutboxByDedup } from "../../src/modules/channels/repo";
 import { insertMailbox } from "../../src/modules/mail/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
 
@@ -148,6 +149,68 @@ describe("insertOutbox", () => {
   });
 });
 
+describe("outbox view columns (F088)", () => {
+  test("insertOutbox stores view and locale; the claim returns them with channel and detail", async () => {
+    await withRollback(db, async (trx) => {
+      const t = await tenant(trx);
+      const id = await insert(trx, t, { view: { a: 1 }, locale: "pl", message: { text: "stored text", buttons: [] } });
+      const claimed = await claimDueOutbox(trx, opts(t));
+      expect(claimed).toHaveLength(1);
+      expect(claimed[0]?.id).toBe(id);
+      expect(claimed[0]?.view).toEqual({ a: 1 });
+      expect(claimed[0]?.channel).toBe("telegram");
+      expect(claimed[0]?.detail).toBe("full");
+      expect(claimed[0]?.locale).toBe("pl");
+      expect(claimed[0]?.text).toBe("stored text");
+    });
+  });
+
+  test("insertOutbox without view and locale stores {} and en", async () => {
+    await withRollback(db, async (trx) => {
+      const t = await tenant(trx);
+      const id = await insert(trx, t);
+      const row = await trx
+        .selectFrom("outbox")
+        .select(["view", "locale"])
+        .where("id", "=", id)
+        .executeTakeFirstOrThrow();
+      expect(row.view).toEqual({});
+      expect(row.locale).toBe("en");
+    });
+  });
+
+  test("markOutboxSent writes the sent text and buttons", async () => {
+    await withRollback(db, async (trx) => {
+      const t = await tenant(trx);
+      const id = await insert(trx, t);
+      const claimed = await claimDueOutbox(trx, opts(t));
+      const message = { text: "sent text", buttons: [[{ text: "OK", data: "ok" }]] };
+      expect(await markOutboxSent(trx, t.ctx, id, claimed[0]?.lockedAt as Date, { messageId: 5, at: T, message })).toBe(
+        true
+      );
+      const row = await trx
+        .selectFrom("outbox")
+        .select(["text", "buttons"])
+        .where("id", "=", id)
+        .executeTakeFirstOrThrow();
+      expect(row.text).toBe("sent text");
+      expect(row.buttons).toEqual(message.buttons);
+    });
+  });
+
+  test("findOutboxByDedup returns locale, channel, detail and a null text", async () => {
+    await withRollback(db, async (trx) => {
+      const t = await tenant(trx);
+      const id = await insert(trx, t, { dedupKey: "find:1", locale: "pl" });
+      const found = await findOutboxByDedup(trx, t.ctx, t.userId, "find:1");
+      expect(found).toMatchObject({ id, channel: "telegram", detail: "full", locale: "pl" });
+      expect(found?.text).toStartWith("text ");
+      await trx.updateTable("outbox").set({ text: null }).where("id", "=", id).execute();
+      expect((await findOutboxByDedup(trx, t.ctx, t.userId, "find:1"))?.text).toBeNull();
+    });
+  });
+});
+
 describe("claimDueOutbox", () => {
   test("claims due rows oldest first, parsed, locked with the now token; skips future rows; honors the limit", async () => {
     await withRollback(db, async (trx) => {
@@ -203,14 +266,32 @@ describe("status changes after a claim", () => {
       const [claimed] = await claimDueOutbox(trx, opts(t));
       const at = minutesFromT(1);
 
-      expect(await markOutboxSent(trx, t.ctx, id, minutesFromT(-3), { messageId: 77, at })).toBe(false);
-      expect(await markOutboxSent(trx, t.ctx, id, claimed?.lockedAt as Date, { messageId: 77, at })).toBe(true);
+      expect(
+        await markOutboxSent(trx, t.ctx, id, minutesFromT(-3), {
+          messageId: 77,
+          at,
+          message: { text: "t", buttons: [] },
+        })
+      ).toBe(false);
+      expect(
+        await markOutboxSent(trx, t.ctx, id, claimed?.lockedAt as Date, {
+          messageId: 77,
+          at,
+          message: { text: "t", buttons: [] },
+        })
+      ).toBe(true);
       const saved = await state(trx, id);
       expect(saved.status).toBe("sent");
       expect(saved.sent_at).toEqual(at);
       expect(Number(saved.external_message_id)).toBe(77);
       expect(saved.locked_at).toBeNull();
-      expect(await markOutboxSent(trx, t.ctx, id, claimed?.lockedAt as Date, { messageId: 77, at })).toBe(false);
+      expect(
+        await markOutboxSent(trx, t.ctx, id, claimed?.lockedAt as Date, {
+          messageId: 77,
+          at,
+          message: { text: "t", buttons: [] },
+        })
+      ).toBe(false);
     });
   });
 
@@ -317,7 +398,7 @@ describe("cancelPendingOutboxOfOrg", () => {
       await setState(trx, sending, "sending", T);
       const sent = await insert(trx, t, { kind: "sync_ok" });
       await setState(trx, sent, "sending", T);
-      await markOutboxSent(trx, t.ctx, sent, T, { messageId: 1, at: T });
+      await markOutboxSent(trx, t.ctx, sent, T, { messageId: 1, at: T, message: { text: "t", buttons: [] } });
       const otherEmail = await insertTestEmail(trx, otherBox.ctx, other.mailboxId);
       const elsewhere = await insert(trx, otherBox, { kind: "urgent", emailId: otherEmail });
 
@@ -345,7 +426,7 @@ describe("listSentStaleEpisodes", () => {
       expect(await listSentStaleEpisodes(trx, t.ctx, t.mailboxId)).toEqual([]);
 
       await setState(trx, id, "sending", T);
-      await markOutboxSent(trx, t.ctx, id, T, { messageId: 1, at: T });
+      await markOutboxSent(trx, t.ctx, id, T, { messageId: 1, at: T, message: { text: "t", buttons: [] } });
       expect(await listSentStaleEpisodes(trx, t.ctx, t.mailboxId)).toEqual([
         { userId: t.userId, episode: "1730000000000" },
       ]);
@@ -366,11 +447,13 @@ describe("tenant guard", () => {
       const sent = await insert(trx, a, { kind: "sync_stale", dedupKey: staleKey });
       const pending = await insert(trx, a, { kind: "auth_error" });
       await setState(trx, sent, "sending", T);
-      await markOutboxSent(trx, a.ctx, sent, T, { messageId: 1, at: T });
+      await markOutboxSent(trx, a.ctx, sent, T, { messageId: 1, at: T, message: { text: "t", buttons: [] } });
       const flight = await insert(trx, a);
       await setState(trx, flight, "sending", T);
 
-      expect(await markOutboxSent(trx, foreign, flight, T, { messageId: 2, at: T })).toBe(false);
+      expect(
+        await markOutboxSent(trx, foreign, flight, T, { messageId: 2, at: T, message: { text: "t", buttons: [] } })
+      ).toBe(false);
       expect(await releaseOutbox(trx, foreign, flight, T, { nextAttemptAt: minutesFromT(5), countAttempt: true })).toBe(
         false
       );
