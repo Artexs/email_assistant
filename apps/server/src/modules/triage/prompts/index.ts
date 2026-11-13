@@ -27,4 +27,4 @@ export const rolesWithoutPrompt = {
   drafter: "E6a",
   extractor: "E5b",
   escalation: "E3b",
-} as const satisfies { [R in LlmRole]?: string };
+} as const satisfies Partial<Record<LlmRole, string>>;
