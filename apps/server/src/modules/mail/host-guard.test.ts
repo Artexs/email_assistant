@@ -89,8 +89,17 @@ describe("resolveMailHost", () => {
     expect(calls).toEqual([]);
   });
 
+  test("a write to the default policy throws and changes nothing", () => {
+    const writable = DEFAULT_MAIL_HOST_POLICY as { allowLocal: boolean };
+    expect(() => {
+      writable.allowLocal = true;
+    }).toThrow();
+    expect(DEFAULT_MAIL_HOST_POLICY.allowLocal).toBe(false);
+  });
+
   test("the process policy is strict by default and configurable", () => {
     expect(DEFAULT_MAIL_HOST_POLICY.allowLocal).toBe(false);
+    expect(Object.isFrozen(DEFAULT_MAIL_HOST_POLICY)).toBe(true);
     const previous = mailHostPolicy();
     try {
       configureMailHosts({ allowLocal: true });
