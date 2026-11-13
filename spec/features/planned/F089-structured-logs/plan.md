@@ -11,7 +11,7 @@
 - [x] stage-02-format-and-context [written]
 - [x] stage-03-run-and-request-ids [written]
 - [x] stage-04-lint-rule [written]
-- [ ] stage-05-convert-platform (not written yet)
+- [x] stage-05-convert-platform [written]
 - [ ] stage-06-convert-main (not written yet)
 - [ ] stage-07-standards (not written yet)
 - [ ] Cold review (`plan-review-1.md`), fixes logged in § "Cold review".
