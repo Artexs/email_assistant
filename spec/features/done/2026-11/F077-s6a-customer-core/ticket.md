@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-12
+landed: 2026-11-13
 ---
 
 # F077 · S6a Customer core: a second organization runs next to the pilot
