@@ -31,3 +31,5 @@
 - Why: 30+ old tickets in `planned/` have a `plan.md` that is a full one-job task file and no `stages/`. The folder test would have planned them again.
 - Not in the ticket: Limen's strict check refuses unknown front matter fields, and its rules forbid status lines in a ticket body. The board is coordinator prose, so a state word there is allowed.
 - Three cases: `needs plan` → planner job; `stages/` → one worker job per stage; neither → one worker job from `ticket.md` (+ old `plan.md`).
+
+- Owner decision 2026-11-13 (late): owner checkpoints and owner steps in a plan are NOT a stop. The coordinator goes on with the plan defaults. Planners: do not add owner checkpoints for review or confirmation; list an owner step only for what needs the owner's hands (VPS, deploy, real secrets, real money). Builders run in parallel without a cap; file gates are advisory; one migration in build at a time. The planner cap (three at once) stays.

@@ -123,7 +123,7 @@ When a planning session finishes a ticket, in the same commit it:
 
 Limen has no dependency field. Each coordinator turn gets only the NOW and NEXT sections of `spec/build.md` injected (Limen `hook/communication.ts`, `boardDigest`), so the rule itself is the first NEXT line. NEXT order and the ticket's `## Sequenced` section carry the order.
 - Start the first NEXT ticket whose `Sequenced` tickets are all in `spec/features/done/` and whose gate is done.
-- At most five Stage 2 tickets in build at once (owner decision 2026-11-13; owner checkpoints; § 4). One DB migration and one `bun run test:int` at a time.
+- No cap on parallel builds (owner decision 2026-11-13). One DB migration in build at a time. File overlaps in plan gates are advisory. Owner checkpoints do not stop the build; see `spec/build.md` for what still needs the owner.
 - A ticket with a second-pass gate on a later stage builds up to that stage, then stops and asks the owner for the second pass.
 - Owner steps (gates) are listed in the ticket; the coordinator asks for them when the ticket reaches the top of NEXT, not earlier.
 
