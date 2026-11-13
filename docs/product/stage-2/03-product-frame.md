@@ -16,7 +16,7 @@ The product is not an "inbox zero" tool. Founders and executives name dropped fo
 
 1. **Nothing slips.** Urgent mail reaches the user in minutes. Delegated work, waiting replies and promises are tracked and chased.
 2. **Less time in the inbox.** Noise (spam, notifications, newsletters) leaves the inbox automatically, with proof. Reply and delegation drafts wait for one tap.
-3. **Trust and privacy.** Every action has a reason, a confidence and an Undo. The system never sends without a tap. Mail stays on the user's server and in the EU.
+3. **Trust and privacy.** Every action has a reason, a confidence and an Undo. The system never sends without a tap. Mail is stored on the user's own server. The AI provider processes mail text without training on it; EU-only processing is an endpoint option (ADR 0035 draft), not the default of this install (PD-101; the public security page states what is true per install).
 
 What makes it different from Fyxer, Superhuman, Inbox Zero, Slashy: any IMAP provider (Interia, WP, Onet, home.pl, own domains) plus Microsoft 365 and Gmail later; Polish and English; self-hosted; tracked delegation with a chaser as a first-class feature.
 
