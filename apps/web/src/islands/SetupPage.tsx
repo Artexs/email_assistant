@@ -8,11 +8,19 @@ import { Label } from "../components/ui/label";
 import { t, type TextKey } from "../i18n/en";
 import { authClient } from "../lib/auth-client";
 import { setPasswordWithTerms } from "../lib/auth-requests";
+import { legalDocs, legalLang, legalPath, type LegalDoc } from "../lib/legal";
 import { setupError } from "../lib/password-errors";
 
 type Mode = "form" | "invalid" | "missing";
-type Field = "email" | "password" | "repeat";
+type Field = "email" | "password" | "repeat" | "terms";
 type FieldErrors = Partial<Record<Field, TextKey>>;
+
+const legalTitles: Record<LegalDoc, TextKey> = {
+  terms: "legal_terms_title",
+  privacy: "legal_privacy_title",
+  dpa: "legal_dpa_title",
+};
+const legalLinks = legalDocs.map((doc) => ({ doc, title: legalTitles[doc] }));
 
 export default function SetupPage() {
   const [mounted, setMounted] = useState(false);
@@ -21,6 +29,7 @@ export default function SetupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [repeat, setRepeat] = useState("");
+  const [terms, setTerms] = useState(false);
   const [pending, setPending] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [error, setError] = useState<TextKey | null>(null);
@@ -45,7 +54,13 @@ export default function SetupPage() {
       for (const field of ["email", "password", "repeat"] as const) {
         if (errors[field] !== undefined) next[field] = errors[field] as TextKey;
       }
+      if (!terms) next.terms = "terms_required";
       setFieldErrors(next);
+      setError(null);
+      return;
+    }
+    if (!terms) {
+      setFieldErrors({ terms: "terms_required" });
       setError(null);
       return;
     }
@@ -97,6 +112,7 @@ export default function SetupPage() {
     const ids = [extra, fieldErrors[field] === undefined ? undefined : `${field}-error`].filter(Boolean);
     return ids.length === 0 ? undefined : ids.join(" ");
   };
+  const lang = legalLang(navigator.language);
   const errorText = (field: Field) => {
     const key = fieldErrors[field];
     return key === undefined ? null : (
@@ -157,6 +173,31 @@ export default function SetupPage() {
             aria-describedby={describedBy("repeat")}
           />
           {errorText("repeat")}
+        </div>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              id="terms"
+              name="terms"
+              className="accent-primary mt-0.5 size-4"
+              checked={terms}
+              onChange={(event) => setTerms(event.target.checked)}
+              aria-invalid={fieldErrors.terms !== undefined}
+              aria-describedby={describedBy("terms", "terms-links")}
+            />
+            <Label htmlFor="terms">{t("setup_terms_label")}</Label>
+          </div>
+          <ul id="terms-links" className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            {legalLinks.map(({ doc, title }) => (
+              <li key={doc}>
+                <a href={legalPath(lang, doc)} target="_blank" rel="noopener" className="underline">
+                  {t(title)}
+                </a>
+              </li>
+            ))}
+          </ul>
+          {errorText("terms")}
         </div>
         <Button type="submit" disabled={pending}>
           {pending ? t("setting_password") : t("set_password")}

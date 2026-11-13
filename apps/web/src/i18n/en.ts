@@ -50,6 +50,7 @@ export const en = {
   password_too_long: "At most 128 characters.",
   password_pwned: "This password is in a list of leaked passwords. Choose another one.",
   terms_required: "Accept the terms to continue.",
+  setup_terms_label: "I accept the terms of service, the privacy policy and the data processing agreement.",
   password_check_unavailable: "We cannot check the password now. Try again in a few minutes.",
   passwords_differ: "The passwords do not match.",
   email_invalid: "Enter a valid e-mail address.",
@@ -65,6 +66,11 @@ export const en = {
   forgot_sent: "If this address has an account, a link is on its way. It works for 1 hour.",
   forgot_off: "Reset by e-mail is off. Ask the operator for a new link.",
   login_forgot_link: "Forgot your password?",
+  // legal
+  legal_privacy_title: "Privacy policy",
+  legal_terms_title: "Terms of service",
+  legal_dpa_title: "Data processing agreement",
+  legal_stub_text: "Draft. The text follows.",
   // 404
   not_found_title: "Page not found",
   not_found_text: "This page does not exist.",
