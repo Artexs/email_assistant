@@ -110,6 +110,7 @@ test.each<[string, unknown, boolean]>([
   ["a route with a star", { route: "/api/*" }, true],
   ["an auth route", { route: "/api/auth/*" }, true],
   ["a config key", { config_key: "SEND_TEST_ADDRESSES" }, true],
+  ["an LLM role", { role: "judge" }, true],
   ["an unlisted name key", { key: "x" }, false],
   ["a model", { model: "gemini-3.5-flash-lite" }, true],
   ["a user id", { user_id: M }, true],

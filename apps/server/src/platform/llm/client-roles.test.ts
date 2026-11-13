@@ -206,7 +206,7 @@ describe("createLlmClient", () => {
     expect(typeof wrongRole).toBe("function");
   });
 
-  test("the debug log holds the model, not the prompt or the key", async () => {
+  test("the debug log holds the role and the model, not the prompt or the key", async () => {
     const lines: string[] = [];
     const spy = spyOn(console, "log").mockImplementation((...args: unknown[]) => {
       lines.push(args.join(" "));
@@ -218,6 +218,7 @@ describe("createLlmClient", () => {
       await llm.generate({ ...judgeCall, prompt: "MARKER-PROMPT" });
       const text = lines.join("\n");
       expect(text).toContain("llm_call_ok");
+      expect(text).toContain("role=judge");
       expect(text).toContain("model=gem-j");
       expect(text).not.toContain("MARKER");
       expect(text).not.toContain("g-key");

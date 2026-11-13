@@ -178,6 +178,7 @@ export function createLlmClient(opts: {
           latencyMs: now() - started,
         };
         log.debug("llm_call_ok", {
+          role: call.role,
           model,
           ms: usage.latencyMs,
           tokens_in: usage.tokensIn,
@@ -186,7 +187,7 @@ export function createLlmClient(opts: {
         return { data, usage };
       } catch (error) {
         const llmError = isLlmError(error) ? error : providerOf(row.provider).classifyError(error, model);
-        log.debug("llm_call_failed", { model, code: llmError.code });
+        log.debug("llm_call_failed", { role: call.role, model, code: llmError.code });
         throw llmError;
       }
     },
