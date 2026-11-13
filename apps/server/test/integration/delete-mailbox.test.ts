@@ -51,6 +51,7 @@ async function insertDigestOutbox(
     dedupKey: `digest:${digestId}`,
     digestId: digestId ?? undefined,
     message: { text, buttons: [] },
+    view: { text, buttons: [] },
     createdAt: now,
     nextAttemptAt: now,
   });
@@ -126,6 +127,11 @@ const allZero = {
   outbox_by_email: 0,
 };
 
+async function outboxView(trx: Transaction<DB>, id: string): Promise<unknown> {
+  const row = await trx.selectFrom("outbox").select("view").where("id", "=", id).executeTakeFirstOrThrow();
+  return row.view;
+}
+
 async function outboxText(trx: Transaction<DB>, id: string): Promise<string | undefined> {
   const row = await trx.selectFrom("outbox").select("text").where("id", "=", id).executeTakeFirst();
   return row?.text ?? undefined;
@@ -155,6 +161,9 @@ describe("delete_mailbox", () => {
       expect(await outboxText(trx, s.digestA.sent)).toBe("[removed]");
       expect(await outboxText(trx, s.digestA.failed)).toBe("[removed]");
       expect(await outboxText(trx, s.digestB)).toBe("Digest of B");
+      expect(await outboxView(trx, s.digestA.sent)).toEqual({});
+      expect(await outboxView(trx, s.digestA.failed)).toEqual({});
+      expect(await outboxView(trx, s.digestB)).toEqual({ text: "Digest of B", buttons: [] });
       const digests = await trx
         .selectFrom("digests")
         .select((eb) => eb.fn.countAll<string>().as("n"))
@@ -185,6 +194,10 @@ describe("delete_mailbox", () => {
         ok: boolean;
       }>`SELECT has_function_privilege('app', 'delete_mailbox(uuid, uuid)', 'EXECUTE') AS ok`.execute(trx);
       expect(grant.rows[0]?.ok).toBe(true);
+      const publicGrant = await sql<{
+        ok: boolean;
+      }>`SELECT has_function_privilege('public', 'delete_mailbox(uuid, uuid)', 'EXECUTE') AS ok`.execute(trx);
+      expect(publicGrant.rows[0]?.ok).toBe(false);
 
       const proc = await sql<{ acl: string[] | null; prosecdef: boolean; proconfig: string[] | null }>`
         SELECT proacl::text[] AS acl, prosecdef, proconfig FROM pg_proc WHERE proname = 'delete_mailbox'`.execute(trx);

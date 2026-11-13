@@ -553,6 +553,7 @@ describe("clearOutboxTexts", () => {
                 dedup_key: `key-${randomUUID()}`,
                 mailbox_id: org.mailboxId,
                 text: "Message text",
+                view: JSON.stringify({ subject: "MARKER" }),
                 buttons: JSON.stringify(buttons),
                 status,
                 created_at: createdAt,
@@ -565,6 +566,7 @@ describe("clearOutboxTexts", () => {
         return {
           sentOver: await add("sent", over90, { sent_at: over90 }),
           failedOver: await add("failed", over90, { error_code: "blocked" }),
+          failedNoText: await add("failed", over90, { error_code: "bad_view", text: null }),
           pendingOver: await add("pending", over90),
           sendingOver: await add("sending", over90, { locked_at: over90 }),
           pendingAt: await add("pending", before90),
@@ -575,13 +577,19 @@ describe("clearOutboxTexts", () => {
       const read = (id: string) =>
         trx
           .selectFrom("outbox")
-          .select(["text", "status", "error_code", "locked_at", "buttons"])
+          .select(["text", "status", "error_code", "locked_at", "buttons", "view"])
           .where("id", "=", id)
           .executeTakeFirstOrThrow();
 
-      expect(await clearOutboxTexts(trx, { orgId: a.orgId }, { before: before90 })).toBe(4);
+      expect(await clearOutboxTexts(trx, { orgId: a.orgId }, { before: before90 })).toBe(5);
 
-      expect(await read(rowsA.sentOver)).toMatchObject({ text: "[removed]", status: "sent", buttons });
+      expect(await read(rowsA.sentOver)).toMatchObject({ text: "[removed]", status: "sent", buttons, view: {} });
+      expect(await read(rowsA.failedNoText)).toMatchObject({
+        text: "[removed]",
+        status: "failed",
+        error_code: "bad_view",
+        view: {},
+      });
       expect(await read(rowsA.failedOver)).toMatchObject({
         text: "[removed]",
         status: "failed",
@@ -593,11 +601,22 @@ describe("clearOutboxTexts", () => {
           status: "failed",
           error_code: "expired",
           locked_at: null,
+          view: {},
         });
       }
-      expect(await read(rowsA.pendingAt)).toMatchObject({ text: "Message text", status: "pending" });
-      for (const id of Object.values(rowsB)) expect((await read(id)).text).toBe("Message text");
+      expect(await read(rowsA.pendingAt)).toMatchObject({
+        text: "Message text",
+        status: "pending",
+        view: { subject: "MARKER" },
+      });
+      for (const id of Object.values(rowsB)) {
+        const rowB = await read(id);
+        expect(rowB.view).toEqual({ subject: "MARKER" });
+        if (id !== rowsB.failedNoText) expect(rowB.text).toBe("Message text");
+      }
+      const afterFirst = await trx.selectFrom("outbox").selectAll().where("org_id", "=", a.orgId).execute();
       expect(await clearOutboxTexts(trx, { orgId: a.orgId }, { before: before90 })).toBe(0);
+      expect(await trx.selectFrom("outbox").selectAll().where("org_id", "=", a.orgId).execute()).toEqual(afterFirst);
     });
   });
 });
