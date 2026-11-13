@@ -8,6 +8,8 @@ export {
   hasAuditKey,
   recordAudit,
   recordAuditOnce,
+  recordLlmCall,
   type AuditData,
   type AuditEvent,
+  type LlmCallRecord,
 } from "./repo";
