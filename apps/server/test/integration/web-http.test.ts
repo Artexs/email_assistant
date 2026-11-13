@@ -27,9 +27,10 @@ let dist = "";
 
 beforeAll(() => {
   dist = mkdtempSync(join(tmpdir(), "ea-web-dist-"));
-  for (const dir of ["login", "setup", "mailboxes", "_astro"]) mkdirSync(join(dist, dir));
+  for (const dir of ["login", "setup", "forgot", "mailboxes", "_astro"]) mkdirSync(join(dist, dir));
   writeFileSync(join(dist, "login/index.html"), "login page");
   writeFileSync(join(dist, "setup/index.html"), "setup page");
+  writeFileSync(join(dist, "forgot/index.html"), "forgot page");
   writeFileSync(join(dist, "mailboxes/index.html"), "mailboxes page");
   writeFileSync(join(dist, "404.html"), "not found page");
   writeFileSync(join(dist, "_astro/x.js"), "console.log(1)");
@@ -117,6 +118,14 @@ describe("page gate", () => {
     expect(evil.status).toBe(302);
     expect(evil.headers.get("location")).toBe("/login?next=%2F");
     expect((await app.request("/login?next=x")).status).toBe(200);
+  });
+
+  test("serves the forgot page without a session", async () => {
+    const app = appWith();
+    const res = await app.request("/forgot");
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe("forgot page");
+    expect((await app.request("/forgot/")).status).toBe(200);
   });
 
   test("sends the root to the path that homePath gives", async () => {

@@ -57,6 +57,14 @@ export const en = {
   setup_link_invalid: "This link was used or has expired. Ask for a new one.",
   setup_link_missing: "This page needs a setup link.",
   go_to_sign_in: "Go to sign in",
+  // forgot
+  forgot_title: "Reset your password",
+  forgot_text: "Enter the e-mail address of your account. We send a link to set a new password.",
+  forgot_send: "Send link",
+  forgot_sending: "Sending…",
+  forgot_sent: "If this address has an account, a link is on its way. It works for 1 hour.",
+  forgot_off: "Reset by e-mail is off. Ask the operator for a new link.",
+  login_forgot_link: "Forgot your password?",
   // 404
   not_found_title: "Page not found",
   not_found_text: "This page does not exist.",
@@ -426,6 +434,7 @@ export const en = {
   title_rules: "Rules",
   title_login: "Sign in",
   title_setup: "Set your password",
+  title_forgot: "Reset password",
   title_not_found: "Page not found",
 } as const;
 

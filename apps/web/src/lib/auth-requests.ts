@@ -20,3 +20,27 @@ export async function setPasswordWithTerms(input: { token: string; newPassword: 
   }
   return { ok: false, status: res.status, code };
 }
+
+export type ResetRequestResult = "sent" | "off" | "too_many" | "error";
+
+export function resetRequestResult(status: number): ResetRequestResult {
+  if (status === 200) return "sent";
+  if (status === 404) return "off";
+  if (status === 429) return "too_many";
+  return "error";
+}
+
+// The answer is the same for every address (F082 L10, L28): the page only tells apart the sender being off and the limits.
+export async function requestPasswordReset(email: string): Promise<ResetRequestResult> {
+  try {
+    const res = await fetch("/api/auth/request-password-reset", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ email, redirectTo: `${location.origin}/setup` }),
+    });
+    return resetRequestResult(res.status);
+  } catch {
+    return "error";
+  }
+}

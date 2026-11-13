@@ -121,6 +121,9 @@ export default function LoginPage() {
           </p>
         )}
       </form>
+      <a href="/forgot" className="text-sm underline">
+        {t("login_forgot_link")}
+      </a>
       <details>
         <summary className="cursor-pointer text-sm">{t("login_help_summary")}</summary>
         <p className="text-muted-foreground mt-2 text-sm">{t("login_help_text")}</p>

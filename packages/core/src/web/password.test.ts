@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   changePasswordFormSchema,
   fieldErrors,
+  forgotFormSchema,
   loginFormSchema,
   passwordSchema,
   setPasswordFormSchema,
@@ -64,5 +65,16 @@ describe("changePasswordFormSchema", () => {
   test("reports a different repeat", () => {
     const result = changePasswordFormSchema.safeParse({ current: "old", password, repeat: "other" });
     expect(fieldErrors(result)).toEqual({ repeat: "passwords_differ" });
+  });
+});
+
+describe("forgotFormSchema", () => {
+  test("trims and lower-cases the address", () => {
+    expect(forgotFormSchema.parse({ email: "  A@X.Test " }).email).toBe("a@x.test");
+  });
+
+  test("refuses an address without a domain", () => {
+    const result = forgotFormSchema.safeParse({ email: "nope" });
+    expect(result.success ? "" : result.error.issues[0]?.message).toBe("email_invalid");
   });
 });
