@@ -44,6 +44,7 @@ export const auditEvents = {
   orgTimezoneChanged: "org.timezone_changed", // data: from, to
   orgStyleChanged: "org.style_changed", // data: set
   orgPlanChanged: "org.plan_changed", // data: from, to, max_from, max_to, trial_ends_at
+  orgFlagChanged: "org.flag_changed", // data: flag, enabled
   delegateAdded: "delegate.added",
   delegateChanged: "delegate.changed",
   delegationCreated: "delegation.created",
