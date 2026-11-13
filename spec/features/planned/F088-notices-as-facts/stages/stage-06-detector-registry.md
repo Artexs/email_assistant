@@ -1,16 +1,18 @@
-# F088 stage 05 — Detector registry: one file per detector
+# F088 stage 06 — Detector registry: one file per detector
 
-Part of [`../plan.md`](../plan.md). Decisions: D4, D21, D22 (server unit test). Needs stage 04 landed. No behaviour change: a move of code plus one loop. Two steps.
+Part of [`../plan.md`](../plan.md). Decisions: D4, D21, D22 (server unit test). Needs stage 05 landed. No behaviour change: a move of code plus one loop. Two steps.
+
+Size: the diff is large (about 750 lines leave `notices.ts` and land in ten files) but mechanical. Commit the move first with no other change (one commit: the new files and the deleted `notices.ts`, with the bodies copied as they are), then the `Detector` wrappers and the loop in a second commit, then the test. `git diff --color-moved=zebra HEAD~2 HEAD~1` shows the first commit as moved lines only; say so in the final message.
 
 ## Step 1 — Split `notices.ts` into `channels/notices/`
 
-**Goal.** `apps/server/src/modules/channels/notices.ts` (about 745 lines after stage 04) becomes a folder with one file per detector and a list that `detectForOrg` iterates (review §3.3; ticket scope "the detector registry").
+**Goal.** `apps/server/src/modules/channels/notices.ts` (about 780 lines after stage 04) becomes a folder with one file per detector and a list that `detectForOrg` iterates (review §3.3; ticket scope "the detector registry").
 
 **Files.** Delete `apps/server/src/modules/channels/notices.ts`. New, in `apps/server/src/modules/channels/notices/`:
 
 | File | Holds (moved code, unchanged unless this table says so) |
 | --- | --- |
-| `run.ts` | `NoticeDeps`, `DbOrTrx`, `OrgRun`, `Detector`, `APPROVAL_LIMIT`, `inTransaction`, `warnSkipped` (with its `warnedRows` set), the local `queue` helper, `const log = createLog("channels")` |
+| `run.ts` | `NoticeDeps`, `DbOrTrx`, `OrgRun`, `Detector`, `APPROVAL_LIMIT`, `inTransaction`, `warnSkipped` (with its `warnedRows` set; the detectors of stage 04 call it), the local `queue` helper, `const log = createLog("channels")` |
 | `urgent.ts` | `URGENT_LOOKBACK_MS`, `URGENT_LIMIT`, `detectUrgent` → `urgentDetector` |
 | `action-failed.ts` | `ACTION_FAILED_LOOKBACK_MS`, `ACTION_FAILED_LIMIT`, `isMailboxActionType`, `detectActionFailed` → `actionFailedDetector` |
 | `auth-error.ts` | `detectAuthError` → `authErrorDetector` (it loops over `run.mailboxes`) |
@@ -106,6 +108,6 @@ Mutation check, then revert: remove `"sync_ok"` from `syncDetector.kinds` → te
 
 **Check.** `bun test apps/server/src/modules/channels/notices/registry.test.ts`.
 
-**Done when.** Tests 1–4 pass; the mutation check failed and was reverted; the Proof of `plan.md` with `NN` = `05` ends with `PROOF_OK`.
+**Done when.** Tests 1–4 pass; the mutation check failed and was reverted; the Proof of `plan.md` with `NN` = `06` ends with `PROOF_OK`.
 
-**Out of scope.** The `pg_constraint` comparison (stage 02 has it).
+**Out of scope.** The `pg_constraint` comparison (stage 03 has it).

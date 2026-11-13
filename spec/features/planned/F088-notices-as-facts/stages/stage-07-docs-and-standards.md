@@ -1,6 +1,6 @@
-# F088 stage 06 — Docs and standards
+# F088 stage 07 — Docs, standards and the deploy note
 
-Part of [`../plan.md`](../plan.md). Decisions: D1–D24 as built. Needs stage 05 landed (the text names its files). Docs only, no code. Two steps. The land of this stage closes the ticket.
+Part of [`../plan.md`](../plan.md). Decisions: D1–D25 as built. Needs stage 06 landed (the text names its files). Docs only, no code. Three steps. The land of this stage closes the ticket.
 
 ## Step 1 — `docs/code-patterns.md` and the styleguide
 
@@ -17,7 +17,7 @@ Part of [`../plan.md`](../plan.md). Decisions: D1–D24 as built. Needs stage 05
 ```markdown
 ## Notices are facts
 
-A module that has something to tell a user queues facts. It never builds the text of a channel (ADR 0032 point 5).
+A module that has something to tell a user through the outbox (digests and notices) queues facts. It never builds the text of a channel (ADR 0032 point 5). Direct replies (command answers, tap answers, the link texts, the operator notices) are not outbox rows and keep their texts where they are (`channels/texts.ts`, `callbacks.ts`, `channels/operator.ts`).
 
 - A notice enters the outbox only through `queueNotice` (`apps/server/src/modules/channels/notice-queue.ts`) with `{ userId, locale, kind, view, dedupKey }`. The view is the input of the kind's renderer: ids, counts, dates, and the strings from mail data or from users that the text prints (subject, sender, names). It holds no phrase of ours: a fixed word or sentence comes from the renderer, so a new locale or a new channel changes only the renderer.
 - Each kind has a strict view schema (`noticeViewSchemas`, `packages/core/src/notices/views.ts`): no field that the renderer does not print. A view holds mail-derived text: it follows the retention of `outbox.text` (`clearOutboxTexts`, `docs/architecture.md` §7) and never reaches a log line, an error text or a test name.
@@ -38,7 +38,7 @@ A module that has something to tell a user queues facts. It never builds the tex
 
 2. `.agents/limen/styleguide.md`:
    - § Prefer, add at the end: "- Notices are facts: a producer calls `queueNotice({ kind, view, locale })`; the sender renders with `renderNotice` from `@ea/core`. A new kind follows the checklist in `docs/code-patterns.md` § Notices are facts."
-   - § Avoid, add at the end: "- Channel text (Telegram or other) built outside a renderer in `packages/core/src/notices/`. A view, a rendered text or a Zod error in a log line."
+   - § Avoid, add at the end: "- The text of an outbox notice built outside a renderer in `packages/core/src/notices/` (direct replies and tap answers keep their own texts). A view, a rendered text or a Zod error in a log line."
 
 **Decisions.** D10, D13–D18, D24.
 
@@ -82,6 +82,37 @@ A module that has something to tell a user queues facts. It never builds the tex
 
 **Check.** `bunx prettier --write` and then `bunx prettier --check` on the three files (the architecture tables are wide; Prettier re-pads them, which is expected).
 
-**Done when.** Tests 1–4 hold; step 1 tests hold; the Proof of `plan.md` with `NN` = `06` ends with `PROOF_OK`.
+**Done when.** Tests 1–4 hold; step 1 tests hold.
 
 **Out of scope.** `docs/product/stage-2/*` (the coordinator edits the stage count in `07-foundation-plan.md`). `spec/build.md`.
+
+## Step 3 — The deploy note in `deploy/README.md`
+
+**Goal.** The operator knows the order of the deploy and how to roll back (D25), as every earlier migration has its "Update" / "Roll back" paragraph (`deploy/README.md:226`, `:305`, `:392`).
+
+**Files.** `deploy/README.md`.
+
+**Interfaces.** Find the last migration section with a `### Roll back` subsection (`grep -n "### Roll back" deploy/README.md`) and add after that section a new section in the same shape, with this text (adapt the heading level to its neighbours):
+
+```markdown
+## Notices as facts (migration `outbox_view`)
+
+### Update
+
+Run `bun run db:migrate` before you start the new code: the code writes `outbox.view`, `channel`, `locale` and `detail`. Rows queued by the old code keep their text and go out as they are.
+
+### Roll back
+
+Roll back the code, not the migration. The code that comes with this migration already renders a row without text, so a rollback to any release that has this migration loses nothing. A release without this migration sends a row without text as an empty message: Telegram refuses it, and the row fails with `bad_request`, approval requests too (their sends expire after 48 h, and the owner gets the result notice). Before a rollback that far, wait until `select count(*) from outbox where text is null and status in ('pending', 'sending')` is 0 (outside the quiet hours the outbox empties within minutes). Do not run `db:rollback`: its down part fails every waiting row without text.
+```
+
+**Decisions.** D25.
+
+**Test.** `grep -n "outbox_view" deploy/README.md` prints the heading.
+
+**Check.** `bunx prettier --write deploy/README.md` then `bunx prettier --check deploy/README.md`.
+
+**Done when.** The test holds; steps 1 and 2 hold; the Proof of `plan.md` with `NN` = `07` ends with `PROOF_OK`.
+
+**Out of scope.** The VPS deploy itself (the owner's normal deploy).
+
