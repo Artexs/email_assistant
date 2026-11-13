@@ -10,7 +10,7 @@ Every push to `master` gets a green CI run, so a red run means a real regression
 
 ## Scope
 
-- Starting seam: `apps/server/src/modules/testmail/agentmail/fake.ts` (with `send.test.ts` test 3 and `fake.test.ts` `holdResponseNext`), `apps/server/src/modules/mail/imap/smtp-starttls.test.ts` (three STARTTLS tests), `apps/server/src/platform/scheduler.test.ts`, and the two entries in `docs/known-alerts.md`.
+- Starting seam: `apps/server/src/modules/testmail/agentmail/fake.ts` (with `send.test.ts` test 3 and `fake.test.ts` `holdResponseNext`), `apps/server/src/modules/mail/imap/smtp-starttls.test.ts` (three STARTTLS tests), `apps/server/src/platform/scheduler.test.ts`, and the AgentMail timeout entry in `docs/known-alerts.md` (plus a new STARTTLS entry).
 - One Bun pin: `.bun-version`, `scripts/ci-bun.sh`, the `test:unit:ci` and `test:int:ci` scripts, `.github/workflows/ci.yml`.
 - The integration suite on the pinned Bun (it has not run in CI since 2026-11-08).
 - The rules in `docs/code-patterns.md` § Tests, `.agents/limen/styleguide.md` and `CLAUDE.md`; the CI run time for `spec/build.md` § TRACK.
@@ -24,7 +24,7 @@ Every push to `master` gets a green CI run, so a red run means a real regression
 
 - Three CI runs in a row on `master` are green, each with `attempt` 1.
 - Each fixed test waits for its condition (or the fake releases its hold) and has no fixed sleep longer than 100 ms.
-- `docs/code-patterns.md` and the styleguide state the quarantine rule and the pinned-Bun checks; `docs/known-alerts.md` closes both entries with the commit.
+- `docs/code-patterns.md` and the styleguide state the quarantine rule and the pinned-Bun checks; `docs/known-alerts.md` closes the AgentMail entry and a new STARTTLS entry, each with its commit.
 - `spec/build.md` § TRACK names the CI run time.
 - Every line of "Done when" in [plan.md](plan.md) holds.
 

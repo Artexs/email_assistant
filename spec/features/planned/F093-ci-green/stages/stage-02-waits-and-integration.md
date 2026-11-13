@@ -78,7 +78,7 @@ Each test calls `stop()` in `finally`, so a failed wait leaves no running cron j
 
 **Goal:** know and fix the state of `test:int` on Bun 1.3.14. CI skipped it since 2026-11-08 because `test:unit` failed first (plan F1).
 
-**Files:** only the integration tests or test fakes that step 3 must fix (`apps/server/test/**`, `tools/fake-telegram/test/**`), and `docs/known-alerts.md` when a fix closes a known alert.
+**Files:** only the integration tests or test-only fakes that step 3 must fix (`apps/server/test/**`, `tools/fake-telegram/**`, `apps/server/src/modules/testmail/agentmail/fake.ts`), and `docs/known-alerts.md` when a fix closes a known alert. Any other file under `apps/` or `packages/` (also `modules/mail/fake/`) → stop and report.
 
 **Do:**
 
@@ -86,11 +86,12 @@ Each test calls `stop()` in `finally`, so a failed wait leaves no running cron j
 2. Run `bun run test:int:ci > /tmp/f093-s02/int-ci-first.log 2>&1` (this job has its own DB from the prepare step; no lock, `CLAUDE.md`). `grep -E "\(fail\)|Ran " /tmp/f093-s02/int-ci-first.log`.
 3. For each failing test, find the cause: run it alone with `bash scripts/ci-bun.sh test <file>` and with `bun test <file>`. A pass on 1.4.4 and a fail on 1.3.14 is a version cause. Then act by the D12 table in `plan.md`:
    - Test code, a test fake, or a fixed sleep → fix it here (D1: `waitFor`; release a fake, as stage 1 did). Keep every assertion.
+   - A test that fails in the CI run of item 1 but passes locally with `test:int:ci` (CI has its own GreenMail with auth off and its own DB roles, `ci.yml`): diagnose it from the CI log under the same rules. Cannot reproduce or explain it → **stop** and report, as below.
    - Bun 1.3.14 behaviour that also reaches product code, a real product bug, or no cause after 30 minutes → **stop**. Do not change product code, do not skip the test. Write in the final message: the test name, the file, the cause, the evidence (log lines, probe result). The coordinator quarantines it by D13 and continues this job.
 4. At most three distinct causes fixed in this stage. More → stop and report the list.
 5. Each fix: one commit `F093 s2: <test> <what changed>`.
 
-**Decisions:** D7, D12, D13. Never `test.skip`, a retry or a longer timeout as a fix; only the coordinator quarantines.
+**Decisions:** D7, D12, D13. Never `test.skip`, a retry or a longer timeout as a fix; only the coordinator quarantines (it commits the skip on `master`, then continues this job: merge `master` and finish the Proof).
 
 **Test:** the failing tests themselves, after the fix, on both Bun versions.
 

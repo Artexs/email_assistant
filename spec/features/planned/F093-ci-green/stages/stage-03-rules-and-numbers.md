@@ -50,7 +50,7 @@ Read first: `plan.md` D1, D3, D6, D10, D13, D14, "Done when" 6–8.
 **Test** (docs; checks by grep):
 
 1. `grep -c "test:unit:ci" docs/code-patterns.md .agents/limen/styleguide.md CLAUDE.md` → each file at least 1.
-2. `grep -c "Quarantine" docs/code-patterns.md` → 1; `grep -ci "quarantined" .agents/limen/styleguide.md CLAUDE.md` → each at least 1.
+2. `grep -c "^- Quarantine:" docs/code-patterns.md` → 1; `grep -ci "quarantined" .agents/limen/styleguide.md CLAUDE.md` → each at least 1.
 3. `grep -n "waitFor" docs/code-patterns.md .agents/limen/styleguide.md` → each at least one line.
 4. `grep -n "Only one checkout at a time runs" .agents/limen/styleguide.md` → nothing.
 5. Every path named in the new text exists: `ls .bun-version scripts/ci-bun.sh apps/server/test/wait-for.ts`.
@@ -73,7 +73,7 @@ Read first: `plan.md` D1, D3, D6, D10, D13, D14, "Done when" 6–8.
 4. Write the TRACK line for the coordinator in the final message, in this form (fill the values):
 
    ```markdown
-   - CI on `master`: green since YYYY-MM-DD (run <id>); ci <m>m<s>s (unit <s> s, int <s> s), e2e <m>m<s>s. Bun pin `.bun-version` 1.3.14; flaky tests: `docs/code-patterns.md` § Tests.
+   - CI on `master`: green since YYYY-MM-DD (run <id>); ci <m>m<s>s (unit <s> s, int <s> s), e2e <m>m<s>s. Bun pin `.bun-version` 1.3.14. After each land, check `gh run list --branch master --workflow CI --limit 3`; a red run → `docs/code-patterns.md` § Tests (quarantine the same day).
    ```
 
 5. Count the green runs in a row on `master` with `attempt` 1 so far and write the count in the final message (Done when 8 needs three).

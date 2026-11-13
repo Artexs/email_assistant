@@ -1,6 +1,6 @@
 # F093 · CI green: plan
 
-> **Status 2026-11-13 — planned.** Planning in progress (see "Planning progress"). Nothing is built.
+> **Status 2026-11-13 — planned.** Three stages written; cold review done and handled. Nothing is built.
 
 Ticket: [ticket.md](ticket.md). Defaults to confirm: [questions.md](questions.md).
 
@@ -10,7 +10,7 @@ Ticket: [ticket.md](ticket.md). Defaults to confirm: [questions.md](questions.md
 - [written] Stage 1 — `stages/stage-01-bun-pin-and-fakes.md`
 - [written] Stage 2 — `stages/stage-02-waits-and-integration.md`
 - [written] Stage 3 — `stages/stage-03-rules-and-numbers.md`
-- [ ] Cold review (`plan-review-1.md`)
+- [written] Cold review (`plan-review-1.md`; findings handled in § Cold review)
 
 ## Input
 
@@ -76,11 +76,11 @@ Sources: `gh run list` / `gh run view --log-failed` on this repo; local probes w
 
 D1–D4: the owner's, above. The added decisions:
 
-- **D5 One Bun version, one file.** `.bun-version` holds `1.3.14` (the version CI and the image run today). CI reads it (`bun-version-file: .bun-version` in both `setup-bun` steps). The `image` job checks that `deploy/Dockerfile` line 1 is `FROM oven/bun:<that version>`. Why: the drift hid five broken tests for five days while every worker's local proof was green. Rejected: upgrade to 1.4.4 inside this ticket (a production runtime change needs a deploy and its own checks; Q1, follow-up). Rejected: a Docker `ARG` for the version (the VPS Compose build needs a default anyway, so the version is still written twice).
+- **D5 One Bun version, one file.** `.bun-version` holds `1.3.14` (the version CI and the image run today). CI reads it (`bun-version-file: .bun-version` in both `setup-bun` steps). The `image` job checks that `deploy/Dockerfile` line 1 is `FROM oven/bun:<that version>`. Why: the drift hid five broken tests for five days while every worker's local proof was green. Rejected: upgrade to 1.4.4 inside this ticket (a production runtime change needs a deploy and its own checks; Q1, follow-up). Rejected: a Docker `ARG` for the version (`deploy/compose.yaml:23-25` builds the image with no `args`, so the Dockerfile needs a default anyway, and the version is still written twice).
 - **D6 Pinned scripts.** `scripts/ci-bun.sh` runs `bunx bun@<.bun-version> "$@"`. `package.json`: `"test:unit:ci": "bash scripts/ci-bun.sh run test:unit"`, `"test:int:ci": "bash scripts/ci-bun.sh run test:int"`. The check line in the styleguide, `CLAUDE.md` and `docs/code-patterns.md` uses them (stage 3), so every later worker proves on the CI Bun. Why: F8; it costs about 25 s more per unit run. Rejected: a preload warning when versions differ (a line nobody reads, no gate). Rejected: run both versions (doubles the time; the image runs only the pin).
 - **D7 Fix the hang, not the limit.** The two AgentMail tests and the three STARTTLS tests hang forever on 1.3.14; a longer per-test timeout (the old alert's fix) cannot help. The fakes change (D8, D9); the test assertions do not.
 - **D8 AgentMail fake.** `startFakeAgentMail().stop()` releases every held response (resolve the wait, clear its timer), then calls `server.stop(true)`. A held response that is released after `stop()` goes to a closed connection; nobody reads it. Doc comment of `holdResponseNext` says so. Rejected: `server.stop(false)` (keeps the port open while a test waits; the test "stop closes the port" needs a closed port).
-- **D9 STARTTLS fake.** The scripted server keeps its plain phase. At `STARTTLS` it relays the socket to a second local server made with `tls.createServer({ key, cert })` that runs the same command handler with `tls = true` (F6). The test certificate's SAN is `IP:127.0.0.1,DNS:localhost` (F7), with a comment that names the Bun 1.3.14 quirk and says: remove `DNS:localhost` when `.bun-version` moves past 1.3. Every assertion of the four STARTTLS tests stays as it is; they are the proof that no password goes out before TLS. Rejected: give the loopback guard path a `servername` (product change in the host guard; F084 froze its policy).
+- **D9 STARTTLS fake.** The scripted server keeps its plain phase. At `STARTTLS` it relays the socket to a second local server made with `tls.createServer({ key, cert })` that runs the same command handler with `tls = true` (F6). The test certificate's SAN is `IP:127.0.0.1,DNS:localhost` (F7), with a comment that names the Bun 1.3.14 quirk and says: remove `DNS:localhost` when `.bun-version` moves past 1.3. Every assertion of the four STARTTLS tests stays as it is; they are the proof that no password goes out before TLS. Rejected: give the loopback guard path a `servername` (product change in the host guard; F084 froze its policy). Known product effect (F7, cold review M4): a STARTTLS mailbox on a public IP-literal host fails the certificate check on the image Bun (`host-guard.ts:51` returns no `servername` for an IP literal). It fails closed: no password goes out. The SAN change hides it only in the test, so the coordinator opens the follow-up ticket of Q1 after the stage 1 land (How to run, item 5). This case is decided here; the D12 row "Bun 1.3.14 behaviour that also reaches product code" is for causes found later.
 - **D10 One wait helper.** `apps/server/test/wait-for.ts` exports `waitFor(condition: () => boolean, what: string, opts?: { timeoutMs?: number; everyMs?: number }): Promise<void>`; defaults 5000 and 25 (D1); it throws `Error(\`waitFor: ${what} not true after ${timeoutMs} ms\`)`. New and changed tests use it. The local helper in `telegram-logs.test.ts` stays (no mass edit).
 - **D11 Scheduler tests** as probed (F10): a gate promise instead of a sleep inside the job; the "skipped" debug line as the overlap signal; `runs >= 2` for the throwing job; the error line for the label test; a second, running "witness" scheduler with two ticks as proof that time passed for `stop()`. No change in `scheduler.ts`.
 - **D12 Integration on the pinned Bun (stage 2 step 3).** The worker runs `bun run test:int:ci` and reads the first CI run after stage 1. For each failing test it finds the cause and acts by this table:
@@ -90,10 +90,11 @@ D1–D4: the owner's, above. The added decisions:
   | Test code or a test fake (as F5, F6), or a fixed sleep | Fix the test or the fake in this stage (D1, D10). |
   | Bun 1.3.14 behaviour that also reaches product code on the image | Stop. Report the test, the cause, the evidence. No product change. The coordinator applies D3 (quarantine with a ticket). |
   | A real product bug | Stop and report, as above. |
+  | Fails in CI but passes locally with `test:int:ci` (CI has its own GreenMail with auth off and its own DB roles, `ci.yml:30-57`) | Diagnose from the CI log under the same rows. Cannot reproduce it → stop and report, as below. |
   | Cannot find the cause in 30 minutes | Stop and report, as above. |
 
   At most three distinct causes are fixed in stage 2; more → stop and report the list, and the coordinator adds a stage 2b with the same rules.
-- **D13 The quarantine rule (D3 made exact).** Text for `docs/code-patterns.md` and the styleguide is in stage 3. Who: the coordinator watches CI after each land. "Without a code change" = the test file and the code it tests did not change between the two failing runs. The coordinator creates the ticket (`limen ticket new "<test> passes on the pinned Bun" --lane planned`) and adds `test.skip(…)` with the comment `// Quarantined <date>: fails in CI without a code change. Fix: spec/features/planned/FNNN-slug/` in one commit. No CI retry, no re-run as the fix, no longer timeout as the fix.
+- **D13 The quarantine rule (D3 made exact).** Text for `docs/code-patterns.md` and the styleguide is in stage 3. Who: the coordinator watches CI after each land (a standing line in `spec/build.md` § TRACK from the stage 3 land on; cold review M3). "Without a code change" = the test file and the code it tests did not change between the two failing runs. The coordinator creates the ticket (`limen ticket new "<test> passes on the pinned Bun" --lane planned`) and commits `test.skip(…)` on `master` with the comment `// Quarantined <date>: fails in CI without a code change. Fix: spec/features/planned/FNNN-slug/` in one commit. A worker never adds the skip; when a job reported the test, the coordinator continues that job after the quarantine commit. No CI retry, no re-run as the fix, no longer timeout as the fix.
 - **D14 Numbers and the end.** Stage 3 reads the CI times of the green `master` runs (`gh run view <id> --json jobs`) and writes them into this file's Log and its final message, with the TRACK line text. Workers do not edit `spec/build.md`: TRACK is coordinator prose. The coordinator adds the line at the stage 3 land. The ticket stays open (`--keep-open`) until three runs in a row on `master` are green with `attempt` 1; then `limen ticket done F093`.
 
 Edge cases:
@@ -113,11 +114,11 @@ Edge cases:
 5. `docs/known-alerts.md`: the AgentMail entry has the true cause and `Status: fixed (<commit>)`; a STARTTLS entry exists with `fixed (<commit>)`.
 6. `docs/code-patterns.md` § Tests, `.agents/limen/styleguide.md` and `CLAUDE.md` state the quarantine rule (D13), the condition-wait rule (D1, D10) and the pinned checks (D6).
 7. `spec/build.md` § TRACK names the CI run time (coordinator, D14).
-8. `gh run list --branch master --workflow CI --limit 3 --json conclusion,attempt,status` shows three `completed` runs with `success` and `attempt` 1.
+8. `gh run list --branch master --workflow CI --status completed --limit 3 --json conclusion,attempt` shows three runs with `success` and `attempt` 1 (a run in progress is not listed and does not break the row).
 
 ## Rules for every stage
 
-- **No product code change.** Allowed: `*.test.ts`, test fakes (`modules/testmail/agentmail/fake.ts`), `apps/server/test/`, `scripts/`, `.github/workflows/ci.yml`, `.bun-version`, `package.json` `scripts`, docs, notes, this ticket folder. A fix that needs a change in other product code is a stop-and-report, not a choice.
+- **No product code change.** Allowed: `*.test.ts`, the test-only fakes and helpers (`apps/server/src/modules/testmail/agentmail/fake.ts`, `apps/server/test/**`, `tools/fake-telegram/**`), `scripts/`, `.github/workflows/ci.yml`, `.bun-version`, `package.json` `scripts`, docs, notes, this ticket folder. A fix that needs a change in any other file under `apps/` or `packages/` (also a fake adapter such as `modules/mail/fake/`) is a stop-and-report, not a choice.
 - **No change to `bun.lock`, no new dependency.** No change to `deploy/Dockerfile`.
 - **Never** add `test.skip`, `test.todo`, `test.if`, a CI retry or a longer test timeout as a fix. Only the coordinator quarantines (D13), and then with a ticket path.
 - **No fixed sleep over 100 ms** in a test you change; wait for a condition (`waitFor`, D10) or release the fake.
@@ -183,15 +184,25 @@ No stage is `[risky]`.
 
 3. When the job finishes: read its final message and `/tmp/f093-sNN/*.log`. For a stage in "Review", spawn the review job (`limen spawn --review --detached --branch <job branch> --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thinking high --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --label "review sNN · F093" "Review F093 stage NN against spec/features/active/F093-ci-green/ (ticket.md, plan.md, stages/stage-NN-<slug>.md)."`) and wait. A finding → `limen continue <job-id> "<fix>"`, then review again (at most 2 rounds, then the owner decides).
 4. Land: `limen land <job-id> --yes --keep-open`. Drop the job DB from the main checkout: `bun run db:worktree <YYYY-MM-DD>-<hash> --drop`.
-5. After the stage 1 land: wait for the CI run of that push. Check NV2 (the `setup-bun` step log shows 1.3.14) and that `test:unit` is green. Note its `test:int` result for stage 2 (the worker reads it too).
-6. Stage 2 stop-and-report (D12): create the quarantine ticket(s) by D13, then `limen continue <job-id> "Quarantine <test> with spec/features/planned/FNNN-slug/"`; the review runs.
-7. After the stage 3 land: add the TRACK line from its final message to `spec/build.md`. Close the ticket when Done-when 8 holds: `limen ticket done F093`. While it is open, a red run on `master` → read the failing test; a stage-1-to-3 cause → `limen continue` the last job; another cause → D13.
+5. After the stage 1 land: open the follow-up ticket of questions.md Q1: `limen ticket new "The server image, CI and local checks run one current Bun (1.4.x)" --lane planned`; its plan input names F7 (STARTTLS to an IP-literal host fails on 1.3.14), NV3, and the removal of `DNS:localhost` from the STARTTLS test certificate. Then wait for the CI run of the land push. Check NV2 (the `setup-bun` step log shows 1.3.14) and that `test:unit` is green. Red `test:unit` with a stage 1 cause → `limen continue <stage-1 job> "<failing test and log lines>"`, review, land again; another cause → D13. Note the `test:int` result for stage 2 (the worker reads it too).
+6. Stage 2 stop-and-report (D12): create the quarantine ticket(s) and commit the `test.skip` on `master` by D13 (the coordinator, not the worker). Then `limen continue <job-id> "<test> is quarantined on master in <commit> (spec/features/planned/FNNN-slug/); merge master and finish the Proof"`; the review runs.
+7. After the stage 3 land: add the TRACK line from its final message to `spec/build.md`; it holds the standing check "after each land, `gh run list --branch master --workflow CI --limit 3`; a red run → `docs/code-patterns.md` § Tests". Close the ticket when Done-when 8 holds: `limen ticket done F093`. While it is open, a red run on `master` → read the failing test; a stage-1-to-3 cause → `limen continue` the last job; another cause → D13.
 8. Workers often break the one-`&&` proof form. Accept a check when its saved log shows the pass.
 
 ## Cold review
 
-Not run yet.
+Review job `2026-11-13-f093-plan-review-c9c52ad0` (Opus 5.5, high; candidate `7d240f0`). Its message is filed whole in [`plan-review-1.md`](plan-review-1.md). Result: PASS, blocker 0, major 4, minor 5, question 2. What changed:
+
+1. M1 (stage 1 step 2 test 2 failed as written: the second fake had no inbox, so it answered 404): the test now calls `ensureInbox` on `other` first. The reviewer's probe of that form passed on 1.3.14.
+2. M2 (CI-only `test:int` failure had no rule): new D12 row; stage 2 step 3 points to it.
+3. M3 (nobody watches CI after the close): the TRACK line of stage 3 step 2 now holds the standing check; D13 and How to run item 7 say so. The `spec/build.md` edit stays with the coordinator.
+4. M4 (F7 hides a product effect; follow-up ticket not opened): D9 records the effect and that it fails closed; How to run item 5 opens the Q1 ticket after the stage 1 land; the stage 1 note names it. The D12 row is for causes found later, so the two rules no longer conflict.
+5. m1: only the coordinator commits a `test.skip` (D13, How to run item 6). m2: the allowed list names the test-only fakes; any other file under `apps/` or `packages/` is stop-and-report. m3: Done when 8 uses `--status completed`. m4: the ticket names the AgentMail entry and a new STARTTLS entry. m5: stage 3 test 2 greps `^- Quarantine:`.
+6. q1: How to run item 5 says what to do when CI is red after the stage 1 land. q2: D5 names its source (`deploy/compose.yaml:23-25`).
+
+Not changed: the NV1 and NV2 items stay open; stages 1 and 2 check them.
 
 ## Log
 
 - 2026-11-13: Planned by a planner job (Opus 5.5). Collect, CI history, probes on Bun 1.3.14 and 1.4.4 (F1–F13); D5–D14; three stage files.
+- 2026-11-13: Cold review (Opus 5.5): PASS, 4 major, 5 minor, 2 questions; all handled (§ Cold review).
