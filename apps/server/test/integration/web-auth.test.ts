@@ -276,7 +276,7 @@ describe("web auth", () => {
       });
       expect(response.user.email).toBe(email);
       const lines = errorSpy.mock.calls.map((call) => call.join(" "));
-      expect(lines.some((line) => line.includes("web: onEvent login failed: Error"))).toBe(true);
+      expect(lines.some((line) => line.includes("auth_event_failed kind=login error=Error"))).toBe(true);
       expect(lines.some((line) => line.includes("boom"))).toBe(false);
     } finally {
       errorSpy.mockRestore();

@@ -1,3 +1,4 @@
+import { errorFields } from "./errors";
 import { createLog } from "./log";
 
 const log = createLog("heartbeat");
@@ -22,13 +23,14 @@ export function createHeartbeat(deps: HeartbeatDeps): { tick(): Promise<void> } 
       if (url === undefined) return;
       try {
         if (!(await deps.checkDb())) {
-          log.warn("no ping: the DB does not answer");
+          log.warn("heartbeat_db_down");
           return;
         }
         const response = await doFetch(url, { signal: AbortSignal.timeout(timeoutMs) });
-        if (!response.ok) log.warn(`ping failed: status ${response.status}`);
+        if (!response.ok) log.warn("heartbeat_ping_failed", { status: response.status });
       } catch (error) {
-        log.warn("ping failed:", error instanceof Error ? error.message : String(error));
+        // A fetch error message can hold the secret URL: log the name and code only.
+        log.warn("heartbeat_ping_failed", { ...errorFields(error) });
       }
     },
   };

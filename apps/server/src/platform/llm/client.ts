@@ -177,13 +177,16 @@ export function createLlmClient(opts: {
           tokensOut: result.tokensOut,
           latencyMs: now() - started,
         };
-        log.debug(
-          `ok role=${call.role} model=${model} latencyMs=${usage.latencyMs} tokensIn=${usage.tokensIn} tokensOut=${usage.tokensOut}`
-        );
+        log.debug("llm_call_ok", {
+          model,
+          ms: usage.latencyMs,
+          tokens_in: usage.tokensIn,
+          tokens_out: usage.tokensOut,
+        });
         return { data, usage };
       } catch (error) {
         const llmError = isLlmError(error) ? error : providerOf(row.provider).classifyError(error, model);
-        log.debug(`failed role=${call.role} model=${model} code=${llmError.code}`);
+        log.debug("llm_call_failed", { model, code: llmError.code });
         throw llmError;
       }
     },

@@ -281,9 +281,11 @@ describe("GET / by onboarding state", () => {
       const res = await root(app, "owner");
       expect(res.status).toBe(302);
       expect(res.headers.get("location")).toBe("/onboarding");
-      const lines = errorSpy.mock.calls.map((call) => call.join(" ")).filter((line) => line.includes("home path"));
+      const lines = errorSpy.mock.calls
+        .map((call) => call.join(" "))
+        .filter((line) => line.includes("home_path_failed"));
       expect(lines).toHaveLength(1);
-      expect(lines[0]).toContain("web: home path failed: ");
+      expect(lines[0]).toContain("error=");
     } finally {
       errorSpy.mockRestore();
     }

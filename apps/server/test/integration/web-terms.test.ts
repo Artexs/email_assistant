@@ -222,7 +222,9 @@ describe("terms on the password reset", () => {
     const token = await resetToken(failing, email);
     const answer = await post(failing, "reset-password", resetBody(PASSWORD, token));
     expect(answer.status).toBe(200);
-    const lines = errorSpy.mock.calls.map((call) => call.join(" ")).filter((line) => line.includes("terms record"));
+    const lines = errorSpy.mock.calls
+      .map((call) => call.join(" "))
+      .filter((line) => line.includes("terms_record_failed"));
     expect(lines).toHaveLength(1);
     expect(lines[0]).toContain(userId);
     expect(lines[0]).not.toContain(email);

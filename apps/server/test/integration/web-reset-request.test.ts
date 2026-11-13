@@ -216,7 +216,7 @@ describe("reset request", () => {
       const mails = known.sent.map((mail) => mail.url);
       expect(mails.length).toBe(3);
       const tokens = mails.map((url) => new URL(url).pathname.split("/").pop() ?? "");
-      expect(lines.some((line) => line.includes("over the address limit"))).toBe(true);
+      expect(lines.some((line) => line.includes("reset_request_limited"))).toBe(true);
       for (const line of lines) {
         expect(line).not.toContain(email);
         expect(line).not.toContain("reset-password/");

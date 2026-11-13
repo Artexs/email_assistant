@@ -145,7 +145,7 @@ describe("page gate", () => {
       const root = await app.request("/", { headers: GOOD });
       expect(root.status).toBe(302);
       expect(root.headers.get("location")).toBe("/onboarding");
-      expect(warnSpy.mock.calls.flat().join(" ")).toContain("web: home path failed: ");
+      expect(warnSpy.mock.calls.flat().join(" ")).toContain("home_path_failed");
     } finally {
       warnSpy.mockRestore();
     }
@@ -345,7 +345,9 @@ describe("errors", () => {
       expect(await res.json()).toEqual({ error: "internal" });
       const lines = errorSpy.mock.calls.map((call) => call.join(" "));
       expect(lines.some((line) => line.includes("Error"))).toBe(true);
-      expect(lines.some((line) => line.includes("GET /api/boom: "))).toBe(true);
+      expect(
+        lines.some((line) => line.includes("http_error") && line.includes("method=GET route=/api/boom error=Error"))
+      ).toBe(true);
       expect(lines.some((line) => line.includes("secret text"))).toBe(false);
     } finally {
       errorSpy.mockRestore();
@@ -414,7 +416,7 @@ describe("dist missing", () => {
       expect((await app.request("/mailboxes")).status).toBe(503);
       expect((await app.request("/api/me")).status).toBe(401);
       const lines = errorSpy.mock.calls.map((call) => call.join(" "));
-      expect(lines.some((line) => line.includes("web: dist folder missing, pages are off"))).toBe(true);
+      expect(lines.some((line) => line.includes("web_dist_missing"))).toBe(true);
     } finally {
       errorSpy.mockRestore();
     }
@@ -443,10 +445,10 @@ describe("http logs", () => {
         expect(line).not.toContain(token);
         expect(line).not.toContain(cookie);
       }
-      expect(lines.some((line) => line.includes("GET /api/auth/* 299"))).toBe(true);
-      expect(lines.some((line) => line.includes("GET /* 200"))).toBe(true);
-      expect(lines.some((line) => line.includes("GET /* 302"))).toBe(true);
-      expect(lines.some((line) => line.includes("GET /api/boom 500"))).toBe(true);
+      expect(lines.some((line) => line.includes("method=GET route=/api/auth/* status=299"))).toBe(true);
+      expect(lines.some((line) => line.includes("method=GET route=/* status=200"))).toBe(true);
+      expect(lines.some((line) => line.includes("method=GET route=/* status=302"))).toBe(true);
+      expect(lines.some((line) => line.includes("method=GET route=/api/boom status=500"))).toBe(true);
     } finally {
       logSpy.mockRestore();
       errorSpy.mockRestore();
