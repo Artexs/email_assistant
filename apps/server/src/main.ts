@@ -8,7 +8,7 @@ import { createLlmPause, createReturnedJob, createTriageJob, type TriageScope } 
 import {
   ConfigError,
   featuresOff,
-  llmSettings,
+  llmRoleTable,
   loadConfig,
   mailAllowLocal,
   operatorChatId,
@@ -136,19 +136,13 @@ log.info(
 
 // The run of the triage worker that is going now. Shutdown waits for it.
 let triageRun: Promise<void> = Promise.resolve();
-const settings = llmSettings(config);
-const provider = llmProviders[settings.provider];
+const llmTable = llmRoleTable(config);
+const classifierRow = llmTable.roles.classifier;
+const provider = llmProviders[classifierRow.provider];
 const scope = triageScope(config, provider.label);
 if (scope !== null) {
-  log.info(`llm provider=${settings.provider} classifier=${settings.classifierModel}`);
-  const llm = createLlmClient({
-    provider: settings.provider,
-    apiKey: settings.apiKey ?? "",
-    classifierModel: settings.classifierModel,
-    timeoutMs: settings.timeoutMs,
-    rpm: settings.rpm,
-    reasoningEffort: settings.reasoningEffort,
-  });
+  log.info(`llm provider=${classifierRow.provider} classifier=${classifierRow.model}`);
+  const llm = createLlmClient({ table: llmTable });
   const triage = createTriageJob({
     db,
     llm,
@@ -227,7 +221,7 @@ if (config.TELEGRAM_BOT_TOKEN === undefined) {
     llmDailyCap: config.LLM_DAILY_CAP,
     triageScope: config.TRIAGE_LLM_SCOPE,
     actionsScope: scopeOfActions,
-    llm: { provider: settings.provider, classifierModel: settings.classifierModel },
+    llm: { provider: classifierRow.provider, classifierModel: classifierRow.model },
     hooks,
     uidplus,
     sendScope: scopeOfSends,

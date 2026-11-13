@@ -15,9 +15,9 @@ import {
   renderEvalReport,
   runEval,
 } from "../modules/triage";
-import { llmSettings, loadConfig, openAiReasoningEfforts } from "../platform/config";
+import { ConfigError, llmRoleTable, loadConfig, openAiReasoningEfforts } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
-import { createLlmClient, LlmConfigError, llmProviderIds } from "../platform/llm";
+import { createLlmClient, LlmConfigError, llmProviderIds, type LlmRoleTable } from "../platform/llm";
 import { createLog } from "../platform/log";
 
 const log = createLog("eval");
@@ -150,26 +150,30 @@ async function main(): Promise<number> {
   if (options.real) return runReal(options, options["org-id"] as string, options["mailbox-id"] as string);
 
   const config = loadConfig();
-  const settings = llmSettings(config, options.provider ?? config.LLM_PROVIDER);
-  const effort = options["reasoning-effort"] ?? settings.reasoningEffort;
-  if (options["reasoning-effort"] !== undefined && settings.reasoningEffort === null) {
+  let table: LlmRoleTable;
+  try {
+    table = llmRoleTable(config, {
+      classifier: {
+        provider: options.provider,
+        model: options.model,
+        reasoningEffort: options["reasoning-effort"],
+      },
+    });
+  } catch (error) {
+    if (!(error instanceof ConfigError)) throw error;
     log.error(usage);
     return 1;
   }
-  if (settings.apiKey === undefined) {
-    log.error(`${settings.apiKeyName} is missing`);
+  const row = table.roles.classifier;
+  const keys = table.providers[row.provider];
+  if (keys.apiKey === undefined) {
+    log.error(`${keys.apiKeyName} is missing`);
     return 1;
   }
-  const model = options.model ?? settings.classifierModel;
-  log.info(`provider=${settings.provider} model=${model} effort=${effort ?? "-"}`);
-  const llm = createLlmClient({
-    provider: settings.provider,
-    apiKey: settings.apiKey,
-    classifierModel: settings.classifierModel,
-    timeoutMs: settings.timeoutMs,
-    rpm: settings.rpm,
-    reasoningEffort: effort,
-  });
+  const model = row.model;
+  const effort = row.reasoningEffort;
+  log.info(`provider=${row.provider} model=${model} effort=${effort ?? "-"}`);
+  const llm = createLlmClient({ table });
 
   const selected = selectCases(
     [
@@ -210,7 +214,7 @@ async function main(): Promise<number> {
       {
         cases,
         model,
-        provider: settings.provider,
+        provider: row.provider,
         reasoningEffort: effort,
         bar: options.bar,
         minKept: options["min-kept"],

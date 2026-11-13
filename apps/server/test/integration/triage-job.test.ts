@@ -64,15 +64,22 @@ function fakeLlm(): FakeLlm {
   const prompts: string[] = [];
   const allowed: string[][] = [];
   return {
-    classifierModel: "fake-model",
+    modelOf: () => "fake-model",
     prompts,
     allowed,
-    async classify(req) {
+    async generate(req) {
       prompts.push(req.prompt);
       allowed.push(probeCategories.filter((category) => req.schema.safeParse({ ...infoAnswer, category }).success));
       return {
         data: req.schema.parse(infoAnswer),
-        usage: { model: "fake-model", tokensIn: 100, tokensOut: 20, latencyMs: 300 },
+        usage: {
+          role: req.role,
+          promptVersion: req.promptVersion,
+          model: "fake-model",
+          tokensIn: 100,
+          tokensOut: 20,
+          latencyMs: 300,
+        },
       };
     },
   } as FakeLlm;
@@ -136,11 +143,18 @@ describe("createTriageJob", () => {
       const inboxMail = await insertTestEmail(trx, ctx, mailboxId, { received_at: minutesFromNow(-10) });
 
       const spamLlm = {
-        classifierModel: "fake-model",
-        async classify(req) {
+        modelOf: () => "fake-model",
+        async generate(req) {
           return {
             data: req.schema.parse({ ...infoAnswer, category: "spam", summary: null }),
-            usage: { model: "fake-model", tokensIn: 100, tokensOut: 20, latencyMs: 300 },
+            usage: {
+              role: req.role,
+              promptVersion: req.promptVersion,
+              model: "fake-model",
+              tokensIn: 100,
+              tokensOut: 20,
+              latencyMs: 300,
+            },
           };
         },
       } as LlmClient;
@@ -304,14 +318,14 @@ describe("createTriageJob: pause and errors", () => {
   function flakyLlm() {
     const llm = fakeLlm();
     const state: { failWith: Error | null } = { failWith: null };
-    const inner = llm.classify.bind(llm);
-    llm.classify = (async (req) => {
+    const inner = llm.generate.bind(llm);
+    llm.generate = (async (req) => {
       if (state.failWith !== null) {
         llm.prompts.push(req.prompt);
         throw state.failWith;
       }
       return inner(req);
-    }) as LlmClient["classify"];
+    }) as LlmClient["generate"];
     return { llm, state };
   }
 
@@ -952,12 +966,12 @@ describe("suspended organizations", () => {
       await insertTestEmail(trx, first.ctx, secondId);
 
       const llm = fakeLlm();
-      const classify = llm.classify.bind(llm);
-      llm.classify = (async (req) => {
+      const classify = llm.generate.bind(llm);
+      llm.generate = (async (req) => {
         const result = await classify(req);
         await suspendOrg(trx, first.orgId);
         return result;
-      }) as LlmClient["classify"];
+      }) as LlmClient["generate"];
       await job(trx, llm, { kind: "all" }).run();
 
       expect(llm.prompts).toHaveLength(1);

@@ -39,7 +39,9 @@ export async function classifyEmail(
   }
 ): Promise<{ analysis: TriageAnalysis; usage: LlmUsage; promptVersion: string }> {
   const nonce = randomBytes(16).toString("hex");
-  const { data, usage } = await llm.classify({
+  const { data, usage } = await llm.generate({
+    role: "classifier",
+    promptVersion: PROMPT_VERSION,
     schema: buildTriageAnalysisSchema(
       input.allowed,
       input.delegates.map((d) => d.id)
@@ -48,7 +50,7 @@ export async function classifyEmail(
     prompt: buildUserPrompt(input.email, input.sender, input.delegates, nonce),
     model: input.model,
   });
-  if (!input.allowed.includes(data.category)) throw new LlmOutputError(input.model ?? llm.classifierModel);
+  if (!input.allowed.includes(data.category)) throw new LlmOutputError(input.model ?? llm.modelOf("classifier"));
 
   const summary = data.category === "info" && data.summary !== null ? markUntrustedText(data.summary) : null;
   const delegateId = data.fields.delegate_id;

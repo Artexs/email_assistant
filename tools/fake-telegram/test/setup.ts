@@ -122,11 +122,18 @@ const urgentAnswer = {
 // A stub classifier that answers category "urgent".
 export function urgentLlm(): LlmClient {
   return {
-    classifierModel: "fake-model",
-    async classify(req) {
+    modelOf: () => "fake-model",
+    async generate(req) {
       return {
         data: req.schema.parse(urgentAnswer),
-        usage: { model: "fake-model", tokensIn: 100, tokensOut: 20, latencyMs: 300 },
+        usage: {
+          role: req.role,
+          promptVersion: req.promptVersion,
+          model: "fake-model",
+          tokensIn: 100,
+          tokensOut: 20,
+          latencyMs: 300,
+        },
       };
     },
   } as LlmClient;

@@ -4,12 +4,19 @@ import { z } from "zod";
 import { HardError, SoftError } from "../errors";
 import { setLogLevel } from "../log";
 
-import { createLlmClient, createRateLimiter, type GenerateFn, type GenerateResult } from "./client";
+import { createRateLimiter, type GenerateFn, type GenerateResult } from "./client";
 import { LlmBlockedError, llmErrorCode, LlmOutputError, LlmSoftError } from "./errors";
+import { createFixedLlmClient } from "./testing";
 
 const MODEL = "test-model";
 const schema = z.object({ category: z.string(), confidence: z.number() });
-const request = { schema, system: "system text", prompt: "prompt MARKER-PROMPT" };
+const request = {
+  role: "classifier",
+  promptVersion: "classifier-v2",
+  schema,
+  system: "system text",
+  prompt: "prompt MARKER-PROMPT",
+} as const;
 
 function fakeClock(): { now: () => number; sleep: (ms: number) => Promise<void>; sleeps: number[] } {
   let t = 0;
@@ -26,13 +33,10 @@ function fakeClock(): { now: () => number; sleep: (ms: number) => Promise<void>;
 
 function client(generate: GenerateFn, extra: { timeoutMs?: number; rpm?: number } = {}) {
   const clock = fakeClock();
-  return createLlmClient({
-    provider: "gemini",
-    apiKey: "MARKER-KEY",
-    classifierModel: MODEL,
+  return createFixedLlmClient(generate, {
+    model: MODEL,
     timeoutMs: extra.timeoutMs ?? 1000,
     rpm: extra.rpm ?? 60_000,
-    generate,
     now: clock.now,
     sleep: clock.sleep,
   });
@@ -69,13 +73,20 @@ const keyBody = JSON.stringify({
   },
 });
 
-describe("classify output", () => {
+describe("generate output", () => {
   test("good JSON gives data and usage; thinking tokens count as output", async () => {
     const result = await client(
       answer({ text: '{"category":"spam","confidence":0.9}', tokensIn: 100, tokensOut: 25 })
-    ).classify(request);
+    ).generate(request);
     expect(result.data).toEqual({ category: "spam", confidence: 0.9 });
-    expect(result.usage).toEqual({ model: MODEL, tokensIn: 100, tokensOut: 25, latencyMs: 0 });
+    expect(result.usage).toEqual({
+      role: "classifier",
+      promptVersion: "classifier-v2",
+      model: MODEL,
+      tokensIn: 100,
+      tokensOut: 25,
+      latencyMs: 0,
+    });
   });
 
   test("sends the JSON schema from Zod and uses the request model", async () => {
@@ -84,39 +95,39 @@ describe("classify output", () => {
       seen = { model: req.model, jsonSchema: req.jsonSchema };
       return { text: '{"category":"a","confidence":1}', tokensIn: 0, tokensOut: 0, blocked: false };
     };
-    const result = await client(generate).classify({ ...request, model: "other-model" });
+    const result = await client(generate).generate({ ...request, model: "other-model" });
     expect(seen?.model).toBe("other-model");
     expect(seen?.jsonSchema).toEqual(z.toJSONSchema(schema));
     expect(result.usage.model).toBe("other-model");
   });
 
   test("a Zod failure is bad_output", async () => {
-    const error = await caught(client(answer({ text: '{"category":1}' })).classify(request));
+    const error = await caught(client(answer({ text: '{"category":1}' })).generate(request));
     expect(error).toBeInstanceOf(LlmOutputError);
     expect(llmErrorCode(error)).toBe("bad_output");
   });
 
   test("text that is not JSON is bad_output", async () => {
-    const error = await caught(client(answer({ text: "not json" })).classify(request));
+    const error = await caught(client(answer({ text: "not json" })).generate(request));
     expect(llmErrorCode(error)).toBe("bad_output");
   });
 
   test("tokensOut passes through unchanged", async () => {
     const result = await client(
       answer({ text: '{"category":"a","confidence":1}', tokensIn: 3, tokensOut: 11 })
-    ).classify(request);
+    ).generate(request);
     expect(result.usage.tokensIn).toBe(3);
     expect(result.usage.tokensOut).toBe(11);
   });
 
   test("empty text that is not blocked is bad_output", async () => {
-    const error = await caught(client(answer({ text: undefined, blocked: false })).classify(request));
+    const error = await caught(client(answer({ text: undefined, blocked: false })).generate(request));
     expect(error).toBeInstanceOf(LlmOutputError);
     expect(llmErrorCode(error)).toBe("bad_output");
   });
 
   test("blocked with no text is llm_blocked (a hard error)", async () => {
-    const error = await caught(client(answer({ text: undefined, blocked: true })).classify(request));
+    const error = await caught(client(answer({ text: undefined, blocked: true })).generate(request));
     expect(error).toBeInstanceOf(LlmBlockedError);
     expect(error).toBeInstanceOf(HardError);
     expect(error).not.toBeInstanceOf(SoftError);
@@ -124,14 +135,14 @@ describe("classify output", () => {
   });
 
   test("blocked with empty text is llm_blocked", async () => {
-    const error = await caught(client(answer({ text: "", blocked: true })).classify(request));
+    const error = await caught(client(answer({ text: "", blocked: true })).generate(request));
     expect(llmErrorCode(error)).toBe("llm_blocked");
   });
 });
 
-describe("classify errors", () => {
+describe("generate errors", () => {
   test.each([429, 503])("status %d is a soft error", async (status) => {
-    const error = await caught(client(failWith(withStatus(status))).classify(request));
+    const error = await caught(client(failWith(withStatus(status))).generate(request));
     expect(error).toBeInstanceOf(LlmSoftError);
     expect(error).toBeInstanceOf(SoftError);
     expect(llmErrorCode(error)).toBe(`http_${status}`);
@@ -141,7 +152,7 @@ describe("classify errors", () => {
   test("a generate that never ends gives timeout within 1 s", async () => {
     const started = Date.now();
     const never: GenerateFn = () => new Promise(() => undefined);
-    const error = await caught(client(never, { timeoutMs: 50 }).classify(request));
+    const error = await caught(client(never, { timeoutMs: 50 }).generate(request));
     expect(error).toBeInstanceOf(LlmSoftError);
     expect(llmErrorCode(error)).toBe("timeout");
     expect(Date.now() - started).toBeLessThan(1000);
@@ -163,7 +174,7 @@ describe("classify errors", () => {
       answer({ text: undefined, blocked: true }),
     ];
     for (const generate of generators) {
-      const error = await caught(client(generate).classify(request));
+      const error = await caught(client(generate).generate(request));
       const message = String((error as Error).message);
       expect(message).toMatch(/^LLM error \S+ \(test-model\)$/);
       for (const marker of ["MARKER-PROMPT", "MARKER-KEY", "MARKER-BODY"]) {
@@ -178,21 +189,15 @@ describe("rate limit and model", () => {
   test("two calls with rpm 60 start 1000 ms apart", async () => {
     const clock = fakeClock();
     const starts: number[] = [];
-    const llm = createLlmClient({
-      provider: "gemini",
-      apiKey: "k",
-      classifierModel: MODEL,
-      timeoutMs: 1000,
-      rpm: 60,
-      generate: async () => {
+    const llm = createFixedLlmClient(
+      async () => {
         starts.push(clock.now());
         return { text: '{"category":"a","confidence":1}', tokensIn: 0, tokensOut: 0, blocked: false };
       },
-      now: clock.now,
-      sleep: clock.sleep,
-    });
-    await llm.classify(request);
-    await llm.classify(request);
+      { model: MODEL, rpm: 60, now: clock.now, sleep: clock.sleep }
+    );
+    await llm.generate(request);
+    await llm.generate(request);
     expect(starts).toEqual([0, 1000]);
     expect(clock.sleeps).toEqual([1000]);
   });
@@ -210,8 +215,8 @@ describe("rate limit and model", () => {
     expect(sleeps).toEqual([2000, 4000]);
   });
 
-  test("classifierModel equals the option", () => {
-    expect(client(answer({ text: "{}" })).classifierModel).toBe(MODEL);
+  test("modelOf gives the row's model", () => {
+    expect(client(answer({ text: "{}" })).modelOf("classifier")).toBe(MODEL);
   });
 });
 
@@ -232,7 +237,7 @@ describe("logs", () => {
   test("a 503 writes one debug line with the code and no error line", async () => {
     setLogLevel("debug");
     try {
-      await caught(client(failWith(withStatus(503, "MARKER-BODY"))).classify(request));
+      await caught(client(failWith(withStatus(503, "MARKER-BODY"))).generate(request));
       expect(out).toHaveBeenCalledTimes(1);
       const line = out.mock.calls[0]?.map(String).join(" ") ?? "";
       expect(line.startsWith("[llm]")).toBe(true);
@@ -248,7 +253,7 @@ describe("logs", () => {
   test("a good call writes one debug line with model, latency and tokens", async () => {
     setLogLevel("debug");
     try {
-      await client(answer({ text: '{"category":"a","confidence":1}', tokensIn: 7, tokensOut: 3 })).classify(request);
+      await client(answer({ text: '{"category":"a","confidence":1}', tokensIn: 7, tokensOut: 3 })).generate(request);
       expect(out).toHaveBeenCalledTimes(1);
       const line = out.mock.calls[0]?.map(String).join(" ") ?? "";
       expect(line).toContain(MODEL);

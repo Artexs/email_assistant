@@ -504,7 +504,7 @@ export async function triageOne(
         reasonCode: llmErrorCode(error),
         data: {
           mailbox_id: mailbox.id,
-          model: deps.llm.classifierModel,
+          model: deps.llm.modelOf("classifier"),
           prompt_version: PROMPT_VERSION,
           tokens_in: null,
           tokens_out: null,

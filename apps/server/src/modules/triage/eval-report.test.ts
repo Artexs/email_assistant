@@ -9,10 +9,10 @@ import {
   ruleSummary,
   thresholdSweep,
 } from "@ea/core";
-import type { EvalCase, Prediction } from "@ea/core";
+import type { EvalCase, LlmRole, Prediction } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
-import type { LlmClient } from "../../platform/llm";
+import type { LlmCall, LlmClient, LlmUsage } from "../../platform/llm";
 
 import { type CaseResult, type CasesEvalReport, type RealEvalReport, runEval } from "./eval";
 import { evalExitCode, renderEvalReport } from "./eval-report";
@@ -252,10 +252,17 @@ describe("renderEvalReport", () => {
   });
 
   test("no case body in the output", async () => {
-    const usage = { model: "gemini-3.5-flash-lite", tokensIn: 10, tokensOut: 5, latencyMs: 20 };
+    const usage: LlmUsage = {
+      role: "classifier",
+      promptVersion: "classifier-v2",
+      model: "gemini-3.5-flash-lite",
+      tokensIn: 10,
+      tokensOut: 5,
+      latencyMs: 20,
+    };
     const llm: LlmClient = {
-      classifierModel: "gemini-3.5-flash-lite",
-      async classify<T>() {
+      modelOf: () => "gemini-3.5-flash-lite",
+      async generate<T, R extends LlmRole>(_req: LlmCall<T, R>) {
         const data = {
           category: "info",
           confidence: 0.9,

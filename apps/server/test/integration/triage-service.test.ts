@@ -77,7 +77,14 @@ function decision(overrides: Partial<TriageDecision> = {}): TriageDecision {
     vip: false,
     model: "m",
     promptVersion: "classifier-v1",
-    usage: { model: "m", tokensIn: 120, tokensOut: 30, latencyMs: 850 },
+    usage: {
+      role: "classifier",
+      promptVersion: "classifier-v1",
+      model: "m",
+      tokensIn: 120,
+      tokensOut: 30,
+      latencyMs: 850,
+    },
     auditReasonCode: "newsletter",
     delegation: null,
     ...overrides,
@@ -235,14 +242,21 @@ interface FakeLlm extends LlmClient {
 function fakeLlm(answer: (() => unknown) | Error): FakeLlm {
   const requests: { system: string; prompt: string }[] = [];
   return {
-    classifierModel: "fake-model",
+    modelOf: () => "fake-model",
     requests,
-    async classify(req) {
+    async generate(req) {
       requests.push({ system: req.system, prompt: req.prompt });
       if (answer instanceof Error) throw answer;
       return {
         data: req.schema.parse(answer()),
-        usage: { model: "fake-model", tokensIn: 100, tokensOut: 20, latencyMs: 300 },
+        usage: {
+          role: req.role,
+          promptVersion: req.promptVersion,
+          model: "fake-model",
+          tokensIn: 100,
+          tokensOut: 20,
+          latencyMs: 300,
+        },
       };
     },
   } as FakeLlm;
@@ -1062,13 +1076,20 @@ describe("triageOne: the delegation plan", () => {
     await withRollback(db, async (trx) => {
       const seen: { categories: string[]; delegates: boolean }[] = [];
       const recording: LlmClient = {
-        classifierModel: "fake-model",
-        async classify(req) {
+        modelOf: () => "fake-model",
+        async generate(req) {
           const shape = (req.schema as unknown as { shape: { category: { options: string[] } } }).shape;
           seen.push({ categories: shape.category.options, delegates: req.prompt.includes("Anna") });
           return {
             data: req.schema.parse(analysis()()),
-            usage: { model: "fake-model", tokensIn: 1, tokensOut: 1, latencyMs: 1 },
+            usage: {
+              role: req.role,
+              promptVersion: req.promptVersion,
+              model: "fake-model",
+              tokensIn: 1,
+              tokensOut: 1,
+              latencyMs: 1,
+            },
           };
         },
       } as LlmClient;

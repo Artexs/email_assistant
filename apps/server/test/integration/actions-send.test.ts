@@ -935,11 +935,18 @@ describe("applySend: crashes and the recovery of an applying send", () => {
 // approval service approves, the committer sends, the delegate's reply answers the delegation.
 function fakeLlm(answer: Record<string, unknown>): LlmClient {
   return {
-    classifierModel: "fake-model",
-    async classify(req: { schema: { parse(value: unknown): unknown } }) {
+    modelOf: () => "fake-model",
+    async generate(req: { role: string; promptVersion: string; schema: { parse(value: unknown): unknown } }) {
       return {
         data: req.schema.parse(answer),
-        usage: { model: "fake-model", tokensIn: 100, tokensOut: 20, latencyMs: 300 },
+        usage: {
+          role: req.role,
+          promptVersion: req.promptVersion,
+          model: "fake-model",
+          tokensIn: 100,
+          tokensOut: 20,
+          latencyMs: 300,
+        },
       };
     },
   } as unknown as LlmClient;
