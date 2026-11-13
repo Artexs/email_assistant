@@ -1,18 +1,68 @@
-import { changePasswordFormSchema, fieldErrors as toFieldErrors } from "@ea/core/web";
+import { changePasswordFormSchema, fieldErrors as toFieldErrors, sessionsSchema } from "@ea/core/web";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { t, type TextKey } from "../../i18n/en";
+import { api } from "../../lib/api";
 import { authClient } from "../../lib/auth-client";
 import { changePasswordError, signOutAllResult } from "../../lib/password-errors";
+import { useResource } from "../../lib/use-resource";
+import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { Skeleton } from "../ui/skeleton";
 import { Switch } from "../ui/switch";
 
 type Field = "current" | "password" | "repeat";
 type FieldErrors = Partial<Record<Field, TextKey>>;
+
+const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
+
+// L21: the member's own live sessions, with a mark on this device. No button ends one session (B3).
+function SessionsList() {
+  const { data, error, loading, reload } = useResource(() => api("/api/me/sessions", sessionsSchema));
+  return (
+    <section data-section="sessions" className="flex flex-col gap-3">
+      <h3 className="text-sm font-medium">{t("acct_sessions_title")}</h3>
+      {data === null && error !== null ? (
+        <div className="flex flex-col items-start gap-2">
+          <p role="alert" className="text-destructive text-sm">
+            {t("load_error_text")}
+          </p>
+          <Button type="button" variant="outline" size="sm" onClick={reload}>
+            {t("retry")}
+          </Button>
+        </div>
+      ) : data === null || loading ? (
+        <Skeleton className="h-12 w-full" />
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {data.sessions.map((session) => (
+            <li
+              key={session.id}
+              data-session={session.id}
+              className="flex flex-col gap-1 rounded-md border p-3 text-sm"
+            >
+              <span className="flex items-center gap-2 font-medium">
+                {t("device_on", {
+                  browser: t(`browser_${session.device.browser}`),
+                  os: t(`os_${session.device.os}`),
+                })}
+                {session.current ? <Badge data-badge="this-device">{t("acct_this_device")}</Badge> : null}
+              </span>
+              <span className="text-muted-foreground">{session.address ?? t("acct_unknown_address")}</span>
+              <span className="text-muted-foreground">
+                {t("acct_last_active", { date: dateFormat.format(new Date(session.lastUsedAt)) })}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
 
 export function AccountCard() {
   const [current, setCurrent] = useState("");
@@ -162,6 +212,9 @@ export function AccountCard() {
           )}
         </form>
         <div className="flex flex-col items-start gap-2 border-t pt-4">
+          <div className="w-full">
+            <SessionsList />
+          </div>
           <Button
             type="button"
             variant="outline"

@@ -13,11 +13,17 @@ describe("isAllowedAuthPath", () => {
     expect(isAllowedAuthPath("POST", "/request-password-reset", { resetRequest: false })).toBe(false);
     expect(isAllowedAuthPath("POST", "/request-password-reset", { resetRequest: true })).toBe(true);
     expect(isAllowedAuthPath("GET", "/request-password-reset", { resetRequest: true })).toBe(false);
-    expect(AUTH_ALLOWED_PATHS.size).toBe(8);
+    expect(AUTH_ALLOWED_PATHS.size).toBe(7);
   });
 
-  test("allows the eight paths with POST and GET", () => {
-    expect(AUTH_ALLOWED_PATHS.size).toBe(8);
+  test("refuses /list-sessions: it returns the session tokens (F6)", () => {
+    expect(AUTH_ALLOWED_PATHS.size).toBe(7);
+    expect(isAllowedAuthPath("GET", "/list-sessions")).toBe(false);
+    expect(isAllowedAuthPath("POST", "/list-sessions")).toBe(false);
+  });
+
+  test("allows the seven paths with POST and GET", () => {
+    expect(AUTH_ALLOWED_PATHS.size).toBe(7);
     for (const path of AUTH_ALLOWED_PATHS) {
       expect(isAllowedAuthPath("POST", path)).toBe(true);
       expect(isAllowedAuthPath("GET", path)).toBe(true);

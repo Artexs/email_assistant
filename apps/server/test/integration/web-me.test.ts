@@ -75,6 +75,7 @@ function appFor(
           scopes: { triage: off, actions: off, send: off },
           countMailboxes: countMailboxes(db),
           operatorContact,
+          sessions: async () => [],
           ...onboardingDeps(db, async () => "fake_ea_bot"),
         })
       ),

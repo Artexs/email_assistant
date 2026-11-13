@@ -27,14 +27,16 @@ export interface WebTestOptions {
   isOrgSuspended?: WebDeps["isOrgSuspended"];
 }
 
+const cookieOf = (headers: Headers): string => headers.get("cookie")?.replace("ea.session_token=", "") ?? "";
+
 export function webTestApp(opts: WebTestOptions): Hono<ApiEnv> {
   const { db, sessions } = opts;
   const web: WebDeps = {
     auth: {
       handler: async () => new Response(),
       getSession: async (headers) => {
-        const userId = sessions[headers.get("cookie")?.replace("ea.session_token=", "") ?? ""];
-        return userId ? { userId } : null;
+        const userId = sessions[cookieOf(headers)];
+        return userId ? { userId, sessionId: cookieOf(headers) } : null;
       },
     },
     db,

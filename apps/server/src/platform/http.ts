@@ -20,6 +20,7 @@ const log = createLog("http");
 
 export interface WebSession {
   userId: string;
+  sessionId: string; // the id of the session row, not the cookie token
   setCookie?: string[]; // refreshed cookies from Better Auth (W17)
 }
 

@@ -8,6 +8,7 @@ export * from "./onboarding";
 export * from "./organization";
 export * from "./password";
 export * from "./rules";
+export * from "./sessions";
 export * from "./settings";
 export * from "./telegram";
 export * from "./terms";
