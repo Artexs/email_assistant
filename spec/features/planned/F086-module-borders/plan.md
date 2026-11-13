@@ -33,6 +33,8 @@ Each one refines D1–D6 after a fact check. "Default" marks a choice that the o
 - **D17 Five stages, not four.** The `[risky]` retention change (data integrity: an open delegation must keep its draft payload) is a stage of its own, as the plan-task rule says. The 07 table says 4 stages; the count changes, the content does not.
 - **D18 The flaky-test rule is F093's wording.** Stage 05 does not write it again. If `docs/code-patterns.md` has no quarantine rule when stage 05 starts, the worker stops and reports it (F093 must be in `done/` first).
 
+- **D19 The new-table rule names what exists (default).** The organization delete and the DSR address map do not exist yet (E7-T3, `05-execution-plan.md` §2.1 row 12). The rule asks now for tenant-filter tests and retention, and for a note in the migration ticket's plan so E7-T3 finds the table. Rejected: a rule that names a test nobody can write yet.
+
 A gap or a deviation that a worker finds is a question in its final message, not a choice. The coordinator decides from this "Input" or asks the owner.
 
 ## Facts checked (2026-11-13, at commit `cb3a447`)
@@ -44,6 +46,7 @@ A gap or a deviation that a worker finds is a question in its final message, not
 - **P1 (zones probe).** A probe config (`eslint.config.js` + one block with generated zones, D8) on `apps/server/src` and `packages`: exactly 2 errors, `actions/repo.ts:14` and `config/service.ts:19` (the second is an `import type`). Under Bun, `new ESLint({ cwd, overrideConfigFile }).lintText(code, { filePath })` with a virtual file path in a module folder: deep import, higher layer, mail→triage (cycle), actions→triage (same-layer reverse), `import type`, `export … from`, `import()`, subfolder (`channels/telegram/` → `../../actions/undo`), module → root, platform → module, root deep import: each gives one `import/no-restricted-paths` error; `../mail` from `triage`, `./modules/mail` from a root: no error. 15 cases in 1.4 s.
 - `import/no-restricted-paths` (eslint-plugin-import 2.31.0, `lib/rules/no-restricted-paths.js:88`): `basePath` defaults to `process.cwd()`, so the config must set `basePath: __dirname`. A zone `from` list must be all globs or all paths: a mix fails every file with "Restricted path `from` must contain either only glob patterns or none".
 - **P6 (stage 03 code).** The `borderZones` code, the config block and `layers.json` of stage 03, pasted into a copy of `eslint.config.js`: `eslint .` gives exactly the 2 known errors (13.9 s). The 14 fixture cases of stage 03 as a `bun test` file (with the repo preload): 14 pass in 1.0 s. With `actions → triage` added to `sameLayerEdges`, case 4 fails. A module folder with no layer makes the config throw "Modules without a layer in …".
+- **P7 (stage 04 code).** `module-graph-build.ts` of stage 04, run on this tree: 10 modules, 36 edges, `forbiddenEdges` = `actions → delegation`, `config → actions` (the two known), `findCycle` finds `actions → delegation → actions`, no cycle in `sameLayerEdges`. Helper cases 9 and 10 and the temp-folder case 11 of stage 04 give the stated results. `tsc --noEmit` with `tsconfig.base.json` passes; `prettier --check` passes on both generated files.
 - Full `bun run lint` time: 13.4 s now, 13.7 s with the zones (probe config, `.probe-f086` ignored).
 - `import/no-cycle` docs (`node_modules/eslint-plugin-import/docs/rules/no-cycle.md:25`): "This rule ignores type-only imports" (D9).
 - **P2 (madge).** `bunx madge@8.0.0 --circular --extensions ts --ts-config apps/server/tsconfig.json apps/server/src`: 18 cycles, 9 of them across modules, all through `config/service.ts → actions/index.ts`. The review counted 10 cycles with another madge run; same root edge. madge exits 1 when it finds any cycle. With only the `config/service.ts:19` import removed (a copy of `src`): 9 cycles, 0 across modules. With both imports removed: the same 9 in-module cycles: `actions/apply ↔ drafts`, `actions/apply ↔ send`, `mail/repo ↔ sync-rules`, `triage/classifier ↔ prompts/classifier-v2`, and 5 in `platform/llm/` (`client`, `providers/index`, `gemini`, `openai`). They stay (out of scope).
@@ -133,7 +136,7 @@ limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thi
 
 ## Planning progress
 
-- [written] stage 01 · [written] stage 02 · [written] stage 03 · stage 04 · stage 05
+- [written] stage 01 · [written] stage 02 · [written] stage 03 · [written] stage 04 · [written] stage 05
 - [pending] cold review (`plan-review-1.md`)
 
 ## Cold review
