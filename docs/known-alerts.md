@@ -18,6 +18,30 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `sync <id> failed: host not allowed` and `sync <id>: mail host lookup failed (<code>); the next tick tries again`
+
+- **First seen:** 2026-11-13 (S6b, F082 stage 8 and 9; not seen live)
+- **Source:** `apps/server/src/modules/mail/host-guard.ts` (`resolveMailHost`), through `modules/mail/port.ts` (`HostNotAllowedError`, a hard error). The sync job (`modules/mail/jobs.ts`) logs `host not allowed` at level `error` and the failed lookup (a soft error) at level `warn`. The connect form and the send path raise the same errors.
+- **Cause:** `host not allowed`: the mail host is, or resolves to, a local, private, multicast, reserved, NAT64 or 6to4 address, and `MAIL_ALLOW_LOCAL_HOSTS` is not true. `mail host lookup failed (<code>)`: the DNS lookup failed (`<code>` is the system code, `ENODATA` for an empty answer, `UNKNOWN` for none).
+- **Fix:** `host not allowed`: check the mailbox host in the panel. A real provider host is public, so a refusal means a wrong host or a DNS change. Do not set `MAIL_ALLOW_LOCAL_HOSTS` on the VPS. `lookup failed`: check DNS from the server container. Until F085 lands, a refused host has no status and no notice: only this log line on every run.
+- **Status:** investigating (per case)
+
+### `pwned check unavailable: <status|name|no range lines in the answer>`
+
+- **First seen:** 2026-11-13 (S6b, F082 stage 6; not seen live)
+- **Source:** `apps/server/src/platform/pwned.ts`. Warning. The password set or change answers `503 PASSWORD_CHECK_UNAVAILABLE` and changes nothing.
+- **Cause:** `api.pwnedpasswords.com` did not answer in 5 s (`TimeoutError`), answered with a status other than 200 (`status <n>`), answered 200 with no `SUFFIX:COUNT` line, or the server has no outbound HTTPS to it.
+- **Fix:** check outbound HTTPS from the server container to `api.pwnedpasswords.com`. For a long outage only: set `AUTH_PWNED_CHECK=off`, restart (the log then warns `AUTH_PWNED_CHECK=off: leaked passwords are not refused`), and remove the key when the API answers again.
+- **Status:** investigating (per case)
+
+### `web: lockout: <label>` and `web: terms record failed for user <id>: <label>`
+
+- **First seen:** 2026-11-13 (S6b, F082 stages 5 and 7; not seen live)
+- **Source:** `apps/server/src/platform/auth.ts`. Level `error`. `web: lockout:` comes from the sign-in `after` hook (the failure count or the lock write failed). `terms record failed` comes from the reset path (`onPasswordReset` and the handler in `web.ts`): the password was set, but the terms row was not written.
+- **Cause:** a database error. The sign-in itself is not changed: the user gets the normal answer. A failed lock write means that failed sign-ins are not counted. A failed terms write means the user sees the terms dialog at the next sign-in.
+- **Fix:** read `<label>` and check the database. No manual repair: the user accepts the terms in the dialog.
+- **Status:** investigating (per case)
+
 ### `web undo <kind> mail <id> by user <id>`
 
 - **First seen:** 2026-11-11 (S5d)
@@ -74,12 +98,12 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** none for one line: `/` redirects to `/onboarding`. Read the error label and check the database.
 - **Status:** investigating (per case)
 
-### `web: WEB_MAIL_ALLOW_LOCAL=true: the connect form accepts local hosts`
+### `mail: MAIL_ALLOW_LOCAL_HOSTS=true: local mail hosts are allowed`
 
-- **First seen:** 2026-11-11 (S5b)
-- **Source:** `apps/server/src/web.ts`, once at start. Warning.
-- **Cause:** `WEB_MAIL_ALLOW_LOCAL=true` lets the connect form accept local and private hosts. The dev and e2e setups need it for GreenMail.
-- **Fix:** the key must be empty or `false` on the VPS. If this line shows on the VPS, remove the key from `.env` and restart.
+- **First seen:** 2026-11-11 (S5b, as `web: WEB_MAIL_ALLOW_LOCAL=true: the connect form accepts local hosts`); renamed 2026-11-13 (S6b, F082 stage 9)
+- **Source:** `apps/server/src/main.ts`, once at start. Warning. A second line `WEB_MAIL_ALLOW_LOCAL is an old name: use MAIL_ALLOW_LOCAL_HOSTS` shows when only the old key is set.
+- **Cause:** `MAIL_ALLOW_LOCAL_HOSTS=true` lets the connect form, the sync and the send accept local and private mail hosts. The dev and e2e setups need it for GreenMail.
+- **Fix:** the key must be empty or `false` on the VPS. If this line shows on the VPS, remove `MAIL_ALLOW_LOCAL_HOSTS` and `WEB_MAIL_ALLOW_LOCAL` from `.env` and restart.
 - **Status:** workaround (dev and e2e only)
 
 ### `mailbox <id> removed by user <id>`
@@ -174,8 +198,8 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 - **First seen:** 2026-11-09 (S5a code; not seen live)
 - **Source:** `apps/server/src/platform/auth.ts` (the default `sendResetPassword`, level `info`).
-- **Cause:** A `request-password-reset` reached a `createAuth` instance that has no own `sendResetPassword`. It cannot happen over HTTP in S5: the `/api/auth/*` allow-list answers 404 for that path. `web:invite` passes its own callback and prints the link, so it logs no line.
-- **Fix:** Investigate: a line means a code path changed or a new `createAuth` caller exists. Check who builds the auth instance without `sendResetPassword` (`webDeps` in `web.ts`, `web-invite.ts`).
+- **Cause:** A `request-password-reset` reached a `createAuth` instance that has no own `sendResetPassword`. It cannot happen over HTTP. With the auth-mail sender off, the `/api/auth/*` allow-list answers 404 for that path. With the sender on (S6b), `webDeps` passes its own `sendResetPassword`. The CLIs (`web:invite`, `org:invite`) pass their own callback in `scripts/invite-delivery.ts` and print the link, so they log no line.
+- **Fix:** Investigate: a line means a code path changed or a new `createAuth` caller exists. Check who builds the auth instance without `sendResetPassword` (`webDeps` in `web.ts`, `scripts/invite-delivery.ts`, `scripts/e2e-seed.ts`).
 - **Status:** investigating
 
 ### `operator notice auth_mail_failed`
@@ -183,7 +207,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **First seen:** 2026-11-13 (S6b code; not seen live)
 - **Source:** `apps/server/src/modules/channels/operator.ts` (`authMailFailed`). The operator chat gets `Auth mail <kind> to user <id> of org <id> failed (<code>).` One notice per user, code and day. The same failure is a `warn` line `auth mail <kind> to user <id> failed: <code>` from `platform/auth-mail.ts`.
 - **Cause:** The auth-mail sender could not send an invite, reset or lock mail. `<code>` is the nodemailer code (for example `EAUTH`, `ECONNECTION`), `TIMEOUT` or `UNKNOWN`.
-- **Fix:** Check the six `AUTH_SMTP_*` and `AUTH_MAIL_FROM` keys and the provider (login, port 465 or 587, `AUTH_SMTP_SECURITY`). Make a new link by hand: `bun run web:invite --org-id <uuid> --user-id <uuid> --print`.
+- **Fix:** Check the `AUTH_SMTP_*` and `AUTH_MAIL_FROM` keys and the provider (login, port 465 or 587, `AUTH_SMTP_SECURITY`). Make a new link by hand: `bun run web:invite --org-id <uuid> --user-id <uuid> --print`.
 - **Status:** open while the sender is off (the home VPS prints the links; no notice fires there)
 
 ### `better-auth: Invalid password`

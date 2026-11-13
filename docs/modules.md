@@ -385,7 +385,7 @@ Built in S5. The routers are mounted under `/api` (`api.route("/", …)` in `app
 | `POST /actions/undo`                                  | member | `triage`   | S5d   |
 
 - `/api/auth/*` allow-list (`AUTH_ALLOWED_PATHS` in `platform/auth.ts`): `/sign-in/email`, `/sign-out`, `/get-session`, `/reset-password`, `/change-password`, `/revoke-other-sessions`, `/revoke-sessions`, and `GET /reset-password/<token>`; `POST /request-password-reset` too, only when the auth-mail sender is on (S6b). Every other path is 404. `/list-sessions` is not open: it returns tokens (use `GET /me/sessions`).
-- Pages are not routes of a module: `platform/http` serves the Astro build (`WEB_DIST`) with a session check. `/login`, `/setup` and the assets are public; `/` redirects to `/onboarding` or `/activity`.
+- Pages are not routes of a module: `platform/http` serves the Astro build (`WEB_DIST`) with a session check. `/login`, `/setup`, `/forgot`, the legal pages `/legal/{pl,en}/{privacy,terms,dpa}` and the assets are public; `/` redirects to `/onboarding` or `/activity`.
 - **Phase 2 web (not built):** `/actions` list, approve and reject (Telegram has them from S4), `/delegates`, `/delegations` (Telegram and CLI from S4).
 
 ### 3.11 Phase 2 modules (not built in MVP)

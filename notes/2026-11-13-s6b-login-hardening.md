@@ -30,3 +30,7 @@ S6b is F082 (`spec/features/active/F082-s6b-public-login/`). Controls: `docs/arc
 - **S6e (legal texts):** fill `/legal/{pl,en}/{privacy,terms,dpa}` and change `TERMS_VERSION` (`packages/core/src/web/terms.ts`) with each text change. A new version shows the blocking dialog to every member.
 - **F078 (delete expired `auth_verifications`):** can start. Reset tokens are stored hashed since F059.
 - **Open follow-up:** a mailbox whose host the guard refuses is only a `sync <id> failed: host not allowed` log line on every run. A planned ticket covers a status and a notice.
+
+## T1 decision (known vs unknown address, sign-in timing)
+
+Checkpoint A found a systematic timing gap: a sign-in for a known address (free user, wrong password) takes slightly longer than for an unknown address. The group review of checkpoint B measured medians of 15 runs: free user 47.8 ms, unknown address 46.3 ms, locked user 47.4 ms (`spec/features/active/F082-s6b-public-login/review-group.md`, item A). The gap is about 3 percent, below the network jitter on the tailnet. Decision: accepted for the tailnet pilot. The real fix (equal work on the unknown path) is not built. Revisit it before the panel opens to a public host.

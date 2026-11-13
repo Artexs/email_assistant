@@ -122,10 +122,11 @@ Never run `tailscale up --force-reauth` over the tailnet. It cuts the connection
    - `WEB_BASE_URL`: `https://<machine>.<tailnet>.ts.net` (no path, no trailing slash).
    - `WEB_AUTH_SECRET`: make it with `openssl rand -base64 32`. Never print it.
    - `WEB_TRUSTED_PROXIES`: `172.30.0.1` (the gateway from step 1).
-   - Leave `WEB_TRUSTED_ORIGINS`, `MAIL_ALLOW_LOCAL_HOSTS`, `WEB_MAIL_ALLOW_LOCAL`, `WEB_DIST` and the six `AUTH_*` keys empty. Leave `AUTH_PWNED_CHECK` empty (on).
+   - Leave `WEB_TRUSTED_ORIGINS`, `MAIL_ALLOW_LOCAL_HOSTS`, `WEB_MAIL_ALLOW_LOCAL`, `WEB_DIST`, the `AUTH_SMTP_*` keys and `AUTH_MAIL_FROM` empty. Leave `AUTH_PWNED_CHECK` empty (on).
 3. Do the section Update. The migrations of S5 run there.
 4. Check the log for the start line `web is on: https://…, dist /app/apps/web/dist`: `$C logs server | grep 'web'`
-   The output must show no other line with `web:` or `WEB_BASE_URL is http://`.
+   The output must show no other line with `web:` or `WEB_BASE_URL is http://`. It must also show `auth mail: off (the CLI prints invite and reset links)`.
+   Two lines must not show: `AUTH_PWNED_CHECK=off: leaked passwords are not refused` and `mail: MAIL_ALLOW_LOCAL_HOSTS=true: local mail hosts are allowed`. Search for them: `$C logs server | grep -E 'AUTH_PWNED_CHECK=off|MAIL_ALLOW_LOCAL_HOSTS'`
 5. Start Tailscale Serve (you, sudo): `sudo tailscale serve --bg 8080`
 6. Check Serve: `tailscale serve status`
 
@@ -165,7 +166,7 @@ The same command makes a reset link later. The link is a secret. Do not paste it
 
 ### Auth mail sender (off on the home VPS)
 
-The sender mails invite, reset and lock messages. It turns on only when all six keys are set: `AUTH_SMTP_HOST`, `AUTH_SMTP_PORT`, `AUTH_SMTP_SECURITY`, `AUTH_SMTP_USER`, `AUTH_SMTP_PASSWORD`, `AUTH_MAIL_FROM`. With the keys empty, `/forgot` shows "Reset by e-mail is off" and the CLI prints the links.
+The sender mails invite, reset and lock messages. It turns on when `AUTH_SMTP_HOST`, `AUTH_SMTP_USER`, `AUTH_SMTP_PASSWORD` and `AUTH_MAIL_FROM` are set (all four or none). `AUTH_SMTP_PORT` (465) and `AUTH_SMTP_SECURITY` (`tls`) have defaults. With the keys empty, `/forgot` shows "Reset by e-mail is off" and the CLI prints the links.
 
 A real sender needs these first:
 

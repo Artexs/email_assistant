@@ -1,5 +1,3 @@
-> **Status 2026-11-12 — planned.** The build starts after F077 stage 18 (the S6a VPS deploy). Left: the 15 stages, one Limen worker job each.
-
 # S6b Login hardening: lockout, leaked-password check, terms, sessions, mail host check, auth-mail sender (off)
 
 Ticket: [ticket.md](ticket.md). Master plan: `tasks/active/s6-pre-sale.md` (D7–D11, D31, P16–P24, "Rules for every step"). Old segment sketch: `tasks/planned/s6b-public-login.md` (history). Replaces `spec/features/planned/F056-web-public-hardening/` (stage 15 closes it). F059 (hashed reset tokens) landed on 2026-11-12 and is closed.
@@ -229,12 +227,12 @@ limen spawn --engine pi --provider claude-bridge --model claude-opus-5-5 --think
 - [x] Stage 7 — lane A, last — Terms on the server: `TERMS_VERSION`, the reset hook, `/api/me` terms, `POST /api/me/terms` `[risky]` — [`stage-07-terms-server.md`](stages/stage-07-terms-server.md)
 - [x] Stage 8 — lane B, **parallel with 1–7** — Mail host guard: ranges, `resolveMailHost`, policy `[risky]` — [`stage-08-host-guard.md`](stages/stage-08-host-guard.md)
 - [x] Stage 9 — joins A and B (after 7 and 8) — Mail host guard on every IMAP and SMTP connect, config key, scripts `[risky]` — [`stage-09-host-guard-wiring.md`](stages/stage-09-host-guard-wiring.md)
-- [x] Checkpoint A review (coordinator): round 1 FAIL (B1), fixes landed, round 2 PASS; the owner's go before stage 10 is open
-- [ ] Stage 10 — lane C, **parallel with 13** — `/forgot` page and the login link — [`stage-10-forgot-page.md`](stages/stage-10-forgot-page.md)
-- [ ] Stage 11 — lane C, **parallel with 13** — Setup terms checkbox and legal stub pages — [`stage-11-setup-terms.md`](stages/stage-11-setup-terms.md)
-- [ ] Stage 12 — lane C, **parallel with 13** — Terms dialog after sign-in — [`stage-12-terms-dialog.md`](stages/stage-12-terms-dialog.md)
-- [ ] Stage 13 — lane D, **parallel with 10–12**; review job, not `[risky]` — Session list and the sign-out audit rows — [`stage-13-sessions.md`](stages/stage-13-sessions.md)
-- [ ] Stage 14 — after all of 1–13 — Docs, ADR 0016 amendment, note — [`stage-14-docs.md`](stages/stage-14-docs.md)
+- [x] Checkpoint A review (coordinator): round 1 FAIL (B1; `review-checkpoint-a.md`), fixes landed (job `2026-11-12-f082-a-fixes-7f78a6f8`), round 2 PASS at `800f1f4` (job `2026-11-12-f082-a-review2-340019b1`; its report is the job's `result` file under `.limen/jobs/`, not filed in this folder); the owner's go before stage 10 is open
+- [x] Stage 10 — lane C, **parallel with 13** — `/forgot` page and the login link — [`stage-10-forgot-page.md`](stages/stage-10-forgot-page.md)
+- [x] Stage 11 — lane C, **parallel with 13** — Setup terms checkbox and legal stub pages — [`stage-11-setup-terms.md`](stages/stage-11-setup-terms.md)
+- [x] Stage 12 — lane C, **parallel with 13** — Terms dialog after sign-in — [`stage-12-terms-dialog.md`](stages/stage-12-terms-dialog.md)
+- [x] Stage 13 — lane D, **parallel with 10–12**; review job, not `[risky]` — Session list and the sign-out audit rows — [`stage-13-sessions.md`](stages/stage-13-sessions.md)
+- [x] Stage 14 — after all of 1–13 — Docs, ADR 0016 amendment, note — [`stage-14-docs.md`](stages/stage-14-docs.md)
 - [ ] Stage 15 — Checkpoint B: review, VPS deploy and checks, close (coordinator, owner) — [`stage-15-checkpoint.md`](stages/stage-15-checkpoint.md)
 
 ## Parallel plan

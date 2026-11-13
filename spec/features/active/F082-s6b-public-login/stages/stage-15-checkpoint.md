@@ -16,7 +16,7 @@ The coordinator runs this stage with the owner; it is not a worker job. Steps 15
     - Order: F077 stage 18 (the S6a deploy) is done. Record the commit that the VPS runs (`git rev-parse --short HEAD` on the VPS) as the rollback target.
     - The steps of `deploy/README.md` § "Update" one by one (backup first, `git fetch && git merge --ff-only origin/master`, `db:migrate`, `up -d --build --wait`); paste the last line of each.
     - The VPS `.env` gets no new key (the `AUTH_*` keys stay empty; `AUTH_PWNED_CHECK` empty = on).
-    - After: the start log has `auth mail: off (the CLI prints invite and reset links)` and no `AUTH_PWNED_CHECK=off` line; `GET /health` ok; `POST /api/auth/request-password-reset` answers 404.
+    - After: the start log has `auth mail: off (the CLI prints invite and reset links)` and neither an `AUTH_PWNED_CHECK=off` line nor a `mail: MAIL_ALLOW_LOCAL_HOSTS=true` line; `GET /health` ok; `POST /api/auth/request-password-reset` answers 404.
     - Rollback point: until the owner's OK, `git checkout <recorded commit>` and `$C up -d --build --wait`. The S6b migration only adds columns and a table; the old code does not read them, so they stay.
   - Done when: the server runs the S6b commit and the checks above pass.
 
