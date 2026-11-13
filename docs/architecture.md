@@ -597,10 +597,10 @@ Tenancy:
 
 ### 6.3 LLM (ADR 0007, ADR 0012, ADR 0013, ADR 0015)
 
-- Two providers behind one switch (ADR 0015): `LLM_PROVIDER` = `gemini` (code default) or `openai`; a restart applies it. The shared client is `platform/llm/`; the adapters are `platform/llm/providers/gemini.ts` (the only file that imports `@google/genai`) and `providers/openai.ts` (the only file that imports `openai`; Responses API, strict JSON schema, `store: false`). The pilot VPS runs `openai` with `OPENAI_MODEL_CLASSIFIER` = `gpt-6-luna` (default pick, user 2026-11-07). OpenAI keys: `OPENAI_API_KEY`, `OPENAI_MODEL` (writer), `OPENAI_MODEL_CLASSIFIER`, `OPENAI_TIMEOUT_MS`, `OPENAI_RPM`, `OPENAI_REASONING_EFFORT`. A third provider = one adapter file, one registry row, one config block, price rows and one eval run. No automatic fallback.
-- Gemini model ids from config: `GEMINI_MODEL` (writer role; dev: `gemini-3.8-flash`),
-  `GEMINI_MODEL_CLASSIFIER` (default `gemini-3.5-flash-lite`). Two roles: `classifier` (one call per mail, summary included) and `writer`.
-  **The writer role is not used in S4:** drafts are templates (`packages/core/src/outgoing/templates.ts`); the fields (delegate id, task, due date, question) come from the classifier (prompt `classifier-v2`).
+- Two providers behind one switch (ADR 0015): `LLM_PROVIDER` = `gemini` (code default) or `openai`; a restart applies it. The shared client is `platform/llm/`; the adapters are `platform/llm/providers/gemini.ts` (the only file that imports `@google/genai`) and `providers/openai.ts` (the only file that imports `openai`; Responses API, strict JSON schema, `store: false`). The pilot VPS runs `openai` with `OPENAI_MODEL_CLASSIFIER` = `gpt-6-luna` (default pick, user 2026-11-07). OpenAI keys: `OPENAI_API_KEY`, `OPENAI_MODEL_CLASSIFIER`, `OPENAI_TIMEOUT_MS`, `OPENAI_RPM`, `OPENAI_REASONING_EFFORT`. A third provider = one adapter file, one registry row, one config block, price rows and one eval run. No automatic fallback.
+- Roles come from one role table (`llmRoleTable`, `platform/config.ts`): five roles, `classifier`, `judge`, `drafter`, `extractor`, `escalation`. The classifier reads `LLM_PROVIDER`, `GEMINI_MODEL_CLASSIFIER` or `OPENAI_MODEL_CLASSIFIER`, `*_TIMEOUT_MS`, `*_RPM` and `OPENAI_REASONING_EFFORT`. The other roles read `LLM_<ROLE>_PROVIDER`, `_MODEL`, `_TIMEOUT_MS`, `_RPM`, `_REASONING`; an empty key falls back to the classifier (same provider) or to the provider's keys (D10). The start checks refuse a role whose provider has no API key, a reasoning key on Gemini, and `_MODEL` without `_PROVIDER` (D11). There is one rate limiter per provider, and one more per role with `LLM_<ROLE>_RPM` (D12). The provider SDK client is built at the first call. Code calls `llm.generate({ role, … })` and never picks a model. Gemini model ids from config: `GEMINI_MODEL_CLASSIFIER` (default `gemini-3.5-flash-lite`).
+  **The writer role is not used in S4:** drafts are templates (`packages/core/src/outgoing/templates.ts`); the fields (delegate id, task, due date, question) come from the classifier (prompt `classifier-v2`). The drafter role replaces the writer role.
+- The `llm.call` audit row carries `role` and `prompt_version`. `countLlmCallsSince` counts per role; rows without a role are classifier rows.
 - **Classifier model (provisional, stage 34, 2026-11-05):** `gemini-3.5-flash-lite`. The eval on the 92 synthetic and injection cases ran with it:
   91 cases answered (1 `http_503`), whitelist 12/12, injection 12/12, hard rules 6/6. Precision was 76.5% for `info` and 84.2% for `spam`,
   so no category reaches the 98% bar yet. The comparison with `gemini-3.8-flash` (stage 36) was dropped after the OpenAI switch.
@@ -731,7 +731,7 @@ Tenancy:
 - **`GET /health`:** DB reachable, last good sync per mailbox.
 - **Backups:** `deploy/backup.sh` at 03:30 every night: `pg_dump`, encrypted with `age` (only the public key on the VPS), copied with `rclone` to a
   Backblaze B2 bucket with a write-only key; remote retention is a bucket lifecycle rule. `deploy/restore-test.sh` on the Mac; one restore test per month.
-- **Logging:** `log` util with levels and a `[module]` prefix.
+- **Logging (ADR 0024):** one JSON object per line (`LOG_FORMAT=json`, the VPS) with `time`, `level`, `module`, `event`, `msg` and allow-listed fields (`platform/log-fields.ts`); every line of a job tick has `job` and `run_id`, every line of an HTTP request has `request_id` (also the `x-request-id` response header); `LOG_FORMAT=text` in dev. The start lines name each job with `job_scheduled`; the schedules are in this section. Module lines move to the event form in E8a; until then they appear as `event: legacy_text` with their old text in `msg`.
 
 ## 9. Testing
 

@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-13
 ---
 
 # F089 · Logs are events with allow-listed fields and run ids, with a lint rule in warn mode

@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-13
 ---
 
 # F090 · LLM calls name a role; provider, model, cap share and prompt version follow the role

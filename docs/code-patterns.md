@@ -88,6 +88,11 @@ The server modules sit in layers. `bun run lint` fails on an import that crosses
 - A module that `actions` must call back (a delegation changes with a send) gets a hooks interface in `actions` (`DelegationHooks`); `main.ts` wires the implementation. `actions` never imports `delegation`.
 - No import cycles between modules: a module sets a column that another module's worker reads (`docs/modules.md` §2).
 - The LLM returns data that a Zod schema checks. LLM text is untrusted: never use it as a recipient, a folder name or a command.
+- An LLM call names a role: `llm.generate({ role, promptVersion, schema, system, prompt })`. The role table (`llmRoleTable`, `platform/config.ts`) decides provider, model, timeout, rate and effort; code never picks a model. A new role is a row: a name in `packages/core/src/llm-roles.ts`, its `LLM_<ROLE>_*` keys, a prompt entry.
+- Every role returns data that a Zod schema checks, also a free-text role (its text is a schema field).
+- Prompts live in the registry (`modules/triage/prompts/index.ts`, `prompts`): one entry per role with its version, and one file `<role>-v<n>.ts` per version whose `PROMPT_VERSION` equals the file name. A changed prompt text is a new file and a new version. A role without a prompt is in `rolesWithoutPrompt` with the epic that writes it. The registry test fails on a gap.
+- Every LLM call in a job or a request writes one `llm.call` row through `recordLlmCall` (`modules/audit`) with `role` and `prompt_version`; the daily cap and the cost per role read these rows. `llm:check` and `eval` write none.
+- A prompt or model change of any role runs the eval gate of PD-025 (`bun run eval`, the go/no-go table) before the merge.
 - A new behaviour that a user can see is read through `isFeatureOn`; the flag is in the registry with an owner epic and a remove-by date; default off; the pilot organization turns it on first.
 - The registry is `featureFlags` in `packages/core/src/features.ts`. The order is `FEATURES_OFF` (env, the kill switch) → the `org_features` row → the registry default (`resolveFeature`). The kill list comes from `FEATURES_OFF`: `main.ts` sets it with `configureFeatures` after `loadConfig`; any other process reads the env on the first flag read. No read function takes a settings argument; tests change the kill list only with `configureFeatures` and reset it in `afterEach`. A job reads a flag once per mailbox run, not once per mail. Flags are not product settings: the mailbox mode and the per-category `auto` switches stay as they are (ADR 0027 point 6).
 - A flag is changed only through `setOrgFeature` (`tenancy`, audit row `org.flag_changed`); the CLI `org:flag` and a later console call it. A unit test fails when a flag is past its remove-by date: then a cleanup ticket removes the key from `FEATURES_OFF` on every server first (an unknown key stops the start), deletes its rows in a migration (`DELETE FROM org_features WHERE flag = '<key>'`), and removes the reads and the registry entry.
@@ -108,14 +113,34 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 - All config comes from env, checked with a Zod schema at start (`platform/config`). A missing key stops the start.
 - `.env.example` lists every key with a placeholder. Never commit `.env`, keys, passwords or tokens. Never log them.
 - Mailbox secrets are encrypted with `platform/crypto` (AES-256-GCM, key version) before they reach the DB.
+- LLM keys: `LLM_PROVIDER` and `*_MODEL_CLASSIFIER` set the classifier; `LLM_<ROLE>_PROVIDER`, `_MODEL`, `_TIMEOUT_MS`, `_RPM`, `_REASONING` set another role; an empty key falls back to the classifier (same provider) or to the provider's keys (`docs/architecture.md` §6.3).
+
+## Logs (ADR 0024)
+
+- A log line is an event: `log.<level>("<event_code>", { <fields> })`. The code is a snake_case literal of at most 64 characters, constant, and names what happened (`auth_mail_failed`). `msg` equals the code. One code for one kind of line.
+- Fields come only from `logFieldNames` in `apps/server/src/platform/log-fields.ts`. A value is a number, a boolean, `null`, or a code of at most 64 characters from `A–Z a–z 0–9 _ . : / * -` without `://` (ids and route patterns are codes; the code fields include `provider`, `model` and `role`).
+  The writer drops any other field or value and counts it in `dropped_fields`. A line with `dropped_fields` is a bug to fix.
+  A change that logs a new field name adds it to the list. The review checks that its values are ids, codes, counts or times.
+  The value rule does not stop a secret that looks like a code: never add a field for a token, a password or a key value, and never pass one in a code field.
+- Errors: `...errorFields(error)` (name and code). Never `error.message`, a mail text, an address, a URL or a token.
+- Context: the scheduler gives every line of a job tick `job` and `run_id` (`runJobTick`). The HTTP layer gives every line of a request `request_id` and sets the `x-request-id` header.
+  Per-item ids come from a child logger: `const mailboxLog = log.with({ org_id, mailbox_id })`. Name a child logger `<thing>Log` (the lint finds it by that name).
+  Inside a run or a request, never pass `job`, `run_id` or `request_id` by hand (the context value wins and the call value is dropped).
+  Only a line outside any context names a job with `job` (`job_scheduled`, `job_skipped`).
+  Create a long-lived timer, interval, socket or pool at start, outside any context: it keeps the context it was created in.
+- Format: the server prints `json` by default (its config) and the VPS pins `LOG_FORMAT: json` (`deploy/compose.yaml`). `text` prints `[module] event key=value …` (dev, `.env.example`).
+  A process that does not load the config (a CLI, a test) prints `text` unless `LOG_FORMAT=json`. Tests run in `text` (the test preload).
+- Lint: `no-restricted-syntax` in `eslint.config.js` (`logEventSelectors`) warns on any other log call in `apps/server/src`, and fails in the converted files (`platform/`, `main.ts`).
+  E8a converts the modules one by one, moves each to the `error` block, and flips the rest at the end. A new log line in any file is an event from now on.
+- `docs/known-alerts.md` keys the entries of event lines by the event code.
 
 ## Style
 
 - TypeScript strict. `const` / `let` only, never `var`.
 - Template literals for strings with variables, never `+` concatenation.
-- Use the `log` util (`platform/log`) with a `[module]` prefix, never `console.log`. No mail bodies or secrets in logs.
+- Use the `log` util (`platform/log`), never `console.log`. The rules are in § Logs.
 - Folder keys in logs and audit rows, never paths from mail data or user input.
-- Telegram errors: log only `telegramErrorLabel(error)`. Never log `error.message` of an inner error, `payload` or `description` (they can hold the bot token or message text). Other errors: `describeError(error)`.
+- Telegram errors: log only `telegramErrorLabel(error)`. Never log `error.message` of an inner error, `payload` or `description` (they can hold the bot token or message text). Other errors: `errorFields(error)` in an event line, `describeError(error)` only in an old-form line that E8a has not converted yet.
 - Errors: throw typed errors (`SoftError` for timeout / 429 / 503 / lost connection, `HardError` for the rest); the job runner decides the retry.
 - A comment states the rule in one sentence. If it needs a source, it names an ADR (`ADR 0014`) or a ticket folder path (`spec/features/done/2026-11/F083-…/`). No bare stage or decision codes (`S3`, `D29`, `U11`, `A23`, `F079`): their plan files move, and no reader can resolve them. Fix the codes of a comment when you change its code; no mass edit.
 

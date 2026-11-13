@@ -11,11 +11,11 @@ providers, to switch between them, and to allow more providers later.
 
 ## Decision
 
-- One global switch: `LLM_PROVIDER` (`gemini` | `openai`; code default `gemini`). A restart applies it. Both roles (`classifier`, `writer`) use it.
+- One global switch: `LLM_PROVIDER` (`gemini` | `openai`; code default `gemini`). A restart applies it. The classifier uses it; other roles fall back to it (see Amendment).
 - Code: `apps/server/src/platform/llm/` holds the shared client (Zod check, timeout, rate limiter) and `providers/{gemini,openai}.ts`.
   `providers/index.ts` is the registry: one row per provider (id, `createGenerate`, `classifyError`, `configHint`). ESLint allows
   `@google/genai` only in `providers/gemini.ts` and `openai` only in `providers/openai.ts`.
-- Keys stay separate per provider: `GEMINI_*` and `OPENAI_API_KEY`, `OPENAI_MODEL` (writer), `OPENAI_MODEL_CLASSIFIER` (default `gpt-6-luna`),
+- Keys stay separate per provider: `GEMINI_*` and `OPENAI_API_KEY`, `OPENAI_MODEL_CLASSIFIER` (default `gpt-6-luna`),
   `OPENAI_TIMEOUT_MS`, `OPENAI_RPM`, `OPENAI_REASONING_EFFORT`.
 - OpenAI call: Responses API, strict JSON schema made from the Zod schema (root `$schema` removed; the adapter throws at build time on a loose object),
   `store: false`, `maxRetries: 0`, no tools. Zod checks every answer again.
@@ -37,3 +37,7 @@ providers, to switch between them, and to allow more providers later.
 - `triage_results.model` mixes models after a switch. Read real-mail results with `eval --real --model`.
 - No automatic fallback from one provider to the other (`spec/features/planned/F072-llm-provider-fallback/plan.md`).
 - ADR 0007, 0012 and 0013 stay valid for Gemini; this ADR adds the second provider.
+
+## Amendment (2026-11, roles)
+
+`LLM_PROVIDER` is the classifier's provider and the fallback of every other role. Each role (`judge`, `drafter`, `extractor`, `escalation`) may name its own provider and model with `LLM_<ROLE>_*` keys, so two providers can run at once (PD-026: the judge is another model family than the drafter). The writer keys `OPENAI_MODEL` and `GEMINI_MODEL` are removed; the drafter role replaces the writer. Still no automatic fallback between providers.
