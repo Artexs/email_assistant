@@ -24,7 +24,7 @@ MVP = slices S0–S6a (`docs/roadmap.md`). Stage 2 makes the product sell-ready,
 2. **Cold review** of the whole plan by a second model (not the author model). Result in `04-review-result.md`; the owner accepts or rejects each finding.
 3. **Epic map**: one page per epic in `epics/`: outcome, users, in scope, out of scope, dependencies, open product questions, risks, exit metric. A dependency graph in this README.
 4. **Epic discovery** for all epics first (PD-012), one session at a time, in the queue of `05-execution-plan.md` §3: answer the open product questions with the owner → `decisions.md` entries and ADRs. Output: an epic page marked "ready to plan", or "decided, second pass after <trigger>" when a question waits for E2/E3 numbers or a spike.
-5. **Planning**, after the queue is empty: one `plan-task` run per ticket of `05` §2.1, in its order (E1 first), into Limen feature folders (`spec/features/planned/`); each run adds its ticket to `spec/build.md` NEXT with its needs (`05` §2.3).
+5. **Planning**, after the queue is empty: one `plan-task` run per ticket of `05` §2.1, in its order (E1 first), into Limen feature folders (`spec/features/planned/`); each run adds its ticket to `spec/build.md` NEXT and a `## Sequenced` section to its ticket (`05` §2.3).
 6. **Build** in Limen; each landed epic updates its page and the roadmap.
 
 ## Epics (proposed by `04-review-result.md` §5; the owner accepts or changes them)

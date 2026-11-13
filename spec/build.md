@@ -10,7 +10,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 - Standing models: worker and reviewer `--engine pi --provider claude-bridge --model claude-sonnet-5-5 --thinking high`, with the personal Claude route (`~/.pi/agent/AGENTS.md` § Limen). Prepare: `--prepare 'bash scripts/limen-prepare.sh'` (own `.env`, `node_modules`, own DB; drop the job DB by hand after the job).
 - Now: S6 pre-sale moves to Limen segment by segment (S6a = F077). The S6 master plan and `s6b`–`s6f` still sit in `tasks/` until `plan-task` plans them here; the old `run-task` flow is removed.
-- Stage 2 order: `docs/product/stage-2/05-execution-plan.md` §2 (ticket table, needs, gates). Each planned Stage 2 ticket has a `## Needs` section and a NEXT line with its needs; start the first NEXT ticket whose needs are all landed and whose gate is done, at most two Stage 2 tickets in build (§2.4).
 
 ## NOW
 
@@ -21,6 +20,9 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F069-compose-network-subnet` (🟠 ACTIVE): Pin the Compose network subnet
 
 ## NEXT
+
+- Stage 2 order: `docs/product/stage-2/05-execution-plan.md` §2. Plan its §2.1 rows in order with `plan-task`; each planned ticket gets a `## Sequenced` section (tickets that must land first, and its gate) and a line here. Start the first line here whose `Sequenced` tickets are all landed and whose gate is done; at most two Stage 2 tickets in build; a ticket with a second-pass gate stops at that stage and asks the owner (§2.4).
+- E1 Close the MVP (§2.1 row 1): not planned yet; plan it first (handoff `~/.pi/agent/notes/2026-11-12-handoff-stage2-e01-close-the-mvp.md`). Every other Stage 2 ticket is sequenced after it.
 
 ## PROVEN
 

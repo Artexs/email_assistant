@@ -114,14 +114,14 @@ Run `plan-task` in the order of the # column. Planning is cheap and may run ahea
 
 When a planning session finishes a ticket, in the same commit it:
 1. writes the F-number into the § 2.1 row;
-2. writes a `## Needs` section in the ticket's `ticket.md`: the F-numbers (or plan names, if not planned yet) of the "Needs" column, and the gate;
-3. adds one line to `spec/build.md` NEXT in § 2.1 order: `FNNN-slug: <outcome>; needs <F-numbers or plan names>`;
+2. writes a `## Sequenced` section in the ticket's `ticket.md`: the F-numbers (or plan names, if not planned yet) of the "Needs" column, and the gate. The Limen coordinator manual uses the word "Sequenced" when it decides which tickets may run in parallel;
+3. adds one line to `spec/build.md` NEXT in § 2.1 order: `FNNN-slug: <outcome>; sequenced after <F-numbers or plan names>; gate <gate or —>`. When E1 is planned, its line replaces the "E1 … not planned yet" line;
 4. applies the cross-epic edits that other epics' discovery notes list for this epic (§ 2.5).
 
 ### 2.4 Start rule for the Limen coordinator (step C)
 
-Limen has no dependency field; NEXT order and the ticket's `## Needs` section carry the order.
-- Start the first NEXT ticket whose needs are all in `spec/features/done/` and whose gate is done.
+Limen has no dependency field. Each coordinator turn gets only the NOW and NEXT sections of `spec/build.md` injected (Limen `hook/communication.ts`, `boardDigest`), so the rule itself is the first NEXT line. NEXT order and the ticket's `## Sequenced` section carry the order.
+- Start the first NEXT ticket whose `Sequenced` tickets are all in `spec/features/done/` and whose gate is done.
 - At most two Stage 2 tickets in build at once (owner checkpoints; § 4). One DB migration and one `bun run test:int` at a time.
 - A ticket with a second-pass gate on a later stage builds up to that stage, then stops and asks the owner for the second pass.
 - Owner steps (gates) are listed in the ticket; the coordinator asks for them when the ticket reaches the top of NEXT, not earlier.
