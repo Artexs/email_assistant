@@ -2,7 +2,7 @@ import type { Transaction } from "kysely";
 
 import { clearActionErrors, clearActionPayloads } from "./modules/actions";
 import { clearOutboxTexts, deleteOldLinkTokens } from "./modules/channels";
-import { clearDelegationTasks } from "./modules/delegation";
+import { clearDelegationTasks, isOpenDelegationDraft } from "./modules/delegation";
 import { clearMailBodies, clearMailHeaders, PENDING_BODY_DAYS } from "./modules/mail";
 import { listOrganizations } from "./modules/tenancy";
 import { clearTriageTexts } from "./modules/triage";
@@ -81,7 +81,7 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
     });
     const headers = await clearers.clearMailHeaders(db, ctx, { before: textsBefore });
     const triage = await clearers.clearTriageTexts(db, ctx, { before: textsBefore });
-    const payloads = await clearers.clearActionPayloads(db, ctx, { before: textsBefore });
+    const payloads = await clearers.clearActionPayloads(db, ctx, { before: textsBefore, keep: isOpenDelegationDraft });
     const errors = await clearers.clearActionErrors(db, ctx, { before: textsBefore });
     const tasks = await clearers.clearDelegationTasks(db, ctx, { before: textsBefore });
     const outbox = await clearers.clearOutboxTexts(db, ctx, { before: textsBefore });

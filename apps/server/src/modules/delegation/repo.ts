@@ -2,6 +2,7 @@ import { sql, type Transaction } from "kysely";
 import { z } from "zod";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
+import type { PayloadKeepRule } from "../actions";
 
 type DbOrTrx = Db | Transaction<DB>;
 
@@ -17,6 +18,18 @@ export const openDelegationFilter = sql<boolean>`(
   delegations.status in ('drafted', 'sent')
   or (delegations.status = 'overdue' and delegations.reminders_sent < ${sql.lit(MAX_REMINDER_SENDS)})
 )`;
+
+// The keep rule of the actions retention clear: the row is the applied draft of an open delegation, and the
+// chaser still reads the language and the due date from its payload. `retention.ts` passes it.
+export const isOpenDelegationDraft: PayloadKeepRule = (eb, ctx) =>
+  eb.exists(
+    eb
+      .selectFrom("delegations")
+      .select("delegations.id")
+      .whereRef("delegations.draft_action_id", "=", "actions.id")
+      .where("delegations.org_id", "=", ctx.orgId)
+      .where(openDelegationFilter)
+  );
 
 export interface DelegateRow {
   id: string;

@@ -205,6 +205,41 @@ describe("retention job: runOrg", () => {
       expect(await job.runOrg(org, NOW)).toEqual(ZERO);
     });
   });
+
+  test("keeps the applied draft payload of an open delegation; clears the one of a closed delegation", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await newOrg(trx, 30);
+      const ctx = { orgId: a.orgId };
+      async function draftOf(status: string): Promise<string> {
+        const delegateId = await insertDelegate(trx, ctx);
+        const { emailId, draftId, sendId } = await insertDraftAndSend(trx, ctx, a.mailboxId, {
+          delegateId,
+          createdAt: over90,
+          dueDate: "2027-03-01",
+          language: "pl",
+        });
+        await insertDelegation(trx, ctx, {
+          mailboxId: a.mailboxId,
+          emailId,
+          delegateId,
+          draftActionId: draftId,
+          sendActionId: sendId,
+          status,
+          remindersSent: 0,
+        });
+        return draftId;
+      }
+      const sent = await draftOf("sent");
+      const done = await draftOf("done");
+
+      await createRetentionJob({ db: trx, now: () => NOW }).runOrg({ id: a.orgId, dataRetentionDays: 30 }, NOW);
+
+      const read = async (id: string) =>
+        (await trx.selectFrom("actions").select("payload").where("id", "=", id).executeTakeFirstOrThrow()).payload;
+      expect(await read(sent)).toMatchObject({ due_date: "2027-03-01", language: "pl" });
+      expect(await read(done)).toEqual({});
+    });
+  });
 });
 
 // F083 (minor-4): the job reads no mailbox status, plan or triage scope. Scope `off` means the triage worker does not run,

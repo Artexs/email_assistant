@@ -147,7 +147,7 @@ graph TD
 `mail → audit`: a status change (`updateMailboxPassword`) and its audit row go in one transaction.
 `mail → config`, `mail → audit` (`mail/connect.ts`): `insertDefaultSettings` and `recordAudit`.
 `mail → tenancy`, `triage → tenancy`, `actions → tenancy` (S6a): the sync, triage and committer loops call `isOrgSuspended` before each mailbox; `connectMailbox` calls `getOrgPlan` for the mailbox limit. `tenancy` imports only `audit` and `platform`, so there is no cycle. `channels → tenancy | mail` (S6a): the Telegram handlers call `isOrgSuspended`; `channels/operator.ts` calls `listOrganizations` and `listAuthErrorMailboxesBefore`.
-**Composition file `retention.ts` (S6a):** `apps/server/src/retention.ts` sits beside `web.ts` and `composition.ts`. It imports the clear functions of `mail`, `triage`, `actions`, `delegation` and `channels` and `listOrganizations` of `tenancy`, and builds the job `platform.retention`. `platform` imports no module, so the job cannot live in `platform`.
+**Composition file `retention.ts` (S6a):** `apps/server/src/retention.ts` sits beside `web.ts` and `composition.ts`. It imports the clear functions of `mail`, `triage`, `actions`, `delegation` and `channels` and `listOrganizations` of `tenancy`, and builds the job `platform.retention`. It passes `isOpenDelegationDraft` of `delegation` as the keep rule of `clearActionPayloads`, so `actions` never imports `delegation`. `platform` imports no module, so the job cannot live in `platform`.
 `actions` never calls `triage`, and `mail` never calls `triage`: they set columns that the triage worker reads (no import cycles).
 
 ## 3. Modules in `apps/server`

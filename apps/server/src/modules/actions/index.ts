@@ -89,6 +89,7 @@ export type {
   FailedAction,
   DraftRow,
   FinishNext,
+  PayloadKeepRule,
   PlannedActionInput,
   SendRow,
   UndoCandidate,

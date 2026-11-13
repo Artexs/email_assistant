@@ -5,7 +5,7 @@ import { sql, type Transaction } from "kysely";
 
 import { clearActionErrors, clearActionPayloads } from "../../src/modules/actions";
 import { deleteOldLinkTokens, clearOutboxTexts } from "../../src/modules/channels";
-import { clearDelegationTasks } from "../../src/modules/delegation";
+import { clearDelegationTasks, isOpenDelegationDraft } from "../../src/modules/delegation";
 import { clearMailBodies, clearMailHeaders } from "../../src/modules/mail";
 import { clearTriageTexts } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
@@ -304,7 +304,7 @@ describe("clearActionPayloads", () => {
           .execute();
       const beforeRows = await snapshot();
 
-      expect(await clearActionPayloads(trx, a.ctx, { before: before90 })).toBe(4);
+      expect(await clearActionPayloads(trx, a.ctx, { before: before90, keep: isOpenDelegationDraft })).toBe(4);
 
       const afterRows = await snapshot();
       const byId = new Map(afterRows.map((row) => [row.id, row]));
@@ -323,7 +323,7 @@ describe("clearActionPayloads", () => {
         .where("id", "in", Object.values(rowsB))
         .execute();
       expect(rowsOfB.filter((row) => Object.keys(row.payload as object).length === 0)).toHaveLength(0);
-      expect(await clearActionPayloads(trx, a.ctx, { before: before90 })).toBe(0);
+      expect(await clearActionPayloads(trx, a.ctx, { before: before90, keep: isOpenDelegationDraft })).toBe(0);
     });
   });
 });
@@ -363,12 +363,12 @@ describe("clearActionPayloads: applying rows and open delegations (F083)", () =>
       const rowsA = await seed(a);
       const rowsB = await seed(b);
 
-      expect(await clearActionPayloads(trx, a.ctx, { before: before90 })).toBe(2);
+      expect(await clearActionPayloads(trx, a.ctx, { before: before90, keep: isOpenDelegationDraft })).toBe(2);
       expect(await read(trx, rowsA.draftOver)).toEqual({});
       expect(await read(trx, rowsA.sendOver)).toEqual({});
       expect(await read(trx, rowsA.sendRecent)).toEqual(payload);
       for (const id of Object.values(rowsB)) expect(await read(trx, id)).toEqual(payload);
-      expect(await clearActionPayloads(trx, a.ctx, { before: before90 })).toBe(0);
+      expect(await clearActionPayloads(trx, a.ctx, { before: before90, keep: isOpenDelegationDraft })).toBe(0);
     });
   });
 
@@ -400,11 +400,36 @@ describe("clearActionPayloads: applying rows and open delegations (F083)", () =>
       const done = await draftOf("done", 1);
       const answered = await draftOf("answered", 0);
 
-      await clearActionPayloads(trx, a.ctx, { before: before90 });
+      await clearActionPayloads(trx, a.ctx, { before: before90, keep: isOpenDelegationDraft });
 
       expect(await read(trx, sent)).toMatchObject({ due_date: "2027-03-01", language: "pl" });
       expect(await read(trx, overdueOne)).toMatchObject({ due_date: "2027-03-01", language: "pl" });
       for (const id of [overdueSpent, done, answered]) expect(await read(trx, id)).toEqual({});
+    });
+  });
+
+  test("a keep rule that matches no row clears the applied draft of an open delegation", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await newOrg(trx);
+      const delegateId = await insertDelegate(trx, a.ctx);
+      const { emailId, draftId, sendId } = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        delegateId,
+        createdAt: over90,
+        dueDate: "2027-03-01",
+        language: "pl",
+      });
+      await insertDelegation(trx, a.ctx, {
+        mailboxId: a.mailboxId,
+        emailId,
+        delegateId,
+        draftActionId: draftId,
+        sendActionId: sendId,
+        status: "sent",
+        remindersSent: 0,
+      });
+
+      expect(await clearActionPayloads(trx, a.ctx, { before: before90, keep: (eb) => eb.lit(false) })).toBe(1);
+      expect(await read(trx, draftId)).toEqual({});
     });
   });
 });

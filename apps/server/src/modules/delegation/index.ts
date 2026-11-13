@@ -20,6 +20,7 @@ export {
   getDelegate,
   getDelegation,
   insertDelegation,
+  isOpenDelegationDraft,
   listAnsweredUnnotified,
   listDelegateAddresses,
   listDelegateNames,

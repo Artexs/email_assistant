@@ -11,7 +11,6 @@ import { z } from "zod";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
-import { openDelegationFilter } from "../delegation/repo";
 import { mailKindFilter } from "../mail";
 
 import { APPROVAL_TTL_MS, UNNOTIFIED_TTL_MS } from "./constants";
@@ -1672,16 +1671,20 @@ const RETENTION_BATCH = 1000;
 const PAYLOAD_TYPES = ["save_summary", "create_draft", "send"];
 const CLOSED_STATUSES = ["applied", "expired", "failed", "rejected", "undone", "logged"];
 
-// Retention (A23): the payload of a closed `save_summary`, `create_draft` or `send` row, and of a `ready` `save_summary`, goes after the period.
+// A row that matches the rule keeps its payload. The composition root passes it (`retention.ts`), so `actions`
+// does not need to know when another module still reads a payload (the hooks pattern, read side).
+export type PayloadKeepRule = (eb: ExpressionBuilder<DB, "actions">, ctx: TenantContext) => Expression<SqlBool>;
+
+// Retention (docs/architecture.md §7): the payload of a closed `save_summary`, `create_draft` or `send` row, and of a `ready` `save_summary`, goes after the period.
 // An `applying` `create_draft` or `send` row goes too when its last change is older than the period: the committer
 // recovers such a row only for a mailbox it still visits, so it can be stuck (a paused mailbox, a suspended organization,
 // scope `off`). A recovery of a cleared row ends as `failed` (bad payload).
-// Other open `create_draft` and `send` rows are not touched. The applied draft of an open delegation keeps its payload:
-// the chaser reads the language and the due date from it. Status and `updated_at` stay. Batches by id; a locked row waits for a later day.
+// Other open `create_draft` and `send` rows are not touched. A row that matches `opts.keep` keeps its payload
+// (`retention.ts` passes the open-delegation rule of `delegation`). Status and `updated_at` stay. Batches by id; a locked row waits for a later day.
 export async function clearActionPayloads(
   db: DbOrTrx,
   ctx: TenantContext,
-  opts: { before: Date; batch?: number }
+  opts: { before: Date; batch?: number; keep: PayloadKeepRule }
 ): Promise<number> {
   const batch = opts.batch ?? RETENTION_BATCH;
   let total = 0;
@@ -1707,18 +1710,7 @@ export async function clearActionPayloads(
               eb.and([eb("status", "=", "applying"), eb("updated_at", "<", opts.before)]),
             ])
           )
-          .where((eb) =>
-            eb.not(
-              eb.exists(
-                eb
-                  .selectFrom("delegations")
-                  .select("delegations.id")
-                  .whereRef("delegations.draft_action_id", "=", "actions.id")
-                  .where("delegations.org_id", "=", ctx.orgId)
-                  .where(openDelegationFilter)
-              )
-            )
-          )
+          .where((eb) => eb.not(opts.keep(eb, ctx)))
           .orderBy("id")
           .limit(batch)
           .forUpdate()
