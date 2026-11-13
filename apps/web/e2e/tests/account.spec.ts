@@ -47,6 +47,12 @@ test("an assistant sees the settings read-only", async ({ page }) => {
 
 test("the account card lists the signed-in devices", async ({ page, browser }, testInfo) => {
   const member = readSeed().members[testInfo.project.name as "mobile" | "desktop"];
+  // Earlier tests of this member left their sessions: end every session but this one.
+  const revoked = await page.request.post("/api/auth/revoke-other-sessions", {
+    headers: { origin: E2E_BASE_URL },
+    data: {},
+  });
+  expect(revoked.status()).toBe(200);
   await page.goto("/settings");
   const account = page.locator("[data-card=account]");
   await expect(account.getByText(en.acct_sessions_title)).toBeVisible();
