@@ -112,7 +112,7 @@ A gap or a deviation that a worker finds is a question in its final message, not
 1. `generate` for `classifier` sends the same request and writes the same `triage_results` rows as `classify` did. Shown by: stage 2 (the old `platform/llm` tests and the OpenAI snapshot pass unchanged through the new client), stage 1 test 1 (the classifier row equals the old settings), and stage 3 (`classifier.test.ts`, `triage-service.test.ts`, `triage-job.test.ts` pass with their assertions unchanged, D17); `classify` is removed at stage 3.
 2. A second role on another provider uses that provider's `createGenerate`, its key, its own limiter and its timeout. Shown by: `platform/llm/client-roles.test.ts` cases 2–6 (stage 2).
 3. Every `llm.call` row and every `LlmUsage` carries `role` and `prompt_version`. Shown by: `client-roles.test.ts` case 1 (stage 2), `triage-service.test.ts` and `rules-audit-repo.test.ts` (stage 4).
-4. `bun run llm:check --role <role>` calls that role's provider and model; `bun run eval` writes the role and the prompt version in its report. Shown by: `scripts/llm-check.test.ts` and `eval-report.test.ts` (stage 5); owner steps U1, U2.
+4. `bun run llm:check --role <role>` calls that role's provider and model; `bun run eval` writes the role and the prompt version in its report. Shown by: `scripts/llm-check-args.test.ts` case 5 and `eval-report.test.ts` (stage 5); owner steps U1, U2.
 5. The SDK-import lint still holds; `docs/code-patterns.md` has the role rule and the registry rule. Shown by: `bun run lint` at each stage; stage 6 diff.
 
 ## Rules for every stage
