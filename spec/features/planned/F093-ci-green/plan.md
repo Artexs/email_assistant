@@ -8,7 +8,7 @@ Ticket: [ticket.md](ticket.md). Defaults to confirm: [questions.md](questions.md
 
 - [written] Collect, facts, probes (2026-11-13; probes in `.probe-f093/` of the planner worktree, not committed).
 - [written] Stage 1 — `stages/stage-01-bun-pin-and-fakes.md`
-- [ ] Stage 2 — `stages/stage-02-waits-and-integration.md`
+- [written] Stage 2 — `stages/stage-02-waits-and-integration.md`
 - [ ] Stage 3 — `stages/stage-03-rules-and-numbers.md`
 - [ ] Cold review (`plan-review-1.md`)
 
