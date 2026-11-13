@@ -12,7 +12,15 @@ import { insertDigest } from "../../src/modules/reports";
 import { saveTriage, type TriageDecision, type TriageMailbox } from "../../src/modules/triage";
 import type { DB } from "../../src/platform/db";
 
-import { addMember, createOrgWithMailbox, insertTestEmail, linkChat, randomChatId, testCapabilities } from "./fixtures";
+import {
+  addMember,
+  createOrgWithMailbox,
+  insertTestEmail,
+  linkChat,
+  randomChatId,
+  renderedOf,
+  testCapabilities,
+} from "./fixtures";
 import { testDb } from "./helpers";
 import { countMailboxRows, fillMailbox, type MailboxIds } from "./mailbox-rows";
 
@@ -108,8 +116,7 @@ async function insertDigestOutbox(
     kind: "digest",
     dedupKey: `digest:${digestId}`,
     digestId: digestId ?? undefined,
-    message: { text, buttons: [] },
-    view: {},
+    view: { text, buttons: [] },
     locale: "en",
     createdAt: now,
     nextAttemptAt: now,
@@ -189,13 +196,33 @@ describe("removeMailbox", () => {
 
     const notices = await db
       .selectFrom("outbox")
-      .select(["user_id", "status", "text", "view", "mailbox_id", "email_id"])
+      .select([
+        "user_id",
+        "status",
+        "text",
+        "view",
+        "mailbox_id",
+        "email_id",
+        "kind",
+        "channel",
+        "detail",
+        "locale",
+        "buttons",
+      ])
       .where("org_id", "=", s.orgId)
       .where("kind", "=", "mailbox_removed")
       .execute();
-    expect(notices).toEqual([
-      { user_id: s.userId, status: "pending", text: MAILBOX_REMOVED_TEXT, view: {}, mailbox_id: null, email_id: null },
-    ]);
+    expect(
+      notices.map(({ user_id, status, text, view, mailbox_id, email_id }) => ({
+        user_id,
+        status,
+        text,
+        view,
+        mailbox_id,
+        email_id,
+      }))
+    ).toEqual([{ user_id: s.userId, status: "pending", text: null, view: {}, mailbox_id: null, email_id: null }]);
+    expect(notices.map((row) => renderedOf(row).text)).toEqual([MAILBOX_REMOVED_TEXT]);
     const leaks = await db
       .selectFrom("outbox")
       .select("id")
@@ -418,7 +445,7 @@ describe("removeMailbox", () => {
       staleBefore: new Date(now.getTime() - 5 * 60_000),
       orgIds: [s.orgId],
     });
-    expect(claimed.some((row) => row.text === "[removed]")).toBe(false);
-    expect(claimed.some((row) => row.text === "Digest pending")).toBe(false);
+    expect(claimed.some((row) => renderedOf(row).text === "[removed]")).toBe(false);
+    expect(claimed.some((row) => renderedOf(row).text === "Digest pending")).toBe(false);
   });
 });
