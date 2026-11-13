@@ -17,6 +17,34 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟠 ACTIVE): The server image, CI and local checks run one current Bun (1.4.x)
+- `F095-e1-close-the-mvp` (🔴 PLANNED, needs plan): E1 Close the MVP (capability map, docs boundary, NEXT sweep of the old planned tickets); sequenced after — (F077 landed); gate Owner: F047 A phone test; vision text OK (owner-owned).
+- `F096-e8-lr-log-rotation` (🔴 PLANNED, needs plan): E8-LR Log rotation; sequenced after —; gate —.
+- `F097-e2a-offline-lab` (🔴 PLANNED, needs plan): E2a Offline lab; sequenced after E1; gate Owner audit of 50 cases per corpus version.
+- `F098-e7-t1-polish-ui-i18n-frame-first` (🔴 PLANNED, needs plan): E7-T1 Polish UI (i18n frame first); sequenced after F082; gate —.
+- `F099-e7-t2-platform-controls-send-limits-feature-flags-operator-console-security-log` (🔴 PLANNED, needs plan): E7-T2 Platform controls (send limits, feature flags, operator console, security log); sequenced after F082; gate —.
+- `F100-e3a-measure` (🔴 PLANNED, needs plan): E3a Measure; sequenced after E1; E7-T2 before its user-visible stages (flags); gate —.
+- `F101-panel-to-astro-7` (🔴 PLANNED, needs plan): Panel to Astro 7; sequenced after E1; gate —.
+- `F102-e4-a-act-from-the-panel` (🔴 PLANNED, needs plan): E4-A Act from the panel; sequenced after E1, E7-T1, Astro 7; gate —.
+- `F103-e8a-logs` (🔴 PLANNED, needs plan): E8a Logs; sequenced after E1; gate —.
+- `F104-e5a-read-sent` (🔴 PLANNED, needs plan): E5a Read Sent; sequenced after E1, E7-T2; gate —.
+- `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (🔴 PLANNED, needs plan): E7-T6 Identity A (TOTP, backup codes, break-glass); sequenced after F082; gate —.
+- `F106-e7-t3-account-data-delete-export-dsr` (🔴 PLANNED, needs plan): E7-T3 Account data (delete, export, DSR); sequenced after F082, E7-T1; gate —.
+- `F107-e7-t4-papers-and-cost` (🔴 PLANNED, needs plan): E7-T4 Papers and cost; sequenced after E7-T3; gate —.
+- `F108-e7-t5-production-on-the-vps` (🔴 PLANNED, needs plan): E7-T5 Production on the VPS; sequenced after E7-T1 … T4; the E8b drill proves its restore; gate —.
+- `F109-e3b-improve` (🔴 PLANNED, needs plan): E3b Improve; sequenced after E2a, E3a; gate Second pass after the first E2a holdout report (PD-060, PD-061).
+- `F110-e4-b-earn-trust` (🔴 PLANNED, needs plan): E4-B Earn trust; sequenced after E4-A (command contract stage), E3a (flag store, header capture), E2a (urgency shape); the urgency-editor stage needs E3b's urgency command; gate —.
+- `F111-e11b-private-model-option` (🔴 PLANNED, needs plan): E11b Private model option; sequenced after E2a; gate Owner: OpenAI Europe project request (PD-111); second pass on the answer (PD-110) before the EU stage.
+- `F112-e10a-docs-site` (🔴 PLANNED, needs plan): E10a Docs site; sequenced after E1, Astro 7; gate —.
+- `F113-e2b-live-lab` (🔴 PLANNED, needs plan): E2b Live lab; sequenced after E2a; gate Owner: grow the VPS root volume (PD-055).
+- `F114-e8b-alerts-and-releases-incl-the-restore-drill` (🔴 PLANNED, needs plan): E8b Alerts and releases (incl. the restore drill); sequenced after E8a; gate Owner: grow the VPS root volume (PD-055).
+- `F115-e6a-reply-drafts` (🔴 PLANNED, needs plan): E6a Reply drafts; sequenced after E2a, E3a, E4-A, E5a, E7-T2; gate Stage 1 is the prototype; second pass after it (PD-071, PD-072, PD-083) before the later stages.
+- `F116-e5b-open-loops` (🔴 PLANNED, needs plan): E5b Open loops; sequenced after E2a, E3a, E4-A, E5a; gate Second pass after the first E3a weekly report and the E2b live week (PD-119, PD-120, PD-122).
+- `F117-e9a-mailbox-oauth` (🔴 PLANNED, needs plan): E9a Mailbox OAuth; sequenced after F082, E7-T2; gate Owner: one Microsoft 365 Business Basic seat; stage 1 is the spike; second pass after it (PD-086, PD-087).
+- `F118-e9b-phone-channel-pwa-push-telegram-detail` (🔴 PLANNED, needs plan): E9b Phone channel (PWA, push, Telegram detail); sequenced after E4-A, E4-B; gate —.
+- `F119-e7-t7-identity-b-oidc` (🔴 PLANNED, needs plan): E7-T7 Identity B (OIDC); sequenced after E7-T2, E7-T6; gate Stage 1 is the spike; second pass after it (PD-040, PD-041).
+- `F120-e11a-sender-context` (🔴 PLANNED, needs plan): E11a Sender context; sequenced after E3a, E5a, E4-B; gate —.
+- `F121-e10b-public-pages-and-demo` (🔴 PLANNED, needs plan): E10b Public pages and demo; sequenced after E2b, E3a, E4-B, E7-T4, E8b; gate —.
+- `F122-e6b-style-from-sent` (🔴 PLANNED, needs plan): E6b Style from Sent; sequenced after E6a, E5a; gate Gated: only if the E2a judge shows a gain.
 - `F088-notices-as-facts` (🟠 ACTIVE): Notices are stored as facts and rendered per channel, detail and locale by a renderer registry
 - `F082-s6b-public-login` (🟠 ACTIVE): The panel login has the production shape: invite only, lockout, leaked-password check, terms, session list
 - `F071-limen-transition` (🟠 ACTIVE): Move the agent workflow to Limen
