@@ -185,6 +185,18 @@ const openaiImports = {
 // Flat config: a later block replaces the rule options, so each file group lists all its patterns.
 const restrictImports = (patterns) => ({ "no-restricted-imports": ["error", { patterns }] });
 
+// Log lines are events (ADR 0024, docs/code-patterns.md § Logs). This is the only no-restricted-syntax rule for
+// server files: flat config replaces the options of a rule, so a second block with this rule would drop these selectors.
+const logCall =
+  'CallExpression[callee.type="MemberExpression"][callee.object.name=/^(log|[a-z][A-Za-z0-9]*Log)$/][callee.property.name=/^(debug|info|warn|error)$/]';
+const logEventMessage =
+  'Log lines are events: log.<level>("event_code", { allow-listed fields }) (ADR 0024, docs/code-patterns.md § Logs).';
+const logEventSelectors = [
+  { selector: `${logCall} > :first-child:not(Literal[value=/^[a-z][a-z0-9_]{0,63}$/])`, message: logEventMessage },
+  { selector: `${logCall}[arguments.length>2]`, message: `${logEventMessage} At most two arguments.` },
+  { selector: `${logCall}[arguments.length=0]`, message: `${logEventMessage} The event code is missing.` },
+];
+
 export default tseslint.config(
   includeIgnoreFile(gitignorePath),
   {
@@ -207,6 +219,13 @@ export default tseslint.config(
     // Tests assemble modules like a composition root; the e2e seed scripts write test rows with a repository.
     ignores: ["**/*.test.ts", ...borders.rootDeepImportExceptions.map(({ file }) => `${serverSrc}/${file}`)],
     rules: { "import/no-restricted-paths": ["error", { basePath: __dirname, zones: borderZones() }] },
+  },
+  {
+    // The modules convert in E8a; then each converted folder moves to the error block (D18).
+    // Tests call the old form on purpose (platform/log.test.ts).
+    files: ["apps/server/src/**/*.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: { "no-restricted-syntax": ["warn", ...logEventSelectors] },
   },
   {
     files: ["apps/server/src/**/*.ts", "packages/**/*.ts"],
