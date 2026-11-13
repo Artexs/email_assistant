@@ -13,6 +13,7 @@ Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit:
 - `packages/core` is pure: no DB, no network, no `process.env`, no imports from `apps/*`. Planners and the policy live there.
 - Ports and adapters: the port lives in the module that owns it (`mail/port.ts`); each adapter is a folder (`mail/imap/`, `mail/fake/`). Each SDK is imported only in its adapter (ESLint enforces it).
 - Routes are thin: parse with `parseBody` and a `@ea/core` schema, call one service or repo function, map to JSON. The tenant comes from the session (`requireTenant`), never from the request.
+- `/api/operator/*` is the only cross-organization web path; `requireOperator` in `createApp` guards the prefix (users in `OPERATOR_USER_IDS`, everyone else 404).
 - Web: one island per page; every visible string is a key in `apps/web/src/i18n/en.ts` through `t()`; data through `lib/api.ts` and `@ea/core/web` schemas.
 
 ## Prefer
@@ -30,6 +31,7 @@ Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit:
 - Files under about 400 lines and one aggregate; a bigger repository becomes `repo/<aggregate>.ts` behind the same index.
 - Registries (a typed record keyed by the enum, with a test against the enum and the CHECK list) over if-chains for handlers, detectors, renderers, roles, prompts and jobs.
 - A new table with `org_id` gets tenant-filter tests, retention (if it holds text) and a note for the organization delete and DSR map (`docs/code-patterns.md` § Data access).
+- A new user-visible behaviour reads `isFeatureOn(db, ctx, flag)`; the flag is in `packages/core/src/features.ts` with an owner epic and a remove-by date, default off, on for the pilot first. Change a flag only through `setOrgFeature`.
 
 ## Avoid
 
@@ -44,3 +46,4 @@ Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit:
 - A fixed sleep over 100 ms in a test; `test.skip`, a CI retry or a longer timeout as a fix. A test that fails twice in CI without a code change is quarantined the same day with a ticket (`docs/code-patterns.md` § Tests); only the coordinator quarantines.
 - Bare codes in comments (`S3`, `D29`, `A23`, `F079`): name the rule, an ADR or a ticket folder path.
 - A CLI that queries a repository directly: a CLI that uses the DB calls the service function that a route calls.
+- `use("*")` in a router mounted at `/` (it runs for every `/api` path); reading `FEATURES_OFF` or `OPERATOR_USER_IDS` outside `platform/config`; a settings argument on a flag read.
