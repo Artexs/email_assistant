@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-12
+landed: 2026-11-13
 ---
 
 # F084 · The mail host guard also refuses multicast, broadcast, reserved, NAT64, site-local and 6to4 addresses, and its default policy is frozen

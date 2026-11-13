@@ -15,7 +15,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
-- `F084-the-mail-host-guard-also-refuses-multicast-broadcast-reserved-nat64-site-local-and-6to4-addresses-and-its-default-policy-is-frozen` (🟠 ACTIVE): The mail host guard also refuses multicast, broadcast, reserved, NAT64, site-local and 6to4 addresses, and its default policy is frozen
 - `F082-s6b-public-login` (🟠 ACTIVE): The panel login has the production shape: invite only, lockout, leaked-password check, terms, session list
 - `F071-limen-transition` (🟠 ACTIVE): Move the agent workflow to Limen
 - `F069-compose-network-subnet` (🟠 ACTIVE): Pin the Compose network subnet
@@ -26,6 +25,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F084-the-mail-host-guard-also-refuses-multicast-broadcast-reserved-nat64-site-local-and-6to4-addresses-and-its-default-policy-is-frozen` (🟢 PROVEN): The mail host guard also refuses multicast, broadcast, reserved, NAT64, site-local and 6to4 addresses, and its default policy is frozen; landed 2026-11-13
 - `F079-approvals-at-resume` (🟢 PROVEN): After a pause, an approval request from before the pause cannot go out unseen or late; landed 2026-11-13
 - `F077-s6a-customer-core` (🟢 PROVEN): S6a Customer core: a second organization runs next to the pilot; landed 2026-11-13
 - `F083-retention-and-review-minors-of-the-s6a-group-review-are-fixed-stuck-rows-delegation-task-text-backfilled-mail-body` (🟢 PROVEN): Retention and review minors of the S6a group review are fixed: stuck rows, delegation task text, backfilled mail body; landed 2026-11-12
@@ -35,5 +35,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F058-sync-sort-folders` (🟢 PROVEN): Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci); landed 2026-11-12
 - `F054-s5e-web-deploy-docs` (🟢 PROVEN): S5e Web: deploy and docs; landed 2026-11-12
 - `F049-mail-smtp-starttls-587` (🟢 PROVEN): SMTP on port 587 with STARTTLS; landed 2026-11-12
-- `F045-approval-quote-address` (🟢 PROVEN): Keep the sender address in the approval quote header; landed 2026-11-12
-- 2026-11: 46 landed. spec/features/done/2026-11/
+- 2026-11: 47 landed. spec/features/done/2026-11/
