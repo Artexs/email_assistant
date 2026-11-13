@@ -8,10 +8,38 @@
 - Packages: `@ea/server` (`apps/server`), `@ea/web` (`apps/web`), `@ea/core` (`packages/core`).
 - Server code lives in `apps/server/src/modules/<module>/` and `apps/server/src/platform/`. Shared pure code lives in `packages/core/`.
 - Real platform paths: `platform/config.ts`, `platform/log.ts`, `platform/http.ts`, `platform/db/`, `platform/llm/`, `platform/crypto.ts`, `platform/errors.ts`, `platform/auth.ts`, `platform/scheduler.ts`, `platform/heartbeat.ts`.
-- A module exposes one `index.ts`. Other modules import only from it, never from its inner files.
+- A module exposes one `index.ts`. Other modules import only from it, never from its inner files. ESLint enforces it (§ Layers and borders).
 - Module files: `index.ts` (public API), `service.ts`, `repo.ts` (DB), `routes.ts` (HTTP), `jobs.ts` (workers), `*.test.ts` next to the code.
 - `packages/core` has no I/O: no DB, no network, no `process.env`, no imports from `apps/*`.
 - Test tools live in `tools/<name>/` (workspace `tools/*`, first: `tools/fake-telegram/`). App code (`apps/*`, `packages/*`) never imports them, and the server image holds only their `package.json`.
+
+## Layers and borders
+
+The server modules sit in layers. `bun run lint` fails on an import that crosses a border the wrong way (`import/no-restricted-paths`, zones generated in `eslint.config.js` from `apps/server/src/modules/layers.json`). The list lives once, in that file; this table repeats it for readers.
+
+| Layer | Modules                                                                                                                             |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| roots | the composition roots `apps/server/src/*.ts` (`main.ts`, `web.ts`, `composition.ts`, `retention.ts`) and `apps/server/src/scripts/` |
+| 4     | `reports`, `channels`, `testmail`                                                                                                   |
+| 3     | `triage`, `actions`, `delegation`                                                                                                   |
+| 2     | `config`, `mail`                                                                                                                    |
+| 1     | `audit`, `tenancy`                                                                                                                  |
+| base  | `apps/server/src/platform/`, then `packages/core`                                                                                   |
+
+- A module imports only the `index.ts` of a module in a lower layer, or of a module in its own layer when `sameLayerEdges` in `layers.json` names the pair with its reason. Never an inner file (`../mail/repo`), also not for a type, a re-export or an `import()`.
+- A module never imports a composition root or a script. `platform` imports no module. `packages/*` import nothing from `apps/*`.
+- A reverse need (a lower module must call a higher one) is a hook interface or a parameter in the lower module, filled in a composition root: `DelegationHooks` in `actions/hooks.ts` (write side), the keep rule `PayloadKeepRule` of `clearActionPayloads` that `retention.ts` fills with `isOpenDelegationDraft` of `delegation` (read side). A shared plain shape goes to `packages/core` (`ExpireFilter`).
+- A new module: add its folder name to a layer in `layers.json` (the lint stops with "Modules without a layer" until you do).
+- A new or removed import between two modules (also a permitted one): run `bun run graph:modules` and commit `docs/diagrams/module-graph.{md,json}`; `layers.test.ts` fails on a stale graph. On a merge or rebase conflict in these two files, run the command again; do not merge them by hand.
+- A new same-layer edge: add `{ from, to, why }` to `sameLayerEdges`. It must not close a cycle: the lint stops on a cycle in `sameLayerEdges`, and `apps/server/src/modules/layers.test.ts` fails on a cycle, on an edge that the layers do not permit, and on a stale generated graph.
+- Test files (`*.test.ts`, `apps/server/test/`) are outside the borders: they assemble modules like a composition root. The e2e seed scripts in `rootDeepImportExceptions` may import a repository directly; add no other entry without a reason in its `why`.
+- The generated graph: `docs/diagrams/module-graph.md`. The reasons for single edges: `docs/modules.md` §2.
+
+## Size and shape
+
+- A source file stays under about 400 lines and holds one aggregate (one table or one closely tied group of tables). A repository that grows past it becomes `repo/<aggregate>.ts` behind the same module `index.ts`.
+- Registries over if-chains: action handlers, notice detectors, notice renderers, LLM roles, prompts and jobs are entries in a typed record keyed by the enum. A test checks the record against the enum and, where one exists, the CHECK list of the migration. A new kind is a new entry, not a new `if` or `case` in a shared function.
+- A CLI script that reads or writes the DB parses its arguments, loads config and calls a service function of a module index, the same function a route calls (ADR 0023). It does not query a repository directly. A dev tool that touches no DB (`scripts/module-graph.ts`) is outside this rule. Existing scripts change when they are touched.
 
 ## Ports and adapters
 
@@ -34,6 +62,7 @@
   - `listAuthErrorMailboxesBefore` (`mail/repo.ts`, S6a): the operator job lists mailboxes in `auth_error` for 24 h across organizations; it skips `suspended` organizations.
   - S2, `channels/repo.ts`: `findChatLink` (the chat id gives the tenant), `listLinkedChats` (the notifier and digest jobs read all organizations; it skips `suspended` organizations unless `includeSuspended: true`), `useLinkToken` and `findLinkToken` (the token gives the tenant), `replaceChatLink` (it deletes the old link of a chat across organizations), `claimDueOutbox` (the sender claims rows of all organizations except `suspended` ones; their rows wait).
   - Rule: a job that walks organizations uses `listSyncTargets`, `listMailboxTargets`, `listLinkedChats` or `listOrganizations`, and states whether it runs for `suspended` organizations. The sync, triage and committer loops also check `isOrgSuspended` before each mailbox, so a suspend stops the next mailbox of a running job.
+- A new table with `org_id`, in the ticket of its migration: a `tenant filter` test for each new repository function (as in `actions-repo.test.ts` and `delegation-repo.test.ts`); a clear function and a row in `docs/architecture.md` §7 if it holds text; and a row in the organization delete and the DSR address map. The last two do not exist yet (E7-T3 builds them); until then, the migration ticket names the table in its plan so E7-T3 finds it.
 - Retention (S6a): the module that owns a text column exports a tenant-scoped clear function for it (`clearMailBodies`, `clearTriageTexts`, `clearActionPayloads`, `clearDelegationTasks`, `clearOutboxTexts` and the others). It works in batches of 1 000 rows by id with `FOR UPDATE SKIP LOCKED`, filters by no mailbox status and no plan, and a repeat run changes nothing. `apps/server/src/retention.ts` calls them for every organization. A new text column gets a clear function and a row in `docs/architecture.md` §7.
 - The tables `auth_sessions`, `auth_accounts`, `auth_verifications` and the Better Auth columns of `users` are read and written only by the Better Auth library through `platform/auth.ts`; no repository function touches them. The session list reads `auth_sessions` through `listUserSessions` (`platform/auth.ts`, the Better Auth internal adapter), never with SQL of ours.
 - Mail host check (S6b): every IMAP and SMTP connect resolves its host through `resolveMailHost` (`mail/host-guard.ts`) and connects to the checked address. `imapFlowOptions` and `buildSmtpTransportOptions` take the resolved target, so a new connect path cannot skip the check. `main.ts` and every entry script that imports `../modules/mail…` or `../composition` call `configureMailHosts` after `loadConfig`.
@@ -81,6 +110,7 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 - Folder keys in logs and audit rows, never paths from mail data or user input.
 - Telegram errors: log only `telegramErrorLabel(error)`. Never log `error.message` of an inner error, `payload` or `description` (they can hold the bot token or message text). Other errors: `describeError(error)`.
 - Errors: throw typed errors (`SoftError` for timeout / 429 / 503 / lost connection, `HardError` for the rest); the job runner decides the retry.
+- A comment states the rule in one sentence. If it needs a source, it names an ADR (`ADR 0014`) or a ticket folder path (`spec/features/done/2026-11/F083-…/`). No bare stage or decision codes (`S3`, `D29`, `U11`, `A23`, `F079`): their plan files move, and no reader can resolve them. Fix the codes of a comment when you change its code; no mass edit.
 
 ## Web app (`apps/web`)
 
