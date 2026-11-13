@@ -294,6 +294,30 @@ describe("HSTS", () => {
   });
 });
 
+describe("x-request-id", () => {
+  test("every response kind has an x-request-id header", async () => {
+    const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+    const app = appWith();
+    const post = { method: "POST", headers: { ...GOOD, ...ORIGIN, "content-type": "application/json" } };
+    const responses: [number, Response][] = [
+      [200, await app.request("/login")],
+      [200, await app.request("/_astro/x.js")],
+      [403, await app.request("/api/me", { method: "POST", headers: GOOD })],
+      [404, await app.request("/api/nope", { headers: GOOD })],
+      [401, await app.request("/api/me")],
+      [413, await app.request("/api/me", { ...post, body: JSON.stringify({ text: "x".repeat(70 * 1024) }) })],
+      [299, await app.request("/api/auth/get-session")],
+      [302, await app.request("/", { headers: GOOD })],
+      [503, await appWith({ dist: "/nonexistent/dist" }).request("/login")],
+    ];
+
+    for (const [status, res] of responses) {
+      expect(res.status).toBe(status);
+      expect(res.headers.get("x-request-id")).toMatch(UUID);
+    }
+  });
+});
+
 const errorRouters: WebDeps["routers"] = (api) => {
   api.get("/boom", () => {
     throw new Error("secret text");

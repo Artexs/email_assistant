@@ -9,6 +9,7 @@ import {
   buildTrustedProxies,
   clientAddress,
   createApp,
+  incomingRequestId,
   normalizeAddress,
   originAllowed,
   parseBody,
@@ -18,6 +19,7 @@ import {
   ValidationError,
   type ApiEnv,
 } from "./http";
+import { setLogFormat, setLogLevel } from "./log";
 
 describe("GET /health", () => {
   test("returns 200 when the DB is up", async () => {
@@ -46,6 +48,74 @@ describe("GET /health", () => {
   test("returns 404 for unknown routes", async () => {
     const res = await createApp({ checkDb: async () => true, web: null }).request("/nope");
     expect(res.status).toBe(404);
+  });
+});
+
+describe("incomingRequestId", () => {
+  const U = "3f2b8c1d-4e5a-4b6c-8d7e-9f0a1b2c3d4e";
+  const trusted = buildTrustedProxies(["172.18.0.0/16"]);
+  test.each([
+    [U, "172.18.0.1", U],
+    [U.toUpperCase(), "172.18.0.1", U],
+    [U, "::ffff:172.18.0.1", U],
+    [U, "203.0.113.9", null],
+    [U, undefined, null],
+    [undefined, "172.18.0.1", null],
+    ["abc", "172.18.0.1", null],
+    [`${U},${U}`, "172.18.0.1", null],
+    ["x".repeat(36), "172.18.0.1", null],
+  ])("header %j from peer %j -> %j", (header, peer, expected) => {
+    expect(incomingRequestId(header, peer, trusted)).toBe(expected);
+  });
+});
+
+describe("x-request-id", () => {
+  const U = "3f2b8c1d-4e5a-4b6c-8d7e-9f0a1b2c3d4e";
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+  test("every response kind has the header, and each request gets its own id", async () => {
+    const ok = createApp({ checkDb: async () => true, web: null });
+    const broken = createApp({
+      checkDb: async () => {
+        throw new Error("boom");
+      },
+      web: null,
+    });
+    const [health, again, missing, failed, foreign] = await Promise.all([
+      ok.request("/health"),
+      ok.request("/health"),
+      ok.request("/nope"),
+      broken.request("/health"),
+      ok.request("/health", { headers: { "x-request-id": U } }),
+    ]);
+
+    expect([health.status, missing.status, failed.status]).toEqual([200, 404, 500]);
+    for (const res of [health, again, missing, failed, foreign]) {
+      expect(res.headers.get("x-request-id")).toMatch(UUID);
+    }
+    expect(health.headers.get("x-request-id")).not.toBe(again.headers.get("x-request-id"));
+    expect(foreign.headers.get("x-request-id")).not.toBe(U);
+  });
+
+  test("the access line carries the request id of the response header", async () => {
+    const logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
+    let calls: unknown[][] = [];
+    let res: Response;
+    setLogFormat("json");
+    setLogLevel("debug");
+    try {
+      res = await createApp({ checkDb: async () => true, web: null }).request("/health");
+    } finally {
+      calls = [...logSpy.mock.calls];
+      setLogFormat("text");
+      setLogLevel("info");
+      logSpy.mockRestore();
+    }
+
+    const lines = calls.map((call) => JSON.parse(String(call[0])) as Record<string, unknown>);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]?.event).toBe("legacy_text");
+    expect(lines[0]?.request_id).toBe(res.headers.get("x-request-id"));
   });
 });
 

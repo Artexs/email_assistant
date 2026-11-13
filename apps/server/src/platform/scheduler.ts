@@ -1,13 +1,28 @@
+import { randomUUID } from "node:crypto";
+
 import { Cron } from "croner";
 
-import { describeError } from "./errors";
-import { createLog } from "./log";
+import { errorFields } from "./errors";
+import { createLog, withLogContext } from "./log";
 
 const log = createLog("scheduler");
 
 export interface Scheduler {
   add(name: string, pattern: string, fn: () => Promise<void>): void;
   stop(): void;
+}
+
+/** One tick of a job in its own log context (D16). Never throws: a failure is one job_failed line. */
+export async function runJobTick(name: string, fn: () => Promise<void>): Promise<void> {
+  const start = performance.now();
+  await withLogContext({ job: name, run_id: randomUUID() }, async () => {
+    try {
+      await fn();
+      log.debug("job_done", { ms: Math.round(performance.now() - start) });
+    } catch (error) {
+      log.error("job_failed", { ms: Math.round(performance.now() - start), ...errorFields(error) });
+    }
+  });
 }
 
 /** Runs jobs in this process. One job never runs twice at the same time: a tick that finds the job still running is skipped. */
@@ -20,10 +35,11 @@ export function createScheduler(): Scheduler {
         new Cron(
           pattern,
           {
-            protect: () => log.debug(`${name} skipped: the previous run is still going`),
-            catch: (error) => log.error(`${name} failed: ${describeError(error)}`),
+            protect: () => log.debug("job_skipped", { job: name }),
+            // A last guard: runJobTick catches every failure itself.
+            catch: (error) => log.error("job_failed", { job: name, ...errorFields(error) }),
           },
-          fn
+          () => runJobTick(name, fn)
         )
       );
     },
