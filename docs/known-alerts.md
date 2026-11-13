@@ -326,9 +326,17 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 - **First seen:** 2026-11-10 (CI run on the S5a branch and on `master`; the `ci` job, `test:unit`)
 - **Source:** `apps/server/src/modules/testmail/send.test.ts` and `apps/server/src/modules/testmail/agentmail/fake.test.ts` (unit tests, no database).
-- **Cause:** Each test sends twice through the fake AgentMail server with a held response and a client timeout of 200 ms. On this PC each test takes about 0.2 s (checked 2026-11-10); on a CI runner the same two tests take about 5.2 s, just over the 5 s default test timeout of `bun test`, so they fail. The extra time on CI is not diagnosed. The S5a branch does not touch `apps/server/src/modules/testmail/`: the same two fail on `master`.
-- **Fix:** Give the two tests their own longer timeout (the third argument of `test`, as `apps/server/test/integration/mail-seed.test.ts` does with `30_000`). A re-run is not a fix. The `test-mail-traffic` task owns the fix.
-- **Status:** fix pending
+- **Cause:** Bun 1.3.14 (CI and the server image) `server.stop(true)` waits for in-flight handlers. The fake's `stop()` cleared the hold timer, so the held handler never ended and `afterEach` hung (log line `a beforeEach/afterEach hook timed out for this test`). Local runs used Bun 1.4.4, where `stop(true)` returns at once. This is a hang, not a slow runner: a longer timeout cannot help. The first entry text said "slow on a CI runner"; that was wrong.
+- **Fix:** the fake's `stop()` releases held responses before it stops the server (F093 stage 1). To test on the CI Bun, run `bun run test:unit:ci`.
+- **Status:** fixed (4ad0fbd)
+
+### `STARTTLS against a scripted server with a self-signed certificate > … ^ this test timed out after 5000ms`
+
+- **First seen:** 2026-11-12 (CI, `test:unit`, after F049 landed the test)
+- **Source:** `apps/server/src/modules/mail/imap/smtp-starttls.test.ts` (three tests: `verifySmtpLogin upgrades first …`, `openSmtpSender sends after the upgrade`, `an untrusted certificate is refused and no password goes out`).
+- **Cause:** Bun 1.3.14 cannot finish a server-side `new TLSSocket(socket, { isServer: true })` on an accepted `node:net` socket, so the test server never completed the handshake. Also, a Bun 1.3.14 client that upgrades a socket to an IP host checks the certificate against `localhost`, not the IP.
+- **Fix:** at `STARTTLS` the scripted server relays the socket to a second, TLS-only server; the test certificate SAN is `IP:127.0.0.1,DNS:localhost` (F093 stage 1). All security assertions are unchanged. Product effect: STARTTLS to an IP-literal mail host fails the name check on the image Bun (it fails closed); DNS names are fine. See `notes/2026-11-13-bun-version-drift.md`.
+- **Status:** fixed (1796c23)
 
 ### `mailbox:seed and mailbox:audit CLI > seed exits 1 … ^ this test timed out after 5000ms.`
 
