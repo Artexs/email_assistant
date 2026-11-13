@@ -40,3 +40,4 @@ Template:
 | 0026 | Identity tier 1: OIDC per organization, TOTP, break-glass owner         | proposed                              |
 | 0027 | Operator role in the panel and per-organization feature flags           | proposed                              |
 | 0028 | Autonomy earned from global evidence and a history check, not labels   | proposed                              |
+| 0033 | Reply drafts: free LLM text under code checks; mail-client edits win    | proposed                              |
