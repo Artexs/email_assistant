@@ -201,7 +201,7 @@ main().then(
 );
 ```
 
-Adapt the import order and the exit handling to what `bun run lint` and the other scripts want; do not add a DB or config load.
+Adapt the import order and the exit handling to what `bun run lint` and the other scripts want; do not add a DB or config load. Run `bunx prettier --write apps/server/src/scripts/module-graph-build.ts apps/server/src/scripts/module-graph.ts apps/server/src/modules/layers.test.ts` before the commit: the `$comment` line of `renderGraphJson` is longer than 120 characters as given, and `bun run lint` reports `prettier/prettier` until it is formatted.
 
 **Decisions.** D15: the TypeScript compiler (`ts.preProcessFile`), a root devDependency, finds every import form; madge is not used. D16: Prettier output. Test files do not count (D11). An import that leaves `modules/` (`../../platform/db`) or stays inside the module is not an edge.
 

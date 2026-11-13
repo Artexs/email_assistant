@@ -1,6 +1,6 @@
 # F086 · Module borders: plan
 
-> **Status 2026-11-13 — planned.** Five stages written; cold review in § "Cold review". Builds after F093 (CI green), alone. Ticket: [ticket.md](ticket.md). Open defaults: [questions.md](questions.md).
+> **Status 2026-11-13 — planned.** Five stages written; cold review 1 done and applied (§ "Cold review"). Builds after F093 (CI green), alone. Ticket: [ticket.md](ticket.md). Open defaults: [questions.md](questions.md).
 
 ## Input
 
@@ -22,13 +22,13 @@ Each one refines D1–D6 after a fact check. "Default" marks a choice that the o
 
 - **D7 Layer data in JSON: `apps/server/src/modules/layers.json`.** D1 allows a JSON. `eslint.config.js` runs under Node (`node_modules/eslint/bin/eslint.js` starts with `#!/usr/bin/env node`); a `.ts` import there depends on the Node version of each machine and of CI. JSON is read by `eslint.config.js` (`readFileSync` + `JSON.parse`) and by the Bun tests. Fields: `layers` (module names, lowest layer first; `platform` and the roots are fixed in code, not in the file), `sameLayerEdges` (`{ from, to, why }`), `rootDeepImportExceptions` (`{ file, why }`). Rejected: `layers.ts` (Node cannot import it on every machine).
 - **D8 One rule: `import/no-restricted-paths` zones, generated.** One zone per ordered module pair: a permitted pair gets `except: ["./index.ts"]` (only the index may be imported), a forbidden pair gets no `except` (nothing may be imported). The rule resolves each import to a file, so it catches deep imports, `import type`, `export … from` and `import()` (probe P1). Rejected: the `no-restricted-imports` pattern `../*/!(index)` (a path pattern cannot tell a sibling folder of the same module, `mail/imap/`, from another module, and a later flat-config block replaces the options of the four SDK blocks); `eslint-plugin-boundaries` (a new dependency and a `bun.lock` change; the zones need about 40 lines).
-- **D9 No `import/no-cycle`.** It ignores type-only imports (its docs, line 25), and the broken `config → actions` edge is type-only. It also reports the 9 cycles inside one module (out of scope) and has no per-folder filter. A cycle between two modules cannot pass the zones: every permitted edge goes to a lower layer or along `sameLayerEdges`, and the stage 04 test fails when `sameLayerEdges` or the generated graph has a cycle. The cycle fixture of the acceptance fails with `import/no-restricted-paths` (probe P1).
+- **D9 No `import/no-cycle`.** It ignores type-only imports (its docs, line 25), and the broken `config → actions` edge is type-only. It also reports the 9 cycles inside one module (out of scope) and has no per-folder filter. A cycle between two modules cannot pass the lint: every permitted edge goes to a lower layer or along `sameLayerEdges`, and `eslint.config.js` throws when `sameLayerEdges` has a cycle (added after review note 1: without it, both directions listed in `sameLayerEdges` would pass the lint). The cycle fixture of the acceptance fails with `import/no-restricted-paths` (probe P1); the stage 04 test also fails on a cycle in the generated graph.
 - **D10 Three more same-layer edges (default).** D1 names three same-layer pairs; the code has three more today, and all three are acyclic: `tenancy → audit`, `mail → config`, `channels → reports`. They go into `sameLayerEdges` with their reason. Rejected: one layer per module (it changes the owner's layer list).
 - **D11 Test files are outside the borders (default).** The zone block ignores `**/*.test.ts`, and the graph does not count them. Tests assemble modules like a composition root does: `mail/views.test.ts` imports `../actions`, and `apps/server/test/` imports module internals 138 times. The lint covers only `apps/server/src/**/*.ts` and `packages/**/*.ts`.
 - **D12 Two e2e seed scripts keep their deep import (default).** `scripts/e2e-seed.ts` and `scripts/e2e-activity-rows.ts` import `insertMailbox`, `insertCredentials`, `insertInboxFolder` from `../modules/mail/repo` to seed test data. They are named in `rootDeepImportExceptions` and ignored by the zone block. Rejected: export raw credential inserts from the `mail` index (a wider public API only for a test seed).
 - **D13 `testmail` stays in `modules/` (layer 4).** The E2a ticket that replaces AgentMail moves it to `tools/`. Today no module imports it.
 - **D14 The keep rule is a typed, required function.** D4's `Expression<SqlBool> | null` becomes `keep: PayloadKeepRule`, with `type PayloadKeepRule = (eb: ExpressionBuilder<DB, "actions">, ctx: TenantContext) => Expression<SqlBool>`, defined in `actions/repo.ts` and exported from the `actions` index. `delegation` exports `isOpenDelegationDraft: PayloadKeepRule` (the same `EXISTS` subquery as today, moved), and `retention.ts` passes it. Reasons: the typed builder checks the column names (a raw `sql` fragment that names `actions.id` does not); "required" makes typecheck stop a caller that forgets the rule (the pattern of `SettingsDeps.expireReady`); `null` has no caller. Behaviour does not change: the SQL is the same.
-- **D15 The graph builder uses the TypeScript compiler, no new tool.** `ts.preProcessFile(text, true, true)` lists every import, `import type`, `export … from` and `import()` (probe P4). A relative import that resolves into another module folder is an edge. madge is not a dependency (it runs as `bunx madge@8.0.0` for the one-time acceptance check only). Rejected: madge's JSON (a download on every run and in CI).
+- **D15 The graph builder uses the TypeScript compiler, no new tool.** It counts relative imports only: the repo has no TypeScript `paths` alias (`tsconfig.base.json`, `apps/server/tsconfig.json`) and no file imports `@ea/server`, so a module reaches another module only by a relative path. `ts.preProcessFile(text, true, true)` lists every import, `import type`, `export … from` and `import()` (probe P4). A relative import that resolves into another module folder is an edge. madge is not a dependency (it runs as `bunx madge@8.0.0` for the one-time acceptance check only). Rejected: madge's JSON (a download on every run and in CI).
 - **D16 Generated files are formatted with Prettier.** `lint-staged` runs `prettier --write` on staged `.md` and `.json` files, so the generator formats its output with the repo Prettier config (`resolveConfig` + `format`, probe P5). Otherwise a commit would change the files and the freshness test would fail.
 - **D17 Five stages, not four.** The `[risky]` retention change (data integrity: an open delegation must keep its draft payload) is a stage of its own, as the plan-task rule says. The 07 table says 4 stages; the count changes, the content does not.
 - **D18 The flaky-test rule is F093's wording.** Stage 05 does not write it again. If `docs/code-patterns.md` has no quarantine rule when stage 05 starts, the worker stops and reports it (F093 must be in `done/` first).
@@ -78,7 +78,7 @@ A gap or a deviation that a worker finds is a question in its final message, not
 - Read `ticket.md`, this file and your one stage file. Build only your stage. A gap or a deviation is a question in your final message, not a choice.
 - No behaviour change. The only SQL that moves is the `EXISTS` subquery of stage 02, unchanged.
 - Format only the files of your stage (`bunx prettier --write <files>`). Never run `bun run format` or `prettier --write .` (an S2 builder did, and the diff touched hundreds of files).
-- No temporary files inside the worktree: `bun run lint` lints every `.ts` file in it. Use `/tmp/f086-sNN/`.
+- No temporary files inside the worktree: `bun run lint` lints every `.ts` file in it. Use `/tmp/f086-sNN/`. The only exception: the probe edits and mutation checks that a stage file names; revert each one at once and check that `git status --short` shows none of them before the commit.
 - Comments in new or changed lines state the rule in one sentence and name an ADR or a ticket folder path if a source is needed. No bare codes (`D29`, `S4`, `A23`, `F083`) in new comments (the standard of stage 05).
 - No secret, `.env` value, mail text or address in a log line, a test name or a commit message.
 - `bun run test:int` runs in your own DB (the prepare script makes it); no lock needed. Do not run `bun run test:e2e`.
@@ -130,19 +130,31 @@ limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thi
 ```
 
 3. Stages 02 and 03: start a review job on the stage branch before the land (`limen spawn --review --branch <stage branch> …` with the reviewer model). Land with `limen land --keep-open`; the land of stage 05 closes the ticket.
-4. Before the land of stage 03: list the open job branches (`limen jobs`). After the land, tell each open job to rebase and run `bun run lint`: a branch that adds a cross-module import may now fail. F082 (active) is the known case.
+4. Before the land of stages 03 and 04: list the open job branches (`limen jobs`). After each land, tell each open job to rebase and run `bun run lint` (after 03: a forbidden cross-module import fails) and `bun run graph:modules` plus `bun test apps/server/src/modules/layers.test.ts` (after 04: any new cross-module import makes the graph stale). F082 (active) is the known case.
 5. After each land, drop the job DB (`bun run db:worktree <name> --drop` from the main checkout, name printed by the prepare script).
 6. After the land of stage 03, check the CI run of `master` (Not verified: ESLint under Bun 1.3.14).
 
 ## Planning progress
 
 - [written] stage 01 · [written] stage 02 · [written] stage 03 · [written] stage 04 · [written] stage 05
-- [pending] cold review (`plan-review-1.md`)
+- [done] cold review (`plan-review-1.md`), findings applied
 
 ## Cold review
 
-Pending.
+Review 1 ([plan-review-1.md](plan-review-1.md)), Opus 5.5 at `548904d`: PASS, 0 major, 9 minor notes (note 10 is a verdict). It applied stages 01–04 in a scratch copy: typecheck, lint, 1898 unit tests, the 14 + 11 new tests, madge and all mutations as the stages say. Not run: `test:int` (no DB).
+
+- Note 1 (lint passes a cycle listed in both directions of `sameLayerEdges`): fixed. `eslint.config.js` throws on a cycle in `sameLayerEdges` (stage 03 step 2 code and test 4; D9). The acceptance line stays true for the lint itself. Probe: the check returns no cycle on the real list and finds `actions → triage` and `actions → delegation` added as cycles.
+- Note 2 (stale graph on a new permitted edge; open branches at the stage 04 land; conflicts in the generated files): fixed in stage 05 (rule text in both files) and § How to run step 4.
+- Note 3 (temporary-files rule against the named probe edits): fixed, the rule names the exception.
+- Note 4 (CLI rule against the graph CLI): fixed, the rule covers CLIs that use the DB.
+- Note 5 (missing `mkdir` in the stage 03 check): fixed.
+- Note 6 (which comments in stage 02): fixed with line 1685 named.
+- Note 7 (stage 04 source not Prettier-formatted): fixed, stage 04 step 1 names the `prettier --write` command and why.
+- Note 8 (non-relative imports not in the graph): rejected with a reason in D15 (no alias exists).
+- Note 9 (`07-foundation-plan.md` says 4 stages): outside this folder; the exact edit is in the final message of this job.
+- Mutation check of stage 03 step 3 changed from `actions → triage` (now a config error) to removing `triage → actions` (case 12 fails).
 
 ## Log
 
 - 2026-11-13: plan written by a planner job (Opus 5.5) from the author's input; probes P1–P5.
+- 2026-11-13: cold review 1 (Opus 5.5): PASS, 9 minor notes; 8 fixed, 1 rejected with a reason; the `sameLayerEdges` cycle check added to stage 03.

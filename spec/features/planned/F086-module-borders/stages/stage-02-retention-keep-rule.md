@@ -33,7 +33,7 @@ export type PayloadKeepRule = (eb: ExpressionBuilder<DB, "actions">, ctx: Tenant
           .where((eb) => eb.not(opts.keep(eb, ctx)))
 ```
 
-All other lines of the function stay. Update its comment (lines 1689–1690; the sentence spans the line break): replace "The applied draft of an open delegation keeps its payload: the chaser reads the language and the due date from it." with "A row that matches `opts.keep` keeps its payload (`retention.ts` passes the open-delegation rule of `delegation`)." Replace the bare codes `(A23)` in the two comments you touch with `(docs/architecture.md §7)`.
+All other lines of the function stay. Update its comment (lines 1689–1690; the sentence spans the line break): replace "The applied draft of an open delegation keeps its payload: the chaser reads the language and the due date from it." with "A row that matches `opts.keep` keeps its payload (`retention.ts` passes the open-delegation rule of `delegation`)." In the same comment, line 1685 starts with `// Retention (A23):`; make it `// Retention (docs/architecture.md §7):`. Leave line 1681 (`PAYLOAD_TYPES`) as it is. The new `PayloadKeepRule` comment above has no code.
 
 `actions/index.ts`: add `PayloadKeepRule,` to the `export type { … } from "./repo"` list (alphabetical place: after `PlannedActionInput`).
 

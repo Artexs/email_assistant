@@ -71,6 +71,16 @@ function borderZones() {
   if (missing.length > 0) {
     throw new Error(`Modules without a layer in ${layersFile}: ${missing.join(", ")}`);
   }
+  // Edges between layers only go down, so a cycle between modules can only run through same-layer edges.
+  // The lint refuses such a cycle here, so `bun run lint` fails on it even when both imports are listed.
+  const next = new Map();
+  for (const { from, to } of borders.sameLayerEdges) next.set(from, [...(next.get(from) ?? []), to]);
+  const reaches = (start, goal, seen = new Set()) =>
+    (next.get(start) ?? []).some((to) => to === goal || (!seen.has(to) && (seen.add(to), reaches(to, goal, seen))));
+  const cyclic = borders.sameLayerEdges.find(({ from }) => reaches(from, from));
+  if (cyclic) {
+    throw new Error(`sameLayerEdges in ${layersFile} has a cycle through ${cyclic.from}`);
+  }
   const sameLayer = new Set(borders.sameLayerEdges.map(({ from, to }) => `${from}>${to}`));
   const moduleDir = (name) => `${serverSrc}/modules/${name}`;
   // Globs only: a `from` list that mixes globs and plain paths is an error of the rule.
@@ -133,10 +143,11 @@ Keep the SDK blocks (`restrictImports`) as they are: they use another rule, so t
 1. `bun run lint` exits 0 on the repo (stages 01 and 02 removed the 2 violations; probe P1 found no other).
 2. Temporarily add `import { getMailbox } from "../mail/repo";` to the top of `apps/server/src/modules/triage/service.ts`, run `bunx eslint apps/server/src/modules/triage/service.ts`: one `import/no-restricted-paths` error. Revert the line (`git diff --stat` is empty for that file afterwards).
 3. Temporarily create the folder `apps/server/src/modules/zz-probe/` with an empty `index.ts`, run `bun run lint`: it fails with "Modules without a layer in …: zz-probe". Delete the folder.
+4. Temporarily add `{ "from": "actions", "to": "triage", "why": "probe" }` to `sameLayerEdges`, run `bun run lint`: it fails with "sameLayerEdges in … has a cycle through". Remove the entry (`git diff apps/server/src/modules/layers.json` is empty).
 
-**Check.** `bun run lint > /tmp/f086-s03/lint.log 2>&1; echo $?` prints `0`; the timing line of `time bun run lint` is in the final message (about 14 s today).
+**Check.** `mkdir -p /tmp/f086-s03 && bun run lint > /tmp/f086-s03/lint.log 2>&1; echo $?` prints `0`; the timing line of `time bun run lint` is in the final message (about 14 s today).
 
-**Done when.** Tests 1–3 hold; the probe edits of tests 2 and 3 are gone.
+**Done when.** Tests 1–4 hold; the probe edits of tests 2, 3 and 4 are gone.
 
 **Out of scope.** Border rules for `apps/web` and `tools/`. Cycles inside one module.
 
@@ -172,7 +183,7 @@ Each fixture is a `test(...)` with a 30 000 ms timeout (the first `lintText` loa
 | --- | --- | --- | --- |
 | 1 | `modules/triage/__border-fixture.ts` | `import { getMailbox } from "../mail/repo";` | 1, message contains `Import mail only through its index.ts` (acceptance: deep import) |
 | 2 | `modules/audit/__border-fixture.ts` | `import { recordFeedback } from "../triage";` | 1, message contains `audit may not import triage` (acceptance: higher layer) |
-| 3 | `modules/mail/__border-fixture.ts` | `import { recordFeedback } from "../triage";` | 1, message contains `mail may not import triage` (acceptance: a cycle between two modules: `triage → mail` exists in the code, so this edge closes a cycle) |
+| 3 | `modules/mail/__border-fixture.ts` | `import { recordFeedback } from "../triage";` | 1, message contains `mail may not import triage` (acceptance: a cycle between two modules: `triage → mail` exists in the code, so this edge closes a cycle; the other way to make a cycle, both directions in `sameLayerEdges`, stops the config: step 2, test 4) |
 | 4 | `modules/actions/__border-fixture.ts` | `import { recordFeedback } from "../triage";` | 1, message contains `actions may not import triage` (a same-layer reverse edge: `triage → actions` is permitted, so this one closes a cycle) |
 | 5 | `modules/mail/__border-fixture.ts` | `import type { ActionsScope } from "../actions";` | 1 (a type-only import counts) |
 | 6 | `modules/channels/telegram/__border-fixture.ts` | `import { undo } from "../../actions/undo";` | 1 (a deep import from a subfolder) |
@@ -191,11 +202,11 @@ Group them as `describe("module borders: the lint fails", …)` (1–10) and `de
 
 **Test.** `bun test apps/server/src/modules/borders.test.ts` passes: 14 tests.
 
-**Check.** Mutation check, then revert: in `layers.json`, add `{ "from": "actions", "to": "triage", "why": "probe" }` to `sameLayerEdges`; case 4 now fails. Remove the entry (`git diff apps/server/src/modules/layers.json` is empty).
+**Check.** Mutation check, then revert: in `layers.json`, remove the entry `{ "from": "triage", "to": "actions", … }` from `sameLayerEdges`; case 12 now fails (one border error). Restore the entry (`git diff apps/server/src/modules/layers.json` is empty). (Adding the reverse edge `actions → triage` instead makes the config throw on the cycle: step 2, test 4.)
 
 **Done when.**
 
-- 14 tests pass; the mutation check failed case 4 and is reverted.
+- 14 tests pass; the mutation check failed case 12 and is reverted.
 - The Proof of `plan.md` ends with `PROOF_OK` (`NN` = `03`).
 - A review job checks the stage before the land (plan § Review).
 

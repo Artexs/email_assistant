@@ -33,8 +33,9 @@ The server modules sit in layers. `bun run lint` fails on an import that crosses
 - A module imports only the `index.ts` of a module in a lower layer, or of a module in its own layer when `sameLayerEdges` in `layers.json` names the pair with its reason. Never an inner file (`../mail/repo`), also not for a type, a re-export or an `import()`.
 - A module never imports a composition root or a script. `platform` imports no module. `packages/*` import nothing from `apps/*`.
 - A reverse need (a lower module must call a higher one) is a hook interface or a parameter in the lower module, filled in a composition root: `DelegationHooks` in `actions/hooks.ts` (write side), the keep rule `PayloadKeepRule` of `clearActionPayloads` that `retention.ts` fills with `isOpenDelegationDraft` of `delegation` (read side). A shared plain shape goes to `packages/core` (`ExpireFilter`).
-- A new module: add its folder name to a layer in `layers.json` (the lint stops with "Modules without a layer" until you do), then run `bun run graph:modules` and commit `docs/diagrams/module-graph.{md,json}`.
-- A new same-layer edge: add `{ from, to, why }` to `sameLayerEdges`. It must not close a cycle; `apps/server/src/modules/layers.test.ts` fails on a cycle, on an edge that the layers do not permit, and on a stale generated graph.
+- A new module: add its folder name to a layer in `layers.json` (the lint stops with "Modules without a layer" until you do).
+- A new or removed import between two modules (also a permitted one): run `bun run graph:modules` and commit `docs/diagrams/module-graph.{md,json}`; `layers.test.ts` fails on a stale graph. On a merge or rebase conflict in these two files, run the command again; do not merge them by hand.
+- A new same-layer edge: add `{ from, to, why }` to `sameLayerEdges`. It must not close a cycle: the lint stops on a cycle in `sameLayerEdges`, and `apps/server/src/modules/layers.test.ts` fails on a cycle, on an edge that the layers do not permit, and on a stale generated graph.
 - Test files (`*.test.ts`, `apps/server/test/`) are outside the borders: they assemble modules like a composition root. The e2e seed scripts in `rootDeepImportExceptions` may import a repository directly; add no other entry without a reason in its `why`.
 - The generated graph: `docs/diagrams/module-graph.md`. The reasons for single edges: `docs/modules.md` §2.
 
@@ -42,7 +43,7 @@ The server modules sit in layers. `bun run lint` fails on an import that crosses
 
 - A source file stays under about 400 lines and holds one aggregate (one table or one closely tied group of tables). A repository that grows past it becomes `repo/<aggregate>.ts` behind the same module `index.ts`.
 - Registries over if-chains: action handlers, notice detectors, notice renderers, LLM roles, prompts and jobs are entries in a typed record keyed by the enum. A test checks the record against the enum and, where one exists, the CHECK list of the migration. A new kind is a new entry, not a new `if` or `case` in a shared function.
-- A CLI script parses its arguments, loads config and calls a service function of a module index, the same function a route calls (ADR 0023). It does not query a repository directly. Existing scripts change when they are touched.
+- A CLI script that reads or writes the DB parses its arguments, loads config and calls a service function of a module index, the same function a route calls (ADR 0023). It does not query a repository directly. A dev tool that touches no DB (`scripts/module-graph.ts`) is outside this rule. Existing scripts change when they are touched.
 ```
 
 3. In § "Data access", after the line that starts with "- Every repository function takes a `TenantContext` and filters by `org_id`." and its exception list (before the line "- Retention (S6a): …"), add:
@@ -81,7 +82,7 @@ The server modules sit in layers. `bun run lint` fails on an import that crosses
 
 - § Shape: replace the bullet that ends "Other modules import only from `index.ts`. No import cycles." with:
 
-  "- Server modules: `apps/server/src/modules/<module>/` with `index.ts` (public API), `service.ts`, `repo.ts`, `routes.ts`, `jobs.ts`, `*.test.ts` next to the code. Layers, lowest first: `platform` → `audit`, `tenancy` → `config`, `mail` → `triage`, `actions`, `delegation` → `reports`, `channels`, `testmail` → composition roots (`apps/server/src/*.ts`, `scripts/`). A module imports only the `index.ts` of a lower layer, or of its own layer when `apps/server/src/modules/layers.json` names the pair. `bun run lint` enforces it; a reverse need is a hook or a parameter filled in a composition root (`docs/code-patterns.md` § Layers and borders). A new module gets a layer in `layers.json` and a run of `bun run graph:modules`."
+  "- Server modules: `apps/server/src/modules/<module>/` with `index.ts` (public API), `service.ts`, `repo.ts`, `routes.ts`, `jobs.ts`, `*.test.ts` next to the code. Layers, lowest first: `platform` → `audit`, `tenancy` → `config`, `mail` → `triage`, `actions`, `delegation` → `reports`, `channels`, `testmail` → composition roots (`apps/server/src/*.ts`, `scripts/`). A module imports only the `index.ts` of a lower layer, or of its own layer when `apps/server/src/modules/layers.json` names the pair. `bun run lint` enforces it; a reverse need is a hook or a parameter filled in a composition root (`docs/code-patterns.md` § Layers and borders). A new module gets a layer in `layers.json`; a new or removed import between modules needs a run of `bun run graph:modules` (on a conflict in its files, run it again)."
 
 - § Prefer: add three bullets at the end:
   - "Files under about 400 lines and one aggregate; a bigger repository becomes `repo/<aggregate>.ts` behind the same index."
@@ -90,7 +91,7 @@ The server modules sit in layers. `bun run lint` fails on an import that crosses
 
 - § Avoid: add two bullets at the end:
   - "Bare codes in comments (`S3`, `D29`, `A23`, `F079`): name the rule, an ADR or a ticket folder path."
-  - "A CLI that queries a repository directly: it calls the service function that a route calls."
+  - "A CLI that queries a repository directly: a CLI that uses the DB calls the service function that a route calls."
 
 **Decisions.** D6, D18.
 
