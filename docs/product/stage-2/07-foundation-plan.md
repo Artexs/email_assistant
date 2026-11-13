@@ -7,7 +7,7 @@
 | # | Ticket | Stages | What it unblocks | Needs |
 | --- | --- | --- | --- | --- |
 | 1 | `F093-ci-green` | 2 | everything: a red CI hides regressions | — |
-| 2 | `F086-module-borders` | 4 | every new module; the standards in the styleguide | F093 |
+| 2 | `F086-module-borders` | 5 | every new module; the standards in the styleguide | F093 |
 | 3 | `F087-feature-flags` | 4 | E3a, E4-A, E5a, E6a (PD-045); the operator routes of E7 | F086 (migration: alone) |
 | 4 | `F088-notices-as-facts` | 5 | E4-B mail channel, E7 Polish texts, E8b alerts, E9b push | F086 (migration: alone) |
 | 5 | `F089-structured-logs` | 3 | every epic writes event logs from its first stage; E8a converts the rest | F086 |
@@ -29,7 +29,7 @@ Overlap with the epic ticket order of `05-execution-plan.md` §2 (so nothing is 
 - F093 first and alone: the next tickets must land on a green CI.
 - F086 next and alone: it changes the lint that every later job runs.
 - Then two lanes: lane A `F087 → F092 (if yes)`; lane B `F088 → F091`. F089 and F090 fit into either lane between the migrations.
-- Migrations (F087 stage 1, F088 stage 1, F092 stage 1) never run at the same time, and not next to a `bun.lock` change (F086 stage 2 if it adds a plugin). `CLAUDE.md` rules hold: one `test:int` at a time, one migration at a time.
+- Migrations (F087 stage 1, F088 stage 1, F092 stage 1) never run at the same time. `CLAUDE.md` rules hold: one `test:int` at a time, one migration at a time.
 - F087, F089 and F090 all edit `platform/config.ts`: serialize those stages (the plan files name them).
 - E1 (docs, runs) may run at any time next to this group. E2a, E3a and E5a may start after F087. E4-A, E5b and E6a start after F091.
 
