@@ -1,9 +1,11 @@
+import type { LlmRole, PromptVersion } from "@ea/core";
 import { z } from "zod";
 
 import { createLog } from "../log";
 
-import { isLlmError, LlmBlockedError, LlmOutputError, LlmSoftError } from "./errors";
-import { type LlmProviderId, llmProviders } from "./providers";
+import { isLlmError, LlmBlockedError, LlmConfigError, LlmOutputError, LlmSoftError } from "./errors";
+import { type LlmProvider, type LlmProviderId, llmProviders } from "./providers";
+import { type LlmRoleSettings, type LlmRoleTable, uniformRoleTable } from "./settings";
 
 const log = createLog("llm");
 
@@ -87,6 +89,121 @@ async function withTimeout<T>(work: Promise<T>, timeoutMs: number, model: string
   }
 }
 
+/** The usage of one call: it goes into the `llm.call` audit row and `triage_results`. */
+export interface LlmCallUsage extends LlmUsage {
+  role: LlmRole;
+  promptVersion: string;
+}
+
+export interface LlmCall<T, R extends LlmRole> {
+  role: R;
+  /** The prompt registry version that built `system` and `prompt`. */
+  promptVersion: PromptVersion<NoInfer<R>>;
+  schema: z.ZodType<T>;
+  system: string;
+  prompt: string;
+  /** Eval only: another model of the role's provider. */
+  model?: string;
+}
+
+export interface RoleLlmClient {
+  /** The model of the role's row in the role table. */
+  modelOf(role: LlmRole): string;
+  generate<T, R extends LlmRole>(call: LlmCall<T, R>): Promise<{ data: T; usage: LlmCallUsage }>;
+}
+
+type RateLimiter = ReturnType<typeof createRateLimiter>;
+type ProviderRegistry = Record<LlmProviderId, Pick<LlmProvider, "createGenerate" | "classifyError">>;
+
+export function createRoleLlmClient(opts: {
+  table: LlmRoleTable;
+  /** Tests: fake providers. Default: the provider registry. */
+  providers?: Partial<ProviderRegistry>;
+  now?: () => number;
+  sleep?: (ms: number) => Promise<void>;
+}): RoleLlmClient {
+  const now = opts.now ?? (() => Date.now());
+  const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const providerOf = (id: LlmProviderId) => opts.providers?.[id] ?? llmProviders[id];
+  // One limiter per provider (its rate limit is shared by all roles) and one per role with its own rpm.
+  const providerLimiters = new Map<LlmProviderId, RateLimiter>();
+  const roleLimiters = new Map<LlmRole, RateLimiter>();
+  // One generate per provider and effort: the OpenAI adapter binds the effort when it is built.
+  const generators = new Map<string, GenerateFn>();
+
+  const providerLimiter = (id: LlmProviderId): RateLimiter => {
+    let limiter = providerLimiters.get(id);
+    if (limiter === undefined) {
+      limiter = createRateLimiter({ rpm: opts.table.providers[id].rpm, now, sleep });
+      providerLimiters.set(id, limiter);
+    }
+    return limiter;
+  };
+  const roleLimiter = (role: LlmRole, rpm: number): RateLimiter => {
+    let limiter = roleLimiters.get(role);
+    if (limiter === undefined) {
+      limiter = createRateLimiter({ rpm, now, sleep });
+      roleLimiters.set(role, limiter);
+    }
+    return limiter;
+  };
+  const generatorOf = (row: LlmRoleSettings, model: string): GenerateFn => {
+    const key = `${row.provider}:${row.reasoningEffort ?? ""}`;
+    let generate = generators.get(key);
+    if (generate === undefined) {
+      const apiKey = opts.table.providers[row.provider].apiKey;
+      if (apiKey === undefined) throw new LlmConfigError("missing_key", model);
+      generate = providerOf(row.provider).createGenerate({ apiKey, reasoningEffort: row.reasoningEffort });
+      generators.set(key, generate);
+    }
+    return generate;
+  };
+
+  return {
+    modelOf: (role) => opts.table.roles[role].model,
+
+    async generate(call) {
+      const row = opts.table.roles[call.role];
+      const model = call.model ?? row.model;
+      if (row.rpm !== null) await roleLimiter(call.role, row.rpm).acquire();
+      await providerLimiter(row.provider).acquire();
+      const started = now();
+      try {
+        const generate = generatorOf(row, model);
+        const result = await withTimeout(
+          generate({
+            model,
+            system: call.system,
+            prompt: call.prompt,
+            jsonSchema: z.toJSONSchema(call.schema),
+            signal: AbortSignal.timeout(row.timeoutMs),
+          }),
+          row.timeoutMs,
+          model
+        );
+        const data = parseOutput(result, call.schema, model);
+        const usage: LlmCallUsage = {
+          role: call.role,
+          promptVersion: call.promptVersion,
+          model,
+          tokensIn: result.tokensIn,
+          tokensOut: result.tokensOut,
+          latencyMs: now() - started,
+        };
+        log.debug(
+          `ok role=${call.role} model=${model} latencyMs=${usage.latencyMs} tokensIn=${usage.tokensIn} tokensOut=${usage.tokensOut}`
+        );
+        return { data, usage };
+      } catch (error) {
+        const llmError = isLlmError(error) ? error : providerOf(row.provider).classifyError(error, model);
+        log.debug(`failed role=${call.role} model=${model} code=${llmError.code}`);
+        throw llmError;
+      }
+    },
+  };
+}
+
+/** Deprecated: the classifier-only client over the role client. The next stage of this ticket removes it. */
 export function createLlmClient(opts: {
   provider: LlmProviderId;
   apiKey: string;
@@ -98,48 +215,30 @@ export function createLlmClient(opts: {
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
 }): LlmClient {
-  const provider = llmProviders[opts.provider];
-  const generate =
-    opts.generate ?? provider.createGenerate({ apiKey: opts.apiKey, reasoningEffort: opts.reasoningEffort ?? null });
-  const now = opts.now ?? (() => Date.now());
-  const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
-  const limiter = createRateLimiter({ rpm: opts.rpm, now, sleep });
-
+  const table = uniformRoleTable(
+    {
+      provider: opts.provider,
+      model: opts.classifierModel,
+      timeoutMs: opts.timeoutMs,
+      rpm: null,
+      reasoningEffort: opts.reasoningEffort ?? null,
+    },
+    { apiKeyName: "", apiKey: opts.apiKey, rpm: opts.rpm }
+  );
+  const fixed = opts.generate;
+  const providers =
+    fixed === undefined
+      ? undefined
+      : { [opts.provider]: { createGenerate: () => fixed, classifyError: llmProviders[opts.provider].classifyError } };
+  const inner = createRoleLlmClient({ table, providers, now: opts.now, sleep: opts.sleep });
   return {
     classifierModel: opts.classifierModel,
-
     async classify(req) {
-      const model = req.model ?? opts.classifierModel;
-      await limiter.acquire();
-      const started = now();
-      try {
-        const result = await withTimeout(
-          generate({
-            model,
-            system: req.system,
-            prompt: req.prompt,
-            jsonSchema: z.toJSONSchema(req.schema),
-            signal: AbortSignal.timeout(opts.timeoutMs),
-          }),
-          opts.timeoutMs,
-          model
-        );
-        const data = parseOutput(result, req.schema, model);
-        const usage: LlmUsage = {
-          model,
-          tokensIn: result.tokensIn,
-          tokensOut: result.tokensOut,
-          latencyMs: now() - started,
-        };
-        log.debug(
-          `ok model=${model} latencyMs=${usage.latencyMs} tokensIn=${usage.tokensIn} tokensOut=${usage.tokensOut}`
-        );
-        return { data, usage };
-      } catch (error) {
-        const llmError = isLlmError(error) ? error : provider.classifyError(error, model);
-        log.debug(`failed model=${model} code=${llmError.code}`);
-        throw llmError;
-      }
+      const { data, usage } = await inner.generate({ ...req, role: "classifier", promptVersion: "classifier-v0" });
+      return {
+        data,
+        usage: { model: usage.model, tokensIn: usage.tokensIn, tokensOut: usage.tokensOut, latencyMs: usage.latencyMs },
+      };
     },
   };
 }
