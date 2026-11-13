@@ -88,6 +88,11 @@ The server modules sit in layers. `bun run lint` fails on an import that crosses
 - A module that `actions` must call back (a delegation changes with a send) gets a hooks interface in `actions` (`DelegationHooks`); `main.ts` wires the implementation. `actions` never imports `delegation`.
 - No import cycles between modules: a module sets a column that another module's worker reads (`docs/modules.md` §2).
 - The LLM returns data that a Zod schema checks. LLM text is untrusted: never use it as a recipient, a folder name or a command.
+- An LLM call names a role: `llm.generate({ role, promptVersion, schema, system, prompt })`. The role table (`llmRoleTable`, `platform/config.ts`) decides provider, model, timeout, rate and effort; code never picks a model. A new role is a row: a name in `packages/core/src/llm-roles.ts`, its `LLM_<ROLE>_*` keys, a prompt entry.
+- Every role returns data that a Zod schema checks, also a free-text role (its text is a schema field).
+- Prompts live in the registry (`modules/triage/prompts/index.ts`, `prompts`): one entry per role with its version, and one file `<role>-v<n>.ts` per version whose `PROMPT_VERSION` equals the file name. A changed prompt text is a new file and a new version. A role without a prompt is in `rolesWithoutPrompt` with the epic that writes it. The registry test fails on a gap.
+- Every LLM call in a job or a request writes one `llm.call` row through `recordLlmCall` (`modules/audit`) with `role` and `prompt_version`; the daily cap and the cost per role read these rows. `llm:check` and `eval` write none.
+- A prompt or model change of any role runs the eval gate of PD-025 (`bun run eval`, the go/no-go table) before the merge.
 - A new behaviour that a user can see is read through `isFeatureOn`; the flag is in the registry with an owner epic and a remove-by date; default off; the pilot organization turns it on first.
 - The registry is `featureFlags` in `packages/core/src/features.ts`. The order is `FEATURES_OFF` (env, the kill switch) → the `org_features` row → the registry default (`resolveFeature`). The kill list comes from `FEATURES_OFF`: `main.ts` sets it with `configureFeatures` after `loadConfig`; any other process reads the env on the first flag read. No read function takes a settings argument; tests change the kill list only with `configureFeatures` and reset it in `afterEach`. A job reads a flag once per mailbox run, not once per mail. Flags are not product settings: the mailbox mode and the per-category `auto` switches stay as they are (ADR 0027 point 6).
 - A flag is changed only through `setOrgFeature` (`tenancy`, audit row `org.flag_changed`); the CLI `org:flag` and a later console call it. A unit test fails when a flag is past its remove-by date: then a cleanup ticket removes the key from `FEATURES_OFF` on every server first (an unknown key stops the start), deletes its rows in a migration (`DELETE FROM org_features WHERE flag = '<key>'`), and removes the reads and the registry entry.
@@ -108,6 +113,7 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 - All config comes from env, checked with a Zod schema at start (`platform/config`). A missing key stops the start.
 - `.env.example` lists every key with a placeholder. Never commit `.env`, keys, passwords or tokens. Never log them.
 - Mailbox secrets are encrypted with `platform/crypto` (AES-256-GCM, key version) before they reach the DB.
+- LLM keys: `LLM_PROVIDER` and `*_MODEL_CLASSIFIER` set the classifier; `LLM_<ROLE>_PROVIDER`, `_MODEL`, `_TIMEOUT_MS`, `_RPM`, `_REASONING` set another role; an empty key falls back to the classifier (same provider) or to the provider's keys (`docs/architecture.md` §6.3).
 
 ## Style
 
