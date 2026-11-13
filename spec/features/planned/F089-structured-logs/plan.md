@@ -10,7 +10,7 @@
 - [x] stage-01-writer [written]
 - [x] stage-02-format-and-context [written]
 - [x] stage-03-run-and-request-ids [written]
-- [ ] stage-04-lint-rule (not written yet)
+- [x] stage-04-lint-rule [written]
 - [ ] stage-05-convert-platform (not written yet)
 - [ ] stage-06-convert-main (not written yet)
 - [ ] stage-07-standards (not written yet)
