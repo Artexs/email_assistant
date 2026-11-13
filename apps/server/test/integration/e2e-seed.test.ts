@@ -1,11 +1,13 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { TERMS_VERSION } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { createDb } from "../../src/platform/db";
 import {
   E2E_ORG_NAME,
+  E2E_PROJECTS,
   E2E_OWNER_EMAIL,
   E2E_PAUSED_ORG_NAME,
   E2E_TRIAL_ORG_NAME,
@@ -124,6 +126,15 @@ describe.skipIf(e2eAppUrl === "" || e2eMigratorUrl === "")("e2e seed of the plan
         .where("org_id", "=", paused.id)
         .execute();
       expect(settings).toHaveLength(1);
+
+      const termsOf = async (userId: string) =>
+        (await e2e.selectFrom("users").select("terms_version").where("id", "=", userId).executeTakeFirstOrThrow())
+          .terms_version;
+      expect(await termsOf(seed.owner.userId)).toBe(TERMS_VERSION);
+      for (const project of E2E_PROJECTS) {
+        expect(await termsOf(seed.termsOwners[project].userId)).toBe("2000-01-01");
+        expect(await termsOf(seed.members[project].userId)).toBe(TERMS_VERSION);
+      }
 
       expect(seed.trialOwner.userId).not.toBe(seed.pausedOwner.userId);
       for (const owner of [seed.trialOwner, seed.pausedOwner]) {

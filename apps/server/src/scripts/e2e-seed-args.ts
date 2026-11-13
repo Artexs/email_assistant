@@ -21,6 +21,12 @@ export const E2E_MEMBER_EMAILS: Record<E2eProject, string> = {
 // A test value, not a secret.
 export const E2E_MEMBER_PASSWORD = "e2e-member-passphrase-one";
 
+export const E2E_TERMS_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-terms-mobile@x.test",
+  desktop: "e2e-terms-desktop@x.test",
+};
+export const e2eTermsOrgName = (project: E2eProject): string => `E2E Terms ${project}`;
+
 export const E2E_OTHER_ORG_NAME = "E2E Other";
 export const E2E_OTHER_OWNER_EMAIL = "e2e-other-owner@x.test";
 
@@ -51,6 +57,7 @@ export interface SeedFile {
   members: Record<E2eProject, { userId: string; email: string; password: string }>;
   otherOrg: { orgId: string; emailId: string };
   activityMembers: Record<E2eProject, { userId: string; email: string; password: string }>;
+  termsOwners: Record<E2eProject, { userId: string; email: string; password: string }>;
   trialOwner: { userId: string; email: string; password: string; orgId: string; trialEndsAt: string };
   pausedOwner: { userId: string; email: string; password: string; orgId: string; mailboxId: string };
 }
