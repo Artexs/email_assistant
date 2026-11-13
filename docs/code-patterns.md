@@ -94,8 +94,11 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 
 ## Tests
 
-- `bun run test:unit` runs unit tests; `bun run test:int` runs integration tests.
+- `bun run test:unit` and `bun run test:int` run on the local Bun. `bun run test:unit:ci` and `bun run test:int:ci` run on the Bun in `.bun-version`, the version of CI and the server image (`scripts/ci-bun.sh`). A stage proof uses the `:ci` scripts. A test that passes only on the local Bun is a failing test.
 - Unit tests stay next to the code. Pure logic in `packages/core`: unit tests without mocks.
 - Integration tests live in `apps/server/test/integration/`. Repositories: tests against Postgres in a container (each test in a transaction that rolls back).
 - Adapters: contract tests; the fake and the real adapter pass the same suite.
 - A prompt or model change runs `bun run eval` and must pass the go/no-go table.
+- A test that waits for time-driven code waits for its condition: `waitFor(condition, what)` from `apps/server/test/wait-for.ts` (polls every 25 ms, fails after 5 s). No fixed sleep over 100 ms. A fake that holds a response releases it in its `stop()`.
+- No retry in CI, no re-run as a fix, no longer test timeout as a fix for a test that hangs. A retry hides a real race.
+- Quarantine: a test that fails twice in CI on `master` without a code change (the test file and the code it tests did not change between the two runs) is quarantined the same day. The coordinator creates a ticket (`limen ticket new "<test> passes on the pinned Bun" --lane planned`) and, in one commit, marks the test `test.skip(…)` with the comment `// Quarantined YYYY-MM-DD: fails in CI without a code change. Fix: spec/features/planned/FNNN-slug/`. A worker never quarantines by itself; it reports the test in its final message.

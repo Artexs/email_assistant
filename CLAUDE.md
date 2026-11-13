@@ -18,7 +18,8 @@ Before you diagnose an alert, grep docs/known-alerts.md.
 - Before each commit, review the staged changes (`git diff --staged`). Look for bugs, secrets, debug code, and changes that are not part of the task. Fix all problems, then commit.
 - Never force-push (`--force`, `-f`, `--force-with-lease`). Never rewrite pushed history.
 - On the owner's Omarchy machine, a local git hook pushes `master` after each commit or merge (`.git/hooks/post-commit`, `post-merge` → same file; log `.git/auto-push.log`). A `PUSH FAILED` line there needs `git pull --rebase && git push`.
-- Shared runtime: one dev DB, GreenMail and the ports in `.env`. A Limen job gets its own DB from `scripts/limen-prepare.sh`. `bun run test:int` runs in parallel in checkouts with their own DB (GreenMail tests use random addresses; 3 parallel full runs passed, 2026-11-13). `bun run test:e2e` uses the fixed ports 8081 and 8092: run it only under `flock /tmp/email-assistant-shared-tests.lock`. Only one at a time adds a DB migration or changes `bun.lock`.
+- Shared runtime: one dev DB, GreenMail and the ports in `.env`. A Limen job gets its own DB from `scripts/limen-prepare.sh`. Stage proofs use `bun run test:unit:ci` and `bun run test:int:ci`: they run the Bun of `.bun-version` (CI and the image), not the local Bun. `bun run test:int` runs in parallel in checkouts with their own DB (GreenMail tests use random addresses; 3 parallel full runs passed, 2026-11-13). `bun run test:e2e` uses the fixed ports 8081 and 8092: run it only under `flock /tmp/email-assistant-shared-tests.lock`. Only one at a time adds a DB migration or changes `bun.lock`.
+- CI on `master` must stay green. A test that fails twice in CI without a code change is quarantined the same day with a ticket (`docs/code-patterns.md` § Tests).
 
 ## Work
 
