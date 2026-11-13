@@ -130,7 +130,10 @@ describe("handleCallback", () => {
       expect(await feedbackRows(trx, info)).toMatchObject([{ verdict: "wrong", true_category: "spam" }]);
 
       const again = await handleCallback(deps, link, `fc:s:${info}`);
-      expect(again.answer).toBe("Already saved.");
+      expect(again).toEqual({
+        answer: "Already saved.",
+        edit: { text: "✏️ Already saved: Spam (AI said Info).", buttons: [] },
+      });
       expect(await feedbackRows(trx, info)).toHaveLength(1);
 
       await ageFeedback(trx);

@@ -17,6 +17,7 @@ describe("answers", () => {
     expect(rightAnswer(true, "info")).toBe("✅ Saved: Info is right.");
     expect(rightAnswer(false, "info")).toBe("Already saved.");
     expect(pickedText("needs_reply", "info")).toBe("✏️ Saved: Reply (AI said Info).");
+    expect(pickedText("needs_reply", "info", false)).toBe("✏️ Already saved: Reply (AI said Info).");
     expect(pickAnswer(true)).toBe("Saved.");
     expect(pickAnswer(false)).toBe("Already saved.");
   });

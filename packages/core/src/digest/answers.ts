@@ -22,6 +22,8 @@ export function pickAnswer(saved: boolean): string {
   return saved ? "Saved." : "Already saved.";
 }
 
-export function pickedText(trueCategory: Category, aiCategory: Category): string {
-  return `✏️ Saved: ${categoryLabels[trueCategory].name} (AI said ${categoryLabels[aiCategory].name}).`;
+// The picker message after a pick. `saved` is false when the latest feedback row already holds this pick.
+export function pickedText(trueCategory: Category, aiCategory: Category, saved = true): string {
+  const state = saved ? "Saved" : "Already saved";
+  return `✏️ ${state}: ${categoryLabels[trueCategory].name} (AI said ${categoryLabels[aiCategory].name}).`;
 }
