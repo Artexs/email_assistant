@@ -105,4 +105,4 @@ export const noticeRenderers = {
     schema: noticeViewSchemas.mailbox_removed,
     telegram: { full: () => ({ text: MAILBOX_REMOVED_TEXT, buttons: [] }) },
   }),
-} satisfies { [K in NoticeKind]: NoticeRenderer<z.ZodType> };
+} satisfies Record<NoticeKind, NoticeRenderer<z.ZodType>>;
