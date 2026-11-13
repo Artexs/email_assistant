@@ -507,8 +507,8 @@ describe("outbox sender, rows without text (F088)", () => {
       expect(message?.text).toContain("MARKER-F088");
       expect((await rowState(trx, id)).status).toBe("sent");
       const stored = await storedMessage(trx, id);
-      expect(stored.text).toBe(message?.text);
-      expect(stored.buttons).toEqual(message?.buttons ?? []);
+      expect(stored.text).toBe(message?.text ?? null);
+      expect(stored.buttons as unknown).toEqual(message?.buttons ?? []);
       expect(allLines().some((line) => line.includes("MARKER-F088"))).toBe(false);
     });
   });
@@ -555,7 +555,7 @@ describe("outbox sender, rows without text (F088)", () => {
       await s.run(T);
       expect((await rowState(trx, id)).status).toBe("sent");
       expect(errorLines.filter((line) => line.includes("sent again after a stale send"))).toHaveLength(1);
-      expect((await storedMessage(trx, id)).text).toBe(s.channel.sent[0]?.message.text);
+      expect((await storedMessage(trx, id)).text).toBe(s.channel.sent[0]?.message.text ?? null);
     });
   });
 
@@ -588,7 +588,7 @@ describe("outbox sender, rows without text (F088)", () => {
       await s.run(new Date("2026-11-07T06:00:00Z"));
       expect((await rowState(trx, id)).status).toBe("sent");
       expect(s.channel.sent).toHaveLength(1);
-      expect((await storedMessage(trx, id)).text).toBe(s.channel.sent[0]?.message.text);
+      expect((await storedMessage(trx, id)).text).toBe(s.channel.sent[0]?.message.text ?? null);
     });
   });
 });
