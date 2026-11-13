@@ -7,8 +7,9 @@ import { createLog } from "../../platform/log";
 import { buildDigestMessage, digestPeriodStart, insertDigest, lastDigestSlotKey } from "../reports";
 import { getMembership, getOrganization } from "../tenancy";
 
+import { queueNotice } from "./notice-queue";
 import type { LinkedChat } from "./port";
-import { insertOutbox, listLinkedChats } from "./repo";
+import { listLinkedChats } from "./repo";
 
 const log = createLog("channels");
 
@@ -48,16 +49,16 @@ async function scheduleForLink(db: Db | Transaction<DB>, link: LinkedChat, now: 
   const queue = async (trx: Transaction<DB>): Promise<string | null> => {
     const digestId = await insertDigest(trx, ctx, { userId, slotKey: slot.key, periodStart, periodEnd });
     if (digestId === null) return null;
-    const outboxId = await insertOutbox(trx, ctx, {
+    const outboxId = await queueNotice(trx, ctx, {
       userId,
+      locale: link.locale,
       kind: "digest",
       dedupKey: `digest:${slot.key}`,
       digestId,
-      message,
-      createdAt: now,
-      nextAttemptAt: now,
+      view: { text: message.text, buttons: message.buttons },
+      now,
     });
-    // The rollback keeps a digest row from staying without its message.
+    // The rollback keeps a digest row from staying without its message, also when the view does not render.
     if (outboxId === null) throw new Error("digest outbox row exists");
     return outboxId;
   };

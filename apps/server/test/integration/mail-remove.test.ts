@@ -189,18 +189,18 @@ describe("removeMailbox", () => {
 
     const notices = await db
       .selectFrom("outbox")
-      .select(["user_id", "status", "text", "mailbox_id", "email_id"])
+      .select(["user_id", "status", "text", "view", "mailbox_id", "email_id"])
       .where("org_id", "=", s.orgId)
       .where("kind", "=", "mailbox_removed")
       .execute();
     expect(notices).toEqual([
-      { user_id: s.userId, status: "pending", text: MAILBOX_REMOVED_TEXT, mailbox_id: null, email_id: null },
+      { user_id: s.userId, status: "pending", text: MAILBOX_REMOVED_TEXT, view: {}, mailbox_id: null, email_id: null },
     ]);
     const leaks = await db
       .selectFrom("outbox")
       .select("id")
       .where("org_id", "=", s.orgId)
-      .where(sql<boolean>`text ILIKE '%' || ${address} || '%'`)
+      .where(sql<boolean>`text ILIKE '%' || ${address} || '%' OR view::text ILIKE '%' || ${address} || '%'`)
       .execute();
     expect(leaks).toEqual([]);
   });
