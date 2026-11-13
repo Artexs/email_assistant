@@ -5,6 +5,7 @@ export * from "./mailboxes";
 export * from "./me";
 export * from "./next-path";
 export * from "./onboarding";
+export * from "./operator";
 export * from "./organization";
 export * from "./password";
 export * from "./rules";

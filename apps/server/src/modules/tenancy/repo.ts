@@ -331,3 +331,15 @@ export async function upsertOrgFeature(
     )
     .execute();
 }
+
+// No TenantContext: listed in docs/code-patterns.md. Only /api/operator/* calls it (F087).
+export async function listOrgFeatureRowsOfAll(
+  db: Db | Transaction<DB>
+): Promise<{ org_id: string; flag: string; enabled: boolean }[]> {
+  return db
+    .selectFrom("org_features")
+    .select(["org_id", "flag", "enabled"])
+    .orderBy("org_id")
+    .orderBy("flag")
+    .execute();
+}
