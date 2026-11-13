@@ -148,6 +148,18 @@ describe("AgentMail fake", () => {
     expect(fake.sent.map((item) => item.displayName)).toEqual(["Anna", "Bartek"]);
   });
 
+  test("stop releases a held response at once", async () => {
+    const other = await startFakeAgentMail({ apiKey });
+    const slow = createAgentMailClient({ apiKey, baseUrl: other.baseUrl, timeoutMs: 200 });
+    const otherInbox = (await slow.ensureInbox({ username: "ea-t", clientId: "ea-t-client", displayName: "Anna" }))
+      .inboxId;
+    other.holdResponseNext("send", 10_000);
+    expect(await failure(slow.send(otherInbox, request, "k-stop"))).toBeInstanceOf(SoftError);
+    const started = Date.now();
+    await other.stop();
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
+
   test("stop closes the port", async () => {
     const other = await startFakeAgentMail({ apiKey });
     const url = other.baseUrl;

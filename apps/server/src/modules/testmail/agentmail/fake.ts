@@ -35,7 +35,7 @@ export interface FakeAgentMail {
   }[];
   readonly requests: { method: string; path: string; authorization: string | null }[];
   failNext(op: FakeOp, response: FakeResponse, times?: number): void;
-  /** Stores the send at once, then waits `holdMs` before it answers (the provider accepted the mail, the client timed out). */
+  /** Stores the send at once, then waits `holdMs` before it answers (the provider accepted the mail, the client timed out). `stop()` releases a held response at once; the answer goes to a closed connection. */
   // Only the next new send uses the hold; a replay, 409, 400 or failNext-ed send leaves it for a later send.
   holdResponseNext(op: "send", holdMs: number): void;
   stop(): Promise<void>;
@@ -54,7 +54,7 @@ export async function startFakeAgentMail(opts: { apiKey: string; now?: () => Dat
   const keys = new Map<string, { inboxId: string; rawBody: string; messageId: string; threadId: string }>();
   const failures: { op: FakeOp; response: FakeResponse; times: number }[] = [];
   const holds: number[] = [];
-  const timers = new Set<ReturnType<typeof setTimeout>>();
+  const held = new Set<{ timer: ReturnType<typeof setTimeout>; release: () => void }>();
   const sent: FakeAgentMail["sent"] = [];
   const requests: FakeAgentMail["requests"] = [];
   let counter = 0;
@@ -79,11 +79,15 @@ export async function startFakeAgentMail(opts: { apiKey: string; now?: () => Dat
 
   function wait(ms: number): Promise<void> {
     return new Promise((resolve) => {
-      const timer = setTimeout(() => {
-        timers.delete(timer);
-        resolve();
-      }, ms);
-      timers.add(timer);
+      const entry = {
+        timer: setTimeout(() => entry.release(), ms),
+        release: () => {
+          clearTimeout(entry.timer);
+          held.delete(entry);
+          resolve();
+        },
+      };
+      held.add(entry);
     });
   }
 
@@ -212,10 +216,10 @@ export async function startFakeAgentMail(opts: { apiKey: string; now?: () => Dat
       holds.push(holdMs);
     },
     async stop() {
-      for (const timer of timers) {
-        clearTimeout(timer);
+      // Bun 1.3.14 `server.stop(true)` waits for in-flight handlers: release each held response first.
+      for (const entry of [...held]) {
+        entry.release();
       }
-      timers.clear();
       await server.stop(true);
     },
   };
