@@ -157,4 +157,4 @@ Review 1 ([plan-review-1.md](plan-review-1.md)), Opus 5.5 at `548904d`: PASS, 0 
 ## Log
 
 - 2026-11-13: plan written by a planner job (Opus 5.5) from the author's input; probes P1–P5.
-- 2026-11-13: cold review 1 (Opus 5.5): PASS, 9 minor notes; 8 fixed, 1 rejected with a reason; the `sameLayerEdges` cycle check added to stage 03.
+- 2026-11-13: cold review 1 (Opus 5.5): PASS, 9 minor notes; 7 fixed, 1 rejected with a reason, 1 needs an edit outside this folder; the `sameLayerEdges` cycle check added to stage 03.
