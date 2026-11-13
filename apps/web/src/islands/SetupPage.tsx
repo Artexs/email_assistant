@@ -191,7 +191,7 @@ export default function SetupPage() {
           <ul id="terms-links" className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
             {legalLinks.map(({ doc, title }) => (
               <li key={doc}>
-                <a href={legalPath(lang, doc)} target="_blank" rel="noopener" className="underline">
+                <a href={legalPath(lang, doc)} target="_blank" rel="noopener noreferrer" className="underline">
                   {t(title)}
                 </a>
               </li>
