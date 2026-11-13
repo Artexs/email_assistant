@@ -217,6 +217,7 @@ describe("createLlmClient", () => {
       const llm = createLlmClient({ table: twoProviderTable(), providers: fake.providers, ...fakeClock() });
       await llm.generate({ ...judgeCall, prompt: "MARKER-PROMPT" });
       const text = lines.join("\n");
+      expect(text).toContain("llm_call_ok");
       expect(text).toContain("role=judge");
       expect(text).toContain("model=gem-j");
       expect(text).not.toContain("MARKER");

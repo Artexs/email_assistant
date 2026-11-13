@@ -5,7 +5,7 @@ import { Pool } from "pg";
 import { z } from "zod";
 
 import type { LockoutStore } from "./auth-lockout";
-import { describeError } from "./errors";
+import { errorFields } from "./errors";
 import { createLog } from "./log";
 import type { PwnedResult } from "./pwned";
 
@@ -110,13 +110,20 @@ export function createAddressLimiter(opts: { max: number; windowMs: number; now:
   };
 }
 
-// Better Auth can log raw request text (`Invalid callbackURL: <query value>`), so the log gets a cleaned copy.
-// eslint-disable-next-line no-control-regex
-const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/g;
-const URL_RUN = /\b[a-z][a-z0-9+.-]*:\/\/\S*/gi;
+// D20: Better Auth logs library text; only a fixed code reaches our log. Message starts from docs/known-alerts.md.
+const BETTER_AUTH_REASONS: readonly (readonly [string, string])[] = [
+  ["Reset Password: User not found", "reset_user_not_found"],
+  ["Invalid password", "invalid_password"],
+  ["User not found", "user_not_found"],
+  ["Invalid callbackURL", "invalid_callback_url"],
+  ["Invalid origin", "invalid_origin"],
+  ["Database schema mismatch", "schema_mismatch"],
+  ["Rate limiting could not determine a client IP", "rate_limit_no_ip"],
+];
 
-export function cleanLogText(text: string): string {
-  return text.replace(CONTROL_CHARACTERS, " ").replace(URL_RUN, "<url>").slice(0, 200);
+export function betterAuthLogReason(message: unknown): string {
+  if (typeof message !== "string") return "other";
+  return BETTER_AUTH_REASONS.find(([start]) => message.startsWith(start))?.[1] ?? "other";
 }
 
 // The router's own log of a thrown error can hold request data, so this hook replaces it.
@@ -125,7 +132,7 @@ export function onAuthError(error: unknown): void {
   if (isAPIError(error) && error.statusCode < 500) {
     return;
   }
-  log.error(`better-auth: ${cleanLogText(describeError(error))}`);
+  log.error("better_auth_error", { ...errorFields(error) });
 }
 
 const SIGN_IN_PATH = "/sign-in/email";
@@ -266,7 +273,7 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
     try {
       await deps.onEvent(kind, userId, data);
     } catch (error) {
-      log.error(`web: onEvent ${kind} failed: ${describeError(error)}`);
+      log.error("auth_event_failed", { kind, ...errorFields(error) });
     }
   };
 
@@ -295,20 +302,20 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
           await deps.sendResetPassword({ userId: user.id, email: user.email, url });
           return;
         }
-        log.info(`web: reset requested for user ${user.id}`);
+        log.info("password_reset_requested", { user_id: user.id });
       },
       onPasswordReset: async ({ user }) => {
         await report("password_set", user.id);
         try {
           await deps.lockout?.clear(user.id, now());
         } catch (error) {
-          log.error(`web: lockout clear failed: ${describeError(error)}`);
+          log.error("lockout_clear_failed", { ...errorFields(error) });
         }
         // The `before` hook proved that the request held the current version (the body is not readable here).
         try {
           await deps.onTermsAccepted(user.id, TERMS_VERSION);
         } catch (error) {
-          log.error(`web: terms record failed for user ${user.id}: ${describeError(error)}`);
+          log.error("terms_record_failed", { user_id: user.id, ...errorFields(error) });
         }
       },
     },
@@ -375,7 +382,7 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
             .trim()
             .toLowerCase();
           if (!resetLimiter.take(key)) {
-            log.info("web: reset request over the address limit");
+            log.info("reset_request_limited");
             return ctx.json(RESET_REQUEST_ANSWER);
           }
         }
@@ -394,7 +401,7 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
           try {
             await countSignIn(ctx, deps, now, report);
           } catch (error) {
-            log.error(`web: lockout: ${describeError(error)}`);
+            log.error("lockout_failed", { ...errorFields(error) });
           }
         }
         const revoked = REVOKE_EVENTS[ctx.path];
@@ -439,9 +446,12 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
     logger: {
       level: "warn",
       log: (level, message, ...args) => {
-        const base = typeof message === "string" ? message : describeError(message);
-        const text = cleanLogText(args[0] instanceof Error ? `${base}: ${describeError(args[0])}` : base);
-        (level === "error" ? log.error : log.warn)(`better-auth: ${text}`);
+        const fields = {
+          reason: betterAuthLogReason(message),
+          ...(args[0] instanceof Error ? errorFields(args[0]) : {}),
+        };
+        if (level === "error") log.error("better_auth_log", fields);
+        else log.warn("better_auth_log", fields);
       },
     },
   });

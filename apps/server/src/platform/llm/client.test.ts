@@ -257,8 +257,8 @@ describe("logs", () => {
       expect(out).toHaveBeenCalledTimes(1);
       const line = out.mock.calls[0]?.map(String).join(" ") ?? "";
       expect(line).toContain(MODEL);
-      expect(line).toContain("tokensIn=7");
-      expect(line).toContain("tokensOut=3");
+      expect(line).toContain("tokens_in=7");
+      expect(line).toContain("tokens_out=3");
       expect(line).not.toContain("MARKER");
       expect(err).not.toHaveBeenCalled();
     } finally {

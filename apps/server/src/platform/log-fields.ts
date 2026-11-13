@@ -33,6 +33,7 @@ export const logFieldNames = [
   "folder_key",
   "provider",
   "model",
+  "role",
   "method",
   "route",
   "config_key",

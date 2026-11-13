@@ -145,3 +145,7 @@ The last count is `0`: no old-form line is left in `platform/`.
 - Steps 1 and 2 are done; the final message lists any call that was not in the tables, with its new form.
 - The Proof of `plan.md` ends with `PROOF_OK` (`NN` = `05`).
 - A review job checks the stage before the land (plan § Review): no free text, no `error.message`, no URL in a converted line; each changed test still checks for the absence of its markers.
+
+## Decision recorded (2026-11-13, coordinator)
+
+`role` joins `logFieldNames` (values are the closed set of LLM roles, D7 holds). `llm_call_ok` and `llm_call_failed` carry `role: call.role`; F090 stage 3 had put `role=` in those lines and `client-roles.test.ts` checks `role=judge`.

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, spyOn, test } from "bun:test";
 
 import { createHeartbeat } from "./heartbeat";
 
@@ -42,6 +42,24 @@ describe("heartbeat", () => {
     const server = startServer(() => new Response("no", { status: 500 }));
     await createHeartbeat({ url: server.url, checkDb: dbUp }).tick();
     expect(server.hits()).toBe(1);
+  });
+
+  test("a failed fetch logs the error name only, never the message or the URL", async () => {
+    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    try {
+      const failing = (async () => {
+        throw new TypeError("MARKER-URL https://hc.test/secret");
+      }) as unknown as typeof fetch;
+      await createHeartbeat({ url: "https://hc.test/secret", checkDb: dbUp, fetch: failing }).tick();
+      const lines = errorSpy.mock.calls.map((call) => call.join(" "));
+      expect(lines).toHaveLength(1);
+      expect(lines[0]).toContain("heartbeat_ping_failed");
+      expect(lines[0]).toContain("error=TypeError");
+      expect(lines[0]).not.toContain("MARKER-URL");
+      expect(lines[0]).not.toContain("hc.test");
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 
   test("does nothing without a URL", async () => {

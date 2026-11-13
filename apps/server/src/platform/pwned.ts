@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 
+import { errorFields } from "./errors";
 import { createLog } from "./log";
 
 const log = createLog("pwned");
@@ -29,7 +30,7 @@ export async function checkPwnedPassword(password: string, deps: PwnedDeps): Pro
       signal: AbortSignal.timeout(deps.timeoutMs),
     });
     if (response.status !== 200) {
-      log.warn(`pwned check unavailable: status ${response.status}`);
+      log.warn("pwned_check_unavailable", { status: response.status });
       return "unavailable";
     }
     const body = await response.text();
@@ -44,13 +45,12 @@ export async function checkPwnedPassword(password: string, deps: PwnedDeps): Pro
     }
     // A 200 page without one valid line (a captive portal, a proxy error page) proves nothing: fail closed.
     if (valid === 0) {
-      log.warn("pwned check unavailable: no range lines in the answer");
+      log.warn("pwned_check_unavailable", { reason: "no_range_lines" });
       return "unavailable";
     }
     return listed ? "pwned" : "ok";
   } catch (error) {
-    const code = error instanceof Error ? error.name : "unknown";
-    log.warn(`pwned check unavailable: ${code}`);
+    log.warn("pwned_check_unavailable", { ...errorFields(error) });
     return "unavailable";
   }
 }

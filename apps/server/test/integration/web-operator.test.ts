@@ -207,8 +207,8 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
       await app.request("/api/operator/flags", as("owner"));
       await app.request("/api/operator/flags", as("assistant"));
     });
-    expect(lines.filter((line) => line.includes(`operator route refused for user ${org.ownerId}`))).toHaveLength(1);
-    expect(lines.filter((line) => line.includes("operator route refused"))).toHaveLength(1);
+    expect(lines.filter((line) => line.includes(`user_id=${org.ownerId}`))).toHaveLength(1);
+    expect(lines.filter((line) => line.includes("operator_route_refused"))).toHaveLength(1);
     for (const line of lines) {
       expect(line).not.toContain("@x.test");
       expect(line).not.toContain("Web org");

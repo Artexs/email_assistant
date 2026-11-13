@@ -116,7 +116,7 @@ describe("x-request-id", () => {
 
     const lines = calls.map((call) => JSON.parse(String(call[0])) as Record<string, unknown>);
     expect(lines).toHaveLength(1);
-    expect(lines[0]?.event).toBe("legacy_text");
+    expect(lines[0]?.event).toBe("http_request");
     expect(lines[0]?.request_id).toBe(res.headers.get("x-request-id"));
   });
 });
@@ -284,9 +284,7 @@ describe("requireTenant", () => {
       expect(await first.json()).toEqual({ ctx: { orgId: "org-1", userId: "u-multi" }, role: "assistant" });
       await app.request("/who", { headers });
       const lines = errorSpy.mock.calls.map((call) => call.join(" "));
-      expect(
-        lines.filter((line) => line.includes("web: user u-multi has 2 memberships; using the oldest"))
-      ).toHaveLength(1);
+      expect(lines.filter((line) => line.includes("tenant_multi_membership user_id=u-multi count=2"))).toHaveLength(1);
     } finally {
       errorSpy.mockRestore();
     }
@@ -344,7 +342,7 @@ describe("requireOperator", () => {
       expect(res.status).toBe(404);
       expect(await res.json()).toEqual({ error: "not_found" });
       const lines = errorSpy.mock.calls.map((call) => call.join(" "));
-      expect(lines.filter((line) => line.includes("operator route refused for user u-other"))).toHaveLength(1);
+      expect(lines.filter((line) => line.includes("operator_route_refused user_id=u-other"))).toHaveLength(1);
     } finally {
       errorSpy.mockRestore();
     }

@@ -3,7 +3,7 @@ import { createTransport, type SMTPTransportOptions } from "nodemailer";
 
 import { type AuthMailKind, authMailText } from "./auth-mail-texts";
 import type { AuthMailSettings } from "./config";
-import { describeError } from "./errors";
+import { errorFields } from "./errors";
 import { createLog } from "./log";
 
 const log = createLog("auth-mail");
@@ -71,7 +71,6 @@ export function createAuthMailer(settings: AuthMailSettings, deps: AuthMailerDep
   return {
     async send(mail) {
       // The mail text holds the link: only the user id and a code reach the log.
-      const label = `auth mail ${mail.kind}`;
       let timer: ReturnType<typeof setTimeout> | undefined;
       try {
         const { subject, text } = authMailText(mail.kind, mail.locale, mail.url);
@@ -90,17 +89,17 @@ export function createAuthMailer(settings: AuthMailSettings, deps: AuthMailerDep
           });
           const outcome = await Promise.race([sending, timeout]);
           if (outcome === TIMED_OUT) {
-            log.warn(`${label} to user ${mail.userId} failed: TIMEOUT`);
+            log.warn("auth_mail_failed", { kind: mail.kind, user_id: mail.userId, code: "TIMEOUT" });
             return { ok: false, code: "TIMEOUT" };
           }
         } finally {
           transport.close();
         }
-        log.info(`${label} sent to user ${mail.userId}`);
+        log.info("auth_mail_sent", { kind: mail.kind, user_id: mail.userId });
         return { ok: true };
       } catch (error) {
         const code = authMailErrorCode(error);
-        log.warn(`${label} to user ${mail.userId} failed: ${code}`);
+        log.warn("auth_mail_failed", { kind: mail.kind, user_id: mail.userId, code });
         return { ok: false, code };
       } finally {
         if (timer !== undefined) clearTimeout(timer);
@@ -133,7 +132,7 @@ export function createAuthMailTasks(deps: {
           if (!result.ok) deps.onFailed(mail.userId, mail.kind, result.code);
         } catch (error) {
           // Never the address or the link.
-          log.error(`auth mail ${mail.kind} task for user ${mail.userId} failed: ${describeError(error)}`);
+          log.error("auth_mail_task_failed", { kind: mail.kind, user_id: mail.userId, ...errorFields(error) });
         }
       })().finally(() => {
         running.delete(task);

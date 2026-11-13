@@ -14,7 +14,7 @@ import type { z } from "zod";
 
 import { isAllowedAuthPath } from "./auth";
 import type { Db, TenantContext } from "./db";
-import { describeError } from "./errors";
+import { errorFields } from "./errors";
 import { createLog, withLogContext } from "./log";
 
 const log = createLog("http");
@@ -223,7 +223,7 @@ export function requireTenant(deps: {
     if (!first) return c.json({ error: "no_organization" }, 403);
     if (rows.length > 1 && !warnedMultiOrg.has(userId)) {
       warnedMultiOrg.add(userId);
-      log.warn(`web: user ${userId} has ${rows.length} memberships; using the oldest`);
+      log.warn("tenant_multi_membership", { user_id: userId, count: rows.length });
     }
     c.set("ctx", { orgId: first.org_id, userId });
     c.set("role", first.role);
@@ -259,7 +259,7 @@ export const refuseSuspendedWrites: MiddlewareHandler<ApiEnv> = async (c, next) 
 export const requireOperator: MiddlewareHandler<ApiEnv> = async (c, next) => {
   const { userId } = c.get("session");
   if (c.get("web").operatorUserIds?.has(userId) !== true) {
-    log.warn(`operator route refused for user ${userId}`);
+    log.warn("operator_route_refused", { user_id: userId });
     return c.json({ error: "not_found" }, 404);
   }
   await next();
@@ -275,7 +275,7 @@ async function homeOf(web: WebDeps, userId: string): Promise<"/onboarding" | "/a
   try {
     return await web.homePath(userId);
   } catch (error) {
-    log.warn(`web: home path failed: ${describeError(error)}`);
+    log.warn("home_path_failed", { ...errorFields(error) });
     return "/onboarding";
   }
 }
@@ -298,7 +298,12 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
   app.use("*", async (c, next) => {
     const start = performance.now();
     await next();
-    log.debug(`${c.req.method} ${routePath(c)} ${c.res.status} ${Math.round(performance.now() - start)}ms`);
+    log.debug("http_request", {
+      method: c.req.method,
+      route: routePath(c),
+      status: c.res.status,
+      ms: Math.round(performance.now() - start),
+    });
   });
 
   app.use(
@@ -324,7 +329,7 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
     if (error instanceof HTTPException) {
       return error.res ?? c.json({ error: error.message || "error" }, error.status);
     }
-    log.error(`${c.req.method} ${routePath(c)}: ${describeError(error)}`);
+    log.error("http_error", { method: c.req.method, route: routePath(c), ...errorFields(error) });
     return c.json({ error: "internal" }, 500);
   });
 
@@ -361,7 +366,7 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
 
   const notFoundPath = join(web.dist, "404.html");
   if (!existsSync(web.dist) || !existsSync(notFoundPath)) {
-    log.warn("web: dist folder missing, pages are off");
+    log.warn("web_dist_missing");
     app.on(["GET", "HEAD"], "*", (c) => c.text(MISSING_BUILD, 503));
     return app;
   }

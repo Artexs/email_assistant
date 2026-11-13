@@ -99,9 +99,9 @@ describe("checkPwnedPassword", () => {
   });
 
   test("the log of the cases above holds no password, no prefix and no hash", () => {
-    expect(lines.some((line) => line.includes("pwned check unavailable"))).toBe(true);
-    expect(lines.some((line) => line.includes("status 503"))).toBe(true);
-    expect(lines.some((line) => line.includes("TimeoutError"))).toBe(true);
+    expect(lines.some((line) => line.includes("pwned_check_unavailable"))).toBe(true);
+    expect(lines.some((line) => line.includes("status=503"))).toBe(true);
+    expect(lines.some((line) => line.includes("error=TimeoutError"))).toBe(true);
     for (const line of lines) {
       for (const secret of [LISTED, GOOD, LISTED_HASH, GOOD_HASH, "E6B6A", "DD606", LISTED_HASH.slice(5)]) {
         expect(line.toUpperCase()).not.toContain(secret.toUpperCase());

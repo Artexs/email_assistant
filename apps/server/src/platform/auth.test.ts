@@ -1,7 +1,7 @@
 import { APIError } from "better-auth/api";
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 
-import { AUTH_ALLOWED_PATHS, cleanLogText, createAddressLimiter, isAllowedAuthPath, onAuthError } from "./auth";
+import { AUTH_ALLOWED_PATHS, betterAuthLogReason, createAddressLimiter, isAllowedAuthPath, onAuthError } from "./auth";
 import { setLogLevel } from "./log";
 
 // The base class that better-auth's APIError extends (better-call is not a direct dependency).
@@ -43,21 +43,19 @@ describe("isAllowedAuthPath", () => {
   });
 });
 
-describe("cleanLogText", () => {
-  test("replaces a URL", () => {
-    expect(cleanLogText("Invalid callbackURL: https://evil.test/a?b=c")).toBe("Invalid callbackURL: <url>");
-  });
-
-  test("replaces control characters with spaces", () => {
-    expect(cleanLogText("a\nb\tc")).toBe("a b c");
-  });
-
-  test("cuts the text to 200 characters", () => {
-    expect(cleanLogText("x".repeat(300))).toHaveLength(200);
-  });
-
-  test("keeps a plain text", () => {
-    expect(cleanLogText("Invalid password")).toBe("Invalid password");
+describe("betterAuthLogReason", () => {
+  test.each([
+    ["Invalid password", "invalid_password"],
+    ["User not found", "user_not_found"],
+    ["Reset Password: User not found", "reset_user_not_found"],
+    ["Invalid callbackURL: https://evil.test/a?b=c", "invalid_callback_url"],
+    ["Invalid origin: https://evil.test", "invalid_origin"],
+    ["Database schema mismatch. Missing tables: x", "schema_mismatch"],
+    ["Rate limiting could not determine a client IP address", "rate_limit_no_ip"],
+    ["Something new for x@y.test", "other"],
+    [new Error("e"), "other"],
+  ])("%p gives the reason %p", (message, reason) => {
+    expect(betterAuthLogReason(message)).toBe(reason);
   });
 });
 
@@ -91,14 +89,16 @@ describe("onAuthError", () => {
   test("logs a 500 APIError with its name only", () => {
     const lines = capture(new APIError("INTERNAL_SERVER_ERROR", { message: "MARKER-DETAIL" }));
     expect(lines).toHaveLength(1);
-    expect(lines[0]).toContain("better-auth: APIError");
+    expect(lines[0]).toContain("better_auth_error");
+    expect(lines[0]).toContain("error=APIError");
     expect(lines[0]).not.toContain("MARKER-DETAIL");
   });
 
   test("logs a non-API error with its name only", () => {
     const lines = capture(new TypeError("MARKER-DETAIL"));
     expect(lines).toHaveLength(1);
-    expect(lines[0]).toContain("better-auth: TypeError");
+    expect(lines[0]).toContain("better_auth_error");
+    expect(lines[0]).toContain("error=TypeError");
     expect(lines[0]).not.toContain("MARKER-DETAIL");
   });
 });
