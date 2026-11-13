@@ -96,7 +96,14 @@ async function setup(trx: Transaction<DB>): Promise<Setup> {
     address,
     fake,
     emailId: mail.emailId,
-    link: { orgId: box.orgId, userId: box.userId, role: "owner", chatId: 1, linkedAt: new Date(NOW.getTime() - HOUR) },
+    link: {
+      orgId: box.orgId,
+      userId: box.userId,
+      role: "owner",
+      chatId: 1,
+      linkedAt: new Date(NOW.getTime() - HOUR),
+      locale: "en",
+    },
   };
 }
 

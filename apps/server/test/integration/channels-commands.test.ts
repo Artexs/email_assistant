@@ -90,6 +90,7 @@ async function setup(trx: Transaction<DB>) {
     role: "owner",
     chatId: 1,
     linkedAt: at(-30 * 24 * HOUR),
+    locale: "en",
   };
   return { a, ctx, link, address: address.address };
 }

@@ -181,7 +181,14 @@ describe("send logs", () => {
         expect(approvals.length).toBeGreaterThanOrEqual(2);
 
         // The taps.
-        const link: LinkedChat = { orgId, userId, role: "owner", chatId: 1, linkedAt: new Date(T0.getTime() - HOUR) };
+        const link: LinkedChat = {
+          orgId,
+          userId,
+          role: "owner",
+          chatId: 1,
+          linkedAt: new Date(T0.getTime() - HOUR),
+          locale: "en",
+        };
         const tapDeps: CallbackDeps = {
           db: trx,
           now: () => clock,

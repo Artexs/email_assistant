@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { NoticeViewError, renderSyncOkNotice } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -11,6 +12,7 @@ import {
   insertOutbox,
   listSentStaleEpisodes,
   markOutboxSent,
+  queueNotice,
   releaseOutbox,
   type OutboxKind,
 } from "../../src/modules/channels";
@@ -47,6 +49,8 @@ function rowFor(
     kind: "sync_ok" as OutboxKind,
     dedupKey: `test:${counter}`,
     message: { text: `text ${counter}`, buttons: [[{ text: "OK", data: "ok" }]] },
+    view: {},
+    locale: "en",
     createdAt: minutesFromT(-60 + counter),
     nextAttemptAt: minutesFromT(-1),
     ...overrides,
@@ -497,5 +501,120 @@ describe("claimDueOutbox with two connections", () => {
       await db.deleteFrom("organizations").where("id", "=", created.orgId).execute();
       await db.deleteFrom("users").where("id", "=", created.userId).execute();
     }
+  });
+});
+
+describe("queueNotice", () => {
+  const syncOk = (address: string) => ({
+    address,
+    lastSyncedAt: new Date("2026-11-06T09:30:00.123Z"),
+    now: T,
+    timeZone: "Europe/Warsaw",
+  });
+
+  async function rowOf(trx: Transaction<DB>, userId: string, dedupKey: string) {
+    return trx
+      .selectFrom("outbox")
+      .select(["view", "locale", "text"])
+      .where("user_id", "=", userId)
+      .where("dedup_key", "=", dedupKey)
+      .execute();
+  }
+
+  test("stores the view, the locale and the registry text", async () => {
+    await withRollback(db, async (trx) => {
+      const t = await tenant(trx);
+      const input = syncOk("box@example.test");
+      const id = await queueNotice(trx, t.ctx, {
+        userId: t.userId,
+        locale: "pl",
+        kind: "sync_ok",
+        view: input,
+        dedupKey: "queue:1",
+        mailboxId: t.mailboxId,
+        now: T,
+      });
+      expect(id).toBeString();
+      const rows = await rowOf(trx, t.userId, "queue:1");
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.locale).toBe("pl");
+      expect(rows[0]?.view).toMatchObject({ lastSyncedAt: "2026-11-06T09:30:00.123Z" });
+      expect(rows[0]?.text).toBe(renderSyncOkNotice(input).text);
+    });
+  });
+
+  test("refuses a view that its schema or renderer rejects, and stores no row", async () => {
+    await withRollback(db, async (trx) => {
+      const t = await tenant(trx);
+      const base = { userId: t.userId, locale: "en" as const, now: T };
+      const tooLong = queueNotice(trx, t.ctx, {
+        ...base,
+        kind: "digest",
+        view: { text: "x".repeat(4097), buttons: [] },
+        dedupKey: "queue:long",
+      });
+      await expect(tooLong).rejects.toBeInstanceOf(NoticeViewError);
+      expect(await rowOf(trx, t.userId, "queue:long")).toHaveLength(0);
+
+      // The check render throws on an e-mail id that is not a UUID.
+      const badId = queueNotice(trx, t.ctx, {
+        ...base,
+        kind: "urgent",
+        view: {
+          emailId: "not-a-uuid",
+          from: null,
+          subject: null,
+          ai: { reasonCode: "deadline", reason: null },
+          receivedAt: T,
+          synthetic: false,
+          folderTag: null,
+          actions: [],
+          delegateNames: {},
+          stayFolder: "INBOX",
+          now: T,
+          timeZone: "Europe/Warsaw",
+        },
+        dedupKey: "queue:badid",
+      });
+      await expect(badId).rejects.toBeInstanceOf(NoticeViewError);
+      expect(await rowOf(trx, t.userId, "queue:badid")).toHaveLength(0);
+    });
+  });
+
+  test("returns null for the second call of one event", async () => {
+    await withRollback(db, async (trx) => {
+      const t = await tenant(trx);
+      const call = () =>
+        queueNotice(trx, t.ctx, {
+          userId: t.userId,
+          locale: "en",
+          kind: "sync_ok",
+          view: syncOk("box@example.test"),
+          dedupKey: "queue:twice",
+          mailboxId: t.mailboxId,
+          now: T,
+        });
+      expect(await call()).toBeString();
+      expect(await call()).toBeNull();
+      expect(await rowOf(trx, t.userId, "queue:twice")).toHaveLength(1);
+    });
+  });
+
+  test("makes a lone surrogate and a NUL safe for jsonb", async () => {
+    await withRollback(db, async (trx) => {
+      const t = await tenant(trx);
+      const id = await queueNotice(trx, t.ctx, {
+        userId: t.userId,
+        locale: "en",
+        kind: "sync_ok",
+        view: syncOk("a\ud800\u0000b@example.test"),
+        dedupKey: "queue:bad-chars",
+        mailboxId: t.mailboxId,
+        now: T,
+      });
+      expect(id).toBeString();
+      const rows = await rowOf(trx, t.userId, "queue:bad-chars");
+      expect(rows[0]?.view).toMatchObject({ address: "a� b@example.test" });
+    });
   });
 });

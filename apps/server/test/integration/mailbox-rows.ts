@@ -64,6 +64,8 @@ export async function fillMailbox(
     dedupKey: `urgent:${triaged.emailId}`,
     emailId: triaged.emailId,
     message,
+    view: {},
+    locale: "en",
     createdAt: now,
     nextAttemptAt: now,
   });
@@ -73,6 +75,8 @@ export async function fillMailbox(
     dedupKey: `auth_error:${mailboxId}`,
     mailboxId,
     message,
+    view: {},
+    locale: "en",
     createdAt: now,
     nextAttemptAt: now,
   });

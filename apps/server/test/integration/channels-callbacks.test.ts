@@ -61,7 +61,7 @@ async function setup(trx: Transaction<DB>) {
   });
   const unsure = await insertTriaged(trx, ctxA, a.mailboxId, { category: "unsure", createdAt: T });
   const other = await insertTriaged(trx, { orgId: b.orgId }, b.mailboxId, { category: "info", createdAt: T });
-  const link: LinkedChat = { orgId: a.orgId, userId: a.userId, role: "owner", chatId: 1, linkedAt: T };
+  const link: LinkedChat = { orgId: a.orgId, userId: a.userId, role: "owner", chatId: 1, linkedAt: T, locale: "en" };
   const deps: CallbackDeps = {
     db: trx,
     now: () => T,
@@ -352,6 +352,7 @@ describe("approval taps", () => {
       role,
       chatId: 1,
       linkedAt: T,
+      locale: "en",
     });
     const cancelled: string[] = [];
     const hooks: DelegationHooks = {
@@ -400,6 +401,8 @@ describe("approval taps", () => {
       dedupKey: `${kind}:${key}`,
       emailId,
       message: { text, buttons: [] },
+      view: {},
+      locale: "en",
       createdAt: T,
       nextAttemptAt: T,
     });
@@ -762,6 +765,7 @@ describe("approval taps", () => {
         role: "owner",
         chatId: 2,
         linkedAt: T,
+        locale: "en",
       };
       expect(await handleCallback(s.deps, foreignLink, `gw:${u.sendId}`)).toEqual({ answer: NOT_FOUND });
       await unchanged();

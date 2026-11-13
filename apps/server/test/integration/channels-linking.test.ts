@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
-import { findChatLink, listLinkedChats } from "../../src/modules/channels";
+import { findChatLink, listLinkedChats, listLinkedChatsOfOrg } from "../../src/modules/channels";
 import {
   LINK_TOKEN_PATTERN,
   consumeLinkToken,
@@ -198,7 +198,7 @@ describe("chat linking", () => {
       await linkChat(trx, { orgId }, userId, chatId, now);
 
       const found = await findChatLink(trx, chatId);
-      expect(found).toEqual({ orgId, userId, role: "owner", chatId, linkedAt: now });
+      expect(found).toEqual({ orgId, userId, role: "owner", chatId, linkedAt: now, locale: "pl" });
       expect(typeof found?.chatId).toBe("number");
       expect(await findChatLink(trx, randomChatId())).toBeUndefined();
       expect(await getChatLinkForUser(trx, { orgId: other.orgId }, userId)).toBeUndefined();
@@ -267,8 +267,42 @@ describe("chat linking", () => {
       await linkChat(trx, { orgId }, userId, chatA, now);
       await linkChat(trx, { orgId }, second, chatB, now);
       const all = await listLinkedChats(trx, { includeSuspended: true });
-      expect(all).toContainEqual({ orgId, userId, role: "owner", chatId: chatA, linkedAt: now });
-      expect(all).toContainEqual({ orgId, userId: second, role: "assistant", chatId: chatB, linkedAt: now });
+      expect(all).toContainEqual({ orgId, userId, role: "owner", chatId: chatA, linkedAt: now, locale: "pl" });
+      expect(all).toContainEqual({
+        orgId,
+        userId: second,
+        role: "assistant",
+        chatId: chatB,
+        linkedAt: now,
+        locale: "pl",
+      });
+    });
+  });
+
+  test("a linked chat carries the locale of its member; no locale means Polish", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId, userId } = await createOrgWithMailbox(trx);
+      const english = await addMember(trx, orgId);
+      const polish = await addMember(trx, orgId);
+      await trx.updateTable("users").set({ locale: "en" }).where("id", "=", english).execute();
+      await trx.updateTable("users").set({ locale: "pl" }).where("id", "=", polish).execute();
+      const chats = { [userId]: randomChatId(), [english]: randomChatId(), [polish]: randomChatId() };
+      for (const [id, chatId] of Object.entries(chats)) await linkChat(trx, { orgId }, id, chatId, now);
+      const expected = new Map<string, "pl" | "en">([
+        [userId, "pl"],
+        [english, "en"],
+        [polish, "pl"],
+      ]);
+
+      const ofOrg = await listLinkedChatsOfOrg(trx, { orgId });
+      const all = await listLinkedChats(trx, { includeSuspended: true });
+      for (const [id, chatId] of Object.entries(chats)) {
+        const want = expected.get(id);
+        expect(ofOrg.find((link) => link.userId === id)?.locale).toBe(want);
+        expect(all.find((link) => link.userId === id)?.locale).toBe(want);
+        expect((await getChatLinkForUser(trx, { orgId }, id))?.locale).toBe(want);
+        expect((await findChatLink(trx, chatId))?.locale).toBe(want);
+      }
     });
   });
 

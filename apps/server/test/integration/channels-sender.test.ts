@@ -96,6 +96,8 @@ async function addRow(
         ? await insertTestEmail(trx, t.ctx, t.mailboxId)
         : undefined,
     message: { text: `${SECRET} ${counter}`, buttons: [[{ text: "OK", data: `ok:${counter}` }]] },
+    view: {},
+    locale: "en",
     createdAt: opts.createdAt ?? T,
     nextAttemptAt: opts.nextAttemptAt ?? T,
   });
