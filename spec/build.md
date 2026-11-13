@@ -10,6 +10,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 - Standing models: worker and reviewer `--engine pi --provider claude-bridge --model claude-sonnet-5-5 --thinking high`, with the personal Claude route (`~/.pi/agent/AGENTS.md` § Limen). Prepare: `--prepare 'bash scripts/limen-prepare.sh'` (own `.env`, `node_modules`, own DB; drop the job DB by hand after the job).
 - Now: S6 pre-sale moves to Limen segment by segment (S6a = F077). The S6 master plan and `s6b`–`s6f` still sit in `tasks/` until `plan-task` plans them here; the old `run-task` flow is removed.
+- Stage 2 order: `docs/product/stage-2/05-execution-plan.md` §2 (ticket table, needs, gates). Each planned Stage 2 ticket has a `## Needs` section and a NEXT line with its needs; start the first NEXT ticket whose needs are all landed and whose gate is done, at most two Stage 2 tickets in build (§2.4).
 
 ## NOW
 

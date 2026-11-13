@@ -18,55 +18,130 @@ Rules:
 - **Discovery first (PD-012).** A runs for every epic before any B, except E1 (no open product question) and E12 (deferred, see §3). E1 goes through B and C in parallel with the discovery sessions, because the E2 build needs E1 landed.
 - A is short when the owner answers "go with defaults". Keep A and B apart: product choices first, file lists second.
 - A question that needs measured numbers (E2 reports, E3 metrics) or a spike on a real provider gets a default now and a "second pass" trigger. The epic is then `decided, second pass after <trigger>`. A second pass is a short A session (about 15 min) on that question only; after it the epic is `ready to plan`.
-- B starts after the A queue in §3 is empty. B then runs rolling, in wave order (§2): the next one or two epics whose status is `ready to plan`.
+- B starts after the A queue in §3 is empty (true since 2026-11-13). B runs per ticket in the order of § 2.3; the coordinator starts builds by the rule of § 2.4.
 
-## 2. Dependencies and waves
+## 2. Tickets, dependencies and order (after discovery, 2026-11-13)
+
+> Source of truth for the Stage 2 order. Written after all discovery sessions ended; it replaces the epic-level graph of 2026-11-12, which had edges that discovery removed (`E4 → E7i`, `E7i → E9`, `E6 → E11`, PD-050, PD-113) and no ticket split. Planning sessions (step B) and the Limen coordinator (step C) read this section. A planning session that changes a ticket's needs updates its row here in the same commit.
+
+### 2.1 Ticket table
+
+One row per `plan-task` run. "Plan name" is the working name until `plan-task` gives the F-number; the planning session writes the F-number into the last column. "Needs" lists what must be **landed** (in `spec/features/done/`) before the build starts; planning may run earlier. "Gate" lists a second pass or an owner step that must be done before the build starts (or before the named stage).
+
+| # | Plan name | Epic page | Stages | Needs (landed) | Gate | F-number |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | E1 Close the MVP (capability map, docs boundary, NEXT sweep of the old planned tickets) | E01 | ≈ 10 | — (F077 landed) | Owner: F047 A phone test; vision text OK (owner-owned) | |
+| 2 | E8-LR Log rotation | E08 (PD-054) | ≈ 1 | — | — | |
+| 3 | E2a Offline lab | E02 | ≈ 14 | E1 | Owner audit of 50 cases per corpus version | |
+| 4 | E7-T1 Polish UI (i18n frame first) | E07 notes §11 | ≈ 6 | F082 | — | |
+| 5 | E7-T2 Platform controls (send limits, feature flags, operator console, security log) | E07 notes §11 | ≈ 12 | F082 | — | |
+| 6 | E3a Measure | E03 | ≈ 13 | E1; E7-T2 before its user-visible stages (flags) | — | |
+| 7 | Panel to Astro 7 | E10 (PD-098 area, notes §5) | ≈ 3 | E1 | — | |
+| 8 | E4-A Act from the panel | E04 | ≈ 20 | E1, E7-T1, Astro 7 | — | |
+| 9 | E8a Logs | E08 | ≈ 8 | E1 | — | |
+| 10 | E5a Read Sent | E05 | ≈ 7 | E1, E7-T2 | — | |
+| 11 | E7-T6 Identity A (TOTP, backup codes, break-glass) | E07 notes §11 | ≈ 4 | F082 | — | |
+| 12 | E7-T3 Account data (delete, export, DSR) | E07 notes §11 | ≈ 8 | F082, E7-T1 | — | |
+| 13 | E7-T4 Papers and cost | E07 notes §11 | ≈ 6 | E7-T3 | — | |
+| 14 | E7-T5 Production on the VPS | E07 notes §11 | ≈ 4 | E7-T1 … T4; the E8b drill proves its restore | — | |
+| 15 | E3b Improve | E03 | ≈ 14 | E2a, E3a | Second pass after the first E2a holdout report (PD-060, PD-061) | |
+| 16 | E4-B Earn trust | E04 | ≈ 25 | E4-A (command contract stage), E3a (flag store, header capture), E2a (urgency shape); the urgency-editor stage needs E3b's urgency command | — | |
+| 17 | E11b Private model option | E11 | ≈ 5 | E2a | Owner: OpenAI Europe project request (PD-111); second pass on the answer (PD-110) before the EU stage | |
+| 18 | E10a Docs site | E10 | ≈ 10 | E1, Astro 7 | — | |
+| 19 | E2b Live lab | E02 | ≈ 16 | E2a | Owner: grow the VPS root volume (PD-055) | |
+| 20 | E8b Alerts and releases (incl. the restore drill) | E08 | ≈ 6 | E8a | Owner: grow the VPS root volume (PD-055) | |
+| 21 | E6a Reply drafts | E06 | ≈ 17 | E2a, E3a, E4-A, E5a, E7-T2 | Stage 1 is the prototype; second pass after it (PD-071, PD-072, PD-083) before the later stages | |
+| 22 | E5b Open loops | E05 | ≈ 22 | E2a, E3a, E4-A, E5a | Second pass after the first E3a weekly report and the E2b live week (PD-119, PD-120, PD-122) | |
+| 23 | E9a Mailbox OAuth | E09 | ≈ 19 | F082, E7-T2 | Owner: one Microsoft 365 Business Basic seat; stage 1 is the spike; second pass after it (PD-086, PD-087) | |
+| 24 | E9b Phone channel (PWA, push, Telegram detail) | E09 | ≈ 14 | E4-A, E4-B | — | |
+| 25 | E7-T7 Identity B (OIDC) | E07 notes §11 | ≈ 10 | E7-T2, E7-T6 | Stage 1 is the spike; second pass after it (PD-040, PD-041) | |
+| 26 | E11a Sender context | E11 | ≈ 10 | E3a, E5a, E4-B | — | |
+| 27 | E10b Public pages and demo | E10 | ≈ 8 | E2b, E3a, E4-B, E7-T4, E8b | — | |
+| 28 | E6b Style from Sent | E06 | ≈ 4 | E6a, E5a | Gated: only if the E2a judge shows a gain | |
+| — | E12 Native mobile app | E12 | — | — | Deferred: discovery only after the E9b PWA is in use | — |
+
+Stage counts are the discovery estimates; `plan-task` sets the real ones.
+
+### 2.2 Graph
 
 ```mermaid
 graph LR
-    E1[E1 Close the MVP]
-    E2[E2 Quality lab]
-    E3[E3 Measured core]
-    E4[E4 Control surface]
-    E5[E5 Open loops]
-    E6[E6 Reply drafts]
-    E7[E7 Platform and trust]
-    E7i[E7 identity tier 1]
-    E8[E8 Operations]
-    E9[E9 Reach]
-    E10[E10 Go-to-market]
-    E11[E11 Contacts]
-    E12[E12 Mobile]
-    E1 --> E2 --> E3
-    E1 --> E4
-    E1 --> E7
-    E1 --> E8
-    E4 --> E7i
-    E7 --> E7i
-    E3 --> E5
-    E4 --> E5
-    E2 --> E6
-    E4 --> E6
-    E7i --> E9
-    E4 --> E9
-    E3 --> E10
-    E7 --> E10
-    E8 --> E10
-    E5 --> E11
-    E6 --> E11
-    E9 --> E12
-    E7i --> E12
+    E1[1 E1] --> E2a[3 E2a] --> E2b[19 E2b] --> E10b[27 E10b]
+    E1 --> E3a[6 E3a] --> E3b[15 E3b]
+    E2a --> E3b
+    F082[F082 running] --> T1[4 E7-T1] --> E4A[8 E4-A] --> E4B[16 E4-B]
+    F082 --> T2[5 E7-T2]
+    E1 --> AST[7 Astro 7] --> E4A
+    AST --> E10a[18 E10a]
+    T2 --> E5a[10 E5a]
+    E1 --> E5a
+    E3a --> E4B
+    E2a --> E4B
+    E3b -. urgency editor stage .-> E4B
+    F082 --> T6[11 E7-T6] --> T7[25 E7-T7]
+    T2 --> T7
+    T1 --> T3[12 E7-T3] --> T4[13 E7-T4] --> T5[14 E7-T5]
+    E1 --> E8a[9 E8a] --> E8b[20 E8b]
+    E8b -. drill .-> T5
+    E2a --> E11b[17 E11b]
+    E2a --> E6a[21 E6a]
+    E3a --> E6a
+    E4A --> E6a
+    E5a --> E6a
+    T2 --> E6a
+    E2a --> E5b[22 E5b]
+    E3a --> E5b
+    E4A --> E5b
+    E5a --> E5b
+    T2 --> E9a[23 E9a]
+    E4A --> E9b[24 E9b]
+    E4B --> E9b
+    E3a --> E11a[26 E11a]
+    E5a --> E11a
+    E4B --> E11a
+    E3a --> E10b
+    E4B --> E10b
+    T4 --> E10b
+    E8b --> E10b
+    E6a --> E6b[28 E6b]
 ```
 
-| Wave | Epics (parallel inside the wave) | Starts when | Note |
-| --- | --- | --- | --- |
-| 0 | E1 | now | No discovery needed (only PD-007 open); go straight to `plan-task`. The discovery queue (§3) runs next to it |
-| 1 | E2, E4, E7 (S6c, S6e, S6f, send limits, console, flags), E8 | E1 landed | Four independent lanes. Practical limit: two in build at once (owner checkpoints, one migration at a time) |
-| 2 | E3, E6, E7 identity tier 1 | E3 after E2; E6 after E2 and E4; identity after E4 and the rest of E7 | E6 discovery runs after the first E2 eval shows draft quality |
-| 3 | E5, E9, E10 | E5 after E3 and E4; E9 after E7 identity and E4; E10 after E3, E7, E8 | The owner re-reads the epic table after E3 (numbers may move E5 and E6) |
-| 4 | E11, E12 | E11 after E5 and E6; E12 after E9 and E7 identity | E12 only if the PWA (E9) is not enough |
+Critical path (longest chain of build work): E1 → E2a → E3b and E1 → E7-T1 → E4-A → E4-B → E9b / E11a. E4-A is the busiest node: E4-B, E5b, E6a and E9b wait for it. Plan it early and keep it moving.
 
-Critical path (longest chain): E1 → E2 → E3 → E5 → E11. Everything else has slack and fills the parallel lanes.
+### 2.3 Planning order (step B)
+
+Run `plan-task` in the order of the # column. Planning is cheap and may run ahead of the build; a ticket that is planned but whose needs have not landed waits in `spec/features/planned/`. Exceptions: a ticket whose gate is a second pass on numbers (# 15, 22) is planned with its defaults, and its plan names the stage that waits for the second pass. E1 (# 1) is first: the old handoff `~/.pi/agent/notes/2026-11-12-handoff-stage2-e01-close-the-mvp.md` is still the input.
+
+When a planning session finishes a ticket, in the same commit it:
+1. writes the F-number into the § 2.1 row;
+2. writes a `## Needs` section in the ticket's `ticket.md`: the F-numbers (or plan names, if not planned yet) of the "Needs" column, and the gate;
+3. adds one line to `spec/build.md` NEXT in § 2.1 order: `FNNN-slug: <outcome>; needs <F-numbers or plan names>`;
+4. applies the cross-epic edits that other epics' discovery notes list for this epic (§ 2.5).
+
+### 2.4 Start rule for the Limen coordinator (step C)
+
+Limen has no dependency field; NEXT order and the ticket's `## Needs` section carry the order.
+- Start the first NEXT ticket whose needs are all in `spec/features/done/` and whose gate is done.
+- At most two Stage 2 tickets in build at once (owner checkpoints; § 4). One DB migration and one `bun run test:int` at a time.
+- A ticket with a second-pass gate on a later stage builds up to that stage, then stops and asks the owner for the second pass.
+- Owner steps (gates) are listed in the ticket; the coordinator asks for them when the ticket reaches the top of NEXT, not earlier.
+
+### 2.5 Cross-epic edits that the planning sessions apply
+
+Discovery sessions did not edit each other's pages. Each planning session reads these sections and applies the lines for its own epic:
+
+| Source | Section |
+| --- | --- |
+| E2 | `epics/E02-discovery-notes.md` § 3 (applied to E3, E4, E6, E8, E10 on 2026-11-13) |
+| E3 | `epics/E03-discovery-notes.md` § 5 |
+| E4 | `epics/E04-discovery-notes.md` § 5 |
+| E5 | `epics/E05-discovery-notes.md` § 6 |
+| E6 | `epics/E06-discovery-notes.md` § 5 |
+| E7 | `epics/E07-discovery-notes.md` § 10 (PD-050) |
+| E8 | `epics/E08-operations.md` § Discovery, "Cross-epic notes" |
+| E9 | `epics/E09-discovery-notes.md` § 4 |
+| E10 | `epics/E10-discovery-notes.md` § 5 |
+| E11 | `epics/E11-discovery-notes.md` § 5 (PD-114) |
 
 ## 3. Discovery queue (step A) — the tracker
 
@@ -87,7 +162,7 @@ One session each, top to bottom, one at a time (never two at once: each session 
 | 10 | E11 Contacts | decided, second pass after OpenAI answers the EU approval request | contacts page or data only, sanitizer vs local model | OpenAI answer to the EU project approval (owner step PD-111; only PD-110 waits) | Done 2026-11-13 (PD-104–PD-114, ADR 0034, 0035 drafts). Two `plan-task` runs: E11b Private model option (after E2a, wave 2), then E11a Sender context (after E3a, E5a, E4-B) |
 | — | E12 Mobile | deferred | go or no-go | after the E9 PWA is in use | Its only question depends on the PWA; no session until then |
 
-When the last `queued` row is done, the session that finished it tells the owner: "Discovery queue empty. Next: second passes as their triggers arrive; planning in wave order (§2)."
+Discovery queue empty since 2026-11-13 (E5 was the last row to commit). Next: planning in the order of § 2.3, starting with E1; second passes when their triggers arrive (§ 2.1 "Gate").
 
 ## 4. Parallel rules (from `CLAUDE.md`)
 
@@ -100,7 +175,7 @@ When the last `queued` row is done, the session that finished it tells the owner
 
 - Discovery: paste the launch line at the top of this file. The agent reads `discovery-prompt.md`, takes the next `queued` row of §3, reads the frame, the epic, the other epics, the code and the web, validates the epic, and returns a short verdict with a decision list that "go with defaults" answers.
 - Second pass: paste `Run the second pass of docs/product/stage-2/discovery-prompt.md for epic E03` when the row's trigger has arrived.
-- Planning: invoke the `plan-task` skill with the ready epic page as the source; it writes the Limen feature folder. For E7, run it once per segment (S6c, S6e, S6f, identity).
+- Planning: invoke the `plan-task` skill once per § 2.1 row, with the epic page (and its notes section for that ticket) as the source; it writes the Limen feature folder. Then do the four steps of § 2.3.
 - Build: the Limen coordinator, standing models in `spec/build.md` § TRACK.
 
 ## 6. Owner time (estimate)
@@ -117,8 +192,8 @@ When the last `queued` row is done, the session that finished it tells the owner
 - **Discovery and second-pass sessions need no handoff.** The launch line at the top of this file is enough: the prompt and the tracker in §3 hold the state.
 - **Planning sessions get one handoff each**, written in a new conversation when the owner says "prepare a handoff for the next epic". The agent that writes it:
   1. Reads `README.md`, this file, `decisions.md`, the epic page (with its "Discovery" section), and the last handoff (`~/.pi/agent/notes/*handoff-stage2-*.md`) to learn the state.
-  2. Picks the next epic whose §3 status is `ready to plan`, in wave order (§2).
-  3. Writes `~/.pi/agent/notes/YYYY-MM-DD-handoff-stage2-e<nn>-<slug>.md` with the `handoff` skill: state not orders; the owner's exact words; what the epic needs and what depends on it (§2); the planned tickets it absorbs; the traps (vision is owner-owned, commit by path, one migration at a time, other sessions in `spec/features/active/`). Goal: the owner invokes `plan-task` on the epic page.
+  2. Picks the first § 2.1 row with no F-number (the planning order of § 2.3).
+  3. Writes `~/.pi/agent/notes/YYYY-MM-DD-handoff-stage2-e<nn>-<slug>.md` with the `handoff` skill: state not orders; the owner's exact words; what the ticket needs and what depends on it (§ 2.1, § 2.2); the planned tickets it absorbs; the traps (vision is owner-owned, commit by path, one migration at a time, other sessions in `spec/features/active/`). Goal: the owner invokes `plan-task` on the epic page.
   4. Shows the summary, waits for the owner's OK, then ends with the `/handoff-open` line.
 
-The first planning session is E1: `~/.pi/agent/notes/2026-11-12-handoff-stage2-e01-close-the-mvp.md`.
+The first planning session is E1 (§ 2.1 row 1): `~/.pi/agent/notes/2026-11-12-handoff-stage2-e01-close-the-mvp.md`.

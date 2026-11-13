@@ -13,7 +13,8 @@ MVP = slices S0–S6a (`docs/roadmap.md`). Stage 2 makes the product sell-ready,
 | `03-product-frame.md` | Boundary, thesis, users, principles, success metrics M1–M8, non-goals, exit criteria — one page, owner approves |
 | `04-review-result.md` | Cold review of 01–03 by a second model: market input, findings R1–R18 with fixes, the proposed epic tiers, decisions for the owner |
 | `discovery-prompt.md` | The one prompt for every epic's product discovery session and its second pass; started by a one-line launch |
-| `05-execution-plan.md` | The route per epic (discovery, `plan-task`, Limen), the waves and the dependency graph, the discovery queue (tracker, §3), parallel rules, owner time |
+| `05-execution-plan.md` | The route per epic (discovery, `plan-task`, Limen), the ticket table, dependency graph, planning order and coordinator start rule (§2), the discovery queue (tracker, §3), parallel rules, owner time |
+| `06-architecture-review.md` | Architecture review of the code against the epic plans (2026-11-13): what stays, 17 findings with evidence, a foundation ticket group P0–P10 to build before the feature epics, 12 proposed code standards, 6 owner decisions |
 | `epics/E<nn>-<slug>.md` | One page per epic: outcome, users, in scope, out of scope, dependencies, open product questions, risks, exit, size |
 | `decisions.md` | Product decision log: PD-NNN, date, decision, owner words. Architecture decisions stay ADRs in `docs/decisions/` |
 
@@ -23,7 +24,7 @@ MVP = slices S0–S6a (`docs/roadmap.md`). Stage 2 makes the product sell-ready,
 2. **Cold review** of the whole plan by a second model (not the author model). Result in `04-review-result.md`; the owner accepts or rejects each finding.
 3. **Epic map**: one page per epic in `epics/`: outcome, users, in scope, out of scope, dependencies, open product questions, risks, exit metric. A dependency graph in this README.
 4. **Epic discovery** for all epics first (PD-012), one session at a time, in the queue of `05-execution-plan.md` §3: answer the open product questions with the owner → `decisions.md` entries and ADRs. Output: an epic page marked "ready to plan", or "decided, second pass after <trigger>" when a question waits for E2/E3 numbers or a spike.
-5. **Planning**, after the queue is empty, rolling in wave order: the next one or two ready epics go through `plan-task` into Limen feature folders (`spec/features/planned/`). E1 is the exception: planned and built now, next to the discovery queue.
+5. **Planning**, after the queue is empty: one `plan-task` run per ticket of `05` §2.1, in its order (E1 first), into Limen feature folders (`spec/features/planned/`); each run adds its ticket to `spec/build.md` NEXT with its needs (`05` §2.3).
 6. **Build** in Limen; each landed epic updates its page and the roadmap.
 
 ## Epics (proposed by `04-review-result.md` §5; the owner accepts or changes them)
@@ -71,4 +72,4 @@ graph LR
     E9 --> E12
 ```
 
-Discovery order (PD-012, `05` §3): E2 → E4 → E7 → E8 → E3 → E6 → E5 → E9 → E10 → E11; E12 deferred. Build order: the waves of `05` §2. After E3 the owner re-reads the table: the numbers may change the order.
+Discovery order (PD-012, `05` §3): E2 → E4 → E7 → E8 → E3 → E6 → E5 → E9 → E10 → E11; E12 deferred. Build order: `05` §2 (ticket table, graph and the coordinator start rule). After E3 the owner re-reads the table: the numbers may change the order.
