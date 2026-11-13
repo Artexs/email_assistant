@@ -344,6 +344,7 @@ describe("triageOne", () => {
       expect(calls[0]?.reason_code).toBe("ok");
       expect(calls[0]?.data).toEqual({
         mailbox_id: mailbox.id,
+        role: "classifier",
         model: "fake-model",
         prompt_version: "classifier-v2",
         tokens_in: 100,
@@ -433,7 +434,13 @@ describe("triageOne", () => {
       const calls = await llmRows(trx, emailId);
       expect(calls).toHaveLength(1);
       expect(calls[0]?.reason_code).toBe("http_429");
-      expect(calls[0]?.data).toMatchObject({ model: "fake-model", tokens_in: null, tokens_out: null });
+      expect(calls[0]?.data).toMatchObject({
+        role: "classifier",
+        prompt_version: "classifier-v2",
+        model: "fake-model",
+        tokens_in: null,
+        tokens_out: null,
+      });
     });
   });
 
@@ -485,6 +492,11 @@ describe("triageOne", () => {
       const calls = await llmRows(trx, emailId);
       expect(calls).toHaveLength(1);
       expect(calls[0]?.reason_code).toBe("llm_blocked");
+      expect(calls[0]?.data).toMatchObject({
+        role: "classifier",
+        prompt_version: "classifier-v2",
+        model: "fake-model",
+      });
     });
   });
 

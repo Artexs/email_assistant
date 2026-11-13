@@ -24,7 +24,7 @@ import { describeError, SoftError } from "../../platform/errors";
 import { LlmBlockedError, LlmConfigError, llmErrorCode, type LlmClient, type LlmUsage } from "../../platform/llm";
 import { createLog } from "../../platform/log";
 import { createPlanned, setDelegationId, type CreatedAction, type PlannedActionInput } from "../actions";
-import { auditEvents, countLlmCallsSince, recordAudit } from "../audit";
+import { auditEvents, countLlmCallsSince, recordAudit, recordLlmCall } from "../audit";
 import { lockSettingsForShare } from "../config";
 import { createDelegation, detectReply, markAnswered } from "../delegation";
 import {
@@ -38,7 +38,7 @@ import {
 
 import { classifyEmail, type ClassifierEmail } from "./classifier";
 import type { LlmPause } from "./pause";
-import { PROMPT_VERSION } from "./prompts/classifier-v2";
+import { prompts } from "./prompts";
 import { insertTriageResult } from "./repo";
 
 const log = createLog("triage");
@@ -346,7 +346,7 @@ async function handleClassifyError(
         fields: {},
         vip,
         model: null,
-        promptVersion: PROMPT_VERSION,
+        promptVersion: prompts.classifier.version,
         usage: null,
         auditReasonCode: "llm_blocked",
         delegation: null,
@@ -497,19 +497,16 @@ export async function triageOne(
   } catch (error) {
     // A failed audit write must not hide the LLM error from the rules below.
     try {
-      await recordAudit(deps.db, ctx, {
+      await recordLlmCall(deps.db, ctx, {
         emailId: email.id,
-        actor: "system",
-        event: auditEvents.llmCall,
-        reasonCode: llmErrorCode(error),
-        data: {
-          mailbox_id: mailbox.id,
-          model: deps.llm.modelOf("classifier"),
-          prompt_version: PROMPT_VERSION,
-          tokens_in: null,
-          tokens_out: null,
-          latency_ms: Date.now() - start,
-        },
+        mailboxId: mailbox.id,
+        role: "classifier",
+        promptVersion: prompts.classifier.version,
+        model: deps.llm.modelOf("classifier"),
+        outcome: llmErrorCode(error),
+        tokensIn: null,
+        tokensOut: null,
+        latencyMs: Date.now() - start,
         at: deps.now(),
       });
     } catch (auditError) {
@@ -519,19 +516,16 @@ export async function triageOne(
   }
   deps.pause.reset();
   const { analysis, usage, promptVersion } = result;
-  await recordAudit(deps.db, ctx, {
+  await recordLlmCall(deps.db, ctx, {
     emailId: email.id,
-    actor: "system",
-    event: auditEvents.llmCall,
-    reasonCode: "ok",
-    data: {
-      mailbox_id: mailbox.id,
-      model: usage.model,
-      prompt_version: promptVersion,
-      tokens_in: usage.tokensIn,
-      tokens_out: usage.tokensOut,
-      latency_ms: usage.latencyMs,
-    },
+    mailboxId: mailbox.id,
+    role: usage.role,
+    promptVersion: usage.promptVersion,
+    model: usage.model,
+    outcome: "ok",
+    tokensIn: usage.tokensIn,
+    tokensOut: usage.tokensOut,
+    latencyMs: usage.latencyMs,
     at: deps.now(),
   });
 

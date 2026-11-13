@@ -4,7 +4,8 @@ import { buildTriageAnalysisSchema, type Category, markUntrustedText, type Triag
 
 import { type LlmClient, LlmOutputError, type LlmUsage } from "../../platform/llm";
 
-import { buildSystemPrompt, buildUserPrompt, type ClassifierDelegate, PROMPT_VERSION } from "./prompts/classifier-v2";
+import { prompts } from "./prompts";
+import type { ClassifierDelegate } from "./prompts/classifier-v2";
 
 export interface ClassifierEmail {
   from: string | null;
@@ -40,14 +41,14 @@ export async function classifyEmail(
 ): Promise<{ analysis: TriageAnalysis; usage: LlmUsage; promptVersion: string }> {
   const nonce = randomBytes(16).toString("hex");
   const { data, usage } = await llm.generate({
-    role: "classifier",
-    promptVersion: PROMPT_VERSION,
+    role: prompts.classifier.role,
+    promptVersion: prompts.classifier.version,
     schema: buildTriageAnalysisSchema(
       input.allowed,
       input.delegates.map((d) => d.id)
     ),
-    system: buildSystemPrompt(input.allowed),
-    prompt: buildUserPrompt(input.email, input.sender, input.delegates, nonce),
+    system: prompts.classifier.buildSystem(input.allowed),
+    prompt: prompts.classifier.buildUser(input.email, input.sender, input.delegates, nonce),
     model: input.model,
   });
   if (!input.allowed.includes(data.category)) throw new LlmOutputError(input.model ?? llm.modelOf("classifier"));
@@ -61,5 +62,5 @@ export async function classifyEmail(
     clarification: markedOrNull(data.fields.clarification),
   };
   const analysis: TriageAnalysis = { ...data, reason: markUntrustedText(data.reason), summary, fields };
-  return { analysis, usage, promptVersion: PROMPT_VERSION };
+  return { analysis, usage, promptVersion: prompts.classifier.version };
 }

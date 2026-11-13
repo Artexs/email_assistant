@@ -11,7 +11,7 @@ import {
   evalStateFileName,
   listLabeledResults,
   parseCaseResults,
-  PROMPT_VERSION,
+  prompts,
   renderEvalReport,
   runEval,
 } from "../modules/triage";
@@ -193,7 +193,7 @@ async function main(): Promise<number> {
       evalStateFileName({
         model,
         reasoningEffort: effort,
-        promptVersion: PROMPT_VERSION,
+        promptVersion: prompts.classifier.version,
         set: options.set,
         perCategory: options["per-category"],
       })
