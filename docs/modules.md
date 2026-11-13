@@ -113,11 +113,12 @@ Code rules: `docs/code-patterns.md`.
 
 ### 3.1 `tenancy` — who is who (S0)
 
-- **Owns:** `organizations`, `users`, `memberships`.
+- **Owns:** `organizations`, `users`, `memberships`, `org_features`.
 - **Does:** creates the pilot organization and user (CLI `bun run org:create`, S0); owns style text and digest times; resolves `TenantContext` from a session (web) or a linked chat (Telegram); checks roles.
 - **Built in S2:** `getMembership` (a member's role by `org_id` and `user_id`) and `setDigestTimes` (CLI `bun run digest:times`; the new default of `digest_times` is `{08:00,16:00}`).
 - **Built in S5:** login through Better Auth (`platform/auth.ts`, ADR 0016; no sign-up). `web:invite` (CLI `bun run web:invite --org-id <uuid> [--user-id <uuid>]`) makes the first-password link for a member. `listMembershipsOfUser` (the user gives the tenant; the oldest membership wins). `updateOrganizationSettings` (timezone and style text; writes `org.timezone_changed` and `org.style_changed`). Routes: §3.10.
 - **Built in S6a:** the plan state: `organizations.plan`, `trial_ends_at`, `max_mailboxes`, `resumed_at`. `getOrgPlan`, `isOrgSuspended`, `listOrganizations` (repo) and `setOrgPlan` (service: one transaction, audit row `org.plan_changed`, an injected `onSuspended` hook; `resumed_at` is set when the plan leaves `suspended`). `createOrganizationWithOwner` takes an optional plan. CLIs: `bun run org:create --plan trial|active [--trial-days N]`, `bun run org:plan --org-id <uuid> [--plan …] [--trial-days N] [--max-mailboxes N]`, `bun run org:status [--org-id <uuid>]` (ids, codes, dates and counts only). Rules of `suspended`: `docs/architecture.md` §8.
+- **Built in F087:** feature flags: `getOrgFeature`, `listOrgFeatureRows`, `upsertOrgFeature`, `listOrgFeatureRowsOfAll` (repo), `isFeatureOn`, `featureStates`, `featureStatesOfAll`, `configureFeatures` (`features.ts`), `setOrgFeature` (service, audit row `org.flag_changed`); CLI `bun run org:flag`; the operator route `GET /api/operator/flags` (`operator-routes.ts`, guarded by `requireOperator` in `platform/http.ts`). The registry is in `packages/core/src/features.ts`.
 - **Later:** self sign-up (S6), invite assistant (Phase 2).
 
 ### 3.2 `mail` — access to mailboxes (S1a)
