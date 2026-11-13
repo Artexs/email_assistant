@@ -4,8 +4,6 @@ import { describe, expect, spyOn, test } from "bun:test";
 import { Hono } from "hono";
 import { z } from "zod";
 
-import { setLogFormat, setLogLevel } from "./log";
-
 import {
   authRequest,
   buildTrustedProxies,
@@ -21,6 +19,7 @@ import {
   ValidationError,
   type ApiEnv,
 } from "./http";
+import { setLogFormat, setLogLevel } from "./log";
 
 describe("GET /health", () => {
   test("returns 200 when the DB is up", async () => {
