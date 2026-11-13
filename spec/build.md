@@ -27,7 +27,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F088-notices-as-facts` (🔴 PLANNED, plan landed): the outbox stores the view, a renderer and a detector registry; after F086.
 - `F089-structured-logs` (🔴 PLANNED, plan landed): event logs with run ids and a warn lint; after F086.
 - `F090-llm-roles` (🔴 PLANNED, plan landed): `generate({ role })`, a role table, a prompt registry; after F086.
-- `F091-repo-split` (🔴 PLANNED, needs plan): the two big repositories split, table-driven apply; after F088 and F090.
+- `F091-repo-split` (🔴 PLANNED, plan landed): the two big repositories split, table-driven apply; after F088 and F090.
 - `F092-rls-safety-net` (🔴 PLANNED, needs plan): RLS under the tenant filter; waits for the owner's yes, after F087.
 
 - Stage 2 order: `docs/product/stage-2/05-execution-plan.md` §2. Plan its §2.1 rows in order with `plan-task`; each planned ticket gets a `## Sequenced` section (tickets that must land first, and its gate) and a line here. Start the first line here whose `Sequenced` tickets are all landed and whose gate is done; at most five Stage 2 tickets in build, and two builds never touch the same files and only one adds a migration (the plan gates name the overlaps); a ticket with a second-pass gate stops at that stage and asks the owner (§2.4).

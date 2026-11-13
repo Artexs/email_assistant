@@ -12,10 +12,10 @@
 | 4 | `F088-notices-as-facts` | 7 | E4-B mail channel, E7 Polish texts, E8b alerts, E9b push | F086 (migration: alone) |
 | 5 | `F089-structured-logs` | 7 | every epic writes event logs from its first stage; E8a converts the rest | F086 |
 | 6 | `F090-llm-roles` | 6 | E2a judge, E3b escalation, E5b extractor, E6a drafter | F086 |
-| 7 | `F091-repo-split` | 4 | E4-A, E5b, E6a touch `actions/repo.ts`; the "add an action type" checklist | F088, F090 |
+| 7 | `F091-repo-split` | 5 | E4-A, E5b, E6a touch `actions/repo.ts`; the "add an action type" checklist | F088, F090 |
 | 8 | `F092-rls-safety-net` | 3 | optional; the E10 isolation claim; the new-table checklist | F087; **the owner's yes** |
 
-About 31 stages. With the standing models (`spec/build.md` § TRACK) and two lanes, about one week.
+About 32 stages. With the standing models (`spec/build.md` § TRACK) and two lanes, about one week.
 
 Overlap with the epic ticket order of `05-execution-plan.md` §2 (so nothing is planned twice):
 
