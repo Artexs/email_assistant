@@ -7,6 +7,7 @@ import {
   type ActionType,
   type BarCategory,
   type CategoryPolicy,
+  type ExpireFilter,
   type GoDecision,
   type MailboxActionType,
   type MailboxMode,
@@ -16,7 +17,6 @@ import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
-import type { ExpireFilter } from "../actions";
 import { auditEvents, recordAudit, type AuditData } from "../audit";
 
 import { getMovesSupported, lockMailboxSettings, updateMailboxSettings, type MailboxSettingsRow } from "./repo";

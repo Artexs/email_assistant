@@ -4,6 +4,7 @@ import {
   MAILBOX_ACTION_TYPES,
   type ActionType,
   type ActionView,
+  type ExpireFilter,
   type MailboxActionType,
 } from "@ea/core";
 import { sql, type Expression, type ExpressionBuilder, type SqlBool, type Transaction } from "kysely";
@@ -1017,16 +1018,6 @@ export async function countReadyOriginals(db: DbOrTrx, ctx: TenantContext, mailb
     )
     .executeTakeFirstOrThrow();
   return Number(row.count);
-}
-
-export interface ExpireFilter {
-  mailboxId: string;
-  emailId?: string;
-  types: readonly MailboxActionType[];
-  // The category of the newest triage_results row of the mail.
-  category?: { is: string } | { not: string };
-  // Also close the `awaiting_approval` sends of the mailbox (and their drafts): `expireReady` does it (S4 D13, D33).
-  sends?: true;
 }
 
 // A row that a committer run holds now (`locked_at` >= `staleBefore`) stays: it ends as `applied` and keeps its Undo.

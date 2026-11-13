@@ -33,6 +33,7 @@ export {
 } from "./approvals";
 export { ensureMoved, type EnsureExclude, type EnsureResult } from "./move";
 export { MAILBOX_ACTION_TYPES, type MailboxActionType } from "@ea/core";
+export type { ExpireFilter } from "@ea/core";
 export {
   CLAIM_MAX_AGE_MS,
   CLAIM_MAX_MAIL_AGE_MS,
@@ -85,7 +86,6 @@ export type {
   MailboxClaimFilter,
   SendClaimFilter,
   CreatedAction,
-  ExpireFilter,
   FailedAction,
   DraftRow,
   FinishNext,

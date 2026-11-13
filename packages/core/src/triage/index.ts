@@ -3,6 +3,7 @@ export * from "./analysis";
 export * from "./categories";
 export * from "./cost";
 export * from "./eval-case";
+export * from "./expire-filter";
 export * from "./metrics";
 export * from "./payloads";
 export * from "./planners";
