@@ -1,9 +1,9 @@
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { createServer, type Server, type Socket } from "node:net";
+import { connect, createServer, type Server, type Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { TLSSocket } from "node:tls";
+import { createServer as createTlsServer, type Server as TlsServer, type TLSSocket } from "node:tls";
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
@@ -13,10 +13,12 @@ import { buildSmtpTransportOptions, openSmtpSender, verifySmtpLogin, type SmtpCo
 
 // A scripted SMTP server that offers STARTTLS and AUTH only after the upgrade. Its certificate is self-signed
 // (made with openssl for the test): only a client that is given this certificate as a CA may trust it.
+// At STARTTLS the plain server relays the connection to a second, TLS-only server, because Bun 1.3.14 cannot
+// upgrade an accepted socket on the server side.
 let dir = "";
 let key = "";
 let cert = "";
-const servers: Server[] = [];
+const servers: (Server | TlsServer)[] = [];
 
 beforeAll(() => {
   dir = mkdtempSync(join(tmpdir(), "ea-starttls-"));
@@ -24,7 +26,16 @@ beforeAll(() => {
     "openssl",
     [
       ...["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "2", "-subj", "/CN=127.0.0.1"],
-      ...["-addext", "subjectAltName=IP:127.0.0.1", "-keyout", join(dir, "key.pem"), "-out", join(dir, "cert.pem")],
+      // Bun 1.3.14 (.bun-version) checks a socket upgraded to an IP host against "localhost": the DNS name lets the
+      // test run there. Remove DNS:localhost when .bun-version moves past 1.3.
+      ...[
+        "-addext",
+        "subjectAltName=IP:127.0.0.1,DNS:localhost",
+        "-keyout",
+        join(dir, "key.pem"),
+        "-out",
+        join(dir, "cert.pem"),
+      ],
     ],
     { stdio: "ignore" }
   );
@@ -46,62 +57,72 @@ interface Fake {
 function startServer(opts: { offerStartTls: boolean }): Promise<Fake> {
   return new Promise((resolve) => {
     const seen: string[] = [];
-    const server = createServer((raw) => {
-      const handle = (socket: Socket | TLSSocket, tls: boolean): void => {
-        let buffer = "";
-        let dataMode = false;
-        socket.on("error", () => undefined);
-        socket.on("data", (chunk) => {
-          buffer += chunk.toString("latin1");
-          for (;;) {
-            if (dataMode) {
-              const end = buffer.indexOf("\r\n.\r\n");
-              if (end === -1) return;
-              buffer = buffer.slice(end + 5);
-              dataMode = false;
-              socket.write("250 2.0.0 queued\r\n");
-              continue;
-            }
-            const nl = buffer.indexOf("\r\n");
-            if (nl === -1) return;
-            const upper = buffer.slice(0, nl).toUpperCase();
-            buffer = buffer.slice(nl + 2);
-            if (upper.startsWith("EHLO")) {
-              const starttls = !tls && opts.offerStartTls ? "250-STARTTLS\r\n" : "";
-              const auth = tls || !opts.offerStartTls ? "250-AUTH PLAIN\r\n" : "";
-              socket.write(`250-fake\r\n${starttls}${auth}250 8BITMIME\r\n`);
-            } else if (upper === "STARTTLS" && !opts.offerStartTls) {
-              socket.write("502 5.5.1 not offered\r\n");
-            } else if (upper === "STARTTLS") {
-              seen.push("STARTTLS");
-              socket.write("220 2.0.0 ready\r\n");
-              socket.removeAllListeners("data");
-              handle(new TLSSocket(socket as Socket, { isServer: true, key, cert }), true);
-              return;
-            } else if (upper.startsWith("AUTH")) {
-              seen.push(tls ? "AUTH tls" : "AUTH plain");
-              socket.write("235 2.7.0 ok\r\n");
-            } else if (upper.startsWith("MAIL FROM")) {
-              seen.push("MAIL");
-              socket.write("250 ok\r\n");
-            } else if (upper === "DATA") {
-              seen.push("DATA");
-              dataMode = true;
-              socket.write("354 go\r\n");
-            } else if (upper === "QUIT") {
-              socket.write("221 bye\r\n");
-              socket.end();
-            } else socket.write("250 ok\r\n");
+    let tlsPort = 0;
+    const handle = (socket: Socket | TLSSocket, tls: boolean): void => {
+      let buffer = "";
+      let dataMode = false;
+      socket.on("error", () => undefined);
+      socket.on("data", (chunk) => {
+        buffer += chunk.toString("latin1");
+        for (;;) {
+          if (dataMode) {
+            const end = buffer.indexOf("\r\n.\r\n");
+            if (end === -1) return;
+            buffer = buffer.slice(end + 5);
+            dataMode = false;
+            socket.write("250 2.0.0 queued\r\n");
+            continue;
           }
-        });
-        if (!tls) socket.write("220 fake ESMTP\r\n");
-      };
-      handle(raw, false);
-    });
-    servers.push(server);
-    server.listen(0, "127.0.0.1", () => {
-      const address = server.address();
-      resolve({ port: typeof address === "object" && address ? address.port : 0, seen });
+          const nl = buffer.indexOf("\r\n");
+          if (nl === -1) return;
+          const upper = buffer.slice(0, nl).toUpperCase();
+          buffer = buffer.slice(nl + 2);
+          if (upper.startsWith("EHLO")) {
+            const starttls = !tls && opts.offerStartTls ? "250-STARTTLS\r\n" : "";
+            const auth = tls || !opts.offerStartTls ? "250-AUTH PLAIN\r\n" : "";
+            socket.write(`250-fake\r\n${starttls}${auth}250 8BITMIME\r\n`);
+          } else if (upper === "STARTTLS" && !opts.offerStartTls) {
+            socket.write("502 5.5.1 not offered\r\n");
+          } else if (upper === "STARTTLS") {
+            seen.push("STARTTLS");
+            socket.removeAllListeners("data");
+            socket.pause();
+            const inner = connect(tlsPort, "127.0.0.1", () => {
+              socket.write("220 2.0.0 ready\r\n");
+              socket.pipe(inner);
+              inner.pipe(socket);
+              socket.resume();
+            });
+            inner.on("error", () => undefined);
+            return;
+          } else if (upper.startsWith("AUTH")) {
+            seen.push(tls ? "AUTH tls" : "AUTH plain");
+            socket.write("235 2.7.0 ok\r\n");
+          } else if (upper.startsWith("MAIL FROM")) {
+            seen.push("MAIL");
+            socket.write("250 ok\r\n");
+          } else if (upper === "DATA") {
+            seen.push("DATA");
+            dataMode = true;
+            socket.write("354 go\r\n");
+          } else if (upper === "QUIT") {
+            socket.write("221 bye\r\n");
+            socket.end();
+          } else socket.write("250 ok\r\n");
+        }
+      });
+      if (!tls) socket.write("220 fake ESMTP\r\n");
+    };
+    const tlsServer = createTlsServer({ key, cert }, (socket) => handle(socket, true));
+    const server = createServer((raw) => handle(raw, false));
+    servers.push(tlsServer, server);
+    tlsServer.listen(0, "127.0.0.1", () => {
+      const tlsAddress = tlsServer.address();
+      tlsPort = typeof tlsAddress === "object" && tlsAddress ? tlsAddress.port : 0;
+      server.listen(0, "127.0.0.1", () => {
+        const address = server.address();
+        resolve({ port: typeof address === "object" && address ? address.port : 0, seen });
+      });
     });
   });
 }
