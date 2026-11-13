@@ -26,7 +26,7 @@ Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit:
 - Config from env through the Zod schema in `platform/config`; every key in `.env.example`.
 - Tests: pure core logic without mocks; repos against Postgres in a transaction that rolls back; fake and real adapters pass one contract suite. Route tests cover 401, 403, 404, 400.
 - A test that waits for time-driven code polls its condition with `waitFor` (`apps/server/test/wait-for.ts`); a fake releases its holds in `stop()`.
-- A prompt or model change runs `bun run eval` and must pass the go/no-go table.
+- An LLM call names a role (`llm.generate({ role, promptVersion, … })`); the role table in config picks provider and model; the prompt comes from the registry (`prompts`), one file per version; one `llm.call` row per call through `recordLlmCall`. A prompt or model change of any role runs `bun run eval` and must pass the go/no-go table.
 - Files under about 400 lines and one aggregate; a bigger repository becomes `repo/<aggregate>.ts` behind the same index.
 - Registries (a typed record keyed by the enum, with a test against the enum and the CHECK list) over if-chains for handlers, detectors, renderers, roles, prompts and jobs.
 - A new table with `org_id` gets tenant-filter tests, retention (if it holds text) and a note for the organization delete and DSR map (`docs/code-patterns.md` § Data access).
