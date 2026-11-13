@@ -89,7 +89,7 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
   test("2. the owner of A answers 404 with the body of an unknown path", async () => {
     const app = operatorApp();
     const unknown = await app.request("/api/no-such-path", as("owner"));
-    const { value: res } = await captured(() => app.request("/api/operator/flags", as("owner")));
+    const { value: res } = await captured(async () => app.request("/api/operator/flags", as("owner")));
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual(await unknown.json());
   });
