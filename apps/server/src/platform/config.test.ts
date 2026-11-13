@@ -6,6 +6,8 @@ import {
   authMailSettings,
   classifierModel,
   ConfigError,
+  featuresOff,
+  featuresOffFromEnv,
   isLoopbackApiRoot,
   llmSettings,
   loadConfig,
@@ -535,5 +537,40 @@ describe("auth mail settings", () => {
     const error = configError({ ...fullEnv, ...mailEnv, AUTH_MAIL_FROM: "not-an-address" });
     expect(error.keys).toContain("AUTH_MAIL_FROM");
     expect(error.message).not.toContain("not-an-address");
+  });
+});
+
+describe("FEATURES_OFF", () => {
+  test("unset or empty means no key", () => {
+    expect(featuresOff(loadConfig(fullEnv))).toEqual([]);
+    expect(featuresOff(loadConfig({ ...fullEnv, FEATURES_OFF: "" }))).toEqual([]);
+  });
+
+  test("the list is trimmed and unique, in the env order", () => {
+    const config = loadConfig({ ...fullEnv, FEATURES_OFF: " sent_sync , stats_page,sent_sync" });
+    expect(featuresOff(config)).toEqual(["sent_sync", "stats_page"]);
+  });
+
+  test("an unknown key stops the start and names the key of the setting only", () => {
+    const error = configError({ ...fullEnv, FEATURES_OFF: "stats_page,stats_pag" });
+    expect(error.keys).toEqual(["FEATURES_OFF"]);
+    expect(error.message).not.toContain("stats_pag");
+  });
+
+  test("an Object.prototype name is not a flag key", () => {
+    expect(configError({ ...fullEnv, FEATURES_OFF: "toString" }).keys).toEqual(["FEATURES_OFF"]);
+  });
+
+  test("featuresOffFromEnv reads raw env with the same rules", () => {
+    expect(featuresOffFromEnv({})).toEqual([]);
+    expect(featuresOffFromEnv({ FEATURES_OFF: "" })).toEqual([]);
+    expect(featuresOffFromEnv({ FEATURES_OFF: "sent_sync, sent_sync" })).toEqual(["sent_sync"]);
+    try {
+      featuresOffFromEnv({ FEATURES_OFF: "nope" });
+      throw new Error("did not throw");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ConfigError);
+      expect((error as ConfigError).keys).toEqual(["FEATURES_OFF"]);
+    }
   });
 });

@@ -1,5 +1,6 @@
 import { isIP } from "node:net";
 
+import { type FeatureKey, isFeatureKey } from "@ea/core";
 import { z } from "zod";
 
 import { type LlmProviderId, llmProviderIds } from "./llm";
@@ -136,6 +137,8 @@ const baseSchema = z.object({
       .regex(/^-?\d{1,15}$/)
       .optional()
   ),
+  // Comma list of flag keys (packages/core/src/features.ts) that read off for every organization. Empty = none.
+  FEATURES_OFF: z.preprocess(emptyAsUndefined, z.string().optional()),
   // Secret: never print or log it.
   WEB_AUTH_SECRET: z.preprocess(emptyAsUndefined, z.string().min(32).optional()),
   // Comma list of origins.
@@ -242,6 +245,13 @@ export const configSchema = baseSchema.superRefine((config, ctx) => {
   if (!parseList(config.WEB_TRUSTED_PROXIES).every(isIpOrCidr)) {
     ctx.addIssue({ code: "custom", path: ["WEB_TRUSTED_PROXIES"], message: "each entry must be an IP or a CIDR" });
   }
+  if (!parseList(config.FEATURES_OFF).every(isFeatureKey)) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["FEATURES_OFF"],
+      message: "each entry must be a flag key of packages/core/src/features.ts",
+    });
+  }
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -282,6 +292,18 @@ export function webTrustedOrigins(config: Config): string[] {
 
 export function webTrustedProxies(config: Config): string[] {
   return parseList(config.WEB_TRUSTED_PROXIES);
+}
+
+/** Flag keys that read off for every organization (`FEATURES_OFF`). `configSchema` refuses an unknown key. */
+export function featuresOff(config: Config): FeatureKey[] {
+  return parseList(config.FEATURES_OFF).filter(isFeatureKey);
+}
+
+/** The same parse on raw env, for code that did not get the config object. An empty string counts as unset. An unknown key throws. */
+export function featuresOffFromEnv(env: Record<string, string | undefined>): FeatureKey[] {
+  const items = parseList(env.FEATURES_OFF);
+  if (!items.every(isFeatureKey)) throw new ConfigError(["FEATURES_OFF"]);
+  return items;
 }
 
 /** `MAIL_ALLOW_LOCAL_HOSTS` wins; the old `WEB_MAIL_ALLOW_LOCAL` counts only while the new key is unset. */
