@@ -23,7 +23,7 @@ Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit:
 - Status change and its `audit_log` row in one transaction. Conditional updates (`WHERE status = …`) guard status changes. Claim work with `FOR UPDATE SKIP LOCKED`.
 - Schema changes only as a new dbmate file `db/migrations/YYYYMMDDHHMMSS_<name>.sql` with up and down; then `bun run db:types`.
 - Typed errors: `SoftError` (timeout, 429, 503, lost connection), `HardError` for the rest; the job runner decides the retry.
-- `log` from `platform/log` with a `[module]` prefix; `describeError(error)`; for Telegram only `telegramErrorLabel(error)`.
+- Log lines are events: `log.info("sync_done", { mailbox_id, count })`, fields only from `platform/log-fields.ts`, errors as `...errorFields(error)`; `job`, `run_id` and `request_id` come from the context, never by hand (`docs/code-patterns.md` § Logs). For Telegram errors in an old-form line only `telegramErrorLabel(error)`.
 - Config from env through the Zod schema in `platform/config`; every key in `.env.example`.
 - Tests: pure core logic without mocks; repos against Postgres in a transaction that rolls back; fake and real adapters pass one contract suite. Route tests cover 401, 403, 404, 400.
 - A test that waits for time-driven code polls its condition with `waitFor` (`apps/server/test/wait-for.ts`); a fake releases its holds in `stop()`.
@@ -40,7 +40,7 @@ Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit:
 - Any mailbox change or send outside `actions.committer`. Retrying `send` after SMTP DATA started.
 - LLM text as a recipient, folder name or command. Loose JSON reads of `actions.payload`.
 - Locating mail by `SEARCH HEADER` (Interia finds nothing by `Message-ID`); use `locateMessage`.
-- `console.log`, secrets or mail bodies in logs, paths from mail data in logs.
+- `console.log`; a template literal, free text or `error.message` in a log call; secrets, mail text, addresses or paths from mail data in logs.
 - Literal text in web components, inline `<script>`, hand-written `<style>`, hand-made shadcn components.
 - Committing `.env`, keys, passwords or tokens.
 - A fixed sleep over 100 ms in a test; `test.skip`, a CI retry or a longer timeout as a fix. A test that fails twice in CI without a code change is quarantined the same day with a ticket (`docs/code-patterns.md` § Tests); only the coordinator quarantines.

@@ -731,7 +731,7 @@ Tenancy:
 - **`GET /health`:** DB reachable, last good sync per mailbox.
 - **Backups:** `deploy/backup.sh` at 03:30 every night: `pg_dump`, encrypted with `age` (only the public key on the VPS), copied with `rclone` to a
   Backblaze B2 bucket with a write-only key; remote retention is a bucket lifecycle rule. `deploy/restore-test.sh` on the Mac; one restore test per month.
-- **Logging:** `log` util with levels and a `[module]` prefix.
+- **Logging (ADR 0024):** one JSON object per line (`LOG_FORMAT=json`, the VPS) with `time`, `level`, `module`, `event`, `msg` and allow-listed fields (`platform/log-fields.ts`); every line of a job tick has `job` and `run_id`, every line of an HTTP request has `request_id` (also the `x-request-id` response header); `LOG_FORMAT=text` in dev. The start lines name each job with `job_scheduled`; the schedules are in this section. Module lines move to the event form in E8a; until then they appear as `event: legacy_text` with their old text in `msg`.
 
 ## 9. Testing
 

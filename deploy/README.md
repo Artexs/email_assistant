@@ -25,7 +25,7 @@ The server listens on `127.0.0.1:8080` on the host only (for Tailscale Serve, se
    - `POSTGRES_PASSWORD`, `MIGRATOR_PASSWORD`, `APP_PASSWORD`: URL-safe. Make each with `openssl rand -hex 24`.
    - `CREDENTIALS_KEY`: `openssl rand -base64 32`. Keep a copy in a password manager. If you lose the key, you lose all stored mailbox passwords.
    - `CREDENTIALS_KEY_VERSION=1`
-   - `HEARTBEAT_URL` (see Heartbeat), `TEST_MAILBOX_ADDRESS` (only for the `testmail` and probe tools), `LOG_LEVEL=info`.
+   - `HEARTBEAT_URL` (see Heartbeat), `TEST_MAILBOX_ADDRESS` (only for the `testmail` and probe tools), `LOG_LEVEL=info`. Leave `LOG_FORMAT` unset: Compose pins `json`.
    - `SEND_SCOPE=off` (default) and `SEND_TEST_ADDRESSES` (comma-separated, needed with `SEND_SCOPE=self`). See the section "Approvals and sends".
    - `TRIAGE_LLM_SCOPE`, `ACTIONS_SCOPE` and `SEND_SCOPE` stay `off` until you decide. `all` acts on every active mailbox of the server: read "Customers (S6a)" first.
    - `OPERATOR_CONTACT` and `OPERATOR_TELEGRAM_CHAT_ID` (optional, see "Customers (S6a)").
@@ -54,12 +54,15 @@ $C up -d --build --wait
 
 ## Logs
 
+The server writes one JSON object per line (ADR 0024). Read them as text:
+
 ```sh
-$C logs -f server
-$C logs --since 1h server
+$C logs --no-log-prefix --since 1h server | jq -rR 'fromjson? | [.time, .level, "[\(.module)]", (if .event == "legacy_text" then .msg else .event end), (del(.time, .level, .module, .event, .msg) | to_entries | map("\(.key)=\(.value)") | join(" "))] | join(" ")'
 ```
 
-A good start shows `listening on port 8080`. Each sync log line has the form `sync <mailbox id> <mode>: fetched …`.
+Follow one job run or one request: add `| grep <run_id or request_id>`; the browser shows the request id in the `x-request-id` response header. A CLI prints the text form with `$C exec -e LOG_FORMAT=text server bun run <script> …`.
+
+A good start shows `server_listening port=8080`. Module lines that E8a has not converted yet show their old text (`sync <mailbox id> <mode>: fetched …`).
 
 ## Login error (`auth_error`)
 

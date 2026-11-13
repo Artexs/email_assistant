@@ -109,13 +109,32 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 - `.env.example` lists every key with a placeholder. Never commit `.env`, keys, passwords or tokens. Never log them.
 - Mailbox secrets are encrypted with `platform/crypto` (AES-256-GCM, key version) before they reach the DB.
 
+## Logs (ADR 0024)
+
+- A log line is an event: `log.<level>("<event_code>", { <fields> })`. The code is a snake_case literal of at most 64 characters, constant, and names what happened (`auth_mail_failed`). `msg` equals the code. One code for one kind of line.
+- Fields come only from `logFieldNames` in `apps/server/src/platform/log-fields.ts`. A value is a number, a boolean, `null`, or a code of at most 64 characters from `A–Z a–z 0–9 _ . : / * -` without `://` (ids and route patterns are codes; the code fields include `provider`, `model` and `role`).
+  The writer drops any other field or value and counts it in `dropped_fields`. A line with `dropped_fields` is a bug to fix.
+  A change that logs a new field name adds it to the list. The review checks that its values are ids, codes, counts or times.
+  The value rule does not stop a secret that looks like a code: never add a field for a token, a password or a key value, and never pass one in a code field.
+- Errors: `...errorFields(error)` (name and code). Never `error.message`, a mail text, an address, a URL or a token.
+- Context: the scheduler gives every line of a job tick `job` and `run_id` (`runJobTick`). The HTTP layer gives every line of a request `request_id` and sets the `x-request-id` header.
+  Per-item ids come from a child logger: `const mailboxLog = log.with({ org_id, mailbox_id })`. Name a child logger `<thing>Log` (the lint finds it by that name).
+  Inside a run or a request, never pass `job`, `run_id` or `request_id` by hand (the context value wins and the call value is dropped).
+  Only a line outside any context names a job with `job` (`job_scheduled`, `job_skipped`).
+  Create a long-lived timer, interval, socket or pool at start, outside any context: it keeps the context it was created in.
+- Format: the server prints `json` by default (its config) and the VPS pins `LOG_FORMAT: json` (`deploy/compose.yaml`). `text` prints `[module] event key=value …` (dev, `.env.example`).
+  A process that does not load the config (a CLI, a test) prints `text` unless `LOG_FORMAT=json`. Tests run in `text` (the test preload).
+- Lint: `no-restricted-syntax` in `eslint.config.js` (`logEventSelectors`) warns on any other log call in `apps/server/src`, and fails in the converted files (`platform/`, `main.ts`).
+  E8a converts the modules one by one, moves each to the `error` block, and flips the rest at the end. A new log line in any file is an event from now on.
+- `docs/known-alerts.md` keys the entries of event lines by the event code.
+
 ## Style
 
 - TypeScript strict. `const` / `let` only, never `var`.
 - Template literals for strings with variables, never `+` concatenation.
-- Use the `log` util (`platform/log`) with a `[module]` prefix, never `console.log`. No mail bodies or secrets in logs.
+- Use the `log` util (`platform/log`), never `console.log`. The rules are in § Logs.
 - Folder keys in logs and audit rows, never paths from mail data or user input.
-- Telegram errors: log only `telegramErrorLabel(error)`. Never log `error.message` of an inner error, `payload` or `description` (they can hold the bot token or message text). Other errors: `describeError(error)`.
+- Telegram errors: log only `telegramErrorLabel(error)`. Never log `error.message` of an inner error, `payload` or `description` (they can hold the bot token or message text). Other errors: `errorFields(error)` in an event line, `describeError(error)` only in an old-form line that E8a has not converted yet.
 - Errors: throw typed errors (`SoftError` for timeout / 429 / 503 / lost connection, `HardError` for the rest); the job runner decides the retry.
 - A comment states the rule in one sentence. If it needs a source, it names an ADR (`ADR 0014`) or a ticket folder path (`spec/features/done/2026-11/F083-…/`). No bare stage or decision codes (`S3`, `D29`, `U11`, `A23`, `F079`): their plan files move, and no reader can resolve them. Fix the codes of a comment when you change its code; no mass edit.
 
