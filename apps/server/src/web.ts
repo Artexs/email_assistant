@@ -28,7 +28,7 @@ import {
   type TenancyRouteDeps,
 } from "./modules/tenancy";
 import { goNoGoFor, setCategoryAutoWithGate, triageRoutes } from "./modules/triage";
-import { createAuth, type AuthDeps, type AuthEventKind } from "./platform/auth";
+import { createAuth, listUserSessions, type AuthDeps, type AuthEventKind } from "./platform/auth";
 import { createLockoutStore } from "./platform/auth-lockout";
 import { createAuthMailer, createAuthMailTasks } from "./platform/auth-mail";
 import type { AuthMailKind } from "./platform/auth-mail-texts";
@@ -48,6 +48,8 @@ const eventNames = {
   password_set: auditEvents.webPasswordSet,
   password_changed: auditEvents.webPasswordChanged,
   login_locked: auditEvents.webLoginLocked,
+  sessions_revoked: auditEvents.webSessionsRevoked,
+  other_sessions_revoked: auditEvents.webOtherSessionsRevoked,
 } satisfies Record<AuthEventKind, string>;
 
 // D4: a login or a password change is a row in the audit log of the user's oldest organization. It never throws.
@@ -231,7 +233,8 @@ export function apiRouters(
   config: Config,
   db: Db,
   extras: WebExtras,
-  now: () => Date
+  now: () => Date,
+  sessions: TenancyRouteDeps["sessions"]
 ): NonNullable<WebDeps["routers"]> {
   const scopes = scopeInfos(config);
   const allowLocalHosts = mailAllowLocal(config);
@@ -244,6 +247,7 @@ export function apiRouters(
         scopes,
         countMailboxes: countMailboxes(db),
         operatorContact: config.OPERATOR_CONTACT ?? null,
+        sessions,
         ...onboardingDeps(db, extras.botUsername),
       })
     );
@@ -332,7 +336,11 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
   const getSession = async (headers: Headers): Promise<WebSession | null> => {
     const response = await handle.auth.api.getSession({ headers, returnHeaders: true });
     if (!response?.response) return null;
-    return { userId: response.response.user.id, setCookie: response.headers.getSetCookie() };
+    return {
+      userId: response.response.user.id,
+      sessionId: response.response.session.id,
+      setCookie: response.headers.getSetCookie(),
+    };
   };
 
   log.info(`web is on: ${baseUrl.origin}, dist ${dist}`);
@@ -347,7 +355,7 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     connInfo: peerAddress,
     listMembershipsOfUser: (userId) => listMembershipsOfUser(db, userId),
     homePath: homePathOf(db, extras.botUsername),
-    routers: apiRouters(config, db, extras, now),
+    routers: apiRouters(config, db, extras, now, (userId) => listUserSessions(handle, userId)),
     isOrgSuspended: (orgId) => isOrgSuspended(db, { orgId }),
     resetRequestOpen: mailTasks !== null,
     close: async () => {

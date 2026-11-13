@@ -186,7 +186,7 @@ describe("requireTenant", () => {
   const appFor = (rows: Rows) => {
     const app = new Hono<ApiEnv>();
     app.use("*", async (c, next) => {
-      c.set("session", { userId: c.req.header("x-user") ?? "u-none" });
+      c.set("session", { userId: c.req.header("x-user") ?? "u-none", sessionId: "s-test" });
       await next();
     });
     app.use("*", requireTenant({ listMembershipsOfUser: async () => rows }));

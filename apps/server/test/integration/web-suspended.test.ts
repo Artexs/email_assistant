@@ -52,7 +52,14 @@ const ALLOWED_WHEN_SUSPENDED = ["POST /api/me/terms"];
 
 let org: WebOrg;
 const sessions = () => ({ owner: org.ownerId, assistant: org.assistantId, other: org.otherOwnerId });
-const routers = () => apiRouters(testConfig, db, extras, () => new Date());
+const routers = () =>
+  apiRouters(
+    testConfig,
+    db,
+    extras,
+    () => new Date(),
+    async () => []
+  );
 
 const suspendedApp = () =>
   webTestApp({

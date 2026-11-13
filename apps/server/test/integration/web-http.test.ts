@@ -60,9 +60,9 @@ function makeWeb(overrides: Partial<WebDeps> = {}): WebDeps {
         }),
       getSession: async (h) =>
         h.get("cookie") === "ea.session_token=good"
-          ? { userId: "u1" }
+          ? { userId: "u1", sessionId: "s1" }
           : h.get("cookie") === "ea.session_token=refresh"
-            ? { userId: "u1", setCookie: ["ea.session_token=new; Path=/; HttpOnly"] }
+            ? { userId: "u1", sessionId: "s1", setCookie: ["ea.session_token=new; Path=/; HttpOnly"] }
             : null,
     },
     db,
@@ -192,7 +192,7 @@ describe("api", () => {
     });
     try {
       const mounted = appWith({
-        auth: { handler: async () => new Response(), getSession: async () => ({ userId }) },
+        auth: { handler: async () => new Response(), getSession: async () => ({ userId, sessionId: "s-test" }) },
         listMembershipsOfUser: async () => [{ org_id: orgId, role: "owner" }],
         routers: (api) =>
           api.route(
@@ -203,6 +203,7 @@ describe("api", () => {
               scopes: { triage: offScope, actions: offScope, send: offScope },
               countMailboxes: async () => ({ total: 0, inAuthError: 0 }),
               operatorContact: null,
+              sessions: async () => [],
               ...onboardingDeps(db, null),
             })
           ),

@@ -45,6 +45,39 @@ test("an assistant sees the settings read-only", async ({ page }) => {
   expect(logged).toEqual([]);
 });
 
+test("the account card lists the signed-in devices", async ({ page, browser }, testInfo) => {
+  const member = readSeed().members[testInfo.project.name as "mobile" | "desktop"];
+  // Earlier tests of this member left their sessions: end every session but this one.
+  const revoked = await page.request.post("/api/auth/revoke-other-sessions", {
+    headers: { origin: E2E_BASE_URL },
+    data: {},
+  });
+  expect(revoked.status()).toBe(200);
+  await page.goto("/settings");
+  const account = page.locator("[data-card=account]");
+  await expect(account.getByText(en.acct_sessions_title)).toBeVisible();
+  const rows = account.locator("[data-session]");
+  await expect(rows).toHaveCount(1);
+  await expect(rows.locator("[data-badge=this-device]")).toHaveText(en.acct_this_device);
+
+  // A second sign-in of the same user: a new context with its own client address.
+  const other = await browser.newContext({
+    baseURL: E2E_BASE_URL,
+    extraHTTPHeaders: { "x-forwarded-for": nextAddress(testInfo.project.name === "mobile" ? 80 : 180) },
+  });
+  try {
+    const otherPage = await other.newPage();
+    await signInAs(otherPage, member);
+    await expect(otherPage).toHaveURL(/\/onboarding$/);
+
+    await page.reload();
+    await expect(rows).toHaveCount(2);
+    await expect(account.locator("[data-badge=this-device]")).toHaveCount(1);
+  } finally {
+    await other.close();
+  }
+});
+
 test("change the password and sign out everywhere", async ({ page, context, browser }, testInfo) => {
   const member = readSeed().members[testInfo.project.name as "mobile" | "desktop"];
   const newPassword = "e2e-member-passphrase-two";

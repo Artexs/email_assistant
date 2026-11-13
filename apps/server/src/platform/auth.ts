@@ -11,7 +11,13 @@ import type { PwnedResult } from "./pwned";
 
 const log = createLog("auth");
 
-export type AuthEventKind = "login" | "password_set" | "password_changed" | "login_locked";
+export type AuthEventKind =
+  | "login"
+  | "password_set"
+  | "password_changed"
+  | "login_locked"
+  | "sessions_revoked"
+  | "other_sessions_revoked";
 
 export interface AuthDeps {
   databaseUrl: string;
@@ -51,8 +57,13 @@ export const AUTH_ALLOWED_PATHS: ReadonlySet<string> = new Set([
   "/change-password",
   "/revoke-other-sessions",
   "/revoke-sessions",
-  "/list-sessions",
 ]);
+
+// L22: the paths that end sessions, and the audit event of each.
+const REVOKE_EVENTS: Readonly<Record<string, AuthEventKind | undefined>> = {
+  "/revoke-sessions": "sessions_revoked",
+  "/revoke-other-sessions": "other_sessions_revoked",
+};
 
 export const RESET_REQUEST_PATH = "/request-password-reset";
 
@@ -386,6 +397,9 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
             log.error(`web: lockout: ${describeError(error)}`);
           }
         }
+        const revoked = REVOKE_EVENTS[ctx.path];
+        const actorId = ctx.context.session?.user.id;
+        if (revoked && actorId && !isAPIError(ctx.context.returned)) await report(revoked, actorId);
       }),
     },
     rateLimit: {
@@ -431,6 +445,30 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
       },
     },
   });
+}
+
+// F6: one row of a user's live sessions. The session token is never copied.
+export interface AuthSessionRow {
+  id: string;
+  userAgent: string | null;
+  ipAddress: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  expiresAt: Date;
+}
+
+// F6: `/list-sessions` returns the tokens and needs a fresh session, so the panel reads through the internal adapter.
+export async function listUserSessions(handle: AuthHandle, userId: string): Promise<AuthSessionRow[]> {
+  const context = await handle.auth.$context;
+  const rows = await context.internalAdapter.listSessions(userId);
+  return rows.map((row) => ({
+    id: row.id,
+    userAgent: row.userAgent || null,
+    ipAddress: row.ipAddress || null,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    expiresAt: row.expiresAt,
+  }));
 }
 
 export function createAuth(deps: AuthDeps): AuthHandle {

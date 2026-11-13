@@ -1,4 +1,5 @@
 import {
+  deviceOf,
   digestTimesBodySchema,
   orgPlanSchema,
   organizationPatchSchema,
@@ -9,9 +10,11 @@ import {
   type Onboarding,
   type OrganizationSettings,
   type ScopeInfo,
+  type Sessions,
 } from "@ea/core";
 import { Hono } from "hono";
 
+import type { AuthSessionRow } from "../../platform/auth";
 import type { Db, TenantContext } from "../../platform/db";
 import { parseBody, requireOwner, ValidationError, type ApiEnv } from "../../platform/http";
 import { auditEvents, recordAudit } from "../audit";
@@ -29,6 +32,7 @@ export interface TenancyRouteDeps {
     ctx: TenantContext,
     userId: string
   ) => Promise<{ available: boolean; linked: boolean; botUsername: string | null }>;
+  sessions: (userId: string) => Promise<AuthSessionRow[]>; // web.ts: listUserSessions of the auth handle (L21)
   operatorContact: string | null; // the public OPERATOR_CONTACT value (D29), not a secret
   keepMode: (ctx: TenantContext, userId: string, now: Date) => Promise<void>;
 }
@@ -117,6 +121,26 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
       });
     });
     return c.body(null, 204);
+  });
+
+  // L21: the member's own live sessions, newest first, never the token.
+  app.get("/me/sessions", async (c) => {
+    const { userId, sessionId } = c.get("session");
+    const now = deps.now();
+    const rows = (await deps.sessions(userId))
+      .filter((row) => row.expiresAt > now)
+      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    const body: Sessions = {
+      sessions: rows.map((row) => ({
+        id: row.id,
+        current: row.id === sessionId,
+        device: deviceOf(row.userAgent),
+        address: row.ipAddress,
+        lastUsedAt: row.updatedAt.toISOString(),
+        createdAt: row.createdAt.toISOString(),
+      })),
+    };
+    return c.json(body);
   });
 
   // D15: keep shadow mode once; a second call writes nothing and answers 204 too.
