@@ -13,6 +13,7 @@ import {
   loadConfig,
   loadTestmailConfig,
   operatorChatId,
+  operatorUserIds,
   sendTestAddresses,
   mailAllowLocal,
   mailAllowLocalFromEnv,
@@ -572,6 +573,26 @@ describe("FEATURES_OFF", () => {
       expect(error).toBeInstanceOf(ConfigError);
       expect((error as ConfigError).keys).toEqual(["FEATURES_OFF"]);
     }
+  });
+});
+
+describe("OPERATOR_USER_IDS", () => {
+  const lower = "0b0f3b3e-6f1c-4d57-9d0e-3f0a8f6f2a11";
+
+  test("unset or empty means no operator", () => {
+    expect(operatorUserIds(loadConfig(fullEnv)).size).toBe(0);
+    expect(operatorUserIds(loadConfig({ ...fullEnv, OPERATOR_USER_IDS: "" })).size).toBe(0);
+  });
+
+  test("the list is trimmed, lower-cased and unique", () => {
+    const config = loadConfig({ ...fullEnv, OPERATOR_USER_IDS: `${lower.toUpperCase()}, ${lower}` });
+    expect([...operatorUserIds(config)]).toEqual([lower]);
+  });
+
+  test("an entry that is not a UUID stops the start and names the key of the setting only", () => {
+    const error = configError({ ...fullEnv, OPERATOR_USER_IDS: `${lower},admin` });
+    expect(error.keys).toEqual(["OPERATOR_USER_IDS"]);
+    expect(error.message).not.toContain("admin");
   });
 });
 

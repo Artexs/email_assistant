@@ -14,10 +14,12 @@ import {
   originAllowed,
   parseBody,
   PUBLIC_PAGE_PATHS,
+  requireOperator,
   requireOwner,
   requireTenant,
   ValidationError,
   type ApiEnv,
+  type WebDeps,
 } from "./http";
 import { setLogFormat, setLogLevel } from "./log";
 
@@ -312,6 +314,82 @@ describe("requireOwner", () => {
   test("lets an owner through", async () => {
     const res = await appWithRole("owner").request("/x");
     expect(res.status).toBe(200);
+  });
+});
+
+describe("requireOperator", () => {
+  // requireOperator reads only operatorUserIds from web: the test app sets a partial WebDeps.
+  const appFor = (operatorUserIds?: ReadonlySet<string>) => {
+    const app = new Hono<ApiEnv>();
+    app.use("*", async (c, next) => {
+      c.set("session", { userId: c.req.header("x-user") ?? "u-none", sessionId: "s-test" });
+      c.set("web", (operatorUserIds === undefined ? {} : { operatorUserIds }) as WebDeps);
+      await next();
+    });
+    app.use("*", requireOperator);
+    app.get("/x", (c) => c.json({ ok: true }));
+    return app;
+  };
+
+  test("lets an operator through", async () => {
+    const res = await appFor(new Set(["u-op"])).request("/x", { headers: { "x-user": "u-op" } });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+  });
+
+  test("answers 404 not_found to another user and logs the user id only", async () => {
+    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    try {
+      const res = await appFor(new Set(["u-op"])).request("/x", { headers: { "x-user": "u-other" } });
+      expect(res.status).toBe(404);
+      expect(await res.json()).toEqual({ error: "not_found" });
+      const lines = errorSpy.mock.calls.map((call) => call.join(" "));
+      expect(lines.filter((line) => line.includes("operator route refused for user u-other"))).toHaveLength(1);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test("fails closed when the web has no operator list", async () => {
+    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    try {
+      const res = await appFor().request("/x", { headers: { "x-user": "u-op" } });
+      expect(res.status).toBe(404);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test("createApp guards the /api/operator prefix after the tenant check and nothing else", async () => {
+    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    try {
+      const web = {
+        auth: {
+          handler: async () => new Response(null),
+          getSession: async () => ({ userId: "u-owner", sessionId: "s1" }),
+        },
+        db: {} as WebDeps["db"],
+        now: () => new Date("2026-11-20T10:00:00Z"),
+        dist: "/nonexistent/dist",
+        baseUrl: new URL("http://127.0.0.1:8080"),
+        trustedOrigins: new Set(["http://127.0.0.1:8080"]),
+        trustedProxies: buildTrustedProxies([]),
+        connInfo: () => undefined,
+        listMembershipsOfUser: async () => [{ org_id: "org-1", role: "owner" as const }],
+        operatorUserIds: new Set(["u-op"]),
+        routers: (api) => {
+          api.get("/operator/x", (c) => c.json({ ok: true }));
+          api.get("/me-x", (c) => c.json({ ok: true }));
+        },
+      } satisfies WebDeps;
+      const app = createApp({ checkDb: async () => true, web });
+      const operator = await app.request("/api/operator/x");
+      expect(operator.status).toBe(404);
+      expect(await operator.json()).toEqual({ error: "not_found" });
+      expect((await app.request("/api/me-x")).status).toBe(200);
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 });
 

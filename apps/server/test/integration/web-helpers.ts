@@ -25,6 +25,7 @@ export interface WebTestOptions {
   dist?: string; // default: a folder that does not exist
   homePath?: WebDeps["homePath"];
   isOrgSuspended?: WebDeps["isOrgSuspended"];
+  operatorUserIds?: WebDeps["operatorUserIds"];
 }
 
 const cookieOf = (headers: Headers): string => headers.get("cookie")?.replace("ea.session_token=", "") ?? "";
@@ -50,6 +51,7 @@ export function webTestApp(opts: WebTestOptions): Hono<ApiEnv> {
     ...(opts.homePath ? { homePath: opts.homePath } : {}),
     routers: opts.routers,
     ...(opts.isOrgSuspended ? { isOrgSuspended: opts.isOrgSuspended } : {}),
+    ...(opts.operatorUserIds ? { operatorUserIds: opts.operatorUserIds } : {}),
   };
   return createApp({ checkDb: async () => true, web });
 }
