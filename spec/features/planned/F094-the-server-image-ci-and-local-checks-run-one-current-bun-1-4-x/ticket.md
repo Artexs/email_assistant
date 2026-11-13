@@ -6,7 +6,7 @@ opened: 2026-11-13
 
 ## Outcome
 
-The server image, CI and every local check run the same current Bun (1.4.x). The pin in `.bun-version` is the only place that holds the version. The test-certificate workaround for Bun 1.3.14 is gone, and STARTTLS to a mail host given as an IP address verifies the certificate.
+The server image, CI and every local check run the same current Bun (1.4.x). The pin in `.bun-version` is the source of the version; the Dockerfile line that repeats it is checked against it in CI. The test-certificate workaround for Bun 1.3.14 is gone, and STARTTLS to a mail host given as an IP address verifies the certificate.
 
 ## Scope
 
@@ -24,9 +24,27 @@ The server image, CI and every local check run the same current Bun (1.4.x). The
 
 - `cat .bun-version` and `head -n 1 deploy/Dockerfile` name the same Bun 1.4.x, and the `image` job passes.
 - `bun run test:unit:ci` and `bun run test:int:ci` pass on that Bun, and the STARTTLS tests pass with no `DNS:localhost` in the certificate.
-- A deploy of the image on the home VPS keeps the pilot mailbox syncing (owner's go needed).
+- A STARTTLS test proves that a trusted certificate for another name is refused for an IP host, and no password goes out.
+- A deploy of the image on the home VPS keeps the pilot mailbox syncing, also 24 hours later (owner's go needed).
+- A test proves that TLS to a DNS mail host refuses a certificate for another name (IMAP and SMTP).
 - `docs/known-alerts.md` and `notes/2026-11-13-bun-version-drift.md` say that the drift is closed.
+- Every line of "Done when" in [plan.md](plan.md) holds.
+
+## Slices
+
+Two stages, in order, each landed with `limen land --keep-open`; the stage 2 land closes the ticket.
+
+1. `stages/stage-01-pin-1-4-4.md` [risky]: the pin, the two TLS name tests, the docs. Review job before the land; CI runs on a `task/` branch before the land.
+2. `stages/stage-02-vps-deploy.md`: owner steps (VPS deploy after the owner's go; a next-day check), then a short job records the result.
+
+No migration, no `bun.lock` change. Owner checkpoint before stage 2. Commands: [plan.md](plan.md) § "How to run".
+
+## Sequenced
+
+- Plan after: none.
+- Build after: the CI-green ticket that set up the pin (F093, in `done/`) and the module-border lint (F086, "next and alone" in `docs/product/stage-2/07-foundation-plan.md` §2), both must be in `done/` before the build starts.
+- Gate: none for stage 1. Stage 2: the owner's go, and no other VPS deploy runs at the same time (`docs/product/stage-2/05-execution-plan.md` §4).
 
 ## Notes
 
-- Opened by the coordinator after F093 stage 1 (plan § How to run, item 5). Needs `plan-task`; it touches the production image, so a VPS deploy step is part of it.
+- Opened by the coordinator after F093 stage 1 (plan § How to run, item 5). Design, facts and probes: [plan.md](plan.md). Defaults to confirm: [questions.md](questions.md).
