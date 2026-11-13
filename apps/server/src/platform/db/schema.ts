@@ -281,22 +281,26 @@ export interface Organizations {
 export interface Outbox {
   attempts: Generated<number>;
   buttons: Generated<Json>;
+  channel: Generated<string>;
   created_at: Timestamp;
   dedup_key: string;
+  detail: Generated<string>;
   digest_id: string | null;
   email_id: string | null;
   error_code: string | null;
   external_message_id: Int8 | null;
   id: Generated<string>;
   kind: string;
+  locale: Generated<string>;
   locked_at: Timestamp | null;
   mailbox_id: string | null;
   next_attempt_at: Timestamp;
   org_id: string;
   sent_at: Timestamp | null;
   status: Generated<string>;
-  text: string;
+  text: string | null;
   user_id: string;
+  view: Generated<Json>;
 }
 
 export interface SenderRules {

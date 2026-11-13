@@ -1,4 +1,4 @@
-import { isQuietTime, quietEnd } from "@ea/core";
+import { isQuietTime, quietEnd, renderNotice, type OutMessage } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -117,6 +117,24 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
           log.warn(`outbox ${row.id}: expired`);
           continue;
         }
+        // A row with a text is sent as it is (rows queued before send-time rendering); every other row is rendered now
+        // (ADR 0032 point 5).
+        let message: OutMessage;
+        if (row.text !== null) {
+          message = { text: row.text, buttons: row.buttons };
+        } else {
+          const rendered = renderNotice(row.kind, row.view, {
+            channel: row.channel,
+            detail: row.detail,
+            locale: row.locale,
+          });
+          if (!rendered.ok) {
+            await fail(row, "bad_view");
+            log.error(`outbox ${row.id}: bad view (${row.kind})`);
+            continue;
+          }
+          message = rendered.message;
+        }
         const timezone = await timezoneOf(ctx);
         if (row.kind !== "digest" && isQuietTime(now, timezone)) {
           await release(row, quietEnd(now, timezone), false);
@@ -135,12 +153,12 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
           continue;
         }
 
-        const { messageId } = await channel.send(link.chatId, { text: row.text, buttons: row.buttons });
+        const { messageId } = await channel.send(link.chatId, message);
         sent = true;
         sentPerUser.set(userKey, sentCount + 1);
 
         const markSent = async (trx: Transaction<DB>): Promise<boolean> => {
-          const ok = await markOutboxSent(trx, ctx, row.id, row.lockedAt, { messageId, at: now });
+          const ok = await markOutboxSent(trx, ctx, row.id, row.lockedAt, { messageId, at: now, message });
           if (ok && row.kind === "digest" && row.digestId !== null) {
             await markDigestSent(trx, ctx, row.digestId, now);
           }

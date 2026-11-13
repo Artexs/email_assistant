@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { noticeChannels, noticeDetails, noticeKinds, userLocales } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -332,5 +333,77 @@ describe("telegram schema", () => {
       await trx.deleteFrom("mailboxes").where("id", "=", mailboxId).execute();
       expect(await trx.selectFrom("outbox").select("id").where("dedup_key", "=", "auth").execute()).toHaveLength(0);
     });
+  });
+});
+
+describe("outbox view columns (F088)", () => {
+  async function insertOne(
+    trx: Transaction<DB>,
+    orgId: string,
+    userId: string,
+    mailboxId: string,
+    overrides?: Record<string, unknown>
+  ) {
+    return trx
+      .insertInto("outbox")
+      .values(outboxRow(orgId, userId, { mailbox_id: mailboxId, ...overrides }))
+      .returning(["id", "text", "view", "channel", "locale", "detail"])
+      .executeTakeFirstOrThrow();
+  }
+
+  test("the new columns have defaults", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId, userId, mailboxId } = await createOrgWithMailbox(trx);
+      const row = await insertOne(trx, orgId, userId, mailboxId);
+      expect(row.view).toEqual({});
+      expect(row.channel).toBe("telegram");
+      expect(row.locale).toBe("en");
+      expect(row.detail).toBe("full");
+    });
+  });
+
+  test("text may be null, but not empty or too long", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId, userId, mailboxId } = await createOrgWithMailbox(trx);
+      const row = await insertOne(trx, orgId, userId, mailboxId, { text: null });
+      expect(row.text).toBeNull();
+      await expectCode(trx, "text_empty", () => insertOne(trx, orgId, userId, mailboxId, { text: "" }), "23514");
+      await expectCode(
+        trx,
+        "text_long",
+        () => insertOne(trx, orgId, userId, mailboxId, { text: "x".repeat(4097) }),
+        "23514"
+      );
+    });
+  });
+
+  test("channel, detail, locale and view reject a bad value", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId, userId, mailboxId } = await createOrgWithMailbox(trx);
+      await expectCode(trx, "channel", () => insertOne(trx, orgId, userId, mailboxId, { channel: "mail" }), "23514");
+      await expectCode(trx, "detail", () => insertOne(trx, orgId, userId, mailboxId, { detail: "minimal" }), "23514");
+      await expectCode(trx, "locale", () => insertOne(trx, orgId, userId, mailboxId, { locale: "de" }), "23514");
+      await expectCode(
+        trx,
+        "view",
+        () => insertOne(trx, orgId, userId, mailboxId, { view: sql`'[]'::jsonb` }),
+        "23514"
+      );
+    });
+  });
+
+  test("the CHECK lists match the lists of core (D22)", async () => {
+    const result = await sql<{ conname: string; def: string }>`
+      select conname, pg_get_constraintdef(oid) as def from pg_constraint
+      where conrelid = 'outbox'::regclass
+        and conname in ('outbox_kind_check', 'outbox_channel_check', 'outbox_locale_check', 'outbox_detail_check')`.execute(
+      db
+    );
+    const values = (name: string) =>
+      [...(result.rows.find((r) => r.conname === name)?.def.matchAll(/'([a-z_]+)'/g) ?? [])].map((m) => m[1]).sort();
+    expect(values("outbox_kind_check")).toEqual([...noticeKinds].sort());
+    expect(values("outbox_channel_check")).toEqual([...noticeChannels].sort());
+    expect(values("outbox_locale_check")).toEqual([...userLocales].sort());
+    expect(values("outbox_detail_check")).toEqual([...noticeDetails].sort());
   });
 });

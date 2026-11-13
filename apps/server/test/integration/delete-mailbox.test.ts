@@ -128,7 +128,7 @@ const allZero = {
 
 async function outboxText(trx: Transaction<DB>, id: string): Promise<string | undefined> {
   const row = await trx.selectFrom("outbox").select("text").where("id", "=", id).executeTakeFirst();
-  return row?.text;
+  return row?.text ?? undefined;
 }
 
 describe("delete_mailbox", () => {

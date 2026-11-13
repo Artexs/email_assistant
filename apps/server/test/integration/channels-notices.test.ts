@@ -221,7 +221,7 @@ describe("urgent notices", () => {
       const found = await rows(trx, o.orgId, "urgent");
       expect(found.map((r) => r.email_id)).toEqual([offers.emailId, offers.emailId]);
       for (const row of found) {
-        expect(row.text.split("\n")[0]).toContain("🔴 Urgent mail · 📁 Oferty");
+        expect(row.text?.split("\n")[0]).toContain("🔴 Urgent mail · 📁 Oferty");
         expect(row.text).toContain("→ stays in Oferty");
       }
       expect(found.some((r) => r.email_id === junk.emailId)).toBe(false);
