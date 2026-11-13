@@ -8,6 +8,7 @@ import pluginReact from "eslint-plugin-react";
 import reactCompiler from "eslint-plugin-react-compiler";
 import eslintPluginReactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import tseslint from "typescript-eslint";
@@ -16,6 +17,77 @@ import tseslint from "typescript-eslint";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const gitignorePath = path.resolve(__dirname, ".gitignore");
+
+// Module borders (docs/code-patterns.md § Layers and borders). The layer list lives once, in layers.json.
+const serverSrc = "apps/server/src";
+const layersFile = path.resolve(__dirname, serverSrc, "modules/layers.json");
+const borders = JSON.parse(readFileSync(layersFile, "utf8"));
+
+// One zone per ordered module pair: a permitted pair may import only the index.ts, a forbidden pair nothing.
+// The rule resolves each import to a file, so it also catches `import type`, `export … from` and `import()`.
+function borderZones() {
+  const layerOf = new Map(borders.layers.flatMap((names, index) => names.map((name) => [name, index])));
+  const folders = readdirSync(path.resolve(__dirname, serverSrc, "modules"), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name);
+  const missing = folders.filter((name) => !layerOf.has(name));
+  if (missing.length > 0) {
+    throw new Error(`Modules without a layer in ${layersFile}: ${missing.join(", ")}`);
+  }
+  // Edges between layers only go down, so a cycle between modules can only run through same-layer edges.
+  // The lint refuses such a cycle here, so `bun run lint` fails on it even when both imports are listed.
+  const next = new Map();
+  for (const { from, to } of borders.sameLayerEdges) next.set(from, [...(next.get(from) ?? []), to]);
+  const reaches = (start, goal, seen = new Set()) =>
+    (next.get(start) ?? []).some((to) => to === goal || (!seen.has(to) && (seen.add(to), reaches(to, goal, seen))));
+  const cyclic = borders.sameLayerEdges.find(({ from }) => reaches(from, from));
+  if (cyclic) {
+    throw new Error(`sameLayerEdges in ${layersFile} has a cycle through ${cyclic.from}`);
+  }
+  const sameLayer = new Set(borders.sameLayerEdges.map(({ from, to }) => `${from}>${to}`));
+  const moduleDir = (name) => `${serverSrc}/modules/${name}`;
+  // Globs only: a `from` list that mixes globs and plain paths is an error of the rule.
+  const roots = [`${serverSrc}/*.ts`, `${serverSrc}/scripts/**`];
+  const zones = [];
+  for (const [name, layer] of layerOf) {
+    for (const [other, otherLayer] of layerOf) {
+      if (other === name) continue;
+      const permitted = otherLayer < layer || sameLayer.has(`${name}>${other}`);
+      zones.push(
+        permitted
+          ? {
+              target: moduleDir(name),
+              from: moduleDir(other),
+              except: ["./index.ts"],
+              message: `Import ${other} only through its index.ts.`,
+            }
+          : {
+              target: moduleDir(name),
+              from: moduleDir(other),
+              message: `${name} may not import ${other}: it is in a higher layer, or in the same layer without a sameLayerEdges entry (apps/server/src/modules/layers.json).`,
+            }
+      );
+    }
+    zones.push({
+      target: moduleDir(name),
+      from: roots,
+      message: "A module never imports a composition root or a script.",
+    });
+    zones.push({
+      target: [`${serverSrc}/*.ts`, `${serverSrc}/scripts/**/*.ts`],
+      from: moduleDir(name),
+      except: ["./index.ts"],
+      message: `Import ${name} only through its index.ts.`,
+    });
+  }
+  zones.push({
+    target: `${serverSrc}/platform`,
+    from: [`${serverSrc}/modules/**`, ...roots],
+    message: "platform imports no module and no composition root.",
+  });
+  zones.push({ target: "packages", from: "apps", message: "packages never import apps." });
+  return zones;
+}
 
 const baseConfig = tseslint.config({
   extends: [eslint.configs.recommended, tseslint.configs.strict, tseslint.configs.stylistic],
@@ -130,6 +202,12 @@ export default tseslint.config(
   reactConfig,
   ...astroConfig,
   nodeConfig,
+  {
+    files: [`${serverSrc}/**/*.ts`, "packages/**/*.ts"],
+    // Tests assemble modules like a composition root; the e2e seed scripts write test rows with a repository.
+    ignores: ["**/*.test.ts", ...borders.rootDeepImportExceptions.map(({ file }) => `${serverSrc}/${file}`)],
+    rules: { "import/no-restricted-paths": ["error", { basePath: __dirname, zones: borderZones() }] },
+  },
   {
     files: ["apps/server/src/**/*.ts", "packages/**/*.ts"],
     ignores: [
