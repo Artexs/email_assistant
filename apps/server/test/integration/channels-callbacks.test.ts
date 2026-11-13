@@ -401,6 +401,8 @@ describe("approval taps", () => {
       dedupKey: `${kind}:${key}`,
       emailId,
       message: { text, buttons: [] },
+      view: {},
+      locale: "en",
       createdAt: T,
       nextAttemptAt: T,
     });

@@ -109,6 +109,8 @@ async function insertDigestOutbox(
     dedupKey: `digest:${digestId}`,
     digestId: digestId ?? undefined,
     message: { text, buttons: [] },
+    view: {},
+    locale: "en",
     createdAt: now,
     nextAttemptAt: now,
   });

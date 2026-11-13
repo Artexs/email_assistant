@@ -231,8 +231,8 @@ export interface NewOutboxRow {
   mailboxId?: string;
   digestId?: string;
   message: OutMessage;
-  view?: Record<string, unknown>;
-  locale?: UserLocale;
+  view: Record<string, unknown>;
+  locale: UserLocale;
   createdAt: Date;
   nextAttemptAt: Date;
 }
@@ -253,8 +253,8 @@ export async function insertOutbox(db: DbOrTrx, ctx: TenantContext, row: NewOutb
       digest_id: row.digestId ?? null,
       text: row.message.text,
       buttons: JSON.stringify(buttons),
-      view: JSON.stringify(row.view ?? {}),
-      locale: row.locale ?? "en",
+      view: JSON.stringify(row.view),
+      locale: row.locale,
       status: "pending",
       attempts: 0,
       created_at: row.createdAt,

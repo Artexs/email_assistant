@@ -53,6 +53,7 @@ export {
   type OperatorNotices,
 } from "./operator";
 export { createOutboxSender, SENDER_STALE_MS, type SenderDeps } from "./sender";
+export { queueNotice, type QueueNoticeInput } from "./notice-queue";
 export { detectNotices, queueMailboxRemovedNotices, type NoticeDeps } from "./notices";
 export { scheduleDigests, type DigestJobDeps } from "./digest-job";
 export { handleCallback, pickerMessage, type CallbackDeps } from "./callbacks";
