@@ -4,11 +4,13 @@ Alerts we have already diagnosed. Before you diagnose an alert, search this file
 
 When you find the cause of a new alert, add an entry below (newest first).
 
+Since F089, a log line is an event: key a new entry by its `event` code (and the field that tells the cases apart, for example `reason=`). An old heading keeps its old text in parentheses, so a search for an old log line still finds it.
+
 Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `investigating`
 
 ## Template
 
-### `<exact alert text, or its stable part>`
+### `<event code>` (or the exact alert text, or its stable part)
 
 - **First seen:** YYYY-MM-DD
 - **Source:** which module / source / command raised it (log line, monitor)
@@ -34,20 +36,20 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** `host not allowed`: check the mailbox host in the panel. A real provider host is public, so a refusal means a wrong host or a DNS change. Do not set `MAIL_ALLOW_LOCAL_HOSTS` on the VPS. `lookup failed`: check DNS from the server container. Until F085 lands, a refused host has no status and no notice: only this log line on every run.
 - **Status:** investigating (per case)
 
-### `pwned check unavailable: <status|name|no range lines in the answer>`
+### `pwned_check_unavailable` (`status=`, `reason=no_range_lines`, `error=`; before F089: `pwned check unavailable: <status|name|no range lines in the answer>`)
 
 - **First seen:** 2026-11-13 (S6b, F082 stage 6; not seen live)
-- **Source:** `apps/server/src/platform/pwned.ts`. Warning. The password set or change answers `503 PASSWORD_CHECK_UNAVAILABLE` and changes nothing.
-- **Cause:** `api.pwnedpasswords.com` did not answer in 5 s (`TimeoutError`), answered with a status other than 200 (`status <n>`), answered 200 with no `SUFFIX:COUNT` line, or the server has no outbound HTTPS to it.
+- **Source:** `apps/server/src/platform/pwned.ts`. Warning. Fields: `status=<n>` (an answer other than 200), `reason=no_range_lines` (200 with no `SUFFIX:COUNT` line), or `error=<name>` (for example `TimeoutError`). The password set or change answers `503 PASSWORD_CHECK_UNAVAILABLE` and changes nothing.
+- **Cause:** `api.pwnedpasswords.com` did not answer in 5 s (`TimeoutError`), answered with a status other than 200 (`status=<n>`), answered 200 with no `SUFFIX:COUNT` line, or the server has no outbound HTTPS to it.
 - **Fix:** check outbound HTTPS from the server container to `api.pwnedpasswords.com`. For a long outage only: set `AUTH_PWNED_CHECK=off`, restart (the log then warns `AUTH_PWNED_CHECK=off: leaked passwords are not refused`), and remove the key when the API answers again.
 - **Status:** investigating (per case)
 
-### `web: lockout: <label>` and `web: terms record failed for user <id>: <label>`
+### `lockout_failed`, `terms_record_failed` (before F089: `web: lockout: <label>`, `web: terms record failed for user <id>: <label>`)
 
 - **First seen:** 2026-11-13 (S6b, F082 stages 5 and 7; not seen live)
-- **Source:** `apps/server/src/platform/auth.ts`. Level `error`. `web: lockout:` comes from the sign-in `after` hook (the failure count or the lock write failed). `terms record failed` comes from the reset path (`onPasswordReset` and the handler in `web.ts`): the password was set, but the terms row was not written.
+- **Source:** `apps/server/src/platform/auth.ts`. Level `error`. `lockout_failed` comes from the sign-in `after` hook (the failure count or the lock write failed). `terms_record_failed` (field `user_id`) comes from the reset path (`onPasswordReset` and the handler in `web.ts`): the password was set, but the terms row was not written. `web.ts` still writes `web: terms record failed for user <id>: <label>` until E8a converts it; search for both.
 - **Cause:** a database error. The sign-in itself is not changed: the user gets the normal answer. A failed lock write means that failed sign-ins are not counted. A failed terms write means the user sees the terms dialog at the next sign-in.
-- **Fix:** read `<label>` and check the database. No manual repair: the user accepts the terms in the dialog.
+- **Fix:** read the `error` field (the old form: `<label>`) and check the database. No manual repair: the user accepts the terms in the dialog.
 - **Status:** investigating (per case)
 
 ### `web undo <kind> mail <id> by user <id>`
@@ -98,18 +100,18 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** check the network and the bot token. The link route then answers 502 `telegram_unreachable` and writes no token row. `/api/me` shows `botUsername: null`.
 - **Status:** investigating (per case)
 
-### `web: home path failed: <label>`
+### `home_path_failed` (before F089: `web: home path failed: <label>`)
 
 - **First seen:** 2026-11-11 (S5b)
-- **Source:** `apps/server/src/platform/http.ts`, the `/` page gate. Warning.
+- **Source:** `apps/server/src/platform/http.ts`, the `/` page gate. Warning. The field `error` holds the error name.
 - **Cause:** `homePath` (the onboarding state of the user) threw, for example a database error.
-- **Fix:** none for one line: `/` redirects to `/onboarding`. Read the error label and check the database.
+- **Fix:** none for one line: `/` redirects to `/onboarding`. Read the `error` field and check the database.
 - **Status:** investigating (per case)
 
-### `mail: MAIL_ALLOW_LOCAL_HOSTS=true: local mail hosts are allowed`
+### `mail_local_hosts_allowed` (before F089: `mail: MAIL_ALLOW_LOCAL_HOSTS=true: local mail hosts are allowed`)
 
 - **First seen:** 2026-11-11 (S5b, as `web: WEB_MAIL_ALLOW_LOCAL=true: the connect form accepts local hosts`); renamed 2026-11-13 (S6b, F082 stage 9)
-- **Source:** `apps/server/src/main.ts`, once at start. Warning. A second line `WEB_MAIL_ALLOW_LOCAL is an old name: use MAIL_ALLOW_LOCAL_HOSTS` shows when only the old key is set.
+- **Source:** `apps/server/src/main.ts`, once at start. Warning. A second line `config_key_renamed config_key=WEB_MAIL_ALLOW_LOCAL` (before F089: `WEB_MAIL_ALLOW_LOCAL is an old name: use MAIL_ALLOW_LOCAL_HOSTS`) shows when only the old key is set.
 - **Cause:** `MAIL_ALLOW_LOCAL_HOSTS=true` lets the connect form, the sync and the send accept local and private mail hosts. The dev and e2e setups need it for GreenMail.
 - **Fix:** the key must be empty or `false` on the VPS. If this line shows on the VPS, remove `MAIL_ALLOW_LOCAL_HOSTS` and `WEB_MAIL_ALLOW_LOCAL` from `.env` and restart.
 - **Status:** workaround (dev and e2e only)
@@ -186,7 +188,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** No action. Compare `<path>` with the folder that `bun run web:build` wrote (`apps/web/dist` unless `WEB_DIST` says otherwise). A wrong path gives `web: dist folder missing, pages are off`.
 - **Status:** won't fix (expected behaviour)
 
-### `web: dist folder missing, pages are off`
+### `web_dist_missing` (before F089: `web: dist folder missing, pages are off`)
 
 - **First seen:** 2026-11-09 (S5a code; the route matrix of stage 6 covers it)
 - **Source:** `apps/server/src/platform/http.ts` (`createApp`, level `warn`, once per process start).
@@ -202,10 +204,10 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Use an `https://` origin: behind Tailscale Serve on the VPS (S5e). An `http://` non-loopback origin is for a test network only.
 - **Status:** won't fix (expected only in a misconfiguration: the VPS uses an `https://` `WEB_BASE_URL` since S5e)
 
-### `web: reset requested for user <id>`
+### `password_reset_requested` (before F089: `web: reset requested for user <id>`)
 
 - **First seen:** 2026-11-09 (S5a code; not seen live)
-- **Source:** `apps/server/src/platform/auth.ts` (the default `sendResetPassword`, level `info`).
+- **Source:** `apps/server/src/platform/auth.ts` (the default `sendResetPassword`, level `info`, field `user_id`).
 - **Cause:** A `request-password-reset` reached a `createAuth` instance that has no own `sendResetPassword`. It cannot happen over HTTP. With the auth-mail sender off, the `/api/auth/*` allow-list answers 404 for that path. With the sender on (S6b), `webDeps` passes its own `sendResetPassword`. The CLIs (`web:invite`, `org:invite`) pass their own callback in `scripts/invite-delivery.ts` and print the link, so they log no line.
 - **Fix:** Investigate: a line means a code path changed or a new `createAuth` caller exists. Check who builds the auth instance without `sendResetPassword` (`webDeps` in `web.ts`, `scripts/invite-delivery.ts`, `scripts/e2e-seed.ts`).
 - **Status:** investigating
@@ -218,47 +220,47 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Check the `AUTH_SMTP_*` and `AUTH_MAIL_FROM` keys and the provider (login, port 465 or 587, `AUTH_SMTP_SECURITY`). Make a new link by hand: `bun run web:invite --org-id <uuid> --user-id <uuid> --print`.
 - **Status:** open while the sender is off (the home VPS prints the links; no notice fires there)
 
-### `better-auth: Invalid password`
+### `better_auth_log reason=invalid_password` (before F089: `better-auth: Invalid password`)
 
 - **First seen:** 2026-11-09 (S5a code; a wrong sign-in makes it, for example in the Playwright smoke of stage 13)
-- **Source:** `apps/server/src/platform/auth.ts` (Better Auth `sign-in.mjs` text through the logger, level `warn`, `cleanLogText` applied).
-- **Cause:** One sign-in came with a wrong password. The answer is the same 401 `INVALID_EMAIL_OR_PASSWORD` as for an unknown e-mail, so the text never says which of the two is wrong.
+- **Source:** `apps/server/src/platform/auth.ts` (Better Auth `sign-in.mjs` text through the logger, level `warn`). `betterAuthLogReason` maps the library text to the `reason` code; the text itself never reaches the log.
+- **Cause:** One sign-in came with a wrong password. The answer is the same 401 `INVALID_EMAIL_OR_PASSWORD` as for an unknown e-mail, so the line never says which of the two is wrong.
 - **Fix:** No action for one line. Many lines per minute from one address mean someone guesses: the rate limit answers 429 after 3 tries in 10 s (W9). S6b (F082) locks a user after 10 failures in 15 minutes; see `docs/architecture.md` §7.
 - **Status:** won't fix (expected behaviour)
 
-### `better-auth: User not found`
+### `better_auth_log reason=user_not_found` (before F089: `better-auth: User not found`)
 
 - **First seen:** 2026-11-09 (S5a code; not seen live)
-- **Source:** `apps/server/src/platform/auth.ts` (Better Auth text through the logger, level `warn`).
+- **Source:** `apps/server/src/platform/auth.ts` (Better Auth text through the logger, level `warn`; `reason` from `betterAuthLogReason`).
 - **Cause:** A sign-in or a reset named an e-mail with no `users` row. The user answers the same 401 as a wrong password (no hint which one).
 - **Fix:** No action for one line; many lines from one address mean someone guesses (see the rate limit line above). A real user who sees the 401 text needs a setup link (`bun run web:invite`).
 - **Status:** won't fix (expected behaviour)
 
-### `better-auth: Reset Password: User not found`
+### `better_auth_log reason=reset_user_not_found` (before F089: `better-auth: Reset Password: User not found`)
 
 - **First seen:** 2026-11-09 (S5a code; not seen live)
-- **Source:** `apps/server/src/platform/auth.ts` (Better Auth text through the logger, level `warn`).
+- **Source:** `apps/server/src/platform/auth.ts` (Better Auth text through the logger, level `warn`; `reason` from `betterAuthLogReason`).
 - **Cause:** A reset came with a token whose user row is gone (the organization or the user was removed). The reset does nothing.
 - **Fix:** No action. Make a new setup link for the user (`bun run web:invite --org-id … --user-id …`) or remove the old link.
 - **Status:** won't fix (expected behaviour)
 
-### `better-auth: Invalid callbackURL: <url>`
+### `better_auth_log reason=invalid_callback_url` (before F089: `better-auth: Invalid callbackURL: <url>`)
 
 - **First seen:** 2026-11-09 (S5a code; the stage 3 fix review found the text)
-- **Source:** `apps/server/src/platform/auth.ts` (Better Auth origin check through the logger, level `error`). `cleanLogText` replaces the URL itself with `<url>`.
+- **Source:** `apps/server/src/platform/auth.ts` (Better Auth origin check through the logger, level `error`). The URL never reaches the log: only the `reason` code does.
 - **Cause:** A request to `/api/auth/reset-password/<token>` or another auth path carried a `callbackURL` outside `WEB_BASE_URL` and `WEB_TRUSTED_ORIGINS`: a hand-edited or foreign link.
 - **Fix:** No action for one line. Many lines mean someone probes the route. When a real link fires it, check `WEB_TRUSTED_ORIGINS` (the built shape needs its own origin, for example `http://127.0.0.1:8080`). Never paste such a link into a task file or a ticket: it holds a reset token.
 - **Status:** investigating
 
-### `better-auth: Invalid origin: <url>`
+### `better_auth_log reason=invalid_origin` (before F089: `better-auth: Invalid origin: <url>`)
 
 - **First seen:** 2026-11-10 (S5a code; the final review found the path; not seen live)
-- **Source:** `apps/server/src/platform/auth.ts` (the Better Auth origin check through the logger, level `error`). `cleanLogText` replaces the URL with `<url>`.
+- **Source:** `apps/server/src/platform/auth.ts` (the Better Auth origin check through the logger, level `error`). The URL never reaches the log: only the `reason` code does.
 - **Cause:** A non-safe `/api/auth/*` request had no `Origin` header (or `Origin: null`) and `Sec-Fetch-Site: same-origin`, so our origin check let it through. Better Auth then checked the `Referer` header and found a foreign site. A browser does not send this combination. A script with hand-made headers does. Better Auth answers 403.
 - **Fix:** No action for one line. Many lines from one address mean someone probes the auth routes: the rate limit holds them. When a real browser gets it, check `WEB_TRUSTED_ORIGINS` and the `Referrer-Policy` header (`same-origin`).
 - **Status:** investigating
 
-### `better-auth: Database schema mismatch … Missing tables …` and `GET /api/auth/*: BetterAuthError SCHEMA_MISMATCH`
+### `better_auth_log reason=schema_mismatch` and `http_error route=/api/auth/* error=BetterAuthError error_code=SCHEMA_MISMATCH` (before F089: `better-auth: Database schema mismatch … Missing tables …` and `GET /api/auth/*: BetterAuthError SCHEMA_MISMATCH`)
 
 - **First seen:** 2026-11-10 (S5a merge: the first `test:e2e` run after a new migration)
 - **Source:** `apps/server/src/platform/auth.ts` (the Better Auth logger at start) and `apps/server/src/platform/http.ts` (`onError`, one line per auth request).
@@ -266,7 +268,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Run `bun run db:migrate`, then restart the server. The deploy runs the migration before `up` (`deploy/README.md`). The e2e server command runs `db:migrate` before the server starts (`apps/web/e2e/playwright.config.ts`).
 - **Status:** fixed (e2e config); a deploy that starts the server before the migration still gets it
 
-### `better-auth: Rate limiting could not determine a client IP …`
+### `better_auth_log reason=rate_limit_no_ip` (before F089: `better-auth: Rate limiting could not determine a client IP …`)
 
 - **First seen:** 2026-11-09 (S5a code; not seen live)
 - **Source:** `apps/server/src/platform/auth.ts` (the Better Auth rate limiter through the logger, level `warn`).
@@ -274,10 +276,10 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Must not appear. If it does, the builder of the auth request or the `/api/auth/*` mount changed: check `authRequest` and `clientAddress` (with `peerAddress`) in `apps/server/src/platform/http.ts` and `WEB_TRUSTED_PROXIES`.
 - **Status:** investigating
 
-### `web: user <id> has <n> memberships; using the oldest`
+### `tenant_multi_membership` (before F089: `web: user <id> has <n> memberships; using the oldest`)
 
 - **First seen:** 2026-11-09 (S5a code; the route matrix of stage 6 covers it)
-- **Source:** `apps/server/src/platform/http.ts` (`requireTenant`, level `warn`, once per process and user id).
+- **Source:** `apps/server/src/platform/http.ts` (`requireTenant`, level `warn`, once per process and user id; fields `user_id`, `count`).
 - **Cause:** The user is a member of more than one organization. S5 has no organization switcher, so `requireTenant` takes the oldest membership (`listMembershipsOfUser`, ordered by `created_at, org_id`).
 - **Fix:** No action for one line: the user sees the oldest organization, and the audit rows of the web events go there. A second organization is a bug of the setup until a switcher exists.
 - **Status:** won't fix (expected behaviour)
@@ -298,10 +300,10 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Read the label and check the DB (connection, migration state, the `audit_log` rows). One row is missing for that event; the next login writes its own.
 - **Status:** investigating
 
-### `web: onEvent <kind> failed: <label>`
+### `auth_event_failed` (before F089: `web: onEvent <kind> failed: <label>`)
 
 - **First seen:** 2026-11-09 (S5a code; not seen live)
-- **Source:** `apps/server/src/platform/auth.ts` (`report`, level `error`).
+- **Source:** `apps/server/src/platform/auth.ts` (`report`, level `error`; fields `kind`, `error`).
 - **Cause:** The injected `onEvent` of an auth event rejected. `auditWebEvent` catches its own errors, so this line means the composition root supplies another `onEvent`, or that function changed. The login or the password change itself succeeded.
 - **Fix:** Check the `onEvent` wiring in `apps/server/src/web.ts`. `auditWebEvent` must return without a throw; an audit miss must never fail a login.
 - **Status:** investigating
@@ -309,15 +311,15 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `# SERVER_ERROR: <message and stack>`
 
 - **First seen:** 2026-11-09 (S5a code, stage 3 fix review; not seen live)
-- **Source:** `better-call` `router.mjs` (`console.error`), not our logger. It follows our own `better-auth: <text>` line.
+- **Source:** `better-call` `router.mjs` (`console.error`), not our logger. It follows our own `better_auth_error` or `better_auth_log` line.
 - **Cause:** An error that is not a `better-call` `APIError` was thrown inside Better Auth, for example a database error. The line holds the full message and stack, so it can hold database text. `onAuthError` cannot suppress it.
-- **Fix:** Read our own `better-auth:` line first (name and code only); use this line for the stack. A database label: check the DB. Cut database text before you paste the line into a task file or a ticket.
+- **Fix:** Read our own `better_auth_error` or `better_auth_log` line first (name and code only); use this line for the stack. A database label: check the DB. Cut database text before you paste the line into a task file or a ticket.
 - **Status:** investigating
 
-### `POST /api/… 403` bursts in the debug access log (`bad_origin`)
+### `http_request method=POST status=403` bursts at level debug (`bad_origin`; before F089: `POST /api/… 403`)
 
 - **First seen:** 2026-11-09 (S5a code; the route matrix of stage 6 covers it)
-- **Source:** `apps/server/src/platform/http.ts`: the access log at level `debug` and the origin check that answers 403 `{ error: "bad_origin" }`.
+- **Source:** `apps/server/src/platform/http.ts`: the access log at level `debug` (event `http_request`, fields `method`, `route`, `status`, `ms`) and the origin check that answers 403 `{ error: "bad_origin" }`.
 - **Cause:** A client sent a non-safe `/api/*` request without a trusted `Origin` (no `Origin` and no `Sec-Fetch-Site: same-origin` counts as untrusted). A browser on another origin, a proxy that drops `Origin`, or a `curl` call does this. The server refuses before any handler runs.
 - **Fix:** Check `WEB_TRUSTED_ORIGINS`: it must hold the browser origin (the built shape needs its own, for example `http://127.0.0.1:8080`). Check that the reverse proxy passes `Origin`. Set `LOG_LEVEL=debug` only while you diagnose.
 - **Status:** workaround (set the key or the proxy)

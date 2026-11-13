@@ -2,6 +2,7 @@
 
 - Status: proposed (E8 discovery, 2026-11-13). The owner chose the defaults (PD-051, PD-052); accepted when E8a lands.
 - Date: 2026-11-13
+- Progress: F089 (`spec/features/done/2026-11/F089-structured-logs/`) landed point 2 and the base of point 1: the writer with the allow-list and the drop count, the lint in `warn`, `platform/` and `main.ts` converted and held at `error`. The module conversion, the lint in `error` everywhere and points 3–7 are E8a and E8b.
 
 ## Context
 
@@ -11,7 +12,7 @@ Alerts today: a Healthchecks.io dead-man (`platform/heartbeat.ts`) and operator 
 
 ## Decision
 
-1. **Log line contract.** One JSON object per line on stdout: `time`, `level`, `module`, `event` (a stable code), `msg` (a constant string), and only allow-listed fields (ids, codes, counts, durations, `release`, `job`, `run_id`, `request_id`). The writer drops any other field and any value that is not a UUID, a number, a boolean or a short code, and counts the drops. `msg` and `event` are string literals at the call site; a lint rule blocks interpolation. Errors reach a log only through `describeError()` (name and code). `LOG_FORMAT=text` gives a readable line in dev.
+1. **Log line contract.** One JSON object per line on stdout: `time`, `level`, `module`, `event` (a stable code), `msg` (a constant string), and only allow-listed fields (ids, codes, counts, durations, `release`, `job`, `run_id`, `request_id`). The writer drops any other field and any value that is not a UUID, a number, a boolean or a short code, and counts the drops. `msg` and `event` are string literals at the call site; a lint rule blocks interpolation. Errors reach a log only through `errorFields()` in an event line, or `describeError()` in an old-form line (name and code). `LOG_FORMAT=text` gives a readable line in dev.
 2. **Context.** The scheduler opens an `AsyncLocalStorage` context per job tick (`job`, `run_id`), the HTTP layer per request (`request_id`, also a response header); per-item code adds `org_id`, `mailbox_id`. Call sites do not pass these ids by hand.
 3. **Proof.** A canary test sends a mail with planted strings through the whole pipeline and an injected IMAP error, and fails if any planted string appears in the log output.
 4. **Rotation.** Every Compose service sets `logging: { driver: json-file, options: { max-size: 10m, max-file: "5" } }`.
