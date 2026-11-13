@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { BlockList, isIP } from "node:net";
 import { join } from "node:path";
@@ -14,7 +15,7 @@ import type { z } from "zod";
 import { isAllowedAuthPath } from "./auth";
 import type { Db, TenantContext } from "./db";
 import { describeError } from "./errors";
-import { createLog } from "./log";
+import { createLog, withLogContext } from "./log";
 
 const log = createLog("http");
 
@@ -96,6 +97,19 @@ export function clientAddress(
     if (!isTrusted(hop, trusted)) return hop;
   }
   return peerAddress;
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** D17: a proxy's x-request-id is reused only from a trusted peer and only as a UUID (lower-cased). null: make a new one. */
+export function incomingRequestId(
+  header: string | undefined,
+  peer: string | undefined,
+  trusted: BlockList
+): string | null {
+  if (header === undefined || peer === undefined) return null;
+  const value = header.trim().toLowerCase();
+  return UUID_PATTERN.test(value) && isTrusted(normalizeAddress(peer), trusted) ? value : null;
 }
 
 export function originAllowed(req: { method: string; headers: Headers }, trustedOrigins: ReadonlySet<string>): boolean {
@@ -260,6 +274,15 @@ const MISSING_BUILD = "The web build is missing. Run bun run web:build.";
 export function createApp(deps: HttpDeps): Hono<ApiEnv> {
   const { web } = deps;
   const app = new Hono<ApiEnv>();
+
+  // D17: one request id per request, in every log line of the request and in the response header.
+  app.use("*", async (c, next) => {
+    const requestId =
+      (web === null ? null : incomingRequestId(c.req.header("x-request-id"), web.connInfo(c), web.trustedProxies)) ??
+      randomUUID();
+    await withLogContext({ request_id: requestId }, () => next());
+    c.header("x-request-id", requestId);
+  });
 
   app.use("*", async (c, next) => {
     const start = performance.now();
