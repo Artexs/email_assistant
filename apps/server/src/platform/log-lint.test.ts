@@ -6,15 +6,15 @@ import { ESLint } from "eslint";
 const repoRoot = path.resolve(import.meta.dir, "../../../..");
 const eslint = new ESLint({ cwd: repoRoot });
 
-const header =
-  'import { createLog } from "../../platform/log";\n\nconst log = createLog("mail");\nconst mailboxLog = log.with({});\ndeclare const id: string, e: unknown, a: unknown, b: unknown, y: string;\n';
+const headerFor = (importPath: string) =>
+  `import { createLog } from "${importPath}";\n\nconst log = createLog("mail");\nconst mailboxLog = log.with({});\ndeclare const id: string, e: unknown, a: unknown, b: unknown, y: string;\n`;
 
 const TIMEOUT = 30_000;
 const fixtureFile = "apps/server/src/modules/mail/__log-fixture.ts";
 
 /** Severities of the log-event messages for `line` in a virtual file. */
-async function logEventSeverities(file: string, line: string): Promise<number[]> {
-  const [result] = await eslint.lintText(`${header}${line}\n`, { filePath: path.join(repoRoot, file) });
+async function logEventSeverities(file: string, line: string, importPath = "../../platform/log"): Promise<number[]> {
+  const [result] = await eslint.lintText(`${headerFor(importPath)}${line}\n`, { filePath: path.join(repoRoot, file) });
   expect(result?.messages.filter((message) => message.fatal)).toEqual([]);
   return (result?.messages ?? [])
     .filter(
@@ -120,6 +120,60 @@ describe("log lint: event form passes", () => {
       expect(
         await logEventSeverities("apps/server/src/modules/mail/__log-fixture.test.ts", "log.info(`sync ${id} done`);")
       ).toEqual([]);
+    },
+    TIMEOUT
+  );
+});
+
+describe("log lint: converted files fail", () => {
+  test(
+    "a template literal in platform fails",
+    async () => {
+      expect(
+        await logEventSeverities("apps/server/src/platform/__log-fixture.ts", "log.info(`x ${y}`);", "./log")
+      ).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "an old-form line in main.ts fails",
+    async () => {
+      expect(
+        await logEventSeverities("apps/server/src/main.ts", 'log.error("config error:", e);', "./platform/log")
+      ).toEqual([2]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "an event line in platform passes",
+    async () => {
+      expect(
+        await logEventSeverities(
+          "apps/server/src/platform/__log-fixture.ts",
+          'log.info("sync_done", { count: 1 });',
+          "./log"
+        )
+      ).toEqual([]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "a platform test file is ignored",
+    async () => {
+      expect(
+        await logEventSeverities("apps/server/src/platform/__log-fixture.test.ts", "log.info(`x ${y}`);", "./log")
+      ).toEqual([]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "web.ts (not converted yet) stays at warn",
+    async () => {
+      expect(await logEventSeverities("apps/server/src/web.ts", "log.info(`x ${y}`);", "./platform/log")).toEqual([1]);
     },
     TIMEOUT
   );

@@ -1,6 +1,6 @@
 # 0027 — Operator role in the panel and per-organization feature flags
 
-- Status: proposed (E7 discovery, 2026-11-13). The owner accepted the defaults (PD-045, PD-046). The ticket that lands it sets "accepted".
+- Status: accepted (2026-11-13). Landed by F087: the flag registry, `org_features`, `FEATURES_OFF`, `isFeatureOn`, `org:flag`, `OPERATOR_USER_IDS` and `requireOperator` with `GET /api/operator/flags`. Open (E7): the console page and the other operator routes, TOTP for the operator.
 - Date: 2026-11-13
 
 ## Context

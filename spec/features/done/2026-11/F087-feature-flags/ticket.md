@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-13
 ---
 
 # F087 · Feature flags per organization and the operator check exist before the first Stage 2 feature

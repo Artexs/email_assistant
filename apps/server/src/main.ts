@@ -16,10 +16,10 @@ import {
 } from "./platform/config";
 import { createSecretBox } from "./platform/crypto";
 import { assertAppRole, checkDb, createDb } from "./platform/db";
-import { describeError } from "./platform/errors";
+import { errorFields } from "./platform/errors";
 import { createHeartbeat } from "./platform/heartbeat";
 import { createApp } from "./platform/http";
-import { createLlmClient, llmProviders } from "./platform/llm";
+import { createLlmClient, llmProviders, type LlmProviderId } from "./platform/llm";
 import { createLog, setLogFormat, setLogLevel } from "./platform/log";
 import { createScheduler } from "./platform/scheduler";
 import { createRetentionJob } from "./retention";
@@ -33,25 +33,25 @@ function loadConfigOrExit() {
     return loadConfig();
   } catch (error) {
     if (error instanceof ConfigError) {
-      log.error(`config error: missing or bad keys: ${error.keys.join(", ")}`);
+      for (const key of error.keys) log.error("config_key_bad", { config_key: key });
     } else {
-      log.error("config error:", error instanceof Error ? error.message : error);
+      log.error("config_load_failed", { ...errorFields(error) });
     }
     process.exit(1);
   }
 }
 
 // null: the worker is off.
-function triageScope(config: Config, providerLabel: string): TriageScope | null {
+function triageScope(config: Config, provider: LlmProviderId): TriageScope | null {
   if (config.TRIAGE_LLM_SCOPE === "off") {
-    log.info("triage worker is off (TRIAGE_LLM_SCOPE=off)");
+    log.info("triage_scope", { scope: "off" });
     return null;
   }
   if (config.TRIAGE_LLM_SCOPE === "synthetic") {
-    log.info("triage takes only synthetic mail (TRIAGE_LLM_SCOPE=synthetic)");
+    log.info("triage_scope", { scope: "synthetic" });
     return { kind: "synthetic" };
   }
-  log.warn(`triage sends the real mail of every active mailbox to ${providerLabel} (TRIAGE_LLM_SCOPE=all)`);
+  log.warn("triage_scope", { scope: "all", provider });
   return { kind: "all" };
 }
 
@@ -61,17 +61,18 @@ setLogFormat(config.LOG_FORMAT);
 configureMailHosts({ allowLocal: mailAllowLocal(config) });
 const featuresOffList = featuresOff(config);
 configureFeatures({ off: featuresOffList });
-log.info(`features off by FEATURES_OFF: ${featuresOffList.length === 0 ? "none" : featuresOffList.join(", ")}`);
+log.info("features_off", { count: featuresOffList.length });
+for (const flag of featuresOffList) log.info("feature_killed", { flag });
 if (config.MAIL_ALLOW_LOCAL_HOSTS === undefined && config.WEB_MAIL_ALLOW_LOCAL !== undefined) {
-  log.warn("WEB_MAIL_ALLOW_LOCAL is an old name: use MAIL_ALLOW_LOCAL_HOSTS");
+  log.warn("config_key_renamed", { config_key: "WEB_MAIL_ALLOW_LOCAL" });
 }
-if (mailAllowLocal(config)) log.warn("mail: MAIL_ALLOW_LOCAL_HOSTS=true: local mail hosts are allowed");
+if (mailAllowLocal(config)) log.warn("mail_local_hosts_allowed");
 
 const db = createDb(config.DATABASE_URL);
 try {
   await assertAppRole(db);
 } catch (error) {
-  log.error("db role check failed:", error instanceof Error ? error.message : error);
+  log.error("db_role_check_failed", { ...errorFields(error) });
   await db.destroy().catch(() => undefined);
   process.exit(1);
 }
@@ -85,9 +86,9 @@ const mailSync = createMailSyncJob({
   now: () => new Date(),
 });
 const heartbeat = createHeartbeat({ url: config.HEARTBEAT_URL, checkDb: () => checkDb(db) });
-if (config.HEARTBEAT_URL === undefined) log.warn("HEARTBEAT_URL is not set: the heartbeat is off");
+if (config.HEARTBEAT_URL === undefined) log.warn("heartbeat_off");
 if (config.WEB_BASE_URL !== undefined && config.OPERATOR_CONTACT === undefined) {
-  log.warn("OPERATOR_CONTACT is empty: the paused banner names no contact");
+  log.warn("operator_contact_empty");
 }
 
 const scheduler = createScheduler();
@@ -99,11 +100,13 @@ if (config.TRIAGE_LLM_SCOPE === "all" || config.ACTIONS_SCOPE === "all" || confi
   try {
     const targets = await countSyncTargets(db);
     const suspended = (await listOrganizations(db)).filter((org) => org.plan === "suspended").length;
-    log.warn(
-      `scope targets: ${targets.mailboxes} active mailboxes in ${targets.organizations} organizations, ${suspended} suspended organizations`
-    );
+    log.warn("scope_targets", {
+      mailbox_count: targets.mailboxes,
+      org_count: targets.organizations,
+      suspended_count: suspended,
+    });
   } catch (error) {
-    log.warn(`scope targets: count failed (${describeError(error)})`);
+    log.warn("scope_targets_failed", { ...errorFields(error) });
   }
 }
 
@@ -128,20 +131,16 @@ scheduler.add("channels.operator", "0 13 * * * *", () => {
   operatorRun = operator.run();
   return operatorRun;
 });
-log.info(
-  operatorChat === null
-    ? "operator notices: hourly; log lines only (OPERATOR_TELEGRAM_CHAT_ID is empty)"
-    : "operator notices: hourly; telegram"
-);
+log.info("operator_notices_on", { kind: operatorChat === null ? "log" : "telegram" });
 
 // The run of the triage worker that is going now. Shutdown waits for it.
 let triageRun: Promise<void> = Promise.resolve();
 const llmTable = llmRoleTable(config);
 const classifierRow = llmTable.roles.classifier;
 const provider = llmProviders[classifierRow.provider];
-const scope = triageScope(config, provider.label);
+const scope = triageScope(config, classifierRow.provider);
 if (scope !== null) {
-  log.info(`llm provider=${classifierRow.provider} classifier=${classifierRow.model}`);
+  log.info("llm_settings", { provider: classifierRow.provider, model: classifierRow.model });
   const llm = createLlmClient({ table: llmTable });
   const triage = createTriageJob({
     db,
@@ -179,13 +178,13 @@ scheduler.add("actions.expiry", "0 7 * * * *", () => {
   expiryRun = expiry.run();
   return expiryRun;
 });
-log.info("actions expiry: hourly");
+log.info("job_scheduled", { job: "actions.expiry" });
 const chaser = createChaserJob({ db, now: () => new Date() });
 scheduler.add("delegation.chaser", "20 */15 * * * *", () => {
   chaserRun = chaser.run();
   return chaserRun;
 });
-log.info("delegation chaser: every 15 min (acts at 07:30 local)");
+log.info("job_scheduled", { job: "delegation.chaser" });
 const returned = createReturnedJob({ db, now: () => new Date() });
 scheduler.add("triage.returned", "*/15 * * * * *", () => {
   returnedRun = returned.run();
@@ -199,18 +198,16 @@ scheduler.add("platform.retention", "0 40 2 * * *", () => {
   retentionRun = retention.run();
   return retentionRun;
 });
-log.info("retention: daily at 02:40");
+log.info("job_scheduled", { job: "platform.retention" });
 
 // The runs of the notifier and the digest job that are going now. Shutdown waits for them.
 let channelRun: Promise<void> = Promise.resolve();
 let digestRun: Promise<void> = Promise.resolve();
 if (config.TELEGRAM_BOT_TOKEN === undefined) {
-  log.info("telegram is off (TELEGRAM_BOT_TOKEN is empty)");
+  log.info("telegram_off");
 } else {
   if (config.TELEGRAM_API_ROOT !== undefined) {
-    log.warn(
-      `telegram: TELEGRAM_API_ROOT is set: the bot talks to the Bot API at ${config.TELEGRAM_API_ROOT}, not to Telegram`
-    );
+    log.warn("telegram_api_root_set");
   }
   const runtime = createTelegramRuntime({
     db,
@@ -249,7 +246,7 @@ const web = webDeps(config, db, {
 const app = createApp({ checkDb: () => checkDb(db), web });
 // idleTimeout: the connect route runs a mailbox login inside the request; Bun's default is 10 s.
 const server = Bun.serve({ port: config.PORT, idleTimeout: 90, fetch: app.fetch });
-log.info(`listening on port ${server.port}`);
+log.info("server_listening", { port: server.port });
 
 const SHUTDOWN_WAIT_MS = 30_000;
 // bot.stop() can wait for the network.

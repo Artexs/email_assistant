@@ -18,6 +18,14 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `operator_route_refused` (field `user_id`)
+
+- **First seen:** 2026-11-13 (F087 stage 6; not seen live)
+- **Source:** `apps/server/src/platform/http.ts` (`requireOperator`). Level `warn`. The log line holds the event name and the user id only.
+- **Cause:** a signed-in user who is not in `OPERATOR_USER_IDS` called a path under `/api/operator`. The answer is `404 { error: "not_found" }`.
+- **Fix:** none for a single line. Many lines for one user id mean someone probes the operator routes: check the user. If the user is the operator, add the id to `OPERATOR_USER_IDS` and restart.
+- **Status:** won't fix (a refusal is the expected answer)
+
 ### `sync <id> failed: host not allowed` and `sync <id>: mail host lookup failed (<code>); the next tick tries again`
 
 - **First seen:** 2026-11-13 (S6b, F082 stage 8 and 9; not seen live)
