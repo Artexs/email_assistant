@@ -68,65 +68,7 @@ Why:
 Direct calls stay for reads and simple commands (for example `triage` reads `config` rules; API routes call module services).
 The triage worker calls the pure policy from `packages/core` in its own transaction (no separate gate job).
 
-Module dependencies (arrow = "uses"):
-
-```mermaid
-graph TD
-    api[http api routes] --> tenancy
-    api --> mail
-    api --> config
-    api --> actions
-    api --> audit
-    api --> reports
-    api --> triage
-    api --> channels
-    api --> delegation
-    triage --> config
-    triage --> mail
-    triage --> core
-    triage --> delegation
-    triage --> actions
-    triage --> audit
-    actions --> mail
-    actions --> audit
-    actions --> core
-    channels --> actions
-    channels --> delegation
-    channels --> reports
-    channels --> triage
-    channels --> tenancy
-    channels --> mail
-    channels --> config
-    channels --> audit
-    config --> tenancy
-    config --> audit
-    mail --> config
-    mail --> tenancy
-    triage --> tenancy
-    actions --> tenancy
-    reports --> tenancy
-    reports --> actions
-    reports --> triage
-    reports --> delegation
-    reports --> audit
-    reports --> mail
-    reports --> config
-    reports --> core
-    tenancy --> audit
-    delegation --> actions
-    delegation --> mail
-    delegation --> config
-    delegation --> tenancy
-    delegation --> audit
-    mail --> audit
-    mail --> platform
-    triage --> platform
-    actions --> platform
-    channels --> platform
-    tenancy --> platform
-    core[packages/core<br/>pure logic]
-    platform[platform<br/>db, llm, crypto, log, http, scheduler]
-```
+Module dependencies are generated: [`docs/diagrams/module-graph.md`](diagrams/module-graph.md), written by `bun run graph:modules`; `apps/server/src/modules/layers.test.ts` fails when it is stale or when the code has an edge that the layers do not permit. Layers and the allowed same-layer edges: `apps/server/src/modules/layers.json`. Rules: `docs/code-patterns.md` § Layers and borders. The lines below give the reason for some edges; the generated file is the edge list.
 
 `triage → delegation`: the triage worker reads the active delegates (`listDelegates`), builds the draft plan from them, creates the `delegations` row (`createDelegation`) and detects a delegate's reply (`detectReply`, `markAnswered`) in its transaction (S4).
 `channels → delegation`: the Done tap calls `closeDelegation`; the notifier reads answered delegations and delegate names; `/status` counts open delegations (S4).
@@ -140,8 +82,7 @@ graph TD
 `actions → mail`: the committer and Undo use `locateMessage`, `listFolderUids`, `openMailboxProvider`, `updateEmailLocation` and the port (S3).
 `tenancy → audit`: `tenancy/service.ts` writes the `org.timezone_changed` and `org.style_changed` audit rows in the transaction of `updateOrganizationSettings` (S5c). S5d adds no edge.
 `config → audit`: the setters write the `mailbox.*_changed` audit rows in their transaction (S3).
-`config` gets `expireReady` as a dependency (`SettingsDeps.expireReady`, passed by the caller from the `actions` index) and never imports `actions` at run time:
-`config → actions → mail → config` would be a cycle (`mail/connect.ts` imports `insertDefaultSettings`).
+`config` gets `expireReady` as a dependency (`SettingsDeps.expireReady`, passed by the caller from the `actions` index) and never imports `actions`: `config` is in a lower layer, and the filter type `ExpireFilter` lives in `@ea/core`.
 `channels → config`, `channels → audit`: the digest and `/status` read the mailbox mode; `/pause` and `/resume` write `mailbox.paused` / `mailbox.resumed` audit rows.
 `reports → mail`, `reports → config`: the digest reads the mailboxes (status, last sync, waiting mail) and their mode. `channels → reports`; `reports` never imports `channels` (no cycle).
 `mail → audit`: a status change (`updateMailboxPassword`) and its audit row go in one transaction.
