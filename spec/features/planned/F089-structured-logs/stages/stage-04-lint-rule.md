@@ -50,7 +50,7 @@ grep -c "no-restricted-syntax" /tmp/f089-s04/lint-step1.log
 grep -E "problems? \(" /tmp/f089-s04/lint-step1.log
 ```
 
-The exit is `0`. The first count is the backlog: 428 on the code of 2026-11-13, minus 2 when stage 03 has landed (the scheduler lines), plus the lines that later tickets added. The summary line shows `0 errors`. Write the count and the summary line in the final message.
+The exit is `0`. The first count is the backlog: 427 on the code of 2026-11-13, minus 2 when stage 03 has landed (the scheduler lines), plus the lines that later tickets added. The summary line shows `0 errors`. Write the count and the summary line in the final message.
 
 **Done when.** The lint exits 0 and shows the warnings; no other block sets the rule.
 
@@ -73,14 +73,17 @@ import { ESLint } from "eslint";
 const repoRoot = path.resolve(import.meta.dir, "../../../..");
 const eslint = new ESLint({ cwd: repoRoot });
 
-const header = 'import { createLog } from "../../platform/log";\n\nconst log = createLog("mail");\nconst mailboxLog = log.with({});\ndeclare const id: string, e: unknown, a: unknown, b: unknown, y: string;\n';
+const header =
+  'import { createLog } from "../../platform/log";\n\nconst log = createLog("mail");\nconst mailboxLog = log.with({});\ndeclare const id: string, e: unknown, a: unknown, b: unknown, y: string;\n';
 
 /** Severities of the log-event messages for `line` in a virtual file. */
 async function logEventSeverities(file: string, line: string): Promise<number[]> {
   const [result] = await eslint.lintText(`${header}${line}\n`, { filePath: path.join(repoRoot, file) });
   expect(result?.messages.filter((message) => message.fatal)).toEqual([]);
   return (result?.messages ?? [])
-    .filter((message) => message.ruleId === "no-restricted-syntax" && message.message.startsWith("Log lines are events"))
+    .filter(
+      (message) => message.ruleId === "no-restricted-syntax" && message.message.startsWith("Log lines are events")
+    )
     .map((message) => message.severity);
 }
 ```
@@ -89,19 +92,19 @@ Each case is a `test(…, 30_000)` (the first `lintText` loads the config). The 
 
 **Test.**
 
-| #   | Line                                                  | Expected severities |
-| --- | ----------------------------------------------------- | ------------------- |
-| 1   | ``log.info(`sync ${id} done`);``                      | `[1]`               |
-| 2   | `log.info("sync done");`                              | `[1]`               |
-| 3   | `log.info("sync ${id}");` (a plain string with `${`)  | `[1]`               |
-| 4   | `log.error("config error:", e);`                      | `[1]`               |
-| 5   | `log.warn("ping_failed", a, b);`                      | `[1]`               |
-| 6   | ``mailboxLog.info(`x ${y}`);``                        | `[1]`               |
-| 7   | `log.info();`                                         | `[1]`               |
-| 8   | `log.info("sync_done", { mailbox_id: id });`          | `[]`                |
-| 9   | `log.info("sync_done");`                              | `[]`                |
-| 10  | `mailboxLog.debug("sync_done", {});`                  | `[]`                |
-| 11  | ``console.info(`x ${y}`);``                           | `[]`                |
+| #   | Line                                                                                     | Expected severities      |
+| --- | ---------------------------------------------------------------------------------------- | ------------------------ |
+| 1   | ``log.info(`sync ${id} done`);``                                                         | `[1]`                    |
+| 2   | `log.info("sync done");`                                                                 | `[1]`                    |
+| 3   | `log.info("sync ${id}");` (a plain string with `${`)                                     | `[1]`                    |
+| 4   | `log.error("config error:", e);`                                                         | `[1]`                    |
+| 5   | `log.warn("ping_failed", a, b);`                                                         | `[1]`                    |
+| 6   | ``mailboxLog.info(`x ${y}`);``                                                           | `[1]`                    |
+| 7   | `log.info();`                                                                            | `[1]`                    |
+| 8   | `log.info("sync_done", { mailbox_id: id });`                                             | `[]`                     |
+| 9   | `log.info("sync_done");`                                                                 | `[]`                     |
+| 10  | `mailboxLog.debug("sync_done", {});`                                                     | `[]`                     |
+| 11  | ``console.info(`x ${y}`);``                                                              | `[]`                     |
 | 12  | ``log.info(`sync ${id} done`);`` in `apps/server/src/modules/mail/__log-fixture.test.ts` | `[]` (tests are ignored) |
 
 Group 1–7 as `describe("log lint: old forms warn", …)` and 8–12 as `describe("log lint: event form passes", …)`. Name each test by what it proves, for example "a template literal warns".

@@ -2,17 +2,16 @@
 
 Part of [`../plan.md`](../plan.md). Read D3, D5, D8, D11, D15 and D21 of `plan.md` first. Needs stage 01 landed. Two steps.
 
-File gate (ticket § Sequenced): this stage edits `platform/config.ts`, `main.ts` and `apps/server/test/preload.ts`. It never builds at the same time as F087 stages 1, 2 or 4, or F090 stage 1.
+File gate (ticket § Sequenced): this stage edits `platform/config.ts`, `main.ts` and `.env.example`. It never builds at the same time as F087 stages 1, 2 or 4, or F090 stage 1.
 
 ## Step 1 — `LOG_FORMAT`: config, server start, tests, dev and VPS
 
-**Goal.** The server takes its format from `LOG_FORMAT` (default `json`); dev gets `text` from `.env.example`; the VPS stays on `json` whatever its `.env` says; tests always run in `text`.
+**Goal.** The server takes its format from `LOG_FORMAT` (default `json`); dev gets `text` from `.env.example`; the VPS stays on `json` whatever its `.env` says. (The tests run in `text` since stage 01: the preload.)
 
 **Files.**
 
 - Change: `apps/server/src/platform/config.ts`, `apps/server/src/platform/config.test.ts`.
 - Change: `apps/server/src/main.ts` (one line and one import name).
-- Change: `apps/server/test/preload.ts`.
 - Change: `.env.example`, `deploy/compose.yaml`.
 
 **Interfaces.**
@@ -28,15 +27,6 @@ File gate (ticket § Sequenced): this stage edits `platform/config.ts`, `main.ts
 setLogFormat(config.LOG_FORMAT);
 ```
 
-```ts
-// apps/server/test/preload.ts, add (keep the existing lines; import order per the lint):
-import { setLogFormat } from "../src/platform/log";
-
-// The tests read console spies in the text form; the CLI tests spawn scripts with this env (ADR 0024, F089).
-process.env.LOG_FORMAT = "text";
-setLogFormat("text");
-```
-
 `.env.example`, directly after the line `LOG_LEVEL=info`:
 
 ```
@@ -47,8 +37,8 @@ LOG_FORMAT=text
 `deploy/compose.yaml`, `services.server.environment`, after `WEB_DIST: /app/apps/web/dist`:
 
 ```yaml
-      # The VPS log is JSON lines whatever .env says: a new install copies .env.example, which sets text (ADR 0024).
-      LOG_FORMAT: json
+# The VPS log is JSON lines whatever .env says: a new install copies .env.example, which sets text (ADR 0024).
+LOG_FORMAT: json
 ```
 
 **Decisions.** D5 refined by D21 (the compose pin), D11.
@@ -139,4 +129,4 @@ bun run typecheck
 ## Stage done when
 
 - Steps 1 and 2 are done.
-- The Proof of `plan.md` ends with `PROOF_OK` (`NN` = `02`). The whole unit and integration suites run in `text` (the preload), so no existing test changes.
+- The Proof of `plan.md` ends with `PROOF_OK` (`NN` = `02`). The whole unit and integration suites run in `text` (the preload of stage 01), so no existing test changes.

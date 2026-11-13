@@ -27,7 +27,7 @@ The server writes one JSON object per log line with a constant `event` code, all
 - A unit test proves that an unknown field and a long string value are dropped and counted.
 - A job tick and an HTTP request carry `run_id` or `request_id` in every line of their context (integration test over one triage run and one `/api/me` request at the same time).
 - Every response has the `x-request-id` header.
-- `bun run lint` warns on `log.info(\`…${x}…\`)` and passes on `log.info("event_code", { … })`; a fixture proves both.
+- `bun run lint` warns on `log.info(\`…${x}…\`)`and passes on`log.info("event_code", { … })`; a fixture proves both.
 - `LOG_FORMAT=text` prints the readable form `[module] event key=value …`.
 - `docs/code-patterns.md` and the styleguide state the log standard; ADR 0024 records points 1 (base) and 2 as landed.
 
@@ -39,7 +39,7 @@ Seven worker jobs, one per stage in `stages/`: 01 the writer `[risky]`; 02 the f
 
 - Plan after: none (the plans of F086 and F087 exist; this plan uses F086's `eslint.config.js` layout and no interface of F087).
 - Build after: F086, the module borders lint (`docs/product/stage-2/07-foundation-plan.md` §1: "Needs F086"), in `spec/features/done/`.
-- Gate: F089 stages never build at the same time as a stage of another ticket that edits the same file (`07-foundation-plan.md` §2): stage 02 (`platform/config.ts`, `main.ts`, `test/preload.ts`) not next to F087 stages 1, 2, 4 or F090 stage 1; stages 03 and 05 (`platform/http.ts`) not next to F087 stages 4, 5; stage 05 (`platform/llm/client.ts`) and stage 06 (`main.ts`) not next to F090 stage 1 or F087 stage 2.
+- Gate: an F089 stage never builds at the same time as a stage of another ticket that edits the same file (`07-foundation-plan.md` §2; list in `plan.md` D27): stage 01 (`test/preload.ts`) not next to F087 stage 2; stage 02 (`platform/config.ts`, `main.ts`, `.env.example`) not next to F087 stages 1, 2, 4 or F090 stage 1; stages 03 and 05 (`platform/http.ts`, `scripts/job-run.ts`, `platform/llm/client.ts`) not next to F087 stages 4, 5 or F090 stage 1; stage 06 (`main.ts`) not next to F087 stage 2 or F090 stage 1; stage 07 (docs) not next to the docs stages of F087 (3, 6), F088 or F090. After stage 06, later stages that log in `platform/` or `main.ts` use the event form (`plan.md` D28).
 
 ## Notes
 

@@ -11,8 +11,11 @@ Part of [`../plan.md`](../plan.md). `[risky]`: the allow-list is the guard that 
 - New: `apps/server/src/platform/log-fields.ts`.
 - Change: `apps/server/src/platform/log.ts` (rewrite), `apps/server/src/platform/log.test.ts` (keep the 3 existing tests, add the new ones).
 - Change: `apps/server/src/platform/errors.ts` (add `errorFields`), `apps/server/src/platform/errors.test.ts`.
+- Change: `apps/server/test/preload.ts` (the tests run in `text`, see below).
 
-Not in this stage: `platform/config.ts`, `main.ts`, the test preload (stage 02); `withLogContext` and `log.with` (stage 02); any call site.
+Not in this stage: `platform/config.ts`, `main.ts` (stage 02); `withLogContext` and `log.with` (stage 02); any call site.
+
+File gate (ticket § Sequenced): this stage edits `apps/server/test/preload.ts`. It never builds at the same time as F087 stage 2.
 
 **Interfaces.**
 
@@ -21,21 +24,50 @@ Not in this stage: `platform/config.ts`, `main.ts`, the test preload (stage 02);
 /** Field names a log line may carry after its base keys (ADR 0024). Add a name in the change that first logs it; the review checks that its values are ids, codes, counts or times. */
 export const logFieldNames = [
   // ids
-  "org_id", "mailbox_id", "email_id", "action_id", "delegation_id", "outbox_id", "user_id",
+  "org_id",
+  "mailbox_id",
+  "email_id",
+  "action_id",
+  "delegation_id",
+  "outbox_id",
+  "user_id",
   // context (stage 02 sets them from AsyncLocalStorage)
-  "job", "run_id", "request_id",
+  "job",
+  "run_id",
+  "request_id",
   // counts and times
-  "count", "attempts", "ms", "tokens_in", "tokens_out", "mailbox_count", "org_count", "suspended_count", "port",
+  "count",
+  "attempts",
+  "ms",
+  "tokens_in",
+  "tokens_out",
+  "mailbox_count",
+  "org_count",
+  "suspended_count",
+  "port",
   // codes
-  "code", "error", "error_code", "kind", "status", "reason", "scope", "folder_key", "provider", "model",
-  "method", "route", "key", "release",
+  "code",
+  "error",
+  "error_code",
+  "kind",
+  "status",
+  "reason",
+  "scope",
+  "folder_key",
+  "provider",
+  "model",
+  "method",
+  "route",
+  "config_key",
+  "flag",
+  "release",
 ] as const;
 export type LogFieldName = (typeof logFieldNames)[number];
 export type LogValue = string | number | boolean | null | undefined;
 export type LogFields = { readonly [K in LogFieldName]?: LogValue };
 
 export const EVENT_CODE = /^[a-z][a-z0-9_]{0,63}$/;
-/** D7: a finite number, a boolean, null, or a short code string. No space, no "@", no URL. */
+/** D7: a finite number, a boolean, null, or a string of 0–64 characters from [A-Za-z0-9_.:/*-] without "://". No space, no "@", no URL. */
 export function isLogValue(value: unknown): value is string | number | boolean | null;
 export function isLogFieldName(name: string): name is LogFieldName; // Set lookup, Object.hasOwn-safe
 ```
@@ -66,7 +98,7 @@ export interface Log {
 export function createLog(module: string): Log;
 export function setLogLevel(level: LogLevel): void; // unchanged
 export function setLogFormat(format: LogFormat): void;
-/** D11: "text" gives text; anything else, also unset, gives json. */
+/** D11: "json" gives json; anything else, also unset, gives text (a process that never loads the config is a CLI or a test). */
 export function logFormatFromEnv(env: Record<string, string | undefined>): LogFormat;
 /** D8: fields dropped since the process started. Tests read a difference. */
 export function droppedLogFields(): number;
@@ -75,7 +107,7 @@ export function droppedLogFields(): number;
 Writer rules (one internal `write(level, module, args)` function):
 
 1. Level filter first, as today; a filtered line does no other work.
-2. Format: the value set by `setLogFormat`; if it was never called, `logFormatFromEnv(process.env)`, read once at the first line and kept.
+2. Format: the value set by `setLogFormat`; if it was never called, `logFormatFromEnv(process.env)`, read once at the first line and kept. (The server sets `json` by default from its config in stage 02.)
 3. Event form or old form by D10. Plain object test: `typeof v === "object" && v !== null && (Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null)`.
 4. Event form: build the line as an ordered list of `[key, value]` pairs: `time` (`new Date().toISOString()`), `level`, `module`, `event`, `msg` (= event, D9). Then the call fields in their own order: for each own key with a value that is not `undefined`, keep it when `isLogFieldName(key)`, `isLogValue(value)` and the key is not on the line yet; else count one drop. If the count is above 0, add `["dropped_fields", count]` and add the count to the process total. Stage 02 adds the context and child keys before the call fields; write the loop so that it takes a list of field sources in order (`[callFields]` now), so stage 02 adds sources without a rewrite.
 5. `json`: `JSON.stringify(Object.fromEntries(pairs))`, one argument to `console.log` (debug, info) or `console.error` (warn, error).
@@ -90,7 +122,17 @@ Writer rules (one internal `write(level, module, args)` function):
 export function errorFields(error: unknown): { error: string; error_code?: string | number };
 ```
 
-**Decisions.** D1 (old form stays), D2, D6 refined by D14, D7, D8, D9, D10, D11 (the env part; `setLogFormat`), D12, D13, D19.
+The test preload, `apps/server/test/preload.ts`, add (keep the existing lines; import order per the lint):
+
+```ts
+import { setLogFormat } from "../src/platform/log";
+
+// The tests read console spies in the text form (ADR 0024, F089). A CLI that a test spawns prints text by default (D11).
+process.env.LOG_FORMAT = "text";
+setLogFormat("text");
+```
+
+**Decisions.** D1 (old form stays), D2, D6 refined by D14, D7, D8, D9, D10, D11 (the env part, `setLogFormat`, the preload), D12, D13, D19.
 
 **Test.** In `log.test.ts`. Keep `beforeEach`/`afterEach` of the file (spies, `setLogLevel("info")`) and add `setLogFormat("text")` to both. Fixed ids: `M = "7d0c2a8e-5b1f-4c3d-9e2a-0f1b2c3d4e5f"`, `O = "11111111-2222-4333-8444-555555555555"`. Helper: `const jsonLine = (spy) => JSON.parse(String(spy.mock.calls.at(-1)?.[0]))`.
 
@@ -98,7 +140,7 @@ export function errorFields(error: unknown): { error: string; error_code?: strin
 2. JSON line: `setLogFormat("json")`; `createLog("mail").info("sync_done", { mailbox_id: M, count: 3 })` → `out` called once with one argument; parsed keys in this order: `["time", "level", "module", "event", "msg", "mailbox_id", "count"]`; `level` `"info"`, `module` `"mail"`, `event` and `msg` `"sync_done"`, `count` `3`; `time` matches `/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/`.
 3. Unknown field: JSON, `info("sync_done", { subject: "MARKER-SUBJ" } as never)` → no `subject` key, `dropped_fields` `1`, `"MARKER-SUBJ"` is not in the raw line.
 4. Long string: `{ reason: "a".repeat(65) }` → dropped (`dropped_fields: 1`); `{ reason: "a".repeat(64) }` → kept, no `dropped_fields` key.
-5. Value shapes, each in its own call, `test.each` with `[fields, kept]`: `{ reason: "has space" }` false; `{ reason: "x@y.test" }` false; `{ reason: "https://h.test/a" }` false; `{ reason: "line\nbreak" }` false; `{ count: Number.NaN }` false; `{ count: Number.POSITIVE_INFINITY }` false; `{ error: new Error("MARKER-ERR") }` false (and `"MARKER-ERR"` not in the raw line); `{ reason: ["a"] }` false; `{ reason: { a: 1 } }` false; `{ count: 10n }` false; `{ status: null }` true (value `null`); `{ route: "/api/mailboxes/:id" }` true; `{ model: "gemini-3.5-flash-lite" }` true; `{ user_id: M }` true; `{ ok: true }` false (name not listed); `{ reason: "" }` true.
+5. Value shapes, each in its own call, `test.each` with `[fields, kept]`: `{ reason: "has space" }` false; `{ reason: "x@y.test" }` false; `{ reason: "https://h.test/a" }` false; `{ reason: "line\nbreak" }` false; `{ count: Number.NaN }` false; `{ count: Number.POSITIVE_INFINITY }` false; `{ error: new Error("MARKER-ERR") }` false (and `"MARKER-ERR"` not in the raw line); `{ reason: ["a"] }` false; `{ reason: { a: 1 } }` false; `{ count: 10n }` false; `{ status: null }` true (value `null`); `{ route: "/api/mailboxes/:id" }` true; `{ route: "/api/*" }` true; `{ route: "/api/auth/*" }` true; `{ config_key: "SEND_TEST_ADDRESSES" }` true; `{ key: "x" }` false (name not listed); `{ model: "gemini-3.5-flash-lite" }` true; `{ user_id: M }` true; `{ ok: true }` false (name not listed); `{ reason: "" }` true.
 6. `undefined` is not a drop: `{ code: undefined, count: 1 }` → no `code` key, no `dropped_fields`.
 7. A base key cannot be replaced: `{ msg: "x", level: "error" } as never` → `msg` `"sync_done"`, `level` `"info"`, `dropped_fields` `2`.
 8. Drop total: `const before = droppedLogFields()`; one line with 2 bad fields and one with 1 → `droppedLogFields() - before === 3`.
@@ -107,7 +149,7 @@ export function errorFields(error: unknown): { error: string; error_code?: strin
 11. Old form in JSON: `setLogFormat("json")`; `warn("sync %s failed", "box-1", 3)` → `err` called once; parsed `event` `"legacy_text"`, `msg` `"sync box-1 failed 3"`, `level` `"warn"`, keys exactly `["time", "level", "module", "event", "msg"]`.
 12. Event or old form (D10), JSON, `test.each` of `[args, event]`: `["sync_done"]` → `sync_done`; `["sync_done", { count: 1 }]` → `sync_done`; `["Sync_done"]` → `legacy_text`; `["sync done"]` → `legacy_text`; `["sync_done", "x"]` → `legacy_text`; `["sync_done", { count: 1 }, 2]` → `legacy_text`; `["sync_done", new Error("e")]` → `legacy_text`; `["sync_done", Object.create(null)]` → `sync_done`; `["a".repeat(65)]` → `legacy_text`.
 13. Streams and levels in both formats: `warn` and `error` go to `console.error`, `debug` and `info` to `console.log`; at level `warn` an `info` line writes nothing in `json` and in `text`.
-14. `logFormatFromEnv`: `{ LOG_FORMAT: "text" }` → `text`; `{ LOG_FORMAT: "json" }` → `json`; `{}` → `json`; `{ LOG_FORMAT: "TEXT" }` → `json`; `{ LOG_FORMAT: "" }` → `json`.
+14. `logFormatFromEnv`: `{ LOG_FORMAT: "json" }` → `json`; `{ LOG_FORMAT: "text" }` → `text`; `{}` → `text`; `{ LOG_FORMAT: "JSON" }` → `text`; `{ LOG_FORMAT: "" }` → `text`.
 15. One line per call: JSON, `info("sync %s", "a\nb")` (old form) → `out` called once and its argument has no raw newline character (`!String(arg).includes("\n")`).
 16. A throwing getter: `info("sync_done", { get count() { throw new Error("g"); } } as never)` → no throw, `dropped_fields` `1`.
 
@@ -127,9 +169,9 @@ Mutation check, then revert: in `isLogValue`, remove the `://` test → case 5 (
 
 **Done when.**
 
-- Tests 1–17 pass; the whole unit suite passes (the writer is used by every module; the old form must print as before).
+- Tests 1–17 pass; the whole unit and integration suites pass (the writer is used by every module; the old form must print as before; the preload keeps every test in `text`, and a spawned CLI prints `text` by default).
 - The mutation check failed and is reverted.
 - The Proof of `plan.md` ends with `PROOF_OK` (`NN` = `01`).
 - A review job checks the stage before the land (plan § Review).
 
-**Out of scope.** `LOG_FORMAT` in the config schema, `main.ts`, the preload (stage 02). Context (stage 02). Any call site and the lint (stages 04–06). A message table (D9).
+**Out of scope.** `LOG_FORMAT` in the config schema and `main.ts` (stage 02). Context (stage 02). Any call site and the lint (stages 04–06). A message table (D9).

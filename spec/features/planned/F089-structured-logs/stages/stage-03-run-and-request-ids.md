@@ -2,7 +2,7 @@
 
 Part of [`../plan.md`](../plan.md). Read D3, D15, D16, D17 and "Facts checked" P1, P2 of `plan.md` first. Needs stages 01 and 02 landed. Three steps. A review job checks it before the land.
 
-File gate (ticket § Sequenced): this stage edits `platform/http.ts`. It never builds at the same time as F087 stage 4 or 5.
+File gate (ticket § Sequenced): this stage edits `platform/http.ts` and `scripts/job-run.ts`. It never builds at the same time as F087 stage 4 or 5, or F090 stage 1.
 
 ## Step 1 — A context per job tick
 
@@ -36,7 +36,7 @@ new Cron(
     catch: (error) => log.error("job_failed", { job: name, ...errorFields(error) }),
   },
   () => runJobTick(name, fn)
-)
+);
 ```
 
 The two old-form calls of the file are gone (they are 2 of the 46 calls of D25). `describeError` is no longer imported here.
@@ -83,14 +83,14 @@ Body: `if (header === undefined || peer === undefined) return null;` `const valu
 In `createApp`, the first `app.use` (before the access-log middleware and before `secureHeaders`):
 
 ```ts
-  // D17: one request id per request, in every log line of the request and in the response header.
-  app.use("*", async (c, next) => {
-    const requestId =
-      (web === null ? null : incomingRequestId(c.req.header("x-request-id"), web.connInfo(c), web.trustedProxies)) ??
-      randomUUID();
-    await withLogContext({ request_id: requestId }, () => next());
-    c.header("x-request-id", requestId);
-  });
+// D17: one request id per request, in every log line of the request and in the response header.
+app.use("*", async (c, next) => {
+  const requestId =
+    (web === null ? null : incomingRequestId(c.req.header("x-request-id"), web.connInfo(c), web.trustedProxies)) ??
+    randomUUID();
+  await withLogContext({ request_id: requestId }, () => next());
+  c.header("x-request-id", requestId);
+});
 ```
 
 The header is set after `next()` returns: set before, it is lost on a raw `Response` (probe P2). Do not convert the other log lines of `http.ts` here (stage 05).
@@ -117,12 +117,14 @@ The header is set after `next()` returns: set before, it is lost on a raw `Respo
 
 - Change: `apps/server/src/scripts/job-run.ts`.
 - New: `apps/server/test/integration/log-context.test.ts`.
+- Change: `apps/server/test/integration/web-http.test.ts` (one test: the header on every response kind).
 
 **Interfaces.** In `job-run.ts`, after the `TELEGRAM_BOT_TOKEN` check, wrap the code from `const db = createDb(...)` to the end of its `finally` in `return await withLogContext({ job: args.name, run_id: randomUUID() }, async () => { … })`. The exit codes and the old-form lines stay (scripts are E8a).
 
 The integration test, one `test(…, 30_000)`:
 
 - Setup: copy the shape of `triage-logs.test.ts` (`createOrgWithMailbox`, `insertDefaultSettings`, `insertTestEmail`, `pauseOtherMailboxes`, a fake `generate` with one successful classifier answer, `createTriageJob` with `scope: { kind: "all" }`, `now` fixed at `2026-11-20T10:00:00Z`) inside `withRollback(db, async (trx) => …)`. Copy `appFor` of `web-me.test.ts` (the `webTestApp` with `tenancyRoutes`) with one session `"good-owner"` → the owner of `webOrg(db)`; clean the org up in `afterEach`.
+- Build the app (`appFor(…)`) before the spies start: `createApp` logs `web: dist folder missing` with no context when it is built (review 1 m6), and that line must not fall into the spy window.
 - Inside the rollback, after the setup: `setLogFormat("json")`, `setLogLevel("debug")`, spy on `console.log` and `console.error`; then `const [, res] = await Promise.all([runJobTick("triage.worker", () => triage.run()), app.request("/api/me", as("good-owner"))])`; restore the spies, `setLogFormat("text")`, `setLogLevel("info")` in `finally`.
 - Parse each captured call: one argument, `JSON.parse`.
 
@@ -133,10 +135,11 @@ The integration test, one `test(…, 30_000)`:
 10. The lines with `job === "triage.worker"`: at least 2 (`job_done` and at least one line of the triage or LLM code); all have the same `run_id`, a UUID; none has `request_id`.
 11. Every captured line has `request_id === H` or the `run_id` of case 10 (no line without a context).
 12. The mail of the setup is `triaged` after the run (the run really did its work).
+13. In `web-http.test.ts`, one new test "every response kind has an x-request-id header" with the file's helpers (`appWith`, `GOOD`, `ORIGIN`; the default `dist` of the file exists): each of these responses has an `x-request-id` header that matches the UUID pattern: `GET /login` (a static page, 200); `GET /_astro/x.js` (a static asset); `POST /api/me` with `GOOD` and no `Origin` (403 `bad_origin`); `GET /api/nope` with `GOOD` (404); `GET /api/me` without a cookie (401); a `POST /api/me` with `GOOD`, `ORIGIN` and a body over 64 KiB (413); an allowed Better Auth path from `AUTH_ALLOWED_PATHS` in `platform/auth.ts` (the test handler returns a raw `Response` with status 299); `GET /` with `GOOD` (302 redirect); `GET /login` on `appWith({ dist: "/nonexistent/dist" })` (503). This keeps probe P2 as a repo test (review 1 m8).
 
 **Check.** `bun test apps/server/test/integration/log-context.test.ts` (needs the job DB that the prepare script made).
 
-**Done when.** Tests 8–12 pass. This closes the "Not verified" item "the store through `pg` and Kysely awaits" of `plan.md`: say so in the final message with the log line of the test run.
+**Done when.** Tests 8–13 pass. This closes the "Not verified" item "the store through `pg` and Kysely awaits" of `plan.md`: say so in the final message with the log line of the test run.
 
 **Out of scope.** Converting the triage or tenancy lines (E8a).
 

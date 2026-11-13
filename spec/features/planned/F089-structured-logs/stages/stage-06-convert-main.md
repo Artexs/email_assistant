@@ -10,30 +10,30 @@ File gate (ticket § Sequenced): this stage edits `main.ts` and `eslint.config.j
 
 **Files.** Change: `apps/server/src/main.ts`.
 
-**Interfaces.** The 20 calls of 2026-11-13. Convert also any `log.*` call in `main.ts` that a later ticket added (D25), by the event code rules of stage 05; list each in the final message. Example: F087 stage 2 adds `` log.info(`features off by FEATURES_OFF: ${…join(", ")}`) ``; its event form is one `log.info("features_off", { count: list.length })` plus one `log.info("feature_killed", { key })` per flag (a comma list does not pass D7).
+**Interfaces.** The 20 calls of 2026-11-13. Convert also any `log.*` call in `main.ts` that a later ticket added (D25), by the event code rules of stage 05; list each in the final message. Example: F087 stage 2 adds ``log.info(`features off by FEATURES_OFF: ${…join(", ")}`)``; its event form is one `log.info("features_off", { count: list.length })` plus one `log.info("feature_killed", { flag })` per flag (a comma list does not pass D7).
 
-| Line (2026-11-13) | Today | New |
-| --- | --- | --- |
-| 28 | `` log.error(`config error: missing or bad keys: ${error.keys.join(", ")}`) `` | `for (const key of error.keys) log.error("config_key_bad", { key });` |
-| 30 | `log.error("config error:", error instanceof Error ? error.message : error)` | `log.error("config_load_failed", { ...errorFields(error) })` |
-| 39 | `log.info("triage worker is off (TRIAGE_LLM_SCOPE=off)")` | `log.info("triage_scope", { scope: "off" })` |
-| 43 | `log.info("triage takes only synthetic mail (TRIAGE_LLM_SCOPE=synthetic)")` | `log.info("triage_scope", { scope: "synthetic" })` |
-| 46 | `` log.warn(`triage sends the real mail of every active mailbox to ${providerLabel} (TRIAGE_LLM_SCOPE=all)`) `` | `log.warn("triage_scope", { scope: "all", provider })` |
-| 54 | `log.warn("WEB_MAIL_ALLOW_LOCAL is an old name: use MAIL_ALLOW_LOCAL_HOSTS")` | `log.warn("config_key_renamed", { key: "WEB_MAIL_ALLOW_LOCAL" })` |
-| 56 | `log.warn("mail: MAIL_ALLOW_LOCAL_HOSTS=true: local mail hosts are allowed")` | `log.warn("mail_local_hosts_allowed")` |
-| 62 | `log.error("db role check failed:", error instanceof Error ? error.message : error)` | `log.error("db_role_check_failed", { ...errorFields(error) })` |
-| 76 | `log.warn("HEARTBEAT_URL is not set: the heartbeat is off")` | `log.warn("heartbeat_off")` |
-| 78 | `log.warn("OPERATOR_CONTACT is empty: the paused banner names no contact")` | `log.warn("operator_contact_empty")` |
-| 90 | `` log.warn(`scope targets: ${targets.mailboxes} active mailboxes in …, ${suspended} suspended organizations`) `` | `log.warn("scope_targets", { mailbox_count: targets.mailboxes, org_count: targets.organizations, suspended_count: suspended })` |
-| 94 | `` log.warn(`scope targets: count failed (${describeError(error)})`) `` | `log.warn("scope_targets_failed", { ...errorFields(error) })` |
-| 119 | `log.info(operatorChat === null ? "operator notices: hourly; log lines only (…)" : "operator notices: hourly; telegram")` | `log.info("operator_notices_on", { kind: operatorChat === null ? "log" : "telegram" })` |
-| 131 | `` log.info(`llm provider=${settings.provider} classifier=${settings.classifierModel}`) `` | `log.info("llm_settings", { provider: settings.provider, model: settings.classifierModel })` |
-| 176 | `log.info("actions expiry: hourly")` | `log.info("job_scheduled", { job: "actions.expiry" })` |
-| 182 | `log.info("delegation chaser: every 15 min (acts at 07:30 local)")` | `log.info("job_scheduled", { job: "delegation.chaser" })` |
-| 196 | `log.info("retention: daily at 02:40")` | `log.info("job_scheduled", { job: "platform.retention" })` |
-| 202 | `log.info("telegram is off (TELEGRAM_BOT_TOKEN is empty)")` | `log.info("telegram_off")` |
-| 205 | `` log.warn(`telegram: TELEGRAM_API_ROOT is set: the bot talks to the Bot API at ${config.TELEGRAM_API_ROOT}, not to Telegram`) `` | `log.warn("telegram_api_root_set")` (the root is a loopback dev URL; D7 drops a URL anyway) |
-| 246 | `` log.info(`listening on port ${server.port}`) `` | `log.info("server_listening", { port: server.port })` |
+| Line (2026-11-13) | Today                                                                                                                            | New                                                                                                                             |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 28                | ``log.error(`config error: missing or bad keys: ${error.keys.join(", ")}`)``                                                     | `for (const key of error.keys) log.error("config_key_bad", { config_key: key });`                                               |
+| 30                | `log.error("config error:", error instanceof Error ? error.message : error)`                                                     | `log.error("config_load_failed", { ...errorFields(error) })`                                                                    |
+| 39                | `log.info("triage worker is off (TRIAGE_LLM_SCOPE=off)")`                                                                        | `log.info("triage_scope", { scope: "off" })`                                                                                    |
+| 43                | `log.info("triage takes only synthetic mail (TRIAGE_LLM_SCOPE=synthetic)")`                                                      | `log.info("triage_scope", { scope: "synthetic" })`                                                                              |
+| 46                | ``log.warn(`triage sends the real mail of every active mailbox to ${providerLabel} (TRIAGE_LLM_SCOPE=all)`)``                    | `log.warn("triage_scope", { scope: "all", provider })`                                                                          |
+| 54                | `log.warn("WEB_MAIL_ALLOW_LOCAL is an old name: use MAIL_ALLOW_LOCAL_HOSTS")`                                                    | `log.warn("config_key_renamed", { config_key: "WEB_MAIL_ALLOW_LOCAL" })`                                                        |
+| 56                | `log.warn("mail: MAIL_ALLOW_LOCAL_HOSTS=true: local mail hosts are allowed")`                                                    | `log.warn("mail_local_hosts_allowed")`                                                                                          |
+| 62                | `log.error("db role check failed:", error instanceof Error ? error.message : error)`                                             | `log.error("db_role_check_failed", { ...errorFields(error) })`                                                                  |
+| 76                | `log.warn("HEARTBEAT_URL is not set: the heartbeat is off")`                                                                     | `log.warn("heartbeat_off")`                                                                                                     |
+| 78                | `log.warn("OPERATOR_CONTACT is empty: the paused banner names no contact")`                                                      | `log.warn("operator_contact_empty")`                                                                                            |
+| 90                | ``log.warn(`scope targets: ${targets.mailboxes} active mailboxes in …, ${suspended} suspended organizations`)``                  | `log.warn("scope_targets", { mailbox_count: targets.mailboxes, org_count: targets.organizations, suspended_count: suspended })` |
+| 94                | ``log.warn(`scope targets: count failed (${describeError(error)})`)``                                                            | `log.warn("scope_targets_failed", { ...errorFields(error) })`                                                                   |
+| 119               | `log.info(operatorChat === null ? "operator notices: hourly; log lines only (…)" : "operator notices: hourly; telegram")`        | `log.info("operator_notices_on", { kind: operatorChat === null ? "log" : "telegram" })`                                         |
+| 131               | ``log.info(`llm provider=${settings.provider} classifier=${settings.classifierModel}`)``                                         | `log.info("llm_settings", { provider: settings.provider, model: settings.classifierModel })`                                    |
+| 176               | `log.info("actions expiry: hourly")`                                                                                             | `log.info("job_scheduled", { job: "actions.expiry" })`                                                                          |
+| 182               | `log.info("delegation chaser: every 15 min (acts at 07:30 local)")`                                                              | `log.info("job_scheduled", { job: "delegation.chaser" })`                                                                       |
+| 196               | `log.info("retention: daily at 02:40")`                                                                                          | `log.info("job_scheduled", { job: "platform.retention" })`                                                                      |
+| 202               | `log.info("telegram is off (TELEGRAM_BOT_TOKEN is empty)")`                                                                      | `log.info("telegram_off")`                                                                                                      |
+| 205               | ``log.warn(`telegram: TELEGRAM_API_ROOT is set: the bot talks to the Bot API at ${config.TELEGRAM_API_ROOT}, not to Telegram`)`` | `log.warn("telegram_api_root_set")` (the root is a loopback dev URL; D7 drops a URL anyway)                                     |
+| 246               | ``log.info(`listening on port ${server.port}`)``                                                                                 | `log.info("server_listening", { port: server.port })`                                                                           |
 
 `triageScope(config, providerLabel)` becomes `triageScope(config, provider: LlmProviderId)` and the caller passes `settings.provider` (import the type from `./platform/llm`). `provider.label` is then unused; `provider.configHint` stays. Import `errorFields` from `./platform/errors`; drop `describeError` if unused.
 
@@ -85,9 +85,9 @@ bun test apps/server/src/platform/log-lint.test.ts
 mkdir -p /tmp/f089-s06 && bun run lint > /tmp/f089-s06/lint-step2.log 2>&1; echo "exit $?"; grep -c "no-restricted-syntax" /tmp/f089-s06/lint-step2.log; grep -E "problems? \(" /tmp/f089-s06/lint-step2.log
 ```
 
-The exit is `0`, the summary shows `0 errors`, and the count is the E8a backlog (382 on the code of 2026-11-13, plus lines that later tickets added in modules, roots or scripts). Write the count in the final message: the coordinator puts it into `spec/build.md`.
+The exit is `0`, the summary shows `0 errors`, and the count is the E8a backlog (381 on the code of 2026-11-13, plus lines that later tickets added in modules, roots or scripts). Write the count in the final message: the coordinator puts it into `spec/build.md`.
 
-Mutation check, then revert: add `` log.info(`probe ${1}`); `` to the end of `apps/server/src/platform/pwned.ts`; `bunx eslint apps/server/src/platform/pwned.ts` exits 1. Remove the line (`git diff apps/server/src/platform/pwned.ts` is empty).
+Mutation check, then revert: add ``log.info(`probe ${1}`);`` to the end of `apps/server/src/platform/pwned.ts`; `bunx eslint apps/server/src/platform/pwned.ts` exits 1. Remove the line (`git diff apps/server/src/platform/pwned.ts` is empty).
 
 **Done when.** 17 lint tests pass; the lint exits 0; the mutation check failed and is reverted.
 
@@ -108,12 +108,12 @@ const probe = Bun.serve({ port: 0, fetch: () => new Response() });
 const port = probe.port;
 probe.stop(true);
 
-const proc = Bun.spawn(["bun", "--no-env-file", "apps/server/src/main.ts"], {
+const proc = Bun.spawn(["bun", "apps/server/src/main.ts"], {
   cwd: repoRoot,
   stdout: "pipe",
   stderr: "pipe",
   env: {
-    ...process.env, // bun test loaded .env; --no-env-file stops the child from loading it again
+    ...process.env, // bun test loaded .env; a value given here wins over the child's own .env load (P6)
     LOG_FORMAT: "json",
     LOG_LEVEL: "info",
     PORT: String(port),
@@ -131,7 +131,7 @@ const proc = Bun.spawn(["bun", "--no-env-file", "apps/server/src/main.ts"], {
 
 Read `proc.stdout` with one reader into a text buffer until the buffer contains `"event":"server_listening"` or 20 s pass (then fail with the buffer's line count, not its text). Then `proc.kill("SIGTERM")`, read the rest of stdout with the same reader until it is done, read `await new Response(proc.stderr).text()`, and `await proc.exited`. In a `finally`, kill the process if it still runs.
 
-Probe P6 of this plan (2026-11-13, Bun 1.4.4): a spawned `bun` keeps an empty env value that the caller passes (a `.env` file does not replace it), and `--no-env-file` stops the `.env` load.
+Probe P6 of this plan (2026-11-13, Bun 1.4.4): a spawned `bun` keeps an empty env value that the caller passes (a `.env` file does not replace it). Do not add `--no-env-file`: it is not checked on Bun 1.3.14 of CI, and it is not needed.
 
 **Decisions.** D24, D21 (the server reads `LOG_FORMAT` through the config).
 
