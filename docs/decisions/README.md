@@ -40,6 +40,7 @@ Template:
 | 0026 | Identity tier 1: OIDC per organization, TOTP, break-glass owner         | proposed                              |
 | 0027 | Operator role in the panel and per-organization feature flags           | proposed                              |
 | 0028 | Autonomy earned from global evidence and a history check, not labels   | proposed                              |
+| 0029 | The sync reads the Sent folder, read-only                               | proposed                              |
 | 0030 | Public docs site: static Starlight on GitHub Pages, synthetic content   | proposed                              |
 | 0031 | Mailbox OAuth through the existing IMAP adapter; Microsoft sends by Graph | proposed                              |
 | 0032 | Phone channel: Web Push with ids and counts; Telegram detail per user   | proposed                              |
