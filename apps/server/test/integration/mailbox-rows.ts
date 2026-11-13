@@ -57,13 +57,11 @@ export async function fillMailbox(
   await recordAudit(trx, ctx, { actionId: triaged.actionIds[0], actor: "system", event: "action.applied" });
   await recordAudit(trx, ctx, { actor: userId, event: "mailbox.paused", data: { mailbox_id: mailboxId } });
 
-  const message = { text: "Notice", buttons: [] };
   await insertOutbox(trx, ctx, {
     userId,
     kind: "urgent",
     dedupKey: `urgent:${triaged.emailId}`,
     emailId: triaged.emailId,
-    message,
     view: {},
     locale: "en",
     createdAt: now,
@@ -74,7 +72,6 @@ export async function fillMailbox(
     kind: "auth_error",
     dedupKey: `auth_error:${mailboxId}`,
     mailboxId,
-    message,
     view: {},
     locale: "en",
     createdAt: now,

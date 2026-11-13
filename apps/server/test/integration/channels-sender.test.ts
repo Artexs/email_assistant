@@ -1,4 +1,3 @@
-import { encodeNoticeView, type NoticeView } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -15,6 +14,7 @@ import {
   linkChat,
   randomChatId,
   suspendOrg,
+  testNoticeView,
 } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
@@ -80,24 +80,39 @@ let counter = 0;
 async function addRow(
   trx: Transaction<DB>,
   t: Tenant,
-  opts: { kind?: OutboxKind; createdAt?: Date; nextAttemptAt?: Date; userId?: string; digestId?: string } = {}
+  opts: {
+    kind?: OutboxKind;
+    createdAt?: Date;
+    nextAttemptAt?: Date;
+    userId?: string;
+    digestId?: string;
+    marker?: string;
+    locale?: "pl" | "en";
+    view?: Record<string, unknown>;
+  } = {}
 ): Promise<string> {
   counter += 1;
   const kind = opts.kind ?? "urgent";
+  // An `urgent` or approval row needs its e-mail (check constraint of the table).
+  const emailId =
+    kind === "urgent" || kind === "approval" || kind === "approval_set"
+      ? await insertTestEmail(trx, t.ctx, t.mailboxId)
+      : undefined;
   const id = await insertOutbox(trx, t.ctx, {
     userId: opts.userId ?? t.userId,
     kind,
     dedupKey: `sender:${counter}`,
     mailboxId: t.mailboxId,
     digestId: opts.digestId,
-    // An `urgent` or approval row needs its e-mail (check constraint of the table).
-    emailId:
-      kind === "urgent" || kind === "approval" || kind === "approval_set"
-        ? await insertTestEmail(trx, t.ctx, t.mailboxId)
-        : undefined,
-    message: { text: `${SECRET} ${counter}`, buttons: [[{ text: "OK", data: `ok:${counter}` }]] },
-    view: {},
-    locale: "en",
+    emailId,
+    view:
+      opts.view ??
+      testNoticeView(kind as "urgent" | "digest" | "approval" | "approval_set", {
+        marker: opts.marker ?? `${SECRET} ${counter}`,
+        emailId,
+        at: T,
+      }),
+    locale: opts.locale ?? "en",
     createdAt: opts.createdAt ?? T,
     nextAttemptAt: opts.nextAttemptAt ?? T,
   });
@@ -111,46 +126,6 @@ async function rowState(trx: Transaction<DB>, id: string) {
     .select(["status", "attempts", "next_attempt_at", "locked_at", "external_message_id", "error_code"])
     .where("id", "=", id)
     .executeTakeFirstOrThrow();
-}
-
-// A row that holds facts only (stage 05 makes the queue write these): the text and the buttons are cleared by hand.
-async function addFactsRow(
-  trx: Transaction<DB>,
-  t: Tenant,
-  opts: { subject?: string; locale?: "pl" | "en"; view?: Record<string, unknown> } = {}
-): Promise<string> {
-  const id = await addRow(trx, t, { kind: "urgent" });
-  const { email_id: emailId } = await trx
-    .selectFrom("outbox")
-    .select("email_id")
-    .where("id", "=", id)
-    .executeTakeFirstOrThrow();
-  if (!emailId) throw new Error("no email id");
-  const view: NoticeView<"urgent"> = {
-    emailId,
-    from: "boss@example.test",
-    subject: opts.subject ?? "Contract",
-    ai: { reasonCode: "llm", reason: "Deadline today" },
-    receivedAt: new Date("2026-11-06T08:15:00Z"),
-    synthetic: false,
-    folderTag: null,
-    actions: [],
-    delegateNames: {},
-    stayFolder: "INBOX",
-    now: T,
-    timeZone: "Europe/Warsaw",
-  };
-  await trx
-    .updateTable("outbox")
-    .set({
-      text: null,
-      buttons: "[]",
-      view: JSON.stringify(opts.view ?? encodeNoticeView("urgent", view)),
-      locale: opts.locale ?? "en",
-    })
-    .where("id", "=", id)
-    .execute();
-  return id;
 }
 
 async function storedMessage(trx: Transaction<DB>, id: string) {
@@ -179,8 +154,8 @@ describe("outbox sender", () => {
       await s.run(T);
       expect(s.channel.sent).toHaveLength(1);
       expect(s.channel.sent[0]?.chatId).toBe(t.chatId);
-      expect(s.channel.sent[0]?.message.text).toStartWith(SECRET);
-      expect(s.channel.sent[0]?.message.buttons[0]?.[0]?.text).toBe("OK");
+      expect(s.channel.sent[0]?.message.text).toContain(SECRET);
+      expect(s.channel.sent[0]?.message.buttons[0]?.[0]?.text).toBe("✅ Right");
       const row = await rowState(trx, id);
       expect(row.status).toBe("sent");
       expect(Number(row.external_message_id)).toBe(1000);
@@ -501,7 +476,7 @@ describe("outbox sender, rows without text (F088)", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const t = await tenant(trx);
-      const id = await addFactsRow(trx, t, { subject: "MARKER-F088" });
+      const id = await addRow(trx, t, { marker: "MARKER-F088" });
       const s = senderFor(trx);
       await s.run(T);
       expect(s.channel.sent).toHaveLength(1);
@@ -519,7 +494,7 @@ describe("outbox sender, rows without text (F088)", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const t = await tenant(trx);
-      const id = await addFactsRow(trx, t, { view: {} });
+      const id = await addRow(trx, t, { view: {} });
       const s = senderFor(trx);
       await s.run(T);
       expect(s.channel.sent).toHaveLength(0);
@@ -534,7 +509,13 @@ describe("outbox sender, rows without text (F088)", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const t = await tenant(trx);
-      const id = await addRow(trx, t);
+      const id = await addRow(trx, t, { view: {} });
+      // A row from before the migration: the text is stored, the view is empty.
+      await trx
+        .updateTable("outbox")
+        .set({ text: `${SECRET} old`, buttons: JSON.stringify([[{ text: "OK", data: "ok:old" }]]) })
+        .where("id", "=", id)
+        .execute();
       const before = await storedMessage(trx, id);
       const s = senderFor(trx);
       await s.run(T);
@@ -547,7 +528,7 @@ describe("outbox sender, rows without text (F088)", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const t = await tenant(trx);
-      const id = await addFactsRow(trx, t, { subject: "MARKER-F088" });
+      const id = await addRow(trx, t, { marker: "MARKER-F088" });
       await trx
         .updateTable("outbox")
         .set({ status: "sending", locked_at: at(-6 * MINUTE) })
@@ -565,8 +546,8 @@ describe("outbox sender, rows without text (F088)", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const t = await tenant(trx);
-      await addFactsRow(trx, t, { locale: "pl" });
-      await addFactsRow(trx, t, { locale: "en" });
+      await addRow(trx, t, { locale: "pl", marker: "same" });
+      await addRow(trx, t, { locale: "en", marker: "same" });
       const s = senderFor(trx);
       await s.run(T);
       expect(s.channel.sent).toHaveLength(2);
@@ -579,7 +560,7 @@ describe("outbox sender, rows without text (F088)", () => {
       await isolateChannels(trx);
       const t = await tenant(trx);
       const night = new Date("2026-11-06T21:30:00Z");
-      const id = await addFactsRow(trx, t);
+      const id = await addRow(trx, t);
       const s = senderFor(trx);
       await s.run(night);
       const held = await rowState(trx, id);

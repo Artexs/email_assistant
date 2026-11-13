@@ -230,7 +230,6 @@ export interface NewOutboxRow {
   emailId?: string;
   mailboxId?: string;
   digestId?: string;
-  message: OutMessage;
   view: Record<string, unknown>;
   locale: UserLocale;
   createdAt: Date;
@@ -239,8 +238,6 @@ export interface NewOutboxRow {
 
 // null = the event has a row already (D4: exactly one row per event).
 export async function insertOutbox(db: DbOrTrx, ctx: TenantContext, row: NewOutboxRow): Promise<string | null> {
-  // A row with bad buttons must not enter the outbox: claimDueOutbox parses them and would fail on it every run.
-  const buttons = outButtonsSchema.parse(row.message.buttons);
   const inserted = await db
     .insertInto("outbox")
     .values({
@@ -251,8 +248,6 @@ export async function insertOutbox(db: DbOrTrx, ctx: TenantContext, row: NewOutb
       email_id: row.emailId ?? null,
       mailbox_id: row.mailboxId ?? null,
       digest_id: row.digestId ?? null,
-      text: row.message.text,
-      buttons: JSON.stringify(buttons),
       view: JSON.stringify(row.view),
       locale: row.locale,
       status: "pending",

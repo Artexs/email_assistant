@@ -9,8 +9,8 @@ import {
   isFeedbackCallback,
   labelCategories,
   parseCallback,
-  approvalEdit,
   formatClock,
+  renderNoticeEdit,
   type ApprovalEditOutcome,
   type Callback,
   type Category,
@@ -189,7 +189,8 @@ async function handleApprovalCallback(
   const timeZone = organization.timezone;
   const approvals: ApprovalDeps = { db: deps.db, hooks: deps.hooks, uidplus: deps.uidplus };
   const input = { userId: link.userId, via: "telegram" as const, now };
-  // The message that the tap came from, as the user got it. An empty original gives no edit, only the answer.
+  // The card as the user got it (the stored text) plus one status line (docs/architecture.md §4.5). A row that was never
+  // sent has no text: no edit, only the answer.
   const edit = async (
     dedupKey: string,
     outcome: ApprovalEditOutcome,
@@ -199,8 +200,12 @@ async function handleApprovalCallback(
       counts?: { done: number; skipped: number };
     } = {}
   ): Promise<OutMessage | undefined> => {
-    const original = (await findOutboxByDedup(deps.db, ctx, link.userId, dedupKey))?.text ?? "";
-    return original === "" ? undefined : approvalEdit({ original, outcome, at: now, timeZone, ...extra });
+    const row = await findOutboxByDedup(deps.db, ctx, link.userId, dedupKey);
+    if (row === undefined || row.text === null || row.text === "") return undefined;
+    return renderNoticeEdit(
+      { original: row.text, outcome, at: now, timeZone, ...extra },
+      { channel: row.channel, detail: row.detail, locale: row.locale }
+    );
   };
 
   switch (callback.kind) {

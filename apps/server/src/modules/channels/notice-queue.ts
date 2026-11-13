@@ -44,7 +44,6 @@ export async function queueNotice<K extends NoticeKind>(
     digestId: input.digestId,
     view,
     locale: input.locale,
-    message: rendered.message,
     createdAt: input.now,
     nextAttemptAt: input.now,
   });
