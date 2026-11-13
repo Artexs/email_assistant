@@ -16,6 +16,10 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟠 ACTIVE): The server image, CI and local checks run one current Bun (1.4.x)
+- `F090-llm-roles` (🟠 ACTIVE): LLM calls name a role; provider, model, cap share and prompt version follow the role
+- `F089-structured-logs` (🟠 ACTIVE): Logs are events with allow-listed fields and run ids, with a lint rule in warn mode
+- `F088-notices-as-facts` (🟠 ACTIVE): Notices are stored as facts and rendered per channel, detail and locale by a renderer registry
 - `F082-s6b-public-login` (🟠 ACTIVE): The panel login has the production shape: invite only, lockout, leaked-password check, terms, session list
 - `F071-limen-transition` (🟠 ACTIVE): Move the agent workflow to Limen
 - `F069-compose-network-subnet` (🟠 ACTIVE): Pin the Compose network subnet
@@ -40,6 +44,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F093-ci-green` (🟢 PROVEN): CI on master is green and a flaky test is quarantined the same day; landed 2026-11-13
+- `F087-feature-flags` (🟢 PROVEN): Feature flags per organization and the operator check exist before the first Stage 2 feature; landed 2026-11-13
 - `F086-module-borders` (🟢 PROVEN): Module borders are linted: layers, allowed edges, no deep imports, a generated module graph; landed 2026-11-13
 - `F084-the-mail-host-guard-also-refuses-multicast-broadcast-reserved-nat64-site-local-and-6to4-addresses-and-its-default-policy-is-frozen` (🟢 PROVEN): The mail host guard also refuses multicast, broadcast, reserved, NAT64, site-local and 6to4 addresses, and its default policy is frozen; landed 2026-11-13
 - `F079-approvals-at-resume` (🟢 PROVEN): After a pause, an approval request from before the pause cannot go out unseen or late; landed 2026-11-13
@@ -48,5 +53,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F080-backfill-suspended-gate` (🟢 PROVEN): The `mailbox:backfill` CLI refuses a suspended organization; landed 2026-11-12
 - `F070-editor-rules-cleanup` (🟢 PROVEN): Editor rule files still name Supabase; landed 2026-11-12
 - `F059-web-hashed-reset-tokens` (🟢 PROVEN): Store web reset tokens hashed; landed 2026-11-12
-- `F058-sync-sort-folders` (🟢 PROVEN): Sync the Interia sort folders and the spam folder (Oferty, Społeczności, Rachunki, Wiadomości-śmieci); landed 2026-11-12
-- 2026-11: 49 landed. spec/features/done/2026-11/
+- 2026-11: 50 landed. spec/features/done/2026-11/
