@@ -59,7 +59,7 @@ $C logs -f server
 $C logs --since 1h server
 ```
 
-A good start shows `listening on port 8080`. Each sync log line has the form `sync <mailbox id> <mode>: fetched …`.
+A good start shows `listening on port 8080`. Each sync log line has the form `synced <mailbox id>: folders <n>, fetched <n>, …`; a failure is `sync <mailbox id> failed: …`.
 
 ## Login error (`auth_error`)
 

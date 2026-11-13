@@ -9,8 +9,10 @@ Learned in S1a stage 9 (2026-11-03).
 - Production mailboxes must use a host name for `imap_host`. Check the same for SMTP (nodemailer) in stages 10–11.
 - If a CI run fails the TLS test with `ECONNREFUSED`, `localhost` resolved to `::1` and GreenMail listens only on IPv4.
 - Known gap (accepted): if a server sends no RFC822.SIZE, `fetchBodyText` fetches the full source with no size limit (`mail/imap/client.ts`).
+- Checked again 2026-11-13 on Bun 1.4.4 (F094 plan F5): the same error. The IMAP adapter never runs STARTTLS.
 
 ## SMTP (nodemailer 10.3.1), stage 10
+
 - nodemailer works with an IP host under Bun: it sets `servername` only for a host name and never passes `servername: false`.
 - `verifySmtpLogin` to GreenMail TLS port 3993 with `127.0.0.1` and with `localhost` both gave HardError `SMTP verify failed (DEPTH_ZERO_SELF_SIGNED_CERT)`: the certificate check runs.
 - `verify()` logs in only when the server advertises AUTH (`forceAuth` is not set). Interia advertises AUTH, so connect really tests the login.

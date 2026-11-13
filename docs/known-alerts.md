@@ -329,14 +329,16 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Cause:** Bun 1.3.14 (CI and the server image) `server.stop(true)` waits for in-flight handlers. The fake's `stop()` cleared the hold timer, so the held handler never ended and `afterEach` hung (log line `a beforeEach/afterEach hook timed out for this test`). Local runs used Bun 1.4.4, where `stop(true)` returns at once. This is a hang, not a slow runner: a longer timeout cannot help. The first entry text said "slow on a CI runner"; that was wrong.
 - **Fix:** the fake's `stop()` releases held responses before it stops the server (F093 stage 1). To test on the CI Bun, run `bun run test:unit:ci`.
 - **Status:** fixed (4ad0fbd)
+- **Pin:** `.bun-version` is 1.4.4 since daea2dc (F094). The fix stays: `stop()` must not wait for a held handler.
 
 ### `STARTTLS against a scripted server with a self-signed certificate > … ^ this test timed out after 5000ms`
 
 - **First seen:** 2026-11-12 (CI, `test:unit`, after F049 landed the test)
 - **Source:** `apps/server/src/modules/mail/imap/smtp-starttls.test.ts` (three tests: `verifySmtpLogin upgrades first …`, `openSmtpSender sends after the upgrade`, `an untrusted certificate is refused and no password goes out`).
 - **Cause:** Bun 1.3.14 cannot finish a server-side `new TLSSocket(socket, { isServer: true })` on an accepted `node:net` socket, so the test server never completed the handshake. Also, a Bun 1.3.14 client that upgrades a socket to an IP host checks the certificate against `localhost`, not the IP.
-- **Fix:** at `STARTTLS` the scripted server relays the socket to a second, TLS-only server; the test certificate SAN is `IP:127.0.0.1,DNS:localhost` (F093 stage 1). All security assertions are unchanged. Product effect: STARTTLS to an IP-literal mail host fails the name check on the image Bun (it fails closed); DNS names are fine. See `notes/2026-11-13-bun-version-drift.md`.
+- **Fix:** at `STARTTLS` the scripted server relays the socket to a second, TLS-only server; the test certificate SAN was `IP:127.0.0.1,DNS:localhost` (F093 stage 1); since F094 it is `IP:127.0.0.1` only, and a test refuses a `localhost` certificate for an IP host. All security assertions are unchanged. Product effect until F094 (pin 1.3.14): STARTTLS to an IP-literal mail host failed the name check (fail-closed), and it accepted a certificate issued for `localhost` (fail-open). DNS names were fine. Since the 1.4.4 pin the check is against the IP. See `notes/2026-11-13-bun-version-drift.md`.
 - **Status:** fixed (1796c23)
+- **Pin:** `.bun-version` is 1.4.4 since daea2dc (F094); the image runs it after the VPS deploy of F094 stage 2.
 
 ### `mailbox:seed and mailbox:audit CLI > seed exits 1 … ^ this test timed out after 5000ms.`
 
