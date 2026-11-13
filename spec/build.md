@@ -22,12 +22,11 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 ## NEXT
 
-- `F093-ci-green` (🔴 PLANNED, needs plan): CI on master is green again; first of the Stage 2 foundation group (`docs/product/stage-2/07-foundation-plan.md`).
-- `F086-module-borders` (🔴 PLANNED, needs plan): module borders linted, two violations fixed, the standards in the styleguide; after F093.
-- `F087-feature-flags` (🔴 PLANNED, needs plan): `isFeatureOn`, `org_features`, the operator check; after F086.
-- `F088-notices-as-facts` (🔴 PLANNED, needs plan): the outbox stores the view, a renderer and a detector registry; after F086.
-- `F089-structured-logs` (🔴 PLANNED, needs plan): event logs with run ids and a warn lint; after F086.
-- `F090-llm-roles` (🔴 PLANNED, needs plan): `generate({ role })`, a role table, a prompt registry; after F086.
+- `F086-module-borders` (🔴 ACTIVE, stages 1-4 landed): module borders linted, two violations fixed, the standards in the styleguide; after F093.
+- `F087-feature-flags` (🔴 PLANNED, plan landed): `isFeatureOn`, `org_features`, the operator check; after F086.
+- `F088-notices-as-facts` (🔴 PLANNED, plan landed): the outbox stores the view, a renderer and a detector registry; after F086.
+- `F089-structured-logs` (🔴 PLANNED, plan landed): event logs with run ids and a warn lint; after F086.
+- `F090-llm-roles` (🔴 PLANNED, plan landed): `generate({ role })`, a role table, a prompt registry; after F086.
 - `F091-repo-split` (🔴 PLANNED, needs plan): the two big repositories split, table-driven apply; after F088 and F090.
 - `F092-rls-safety-net` (🔴 PLANNED, needs plan): RLS under the tenant filter; waits for the owner's yes, after F087.
 
