@@ -1,11 +1,11 @@
 # F089 · Structured logs: plan
 
-> **Status 2026-11-13 — planning.** Stages are written one by one (§ Planning progress). Builds after F086 is in `done/`. Nothing is built yet. Ticket: [ticket.md](ticket.md). Open defaults for the owner: [questions.md](questions.md).
+> **Status 2026-11-13 — planned.** Seven stages written; cold review 1 in § "Cold review". Builds after F086 is in `done/`. Nothing is built yet. Ticket: [ticket.md](ticket.md). Open defaults for the owner: [questions.md](questions.md).
 
 ## Planning progress
 
 - [x] Collect: ticket, plan input, ADR 0024, `07-foundation-plan.md`, `05-execution-plan.md` §2, the plans of F086 and F087, the code of `platform/{log,scheduler,http,config,errors,auth,auth-mail,heartbeat,pwned}.ts`, `platform/llm/client.ts`, `main.ts`, `scripts/job-run.ts`, `eslint.config.js`, the test preload and the log tests.
-- [x] Facts checked (probes P1–P6).
+- [x] Facts checked (probes P1–P7).
 - [x] Decisions D7–D27.
 - [x] stage-01-writer [written]
 - [x] stage-02-format-and-context [written]
@@ -13,7 +13,7 @@
 - [x] stage-04-lint-rule [written]
 - [x] stage-05-convert-platform [written]
 - [x] stage-06-convert-main [written]
-- [ ] stage-07-standards (not written yet)
+- [x] stage-07-standards [written]
 - [ ] Cold review (`plan-review-1.md`), fixes logged in § "Cold review".
 
 ## Input
@@ -79,7 +79,7 @@ A gap or a deviation that a worker finds is a question in its final message, not
 
 ## Facts checked (2026-11-13, at commit `88df1c5`)
 
-Probes P1–P6 ran in `.probe-f089/` in this worktree with the `node_modules` of the main checkout (deleted before the commit; their code is in the stage files where it matters). Bun 1.4.4, Hono 4.13.16, croner 11.0.0, ESLint 9.23.0, typescript-eslint 8.28.0, esquery 1.6.0.
+Probes P1–P7 ran in `.probe-f089/` in this worktree with the `node_modules` of the main checkout (deleted before the commit; their code is in the stage files where it matters). Bun 1.4.4, Hono 4.13.16, croner 11.0.0, ESLint 9.23.0, typescript-eslint 8.28.0, esquery 1.6.0.
 
 - **P1 `AsyncLocalStorage` in Bun.** Two `als.run` calls at once (`Promise.all`), each awaiting: a TCP round trip on one socket opened outside any context (the shape of a `pg` pool connection), a `setTimeout`, a promise resolved from an `EventEmitter` listener registered outside the context, and a nested `als.run`. After each `await`, `getStore()` returned the own store; the nested run saw the merged store and the outer store came back after it; outside, `getStore()` was `undefined`. A croner job whose callback calls `als.run` per tick saw `run_id` 1, then 2.
 - **P2 Hono header.** A first middleware that sets `x-request-id` with `c.header` after `await next()` put the header on 12 of 12 response kinds (listed in D17). Set before `next()`, 3 kinds lost it (`HTTPException` with `res`, a raw `Response`, `Response.redirect`). Under `Bun.serve`, a store opened around `next()` was visible in the handler, in a later middleware after its `next()`, and in `onError`; two requests at once kept their own ids.
@@ -91,7 +91,8 @@ Probes P1–P6 ran in `.probe-f089/` in this worktree with the `node_modules` of
 - `bunfig.toml` preloads `apps/server/test/preload.ts` for every `bun test` run; it sets `process.env.MAIL_ALLOW_LOCAL_HOSTS` and calls `configureMailHosts`.
 - `scripts/limen-prepare.sh` copies the main checkout's `.env` into the job worktree (without the DB URLs), so a worker's `.env` may hold a real `TELEGRAM_BOT_TOKEN`; the stage 06 test sets it empty for the spawned server.
 - `main.ts` shutdown on `SIGTERM` waits for the running jobs (at most 30 s) and exits 0 (`main.ts:254–281`).
-- `docs/known-alerts.md` has 16 headings for lines that stages 05 and 06 convert (pwned, `web: lockout`, `web: home path failed`, `mail: MAIL_ALLOW_LOCAL_HOSTS=true`, `web: dist folder missing`, `web: reset requested`, seven `better-auth:` entries, `web: user <id> has <n> memberships`, `web: onEvent`).
+- `docs/known-alerts.md` has 16 headings for lines that stages 05 and 06 convert (pwned, `web: lockout`, `web: home path failed`, `mail: MAIL_ALLOW_LOCAL_HOSTS=true`, `web: dist folder missing`, `web: reset requested`, seven `better-auth:` entries, `web: user <id> has <n> memberships`, `web: onEvent`, the `POST /api/… 403` access-log bursts).
+- **P7 jq.** The `jq -rR 'fromjson? | …'` program of stage 07 (jq 1.8.2) prints `2026-11-20T10:00:00.000Z info [mail] sync_done run_id=r1 count=3` for an event line, the old text for a `legacy_text` line, and skips a line that is not JSON.
 
 ## Not verified
 
@@ -206,4 +207,4 @@ Not run yet.
 
 ## Log
 
-- 2026-11-13: planned by a planning job (Opus 5.5) from the author's input; probes P1–P6.
+- 2026-11-13: planned by a planning job (Opus 5.5) from the author's input; probes P1–P7.
