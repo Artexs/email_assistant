@@ -5,7 +5,7 @@ import { createCommitterJob, createExpiryJob } from "../modules/actions";
 import { createTelegramRuntime } from "../modules/channels";
 import { createChaserJob, delegationHooks } from "../modules/delegation";
 import { configureMailHosts } from "../modules/mail";
-import { llmSettings, loadConfig, mailAllowLocal } from "../platform/config";
+import { llmRoleTable, loadConfig, mailAllowLocal } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
@@ -49,7 +49,7 @@ async function main(): Promise<number> {
       } else if (args.name === "platform.retention") {
         await createRetentionJob({ db, now }).run();
       } else {
-        const settings = llmSettings(config);
+        const row = llmRoleTable(config).roles.classifier;
         const runtime = createTelegramRuntime({
           db,
           token: config.TELEGRAM_BOT_TOKEN ?? "",
@@ -59,7 +59,7 @@ async function main(): Promise<number> {
           llmDailyCap: config.LLM_DAILY_CAP,
           triageScope: config.TRIAGE_LLM_SCOPE,
           actionsScope: actionsScope(config),
-          llm: { provider: settings.provider, classifierModel: settings.classifierModel },
+          llm: { provider: row.provider, classifierModel: row.model },
           hooks,
           uidplus,
           sendScope: sendScope(config),

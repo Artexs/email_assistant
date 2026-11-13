@@ -26,6 +26,7 @@ function header(report: EvalReport): string[] {
     case "cases":
       return [
         `- date: ${date}`,
+        `- role: ${report.role}`,
         `- model: ${report.model}`,
         `- provider: ${report.provider}`,
         ...(report.reasoningEffort === null ? [] : [`- reasoning effort: ${report.reasoningEffort}`]),
@@ -44,6 +45,7 @@ function header(report: EvalReport): string[] {
     case "real":
       return [
         `- date: ${date}`,
+        `- role: ${report.role}`,
         `- ${report.labeled} labeled ${report.mail === "synthetic" ? "synthetic" : "real"} mails`,
         ...(report.modelFilter === null ? [] : [`- model filter: ${report.modelFilter}`]),
         `- rows per model: ${rowsPerModel(report.modelCounts)}`,

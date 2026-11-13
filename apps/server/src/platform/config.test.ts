@@ -4,12 +4,11 @@ import { describe, expect, test } from "bun:test";
 
 import {
   authMailSettings,
-  classifierModel,
   ConfigError,
   featuresOff,
   featuresOffFromEnv,
   isLoopbackApiRoot,
-  llmSettings,
+  llmRoleTable,
   loadConfig,
   loadTestmailConfig,
   operatorChatId,
@@ -136,9 +135,8 @@ describe("loadConfig", () => {
   test("sets the LLM defaults with only the S1a keys", () => {
     const config = loadConfig(geminiEnv);
     expect(config.GEMINI_API_KEY).toBeUndefined();
-    expect(config.GEMINI_MODEL).toBe("gemini-3.8-flash");
     expect(config.GEMINI_MODEL_CLASSIFIER).toBe("gemini-3.5-flash-lite");
-    expect(classifierModel(config)).toBe("gemini-3.5-flash-lite");
+    expect(llmRoleTable(config).roles.classifier.model).toBe("gemini-3.5-flash-lite");
     expect(config.GEMINI_TIMEOUT_MS).toBe(30000);
     expect(config.GEMINI_RPM).toBe(12);
     expect(config.LLM_DAILY_CAP).toBe(300);
@@ -205,13 +203,13 @@ describe("loadConfig", () => {
     );
   });
 
-  test("treats an empty GEMINI_MODEL as the default", () => {
-    expect(loadConfig({ ...fullEnv, GEMINI_MODEL: "" }).GEMINI_MODEL).toBe("gemini-3.8-flash");
+  test("an old .env with the removed writer keys still loads", () => {
+    expect(() => loadConfig({ ...fullEnv, GEMINI_MODEL: "x", OPENAI_MODEL: "y" })).not.toThrow();
   });
 
-  test("classifierModel returns the set GEMINI_MODEL_CLASSIFIER", () => {
+  test("the classifier row takes the set GEMINI_MODEL_CLASSIFIER", () => {
     const config = loadConfig({ ...geminiEnv, GEMINI_MODEL_CLASSIFIER: "gemini-3.1-flash-lite" });
-    expect(classifierModel(config)).toBe("gemini-3.1-flash-lite");
+    expect(llmRoleTable(config).roles.classifier.model).toBe("gemini-3.1-flash-lite");
   });
 
   test("AUTH_PWNED_CHECK defaults to on, accepts off and refuses other values", () => {
@@ -264,9 +262,8 @@ describe("loadConfig", () => {
   });
 
   test("sets the OpenAI defaults with only the S1a keys", () => {
-    const config = loadConfig({ ...fullEnv, OPENAI_API_KEY: "", OPENAI_MODEL: "" });
+    const config = loadConfig({ ...fullEnv, OPENAI_API_KEY: "" });
     expect(config.OPENAI_API_KEY).toBeUndefined();
-    expect(config.OPENAI_MODEL).toBe("gpt-6.1-terra");
     expect(config.OPENAI_MODEL_CLASSIFIER).toBe("gpt-6-luna");
     expect(config.OPENAI_TIMEOUT_MS).toBe(30000);
     expect(config.OPENAI_RPM).toBe(60);
@@ -287,18 +284,16 @@ describe("loadConfig", () => {
     ).not.toThrow();
   });
 
-  test("llmSettings returns the Gemini settings when LLM_PROVIDER=gemini", () => {
-    const config = loadConfig({ ...geminiEnv, GEMINI_API_KEY: "test-key" });
-    expect(llmSettings(config)).toEqual({
+  test("llmRoleTable returns the Gemini settings when LLM_PROVIDER=gemini", () => {
+    const table = llmRoleTable(loadConfig({ ...geminiEnv, GEMINI_API_KEY: "test-key" }));
+    expect(table.roles.classifier).toEqual({
       provider: "gemini",
-      apiKeyName: "GEMINI_API_KEY",
-      apiKey: "test-key",
-      classifierModel: "gemini-3.5-flash-lite",
-      writerModel: "gemini-3.8-flash",
+      model: "gemini-3.5-flash-lite",
       timeoutMs: 30000,
-      rpm: 12,
+      rpm: null,
       reasoningEffort: null,
     });
+    expect(table.providers.gemini).toEqual({ apiKeyName: "GEMINI_API_KEY", apiKey: "test-key", rpm: 12 });
   });
 
   test("LLM_PROVIDER=openai needs OPENAI_API_KEY when the scope is not off", () => {
@@ -307,20 +302,22 @@ describe("loadConfig", () => {
     expect(() => loadConfig({ ...env, GEMINI_API_KEY: "", OPENAI_API_KEY: "o-key" })).not.toThrow();
   });
 
-  test("llmSettings returns the OpenAI settings", () => {
+  test("llmRoleTable returns the OpenAI settings", () => {
     const env = { ...fullEnv, OPENAI_API_KEY: "o-key" };
-    const expected = {
+    const classifier = {
       provider: "openai" as const,
-      apiKeyName: "OPENAI_API_KEY",
-      apiKey: "o-key",
-      classifierModel: "gpt-6-luna",
-      writerModel: "gpt-6.1-terra",
+      model: "gpt-6-luna",
       timeoutMs: 30000,
-      rpm: 60,
+      rpm: null,
       reasoningEffort: "none",
     };
-    expect(llmSettings(loadConfig({ ...env, LLM_PROVIDER: "openai" }))).toEqual(expected);
-    expect(llmSettings(loadConfig(env), "openai")).toEqual(expected);
+    const provider = { apiKeyName: "OPENAI_API_KEY", apiKey: "o-key", rpm: 60 };
+    const table = llmRoleTable(loadConfig({ ...env, LLM_PROVIDER: "openai" }));
+    expect(table.roles.classifier).toEqual(classifier);
+    expect(table.providers.openai).toEqual(provider);
+    const forced = llmRoleTable(loadConfig(env), { classifier: { provider: "openai" } });
+    expect(forced.roles.classifier).toEqual(classifier);
+    expect(forced.providers.openai).toEqual(provider);
   });
 });
 

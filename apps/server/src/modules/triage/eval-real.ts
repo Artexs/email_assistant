@@ -68,6 +68,7 @@ export function buildRealReport(
   const errors = predictions.filter((p) => p.source === "error").length;
   return {
     kind: "real",
+    role: "classifier",
     mail: opts.mail,
     labeled: kept.length,
     modelFilter: opts.model ?? null,

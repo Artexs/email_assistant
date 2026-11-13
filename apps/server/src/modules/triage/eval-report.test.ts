@@ -80,6 +80,7 @@ function casesReport(over: Partial<CasesEvalReport> = {}): CasesEvalReport {
   return {
     ...base(predictions()),
     kind: "cases",
+    role: "classifier",
     model: "gemini-3.5-flash-lite",
     provider: "gemini",
     reasoningEffort: null,
@@ -109,6 +110,7 @@ function realReport(over: Partial<RealEvalReport> = {}): RealEvalReport {
   return {
     ...base(predictions()),
     kind: "real",
+    role: "classifier",
     mail: "real",
     labeled: 99,
     modelFilter: null,
@@ -123,6 +125,13 @@ function decisionOf(md: string, category: Category): string {
 }
 
 describe("renderEvalReport", () => {
+  test("both reports name the role; the cases report names the prompt version", () => {
+    const cases = renderEvalReport(casesReport());
+    expect(cases).toContain("- role: classifier");
+    expect(cases).toContain("- prompt version: classifier-v2");
+    expect(renderEvalReport(realReport())).toContain("- role: classifier");
+  });
+
   test("cases: the effort line shows when set", () => {
     const md = renderEvalReport(casesReport({ provider: "openai", reasoningEffort: "low" }));
     expect(md).toContain("- provider: openai");

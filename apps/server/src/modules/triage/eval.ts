@@ -17,6 +17,7 @@ import {
   type EvalCase,
   goNoGo,
   monthlyCost,
+  type LlmRole,
   type PlannedAction,
   planActions,
   type Prediction,
@@ -88,6 +89,8 @@ export interface CaseResult {
 }
 
 export interface EvalReportBase {
+  // The role whose prompt and model this report measures.
+  role: LlmRole;
   bar: number;
   minKept: number;
   startedAt: Date;
@@ -509,6 +512,7 @@ export async function runEval(
 
   return {
     kind: "cases",
+    role: "classifier",
     bar: input.bar,
     minKept: input.minKept,
     startedAt,

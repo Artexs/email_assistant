@@ -127,15 +127,11 @@ const baseSchema = z.object({
     emptyAsUndefined,
     z.string().refine(isLoopbackApiRoot, "must be http(s)://127.0.0.1, ::1 or localhost, with no path").optional()
   ),
-  // Writer role (S4) and fallback.
-  GEMINI_MODEL: z.preprocess((v) => (v === "" ? undefined : v), z.string().default("gemini-3.8-flash")),
   GEMINI_MODEL_CLASSIFIER: z.preprocess((v) => (v === "" ? undefined : v), z.string().default("gemini-3.5-flash-lite")),
   GEMINI_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
   GEMINI_RPM: z.coerce.number().int().positive().default(defaultGeminiRpm),
   // Secret: never print or log it.
   OPENAI_API_KEY: z.preprocess(emptyAsUndefined, z.string().optional()),
-  // Writer role (S4).
-  OPENAI_MODEL: z.preprocess(emptyAsUndefined, z.string().default("gpt-6.1-terra")),
   OPENAI_MODEL_CLASSIFIER: z.preprocess(emptyAsUndefined, z.string().default("gpt-6-luna")),
   OPENAI_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
   OPENAI_RPM: z.coerce.number().int().positive().default(60),
@@ -196,14 +192,11 @@ const baseSchema = z.object({
 
 type BaseConfig = z.infer<typeof baseSchema>;
 
-export interface LlmSettings {
-  provider: LlmProviderId;
+interface ProviderBlock {
   /** Env key name, for messages: "GEMINI_API_KEY". */
   apiKeyName: string;
   apiKey: string | undefined;
   classifierModel: string;
-  /** S4 writer role. */
-  writerModel: string;
   timeoutMs: number;
   rpm: number;
   /** null: the provider has no effort setting. */
@@ -211,12 +204,11 @@ export interface LlmSettings {
 }
 
 // One block per registry row: the type forces a block for each provider.
-const providerBlocks: Record<LlmProviderId, (config: BaseConfig) => Omit<LlmSettings, "provider">> = {
+const providerBlocks: Record<LlmProviderId, (config: BaseConfig) => ProviderBlock> = {
   gemini: (c) => ({
     apiKeyName: "GEMINI_API_KEY",
     apiKey: c.GEMINI_API_KEY,
     classifierModel: c.GEMINI_MODEL_CLASSIFIER,
-    writerModel: c.GEMINI_MODEL,
     timeoutMs: c.GEMINI_TIMEOUT_MS,
     rpm: c.GEMINI_RPM,
     reasoningEffort: null,
@@ -225,7 +217,6 @@ const providerBlocks: Record<LlmProviderId, (config: BaseConfig) => Omit<LlmSett
     apiKeyName: "OPENAI_API_KEY",
     apiKey: c.OPENAI_API_KEY,
     classifierModel: c.OPENAI_MODEL_CLASSIFIER,
-    writerModel: c.OPENAI_MODEL,
     timeoutMs: c.OPENAI_TIMEOUT_MS,
     rpm: c.OPENAI_RPM,
     reasoningEffort: c.OPENAI_REASONING_EFFORT,
@@ -315,10 +306,6 @@ export const configSchema = baseSchema.superRefine((config, ctx) => {
 });
 
 export type Config = z.infer<typeof configSchema>;
-
-export function llmSettings(config: Config, provider: LlmProviderId = config.LLM_PROVIDER): LlmSettings {
-  return { provider, ...providerBlocks[provider](config) };
-}
 
 /** A tool's change of one role row (eval and llm:check flags). */
 export interface LlmRoleOverride {
@@ -455,10 +442,6 @@ export function mailAllowLocal(config: Config): boolean {
 export function mailAllowLocalFromEnv(env: Record<string, string | undefined>): boolean {
   const pick = (key: string) => (env[key] === undefined || env[key] === "" ? undefined : env[key]);
   return (pick("MAIL_ALLOW_LOCAL_HOSTS") ?? pick("WEB_MAIL_ALLOW_LOCAL")) === "true";
-}
-
-export function classifierModel(config: Config): string {
-  return llmSettings(config).classifierModel;
 }
 
 export class ConfigError extends Error {

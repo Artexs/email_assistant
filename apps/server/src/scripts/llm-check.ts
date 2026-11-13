@@ -1,17 +1,14 @@
-import { parseArgs } from "node:util";
-
 import { classifierCategories } from "@ea/core";
-import { z } from "zod";
 
 import { type ClassifierDelegate, type ClassifierEmail, classifyEmail } from "../modules/triage";
 import { llmRoleTable, loadConfig } from "../platform/config";
 import { describeError } from "../platform/errors";
-import { createLlmClient, type LlmProviderId, llmProviderIds, type LlmUsage } from "../platform/llm";
+import { createLlmClient, type LlmUsage } from "../platform/llm";
 import { createLog } from "../platform/log";
 
-const log = createLog("llm-check");
+import { greetingCall, parseLlmCheckArgs, usage } from "./llm-check-args";
 
-const usage = `usage: bun run llm:check [--provider ${llmProviderIds.join("|")}] [--delegates]`;
+const log = createLog("llm-check");
 
 // Made-up mail: example.com addresses, no real data.
 const SAMPLE_EMAIL: ClassifierEmail = {
@@ -35,33 +32,15 @@ const SAMPLE_DELEGATES: ClassifierDelegate[] = [
   { id: "00000000-0000-4000-8000-000000000002", name: "Tom Sales", tags: ["offers"] },
 ];
 
-function readArgs(): { provider: LlmProviderId | undefined; delegates: boolean } {
-  let values: { provider?: string; delegates?: boolean };
-  try {
-    values = parseArgs({
-      args: process.argv.slice(2),
-      options: { provider: { type: "string" }, delegates: { type: "boolean" } },
-      strict: true,
-    }).values;
-  } catch {
-    log.error(usage);
-    process.exit(1);
-  }
-  const delegates = values.delegates === true;
-  if (values.provider === undefined) return { provider: undefined, delegates };
-  const id = llmProviderIds.find((candidate) => candidate === values.provider);
-  if (id === undefined) {
-    log.error(usage);
-    process.exit(1);
-  }
-  return { provider: id, delegates };
-}
-
 async function main() {
   const config = loadConfig();
-  const args = readArgs();
-  const table = llmRoleTable(config, { classifier: { provider: args.provider } });
-  const row = table.roles.classifier;
+  const args = parseLlmCheckArgs(process.argv.slice(2));
+  if (args === null) {
+    log.error(usage);
+    process.exit(1);
+  }
+  const table = llmRoleTable(config, { [args.role]: { provider: args.provider } });
+  const row = table.roles[args.role];
   const keys = table.providers[row.provider];
 
   if (keys.apiKey === undefined) {
@@ -73,17 +52,13 @@ async function main() {
 
   const line = (check: string, used: LlmUsage, extra = "") =>
     log.info(
-      `provider=${row.provider} model=${used.model} effort=${row.reasoningEffort ?? "-"} check=${check} latencyMs=${used.latencyMs} tokensIn=${used.tokensIn} tokensOut=${used.tokensOut}${extra}`
+      `role=${used.role} provider=${row.provider} model=${used.model} effort=${row.reasoningEffort ?? "-"} check=${check} latencyMs=${used.latencyMs} tokensIn=${used.tokensIn} tokensOut=${used.tokensOut}${extra}`
     );
 
-  const greeting = await llm.generate({
-    role: "classifier",
-    promptVersion: "classifier-v0",
-    schema: z.object({ greeting: z.string() }),
-    system: "Answer with a JSON object.",
-    prompt: "Say hello in the field greeting.",
-  });
+  const greeting = await llm.generate(greetingCall(args.role));
   line("greeting", greeting.usage);
+
+  if (args.role !== "classifier") return;
 
   const triage = await classifyEmail(llm, {
     email: SAMPLE_EMAIL,

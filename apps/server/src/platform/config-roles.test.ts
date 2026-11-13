@@ -3,7 +3,8 @@ import { randomBytes } from "node:crypto";
 import { llmRoles } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
-import { ConfigError, llmRoleTable, llmSettings, loadConfig } from "./config";
+import { ConfigError, llmRoleTable, loadConfig } from "./config";
+import type { LlmProviderSettings, LlmRoleSettings } from "./llm";
 
 const fullEnv = {
   DATABASE_URL: "postgres://app:pw@127.0.0.1:5433/email_assistant",
@@ -23,33 +24,39 @@ function keysOf(env: Record<string, string | undefined>): string[] {
 
 describe("llmRoleTable", () => {
   test("1: the classifier row is today's setting", () => {
-    const envs = [
-      openaiEnv,
+    const cases: { env: Record<string, string>; row: LlmRoleSettings; provider: LlmProviderSettings }[] = [
       {
-        ...openaiEnv,
-        OPENAI_REASONING_EFFORT: "low",
-        OPENAI_TIMEOUT_MS: "20000",
-        OPENAI_RPM: "30",
-        OPENAI_MODEL_CLASSIFIER: "m-1",
+        env: openaiEnv,
+        row: { provider: "openai", model: "gpt-6-luna", timeoutMs: 30000, rpm: null, reasoningEffort: "none" },
+        provider: { apiKeyName: "OPENAI_API_KEY", apiKey: "o-key", rpm: 60 },
       },
-      { ...fullEnv, LLM_PROVIDER: "gemini", GEMINI_API_KEY: "g-key", GEMINI_MODEL_CLASSIFIER: "g-1", GEMINI_RPM: "7" },
+      {
+        env: {
+          ...openaiEnv,
+          OPENAI_REASONING_EFFORT: "low",
+          OPENAI_TIMEOUT_MS: "20000",
+          OPENAI_RPM: "30",
+          OPENAI_MODEL_CLASSIFIER: "m-1",
+        },
+        row: { provider: "openai", model: "m-1", timeoutMs: 20000, rpm: null, reasoningEffort: "low" },
+        provider: { apiKeyName: "OPENAI_API_KEY", apiKey: "o-key", rpm: 30 },
+      },
+      {
+        env: {
+          ...fullEnv,
+          LLM_PROVIDER: "gemini",
+          GEMINI_API_KEY: "g-key",
+          GEMINI_MODEL_CLASSIFIER: "g-1",
+          GEMINI_RPM: "7",
+        },
+        row: { provider: "gemini", model: "g-1", timeoutMs: 30000, rpm: null, reasoningEffort: null },
+        provider: { apiKeyName: "GEMINI_API_KEY", apiKey: "g-key", rpm: 7 },
+      },
     ];
-    for (const env of envs) {
-      const config = loadConfig(env);
-      const old = llmSettings(config);
-      const table = llmRoleTable(config);
-      expect(table.roles.classifier).toEqual({
-        provider: old.provider,
-        model: old.classifierModel,
-        timeoutMs: old.timeoutMs,
-        rpm: null,
-        reasoningEffort: old.reasoningEffort,
-      });
-      expect(table.providers[old.provider]).toEqual({
-        apiKeyName: old.apiKeyName,
-        apiKey: old.apiKey,
-        rpm: old.rpm,
-      });
+    for (const { env, row, provider } of cases) {
+      const table = llmRoleTable(loadConfig(env));
+      expect(table.roles.classifier).toEqual(row);
+      expect(table.providers[row.provider]).toEqual(provider);
     }
   });
 
