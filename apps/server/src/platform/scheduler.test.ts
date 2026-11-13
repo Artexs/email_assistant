@@ -1,6 +1,7 @@
 import { describe, expect, spyOn, test } from "bun:test";
 
 import { waitFor } from "../../test/wait-for";
+
 import { setLogLevel } from "./log";
 import { createScheduler } from "./scheduler";
 
