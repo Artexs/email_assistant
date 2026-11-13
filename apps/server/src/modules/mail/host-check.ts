@@ -13,6 +13,8 @@ for (const [net, prefix] of [
   ["100.64.0.0", 10], // carrier-grade NAT, Tailscale
   ["198.18.0.0", 15], // benchmark
   ["192.0.0.0", 24], // IETF protocol assignments
+  ["224.0.0.0", 4], // multicast
+  ["240.0.0.0", 4], // reserved, and 255.255.255.255 broadcast
 ] as const) {
   localV4.addSubnet(net, prefix, "ipv4");
 }
@@ -23,12 +25,17 @@ for (const [net, prefix] of [
   ["::ffff:0:0", 96], // IPv4-mapped, in any spelling
   ["fc00::", 7],
   ["fe80::", 10],
+  ["fec0::", 10], // site-local, deprecated
+  ["ff00::", 8], // multicast
+  ["64:ff9b::", 96], // NAT64: embeds an IPv4 address the guard cannot see
+  ["2002::", 16], // 6to4: embeds an IPv4 address the guard cannot see
 ] as const) {
   localV6.addSubnet(net, prefix, "ipv6");
 }
 
 /**
- * True for an IPv4 or IPv6 literal in a refused range (local, private, Tailscale, benchmark). An IPv4-mapped IPv6
+ * True for an IPv4 or IPv6 literal in a refused range (local, private, Tailscale, benchmark, multicast, broadcast,
+ * reserved, NAT64, site-local, 6to4). An IPv4-mapped IPv6
  * address is checked as IPv4. A string that is not an IP address is refused too (true).
  */
 export function isLocalAddress(ip: string): boolean {

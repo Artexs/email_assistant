@@ -21,7 +21,10 @@ export interface MailTarget {
 
 export const dnsLookupAll: LookupAll = (host) => lookup(host, { all: true, verbatim: true });
 
-export const DEFAULT_MAIL_HOST_POLICY: MailHostPolicy = { allowLocal: false, lookup: dnsLookupAll };
+export const DEFAULT_MAIL_HOST_POLICY: Readonly<MailHostPolicy> = Object.freeze({
+  allowLocal: false,
+  lookup: dnsLookupAll,
+});
 
 let current: MailHostPolicy = DEFAULT_MAIL_HOST_POLICY;
 
@@ -58,6 +61,7 @@ export async function resolveMailHost(host: string, policy: MailHostPolicy = mai
   if (addresses.some((entry) => isLocalAddress(entry.address))) throw new HostNotAllowedError();
 
   const chosen = addresses.find((entry) => isIP(entry.address) === 4) ?? addresses[0];
+  // Unreachable at run time (the list is not empty); `noUncheckedIndexedAccess` needs the narrowing.
   if (chosen === undefined) throw new SoftError("mail host lookup failed (ENODATA)");
   return { host: chosen.address, servername: name };
 }
