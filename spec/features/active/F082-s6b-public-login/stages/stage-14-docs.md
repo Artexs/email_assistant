@@ -48,3 +48,16 @@ Three steps. Docs only: no code change. Write in the style of the file you chang
   - Check: Proof (server form, `/tmp/f082-s14`).
   - Done when: the Proof printed `PROOF_OK`.
   - Out of scope: the legal texts (S6e); the VPS (stage 15).
+
+## Additions from the stage 13 review (coordinator, 2026-11-13)
+
+Stage 13 removed `/list-sessions` from the auth allow-list (`AUTH_ALLOWED_PATHS` has 7 paths). These docs still name it, or lack the new routes and events. Fix each one in this stage:
+
+1. `docs/architecture.md` "Auth allow-list" bullet (~line 639): remove `list-sessions`, add `request-password-reset` (14.1).
+2. `docs/modules.md` (~line 385): the `AUTH_ALLOWED_PATHS` line names `/list-sessions`; remove it.
+3. `docs/decisions/0016-web-panel-static-build-and-better-auth.md` (~line 22): the "Only these routes are open" line names `list-sessions`; the amendment (14.3) must also say that S6b removed it, and why (the Account card reads sessions through `GET /api/me/sessions`, which returns no token).
+4. `docs/modules.md` §3.10 route table: add `GET /me/sessions | member | tenancy | S6b` and `POST /me/terms | member | tenancy | S6b`.
+5. `docs/known-alerts.md` (~line 256): the audit `<kind>` list leaves out `login_locked`, `sessions_revoked` and `other_sessions_revoked`; add them.
+6. `docs/architecture.md` Audit bullet (~line 642) and the event list (~line 462): add the new events (`web.login_locked`, `web.terms_accepted`, `web.sessions_revoked`, `web.other_sessions_revoked`; check the exact names in the code).
+7. Use the helper name `deviceOf` (not `deviceLabel`) in the docs.
+8. Test gap (rule in plan.md "Rules for every stage"): `apps/server/test/integration/web-sessions.test.ts` has no log capture. Add a test that captures the console during sign-in, reset and the revoke routes and asserts that no line holds the test password, a token or `reset-password/`, and that at least one line was captured (copy the pattern of `web-lockout.test.ts`). This is the only code change allowed in this stage.
