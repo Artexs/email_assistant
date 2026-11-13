@@ -1,3 +1,4 @@
+import type { LlmRole } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -128,21 +129,66 @@ export async function recordAuditOnce(db: DbOrTrx, ctx: TenantContext, event: Au
   return (result.numAffectedRows ?? 0n) > 0n;
 }
 
+/** One LLM call attempt. Ids, codes and numbers only: never the prompt or the answer. */
+export interface LlmCallRecord {
+  emailId?: string;
+  mailboxId: string;
+  role: LlmRole;
+  promptVersion: string;
+  model: string;
+  /** `ok` or the LLM error code. */
+  outcome: string;
+  tokensIn: number | null;
+  tokensOut: number | null;
+  latencyMs: number;
+  at: Date;
+}
+
+// Every LLM call writes one `llm.call` row here: the daily cap and the cost per role read these rows.
+export async function recordLlmCall(db: DbOrTrx, ctx: TenantContext, call: LlmCallRecord): Promise<void> {
+  await recordAudit(db, ctx, {
+    emailId: call.emailId,
+    actor: "system",
+    event: auditEvents.llmCall,
+    reasonCode: call.outcome,
+    data: {
+      mailbox_id: call.mailboxId,
+      role: call.role,
+      model: call.model,
+      prompt_version: call.promptVersion,
+      tokens_in: call.tokensIn,
+      tokens_out: call.tokensOut,
+      latency_ms: call.latencyMs,
+    },
+    at: call.at,
+  });
+}
+
 // One `llm.call` row per LLM call attempt; the mailbox id is in `data`, so no join to `emails`.
+// With a role: rows of that role; rows without a role count as classifier rows (written before roles existed).
 export async function countLlmCallsSince(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string,
-  since: Date
+  since: Date,
+  opts: { role?: LlmRole } = {}
 ): Promise<number> {
-  const row = await db
+  let query = db
     .selectFrom("audit_log")
     .select((eb) => eb.fn.countAll<string>().as("count"))
     .where("org_id", "=", ctx.orgId)
     .where("event", "=", auditEvents.llmCall)
     .where(sql<string>`data->>'mailbox_id'`, "=", mailboxId)
-    .where("created_at", ">=", since)
-    .executeTakeFirstOrThrow();
+    .where("created_at", ">=", since);
+  const { role } = opts;
+  if (role === "classifier") {
+    query = query.where((eb) =>
+      eb.or([eb(sql<string>`data->>'role'`, "=", role), eb(sql<string>`data->>'role'`, "is", null)])
+    );
+  } else if (role !== undefined) {
+    query = query.where(sql<string>`data->>'role'`, "=", role);
+  }
+  const row = await query.executeTakeFirstOrThrow();
   return Number(row.count);
 }
 

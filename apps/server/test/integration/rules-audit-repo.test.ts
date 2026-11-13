@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 
-import type { SenderRule } from "@ea/core";
+import type { LlmRole, SenderRule } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
-import { auditEvents, countLlmCallsSince, recordAudit } from "../../src/modules/audit";
+import { auditEvents, countLlmCallsSince, recordAudit, recordLlmCall } from "../../src/modules/audit";
 import { insertSenderRule, listSenderRules } from "../../src/modules/config";
 import { insertMailbox } from "../../src/modules/mail/repo";
 import type { DB, TenantContext } from "../../src/platform/db";
@@ -251,6 +251,82 @@ describe("audit repository", () => {
       expect(await countLlmCallsSince(trx, b.ctx, a.mailboxId, since)).toBe(1);
       expect(await countLlmCallsSince(trx, b.ctx, b.mailboxId, since)).toBe(1);
       expect(await countLlmCallsSince(trx, a.ctx, a.mailboxId, new Date("2026-11-04T10:00:00Z"))).toBe(0);
+    });
+  });
+
+  test("recordLlmCall writes one llm.call row with role and prompt version", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      const inside = new Date("2026-11-04T09:00:00Z");
+      await recordLlmCall(trx, a.ctx, {
+        emailId: undefined,
+        mailboxId: a.mailboxId,
+        role: "judge",
+        promptVersion: "judge-v1",
+        model: "m-j",
+        outcome: "http_429",
+        tokensIn: null,
+        tokensOut: null,
+        latencyMs: 12,
+        at: inside,
+      });
+      const rows = await auditRows(trx, a.ctx.orgId);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({
+        event: "llm.call",
+        reason_code: "http_429",
+        actor: "system",
+        created_at: inside,
+      });
+      expect(rows[0]?.data).toEqual({
+        mailbox_id: a.mailboxId,
+        role: "judge",
+        model: "m-j",
+        prompt_version: "judge-v1",
+        tokens_in: null,
+        tokens_out: null,
+        latency_ms: 12,
+      });
+    });
+  });
+
+  test("countLlmCallsSince with a role counts that role; rows without a role count as classifier", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      const since = new Date("2026-11-04T08:00:00Z");
+      const inside = new Date("2026-11-04T09:00:00Z");
+      const record = (ctx: TenantContext, mailboxId: string, role: LlmRole, at: Date) =>
+        recordLlmCall(trx, ctx, {
+          mailboxId,
+          role,
+          promptVersion: `${role}-v1`,
+          model: "m",
+          outcome: "ok",
+          tokensIn: 1,
+          tokensOut: 1,
+          latencyMs: 1,
+          at,
+        });
+
+      await record(a.ctx, a.mailboxId, "classifier", inside);
+      await recordAudit(trx, a.ctx, {
+        actor: "system",
+        event: auditEvents.llmCall,
+        reasonCode: "ok",
+        data: llmCallData(a.mailboxId),
+        at: inside,
+      });
+      await record(a.ctx, a.mailboxId, "judge", inside);
+      await record(a.ctx, a.mailboxId, "drafter", inside);
+      // Not counted: another org, before `since`.
+      await record(b.ctx, b.mailboxId, "judge", inside);
+      await record(a.ctx, a.mailboxId, "judge", new Date(since.getTime() - 1));
+
+      expect(await countLlmCallsSince(trx, a.ctx, a.mailboxId, since)).toBe(4);
+      expect(await countLlmCallsSince(trx, a.ctx, a.mailboxId, since, { role: "classifier" })).toBe(2);
+      expect(await countLlmCallsSince(trx, a.ctx, a.mailboxId, since, { role: "judge" })).toBe(1);
+      expect(await countLlmCallsSince(trx, a.ctx, a.mailboxId, since, { role: "drafter" })).toBe(1);
+      expect(await countLlmCallsSince(trx, a.ctx, a.mailboxId, since, { role: "escalation" })).toBe(0);
     });
   });
 });
