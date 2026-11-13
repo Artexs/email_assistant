@@ -6,7 +6,7 @@ opened: 2026-11-13
 
 ## Outcome
 
-Code can ask `isFeatureOn(ctx, flag)` and get the answer for one organization: the registry default, overridden by a row in `org_features`, overridden by the env kill list `FEATURES_OFF`. The operator sets a flag from the CLI with an audit row. The server knows who the operator is (`OPERATOR_USER_IDS`) and an HTTP middleware refuses everyone else with 404, so E7's console and every later flag route have their guard. Every Stage 2 behaviour that a user can see ships behind a flag from its first stage (PD-045, ADR 0027).
+Code can ask `isFeatureOn(db, ctx, flag)` and get the answer for one organization: the registry default, overridden by a row in `org_features`, overridden by the env kill list `FEATURES_OFF`. The operator sets a flag from the CLI with an audit row. The server knows who the operator is (`OPERATOR_USER_IDS`) and an HTTP middleware refuses everyone else with 404, so E7's console and every later flag route have their guard. Every Stage 2 behaviour that a user can see ships behind a flag from its first stage (PD-045, ADR 0027).
 
 ## Scope
 
@@ -30,7 +30,7 @@ Code can ask `isFeatureOn(ctx, flag)` and get the answer for one organization: t
 
 ## Slices
 
-Five worker jobs, one per stage in `stages/`, run one after another: the registry, the table and read path (the only migration: not next to another migration or `bun.lock` change), the write path and CLI, the operator check, the standards. Stages 2 and 4 get a review job. The coordinator stops after stage 4 (checkpoint 1: the owner runs `org:flag` on the dev database) before the last stage. Commands: [plan.md](plan.md) § "How to run".
+Six worker jobs, one per stage in `stages/`, run one after another: the registry, the table and read path (the only migration: not next to another migration or `bun.lock` change), the write path and CLI, the operator guard, the operator flag route, the standards. Stages 2, 4 and 5 get a review job. The coordinator stops after stage 5 (checkpoint 1: the owner runs `org:flag` on the dev database) before the last stage. Commands: [plan.md](plan.md) § "How to run".
 
 ## Sequenced
 

@@ -41,6 +41,7 @@ Two steps. About 300 changed lines.
     ```
 
     Shape: copy the transaction pattern of `setOrgPlan` (`db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run)`).
+
   - Decisions: D4, D11, D12, D13.
   - Test (`tenancy-flag-write.test.ts`; `NOW = new Date("2026-11-20T10:00:00Z")`; `MISSING = { orgId: "00000000-0000-4000-8000-000000000000" }`; audit rows read with `selectFrom("audit_log").where("org_id", "=", …).where("event", "=", "org.flag_changed")`):
     1. No row, `stats_page` on → `{ kind: "changed", flag: "stats_page", before: null, enabled: true }`; the row has `enabled` true, `set_by` `"cli"`, `set_at` `NOW`; one audit row with `actor` `"cli"`, `data` `{ flag: "stats_page", enabled: true }`, `created_at` `NOW`.
@@ -53,7 +54,7 @@ Two steps. About 300 changed lines.
     8. Two at once (committed rows, not `withRollback`): an organization from `createOrganizationWithOwner(db, …)`; `Promise.all` of two `setOrgFeature(db, { orgId }, { flag: "stats_page", enabled: true, actor: "cli", now: NOW })` → the kinds, sorted, are `["changed", "unchanged"]`; exactly one audit row. `afterAll`/`finally` deletes the organization and its user.
   - Check: `bun test apps/server/test/integration/tenancy-flag-write.test.ts`; `bun run typecheck`.
   - Done when: tests 1–8 pass.
-  - Out of scope: a "clear" that deletes a row (D12); any web route (stage 4).
+  - Out of scope: a "clear" that deletes a row (D12); any web route (stage 5).
 
 - [ ] **3.2 `bun run org:flag`**
   - Goal: the operator lists the flags of one organization and turns one on or off from the command line; the output holds ids, keys and codes only.
@@ -108,12 +109,11 @@ Two steps. About 300 changed lines.
       3. null for: `[]`; `["--org-id", "nope"]`; `--on` and `--off` together; `--flag stats_page` alone; `--on` without `--flag`; `--flag ""` with `--on`; a positional `extra`; `--unknown x`.
     - `org-flag-cli.test.ts` (spawn the script as `org-cli.test.ts` does, `cwd` = repo root, `env: { ...process.env }` unless the case sets more; committed organizations from `createOrganizationWithOwner(db, …)` with the name `Secret Org <uuid>`, deleted in `afterEach`; every case asserts that stdout and stderr do not contain the organization name):
       1. List on a new organization → exit 0; stdout has `stats_page off (default)`, `approvals_page off (default)`, `sent_sync off (default)`.
-      2. `--flag stats_page --on` → exit 0; stdout has `flag stats_page unset → on`; the row is `enabled` true with `set_by` `"cli"`; one `org.flag_changed` row.
-      3. The same again → exit 0; stdout has `already on, no change`; still one audit row.
-      4. `--flag nope --on` → exit 1; stderr has `unknown flag; known flags: stats_page`; no row.
-      5. `--flag stats_page` alone → exit 1; stderr has `usage: bun run org:flag`.
-      6. `--org-id 00000000-0000-4000-8000-000000000000` (list mode, and set mode) → exit 1; stderr has `organization not found`.
-      7. With `env: { ...process.env, FEATURES_OFF: "stats_page" }`: `--flag stats_page --on` → exit 0, the row is written, stdout has `FEATURES_OFF holds stats_page`; then list → stdout has `stats_page off (env)`.
+      2. and 3. run in one `test` on one organization (the `afterEach` delete would remove the row between two tests): `--flag stats_page --on` → exit 0; stdout has `flag stats_page unset → on`; the row is `enabled` true with `set_by` `"cli"`; one `org.flag_changed` row. Then the same command again → exit 0; stdout has `already on, no change`; still one audit row.
+      3. `--flag nope --on` → exit 1; stderr has `unknown flag; known flags: stats_page`; no row.
+      4. `--flag stats_page` alone → exit 1; stderr has `usage: bun run org:flag`.
+      5. `--org-id 00000000-0000-4000-8000-000000000000` (list mode, and set mode) → exit 1; stderr has `organization not found`.
+      6. With `env: { ...process.env, FEATURES_OFF: "stats_page" }`: `--flag stats_page --on` → exit 0, the row is written, stdout has `FEATURES_OFF holds stats_page`; then list → stdout has `stats_page off (env)`.
   - Check: `bun test apps/server/src/scripts/org-flag-args.test.ts`; `bun test apps/server/test/integration/org-flag-cli.test.ts`; `bun run lint`.
   - Done when: all cases pass; `bun run org:flag` with no argument prints the usage and exits 1.
   - Out of scope: a `--clear` option (D12); `org:status` changes; the dev-DB run (owner step U2).

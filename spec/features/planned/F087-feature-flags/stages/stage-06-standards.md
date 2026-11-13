@@ -1,36 +1,36 @@
-# F087 stage 05 — Standards and docs
+# F087 stage 06 — Standards and docs
 
-Part of [`../plan.md`](../plan.md). Read its D6, D8, D9, D11, D15–D18, "Differences found at collect" and "Rules for every stage" first. Needs stages 1–4 landed and the owner's go at checkpoint 1. Docs only: no code change.
+Part of [`../plan.md`](../plan.md). Read its D6, D8, D9, D11, D15–D18, D24, "Differences found at collect" and "Rules for every stage" first. Needs stages 1–5 landed and the owner's go at checkpoint 1. Docs only: no code change.
 
 Two steps. About 80 changed lines. Write in the style of the file you change (short sentences, active voice, plain technical English).
 
-- [ ] **5.1 The flag standard and the operator rule in the rule files**
+- [ ] **6.1 The flag standard and the operator rule in the rule files**
   - Goal: every later planning session and worker reads that a new user-visible behaviour ships behind a flag, how a flag is added and removed, and how an operator route is guarded.
   - Files:
     - change `docs/code-patterns.md` (§ Side effects, § HTTP routes);
     - change `.agents/limen/styleguide.md` (§ Shape, § Prefer, § Avoid);
-    - change `docs/known-alerts.md` (two entries, newest first, after `## Template` and its `---`).
+    - change `docs/known-alerts.md` (one entry, newest first, after `## Template` and its `---`).
   - Text to add (adapt only the wording around it; keep the facts). If F086 already wrote a flag line or a "new table" checklist, merge into it, do not repeat it.
     - `docs/code-patterns.md` § Side effects, new bullets at the end:
       - "A new behaviour that a user can see is read through `isFeatureOn`; the flag is in the registry with an owner epic and a remove-by date; default off; the pilot organization turns it on first." (D6, word for word.)
-      - "The registry is `featureFlags` in `packages/core/src/features.ts`. The order is `FEATURES_OFF` (env, the kill switch) → the `org_features` row → the registry default (`resolveFeature`). `main.ts` and every entry script that reads a flag call `configureFeatures` after `loadConfig`; without it every flag reads off. A job reads a flag once per mailbox run, not once per mail. Flags are not product settings: the mailbox mode and the per-category `auto` switches stay as they are (ADR 0027 point 6)."
+      - "The registry is `featureFlags` in `packages/core/src/features.ts`. The order is `FEATURES_OFF` (env, the kill switch) → the `org_features` row → the registry default (`resolveFeature`). The kill list comes from `FEATURES_OFF`: `main.ts` sets it with `configureFeatures` after `loadConfig`; any other process reads the env on the first flag read. No read function takes a settings argument; tests change the kill list only with `configureFeatures` and reset it in `afterEach`. A job reads a flag once per mailbox run, not once per mail. Flags are not product settings: the mailbox mode and the per-category `auto` switches stay as they are (ADR 0027 point 6)."
       - "A flag is changed only through `setOrgFeature` (`tenancy`, audit row `org.flag_changed`); the CLI `org:flag` and a later console call it. A unit test fails when a flag is past its remove-by date: then a cleanup ticket removes the key from `FEATURES_OFF` on every server first (an unknown key stops the start), deletes its rows in a migration (`DELETE FROM org_features WHERE flag = '<key>'`), and removes the reads and the registry entry."
+      - "Roll-out: an epic turns its flag on for an organization with `org:flag --on`, the pilot first. A default that changes to `true` reaches only organizations with no row: an earlier `--off` row stays off."
     - `docs/code-patterns.md` § HTTP routes, a new paragraph after the `refuseSuspendedWrites` paragraph:
       - "Routes under `/api/operator` are the only web code that reads across organizations (ADR 0027). `createApp` guards the whole prefix with `requireOperator`: only users in `OPERATOR_USER_IDS` pass; every other user, also an owner, gets the same `404 { error: "not_found" }` as an unknown path. The guard runs after `requireTenant`, so the operator is a member of an organization. Mount an operator router at `/operator`. A router never calls `use("*")` when it is mounted at `/`: Hono then runs it for every `/api` path. Every operator route test covers 401 (no session), 404 for an owner who is not an operator, and the operator's answer."
     - `.agents/limen/styleguide.md`:
       - § Shape, one bullet: "`/api/operator/*` is the only cross-organization web path; `requireOperator` in `createApp` guards the prefix (users in `OPERATOR_USER_IDS`, everyone else 404)."
       - § Prefer, one bullet: "A new user-visible behaviour reads `isFeatureOn(db, ctx, flag)`; the flag is in `packages/core/src/features.ts` with an owner epic and a remove-by date, default off, on for the pilot first. Change a flag only through `setOrgFeature`."
-      - § Avoid, one bullet: "`use("*")` in a router mounted at `/` (it runs for every `/api` path); reading `FEATURES_OFF` or `OPERATOR_USER_IDS` outside `platform/config`."
-    - `docs/known-alerts.md`, two entries with the template fields (First seen: the build day, "not seen live"; Status: `investigating (per case)` for the first, `won't fix` for the second, because a refusal is the expected answer):
-      - `` `feature flags are not configured (configureFeatures was not called): every flag reads off` `` — Source `apps/server/src/modules/tenancy/features.ts`, level `warn`. Cause: an entry point read a flag without `configureFeatures` after `loadConfig`. Fix: add the call to that entry (`main.ts` has it); until then every flag reads off there.
+      - § Avoid, one bullet: "`use("*")` in a router mounted at `/` (it runs for every `/api` path); reading `FEATURES_OFF` or `OPERATOR_USER_IDS` outside `platform/config`; a settings argument on a flag read."
+    - `docs/known-alerts.md`, one entry with the template fields (First seen: the build day, "not seen live"; Status: `won't fix`, because a refusal is the expected answer):
       - `` `operator route refused for user <userId>` `` — Source `apps/server/src/platform/http.ts` (`requireOperator`), level `warn`. Cause: a signed-in user who is not in `OPERATOR_USER_IDS` called `/api/operator/*`. Fix: none for a single line; many lines for one user id mean someone probes the operator routes: check the user. If the user is the operator, add the id to `OPERATOR_USER_IDS` and restart.
-  - Decisions: D6, D8, D9, D11, D15, D17.
+  - Decisions: D6, D8, D9, D11, D15, D17, D24.
   - Test: none (docs). The styleguide stays at or below 1000 lines (`wc -l .agents/limen/styleguide.md`).
   - Check: `bunx prettier --check docs/code-patterns.md .agents/limen/styleguide.md docs/known-alerts.md`; `wc -l .agents/limen/styleguide.md`.
   - Done when: the text is in the three files; every function name in the text exists in the code (`grep -rn "export async function setOrgFeature\|export const requireOperator\|export function configureFeatures\|export function resolveFeature" apps/server/src packages/core/src` finds four lines).
   - Out of scope: `spec/build.md`, `docs/product/stage-2/*`.
 
-- [ ] **5.2 Architecture, modules and ADR 0027**
+- [ ] **6.2 Architecture, modules and ADR 0027**
   - Goal: the reference docs describe the table, the CLI, the operator identity and the guard, and ADR 0027 is accepted.
   - Files:
     - change `docs/architecture.md` (§5 diagram and table, §7, §8);
@@ -50,5 +50,5 @@ Two steps. About 80 changed lines. Write in the style of the file you change (sh
 
 ## Done when
 
-- Steps 5.1 and 5.2 are done and committed by explicit paths.
-- The Proof command of `plan.md` for stage 05 (`/tmp/f087-s05`, with the six changed files) prints `PROOF_OK`.
+- Steps 6.1 and 6.2 are done and committed by explicit paths.
+- The Proof command of `plan.md` for stage 06 (`/tmp/f087-s06`, with the six changed files) prints `PROOF_OK`.

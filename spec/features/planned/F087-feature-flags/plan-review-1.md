@@ -103,6 +103,7 @@ The plan can ship. No finding proves that any stage breaks one of the six accept
   - `/api/operator/%66lags`, `/api/%6fperator/flags`, `/api/./operator/flags`, `/api/me/../operator/flags`.
 
   It does not run for `/api/me`, `/api/operatorx` or `/api/OPERATOR/flags`, and none of those reach the handler. P2 holds.
+
 - Regex check of the epic pattern over the codes in `05-execution-plan.md`: 8 codes are rejected (N3).
 
 ---
