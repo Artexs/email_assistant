@@ -1,9 +1,9 @@
 import { isIP } from "node:net";
 
-import { type FeatureKey, isFeatureKey } from "@ea/core";
+import { type FeatureKey, isFeatureKey, type LlmRole, llmRoles } from "@ea/core";
 import { z } from "zod";
 
-import { type LlmProviderId, llmProviderIds } from "./llm";
+import { type LlmProviderId, llmProviderIds, type LlmRoleSettings, type LlmRoleTable } from "./llm";
 
 // 32 bytes for AES-256-GCM (platform/crypto)
 const isCredentialsKey = (value: string): boolean =>
@@ -17,6 +17,32 @@ const defaultLlmDailyCap = 300;
 export const openAiReasoningEfforts = ["none", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
 
 const emptyAsUndefined = (v: unknown): unknown => (v === "" ? undefined : v);
+
+// The roles with their own env keys. The classifier keeps the provider keys (LLM_PROVIDER, *_MODEL_CLASSIFIER).
+type KeyedRole = Exclude<LlmRole, "classifier">;
+const keyedRoles = llmRoles.filter((role): role is KeyedRole => role !== "classifier");
+
+const roleKeyFields = {
+  PROVIDER: z.preprocess(emptyAsUndefined, z.enum(llmProviderIds).optional()),
+  MODEL: z.preprocess(emptyAsUndefined, z.string().min(1).optional()),
+  TIMEOUT_MS: z.preprocess(emptyAsUndefined, z.coerce.number().int().positive().optional()),
+  RPM: z.preprocess(emptyAsUndefined, z.coerce.number().int().positive().optional()),
+  REASONING: z.preprocess(emptyAsUndefined, z.enum(openAiReasoningEfforts).optional()),
+};
+type RoleKeyField = keyof typeof roleKeyFields;
+type RoleKey<R extends KeyedRole = KeyedRole, F extends RoleKeyField = RoleKeyField> = `LLM_${Uppercase<R>}_${F}`;
+
+/** `LLM_JUDGE_MODEL` for ("judge", "MODEL"). */
+function roleKey<R extends KeyedRole, F extends RoleKeyField>(role: R, field: F): RoleKey<R, F> {
+  return `LLM_${role.toUpperCase()}_${field}` as RoleKey<R, F>;
+}
+
+// Optional per-role keys: LLM_<ROLE>_PROVIDER, _MODEL, _TIMEOUT_MS, _RPM, _REASONING. Empty = not set.
+const roleKeyShape = Object.fromEntries(
+  keyedRoles.flatMap((role) =>
+    (Object.keys(roleKeyFields) as RoleKeyField[]).map((field) => [roleKey(role, field), roleKeyFields[field]])
+  )
+) as { [K in RoleKey]: (typeof roleKeyFields)[K extends `LLM_${string}_${infer F extends RoleKeyField}` ? F : never] };
 
 // Dev only: a loopback root never reaches a real or remote server. `origin` drops userinfo, path, query and hash.
 // A trailing "/" is refused too: grammY throws on an apiRoot that ends with "/".
@@ -83,7 +109,7 @@ const baseSchema = z.object({
       .regex(/^[^\s@]+@[^\s@]+$/)
       .optional()
   ),
-  // One switch for both LLM roles (classifier, S4 writer). A restart applies it.
+  // The classifier's provider, and the provider of every role without LLM_<ROLE>_PROVIDER. A restart applies it.
   LLM_PROVIDER: z.preprocess(emptyAsUndefined, z.enum(llmProviderIds).default("openai")),
   GEMINI_API_KEY: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
   // Empty or missing = Telegram off. Secret: never print or log it.
@@ -161,6 +187,7 @@ const baseSchema = z.object({
   AUTH_MAIL_FROM: z.preprocess(emptyAsUndefined, z.string().regex(addressPattern).optional()),
   // on = a new password is checked against the Have I Been Pwned list; off = tests only.
   AUTH_PWNED_CHECK: z.preprocess(emptyAsUndefined, z.enum(["on", "off"]).default("on")),
+  ...roleKeyShape,
 });
 
 type BaseConfig = z.infer<typeof baseSchema>;
@@ -205,6 +232,32 @@ export const configSchema = baseSchema.superRefine((config, ctx) => {
   const block = providerBlocks[config.LLM_PROVIDER](config);
   if (config.TRIAGE_LLM_SCOPE !== "off" && block.apiKey === undefined) {
     ctx.addIssue({ code: "custom", path: [block.apiKeyName], message: "needed when TRIAGE_LLM_SCOPE is not off" });
+  }
+  for (const role of keyedRoles) {
+    const provider = config[roleKey(role, "PROVIDER")];
+    if (provider !== undefined && providerBlocks[provider](config).apiKey === undefined) {
+      const keyName = providerBlocks[provider](config).apiKeyName;
+      ctx.addIssue({ code: "custom", path: [keyName], message: `needed by ${roleKey(role, "PROVIDER")}` });
+    }
+    // A model id belongs to one provider: without its provider it would follow a later LLM_PROVIDER switch.
+    if (config[roleKey(role, "MODEL")] !== undefined && provider === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: [roleKey(role, "PROVIDER")],
+        message: `needed by ${roleKey(role, "MODEL")}`,
+      });
+    }
+    const effective = provider ?? config.LLM_PROVIDER;
+    if (
+      config[roleKey(role, "REASONING")] !== undefined &&
+      providerBlocks[effective](config).reasoningEffort === null
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: [roleKey(role, "REASONING")],
+        message: `${effective} takes no reasoning effort`,
+      });
+    }
   }
   if (config.SEND_SCOPE === "self") {
     const raw = (config.SEND_TEST_ADDRESSES ?? "").split(",").filter((item) => item.trim() !== "");
@@ -258,6 +311,81 @@ export type Config = z.infer<typeof configSchema>;
 
 export function llmSettings(config: Config, provider: LlmProviderId = config.LLM_PROVIDER): LlmSettings {
   return { provider, ...providerBlocks[provider](config) };
+}
+
+/** A tool's change of one role row (eval and llm:check flags). */
+export interface LlmRoleOverride {
+  provider?: LlmProviderId;
+  model?: string;
+  reasoningEffort?: string;
+}
+
+/**
+ * The role table. The classifier row comes from LLM_PROVIDER and that provider's keys. Another role reads its
+ * LLM_<ROLE>_* keys; a missing key takes the classifier row's value when the role uses the classifier's provider,
+ * else the value of the role's provider keys. An override that changes a role's provider drops that role's env keys.
+ */
+export function llmRoleTable(config: Config, overrides: Partial<Record<LlmRole, LlmRoleOverride>> = {}): LlmRoleTable {
+  const providerRow = (provider: LlmProviderId) => providerBlocks[provider](config);
+  const defaults = (provider: LlmProviderId): LlmRoleSettings => {
+    const block = providerRow(provider);
+    return {
+      provider,
+      model: block.classifierModel,
+      timeoutMs: block.timeoutMs,
+      rpm: null,
+      reasoningEffort: block.reasoningEffort,
+    };
+  };
+  const apply = (row: LlmRoleSettings, override: LlmRoleOverride | undefined): LlmRoleSettings => {
+    if (override === undefined) return row;
+    if (override.reasoningEffort !== undefined && providerRow(row.provider).reasoningEffort === null) {
+      throw new ConfigError(["reasoningEffort"]);
+    }
+    return {
+      ...row,
+      ...(override.model === undefined ? {} : { model: override.model }),
+      ...(override.reasoningEffort === undefined ? {} : { reasoningEffort: override.reasoningEffort }),
+    };
+  };
+
+  const classifierProvider = overrides.classifier?.provider ?? config.LLM_PROVIDER;
+  const classifier = apply(defaults(classifierProvider), overrides.classifier);
+
+  const rowOf = (role: KeyedRole): LlmRoleSettings => {
+    const override = overrides[role];
+    const envKeys = override?.provider === undefined;
+    const provider = override?.provider ?? config[roleKey(role, "PROVIDER")] ?? classifier.provider;
+    const base = provider === classifier.provider ? classifier : defaults(provider);
+    const row: LlmRoleSettings = envKeys
+      ? {
+          provider,
+          model: config[roleKey(role, "MODEL")] ?? base.model,
+          timeoutMs: config[roleKey(role, "TIMEOUT_MS")] ?? base.timeoutMs,
+          rpm: config[roleKey(role, "RPM")] ?? null,
+          reasoningEffort: config[roleKey(role, "REASONING")] ?? base.reasoningEffort,
+        }
+      : { ...base, rpm: null };
+    return apply(row, override);
+  };
+
+  const providers = Object.fromEntries(
+    llmProviderIds.map((id) => {
+      const block = providerRow(id);
+      return [id, { apiKeyName: block.apiKeyName, apiKey: block.apiKey, rpm: block.rpm }];
+    })
+  ) as LlmRoleTable["providers"];
+
+  return {
+    roles: {
+      classifier,
+      judge: rowOf("judge"),
+      drafter: rowOf("drafter"),
+      extractor: rowOf("extractor"),
+      escalation: rowOf("escalation"),
+    },
+    providers,
+  };
 }
 
 export interface AuthMailSettings {
