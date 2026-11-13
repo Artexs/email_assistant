@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { format } from "node:util";
 
 import { EVENT_CODE, isLogFieldName, isLogValue, type LogFields } from "./log-fields";
@@ -5,6 +6,22 @@ import { EVENT_CODE, isLogFieldName, isLogValue, type LogFields } from "./log-fi
 export type LogLevel = "debug" | "info" | "warn" | "error";
 export type LogFormat = "json" | "text";
 export type { LogFields } from "./log-fields";
+
+export interface LogContext {
+  job?: string;
+  run_id?: string;
+  request_id?: string;
+}
+
+const contextKeys = ["job", "run_id", "request_id"] as const;
+const contextStorage = new AsyncLocalStorage<Readonly<LogContext>>();
+
+/** D15: every line written inside fn (also after await) carries these keys. A nested call adds keys; an outer key keeps its value. */
+export function withLogContext<T>(context: LogContext, fn: () => T): T {
+  const defined = Object.fromEntries(Object.entries(context).filter(([, value]) => value !== undefined));
+  const merged: LogContext = { ...defined, ...contextStorage.getStore() };
+  return contextStorage.run(merged, fn);
+}
 
 export interface Log {
   debug(event: string, fields?: LogFields): void;
@@ -19,6 +36,8 @@ export interface Log {
   error(event: string, fields?: LogFields): void;
   /** @deprecated Free-text form; E8a converts the modules (ADR 0024). */
   error(...args: unknown[]): void;
+  /** A child logger: every line adds `fields` after the context keys (D3, D8). */
+  with(fields: LogFields): Log;
 }
 
 const levelOrder: Record<LogLevel, number> = { debug: 0, info: 1, warn: 2, error: 3 };
@@ -96,7 +115,19 @@ function resolveFormat(): LogFormat {
   return currentFormat;
 }
 
-function write(level: LogLevel, module: string, args: readonly unknown[]): void {
+/** The context store as a field source, keys in the fixed order job, run_id, request_id. */
+function contextFields(): FieldSource {
+  const store: FieldSource = contextStorage.getStore() ?? {};
+  const ordered: FieldSource = {};
+  for (const key of contextKeys) {
+    if (store[key] !== undefined) {
+      ordered[key] = store[key];
+    }
+  }
+  return ordered;
+}
+
+function write(level: LogLevel, module: string, childFields: readonly FieldSource[], args: readonly unknown[]): void {
   if (levelOrder[level] < levelOrder[currentLevel]) {
     return;
   }
@@ -117,7 +148,13 @@ function write(level: LogLevel, module: string, args: readonly unknown[]): void 
       event: "legacy_text",
       msg: format(...args),
     };
-    out(JSON.stringify(line));
+    const pairs: Pair[] = Object.entries(line);
+    const dropped = addFields(pairs, [contextFields()]);
+    if (dropped > 0) {
+      pairs.push(["dropped_fields", dropped]);
+      droppedTotal += dropped;
+    }
+    out(JSON.stringify(Object.fromEntries(pairs)));
     return;
   }
 
@@ -130,7 +167,7 @@ function write(level: LogLevel, module: string, args: readonly unknown[]): void 
     ["event", event],
     ["msg", event],
   ];
-  const dropped = addFields(pairs, [callFields]);
+  const dropped = addFields(pairs, [contextFields(), ...childFields, callFields]);
   if (dropped > 0) {
     pairs.push(["dropped_fields", dropped]);
     droppedTotal += dropped;
@@ -147,11 +184,16 @@ function write(level: LogLevel, module: string, args: readonly unknown[]): void 
   out(prefix, `${event}${rest}`);
 }
 
-export function createLog(module: string): Log {
+function makeLog(module: string, childFields: readonly FieldSource[]): Log {
   return {
-    debug: (...args: unknown[]) => write("debug", module, args),
-    info: (...args: unknown[]) => write("info", module, args),
-    warn: (...args: unknown[]) => write("warn", module, args),
-    error: (...args: unknown[]) => write("error", module, args),
+    debug: (...args: unknown[]) => write("debug", module, childFields, args),
+    info: (...args: unknown[]) => write("info", module, childFields, args),
+    warn: (...args: unknown[]) => write("warn", module, childFields, args),
+    error: (...args: unknown[]) => write("error", module, childFields, args),
+    with: (fields: LogFields) => makeLog(module, [...childFields, fields]),
   };
+}
+
+export function createLog(module: string): Log {
+  return makeLog(module, []);
 }
