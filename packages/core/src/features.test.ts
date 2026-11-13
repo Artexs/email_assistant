@@ -39,7 +39,7 @@ describe("featureFlags registry", () => {
   });
 
   test("featureKeys lists the registry keys in registry order", () => {
-    expect(featureKeys).toEqual(Object.keys(featureFlags));
+    expect<string[]>(featureKeys).toEqual(Object.keys(featureFlags));
     expect(featureKeys.slice(0, 3)).toEqual(["stats_page", "approvals_page", "sent_sync"]);
   });
 
