@@ -25,3 +25,9 @@
 - The job runs its own cold review. The coordinator lands it with `limen land`.
 - A job that ends with `needs-adam` set: ask the owner, then `limen continue <job> "<answer>"`.
 - Auto-build (owner decision 2026-11-13): a plan that lands with no `needs-adam` builds without a new owner OK once its `Build after` tickets are in `done/`. Send the owner the plan summary and the `questions.md` defaults. Stop at the owner checkpoints the plan names.
+
+## Trigger (owner question 2026-11-13; replaces "plan.md without stages/")
+- Only a NEXT line in `spec/build.md` that says `needs plan` starts a planner job. Whoever adds the ticket writes it there.
+- Why: 30+ old tickets in `planned/` have a `plan.md` that is a full one-job task file and no `stages/`. The folder test would have planned them again.
+- Not in the ticket: Limen's strict check refuses unknown front matter fields, and its rules forbid status lines in a ticket body. The board is coordinator prose, so a state word there is allowed.
+- Three cases: `needs plan` → planner job; `stages/` → one worker job per stage; neither → one worker job from `ticket.md` (+ old `plan.md`).
