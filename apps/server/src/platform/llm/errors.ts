@@ -21,7 +21,8 @@ export type ConfigCode =
   | "http_400_precondition"
   | "http_429_quota"
   | "http_400_schema"
-  | "schema_not_strict";
+  | "schema_not_strict"
+  | "missing_key";
 
 /** Timeout, 429 or 5xx: the quota or the service, not the mail. */
 export class LlmSoftError extends SoftError {
