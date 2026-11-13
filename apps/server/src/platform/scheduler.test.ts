@@ -31,10 +31,7 @@ describe("scheduler", () => {
       running -= 1;
     });
     try {
-      await waitFor(
-        () => joined(logSpy.mock.calls).includes("job_skipped job=slow"),
-        "a skipped tick"
-      );
+      await waitFor(() => joined(logSpy.mock.calls).includes("job_skipped job=slow"), "a skipped tick");
       expect(runs).toBe(1);
       release();
       await waitFor(() => runs >= 2, "a run after the release");
