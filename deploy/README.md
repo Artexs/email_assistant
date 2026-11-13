@@ -403,11 +403,15 @@ $C run --rm server bun run org:plan --org-id <org id> --plan suspended
 $C run --rm server bun run org:plan --org-id <org id> --plan active
 $C run --rm server bun run org:plan --org-id <org id> --plan trial --trial-days 14
 $C run --rm server bun run org:plan --org-id <org id> --max-mailboxes 5
+$C run --rm server bun run org:flag --org-id <org id>
+$C run --rm server bun run org:flag --org-id <org id> --flag <key> --on
+$C run --rm server bun run org:flag --org-id <org id> --flag <key> --off
 $C run --rm server bun run org:status [--org-id <org id>]
 ```
 
 - `org:create --plan trial|active`: the default is `trial` with `--trial-days 30` (1 to 365). The database default of an organization that exists already is `active`.
 - `org:plan` changes the plan, the trial end or the mailbox limit (0 to 100) and writes an audit row. Moving a `trial` organization to `active` or `suspended` clears the trial end. Moving to `trial` from another plan needs `--trial-days`.
+- `org:flag` lists the feature flags of an organization (each `on` or `off`, with the source: `env`, `row` or `default`) or turns one flag on or off for it, with an audit row `org.flag_changed`. The keys and their defaults are in `packages/core/src/features.ts`. An `--off` is kept when the default later changes. `FEATURES_OFF=<key>,<key>` in the server `.env` turns flags off for every organization at the next restart, without a DB write (the kill switch); an unknown key stops the start.
 - `org:status` prints, for each organization: the plan, the trial end, `max_mailboxes`, `resumed_at`, the mailbox counts by status, the last sync, the LLM calls of today and the number of linked Telegram chats.
 - `suspended` pauses the customer: no sync, no triage, no action, no send, no reminder, no digest and no notice. Telegram taps and commands answer "account paused". Every write in the web panel answers `403 org_suspended`. The member can still read, sign out and change the password. The approval expiry and the retention job still run. The change to `suspended` cancels the queued messages, except approval requests.
 - `mailbox:backfill` refuses a `suspended` organization: exit 1, a message with the org id and `org_suspended`, before any IMAP call and with no row changed. Resume the organization first. `mailbox:rescan` and `mailbox:settings` do not check the plan: they make no IMAP call and store no mail.

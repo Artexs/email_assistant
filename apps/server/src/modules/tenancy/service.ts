@@ -1,4 +1,4 @@
-import { userLocaleSchema, type OrganizationView, type OrgPlan } from "@ea/core";
+import { isFeatureKey, userLocaleSchema, type FeatureKey, type OrganizationView, type OrgPlan } from "@ea/core";
 import type { Transaction } from "kysely";
 import { z } from "zod";
 
@@ -7,6 +7,7 @@ import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 
 import {
+  getOrgFeature,
   insertMembership,
   insertOrganization,
   insertUser,
@@ -14,6 +15,7 @@ import {
   planStateOfRow,
   updateOrganization,
   updateOrganizationPlan,
+  upsertOrgFeature,
   type OrganizationRow,
   type OrgPlanState,
 } from "./repo";
@@ -223,6 +225,48 @@ export async function setOrgPlan(
         ? ((await hooks.onResumed?.(trx, ctx, { now: input.now, actor: input.actor })) ?? 0)
         : 0;
     return { kind: "changed", before, after, cancelledMessages, expiredSends };
+  };
+
+  return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
+}
+
+export interface SetOrgFeatureInput {
+  flag: string; // checked here: the CLI passes what the operator typed
+  enabled: boolean;
+  actor: string; // "cli", or the user id of a later console
+  now: Date;
+}
+
+export type SetOrgFeatureResult =
+  | { kind: "changed"; flag: FeatureKey; before: boolean | null; enabled: boolean } // before null = there was no row
+  | { kind: "unchanged"; flag: FeatureKey; enabled: boolean }
+  | { kind: "not_found" }
+  | { kind: "unknown_flag" };
+
+// One transaction: the organization lock (it orders two writes at once), the row, and the audit row in the same commit (D11).
+// A row with the same value is "unchanged": no write, no audit row. An off with no row writes a row.
+export async function setOrgFeature(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  input: SetOrgFeatureInput
+): Promise<SetOrgFeatureResult> {
+  const { flag, enabled } = input;
+  if (!isFeatureKey(flag)) return { kind: "unknown_flag" };
+
+  const run = async (trx: Transaction<DB>): Promise<SetOrgFeatureResult> => {
+    if (!(await lockOrganization(trx, ctx))) return { kind: "not_found" };
+    const row = await getOrgFeature(trx, ctx, flag);
+    if (row === enabled) return { kind: "unchanged", flag, enabled };
+
+    await upsertOrgFeature(trx, ctx, { flag, enabled, setBy: input.actor, setAt: input.now });
+    await recordAudit(trx, ctx, {
+      actor: input.actor,
+      event: auditEvents.orgFlagChanged,
+      data: { flag, enabled },
+      at: input.now,
+    });
+    log.info(`organization ${ctx.orgId} flag ${flag} ${enabled ? "on" : "off"} by ${input.actor}`);
+    return { kind: "changed", flag, before: row ?? null, enabled };
   };
 
   return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
