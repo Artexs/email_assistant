@@ -43,6 +43,7 @@ A gap or a deviation that a worker finds is a question in its final message, not
 - Roots with deep imports: only `scripts/e2e-seed.ts:10` and `scripts/e2e-activity-rows.ts:6` (D12). Test files with a higher-layer import: `modules/mail/views.test.ts:4` (D11).
 - **P1 (zones probe).** A probe config (`eslint.config.js` + one block with generated zones, D8) on `apps/server/src` and `packages`: exactly 2 errors, `actions/repo.ts:14` and `config/service.ts:19` (the second is an `import type`). Under Bun, `new ESLint({ cwd, overrideConfigFile }).lintText(code, { filePath })` with a virtual file path in a module folder: deep import, higher layer, mail→triage (cycle), actions→triage (same-layer reverse), `import type`, `export … from`, `import()`, subfolder (`channels/telegram/` → `../../actions/undo`), module → root, platform → module, root deep import: each gives one `import/no-restricted-paths` error; `../mail` from `triage`, `./modules/mail` from a root: no error. 15 cases in 1.4 s.
 - `import/no-restricted-paths` (eslint-plugin-import 2.31.0, `lib/rules/no-restricted-paths.js:88`): `basePath` defaults to `process.cwd()`, so the config must set `basePath: __dirname`. A zone `from` list must be all globs or all paths: a mix fails every file with "Restricted path `from` must contain either only glob patterns or none".
+- **P6 (stage 03 code).** The `borderZones` code, the config block and `layers.json` of stage 03, pasted into a copy of `eslint.config.js`: `eslint .` gives exactly the 2 known errors (13.9 s). The 14 fixture cases of stage 03 as a `bun test` file (with the repo preload): 14 pass in 1.0 s. With `actions → triage` added to `sameLayerEdges`, case 4 fails. A module folder with no layer makes the config throw "Modules without a layer in …".
 - Full `bun run lint` time: 13.4 s now, 13.7 s with the zones (probe config, `.probe-f086` ignored).
 - `import/no-cycle` docs (`node_modules/eslint-plugin-import/docs/rules/no-cycle.md:25`): "This rule ignores type-only imports" (D9).
 - **P2 (madge).** `bunx madge@8.0.0 --circular --extensions ts --ts-config apps/server/tsconfig.json apps/server/src`: 18 cycles, 9 of them across modules, all through `config/service.ts → actions/index.ts`. The review counted 10 cycles with another madge run; same root edge. madge exits 1 when it finds any cycle. With only the `config/service.ts:19` import removed (a copy of `src`): 9 cycles, 0 across modules. With both imports removed: the same 9 in-module cycles: `actions/apply ↔ drafts`, `actions/apply ↔ send`, `mail/repo ↔ sync-rules`, `triage/classifier ↔ prompts/classifier-v2`, and 5 in `platform/llm/` (`client`, `providers/index`, `gemini`, `openai`). They stay (out of scope).
@@ -132,7 +133,7 @@ limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thi
 
 ## Planning progress
 
-- [written] stage 01 · [written] stage 02 · stage 03 · stage 04 · stage 05
+- [written] stage 01 · [written] stage 02 · [written] stage 03 · stage 04 · stage 05
 - [pending] cold review (`plan-review-1.md`)
 
 ## Cold review
