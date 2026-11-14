@@ -540,7 +540,7 @@ describe("audit", () => {
       readSlots(c.dir, p).some((s) => s.id === target)
     ) as SimPart;
     const slot = readSlots(c.dir, part).find((s) => s.id === target) as Slot;
-    const other = valueCategories.find((category) => category !== slot.category && category !== "urgent") as string;
+    const other = valueCategories.find((category) => category !== slot.category && category !== "urgent");
     setVerdicts(c, "1", (id) => (id === target ? `wrong: ${other}` : "ok"));
 
     const result = sim(c, "audit-apply", "mini", "--version", "1", "--date", "2026-11-20");

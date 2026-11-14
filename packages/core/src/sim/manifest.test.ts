@@ -57,7 +57,7 @@ describe("freeze", () => {
       version: "1",
       frozenAt: "2026-11-14",
       ...body,
-      audit: { status: "pending", list: "audit/v1-list.md", verdicts: "audit/v1-verdicts.json", wrong: 0 },
+      audit: { status: "pending" as const, list: "audit/v1-list.md", verdicts: "audit/v1-verdicts.json", wrong: 0 },
     };
     expect(manifestSchema.parse(manifest)).toEqual(manifest);
     expect(body.parts.dev.cases).toBe(input.slots.dev.length);
