@@ -28,8 +28,12 @@ export type FeedbackCallback =
   | { kind: "review_edit"; emailId: string }
   | { kind: "review_cancel"; emailId: string };
 
+// The Yes and No buttons of the answered check in /review. They name a mail, but they are not feedback taps.
+export type AnsweredCallback = { kind: "answered_yes"; emailId: string } | { kind: "answered_no"; emailId: string };
+
 export type Callback =
   | FeedbackCallback
+  | AnsweredCallback
   | { kind: "approve"; actionId: string }
   | { kind: "reject"; actionId: string }
   | { kind: "approve_set"; setId: string }
@@ -41,8 +45,12 @@ export type Callback =
   | { kind: "reject_reason"; reason: RejectReason; actionId: string }
   | { kind: "mistake"; actionId: string };
 
+export function isAnsweredCallback(callback: Callback): callback is AnsweredCallback {
+  return callback.kind === "answered_yes" || callback.kind === "answered_no";
+}
+
 export function isFeedbackCallback(callback: Callback): callback is FeedbackCallback {
-  return "emailId" in callback;
+  return "emailId" in callback && !isAnsweredCallback(callback);
 }
 
 export function isReviewCallback(callback: Callback): boolean {
@@ -71,6 +79,7 @@ const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const WITH_CODE = new RegExp(`^(fr|fc):([urins]):(${UUID})$|^(vr|vc):([urinsd]):(${UUID})$`);
 const WITHOUT_CODE = new RegExp(`^(fe|fx|fu|ve|vx):(${UUID})$`);
 const APPROVAL = new RegExp(`^(ap|ar|as|rs|ag|gw|dd|mk):(${UUID})$`);
+const ANSWERED = new RegExp(`^(ay|an):(${UUID})$`);
 const REASON = new RegExp(`^rw:([pcn]):(${UUID})$`);
 const REASON_CODES: Record<RejectReason, string> = { wrong_person: "p", wrong_content: "c", not_needed: "n" };
 const CODE_TO_REASON = Object.fromEntries(rejectReasons.map((reason) => [REASON_CODES[reason], reason])) as Record<
@@ -99,6 +108,10 @@ export function encodeCallback(callback: Callback): string {
       return `rw:${REASON_CODES[callback.reason]}:${checkedId(callback.actionId)}`;
     case "mistake":
       return `mk:${checkedId(callback.actionId)}`;
+    case "answered_yes":
+      return `ay:${checkedId(callback.emailId)}`;
+    case "answered_no":
+      return `an:${checkedId(callback.emailId)}`;
     default:
       return encodeFeedback(callback);
   }
@@ -156,6 +169,11 @@ export function parseCallback(data: string): Callback | null {
       default:
         return { kind: "delegation_done", delegationId: id };
     }
+  }
+  const answered = ANSWERED.exec(data);
+  if (answered !== null) {
+    const emailId = answered[2] as string;
+    return answered[1] === "ay" ? { kind: "answered_yes", emailId } : { kind: "answered_no", emailId };
   }
   const reason = REASON.exec(data);
   if (reason !== null) {

@@ -1,0 +1,267 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-034",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-rep-0248",
+      "subject": "Customs split on the Rotterdam lane: your view",
+      "body": "Dear Wiktor,\n\nI hope the week started well. I would like to ask for your written view on a customs question that came up in our call with the Rotterdam agent yesterday.\n\nThe agent proposes to clear the January loads in one declaration per week, instead of one per truck. This would cut the fees by about a third and reduce the waiting time at the border, but it also means that one error in the paperwork could hold a whole week of cargo. My team thinks the saving is worth the risk if Oliver's export desk checks the files before they are sent.\n\nDo you support the weekly declaration for the first month, as a test? A short email with your decision is enough, and I will then confirm with the agent and send you the final plan.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "html": "<div style=\"font-family:Arial,sans-serif;\"><p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Dear Wiktor,</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">I hope the week started well. I would like to ask for your written view on a customs question that came up in our call with the Rotterdam agent yesterday.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">The agent proposes to clear the January loads in one declaration per week, instead of one per truck. This would cut the fees by about a third and reduce the waiting time at the border, but it also means that one error in the paperwork could hold a whole week of cargo. My team thinks the saving is worth the risk if Oliver's export desk checks the files before they are sent.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Do you support the weekly declaration for the first month, as a test? A short email with your decision is enough, and I will then confirm with the agent and send you the final plan.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Kind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners</p></div>",
+      "thread": [],
+      "expectedPoints": [
+        "Say whether weekly customs declarations are approved as a first-month test",
+        "Confirm that the export desk checks the files first"
+      ],
+      "mustNot": [
+        "Do not accept liability for errors made by the agent"
+      ]
+    },
+    {
+      "id": "b-rep-0249",
+      "subject": "Wyjazd do Hamburga 21 stycznia",
+      "body": "Szanowny Panie Prezesie,\n\nczy może Pan wziąć udział w wizycie w Hamburgu 21 stycznia? Potrzebuję odpowiedzi do środy, aby zarezerwować lot.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "expectedPoints": [
+        "Confirm whether the executive travels to Hamburg on 21.01.2027",
+        "Answer by Wednesday"
+      ]
+    },
+    {
+      "id": "b-rep-0251",
+      "subject": "Pytania rady przed zatwierdzeniem budżetu",
+      "body": "Szanowny Panie Prezesie,\n\nzwracam się do Pana z pytaniem w imieniu rady nadzorczej i oczekuję odpowiedzi przed posiedzeniem 28 stycznia. Czy zarząd zamierza w tym roku utrzymać poziom inwestycji w flotę, czy ograniczyć go z powodu wyższych kosztów paliwa i niepewności wokół kluczowych kontraktów?\n\nRada otrzymała wstępne zestawienie budżetu od księgowej, ale nie zawiera ono założeń dotyczących przetargu z siecią Zielona Hurtownia ani umowy ramowej z Nordic Foods Trade. Proszę o wskazanie, czy te kontrakty zostały uwzględnione w prognozie przychodów, a jeśli tak, w jakim wariancie: bazowym, ostrożnym czy optymistycznym.\n\nChciałbym także wiedzieć, jaką rezerwę zarząd przewiduje na nieplanowane naprawy floty oraz na ewentualne kary umowne za opóźnienia dostaw. Wczoraj słyszałem od jednego z członków rady, że w grudniu było kilka reklamacji, które mogą wpłynąć na wynik kwartału. Proszę o jednoznaczną informację na ten temat.\n\nOczekuję odpowiedzi na piśmie. Jeśli zarząd potrzebuje więcej czasu na przygotowanie analizy, proszę wskazać konkretną datę. Rada nie będzie głosować nad budżetem, dopóki nie otrzyma pełnych danych. Przypominam również, że członkowie rady dostają materiały na tydzień przed posiedzeniem, więc czas jest naprawdę ograniczony i nie widzę możliwości dalszego odkładania tej sprawy.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "expectedPoints": [
+        "Say whether fleet investment stays at the current level",
+        "State which scenario the tender and the Nordic contract use in the revenue forecast",
+        "Name the reserve for repairs and contract penalties",
+        "Give a date if the analysis needs more time"
+      ],
+      "mustNot": [
+        "Do not give figures that the accountant has not confirmed"
+      ]
+    },
+    {
+      "id": "b-rep-0252",
+      "subject": "Fuel card limits for Q1",
+      "body": "Dear Mr Szalewski,\n\nI have a direct question about the fuel card limits for the first quarter. At the moment each of your 47 cards has a monthly limit of 1,800 litres. Your fleet manager asked us to lower the limit for the six city delivery vans and to raise it for the long haul trucks that go to the Baltic ports.\n\nBefore I change anything, I need your confirmation that this is the right decision on the company's side, because the contract says that limit changes need the signature of a board member. Do you agree with the new limits, or do you want to keep the current ones until the end of March? A short reply by email is enough.\n\nIf you agree, we apply the change on the first working day of February.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "expectedPoints": [
+        "Confirm or reject the new fuel card limits",
+        "State whether the change starts on the first working day of February"
+      ],
+      "mustNot": [
+        "Do not agree to a general limit increase"
+      ]
+    },
+    {
+      "id": "b-rep-0253",
+      "subject": "Naczepy – co myślisz o ofercie?",
+      "body": "Cześć Wiktor,\n\nmamy dwie oferty na nowe naczepy: jedną od Trailerwerk, drugą od polskiego producenta. Niemiecka jest droższa o około osiem procent, ale daje trzy lata serwisu w cenie i krótszy czas dostawy, bo naczepy mogą być u nas już w marcu. Polska tańsza, jednak serwis dopiero po okresie gwarancji, a dostawa dopiero w maju.\n\nMoja ocena: bierzemy niemiecką, bo koszt przestojów w sezonie wiosennym zje różnicę w cenie. Ale to Ty decydujesz o budżecie. Napisz proszę, którą ofertę wybierasz i czy mam zacząć rozmowy o warunkach płatności. Odpowiedź mailem wystarczy.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [],
+      "expectedPoints": [
+        "Choose the Trailerwerk or the Polish offer",
+        "Say whether payment terms talks may start"
+      ],
+      "mustNot": [
+        "Do not sign any order"
+      ]
+    },
+    {
+      "id": "b-rep-0254",
+      "subject": "Pytanie o udział w drugim etapie przetargu",
+      "body": "Szanowny Panie Wiktorze,\n\nmam pytanie, na które nie mogę znaleźć odpowiedzi w dotychczasowej korespondencji. Czy Kordelan zamierza wystawić własne pojazdy do drugiego etapu naszego wspólnego przetargu, czy rozważa Pan raczej podwykonawców z naszej sieci? Odpowiedź jest dla mnie ważna, bo komisja żąda w ofercie dokładnej listy floty, a termin upływa w przyszłym tygodniu. Chętnie omówię szczegóły przez telefon, ale proszę przede wszystkim o krótką odpowiedź mailem.",
+      "html": "<div style=\"font-family:Arial,sans-serif;\"><p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Szanowny Panie Wiktorze,</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">mam pytanie, na które nie mogę znaleźć odpowiedzi w dotychczasowej korespondencji. Czy Kordelan zamierza wystawić własne pojazdy do drugiego etapu naszego wspólnego przetargu, czy rozważa Pan raczej podwykonawców z naszej sieci? Odpowiedź jest dla mnie ważna, bo komisja żąda w ofercie dokładnej listy floty, a termin upływa w przyszłym tygodniu. Chętnie omówię szczegóły przez telefon, ale proszę przede wszystkim o krótką odpowiedź mailem.</p></div>",
+      "thread": [],
+      "expectedPoints": [
+        "Say whether Kordelan provides its own vehicles for stage two",
+        "State if subcontractors from the Baltic network are an option"
+      ],
+      "mustNot": [
+        "Do not give a fleet list without the operations director"
+      ]
+    },
+    {
+      "id": "b-rep-0255",
+      "subject": "Oslo account: what do you want me to say",
+      "body": "Wiktor, Oslo called again about the delay on the frozen lot. They ask whether we cover the extra storage cost, about 900 euro, or whether they should claim it from the carrier. My view is that we should cover it, since we want that account for the framework deal. But it is your money, so I would like your decision, and an answer in writing would help me. I would also like to know if I may mention the discount for the next order to them. I am on the road till Thursday and the signal is poor, so email works best.",
+      "thread": [],
+      "expectedPoints": [
+        "Decide whether Kordelan pays the extra storage cost",
+        "Say whether the discount for the next order may be mentioned"
+      ],
+      "mustNot": [
+        "Do not promise a discount above current terms"
+      ],
+      "note": "rewritten: removed the deadline and the wording that handed the reply to the sender; now asks the executive for a decision"
+    },
+    {
+      "id": "b-rep-0256",
+      "subject": "Propozycja umowy serwisowej: proszę o opinię",
+      "body": "Szanowny Panie Wiktorze,\n\npozwalam sobie zapytać o Pański pogląd na propozycję umowy serwisowej dla naczep, którą wysłaliśmy w grudniu. Zaproponowaliśmy stałą opłatę miesięczną w miejsce rozliczania każdej naprawy osobno. Taka forma jest dla Państwa korzystniejsza przy flocie powyżej dwudziestu naczep, a koszty stają się przewidywalne.\n\nProszę o odpowiedź na piśmie, czy wariant ryczałtowy jest dla Państwa do przyjęcia, a jeśli nie, które zapisy należałoby zmienić. Cennik na rok 2027 przygotujemy dopiero po Pańskiej opinii. Chętnie wprowadzę korekty, jeśli Państwa dział prawny ma uwagi.",
+      "thread": [],
+      "expectedPoints": [
+        "Say whether the flat monthly service fee is acceptable",
+        "List clauses that must change"
+      ],
+      "mustNot": [
+        "Do not agree to the price list for 2027"
+      ]
+    },
+    {
+      "id": "b-rep-0257",
+      "subject": "Okna rozładunku w styczniu",
+      "body": "Szanowny Panie Prezesie,\n\nw imieniu Meblodrewu proszę o Pana stanowisko w sprawie okien rozładunku w styczniu. Nasza hala przyjmuje towar tylko w godzinach od 7:00 do 12:00, a ostatnie trzy dostawy przyjechały po południu, co zmusiło nas do płacenia za dodatkową zmianę. Czy Kordelan gwarantuje, że od przyszłego tygodnia dostawy będą docierać w ustalonych oknach? Jeśli nie, proszę o propozycję rekompensaty za dodatkowe koszty.\n\nPotrzebujemy odpowiedzi na piśmie, ponieważ sprawa trafi do naszego dyrektora finansowego.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "expectedPoints": [
+        "Say whether delivery windows will be kept from next week",
+        "Offer a way to cover the extra shift cost"
+      ],
+      "mustNot": [
+        "Do not agree to pay compensation without checking the facts"
+      ]
+    },
+    {
+      "id": "b-rep-0258",
+      "subject": "Overdue December invoice, your confirmation",
+      "body": "Dear Mr Szalewski,\n\nplease confirm in writing whether Kordelan accepts the corrected December invoice, with the reduced fee for nine inactive cards. We can only close the file after your reply.",
+      "html": "<div style=\"font-family:Arial,sans-serif;\"><p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Dear Mr Szalewski,</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">please confirm in writing whether Kordelan accepts the corrected December invoice, with the reduced fee for nine inactive cards. We can only close the file after your reply.</p></div>",
+      "thread": [],
+      "expectedPoints": [
+        "Confirm or reject the corrected December invoice"
+      ]
+    },
+    {
+      "id": "b-rep-0259",
+      "subject": "Capacity for the joint tender: can you commit?",
+      "body": "Wiktor,\n\nhere is where we stand on the northern tender. The client wants a firm commitment on weekly capacity before they will open the second round, and my partners expect an answer from Kordelan by the end of next week. Can you commit forty trucks a week from March, or should we offer only thirty and add more later? Please send me your view in writing. If the number depends on the new trailers, tell me when they arrive, and I will build the offer around that date. I also need to know whether Piotr is the right person for the commercial details.",
+      "thread": [],
+      "expectedPoints": [
+        "State if Kordelan commits forty or thirty trucks a week from March",
+        "Say whether Piotr handles the commercial details"
+      ],
+      "mustNot": [
+        "Do not commit capacity that depends on trailers not yet bought"
+      ]
+    },
+    {
+      "id": "b-rep-0260",
+      "subject": "Rekrutacja kierowników zmian: potrzebuję Twojego zdania",
+      "body": "Cześć Wiktor,\n\nmam prośbę o Twoją opinię w sprawie rekrutacji dwóch kierowników zmian dla magazynu w Poznaniu. Sytuacja wygląda tak, że mamy trzech dobrych kandydatów, ale tylko dwa etaty w budżecie. Pierwszy ma duże doświadczenie, ale oczekuje wynagrodzenia o piętnaście procent wyższego niż stawka, którą zatwierdziłeś. Druga kandydatka pracuje obecnie u konkurenta, ma świetne referencje i jest gotowa zaczynać od lutego. Trzeci jest młodszy, ale awansował wewnętrznie w poprzedniej firmie i szybko się uczy.\n\nHalina preferuje kandydatkę z konkurencji i trzeciego kandydata. Ja bym rozważył, czy nie warto jednak utworzyć trzeciego etatu, bo od wiosny będziemy mieli więcej zmian i rośnie ryzyko wypalenia obecnego zespołu.\n\nDlatego proszę Cię o decyzję w dwóch kwestiach. Po pierwsze, czy akceptujesz ofertę dla pierwszego kandydata po wyższej stawce, czy rezygnujemy z niego. Po drugie, czy zgadzasz się na dodatkowy etat, a jeśli tak, to od kiedy. Wystarczy mi krótka odpowiedź mailem, a resztę formalności załatwię z działem płac. Dobrze byłoby zamknąć sprawę do końca tygodnia, bo kandydatka z konkurencji ma też inne propozycje i nie będzie czekać dłużej. Gdybyś chciał, mogę przesłać Ci wcześniej krótkie podsumowania rozmów kwalifikacyjnych, wraz z oceną kompetencji i listą referencji.",
+      "html": "<div style=\"font-family:Arial,sans-serif;\"><p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Cześć Wiktor,</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">mam prośbę o Twoją opinię w sprawie rekrutacji dwóch kierowników zmian dla magazynu w Poznaniu. Sytuacja wygląda tak, że mamy trzech dobrych kandydatów, ale tylko dwa etaty w budżecie. Pierwszy ma duże doświadczenie, ale oczekuje wynagrodzenia o piętnaście procent wyższego niż stawka, którą zatwierdziłeś. Druga kandydatka pracuje obecnie u konkurenta, ma świetne referencje i jest gotowa zaczynać od lutego. Trzeci jest młodszy, ale awansował wewnętrznie w poprzedniej firmie i szybko się uczy.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Halina preferuje kandydatkę z konkurencji i trzeciego kandydata. Ja bym rozważył, czy nie warto jednak utworzyć trzeciego etatu, bo od wiosny będziemy mieli więcej zmian i rośnie ryzyko wypalenia obecnego zespołu.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Dlatego proszę Cię o decyzję w dwóch kwestiach. Po pierwsze, czy akceptujesz ofertę dla pierwszego kandydata po wyższej stawce, czy rezygnujemy z niego. Po drugie, czy zgadzasz się na dodatkowy etat, a jeśli tak, to od kiedy. Wystarczy mi krótka odpowiedź mailem, a resztę formalności załatwię z działem płac. Dobrze byłoby zamknąć sprawę do końca tygodnia, bo kandydatka z konkurencji ma też inne propozycje i nie będzie czekać dłużej. Gdybyś chciał, mogę przesłać Ci wcześniej krótkie podsumowania rozmów kwalifikacyjnych, wraz z oceną kompetencji i listą referencji.</p></div>",
+      "thread": [],
+      "expectedPoints": [
+        "Decide whether the higher salary offer for the first candidate is accepted",
+        "Decide whether a third position is approved and from when"
+      ],
+      "mustNot": [
+        "Do not approve a salary above the approved rate without a budget check"
+      ]
+    },
+    {
+      "id": "b-rep-0261",
+      "subject": "Re: Reklamacja palet z 8 stycznia, proszę o stanowisko",
+      "body": "Panie Wiktorze,\n\ndostałam odpowiedź od Pana koordynatora, że reklamacja będzie rozpatrzona w ciągu trzydziestu dni. To za długo. Proszę o Pańskie stanowisko na piśmie: czy Kordelan uznaje szkodę na czterech uszkodzonych paletach i wystawi korektę w tym tygodniu, czy mam kierować sprawę do ubezpieczyciela? Dla nas to kwestia zaufania, a nie samej kwoty.\n\nCzekam na odpowiedź do końca tygodnia.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [
+        {
+          "subject": "Reklamacja palet z 8 stycznia",
+          "body": "Dzień dobry, przyjęliśmy zgłoszenie reklamacji i przekazaliśmy je do analizy. Odpowiemy w ciągu trzydziestu dni. Piotr L."
+        }
+      ],
+      "expectedPoints": [
+        "Say whether Kordelan accepts the damage on four pallets",
+        "Say whether a correction is issued this week"
+      ],
+      "mustNot": [
+        "Do not admit liability for the full value before inspection"
+      ]
+    },
+    {
+      "id": "b-rep-0262",
+      "subject": "Cennik na 2027, jedno pytanie",
+      "body": "Szanowny Panie Prezesie,\n\nmam do Pana jedno pytanie o cennik transportu na 2027: czy cena obejmuje opłatę paliwową, czy jest ona liczona osobno? Interesuje mnie Pańskie stanowisko w tej sprawie.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "expectedPoints": [
+        "State whether the 2027 transport price includes the fuel surcharge"
+      ],
+      "note": "rewritten: removed the request to send an answer as a task; asks for the executive's own statement"
+    },
+    {
+      "id": "b-rep-0263",
+      "subject": "Pytanie o terminy w sprawie odprawy w Gdyni",
+      "body": "Szanowny Panie Wiktorze,\n\npragnę zapytać, czy Kordelan zgodzi się przesunąć o dwa dni termin wysyłki styczniowego kontenera, aby uniknąć zatoru w porcie w Gdyni? Nasz agent twierdzi, że w przyszłym tygodniu kolejki będą dłuższe niż zwykle i opłaty za postój wzrosną. Jeżeli Pan się zgodzi, poinformuję agenta jeszcze dziś. Jeśli nie, proszę o wskazanie, kto po Państwa stronie pokryje dodatkowe koszty. Liczę na odpowiedź mailem, bo muszę ją przekazać partnerom na spotkaniu we wtorek rano.",
+      "thread": [],
+      "expectedPoints": [
+        "Say whether the January container shipment moves by two days",
+        "Name who pays extra port costs if it does not"
+      ],
+      "mustNot": [
+        "Do not accept extra port costs without a limit"
+      ]
+    },
+    {
+      "id": "b-spa-0001",
+      "subject": "Pilna weryfikacja danych do przelewu",
+      "body": "Dział rozliczeń Paliwa-Flota informuje, że faktura 2027/01/0088 jest przeterminowana, a Państwa karty paliwowe zostaną zablokowane w ciągu 24 godzin. Aby uniknąć blokady, prosimy o potwierdzenie nowych danych bankowych firmy w formularzu pod linkiem w tej wiadomości. Po wypełnieniu formularza wyślemy Państwu rabat 10 procent na kolejne zamówienia.\n\nProsimy nie kontaktować się z dotychczasowym opiekunem konta. Wiadomość jest automatyczna i dotyczy wyłącznie osób upoważnionych do płatności. Niewypełnienie formularza spowoduje naliczenie opłaty za windykację.\n\nPaliwa-Flota Billing Department",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0002",
+      "subject": "TYLKO DZIŚ! Stoisko na Targach Magazynowych -30%",
+      "body": "Ostatnie 12 stoisk na Targach Magazynowych Expo!\n\nPierwsze 5 firm dostaje rabat 30% i darmowy baner. Zamów teraz, zanim zniknie!",
+      "html": "<div style=\"font-family:Arial,sans-serif;\"><p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Ostatnie 12 stoisk na Targach Magazynowych Expo!</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Pierwsze 5 firm dostaje rabat 30% i darmowy baner. Zamów teraz, zanim zniknie!</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0003",
+      "subject": "Tysiące kontaktów firm transportowych, cena promocyjna",
+      "body": "Szanowny Kliencie!\n\nMamy dla Panstwa baza 250000 adresów email firm z calej Europy, gotowa do wysylki. Tylko teraz cena specjalna, z gwarancja wyników. Nasze usługi SEO pozwola Panstwa stronie byc pierwszymi w wyszukiwarce w 7 dni, bez ryzyka. Setki klientów już skorzystało i polecają nas przyjaciołom.\n\nOferta wazna do konca tygodnia, potem cena wraca do normalnej. Nie czekaj, kupujacy z pierwszej piatki dostanie dodatkowa baze za darmo. Odpowiedz na ten mail slowem TAK, a nasz doradca skontaktuje sie natychmiast.",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0004",
+      "subject": "Zaproszenie dla wystawców: pakiet Premium z rabatem",
+      "body": "Szanowni Państwo,\n\nz radością informujemy, że rejestracja wystawców na Targi Magazynowe Expo trwa! Tylko do piątku oferujemy pakiet Premium z rabatem 25 procent: powierzchnia 12 metrów, dwa bilety VIP dla zarządu oraz reklama w katalogu targowym w cenie podstawowego stoiska.\n\nLiczba miejsc jest ograniczona, a zainteresowanie rekordowe, więc nie czekajcie do ostatniej chwili! Zgłoszenia przyjmujemy w kolejności odpowiedzi na tę wiadomość. Nasi doradcy chętnie przygotują dla Państwa indywidualną ofertę, bez żadnych zobowiązań. Pierwsze firmy otrzymają dodatkowo miejsce w strefie networkingu.",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0006",
+      "subject": "Wymagana aktualizacja danych kart paliwowych",
+      "body": "Szanowny Kliencie,\n\nzgodnie z naszymi danymi, przesłane przez nas zestawienie kart paliwowych za styczeń nie zostało potwierdzone. System wykrył niezgodność w danych rozliczeniowych Państwa firmy.\n\nAby zapobiec zawieszeniu wszystkich kart, prosimy o natychmiastowe zalogowanie się do panelu klienta przez przycisk w tej wiadomości i potwierdzenie numeru konta do zwrotów: PL00-TEST-4821. Brak reakcji w ciągu 48 godzin oznacza blokadę kart oraz dodatkowe opłaty. Dla klientów, którzy zareagują dzisiaj, przygotowaliśmy bonus: 200 litrów paliwa gratis przy następnym tankowaniu.\n\nDział rozliczeń Paliwa-Flota",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0007",
+      "subject": "Nowy bonus paliwowy tylko dla Państwa firmy",
+      "body": "Szanowny Kliencie,\n\nPaliwa-Flota Billing wyróżnia Państwa firmę specjalnym programem lojalnościowym. Wystarczy potwierdzić dane kontaktowe i bankowe w załączonym formularzu online, a otrzymają Państwo zwrot do 5 procent wartości zeszłorocznych zakupów paliwa. Formularz wygasa za 24 godziny, więc prosimy o szybkie działanie, aby nie stracić bonusu.\n\nBonus jest przyznawany bez umowy i bez zobowiązań. Jeśli nie zareagują Państwo na tę wiadomość, program zostanie przekazany innej firmie z Państwa branży.",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0009",
+      "subject": "Targi Magazynowe Expo 2027: nie przegap największego wydarzenia roku!",
+      "body": "Drodzy Państwo!\n\nTargi Magazynowe Expo wracają, i to w największym wydaniu w historii! Tym razem mamy dla Was aż trzy hale, ponad czterysta wystawców i strefę robotyki magazynowej, w której zobaczycie roboty, wózki widłowe bez kierowców i systemy do liczenia palet. To nie jest kolejna nudna konferencja, to święto branży! W programie znajdą się także prezentacje liderów rynku, pokazy na żywo i konkursy z nagrodami dla uczestników.\n\nDla pierwszych 50 firm, które zarejestrują się do końca tygodnia, mamy rabat 40% na pakiet wystawienniczy, bezpłatny parking dla dziesięciu samochodów oraz zaproszenie na uroczystą kolację z sekcją networkingową. Dodatkowo każdy zarejestrowany uczestnik dostaje katalog targowy, torbę z gadżetami i voucher na kawę.\n\nLiczba miejsc jest ograniczona! W zeszłym roku wszystkie stoiska sprzedały się w dwa dni, a lista oczekujących liczyła setki firm. Nie dajcie się wyprzedzić konkurencji! Wystarczy odpowiedzieć na tę wiadomość, a nasz doradca zadzwoni do Was jeszcze dziś i przygotuje ofertę bez żadnych zobowiązań. Pamiętajcie, że dla zarejestrowanych wystawców przygotowaliśmy także bezpłatne szkolenia i konsultacje z ekspertami od logistyki magazynowej. Do zobaczenia na targach!\n\nZespół Targi Magazynowe Expo | Dział Handlowy",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0010",
+      "subject": "Specjalny pakiet VIP dla firm logistycznych!!!",
+      "body": "UWAGA, zarządy firm logistycznych!\n\nTargi Magazynowe Expo przygotowały specjalną ofertę, której nie znajdziecie nigdzie indziej! Pakiet VIP obejmuje stoisko w pierwszej hali, dwa przemówienia na scenie głównej oraz pięć zaproszeń na kolację dla Waszych klientów. Cena pakietu to tylko połowa standardowej opłaty, ale tylko dla firm, które zgłoszą się w tym tygodniu!\n\nCo dostajecie? Po pierwsze, widoczność: setki tysięcy odwiedzających i media branżowe. Po drugie, kontakty: lista uczestników z danymi kontaktowymi dla każdego wystawcy. Po trzecie, prestiż: logo na wszystkich materiałach targowych i na stronie wydarzenia. Po czwarte, bonusy: darmowy bilet na warsztaty o automatyzacji magazynów dla każdego członka zarządu!\n\nZostały tylko trzy pakiety VIP! Nie zwlekajcie, bo rabat znika w piątek o północy. Wystarczy zadzwonić do naszego działu handlowego lub po prostu odpowiedzieć na tę wiadomość, a zarezerwujemy dla Was miejsce. Będziecie żałować, jeśli zrobicie to za późno! Nasi klienci z zeszłego roku mówią, że wrócili z targów z nowymi kontraktami, a dla niektórych był to najlepszy tydzień w całym roku. Dołączcie do nich już teraz i nie pozwólcie, żeby konkurencja zajęła Wasze miejsce w pierwszej hali.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0011",
+      "subject": "MEGA OFERTA: leady B2B",
+      "body": "Dzień dobry,\nmamy dla Państwa bazę leadów B2B z gwarancją wyników! Cena promocyjna tylko dziś, odpowiedz TAK.\n\nPremium Leads Pro | Sales Team",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0012",
+      "subject": "Boost your sales with 1 million verified business emails",
+      "body": "Dear Sir or Madam,\n\nAre you tired of low sales? Premium Leads Pro have the solution for your business, guaranteed. We are selling a verified list of one million business email addresses from logistic and trade companies in all Europe, with phone contacts and name of the managers. Price today is only 99 euro, instead of 499 euro, but offer ends at midnight!\n\nWhy choose us? Because we are number one in the market. Our clients grow their sales by 300 percent in only one month, this is real result. We also offer SEO services that put your company on the first page of the search in seven days, without any risk and without a contract.\n\nDo not lose this chance, the best offers go fast and our stock is limited! Just reply to this message with the word YES and our manager will send you the files and the invoice in the same minute. Many companies in your industry already use our lists, so do not stay behind. We wait for your answer today. Please do not tell this offer to your competitors, because the price is special only for you and we cannot give the same price again next week.\n\nPremium Leads Pro | Sales Team",
+      "html": "<div style=\"font-family:Arial,sans-serif;\"><p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Dear Sir or Madam,</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Are you tired of low sales? Premium Leads Pro have the solution for your business, guaranteed. We are selling a verified list of one million business email addresses from logistic and trade companies in all Europe, with phone contacts and name of the managers. Price today is only 99 euro, instead of 499 euro, but offer ends at midnight!</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Why choose us? Because we are number one in the market. Our clients grow their sales by 300 percent in only one month, this is real result. We also offer SEO services that put your company on the first page of the search in seven days, without any risk and without a contract.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Do not lose this chance, the best offers go fast and our stock is limited! Just reply to this message with the word YES and our manager will send you the files and the invoice in the same minute. Many companies in your industry already use our lists, so do not stay behind. We wait for your answer today. Please do not tell this offer to your competitors, because the price is special only for you and we cannot give the same price again next week.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Premium Leads Pro | Sales Team</p></div>",
+      "thread": []
+    }
+  ]
+}

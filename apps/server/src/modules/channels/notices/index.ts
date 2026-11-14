@@ -39,6 +39,7 @@ export const detectors: readonly Detector[] = [
 export const queuedBy = {
   digest: "channels/digest-job.ts",
   mailbox_removed: "channels/notices/mailbox-removed.ts",
+  weekly_report: "channels/notices/weekly-report.ts (stage 17)",
 } as const satisfies Partial<Record<NoticeKind, string>>;
 
 async function detectForOrg(deps: NoticeDeps, orgId: string, members: LinkedChat[], now: Date): Promise<void> {

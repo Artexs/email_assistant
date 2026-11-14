@@ -8,6 +8,7 @@ export interface CommonTexts {
   unknownSender: string; // "(unknown sender)"
   unknownAddress: string; // "(unknown)"
   test: string; // "🧪 test"
+  of: string; // "of": "3 of 9"
   right: string;
   change: string;
   undo: string; // the three feedback buttons
@@ -21,6 +22,7 @@ export const commonTexts = {
     unknownSender: "(unknown sender)",
     unknownAddress: "(unknown)",
     test: "🧪 test",
+    of: "of",
     right: "✅ Right",
     change: "✏️ Change",
     undo: "↩️ Undo",
@@ -32,6 +34,7 @@ export const commonTexts = {
     unknownSender: "(nieznany nadawca)",
     unknownAddress: "(nieznany)",
     test: "🧪 test",
+    of: "z",
     right: "✅ Dobrze",
     change: "✏️ Zmień",
     undo: "↩️ Cofnij",

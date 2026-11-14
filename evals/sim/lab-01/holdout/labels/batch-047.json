@@ -1,0 +1,133 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-047",
+  "checker": "claude-haiku-5-5",
+  "labels": [
+    {
+      "id": "b-urg-0125",
+      "category": "urgent",
+      "blindHash": "5c0d4dc7a5258a41c78d37535fe1ddddfbdcd138d355a354ccc5daf675babc4d"
+    },
+    {
+      "id": "b-urg-0126",
+      "category": "urgent",
+      "blindHash": "3aa045e716bd9f007a84408f4e7e2c050945e08b55c14f7a06650bd387bdd08b"
+    },
+    {
+      "id": "b-urg-0127",
+      "category": "urgent",
+      "blindHash": "1d5e250e6b41566ca2d7db594a3c6e5b5d96bdf647505f298070a49a1050d313"
+    },
+    {
+      "id": "b-urg-0128",
+      "category": "urgent",
+      "blindHash": "6a928afd4f8e529e7ab3a31d2c8067b913155bbf281eba2857b7a3cf53c3f4af"
+    },
+    {
+      "id": "b-urg-0129",
+      "category": "urgent",
+      "blindHash": "3248638e50b912baa45617d51b0680c573284ca55bad9a8ccbd26097c3b73a08"
+    },
+    {
+      "id": "b-urg-0130",
+      "category": "urgent",
+      "blindHash": "e4d8d5d8834c4fccc82c2210eb482bbb8ef7626f0c4023acde11074321f0afc9"
+    },
+    {
+      "id": "b-urg-0131",
+      "category": "urgent",
+      "blindHash": "1e07cedce6b4fa7f80e2ccd136e7c0927ba68e291480deefd1c7de1b3f2e8f05"
+    },
+    {
+      "id": "b-urg-0132",
+      "category": "needs_reply",
+      "blindHash": "61e918fe14bd5c86dc0942fd90598ad587506d66674d0af4627c0b6809af2220"
+    },
+    {
+      "id": "b-urg-0133",
+      "category": "urgent",
+      "blindHash": "9a9df34838d5fd19ca3a36b1432b5ffd2f704c4670b75aeb4028814801ebd68b"
+    },
+    {
+      "id": "b-urg-0135",
+      "category": "urgent",
+      "blindHash": "7cb53837f15182bbe3361abc2ad94dacf1c9dad77e05fcf46aeef47ccb1a85da"
+    },
+    {
+      "id": "b-urg-0136",
+      "category": "urgent",
+      "blindHash": "cc74ab6e302160052bd035a0a57aaa9c0c03482ada87cf93d07bce3b3628b977"
+    },
+    {
+      "id": "b-urg-0137",
+      "category": "urgent",
+      "blindHash": "3b86a73f628529c0c379706cbfe7de4e0a8782772321b5496c3456ed88a83b91"
+    },
+    {
+      "id": "b-urg-0138",
+      "category": "urgent",
+      "blindHash": "31a2f243e64821d142d21d7ca9ccb0d2d8a83016b3a41c501073d92f5e485882"
+    },
+    {
+      "id": "b-urg-0139",
+      "category": "urgent",
+      "blindHash": "4dfaa4ce8bc16395ccc4e3084a14d295a7bb990b339af3be5d0af19a3216a60e"
+    },
+    {
+      "id": "b-urg-0141",
+      "category": "needs_reply",
+      "blindHash": "a0f78985432bc9d3c423f3c31c7ab84dd4ab51cda0a6bcf48545ea157ac2c5b9"
+    },
+    {
+      "id": "b-urg-0142",
+      "category": "urgent",
+      "blindHash": "6a81d981eb6e50f9b2cdffe55ca1c3dee21317ef609e40e1ec40cb9a08ecca4f"
+    },
+    {
+      "id": "b-urg-0143",
+      "category": "urgent",
+      "blindHash": "35b93d6077596c65993f2012f15b4b89cefd753a7b138f6d340dccda5e98cc34"
+    },
+    {
+      "id": "b-urg-0145",
+      "category": "needs_reply",
+      "blindHash": "98261fb87072584fa38f1dbe15662eb843f811038e22801f25b83b3d607f6bec"
+    },
+    {
+      "id": "b-urg-0146",
+      "category": "urgent",
+      "blindHash": "416adb7801cc87c6559e8c5c49f79a20932139c447a267e93fa0d1a6759895b1"
+    },
+    {
+      "id": "b-urg-0147",
+      "category": "needs_reply",
+      "blindHash": "3a1486419fada1532bfd28f789a314fb0c48fab6645c0faf63ce8b65b244729a"
+    },
+    {
+      "id": "b-urg-0148",
+      "category": "needs_reply",
+      "blindHash": "6dd02c32083373bfa8629a7e5c471199acbcaa983387a3ea740df7bf9eb2f8b0"
+    },
+    {
+      "id": "b-urg-0149",
+      "category": "urgent",
+      "blindHash": "0933e4e229d632c8b8e212b87c1b8cc55f003a152c6b3776d05dfd17ad46de4c"
+    },
+    {
+      "id": "b-urg-0150",
+      "category": "needs_reply",
+      "blindHash": "a491bfba4516b0239eded442cc41e03d60d59a69278dc9bab95b4c812f8e1918"
+    },
+    {
+      "id": "b-urg-0151",
+      "category": "urgent",
+      "blindHash": "99ff4e7966b983b6e348005807247dcffdd8bc9eae5db46ee4340c0c39e9372c"
+    },
+    {
+      "id": "b-urg-0152",
+      "category": "urgent",
+      "blindHash": "540c9a085262bf9882ddef48042107fdc5c189bfc2ffacd0cc3c3d9c8912ed9e"
+    }
+  ]
+}

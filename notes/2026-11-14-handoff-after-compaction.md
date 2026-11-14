@@ -56,3 +56,22 @@ Run `limen land` ALONE. Read its last lines. "Recorded preimage" or CONFLICT = n
 - Fixed on master: mermaid node quoted; two CLI texts no longer say 5 minutes.
 - Open, optional: web panel texts `mb_resumed_toast` and `connected_toast` (en.ts 107, 168, and pl) still say "within 5 minutes". Fix in F100 stage 18/19 or a later web ticket.
 - Soft-pause line vanishes after 10 min while a doubled soft pause runs; other orgs see no pause line (plan D8, N17). Owner step O1 note after land: set MAIL_SYNC_EVERY_MIN only if 2 is wrong.
+
+## F100 s16 review carry-over (landed)
+- N6 open for the owner/F098 follow-up: Polish `Załatwiłbym` (digest and weekly wouldHandle) is a masculine first-person verb; the F098 glossary has no neutral form. Polish stays off until F098 s12. Decide the assistant's grammatical voice before Polish goes live (neutral: "Do załatwienia przez asystenta: …").
+- Migration 20261114140001 applied on the shared dev DB.
+
+## F029 s01 review carry-over (landed)
+- Stage 04 docs: architecture.md 6.1 "Known mail" parenthetical sits in the system-moved sentence; the multi-copy rule also covers a first copy in its source folder (test 1.5). Say so in stage 04 docs.
+- Accepted risks (D1, Q4): more locates = more exposure to Interia SEARCH limit (h) for tab-folder copies (false `relocated`); with 6+ copies and only the 6th gone, a new copy is stored silently.
+
+## F097 s18 writers: thread order (holdout 049-057 landed)
+- Thread order in holdout 049-057 was checked by hand only (no command detects a reversed thread). The blind checker and reconcile show a reversed thread only through disagreement. Stage 20 (freeze + owner audit of 50 cases) must include threaded cases. A mechanical check (thread[i] signature name vs slot thread[i].persona) would be a small ticket for the sim check.
+- Slots whose persona language differs from slot.lang were written in slot.lang with the persona signature unchanged.
+
+## F100 s18 re-review carry-over (landed, PASS)
+For F100 stage 19 (docs) and later web work:
+- measurement.md rule 9 and web-panel.md rule 9: say the page applies the 30-label rule and names the stats_mailbox_gone state. "Checked against" lines in both pages name d91e47f, a master commit that does not hold the stats page: set them to the commit that holds the page (after this land).
+- Page text gap: below 30 labels the page drops the auto mark ("29 of 30 rated mails needed" has no "· auto"). Add `stats_evidence_few_auto` (en, pl) so a category on auto shows it.
+- kept 0 shows "–", not "0 of 30 needed": acceptable; decide later.
+- Cleanup idea: extract a pure `statsView({mailboxId,data,error,loading})` from StatsPage.tsx and unit test the state cases (the page has no component test).

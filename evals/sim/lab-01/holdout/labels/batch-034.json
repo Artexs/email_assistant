@@ -1,0 +1,133 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-034",
+  "checker": "claude-haiku-5-5",
+  "labels": [
+    {
+      "id": "b-rep-0248",
+      "category": "needs_reply",
+      "blindHash": "5ff720319b49262528d0b5da388cad2c141f799974da7509b0fd337fc904ca25"
+    },
+    {
+      "id": "b-rep-0249",
+      "category": "needs_reply",
+      "blindHash": "4cead060c6fe765ee905af92f4989903cc5dd99a851527fa1cf09eb5d83268dc"
+    },
+    {
+      "id": "b-rep-0251",
+      "category": "needs_reply",
+      "blindHash": "9facfce80bd0caec8d16b5dcb41ed1497fa1d8987f72a20760f56116d6bcc9a7"
+    },
+    {
+      "id": "b-rep-0252",
+      "category": "needs_reply",
+      "blindHash": "4bd3f77cc504bd49aee24da57a117ea38a4c2ddf4a44a29ce0df22467de336bf"
+    },
+    {
+      "id": "b-rep-0253",
+      "category": "needs_reply",
+      "blindHash": "d4c534cc55afbed48c57560a366c541847441a62b02c5ad1f3902f78f64765c9"
+    },
+    {
+      "id": "b-rep-0254",
+      "category": "needs_reply",
+      "blindHash": "83fcf04a18b1fd05a9c863235801b53490dfac71e6aae7e3eb7404f535747e93"
+    },
+    {
+      "id": "b-rep-0255",
+      "category": "needs_reply",
+      "blindHash": "996755674d58525138b98baf41e73560c1afad4c067b9f7a1f05524fdeb3f312"
+    },
+    {
+      "id": "b-rep-0256",
+      "category": "needs_reply",
+      "blindHash": "4c4bbf9d5e6ed36d5755130d74390e3b1307dfcf59fa5c489822d01cc5b892e3"
+    },
+    {
+      "id": "b-rep-0257",
+      "category": "needs_reply",
+      "blindHash": "28d36af5966f82c98ff555bda5cc9e50506f269a3b238cf7212c3528f9794176"
+    },
+    {
+      "id": "b-rep-0258",
+      "category": "needs_reply",
+      "blindHash": "ef8c6fe205842e01ab10aa966785f0ce85f0997e45a68972f523b4437a185326"
+    },
+    {
+      "id": "b-rep-0259",
+      "category": "needs_reply",
+      "blindHash": "a19bad0e657ed614486b6b2f393d3d21ffd435a3d3ebce76896327b16e682993"
+    },
+    {
+      "id": "b-rep-0260",
+      "category": "needs_reply",
+      "blindHash": "db68bbdfd17390ded7fedb36804a957e5c80449110188a37730f5b7261ac9d6e"
+    },
+    {
+      "id": "b-rep-0261",
+      "category": "needs_reply",
+      "blindHash": "64c719ba7327c4efcc6454195b0c587783bd5ca010728e14726eea484acc6467"
+    },
+    {
+      "id": "b-rep-0262",
+      "category": "needs_reply",
+      "blindHash": "aa7332a21eee666d0f8a6e0b78644bc6cd169745a310b1945a2bd1c54585e9e4"
+    },
+    {
+      "id": "b-rep-0263",
+      "category": "needs_reply",
+      "blindHash": "6398c7460fd825c76e8bd6042f1a5b5ed55ac195bc2ff0093b9e09a8be79a204"
+    },
+    {
+      "id": "b-spa-0001",
+      "category": "spam",
+      "blindHash": "860c25ee3c4fed7329a39cbb6b0dd55d9648e34a28468bbc2267aa0bbe7b49e5"
+    },
+    {
+      "id": "b-spa-0002",
+      "category": "spam",
+      "blindHash": "f5fe2a828b0a569f39e9598c2c5afacd0cdfc175877111600c8cab9c6e09ab49"
+    },
+    {
+      "id": "b-spa-0003",
+      "category": "spam",
+      "blindHash": "8acb263395571a29ff73b55d2c11fd1c82683396c8db5b1698141501cdf594d5"
+    },
+    {
+      "id": "b-spa-0004",
+      "category": "spam",
+      "blindHash": "aa2f42128426361d48fa6b4eaf863356794c2f309bc69740b181c37d7aefb404"
+    },
+    {
+      "id": "b-spa-0006",
+      "category": "spam",
+      "blindHash": "b544f30b28bb3c9094c5b1a3ee4ab4a5192a9b3bf4d3024fedd9bf461d1d85a1"
+    },
+    {
+      "id": "b-spa-0007",
+      "category": "spam",
+      "blindHash": "a737907a5d063033c593ca7a9bca4e8b3076cad247220c1c1a87390d49f5dbb4"
+    },
+    {
+      "id": "b-spa-0009",
+      "category": "spam",
+      "blindHash": "8b8c35c0d035c591ea48aadfbdd51e2ece872a9f09e6f7c0fbfe85d864fc3331"
+    },
+    {
+      "id": "b-spa-0010",
+      "category": "spam",
+      "blindHash": "2335a89daf9c7eba55fa1e2f142d30739a037149b444ec65ff72e31fadf29e7f"
+    },
+    {
+      "id": "b-spa-0011",
+      "category": "spam",
+      "blindHash": "cd8e31515da8bf3268d04a13adc00ac3f1f0791e7fa79c213c7d7362ed337e4b"
+    },
+    {
+      "id": "b-spa-0012",
+      "category": "spam",
+      "blindHash": "3752614821cbbc40d34296d98446998d788eb02bd1483137754157d1f074eceb"
+    }
+  ]
+}

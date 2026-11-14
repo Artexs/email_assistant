@@ -40,7 +40,7 @@ export interface DigestHandled { handled: number; wouldHandle: number; triaged: 
 Weekly text, line by line (D23, D27):
 
 1. `📈 Week ${formatDay(start)} – ${formatDay(end − 1 ms)}` with `{ start, end } = weekRange(week.weekStart, timeZone)`.
-2. When `m1.important === 0 && m4.triaged === 0`: `No mail this week.` (then go on with lines for M2, M3, M7, M8 and the review line only).
+2. When `m1.important === 0 && m4.triaged === 0`: `No mail this week.` (then go on with the lines for M2, M3, M4, M5, M7, M8 and the review line: they print zeros and dashes; only the M1 lines of rule 3 and 4 are left out).
 3. `Missed important mail (lower bound): ${rateText(m1.misses, m1.important)}`.
 4. Only when `m1.sample.labelled > 0`: `Random review sample: ${m1.sample.misses} missed of ${m1.sample.important}`.
 5. `Open loops on time: ${pct(closed, due)} closed (${closed} of ${due}), ${pct(surfaced, due)} surfaced (${surfaced} of ${due})` — use `rateText` pieces; with `due === 0`: `Open loops on time: no delegation was due`; append `, ${pending} still open` when `pending > 0`.
@@ -72,7 +72,7 @@ Digest line (D24): when `handled` is set and `triaged > 0`, the footer gets, aft
    /review: 2 replied mails wait for a check.
    ```
 
-2. An empty week (all zeros, no auto) → line 2 `No mail this week.`, `Open loops on time: no delegation was due`, `Urgent notice time: no urgent mail`, `Auto: no category on auto`; no review line.
+2. An empty week (all zeros, no auto) → line 2 `No mail this week.`, `Handled for you: – (0 of 0)`, `Open loops on time: no delegation was due`, `Urgent notice time: no urgent mail`, `Auto: no category on auto`; no review line.
 3. `rateText(0, 0)` → `– (0 of 0)`; `rateText(1, 3)` → `33% (1 of 3)`.
 4. Registry: `noticeRenderers.weekly_report` exists; the view refuses an extra key and a `week` with a `subject` field.
 5. `renderDigest` with `handled: { handled: 124, wouldHandle: 0, triaged: 200, shadowOnly: false }` → footer holds `🤖 Handled in the last 7 days: 62% (124 of 200)`; with `shadowOnly: true, handled: 0, wouldHandle: 50` → `🤖 Would handle in the last 7 days: 25% (50 of 200)`; `triaged: 0` → no line; without `handled` → the old text.
