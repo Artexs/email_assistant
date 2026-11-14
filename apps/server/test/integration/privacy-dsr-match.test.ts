@@ -90,7 +90,7 @@ async function addHeaders(
   trx: Transaction<DB>,
   w: World,
   emailId: string,
-  values: { reply_to?: string[]; return_path?: string | null }
+  values: { reply_to?: string[]; return_path?: string | null; from_name?: string | null }
 ): Promise<void> {
   await trx
     .insertInto("email_headers")
@@ -99,6 +99,7 @@ async function addHeaders(
       org_id: w.orgId,
       reply_to: values.reply_to ?? [],
       return_path: values.return_path ?? null,
+      from_name: values.from_name ?? null,
       parts_known: true,
       captured_at: new Date(),
     })
@@ -142,6 +143,9 @@ describe("DSR address map", () => {
     expect(candidates.length).toBeGreaterThan(40);
 
     expect(candidates.filter((name) => !mapped.includes(name) && !excluded.includes(name))).toEqual([]);
+    // A display name can hold an address (owner decision): it is searched, not excluded.
+    expect(DSR_ADDRESS_MAP.email_headers?.from_name).toBe("text");
+    expect(excluded).not.toContain("email_headers.from_name");
     expect(candidates.filter((name) => mapped.includes(name) && excluded.includes(name))).toEqual([]);
     expect(mapped.filter((name) => excluded.includes(name))).toEqual([]);
 
@@ -253,6 +257,10 @@ describe("matchSubject", () => {
       });
       const headers = await kept();
       await addHeaders(trx, w, headers, { return_path: w.person });
+      // A display name can be an address. Another kept mail has a plain name: no match.
+      const named = await kept();
+      await addHeaders(trx, w, named, { from_name: `"${w.person.toUpperCase()}"` });
+      await addHeaders(trx, w, await kept(), { from_name: "Pat Smith" });
       const outboxRow = randomUUID();
       await trx
         .insertInto("outbox")
@@ -292,6 +300,7 @@ describe("matchSubject", () => {
       expect(match.mentions).toEqual({
         "emails.body_text": [body],
         "emails.subject": [subject],
+        "email_headers.from_name": [named],
         "email_headers.return_path": [headers],
         "triage_results.reason": [expect.any(String)],
         "triage_results.fields": [expect.any(String)],

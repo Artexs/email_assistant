@@ -22,6 +22,8 @@ export const DSR_ADDRESS_MAP: Readonly<Record<string, Readonly<Record<string, Ad
     body_text: "text",
   },
   email_headers: {
+    // The display name can be an address (`"p@x.test" <r@x.test>`), so a kept mail can hold the person's address here.
+    from_name: "text",
     reply_to: "recipients",
     return_path: "equal",
   },
@@ -94,10 +96,6 @@ export const NOT_PERSONAL: Readonly<Record<string, string>> = Object.fromEntries
   ...reasons(["email_headers.auto_submitted", "email_headers.precedence"], "one header token, no address"),
   ...reasons(["email_headers.attachments"], "file names, types and sizes, no address"),
   ...reasons(["email_headers.links"], "link host names only, no address"),
-  ...reasons(
-    ["email_headers.from_name"],
-    "display name of the sender; a mail that goes is deleted with it (open question: a kept mail can show an address as its display name)"
-  ),
   ...reasons(
     ["emails.dedup_key", "emails.message_id_header", "emails.in_reply_to", "emails.references_header"],
     "a Message-ID: random part and the host of the sender's system, no address of a person"
