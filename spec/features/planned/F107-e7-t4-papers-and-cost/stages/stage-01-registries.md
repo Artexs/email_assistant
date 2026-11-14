@@ -21,7 +21,7 @@ Part of [`../plan.md`](../plan.md). Decisions P2, D3, D4, D12.
 | `hibp` | no | env `AUTH_PWNED_CHECK` (on unless `off`) | 5 hex characters of a password hash |
 | `auth-smtp` | yes | env `AUTH_SMTP_HOST` | the address and the link of an auth mail; name `<SMTP provider>` |
 
-`location` uses facts from ADR 0015, the consent text and `docs/architecture.md`; an unknown location is `<to confirm: location>`; Backblaze is `<B2 region>` (Q3). `termsUrl` is the provider's privacy or data page; stage 06 verifies each URL.
+`location` uses facts from ADR 0015, the consent text and `docs/architecture.md`; an unknown location is `<to confirm: location>`; Backblaze is `<B2 region>` (Q3). `termsUrl`: the provider's privacy page (stage 06 verifies it).
 
 **Test.**
 1. Every key of `llmProviders` has exactly one row with `activeWhen = { kind: "llmProvider", provider: <key> }` (today `gemini`, `openai`).
