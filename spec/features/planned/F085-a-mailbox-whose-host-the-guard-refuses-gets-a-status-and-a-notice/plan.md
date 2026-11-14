@@ -79,7 +79,7 @@ Owner and coordinator words, word for word:
   | Event | Level | Fields | When |
   | --- | --- | --- | --- |
   | `mailbox_host_blocked` | warn | `mailbox_id`, `reason` (`sync` / `committer`) | `markHostBlocked` changed the row |
-  | `mailbox_host_refused` | info | `mailbox_id`, `status` | the guard refused, the row was not `active` |
+  | `mailbox_host_refused` | info | `mailbox_id` | the guard refused, the row was not `active` |
   | `mailbox_host_block_failed` | error | `mailbox_id`, `...errorFields(error)` | the transaction of `markHostBlocked` failed |
   | `mailbox_host_allowed` | info | `mailbox_id` | the re-check made the row `active` |
   | `mailbox_host_check_failed` | warn | `mailbox_id`, `...errorFields(error)` | a lookup failed in the re-check, or a per-mailbox error |
@@ -99,21 +99,21 @@ Owner and coordinator words, word for word:
 
 | Status now | Event | Result | Test |
 | --- | --- | --- | --- |
-| `active` | sync: guard refuses the IMAP host | `host_blocked`, audit row, notice to owners | 05: 5.1 tests 1–2 |
+| `active` | sync: guard refuses the IMAP host | `host_blocked`, audit row, notice to owners | 05: 5.1 tests 1–2; 5.2 |
 | `active` | committer: guard refuses the IMAP or SMTP host | `host_blocked`; the batch is released with no attempt counted | 05: 5.1 tests 3–4 |
 | `active` | lookup fails (`SoftError`) | stays `active`; `warn`; the next tick tries again | 05: 5.1 test 5 |
 | `paused` / `auth_error` | `markHostBlocked` called (a race) | no change; `mailbox_host_refused` | 05: 5.1 test 6 |
-| `host_blocked` | re-check: both hosts allowed | `active`, audit row, synced in the same run; a pending notice becomes `outdated` | 04: 4.1 tests 2, 6; 05: 5.2 |
-| `host_blocked` | re-check: a host refused | no change, no line | 04: 4.1 test 3 |
-| `host_blocked` | re-check: lookup fails | no change, one `warn` | 04: 4.1 test 4 |
-| `host_blocked` | organization `suspended` | no re-check, no notice sent until the resume | 04: 4.1 test 5 |
+| `host_blocked` | re-check: both hosts allowed | `active`, audit row, synced in the same run; a pending notice becomes `outdated` | 04: 4.1 integration tests 1, 7; 05: 5.2 |
+| `host_blocked` | re-check: a host refused | no change, no line | 04: 4.1 integration test 3 |
+| `host_blocked` | re-check: lookup fails | no change, one `warn` | 04: 4.1 integration test 4 |
+| `host_blocked` | organization `suspended` | no re-check, no notice sent until the resume | 04: 4.1 integration test 5 |
 | `host_blocked` | password change, guard passes | `active`, `reactivated: true` | 04: 4.2 test 1 |
 | `host_blocked` | password change, guard refuses | `HostNotAllowedError`, no change | 04: 4.2 test 2 |
-| `host_blocked` | pause or resume (web, Telegram) | refused: `409 wrong_status`, Telegram skip text | 03: 3.1 |
+| `host_blocked` | pause or resume (web, Telegram) | refused: `409 wrong_status`, Telegram skip text | 03: 3.1 tests 1–3 |
 | `host_blocked` | remove | removed, as `auth_error` | 03: 3.1 test 4 |
-| `host_blocked` | an owner approves a send | the send waits; answer `approvedHostBlocked` | 03: 3.2 |
+| `host_blocked` | an owner approves a send | the send waits; answer `approvedHostBlocked` | 03: 3.2 tests 3–4 |
 | `host_blocked` | 48 h after an approval | the expiry ends the send (`held_timeout`) | 03: 3.1 test 5 |
-| `active` again | the guard refuses again | a new episode: a new notice; the old pending one is `outdated` | 02: 2.1 test 6 |
+| `active` again | the guard refuses again | a new episode: a new notice; the old pending one is `outdated` | 02: 2.1 test 4 |
 
 Crash and repeat: the status change and its audit row share one transaction (`markHostBlocked`, the re-check). The notice has no source mark: the detector finds the status again at the next tick and the dedup key stops a second row. The committer releases the batch before it marks the mailbox; a crash between them leaves an `active` mailbox, and the next tick meets the guard again. Two runs at once (sync and committer): the conditional `WHERE status = 'active'` lets one of them change the row and write the audit row. Tenants: every new repository call takes a `TenantContext`; the only cross-tenant read is the existing `listMailboxTargets`.
 
@@ -226,7 +226,7 @@ limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thi
 
 ## Planning progress
 
-- [written] stage 01 · [written] stage 02 · [written] stage 03 · [written] stage 04 · [ ] stage 05 · [ ] stage 06 · [ ] stage 07
+- [written] stage 01 · [written] stage 02 · [written] stage 03 · [written] stage 04 · [written] stage 05 · [ ] stage 06 · [ ] stage 07
 - [ ] cold review (`plan-review-1.md`), findings applied
 
 ## Cold review
