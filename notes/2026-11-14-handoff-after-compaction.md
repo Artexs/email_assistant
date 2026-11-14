@@ -115,3 +115,8 @@ For F100 stage 19 (docs) and later web work:
 - N1 for stage 07 (D16 CLI write): lock the organization row FOR NO KEY UPDATE, not FOR UPDATE. The refusal audit row (app pool, FK key share on organizations) can otherwise wait on the CLI while the callback tx waits on the audit insert: a lock wait Postgres cannot see as a deadlock.
 - Note: the resolver-to-hook map is keyed by user id; two parallel callbacks of one user may lose one sso.login row. Low impact; per-request key is the fix if needed.
 - Suspended org is not checked at SSO sign-in (same as password sign-in). Refusals are not rate limited.
+
+## F101 s02 review carry-overs (Opus PASS, landed)
+- `.nvmrc` still says 22.14.0; the Astro 7 CLI rejects it. Fix in stage 03 (docs) or a follow-up: set 24.x.
+- The web:build CSP check does not see a missing island hash; only the e2e (browser) does. A removed `markdown.syntaxHighlight: false` gives only a Shiki [WARN] (stage 02 T5 hand check).
+- C1 (coordinator): check the first master CI run on Node 24 after this land (ci and image jobs). docker build was not run by worker or reviewer (no daemon).
