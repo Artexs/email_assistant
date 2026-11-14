@@ -87,3 +87,8 @@ For F100 stage 19 (docs) and later web work:
 - Flaky note: one mutation run showed extra failures that did not repeat (likely a stale Bun transpile cache).
 
 ## F105 s07/F100 s19/F029 s04: see commits; F105 stage 14 docs: tenancy-and-plans.md rule 7 may need the org:break-glass line.
+
+## F106 s01 review carry-over (PASS)
+- N4 (plausible, not tested): delete_organization's `gone` select takes no lock on memberships. An invite into org B that commits during a delete of org A can lose its new membership through the users cascade. Stage 02 (module `privacy`, deleteOrganization) must either lock the `gone` users' membership rows and re-check, or note why it is acceptable; test it if deterministic.
+- N3: a user whose only membership is A can have B rows from an earlier B membership: they lose the user link (SET NULL) and the user is deleted; audit_log.actor text in B keeps the id. Accepted edge case.
+- N5: trigger emails_skip_tombstoned has no pinned search_path (it qualifies public.dsr_tombstones): low risk.
