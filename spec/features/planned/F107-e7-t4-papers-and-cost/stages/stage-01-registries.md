@@ -6,51 +6,53 @@ Part of [`../plan.md`](../plan.md). Decisions P2, D3, D4, D12.
 
 **Goal.** One typed list of the outside services that get data.
 
-**Files.** New `packages/core/src/legal/subprocessors.ts` (exported from `@ea/core/web`: the web app imports only that entry, and the root re-exports it); its unit test. A server unit test next to the LLM provider registry or config for the checks that need server code.
+**Files.** New `packages/core/src/legal/subprocessors.ts` (exported from `@ea/core/web`: the web app imports only that entry, and the root re-exports it); its unit test. A server unit test for the checks that need server code, and the map `OUTSIDE_SERVICE_KEYS` next to the config.
 
-**Interfaces.** D3 names and shapes. Rows at the plan base (worker checks each against the code at `HEAD`):
+**Interfaces.** D3 names and shapes. Rows (check each at `HEAD`):
 
 | id | personalData | activeWhen | dataReceived (en, short) |
 | --- | --- | --- | --- |
 | `openai` | yes | llmProvider `openai` | mail text, subject, sender for triage and drafts |
 | `gemini` | yes | llmProvider `gemini` | the same |
-| `telegram` | yes | env `TELEGRAM_BOT_TOKEN` | the items of the consent text `tg_consent_text` (en and pl), no more, no less |
+| `telegram` | yes | env `TELEGRAM_BOT_TOKEN` | the items of `tg_consent_text`, no more, no less |
 | `backblaze` | yes | host `backup` | the database dump, encrypted with `age` before upload |
 | `tailscale` | yes | always | panel traffic (encrypted), device and network metadata |
-| `healthchecks` | no | env `HEARTBEAT_URL` | a timing ping, no personal data |
-| `hibp` | no | env `AUTH_PWNED_CHECK` (on unless `off`) | 5 hex characters of a password hash |
-| `auth-smtp` | yes | env `AUTH_SMTP_HOST` | the address and the link of an auth mail; name `<SMTP provider>` |
+| `healthchecks` | no | env `HEARTBEAT_URL` | a timing ping |
+| `hibp` | no | env `AUTH_PWNED_CHECK` unless `off` | 5 hex characters of a password hash |
+| `auth-smtp` | yes | env `AUTH_SMTP_HOST` | the address and link of an auth mail; name `<SMTP provider>` |
 
-`location` uses facts from ADR 0015, the consent text and `docs/architecture.md`; an unknown location is `<to confirm: location>`; Backblaze is `<B2 region>` (Q3). `termsUrl`: the provider's privacy page (stage 06 verifies it).
+`location`: facts from ADR 0015, the consent text, `docs/architecture.md`; else `<to confirm: location>`; Backblaze `<B2 region>` (Q3). `termsUrl`: the provider's privacy page (stage 06 verifies it).
+
+**Decisions.** `OUTSIDE_SERVICE_KEYS: Record<string, string | { exempt: string }>` maps each config key that names an outside endpoint or credential to a row id, or to an exempt reason (own database, own panel URL, a local key).
 
 **Test.**
-1. Every key of `llmProviders` has exactly one row with `activeWhen = { kind: "llmProvider", provider: <key> }` (today `gemini`, `openai`).
-2. Every `env` key of a row is a key of the server config schema (`TELEGRAM_BOT_TOKEN`, `HEARTBEAT_URL`, `AUTH_PWNED_CHECK`, `AUTH_SMTP_HOST`).
-3. Row ids are unique; every `Texts` value has a non-empty `en` and `pl`.
+1. Every key of `llmProviders` has exactly one row with `activeWhen = { kind: "llmProvider", provider: <key> }`.
+2. Every `env` key of a row is a key of the server config schema.
+3. Every config schema key that ends in `_URL`, `_HOST`, `_API_KEY`, `_TOKEN` or `_ENDPOINT` is a key of `OUTSIDE_SERVICE_KEYS`; every mapped id is a row id. A new key fails with its name.
+4. Row ids are unique; every `Texts` value has a non-empty `en` and `pl`.
 
 ## Step 2 — Data-category registry
 
-**Goal.** One typed list of what the system stores, about whom and for how long, so the privacy page, the records of processing and the tests share it.
+**Goal.** One typed list of what the system stores, about whom and for how long.
 
 **Files.** New `packages/core/src/legal/data-categories.ts` (exported as in step 1); a server integration test for coverage; a server unit test for the retention pins.
 
-**Interfaces.** D4 names and shapes. Categories (ids fixed; tables from `docs/architecture.md` §5 at `HEAD`):
-`account` (users, memberships, auth tables), `organization` (organization and mailbox settings), `mailbox-secret` (encrypted credentials), `mail-body`, `mail-headers` (subject, addresses, captured headers), `mail-ids` (Message-ID, dedup keys: `untilDelete`), `ai-results` (triage results, action payloads, drafts), `delegation` (delegates, delegations), `rules` (sender rules), `chat` (Telegram links, outbox), `audit` (audit log, feedback labels), `tombstones` (DSR hashes). A table holds one category: a mixed table (`emails`) goes to its most personal column's category, whose `label` names the rest.
+**Interfaces.** D4 names and shapes. A category groups columns with one period; `columns` entries are `table.column` or `table.*`. Ids: `account`, `organization`, `mailbox-secret`, `mail-body`, `captured-headers`, `mail-headers`, `mail-ids`, `ai-results`, `delegation`, `rules`, `chat-links`, `messages`, `audit`, `tombstones`; add one when a period does not fit (name it in the final message).
 
 **Decisions.**
-- `kept` of `mail-body` is `{ kind: "orgSetting", defaultDays: 30 }`; `mail-headers`, `ai-results`, `chat` are `{ kind: "days", days: 90 }`; `audit` and `mail-ids` are `untilDelete`; reset and invite tokens are part of `account` with the note in its label (1 day after expiry). Take each number from the retention code.
-- `subjects` includes `others` for every category that holds data of senders or recipients who are not users.
-- `NO_PERSONAL_DATA_TABLES`: the migration table and tables of codes or counts only; each entry has a reason string.
+- Take every period from `docs/capabilities/retention.md` rule 2 and the clear functions at `HEAD`. A column that no clear function touches is `untilDelete`.
+- `subjects` includes `others` for every category that holds data of people who are not members.
+- `NO_PERSONAL_DATA_TABLES`: tables of codes, counts or migrations only; each with a reason.
 
 **Test.**
-4. (int) Every table of the `public` schema (from `information_schema.tables`) is in exactly one category or in `NO_PERSONAL_DATA_TABLES`; the test names the missing or doubled tables.
-5. (int) A probe table `f107_probe` made inside the test transaction makes check 4 fail with `f107_probe` in the message (then rolls back).
-6. Every table of `DSR_ADDRESS_MAP` is in a category whose `subjects` include `others`.
-7. `mail-body.kept.defaultDays` equals the column default of `organizations.data_retention_days` (30); every `{ kind: "days" }` value equals `RETENTION_TEXT_DAYS` (90).
-8. Category ids are unique; `tables` lists hold no duplicate.
+5. (int) Every table of the `public` schema is in at least one category or in `NO_PERSONAL_DATA_TABLES`, never in both. Read the catalog (`pg_class`, `relkind = 'r'`) as the migrator role (`MIGRATOR_DATABASE_URL`, as `db-role.test.ts` does): the `app` role sees not every table.
+6. (int) In one migrator transaction: create `f107_probe (id int)`, run the check 5 query in that transaction, expect `f107_probe` in the missing list, roll back.
+7. Every table of `DSR_ADDRESS_MAP` is in a category whose `subjects` include `others`.
+8. Fixed pins (unit): `emails.body_text` → `{ kind: "orgSetting", defaultDays: 30 }`; `email_headers.*` → `orgSetting`; `emails.subject` → `{ kind: "days", days: 90 }` (equal to `RETENTION_TEXT_DAYS`); `emails.dedup_key` → `untilDelete`; `chat_links.*` → `untilDelete`; `actions.provider_result` → `untilDelete`; `delegations.task_summary` → `{ kind: "daysAfterClose", days: 90 }`. `defaultDays` equals the default of `organizations.data_retention_days` (int test).
+9. Category ids are unique; a column is in at most one category.
 
-**Check.** `bun test packages/core/src/legal`, the new server unit test and the new integration test file.
+**Check.** `bun test packages/core/src/legal`, the new server unit and integration tests.
 
-**Done when.** Tests 1–8 pass and the Proof of `plan.md` prints `PROOF_OK`.
+**Done when.** Tests 1–9 pass and the Proof of `plan.md` prints `PROOF_OK`.
 
-**Out of scope.** Rendering (stage 02), legal texts (03–05), the version guard (02).
+**Out of scope.** Rendering (02), legal texts (03–05), the version guard (06).

@@ -6,24 +6,24 @@ Part of [`../plan.md`](../plan.md). Decisions P7, P8, D10, D13. Needs stage 07 (
 
 **Goal.** One pure function gives the cost per mailbox per month at a mail volume, from the pilot measurement, for `docs/cost-model.md` and the E10b pricing page.
 
-**Files.** `packages/core/src/metrics/cost-model.ts` and its unit test.
+**Files.** `packages/core/src/metrics/cost-model.ts` (exported from the `@ea/core` root, like `unitCost`) and its unit test.
 
-**Interfaces.** D10: `costToRun(mailsPerDay, opts?)` and `pilotCost = { measuredOn: string; days: number; mails: number; llmUsd: number; llmCalls: number; unpricedCalls: number; models: readonly string[]; source: string }`. `llmUsdPerMail = llmUsd / mails` (all LLM calls of the four weeks over the classified mails of the 28 days, so plan and draft calls count per mail).
+**Interfaces.** D10: `costToRun(mailsPerDay, opts?)` and `pilotCost = { measuredOn: string; weeks: readonly string[]; triagedMails: number; llmUsd: number; llmCalls: number; unpricedCalls: number; models: readonly string[] }`, the sums of the four `stats:week` runs of `pilot-cost.md` (one window, one scope: the organization). `llmUsdPerMail = llmUsd / triagedMails`: all LLM calls (plan, draft, test mail) over the real triaged mails, so it is an upper bound; the doc says so.
 
 **Decisions.**
 - The hosting and backup shares come from one helper that `unitCost` (M7) also calls; M7 results do not change (its tests stay green unchanged).
-- `basis: "measured"` when `pilotCost.mails >= 100`; else `"estimate"` with `E3_ESTIMATE_USD_PER_MAIL = 0.000143` (E3 notes §4, classifier only) and the doc says so.
+- `basis: "measured"` when `triagedMails >= 100` and `unpricedCalls <= 0.05 × llmCalls`; else `"estimate"` with `E3_ESTIMATE_USD_PER_MAIL = 0.000143` (E3 notes §4, classifier only). The doc names the unpriced calls in both cases.
 - `opts.mailboxesPerHost` defaults to `costModel.mailboxesPerHost` (20); `mailsPerDay` and `mailboxesPerHost` must be > 0, else the function throws a `RangeError`.
 - Month = 30 days (the `monthlyCost` rule).
 
-**Test.** With a test `pilotCost` of `mails: 1000, llmUsd: 0.5` (`$0.0005` per mail):
+**Test.** With a test block of `triagedMails: 1000, llmUsd: 0.5, llmCalls: 1200, unpricedCalls: 0` (`$0.0005` per mail):
 1. `costToRun(100).llmUsd` = `0.0005 × 100 × 30` = `1.5`; `hostingUsd` = `7.1 / 20` = `0.355`; `backupUsd` = `0.05`; `totalUsd` = `1.905`; `basis` = `measured`.
 2. `costToRun(100, { mailboxesPerHost: 5 }).hostingUsd` = `1.42`.
-3. With `mails: 99`, `basis` = `estimate` and `llmUsd` = `0.000143 × 100 × 30` = `0.429`.
+3. With `triagedMails: 99`, or with `unpricedCalls: 61`, `basis` = `estimate` and `costToRun(100).llmUsd` = `0.000143 × 100 × 30` = `0.429`; with `unpricedCalls: 60`, `measured`.
 4. `costToRun(0)` and `costToRun(50, { mailboxesPerHost: 0 })` throw `RangeError`.
 5. `unitCost` gives the same `hostingUsdMonth` and `backupUsdMonth` as `costToRun` for the default host size.
 
-(Compare with `toBeCloseTo`, 6 digits. Inject the block for the tests; the exported `pilotCost` holds the real numbers of `pilot-cost.md`.)
+(Compare with `toBeCloseTo`, 6 digits. Inject the block for the tests; the exported `pilotCost` holds the real numbers of `pilot-cost.md`; the code and the doc cite "the F107 ticket folder", not a path, because the folder moves at close.)
 
 ## Step 2 — `docs/cost-model.md`
 

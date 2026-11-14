@@ -1,6 +1,6 @@
 # F107 stage 03 — Privacy policy (pl, en)
 
-Part of [`../plan.md`](../plan.md). Decisions P1–P3, P5, D2, D5–D7, E2. Needs stage 02.
+Part of [`../plan.md`](../plan.md). Decisions P1–P3, D2, D5–D7, E2. Needs stage 02.
 
 ## Step 1 — Write the privacy policy
 
@@ -26,12 +26,12 @@ Part of [`../plan.md`](../plan.md). Decisions P1–P3, P5, D2, D5–D7, E2. Need
 
 **Test.**
 1. A unit test lists the nine `##` headings of each language in the order above (exact text).
-2. The en and pl privacy sources hold `<provider name>` and `<contact>` (the stage 02 e2e test 3 depends on it).
+2. The en and pl privacy sources hold `<provider name>` and `<contact>` (P3).
 3. Every placeholder is in `legalPlaceholders` (extend the list for new ones such as `<backup retention>`; each new entry is named in the final message).
-4. The text guard of stage 02 passes after the bump of `TERMS_VERSION` and `LEGAL_TEXTS_SHA256` (D5).
+4. The placeholder and parity checks of stage 02 pass; `TERMS_VERSION` stays (D5: stage 06 bumps it).
 
 **Check.** The unit tests of `apps/web/src/lib/`, `bun run web:build`.
 
 **Done when.** Tests 1–4 pass and the Proof prints `PROOF_OK`. The final message lists the statements with a weak source.
 
-**Out of scope.** Terms and DPA (04), internal papers (05), the claims list (06), changes to registry rows (a wrong row is a question).
+**Out of scope.** Terms and DPA (04), internal papers (05), the claims list (06), changes to registry rows (a wrong row goes to the final message; stage 06 fixes it).

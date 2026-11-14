@@ -1,6 +1,6 @@
 # F107 stage 04 — Terms of service and DPA (pl, en)
 
-Part of [`../plan.md`](../plan.md). Decisions P1–P3, P5, D2, D5–D7. Needs stage 03. Sources as stage 03, plus `docs/capabilities/tenancy-and-plans.md` and the EU standard contractual clauses for Art. 28 (E07 notes §3, W13).
+Part of [`../plan.md`](../plan.md). Decisions P1–P3, D2, D5–D7. Needs stage 03. Sources as stage 03, plus `docs/capabilities/tenancy-and-plans.md` and the EU standard contractual clauses for Art. 28 (E07 notes §3, W13).
 
 ## Step 1 — Terms of service
 
@@ -40,7 +40,7 @@ Part of [`../plan.md`](../plan.md). Decisions P1–P3, P5, D2, D5–D7. Needs st
 **Test.**
 1. A unit test lists the nine terms headings and the eleven DPA headings of each language in the order above (exact text).
 2. The en and pl DPA sources hold `<provider name>`; the terms sources hold `<to confirm: liability>` and `<to confirm: governing law>`.
-3. The text guard passes after the bump (D5).
+3. The placeholder and parity checks of stage 02 pass; `TERMS_VERSION` stays (D5).
 
 **Check.** The unit tests of `apps/web/src/lib/`, `bun run web:build`, `legal.spec.ts` under the lock.
 
