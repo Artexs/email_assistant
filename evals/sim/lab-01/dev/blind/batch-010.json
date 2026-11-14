@@ -1,0 +1,307 @@
+{
+  "scenario": "lab-01",
+  "part": "dev",
+  "batch": "batch-010",
+  "cases": [
+    {
+      "id": "b-spa-0064",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Warehouse Expo 2027: stand booking closes Friday",
+      "body": "Hello exhibitors!\n\nStand booking for Warehouse Expo 2027 closes this Friday. Book any stand in hall C before then and you receive a free banner in our online catalogue and a premium slot in the Expo newsletter, which reaches more than 30,000 logistics managers.\n\nPrices start from 4,900 PLN for a basic 9 sqm stand. This year we also launch a startup corner with reduced rates, and a new hall for automation and robotics. Seats at the opening conference are limited, so register early to get the best positions.\n\nReply to this message and our sales team will send the floor plan and the price list within the hour.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0068",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Your website is losing customers – free audit inside",
+      "body": "Hi there,\n\nWe took a quick look at your company website and noticed a few issues that may be costing you leads: slow loading, missing keywords and no mobile version. Our team can fix everything in one week.\n\nFor a limited time we offer the complete package at 70 percent off, plus a free report on your three main competitors.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0077",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Congratulations! Your company was selected for the Fleet Loyalty Prize",
+      "body": "Dear valued customer,\n\nWe are delighted to inform you that your company has been randomly selected for the Fleet Loyalty Prize, our annual reward program for customers who use fleet cards. The prize includes a luxury weekend for two in a mountain resort, a tablet computer of your choice, and a gift voucher for 1,500 PLN that you can spend in more than 200 partner shops.\n\nTo receive your prize, please complete the short registration form available at http://paliwa-fiota.test/prize within the next 48 hours. You will be asked to confirm the name of your company, the contact person, and the last four digits of your payment card, so that we can verify your eligibility. Please note that prizes which are not claimed in time will be given to the next company on the list, and we will not be able to make any exceptions.\n\nThis promotion is not related to your invoices or your current fleet card agreement, and it does not require any payment. It is simply our way of saying thank you for being with us.\n\nWe look forward to hearing from you soon, and we wish you a pleasant and successful year.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0083",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Free gift for loyal customers",
+      "body": "Dear customer, claim your free smart watch today. Only 50 pieces left! Click http://paliwa-fiota.test/gift and enter your details. Offer ends tonight.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0085",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "New: Warehouse Expo VIP ticket, two for one this week",
+      "body": "Dear logistics professionals,\n\nWarehouse Expo is giving away a limited number of VIP passes. Buy one pass and get a second for free, valid until the end of this week. VIP guests get a reserved seat at the keynote, an invitation to the evening reception, and access to the exhibitor lounge.\n\nMore than 15,000 guests visited last year. This spring we expect even more, because the fair moves to a bigger hall with an extra conference stage.\n\nHurry up, the promotion ends on Sunday at midnight. Click the link in the footer to get your pass.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0086",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Buy 10,000 targeted emails for $29",
+      "body": "Hello! Need more clients? Buy 10,000 targeted business emails for only $29. Instant download after payment. Limited stock, so act now.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0090",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Tanie leady B2B – tylko dziś",
+      "body": "Dzień dobry, sprzedajemy aktualne kontakty do menedżerów firm z całej Polski. Pakiet 5000 rekordów za 99 zł, płatność z góry. Odpowiedz TAK, a przyślemy fakturę proforma.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0092",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zarabiaj na giełdzie z naszym systemem – pewny zysk",
+      "body": "Witam, nasz zespół opracował system inwestycyjny, który daje zysk 15 procent miesięcznie bez ryzyka. Dołącz do 3000 zadowolonych klientów. Napisz teraz.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0094",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Expo for Logistics – free entry code",
+      "body": "Hi! Use the free entry code EXPO-FREE and get a ticket at no cost to the Expo for Logistics, this March in Katowice. Register at the link below. Spaces are limited.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0104",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Tłumaczenia techniczne ze zniżką 40 procent",
+      "body": "Szanowni Państwo,\n\nnasze biuro tłumaczeń specjalizuje się w dokumentacji technicznej, instrukcjach i umowach handlowych. Obsługujemy ponad trzydzieści języków i realizujemy zlecenia w 24 godziny. Tylko w tym miesiącu dajemy zniżkę 40 procent na pierwsze zlecenie dla nowych klientów.\n\nAby skorzystać z oferty, wystarczy odpowiedzieć na tę wiadomość i dołączyć plik do wyceny. Oferta jest ważna do końca miesiąca, a liczba miejsc w promocji ograniczona.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0105",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Pożyczka dla firm bez BIK – decyzja w 15 minut",
+      "body": "Dzień dobry,\n\nczy Państwa firma potrzebuje szybkiego finansowania? Oferujemy pożyczki od 20 do 300 tysięcy złotych, bez sprawdzania w BIK, bez zaświadczeń i bez zbędnych formalności. Pieniądze trafiają na konto w ciągu jednego dnia roboczego, a pierwsza rata dopiero po trzech miesiącach.\n\nWystarczy, że odpowiedzą Państwo na tę wiadomość i podadzą kwotę, której potrzebują. Nasz doradca zadzwoni do Państwa jeszcze dziś i przedstawi najkorzystniejszą ofertę. Tylko teraz zerowa prowizja.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0107",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wystaw się z nami! Rabat 20% na stoisko",
+      "body": "Szanowni Państwo, tylko do końca tygodnia rabat 20 procent na stoisko na Targach Magazynowych Expo. Zgłoś się teraz i zyskaj darmowy wpis w katalogu. Liczba miejsc jest ograniczona.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0109",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Targi Magazynowe Expo: pakiet VIP dla 50 pierwszych firm",
+      "body": "Szanowni Państwo,\n\nzapraszamy do udziału w największym wydarzeniu branży magazynowej w tym roku. Tylko dla pierwszych pięćdziesięciu firm, które zgłoszą się do końca bieżącego tygodnia, przygotowaliśmy pakiet VIP, w którym znajdziecie Państwo: miejsce na stoisko w najlepszej lokalizacji, dwa zaproszenia na kolację wystawców, prezentację firmy podczas otwarcia targów oraz bezpłatny wpis w katalogu.\n\nTargi odbędą się w kwietniu w Katowicach. Spodziewamy się ponad dwunastu tysięcy gości z kraju i zagranicy, w tym przedstawicieli największych sieci handlowych i operatorów logistycznych. W tym roku po raz pierwszy zorganizujemy także strefę innowacji, w której młode firmy zaprezentują nowe technologie dla magazynów.\n\nWiemy, że czas jest dla Państwa cenny, dlatego proces zgłoszenia ograniczyliśmy do jednego formularza. Po jego wypełnieniu nasz opiekun skontaktuje się z Państwem w ciągu jednego dnia roboczego i omówi szczegóły oraz indywidualną wycenę.\n\nPamiętajcie, że pakiet VIP jest limitowany i nie będziemy go powtarzać. Kto zgłosi się później, zapłaci pełną cenę, a najlepsze miejsca zostaną już zajęte. Zarezerwujcie swoje stoisko dziś i dołączcie do grona wystawców, którzy co roku zwiększają swoją sprzedaż dzięki naszym targom.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0118",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Okazja: serwis kawowy dla biura z 50% rabatem",
+      "body": "Dzień dobry,\n\nproponujemy Państwu wynajem profesjonalnych ekspresów do kawy dla biura, z dostawą ziarna i serwisem raz w miesiącu. W tym tygodniu oferujemy pierwszy miesiąc za darmo oraz 50 procent rabatu na kolejne trzy.\n\nWystarczy, że odpowiedzą Państwo na tę wiadomość, a nasz doradca umówi bezpłatną prezentację w Państwa firmie.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0120",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Targi Magazynowe Expo: dołącz do wystawców, zniżka tylko do jutra",
+      "body": "Dzień dobry,\n\nzbliża się termin zamknięcia rejestracji wystawców na Targi Magazynowe Expo. Wszystkim firmom, które zgłoszą się do jutra do godziny 14:30, oferujemy zniżkę 18 procent na dowolne stoisko oraz bezpłatną promocję w naszych mediach społecznościowych.\n\nDo tej pory zarejestrowało się już ponad trzysta firm. Na liście są duzi operatorzy i małe firmy transportowe, a także dostawcy oprogramowania do zarządzania magazynem. Dołącz do nich, póki są jeszcze wolne miejsca.\n\nZgłoszenia przyjmujemy pod adresem oferty@targi-magazynowe.test. W temacie wpisz słowo STOISKO.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0125",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Karta podarunkowa do sklepu budowlanego",
+      "body": "Dzień dobry, w ramach programu lojalnościowego przyznajemy Państwu kartę podarunkową na zakupy w sklepie budowlanym. Aby ją odebrać, kliknij: http://paliwa-fiota.test/karta\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0127",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wyjątkowa oferta: odzież robocza z nadrukiem Twojego logo",
+      "body": "Szanowni Państwo,\n\nszyjemy odzież roboczą dla firm: kurtki, spodnie, polary i koszulki z nadrukiem logo, w nakładach od 50 sztuk. Jeśli złożą Państwo zamówienie w tym miesiącu, dołożymy 20 dodatkowych koszulek gratis, a wysyłkę zrealizujemy bez opłat.\n\nOferujemy też bezpłatne projekty graficzne i próbny egzemplarz do zatwierdzenia. Wystarczy, że odpowiedzą Państwo na ten e-mail i podadzą liczbę osób, które chcą ubrać.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0131",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Final reminder: Warehouse Expo gala dinner tickets now on sale",
+      "body": "Dear friends of Warehouse Expo,\n\nTickets for the annual Warehouse Expo gala dinner are now on sale, and this year the evening promises to be better than ever. We have booked a historic venue in the centre of Katowice, a live jazz band, a three-course menu prepared by a well-known chef, and a networking lounge for up to 400 guests.\n\nEvery exhibitor and visitor can buy a table for ten people or a single seat. Early bookings until the end of the month get 20 percent off. We also offer a sponsor package that includes your logo on the main screen, a short speech by your representative, and a presentation stand next to the entrance.\n\nLast year all tables were sold out two weeks before the event, so we strongly advise you not to wait. The booking form is available at the link below, and our team will confirm your reservation by return email.\n\nWe would be delighted to see you there, and we thank you for your support of the logistics community.\n\nPlease unsubscribe using the link in the footer if you do not wish to receive these messages.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0146",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Targi Magazynowe Expo: szkolenie za darmo przy rezerwacji stoiska",
+      "body": "Szanowni Państwo,\n\nkażda firma, która do końca miesiąca zarezerwuje stoisko na Targach Magazynowych Expo, otrzyma bezpłatne szkolenie dla pracowników z obsługi stoiska i prezentacji oferty. Szkolenie prowadzi doświadczony trener, który od lat pracuje z wystawcami z branży logistycznej.\n\nDodatkowo oferujemy rabat 10 procent na pakiet reklamowy, obejmujący baner w naszym newsletterze i wzmiankę w mediach społecznościowych. Zainteresowane firmy prosimy o kontakt mailowy, a wyślemy komplet materiałów.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0148",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Make money online",
+      "body": "Hello friend! Make $500 per day working from home. No experience needed, only a laptop. Join our free webinar today.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0153",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "You have a pending cashback",
+      "body": "Hello. Your fleet account has a cashback bonus of 120 EUR ready to claim. Confirm your details at http://paliwa-fiota.test/cashback in 24 hours.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0159",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Premium Leads Pro: summer sale on lead databases, everything 80% off",
+      "body": "Dear business owner,\n\nThe big sale is here. For the next five days only, Premium Leads Pro reduces the price of all lead databases by 80 percent. Choose from more than 200 industries and 40 countries, and get a fresh list of decision makers with their names, positions and emails, ready to import into your CRM.\n\nOur top three databases this week: logistics and transport, with 38,000 contacts; manufacturing, with 52,000 contacts; and retail, with 61,000 contacts. All lists are verified every month, and our delivery rate is better than 95 percent, so you do not waste time on bounced emails.\n\nAs a bonus, every customer who orders today gets a free SEO audit of their website, plus a video review of their landing page made by one of our experts. There is no contract, and you can cancel any time, although we are sure that you will not want to.\n\nTo order, just reply with the name of the database you want and your company name, and we will send a payment link. Offers like this are rare, and the stock is limited to the first 150 customers, so do not hesitate for too long.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0161",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zniżka na ubezpieczenie zdrowotne dla Twojej rodziny",
+      "body": "Szanowni Państwo,\n\nwiemy, że prowadzenie firmy to ogromna odpowiedzialność, dlatego w ramach programu lojalnościowego dla klientów kart flotowych przygotowaliśmy specjalną ofertę prywatnego ubezpieczenia zdrowotnego dla Państwa i Państwa rodzin. Pakiet obejmuje wizyty u specjalistów bez kolejek, badania laboratoryjne oraz opiekę stomatologiczną. Zniżka dla Państwa wynosi 35 procent w pierwszym roku.\n\nAby skorzystać z oferty, należy zalogować się na swoje konto pod adresem http://paliwa-fiota.test/zdrowie i wprowadzić dane osobowe wszystkich osób, które mają być objęte ubezpieczeniem, w tym numery PESEL. Formularz jest dostępny tylko przez 72 godziny, po tym czasie oferta zostanie wycofana.\n\nNie przegap okazji, która zdarza się tylko raz. Nasi doradcy są do Państwa dyspozycji, jeśli potrzebują Państwo pomocy z wypełnieniem formularza. Wystarczy odpowiedzieć na tę wiadomość.\n\nOferta nie jest związana z Państwa obecną umową na karty ani z fakturami. Jest przeznaczona dla wszystkich firm, które w ostatnim roku skorzystały z naszych stacji, i obejmuje także dzieci do 18. roku życia, które ubezpieczamy bez dodatkowej opłaty.\n\nZ poważaniem\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0166",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Bon na zakupy w sieci sklepów sportowych",
+      "body": "Dzień dobry, jako stały klient otrzymujesz bon 200 zł do sklepu sportowego. Odbierz go pod adresem http://paliwa-fiota.test/bon, wpisując dane karty.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0167",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Get your company on the first page of Google",
+      "body": "Dear Sir or Madam,\n\nYour competitors are already ranking above you in Google, and you are losing customers every day. Our SEO specialists can change this in 30 days. We guarantee top-three positions for ten keywords of your choice, or we return your money.\n\nThis week we offer a free trial month for new customers, and a reduced price of $149 for the following three months. No contracts, no hidden fees. Just reply to this message with the word START, and we will send you the first report within 24 hours.\n\nDo not miss the chance to beat your competition.",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}

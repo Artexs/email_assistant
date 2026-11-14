@@ -5,6 +5,7 @@ import { listHiddenMoveRows, listMistakeRows, listRejectRows } from "../../src/m
 import { listLlmCallRows } from "../../src/modules/audit";
 import { listDelegationDueRows } from "../../src/modules/delegation";
 
+import { insertAction, insertDelegate, insertDelegation } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { WEEK, seedWeek } from "./metrics-fixtures";
 
@@ -227,6 +228,111 @@ describe("metric row readers: actions, delegation, audit", () => {
         query({ testMail: { senders: (await rule(["e7"])).map((a) => a.toLowerCase()) } })
       );
       expect(mistakes).toEqual([]);
+    });
+  });
+  test("listHiddenMoveRows: a reverse move to a folder other than the inbox is not a row", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgA } = await seedWeek(trx);
+      const original = await trx
+        .selectFrom("actions")
+        .select("id")
+        .where("org_id", "=", orgA.ctx.orgId)
+        .where("email_id", "=", orgA.ids.e4 as string)
+        .where("type", "=", "move")
+        .executeTakeFirstOrThrow();
+      // Only `reverses_action_id` tells this row from an original move: the target is a real folder, the status applied.
+      await insertAction(trx, orgA.ctx, orgA.ids.e4 as string, {
+        type: "move",
+        status: "applied",
+        payload: { folder: "ai_info" },
+        appliedAt: new Date("2026-11-18T11:30:00Z"),
+        reversesActionId: original.id,
+      });
+      const rows = await listHiddenMoveRows(trx, orgA.ctx, query());
+      expect(rows).toHaveLength(3);
+      expect(rows.filter((row) => row.emailId === orgA.ids.e4)).toHaveLength(1);
+      expect(rows.find((row) => row.emailId === orgA.ids.e4)?.folder).toBe("ai_notifications");
+    });
+  });
+
+  test("listHiddenMoveRows: a logged move is not a row, an undone one is", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgA } = await seedWeek(trx);
+      const inWeek = new Date("2026-11-17T10:30:00Z");
+      await insertAction(trx, orgA.ctx, orgA.ids.e2 as string, {
+        type: "move",
+        status: "logged",
+        payload: { folder: "ai_info" },
+        appliedAt: inWeek,
+      });
+      expect(await listHiddenMoveRows(trx, orgA.ctx, query())).toHaveLength(3);
+      await insertAction(trx, orgA.ctx, orgA.ids.e10 as string, {
+        type: "move",
+        status: "undone",
+        payload: { folder: "ai_info" },
+        appliedAt: inWeek,
+      });
+      const rows = await listHiddenMoveRows(trx, orgA.ctx, query());
+      expect(rows).toHaveLength(4);
+      expect(rows.find((row) => row.emailId === orgA.ids.e10)?.truth).toBeNull();
+    });
+  });
+
+  test("listDelegationDueRows: a test sender is left out", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgA } = await seedWeek(trx);
+      const sender = (
+        await trx
+          .selectFrom("emails")
+          .select("from_address")
+          .where("id", "=", orgA.ids.e11 as string)
+          .executeTakeFirstOrThrow()
+      ).from_address as string;
+      const rows = await listDelegationDueRows(trx, orgA.ctx, query({ testMail: { senders: [sender.toLowerCase()] } }));
+      expect(rows.map((row) => row.id)).toEqual([orgA.ids.d3 as string]);
+    });
+  });
+
+  test("listDelegationDueRows: a missing due_at falls back to sent_at + 3 days; unsent mail is not a row", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgA } = await seedWeek(trx);
+      const delegateId = await insertDelegate(trx, orgA.ctx);
+      // All new delegations hang on the seeded mail e9: the reader needs a real mail, not its category.
+      const add = async (opts: { status: string; sentAt: string | null }) => {
+        const emailId = orgA.ids.e9 as string;
+        const draft = await insertAction(trx, orgA.ctx, emailId, { type: "create_draft", status: "applied" });
+        const send = await insertAction(trx, orgA.ctx, emailId, {
+          type: "send",
+          status: "applied",
+          dependsOnActionId: draft,
+          approvedAt: new Date("2026-11-10T09:00:00Z"),
+          approvedBy: orgA.ownerId,
+          approvedVia: "telegram",
+        });
+        return insertDelegation(trx, orgA.ctx, {
+          mailboxId: orgA.mailboxId,
+          emailId,
+          delegateId,
+          draftActionId: draft,
+          sendActionId: send,
+          status: opts.status,
+          sentAt: opts.sentAt === null ? null : new Date(opts.sentAt),
+          dueAt: null,
+        });
+      };
+      const inWeek = await add({ status: "sent", sentAt: "2026-11-17T09:00:00Z" }); // due 2026-11-20
+      const early = await add({ status: "sent", sentAt: "2026-11-10T09:00:00Z" }); // due 2026-11-13
+      const late = await add({ status: "sent", sentAt: "2026-11-20T09:00:00Z" }); // due 2026-11-23
+      const cancelled = await add({ status: "cancelled", sentAt: "2026-11-18T09:00:00Z" }); // due 2026-11-21
+      await add({ status: "drafted", sentAt: null });
+      const rows = await listDelegationDueRows(trx, orgA.ctx, query());
+      expect(rows.map((row) => row.id).sort()).toEqual(
+        [orgA.ids.d2, orgA.ids.d3, inWeek, cancelled].map(String).sort()
+      );
+      expect(rows.map((row) => row.id)).not.toContain(early);
+      expect(rows.map((row) => row.id)).not.toContain(late);
+      expect(rows.find((row) => row.id === inWeek)).toMatchObject({ dueAt: null, cancelled: false });
+      expect(rows.find((row) => row.id === cancelled)?.cancelled).toBe(true);
     });
   });
 });

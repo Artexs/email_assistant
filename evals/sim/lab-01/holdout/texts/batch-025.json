@@ -1,0 +1,160 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-025",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-not-0223",
+      "subject": "Potwierdzenie przelewu wychodzącego z rachunku firmowego",
+      "body": "Potwierdzenie realizacji przelewu\n\nRachunek obciążony: PL00-TEST-4821 (rachunek bieżący, PLN)\nOdbiorca: Trans-Pak Opakowania Sp. z o.o.\nTytuł przelewu: Faktura FV/0412/2027, termin płatności 15.01.2027\nKwota: 18 450,00 PLN\nData księgowania: 11.01.2027, godzina 09:12\nStatus: zrealizowany\n\nSaldo po operacji: 214 306,52 PLN. Dostępny limit w rachunku: 150 000,00 PLN.\n\nPrzelew zlecił użytkownik zatwierdzający płatności Magdalena Czerniak w ramach paczki zleceń nr 7. Pozostałe dwa przelewy z tej paczki oczekują na drugie zatwierdzenie i zostaną zrealizowane po jego złożeniu.\n\nTo jest wiadomość wygenerowana automatycznie. Prosimy na nią nie odpowiadać.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0224",
+      "subject": "Logistyka Dziś: biuletyn z 8 stycznia",
+      "body": "W tym wydaniu: stawki spotowe na trasach bałtyckich, nowe limity emisji dla ciężarówek, wyniki przetargów na usługi magazynowe.\n\nStawki frachtowe. Na początku roku przewoźnicy na trasie Gdynia–Malmö podnieśli stawki średnio o cztery procent. Spedytorzy tłumaczą to mniejszą liczbą wolnych naczep po świętach i wyższymi kosztami paliwa. Analitycy rynku spodziewają się stabilizacji dopiero pod koniec lutego.\n\nRegulacje. Komisja zapowiedziała zmiany w zasadach rozliczania opłat drogowych dla pojazdów powyżej dwunastu ton. Projekt trafi do konsultacji w przyszłym miesiącu, a firmy transportowe mają czas na uwagi do połowy marca.\n\nPrzetargi. Dwie duże sieci handlowe ogłosiły postępowania na obsługę magazynów regionalnych. Terminy składania ofert upływają w lutym. Szczegóły warunków udziału publikujemy w dziale przetargów.\n\nDo zobaczenia w piątek.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0225",
+      "subject": "Zestawienie operacji na rachunku za okres 4–10 stycznia 2027",
+      "body": "Zestawienie operacji na rachunku firmowym PL00-TEST-4821\n\nOkres: 04.01.2027 – 10.01.2027. Waluta rachunku: PLN. Saldo początkowe: 241 880,10 PLN.\n\nOperacje uznaniowe:\n04.01.2027, wpływ od Zielona Hurtownia S.A., płatność za fakturę FV/0388/2026, kwota 62 300,00 PLN.\n06.01.2027, wpływ od Meble Dąbrowski Sp. j., zapłata za dostawę z 22.12.2026, kwota 14 920,50 PLN.\n08.01.2027, wpływ od Nordic Foods Trade, zaliczka za pierwszy kwartał, kwota 35 000,00 PLN.\n\nOperacje obciążeniowe:\n05.01.2027, przelew do Paliwa Północ Sp. z o.o., faktura za paliwo za grudzień, kwota 47 215,30 PLN.\n07.01.2027, opłata za prowadzenie rachunku i pakiet kart, kwota 189,00 PLN.\n07.01.2027, składka ubezpieczenia floty, rata pierwsza, kwota 12 640,00 PLN.\n09.01.2027, przelew do Serwis Naczep Trailmax Sp. z o.o., usługa przeglądu, kwota 5 870,00 PLN.\n10.01.2027, zlecenie stałe, czynsz za biuro w Gdyni, kwota 9 400,00 PLN.\n\nPodsumowanie okresu: suma uznań wyniosła 112 220,50 PLN, suma obciążeń wyniosła 75 314,30 PLN. Saldo końcowe: 278 786,30 PLN.\n\nInformacje dodatkowe: w okresie zestawienia nie odnotowano operacji odrzuconych ani zwrotów. Dwa zlecenia płatności z datą 12.01.2027 oczekują na drugie zatwierdzenie i nie są ujęte w saldzie. Zablokowane środki z tytułu autoryzacji kartowych wyniosły 1 150,00 PLN.\n\nPełne zestawienie w formacie pliku znajdziesz w bankowości internetowej, w zakładce Historia i raporty. Zestawienie jest generowane automatycznie co poniedziałek. Wiadomość nie wymaga odpowiedzi.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0226",
+      "subject": "Logowanie do bankowości internetowej z nowego urządzenia",
+      "body": "Zarejestrowano logowanie do rachunku PL00-TEST-4821 z nowego urządzenia. Data: 11.01.2027, godzina 07:58. Jeśli to Ty, nie musisz nic robić.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0227",
+      "subject": "Daily limit reached for card payments",
+      "body": "Card payments on account PL00-TEST-4821 reached 80% of the daily limit (8 000,00 PLN) on 11.01.2027 at 10:41. No action is needed.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0228",
+      "subject": "Supply Chain Weekly: container rates ease, air cargo tightens",
+      "body": "This week in global freight\n\nOcean rates. Spot container rates from Asia to Northern Europe fell for the third week in a row, down about six percent on the month. Carriers added blank sailings to hold prices, but port congestion in the North Sea has cleared and transit times are back to normal.\n\nAir cargo. Capacity on transatlantic routes tightened after two carriers withdrew older freighters. Forwarders report rate increases of eight to ten percent on short notice bookings.\n\nRoad freight. European road rates stayed flat. Driver shortages remain the main constraint in the Baltic region, and several operators now offer retention bonuses.\n\nAlso this week:\n- Two large retailers extend their winter surcharge until the end of February.\n- A new rail link between Poland and Lithuania opens for container traffic in March.\n- Fuel surcharge indices were mixed across the continent.\n\nOur new quarterly report on freight cost trends is available to subscribers at a reduced price this month.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": []
+    },
+    {
+      "id": "b-not-0229",
+      "subject": "Freight Rates Briefing: what moved in the market",
+      "body": "Good morning from the Supply Chain Weekly desk. Three things moved the freight market in the last seven days.\n\n1. Bunker fuel prices rose for the second week, which pushes carriers to review their surcharges. Expect announcements before the end of the month.\n\n2. Warehouse vacancy in Central Europe dropped below five percent for the first time in two years, according to a regional property survey. Rents for logistics space in Poland and the Czech Republic are rising accordingly.\n\n3. A major European forwarder reported its quarterly results. Volumes grew by three percent, margins stayed under pressure, and management expects a slow first half of the year.\n\nWhat to watch next week: the preliminary figures on December exports from the major port authorities, and the planned vote on new cabotage rules.\n\nReaders who want the full data tables can order our paid Freight Outlook report, which includes route-by-route forecasts for the next two quarters.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0232",
+      "subject": "Karty paliwowe: nowy cennik od lutego",
+      "body": "Dostawcy kart paliwowych zapowiadają nowe rabaty od 1 lutego.\n\nPorównanie stawek w tabeli na stronie biuletynu.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0234",
+      "subject": "Weekly digest: ports, tariffs and trucking capacity",
+      "body": "Your weekly summary of supply chain news.\n\nPorts. Rotterdam and Gdansk both reported record container throughput for the final quarter. Gdansk cites growth in transshipment to the Baltic states. Berth waiting times stayed under one day at both ports.\n\nTariffs. New customs rules for e-commerce parcels take effect for shipments entering the union from the start of March. Brokers advise exporters to update their documentation templates early to avoid delays at the border.\n\nTrucking capacity. The spot market shows more available trailers than a month ago, but long-haul rates remain above last year's level. Analysts link this to higher insurance costs and tighter rules on driver rest time.\n\nTechnology. A group of logistics operators announced a shared platform for booking loading slots at warehouses. A pilot starts in the spring with six participants.\n\nThat is all for this week. Our paid market outlook covers all these topics in detail and is available with a discount for new readers.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0235",
+      "subject": "Ceny kart paliwowych: co się zmieniło w styczniu",
+      "body": "Karty paliwowe w styczniu. Przegląd zmian w ofertach największych dostawców dla firm transportowych.\n\nCeny. Średnia cena oleju napędowego w rozliczeniu kartowym wzrosła o trzy grosze na litrze w porównaniu z grudniem. Największe podwyżki dotknęły stacje przy autostradach, najmniejsze stacje sieci regionalnych na północy kraju.\n\nRabaty. Dwóch dostawców wprowadziło rabaty progowe dla flot powyżej pięćdziesięciu pojazdów. Pierwszy próg zaczyna się od miesięcznego wolumenu dwudziestu tysięcy litrów. Trzeci dostawca zapowiada podobny model od lutego.\n\nOpłaty. Kilka firm podniosło opłatę za wydanie nowej karty oraz za obsługę faktur w formie papierowej. Przedsiębiorcy powinni sprawdzić zapisy aneksów do swoich umów.\n\nBezpieczeństwo. Przypominamy o limitach dziennych i o blokadzie kart w razie zgubienia.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0236",
+      "subject": "Biuletyn branżowy: krótko o rynku",
+      "body": "Najważniejsze wiadomości tygodnia dla branży transportowej.\n\nStawki frachtowe na trasach krajowych bez zmian. Spedytorzy czekają na dane o eksporcie za grudzień.\n\nDwa nowe terminale przeładunkowe ruszą w tym roku w północnej Polsce. Szczegóły w kolejnym wydaniu.\n\nDo przeczytania w przyszłym tygodniu.",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Najważniejsze wiadomości tygodnia dla branży transportowej.</p><p style=\"margin:0 0 12px 0\">Stawki frachtowe na trasach krajowych bez zmian. Spedytorzy czekają na dane o eksporcie za grudzień.</p><p style=\"margin:0 0 12px 0\">Dwa nowe terminale przeładunkowe ruszą w tym roku w północnej Polsce. Szczegóły w kolejnym wydaniu.</p><p style=\"margin:0 0 12px 0\">Do przeczytania w przyszłym tygodniu.</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-not-0237",
+      "subject": "Warehouse system alert: sync with ERP delayed",
+      "body": "ERP notification, automatic message\n\nModule: Warehouse Management (WMS) integration\nEvent: synchronization delay\nDocument reference: WMS-SYNC-0287\nDate and time: 11.01.2027, 06:45\n\nSummary\nThe scheduled synchronization between the warehouse management system and the ERP ledger did not complete in the expected time window. The job started at 06:00 and ran for 45 minutes before the monitoring service marked it as delayed.\n\nDetails\n- Warehouse locations affected: Gdynia hall A, Gdynia hall C, Tczew cross-dock\n- Stock movements waiting in the queue: 412\n- Goods receipts waiting for posting: 37\n- Shipment confirmations waiting for posting: 58\n- Oldest document in the queue: goods receipt dated 10.01.2027, 21:14\n\nCurrent status\nThe integration service restarted automatically at 06:52. The queue is being processed in batches of 50 documents. The estimated time to clear the queue is 25 minutes. Stock levels in the ERP may differ from the physical stock until the process finishes.\n\nImpact\nNo documents were lost. Orders created in the sales module during the delay are visible but may show outdated availability.\n\nNext steps\nThe monitoring service checks the queue every 5 minutes and sends a closing message when it is empty. If the queue does not shrink within 60 minutes, the system raises a ticket in the IT service desk.\n\nThis message was generated by System ERP Kordelan. Do not reply to this address.",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">ERP notification, automatic message</p><p style=\"margin:0 0 12px 0\">Module: Warehouse Management (WMS) integration<br>Event: synchronization delay<br>Document reference: WMS-SYNC-0287<br>Date and time: 11.01.2027, 06:45</p><p style=\"margin:0 0 12px 0\">Summary<br>The scheduled synchronization between the warehouse management system and the ERP ledger did not complete in the expected time window. The job started at 06:00 and ran for 45 minutes before the monitoring service marked it as delayed.</p><p style=\"margin:0 0 12px 0\">Details<br>- Warehouse locations affected: Gdynia hall A, Gdynia hall C, Tczew cross-dock<br>- Stock movements waiting in the queue: 412<br>- Goods receipts waiting for posting: 37<br>- Shipment confirmations waiting for posting: 58<br>- Oldest document in the queue: goods receipt dated 10.01.2027, 21:14</p><p style=\"margin:0 0 12px 0\">Current status<br>The integration service restarted automatically at 06:52. The queue is being processed in batches of 50 documents. The estimated time to clear the queue is 25 minutes. Stock levels in the ERP may differ from the physical stock until the process finishes.</p><p style=\"margin:0 0 12px 0\">Impact<br>No documents were lost. Orders created in the sales module during the delay are visible but may show outdated availability.</p><p style=\"margin:0 0 12px 0\">Next steps<br>The monitoring service checks the queue every 5 minutes and sends a closing message when it is empty. If the queue does not shrink within 60 minutes, the system raises a ticket in the IT service desk.</p><p style=\"margin:0 0 12px 0\">This message was generated by System ERP Kordelan. Do not reply to this address.</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-not-0238",
+      "subject": "ERP: zatwierdzono zamówienie zakupu ZK/0145/2027",
+      "body": "Zamówienie zakupu ZK/0145/2027 zostało zatwierdzone. Dostawca: Paliwa Północ Sp. z o.o. Wartość: 23 800,00 PLN. Data: 11.01.2027, 08:05.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0239",
+      "subject": "Magazyn Logistyka Dziś: wydanie specjalne o rynku magazynowym",
+      "body": "Wydanie specjalne: rynek magazynowy na początku roku\n\nNowy rok przyniósł zmiany na rynku powierzchni magazynowych. Przygotowaliśmy zestawienie najważniejszych informacji dla operatorów i właścicieli firm dystrybucyjnych.\n\nWolna powierzchnia. Według przeglądu agencji nieruchomości wskaźnik pustostanów w regionie Trójmiasta spadł poniżej czterech procent. W województwie mazowieckim odsetek wolnych hal jest wyższy, ale i tu popyt rośnie. Najemcy z branży spożywczej szukają obiektów z kontrolowaną temperaturą, a oferta takich hal jest wciąż ograniczona.\n\nCzynsze. Stawki za metr kwadratowy w nowych obiektach wzrosły średnio o pięć procent w skali roku. Deweloperzy zapowiadają kolejne podwyżki, tłumacząc je kosztami budowy i cenami energii. Część najemców negocjuje umowy z indeksacją powiązaną z inflacją.\n\nAutomatyzacja. Coraz więcej operatorów inwestuje w systemy zarządzania magazynem i w skanery nowej generacji. Eksperci zwracają uwagę, że wdrożenie nowego systemu w środku sezonu zwykle kończy się opóźnieniami, dlatego warto planować je na okres mniejszego ruchu.\n\nPracownicy. Agencje pracy tymczasowej donoszą o trudnościach w rekrutacji magazynierów. Wynagrodzenia na stanowiskach operatorów wózków widłowych wzrosły o osiem procent. Firmy coraz częściej oferują dodatki za pracę w nocy oraz opłacane szkolenia na uprawnienia.\n\nPrawo. Ministerstwo przygotowuje nowe przepisy o przechowywaniu materiałów łatwopalnych. Projekt przewiduje dodatkowe wymogi dla hal powyżej pięciu tysięcy metrów kwadratowych.\n\nPełny raport o rynku magazynowym przygotujemy na koniec miesiąca. Zapraszamy do lektury kolejnych wydań.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0240",
+      "subject": "ERP: faktura sprzedaży FS/0071/2027 wystawiona",
+      "body": "Wystawiono fakturę sprzedaży FS/0071/2027 dla Nordic Foods Trade. Kwota brutto: 41 200,00 PLN. Termin płatności: 25.01.2027.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0241",
+      "subject": "Raport dzienny ERP: dokumenty oczekujące na zatwierdzenie",
+      "body": "Raport dzienny systemu ERP Kordelan\nData raportu: 11.01.2027, godzina 07:00\nNr raportu: RD/0011/2027\n\nPoniżej zestawienie dokumentów, które czekają na zatwierdzenie na koniec poprzedniego dnia roboczego.\n\nZamówienia zakupu (5):\nZK/0143/2027, Paliwa Północ Sp. z o.o., 23 800,00 PLN, oczekuje na akceptację kierownika działu.\nZK/0144/2027, Serwis Naczep Trailmax Sp. z o.o., 5 870,00 PLN, oczekuje na akceptację dyrektora operacyjnego.\nZK/0146/2027, Trans-Pak Opakowania Sp. z o.o., 11 450,00 PLN, oczekuje na akceptację kierownika działu.\nZK/0147/2027, Elektro-Rampy Sp. z o.o., 9 120,00 PLN, oczekuje na akceptację kierownika działu.\nZK/0148/2027, Biuro Plus Sp. z o.o., 1 340,00 PLN, oczekuje na akceptację kierownika działu.\n\nFaktury kosztowe (3):\nFK/0210/2027, Trans-Pak Opakowania Sp. z o.o., 18 450,00 PLN, termin płatności 15.01.2027.\nFK/0211/2027, Elektro-Rampy Sp. z o.o., 9 120,00 PLN, termin płatności 22.01.2027.\nFK/0212/2027, Biuro Plus Sp. z o.o., 1 340,00 PLN, termin płatności 22.01.2027.\n\nWnioski urlopowe (2):\nWU/0019/2027, magazyn Gdynia, termin od 18.01.2027 do 22.01.2027.\nWU/0020/2027, dział sprzedaży, termin od 25.01.2027 do 29.01.2027.\n\nDokumenty, które nie zostaną zatwierdzone w ciągu pięciu dni roboczych, system oznaczy jako przeterminowane i przekaże do nadzoru. Zatwierdzenia wykonuje się w module Obieg dokumentów.\n\nRaport wygenerowano automatycznie. Prosimy nie odpowiadać na tę wiadomość.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0242",
+      "subject": "Supply Chain Weekly: quick update",
+      "body": "Container spot rates edged lower again this week.\n\nFull figures in the members area.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": []
+    },
+    {
+      "id": "b-not-0245",
+      "subject": "Karty paliwowe: ostrzeżenia i nowe zasady rozliczeń",
+      "body": "Karty paliwowe. Co zmienia się w rozliczeniach flotowych.\n\nNowe zasady. Dwaj duzi dostawcy zmieniają okres rozliczeniowy z miesięcznego na dwutygodniowy. Dla firm z mniejszym obrotem oznacza to częstsze faktury i krótszy czas na płatność. Przedsiębiorcy powinni sprawdzić, czy ich system księgowy obsłuży nowy cykl.\n\nLimity. Banki i wystawcy kart przypominają, że limity kredytowe dla firm transportowych są weryfikowane raz na kwartał. Opóźnienia w płatności mogą skutkować czasową blokadą kart.\n\nOszustwa. Rośnie liczba prób wyłudzeń danych kart paliwowych, w tym fałszywych wiadomości o rzekomej blokadzie. Przypominamy, że dostawcy nie proszą o podanie numeru karty w mailu.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0246",
+      "subject": "Logistyka Dziś: biuletyn z 15 stycznia, wydanie rozszerzone",
+      "body": "Wydanie rozszerzone. Temat numeru: jak firmy dystrybucyjne planują rok.\n\nPrognozy. Analitycy branży oceniają, że popyt na usługi transportowe w pierwszym kwartale wzrośnie o dwa do trzech procent. Największy wzrost dotyczy przewozów żywności i produktów chemii gospodarczej. Słabiej wygląda sektor meblarski, gdzie zamówienia na eksport nadal spadają.\n\nKoszty. Firmy przewozowe wskazują trzy główne źródła rosnących kosztów: paliwo, wynagrodzenia kierowców i ubezpieczenia floty. Wiele z nich renegocjuje umowy z klientami, wprowadzając klauzule indeksacyjne. Klienci zwykle zgadzają się na nie, ale żądają ograniczenia wysokości podwyżek.\n\nFlota. Ceny nowych naczep wzrosły w ubiegłym roku o dziewięć procent, a czas oczekiwania na dostawę wydłużył się do pięciu miesięcy. Część przewoźników przedłuża więc eksploatację starszych pojazdów i inwestuje w serwis. Producenci zapowiadają zwiększenie mocy produkcyjnych dopiero w drugiej połowie roku.\n\nCła i granice. Na wschodniej granicy czas oczekiwania dla ciężarówek skrócił się średnio o godzinę. Natomiast odprawy eksportowe do krajów skandynawskich nadal wymagają starannego przygotowania dokumentów, zwłaszcza faktur handlowych i świadectw pochodzenia.\n\nPrzetargi. Dwie sieci handlowe zapowiedziały przetargi na obsługę logistyczną sklepów regionalnych. Organizatorzy chcą wybrać wykonawców do końca marca.\n\nKalendarz. Najbliższe targi logistyczne odbędą się w lutym. Lista wystawców jest już dostępna w serwisie.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0249",
+      "subject": "Ceny paliw: tygodniowy przegląd dla flot",
+      "body": "Tygodniowy przegląd cen paliw dla firm transportowych\n\nOlej napędowy w hurcie potaniał w tym tygodniu o około dwa procent. Obniżka wynika z niższych notowań ropy na rynkach światowych i mocniejszego złotego. Dla odbiorców detalicznych zmiana będzie widoczna na stacjach dopiero za kilka dni.\n\nRafinerie zapowiadają na przyszły tydzień niewielką korektę w górę, związaną z rosnącym popytem w Europie Zachodniej. Analitycy ostrzegają, że prognozy na luty pozostają niepewne.\n\nW dziale kart paliwowych porównujemy trzy popularne oferty dla flot średniej wielkości: różnice w rabatach, opłatach za wydanie karty i długości okresów płatności. Najkorzystniejsza oferta zależy od profilu tras i od tego, ile paliwa firma kupuje poza granicami kraju.\n\nDane do tabel pochodzą z publicznych cenników i oświadczeń dostawców. Redakcja nie pobiera opłat za umieszczenie ofert w zestawieniu.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0250",
+      "subject": "Biuletyn: stawki paliwowe w skrócie",
+      "body": "Dostawcy paliw ogłosili nowe stawki na luty.\n\nZestawienie cen w tabeli w serwisie.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0251",
+      "subject": "Supply Chain Weekly: last mile, labour and rates",
+      "body": "Highlights from the freight world this week.\n\nLast mile. Parcel carriers in Western Europe report a rise in failed first deliveries during the winter weeks, which pushes costs up for retailers. Several operators now test delivery slots confirmed by app notification.\n\nLabour. A survey of two hundred logistics employers shows that wage growth for warehouse staff averaged four percent last year. Employers expect similar growth in the coming year and say retention is a bigger challenge than hiring.\n\nRates. Truckload rates in Northern Europe edged up one percent. Reefer capacity remains tight on routes from Poland to Scandinavia.\n\nPolicy. A group of transport ministers will meet next month to discuss common rules for driver rest areas.\n\nSubscribe to our premium service to receive the full regional rate tables each Monday.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": []
+    },
+    {
+      "id": "b-not-0252",
+      "subject": "Logistyka Dziś: podsumowanie tygodnia w transporcie",
+      "body": "Podsumowanie tygodnia w transporcie drogowym i magazynowaniu.\n\nInfrastruktura. Zakończono remont odcinka drogi ekspresowej prowadzącej do portu w Gdyni. Przewoźnicy zapowiadają krótsze czasy dojazdu, szczególnie w godzinach porannych. Zarządca drogi ostrzega, że prace wykończeniowe mogą jeszcze powodować utrudnienia nocą.\n\nPrzewoźnicy. Rośnie liczba firm, które wdrażają elektroniczne listy przewozowe. Według przeglądu branżowego ponad połowa średnich przedsiębiorstw korzysta już z takiego rozwiązania, co skraca czas rozliczeń o kilka dni.\n\nRynek pracy. Kierowcy z uprawnieniami na przewóz towarów niebezpiecznych mogą liczyć na wyższe stawki. Firmy szkoleniowe odnotowały wzrost zapisów na kursy ADR.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0254",
+      "subject": "ERP notification: monthly stock count scheduled",
+      "body": "ERP notification, automatic message\n\nModule: Inventory\nEvent: monthly stock count scheduled\nDocument reference: INV-PLAN-0031\nCreated: 11.01.2027, 07:30\n\nThe monthly stock count for January has been scheduled by the inventory control team. The system has locked the creation of new stock adjustment documents for the locations listed below during the count windows.\n\nSchedule\n- Gdynia hall A: 23.01.2027, from 06:00 to 14:00\n- Gdynia hall B: 23.01.2027, from 14:00 to 22:00\n- Gdynia hall C: 24.01.2027, from 06:00 to 14:00\n- Tczew cross-dock: 24.01.2027, from 14:00 to 20:00\n\nScope\nThe count covers all item groups with a stock value above 5 000,00 PLN and a random sample of 150 further items. Reserved stock for open customer orders is counted separately and compared with the reservation list.\n\nExpected effects\nOutbound shipments planned for the count windows will be moved by the planning module to the nearest free slot. The module creates a list of moved shipments after the count and sends it to the sales team. Goods receipts continue as usual but are posted only after the count of the given location is closed.\n\nRoles\nThe inventory control team leads the count. Shift managers confirm the results of their halls in the module Inventory, tab Count results. Differences above the tolerance of 0,5 percent of the value of the item group start a recount automatically.\n\nThis message was generated by System ERP Kordelan. Do not reply to this address.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0257",
+      "subject": "ERP: zmiana statusu dokumentów w module Sprzedaż",
+      "body": "Powiadomienie systemowe ERP Kordelan\n\nModuł: Sprzedaż\nZdarzenie: zmiana statusu dokumentów\nData i godzina: 11.01.2027, 08:40\n\nTrzy zamówienia klientów zmieniły status z \"w realizacji\" na \"gotowe do wysyłki\": ZS/0502/2027, ZS/0503/2027 oraz ZS/0507/2027. Magazyn w Gdyni otrzymał listy kompletacyjne i rozpoczął przygotowanie przesyłek.\n\nJedno zamówienie, ZS/0505/2027, zostało wstrzymane z powodu braku pełnej dostępności towaru. System zaproponował wysyłkę częściową. Decyzję o jej zatwierdzeniu podejmuje koordynator sprzedaży.\n\nWiadomość wygenerowano automatycznie. Prosimy na nią nie odpowiadać.",
+      "thread": []
+    }
+  ]
+}

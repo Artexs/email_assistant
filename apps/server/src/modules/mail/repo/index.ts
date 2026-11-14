@@ -32,7 +32,14 @@ export {
   type SyncFolderRow,
 } from "./folders";
 export { getCredentials, insertCredentials, updateCredentials } from "./credentials";
-export { findCopies, listFolderUids, listRecentlyMoved, type MovedRow } from "./copies";
+export {
+  findCopies,
+  listFolderUids,
+  listMoveCandidates,
+  listRecentlyMoved,
+  type MoveCandidateRow,
+  type MovedRow,
+} from "./copies";
 export {
   clearReturned,
   getEmailMailbox,

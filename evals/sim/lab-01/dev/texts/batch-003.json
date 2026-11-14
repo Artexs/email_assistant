@@ -1,0 +1,198 @@
+{
+  "scenario": "lab-01",
+  "part": "dev",
+  "batch": "batch-003",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-del-0234",
+      "subject": "Joint tender – site visit and travel for your team",
+      "body": "Dear Mr Szalewski,\n\nWe are preparing the presentation for the joint tender and would like your representatives to visit our terminal in Gdynia so that the evaluation committee can see the whole chain at one place. We propose one working day in the last week of January.\n\nCould your assistant coordinate the date with your diary, book train tickets for three or four people from Warsaw and reserve a lunch table near the terminal? We will take care of the visit programme and of the parking permits as soon as we know the number of guests.\n\nThere is no need for a long reply. A short note with the chosen date from your office will be enough for our planning.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-del-0245",
+      "subject": "Organizacja posiedzenia rady w styczniu",
+      "body": "Szanowny Panie Prezesie,\n\nposiedzenie rady nadzorczej odbędzie się 28.01.2027 w siedzibie spółki. Chciałbym, aby Pana biuro zajęło się wszystkimi sprawami organizacyjnymi, a ja mogłem skupić się wyłącznie na treści obrad.\n\nProszę o zarezerwowanie sali na cały dzień, od godziny 9:00 do 16:00, z projektorem i możliwością podłączenia członków rady, którzy dołączą zdalnie. Potrzebne będzie również zamówienie przerwy kawowej oraz obiadu dla dziewięciu osób, z uwzględnieniem dwóch diet wegetariańskich. Zaproszenia z agendą powinny trafić do członków rady z tygodniowym wyprzedzeniem, a materiały w formie plików z hasłem, które prześle moja asystentka.\n\nOsoby spoza Warszawy będą potrzebowały noclegu poprzedniego dnia. Proszę o rezerwację czterech pokoi w hotelu w pobliżu siedziby oraz transportu z dworca. Listę uczestników i ich preferencje przekaże moja asystentka w osobnej wiadomości, jak tylko zakończy zbieranie odpowiedzi.\n\nNie oczekuję dużej liczby informacji zwrotnych. Wystarczy, że ktoś z Pana biura potwierdzi rezerwacje i prześle plan dnia do mojego sekretariatu. Gdyby wystąpiły trudności z salą, proszę o wcześniejszy kontakt, żebyśmy mogli poszukać alternatywy na czas. Nie zależy mi na wyszukanej oprawie, ważne, aby wszyscy mogli skupić się na pracy i nie tracić czasu na sprawy organizacyjne w dniu posiedzenia.\n\nDziękuję za pomoc.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-del-0258",
+      "subject": "Re: Faktura FV/2026/118 – prośba o płatność",
+      "body": "Szanowny Panie Prezesie,\n\nprosimy, aby dział księgowości sprawdził i zaksięgował fakturę FV/2026/118 za grudniowe tankowania oraz zlecił przelew w ustalonym terminie.",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Szanowny Panie Prezesie,</p><p style=\"margin:0 0 12px 0\">prosimy, aby dział księgowości sprawdził i zaksięgował fakturę FV/2026/118 za grudniowe tankowania oraz zlecił przelew w ustalonym terminie.</p></div>",
+      "thread": [
+        {
+          "subject": "Faktura FV/2026/118 – grudzień",
+          "body": "Dzień dobry, czy ma Pani informację o statusie faktury za grudniowe tankowania?\n\nWiktor Szalewski"
+        },
+        {
+          "subject": "Re: Faktura FV/2026/118 – grudzień",
+          "body": "Dzień dobry Panie Prezesie, fakturę wysłaliśmy 5.01.2027, termin płatności wynosi czternaście dni.\n\nEwelina Marszalek"
+        }
+      ]
+    },
+    {
+      "id": "b-inf-0003",
+      "subject": "Export status: customs backlog cleared",
+      "body": "Dear Mr Szalewski,\n\nFor your information: the customs backlog at the port was cleared on Tuesday. All our joint shipments are released and moving again.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0007",
+      "subject": "Supply Chain Weekly: Baltic freight rates edge up",
+      "body": "Spot rates on the Baltic container lanes rose about 3% over the past week, driven by winter congestion at northern ports.\n\nAnalysts expect rates to stay elevated until mid-February. Two large carriers have announced new surcharges, and transit time to Scandinavian ports lengthened by one day.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0011",
+      "subject": "Podsumowanie sytuacji w odprawach celnych",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję Pana o bieżącym stanie spraw celnych w naszych wspólnych przewozach eksportowych. W ciągu ostatnich dwóch tygodni nasz agent w porcie w Gdyni odprawił czterdzieści siedem przesyłek, z czego tylko trzy wymagały dodatkowych wyjaśnień. W żadnym przypadku nie doszło do zatrzymania towaru dłuższego niż jeden dzień.\n\nNajwiększe opóźnienia dotyczyły przesyłek spożywczych z certyfikatami pochodzenia, które w grudniu zmieniły format. Agent przygotował już nowe wzory dokumentów i od początku stycznia wszystkie przesyłki do krajów nordyckich korzystają z uproszczonej procedury. Dzięki temu średni czas odprawy skrócił się z dwudziestu sześciu do jedenastu godzin.\n\nWarto również odnotować, że urząd celny zapowiedział w lutym planowane prace modernizacyjne w systemie zgłoszeń elektronicznych. Według komunikatu przewidywane są krótkie przerwy w nocy, bez wpływu na odprawy w godzinach pracy terminalu. Będziemy tak organizować załadunki, aby uniknąć okien technicznych. Agent celny potwierdził też, że do końca marca nie przewiduje zmian w taryfach opłat za odprawę, więc koszty na tej trasie pozostaną na dotychczasowym poziomie.\n\nPrzesyłam to jedynie jako informację do Pana wiadomości; w tej chwili nie widzimy ryzyk, które wymagałyby decyzji po Pana stronie. O ewentualnych zmianach będziemy informować na bieżąco.\n\nDaniel Hargreaves",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0022",
+      "subject": "Re: Zakres wspólnej oferty",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że nasz dział prawny zakończył przegląd dokumentów wspólnej oferty. Nie wniósł żadnych uwag.\n\nDaniel Hargreaves",
+      "thread": [
+        {
+          "subject": "Zakres wspólnej oferty – uwagi klienta",
+          "body": "Dear Mr Szalewski,\n\nwe have no objections to the scope of the joint offer as presented. Nordic Foods Trade will act as a reference for the project.\n\nKarin Lindqvist"
+        }
+      ]
+    },
+    {
+      "id": "b-inf-0027",
+      "subject": "Zakończenie sprawy reklamacji z grudnia",
+      "body": "Szanowny Panie Prezesie,\n\nchciałabym poinformować, że sprawa grudniowej reklamacji, którą zgłosiłam Państwa dyrektor operacyjnej, została z naszej strony zamknięta. Towar z uszkodzonych palet został odesłany do Państwa magazynu w Łodzi, a nota uznaniowa wpłynęła do nas w poniedziałek, w pełnej kwocie.\n\nMuszę przyznać, że cały proces przebiegł sprawniej, niż się spodziewałam. Pani Strzemecka odpowiedziała w ciągu doby, a kierowca zabrał palety następnego dnia rano. W ubiegłych latach podobne sprawy ciągnęły się tygodniami, dlatego chcę to wyraźnie zaznaczyć.\n\nW styczniu odbieramy dostawy w normalnym trybie, bez zmian w harmonogramie. Wszystkie nasze hurtownie, w tym nowo otwarta w Rzeszowie, przyjmują towar zgodnie z dotychczasowymi oknami rozładunku. Nasz dział jakości nie zgłasza w tym tygodniu żadnych uwag do jakości opakowań.\n\nPiszę o tym tylko dla Pana wiadomości, bez potrzeby podejmowania jakichkolwiek działań. Cenię naszą współpracę i uważam, że takie sprawy warto odnotować, gdy układają się dobrze. Mam nadzieję, że podobnie sprawnie pójdzie nam w kolejnych miesiącach, szczególnie w sezonie wzmożonych zamówień przed Wielkanocą, kiedy wolumen u nas rośnie niemal o jedną czwartą, a każde opóźnienie jest od razu widoczne w sklepach.\n\nZ poważaniem,\nGenowefa Jastrzebska",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0032",
+      "subject": "Re: Terminy podróży w pierwszym kwartale",
+      "body": "Dzień dobry Wiktorze,\n\ndla porządku: moje wyjazdy w pierwszym kwartale zostały ustalone. Będę poza krajem w dniach od 9 do 11 lutego oraz od 2 do 4 marca. Poza tymi terminami jestem dostępny w biurze rady, a w razie spraw pilnych dla zarządu można dzwonić do mojego sekretariatu. Sekretariat zna mój kalendarz i potrafi znaleźć wolną chwilę nawet w czasie podróży.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "subject": "Terminy podróży w pierwszym kwartale",
+          "body": "Dzień dobry Panie Przewodniczący,\n\nw kalendarzu zarządu są wolne terminy w lutym, jeśli planuje Pan wizytę w siedzibie.\n\nMagdalena Czerniak"
+        }
+      ]
+    },
+    {
+      "id": "b-inf-0038",
+      "subject": "Logistyka Dzis: ceny paliw w styczniu",
+      "body": "W styczniu średnia cena oleju napędowego na stacjach zawodowych wyniosła 6,18 zł za litr, o 2 proc. mniej niż w grudniu.\n\nEksperci przewidują stabilizację do końca lutego, choć zastrzegają, że wiele zależy od decyzji producentów ropy. Z kolejnych tematów numeru: nowe zasady rozliczeń kart paliwowych w transporcie międzynarodowym i raport o kosztach floty w 2026 roku.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">W styczniu średnia cena oleju napędowego na stacjach zawodowych wyniosła 6,18 zł za litr, o 2 proc. mniej niż w grudniu.</p><p style=\"margin:0 0 12px 0\">Eksperci przewidują stabilizację do końca lutego, choć zastrzegają, że wiele zależy od decyzji producentów ropy. Z kolejnych tematów numeru: nowe zasady rozliczeń kart paliwowych w transporcie międzynarodowym i raport o kosztach floty w 2026 roku.</p><p style=\"margin:0 0 12px 0\">Redakcja Logistyka Dzis | wypisz sie z listy</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0050",
+      "subject": "Nordic – signing date fixed",
+      "body": "Hi Wiktor,\n\nFYI, Nordic's legal confirmed the draft text of the framework agreement yesterday. Signing stays at 22.01.2027, nothing changed on their side.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0052",
+      "subject": "Customs update – Sweden lane",
+      "body": "Hi Wiktor,\n\njust so you know where we are with Sweden. The last four trucks went through Gdynia without any hold, which is the best result since November. The agent says the new certificate format is working and the inspectors have stopped asking for extra copies.\n\nTransit time on that lane is now around 38 hours door to door. Nothing needed from you, it's only an update. I'll send a short summary of the month at the start of February.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0061",
+      "subject": "Logistyka Dzis: Przetargi w sektorze FMCG",
+      "body": "Duże sieci handlowe ogłosiły w tym tygodniu przetargi na obsługę logistyczną na 2027 rok.\n\nTerminy składania ofert upływają w drugiej połowie stycznia, a zamawiający zapowiadają ocenę wyłącznie na podstawie ceny i terminowości.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0062",
+      "subject": "Stan rekrutacji do magazynów – podsumowanie tygodnia",
+      "body": "Cześć Wiktor,\n\npiszę krótko, żebyś miał pełny obraz rekrutacji do magazynów po pierwszym tygodniu stycznia.\n\nDo magazynu w Poznaniu przyjęliśmy dwanaście osób na stanowiska operatorów wózków i kompletacji. Wszyscy przeszli już szkolenie BHP i zaczęli pracę na pierwszej zmianie. W Łodzi rekrutacja jest bardziej wymagająca: z dwudziestu zaplanowanych etatów obsadziliśmy czternaście, a pozostałe sześć będzie uzupełnione z agencji w drugiej połowie miesiąca. Średni czas zatrudnienia kandydata skrócił się z dwudziestu do czternastu dni, głównie dzięki nowemu formularzowi ofertowemu.\n\nWarto odnotować, że liczba absencji po okresie świątecznym spadła do poziomu poniżej średniej z ubiegłego roku, a rotacja w pierwszym miesiącu pracy nie przekracza pięciu procent. Z naszych ankiet wynika, że nowi pracownicy dobrze oceniają dni wprowadzające.\n\nNie potrzebuję żadnych decyzji, to tylko informacja. Kolejne podsumowanie wyślę za dwa tygodnie, razem z zestawieniem kosztów pracy tymczasowej. Dla porządku dodam, że w tym tygodniu zamknęliśmy też dwie umowy z agencjami na zastępstwa urlopowe w Gdańsku, więc w pierwszym kwartale nie przewidujemy już dodatkowych luk w obsadzie, nawet gdyby w lutym wzrosła liczba zwolnień chorobowych.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Cześć Wiktor,</p><p style=\"margin:0 0 12px 0\">piszę krótko, żebyś miał pełny obraz rekrutacji do magazynów po pierwszym tygodniu stycznia.</p><p style=\"margin:0 0 12px 0\">Do magazynu w Poznaniu przyjęliśmy dwanaście osób na stanowiska operatorów wózków i kompletacji. Wszyscy przeszli już szkolenie BHP i zaczęli pracę na pierwszej zmianie. W Łodzi rekrutacja jest bardziej wymagająca: z dwudziestu zaplanowanych etatów obsadziliśmy czternaście, a pozostałe sześć będzie uzupełnione z agencji w drugiej połowie miesiąca. Średni czas zatrudnienia kandydata skrócił się z dwudziestu do czternastu dni, głównie dzięki nowemu formularzowi ofertowemu.</p><p style=\"margin:0 0 12px 0\">Warto odnotować, że liczba absencji po okresie świątecznym spadła do poziomu poniżej średniej z ubiegłego roku, a rotacja w pierwszym miesiącu pracy nie przekracza pięciu procent. Z naszych ankiet wynika, że nowi pracownicy dobrze oceniają dni wprowadzające.</p><p style=\"margin:0 0 12px 0\">Nie potrzebuję żadnych decyzji, to tylko informacja. Kolejne podsumowanie wyślę za dwa tygodnie, razem z zestawieniem kosztów pracy tymczasowej. Dla porządku dodam, że w tym tygodniu zamknęliśmy też dwie umowy z agencjami na zastępstwa urlopowe w Gdańsku, więc w pierwszym kwartale nie przewidujemy już dodatkowych luk w obsadzie, nawet gdyby w lutym wzrosła liczba zwolnień chorobowych.</p><p style=\"margin:0 0 12px 0\">Z wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0063",
+      "subject": "Kalendarz rady nadzorczej na pierwsze półrocze",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że rada ustaliła kalendarz posiedzeń na pierwsze półrocze 2027 roku. Posiedzenia odbędą się w następujących terminach: 28.01.2027, 25.03.2027 oraz 27.05.2027, każdorazowo w siedzibie spółki, zaczynając o godzinie 9:00. Terminy zostały zatwierdzone przez wszystkich członków rady i są zgodne z harmonogramem sprawozdań finansowych.\n\nDodatkowo przypominam, że w marcu i kwietniu planowane są dwie wizyty członków rady w magazynach spółki. Dokładne terminy zostaną uzgodnione po zakończeniu przetargu na obsługę sieci handlowej, ponieważ część członków rady będzie zaangażowana w jego ocenę.\n\nW kalendarzu rady nie ma w pierwszym półroczu spotkań w trybie zdalnym z udziałem zarządu, poza ewentualnymi nadzwyczajnymi posiedzeniami, o których poinformuję z wyprzedzeniem. Wszystkie dokumenty będą przekazywane zgodnie z dotychczasową praktyką, to znaczy z tygodniowym wyprzedzeniem, w formie szyfrowanych plików. Dotyczy to zarówno sprawozdań z wyników, jak i raportów o ryzykach, które rada otrzymuje od zarządu przed każdym posiedzeniem. Wszelkie zmiany w tym trybie zostaną ogłoszone pisemnie, z odpowiednim wyprzedzeniem, aby zarząd mógł dostosować własne harmonogramy.\n\nPiszę o tym tylko dla Pana wiadomości; nie oczekuję odpowiedzi ani działań w tej sprawie.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0065",
+      "subject": "Logistyka Dzis: zmiany w przepisach o czasie pracy kierowców",
+      "body": "Od 1 lutego obowiązują zaktualizowane przepisy dotyczące zapisu czasu pracy kierowców.\n\nZmiany obejmują także pojazdy do 3,5 tony; kontrole drogowe rozpoczną się w marcu.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0073",
+      "subject": "Wspólne przewozy – wyniki za grudzień",
+      "body": "Szanowny Panie Prezesie,\n\nprzesyłam krótkie podsumowanie wyników naszych wspólnych przewozów eksportowych za grudzień 2026. Łącznie zrealizowaliśmy 212 kursów, o 9 procent więcej niż w listopadzie. Terminowość dostaw wyniosła 96,4 procent, co jest najlepszym wynikiem od początku współpracy.\n\nNajwiększy udział w wolumenie miały trasy do Szwecji i Finlandii, odpowiadające za 58 procent wszystkich kursów. Wzrost zanotowaliśmy także na trasie do Estonii, gdzie po raz pierwszy przekroczyliśmy trzydzieści kursów w miesiącu. Średnia wartość frachtu wzrosła o 3 procent, głównie z powodu sezonowych dopłat przewoźników.\n\nPo stronie kosztów odnotowaliśmy mniej opłat za przestoje: dzięki nowemu harmonogramowi załadunków w Gdyni ich suma spadła o jedną trzecią. Reklamacji z tytułu uszkodzeń było cztery, wszystkie zostały zamknięte do końca grudnia.\n\nPełne zestawienie w formie tabeli trafi do Państwa działu finansowego przez nasz zwykły kanał. Ten list ma charakter wyłącznie informacyjny i nie wymaga reakcji z Pana strony. Cieszymy się z wyników i oczekujemy, że w styczniu utrzymamy ten poziom. Zespół w Gdyni zakończył również szkolenie dla nowych dyspozytorów, więc zdolności przeładunkowe w szczycie sezonu nie powinny stanowić ograniczenia dla wspólnych kursów.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0087",
+      "subject": "Re: Obsada magazynu w Łodzi",
+      "body": "Cześć Wiktor,\n\ninformacyjnie: w łódzkim magazynie jest już komplet kierowników zmian. Ostatnia osoba zaczęła w poniedziałek.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [
+        {
+          "subject": "Obsada magazynu w Łodzi",
+          "body": "Wiktorze, w Łodzi brakuje dwóch kierowników zmian na drugą zmianę. Szukamy, ale to potrwa.\n\nHalina Strzemecka"
+        },
+        {
+          "subject": "Re: Obsada magazynu w Łodzi",
+          "body": "Dziękuję Halino, dajcie znać, jak się to ułoży.\n\nWiktor"
+        }
+      ]
+    },
+    {
+      "id": "b-inf-0097",
+      "subject": "Potwierdzenie odbioru dostawy z 8 stycznia",
+      "body": "Szanowny Panie Prezesie,\n\ndostawa z 8 stycznia dotarła do wszystkich naszych hurtowni bez uszkodzeń. Dziękujemy za sprawną realizację.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0103",
+      "subject": "Logistyka Dzis: tydzień w branży",
+      "body": "Ceny frachtu na trasach bałtyckich lekko wzrosły, a przewoźnicy zapowiadają nowe dopłaty zimowe od lutego.\n\nWedług danych branżowych popyt na transport chłodniczy jest o 5 proc. wyższy niż przed rokiem.\n\nW numerze także: omówienie nowych regulacji dotyczących opłat drogowych w Niemczech oraz wywiad z dyrektorem dużego operatora logistycznego o przetargach sieci handlowych w 2027 roku.\n\nDo przeczytania w piątkowym wydaniu. Pełne teksty dostępne są dla subskrybentów w serwisie wydawcy.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0108",
+      "subject": "Plan szkoleń dla pracowników magazynów w 2027 roku",
+      "body": "Wiktorze, cześć,\n\nzamykam plan szkoleń dla magazynów na 2027 rok i chciałem, żebyś wiedział, jak to wygląda.\n\nPrzewidzieliśmy łącznie dwanaście szkoleń zawodowych, w tym cztery kursy obsługi wózków widłowych, trzy szkolenia z bezpieczeństwa pracy oraz dwa warsztaty dla kierowników zmian z zakresu zarządzania zespołem. Szkolenia odbywają się w godzinach pracy, więc nie wpływają na plany zmian, a koszt całego programu mieści się w budżecie na ten rok, z rezerwą około ośmiu procent. Dla nowych pracowników zostawiamy dodatkowy blok wprowadzający trwający dwa dni.\n\nNajwiększą zmianą jest wprowadzenie e-learningu dla kursów podstawowych. Dzięki temu nowi pracownicy będą mogli zacząć naukę jeszcze przed pierwszym dniem w magazynie, co skraca okres wdrożenia. Próbny kurs przeszło już piętnaście osób i oceny są dobre, średnio 4,6 w skali pięciostopniowej.\n\nHarmonogram jest gotowy i został przekazany kierownikom magazynów. Nie potrzebuję od Ciebie żadnej decyzji, piszę wyłącznie informacyjnie. Jeśli chciałbyś zobaczyć szczegóły, są w zwykłym folderze działu. Poprosiłem też kierowników o zebranie uwag po pierwszych kursach, ale to zrobimy wewnętrznie i nie będzie wymagało Twojego czasu, więc możesz na razie nie robić z tym nic więcej.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0111",
+      "subject": "Re: Nordic – status of the draft",
+      "body": "Hi Wiktor,\n\nan update on Nordic. Karin's lawyers sent back their comments on the draft: mostly typos and small changes to the wording of the delivery clause. Nothing on price or volume was touched.\n\nPiotr has the file and will work the edits in this week. He expects to send the clean version to Karin on Friday and to circulate the final text inside the company before the weekend. As things stand, the timeline for signing on 22.01.2027 holds.",
+      "thread": [
+        {
+          "subject": "Nordic – status of the draft",
+          "body": "Oliver, do you know where we are with the Nordic draft? I saw nothing new in my inbox.\n\nWiktor"
+        },
+        {
+          "subject": "Re: Nordic – status of the draft",
+          "body": "Not yet, Wiktor. Karin promised comments by Monday.\n\nOliver"
+        }
+      ]
+    },
+    {
+      "id": "b-inf-0123",
+      "subject": "Export lanes – January numbers",
+      "body": "Hi Wiktor,\n\nquick numbers for January so far. We moved 184 pallets to Sweden and Finland, 22 more than in the same period last year. Two trucks were delayed by snow near Gdansk, otherwise the lanes ran clean.\n\nAverage customs clearance sits at about 11 hours, down from 26 in December. The agent says the new document format helped most.\n\nNothing needed from your side, just keeping you in the loop. Next update after the month closes.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0126",
+      "subject": "Notes from the call with the Nordic team",
+      "body": "Wiktor,\n\nhad a long call with Karin's team this morning. Short version for your awareness:\n\nThey are happy with the pallet spec and the delivery windows we proposed. They asked for a copy of our latest food-safety certificate, and Piotr is sending it today. They also mentioned that their own warehouse will be closed on 6 and 7 February for stocktaking, so no deliveries on those days. We already have that in the plan.\n\nOn pricing, they accept the structure of the annex and only want the rates in euro. That is a formatting matter and Piotr has it.\n\nNo decisions are waiting on you. I'll keep you posted if anything changes before signing.",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0129",
+      "subject": "Nordic – small update from Gdansk",
+      "body": "Hi Wiktor,\n\na small update on the Nordic framework. Their purchasing board approved the volume forecast, so the numbers in annex 1 are now final. They also confirmed the pallet type, the standard euro pallet, and the shared tracking portal will go live in the second week of February.\n\nI have uploaded the confirmation to the shared folder. Nothing to do on your side, just so you know.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": []
+    }
+  ]
+}

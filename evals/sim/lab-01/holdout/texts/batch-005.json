@@ -1,0 +1,171 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-005",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-del-0128",
+      "subject": "Re: Karty paliwowe - prosimy sprawdzić płatności",
+      "body": "Szanowny Panie Prezesie,\n\nproszę poprosić księgowość o weryfikację, czy nie zlecono przelewu na rachunek z wiadomości poniżej. To nie jest nasz rachunek.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [
+        {
+          "subject": "Pilna aktualizacja danych kart paliwowych",
+          "body": "Szanowni Państwo, w związku ze zmianą systemu rozliczeń prosimy o przesyłanie kolejnych płatności na nowy rachunek PL00-TEST-4821 oraz o potwierdzenie danych karty. Dział rozliczeń"
+        },
+        {
+          "subject": "Re: Karty paliwowe",
+          "body": "Dziękuję za wiadomość. Przekażę ją do sprawdzenia w księgowości. Wiktor Szalewski"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0130",
+      "subject": "transit docs - invoice",
+      "body": "hi Wiktor,\n\nthe Hamburg forwarder billed the transit documents twice, once on the old rate and once on the new one. Can you ask accounting to check both invoices against the rate agreement and request a credit note for the overcharge?\n\nThe sum is not big but I'd rather have it fixed before the month closes. No need to come back to me, just let Magdalena handle it.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": []
+    },
+    {
+      "id": "b-del-0131",
+      "subject": "Preparing the committee papers",
+      "body": "Dear Mr Szalewski,\n\nplease ask your assistant to prepare the room and the schedule for the audit committee meeting that precedes the board session. The committee will meet on 27.01.2027 at 15:00 for about ninety minutes, with five participants.\n\nPlease also have her send the calendar invitations and arrange refreshments. Details of the participants will come from my secretary. I do not need a personal answer from you.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-del-0133",
+      "subject": "Szkolenie BHP - termin",
+      "body": "Wiktor, niech asystentka znajdzie termin szkolenia BHP dla nowych magazynierów, najlepiej w piątek rano, i zarezerwuje salę.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Wiktor, niech asystentka znajdzie termin szkolenia BHP dla nowych magazynierów, najlepiej w piątek rano, i zarezerwuje salę.</p><p style=\"margin:0 0 12px 0\">Z wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0134",
+      "subject": "Zmiana warunków umowy serwisowej od lutego",
+      "body": "Szanowny Panie Prezesie,\n\nod lutego zmieniamy ogólne warunki umowy serwisowej dla naczep, w tym zakres przeglądów okresowych i zasady odpowiedzialności za naprawy gwarancyjne. Nowy wzór załącznika przesyłamy do Państwa działu umów.\n\nProsimy o polecenie osobie zajmującej się umowami sprzedażowymi sprawdzenia dokumentu i przesłania uwag lub podpisanej wersji. Nie wymaga to Pana osobistego zaangażowania. Chętnie odpowiemy na pytania naszego działu prawnego, jeśli się pojawią.\n\nMit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued",
+      "thread": []
+    },
+    {
+      "id": "b-del-0135",
+      "subject": "Przygotowanie sali dla komitetu rady",
+      "body": "Wiktor,\n\npoproś asystentkę, żeby zarezerwowała małą salę na spotkanie komitetu rady we wtorek 26.01.2027 od 13:00 do 14:30 i rozesłała zaproszenia do czterech osób. Dane uczestników wyśle sekretariat. Zależy mi tylko na tym, żeby sala była wolna, a w kalendarzu pojawił się wpis. Jeśli wtorek nie jest możliwy, proszę o środę w tych samych godzinach. Prosiłbym też o wodę i kawę dla uczestników, ale bez cateringu, bo spotkanie jest krótkie.\n\nDzięki.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-del-0136",
+      "subject": "Customs invoice query",
+      "body": "Dear Mr Szalewski, please ask your accounting team to send us a corrected customs invoice for the Malmo delivery. The tariff code on the current one is wrong.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": []
+    },
+    {
+      "id": "b-del-0137",
+      "subject": "Aneks do umowy o karty paliwowe - przekazanie do przeglądu",
+      "body": "Szanowny Panie Prezesie,\n\nod lutego zmieniamy w umowie o karty paliwowe limity miesięczne oraz zasady blokowania kart w razie opóźnienia płatności. Przygotowaliśmy projekt aneksu i prosimy o przekazanie go osobie, która w Państwa firmie zajmuje się umowami z dostawcami i odbiorcami.\n\nProsimy o przegląd zapisów i o przesłanie uwag do naszego biura do końca stycznia. Jeśli zmiany są akceptowalne, wystarczy podpisana kopia.\n\nDziękujemy za sprawną współpracę.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": []
+    },
+    {
+      "id": "b-del-0139",
+      "subject": "Termin spotkania w sprawie rozliczeń",
+      "body": "Szanowny Panie Prezesie,\n\nchcielibyśmy umówić krótkie spotkanie na temat rozliczeń za pierwszy kwartał z udziałem osoby z Państwa działu finansowego. Prosimy o polecenie asystentce ustalenia terminu w przyszłym tygodniu, najlepiej we wtorek lub w czwartek przed południem, oraz o przesłanie zaproszenia do naszego biura.\n\nSpotkanie może odbyć się zdalnie. Wystarczy nam jeden termin potwierdzony przez asystentkę. Zaproponujemy agendę po otrzymaniu terminu, a Państwa osoba z finansów może dołączyć tylko na część dotyczącą faktur. Nie potrzebujemy odpowiedzi od Pana osobiście.",
+      "thread": []
+    },
+    {
+      "id": "b-del-0140",
+      "subject": "Zmiana limitów kart paliwowych - przygotowanie dokumentów rozliczeniowych",
+      "body": "Szanowny Panie Prezesie,\n\nw związku z rozszerzeniem Państwa floty o dwanaście nowych ciągników wprowadzamy od lutego zmianę w rozliczaniu kart paliwowych. Każdy pojazd będzie miał osobny limit miesięczny, a faktura zbiorcza będzie zawierała szczegółowy podział na pojazdy i stacje. Zmiana ułatwi Państwa księgowości kontrolę kosztów, ale wymaga kilku czynności po Państwa stronie, zanim system zacznie działać w nowym trybie.\n\nProsimy o przekazanie księgowości zadania sprawdzenia i uzupełnienia listy kart wraz z numerami rejestracyjnymi pojazdów oraz przypisania poszczególnych kart do centrów kosztów. Szablon tabeli przesłaliśmy już do działu operacyjnego, więc księgowość powinna go mieć. Prosimy także o wskazanie osoby, do której mamy kierować comiesięczne zestawienia, ponieważ dotychczasowy adres sekretariatu nie będzie już obsługiwany.\n\nTermin uzupełnienia danych to 31.01.2027. Po tym terminie nowe karty nie zostaną aktywowane, a stare zostaną zablokowane po okresie przejściowym. Dopilnowanie tych czynności to zadanie rutynowe i nie wymaga Pana udziału, dlatego prosimy tylko o przekazanie sprawy właściwej osobie.\n\nW razie pytań nasz dział wsparcia jest dostępny w dni robocze od ósmej do szesnastej. Dla ułatwienia przygotowaliśmy też krótką instrukcję użycia nowego formularza, którą prześlemy razem z szablonem. Dziękujemy za współpracę i życzymy udanego roku.\n\nZ poważaniem\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": []
+    },
+    {
+      "id": "b-del-0141",
+      "subject": "Umowa z dostawcą WMS - przegląd zapisów o dostępności",
+      "body": "Cześć Wiktor,\n\npo ostatniej awarii systemu magazynowego, która zatrzymała nam wydania na pół dnia, chcę wrócić do umowy z dostawcą systemu. Nie jestem pewna, czy zapisy o gwarantowanym czasie reakcji i o karach umownych rzeczywiście dają nam jakąś ochronę.\n\nPoproś koordynatora sprzedaży, żeby przejrzał umowę i napisał mi krótko, co w niej mamy: czas reakcji, limit dostępności i ewentualne odszkodowanie. Jeśli zapisy są słabe, przygotujemy propozycję zmian do rozmowy z dostawcą.\n\nDzięki.",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Cześć Wiktor,</p><p style=\"margin:0 0 12px 0\">po ostatniej awarii systemu magazynowego, która zatrzymała nam wydania na pół dnia, chcę wrócić do umowy z dostawcą systemu. Nie jestem pewna, czy zapisy o gwarantowanym czasie reakcji i o karach umownych rzeczywiście dają nam jakąś ochronę.</p><p style=\"margin:0 0 12px 0\">Poproś koordynatora sprzedaży, żeby przejrzał umowę i napisał mi krótko, co w niej mamy: czas reakcji, limit dostępności i ewentualne odszkodowanie. Jeśli zapisy są słabe, przygotujemy propozycję zmian do rozmowy z dostawcą.</p><p style=\"margin:0 0 12px 0\">Dzięki.</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0142",
+      "subject": "Noty obciążeniowe dla przewoźnika",
+      "body": "Wiktor,\n\nprzewoźnik z trasy do Wrocławia uznał dwie reklamacje z grudnia. Teraz trzeba wystawić noty obciążeniowe i zaksięgować zwrot kosztów. Poproś Magdalenę, żeby się tym zajęła: protokoły szkód są w folderze reklamacji, a kwoty podaliśmy w mailu do przewoźnika.\n\nNie musisz tego sprawdzać, to rutyna. Chciałabym tylko, żeby noty wyszły przed końcem tygodnia, bo przewoźnik rozlicza się z nami w cyklu miesięcznym, a w poniedziałek zamyka okres. Kopie wszystkich not niech Magdalena zostawi w folderze reklamacji.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": []
+    },
+    {
+      "id": "b-del-0143",
+      "subject": "Export lane contract - check",
+      "body": "Hi Wiktor,\n\nthe Rotterdam forwarder wants us to sign the lane contract for the year by the end of January. I haven't read the final version in detail and I would rather have someone from sales contracts do it first. Could you ask the sales coordinator to read it, compare it to last year's and list any differences in rates or liability? Short list is fine. Thanks, Oliver\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Hi Wiktor,</p><p style=\"margin:0 0 12px 0\">the Rotterdam forwarder wants us to sign the lane contract for the year by the end of January. I haven&#x27;t read the final version in detail and I would rather have someone from sales contracts do it first. Could you ask the sales coordinator to read it, compare it to last year&#x27;s and list any differences in rates or liability? Short list is fine. Thanks, Oliver</p><p style=\"margin:0 0 12px 0\">Cheers, Oliver | Head of Export | Kordelan Distribution</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0144",
+      "subject": "Request regarding the export documentation templates",
+      "body": "Dear Mr Szalewski,\n\nI am writing on behalf of Nordic Foods Trade about the export documentation that accompanies each shipment to our warehouses. We have noticed that the templates your team uses for the delivery terms differ slightly from those in the framework agreement, which causes our customs broker to ask for clarifications on almost every consignment.\n\nTo avoid this, we would like to ask you to have the person responsible for sales contracts prepare a standard annex to the agreement. The annex should describe the delivery terms in a single, fixed wording, state which party is responsible for the export declaration, and list the documents that must accompany every shipment: the commercial invoice, the packing list, the certificate of origin and the temperature log.\n\nIf your team already has a draft of such an annex, we can use it as a starting point, and our legal department will review it within a few days of receiving it. If not, we can send a model that we use with other suppliers, to save time. We would appreciate a first version by the middle of February, so that we can introduce it with the next quarterly order.\n\nPlease note that no personal involvement from you is required. A short reply from the person who takes this on is enough for us.\n\nThank you very much for your help, and we look forward to continued good cooperation.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Dear Mr Szalewski,</p><p style=\"margin:0 0 12px 0\">I am writing on behalf of Nordic Foods Trade about the export documentation that accompanies each shipment to our warehouses. We have noticed that the templates your team uses for the delivery terms differ slightly from those in the framework agreement, which causes our customs broker to ask for clarifications on almost every consignment.</p><p style=\"margin:0 0 12px 0\">To avoid this, we would like to ask you to have the person responsible for sales contracts prepare a standard annex to the agreement. The annex should describe the delivery terms in a single, fixed wording, state which party is responsible for the export declaration, and list the documents that must accompany every shipment: the commercial invoice, the packing list, the certificate of origin and the temperature log.</p><p style=\"margin:0 0 12px 0\">If your team already has a draft of such an annex, we can use it as a starting point, and our legal department will review it within a few days of receiving it. If not, we can send a model that we use with other suppliers, to save time. We would appreciate a first version by the middle of February, so that we can introduce it with the next quarterly order.</p><p style=\"margin:0 0 12px 0\">Please note that no personal involvement from you is required. A short reply from the person who takes this on is enough for us.</p><p style=\"margin:0 0 12px 0\">Thank you very much for your help, and we look forward to continued good cooperation.</p><p style=\"margin:0 0 12px 0\">Best regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0145",
+      "subject": "Faktura za udział w przetargu",
+      "body": "Szanowny Panie Wiktorze,\n\nproszę o polecenie księgowości wystawienia noty obciążeniowej na Państwa część kosztów wspólnego przetargu. Dane prześlemy po otrzymaniu adresu.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-del-0146",
+      "subject": "Fuel card review meeting for the first quarter",
+      "body": "Dear Mr Szalewski,\n\nAs the first quarter begins, we would like to schedule a review of the fuel card programme with your fleet and finance people. The meeting would cover the discount tiers, the new reporting format, and the list of vehicles added in December.\n\nCould you ask your assistant to find a time for a one-hour video call in the week of 01.02.2027? Tuesday or Thursday mornings work best for us. She can send the calendar invitation to me and my colleague from the analytics team, and we will join from our side.\n\nIf it is easier for her, she can propose two or three slots and we will pick one. Your own presence is not required, as this is a working meeting for the people who deal with the cards every day. A short confirmation from her will be enough.\n\nWe prepare a short summary of consumption by vehicle, which we will send to her together with the invitation, so that the participants from your side can look at it beforehand and bring their questions.\n\nThank you in advance for your help with the scheduling.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": []
+    },
+    {
+      "id": "b-del-0147",
+      "subject": "Umowa ze spółką audytorską - przygotowanie projektu",
+      "body": "Szanowny Panie Prezesie,\n\nrada nadzorcza zdecydowała na ostatnim posiedzeniu o powierzeniu badania sprawozdania rocznego nowej spółce audytorskiej. Aby kontynuować proces, potrzebny jest projekt umowy o badanie, który zostanie przedstawiony radzie do akceptacji na najbliższym posiedzeniu. Proszę, aby przygotował go koordynator sprzedaży, który na co dzień pracuje z umowami i zna nasze standardy.\n\nProjekt powinien obejmować zakres badania, harmonogram prac, wynagrodzenie według oferty z listopada, zasady poufności oraz zapisy o niezależności biegłego rewidenta, które rada wymaga w każdym tego typu kontrakcie. Wzorem może być umowa z poprzednią spółką, po usunięciu zapisów, które utraciły aktualność.\n\nProszę o przekazanie projektu do mojego sekretariatu najpóźniej w poniedziałek 25.01.2027, żebyśmy mogli rozesłać go członkom rady wraz z pozostałymi materiałami. Jeśli w trakcie prac pojawią się pytania co do zakresu, może je kierować do mojego sekretariatu. Proszę, aby nie angażować Pana osobiście, ponieważ sprawa ma charakter wyłącznie redakcyjny. Osobne pytanie dotyczy zapisu o odpowiedzialności za błędy w sprawozdaniu: rada chce, aby ograniczenie odpowiedzialności było wyraźnie widoczne w tekście, a nie ukryte w załączniku. Koordynator może to zaznaczyć w uwagach na marginesie.\n\nZ wyrazami szacunku i podziękowaniem\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-del-0148",
+      "subject": "Nordic invoice mismatch",
+      "body": "Wiktor, Nordic's last invoice shows 24 pallets, but we delivered 22. Pls get accounting to issue a credit note. Cheers, Oliver\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": []
+    },
+    {
+      "id": "b-del-0150",
+      "subject": "Faktura za bilety",
+      "body": "Wiktor,\n\nksięgowość niech opłaci fakturę za bilety lotnicze rady. Leży w sekretariacie od środy. Dziękuję.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-del-0154",
+      "subject": "Contract terms for the extended card programme",
+      "body": "Dear Mr Szalewski,\n\nWe are expanding the fuel card programme to cover the toll and parking services that many of your drivers use abroad. This needs a short addendum to the existing agreement, with new fees and a clause on the monthly statement.\n\nCould you ask the colleague in your company who handles sales and supplier contracts to review the terms in the next draft, and to confirm to us whether the changes are acceptable? We would like to start the new service from 01.03.2027.\n\nThank you for your help.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": []
+    },
+    {
+      "id": "b-del-0155",
+      "subject": "Posiedzenie rady - podróż dla gości",
+      "body": "Wiktor,\n\ndwóch gości z zagranicy ma uczestniczyć w części posiedzenia poświęconej budżetowi. Poproś asystentkę o zorganizowanie ich podróży: bilety lotnicze do Gdańska na 27.01.2027, hotel przy siedzibie spółki na jedną noc i transfer z lotniska. Ich dane mam w sekretariacie, przekażę je asystentce, kiedy tylko potwierdzą terminy. Najlepiej, żeby hotel miał śniadanie w cenie, a transfer czekał z tabliczką, bo goście nie znają miasta. Jeśli lot się zmieni, asystentka dostanie ode mnie nową godzinę.\n\nTo tylko organizacja, nie czekam na Twoją odpowiedź.",
+      "thread": []
+    },
+    {
+      "id": "b-del-0156",
+      "subject": "Zwrot kosztów podróży",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o polecenie księgowości zwrotu kosztów mojej podróży do Gdyni na konto, które podałem w sekretariacie.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-del-0157",
+      "subject": "Contract draft",
+      "body": "Wiktor,\n\nplease ask the sales coordinator to send me the updated engagement letter for the board advisers.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-del-0158",
+      "subject": "Meeting room",
+      "body": "Dear Mr Szalewski,\n\nplease ask your assistant to reserve a room for the board's pre-meeting on 27.01.2027 at 17:00.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-del-0159",
+      "subject": "Umowy agencji pracy - przegląd przed lutym",
+      "body": "Cześć Wiktor,\n\nw lutym wygasają nam trzy umowy z agencjami pracy tymczasowej, które dostarczają ludzi do magazynów w Poznaniu, Gdyni i Lesznie. Wolałbym nie przedłużać ich automatycznie, bo stawki są wyższe niż u konkurencji, a zakres usług nie zawsze się zgadza z tym, czego potrzebujemy. Jednocześnie nie mogę ryzykować, że w szczycie sezonu zabraknie nam ludzi do pracy.\n\nPoproś proszę koordynatora sprzedaży, żeby przejrzał wszystkie trzy umowy i zestawił je w jednej tabeli: stawki godzinowe, okresy wypowiedzenia, zapisy o minimalnej liczbie pracowników i kary za opóźnienia w obsadzie. Piotr ma doświadczenie w takich rozmowach, więc może od razu zaproponować, które zapisy warto negocjować, a które można zostawić bez zmian. Jeśli to możliwe, niech też przygotuje szkic pisma do agencji z propozycją nowych warunków.\n\nPrzy okazji niech sprawdzi, czy agencje nie dopisały po cichu opłaty za obsługę administracyjną, bo w jednej z umów widziałem taką pozycję. Zależy mi na tym, żeby wszystko było gotowe w ciągu dwóch tygodni, bo wypowiedzenia w niektórych umowach trzeba złożyć z wyprzedzeniem. Nie musisz niczego zatwierdzać, wystarczy, że przekażesz sprawę dalej. Wrócę do Ciebie dopiero wtedy, gdy zespół przedstawi propozycję.\n\nDzięki, że to ogarniesz.",
+      "thread": []
+    }
+  ]
+}

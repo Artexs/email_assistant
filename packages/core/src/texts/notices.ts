@@ -52,7 +52,7 @@ export const noticeTexts = {
     },
     syncStale: {
       first: (address) => `⚠️ Mail sync is late for ${address}.`,
-      last: (last) => `Last good sync: ${last}. The system tries again every 5 minutes.`,
+      last: (last) => `Last good sync: ${last}. The system keeps trying.`,
       status: "/status shows the state.",
       never: "never",
     },
@@ -95,7 +95,7 @@ export const noticeTexts = {
     },
     syncStale: {
       first: (address) => `⚠️ Synchronizacja poczty jest opóźniona: ${address}.`,
-      last: (last) => `Ostatnia udana synchronizacja: ${last}. System ponawia próbę co 5 minut.`,
+      last: (last) => `Ostatnia udana synchronizacja: ${last}. System dalej próbuje.`,
       status: "/status pokazuje stan.",
       never: "nigdy",
     },

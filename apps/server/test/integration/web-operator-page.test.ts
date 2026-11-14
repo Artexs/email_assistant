@@ -26,13 +26,14 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const app = () =>
+const app = (twoFactorOff?: ReadonlySet<string>) =>
   webTestApp({
     db,
     dist,
     routers: () => undefined,
     sessions: { owner: org.ownerId, assistant: org.assistantId, other: org.otherOwnerId },
     operatorUserIds: new Set([org.assistantId]),
+    ...(twoFactorOff ? { twoFactorOff } : {}),
   });
 
 // Every form of the path that a client can send for the operator page.
@@ -95,6 +96,40 @@ describe("the operator console page (F099 stage 06, D22)", () => {
     const res = await app().request("/settings", as("owner"));
     expect(res.status).toBe(200);
     expect(await res.text()).toBe("settings page");
+  });
+
+  test("5. an operator without TOTP goes to the settings in every path form; a non-operator still gets 404 (F105 D10)", async () => {
+    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    try {
+      const off = new Set([org.assistantId, org.ownerId]);
+      for (const path of FORMS) {
+        const res = await app(off).request(path, as("assistant"));
+        expect({
+          path,
+          status: res.status,
+          location: res.headers.get("location"),
+          cache: res.headers.get("cache-control"),
+        }).toEqual({ path, status: 302, location: "/settings?two_factor=required", cache: "private, no-store" });
+        const owner = await app(off).request(path, as("owner"));
+        expect({ path, status: owner.status, body: await owner.text() }).toEqual({
+          path,
+          status: 404,
+          body: "not found page",
+        });
+      }
+      const lines = errorSpy.mock.calls.map((call) => call.join(" "));
+      const required = lines.filter((l) => l.includes("operator_two_factor_required"));
+      expect(required).toHaveLength(FORMS.length);
+      for (const line of required) expect(line).toContain(`user_id=${org.assistantId}`);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test("6. the same operator with TOTP on still gets the page", async () => {
+    const res = await app(new Set([org.ownerId])).request("/operator", as("assistant"));
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe("operator page");
   });
 
   test("a web without operatorUserIds refuses the operator user too", async () => {

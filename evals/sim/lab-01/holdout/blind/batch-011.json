@@ -1,0 +1,330 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-011",
+  "cases": [
+    {
+      "id": "b-inf-0048",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: karty paliwowe i zmiany w opłatach",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nDwóch największych dostawców kart paliwowych w Polsce opublikowało nowe cenniki na pierwszy kwartał. Opłata za obsługę jednej karty wzrośnie symbolicznie, za to rabaty za wolumen pozostaną na dotychczasowym poziomie dla firm, które tankują ponad sto tysięcy litrów miesięcznie.\n\nEksperci przypominają, że przy wyborze dostawcy ważniejsza od rabatu bywa gęstość sieci stacji na trasach międzynarodowych. Według badania branżowego przewoźnicy najczęściej narzekają na brak stacji z paliwem na szlakach przez Czechy i Słowację.\n\nW przyszłym tygodniu: rozmowa o cenach opon i przegląd nowych naczep chłodniczych.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0049",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wspólne przetargi - zakończenie etapu pytań",
+      "body": "Szanowny Panie Wiktorze,\n\ndla Pańskiej wiadomości: zamawiający w przetargu dla sieci hurtowni zakończył etap pytań i odpowiedzi. Otrzymał szesnaście pytań od wszystkich uczestników, a odpowiedzi opublikuje do końca tygodnia. Większość dotyczy harmonogramu dostaw i sposobu rozliczania paliwa. Żadne z pytań nie zmienia założeń naszej oferty.\n\nNasz zespół przejrzy odpowiedzi zaraz po publikacji i dopasuje dokumentację, jeśli będzie taka potrzeba. Piszę tylko po to, aby Pan wiedział, że wszystko idzie zgodnie z planem.\n\nZ wyrazami szacunku",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0051",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Our new certificate set",
+      "body": "Dear Mr Szalewski,\n\nI would like to let you know that our quality department has completed the annual renewal of the cold chain certificates. All three importer sites in Sweden and Denmark passed the audit without remarks. The auditor praised the temperature records for the chilled lanes, which he described as the most complete he had seen this year.\n\nThe new certificates are valid for twelve months from February. Your drivers will not have to carry any new documents, because the old reference numbers stay in force. We also updated our supplier file with your latest licence data, so the border checks should remain smooth.\n\nNothing needs to be done on your side. I send this only as a courtesy.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0053",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Raport z audytu zewnętrznego - kopia dla zarządu",
+      "body": "Wiktor,\n\ndla Twojej wiadomości: audytor zewnętrzny przekazał radzie projekt sprawozdania z badania ksiąg za ubiegły rok. Opinia będzie bez zastrzeżeń, a w piśmie do zarządu pojawią się dwie uwagi organizacyjne dotyczące dokumentacji środków trwałych. Nic nie wskazuje na to, żeby wymagało to zmian w budżecie.\n\nPełny tekst zostanie omówiony na posiedzeniu. Nie wymagam od Ciebie żadnej reakcji teraz.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0054",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Remuneration committee - summary of the meeting",
+      "body": "Dear Mr Szalewski,\n\nI wish to inform you that the remuneration committee met on Tuesday and concluded its work on the annual review. The committee proposes to keep the current structure of bonuses for the management team and to adjust the thresholds for the new financial year. The proposal will go to the full board for approval on 28 January.\n\nThe committee also noted the satisfactory level of staff turnover in the warehouses, which has decreased compared with the previous year. The minutes will be available in the board portal by the end of the week.\n\nRespectfully,\nZbigniew Orlowicz",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0055",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nordic framework - what the lawyers said",
+      "body": "Wiktor,\n\nquick note, no action. I spoke to Karin's legal people yesterday and they are happy with the liability clause in the form we sent. The only open point is the wording on price reviews, which they want to align with the Swedish index, but they said it is a formality. So the signing date of 22 January looks safe.\n\nI will keep you posted if that changes.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0056",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rekrutacja kierowców - raport tygodniowy",
+      "body": "Cześć Wiktor,\n\nprzekazuję krótki raport tygodniowy z rekrutacji. Do końca tygodnia podpisaliśmy umowy z szesnastoma osobami z dwudziestu planowanych. Cztery pozostałe mają czas do poniedziałku na dostarczenie zaświadczeń lekarskich. Agencja pracy tymczasowej potwierdziła, że w razie braków zapewni zastępstwo w ciągu dwóch dni.\n\nSzkolenia wstępne odbędą się według harmonogramu. Z mojej strony nie ma żadnych problemów, o których powinieneś wiedzieć, a ten mail jest tylko informacją.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0057",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nowe godziny pracy terminala w Gdyni",
+      "body": "Szanowny Panie Wiktorze,\n\npragnę przekazać informację od terminala w Gdyni: od lutego zmieniają się godziny przyjmowania kontenerów eksportowych. Nowe okno przyjęć trwa od siódmej do osiemnastej w dni robocze, a w soboty do czternastej. Nasze biuro odpraw dostosowało już swój grafik i będzie pracować z takim wyprzedzeniem, żeby wszystkie dokumenty były gotowe przed południem.\n\nZmiana nie zmienia stawek ani zasad rozliczeń. Informuję wyłącznie dla porządku.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0058",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zielona Hurtownia - podsumowanie spotkania zarządu",
+      "body": "Szanowny Panie Wiktorze,\n\nw poniedziałek odbyło się posiedzenie naszego zarządu, na którym omawialiśmy m.in. przetarg na obsługę logistyczną sieci. Chciałabym przekazać Panu, jak wygląda stan tej sprawy z naszej strony, aby wiedział Pan, czego się spodziewać w najbliższych tygodniach.\n\nPo pierwsze, zarząd zaakceptował kryteria oceny ofert. Cena będzie miała wagę czterdziestu procent, jakość obsługi i terminowość trzydzieści procent, a doświadczenie przy podobnych kontraktach dwadzieścia procent. Pozostałe dziesięć procent dotyczy elastyczności w sytuacjach nietypowych.\n\nPo drugie, ocena ofert odbędzie się w dwóch rundach. Pierwsza runda to analiza dokumentów, druga to rozmowy z trzema najlepszymi uczestnikami. Wszyscy dostaną informację o wyniku pierwszej rundy najpóźniej piętnastego dnia lutego.\n\nPo trzecie, dotychczasowa współpraca z Państwa firmą jest oceniana bardzo dobrze, co zapisano w protokole. Nie przesądza to wyniku, ale jest dla nas ważne.\n\nWiadomość ma charakter informacyjny i nie wymaga odpowiedzi. Piszę ją, bo w poprzednich latach zdarzało się, że dostawcy dowiadywali się o zasadach oceny dopiero z dokumentów przetargowych, a my chcemy, żeby tym razem wszystko było jasne od początku. Zarząd docenił również to, że Państwa przedstawiciele zawsze odpowiadają na nasze pytania w ciągu jednego dnia roboczego.\n\nZ poważaniem\nGenowefa Jastrzębska",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0059",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Framework agreement - status of our review",
+      "body": "Dear Mr Szalewski,\n\nFollowing our recent exchanges, I confirm that our legal department has finished the first reading of the framework agreement. They found the structure clear and the liability clause consistent with our standard terms. Two minor drafting points were passed on to Mr Lewandrowski directly, and he has already noted them.\n\nWe still plan to sign on 22 January. This email is only to inform you of the status, and no reply is needed.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0060",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supply Chain Weekly: reefer rates and the quarter ahead",
+      "body": "Supply Chain Weekly - the reefer edition\n\nReefer rates on North Sea to Baltic services rose three percent this week, mostly on seasonal demand for fresh produce. Equipment availability remains tight in Hamburg, where operators report shortages of 40-foot units.\n\nOn the road, refrigerated truck capacity in Poland is tight until the end of the month. Operators say that new trailers ordered last autumn will start arriving in March.\n\nA look at the quarter: forwarders expect stable volumes, with a modest uptick in March.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0064",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zestawienie reklamacji i dostaw w naszej sieci",
+      "body": "Szanowny Panie Wiktorze,\n\npragnę przekazać Panu zbiorczą informację o naszych dostawach w ostatnim kwartale ubiegłego roku, bo uznałam, że warto, aby prezes miał taki obraz sytuacji przed rozmowami o nowym kontrakcie. Poniżej przedstawiam najważniejsze liczby i wnioski, które sformułował nasz dział jakości.\n\nPrzyjęliśmy w sumie sto osiemdziesiąt dwie dostawy do wszystkich hurtowni. Dziewięćdziesiąt cztery procent z nich zmieściło się w ustalonych oknach rozładunku, a to wynik lepszy niż w poprzednim kwartale, kiedy było to osiemdziesiąt dziewięć procent. Reklamacji było jedenaście, z czego dziewięć zostało zamkniętych w czasie krótszym niż tydzień. Dwie wymagały dłuższej korespondencji z ubezpieczycielem.\n\nNajczęstszą przyczyną reklamacji było mocowanie palet z napojami w naczepie, co zostało omówione z dyrektor operacyjną. Wiem od niej, że kierowcy dostali dodatkowe instrukcje, więc spodziewam się poprawy w kolejnym kwartale.\n\nZ naszej strony dziękuję za dobrą współpracę. Wiadomość ma charakter informacyjny i nie wymaga odpowiedzi. Kopię zestawienia z numerami dostaw mamy u siebie, ale nie ma potrzeby jej przesyłać.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0066",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Joint venture - update on our capacity",
+      "body": "Dear Wiktor,\n\nI thought you would like to hear that our capacity for the second quarter is now fully planned. We have confirmed twelve dedicated trucks on the lanes into Scandinavia and secured additional space with two subcontractors for peaks around Easter. The new vehicles meet the latest emission standards, which should help in tenders where environmental criteria carry weight.\n\nOur operations team also finished the review of the driver rotation plan. It shows that we can cover the joint tender volumes even if the demand is ten percent higher than forecast.\n\nThere is nothing to decide here. I am sharing the information so that your sales team knows what we can offer when they prepare offers.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0067",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Terminy posiedzeń i podróży rady - zestawienie na pierwszy kwartał",
+      "body": "Szanowny Panie Prezesie,\n\nchciałbym przekazać Panu zestawienie terminów posiedzeń rady nadzorczej oraz zaplanowanych wyjazdów, jakie wynikają z kalendarza na pierwszy kwartał. Informacja ma charakter porządkowy i służy temu, aby zarząd mógł uwzględnić te daty w planowaniu pracy.\n\nPosiedzenie zwyczajne odbędzie się 28 stycznia w siedzibie spółki w Poznaniu i potrwa cały dzień. Kolejne posiedzenie, poświęcone wynikom za pierwszy kwartał, jest planowane na początek kwietnia. Komitet audytu spotka się osobno w drugiej połowie lutego, w formie zdalnej, a komitet wynagrodzeń w pierwszym tygodniu marca.\n\nJeśli chodzi o podróże, planuję wyjazd do Sztokholmu na konferencję branżową w drugim tygodniu lutego oraz krótką wizytę u akcjonariusza w Hamburgu pod koniec marca. W obu przypadkach nie przewiduję udziału zarządu. Wszystkie rezerwacje zostały już dokonane przez sekretariat rady.\n\nPrzekazuję te informacje wyłącznie do wiadomości. Nie oczekuję odpowiedzi ani żadnych czynności po stronie zarządu. Gdyby termin któregoś z posiedzeń uległ zmianie, sekretariat rady powiadomi o tym w zwykły sposób, a aktualny kalendarz będzie dostępny w portalu rady przez cały kwartał.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0068",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rekrutacje, obsada i urlopy - stan na koniec stycznia",
+      "body": "Cześć Wiktor,\n\nwysyłam zbiorcze podsumowanie spraw kadrowych w magazynach, bo sporo się dzieje i wolę, żebyś miał pełny obraz bez szukania po osobnych mailach.\n\nRekrutacje: w Poznaniu zatrudniliśmy dwudziestu pracowników, w Gdyni czternastu z szesnastu planowanych. Dwie ostatnie osoby podpiszą umowy w poniedziałek. Agencja pracy tymczasowej dostarczyła dodatkowo sześć osób na weekendy.\n\nSzkolenia: wszyscy nowi przeszli już szkolenie wstępne BHP. Szkolenie z obsługi wózków widłowych odbędzie się w trzech grupach, pierwsza w środę. Instruktor potwierdził terminy.\n\nUrlopy: plan na luty jest zatwierdzony. Przy zachowaniu tej obsady nie przewidujemy problemów z realizacją zleceń nawet przy wzmożonym ruchu pod koniec miesiąca.\n\nFluktuacja: w styczniu odeszły tylko trzy osoby, co jest wynikiem lepszym niż w ubiegłym roku o tej porze. Wyniki ankiety wyjściowej wskazują głównie na przeprowadzki do innych miast, a nie na niezadowolenie z pracy.\n\nTo wszystko. Nie potrzebuję od Ciebie żadnych decyzji. Gdyby coś się zmieniło, od razu dam znać.\n\nPozdrawiam",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0069",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wyniki ankiety rady",
+      "body": "Wiktor,\n\ninformuję, że wyniki ankiety oceny pracy rady za ubiegły rok są już w portalu. Średnia ocena wyniosła cztery i dwie dziesiąte w skali pięciostopniowej. Najlepiej oceniono jakość materiałów od zarządu, a najniżej czas na dyskusję podczas posiedzeń. Omówimy to na posiedzeniu w ostatnim punkcie.\n\nNic nie musisz robić, dla Twojej wiadomości.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0070",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana lotu - Sztokholm",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że linia lotnicza zmieniła godzinę mojego lotu do Sztokholmu, a pozostałe terminy wyjazdu pozostają bez zmian.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0071",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Awaria WMS w Gdyni - stan na dziś",
+      "body": "Cześć Wiktor,\n\nsystem magazynowy w Gdyni działa już normalnie od wczorajszego wieczora. Przyczyną przerwy był błąd w aktualizacji modułu przyjęć, który dostawca wycofał. Straciliśmy około czterech godzin pracy przy rozładunkach, ale wszystkie opóźnione dostawy zostały przyjęte tej samej nocy.\n\nŻadne dane nie zostały utracone, a dział IT potwierdził to po sprawdzeniu kopii. Dostawca przesłał raport z przyczynami i obiecał dodatkowe testy przed kolejnymi aktualizacjami. Zdarzenie jest zamknięte.\n\nHalina",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0072",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Framework agreement - Swedish index",
+      "body": "Hi Wiktor,\n\njust so you know - Karin confirmed on the phone that the price review clause can stay as drafted, so one more point is off the list. She will send a short written note next week.\n\nRest of the draft is untouched. Nothing for you to do.\n\nOliver",
+      "thread": [
+        {
+          "from": "karin.lindqvist@nordicfoods-trade.test",
+          "subject": "Re: Nordic framework - open points",
+          "body": "Hi Oliver, thank you for the update. Our lawyers have only the price review clause left, we hope to close it this week. Karin Lindqvist"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0074",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Reklamacja zamknięta",
+      "body": "Dzień dobry,\n\npotwierdzamy, że reklamacja została u nas zamknięta, towar zastępczy dotarł wczoraj.",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Reklamacja - uszkodzone palety",
+          "body": "Pani Genowefo, towar zastępczy wyjechał dziś rano. Dziękuję za cierpliwość. Wiktor Szalewski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0075",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Terminy dostaw - nasz plan magazynowy na luty",
+      "body": "Szanowny Panie Wiktorze,\n\nchciałbym poinformować Pana o zmianach w organizacji naszego magazynu surowców, które będą miały wpływ na okna rozładunku w lutym. Informuję o nich z wyprzedzeniem, żeby Państwa dyspozytorzy mogli to uwzględnić.\n\nOd pierwszego lutego uruchamiamy drugą rampę, co pozwoli nam przyjmować równocześnie dwa samochody. Rozładunki płyt będą odbywały się na nowej rampie, a rozładunki okuć i akcesoriów na dotychczasowej. W praktyce oznacza to, że okna rozładunku skrócą się z czterech godzin do dwóch, ale będzie ich więcej w ciągu dnia.\n\nNowy plan obejmuje poniedziałki, środy i piątki w godzinach od ósmej do szesnastej. We wtorki i czwartki przyjmujemy tylko drobnicę. Kierowcy muszą zgłaszać się przy bramie numer dwa, a nie, jak dotąd, przy bramie numer jeden. Wszystkie oznakowania zostały już zmienione.\n\nPiszę tylko informacyjnie, szczegółowy plan trzymamy u siebie i wiadomo, że Państwa dyspozytor ma już dane kontaktowe do naszego magazyniera. Nie wymaga to odpowiedzi.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0076",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supply Chain Weekly: short brief",
+      "body": "Supply Chain Weekly - 60 seconds\n\nDiesel prices in the EU were flat this week, with a small fall in Poland. Container spot rates were stable on most lanes.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0077",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Framework agreement - note of the call",
+      "body": "Dear Mr Szalewski,\n\nFor the record: Mr Lewandrowski and I agreed that the draft is ready for the final read.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [
+        {
+          "from": "piotr.lewandrowski@kordelan.test",
+          "subject": "Re: Framework agreement - draft v3",
+          "body": "Dear Karin, thank you for the call. Our lawyers will send the last comments within the week. Piotr Lewandrowski"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Framework agreement - draft v3",
+          "body": "Karin, thank you for the update. Please keep Piotr in the loop on the final wording. Best, Wiktor Szalewski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0078",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wspólne przetargi - nasze wyniki za ostatni kwartał",
+      "body": "Szanowny Panie Wiktorze,\n\npragnę przedstawić Panu krótkie podsumowanie wyników naszej współpracy w przetargach w ostatnim kwartale, bo w tym czasie zebraliśmy kilka istotnych doświadczeń, które mogą być przydatne przy planowaniu kolejnych ofert.\n\nWspólnie złożyliśmy cztery oferty. Dwie wygraliśmy, jedną przegraliśmy w drugiej rundzie z powodu ceny, a w jednym postępowaniu czekamy jeszcze na rozstrzygnięcie. Łączna wartość wygranych kontraktów wynosi około jedenaście milionów złotych w skali roku. Marża po uwzględnieniu kosztów dodatkowych jest zgodna z założeniami wspólnego modelu finansowego.\n\nZ analizy przegranej oferty wynika, że zamawiający kładł bardzo duży nacisk na stawki za dodatkowe usługi magazynowe, w których jesteśmy wyraźnie droższi od konkurencji. Wniosek jest taki, że przy następnych przetargach warto z góry przygotować wariant z uproszczoną strukturą tych stawek. Nasz zespół już nad tym pracuje, a o efektach poinformuję przy okazji.\n\nPiszę wyłącznie informacyjnie. Nie oczekuję Pańskiej odpowiedzi.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0079",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Hamburg lane - all clear",
+      "body": "Hi Wiktor,\n\nFYI the Hamburg border queue is back to normal, so no more delays on that lane this week. Nothing needed.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}
