@@ -9,12 +9,12 @@ test.describe.configure({ mode: "serial" });
 
 let errors: string[] = [];
 
-// The language spec writes `users.locale` of the project's assistant (the account spec changes the password of the member) and sets it back to en after each test. Blocks: 30 and 130.
+// The language spec writes `users.locale` of the project's activity member (the account spec changes the password of the member; the assistants have no password) and sets it back to en after each test. Blocks: 30 and 130.
 test.beforeEach(async ({ context, page }, testInfo) => {
   const onMobile = testInfo.project.name === "mobile";
   await context.setExtraHTTPHeaders({ "x-forwarded-for": nextAddress(onMobile ? 30 : 130) });
   errors = await cspErrors(page);
-  await signInAs(page, readSeed().assistants[testInfo.project.name as "mobile" | "desktop"]);
+  await signInAs(page, readSeed().activityMembers[testInfo.project.name as "mobile" | "desktop"]);
   await expect(page).toHaveURL(/\/onboarding$/);
 });
 
