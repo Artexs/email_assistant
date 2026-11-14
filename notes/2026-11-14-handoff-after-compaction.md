@@ -17,3 +17,9 @@ Steps after the owner says "start":
 `/tmp` (tmpfs, 1,048,576 inodes) was 100% full of inodes: `/tmp/node-compile-cache` held 823,000 files; old review folders (`f086-review`, `f090-review`, `f091-review`, `ea-s5-*`) held about 200,000. Jobs fail with ENOSPC when this happens (a review reported TLS/SMTP tests failing). I deleted those folders (4% used after). If it returns: `df -i /tmp`, then `rm -rf /tmp/node-compile-cache`. A follow-up idea: set `NODE_COMPILE_CACHE` to a folder outside /tmp or clear it in `scripts/limen-prepare.sh`.
 ## Landing rule (my own mistake, three times today)
 Run `limen land` ALONE. Read its last lines. "Recorded preimage" or CONFLICT = not landed: resume the worker with "git merge master, keep both sides, re-run the proof"; do NOT drop its databases and do NOT spawn the next stage until it landed.
+
+## F097 stage 04 review carry-over (landed 2026-11-14, review PASS)
+- F098 stage 11 spawn text MUST say: move `review.helpLine` / `review.commandDescription` (packages/core/src/texts/review.ts, read by channels/texts.ts and BOT_COMMANDS) into `texts.bot.help` / `texts.bot.commands`; use the verb "Stuknij" for tap; keep one source only.
+- Polish `empty` text in texts/review.ts: change to "Brak wiadomości do przeglądu: każda wiadomość z ostatnich 30 dni ma etykietę." ("etykieta" vs panel "ocena": F098 owner choice; pl only, hold is on).
+- Test case 3 in apps/server/test/integration/channels-review.test.ts inserts no mail; add one mail plus a feedback row.
+- Coordinator still has C2 (deploy) and C3 (flag on for pilot) for /review.
