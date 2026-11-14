@@ -55,6 +55,7 @@ flowchart BT
   operator --> reports
   operator --> tenancy
   operator --> triage
+  privacy --> audit
   reports --> actions
   reports --> audit
   reports --> config
