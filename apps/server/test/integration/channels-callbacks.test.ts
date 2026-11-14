@@ -1092,6 +1092,7 @@ describe("taps of a suspended organization", () => {
       llmDailyCap: 300,
       triageScope: "all",
       llm: { provider: "gemini", classifierModel: "gemini-3.5-flash-lite" },
+      testMail: NO_TEST_SENDERS,
       operatorContact: "ops@example.test",
     });
   }

@@ -29,7 +29,7 @@ export interface LinkedChat {
   locale: UserLocale;
 }
 
-export const commandNames = ["help", "digest", "status", "pause", "resume"] as const;
+export const commandNames = ["help", "digest", "status", "pause", "resume", "review"] as const;
 export type CommandName = (typeof commandNames)[number];
 
 /** The answer to a button tap: a short toast, then optionally an edit of the tapped message and a new message. */

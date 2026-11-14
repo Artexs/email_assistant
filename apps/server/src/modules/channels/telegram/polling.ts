@@ -1,3 +1,4 @@
+import { textTables } from "@ea/core";
 import { GrammyError, type Bot } from "grammy";
 
 import { createLog } from "../../../platform/log";
@@ -12,6 +13,7 @@ export const BOT_COMMANDS: readonly { command: CommandName; description: string 
   { command: "status", description: "Mailboxes, last sync, LLM calls" },
   { command: "pause", description: "Stop reading and triage" },
   { command: "resume", description: "Start reading and triage again" },
+  { command: "review", description: textTables.en.review.commandDescription },
   { command: "help", description: "The command list" },
 ];
 

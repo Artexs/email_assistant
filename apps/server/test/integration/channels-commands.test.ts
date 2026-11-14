@@ -61,6 +61,7 @@ function depsAt(trx: Transaction<DB>, now: Date, extra: Partial<CommandDeps> = {
     hooks: noDelegationHooks,
     uidplus: async () => true,
     sendScope: { kind: "off" },
+    testMail: NO_TEST_SENDERS,
     operatorContact: null,
     ...extra,
   };

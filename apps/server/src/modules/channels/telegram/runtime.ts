@@ -4,6 +4,7 @@ import type { Transaction } from "kysely";
 import type { DB, Db, TenantContext } from "../../../platform/db";
 import { SoftError } from "../../../platform/errors";
 import type { ActionsScope, DelegationHooks, SendScope } from "../../actions";
+import type { TestMailRule } from "../../mail";
 import { createUpdateHandlers } from "../commands";
 import { scheduleDigests } from "../digest-job";
 import { detectNotices } from "../notices";
@@ -53,6 +54,7 @@ export interface TelegramRuntimeDeps {
   hooks: DelegationHooks;
   uidplus(ctx: TenantContext, mailboxId: string): Promise<boolean>;
   sendScope: SendScope;
+  testMail: TestMailRule;
   operatorContact: string | null;
   // Tests, and TELEGRAM_API_ROOT (loopback only, platform/config).
   apiRoot?: string;
@@ -88,6 +90,7 @@ export function createTelegramRuntime(deps: TelegramRuntimeDeps): TelegramRuntim
         hooks: deps.hooks,
         uidplus: deps.uidplus,
         sendScope: deps.sendScope,
+        testMail: deps.testMail,
         operatorContact: deps.operatorContact,
       }),
     },

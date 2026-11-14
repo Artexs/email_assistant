@@ -5,7 +5,7 @@ import { createCommitterJob, createExpiryJob } from "../modules/actions";
 import { createTelegramRuntime } from "../modules/channels";
 import { createChaserJob, delegationHooks } from "../modules/delegation";
 import { configureMailHosts } from "../modules/mail";
-import { llmRoleTable, loadConfig, mailAllowLocal, sendLimits } from "../platform/config";
+import { llmRoleTable, loadConfig, mailAllowLocal, sendLimits, testMailRule } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
@@ -69,6 +69,7 @@ async function main(): Promise<number> {
           hooks,
           uidplus,
           sendScope: sendScope(config),
+          testMail: testMailRule(config),
           operatorContact: null,
         });
         await runtime.notify();

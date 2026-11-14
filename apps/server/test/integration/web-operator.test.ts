@@ -103,7 +103,7 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
     expect(await res.json()).toEqual({ error: "not_found" });
   });
 
-  test("4. the operator reads every organization with effective values, four keys per row", async () => {
+  test("4. the operator reads every organization with effective values, five keys per row", async () => {
     await flagOn(org.orgId, "stats_page");
     const res = await operatorApp().request("/api/operator/flags", as("assistant"));
     expect(res.status).toBe(200);
@@ -113,8 +113,9 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
       { orgId: org.orgId, flag: "approvals_page", enabled: false },
       { orgId: org.orgId, flag: "sent_sync", enabled: false },
       { orgId: org.orgId, flag: "security_log", enabled: false },
+      { orgId: org.orgId, flag: "review_command", enabled: false },
     ]);
-    expect(rowsOf(body, org.otherOrgId).map((row) => row.enabled)).toEqual([false, false, false, false]);
+    expect(rowsOf(body, org.otherOrgId).map((row) => row.enabled)).toEqual([false, false, false, false, false]);
     for (const row of [...rowsOf(body, org.orgId), ...rowsOf(body, org.otherOrgId)]) {
       expect(Object.keys(row).sort()).toEqual(["enabled", "flag", "orgId"]);
     }
@@ -134,7 +135,7 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
     const res = await operatorApp().request("/api/operator/flags", as("assistant"));
     const body = (await res.json()) as OperatorFlags;
     expect(body.rows.filter((row) => (row.flag as string) === "old_flag")).toEqual([]);
-    expect(rowsOf(body, org.orgId)).toHaveLength(4);
+    expect(rowsOf(body, org.orgId)).toHaveLength(5);
   });
 
   test("7. path forms: the guard covers the prefix, the route is GET /flags only", async () => {
