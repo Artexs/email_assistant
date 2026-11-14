@@ -32,6 +32,15 @@ export {
   type SendAgainResult,
   type WentOutResult,
 } from "./approvals";
+export {
+  markSentMistake,
+  MISTAKE_WINDOW_MS,
+  recordRejectReason,
+  type MistakeResult,
+  type RejectReasonResult,
+} from "./feedback";
+export { getActionFeedback, type ActionFeedbackKind, type ActionFeedbackRow } from "./repo";
+export { listHiddenMoveRows, listMistakeRows, listRejectRows, type HiddenMoveRowWithMail } from "./repo";
 export { ensureMoved, type EnsureExclude, type EnsureResult } from "./move";
 export { MAILBOX_ACTION_TYPES, type MailboxActionType } from "@ea/core";
 export type { ExpireFilter } from "@ea/core";
@@ -122,3 +131,4 @@ export {
 } from "./expiry";
 export { noDelegationHooks, type DelegationHooks } from "./hooks";
 export { undo, type UndoResult } from "./undo";
+export { actionRoutes, type ActionRouteDeps } from "./routes";

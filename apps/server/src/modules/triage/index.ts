@@ -56,3 +56,4 @@ export type { TriageJobDeps, TriageScope } from "./jobs";
 export { requeueBackfillWindow } from "./backfill";
 export { createReturnedJob, processReturned } from "./returned";
 export type { ReturnedJobDeps } from "./returned";
+export { listHandledRows, listTruthRows } from "./metrics-repo";

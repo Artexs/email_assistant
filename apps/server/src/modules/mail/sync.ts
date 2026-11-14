@@ -5,9 +5,17 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { describeError, HardError, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 
+import { storeCapture } from "./capture-store";
 import { ensureSyncFolders } from "./folders";
 import { LOCATE_CHUNK, locateKeyOf, locateMessage, type LocateKey } from "./locate";
-import { INBOX, MailAuthError, type FolderStatus, type MailProvider, type MessageMeta } from "./port";
+import {
+  INBOX,
+  MailAuthError,
+  type CapturedHeaders,
+  type FolderStatus,
+  type MailProvider,
+  type MessageMeta,
+} from "./port";
 import {
   findCopies,
   getMailbox,
@@ -67,6 +75,8 @@ export interface SyncResult {
   mode: "initial" | "incremental" | "rescan" | "backfill";
   fetched: number;
   stored: number;
+  /** Stored mail without an `email_headers` row: no capture, or the header insert failed. */
+  captureMissing: number;
   uidUpdated: number;
   returned: number;
   relocated: number;
@@ -97,6 +107,7 @@ function emptyResult(folder: SyncFolderKey, mode: SyncResult["mode"]): SyncResul
     mode,
     fetched: 0,
     stored: 0,
+    captureMissing: 0,
     uidUpdated: 0,
     returned: 0,
     relocated: 0,
@@ -118,7 +129,7 @@ export class CursorMovedError extends SoftError {
 }
 
 type Write =
-  | { kind: "insert"; row: NewEmail }
+  | { kind: "insert"; row: NewEmail; capture: CapturedHeaders | null }
   | { kind: "update_uid"; emailId: string; uid: number; folder: string; isSource: boolean }
   | { kind: "returned"; emailId: string; uid: number; folder: string }
   | { kind: "relocated"; emailId: string; uid: number; from: string; to: string };
@@ -257,7 +268,11 @@ async function planChunk(
 
     if (dedupKey !== null) {
       const content = await deps.provider.fetchContent(folder, meta.uid);
-      writes.push({ kind: "insert", row: newRow(mailboxId, folder, meta, messageId, hash, dedupKey, content.text) });
+      writes.push({
+        kind: "insert",
+        row: newRow(mailboxId, folder, meta, messageId, hash, dedupKey, content.text),
+        capture: content.capture,
+      });
       state.newKeys.set(baseKey, [...runStored, { dedupKey, folder, uid: meta.uid }]);
       state.matched.set(`run:${dedupKey}`, folder);
     }
@@ -282,12 +297,17 @@ async function applyChunk(
       throw new CursorMovedError(`cursor of mailbox ${mailboxId} moved during the sync`);
     }
     let stored = 0;
+    let missing = 0;
     let uidUpdated = 0;
     let returned = 0;
     let relocated = 0;
     for (const write of writes) {
       if (write.kind === "insert") {
-        if (await insertEmail(trx, ctx, write.row)) stored += 1;
+        if (await insertEmail(trx, ctx, write.row)) {
+          stored += 1;
+          const mail = { mailboxId: write.row.mailbox_id, dedupKey: write.row.dedup_key };
+          if (write.capture === null || !(await storeCapture(trx, ctx, mail, write.capture, deps.now()))) missing += 1;
+        }
       } else if (write.kind === "update_uid") {
         if (
           await updateEmailUid(trx, ctx, write.emailId, write.uid, { folder: write.folder, isSource: write.isSource })
@@ -313,13 +333,14 @@ async function applyChunk(
     if (next !== null && !(await updateFolderCursor(trx, ctx, folderId, expected, next))) {
       throw new CursorMovedError(`cursor of mailbox ${mailboxId} moved during the sync`);
     }
-    return { stored, uidUpdated, returned, relocated };
+    return { stored, missing, uidUpdated, returned, relocated };
   };
 
   const counts = deps.db.isTransaction
     ? await run(deps.db as Transaction<DB>)
     : await deps.db.transaction().execute(run);
   result.stored += counts.stored;
+  result.captureMissing += counts.missing;
   result.uidUpdated += counts.uidUpdated;
   result.returned += counts.returned;
   result.relocated += counts.relocated;
@@ -500,6 +521,9 @@ async function syncFolder(
   log.info(
     `sync ${mailboxId} folder ${row.key}: ${result.mode}, fetched ${result.fetched}, stored ${result.stored}, uid updated ${result.uidUpdated}, returned ${result.returned}, relocated ${result.relocated}, cross copies ${result.crossCopies}, move in flight ${result.moveInFlight}, skipped own ${result.skippedOwn}, ignored below cursor ${result.ignoredBelowCursor}`
   );
+  if (result.captureMissing > 0) {
+    log.warn("capture_missing", { mailbox_id: mailboxId, count: result.captureMissing });
+  }
   return result;
 }
 
@@ -605,5 +629,8 @@ export async function backfillInbox(
   log.info(
     `backfill ${mailboxId}: fetched ${result.fetched}, stored ${result.stored}, uid updated ${result.uidUpdated}, returned ${result.returned}, skipped own ${result.skippedOwn}`
   );
+  if (result.captureMissing > 0) {
+    log.warn("capture_missing", { mailbox_id: mailboxId, count: result.captureMissing });
+  }
   return result;
 }

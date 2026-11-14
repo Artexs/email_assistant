@@ -8,3 +8,4 @@ export * from "./m7";
 export * from "./m8";
 export * from "./week";
 export * from "./week-stats";
+export * from "./query";

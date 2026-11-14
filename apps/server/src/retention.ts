@@ -3,7 +3,7 @@ import type { Transaction } from "kysely";
 import { clearActionErrors, clearActionPayloads } from "./modules/actions";
 import { clearOutboxTexts, deleteOldLinkTokens } from "./modules/channels";
 import { clearDelegationTasks, isOpenDelegationDraft } from "./modules/delegation";
-import { clearMailBodies, clearMailHeaders, PENDING_BODY_DAYS } from "./modules/mail";
+import { clearCapturedHeaders, clearMailBodies, clearMailHeaders, PENDING_BODY_DAYS } from "./modules/mail";
 import { listOrganizations } from "./modules/tenancy";
 import { clearTriageTexts } from "./modules/triage";
 import { deleteExpiredVerifications } from "./platform/auth";
@@ -25,6 +25,7 @@ export const VERIFICATION_GRACE_MS = 24 * HOUR_MS;
 export interface RetentionCounts {
   body: number;
   headers: number;
+  capturedHeaders: number;
   triage: number;
   payloads: number;
   errors: number;
@@ -36,6 +37,7 @@ export interface RetentionCounts {
 export interface Clearers {
   clearMailBodies: typeof clearMailBodies;
   clearMailHeaders: typeof clearMailHeaders;
+  clearCapturedHeaders: typeof clearCapturedHeaders;
   clearTriageTexts: typeof clearTriageTexts;
   clearActionPayloads: typeof clearActionPayloads;
   clearActionErrors: typeof clearActionErrors;
@@ -67,6 +69,7 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
   const clearers: Clearers = {
     clearMailBodies,
     clearMailHeaders,
+    clearCapturedHeaders,
     clearTriageTexts,
     clearActionPayloads,
     clearActionErrors,
@@ -80,11 +83,14 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
   async function runOrg(org: { id: string; dataRetentionDays: number }, now: Date): Promise<RetentionCounts> {
     const ctx = { orgId: org.id };
     const textsBefore = new Date(now.getTime() - RETENTION_TEXT_DAYS * DAY_MS);
+    const bodyBefore = new Date(now.getTime() - org.dataRetentionDays * DAY_MS);
     const body = await clearers.clearMailBodies(db, ctx, {
-      before: new Date(now.getTime() - org.dataRetentionDays * DAY_MS),
+      before: bodyBefore,
       pendingBefore: new Date(now.getTime() - PENDING_BODY_DAYS * DAY_MS),
     });
     const headers = await clearers.clearMailHeaders(db, ctx, { before: textsBefore });
+    // The captured header texts go with the mail body, after the organization's period.
+    const capturedHeaders = await clearers.clearCapturedHeaders(db, ctx, { before: bodyBefore });
     const triage = await clearers.clearTriageTexts(db, ctx, { before: textsBefore });
     const payloads = await clearers.clearActionPayloads(db, ctx, { before: textsBefore, keep: isOpenDelegationDraft });
     const errors = await clearers.clearActionErrors(db, ctx, { before: textsBefore });
@@ -93,10 +99,10 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
     const tokens = await clearers.deleteOldLinkTokens(db, ctx, {
       before: new Date(now.getTime() - LINK_TOKEN_GRACE_MS),
     });
-    const counts = { body, headers, triage, payloads, errors, tasks, outbox, tokens };
+    const counts = { body, headers, capturedHeaders, triage, payloads, errors, tasks, outbox, tokens };
     if (sumOf(counts) > 0) {
       log.info(
-        `retention org ${org.id}: body ${body}, headers ${headers}, triage ${triage}, payloads ${payloads}, errors ${errors}, tasks ${tasks}, outbox ${outbox}, tokens ${tokens}`
+        `retention org ${org.id}: body ${body}, headers ${headers}, captured ${capturedHeaders}, triage ${triage}, payloads ${payloads}, errors ${errors}, tasks ${tasks}, outbox ${outbox}, tokens ${tokens}`
       );
     }
     return counts;

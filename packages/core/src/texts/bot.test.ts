@@ -99,15 +99,15 @@ describe("bot texts", () => {
       "zatwierdzono 22, trwa wysyłanie",
     ]);
     for (const n of [1, 2, 5, 22]) {
-      expect(status.approvedPaused(n)).toBe(`zatwierdzono ${n}, wysyłka czeka: skrzynka jest wstrzymana`);
-      expect(status.approvedAuthError(n)).toBe(`zatwierdzono ${n}, wysyłka czeka: logowanie do skrzynki nie działa`);
+      expect(status.approvedPaused(n)).toBe(`zatwierdzono ${n}, wysyłka czeka, bo skrzynka jest wstrzymana`);
+      expect(status.approvedAuthError(n)).toBe(`zatwierdzono ${n}, wysyłka czeka, bo logowanie do skrzynki nie działa`);
       expect(status.approvedHeld(n, "all")).toBe(`zatwierdzono ${n}, wysyłka wstrzymana przez SEND_SCOPE=all`);
       expect(status.delegations(n, 0)).toBe(`Zlecenia: ${n} bez odpowiedzi, 0 po terminie`);
       expect(status.approvalsLine("Zatwierdzenia", n, { oldest: null, held: null })).toBe(
         `Zatwierdzenia: ${n} do Twojego stuknięcia`
       );
       expect(status.actions("all", { applied: n, undone: 0, failed: 0 })).toContain(
-        `wykonano ${n}, cofnięto 0, nie udało się 0`
+        `wykonano ${n}, cofnięto 0, z błędem 0`
       );
     }
   });

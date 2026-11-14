@@ -319,13 +319,13 @@ export const botTexts = {
       waiting: (count) => `Czeka na klasyfikację: ${count}`,
       triage: (scope) => `Klasyfikacja: ${PL_TRIAGE[scope]}`,
       actions: (scope, counts) =>
-        `Działania: ${PL_ACTIONS[scope]} · ostatnie 24 h – wykonano ${counts.applied}, cofnięto ${counts.undone}, nie udało się ${counts.failed}`,
+        `Działania: ${PL_ACTIONS[scope]} · ostatnie 24 h – wykonano ${counts.applied}, cofnięto ${counts.undone}, z błędem ${counts.failed}`,
       approvals: "Zatwierdzenia",
       approvalsOf: (address) => `Zatwierdzenia ${address}`,
       approvalsLine: (label, waiting, extra) =>
-        `${label}: ${waiting} do Twojego stuknięcia${extra.oldest === null ? "" : ` (najstarsze od ${extra.oldest})`}${extra.held === null ? "" : ` · ${extra.held}`}`,
-      approvedPaused: (count) => `zatwierdzono ${count}, wysyłka czeka: skrzynka jest wstrzymana`,
-      approvedAuthError: (count) => `zatwierdzono ${count}, wysyłka czeka: logowanie do skrzynki nie działa`,
+        `${label}: ${waiting} do Twojego stuknięcia${extra.oldest === null ? "" : ` (najstarsze z ${extra.oldest})`}${extra.held === null ? "" : ` · ${extra.held}`}`,
+      approvedPaused: (count) => `zatwierdzono ${count}, wysyłka czeka, bo skrzynka jest wstrzymana`,
+      approvedAuthError: (count) => `zatwierdzono ${count}, wysyłka czeka, bo logowanie do skrzynki nie działa`,
       approvedHeld: (count, scope) => `zatwierdzono ${count}, wysyłka wstrzymana przez SEND_SCOPE=${scope}`,
       approvedSending: (count) => `zatwierdzono ${count}, trwa wysyłanie`,
       send: (scope) => `Wysyłanie: ${PL_SEND[scope]}`,

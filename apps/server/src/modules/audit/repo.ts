@@ -33,6 +33,8 @@ export const auditEvents = {
   actionRejected: "action.rejected",
   actionSendAgain: "action.send_again",
   actionWentOut: "action.went_out", // data: delegation_id, outgoing_message_id
+  actionRejectReason: "action.reject_reason", // reason_code: the reason; data: via
+  actionMistake: "action.mistake", // data: via
   actionSentCopyFailed: "action.sent_copy_failed",
   emailReturned: "email.returned",
   mailboxFolderCreated: "mailbox.folder_created",

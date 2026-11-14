@@ -45,6 +45,12 @@ describe("featureFlags registry", () => {
     expect(featureFlags.security_log.removeBy).toBe("2027-03-01");
   });
 
+  test("mistake_capture defaults off and has the epic E3a", () => {
+    expect(featureFlags.mistake_capture.default).toBe(false);
+    expect(featureFlags.mistake_capture.epic).toBe("E3a");
+    expect(featureEpicPattern.test(featureFlags.mistake_capture.epic)).toBe(true);
+  });
+
   test("featureKeys lists the registry keys in registry order", () => {
     expect<string[]>(featureKeys).toEqual(Object.keys(featureFlags));
     expect(featureKeys.slice(0, 3)).toEqual(["stats_page", "approvals_page", "sent_sync"]);

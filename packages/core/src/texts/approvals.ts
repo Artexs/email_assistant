@@ -1,3 +1,4 @@
+import type { RejectReason } from "../metrics/m3";
 import type { UserLocale } from "../tenancy";
 
 import { pluralCategory } from "./locale";
@@ -29,7 +30,12 @@ export interface ApprovalTexts {
     sendAgain: string;
     wentOut: string;
     done: string;
+    reasonWrongPerson: string; // after a reject: "✖️ Wrong person"
+    reasonWrongContent: string;
+    reasonNotNeeded: string;
+    mistake: string; // on a sent mail: "⚠️ This was a mistake"
   };
+  reasons: Record<RejectReason, string>; // inside a sentence, after "Reason: "
   set: {
     header: (count: number) => string;
     dueDay: (day: string) => string; // ends with ", " : it sits before the reminder number
@@ -78,10 +84,22 @@ export interface ApprovalTexts {
     rejectedSet: (time: string, done: number, skipped: number) => string;
     wentOut: (time: string) => string;
     done: (time: string) => string;
+    rejectedReason: (reason: string) => string; // no clock: the tap time is not the reject time
+    markedMistake: (time: string) => string;
   };
   answered: {
     title: (name: string, subject: string) => string;
     tapDone: string;
+  };
+  // The answers to the reason and mistake taps (F100 stage 14).
+  feedbackTaps: {
+    noted: (reason: string) => string; // `reason` = an entry of `reasons`
+    notRejected: string;
+    off: string;
+    markedMistake: string;
+    alreadyMarked: string;
+    tooLate: string;
+    notSent: string;
   };
 }
 
@@ -117,7 +135,12 @@ export const approvalTexts = {
       sendAgain: "📤 Send again",
       wentOut: "✅ It went out",
       done: "✅ Done",
+      reasonWrongPerson: "✖️ Wrong person",
+      reasonWrongContent: "✖️ Wrong content",
+      reasonNotNeeded: "Not needed",
+      mistake: "⚠️ This was a mistake",
     },
+    reasons: { wrong_person: "wrong person", wrong_content: "wrong content", not_needed: "not needed" },
     set: {
       header: (count) => (count === 1 ? "📤 Send 1 reminder?" : `📤 Send ${count} reminders?`),
       dueDay: (day) => `due ${day}, `,
@@ -181,10 +204,21 @@ export const approvalTexts = {
       rejectedSet: (time, done, skipped) => `✖️ Skipped ${time}: ${done} rejected, ${skipped} skipped.`,
       wentOut: (time) => `✅ Marked as sent ${time}.`,
       done: (time) => `✅ Done ${time}.`,
+      rejectedReason: (reason) => `✖️ Rejected. Reason: ${reason}.`,
+      markedMistake: (time) => `⚠️ Marked as a mistake ${time}.`,
     },
     answered: {
       title: (name, subject) => `📩 ${name} answered · ${subject}`,
       tapDone: "Tap Done when the task is closed.",
+    },
+    feedbackTaps: {
+      noted: (reason) => `Noted: ${reason}.`,
+      notRejected: "This send is not rejected.",
+      off: "This button is off now.",
+      markedMistake: "⚠️ Noted as a mistake.",
+      alreadyMarked: "Already marked.",
+      tooLate: "Too late: a mistake can be marked within 7 days of the send.",
+      notSent: "This mail was not sent.",
     },
   },
   pl: {
@@ -210,7 +244,12 @@ export const approvalTexts = {
       sendAgain: "📤 Wyślij ponownie",
       wentOut: "✅ Wysłano",
       done: "✅ Gotowe",
+      reasonWrongPerson: "✖️ Zła osoba",
+      reasonWrongContent: "✖️ Zła treść",
+      reasonNotNeeded: "Niepotrzebne",
+      mistake: "⚠️ To był błąd",
     },
+    reasons: { wrong_person: "zła osoba", wrong_content: "zła treść", not_needed: "niepotrzebne" },
     set: {
       header: (count) => `📤 Wysłać ${count} ${PL_SET_REMINDERS[pluralCategory("pl", count)]}?`,
       dueDay: (day) => `termin: ${day}, `,
@@ -275,10 +314,21 @@ export const approvalTexts = {
       rejectedSet: (time, done, skipped) => `✖️ Pominięto ${time}. Odrzucono: ${done}, pominięto: ${skipped}.`,
       wentOut: (time) => `✅ Oznaczono jako wysłane ${time}.`,
       done: (time) => `✅ Gotowe ${time}.`,
+      rejectedReason: (reason) => `✖️ Odrzucono. Powód: ${reason}.`,
+      markedMistake: (time) => `⚠️ Oznaczono jako błąd ${time}.`,
     },
     answered: {
       title: (name, subject) => `📩 Odpowiedź od: ${name} · ${subject}`,
       tapDone: "Naciśnij „Gotowe”, gdy zadanie zostanie zamknięte.",
+    },
+    feedbackTaps: {
+      noted: (reason) => `Zapisano: ${reason}.`,
+      notRejected: "Ta wysyłka nie została odrzucona.",
+      off: "Ten przycisk jest teraz wyłączony.",
+      markedMistake: "⚠️ Oznaczono jako błąd.",
+      alreadyMarked: "Już oznaczono.",
+      tooLate: "Za późno: błąd można oznaczyć w ciągu 7 dni od wysyłki.",
+      notSent: "Ta wiadomość nie została wysłana.",
     },
   },
 } satisfies Record<UserLocale, ApprovalTexts>;

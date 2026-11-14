@@ -108,6 +108,20 @@ describe("retention job: run", () => {
   });
 });
 
+async function insertCaptured(trx: Transaction<DB>, orgId: string, emailId: string, text: string, capturedAt: Date) {
+  await trx
+    .insertInto("email_headers")
+    .values({
+      email_id: emailId,
+      org_id: orgId,
+      from_name: text,
+      reply_to: [`${text}@x.test`],
+      parts_known: true,
+      captured_at: capturedAt,
+    })
+    .execute();
+}
+
 // One row per kind of the A23 list, all over 90 days (the mail body is over the 30 days of the organization).
 async function seedFullSet(trx: Transaction<DB>, org: Org, text: string) {
   const ctx = { orgId: org.orgId };
@@ -120,6 +134,9 @@ async function seedFullSet(trx: Transaction<DB>, org: Org, text: string) {
   });
   // The mail of the other rows is new: its own body and headers stay.
   const fresh = await insertTestEmail(trx, ctx, org.mailboxId, { status: "done", created_at: ago(DAY_MS) });
+  // The captured texts of the old mail are over the 30 days of the organization; those of the fresh mail are not.
+  await insertCaptured(trx, org.orgId, old, text, ago(31 * DAY_MS));
+  await insertCaptured(trx, org.orgId, fresh, text, ago(DAY_MS));
   await insertTriaged(trx, ctx, org.mailboxId, {
     category: "info",
     createdAt: over90,
@@ -177,6 +194,7 @@ async function seedFullSet(trx: Transaction<DB>, org: Org, text: string) {
 const ZERO: RetentionCounts = {
   body: 0,
   headers: 0,
+  capturedHeaders: 0,
   triage: 0,
   payloads: 0,
   errors: 0,
@@ -196,6 +214,7 @@ describe("retention job: runOrg", () => {
       expect(await job.runOrg(org, NOW)).toEqual({
         body: 1,
         headers: 1,
+        capturedHeaders: 1,
         triage: 1,
         payloads: 1,
         errors: 1,
@@ -204,6 +223,32 @@ describe("retention job: runOrg", () => {
         tokens: 1,
       });
       expect(await job.runOrg(org, NOW)).toEqual(ZERO);
+    });
+  });
+
+  test("clears the captured texts of a row older than the organization's period and keeps a newer row", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await newOrg(trx, 30);
+      await seedFullSet(trx, a, "secret");
+      const rows = () =>
+        trx
+          .selectFrom("email_headers")
+          .select(["from_name", "texts_cleared_at"])
+          .where("org_id", "=", a.orgId)
+          .orderBy("captured_at")
+          .execute();
+
+      const counts = await createRetentionJob({ db: trx, now: () => NOW }).runOrg(
+        { id: a.orgId, dataRetentionDays: 30 },
+        NOW
+      );
+
+      expect(counts.capturedHeaders).toBe(1);
+      const [cleared, kept] = await rows();
+      expect(cleared?.from_name).toBeNull();
+      expect(cleared?.texts_cleared_at).not.toBeNull();
+      expect(kept?.from_name).toBe("secret");
+      expect(kept?.texts_cleared_at).toBeNull();
     });
   });
 
@@ -270,6 +315,7 @@ describe("retention job: every §7 row in a paused mailbox, a suspended organiza
         const stuckProcessing = await mail(ago(40 * DAY_MS), { status: "processing", locked_at: ago(40 * DAY_MS) });
         const youngProcessing = await mail(ago(40 * DAY_MS), { status: "processing", locked_at: ago(DAY_MS) });
         const fresh = await insertTestEmail(trx, ctx, a.mailboxId, { status: "done", created_at: ago(DAY_MS) });
+        await insertCaptured(trx, a.orgId, doneOld, text, ago(31 * DAY_MS));
         await insertTriaged(trx, ctx, a.mailboxId, { category: "info", createdAt: over90, reason: text });
         await insertAction(trx, ctx, fresh, {
           type: "save_summary",
@@ -343,6 +389,7 @@ describe("retention job: every §7 row in a paused mailbox, a suspended organiza
         expect(await job.runOrg(org, NOW)).toEqual({
           body: 3,
           headers: 1,
+          capturedHeaders: 1,
           triage: 1,
           payloads: 2,
           errors: 1,
@@ -376,7 +423,7 @@ describe("retention job: log", () => {
       expect(await body(trx, old)).toBeNull();
       const joined = lines.join("\n");
       expect(joined).toContain(
-        `[retention] retention org ${a.orgId}: body 1, headers 1, triage 1, payloads 1, errors 1, tasks 1, outbox 1, tokens 1`
+        `[retention] retention org ${a.orgId}: body 1, headers 1, captured 1, triage 1, payloads 1, errors 1, tasks 1, outbox 1, tokens 1`
       );
       expect(joined).not.toContain("TopSecretText");
       expect(joined).not.toContain("@x.test");

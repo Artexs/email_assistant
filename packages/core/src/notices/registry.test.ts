@@ -322,6 +322,27 @@ describe("renderNotice", () => {
     expect(direct.text).toContain("(unknown)");
   });
 
+  test("a send_result accepts a view without mistakeButton (an old row) and with it", () => {
+    const old = {
+      actionId: id1,
+      sendKind: "delegation",
+      result: sendResult,
+      recipient: { name: "Anna Nowak", address: "anna@example.test" },
+      subject: "Contract",
+      synthetic: false,
+    };
+    expect(noticeViewSchemas.send_result.safeParse(old).success).toBe(true);
+    expect(noticeViewSchemas.send_result.safeParse({ ...old, mistakeButton: true }).success).toBe(true);
+    expect(noticeViewSchemas.send_result.safeParse({ ...old, mistakeButton: "yes" }).success).toBe(false);
+    const sent = { kind: "sent", sentCopy: "appended", draftRemoved: true };
+    const withButton = renderNotice("send_result", { ...old, result: sent, mistakeButton: true }, opts);
+    expect(withButton.ok && withButton.message.buttons).toEqual([
+      [{ text: "⚠️ This was a mistake", data: `mk:${id1}` }],
+    ]);
+    const without = renderNotice("send_result", { ...old, result: sent }, opts);
+    expect(without.ok && without.message.buttons).toEqual([]);
+  });
+
   test("a renderer that throws gives ok: false", () => {
     const view = { ...encodeNoticeView("urgent", urgentView), emailId: "e1" };
     expect(renderNotice("urgent", view, opts)).toEqual({ ok: false });

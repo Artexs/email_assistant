@@ -1,9 +1,23 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { applyHardRules, evalCaseSchema, selectCases, splitAddress, type EvalCase } from "@ea/core";
+import {
+  applyHardRules,
+  EVAL_RECEIVED_AT,
+  evalCaseSchema,
+  miniScenario,
+  selectCases,
+  slotSchema,
+  splitAddress,
+  toEvalCase,
+  type EvalCase,
+} from "@ea/core";
 import { describe, expect, test } from "bun:test";
 import { z } from "zod";
+
+import { bodyTextFromSource, renderSeedMessage } from "../mail";
+
+import { toClassifierInput } from "./eval";
 
 const casesDir = resolve(import.meta.dir, "../../../../../evals/cases");
 const reservedDomains = ["example.com", "example.org", "example.net"];
@@ -234,5 +248,81 @@ describe("eval case files", () => {
         if (result.kind === "classify") expect(result.allowed).toContain("delegation");
       }
     });
+  });
+});
+
+// The classifier input before the stage that added receivedAt to cases: the pin for the old cases.
+function oldClassifierInput(c: EvalCase) {
+  const n = c.thread.length;
+  return {
+    from: splitAddress(c.from).address,
+    to: c.to.map((value) => splitAddress(value).address),
+    cc: c.cc.map((value) => splitAddress(value).address),
+    subject: c.subject,
+    receivedAt: EVAL_RECEIVED_AT,
+    bodyText: c.body,
+    thread: c.thread.map((t, i) => ({
+      from: splitAddress(t.from).address,
+      subject: t.subject,
+      receivedAt: new Date(EVAL_RECEIVED_AT.getTime() - (n - i) * 3_600_000),
+      bodyExcerpt: t.body.slice(0, 500),
+    })),
+  };
+}
+
+describe("old eval cases", () => {
+  test("1 every case file parses and keeps its classifier input", () => {
+    const files = readdirSync(casesDir).filter((file) => file.endsWith(".json"));
+    expect(files.length).toBeGreaterThan(0);
+    let count = 0;
+    for (const file of files) {
+      for (const c of load(file)) {
+        expect(toClassifierInput(c)).toEqual(oldClassifierInput(c));
+        count += 1;
+      }
+    }
+    expect(count).toBe(everything.length);
+  });
+});
+
+describe("html text like the pipeline", () => {
+  test("7 an html-only text joins to the body that the IMAP mapper reads", async () => {
+    const slot = slotSchema.parse({
+      id: "h-html-01",
+      part: "dev",
+      batch: "batch-001",
+      persona: "kasia",
+      to: ["szef"],
+      lang: "pl",
+      receivedAt: "2026-11-02T09:00:00.000Z",
+      category: "info",
+      kind: "synthetic",
+      hardCases: ["html_only"],
+      style: { length: "short", format: "html", signature: false, greeting: "none" },
+      brief: "an html-only mail",
+    });
+    const result = await toEvalCase(
+      {
+        slot,
+        text: { id: slot.id, subject: "Raport", body: "", html: "<p>Dzień <b>dobry</b></p>", thread: [] },
+        scenario: miniScenario,
+        corpusVersion: "v1",
+      },
+      {
+        htmlBodyText: (input) =>
+          bodyTextFromSource(
+            Buffer.from(
+              renderSeedMessage({
+                from: input.from,
+                to: input.to,
+                subject: input.subject,
+                date: input.date,
+                html: input.html,
+              })
+            )
+          ),
+      }
+    );
+    expect(result.body).toContain("Dzień dobry");
   });
 });

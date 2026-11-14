@@ -17,6 +17,7 @@ import {
   type CoreTexts,
   type FeedbackCallback,
   type OutMessage,
+  type RejectReason,
 } from "@ea/core";
 import type { Transaction } from "kysely";
 
@@ -40,9 +41,10 @@ import {
 } from "../actions";
 import { closeDelegation } from "../delegation";
 import { getMailbox } from "../mail";
-import { getOrganization } from "../tenancy";
+import { getOrganization, isFeatureOn } from "../tenancy";
 import { getLabelTarget, recordFeedback, undoWithFeedback } from "../triage";
 
+import { handleMistakeTap, handleReasonTap } from "./action-feedback-taps";
 import type { CallbackResult, LinkedChat } from "./port";
 import { findOutboxByDedup } from "./repo";
 import { feedbackTap, reviewPickerMessage } from "./review-taps";
@@ -164,6 +166,8 @@ async function handleApprovalCallback(
       heldBy?: "scope" | "paused" | "auth_error";
       actionId?: string;
       counts?: { done: number; skipped: number };
+      reason?: RejectReason;
+      reasonButtons?: boolean;
     } = {}
   ): Promise<OutMessage | undefined> => {
     const row = await findOutboxByDedup(deps.db, ctx, link.userId, dedupKey);
@@ -215,9 +219,15 @@ async function handleApprovalCallback(
     case "reject": {
       const result = await reject(approvals, ctx, callback.actionId, input);
       if (result.kind === "rejected") {
+        // The reason buttons only while the flag is on (plan D21).
+        const reasonButtons = await isFeatureOn(deps.db, ctx, "mistake_capture");
         return {
           answer: taps.rejectedNow,
-          edit: await edit(`approval:${callback.actionId}`, "rejected"),
+          edit: await edit(
+            `approval:${callback.actionId}`,
+            "rejected",
+            reasonButtons ? { actionId: callback.actionId, reasonButtons } : {}
+          ),
         };
       }
       if (result.kind === "already") return { answer: statusText(taps, result.status) ?? taps.notFound };
@@ -300,6 +310,16 @@ async function handleApprovalCallback(
       }
       break;
     }
+    case "reject_reason":
+      return handleReasonTap(
+        { db: deps.db, ctx, link, now, texts, notFound: taps.notFound, edit },
+        { actionId: callback.actionId, reason: callback.reason }
+      );
+    case "mistake":
+      return handleMistakeTap(
+        { db: deps.db, ctx, link, now, texts, notFound: taps.notFound, edit },
+        { actionId: callback.actionId }
+      );
     case "delegation_done": {
       const result = await inTransaction(deps.db, (trx) =>
         closeDelegation(trx, ctx, callback.delegationId, { actor: link.userId, at: now })

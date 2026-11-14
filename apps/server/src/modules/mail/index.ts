@@ -18,10 +18,12 @@ export { ensureSyncFolders, setSyncFolderEnabled, type SyncFolderSwitchResult } 
 export { auditExitCode, compareFolderWithDb, compareInboxWithDb, type AuditCounts, type InboxKey } from "./audit";
 export { openMailboxProvider, type OpenDeps } from "./open";
 export { createMailSyncJob, type MailSyncJobDeps } from "./jobs";
+export { FLAGS_CHUNK, FLAGS_REFRESH_EVERY_MS, FLAGS_RUN_LIMIT, FLAGS_WINDOW_MS, refreshFlags } from "./flags";
 export { openImapProvider, type ImapConnectOptions } from "./imap/client";
 export { assertTestAddress, probeMove, type ProbeMoveReport } from "./imap/probe-move";
 export { isAllowedRecipient, probeSend, type ProbeSendReport } from "./imap/probe-send";
 export { composeMessage } from "./imap/compose";
+export { bodyTextFromSource } from "./imap/mapper";
 export { openSmtpSender, verifySmtpLogin, type SmtpConnectOptions } from "./imap/smtp";
 export {
   INBOX,
@@ -57,17 +59,22 @@ export {
   PENDING_BODY_DAYS,
   clearMailHeaders,
   clearReturned,
+  clearCapturedHeaders,
   countSyncTargets,
   countWaiting,
   finishEmail,
   forceRescan,
+  getEmailFlags,
+  getEmailHeaders,
   getEmailMailbox,
   getEmailMeta,
   getJunkFolderPath,
   getMailbox,
   getMailboxSummary,
+  insertEmailHeaders,
   listAuthErrorMailboxesBefore,
   listEmailsByMessageIds,
+  listFlagTargets,
   listFolderUids,
   listMailboxes,
   listMailboxTargets,
@@ -82,9 +89,11 @@ export {
   requeueTooOld,
   setFolderMapEntry,
   setUndoPending,
+  touchEmailFlags,
   updateEmailLocation,
+  writeEmailFlags,
 } from "./repo";
-export type { EmailMeta, MailKind } from "./repo";
+export type { EmailFlagsRow, EmailHeadersRow, FlagRead, FlagTarget, EmailMeta, MailKind } from "./repo";
 export type { ClaimedEmail, Cursor, MailboxRow, MailboxStatus, MailboxSummary, NewEmail, SyncFolderRow } from "./repo";
 export {
   isSyntheticMessageId,

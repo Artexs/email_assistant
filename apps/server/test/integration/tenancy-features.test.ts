@@ -171,6 +171,7 @@ describe("org_features", () => {
         { flag: "sent_sync", enabled: false, source: "env" },
         { flag: "security_log", enabled: false, source: "default" },
         { flag: "review_command", enabled: false, source: "default" },
+        { flag: "mistake_capture", enabled: false, source: "default" },
       ]);
     });
   });
