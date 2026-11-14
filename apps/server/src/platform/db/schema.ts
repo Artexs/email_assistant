@@ -5,8 +5,9 @@
 
 import type { ColumnType } from "kysely";
 
-export type Generated<T> =
-  T extends ColumnType<infer S, infer I, infer U> ? ColumnType<S, I | undefined, U> : ColumnType<T, T | undefined, T>;
+export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
+  ? ColumnType<S, I | undefined, U>
+  : ColumnType<T, T | undefined, T>;
 
 export type Int8 = ColumnType<string, bigint | number | string, bigint | number | string>;
 
@@ -315,6 +316,21 @@ export interface MailboxFolders {
   updated_at: Generated<Timestamp>;
 }
 
+export interface MailboxSentSync {
+  created_at: Generated<Timestamp>;
+  enabled: Generated<boolean>;
+  enabled_at: Timestamp | null;
+  first_pass_at: Timestamp | null;
+  last_error_code: string | null;
+  last_pass_at: Timestamp | null;
+  last_uid: Int8 | null;
+  mailbox_id: string;
+  org_id: string;
+  path: string | null;
+  uidvalidity: Int8 | null;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface MailboxSettings {
   category_policy: Generated<Json>;
   mailbox_id: string;
@@ -387,6 +403,36 @@ export interface SenderRules {
   mailbox_id: string | null;
   org_id: string;
   pattern: string;
+}
+
+export interface SentEmails {
+  action_id: string | null;
+  auto_submitted: string | null;
+  body_text: string | null;
+  cc_addresses: Generated<string[]>;
+  content: string;
+  created_at: Generated<Timestamp>;
+  dedup_key: string;
+  from_address: string | null;
+  has_calendar: boolean | null;
+  id: Generated<string>;
+  internal_date: Timestamp;
+  list_id: string | null;
+  mailbox_id: string;
+  message_id: string | null;
+  org_id: string;
+  origin: string;
+  parent_message_id: string | null;
+  path: string;
+  precedence: string | null;
+  references_ids: Generated<string[]>;
+  sent_at: Timestamp;
+  subject: string | null;
+  thread_key: string;
+  to_addresses: Generated<string[]>;
+  uid: Int8;
+  uidvalidity: Int8;
+  updated_at: Generated<Timestamp>;
 }
 
 export interface SsoProviders {
@@ -467,6 +513,7 @@ export interface DB {
   emails: Emails;
   mailbox_credentials: MailboxCredentials;
   mailbox_folders: MailboxFolders;
+  mailbox_sent_sync: MailboxSentSync;
   mailbox_settings: MailboxSettings;
   mailboxes: Mailboxes;
   memberships: Memberships;
@@ -474,6 +521,7 @@ export interface DB {
   organizations: Organizations;
   outbox: Outbox;
   sender_rules: SenderRules;
+  sent_emails: SentEmails;
   sso_providers: SsoProviders;
   triage_feedback: TriageFeedback;
   triage_results: TriageResults;
