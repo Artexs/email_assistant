@@ -1,0 +1,727 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-026",
+  "slots": [
+    {
+      "id": "w-5-008",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "phishing-paliwa",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-29T06:21:00.000Z",
+      "category": "spam",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "an unsolicited promo from Paliwa Flota Billing that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "w-5-009",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "bank-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-29T06:26:00.000Z",
+      "category": "notification",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "a system message about Faktury i platnosci, sent by Powiadomienia Bankowe, with no personal text"
+    },
+    {
+      "id": "w-5-010",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "spam-seo",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-29T06:33:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "Premium Leads Pro pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "w-5-011",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "phishing-paliwa",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-29T06:38:00.000Z",
+      "category": "spam",
+      "topic": "faktury",
+      "hardCases": [
+        "phishing_urgent_push"
+      ],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "fake payment demand or account lock that pushes for action now"
+    },
+    {
+      "id": "w-5-012",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "marketing-targi",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-29T06:39:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<marketing-targi.lists.targi-magazynowe.test>",
+        "List-Unsubscribe": "<https://lists.targi-magazynowe.test/u/7418>"
+      },
+      "attachments": [],
+      "thread": [],
+      "brief": "Targi Magazynowe Expo pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "w-5-013",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "klient-meble",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-29T06:45:00.000Z",
+      "category": "info",
+      "topic": "umowy-sprzedaz",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "shares plain information about Umowy i cenniki sprzedazy; no question and no request"
+    },
+    {
+      "id": "w-5-014",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "erp-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-29T06:49:00.000Z",
+      "category": "notification",
+      "topic": "wms-awaria",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "a system message about System magazynowy i awarie ERP, sent by System ERP Kordelan, with no personal text"
+    },
+    {
+      "id": "w-5-015",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "klient-meble",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-29T06:50:00.000Z",
+      "category": "info",
+      "topic": "reklamacje",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "threadId": "w-5-015",
+      "brief": "shares plain information about Reklamacje i uszkodzone dostawy; no question and no request"
+    },
+    {
+      "id": "w-5-016",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-29T06:53:00.000Z",
+      "category": "delegation",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "koordynator-sprzedazy",
+      "expectedDraft": "delegation",
+      "delegateBehaviour": "late",
+      "style": {
+        "length": "long",
+        "format": "html",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "a task in umowy: Daniel Hargreaves wants someone to take care of Eksport i odprawy celne"
+    },
+    {
+      "id": "w-5-017",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-29T06:56:00.000Z",
+      "category": "needs_reply",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "asks the executive a direct question about Eksport i odprawy celne and waits for an answer"
+    },
+    {
+      "id": "w-5-018",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-29T06:58:00.000Z",
+      "category": "info",
+      "topic": "joint-venture",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "shares plain information about Wspolne przetargi z Baltic Freight Partners; no question and no request"
+    },
+    {
+      "id": "w-5-019",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "marketing-targi",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-29T06:59:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<marketing-targi.lists.targi-magazynowe.test>",
+        "List-Unsubscribe": "<https://lists.targi-magazynowe.test/u/3280>"
+      },
+      "attachments": [],
+      "thread": [],
+      "brief": "an unsolicited promo from Targi Magazynowe Expo that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "w-5-020",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "head-export",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-29T07:00:00.000Z",
+      "category": "delegation",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "asystentka",
+      "expectedDraft": "delegation",
+      "delegateBehaviour": "out_of_office",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "threadId": "w-2-019",
+      "parentId": "w-2-078",
+      "brief": "a task in kalendarz: Oliver Pemberton wants someone to take care of Eksport i odprawy celne"
+    },
+    {
+      "id": "w-5-021",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "marketing-targi",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-29T07:02:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<marketing-targi.lists.targi-magazynowe.test>",
+        "List-Unsubscribe": "<https://lists.targi-magazynowe.test/u/8467>"
+      },
+      "attachments": [],
+      "thread": [],
+      "brief": "Targi Magazynowe Expo pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "w-5-022",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "marketing-targi",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-29T07:03:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<marketing-targi.lists.targi-magazynowe.test>",
+        "List-Unsubscribe": "<https://lists.targi-magazynowe.test/u/6066>"
+      },
+      "attachments": [],
+      "thread": [],
+      "brief": "an unsolicited promo from Targi Magazynowe Expo that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "w-5-023",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "news-global",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-29T07:07:00.000Z",
+      "category": "notification",
+      "topic": "branza-newsletter",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-global.lists.supplychain-weekly.test>",
+        "List-Unsubscribe": "<https://lists.supplychain-weekly.test/u/5386>"
+      },
+      "attachments": [],
+      "thread": [],
+      "brief": "a system message about Wiadomosci branzowe i rynek frachtow, sent by Supply Chain Weekly, with no personal text"
+    },
+    {
+      "id": "w-5-024",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-29T07:09:00.000Z",
+      "category": "info",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "shares plain information about Eksport i odprawy celne; no question and no request"
+    },
+    {
+      "id": "w-5-025",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "news-global",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-29T07:14:00.000Z",
+      "category": "notification",
+      "topic": "branza-newsletter",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-global.lists.supplychain-weekly.test>",
+        "List-Unsubscribe": "<https://lists.supplychain-weekly.test/u/7129>"
+      },
+      "attachments": [],
+      "thread": [],
+      "brief": "a system message about Wiadomosci branzowe i rynek frachtow, sent by Supply Chain Weekly, with no personal text"
+    },
+    {
+      "id": "w-5-026",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "erp-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-29T07:21:00.000Z",
+      "category": "notification",
+      "topic": "wms-awaria",
+      "hardCases": [
+        "auto_reply"
+      ],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {
+        "Auto-Submitted": "auto-replied"
+      },
+      "attachments": [],
+      "thread": [],
+      "brief": "an out-of-office auto-reply"
+    },
+    {
+      "id": "w-5-027",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "erp-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-29T07:23:00.000Z",
+      "category": "notification",
+      "topic": "branza-newsletter",
+      "hardCases": [
+        "bounce"
+      ],
+      "kind": "synthetic",
+      "fromOverride": "mailer-daemon@kordelan.test",
+      "style": {
+        "length": "long",
+        "format": "html",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "a delivery failure report for a mail the executive sent"
+    },
+    {
+      "id": "w-5-028",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "bank-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-29T07:27:00.000Z",
+      "category": "notification",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "an automated message from Powiadomienia Bankowe about Faktury i platnosci; no person writes it"
+    },
+    {
+      "id": "w-5-029",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-29T07:28:00.000Z",
+      "category": "delegation",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "ksiegowa",
+      "expectedDraft": "delegation",
+      "delegateBehaviour": "done",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "a task in faktury: Daniel Hargreaves wants someone to take care of Eksport i odprawy celne"
+    },
+    {
+      "id": "w-5-030",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "news-branza",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-29T07:57:00.000Z",
+      "category": "notification",
+      "topic": "karty-paliwowe",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-branza.lists.logistyka-dzis.test>",
+        "List-Unsubscribe": "<https://lists.logistyka-dzis.test/u/8700>"
+      },
+      "attachments": [],
+      "thread": [],
+      "brief": "a system message about Karty paliwowe i ceny paliw, sent by Magazyn Logistyka Dzis, with no personal text"
+    },
+    {
+      "id": "w-5-031",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "news-branza",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-29T07:58:00.000Z",
+      "category": "notification",
+      "topic": "branza-newsletter",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-branza.lists.logistyka-dzis.test>",
+        "List-Unsubscribe": "<https://lists.logistyka-dzis.test/u/8759>"
+      },
+      "attachments": [],
+      "thread": [],
+      "brief": "a system message about Wiadomosci branzowe i rynek frachtow, sent by Magazyn Logistyka Dzis, with no personal text"
+    },
+    {
+      "id": "w-5-032",
+      "part": "week",
+      "batch": "batch-026",
+      "persona": "erp-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-29T08:06:00.000Z",
+      "category": "notification",
+      "topic": "wms-awaria",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "html",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "a system message about System magazynowy i awarie ERP, sent by System ERP Kordelan, with no personal text"
+    }
+  ]
+}

@@ -1,0 +1,146 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-035",
+  "slots": [
+    {
+      "id": "w-7-036",
+      "part": "week",
+      "batch": "batch-035",
+      "persona": "spam-seo",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-31T19:01:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "an unsolicited promo from Premium Leads Pro that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "w-7-037",
+      "part": "week",
+      "batch": "batch-035",
+      "persona": "bank-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-31T19:07:00.000Z",
+      "category": "notification",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "a system message about Faktury i platnosci, sent by Powiadomienia Bankowe, with no personal text"
+    },
+    {
+      "id": "w-7-038",
+      "part": "week",
+      "batch": "batch-035",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-31T19:57:00.000Z",
+      "category": "urgent",
+      "urgencySource": "vip",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "a short request about Posiedzenie rady nadzorczej i budzet from an important person; no deadline words"
+    },
+    {
+      "id": "w-7-039",
+      "part": "week",
+      "batch": "batch-035",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-31T20:13:00.000Z",
+      "category": "delegation",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "koordynator-sprzedazy",
+      "expectedDraft": "delegation",
+      "delegateBehaviour": "done",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "a task in umowy: Daniel Hargreaves wants someone to take care of Eksport i odprawy celne"
+    },
+    {
+      "id": "w-7-040",
+      "part": "week",
+      "batch": "batch-035",
+      "persona": "bank-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-31T20:30:00.000Z",
+      "category": "notification",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "an automated message from Powiadomienia Bankowe about Faktury i platnosci; no person writes it"
+    }
+  ]
+}

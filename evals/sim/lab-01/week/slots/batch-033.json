@@ -1,0 +1,722 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-033",
+  "slots": [
+    {
+      "id": "w-6-028",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "marketing-targi",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-30T16:34:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<marketing-targi.lists.targi-magazynowe.test>",
+        "List-Unsubscribe": "<https://lists.targi-magazynowe.test/u/4339>"
+      },
+      "attachments": [],
+      "thread": [],
+      "brief": "an unsolicited promo from Targi Magazynowe Expo that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "w-6-029",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "bank-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-30T16:42:00.000Z",
+      "category": "notification",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "an automated message from Powiadomienia Bankowe about Faktury i platnosci; no person writes it"
+    },
+    {
+      "id": "w-6-030",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "spam-seo",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-30T16:47:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "Premium Leads Pro pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "w-6-031",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-30T16:53:00.000Z",
+      "category": "info",
+      "topic": "joint-venture",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "shares plain information about Wspolne przetargi z Baltic Freight Partners; no question and no request"
+    },
+    {
+      "id": "w-6-032",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-30T17:28:00.000Z",
+      "category": "delegation",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "asystentka",
+      "expectedDraft": "delegation",
+      "delegateBehaviour": "done",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "threadId": "w-2-025",
+      "parentId": "w-2-025",
+      "brief": "a task in kalendarz: asks the executive to have Posiedzenie rady nadzorczej i budzet handled by the team"
+    },
+    {
+      "id": "w-6-033",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "klient-meble",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-30T17:53:00.000Z",
+      "category": "delegation",
+      "topic": "terminy-dostaw",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "koordynator-sprzedazy",
+      "expectedDraft": "delegation",
+      "delegateBehaviour": "done",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "a task in umowy: asks the executive to have Terminy dostaw i okna rozladunku handled by the team"
+    },
+    {
+      "id": "w-6-034",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "bank-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-30T17:56:00.000Z",
+      "category": "notification",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "an automated message from Powiadomienia Bankowe about Faktury i platnosci; no person writes it"
+    },
+    {
+      "id": "w-6-035",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "news-branza",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-30T18:00:00.000Z",
+      "category": "notification",
+      "topic": "karty-paliwowe",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-branza.lists.logistyka-dzis.test>",
+        "List-Unsubscribe": "<https://lists.logistyka-dzis.test/u/3802>"
+      },
+      "attachments": [],
+      "thread": [],
+      "brief": "an automated message from Magazyn Logistyka Dzis about Karty paliwowe i ceny paliw; no person writes it"
+    },
+    {
+      "id": "w-6-036",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "news-branza",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-30T18:24:00.000Z",
+      "category": "notification",
+      "topic": "karty-paliwowe",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-branza.lists.logistyka-dzis.test>",
+        "List-Unsubscribe": "<https://lists.logistyka-dzis.test/u/8817>"
+      },
+      "attachments": [],
+      "thread": [],
+      "brief": "an automated message from Magazyn Logistyka Dzis about Karty paliwowe i ceny paliw; no person writes it"
+    },
+    {
+      "id": "w-6-037",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-30T18:47:00.000Z",
+      "category": "info",
+      "topic": "kalendarz-podroze",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "shares plain information about Kalendarz zarzadu i podroze sluzbowe; no question and no request"
+    },
+    {
+      "id": "w-6-038",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "dyr-hr",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-30T18:57:00.000Z",
+      "category": "needs_reply",
+      "topic": "rekrutacje",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "asks the executive a direct question about Rekrutacje i obsada magazynow and waits for an answer"
+    },
+    {
+      "id": "w-6-039",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "bank-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-30T19:17:00.000Z",
+      "category": "notification",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "a system message about Faktury i platnosci, sent by Powiadomienia Bankowe, with no personal text"
+    },
+    {
+      "id": "w-6-040",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-30T19:28:00.000Z",
+      "category": "info",
+      "topic": "joint-venture",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "threadId": "w-2-018",
+      "parentId": "w-2-144",
+      "brief": "Daniel Hargreaves reports a status on Wspolne przetargi z Baltic Freight Partners for the executive's awareness"
+    },
+    {
+      "id": "w-6-041",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "news-branza",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-30T20:12:00.000Z",
+      "category": "notification",
+      "topic": "karty-paliwowe",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-branza.lists.logistyka-dzis.test>",
+        "List-Unsubscribe": "<https://lists.logistyka-dzis.test/u/6941>"
+      },
+      "attachments": [],
+      "thread": [],
+      "brief": "an automated message from Magazyn Logistyka Dzis about Karty paliwowe i ceny paliw; no person writes it"
+    },
+    {
+      "id": "w-6-042",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "news-global",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-30T20:53:00.000Z",
+      "category": "notification",
+      "topic": "branza-newsletter",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "html",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-global.lists.supplychain-weekly.test>",
+        "List-Unsubscribe": "<https://lists.supplychain-weekly.test/u/9488>"
+      },
+      "attachments": [],
+      "thread": [],
+      "brief": "an automated message from Supply Chain Weekly about Wiadomosci branzowe i rynek frachtow; no person writes it"
+    },
+    {
+      "id": "w-7-001",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "spam-seo",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-31T07:15:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "an unsolicited promo from Premium Leads Pro that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "w-7-002",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-31T07:24:00.000Z",
+      "category": "info",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "threadId": "w-1-076",
+      "parentId": "w-5-034",
+      "brief": "Daniel Hargreaves reports a status on Eksport i odprawy celne for the executive's awareness"
+    },
+    {
+      "id": "w-7-003",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-31T07:29:00.000Z",
+      "category": "info",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "threadId": "w-4-131",
+      "parentId": "w-6-025",
+      "brief": "Zbigniew Orlowicz reports a status on Posiedzenie rady nadzorczej i budzet for the executive's awareness"
+    },
+    {
+      "id": "w-7-004",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "news-branza",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-31T07:43:00.000Z",
+      "category": "notification",
+      "topic": "branza-newsletter",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-branza.lists.logistyka-dzis.test>",
+        "List-Unsubscribe": "<https://lists.logistyka-dzis.test/u/5026>"
+      },
+      "attachments": [],
+      "thread": [],
+      "brief": "an automated message from Magazyn Logistyka Dzis about Wiadomosci branzowe i rynek frachtow; no person writes it"
+    },
+    {
+      "id": "w-7-005",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "news-branza",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-31T07:48:00.000Z",
+      "category": "notification",
+      "topic": "karty-paliwowe",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-branza.lists.logistyka-dzis.test>",
+        "List-Unsubscribe": "<https://lists.logistyka-dzis.test/u/2852>"
+      },
+      "attachments": [],
+      "thread": [],
+      "brief": "a system message about Karty paliwowe i ceny paliw, sent by Magazyn Logistyka Dzis, with no personal text"
+    },
+    {
+      "id": "w-7-006",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-31T08:01:00.000Z",
+      "category": "delegation",
+      "topic": "kalendarz-podroze",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "koordynator-sprzedazy",
+      "expectedDraft": "delegation",
+      "delegateBehaviour": "out_of_office",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "a task in umowy: Zbigniew Orlowicz wants someone to take care of Kalendarz zarzadu i podroze sluzbowe"
+    },
+    {
+      "id": "w-7-007",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "bank-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-31T08:07:00.000Z",
+      "category": "notification",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "an automated message from Powiadomienia Bankowe about Faktury i platnosci; no person writes it"
+    },
+    {
+      "id": "w-7-008",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "head-export",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-31T08:19:00.000Z",
+      "category": "info",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "threadId": "w-2-104",
+      "parentId": "w-3-119",
+      "brief": "Oliver Pemberton reports a status on Eksport i odprawy celne for the executive's awareness"
+    },
+    {
+      "id": "w-7-009",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "erp-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-31T08:43:00.000Z",
+      "category": "notification",
+      "topic": "wms-awaria",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "a system message about System magazynowy i awarie ERP, sent by System ERP Kordelan, with no personal text"
+    },
+    {
+      "id": "w-7-010",
+      "part": "week",
+      "batch": "batch-033",
+      "persona": "dyr-operacyjny",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-31T09:03:00.000Z",
+      "category": "info",
+      "topic": "rekrutacje",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "brief": "Halina Strzemecka reports a status on Rekrutacje i obsada magazynow for the executive's awareness"
+    }
+  ]
+}
