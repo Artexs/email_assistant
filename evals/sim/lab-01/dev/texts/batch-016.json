@@ -124,18 +124,18 @@
       "body": "Wiktor, you said we decide about the second container later. I need your decision now: do we use the Gdynia agent again, or do you want Gdansk? I will book as you decide.",
       "thread": [
         {
-          "subject": "Re: Nordic container",
-          "body": "Oliver, use the Gdynia agent for the first one. We decide about the second later. Wiktor"
-        },
-        {
           "subject": "Nordic container",
           "body": "Wiktor, the first Nordic container is booked. Which agent do we use? Oliver"
+        },
+        {
+          "subject": "Re: Nordic container",
+          "body": "Oliver, use the Gdynia agent for the first one. We decide about the second later. Wiktor"
         }
       ],
       "expectedPoints": [
         "Którego agenta celnego wybiera prezes dla drugiego kontenera: Gdynia czy Gdańsk"
       ],
-      "note": "rewritten: the sender now asks for the executive's own decision that he said he would make later"
+      "note": "rewritten: thread order fixed"
     },
     {
       "id": "h-rnt-03",
@@ -143,16 +143,16 @@
       "body": "Wiktor,\n\ndziękuję za informację o wizycie w Poznaniu. Pani Wilczyńska pisze, że może zorganizować wszystko na czwartek, ale chciałbym najpierw wiedzieć, czy zamierzasz pokazać radzie także nowy magazyn, który jeszcze jest w budowie. Moim zdaniem warto, bo to ważny punkt budżetu, ale rada może poprosić o szczegóły kosztów. Daj mi znać, co postanawiasz.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
       "thread": [
         {
-          "subject": "Re: Wizyta w Poznaniu",
-          "body": "Zbigniew, proponuję czwartek. Czy chce Pan zobaczyć także nowy magazyn? Wiktor"
+          "subject": "Wizyta członków rady w magazynie w Poznaniu",
+          "body": "Wiktor, rada chce zobaczyć magazyn w Poznaniu przed posiedzeniem. Kiedy możemy pojechać? Zbigniew"
         },
         {
           "subject": "Re: Wizyta w Poznaniu",
           "body": "Panie Prezesie, mogę zarezerwować transport i obiad na czwartek. Dorota Wilczynska"
         },
         {
-          "subject": "Wizyta członków rady w magazynie w Poznaniu",
-          "body": "Wiktor, rada chce zobaczyć magazyn w Poznaniu przed posiedzeniem. Kiedy możemy pojechać? Zbigniew"
+          "subject": "Re: Wizyta w Poznaniu",
+          "body": "Zbigniew, proponuję czwartek. Czy chce Pan zobaczyć także nowy magazyn? Wiktor"
         }
       ],
       "expectedPoints": [
@@ -161,7 +161,8 @@
       ],
       "mustNot": [
         "Nie ujawniać szczegółowych kosztów budowy przed posiedzeniem rady"
-      ]
+      ],
+      "note": "rewritten: thread order fixed"
     },
     {
       "id": "h-rnt-07",
@@ -169,12 +170,12 @@
       "body": "Wiktor,\n\nwracam do naszej rozmowy o podróży do Frankfurtu, bo po Twojej ostatniej wiadomości mam jeszcze dwie wątpliwości, które muszę rozstrzygnąć, zanim zamkniemy plan. Pierwsza dotyczy hotelu: Dorota zaproponowała dwa warianty, jeden blisko centrum konferencyjnego, a drugi niedaleko lotniska. Pierwszy jest droższy, ale oszczędza czas, a w Twoim kalendarzu jest bardzo mało miejsca na dojazdy. Drugą wątpliwością jest to, czy chcesz zabrać na to spotkanie dyrektora finansowego, bo akcjonariusze prawdopodobnie zapytają o koszty paliwa i o planowane inwestycje we flotę.\n\nWiem, że w poprzedniej wiadomości napisałeś, że wolisz jechać sam, ale zastanów się jeszcze raz. Pytania dotyczące dywidendy mogą być techniczne, a nie chciałbym, żebyś musiał odpowiadać na nie bez dokumentów.\n\nZ mojej strony nie widzę przeszkód, żeby dołączył do Ciebie jeszcze ktoś z zespołu. Daj mi znać, który hotel wybierasz i czy ktoś jedzie z Tobą. Muszę przekazać to organizatorom do końca tygodnia, żeby przygotowali identyfikatory i przygotowali listę miejsc przy stole. Pamiętaj, że w zeszłym roku zabrakło miejsc dla członków zarządu, a nie chciałbym powtórki tej sytuacji, szczególnie że zależy mi na Twojej obecności na pierwszym spotkaniu.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
       "thread": [
         {
-          "subject": "Re: Podróż do Frankfurtu",
-          "body": "Zbigniew, wolę jechać sam. Hotel ustalimy z Dorotą. Wiktor"
-        },
-        {
           "subject": "Podróż do Frankfurtu",
           "body": "Wiktor, jak widzisz swój udział w spotkaniu w Frankfurcie? Zbigniew"
+        },
+        {
+          "subject": "Re: Podróż do Frankfurtu",
+          "body": "Zbigniew, wolę jechać sam. Hotel ustalimy z Dorotą. Wiktor"
         }
       ],
       "expectedPoints": [
@@ -184,7 +185,8 @@
       ],
       "mustNot": [
         "Nie ujawniać szczegółów kosztów paliwa przed spotkaniem akcjonariuszy"
-      ]
+      ],
+      "note": "rewritten: thread order fixed"
     },
     {
       "id": "h-unk-01",

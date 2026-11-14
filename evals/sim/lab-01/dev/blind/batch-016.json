@@ -99,13 +99,13 @@
       "thread": [
         {
           "from": "oliver.pemberton@kordelan.test",
-          "subject": "Re: Nordic container",
-          "body": "Oliver, use the Gdynia agent for the first one. We decide about the second later. Wiktor"
+          "subject": "Nordic container",
+          "body": "Wiktor, the first Nordic container is booked. Which agent do we use? Oliver"
         },
         {
           "from": "wiktor.szalewski@kordelan.test",
-          "subject": "Nordic container",
-          "body": "Wiktor, the first Nordic container is booked. Which agent do we use? Oliver"
+          "subject": "Re: Nordic container",
+          "body": "Oliver, use the Gdynia agent for the first one. We decide about the second later. Wiktor"
         }
       ],
       "attachments": []
@@ -122,8 +122,8 @@
       "thread": [
         {
           "from": "z.orlowicz@rada-kordelan.test",
-          "subject": "Re: Wizyta w Poznaniu",
-          "body": "Zbigniew, proponuję czwartek. Czy chce Pan zobaczyć także nowy magazyn? Wiktor"
+          "subject": "Wizyta członków rady w magazynie w Poznaniu",
+          "body": "Wiktor, rada chce zobaczyć magazyn w Poznaniu przed posiedzeniem. Kiedy możemy pojechać? Zbigniew"
         },
         {
           "from": "dorota.wilczynska@kordelan.test",
@@ -132,8 +132,8 @@
         },
         {
           "from": "wiktor.szalewski@kordelan.test",
-          "subject": "Wizyta członków rady w magazynie w Poznaniu",
-          "body": "Wiktor, rada chce zobaczyć magazyn w Poznaniu przed posiedzeniem. Kiedy możemy pojechać? Zbigniew"
+          "subject": "Re: Wizyta w Poznaniu",
+          "body": "Zbigniew, proponuję czwartek. Czy chce Pan zobaczyć także nowy magazyn? Wiktor"
         }
       ],
       "attachments": []
@@ -150,13 +150,13 @@
       "thread": [
         {
           "from": "z.orlowicz@rada-kordelan.test",
-          "subject": "Re: Podróż do Frankfurtu",
-          "body": "Zbigniew, wolę jechać sam. Hotel ustalimy z Dorotą. Wiktor"
+          "subject": "Podróż do Frankfurtu",
+          "body": "Wiktor, jak widzisz swój udział w spotkaniu w Frankfurcie? Zbigniew"
         },
         {
           "from": "wiktor.szalewski@kordelan.test",
-          "subject": "Podróż do Frankfurtu",
-          "body": "Wiktor, jak widzisz swój udział w spotkaniu w Frankfurcie? Zbigniew"
+          "subject": "Re: Podróż do Frankfurtu",
+          "body": "Zbigniew, wolę jechać sam. Hotel ustalimy z Dorotą. Wiktor"
         }
       ],
       "attachments": []
