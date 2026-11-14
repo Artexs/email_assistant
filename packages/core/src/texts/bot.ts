@@ -31,6 +31,7 @@ export interface BotTexts {
     stateActive: string;
     statePaused: (since: string) => string;
     stateAuthError: (since: string) => string;
+    stateHostBlocked: (since: string) => string;
     lastSync: (when: string | null, late: boolean) => string;
     llmCalls: (since: string, calls: number, cap: number) => string;
     waiting: (count: number) => string;
@@ -41,6 +42,7 @@ export interface BotTexts {
     approvalsLine: (label: string, waiting: number, extra: { oldest: string | null; held: string | null }) => string;
     approvedPaused: (count: number) => string;
     approvedAuthError: (count: number) => string;
+    approvedHostBlocked: (count: number) => string;
     approvedHeld: (count: number, scope: string) => string;
     approvedSending: (count: number) => string;
     send: (scope: SendScopeKind) => string;
@@ -55,6 +57,7 @@ export interface BotTexts {
     alreadyPaused: (address: string) => string;
     alreadyActive: (address: string) => string;
     loginError: (address: string) => string;
+    hostBlocked: (address: string) => string;
     pausedHeader: (list: string) => string;
     pausedExplain: string;
     pausedResume: string;
@@ -71,6 +74,7 @@ export interface BotTexts {
     approvedHeld: string;
     approvedPaused: string;
     approvedAuthError: string;
+    approvedHostBlocked: string;
     alreadyApproved: (clock: string) => string;
     sending: string;
     sent: string;
@@ -81,8 +85,8 @@ export interface BotTexts {
     rejectedNow: string;
     notFound: string;
     sendAgain: string;
-    sendAgainHeld: { scope: string; paused: string; auth_error: string };
-    heldNotes: { scope: string; paused: string; auth_error: string };
+    sendAgainHeld: { scope: string; paused: string; auth_error: string; host_blocked: string };
+    heldNotes: { scope: string; paused: string; auth_error: string; host_blocked: string };
     sendAgainAlready: string;
     sendAgainNotFailed: string;
     sendAgainDraftGone: string;
@@ -202,6 +206,7 @@ export const botTexts = {
       stateActive: "active",
       statePaused: (since) => `paused since ${since}`,
       stateAuthError: (since) => `login error since ${since} (run mailbox:password)`,
+      stateHostBlocked: (since) => `mail server not allowed since ${since} (checked again at each sync)`,
       lastSync: (when, late) => `Last sync: ${when === null ? "never" : `${when}${late ? " (late)" : ""}`}`,
       llmCalls: (since, calls, cap) => `LLM calls since ${since}: ${calls} of ${cap}`,
       waiting: (count) => `Waiting for triage: ${count}`,
@@ -214,6 +219,7 @@ export const botTexts = {
         `${label}: ${waiting} waiting for your tap${extra.oldest === null ? "" : ` (oldest ${extra.oldest})`}${extra.held === null ? "" : ` · ${extra.held}`}`,
       approvedPaused: (count) => `${count} approved, held: the mailbox is paused`,
       approvedAuthError: (count) => `${count} approved, held: the mailbox login fails`,
+      approvedHostBlocked: (count) => `${count} approved, held: the mail server is not allowed`,
       approvedHeld: (count, scope) => `${count} approved, held by SEND_SCOPE=${scope}`,
       approvedSending: (count) => `${count} approved, sending`,
       send: (scope) => `Send: ${EN_SEND[scope]}`,
@@ -228,6 +234,8 @@ export const botTexts = {
       alreadyPaused: (address) => `${address} was paused already.`,
       alreadyActive: (address) => `${address} was active already.`,
       loginError: (address) => `❌ ${address} has a login error: run mailbox:password first.`,
+      hostBlocked: (address) =>
+        `⛔ ${address}: its mail server is not allowed; the system checks it again at each sync.`,
       pausedHeader: (list) => `⏸ Paused: ${list}`,
       pausedExplain:
         "The system does not read or triage these mailboxes now and sends no urgent notice for them. Digests still come.",
@@ -250,6 +258,8 @@ export const botTexts = {
       approvedPaused: "Approved. The mailbox is paused, so the send waits; /status shows it.",
       approvedAuthError:
         "Approved. The mailbox login fails, so the send waits until the password is fixed; /status shows it.",
+      approvedHostBlocked:
+        "Approved. The mail server of this mailbox is not allowed, so the send waits; /status shows it.",
       alreadyApproved: (clock) => `Already approved ${clock}.`,
       sending: "Already approved, sending now.",
       sent: "Already sent.",
@@ -264,11 +274,13 @@ export const botTexts = {
         scope: "A new send was approved. Sending is held by SEND_SCOPE on the server; /status shows it.",
         paused: "A new send was approved. The mailbox is paused, so the send waits; /status shows it.",
         auth_error: "A new send was approved. The mailbox login fails, so the send waits; /status shows it.",
+        host_blocked: "A new send was approved. The mail server is not allowed, so the send waits; /status shows it.",
       },
       heldNotes: {
         scope: "Sending is held by SEND_SCOPE on the server",
         paused: "The mailbox is paused, so the sends wait",
         auth_error: "The mailbox login fails, so the sends wait",
+        host_blocked: "The mail server is not allowed, so the sends wait",
       },
       sendAgainAlready: "A resend was already approved for this mail.",
       sendAgainNotFailed: "This send is not in a failed state.",
@@ -317,6 +329,7 @@ export const botTexts = {
       stateActive: "aktywna",
       statePaused: (since) => `wstrzymana od ${since}`,
       stateAuthError: (since) => `błąd logowania od ${since} (uruchom mailbox:password)`,
+      stateHostBlocked: (since) => `serwer poczty niedozwolony od ${since} (sprawdzany przy każdej synchronizacji)`,
       lastSync: (when, late) =>
         `Ostatnia synchronizacja: ${when === null ? "nigdy" : `${when}${late ? " (spóźniona)" : ""}`}`,
       llmCalls: (since, calls, cap) => `Wywołania AI od ${since}: ${calls} z ${cap}`,
@@ -330,6 +343,7 @@ export const botTexts = {
         `${label}: ${waiting} do Twojego stuknięcia${extra.oldest === null ? "" : ` (najstarsze z ${extra.oldest})`}${extra.held === null ? "" : ` · ${extra.held}`}`,
       approvedPaused: (count) => `zatwierdzono ${count}, wysyłka czeka, bo skrzynka jest wstrzymana`,
       approvedAuthError: (count) => `zatwierdzono ${count}, wysyłka czeka, bo logowanie do skrzynki nie działa`,
+      approvedHostBlocked: (count) => `zatwierdzono ${count}, wysyłka czeka, bo serwer poczty jest niedozwolony`,
       approvedHeld: (count, scope) => `zatwierdzono ${count}, wysyłka wstrzymana przez SEND_SCOPE=${scope}`,
       approvedSending: (count) => `zatwierdzono ${count}, trwa wysyłanie`,
       send: (scope) => `Wysyłanie: ${PL_SEND[scope]}`,
@@ -344,6 +358,8 @@ export const botTexts = {
       alreadyPaused: (address) => `${address}: już wstrzymana.`,
       alreadyActive: (address) => `${address}: już aktywna.`,
       loginError: (address) => `❌ ${address}: błąd logowania. Najpierw uruchom mailbox:password.`,
+      hostBlocked: (address) =>
+        `⛔ ${address}: serwer poczty jest niedozwolony; system sprawdza go przy każdej synchronizacji.`,
       pausedHeader: (list) => `⏸ Wstrzymano: ${list}`,
       pausedExplain:
         "System nie czyta ani nie klasyfikuje tych skrzynek i nie wysyła o nich pilnych komunikatów. Podsumowania nadal przychodzą.",
@@ -366,6 +382,8 @@ export const botTexts = {
       approvedPaused: "Zatwierdzono. Skrzynka jest wstrzymana, więc wysyłka czeka; /status pokazuje szczegóły.",
       approvedAuthError:
         "Zatwierdzono. Logowanie do skrzynki nie działa, więc wysyłka czeka, aż hasło zostanie poprawione; /status pokazuje szczegóły.",
+      approvedHostBlocked:
+        "Zatwierdzono. Serwer poczty tej skrzynki jest niedozwolony, więc wysyłka czeka; /status pokazuje szczegóły.",
       alreadyApproved: (clock) => `Już zatwierdzono (${clock}).`,
       sending: "Już zatwierdzono, trwa wysyłanie.",
       sent: "Już wysłano.",
@@ -382,11 +400,14 @@ export const botTexts = {
         paused: "Zatwierdzono nową wysyłkę. Skrzynka jest wstrzymana, więc wysyłka czeka; /status pokazuje szczegóły.",
         auth_error:
           "Zatwierdzono nową wysyłkę. Logowanie do skrzynki nie działa, więc wysyłka czeka; /status pokazuje szczegóły.",
+        host_blocked:
+          "Zatwierdzono nową wysyłkę. Serwer poczty jest niedozwolony, więc wysyłka czeka; /status pokazuje szczegóły.",
       },
       heldNotes: {
         scope: "Wysyłanie jest wstrzymane przez SEND_SCOPE na serwerze",
         paused: "Skrzynka jest wstrzymana, więc wysyłki czekają",
         auth_error: "Logowanie do skrzynki nie działa, więc wysyłki czekają",
+        host_blocked: "Serwer poczty jest niedozwolony, więc wysyłki czekają",
       },
       sendAgainAlready: "Ponowna wysyłka tej wiadomości została już zatwierdzona.",
       sendAgainNotFailed: "Ta wysyłka nie zakończyła się błędem.",

@@ -11,6 +11,7 @@ export interface NoticeTexts {
   urgentTitle: string;
   received: (clock: string) => string;
   authError: { first: (address: string, since: string) => string; noRead: string; fix: (mailboxId: string) => string };
+  hostBlocked: { first: (address: string, since: string) => string; why: string; noRead: string; recheck: string };
   syncStale: { first: (address: string) => string; last: (last: string) => string; status: string; never: string };
   syncOk: (address: string, last: string) => string;
   actionFailed: {
@@ -102,6 +103,14 @@ export const noticeTexts = {
       fix: (mailboxId) =>
         `To fix it: check the password, then run mailbox:password for mailbox ${mailboxId} (runbook: deploy/README.md).`,
     },
+    hostBlocked: {
+      first: (address, since) => `⛔ The system stopped connecting to the mail server of ${address} at ${since}.`,
+      why: "The server name points to a private or local network address, and the system never connects there.",
+      noRead:
+        "The system does not read or send mail of this mailbox now. No mail is lost: it stays on the mail server.",
+      recheck:
+        "The system checks the server again at each sync and starts the mailbox again by itself. /status shows the state.",
+    },
     syncStale: {
       first: (address) => `⚠️ Mail sync is late for ${address}.`,
       last: (last) => `Last good sync: ${last}. The system keeps trying.`,
@@ -177,6 +186,14 @@ export const noticeTexts = {
       noRead: "System nie czyta teraz tej skrzynki. Żadna wiadomość nie ginie: zostaje na serwerze poczty.",
       fix: (mailboxId) =>
         `Aby to naprawić: sprawdź hasło, potem uruchom mailbox:password dla skrzynki: ${mailboxId} (instrukcja: deploy/README.md).`,
+    },
+    hostBlocked: {
+      first: (address, since) => `⛔ System przestał łączyć się z serwerem poczty skrzynki: ${address}. Od: ${since}.`,
+      why: "Nazwa serwera wskazuje adres w sieci prywatnej lub lokalnej, a system nigdy się z takim nie łączy.",
+      noRead:
+        "System nie czyta teraz tej skrzynki i nie wysyła z niej poczty. Żadna wiadomość nie ginie: zostaje na serwerze poczty.",
+      recheck:
+        "System sprawdza serwer przy każdej synchronizacji i sam uruchomi skrzynkę ponownie. /status pokazuje stan.",
     },
     syncStale: {
       first: (address) => `⚠️ Synchronizacja poczty jest opóźniona: ${address}.`,
