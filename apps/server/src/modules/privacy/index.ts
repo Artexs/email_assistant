@@ -4,6 +4,7 @@ export {
   DSR_ADDRESS_MAP,
   MESSAGE_TABLES,
   normalizeDsrAddress,
+  NO_PERSONAL_TABLES,
   NOT_PERSONAL,
   type AddressRule,
 } from "./address-map";

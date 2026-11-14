@@ -10,6 +10,7 @@ import {
   matchSubject,
   MESSAGE_TABLES,
   normalizeDsrAddress,
+  NO_PERSONAL_TABLES,
   NOT_PERSONAL,
 } from "../../src/modules/privacy";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
@@ -125,6 +126,29 @@ async function candidateColumns(): Promise<string[]> {
   return result.rows.map((row) => row.name);
 }
 
+// Every text, varchar, array and jsonb column of every table with an `org_id` column, and of `organizations` (its key
+// is `id`). Read from `pg_attribute`.
+async function tenantColumns(): Promise<{ table: string; name: string }[]> {
+  const result = await sql<{ tbl: string; name: string }>`
+    select c.relname as tbl, c.relname || '.' || a.attname as name
+    from pg_attribute a
+    join pg_class c on c.oid = a.attrelid and c.relkind = 'r'
+    join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
+    where a.attnum > 0 and not a.attisdropped
+      and (
+        c.relname = 'organizations'
+        or exists (select 1 from pg_attribute o where o.attrelid = c.oid and o.attname = 'org_id' and not o.attisdropped)
+      )
+      and (
+        format_type(a.atttypid, a.atttypmod) like 'text%'
+        or format_type(a.atttypid, a.atttypmod) like 'character varying%'
+        or format_type(a.atttypid, a.atttypmod) like '%[]'
+        or format_type(a.atttypid, a.atttypmod) = 'jsonb'
+      )
+    order by 2`.execute(db);
+  return result.rows.map((row) => ({ table: row.tbl, name: row.name }));
+}
+
 async function realColumns(): Promise<Set<string>> {
   const result = await sql<{ name: string }>`
     select table_name || '.' || column_name as name from information_schema.columns where table_schema = 'public'`.execute(
@@ -143,6 +167,24 @@ describe("DSR address map", () => {
     expect(candidates.length).toBeGreaterThan(40);
 
     expect(candidates.filter((name) => !mapped.includes(name) && !excluded.includes(name))).toEqual([]);
+    // Stricter: every such column of every tenant table has a decision, unless its whole table has none to make.
+    const tenant = await tenantColumns();
+    expect(tenant.length).toBeGreaterThan(60);
+    expect(
+      tenant
+        .filter(
+          (column) =>
+            !mapped.includes(column.name) && !excluded.includes(column.name) && !(column.table in NO_PERSONAL_TABLES)
+        )
+        .map((column) => column.name)
+    ).toEqual([]);
+    // A table cannot be both exempt and mapped, and each exempt table is a real tenant table with a reason.
+    const tenantTables = new Set(tenant.map((column) => column.table));
+    for (const [table, reason] of Object.entries(NO_PERSONAL_TABLES)) {
+      expect(tenantTables.has(table)).toBe(true);
+      expect(Object.keys(DSR_ADDRESS_MAP)).not.toContain(table);
+      expect(reason.length).toBeGreaterThan(5);
+    }
     // A display name can hold an address (owner decision): it is searched, not excluded.
     expect(DSR_ADDRESS_MAP.email_headers?.from_name).toBe("text");
     expect(excluded).not.toContain("email_headers.from_name");
@@ -165,16 +207,61 @@ describe("DSR address map", () => {
     expect(normalizeDsrAddress(`${"a".repeat(248)}@x.test`)).toBeNull(); // 255 characters
   });
 
-  test("the pattern escapes the address and keeps the word boundaries", async () => {
-    const regex = addressRegex("a.b+c@x.test");
-    const hit = async (text: string) =>
-      (await sql<{ hit: boolean }>`select ${text} ~* ${regex} as hit`.execute(db)).rows[0]?.hit;
-    expect(await hit("write A.B+C@X.test.")).toBe(true);
-    expect(await hit("<a.b+c@x.test>")).toBe(true);
-    expect(await hit("axb+c@x.test")).toBe(false); // the dot is not a wildcard
-    expect(await hit("jim.a.b+c@x.test")).toBe(false);
-    expect(await hit("a.b+c@x.test.pl")).toBe(false);
-    expect(await hit("a.b+c@x.test-lab")).toBe(false);
+  // One row per form: the text, and whether `addressRegex(address)` finds the address in it.
+  const PATTERN_ROWS: { address: string; text: string; hit: boolean }[] = [
+    // The address between other characters: found.
+    { address: "p@x.test", text: "p@x.test", hit: true },
+    { address: "p@x.test", text: "write to p@x.test now", hit: true },
+    { address: "p@x.test", text: "a, p@x.test, b", hit: true },
+    { address: "p@x.test", text: "Pat <p@x.test>", hit: true },
+    { address: "p@x.test", text: '"p@x.test"', hit: true },
+    { address: "p@x.test", text: "(p@x.test)", hit: true },
+    { address: "p@x.test", text: "mailto:p@x.test?subject=x", hit: true },
+    { address: "p@x.test", text: "ends p@x.test.", hit: true },
+    { address: "p@x.test", text: "line one\np@x.test\nline three", hit: true },
+    { address: "p@x.test", text: "“p@x.test”", hit: true },
+    { address: "p@x.test", text: "P@X.TEST", hit: true },
+    // The address inside a longer local part or domain: not found.
+    { address: "p@x.test", text: "jimp@x.test", hit: false },
+    { address: "p@x.test", text: "o'p@x.test", hit: false },
+    { address: "p@x.test", text: "=p@x.test", hit: false },
+    { address: "p@x.test", text: "x/p@x.test", hit: false },
+    { address: "p@x.test", text: "łp@x.test", hit: false },
+    { address: "p@x.test", text: "p.p@x.test", hit: false },
+    { address: "p@x.test", text: "p+tag@x.test", hit: false },
+    { address: "p@x.test", text: "p@x.test_x", hit: false },
+    { address: "p@x.test", text: "p@x.testé", hit: false },
+    { address: "p@x.test", text: "p@x.test.pl", hit: false },
+    { address: "p@x.test", text: "p@x.test.é", hit: false },
+    { address: "p@x.test", text: "p@x.test-lab", hit: false },
+    { address: "a@b.com", text: "aa@b.com", hit: false },
+    { address: "a@b.com", text: "a@b.com.pl", hit: false },
+    { address: "a@b.com", text: "a@b.company", hit: false },
+    { address: "a@b.com", text: "a@b.com-x", hit: false },
+    // Metacharacters of the address are ordinary characters.
+    { address: "a.b+c@x.test", text: "write A.B+C@X.test.", hit: true },
+    { address: "a.b+c@x.test", text: "axb+c@x.test", hit: false },
+    { address: "a.b+c@x.test", text: "aab+c@x.test", hit: false },
+    { address: "a(b|c)*{1}$^@x.test", text: "<a(b|c)*{1}$^@x.test>", hit: true },
+    { address: "a(b|c)*{1}$^@x.test", text: "abc@x.test", hit: false },
+  ];
+
+  test("the pattern: one row per form (inside a longer address, between other characters, metacharacters)", async () => {
+    for (const row of PATTERN_ROWS) {
+      const regex = addressRegex(row.address);
+      const found = (await sql<{ hit: boolean }>`select ${row.text} ~* ${regex} as hit`.execute(db)).rows[0]?.hit;
+      expect({ ...row, hit: found }).toEqual(row);
+    }
+  });
+
+  test("the pattern also scrubs: regexp_replace with the same pattern keeps the neighbours", async () => {
+    const regex = addressRegex("p@x.test");
+    const scrub = async (text: string) =>
+      (await sql<{ out: string }>`select regexp_replace(${text}, ${regex}, '[removed]', 'gi') as out`.execute(db))
+        .rows[0]?.out;
+    expect(await scrub("<p@x.test>, P@X.test. o'p@x.test p@x.testé")).toBe(
+      "<[removed]>, [removed]. o'p@x.test p@x.testé"
+    );
   });
 });
 
@@ -224,6 +311,20 @@ describe("matchSubject", () => {
       expect(ids).not.toContain(a);
       expect(ids).not.toContain(b);
       expect(again.mentions["emails.to_addresses"]).toEqual([group, a, b].sort());
+    });
+  });
+
+  test("an upper-case address in to or cc is found, and still counts for the mail rule", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      const upper = w.person.toUpperCase();
+      const toMail = await w.mail(w.box1, { from_address: w.at("r"), to_addresses: [upper, w.at("q")] });
+      const ccMail = await w.mail(w.box1, { from_address: w.at("r"), cc_addresses: [w.at("q"), upper] });
+      const goes = await w.mail(w.box1, { from_address: w.own.toUpperCase(), to_addresses: [w.own2, upper] });
+      const match = await matchSubject(trx, w.orgId, w.person);
+      expect(match.mails.map((mail) => mail.id)).toEqual([goes]);
+      expect(match.mentions["emails.to_addresses"]).toEqual([toMail]);
+      expect(match.mentions["emails.cc_addresses"]).toEqual([ccMail]);
     });
   });
 
@@ -437,6 +538,8 @@ describe("matchSubject", () => {
       expect(match.chainActions).toEqual([]);
       // Own addresses of the other organization are not own addresses here.
       expect((await matchSubject(trx, a.orgId, b.own)).ownAddress).toBe(false);
+      expect((await matchSubject(trx, a.orgId, b.owner)).ownAddress).toBe(false);
+      expect((await matchSubject(trx, a.orgId, a.owner)).ownAddress).toBe(true);
     });
   });
 
