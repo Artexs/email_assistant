@@ -78,8 +78,8 @@ Workers read `ticket.md`, this file and their one stage file. A gap or a deviati
 - **D15 Test fixtures** (stage 08). `createOrgWithMailbox` and `addMember` in `apps/server/test/integration/fixtures.ts` create users with `locale: "en"`, so the existing English assertions keep their meaning; new cases cover null → `pl` and `pl`. The e2e seed keeps null users (an English browser gives the English panel; no e2e asserts a Telegram text).
 - **D16 Old cards (accepted gap).** Rows queued since the notices-as-facts deploy carry `locale = 'pl'` for null users while their stored text is English. After stage 08, a tap on such an approval card appends a Polish status line to the English card (F088 D17 keeps the stored bytes). Cards expire within 48 h.
 - **D17 Between stages (accepted).** After stage 02 a Polish panel shows English action phrases and AI lines in the activity list until stage 08 (D10, D13).
-- **D19 The English placeholder inside approval views** (stage 06). `approvalViewOf` stores `sender.label` at queue time; for an unknown sender it is `"(unknown sender)"` (F088 D13 named it for this ticket). The renderer prints `texts.common.unknownSender` when the label equals the English placeholder. The view schema does not change, so rows of the last 24 h still render. Rejected: a view change to `label: null` (a schema change for one placeholder; old rows need the same mapping anyway).
 - **D18 Seams for later tickets.** A new panel text is a key in `en.ts` and `pl.ts` (typecheck); a new notice kind or bot text adds an entry to a section of `packages/core/src/texts/` with en and pl; a route that returns our phrases to the panel uses `requestLocale`. Stage 08 writes this as `docs/code-patterns.md` § "Texts carry a locale".
+- **D19 The English placeholder inside approval views** (stage 06). `approvalViewOf` stores `sender.label` at queue time; for an unknown sender it is `"(unknown sender)"` (F088 D13 named it for this ticket). The renderer prints `texts.common.unknownSender` when the label equals the English placeholder. The view schema does not change, so rows of the last 24 h still render. Rejected: a view change to `label: null` (a schema change for one placeholder; old rows need the same mapping anyway).
 
 ## Facts checked
 
@@ -188,7 +188,7 @@ limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thi
 
 ## Planning progress
 
-- [written] stage 01 · [written] stage 02 · [written] stage 03 · [written] stage 04 · [written] stage 05 · [written] stage 06 · [ ] stage 07 · [ ] stage 08
+- [written] stage 01 · [written] stage 02 · [written] stage 03 · [written] stage 04 · [written] stage 05 · [written] stage 06 · [written] stage 07 · [ ] stage 08
 - [ ] cold review (`plan-review-1.md`), findings applied
 
 ## Cold review
