@@ -5,10 +5,12 @@ import { aiTextTexts, type AiTextTexts } from "./ai-text";
 import { answerTexts, type AnswerTexts } from "./answers";
 import { categoryTexts, type CategoryTexts } from "./categories";
 import { clockTexts, type ClockTexts } from "./clock";
+import { commonTexts, type CommonTexts } from "./common";
+import { noticeTexts, type NoticeTexts } from "./notices";
 import { wouldDoTexts, type WouldDoTexts } from "./would-do";
 
 export type { ActionTense, SendPhraseStatus } from "./would-do";
-export type { AiTextTexts, AnswerTexts, CategoryTexts, ClockTexts, WouldDoTexts };
+export type { AiTextTexts, AnswerTexts, CategoryTexts, ClockTexts, CommonTexts, NoticeTexts, WouldDoTexts };
 
 export interface CoreTexts {
   locale: UserLocale;
@@ -17,7 +19,9 @@ export interface CoreTexts {
   answers: AnswerTexts;
   aiText: AiTextTexts;
   wouldDo: WouldDoTexts;
-  // Stages 08–11 add common, notices, approvals, digest, bot.
+  common: CommonTexts;
+  notices: NoticeTexts;
+  // Stages 09–11 add approvals, digest, bot.
 }
 
 export const textTables: Record<UserLocale, CoreTexts> = {
@@ -28,6 +32,8 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     answers: answerTexts.en,
     aiText: aiTextTexts.en,
     wouldDo: wouldDoTexts.en,
+    common: commonTexts.en,
+    notices: noticeTexts.en,
   },
   pl: {
     locale: "pl",
@@ -36,6 +42,8 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     answers: answerTexts.pl,
     aiText: aiTextTexts.pl,
     wouldDo: wouldDoTexts.pl,
+    common: commonTexts.pl,
+    notices: noticeTexts.pl,
   },
 };
 

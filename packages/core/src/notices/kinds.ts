@@ -31,5 +31,3 @@ export interface NoticeRenderOptions {
   detail: NoticeDetail;
   locale: UserLocale;
 }
-
-export const MAILBOX_REMOVED_TEXT = "Mailbox removed. Change its password in your mail provider's settings now.";

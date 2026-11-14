@@ -110,8 +110,8 @@ function mailboxLine(input: DigestInput, mailbox: DigestMailbox): string {
 function itemBlock(n: number, item: DigestItem): string[] {
   const lines = [
     // The next stage of the Polish UI plan passes the texts of the row.
-    `${n}. ${categoryTag(item.category, textTables.en)} · ${senderLabel(item.from)}${item.folderTag === null ? "" : ` · 📁 ${cutText(item.folderTag, 30)}`}${item.synthetic ? " · 🧪 test" : ""}`,
-    cleanSubject(item.subject),
+    `${n}. ${categoryTag(item.category, textTables.en)} · ${senderLabel(item.from, textTables.en)}${item.folderTag === null ? "" : ` · 📁 ${cutText(item.folderTag, 30)}`}${item.synthetic ? " · 🧪 test" : ""}`,
+    cleanSubject(item.subject, textTables.en),
   ];
   if (item.aiText !== null && item.aiText !== "") lines.push(`💬 ${cutText(item.aiText, 120)}`);
   lines.push(`→ ${item.wouldDo}`);

@@ -7,7 +7,7 @@ import {
   renderDelegationAnswered,
   renderSendResult,
 } from "../digest/approvals";
-import type { OutMessage } from "../digest/message";
+import { MESSAGE_MAX_CHARS, type OutMessage } from "../digest/message";
 import {
   renderActionFailedNotice,
   renderAuthErrorNotice,
@@ -17,10 +17,10 @@ import {
   renderUrgentNotice,
 } from "../digest/notices";
 import { describeActions, type WouldDoAction } from "../digest/would-do";
-import { textTables } from "../texts";
+import { type CoreTexts, textTables } from "../texts";
 
 import { encodeNoticeView } from "./encode";
-import { MAILBOX_REMOVED_TEXT, type NoticeKind, noticeKinds, type NoticeRenderOptions } from "./kinds";
+import { type NoticeKind, noticeKinds, type NoticeRenderOptions } from "./kinds";
 import { renderNotice, renderNoticeEdit } from "./render";
 import { noticeRenderers } from "./renderers";
 import { type NoticeView, noticeViewSchemas } from "./views";
@@ -92,7 +92,8 @@ const sendResult = { kind: "failed", cause: "tries", code: "ETIMEDOUT", tries: 5
 interface Case {
   kind: NoticeKind;
   view: unknown;
-  direct: () => OutMessage;
+  // Renders with the given texts; the kinds of stage 09 and 10 still print English.
+  direct: (texts: CoreTexts) => OutMessage;
 }
 
 const cases: Case[] = [
@@ -104,45 +105,49 @@ const cases: Case[] = [
   {
     kind: "urgent",
     view: urgentView,
-    direct: () =>
-      renderUrgentNotice({
-        emailId: id1,
-        from: "boss@example.test",
-        subject: "Contract",
-        aiText: aiTextFor(
-          {
-            category: "urgent",
-            reasonCode: "llm",
-            reason: "Deadline today",
-            summary: null,
-            modelCategory: null,
-            confidence: 0.91,
-          },
-          textTables.en
-        ),
-        receivedAt,
-        synthetic: false,
-        folderTag: null,
-        wouldDo: describeActions(actions, names, { stayFolder: "INBOX" }, textTables.en),
-        now,
-        timeZone,
-      }),
+    direct: (texts) =>
+      renderUrgentNotice(
+        {
+          emailId: id1,
+          from: "boss@example.test",
+          subject: "Contract",
+          aiText: aiTextFor(
+            {
+              category: "urgent",
+              reasonCode: "llm",
+              reason: "Deadline today",
+              summary: null,
+              modelCategory: null,
+              confidence: 0.91,
+            },
+            texts
+          ),
+          receivedAt,
+          synthetic: false,
+          folderTag: null,
+          wouldDo: describeActions(actions, names, { stayFolder: "INBOX" }, texts),
+          now,
+          timeZone,
+        },
+        texts
+      ),
   },
   {
     kind: "auth_error",
     view: { address: "box@example.test", mailboxId: id2, since: receivedAt, now, timeZone },
-    direct: () =>
-      renderAuthErrorNotice({ address: "box@example.test", mailboxId: id2, since: receivedAt, now, timeZone }),
+    direct: (texts) =>
+      renderAuthErrorNotice({ address: "box@example.test", mailboxId: id2, since: receivedAt, now, timeZone }, texts),
   },
   {
     kind: "sync_stale",
     view: { address: "box@example.test", lastSyncedAt: null, now, timeZone },
-    direct: () => renderSyncStaleNotice({ address: "box@example.test", lastSyncedAt: null, now, timeZone }),
+    direct: (texts) => renderSyncStaleNotice({ address: "box@example.test", lastSyncedAt: null, now, timeZone }, texts),
   },
   {
     kind: "sync_ok",
     view: { address: "box@example.test", lastSyncedAt: receivedAt, now, timeZone },
-    direct: () => renderSyncOkNotice({ address: "box@example.test", lastSyncedAt: receivedAt, now, timeZone }),
+    direct: (texts) =>
+      renderSyncOkNotice({ address: "box@example.test", lastSyncedAt: receivedAt, now, timeZone }, texts),
   },
   {
     kind: "action_failed",
@@ -158,19 +163,22 @@ const cases: Case[] = [
       synthetic: false,
       attempts: 3,
     },
-    direct: () =>
-      renderActionFailedNotice({
-        actionType: "move",
-        reverse: false,
-        reason: "other",
-        folderName: "ai_info",
-        sourceFolder: "INBOX",
-        currentFolder: "INBOX",
-        from: "boss@example.test",
-        subject: "Contract",
-        synthetic: false,
-        attempts: 3,
-      }),
+    direct: (texts) =>
+      renderActionFailedNotice(
+        {
+          actionType: "move",
+          reverse: false,
+          reason: "other",
+          folderName: "ai_info",
+          sourceFolder: "INBOX",
+          currentFolder: "INBOX",
+          from: "boss@example.test",
+          subject: "Contract",
+          synthetic: false,
+          attempts: 3,
+        },
+        texts
+      ),
   },
   {
     kind: "approval",
@@ -224,7 +232,7 @@ const cases: Case[] = [
         synthetic: false,
       }),
   },
-  { kind: "mailbox_removed", view: {}, direct: () => ({ text: MAILBOX_REMOVED_TEXT, buttons: [] }) },
+  { kind: "mailbox_removed", view: {}, direct: (texts) => ({ text: texts.notices.mailboxRemoved, buttons: [] }) },
   {
     kind: "send_held",
     view: { mailboxId: id1, address: "me@firma.test", limit: "mailbox_day", waiting: 2, nextAt, now, timeZone },
@@ -260,12 +268,24 @@ describe("notice registries", () => {
 
 describe("renderNotice", () => {
   test.each(cases)("$kind renders byte-identical to its render function", (testCase) => {
-    expect(renderNotice(testCase.kind, stored(testCase), opts)).toEqual({ ok: true, message: testCase.direct() });
+    expect(renderNotice(testCase.kind, stored(testCase), opts)).toEqual({
+      ok: true,
+      message: testCase.direct(textTables.en),
+    });
   });
 
-  test("the locale does not change the en text yet", () => {
-    const view = encodeNoticeView("urgent", urgentView);
-    expect(renderNotice("urgent", view, { ...opts, locale: "pl" })).toEqual(renderNotice("urgent", view, opts));
+  // Stage 12 of the Polish UI plan turns this case around when it drops the hold.
+  test.each(cases)("$kind: the locale does not change the text while the hold is on", (testCase) => {
+    const view = stored(testCase);
+    expect(renderNotice(testCase.kind, view, { ...opts, locale: "pl" })).toEqual(
+      renderNotice(testCase.kind, view, opts)
+    );
+  });
+
+  test.each(cases)("$kind: the Polish texts fit one message", (testCase) => {
+    const message = testCase.direct(textTables.pl);
+    expect(message.text.length).toBeGreaterThan(0);
+    expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
   });
 
   test("a send_result without an address renders (unknown)", () => {

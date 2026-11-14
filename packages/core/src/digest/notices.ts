@@ -1,4 +1,5 @@
 import type { SendLimitKind } from "../send-limits";
+import type { CoreTexts } from "../texts";
 import type { Category } from "../triage/categories";
 
 import { encodeCallback, isLabelCategory } from "./callback";
@@ -18,46 +19,53 @@ export function feedbackButtons(
   return [{ text: texts.right, data: encodeCallback({ kind: "right", category, emailId }) }, edit, ...undo];
 }
 
-export function renderUrgentNotice(input: {
-  emailId: string;
-  from: string | null;
-  subject: string | null;
-  aiText: string | null;
-  receivedAt: Date;
-  synthetic: boolean;
-  folderTag: string | null;
-  wouldDo: string;
-  now: Date;
-  timeZone: string;
-}): OutMessage {
+export function renderUrgentNotice(
+  input: {
+    emailId: string;
+    from: string | null;
+    subject: string | null;
+    aiText: string | null;
+    receivedAt: Date;
+    synthetic: boolean;
+    folderTag: string | null;
+    wouldDo: string;
+    now: Date;
+    timeZone: string;
+  },
+  texts: CoreTexts
+): OutMessage {
   const lines = [
-    `🔴 Urgent mail${input.folderTag === null ? "" : ` · 📁 ${cutText(input.folderTag, 30)}`}${input.synthetic ? " · 🧪 test" : ""}`,
-    `From: ${senderLabel(input.from)}`,
-    `Subject: ${cleanSubject(input.subject)}`,
+    `${texts.notices.urgentTitle}${input.folderTag === null ? "" : ` · 📁 ${cutText(input.folderTag, 30)}`}${input.synthetic ? ` · ${texts.common.test}` : ""}`,
+    `${texts.common.from}: ${senderLabel(input.from, texts)}`,
+    `${texts.common.subject}: ${cleanSubject(input.subject, texts)}`,
   ];
   if (input.aiText !== null) lines.push(`💬 ${cutText(input.aiText, 200)}`);
-  // The next stage of the Polish UI plan passes the texts of the row.
-  lines.push(`Received ${formatClock(input.receivedAt, input.timeZone, input.now, "en")}`, `→ ${input.wouldDo}`);
+  lines.push(
+    texts.notices.received(formatClock(input.receivedAt, input.timeZone, input.now, texts.locale)),
+    `→ ${input.wouldDo}`
+  );
   return {
     text: lines.join("\n"),
-    buttons: [feedbackButtons(input.emailId, "urgent", { right: "✅ Right", edit: "✏️ Change" })],
+    buttons: [feedbackButtons(input.emailId, "urgent", { right: texts.common.right, edit: texts.common.change })],
   };
 }
 
-export function renderAuthErrorNotice(input: {
-  address: string;
-  mailboxId: string;
-  since: Date;
-  now: Date;
-  timeZone: string;
-}): OutMessage {
-  // The next stage of the Polish UI plan passes the texts of the row.
-  const since = formatClock(input.since, input.timeZone, input.now, "en");
+export function renderAuthErrorNotice(
+  input: {
+    address: string;
+    mailboxId: string;
+    since: Date;
+    now: Date;
+    timeZone: string;
+  },
+  texts: CoreTexts
+): OutMessage {
+  const since = formatClock(input.since, input.timeZone, input.now, texts.locale);
   return {
     text: [
-      `❌ Login to ${cutText(input.address, 60)} failed at ${since}.`,
-      "The system does not read this mailbox now. No mail is lost: it stays on the mail server.",
-      `To fix it: check the password, then run mailbox:password for mailbox ${input.mailboxId} (runbook: deploy/README.md).`,
+      texts.notices.authError.first(cutText(input.address, 60), since),
+      texts.notices.authError.noRead,
+      texts.notices.authError.fix(input.mailboxId),
     ].join("\n"),
     buttons: [],
   };
@@ -88,78 +96,86 @@ export function renderSendHeldNotice(input: {
   };
 }
 
-export function renderSyncStaleNotice(input: {
-  address: string;
-  lastSyncedAt: Date | null;
-  now: Date;
-  timeZone: string;
-}): OutMessage {
-  // The next stage of the Polish UI plan passes the texts of the row.
-  const last = input.lastSyncedAt === null ? "never" : formatClock(input.lastSyncedAt, input.timeZone, input.now, "en");
+export function renderSyncStaleNotice(
+  input: {
+    address: string;
+    lastSyncedAt: Date | null;
+    now: Date;
+    timeZone: string;
+  },
+  texts: CoreTexts
+): OutMessage {
+  const last =
+    input.lastSyncedAt === null
+      ? texts.notices.syncStale.never
+      : formatClock(input.lastSyncedAt, input.timeZone, input.now, texts.locale);
   return {
     text: [
-      `⚠️ Mail sync is late for ${cutText(input.address, 60)}.`,
-      `Last good sync: ${last}. The system tries again every 5 minutes.`,
-      "/status shows the state.",
+      texts.notices.syncStale.first(cutText(input.address, 60)),
+      texts.notices.syncStale.last(last),
+      texts.notices.syncStale.status,
     ].join("\n"),
     buttons: [],
   };
 }
 
-export function renderSyncOkNotice(input: {
-  address: string;
-  lastSyncedAt: Date;
-  now: Date;
-  timeZone: string;
-}): OutMessage {
-  // The next stage of the Polish UI plan passes the texts of the row.
-  const last = formatClock(input.lastSyncedAt, input.timeZone, input.now, "en");
-  return { text: `✅ Mail sync works again for ${cutText(input.address, 60)}. Last sync ${last}.`, buttons: [] };
+export function renderSyncOkNotice(
+  input: {
+    address: string;
+    lastSyncedAt: Date;
+    now: Date;
+    timeZone: string;
+  },
+  texts: CoreTexts
+): OutMessage {
+  const last = formatClock(input.lastSyncedAt, input.timeZone, input.now, texts.locale);
+  return { text: texts.notices.syncOk(cutText(input.address, 60), last), buttons: [] };
 }
 
-const FAILED_FIRST_LINE = {
-  move: { original: "Could not move a mail", reverse: "Undo failed: could not move a mail back to" },
-  flag: { original: "Could not flag a mail", reverse: "Undo failed: could not remove the flag" },
-  mark_read: { original: "Could not mark a mail read", reverse: "Undo failed: could not mark a mail unread" },
-  create_draft: { original: "Could not create a draft", reverse: "Could not remove the draft for a mail" },
-} as const;
-
 // Plain text, no buttons. The action's mail stays where it was (an original) or where the system put it (a reverse).
-export function renderActionFailedNotice(input: {
-  actionType: "move" | "flag" | "mark_read" | "create_draft";
-  reverse: boolean;
-  reason: "mail_not_found" | "bad_payload" | "other";
-  folderName: string | null;
-  sourceFolder: string;
-  currentFolder: string;
-  from: string | null;
-  subject: string | null;
-  synthetic: boolean;
-  attempts: number;
-}): OutMessage {
+export function renderActionFailedNotice(
+  input: {
+    actionType: "move" | "flag" | "mark_read" | "create_draft";
+    reverse: boolean;
+    reason: "mail_not_found" | "bad_payload" | "other";
+    folderName: string | null;
+    sourceFolder: string;
+    currentFolder: string;
+    from: string | null;
+    subject: string | null;
+    synthetic: boolean;
+    attempts: number;
+  },
+  texts: CoreTexts
+): OutMessage {
+  const failed = texts.notices.actionFailed;
   const folder = input.folderName === null ? null : cutText(input.folderName, 60);
-  let first = `⚠️ ${FAILED_FIRST_LINE[input.actionType][input.reverse ? "reverse" : "original"]}`;
+  let first = `⚠️ ${failed.first[input.actionType][input.reverse ? "reverse" : "original"]}`;
   if (input.reverse && input.actionType === "move") first = `${first} ${cutText(input.sourceFolder, 30)}`;
   if (!input.reverse && input.actionType === "move" && folder !== null && input.reason !== "bad_payload") {
-    first = `${first} to ${folder}`;
+    first = `${first}${failed.toFolder(folder)}`;
   }
-  const tried = `Tried ${input.attempts} ${input.attempts === 1 ? "time" : "times"}.`;
+  const tried = failed.tried(input.attempts);
   let last: string;
   if (input.reverse && input.reason === "mail_not_found") {
-    last = "The mail was not found: it was moved or deleted in the mail client.";
+    last = failed.notFound;
   } else if (input.reason === "bad_payload") {
-    last = `The plan had an unknown folder. The mail stays in ${cutText(input.currentFolder, 30)}.`;
+    last = failed.badPayload(cutText(input.currentFolder, 30));
   } else if (input.reverse) {
     let where = "";
-    if (input.actionType === "move") where = ` The mail stays in ${folder ?? "its AI folder"}: move it by hand.`;
-    if (input.actionType === "create_draft") where = " The draft stays in Drafts: delete it by hand.";
-    last = `${tried}${where} /status shows the mailbox state.`;
+    if (input.actionType === "move") where = failed.staysInAiFolder(folder);
+    if (input.actionType === "create_draft") where = failed.draftStays;
+    last = [tried, where, failed.status].filter((part) => part !== "").join(" ");
   } else {
-    const where = input.actionType === "move" ? ` The mail stays in ${cutText(input.currentFolder, 30)}.` : "";
-    last = `${tried}${where} /status shows the mailbox state.`;
+    const where = input.actionType === "move" ? failed.staysIn(cutText(input.currentFolder, 30)) : "";
+    last = [tried, where, failed.status].filter((part) => part !== "").join(" ");
   }
   const lines = [first];
-  if (input.synthetic) lines.push("🧪 test");
-  lines.push(`From: ${senderLabel(input.from)}`, `Subject: ${cleanSubject(input.subject)}`, last);
+  if (input.synthetic) lines.push(texts.common.test);
+  lines.push(
+    `${texts.common.from}: ${senderLabel(input.from, texts)}`,
+    `${texts.common.subject}: ${cleanSubject(input.subject, texts)}`,
+    last
+  );
   return { text: lines.join("\n"), buttons: [] };
 }
