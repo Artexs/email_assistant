@@ -1,4 +1,4 @@
-import { AI_FOLDER_NAMES, MAILBOX_ACTION_TYPES, type OutgoingMessage } from "@ea/core";
+import { AI_FOLDER_NAMES, type OutgoingMessage } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { SecretBox } from "../../platform/crypto";
@@ -25,7 +25,8 @@ import {
 } from "../mail";
 import { getOrganization, isOrgSuspended, listMemberships } from "../tenancy";
 
-import { applyAction, type ApplyDeps, type FolderResolver, type ResolvableFolderKey } from "./apply";
+import { APPLY_HANDLERS, applyAction, type ApplyDeps, type FolderResolver, type ResolvableFolderKey } from "./apply";
+import type { ApplyNeeds } from "./apply-shared";
 import { STALE_AFTER_MS } from "./constants";
 import { noDelegationHooks, type DelegationHooks } from "./hooks";
 import {
@@ -114,11 +115,8 @@ export function createFolderResolver(
   };
 }
 
-// D17: a draft and its reverse need IMAP; a send needs it for the Sent copy and the recovery.
-const isMailboxChanging = (action: ClaimedAction): boolean =>
-  (MAILBOX_ACTION_TYPES as readonly string[]).includes(action.type) ||
-  action.type === "create_draft" ||
-  action.type === "send";
+// What each row of a batch needs, from the handler table: IMAP, SMTP, the tenant texts, the sort folders.
+const needs = (action: ClaimedAction): ApplyNeeds => APPLY_HANDLERS[action.type].needs;
 
 // D21: a ready original older than 24 h is never applied. One audit row per row, in one transaction.
 async function expireStale(deps: CommitterDeps, ctx: TenantContext, mailboxId: string, now: Date): Promise<number> {
@@ -331,7 +329,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
 
     // U11: a move into a `sort` folder is an APPEND transfer. A disabled row counts: its mail can still be undone.
     let appendFolders: ReadonlySet<string> = new Set();
-    if (batch.some((action) => action.type === "move")) {
+    if (batch.some((action) => needs(action).sortFolders)) {
       try {
         const rows = await listSyncFolders(deps.db, ctx, mailboxId, { enabledOnly: false });
         appendFolders = new Set(rows.filter((row) => row.role === "sort").map((row) => row.path));
@@ -346,16 +344,16 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
 
     let provider: MailProvider | null = null;
     let sender: MailSender | null = null;
-    if (batch.some(isMailboxChanging)) {
+    if (batch.some((action) => needs(action).provider)) {
       // The recovery of an `applying` send needs no SMTP (M9).
-      const withSender = batch.some((action) => action.type === "send" && action.status === "approved");
+      const withSender = batch.some((action) => needs(action).sender && action.status === "approved");
       const opened = await openFor(ctx, mailboxId, batch, now, withSender);
       if (opened === null) return;
       provider = opened.provider;
       sender = opened.sender;
     }
     try {
-      const needsFacts = batch.some((action) => action.type === "create_draft" || action.type === "send");
+      const needsFacts = batch.some((action) => needs(action).facts);
       let tenantFacts: TenantFacts | null = null;
       if (needsFacts) {
         try {
