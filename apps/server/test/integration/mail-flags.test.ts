@@ -84,7 +84,7 @@ async function emailIdOf(trx: Transaction<DB>, mailboxId: string, uid: number): 
     .selectFrom("emails")
     .select("id")
     .where("mailbox_id", "=", mailboxId)
-    .where("uid", "=", uid)
+    .where("uid", "=", String(uid))
     .executeTakeFirstOrThrow();
   return row.id;
 }
