@@ -1,6 +1,6 @@
 # Web panel
 
-> Checked against the code at `e8164ad`, 2026-11-14.
+> Checked against the code at `85904fc`, 2026-11-14.
 
 ## What it does now
 
@@ -29,6 +29,7 @@ The web panel is a static Astro build with one React island per page (`apps/web`
    | `settingsRoutes` | `GET /settings/:mailboxId`, `PATCH /settings/:mailboxId/mode`, `PATCH /settings/:mailboxId/switches/:name`, `PATCH /settings/:mailboxId/auto/:category`, `PATCH /settings/:mailboxId/sync-folders/:key` | owner for every write                                                                                               |
    | `rulesRoutes`    | `GET /rules`, `POST /rules`, `DELETE /rules/:id`                                                                                                                                                        | owner for the writes                                                                                                |
    | `activityRoutes` | `GET /activity` (filters, cursor `before`, `limit`)                                                                                                                                                     | any member                                                                                                          |
+   | `statsRoutes`    | `GET /stats` (`weeks`, `mailboxId`)                                                                                                                                                                     | any member; `404` while the flag `stats_page` is off                                                                |
    | `triageRoutes`   | `POST /feedback`, `POST /actions/undo`                                                                                                                                                                  | any member                                                                                                          |
    | `actionRoutes`   | `POST /actions/:id/reject-reason` (body `{ reason }`), `POST /actions/:id/mistake` (both behind the flag `mistake_capture`: 404 when it is off; 409 `not_rejected`, `not_sent` or `too_late`)           | owner for both (`drafts-and-send.md` rule 11)                                                                       |
    | `channelRoutes`  | `GET /channels/telegram`, `POST /channels/telegram/link` (body `{ consentVersion }`; 409 `telegram_consent_outdated` for an old version), `DELETE /channels/telegram/link`                              | any member (each user links their own chat)                                                                         |
@@ -54,7 +55,7 @@ The web panel is a static Astro build with one React island per page (`apps/web`
 | page     | `/rules` (VIP, whitelist, blocklist)                                                                      | `apps/web/src/islands/RulesPage.tsx`          |
 | page     | `/legal/<lang>/<doc>` (draft legal stubs)                                                                 | `apps/web/src/pages/legal/[lang]/[doc].astro` |
 | page     | `/` (redirect to `/onboarding`; the server redirects by `homePathOf`)                                     | `apps/web/src/pages/index.astro`              |
-| route    | `/api/*` (the 9 routers of rule 7)                                                                        | `apps/server/src/web.ts`                      |
+| route    | `/api/*` (the 10 routers of rule 7)                                                                       | `apps/server/src/web.ts`                      |
 | route    | `/api/auth/*` (the Better Auth allow-list of rule 3)                                                      | `apps/server/src/platform/http.ts`            |
 | route    | `GET /health`                                                                                             | `apps/server/src/platform/http.ts`            |
 | CLI      | `bun run org:invite`                                                                                      | `apps/server/src/scripts/org-invite.ts`       |
