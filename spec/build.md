@@ -18,7 +18,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 - `F101-panel-to-astro-7` (🟠 ACTIVE): Panel to Astro 7
 - `F100-e3a-measure` (🟠 ACTIVE): Every Stage 2 metric is measured on real mail and the executive gets a weekly report that leads with misses and mistakes
-- `F099-e7-t2-platform-controls-send-limits-feature-flags-operator-console-security-log` (🟠 ACTIVE): E7-T2 Platform controls (send limits, feature flags, operator console, security log)
 - `F098-e7-t1-polish-ui-i18n-frame-first` (🟠 ACTIVE): E7-T1 Polish UI (i18n frame first)
 - `F097-e2a-offline-lab` (🟠 ACTIVE): Every category has a measured precision and recall on a frozen synthetic corpus, and real labels start
 - `F095-e1-close-the-mvp` (🟠 ACTIVE): E1 Close the MVP (capability map, docs boundary, NEXT sweep of the old planned tickets)
@@ -88,6 +87,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 - `F126-mailbox-settings-sync-folder-test-off-then-on-with-a-plain-db-passes-every-time` (🟢 PROVEN): The sync-folder CLI test passes every time; landed 2026-11-14
 - `F123-main-start-log-test-no-longer-fails-with-exit-143-after-sigterm-flaky-twice-f098-stages-03-and-06` (🟢 PROVEN): The server start-log test passes every time: no exit 143 after SIGTERM; landed 2026-11-14
+- `F099-e7-t2-platform-controls-send-limits-feature-flags-operator-console-security-log` (🟢 PROVEN): E7-T2 Platform controls (send limits, feature flags, operator console, security log); landed 2026-11-14
 - `F096-e8-lr-log-rotation` (🟢 PROVEN): E8-LR Log rotation; landed 2026-11-14
 - `F092-rls-safety-net` (🟢 PROVEN): Row-level security is a safety net under the tenant filter for every table with `org_id`; landed 2026-11-14
 - `F091-repo-split` (🟢 PROVEN): The big repositories are split by aggregate and action handling is table-driven with a completeness test; landed 2026-11-14
@@ -95,5 +95,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F082-s6b-public-login` (🟢 PROVEN): The panel login has the production shape: invite only, lockout, leaked-password check, terms, session list; landed 2026-11-14
 - `F078-auth-verifications-cleanup` (🟢 PROVEN): Expired Better Auth `auth_verifications` rows are deleted by the retention job; landed 2026-11-14
 - `F069-compose-network-subnet` (🟢 PROVEN): Pin the Compose network subnet; landed 2026-11-14
-- `F030-telegram-picker-already-saved` (🟢 PROVEN): Telegram picker: say "Already saved" in the message too; landed 2026-11-14
-- 2026-11: 64 landed. spec/features/done/2026-11/
+- 2026-11: 65 landed. spec/features/done/2026-11/
