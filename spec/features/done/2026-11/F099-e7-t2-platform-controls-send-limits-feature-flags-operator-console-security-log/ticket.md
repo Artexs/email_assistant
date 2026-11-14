@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-14
 ---
 
 # F099 · E7-T2 Platform controls (send limits, feature flags, operator console, security log)

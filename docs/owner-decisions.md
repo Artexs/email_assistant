@@ -17,6 +17,12 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Source: the file and item, for example `spec/features/active/FNNN-slug/questions.md` Q2.
 ```
 
+### 2026-11-14 · Production deploy of F099 (with F092 and F098 code) and operator id (F099) · security · new
+- Choice: I deployed `65164fd` to the VPS and set `OPERATOR_USER_IDS` to the pilot org owner. Backup and rollback target are named in `notes/2026-11-14-f099-vps-deploy.md`.
+- Why: the operator console needs one operator; the owner of the pilot org is the only real user. All 9 checks held.
+- Undo: remove the id from the VPS `.env` and restart the server; or roll back to image `ea-server:pre-f099` (never run `db:rollback`).
+- Source: `stages/stage-15-vps-deploy.md`.
+
 ### 2026-11-14 · F104 plan started while F095 is still open (F104) · scope · new
 - Choice: the F104 plan job started when F095 had stage 10 running and stage 09 waiting for 22:40Z. Your order rule asks for "needs landed" first.
 - Why: F095 is docs and a runbook only; no code that F104 reads depends on it. F099 (the other need) is landed and deployed.
