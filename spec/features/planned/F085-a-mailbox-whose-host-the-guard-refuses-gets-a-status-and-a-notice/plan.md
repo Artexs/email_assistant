@@ -89,7 +89,7 @@ Owner and coordinator words, word for word:
 - **D17 Roll back the code, not the migration.** A release older than stage 02 cannot parse `host_blocked` (`mailboxStatusSchema` throws in `listMailboxes`; `noticeKindSchema` throws in `claimDueOutbox`, `channels/repo.ts:368`, and stops the sender). Before such a rollback run, in this order:
   `UPDATE outbox SET status = 'failed', error_code = 'outdated', locked_at = NULL WHERE kind = 'host_blocked' AND status IN ('pending', 'sending');`
   `UPDATE mailboxes SET status = 'active', status_changed_at = now() WHERE status = 'host_blocked';`
-  The old code then logs the refusal at each run again. The migration's `down` part does the same before it restores the old CHECK lists. Stage 07 writes this into `deploy/README.md`.
+  The old code then logs the refusal at each run again. The migration's `down` part deletes the `host_blocked` outbox rows and sets those mailboxes `active` before it restores the old CHECK lists (it exists for the dev DB, not for production). Stage 07 writes this into `deploy/README.md`.
 - **D18 Order: read before write, the way out before the way in.** Stage 01 teaches core and the panel the value; stage 02 lets the DB hold it and adds the notice; stage 03 teaches the server readers; stage 04 adds the way out; stage 05 adds the way in. At every landed commit, no reader meets a value it does not know, and no mailbox can enter `host_blocked` without a way out. Until stage 05, no row is ever `host_blocked` outside tests.
 - **D19 Tests never open a network connection.** The test preload allows local hosts for GreenMail. A test that needs the guard sets `configureMailHosts({ allowLocal: false, lookup })` with a fake `lookup` and puts back `configureMailHosts({ allowLocal: true })` in `afterEach` (as `apps/server/test/integration/mail-host-guard.test.ts` does). A test that runs the sync job or the committer through the guard uses a guarded fake opener: for its own mailbox it calls `resolveMailHost(opts.host)` and then returns the fake provider or sender; it never calls the real IMAP or SMTP client with a public address. Refused address `10.0.0.7`; public address `93.184.216.34`. Fixture hosts: `imap.x.test`, `smtp.x.test` (`fixtures.ts` `createOrgWithMailbox`).
 - **D20 Audit events.** `auditEvents` (`apps/server/src/modules/audit/repo.ts`) gains `mailboxHostBlocked: "mailbox.host_blocked"` (data `mailbox_id`, `source`) and `mailboxHostAllowed: "mailbox.host_allowed"` (data `mailbox_id`). They are not in `securityEvents` (default, Q8). `delete_mailbox` deletes them with the mailbox (it deletes audit rows by `data->>'mailbox_id'`).
@@ -226,7 +226,7 @@ limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thi
 
 ## Planning progress
 
-- [written] stage 01 · [ ] stage 02 · [ ] stage 03 · [ ] stage 04 · [ ] stage 05 · [ ] stage 06 · [ ] stage 07
+- [written] stage 01 · [written] stage 02 · [ ] stage 03 · [ ] stage 04 · [ ] stage 05 · [ ] stage 06 · [ ] stage 07
 - [ ] cold review (`plan-review-1.md`), findings applied
 
 ## Cold review
