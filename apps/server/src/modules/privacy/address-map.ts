@@ -137,6 +137,18 @@ export const NOT_PERSONAL: Readonly<Record<string, string>> = Object.fromEntries
     "the owner's text about their own writing style; an organization setting, not mail data (open: an address typed there stays)"
   ),
   ...reasons(["sender_rules.kind"], "closed list of codes"),
+  ...reasons(
+    ["sso_providers.provider_id", "sso_providers.domain_proof", "sso_providers.saml_config"],
+    "the organization id as text, a closed list of codes, and a column that stays NULL"
+  ),
+  ...reasons(
+    ["sso_providers.issuer", "sso_providers.domain"],
+    "the URL and the mail domain of the organization's own IdP setup, no address of a person"
+  ),
+  ...reasons(
+    ["sso_providers.oidc_config"],
+    "the IdP configuration of the organization's own setup: endpoints, client id and client secret, no third-party address"
+  ),
 ]);
 
 // Tables whose text, array and jsonb columns hold no address of a third party. The completeness test accepts every
