@@ -9,6 +9,8 @@ import {
   QUIET_HOURS,
   QUOTA_TIMEZONE,
   quotaDayStart,
+  renderReviewPage,
+  textsFor,
   type OutMessage,
 } from "@ea/core";
 import type { Transaction } from "kysely";
@@ -27,9 +29,10 @@ import {
 import { countLlmCallsSince } from "../audit";
 import { getMailboxSettings } from "../config";
 import { countOpenDelegations } from "../delegation";
-import { countWaiting, listMailboxes, switchMailboxStatus, type MailboxSummary } from "../mail";
+import { countWaiting, listMailboxes, switchMailboxStatus, type MailboxSummary, type TestMailRule } from "../mail";
 import { buildDigestMessage, digestPeriodStart, WAITING_WINDOW_MS } from "../reports";
-import { getMembership, getOrganization, isOrgSuspended } from "../tenancy";
+import { getMembership, getOrganization, isFeatureOn, isOrgSuspended } from "../tenancy";
+import { listForReview } from "../triage";
 
 import { handleCallback } from "./callbacks";
 import { SYNC_LATE_MS } from "./notices";
@@ -46,6 +49,8 @@ export interface CommandDeps {
   hooks: DelegationHooks;
   uidplus(ctx: TenantContext, mailboxId: string): Promise<boolean>;
   sendScope: SendScope;
+  // The test-sender rule: /review lists real mail only (F097 D1).
+  testMail: TestMailRule;
   // Public contact address for the paused answer. null = "the operator".
   operatorContact: string | null;
 }
@@ -191,6 +196,36 @@ export async function digestNowMessage(deps: CommandDeps, link: LinkedChat): Pro
   return buildDigestMessage(deps.db, ctx, { kind: "on_demand", periodStart, periodEnd: now, slot: null, now });
 }
 
+// The /review page (F097 D4, D6): behind the flag `review_command`; a seeded random sample of unlabelled real mail.
+// A new seed per call (chat id and time) gives a new sample on the next /review.
+export async function reviewMessage(deps: CommandDeps, link: LinkedChat): Promise<OutMessage> {
+  const texts = textsFor(link.locale);
+  const ctx = { orgId: link.orgId, userId: link.userId };
+  if (!(await isFeatureOn(deps.db, ctx, "review_command"))) return { text: texts.review.off, buttons: [] };
+  const organization = await getOrganization(deps.db, ctx);
+  if (organization === undefined) throw new HardError("organization not found");
+  const mailboxIds = (await listMailboxes(deps.db, ctx)).map((mailbox) => mailbox.id);
+  if (mailboxIds.length === 0) return { text: texts.review.noMailbox, buttons: [] };
+  const now = deps.now();
+  const seed = `${link.chatId}:${now.toISOString()}`;
+  const items = await listForReview(deps.db, ctx, { mailboxIds, now, seed, testMail: deps.testMail });
+  return renderReviewPage(
+    {
+      items: items.map((item) => ({
+        emailId: item.emailId,
+        category: item.category,
+        from: item.from,
+        subject: item.subject,
+        receivedAt: item.receivedAt,
+        aiText: item.summary,
+      })),
+      now,
+      timeZone: organization.timezone,
+    },
+    texts
+  );
+}
+
 const OWNER_ONLY_TEXT = "Only the owner can pause or resume the mailboxes.";
 
 interface StatusSwitch {
@@ -262,6 +297,8 @@ export function runCommand(deps: CommandDeps, link: LinkedChat, name: CommandNam
       return statusMessage(deps, link);
     case "digest":
       return digestNowMessage(deps, link);
+    case "review":
+      return reviewMessage(deps, link);
     case "pause":
       return pauseMailboxes(deps, link);
     case "resume":

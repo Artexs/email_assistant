@@ -11,6 +11,10 @@ export function isLabelCategory(category: Category): category is LabelCategory {
 export const reviewLabelCategories = [...labelCategories, "delegation"] as const;
 export type ReviewLabelCategory = (typeof reviewLabelCategories)[number];
 
+export function isReviewLabelCategory(category: Category): category is ReviewLabelCategory {
+  return (reviewLabelCategories as readonly string[]).includes(category);
+}
+
 export type FeedbackCallback =
   | { kind: "right"; category: LabelCategory; emailId: string }
   | { kind: "edit"; emailId: string }

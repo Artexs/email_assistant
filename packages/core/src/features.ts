@@ -31,6 +31,12 @@ export const featureFlags = {
     epic: "E7-T2",
     removeBy: "2027-03-01",
   },
+  review_command: {
+    default: false,
+    description: "The /review command in Telegram: label a random sample of recent mail.",
+    epic: "E2a",
+    removeBy: "2027-03-01",
+  },
 } as const satisfies Record<string, FeatureFlag>;
 
 export type FeatureKey = keyof typeof featureFlags;
