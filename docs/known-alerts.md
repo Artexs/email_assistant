@@ -20,6 +20,22 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `new row violates row-level security policy for table "<table>"` (in `http_error`)
+
+- **First seen:** 2026-11-14 (F092; not seen live)
+- **Source:** Postgres, through `http_error` of `platform/http.ts` (the `route` field names the route). SQLSTATE `42501`.
+- **Cause:** a web request wrote a row whose `org_id` is not the organization of the session. The code filter missed it; RLS refused it. The request answered 500 and wrote nothing.
+- **Fix:** find the route and the repository function; fix the `org_id` it writes. Do not turn RLS off.
+- **Status:** won't fix (the refusal is the safety net working)
+
+### `invalid input syntax for type uuid` on every query of a request
+
+- **First seen:** 2026-11-14 (F092; not seen live)
+- **Source:** Postgres, through `http_error` of `platform/http.ts`.
+- **Cause:** `app.org_id` holds a value that is not a UUID. Only `scoped-driver.ts` writes it, from `requireTenant`.
+- **Fix:** check the membership row and the scope call.
+- **Status:** won't fix (fail closed)
+
 ### `operator_route_refused` (field `user_id`)
 
 - **First seen:** 2026-11-13 (F087 stage 6; not seen live)

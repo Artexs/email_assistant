@@ -24,3 +24,4 @@ Stage 2 needs an operator console (E7, absorbs F081; E8 relies on it for job sta
 - `org_features` joins the organization-delete test.
 - A flag past its remove-by date is a cleanup ticket; the registry makes the list visible.
 - If a real flag service is ever needed, it replaces the body of `isFeatureOn` (the call shape follows OpenFeature: a flag key and an evaluation context).
+- 2026-11-14 (F092): row-level security exists now. The `/api/operator` routes run without the tenant scope (`requireOperator` → `withoutTenantScope`), so their cross-organization reads still work.
