@@ -68,13 +68,15 @@ async function setup() {
 function appFor(
   ids: { ownerId: string; assistantId: string; nobodyId: string },
   operatorContact: string | null = null,
-  operatorUserIds?: ReadonlySet<string>
+  operatorUserIds?: ReadonlySet<string>,
+  twoFactorOff?: ReadonlySet<string>
 ) {
   return webTestApp({
     db,
     sessions: { "good-owner": ids.ownerId, "good-assistant": ids.assistantId, "good-nobody": ids.nobodyId },
     isOrgSuspended: (orgId) => isOrgSuspended(db, { orgId }),
     ...(operatorUserIds ? { operatorUserIds } : {}),
+    ...(twoFactorOff ? { twoFactorOff } : {}),
     routers: (api) =>
       api.route(
         "/",
@@ -151,6 +153,13 @@ describe("GET /api/me", () => {
     // The body holds no list of operator ids.
     expect(Object.keys(operator.me).sort()).toEqual(Object.keys(plain.me).sort());
     expect(operator.raw).not.toContain(otherOperatorId);
+  });
+
+  test("an operator without TOTP still reads operator: true (F105 D10: the page sends the user to the settings)", async () => {
+    const ids = await setup();
+    const app = appFor(ids, null, new Set([ids.ownerId]), new Set([ids.ownerId]));
+    const me = meSchema.parse(await (await app.request("/api/me", as("good-owner"))).json());
+    expect(me.operator).toBe(true);
   });
 
   test("returns the trial end and the plan to every member", async () => {

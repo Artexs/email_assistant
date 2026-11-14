@@ -350,6 +350,7 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     return {
       userId: response.response.user.id,
       sessionId: response.response.session.id,
+      twoFactorEnabled: response.response.user.twoFactorEnabled === true,
       setCookie: response.headers.getSetCookie(),
     };
   };

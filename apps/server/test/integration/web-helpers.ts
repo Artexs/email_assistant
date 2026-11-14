@@ -26,6 +26,7 @@ export interface WebTestOptions {
   homePath?: WebDeps["homePath"];
   isOrgSuspended?: WebDeps["isOrgSuspended"];
   operatorUserIds?: WebDeps["operatorUserIds"];
+  twoFactorOff?: ReadonlySet<string>; // user ids whose fake session has TOTP off; every other user has it on
 }
 
 const cookieOf = (headers: Headers): string => headers.get("cookie")?.replace("ea.session_token=", "") ?? "";
@@ -37,7 +38,9 @@ export function webTestApp(opts: WebTestOptions): Hono<ApiEnv> {
       handler: async () => new Response(),
       getSession: async (headers) => {
         const userId = sessions[cookieOf(headers)];
-        return userId ? { userId, sessionId: cookieOf(headers) } : null;
+        return userId
+          ? { userId, sessionId: cookieOf(headers), twoFactorEnabled: opts.twoFactorOff?.has(userId) !== true }
+          : null;
       },
     },
     db,
