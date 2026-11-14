@@ -198,3 +198,38 @@ export async function markResultNotified(db: DbOrTrx, ctx: TenantContext, id: st
     .executeTakeFirst();
   return result.numUpdatedRows > 0n;
 }
+
+export interface SendLimitHold {
+  mailboxId: string;
+  waiting: number;
+  nextAt: Date;
+  lastError: string;
+}
+
+// One row per mailbox that has sends held by a send limit now (PD-044, F099 D11). A hold ended when
+// `next_attempt_at <= now`: the committer has not run yet, so the send no longer waits on the limit.
+// `lastError` is the one of the row that goes out first (ties: smallest id); it names the limit.
+export async function listSendLimitHolds(db: DbOrTrx, ctx: TenantContext, now: Date): Promise<SendLimitHold[]> {
+  const result = await sql<{ mailbox_id: string; waiting: number; next_at: Date; last_error: string }>`
+    select distinct on (a.mailbox_id) a.mailbox_id,
+      (count(*) over (partition by a.mailbox_id))::int as waiting,
+      min(a.next_attempt_at) over (partition by a.mailbox_id) as next_at,
+      a.last_error
+    from (
+      select e.mailbox_id, actions.id, actions.next_attempt_at, actions.last_error
+      from actions
+      join emails e on e.id = actions.email_id and e.org_id = actions.org_id
+      where actions.org_id = ${ctx.orgId} and e.org_id = ${ctx.orgId}
+        and actions.type = 'send' and actions.status = 'approved'
+        and actions.last_error like 'send_limit:%'
+        and actions.next_attempt_at > ${now}
+    ) a
+    order by a.mailbox_id, a.next_attempt_at, a.id
+  `.execute(db);
+  return result.rows.map((row) => ({
+    mailboxId: row.mailbox_id,
+    waiting: row.waiting,
+    nextAt: row.next_at,
+    lastError: row.last_error,
+  }));
+}

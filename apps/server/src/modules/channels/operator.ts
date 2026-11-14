@@ -1,9 +1,10 @@
-import type { SendLimitKind } from "@ea/core";
+import { sendLimitOfError, type SendLimitKind } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 import { describeError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
+import { listSendLimitHolds } from "../actions";
 import { auditEvents, hasAuditKey, recordAudit } from "../audit";
 import { listAuthErrorMailboxesBefore } from "../mail";
 import { listOrganizations } from "../tenancy";
@@ -161,11 +162,49 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
     }
   }
 
+  type SendLimitHit = Parameters<OperatorNotices["sendLimitReached"]>[1];
+
+  // Never throws. Resolves when the text is sent or has failed (a failed text goes to `retries`).
+  function startSendLimit(ctx: TenantContext, hit: SendLimitHit): Promise<void> {
+    const key = `send_limit:${hit.mailboxId}:${hit.at.toISOString().slice(0, 10)}`;
+    if (retries.has(key)) return Promise.resolve();
+    return start(
+      ctx,
+      "send_limit",
+      key,
+      `Mailbox ${hit.mailboxId} of org ${ctx.orgId} hit the send limit ${hit.limit} at ${hit.at.toISOString()}; its sends wait until ${hit.until.toISOString()}.`
+    );
+  }
+
+  // The catch for a lost `sendLimitReached` call (F099 D10): a crash between the hold commit and the callback.
+  // The key is the same, so the dedup makes one text per mailbox per UTC day.
+  async function runSendLimits(now: Date): Promise<void> {
+    const organizations = await listOrganizations(db);
+    for (const organization of organizations) {
+      if (organization.plan === "suspended") continue;
+      try {
+        const ctx = { orgId: organization.id };
+        for (const hold of await listSendLimitHolds(db, ctx, now)) {
+          const limit = sendLimitOfError(hold.lastError);
+          if (limit === null) continue;
+          await startSendLimit(ctx, { mailboxId: hold.mailboxId, limit, until: hold.nextAt, at: now });
+        }
+      } catch (error) {
+        log.error(`operator notice send_limit: ${describeError(error)}`);
+      }
+    }
+  }
+
   return {
     async run() {
       const now = deps.now();
       // Each part has its own guard: one failure does not stop the next part.
-      for (const part of [() => runOrganizations(now), () => runAuthErrors(now), () => runRetries()]) {
+      for (const part of [
+        () => runOrganizations(now),
+        () => runAuthErrors(now),
+        () => runRetries(),
+        () => runSendLimits(now),
+      ]) {
         try {
           await part();
         } catch (error) {
@@ -206,14 +245,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
 
     sendLimitReached(ctx, hit) {
       try {
-        const key = `send_limit:${hit.mailboxId}:${hit.at.toISOString().slice(0, 10)}`;
-        if (retries.has(key)) return;
-        void start(
-          ctx,
-          "send_limit",
-          key,
-          `Mailbox ${hit.mailboxId} of org ${ctx.orgId} hit the send limit ${hit.limit} at ${hit.at.toISOString()}; its sends wait until ${hit.until.toISOString()}.`
-        );
+        void startSendLimit(ctx, hit);
       } catch (error) {
         log.error(`operator notice send_limit: ${describeError(error)}`);
       }

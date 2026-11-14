@@ -1,3 +1,4 @@
+import type { SendLimitKind } from "../send-limits";
 import type { Category } from "../triage/categories";
 
 import { encodeCallback, isLabelCategory } from "./callback";
@@ -55,6 +56,31 @@ export function renderAuthErrorNotice(input: {
       `❌ Login to ${cutText(input.address, 60)} failed at ${since}.`,
       "The system does not read this mailbox now. No mail is lost: it stays on the mail server.",
       `To fix it: check the password, then run mailbox:password for mailbox ${input.mailboxId} (runbook: deploy/README.md).`,
+    ].join("\n"),
+    buttons: [],
+  };
+}
+
+const SEND_HELD_LIMIT_TEXT: Record<SendLimitKind, string> = {
+  mailbox_hour: "the hourly send limit of this mailbox is reached",
+  mailbox_day: "the daily send limit of this mailbox is reached",
+  recipient_day: "the daily limit for one recipient is reached",
+};
+
+// Sends of one mailbox wait on a send limit (PD-044). The view holds no limit number: the text names the window.
+export function renderSendHeldNotice(input: {
+  address: string;
+  mailboxId: string;
+  limit: SendLimitKind;
+  waiting: number;
+  nextAt: Date;
+  now: Date;
+  timeZone: string;
+}): OutMessage {
+  return {
+    text: [
+      `⏸ Sends from ${cutText(input.address, 60)} wait: ${SEND_HELD_LIMIT_TEXT[input.limit]}.`,
+      `${input.waiting} waiting; the next one goes out at about ${formatClock(input.nextAt, input.timeZone, input.now)}.`,
     ].join("\n"),
     buttons: [],
   };

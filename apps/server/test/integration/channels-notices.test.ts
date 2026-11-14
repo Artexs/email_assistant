@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
-import { SENT_COPY_PENDING_MAX_AGE_MS } from "../../src/modules/actions";
+import { listSendLimitHolds, SENT_COPY_PENDING_MAX_AGE_MS } from "../../src/modules/actions";
 import { auditEvents, recordAudit } from "../../src/modules/audit";
 import { detectNotices } from "../../src/modules/channels";
 import { insertSenderRule } from "../../src/modules/config";
@@ -1305,6 +1305,128 @@ describe("send result notices", () => {
         expect(JSON.stringify(row.view)).not.toContain(BODY);
       }
       expect((await resultText(trx, a, mine.sendId)).text).toContain(mine.to);
+    });
+  });
+});
+
+describe("send_held notices", () => {
+  const NOW = new Date("2026-11-20T10:00:00Z");
+  const LIMIT_ERROR = "send_limit:mailbox_hour";
+
+  async function runAt(trx: Transaction<DB>, now: Date): Promise<void> {
+    await detectNotices({ db: trx, now: () => now, startedAt: new Date(now.getTime() - HOUR) });
+  }
+
+  // An approved send that waits on a limit (or on `lastError`) until `nextAttemptAt`.
+  async function held(trx: Transaction<DB>, o: Org, nextAttemptAt: Date, lastError: string | null = LIMIT_ERROR) {
+    const p = await waiting(trx, o, {
+      sendStatus: "approved",
+      approved: { userId: o.ownerId, at: at(-20 * MINUTE) },
+      outgoingMessageId: `<${randomUUID()}@x.test>`,
+    });
+    await trx
+      .updateTable("actions")
+      .set({ status: "approved", last_error: lastError, next_attempt_at: nextAttemptAt })
+      .where("id", "=", p.sendId)
+      .execute();
+    return p;
+  }
+
+  test("(3)(4) one row for the owner per mailbox and UTC day; the next day gives a second row", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      await held(trx, o, new Date(NOW.getTime() + 10 * MINUTE));
+      await held(trx, o, new Date(NOW.getTime() + 20 * MINUTE));
+
+      await runAt(trx, NOW);
+      const first = await rows(trx, o.orgId, "send_held");
+      expect(first).toHaveLength(1);
+      expect(first[0]).toMatchObject({
+        user_id: o.ownerId,
+        mailbox_id: o.mailboxId,
+        dedup_key: `send_held:${o.mailboxId}:2026-11-20`,
+        status: "pending",
+      });
+      expect(first[0]?.view).toMatchObject({ mailboxId: o.mailboxId, limit: "mailbox_hour", waiting: 2 });
+      expect(new Date((first[0]?.view as { nextAt: string }).nextAt)).toEqual(new Date(NOW.getTime() + 10 * MINUTE));
+      expect(first[0]?.text).toContain("2 waiting; the next one goes out at about");
+
+      await runAt(trx, NOW);
+      expect(await rows(trx, o.orgId, "send_held")).toHaveLength(1);
+
+      await trx
+        .updateTable("actions")
+        .set({ next_attempt_at: new Date("2026-11-21T01:00:00Z") })
+        .where("last_error", "=", LIMIT_ERROR)
+        .where("org_id", "=", o.orgId)
+        .execute();
+      await runAt(trx, new Date("2026-11-21T00:30:00Z"));
+      const keys = (await rows(trx, o.orgId, "send_held")).map((row) => row.dedup_key);
+      expect(keys).toEqual([`send_held:${o.mailboxId}:2026-11-20`, `send_held:${o.mailboxId}:2026-11-21`]);
+    });
+  });
+
+  test("(5) an ended hold and another last_error give no row", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      await held(trx, o, new Date(NOW.getTime() - MINUTE));
+      await held(trx, o, new Date(NOW.getTime() + 10 * MINUTE), "smtp_421");
+
+      await runAt(trx, NOW);
+      expect(await rows(trx, o.orgId, "send_held")).toEqual([]);
+    });
+  });
+
+  test("(6) the holds of one organization are not listed for another", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const a = await org(trx);
+      const b = await org(trx);
+      await held(trx, a, new Date(NOW.getTime() + 10 * MINUTE));
+
+      expect(await listSendLimitHolds(trx, b.ctx, NOW)).toEqual([]);
+      expect(await listSendLimitHolds(trx, a.ctx, NOW)).toEqual([
+        { mailboxId: a.mailboxId, waiting: 1, nextAt: new Date(NOW.getTime() + 10 * MINUTE), lastError: LIMIT_ERROR },
+      ]);
+    });
+  });
+
+  test("the limit text comes from the send that goes out first", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      await held(trx, o, new Date(NOW.getTime() + 30 * MINUTE), "send_limit:mailbox_day");
+      await held(trx, o, new Date(NOW.getTime() + 10 * MINUTE), "send_limit:recipient_day");
+
+      expect(await listSendLimitHolds(trx, o.ctx, NOW)).toMatchObject([
+        { waiting: 2, nextAt: new Date(NOW.getTime() + 10 * MINUTE), lastError: "send_limit:recipient_day" },
+      ]);
+    });
+  });
+
+  test("(8) a pending row becomes outdated when the holds end; a paused mailbox gets no row", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      const p = await held(trx, o, new Date(NOW.getTime() + 10 * MINUTE));
+      await runAt(trx, NOW);
+      expect((await rows(trx, o.orgId, "send_held")).map((row) => row.status)).toEqual(["pending"]);
+
+      await trx
+        .updateTable("actions")
+        .set({ next_attempt_at: new Date(NOW.getTime() - MINUTE) })
+        .where("id", "=", p.sendId)
+        .execute();
+      await runAt(trx, NOW);
+      expect(await rows(trx, o.orgId, "send_held")).toMatchObject([{ status: "failed", error_code: "outdated" }]);
+
+      const paused = await org(trx);
+      await held(trx, paused, new Date(NOW.getTime() + 10 * MINUTE));
+      await setStatus(trx, paused, "paused");
+      await runAt(trx, NOW);
+      expect(await rows(trx, paused.orgId, "send_held")).toEqual([]);
     });
   });
 });

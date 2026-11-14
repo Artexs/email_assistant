@@ -12,6 +12,7 @@ import { approvalSetDetector } from "./approval-set";
 import { authErrorDetector } from "./auth-error";
 import { delegationAnsweredDetector } from "./delegation-answered";
 import { log, type Detector, type NoticeDeps, type OrgRun } from "./run";
+import { sendHeldDetector } from "./send-held";
 import { sendResultDetector } from "./send-result";
 import { SYNC_LATE_MS, syncDetector } from "./sync";
 import { urgentDetector } from "./urgent";
@@ -30,6 +31,7 @@ export const detectors: readonly Detector[] = [
   approvalDetector,
   approvalSetDetector,
   sendResultDetector,
+  sendHeldDetector,
   delegationAnsweredDetector,
 ];
 
