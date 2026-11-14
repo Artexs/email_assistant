@@ -12,6 +12,7 @@ A file is an array of cases. The schema is `evalCaseSchema` in `packages/core/sr
 The structural test is `apps/server/src/modules/triage/eval-cases.test.ts`.
 
 See also: `evals/testmail/README.md` (runbook for live test mail from AgentMail to the Interia test mailbox).
+See also: `evals/sim/README.md` (runbook for synthetic corpora: plan, write, blind check, reconcile; `bun run sim`).
 
 ## Data rule
 
