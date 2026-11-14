@@ -6,29 +6,35 @@ opened: 2026-11-13
 
 ## Outcome
 
-E9a Mailbox OAuth: the Stage 2 ticket in row 23 of `docs/product/stage-2/05-execution-plan.md` §2.1 (about ≈ 19 stages). The outcome, the user value and the acceptance come from the epic page `docs/product/stage-2/epics/E09-reach.md` and its discovery notes `docs/product/stage-2/epics/E09-discovery-notes.md`; the planning job turns them into stages.
+An owner connects a Microsoft 365 or Gmail mailbox with "Sign in with Microsoft" or "Sign in with Google", and the full pipeline (sync, triage, moves, drafts, sends) runs on it through the existing IMAP adapter. Microsoft mail goes out through Graph `sendMail`. A token problem sets `auth_error` with a reason, and one Reconnect keeps the mailbox history. The first stage is a spike on the owner's real test accounts, because the docs do not say if a default Microsoft tenant allows OAuth IMAP (PD-086, PD-087).
 
 ## Scope
 
-- The epic page and discovery notes above set the boundary. The planning job reads them first, then the repo at HEAD, and splits the work into stages of at most one worker job each.
-- Product questions are answered in those pages. A planning job only turns decisions into stages and records small defaults in `questions.md`.
+- Stage 2 row 23 (`docs/product/stage-2/05-execution-plan.md` §2.1); epic `docs/product/stage-2/epics/E09-reach.md` (E9a half) and its discovery notes §5–§6; ADR 0031; architecture review §3.7.
+- Seam: `apps/server/src/modules/mail/open.ts`, the one place that reads a mailbox secret and opens the provider and the sender.
+- Spike, schema, OAuth flow, token store and refresh, reason codes, Reconnect, Remove, Graph sender, admin consent, Gmail OAuth, panel, docs, provider smoke, VPS deploy.
 
 ## Out of scope
 
-- Work that belongs to other rows of §2.1. The plan names the seams.
+- The phone channel ticket (E9b, F118): PWA, Web Push, Telegram detail levels.
+- A Graph or Gmail API read adapter, webhooks, IDLE.
+- Company sign-in to the panel with Microsoft or Google (the OIDC ticket, F119).
+- Google verification and CASA (PD-005).
 
 ## Acceptance
 
-- The planned stages together deliver the epic outcome for this row, each stage with its own proof, as `plan-task` requires.
+- With the fake token server, a new mailbox connects through `/api/mailboxes/oauth/<provider>/start` and the callback, and syncs from GreenMail with XOAUTH2.
+- A refused refresh sets `auth_error` with the reason of `plan.md` D17; Reconnect returns it to `active` with the same mailbox id and its mail rows.
+- A Microsoft mailbox sends through the fake Graph; the `MailSender` contract suite passes for the fake, SMTP and Graph senders.
+- No token, code, `state`, verifier or client secret appears in a log line, error text, audit row or redirect URL (canary tests).
+- On the owner's real Microsoft 365 and Gmail test mailboxes, the provider smoke runs 20 cases in assist and sends only to the owner (`plan.md` § Done when 8).
 
 ## Sequenced
 
-- Plan after: none (planning may run ahead of the build).
-- Build after: F082, E7-T2 (landed, in `spec/features/done/`).
-- Gate: Owner: one Microsoft 365 Business Basic seat; stage 1 is the spike; second pass after it (PD-086, PD-087)
+- Plan after: none.
+- Build after: F082 (public login) and F099 (E7-T2 platform controls: send limits, feature flags); both in `spec/features/done/`.
+- Gate: Owner: one Microsoft 365 Business Basic seat; stage 1 is the spike; second pass after it (PD-086, PD-087). Plan form: owner step U1 runs the spike kit, gate G1 after stage 02 (`plan.md`).
 
 ## Notes
 
-Source row: §2.1 # 23. Needs plan: run the planner job (`notes/2026-11-13-limen-planner-role.md`).
-
-Design input from the architecture review (`docs/product/stage-2/06-architecture-review.md` §3.7): the IMAP adapter takes an auth-material union (`password` | `oauth` access token) instead of a password field; `mail/open.ts` resolves the stored secret into it (the token refresh with its per-mailbox lock lives there); the sender comes from a mailbox column (`smtp` | `graph`). Add a `MailSender` contract suite next to the `MailProvider` one before the Graph adapter.
+- Replaces the old mail OAuth adapters ticket (F048, dropped). Shares the Microsoft test tenant with the OIDC ticket (F119 Q10).
