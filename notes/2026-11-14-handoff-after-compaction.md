@@ -110,3 +110,8 @@ For F100 stage 19 (docs) and later web work:
 - Stage 10 runbook: say 'erase again after a backfill, after the first sync of a newly enabled sync folder and after a newly connected mailbox' (mail never stored has no tombstone). Document that `p@x.test.vcf` style file names are not matched (look-ahead rejects `.x` after the address; same rule keeps a@b.com.pl apart).
 - N5 hardening (RLS as a second guard for the erase/find CLI via the tenant scope helper): see the stage 08 fix job; if skipped it stays a note.
 - N4: `config-settings.test.ts` 'setToolSwitch flag off audits' flakes (auditRows has no ORDER BY): fixed in the stage 08 fix job.
+
+## F119 s04 review carry-overs (Opus PASS, landed)
+- N1 for stage 07 (D16 CLI write): lock the organization row FOR NO KEY UPDATE, not FOR UPDATE. The refusal audit row (app pool, FK key share on organizations) can otherwise wait on the CLI while the callback tx waits on the audit insert: a lock wait Postgres cannot see as a deadlock.
+- Note: the resolver-to-hook map is keyed by user id; two parallel callbacks of one user may lose one sso.login row. Low impact; per-request key is the fix if needed.
+- Suspended org is not checked at SSO sign-in (same as password sign-in). Refusals are not rate limited.

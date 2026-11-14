@@ -10,3 +10,19 @@ export const ssoRefusals = [
 ] as const;
 
 export type SsoRefusal = (typeof ssoRefusals)[number];
+
+// What the IdP says about the person. `null` = the IdP sent no such claim.
+export interface SsoIdentity {
+  providerId: string;
+  issuer: string;
+  subject: string;
+  email: string;
+  emailVerified: boolean | null;
+  hostedDomain: string | null;
+}
+
+// `orgId` is the organization of the provider; `null` only when no provider matches. A resolver never answers
+// the plugin's `continue`: with `requestSignUp: true` that makes a user (`spike.md` finding on the resolver).
+export type SsoResolution =
+  | { kind: "link"; userId: string; orgId: string; firstLink: boolean }
+  | { kind: "reject"; code: SsoRefusal; orgId: string | null };
