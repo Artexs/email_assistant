@@ -88,6 +88,7 @@ export const en = {
   status_active: "Active",
   status_paused: "Paused",
   status_auth_error: "Login error",
+  status_host_blocked: "Server not allowed",
   // mailboxes
   mb_connect: "Connect mailbox",
   mb_empty: "No mailbox yet.",
@@ -103,6 +104,8 @@ export const en = {
   mb_change_password: "Change password",
   mb_remove: "Remove",
   mb_auth_error_hint: "The login failed. Change the password to start the mailbox again.",
+  mb_host_blocked_hint:
+    "The mail server name points to a private or local network address, so the system does not connect. It checks again at each sync and starts the mailbox by itself.",
   mb_paused_toast: "Paused. The system does not read or triage this mailbox now. Digests still come.",
   mb_resumed_toast: "Resumed. The next sync runs within 5 minutes.",
   mb_scopes_note: "The server settings decide these. The web cannot change them.",

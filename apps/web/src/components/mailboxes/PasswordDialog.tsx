@@ -45,9 +45,8 @@ export function PasswordDialog({ mailbox, open, onOpenChange, onSaved }: Passwor
     setPending(true);
     try {
       const view = await api(`/api/mailboxes/${mailbox.id}/password`, mailboxViewSchema, { method: "POST", body });
-      toast.success(
-        t(mailbox.status === "auth_error" && view.status === "active" ? "password_saved_active" : "password_saved")
-      );
+      const wasStopped = mailbox.status === "auth_error" || mailbox.status === "host_blocked";
+      toast.success(t(wasStopped && view.status === "active" ? "password_saved_active" : "password_saved"));
       setPassword("");
       onSaved(view);
       onOpenChange(false);
