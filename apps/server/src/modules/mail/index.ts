@@ -1,4 +1,11 @@
-export { checkMailbox, type CheckDeps, type CheckOptions, type CheckReport } from "./check";
+export {
+  checkMailbox,
+  inspectMailbox,
+  type CheckDeps,
+  type CheckOptions,
+  type CheckReport,
+  type MailboxInspection,
+} from "./check";
 export {
   buildFolderMap,
   connectMailbox,

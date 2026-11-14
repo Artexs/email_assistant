@@ -6,11 +6,12 @@ import type { SecretBox } from "../../platform/crypto";
 import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 
+import { checkMailboxHosts, type HostCheck } from "./host-status";
 import { openImapProvider, type ImapConnectOptions } from "./imap/client";
 import { probeHeaderSearch, probeSentAutosave, withCleanupNotes } from "./imap/probe";
 import type { SmtpConnectOptions } from "./imap/smtp";
 import type { MailCapabilities, MailFolder } from "./port";
-import { getCredentials, getMailbox } from "./repo";
+import { getCredentials, getMailbox, mailboxStatusSchema, type MailboxStatus } from "./repo";
 
 export interface CheckReport {
   capabilities: MailCapabilities;
@@ -30,6 +31,14 @@ export interface CheckOptions {
   probe: boolean;
   sentTimeoutMs?: number;
   pollMs?: number;
+}
+
+export interface MailboxInspection {
+  status: MailboxStatus;
+  statusChangedAt: Date;
+  hosts: { imap: HostCheck; smtp: HostCheck };
+  /** Null: a host is not "allowed", and the check made no connection. */
+  report: CheckReport | null;
 }
 
 function folderWith(folders: MailFolder[], specialUse: string): MailFolder | undefined {
@@ -108,4 +117,24 @@ export async function checkMailbox(
     report.notes.push(`the probe mail "EA probe ${probeId}" is in INBOX (and Sent if saved); delete it by hand`);
   }
   return report;
+}
+
+// Read-only: the status, the host guard on both hosts and, only when both pass, the capability report.
+export async function inspectMailbox(
+  deps: CheckDeps,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: CheckOptions
+): Promise<MailboxInspection> {
+  const mailbox = await getMailbox(deps.db, ctx, mailboxId);
+  if (mailbox === undefined) throw new HardError("mailbox not found");
+  const hosts = await checkMailboxHosts(mailbox);
+  const report =
+    hosts.imap === "allowed" && hosts.smtp === "allowed" ? await checkMailbox(deps, ctx, mailboxId, opts) : null;
+  return {
+    status: mailboxStatusSchema.parse(mailbox.status),
+    statusChangedAt: mailbox.status_changed_at,
+    hosts,
+    report,
+  };
 }

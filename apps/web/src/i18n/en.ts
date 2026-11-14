@@ -60,6 +60,10 @@ export const en = {
   tf_error_expired: "The sign-in step expired. Sign in again.",
   tf_error_locked: "Too many wrong codes. Try again in 15 minutes.",
   tf_error_state: "Two-factor sign-in has a problem. Use a backup code or ask the operator to reset it.",
+  tf_qr_label: "QR code for your authenticator app",
+  tf_error_password: "Wrong password.",
+  tf_error_break_glass:
+    "You are the break-glass owner of your organization, so two-factor sign-in stays on. Ask the operator to choose another break-glass owner first.",
   // setup
   setup_title: "Set your password",
   new_password_label: "New password",

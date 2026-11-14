@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { pl } from "../i18n/pl";
-import { cleanBackupCode, cleanTotpCode, codeStepError } from "./two-factor-errors";
+import { accountTwoFactorError, cleanBackupCode, cleanTotpCode, codeStepError } from "./two-factor-errors";
 
 describe("codeStepError", () => {
   test("maps each error to its key and restart choice", () => {
@@ -32,6 +32,37 @@ describe("codeStepError", () => {
     });
     expect(codeStepError({ status: 500, code: "SOMETHING_ELSE" })).toEqual({ key: "error_generic", restart: false });
     expect(codeStepError({})).toEqual({ key: "error_generic", restart: false });
+  });
+});
+
+describe("accountTwoFactorError", () => {
+  test("maps each error to its field and key", () => {
+    expect(accountTwoFactorError(null)).toBeNull();
+    expect(accountTwoFactorError(undefined)).toBeNull();
+    expect(accountTwoFactorError({ status: 429, code: "INVALID_PASSWORD" })).toEqual({
+      field: null,
+      key: "error_too_many",
+    });
+    expect(accountTwoFactorError({ status: 400, code: "INVALID_PASSWORD" })).toEqual({
+      field: "password",
+      key: "tf_error_password",
+    });
+    expect(accountTwoFactorError({ status: 401, code: "INVALID_CODE" })).toEqual({
+      field: "code",
+      key: "tf_error_code",
+    });
+    expect(accountTwoFactorError({ status: 400, code: "BREAK_GLASS_NEEDS_TWO_FACTOR" })).toEqual({
+      field: null,
+      key: "tf_error_break_glass",
+    });
+    for (const code of ["TOTP_ALREADY_ENABLED", "TWO_FACTOR_NOT_ENABLED", "TOTP_NOT_ENABLED"]) {
+      expect(accountTwoFactorError({ status: 400, code })).toEqual({ field: null, key: "tf_error_state" });
+    }
+    expect(accountTwoFactorError({ status: 500, code: "SOMETHING_ELSE" })).toEqual({
+      field: null,
+      key: "error_generic",
+    });
+    expect(accountTwoFactorError({})).toEqual({ field: null, key: "error_generic" });
   });
 });
 

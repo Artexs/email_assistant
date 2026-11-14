@@ -1,26 +1,32 @@
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 
-import { afterAll, describe, expect, spyOn, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import { ImapFlow } from "imapflow";
 import type { Transaction } from "kysely";
 
 import {
   checkMailbox,
+  configureMailHosts,
   connectMailbox,
+  inspectMailbox,
   openImapProvider,
   renderSeedMessage,
+  setMailboxStatus,
   verifySmtpLogin,
   type ImapConnectOptions,
+  type LookupAll,
 } from "../../src/modules/mail";
 import { connectImapClient } from "../../src/modules/mail/imap/client";
 import { probeHeaderSearch, probeSentAutosave } from "../../src/modules/mail/imap/probe";
 import { appendRaw } from "../../src/modules/mail/imap/tools";
+import { insertCredentials, insertMailbox } from "../../src/modules/mail/repo";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { DB, Db, TenantContext } from "../../src/platform/db";
 
+import { createOrgWithMailbox, testCapabilities } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 // Needs the local GreenMail (bun run dev:up). Auth is off: any password logs in.
@@ -281,15 +287,102 @@ describe("probeSentAutosave", () => {
   });
 });
 
+describe("inspectMailbox", () => {
+  // The preload (`bunfig.toml`) allows local hosts for GreenMail: put that policy back after each test.
+  afterEach(() => {
+    configureMailHosts({ allowLocal: true });
+  });
+
+  const opts = { probe: false };
+
+  // Records the names it gets, and answers one address per name.
+  function recordingLookup(answers: Record<string, string>): { lookup: LookupAll; names: string[] } {
+    const names: string[] = [];
+    const lookup: LookupAll = async (name) => {
+      names.push(name);
+      return [{ address: answers[name] as string, family: 4 }];
+    };
+    return { lookup, names };
+  }
+
+  test("1: a refused IMAP host and an allowed SMTP host give no report and no connection", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId, mailboxId } = await createOrgWithMailbox(trx);
+      const { lookup, names } = recordingLookup({ "imap.x.test": "10.0.0.7", "smtp.x.test": "93.184.216.34" });
+      configureMailHosts({ allowLocal: false, lookup });
+
+      const inspection = await inspectMailbox({ db: trx, secrets }, { orgId }, mailboxId, opts);
+
+      expect(inspection).toMatchObject({ status: "active", hosts: { imap: "refused", smtp: "allowed" }, report: null });
+      // A connect would resolve a host again: two names mean no connect attempt.
+      expect(names).toEqual(["imap.x.test", "smtp.x.test"]);
+    });
+  });
+
+  test("2: a host_blocked mailbox shows its status and time, and the row stays as it was", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId, mailboxId } = await createOrgWithMailbox(trx);
+      const at = new Date("2026-11-14T11:00:00Z");
+      await setMailboxStatus(trx, { orgId }, mailboxId, "host_blocked", at);
+      const before = await trx
+        .selectFrom("mailboxes")
+        .selectAll()
+        .where("id", "=", mailboxId)
+        .executeTakeFirstOrThrow();
+      configureMailHosts({
+        allowLocal: false,
+        lookup: recordingLookup({ "imap.x.test": "10.0.0.7", "smtp.x.test": "10.0.0.7" }).lookup,
+      });
+
+      const inspection = await inspectMailbox({ db: trx, secrets }, { orgId }, mailboxId, opts);
+
+      expect(inspection).toMatchObject({
+        status: "host_blocked",
+        hosts: { imap: "refused", smtp: "refused" },
+        report: null,
+      });
+      expect(inspection.statusChangedAt).toEqual(at);
+      const after = await trx.selectFrom("mailboxes").selectAll().where("id", "=", mailboxId).executeTakeFirstOrThrow();
+      expect(after).toEqual(before);
+    });
+  });
+
+  test("3: a failed lookup gives lookup_failed for both hosts and no report", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId, mailboxId } = await createOrgWithMailbox(trx);
+      configureMailHosts({
+        allowLocal: false,
+        lookup: async () => {
+          throw new Error("ENOTFOUND");
+        },
+      });
+
+      const inspection = await inspectMailbox({ db: trx, secrets }, { orgId }, mailboxId, opts);
+
+      expect(inspection).toMatchObject({ hosts: { imap: "lookup_failed", smtp: "lookup_failed" }, report: null });
+    });
+  });
+
+  test("4: an unknown mailbox id throws", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId } = await createOrgWithMailbox(trx);
+
+      await expect(inspectMailbox({ db: trx, secrets }, { orgId }, randomUUID(), opts)).rejects.toThrow(
+        "mailbox not found"
+      );
+    });
+  });
+});
+
 describe("mailbox:check CLI", () => {
-  function runCheck(args: string[]) {
+  function runCheck(args: string[], env: Record<string, string> = { MAIL_ALLOW_LOCAL_HOSTS: "true" }) {
     return Bun.spawn(["bun", checkScript, ...args], {
       cwd: repoRoot,
       stdin: "ignore",
       stdout: "pipe",
       stderr: "pipe",
       // Bun.spawn without `env` does not see the preload's change of process.env.
-      env: { ...process.env, MAIL_ALLOW_LOCAL_HOSTS: "true" },
+      env: { ...process.env, ...env },
     });
   }
 
@@ -306,12 +399,64 @@ describe("mailbox:check CLI", () => {
       ]);
       expect(stderr).toBe("");
       expect(code).toBe(0);
+      expect(stdout).toContain("status: active since ");
+      expect(stdout).toContain("imap-host: allowed");
+      expect(stdout).toContain("smtp-host: allowed");
+      expect(stdout.indexOf("smtp-host: allowed")).toBeLessThan(stdout.indexOf("capabilities:"));
       expect(stdout).toContain("capabilities: IDLE=yes MOVE=yes UIDPLUS=yes CONDSTORE=");
       expect(stdout).toContain("folder Drafts \\Drafts");
       expect(stdout).toContain("search-header: skipped");
       expect(stdout).toContain("smtp-saves-sent: skipped");
       expect(stdout).not.toContain(password);
       expect(stdout).not.toContain(Buffer.from(password).toString("base64"));
+    } finally {
+      await db.deleteFrom("organizations").where("id", "=", orgId).execute();
+      await db.deleteFrom("users").where("id", "=", userId).execute();
+    }
+  });
+
+  test("a host that the guard refuses: exit 2, no connection, no host name", async () => {
+    const suffix = randomUUID();
+    const { orgId, userId } = await createOrg(db, suffix);
+    try {
+      const mailboxId = randomUUID();
+      const address = `u-${suffix}@localhost`;
+      await insertMailbox(
+        db,
+        { orgId },
+        {
+          id: mailboxId,
+          address,
+          imapHost: "127.0.0.1",
+          imapPort: imapPort,
+          smtpHost: "127.0.0.1",
+          smtpPort: smtpPort,
+          capabilities: testCapabilities,
+          folderMap: {},
+        }
+      );
+      const secret = secrets.encrypt("check-pw", `mailbox:${mailboxId}`);
+      await insertCredentials(
+        db,
+        { orgId },
+        { mailboxId, encryptedSecret: secret.ciphertext, secretKind: "password", keyVersion: secret.keyVersion }
+      );
+
+      const proc = runCheck(["--org-id", orgId, "--mailbox-id", mailboxId], { MAIL_ALLOW_LOCAL_HOSTS: "false" });
+      const [code, stdout, stderr] = await Promise.all([
+        proc.exited,
+        new Response(proc.stdout).text(),
+        new Response(proc.stderr).text(),
+      ]);
+
+      expect(stderr).toBe("");
+      expect(code).toBe(2);
+      expect(stdout).toContain("status: active since ");
+      expect(stdout).toContain("imap-host: refused");
+      expect(stdout).toContain("smtp-host: refused");
+      expect(stdout).toContain("the host guard refuses a mail server of this mailbox: no connection");
+      expect(stdout).not.toContain("capabilities:");
+      expect(stdout).not.toContain("127.0.0.1");
     } finally {
       await db.deleteFrom("organizations").where("id", "=", orgId).execute();
       await db.deleteFrom("users").where("id", "=", userId).execute();

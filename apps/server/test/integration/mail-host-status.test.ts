@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
-import type { Transaction } from "kysely";
+import { sql, type Transaction } from "kysely";
 
 import { configureMailHosts, type LookupAll } from "../../src/modules/mail";
 import { markHostBlocked, recheckBlockedHosts } from "../../src/modules/mail/host-status";
@@ -345,6 +345,30 @@ describe("recheckBlockedHosts against a newer block", () => {
       expect(row.status).toBe("host_blocked");
       expect(row.status_changed_at).toEqual(newer);
       expect(await auditOf(trx, box.mailboxId)).toHaveLength(0);
+    });
+  });
+});
+
+describe("changeMailboxStatus with seenChangedAt", () => {
+  test("a stamp that now() wrote, with microseconds, still matches the millisecond Date the caller read", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId, mailboxId } = await createOrgWithMailbox(trx);
+      // No `at`: the stamp comes from now(). The update then gives it a fraction below a millisecond, whatever the clock said.
+      await setMailboxStatus(trx, { orgId }, mailboxId, "host_blocked");
+      await sql`UPDATE mailboxes SET status_changed_at = date_trunc('milliseconds', status_changed_at) + interval '123 microseconds' WHERE id = ${mailboxId}`.execute(
+        trx
+      );
+      const seen = (await rowOf(trx, mailboxId)).status_changed_at;
+
+      const changed = await changeMailboxStatus(trx, { orgId }, mailboxId, {
+        from: "host_blocked",
+        to: "active",
+        at: NOW,
+        seenChangedAt: seen,
+      });
+
+      expect(changed).toBe(true);
+      expect(await rowOf(trx, mailboxId)).toMatchObject({ status: "active", status_changed_at: NOW });
     });
   });
 });
