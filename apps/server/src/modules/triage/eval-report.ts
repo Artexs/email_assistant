@@ -1,4 +1,4 @@
-import { barCategories, categories, DEFAULT_MAILS_PER_DAY, llmPrices } from "@ea/core";
+import { barCategories, categories, DEFAULT_MAILS_PER_DAY, llmPrices, wilsonInterval } from "@ea/core";
 
 import type { CasesEvalReport, EvalReport } from "./eval";
 import { num, pct, table, usd } from "./eval-format";
@@ -133,6 +133,39 @@ function sharedParts(report: EvalReport): string[] {
   return lines;
 }
 
+// The draft judge of a sim run with `--judge`. Counts and rates only; `hideIds` has no id to hide here.
+function judgeParts(report: CasesEvalReport): string[] {
+  const judge = report.judge;
+  if (judge === null) return [];
+  const failedCodes = Object.entries(judge.codeFailedBy)
+    .map(([code, n]) => `${code} ${n}`)
+    .join(", ");
+  const lines: string[] = [
+    "## Draft judge",
+    "",
+    `Judge: ${judge.provider} ${judge.model}. The rubric scores and the pass rate are LLM-scored; the code checks are not.`,
+    "",
+    `Judged: ${judge.judged}, errors ${judge.errors} (a judge error is not in the other counts).`,
+    `Code checks passed: ${judge.codePassed} of ${judge.scored}${failedCodes === "" ? "" : ` (failed: ${failedCodes})`}`,
+    "",
+  ];
+  const means = Object.entries(judge.scoreMeans);
+  if (means.length > 0) {
+    lines.push(
+      ...table(
+        ["rubric item", "mean (0-2)"],
+        means.map(([name, mean]) => [name, mean.toFixed(2)])
+      )
+    );
+  }
+  const rate = judge.scored === 0 ? null : judge.passed / judge.scored;
+  lines.push(
+    `Pass: ${judge.passed} of ${judge.scored}, rate ${pct(rate)}, Wilson lower bound ${pct(judge.scored === 0 ? null : wilsonInterval(judge.passed, judge.scored).lower)}`,
+    ""
+  );
+  return lines;
+}
+
 function casesParts(report: CasesEvalReport, hideIds: boolean): string[] {
   const { whitelist, injection, blocked, delegation, usage } = report;
   const lines: string[] = [
@@ -174,6 +207,7 @@ function casesParts(report: CasesEvalReport, hideIds: boolean): string[] {
   );
   lines.push(`delegate pick: ${delegation.pick.right}/${delegation.pick.total}`);
   lines.push(`draft kind: ${delegation.draft.right}/${delegation.draft.total}`, "");
+  lines.push(...judgeParts(report));
   lines.push("## Usage", "");
   lines.push(
     `- average tokens in / out: ${num(usage.avgTokensIn)} / ${num(usage.avgTokensOut)}`,
@@ -218,6 +252,9 @@ export function evalExitCode(report: EvalReport): 0 | 1 | 2 {
       if (report.whitelist.passed < report.whitelist.total) return 1;
       if (report.injection.failedIds.length > 0) return 1;
       if (report.complete && report.errors / report.cases.length > MAX_ERROR_SHARE) return 1;
+      if (report.complete && report.judge !== null && report.judge.errors / report.judge.judged > MAX_ERROR_SHARE) {
+        return 1;
+      }
       return report.complete ? 0 : 2;
   }
 }

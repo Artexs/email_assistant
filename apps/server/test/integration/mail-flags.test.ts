@@ -158,6 +158,9 @@ describe("flag refresh in the sync job", () => {
         expect(lines).toHaveLength(1);
         expect(lines[0]).toContain(`mailbox_id=${box.mailboxId}`);
         expect(info.mock.calls.some((call) => call.join(" ").includes("flags_refreshed"))).toBe(false);
+        // A refresh that throws starts no finder.
+        const all = [...warn.mock.calls, ...info.mock.calls].map((call) => call.join(" "));
+        expect(all.some((line) => line.includes("user_moves"))).toBe(false);
       } finally {
         warn.mockRestore();
         info.mockRestore();
@@ -171,6 +174,99 @@ describe("flag refresh in the sync job", () => {
       const stored = await trx.selectFrom("emails").select("id").where("mailbox_id", "=", box.mailboxId).execute();
       expect(stored).toHaveLength(2);
       expect(await flagRows(trx, box.orgId)).toEqual([]);
+    });
+  });
+
+  // Interia shape: one UID counter, a webmail move keeps the UID, so a moved mail sits below the cursor of its new folder.
+  async function interiaMove(trx: Transaction<DB>) {
+    await pauseOtherMailboxes(trx);
+    const box = await addBox(trx);
+    const fake = createFakeMailProvider({
+      uidValidity: 7,
+      globalUids: true,
+      keepUidOnUserMove: true,
+      uidNextValue: 1,
+      capabilities: { move: false },
+    });
+    const internalDate = new Date(NOW.getTime() - 3_600_000);
+    const u1 = fake.deliver("INBOX", seed(1), { internalDate });
+    const u2 = fake.deliver("Oferty", seed(2), { internalDate });
+    const clock = { at: NOW };
+    const job = jobWith(trx, new Map([[box.address, fake]]), clock);
+    await job.run();
+    fake.userMove("INBOX", u1, "Oferty");
+    const rowOf1 = () =>
+      trx
+        .selectFrom("emails")
+        .select(["folder", "source_folder", "uid", "returned_at"])
+        .where("mailbox_id", "=", box.mailboxId)
+        .where("message_id_header", "=", "<m1@x.test>")
+        .executeTakeFirstOrThrow();
+    return { box, fake, clock, job, u1, u2, rowOf1 };
+  }
+
+  test("4.1: the job finds a user move below the cursor", async () => {
+    await withRollback(db, async (trx) => {
+      const t = await interiaMove(trx);
+      expect(await t.rowOf1()).toMatchObject({ folder: "INBOX", uid: String(t.u1) });
+      const info = spyOn(console, "log").mockImplementation(() => undefined);
+      try {
+        t.clock.at = new Date(NOW.getTime() + 11 * MIN);
+        await t.job.run();
+        const lines = info.mock.calls.map((call) => call.join(" ")).filter((line) => line.includes("user_moves_found"));
+        expect(lines).toHaveLength(1);
+        expect(lines[0]).toContain("count=1");
+      } finally {
+        info.mockRestore();
+      }
+      expect(await t.rowOf1()).toMatchObject({
+        folder: "Oferty",
+        source_folder: "Oferty",
+        uid: String(t.u1),
+        returned_at: null,
+      });
+    });
+  });
+
+  test("4.3: a finder error is one warning; the sync result and the refresh stay", async () => {
+    await withRollback(db, async (trx) => {
+      const t = await interiaMove(trx);
+      t.fake.failOn("fetchByUidsIn", new SoftError("lost connection"));
+      const warn = spyOn(console, "error").mockImplementation(() => undefined);
+      const info = spyOn(console, "log").mockImplementation(() => undefined);
+      const later = new Date(NOW.getTime() + 11 * MIN);
+      try {
+        t.clock.at = later;
+        await t.job.run();
+        const failed = warn.mock.calls
+          .map((call) => call.join(" "))
+          .filter((line) => line.includes("user_moves_failed"));
+        expect(failed).toHaveLength(1);
+        expect(failed[0]).toContain(`mailbox_id=${t.box.mailboxId}`);
+        expect(warn.mock.calls.some((call) => call.join(" ").includes("flags_refresh_failed"))).toBe(false);
+        expect(info.mock.calls.some((call) => call.join(" ").includes("flags_refreshed"))).toBe(true);
+      } finally {
+        warn.mockRestore();
+        info.mockRestore();
+      }
+      const mailbox = await trx
+        .selectFrom("mailboxes")
+        .select("last_synced_at")
+        .where("id", "=", t.box.mailboxId)
+        .executeTakeFirstOrThrow();
+      expect(mailbox.last_synced_at).toEqual(later);
+      expect(await t.rowOf1()).toMatchObject({ folder: "INBOX" });
+    });
+  });
+
+  test("4.4: a run that does not refresh does not search", async () => {
+    await withRollback(db, async (trx) => {
+      const t = await interiaMove(trx);
+      const calls = t.fake.folderCalls.length;
+      t.clock.at = new Date(NOW.getTime() + 2 * MIN);
+      await t.job.run();
+      expect(await t.rowOf1()).toMatchObject({ folder: "INBOX" });
+      expect(t.fake.folderCalls.slice(calls).some((call) => call.method === "fetchByUidsIn")).toBe(false);
     });
   });
 
@@ -230,6 +326,7 @@ describe("refreshFlags", () => {
         written: 2,
         notFound: 0,
         mismatch: 0,
+        gone: [],
       });
 
       await fake.setFlags("INBOX", uid1, { add: ["\\Flagged"] });
@@ -240,6 +337,7 @@ describe("refreshFlags", () => {
         written: 1,
         notFound: 1,
         mismatch: 0,
+        gone: [expect.objectContaining({ emailId: m1, folder: "INBOX", uid: uid1 })],
       });
       expect(await getEmailFlags(trx, ctx, m1)).toMatchObject({ flagged: false, checkedAt: NOW });
     });
@@ -256,7 +354,7 @@ describe("refreshFlags", () => {
       await trx.updateTable("emails").set({ uid: uid2 }).where("id", "=", m1).execute();
 
       const result = await refreshFlags({ db: trx, provider: fake, now: () => NOW }, ctx, box.mailboxId);
-      expect(result).toEqual({ checked: 1, written: 0, notFound: 0, mismatch: 1 });
+      expect(result).toEqual({ checked: 1, written: 0, notFound: 0, mismatch: 1, gone: [] });
       // Nothing of the other mail's flags is written; the row only says "tried, flags unknown" (N1).
       expect(await getEmailFlags(trx, ctx, m1)).toMatchObject({
         seen: false,
@@ -338,7 +436,13 @@ describe("refreshFlags", () => {
       const run = (n: number) =>
         refreshFlags({ db: trx, provider: fake, now: () => at(n), runLimit: 1 }, ctx, box.mailboxId);
 
-      expect(await run(0)).toEqual({ checked: 1, written: 0, notFound: 1, mismatch: 0 });
+      expect(await run(0)).toEqual({
+        checked: 1,
+        written: 0,
+        notFound: 1,
+        mismatch: 0,
+        gone: [expect.objectContaining({ emailId: gone, uid: 999 })],
+      });
       expect(await getEmailFlags(trx, ctx, live)).toBeUndefined();
       expect(await getEmailFlags(trx, ctx, gone)).toMatchObject({
         answered: false,
@@ -347,7 +451,7 @@ describe("refreshFlags", () => {
       });
 
       // The gone mail was tried, so the live mail is the head now and gets its first check.
-      expect(await run(1)).toEqual({ checked: 1, written: 1, notFound: 0, mismatch: 0 });
+      expect(await run(1)).toEqual({ checked: 1, written: 1, notFound: 0, mismatch: 0, gone: [] });
       expect(await getEmailFlags(trx, ctx, live)).toMatchObject({
         answered: true,
         firstAnsweredAt: at(1),

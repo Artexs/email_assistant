@@ -40,6 +40,8 @@ function result(id: string, expected: Category, finalCategory: Category, over: P
     delegatePick: null,
     draftKind: null,
     draftMatches: null,
+    judge: null,
+    judgeUsage: null,
     ...over,
   };
 }
@@ -111,6 +113,7 @@ function report(over: Partial<CasesEvalReport> = {}): CasesEvalReport {
     injection: { passed: 0, total: 1, failedIds: ["case-inj1"] },
     blocked: { total: 0, ids: [] },
     delegation: { pick: { right: 0, total: 0 }, draft: { right: 0, total: 0 } },
+    judge: null,
     usage: {
       avgTokensIn: 500,
       avgTokensOut: 40,

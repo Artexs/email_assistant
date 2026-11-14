@@ -56,15 +56,15 @@ Short form. The task file has the full text of each decision.
 - The pipeline rule 1 of `docs/architecture.md` is now: the system reads INBOX and the synced folders of `mailbox_folders`.
   It never reads `AI/*`, Sent, Drafts, Trash or the user's own folders.
 - **Known limits (D24).** The system does not fix them in this change.
-  - (a) A return into a synced folder that is not the row's source, below that folder's cursor, is not seen (Interia keeps the UID).
+  - (a) A return into a synced folder that is not the row's source, below that folder's cursor, is not seen (Interia keeps the UID). Fixed for mail received in the last 30 days by the move finder (`apps/server/src/modules/mail/moves.ts`).
   - (b) A mail that the user moves between two synced folders in the seconds between two passes of one run is not stored.
   - (c) After a user move out of `Oferty` into INBOX, the Undo is a COPY into INBOX, which Interia sorts back.
   - (d) After a code rollback, the old code ends a `ready` move `{ folder: "inbox" }` as `bad_payload` and sends an Undo of `Oferty` mail to INBOX.
     An Undo of a rescue ends `applied` with no IMAP change, and the mail stays in INBOX.
   - (e) `mailbox:audit` shows a cross copy as `cross`, not as `missing`.
-  - (f) A spam folder mail that the user moves into INBOX by hand keeps its UID, so it is below the INBOX cursor. The row keeps the old folder; the mail is fine.
+  - (f) A spam folder mail that the user moves into INBOX by hand keeps its UID, so it is below the INBOX cursor. The row keeps the old folder; the mail is fine. Fixed for mail received in the last 30 days by the move finder (`apps/server/src/modules/mail/moves.ts`).
   - (g) A user move between two synced folders, of a mail that the system did not move, is not seen when its UID is below the target cursor.
-    The row keeps its old folder, and an action on it ends `mail_not_found`. Follow-up: `spec/features/planned/F064-sync-return-to-other-folder/plan.md` (covers (a) and (g)).
+    The row keeps its old folder, and an action on it ends `mail_not_found`. Fixed for mail received in the last 30 days by the move finder (`apps/server/src/modules/mail/moves.ts`).
   - (i) A rescue that goes back to `ready` and then expires (`expireStaleReady`, or `mailbox:settings switch --name move --value off`) keeps `undo_pending_at` for up to 24 h.
     The sync stores no copy of that mail meanwhile. Rare; accepted.
   - (h) The Interia SEARCH misses a mail that its sorter moved after a COPY. A locate without a UID hit, `fetchSince` and `mailbox:audit` do not see it.

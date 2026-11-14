@@ -45,7 +45,14 @@ export type {
   UnlabeledResult,
   UsageRow,
 } from "./repo";
-export { evalStateFileName, parseCaseResults, runEval, toClassifierInput, toPrediction } from "./eval";
+export {
+  delegateAddress as evalDelegateAddress,
+  evalStateFileName,
+  parseCaseResults,
+  runEval,
+  toClassifierInput,
+  toPrediction,
+} from "./eval";
 export { firstEstimateUsd } from "./eval-pool";
 export type { CaseResult, CaseUsage, CasesEvalReport, EvalReport, EvalReportBase, RealEvalReport } from "./eval";
 export { goNoGoFor, realGoNoGoRows, setCategoryAutoWithGate } from "./gate";
@@ -54,6 +61,8 @@ export { buildRealPredictions, buildRealReport } from "./eval-real";
 export { GapInputError, gateFileError, realCounts, realCountsSchema, renderGap } from "./eval-gap";
 export type { RealCounts } from "./eval-gap";
 export { evalExitCode, renderEvalReport } from "./eval-report";
+export { judgeDraft, judgePassed } from "./judge";
+export type { JudgeResult } from "./judge";
 export {
   buildGateFile,
   gateFileName,
