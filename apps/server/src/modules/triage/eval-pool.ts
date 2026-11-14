@@ -14,6 +14,9 @@ export interface EvalBudget {
   onSpend?(usd: number): void;
 }
 
+// The waits between the tries of one soft-failed call: a case, and the judge pass of a case, use the same list.
+export const RETRY_WAITS_MS = [10_000, 20_000, 40_000, 60_000];
+
 export const BUDGET_STOP_REASON = "budget cap reached: resume after the cap allows it";
 
 const FIRST_ESTIMATE_TOKENS = { in: 2000, out: 300 };
@@ -37,6 +40,8 @@ interface PoolResult {
   id: string;
   source: "llm" | "rule";
   usage: CaseUsage | null;
+  // A second call of the same case (the draft judge). Its cost counts like the first call's.
+  judgeUsage?: CaseUsage | null;
   errorCode: string | null;
 }
 
@@ -66,6 +71,8 @@ export async function runPool<C extends { id: string }, R extends PoolResult>(in
   now: Date;
   // A case that ends without an LLM call (a rule) never stops the run for budget.
   usesLlm(c: C): boolean;
+  // True when the case counts as an error for the stop rule. Default: the result has an error code.
+  endedInError?(result: R): boolean;
   run(c: C, attempts: AttemptHooks): Promise<R>;
   onResult?(result: R): Promise<void>;
 }): Promise<PoolOutcome<R>> {
@@ -91,12 +98,18 @@ export async function runPool<C extends { id: string }, R extends PoolResult>(in
     if (isNew) budget?.onSpend?.(usd);
   };
 
-  const costOf = (result: PoolResult): number => {
-    if (budget === undefined) return 0;
-    if (result.usage === null) return 0;
-    const cost = budget.callCostUsd(result.usage, input.now);
+  // A cost that is unknown, NaN or infinite is charged at the estimate; a negative cost counts as zero.
+  const callCost = (usage: CaseUsage, budgetOf: EvalBudget): number => {
+    const cost = budgetOf.callCostUsd(usage, input.now);
     if (cost === null || !Number.isFinite(cost)) return estimate();
     return Math.max(0, cost);
+  };
+  const costOf = (result: PoolResult): number => {
+    if (budget === undefined) return 0;
+    return (
+      (result.usage === null ? 0 : callCost(result.usage, budget)) +
+      (result.judgeUsage == null ? 0 : callCost(result.judgeUsage, budget))
+    );
   };
 
   const results = new Map<string, R>();
@@ -157,7 +170,7 @@ export async function runPool<C extends { id: string }, R extends PoolResult>(in
         newCostSum += cost;
         newCostCount += 1;
       }
-      if (result.errorCode !== null) errorsInRow += 1;
+      if (input.endedInError?.(result) ?? result.errorCode !== null) errorsInRow += 1;
       else if (result.source === "llm") errorsInRow = 0;
       await input.onResult?.(result);
     }

@@ -17,6 +17,7 @@ import { sendHeldDetector } from "./send-held";
 import { sendResultDetector } from "./send-result";
 import { SYNC_LATE_MS, syncDetector } from "./sync";
 import { urgentDetector } from "./urgent";
+import { weeklyReportDetector } from "./weekly-report";
 
 export { queueMailboxRemovedNotices } from "./mailbox-removed";
 export { SYNC_LATE_MS };
@@ -35,13 +36,13 @@ export const detectors: readonly Detector[] = [
   sendResultDetector,
   sendHeldDetector,
   delegationAnsweredDetector,
+  weeklyReportDetector,
 ];
 
 // Kinds that a producer outside the detector list queues.
 export const queuedBy = {
   digest: "channels/digest-job.ts",
   mailbox_removed: "channels/notices/mailbox-removed.ts",
-  weekly_report: "channels/notices/weekly-report.ts (stage 17)",
 } as const satisfies Partial<Record<NoticeKind, string>>;
 
 async function detectForOrg(deps: NoticeDeps, orgId: string, members: LinkedChat[], now: Date): Promise<void> {

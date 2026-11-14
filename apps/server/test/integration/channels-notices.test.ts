@@ -7,7 +7,7 @@ import { listSendLimitHolds, SENT_COPY_PENDING_MAX_AGE_MS } from "../../src/modu
 import { auditEvents, recordAudit } from "../../src/modules/audit";
 import { detectNotices } from "../../src/modules/channels";
 import { insertSenderRule } from "../../src/modules/config";
-import { ensureSyncFolders } from "../../src/modules/mail";
+import { ensureSyncFolders, NO_TEST_SENDERS } from "../../src/modules/mail";
 import { insertMailbox, markSynced, type MailboxStatus } from "../../src/modules/mail/repo";
 import { setOrgFeature } from "../../src/modules/tenancy";
 import type { DB, TenantContext } from "../../src/platform/db";
@@ -88,7 +88,7 @@ async function org(trx: Transaction<DB>): Promise<Org> {
 }
 
 async function run(trx: Transaction<DB>, startedAt = at(-HOUR)): Promise<void> {
-  await detectNotices({ db: trx, now: () => T, startedAt });
+  await detectNotices({ db: trx, now: () => T, startedAt, testMail: NO_TEST_SENDERS });
 }
 
 async function setStatus(trx: Transaction<DB>, o: Org, status: MailboxStatus, changedAt?: Date): Promise<void> {
@@ -1454,7 +1454,12 @@ describe("send_held notices", () => {
   const LIMIT_ERROR = "send_limit:mailbox_hour";
 
   async function runAt(trx: Transaction<DB>, now: Date): Promise<void> {
-    await detectNotices({ db: trx, now: () => now, startedAt: new Date(now.getTime() - HOUR) });
+    await detectNotices({
+      db: trx,
+      now: () => now,
+      startedAt: new Date(now.getTime() - HOUR),
+      testMail: NO_TEST_SENDERS,
+    });
   }
 
   // An approved send that waits on a limit (or on `lastError`) until `nextAttemptAt`.
@@ -1697,7 +1702,12 @@ describe("after a resume (D4)", () => {
   }
 
   async function runAt(trx: Transaction<DB>, now: Date): Promise<void> {
-    await detectNotices({ db: trx, now: () => now, startedAt: new Date(now.getTime() - HOUR) });
+    await detectNotices({
+      db: trx,
+      now: () => now,
+      startedAt: new Date(now.getTime() - HOUR),
+      testMail: NO_TEST_SENDERS,
+    });
   }
 
   test("no sync-late row in the first 30 minutes after the resume; one after, unless the sync is fresh", async () => {

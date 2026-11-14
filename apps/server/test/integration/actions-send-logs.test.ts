@@ -160,7 +160,12 @@ describe("send logs", () => {
             .set({ status_changed_at: new Date(T0.getTime() - 24 * HOUR) })
             .where("id", "=", mailboxId)
             .execute();
-          await detectNotices({ db: trx, now: () => clock, startedAt: new Date(T0.getTime() - 24 * HOUR) });
+          await detectNotices({
+            db: trx,
+            now: () => clock,
+            startedAt: new Date(T0.getTime() - 24 * HOUR),
+            testMail: NO_TEST_SENDERS,
+          });
         };
         // `except`: the fixture inserts a `sent` request row for the stale send; the notifier did not queue it.
         const outboxIds = async (kind: string, except = "") =>

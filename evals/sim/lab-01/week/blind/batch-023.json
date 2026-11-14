@@ -1,0 +1,306 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-023",
+  "cases": [
+    {
+      "id": "w-4-089",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Kursy online z marketingu - 80% zniżki dla pierwszych 50 osób",
+      "body": "Szanowni Państwo,\n\nchcą Państwo zarabiać w internecie bez wychodzenia z domu? Nasz kurs online uczy, jak w 30 dni zbudować dochodowy biznes w mediach społecznościowych. Ponad 8 000 absolwentów, certyfikat ukończenia i dostęp do nagrań na zawsze.\n\nPierwsze 50 osób płaci tylko 199 zł zamiast 990 zł. Wystarczy odpowiedzieć na tę wiadomość i podać numer telefonu do kontaktu z doradcą.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-090",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie subskrypcji alertów o cenach kart",
+      "body": "Subskrypcja alertów potwierdzona\n\nTo jest automatyczna wiadomość serwisu cen paliw. Subskrypcja alertów o zmianach cen kart paliwowych dla adresu wiktor.szalewski@kordelan.test została potwierdzona 28.01.2027 o godzinie 13:16.\n\nZakres alertów: opłaty za obsługę kart, rabaty flotowe\nCzęstotliwość: raz w tygodniu, w czwartek\nPierwszy alert: 04.02.2027\nStatus: aktywna\n\nZakres i częstotliwość alertów zmienisz w ustawieniach konta czytelnika. Ta wiadomość została wygenerowana automatycznie i nie wymaga odpowiedzi.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-091",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wynajem sal konferencyjnych w Sopocie - promocja dla firm",
+      "body": "Szanowni Państwo,\n\norganizujecie szkolenie, konferencję lub spotkanie zespołu? Wynajmij nowoczesną salę w Sopocie z pełnym wyposażeniem. Oferujemy sale od 10 do 200 osób, z projektorem, nagłośnieniem i cateringiem. Przy rezerwacji do końca tygodnia dajemy rabat 35% i bezpłatny parking dla uczestników.\n\nWystarczy odpowiedzieć na ten mail, a nasz doradca zadzwoni w ciągu godziny. Sale są dostępne od poniedziałku do soboty, a w pakiecie dla firm oferujemy także tłumaczenia symultaniczne i profesjonalną obsługę techniczną na miejscu.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-092",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Twoje powiadomienia o cenach paliw: zmiana częstotliwości",
+      "body": "Zmiana częstotliwości powiadomień\n\nSerwis cen paliw zapisał nową wartość ustawienia. Częstotliwość powiadomień o cenach oleju napędowego została zmieniona z codziennej na tygodniową. Zmianę zapisano 28.01.2027 o godzinie 13:22.\n\nKonto: wiktor.szalewski@kordelan.test\nProdukt: olej napędowy\nPoprzednia częstotliwość: codziennie\nNowa częstotliwość: raz w tygodniu\nStatus: zapisano\n\nJeśli nie wprowadzałeś tej zmiany, zaloguj się na konto czytelnika i zmień ustawienia. Wiadomość wygenerowano automatycznie.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-093",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Reklamacja - potrzebujemy Pana odpowiedzi dziś do 15:00",
+      "body": "Szanowny Panie Prezesie,\n\ndzisiejsza dostawa do naszego centrum w Radomiu miała 8 uszkodzonych palet z jogurtami, a kierowca odmówił podpisania protokołu szkody. Sklepy regionu są zaopatrywane z tego centrum jutro od 5:00 rano.\n\nPotrzebuję Pana decyzji dzisiaj do godziny 15:00, czy Kordelan wysyła zastępczą dostawę jeszcze dziś wieczorem. Jeśli nie dostanę potwierdzenia do 15:00, zamawiam towar zastępczy u innego dostawcy, a kosztami obciążę Państwa.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-094",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Your competitors are already using this - get 10,000 leads free",
+      "body": "Hello,\n\nYour competitors already use our lead database to double their sales. Today we give you 10,000 verified leads for free, just to prove how good our data is. No contract, no card needed.\n\nReply with the word YES and we will send the first batch within one hour. The offer is valid for the first 20 companies only.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-095",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie przelewu na rachunek zagraniczny",
+      "body": "Przelew zagraniczny zrealizowany\n\nPrzelew SEPA z rachunku firmowego został wysłany do odbiorcy. Kwota: 4 200,00 EUR. Data: 28.01.2027. Status: wysłano.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-096",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Posiedzenie rady - pytanie o politykę dywidendy",
+      "body": "Szanowny Panie Prezesie,\n\nprzygotowując porządek posiedzenia rady nadzorczej na 3.02.2027, zauważyłem, że w projekcie budżetu nie ma jednoznacznego zapisu o polityce dywidendy za 2026 rok. Rada zapyta o to na pewno, bo akcjonariusze oczekują jasnego stanowiska zarządu przed zatwierdzeniem sprawozdania.\n\nChciałbym zapytać Pana wprost: jaką część zysku za 2026 rok zarząd zamierza wnioskować do wypłaty w formie dywidendy, a jaką zatrzymać na inwestycje w flotę? Interesuje mnie Pana osobiste stanowisko w tej sprawie, a nie opinia działu finansowego. Jeżeli zarząd nie ma jeszcze jednej propozycji, proszę o wskazanie wariantów, które rozważa Pan z pierwszeństwem.\n\nRada oczekuje od zarządu jasnej informacji, bo od stanowiska w sprawie dywidendy zależy także ocena ryzyka związanego z zadłużeniem spółki po zakupie floty. Dodatkowo proszę o krótkie uzasadnienie, jak ten wybór wpływa na zaplanowany kredyt na zakup naczep. Rada będzie dyskutować oba tematy łącznie, więc zależy mi na spójnej odpowiedzi.\n\nChodzi mi także o to, aby wersje liczbowe, które Pan przedstawi, były zgodne z tabelą w projekcie budżetu, ponieważ rozbieżności w tej sprawie rada traktuje bardzo poważnie. Odpowiedź proszę przekazać mi mailem przed posiedzeniem, najlepiej w ciągu kilku dni, żebym mógł uwzględnić ją w przygotowanych materiałach.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-097",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Dodatkowi brygadziści w Łodzi - Twoja decyzja",
+      "body": "Cześć Wiktorze,\n\nw Łodzi mamy dwie otwarte zmiany nocne bez brygadzisty i dyrektor magazynu prosi o zwiększenie zatrudnienia o dwie osoby. To dodatkowy koszt około 19 tysięcy złotych miesięcznie, którego nie ma w budżecie.\n\nCzy zgadzasz się na dwa dodatkowe etaty brygadzistów w Łodzi od marca? Potrzebuję Twojej odpowiedzi, bo to Twoja decyzja budżetowa, a nie moja.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-099",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Kandydat na kierownika magazynu - zgoda na wynagrodzenie do 15:00",
+      "body": "Cześć Wiktorze,\n\nfinalista na kierownika magazynu w Poznaniu ma inną ofertę i musi dać odpowiedź do 16:00 dzisiaj. Proponuje wynagrodzenie 21 tysięcy brutto, czyli o 2 tysiące więcej, niż mamy w widełkach. Potrzebuję Twojej zgody do godziny 15:00, żebym zdążył przygotować ofertę na piśmie. Jeśli jej nie dostanę, kandydat odejdzie do konkurencji, a rekrutację zaczynamy od nowa, co zajmie około trzech miesięcy.\n\nCzy mogę złożyć mu ofertę na 21 tysięcy?\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-100",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Delivery windows: our new unloading schedule from February",
+      "body": "Dear Mr Szalewski,\n\nfor your information, we have changed the unloading schedule at our central warehouse in Gothenburg. The changes start on 02.02.2027 and apply to all inbound shipments from Poland.\n\nThe new unloading windows are Monday to Friday from 07:00 to 11:00 and from 13:00 to 16:00. On Saturdays, we receive only pre-booked pallets for chilled products. Trucks that arrive outside the booked window wait until the next free gate, so the earlier booking process, which your dispatchers know from the previous months, continues to apply.\n\nThe gate capacity has also been increased. We now have six gates in the morning shift instead of four, and this should reduce the average waiting time for trucks from about 90 minutes to under 40. Our logistics team reports that the first results of the test period in January were positive, with 94 percent of trucks unloaded within the booked window.\n\nPlease note that the loading ramp number 5 is closed for maintenance until the end of February. Trucks with chilled goods are directed to ramps 1 to 3, which are closer to the cold store. Our team will mark the new route on the gate signs.\n\nWe share this information so that your planning team has the current picture. No action is needed on your side.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-101",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Hamburg customs - quick update",
+      "body": "Hi Wiktor,\n\njust so you know, the Hamburg containers got released this morning, the agent finished the extra paperwork late yesterday. Goods are on the way to Gdynia, should be there on friday. No extra charges from the port, only the 3k guarantee we already knew about.\n\nNordic is informed and happy, Karin sent a thank you note to the team.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-102",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Partners' meeting 5.02 in Gdansk - confirmed",
+      "body": "Dear Mr Szalewski,\n\nthank you for confirming that you will join the partners' meeting in Gdansk in person on 5 February. The room is booked, and I am writing to share the current plan so that you have the full picture.\n\nThe meeting starts at 10:00 and ends at 15:30. The agenda has four parts: the review of the joint tenders from the last quarter, the results of the prequalification for the Baltic tender, the new split of the work between our two companies, and the plan for the next twelve months. A working lunch is planned for 13:00.\n\nOur team will bring a one-page summary of the open tenders, with the expected values and the dates of the decisions. We expect three of our partners from Riga and Tallinn, and two people from the Kordelan export team will join the part about customs procedures. Hotel rooms for our guests are reserved by our office, so you do not need to arrange anything.\n\nIf the schedule changes, I will let you know. There is nothing further for you to do at this stage.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "daniel.hargreaves@baltic-freight-partners.test",
+          "subject": "Spotkanie wspólników 5.02 w Gdańsku",
+          "body": "Szanowny Panie Prezesie,\n\nczy weźmie Pan udział w spotkaniu wspólników 5.02 w Gdańsku? Proszę o odpowiedź pisemną.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners"
+        },
+        {
+          "from": "daniel.hargreaves@baltic-freight-partners.test",
+          "subject": "Re: Spotkanie wspólników 5.02 w Gdańsku",
+          "body": "Dear Mr Szalewski,\n\nFollowing up on my note about the partners' meeting in Gdansk on 5.02: I must confirm the room by Friday. Will you join in person or by video? A written answer is enough.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-4-103",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Your monthly account statement for January 2027 is ready",
+      "body": "Monthly statement\n\nThis is an automatic message from your bank. The statement for your main company account for January 2027 is ready in your online banking.\n\nAccount: main company account\nStatement period: 01.01.2027 to 31.01.2027\nOpening balance: available in the statement\nTotal debits: 1,284,310.40 PLN\nTotal credits: 1,361,925.10 PLN\nNumber of operations: 412\nFees charged in the period: 189.00 PLN\nInterest credited: 0.00 PLN\nStatus: available\n\nThe statement is available in PDF format and in the format for accounting software. You can download it in online banking in the section statements and documents. Statements are stored for ten years, and you can ask for a paper copy at your branch at any time.\n\nPlease check the statement and report any inconsistencies to the bank within 14 days from the date of this message, as set out in the account terms. After this period, the statement is considered accepted. Information about the exchange rates used for foreign currency operations is included on the last page of the document.\n\nThis message was generated automatically. Please do not reply to it. For questions about your account, contact the helpline for business customers.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-104",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rozmowy z finalistami - wpis do kalendarza",
+      "body": "Cześć Wiktorze,\n\npoproś Dorotę Wilczyńską, żeby wpisała do Twojego kalendarza rozmowy z finalistami: 4 i 5.02.2027, po 2 godziny rano.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-105",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Board calendar for February and March",
+      "body": "Dear Mr Szalewski,\n\nI would like to inform you about the calendar of the supervisory board for the next two months, so that you can plan your own schedule in good time. The dates below are final and were agreed with all members on Tuesday.\n\nThe main session of the board takes place on 3 February at 10:00 in the headquarters. The audit committee meets on the same day at 08:00, before the main session. The next ordinary session is planned for 3 March, also at 10:00, and the session with the external auditor is fixed for 24 March at 14:00.\n\nTwo events outside the regular sessions are also planned. The first is the visit of the board to the Poznan warehouse in the second half of February, and the second is the investor dinner in Vienna on 5 February. I will confirm the exact details of both events separately, as soon as the organisers send their final programmes.\n\nAll members have received the invitations with the dates, and the secretary of the council keeps the calendar up to date. This message is for your information only, and I do not expect an answer.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-106",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Payment received: receipt for your subscription",
+      "body": "Payment receipt\n\nThis is an automatic receipt from the Supply Chain Weekly billing system. We have received your payment, and your subscription is now active until the end of the paid period.\n\nReceipt number: SCW-R-48213\nDate of payment: 28.01.2027\nAccount: wiktor.szalewski@kordelan.test\nPlan: Professional, annual\nAmount paid: 349.00 EUR\nPayment method: company card ending 4417\nStatus: paid\n\nYour invoice will be sent to the billing contact of the account within two business days. The invoice shows the amount without tax and the tax amount separately, as required for companies in the European Union. It also shows the VAT number of your company, which we took from the billing contact stored on the account, and the full address of the billing entity. Corrections to these data are possible until the invoice is issued.\n\nYou can download the receipt, change the billing contact or update the payment method in the account settings. If you did not make this payment, please change your password and contact our billing support through the account page. This message was generated automatically and replies to this address are not read.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-107",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Spare parts order approved: handheld scanners",
+      "body": "Purchase order approved\n\nA purchase order was approved in the ERP system.\n\nDocument number: PO/2027/0155\nSupplier: Scanner Parts Ltd\nItems: batteries and docking stations for handheld scanners, 20 pieces\nNet value: 3,980.00 PLN\nApproved on: 28.01.2027, 14:40\nApproved by: operations director\nStatus: approved\n\nThe order was sent to the purchasing department for processing. This message was generated automatically by the ERP system. Please do not reply to it.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-108",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "New user account created in the warehouse management system",
+      "body": "User account created\n\nA new user account was created in the warehouse management system.\n\nUser: temporary shift supervisor, Lodz site\nRole: shift supervisor\nAccess: receiving module, picking module, reports\nCreated on: 28.01.2027, 14:58\nCreated by: system administrator\nStatus: active\n\nThe account expires on 28.02.2027 unless it is extended by the site manager. This message was generated automatically by the ERP system. Please do not reply to it.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-109",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie przelewu SEPA na rachunek dostawcy",
+      "body": "Przelew SEPA wysłany\n\nBank przyjął do realizacji Twoje zlecenie przelewu SEPA z rachunku firmowego.\n\nOdbiorca: Trailerwerk Sued GmbH\nTytuł: Zaliczka na naczepy, faktura zaliczkowa\nKwota: 33 000,00 EUR\nData wysłania: 28.01.2027, 15:00\nStatus: wysłano do banku odbiorcy\n\nŚrodki zostaną uznane na rachunku odbiorcy zwykle do końca następnego dnia roboczego, a w razie opóźnienia bank powiadomi o tym w historii operacji. Pełne potwierdzenie jest dostępne w historii operacji. To jest automatyczne powiadomienie banku. Prosimy na nie nie odpowiadać.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-110",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Targi Ślubne w Warszawie - stoisko dla wystawców 25% taniej",
+      "body": "Szanowni Państwo,\n\nzapraszamy do udziału w Targach Ślubnych, które odbędą się w marcu w Warszawie. Spodziewamy się ponad 10 tysięcy odwiedzających, którzy szukają usług dla przyszłych małżonków: sal weselnych, fotografów, zespołów muzycznych i cateringu.\n\nPrzy rezerwacji stoiska do końca lutego oferujemy rabat 25% na powierzchnię wystawienniczą. W pakiecie wpis do katalogu, dwa bilety na galę i bezpłatny parking dla wystawców.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-111",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Operator kart obniża opłatę za kartę dodatkową",
+      "body": "Jeden z największych operatorów kart paliwowych obniżył od 1.02.2027 opłatę za kartę dodatkową z 8 do 6 zł miesięcznie. Pozostałe opłaty pozostają bez zmian.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-112",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zgłoszenie WMS INC-2802 zamknięte",
+      "body": "Zgłoszenie zamknięte\n\nZgłoszenie w systemie magazynowym zostało zamknięte.\n\nNumer zgłoszenia: INC-2802\nLokalizacja: magazyn Poznań, strefa kompletacji\nOpis: kolejka wydruku etykiet zablokowana, etykiety przewozowe niedostępne\nRozwiązanie: wyczyszczono kolejkę i uruchomiono ponownie usługę drukowania\nZgłaszający: kierownik zmiany w Poznaniu\nData zamknięcia: 28.01.2027, 15:05\nStatus: rozwiązane\n\nCzas rozwiązania: 17 minut. Nie wystąpiły straty ani opóźnienia wysyłek. Wiadomość została wygenerowana automatycznie przez system ERP Kordelan i nie wymaga odpowiedzi.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-113",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Hamburg containers: update from our side",
+      "body": "Dear Mr Szalewski,\n\nfor your information, the agent in Hamburg confirmed that both containers left the port terminal this morning. The customs documents were accepted without further queries, and the guarantee was released on the same day.\n\nThe trucks are expected at your warehouse in Gdynia on Friday morning. We will send the delivery confirmation after the unloading.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}

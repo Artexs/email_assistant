@@ -261,6 +261,11 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 - The Telegram answer words live in `packages/core/src/digest/answers.ts`. The web keeps its own keys in `en.ts` (every string stays there for S6), and `lib/activity-text.test.ts` ties each key to the core function (S5d, B2). Change a Telegram answer: the test fails until `en.ts` follows.
 - A web feature behind a flag reads `me.features` (`/api/me`); the server route checks `isFeatureOn` too and answers 404 when it is off.
 
+## Metrics
+
+- A Stage 2 metric has one definition: a pure function in `packages/core/src/metrics/` over plain rows, a field in `weekStatsSchema`, and a reader in the module that owns its table. The weekly report, the stats route, `stats:week` and the E2b week scorer call the same function. A new metric or a new source of rows (E5 loops, E6 drafts) adds to these three places; it never computes a metric in a route, a renderer or a script.
+- `apps/server/src/modules/reports/metrics.ts` (`weekStats`, `recentWeekStats`) is the only service that joins the readers. The page cells (`apps/web/src/lib/stats-view.ts`) only format numbers.
+
 ## Capability map (PD-009)
 
 - A change that lands a feature or changes behaviour updates `docs/capabilities/<capability>.md` in the same change; once E10a exists, a user-visible change also updates its user doc page (en) (PD-100).

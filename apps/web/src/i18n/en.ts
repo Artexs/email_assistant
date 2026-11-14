@@ -573,6 +573,7 @@ export const en = {
   stats_evidence: "{percent}% of {kept} (≥ {lower}%)",
   stats_evidence_auto: "{percent}% of {kept} (≥ {lower}%) · auto",
   stats_evidence_few: "{kept} of {min} rated mails needed",
+  stats_evidence_few_auto: "{kept} of {min} rated mails needed · auto",
   stats_m1: "Missed important mail (lower bound)",
   stats_m1_sample: "Random review sample: missed",
   stats_m2_closed: "Delegations closed on time",

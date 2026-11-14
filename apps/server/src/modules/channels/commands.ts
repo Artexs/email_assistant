@@ -195,6 +195,7 @@ export async function digestNowMessage(deps: CommandDeps, link: LinkedChat): Pro
     slot: null,
     now,
     locale: link.locale,
+    testMail: deps.testMail,
   });
 }
 

@@ -1,0 +1,336 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-022",
+  "cases": [
+    {
+      "id": "w-4-064",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rekrutacje: stan na koniec stycznia",
+      "body": "Cześć Wiktorze,\n\nkrótko o stanie rekrutacji na koniec stycznia. Na stanowisko kierownika zmiany w Poznaniu mamy czterech kandydatów po drugiej rozmowie, a w Łodzi dwóch. Dyspozytor transportu w Gdyni zaczyna pracę 1.03.2027, umowa jest już podpisana. Rekrutacja na stanowiska magazynierów w Łodzi trwa i zgłosiło się do tej pory 52 osoby.\n\nWszystkie procesy idą zgodnie z planem, a budżet na rekrutacje jest wykorzystany w 40 procentach.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-065",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Domki nad morzem na lato 2027 - rezerwacja z rabatem 25%",
+      "body": "Szanowni Państwo,\n\nczy planujecie wypoczynek rodzinny w lecie? Mamy dla Państwa wyjątkową ofertę: domki letniskowe nad Bałtykiem, kilkaset metrów od plaży, z pełnym wyposażeniem, tarasem i miejscem parkingowym. Przy rezerwacji do końca lutego oferujemy rabat 25% na każdy turnus i bezpłatne anulowanie do 30 kwietnia.\n\nW ofercie są domki dla czterech, sześciu i ośmiu osób, w Łebie, Dąbkach, Mielnie i Jastrzębiej Górze. Każdy domek ma kuchnię, telewizor satelitarny, bezpłatny internet i rowery dla gości. Dla dzieci przygotowaliśmy plac zabaw, a dla dorosłych strefę grillowania i sauny.\n\nZarezerwuj teraz, a otrzymasz w prezencie bon na obiad dla całej rodziny w restauracji rybnej przy plaży. Zamówienia przyjmujemy do wyczerpania miejsc, a dostępność jest już mocno ograniczona, ponieważ mamy ponad 300 zgłoszeń z poprzedniego sezonu.\n\nWystarczy odpowiedzieć na tę wiadomość i podać termin wyjazdu oraz liczbę osób. Nasz doradca zadzwoni, aby potwierdzić rezerwację i przedstawić szczegóły płatności. Zaliczka wynosi 30 procent wartości pobytu i jest płatna z góry.\n\nDomki są w pełni ubezpieczone, a obsługa gości czynna jest całą dobę. Dla grup powyżej piętnastu osób przygotowujemy też indywidualne pakiety z wyżywieniem i wycieczkami, a w razie złej pogody oferujemy bezpłatny dostęp do basenu. Czekamy na Państwa!\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-066",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Bonus dla klientów: 5 groszy zniżki na litr po aktywacji konta",
+      "body": "Szanowni Państwo,\n\nw ramach programu dla stałych klientów oferujemy 5 groszy zniżki na każdy litr paliwa tankowany kartami naszej sieci przez najbliższe sześć miesięcy. Oferta nie wymaga umowy i jest dostępna tylko do końca tygodnia.\n\nAby ją aktywować, wystarczy kliknąć przycisk poniżej i zalogować się na konto firmy, podając numer karty oraz dane do logowania do bankowości. Po aktywacji zniżka jest naliczana automatycznie przy każdym tankowaniu, bez dodatkowych formalności. Program obejmuje wszystkie stacje naszej sieci w kraju, a rozliczenie następuje na fakturze miesięcznej.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-067",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Boost your sales with 100k fresh leads",
+      "body": "Hello,\n\nGet 100,000 fresh business leads for just 99 EUR. Order today and receive a free SEO audit.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-068",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Tygodniowy raport awarii systemu magazynowego",
+      "body": "Raport tygodniowy\n\nTo jest automatyczny raport systemu ERP z awarii i zgłoszeń systemu magazynowego (WMS) za okres od 21.01.2027 do 27.01.2027.\n\nLiczba zgłoszeń: 31\nZgłoszenia zamknięte: 28\nZgłoszenia otwarte: 3\nŚredni czas rozwiązania: 2 godziny 30 minut\nZgłoszenia z wpływem na wysyłki: 2\n\nZgłoszenia według magazynu\nŁódź: 17 zgłoszeń, w tym awaria synchronizacji skanerów INC-2704\nPoznań: 9 zgłoszeń, głównie błędy drukarek etykiet\nGdynia: 5 zgłoszeń, brak aktualizacji statusów palet\n\nZgłoszenia według kategorii\nSkanery i urządzenia mobilne: 12\nDrukarki i etykiety: 9\nInterfejsy z systemami przewoźników: 6\nUprawnienia użytkowników: 4\n\nUwagi do danych\nRaport obejmuje wszystkie zgłoszenia wpisane do tablicy serwisowej w podanym okresie. Czas rozwiązania liczy się od pierwszego przyjęcia zgłoszenia przez zespół wsparcia do jego zamknięcia. Zgłoszenia otwarte przechodzą do raportu z następnego tygodnia. Wartości dla Łodzi są wyższe niż w poprzednim tygodniu z powodu awarii z 26.01.2027, a pozostałe magazyny utrzymują wyniki z poprzednich tygodni. Dane o zgłoszeniach z wpływem na wysyłki zawierają opóźnienia dłuższe niż jedna zmiana robocza.\n\nRaport jest wysyłany automatycznie w czwartki o godzinie 10:50 do członków zarządu i dyrektorów operacyjnych. Wiadomość została wygenerowana przez system ERP Kordelan i nie wymaga odpowiedzi.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-069",
+      "from": "Magdalena Czerniak <magdalena.czerniak@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Rada jutro - dokumenty finansowe",
+      "body": "Cześć Wiktor,\n\ntak, zestawienie kosztów floty z grudnia jest w repozytorium rady i zgadza się z kwotą w budżecie.\n\nMagdalena Czerniak | Glowna Ksiegowa | Dzial Finansow",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Rada jutro - dokumenty finansowe",
+          "body": "Cześć Magdalena,\n\njutro posiedzenie rady, więc chcę mieć pewność co do kompletności materiałów. Zbigniew pisał, że komitet audytu zamknął przegląd budżetu, a repozytorium rady zawiera już dane za grudzień.\n\nNapisz mi krótko, czy zestawienie kosztów floty z grudnia jest tam wgrane i czy zgadza się z kwotą w budżecie. Wystarczy jedno zdanie, tak lub nie. Jeśli coś się nie zgadza, opisz to potem, nie spieszę się z szczegółami.\n\nWiktor"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-4-070",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Przetarg - aktualny cennik do oferty",
+      "body": "Szanowny Panie Prezesie,\n\nkomisja przetargowa poprosiła o aktualny cennik usług, który ma być załącznikiem do oferty. Proszę, aby Piotr Lewandrowski przygotował zaktualizowany cennik stawek za paletę i za dodatkowe dostawy według oferty przetargowej i przesłał go do mojego sekretariatu do piątku 30.01.2027.\n\nCennik musi być zgodny z ofertą, którą Państwo złożyli, bez nowych pozycji. Pan Piotr zna dokumenty, bo uczestniczył w negocjacjach.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-071",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Rozliczenie delegacji do Wilna - potwierdzenie",
+      "body": "Cześć Wiktorze,\n\npotwierdzam, że zwrot kosztów z podróży do Wilna wpłynął na moje konto. Magdalena Czerniak rozliczyła faktury hotelowe w dwa dni, więc wszystko jest załatwione.\n\nDla Twojej wiadomości: w przyszłym tygodniu będę w Krakowie, a w kalendarzu rady na luty są już dwie daty spotkań, 3.02 i 24.02. Szczegóły podróży ustalam sam z asystentką rady.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Rozliczenie delegacji do Wilna",
+          "body": "Panie Wiktorze,\n\nproszę, aby Magdalena Czerniak rozliczyła faktury hotelowe z mojej zeszłotygodniowej podróży do Wilna i przesłała mi potwierdzenie zwrotu kosztów."
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-4-072",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Po posiedzeniu rady - zadania organizacyjne",
+      "body": "Szanowny Panie Prezesie,\n\ndziękuję za jednostronicowe podsumowanie nowego systemu magazynowego, które dotarło do członków rady na czas. Jest ono bardzo pomocne przy dzisiejszej dyskusji o inwestycjach i pozwoli członkom rady lepiej zrozumieć, dlaczego nakłady na system są potrzebne.\n\nMam prośbę o pomoc organizacyjną po dzisiejszym posiedzeniu. Proszę, aby Dorota Wilczyńska przygotowała projekt protokołu z posiedzenia i rozesłała go do wszystkich członków rady do piątku 30.01.2027, razem ze zeskanowaną listą obecności. Proszę też, żeby zarezerwowała salę na następne posiedzenie 3.03.2027, na 14 osób, od godziny 10:00, wraz z kawą i lunchem dla uczestników.\n\nDodatkowo dwóch członków rady spoza Warszawy prosiło o pomoc w rezerwacji noclegu na noc przed posiedzeniem. Pani Dorota ma ich dane z poprzedniego spotkania, więc wystarczy, że prześle im propozycję hotelu w pobliżu biura i poczeka na potwierdzenie.\n\nNie ma pośpiechu przy rezerwacji sali, ale protokół chciałbym mieć możliwie szybko, ponieważ członkowie rady zgłaszają uwagi zwykle w ciągu tygodnia. Resztę spraw proszę zostawić po mojej stronie. Jeżeli sala na 3.03.2027 nie jest dostępna, w porządku jest też 4.03 w tych samych godzinach, a o wyborze wystarczy mnie poinformować po fakcie.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Posiedzenie rady 28.01 - szczegóły organizacyjne",
+          "body": "Szanowny Panie Prezesie,\n\nprzekazuję krótką informację organizacyjną przed jutrzejszym posiedzeniem rady nadzorczej. Wiadomość ma charakter informacyjny.\n\nSekretarz rady potwierdził, że posiedzenie odbędzie się w sali konferencyjnej na drugim piętrze siedziby w Gdyni, a nie na pierwszym piętrze, jak podano wcześniej. Rejestracja członków rady rozpocznie się o 9:30, a obrady o 10:00. Dla członków dołączających zdalnie przygotowano połączenie wideo, które zostanie uruchomione 15 minut przed rozpoczęciem.\n\nDo porządku obrad dodano jeden punkt: informację o stanie wdrożenia nowego systemu magazynowego. Prezentacja zarządu na ten temat ma trwać nie dłużej niż dziesięć minut. Pozostałe punkty pozostają bez zmian: sprawozdanie z wyników roku, budżet na 2027, wspólne przetargi i sprawy bieżące.\n\nPrzerwa w obradach zaplanowana jest po drugim punkcie i potrwa pół godziny. Po zakończeniu obrad członkowie rady zjedzą wspólny lunch w restauracji w budynku, a organizacją zajmie się sekretariat. Samochody gości mogą zostać zaparkowane na parkingu podziemnym, z którego można wejść bezpośrednio na piętro.\n\nZarząd nie musi składać wcześniej dodatkowych dokumentów, a członkowie rady otrzymają je w formie papierowej na miejscu, jeśli nie pobrali ich z repozytorium.\n\nProtokół z posiedzenia zostanie przygotowany w ciągu trzech dni roboczych i przesłany wszystkim członkom rady oraz zarządowi.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej"
+        },
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Re: Posiedzenie rady 28.01 - szczegóły organizacyjne",
+          "body": "Dear Mr Szalewski,\n\nplease send me by 14:00 today your one-page summary on the new warehouse system. The secretary sends the printed pack to all members at 15:00, and later additions will not be included."
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-4-073",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Targi Rowerowe i Turystyczne - zostań wystawcą z rabatem 20%",
+      "body": "Szanowni Państwo,\n\nzapraszamy do udziału w Targach Rowerowych i Turystycznych, które odbędą się w maju w Poznaniu. To najlepsza okazja, aby zaprezentować produkty dla miłośników aktywnego wypoczynku. W tym roku spodziewamy się ponad 25 tysięcy odwiedzających.\n\nPrzy zgłoszeniu do końca lutego oferujemy rabat 20% na wynajem powierzchni oraz bezpłatny wpis do katalogu wystawców. Wystarczy odpowiedzieć na tę wiadomość.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-074",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Brakujące palety - numer protokołu",
+      "body": "Szanowny Panie Prezesie,\n\nnumer protokołu rozładunku z Poznania to PR-2027-118, zapisany przez kierownika naszego magazynu 22.01.2027. Wszystkie trzy brakujące palety dotarły do nas w poniedziałek dodatkową dostawą, więc sprawa jest zamknięta po naszej stronie. Nie mamy już uwag do tej dostawy, a nasz dział jakości zamknął odpowiednią notatkę. Dziękuję za sprawną pomoc Państwa dyspozytorów, którzy przekazali nam informację o trasie dodatkowej dostawy jeszcze tego samego dnia.",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Brakujące palety - krótkie pytanie",
+          "body": "Szanowna Pani Prezes,\n\ndziękuję za informację o brakujących paletach w Poznaniu. Czy mogłaby Pani krótko potwierdzić numer protokołu rozładunku? Wystarczy jedno zdanie.\n\nWiktor Szalewski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-4-075",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie wysyłki biuletynu",
+      "body": "Biuletyn wysłany\n\nBiuletyn branżowy z 28.01.2027 został wysłany. Wiadomość automatyczna.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-076",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Digest preferences saved",
+      "body": "Preferences saved\n\nYour digest preferences were saved on 28.01.2027. Automatic message.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-077",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Przegląd kart paliwowych - prośba o umówienie spotkania",
+      "body": "Szanowny Panie Prezesie,\n\njak co roku proponujemy spotkanie przeglądowe dotyczące kart paliwowych, limitów i cennika na 2027 rok. Spotkanie potrwa około godziny i może odbyć się w Państwa biurze lub online.\n\nUprzejmie proszę o przekazanie sprawy Dorocie Wilczyńskiej, aby umówiła z nami termin w drugiej połowie lutego, najlepiej we wtorek lub w czwartek po południu. Przygotujemy zestawienie zużycia paliwa za 2026 rok oraz propozycję nowych rabatów.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-078",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Aktualizacja regulaminu serwisu cen paliw",
+      "body": "Zmiana regulaminu\n\nTo jest automatyczna wiadomość dla użytkowników serwisu cen paliw i kart paliwowych. Od 1.02.2027 obowiązuje nowy regulamin serwisu.\n\nZmiany obejmują zasady korzystania z alertów cenowych, limit eksportów danych (do dziesięciu miesięcznie) oraz informacje o przetwarzaniu danych użytkowników. Korzystanie z serwisu po tej dacie oznacza akceptację nowych zasad.\n\nPełny tekst regulaminu znajdziesz w ustawieniach konta czytelnika. Wiadomość wygenerowano automatycznie.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-079",
+      "from": "System ERP Kordelan <mailer-daemon@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Undelivered Mail Returned to Sender: Karty paliwowe - limity",
+      "body": "To jest automatyczna wiadomość serwera pocztowego.\n\nNie udało się dostarczyć Twojej wiadomości o temacie \"Karty paliwowe - limity na luty\" do adresata: e.marszalek@paliwa-flota.test. Serwer odbiorcy zwrócił błąd 550: adres nie istnieje. Wiadomość nie została dostarczona.\n\nWiadomość została wysłana 28.01.2027 o godzinie 12:07. Sprawdź pisownię adresu odbiorcy i spróbuj wysłać wiadomość ponownie. Adresat i temat zostały odnotowane w dzienniku serwera. Jeżeli problem się powtarza, skontaktuj się z administratorem poczty.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-080",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Reminder: scheduled maintenance of the warehouse system on 30.01",
+      "body": "Maintenance reminder\n\nThis is an automatic reminder about the scheduled maintenance of the warehouse management system.\n\nDate: 30.01.2027\nTime: 22:00 to 02:00\nScope: update of the receiving module, all sites\nImpact: the system is not available, the warehouses work in manual mode\nStatus: scheduled\n\nA short instruction for manual work was sent to the site managers. This message was generated automatically by the ERP system. Please do not reply to it.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-081",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nowy pracownik działu HR",
+      "body": "Cześć Wiktorze,\n\nod 2.02.2027 do zespołu HR dołącza nowa specjalistka ds. rekrutacji.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-082",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wizyta delegacji w Gdańsku - prośba o organizację",
+      "body": "Szanowny Panie Prezesie,\n\ndwóch naszych specjalistów od odpraw celnych chce odwiedzić Państwa biuro w Gdańsku w dniach 17 i 18 lutego, żeby omówić wspólne procedury dokumentów.\n\nUprzejmie proszę o przekazanie sprawy Dorocie Wilczyńskiej, aby zarezerwowała salę na dwa dni od godziny 9:00 i dwa pokoje hotelowe w pobliżu biura. Dane naszych specjalistów prześlemy jej bezpośrednio, gdy tylko potwierdzi Pan zgodę na wizytę.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-083",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Warehouse system: nightly backup completed",
+      "body": "Backup completed\n\nThe nightly backup of the warehouse management system finished on 28.01.2027 at 03:10. Status: completed. Size: 41 GB.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-084",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Bazy mailingowe 60% taniej - tylko do jutra",
+      "body": "Szanowni Państwo,\n\nPaństwa firma może dotrzeć do tysięcy nowych klientów dzięki naszym bazom mailingowym. Oferujemy zweryfikowane adresy menedżerów z branży transportowej, handlowej i produkcyjnej, w cenie 60% niższej niż u konkurencji. Oferta obowiązuje tylko do jutra.\n\nZamów pakiet startowy 10 000 adresów za jedyne 390 zł i odbierz bezpłatną konsultację marketingową. Płatność przelewem po otrzymaniu faktury, a dostęp do bazy w ciągu godziny od zamówienia.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-085",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana trasy kontenera - zgoda do 14:00 dzisiaj",
+      "body": "Szanowny Panie Prezesie,\n\nstatek z kontenerem dla Nordic Foods Trade zmienił rozkład i zawinie do Gdyni dzień wcześniej. Nasz agent może przekierować kontener na wcześniejszy slot odprawy, ale potrzebuję Pana zgody dzisiaj do godziny 14:00, bo o tej porze agent zamyka rezerwacje na jutro.\n\nJeśli nie otrzymam zgody do 14:00, kontener czeka na następny slot dopiero w poniedziałek, a Nordic Foods Trade naliczy nam karę za opóźnienie wynoszącą około 1 200 euro za dzień. Zmiana slotu nie kosztuje dodatkowo.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-086",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Raport końcowy z incydentu INC-2704: awaria synchronizacji skanerów",
+      "body": "Raport końcowy z incydentu\n\nTo jest automatyczny raport końcowy z incydentu w systemie magazynowym. Raport został wygenerowany po zamknięciu zgłoszenia.\n\nNumer zgłoszenia: INC-2704\nLokalizacja: magazyn Łódź, strefa przyjęć\nPoczątek incydentu: 26.01.2027, 20:10\nKoniec incydentu: 27.01.2027, 17:28\nCzas przestoju przyjęć: 3 godziny 10 minut\nPriorytet: średni\nZgłaszający: kierownik magazynu w Łodzi\nStatus: zamknięty\n\nPrzebieg\nPo aktualizacji usługi synchronizacji skanerów w poniedziałek wieczorem moduł przyjęć przestał odbierać dane z urządzeń mobilnych. Zespół wsparcia WMS zidentyfikował błąd w konfiguracji kolejki komunikatów, a następnie uruchomił usługę ponownie. Dokumenty przyjęć wprowadzone ręcznie w czasie przestoju zostały zaksięgowane w nocnym przetwarzaniu.\n\nWpływ\nOpóźnione przyjęcia: 22 dokumenty\nWstrzymane wysyłki: 0\nStraty towarowe: brak\nReklamacje klientów: brak\n\nDziałania zapobiegawcze\nDodano monitorowanie kolejki komunikatów oraz alert dla zespołu wsparcia. Zespół przygotował też krótką instrukcję postępowania na wypadek podobnej awarii, którą otrzymają kierownicy magazynów. Test odtworzenia usługi przeprowadzono na środowisku testowym i zakończył się powodzeniem. Analiza przyczyn została zakończona, a zgłoszenie zostało zamknięte po akceptacji kierownika zespołu wsparcia. Kolejna aktualizacja modułu przyjęć jest zaplanowana na 30.01.2027.\n\nRaport jest wysyłany automatycznie po zamknięciu zgłoszenia o priorytecie średnim lub wyższym. Wiadomość została wygenerowana przez system ERP Kordelan i nie wymaga odpowiedzi.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-087",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Umowa sprzedaży i cennik na 2027 - stan uzgodnień",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że nasz zarząd zatwierdził cennik na 2027 rok w wersji uzgodnionej z Państwa koordynatorem sprzedaży. Stawki za transport płyt meblowych zostały podniesione o 3,5 procent, a bonusy za wolumen powyżej 400 palet miesięcznie pozostają bez zmian.\n\nPodpisaną umowę prześlemy pocztą kurierską do końca tygodnia, a skan wyślemy mailem jeszcze dzisiaj. To jest tylko informacja o stanie uzgodnień.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-088",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Trip to Brussels in March",
+      "body": "Hi Wiktor,\n\nthe supervisory board is invited to a conference in Brussels on 12 and 13 March, and I think you should come with me. Could you ask Dorota Wilczynska to check the flights from Gdansk, book two seats in business class for the morning of 11 March, and find a hotel near the conference venue for three nights?\n\nShe can send me the options by the end of next week, and I will confirm what I choose.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}

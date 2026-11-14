@@ -1,0 +1,313 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-017",
+  "cases": [
+    {
+      "id": "w-3-094",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Automatyczna odpowiedź: Limity przelewów na rachunku firmowym",
+      "body": "Dziękujemy za wiadomość.\n\nDoradca klienta korporacyjnego, do którego ją skierowano, przebywa na urlopie do 02.02.2027 i w tym czasie nie odczytuje poczty. Ta odpowiedź została wysłana automatycznie, a Twoja wiadomość nie jest przekazywana dalej.\n\nW sprawach dotyczących limitów, przelewów zagranicznych i obsługi faktur skontaktuj się z całodobową infolinią dla klientów biznesowych albo napisz na adres zespołu wsparcia, który odpowiada w dni robocze w godzinach od 8:00 do 18:00. Zastępstwo za doradcę pełni zespół obsługi klientów korporacyjnych.\n\nPo powrocie doradca odpowie na wiadomości w kolejności ich otrzymania.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-095",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Gothenburg - DDP question from Karin",
+      "body": "Hi Wiktor,\n\nquick update on the DDP numbers. I spoke to our broker in Gothenburg this morning. For a standard full truck the clearance fee is about 95 EUR and the import VAT handling adds roughly 30 EUR on top. The duty itself is zero for most of our goods, so the real extra cost for us is around 125 EUR per shipment, and maybe 150 EUR when the paperwork is late.\n\nWith about 14 trucks a month to Karin that gives us roughly 1,750 EUR extra per month. The broker said he can hold this price until the end of the year. Its only a rough number, the final offer comes from him on friday.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Gothenburg - DDP question from Karin",
+          "body": "Hi Oliver,\n\nKarin asked us whether we could move the Swedish shipments to DDP from April, so Kordelan would handle the import clearance and the duty. Before I answer her, I need your numbers.\n\nCan you tell me briefly what the extra cost per shipment would be for us, including your broker's fee? A short answer by tomorrow is enough, a rough number is fine for now.\n\nWiktor"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-3-096",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie realizacji przelewu: faktura FV-2027-0114",
+      "body": "Potwierdzenie przelewu\n\nPrzelew z rachunku firmowego został zrealizowany.\n\nRachunek obciążony: główny rachunek firmowy\nOdbiorca: Trans-Opak Sp. z o.o.\nTytuł: Płatność za fakturę FV-2027-0114\nKwota: 18 450,00 PLN\nData realizacji: 27.01.2027, 14:02\nStatus: zaksięgowano\nKanał zlecenia: bankowość internetowa\n\nPełne potwierdzenie z numerem referencyjnym znajdziesz w historii operacji w bankowości internetowej. Jeśli nie zlecałeś tej operacji, skontaktuj się z infolinią banku. To jest automatyczne powiadomienie. Prosimy na nie nie odpowiadać.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-097",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Freight rates: Baltic lanes ease for the second week",
+      "body": "This week in freight\n\nContainer spot rates on the Baltic and North Sea lanes fell for the second week in a row. Road rates in Central Europe stayed flat, and diesel surcharges did not change.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-098",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Ceny oleju napędowego: stabilnie w drugim tygodniu",
+      "body": "Paliwa w skrócie\n\nŚrednia cena oleju napędowego na stacjach w kraju nie zmieniła się w porównaniu z poprzednim tygodniem. Operatorzy kart paliwowych nie zapowiadają zmian w cennikach przed lutym.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-099",
+      "from": "System ERP Kordelan <mailer-daemon@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Undelivered Mail Returned to Sender",
+      "body": "To jest automatyczna wiadomość serwera pocztowego.\n\nNie udało się dostarczyć Twojej wiadomości do adresata: biuro@hurtownia-zachod.test. Serwer odbiorcy odrzucił ją z powodu przepełnionej skrzynki (błąd 552). Wiadomość nie została dostarczona. Spróbuj wysłać ją ponownie później.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-100",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Your Supply Chain Weekly subscription renews on 03.02.2027",
+      "body": "Subscription renewal notice\n\nThis is an automatic message about your account. Your Supply Chain Weekly Professional subscription for the address wiktor.szalewski@kordelan.test will renew on 03.02.2027.\n\nPlan: Professional, annual\nAmount: 349.00 EUR\nPayment method: company card ending 4417\nRenewal date: 03.02.2027\nStatus: scheduled\nNext invoice: sent by email after payment\n\nThe charge will appear on your card statement within two business days after the renewal date. A receipt will be sent to the billing contact stored on the account. You do not need to do anything to keep your subscription active.\n\nIf you want to change the plan, update the payment method or the billing contact, or turn off automatic renewal, you can do it in the account settings before the renewal date. Changes made after that date apply from the next billing period. Cancelled subscriptions keep access to the archive and to the weekly digest until the end of the paid term, and refunds are not issued for the unused part of the term. Prices include all taxes that apply in your country of billing.\n\nThis message was generated by our billing system. Replies to this address are not read.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-101",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Exclusive fuel card offer: 12% extra discount for your fleet",
+      "body": "Dear Fleet Manager,\n\nAs a valued customer of our fuel card programme you have been selected for an exclusive 12% discount on every litre of diesel for the next 90 days. No application is needed. We only have to verify that your company details are still correct.\n\nTo activate the discount, open the secure portal button below and re-enter your company bank account details and the card administrator login. Offers that are not activated within 48 hours are cancelled and the discount goes to another company.\n\nDo not miss this chance to lower your transport costs this winter. Cards of companies that do not verify their data may be restricted.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-102",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Specjalna oferta: rabat 15% na paliwo dla Kordelan Dystrybucja",
+      "body": "Szanowni Państwo,\n\nz przyjemnością informujemy, że Państwa firma została wybrana do programu lojalnościowego dla największych klientów flotowych. W ramach programu oferujemy rabat w wysokości 15% na każdy litr oleju napędowego tankowany kartami paliwowymi przez najbliższe 120 dni. Dodatkowo zwracamy 2% wartości zakupów w formie bonusu na kolejne rozliczenie. Oferta jest ważna tylko dla wybranych firm i nie jest dostępna publicznie.\n\nAby aktywować rabat, prosimy o potwierdzenie danych rozliczeniowych i podanie numeru rachunku bankowego, na który mamy przekazywać zwroty. Potwierdzenia można dokonać, klikając przycisk w dolnej części tej wiadomości i logując się na konto administratora kart. Dane należy podać w ciągu 24 godzin od otrzymania wiadomości.\n\nFirmy, które nie potwierdzą danych w tym terminie, zostaną usunięte z programu, a ich karty paliwowe mogą zostać tymczasowo ograniczone do limitu awaryjnego. Rabat zostanie wtedy przyznany kolejnej firmie z listy oczekujących. Z uwagi na ograniczoną liczbę miejsc nie możemy przedłużyć terminu.\n\nProsimy nie przekazywać tej wiadomości innym osobom, ponieważ zawiera ona indywidualne warunki. Szczegóły programu, w tym pełną listę stacji partnerskich i zasady zwrotu bonusu, prześlemy po potwierdzeniu danych przez administratora kont. Warunki zostały przygotowane dla firm o podobnym profilu zakupów jak Państwa.\n\nDział rozliczeń programu flotowego",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-103",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Weekly digest: rates, ports and the winter capacity squeeze",
+      "body": "Good morning,\n\nHere are the main stories of the week for supply chain teams.\n\nFreight rates\n- Spot rates on the Asia to North Europe container lanes rose 4 percent after carriers cut two sailings for February.\n- Road freight rates in Central Europe stayed flat, with a small rise for refrigerated trailers on the Germany to Poland corridor.\n- Air cargo yields fell for the third week in a row as holiday volumes faded.\n\nPorts and terminals\n- Two North Sea terminals reported yard congestion after storm delays. Average container dwell time rose from 4.1 to 5.3 days.\n- A Baltic port announced extra gate hours on Saturdays until the end of March to clear a backlog of trailers.\n\nCapacity and costs\n- Several large carriers announced new emission surcharges that start in April. The amounts differ by lane, and shippers with annual contracts are mostly protected until renewal.\n- Warehouse vacancy in the main European logistics hubs stayed below 4 percent, which keeps rents high for new leases.\n- A survey of 800 shippers found that 61 percent plan to dual-source at least one key route this year.\n\nData point of the week: the average transit time from Shanghai to Rotterdam was 36 days, against 31 days a year ago.\n\nThat is all for this week. We will be back next Wednesday with the quarterly rate outlook.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-104",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Gotowe bazy e-mail firm transportowych - 70% taniej tylko dziś",
+      "body": "Szanowni Państwo,\n\noferujemy zweryfikowane bazy kontaktów do 40 000 firm z branży TSL i handlu hurtowego. Każda baza zawiera imienne adresy decydentów, a skuteczność dostarczenia gwarantujemy na poziomie 99%. Dodatkowo pozycjonujemy strony firmowe na pierwszą stronę wyszukiwarki w 7 dni.\n\nZamów dziś pakiet startowy za 490 zł zamiast 1 650 zł. Oferta kończy się o północy, a ostatnie 12 pakietów w tej cenie rozchodzi się bardzo szybko. Wystarczy odpowiedzieć na tę wiadomość, a nasz doradca przygotuje fakturę.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-105",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie zmiany ustawień subskrypcji newslettera",
+      "body": "Ustawienia subskrypcji zmienione\n\nTo jest automatyczna wiadomość systemu subskrypcji. Ustawienia newslettera dla adresu wiktor.szalewski@kordelan.test zostały zaktualizowane 27.01.2027 o godzinie 14:41.\n\nWydanie: Logistyka Dzis, wydanie tygodniowe\nDzień wysyłki: piątek\nJęzyk: polski\nStatus subskrypcji: aktywna\n\nZmiany zaczną obowiązywać od najbliższego wydania. Jeśli nie wprowadzałeś tych zmian, zmień hasło do konta czytelnika. Ta wiadomość została wygenerowana automatycznie i nie wymaga odpowiedzi.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-106",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Alert cenowy uruchomiony: olej napędowy poniżej 6,10 zł",
+      "body": "Alert cenowy\n\nUstawiony przez Ciebie alert cenowy został uruchomiony. Średnia hurtowa cena oleju napędowego spadła poniżej progu 6,10 zł za litr.\n\nProdukt: olej napędowy\nPróg alertu: 6,10 zł za litr\nAktualna cena: 6,07 zł za litr\nCzas pomiaru: 27.01.2027, 14:30\nStatus alertu: uruchomiony\n\nAlert zostanie wysłany ponownie dopiero po wzroście ceny powyżej progu. Aby zmienić lub usunąć alert, zaloguj się na konto czytelnika. Wiadomość wygenerowana automatycznie.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-107",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rekrutacja kierowników magazynu",
+      "body": "Cześć Wiktorze,\n\nkrótka informacja: w tym tygodniu zamknęliśmy pierwszy etap rekrutacji na kierowników zmian w magazynach w Poznaniu i Łodzi. Mamy 38 zgłoszeń, a rozmowy zaczynają się w przyszłym tygodniu.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-108",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Automatic reply: WMS outage at the Lodz warehouse",
+      "body": "Hello,\n\nThank you for your message. This is an automatic reply.\n\nI am out of the office from 26.01.2027 until 30.01.2027 with limited access to email, and I will not be able to read your message during this time. I will reply after my return, in the order the messages arrive.\n\nIf your message is about the warehouse management system, please note that the system administrators of the Lodz site are still working on the outage that started on Monday evening. Status updates are published every two hours on the internal service board, and the helpdesk collects all new reports about missing scans, blocked pallets and printing errors. Please do not send these reports to this mailbox, because nobody will process them until I am back.\n\nFor urgent matters that concern operations in the warehouse, please contact the duty manager of the site. The duty manager is available on every shift and can decide on manual picking procedures when the system is not available. For questions about access rights, licences and new user accounts, please write to the IT service desk.\n\nPlease note that this mailbox is checked by the automatic system only, and no person will read the messages sent during my absence before 31.01.2027.\n\nKind regards,\nKordelan ERP service mailbox",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-109",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Karty paliwowe w 2027: kto podnosi opłaty, a kto je obniża",
+      "body": "Karty paliwowe: nowe cenniki na pierwszy kwartał\n\nNa początku roku większość operatorów kart paliwowych opublikowała nowe tabele opłat. Z naszego przeglądu wynika, że różnice między ofertami są w tym roku większe niż w poprzednich latach, a o kosztach floty coraz częściej decyduje nie rabat na litrze, lecz suma drobnych opłat.\n\nOpłaty za obsługę\nDwóch z czterech największych operatorów podniosło miesięczną opłatę za kartę z 6 do 8 zł. Pozostali zostawili stawki bez zmian, ale skrócili okres bezpłatnego rozliczenia w programach flotowych z 30 do 21 dni. Dla firm z kilkudziesięcioma kartami oznacza to zauważalną różnicę w kapitale obrotowym.\n\nRabaty i bonusy\nŚredni rabat dla flot powyżej 50 pojazdów wynosi obecnie od 18 do 26 groszy na litrze, zależnie od sieci stacji. Kilku operatorów wprowadziło rabaty progowe, które rosną po przekroczeniu miesięcznego wolumenu. Branżowi doradcy przypominają, żeby przy porównaniu ofert liczyć rabat od ceny sprzed rabatu, a nie od ceny na dystrybutorze.\n\nOpłaty zagraniczne\nWzrosły prowizje za tankowanie w Niemczech i Czechach, a w Skandynawii część sieci pobiera dodatkową opłatę za transakcje w koronach. Operatorzy tłumaczą to wyższymi kosztami rozliczeń międzynarodowych.\n\nCo dalej\nUrząd regulacyjny zapowiada na marzec konsultacje dotyczące przejrzystości opłat w kartach flotowych. Szczegółowe zestawienie cenników opublikujemy w wydaniu z 7 lutego.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-110",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Informacja o szkoleniu dla nowych brygadzistów",
+      "body": "Cześć Wiktorze,\n\ninformuję, że szkolenie dla nowych brygadzistów magazynowych odbędzie się 10 i 11.02.2027. Weźmie w nim udział 12 osób.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-111",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Promocja dla flot: tańsze paliwo po potwierdzeniu danych",
+      "body": "Szanowni Państwo,\n\nnasz program flotowy przygotował dla Państwa firmy specjalną ofertę: rabat 10% na paliwo oraz zerową opłatę za obsługę kart przez najbliższe trzy miesiące. Oferta jest przeznaczona wyłącznie dla stałych klientów i nie wymaga żadnych formalności.\n\nWystarczy, że potwierdzą Państwo aktualne dane do przelewów, klikając przycisk w tej wiadomości. Po potwierdzeniu rabat zostanie naliczony automatycznie od następnego tankowania. Brak potwierdzenia w ciągu doby oznacza utratę oferty.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-112",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supply Chain Weekly: the winter capacity squeeze, in numbers",
+      "body": "Good morning,\n\nThis week's briefing on supply chains, in five points.\n\n1. Container rates: spot rates from Asia to North Europe rose 4 percent after carriers removed two February sailings. Contract rates did not move.\n2. Road freight: prices in Central Europe stayed flat. Refrigerated trailers on the Germany to Poland corridor became about 2 percent more expensive.\n3. Ports: average container dwell time at two North Sea terminals rose from 4.1 to 5.3 days after storm delays. A Baltic port added Saturday gate hours until the end of March.\n4. Surcharges: several carriers announced emission surcharges that start in April. Shippers with annual contracts are mostly protected until their renewal date.\n5. Warehousing: vacancy in the main European logistics hubs stayed below 4 percent, so rents for new leases remain high.\n\nNumber of the week: 36 days is the average transit time from Shanghai to Rotterdam, against 31 days a year ago.\n\nThe full quarterly outlook, with lane by lane forecasts and a guide to renewing annual contracts, will be published in the paid report next week. Early readers get a 20 percent discount on the report until Friday.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-113",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Board pack: your corrected budget figures are needed today",
+      "body": "Dear Mr Szalewski,\n\nI am writing about the supervisory board meeting on 03.02.2027. The auditor has told me that the board pack must be sent to all members and to his office by 18:00 today, because his team needs the full weekend before the meeting to review the budget for the new financial year.\n\nThe draft I received yesterday still contains the old assumption for fuel costs and does not show the effect of the new trailer purchase. In this form, I cannot recommend the budget to the board. I ask you to send me the corrected figures personally, with your own comment on the main risks, no later than 16:00 today. This leaves me two hours to read them and to approve the final pack.\n\nIf I do not have the figures by 16:00, I will have to remove the budget from the agenda of the meeting and propose an extraordinary session in March. The auditor has already confirmed that this would delay the approval of the credit line for the trailer purchase, and the bank will not accept the deal without it. I would like to avoid this, but I cannot send the pack without your confirmation.\n\nPlease reply as soon as you have read this message.\n\nYours sincerely,\nZbigniew Orlowicz",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-114",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Decision needed today: travel to the board dinner in Vienna",
+      "body": "Dear Mr Szalewski,\n\nthe investor dinner in Vienna on 05.02.2027 is going ahead, and the organiser needs the final list of guests today by 15:00. After that hour the table and the hotel block are released to other companies and we cannot get them back at a reasonable price.\n\nI need your personal decision: will you travel, and will you attend the dinner together with me? Please answer by 15:00 today, so that I can confirm the seats.\n\nYours sincerely,\nZbigniew Orlowicz",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-115",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Cennik na 2027 - prośba o spotkanie",
+      "body": "Szanowny Panie Prezesie,\n\nproszę, aby Dorota Wilczyńska uzgodniła z naszym biurem termin spotkania w sprawie cennika na 2027 rok. Wystarczy godzina w przyszłym tygodniu.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-116",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Uszkodzone palety - prośba o ustalenie terminu oględzin",
+      "body": "Szanowny Panie Prezesie,\n\nw ubiegłym tygodniu dostaliśmy dostawę płyt meblowych, w której 6 palet było uszkodzonych podczas transportu. Zdjęcia i protokół szkody są już u Państwa.\n\nProszę o polecenie pani Dorocie Wilczyńskiej, aby umówiła z nami termin oględzin palet w naszym magazynie w Kaliszu, najlepiej w czwartek lub w piątek. Do czasu oględzin nie rozładowujemy pozostałych palet, żeby nie utrudniać oceny szkody. Dorota ma kontakt do naszego kierownika magazynu.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-117",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Raport alertów cenowych: tydzień 5",
+      "body": "Automatyczny raport alertów\n\nTo jest wiadomość systemu alertów cenowych. W tym tygodniu uruchomiły się trzy z Twoich czterech alertów dla paliw i kart paliwowych. Poniżej znajdziesz zestawienie.\n\nAlert 1: olej napędowy, próg 6,10 zł za litr, uruchomiony 26.01.2027, cena w chwili uruchomienia 6,08 zł\nAlert 2: olej napędowy, próg 6,05 zł za litr, nie uruchomiony, najniższa cena tygodnia 6,07 zł\nAlert 3: AdBlue, próg 3,40 zł za litr, uruchomiony 27.01.2027, cena w chwili uruchomienia 3,38 zł\nAlert 4: opłata za obsługę karty, próg 8,00 zł miesięcznie, uruchomiony 27.01.2027, nowa stawka jednego z operatorów 8,00 zł\n\nWszystkie alerty z progiem w dół zostają aktywne do następnego uruchomienia. Alert, który uruchomił się raz, jest wysyłany ponownie dopiero wtedy, gdy cena wróci powyżej progu i znów go przekroczy. Dane pochodzą z hurtowych notowań i cenników operatorów publikowanych do godziny 14:00 w dniu pomiaru. Ceny na stacjach mogą się różnić, a raport nie stanowi oferty handlowej ani porady zakupowej.\n\nZmiany w alertach, progach i częstotliwości raportów możesz wprowadzić na koncie czytelnika. Raport jest wysyłany automatycznie co środę. Prosimy na tę wiadomość nie odpowiadać.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-118",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Twoje konto czytelnika: nowa opcja powiadomień",
+      "body": "Konto czytelnika\n\nNa Twoim koncie czytelnika włączono nową opcję powiadomień o zmianach cen paliw. Zmiana została zapisana 27.01.2027 o godzinie 16:44.\n\nKonto: wiktor.szalewski@kordelan.test\nOpcja: powiadomienia o zmianie cen kart paliwowych\nCzęstotliwość: raz w tygodniu\nStatus: włączona\nNajbliższy raport: środa, 03.02.2027\n\nJeśli nie włączałeś tej opcji, możesz ją wyłączyć w ustawieniach konta. Powiadomienia dotyczą tylko cen, nie zawierają treści redakcyjnych. Ta wiadomość została wygenerowana automatycznie.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}

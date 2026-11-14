@@ -1,6 +1,7 @@
 import type { LlmRole, PromptVersion } from "@ea/core";
 
 import * as classifierV2 from "./classifier-v2";
+import * as judgeV1 from "./judge-v1";
 
 /** The prompt of one role in one version; the builders differ per role. */
 export interface PromptEntry<R extends LlmRole> {
@@ -19,11 +20,16 @@ export const prompts = {
     buildSystem: classifierV2.buildSystemPrompt,
     buildUser: classifierV2.buildUserPrompt,
   },
+  judge: {
+    role: "judge",
+    version: judgeV1.PROMPT_VERSION,
+    buildSystem: judgeV1.buildSystemPrompt,
+    buildUser: judgeV1.buildUserPrompt,
+  },
 } as const satisfies { [R in LlmRole]?: PromptEntry<R> };
 
 // Roles with no prompt yet, and the epic that writes it.
 export const rolesWithoutPrompt = {
-  judge: "E2a",
   drafter: "E6a",
   extractor: "E5b",
   escalation: "E3b",
