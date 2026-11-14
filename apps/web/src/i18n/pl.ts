@@ -99,17 +99,18 @@ export const pl: Record<TextKey, string> = {
   // delete organization (F106)
   del_title: "Usuń organizację",
   del_text:
-    "To od razu usunie organizację {name} i wszystkie jej dane w aplikacji: skrzynki, wiadomości, wyniki klasyfikacji, działania, zlecenia, reguły, połączenia z Telegramem, historię i konta jej członków. Tego nie można cofnąć. Kopie zapasowe przechowują dane do czasu ich wygaśnięcia; okres podaje polityka prywatności.",
+    "To od razu usunie organizację {name} i wszystkie jej dane w aplikacji: skrzynki, wiadomości, wyniki klasyfikacji, działania, zlecenia, reguły, połączenia z Telegramem, historię i konta jej członków. Tego nie można cofnąć. Kopie zapasowe zachowują dane, dopóki nie wygasną; okres określa polityka prywatności.",
   del_imap_note:
-    "Szkice i foldery, które asystent utworzył w Twoich skrzynkach, zostaną w nich. Usuń je w programie pocztowym, jeśli ich nie chcesz.",
+    "Szkice i foldery, które asystent utworzył w Twoich skrzynkach, zostaną w nich. Usuń je w programie pocztowym, jeśli ich nie chcesz. Po usunięciu zmień hasła do skrzynek u dostawcy poczty: asystent je znał, a one nadal działają.",
   del_password_label: "Twoje hasło",
   del_confirm_label: "Wpisz nazwę organizacji, aby potwierdzić",
   del_submit: "Usuń wszystko",
-  del_deleting: "Usuwanie",
-  del_wrong_password: "Nieprawidłowe hasło.",
+  del_deleting: "Usuwanie…",
+  del_wrong_password: "Błędne hasło.",
   del_wrong_name: "Nazwa się nie zgadza.",
-  del_locked: "Zbyt wiele błędnych haseł. Spróbuj ponownie za 15 minut.",
+  del_locked: "Za dużo błędnych prób. Spróbuj ponownie za 15 minut.",
   del_failed: "Usuwanie nie powiodło się. Nic nie zostało usunięte. Spróbuj ponownie.",
+  del_failed_unknown: "Nie udało się potwierdzić usunięcia. Odśwież stronę i sprawdź, czy nadal możesz się zalogować.",
   del_done_title: "Organizacja usunięta",
   del_done_text:
     "Wszystkie dane zostały usunięte, a sesja zakończona. Zmień teraz hasła swoich skrzynek w ustawieniach dostawcy poczty: asystent je znał.",

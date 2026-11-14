@@ -22,3 +22,21 @@ export function errorText(error: unknown): TextKey {
   if (!(error instanceof ApiError)) return "error_generic";
   return (Object.hasOwn(codeTexts, error.code) ? codeTexts[error.code] : undefined) ?? "error_generic";
 }
+
+export interface DeleteError {
+  // The field that shows the text; null means the text stands for the whole form.
+  field: "password" | "name" | null;
+  key: TextKey;
+}
+
+// DELETE /api/organization (F106 stage 04). 400 `wrong_password`, 400 `wrong_name` and 429 `locked` have their own
+// text. Any other server answer (a busy 503 `internal`, a closed flag `not_found`) proves that nothing was deleted:
+// `del_failed`. An error without a server answer (a network error, an unreadable 200) does not prove it: the delete
+// may have run, so the text says to reload and check (`del_failed_unknown`).
+export function deleteError(error: unknown): DeleteError {
+  if (!(error instanceof ApiError)) return { field: null, key: "del_failed_unknown" };
+  if (error.code === "wrong_password") return { field: "password", key: "del_wrong_password" };
+  if (error.code === "wrong_name") return { field: "name", key: "del_wrong_name" };
+  if (error.code === "locked") return { field: "password", key: "del_locked" };
+  return { field: null, key: "del_failed" };
+}

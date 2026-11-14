@@ -44,7 +44,7 @@ export default function LoginPage() {
     } catch {
       store = undefined;
     }
-    const deleted = takeDeletedNotice(location.search, store);
+    const deleted = takeDeletedNotice(location.search, store, Date.now());
     if (deleted !== null) setDeletedNotice((current) => current ?? deleted);
     let active = true;
     void authClient

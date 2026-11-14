@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { ApiError } from "./api";
-import { errorText } from "./errors";
+import { deleteError, errorText } from "./errors";
 
 describe("errorText", () => {
   const cases = [
@@ -33,5 +33,25 @@ describe("errorText", () => {
 
   test("a value that is not an ApiError gives error_generic", () => {
     expect(errorText(new Error("x"))).toBe("error_generic");
+  });
+});
+
+describe("deleteError", () => {
+  test("the three codes have their text and field", () => {
+    expect(deleteError(new ApiError(400, "wrong_password"))).toEqual({ field: "password", key: "del_wrong_password" });
+    expect(deleteError(new ApiError(400, "wrong_name"))).toEqual({ field: "name", key: "del_wrong_name" });
+    expect(deleteError(new ApiError(429, "locked"))).toEqual({ field: "password", key: "del_locked" });
+  });
+
+  test("a busy 503 internal and a closed flag (not_found) prove that nothing was deleted", () => {
+    for (const caught of [new ApiError(503, "internal"), new ApiError(404, "not_found")]) {
+      expect(deleteError(caught)).toEqual({ field: null, key: "del_failed" });
+    }
+  });
+
+  test("a network error or an unreadable answer does not say that nothing was deleted", () => {
+    for (const caught of [new TypeError("fetch failed"), new SyntaxError("bad json"), "x"]) {
+      expect(deleteError(caught)).toEqual({ field: null, key: "del_failed_unknown" });
+    }
   });
 });

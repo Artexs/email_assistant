@@ -11,7 +11,8 @@ export interface MeState {
   reload: () => void;
 }
 
-const MeContext = createContext<MeState | null>(null);
+// Exported so a render test can supply `me` without the `/api/me` request.
+export const MeContext = createContext<MeState | null>(null);
 
 export function MeProvider({ children }: { children: ReactNode }) {
   const { data, error, loading, reload } = useResource(() => api("/api/me", meSchema), { pollMs: 30_000 });

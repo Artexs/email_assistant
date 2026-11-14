@@ -9,8 +9,8 @@ import {
   deleteFormReducer,
   deleteSubmitEnabled,
   emptyDeleteForm,
-  type DeleteError,
 } from "../../lib/delete-organization";
+import type { DeleteError } from "../../lib/errors";
 import { useMe } from "../shell/MeProvider";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
@@ -40,6 +40,7 @@ export function DeleteOrganization() {
         }
       },
       goTo: (url) => location.assign(url),
+      now: () => Date.now(),
     })
   );
   const [open, setOpen] = useState(false);

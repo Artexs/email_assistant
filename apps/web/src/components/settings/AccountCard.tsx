@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { getLocale, setLocale, t, useLocale, type TextKey } from "../../i18n";
 import { api } from "../../lib/api";
 import { authClient } from "../../lib/auth-client";
+import { canDeleteOrganization } from "../../lib/delete-organization";
 import { errorText } from "../../lib/errors";
 import { saveLocale } from "../../lib/locale-api";
 import { changePasswordError, signOutAllResult } from "../../lib/password-errors";
@@ -289,9 +290,11 @@ export function AccountCard() {
             <SecurityLog timeZone={me.organization.timezone} />
           </div>
         ) : null}
-        <div className="border-t pt-4">
-          <DeleteOrganization />
-        </div>
+        {me !== null && canDeleteOrganization(me) ? (
+          <div className="border-t pt-4">
+            <DeleteOrganization />
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );
