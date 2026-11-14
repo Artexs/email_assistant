@@ -34,6 +34,6 @@ export const answerTexts = {
     right: (saved, category) => (saved ? `✅ Zapisano: ${category} – dobrze.` : "Już zapisano."),
     pick: (saved) => (saved ? "Zapisano." : "Już zapisano."),
     picked: (saved, trueCategory, aiCategory) =>
-      `✏️ ${saved ? "Zapisano" : "Już zapisano"}: ${trueCategory} (propozycja AI: ${aiCategory}).`,
+      `✏️ ${saved ? "Zapisano" : "Już zapisano"} kategorię ${trueCategory} (propozycja AI: ${aiCategory}).`,
   },
 } satisfies Record<UserLocale, AnswerTexts>;

@@ -192,20 +192,20 @@ describe("Polish action phrases", () => {
   });
 
   test("a move that would happen", () => {
-    expect(describeActions([act("move", "logged", "ai_info")], jan, {}, PL)).toBe("zrobiłby: przenieść do AI/Info");
+    expect(describeActions([act("move", "logged", "ai_info")], jan, {}, PL)).toBe("zrobiłby – przenieść do AI/Info");
   });
 
   test("a move and a flag that were done use the noun form", () => {
     expect(describeActions([act("move", "applied", "ai_info"), act("flag", "applied")], jan, {}, PL)).toBe(
-      "zrobione: przeniesienie do AI/Info, oznaczenie flagą"
+      "zrobione – przeniesienie do AI/Info, oznaczenie flagą"
     );
   });
 
   test("a delegation draft names the delegate in parentheses", () => {
     expect(describeActions([delegation("ready", "d1")], jan, {}, PL)).toBe(
-      "zrobi: przygotować szkic zlecenia (wykonawca: Jan)"
+      "zrobi – przygotować szkic zlecenia (wykonawca Jan)"
     );
-    expect(describeActions([delegation("ready", "unknown")], jan, {}, PL)).toBe("zrobi: przygotować szkic zlecenia");
+    expect(describeActions([delegation("ready", "unknown")], jan, {}, PL)).toBe("zrobi – przygotować szkic zlecenia");
   });
 
   test("a send waits for approval", () => {
@@ -217,15 +217,15 @@ describe("Polish action phrases", () => {
   });
 
   test("a failed mark read", () => {
-    expect(describeAction(act("mark_read", "failed"), jan, PL)).toBe("nieudane: oznaczenie jako przeczytanej");
+    expect(describeAction(act("mark_read", "failed"), jan, PL)).toBe("nieudane – oznaczenie jako przeczytanej");
   });
 
   test("the other draft kinds and the send-limit wait", () => {
     expect(describeActions([draft("applied", "clarification")], jan, {}, PL)).toBe(
-      "zrobione: szkic pytania do nadawcy"
+      "zrobione – szkic pytania do nadawcy"
     );
     expect(describeActions([{ ...draft("ready", "reminder"), delegateId: "d1" }], jan, {}, PL)).toBe(
-      "zrobi: przygotować szkic przypomnienia (wykonawca: Jan)"
+      "zrobi – przygotować szkic przypomnienia (wykonawca Jan)"
     );
     expect(describeAction({ ...send("approved"), waiting: "send_limit" }, jan, PL)).toBe(
       "zatwierdzone, czeka: limit wysyłki"

@@ -27,7 +27,7 @@ export interface WouldDoTexts {
 const isFuture = (tense: ActionTense): boolean => tense === "would" || tense === "will";
 
 // A Polish name in parentheses avoids a case ending on a name that we cannot decline.
-const plDelegate = (name: string | null): string => (name === null ? "" : ` (wykonawca: ${name})`);
+const plDelegate = (name: string | null): string => (name === null ? "" : ` (wykonawca ${name})`);
 
 export const wouldDoTexts = {
   en: {
@@ -53,7 +53,7 @@ export const wouldDoTexts = {
     staysIn: (folder) => `stays in ${folder}`,
   },
   pl: {
-    tense: { would: "zrobiłby:", will: "zrobi:", done: "zrobione:", undone: "cofnięte:", failed: "nieudane:" },
+    tense: { would: "zrobiłby –", will: "zrobi –", done: "zrobione –", undone: "cofnięte –", failed: "nieudane –" },
     flag: (tense) => (isFuture(tense) ? "oznaczyć flagą" : "oznaczenie flagą"),
     markRead: (tense) => (isFuture(tense) ? "oznaczyć jako przeczytaną" : "oznaczenie jako przeczytanej"),
     move: (tense, folder) => {

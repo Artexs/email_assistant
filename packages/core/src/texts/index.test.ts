@@ -3,9 +3,9 @@ import { describe, expect, test } from "bun:test";
 import { textTables, textsFor } from "./index";
 
 describe("the texts registry", () => {
-  test("the hold: every locale gets English", () => {
+  test("every locale gets its own table", () => {
     expect(textsFor("en")).toBe(textTables.en);
-    expect(textsFor("pl")).toBe(textTables.en); // stage 12 of the Polish UI plan changes this case
+    expect(textsFor("pl")).toBe(textTables.pl);
     expect(textTables.pl.locale).toBe("pl");
     expect(textTables.en.locale).toBe("en");
   });
@@ -61,5 +61,28 @@ describe("the texts registry", () => {
         ? Object.entries(value).flatMap(([key, child]) => keys(child, `${path}.${key}`))
         : [path];
     expect(keys(textTables.pl, "t")).toEqual(keys(textTables.en, "t"));
+  });
+
+  // Every Polish line puts a value after at most one colon; a second label takes a dash or a plain word.
+  test("no Polish line holds two colons", () => {
+    const lines: { path: string; line: string }[] = [];
+    const collect = (path: string, value: unknown): void => {
+      if (typeof value === "string") {
+        for (const line of value.split("\n")) lines.push({ path, line });
+      } else if (Array.isArray(value)) {
+        value.forEach((item, index) => collect(`${path}[${index}]`, item));
+      } else if (typeof value === "function") {
+        for (const args of samples) {
+          if (args.length === value.length) collect(path, value(...args));
+        }
+      } else if (typeof value === "object" && value !== null) {
+        for (const [key, child] of Object.entries(value)) collect(`${path}.${key}`, child);
+      }
+    };
+    collect("pl", textTables.pl);
+    expect(lines.length).toBeGreaterThan(100);
+    for (const { path, line } of lines) {
+      expect(line.match(/:(?=\s|$)/g)?.length ?? 0, `${path}: ${line}`).toBeLessThanOrEqual(1);
+    }
   });
 });

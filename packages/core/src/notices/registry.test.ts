@@ -92,7 +92,7 @@ const sendResult = { kind: "failed", cause: "tries", code: "ETIMEDOUT", tries: 5
 interface Case {
   kind: NoticeKind;
   view: unknown;
-  // Renders with the given texts; the kinds of stage 09 and 10 still print English.
+  // Renders with the given texts.
   direct: (texts: CoreTexts) => OutMessage;
 }
 
@@ -283,11 +283,24 @@ describe("renderNotice", () => {
     });
   });
 
-  // Stage 12 of the Polish UI plan turns this case around when it drops the hold.
-  test.each(cases)("$kind: the locale does not change the text while the hold is on", (testCase) => {
+  // The digest kind stores its finished text and buttons, so its render ignores the locale.
+  test.each(cases.filter((testCase) => testCase.kind !== "digest"))(
+    "$kind: the Polish render differs from the English render",
+    (testCase) => {
+      const view = stored(testCase);
+      const pl = renderNotice(testCase.kind, view, { ...opts, locale: "pl" });
+      const en = renderNotice(testCase.kind, view, { ...opts, locale: "en" });
+      expect(pl.ok).toBe(true);
+      expect(pl).not.toEqual(en);
+      expect(en).toEqual({ ok: true, message: testCase.direct(textTables.en) });
+    }
+  );
+
+  test("the digest kind prints its stored text for both locales", () => {
+    const testCase = cases.find((entry) => entry.kind === "digest")!;
     const view = stored(testCase);
-    expect(renderNotice(testCase.kind, view, { ...opts, locale: "pl" })).toEqual(
-      renderNotice(testCase.kind, view, opts)
+    expect(renderNotice("digest", view, { ...opts, locale: "pl" })).toEqual(
+      renderNotice("digest", view, { ...opts, locale: "en" })
     );
   });
 
@@ -373,13 +386,15 @@ describe("renderNoticeEdit", () => {
     expect(message.text).toBe("📤 Send 1 reminder?\n\n✖️ Skipped 11:00: 1 rejected, 0 skipped.");
   });
 
-  test("the locale does not change the status line while the hold is on", () => {
+  test("the Polish status line differs from the English one", () => {
     const input = {
       original: "📤 Send 1 reminder?",
       outcome: "approved" as const,
       at: new Date("2026-11-13T10:00:00.000Z"),
       timeZone: "Europe/Warsaw",
     };
-    expect(renderNoticeEdit(input, { ...opts, locale: "pl" })).toEqual(renderNoticeEdit(input, opts));
+    const pl = renderNoticeEdit(input, { ...opts, locale: "pl" });
+    expect(pl.text).not.toEqual(renderNoticeEdit(input, { ...opts, locale: "en" }).text);
+    expect(pl.text.startsWith(input.original)).toBe(true);
   });
 });

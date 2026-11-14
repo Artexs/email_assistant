@@ -477,7 +477,7 @@ export const pl: Record<TextKey, string> = {
   act_pick_ai: "{category} (AI)",
   act_pick_help: "Propozycja AI: {category}",
   act_toast_right: "✅ Zapisano: {category} – dobrze.",
-  act_toast_picked: "✏️ Zapisano: {category} (propozycja AI: {ai}).",
+  act_toast_picked: "✏️ Zapisano kategorię {category} (propozycja AI: {ai}).",
   act_toast_same: "Już zapisano.",
   undo_started: "↩️ Cofanie rozpoczęte: wiadomość wróci w ciągu minuty.",
   undo_already: "Cofnięcie tej wiadomości zostało już zgłoszone.",

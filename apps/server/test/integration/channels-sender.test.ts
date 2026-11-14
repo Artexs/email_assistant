@@ -542,7 +542,7 @@ describe("outbox sender, rows without text (F088)", () => {
     });
   });
 
-  test("the pl row renders the same text as the en row (D16, until E7-T1)", async () => {
+  test("the pl row renders Polish text and the en row English text", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const t = await tenant(trx);
@@ -551,7 +551,8 @@ describe("outbox sender, rows without text (F088)", () => {
       const s = senderFor(trx);
       await s.run(T);
       expect(s.channel.sent).toHaveLength(2);
-      expect(s.channel.sent[0]?.message.text).toBe(s.channel.sent[1]?.message.text as string);
+      expect(s.channel.sent[0]?.message.text).toStartWith("🔴 Pilna wiadomość");
+      expect(s.channel.sent[1]?.message.text).toStartWith("🔴 Urgent mail");
     });
   });
 

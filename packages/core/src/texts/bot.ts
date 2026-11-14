@@ -309,7 +309,7 @@ export const botTexts = {
       noMailbox: "Brak połączonej skrzynki.",
       modes: { shadow: "podgląd", assist: "asystent" },
       modeNone: "brak (skrzynka bez ustawień: bez klasyfikacji)",
-      mailboxLine: (mode, state) => `Tryb: ${mode} · Stan: ${state}`,
+      mailboxLine: (mode, state) => `Tryb: ${mode} · stan – ${state}`,
       stateActive: "aktywna",
       statePaused: (since) => `wstrzymana od ${since}`,
       stateAuthError: (since) => `błąd logowania od ${since} (uruchom mailbox:password)`,
