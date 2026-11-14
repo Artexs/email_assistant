@@ -121,6 +121,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check that the image uses the pinned Bun
         run: test "FROM oven/bun:$(tr -d '[:space:]' < .bun-version)" = "$(head -n 1 deploy/Dockerfile)"
+      - name: Check that every Compose service rotates its log
+        run: bash deploy/check-logging.sh
       - name: Build the server image
         run: docker build -f deploy/Dockerfile -t ea-server:ci .
       - name: Check that the image holds only the package.json of the test tools
