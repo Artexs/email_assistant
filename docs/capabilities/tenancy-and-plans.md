@@ -1,0 +1,106 @@
+# Tenancy and plans
+
+> Checked against the code at `432b5e2`, 2026-11-14.
+
+## What it does now
+
+Every row of the system belongs to one organization. An organization has members; a member has the role `owner` or `assistant`. The operator (the person who runs the server) creates an organization and its first owner with `bun run org:create` or `bun run org:invite`; there is no sign-up. The plan of an organization is `trial`, `active` or `suspended`. The operator changes it with `bun run org:plan`. A `suspended` organization is paused: jobs, Telegram and web writes stop, and mail that arrived during the pause is not triaged after the resume. Each organization has a mailbox limit (`max_mailboxes`, default 2) that every connect checks. New user-visible behaviour ships behind a feature flag per organization; the operator reads and sets flags with `bun run org:flag`, and users in `OPERATOR_USER_IDS` read all flags at `GET /api/operator/flags`. The tenant comes from the session user's membership, never from the request.
+
+## Rules
+
+1. **Organizations and memberships.** `organizations` holds the name, the time zone, the signature text (`style_text`), the plan fields and `data_retention_days`. `memberships` joins a user to an organization with a role (`owner` or `assistant`) and the digest times of that member (`digest_times`). `createOrganizationWithOwner` inserts the organization, the user and the owner membership in one transaction; a plan of `trial` needs `trial_ends_at`.
+   - The web resolves the tenant in `requireTenant`: the user's oldest membership gives `ctx = { orgId, userId }` and the `role`. A user without a membership gets `403 no_organization`. A user with more than one membership gets a `tenant_multi_membership` warn line once per process; the oldest one still wins.
+   - `requireOwner` answers `403 owner_only` for a member that is not an owner. Owner-only routes: `PATCH /api/organization`, `POST /api/onboarding/keep-mode`, the mailbox routes that change a mailbox, and the settings and rules write routes (`modules/config/routes.ts`).
+   - Only the owner role is created by a tool today (`org:create`, `org:invite`). The code reads the role `assistant`, and no CLI or route adds one.
+2. **The tenant filter.** Every repository function takes a `TenantContext` (`{ orgId, userId? }`) and filters by `org_id`. The few functions that list across organizations are named in `docs/code-patterns.md` § Data access. `docs/architecture.md` §5 holds the tenant tables and §7 holds the isolation rules. The filter lives in code: there is no row-level security (F092).
+3. **Plan state (S6a).** `organizations.plan` is `trial`, `active` or `suspended`. The operator changes it with `bun run org:plan` (audit row `org.plan_changed`). A `suspended` organization is paused by the operator:
+   - **Jobs.** These skip it: mail sync, triage worker, `triage.returned`, committer, chaser, notice detection, digests and the outbox sender (its pending rows wait). The approval expiry and `platform.retention` still run for it. Every job reaches mailboxes through `listSyncTargets`, `listMailboxTargets` or `listLinkedChats`, which skip a `suspended` organization unless the caller sets `includeSuspended`. The sync, triage and committer loops check the plan before each mailbox, so a run that started before the change stops at the next mailbox. A send in flight finishes.
+   - **Queued messages.** The change to `suspended` sets every `pending` outbox row of the organization to `failed` / `outdated`, except the kinds `approval` and `approval_set` (the notifier queues them only once).
+   - **Approval requests at resume (F079).** The change from `suspended` to `trial` or `active` ends every send that is `awaiting_approval` with `notified_at` before `resumed_at` and no `sent` outbox row of its request (`approval:<send id>` or `approval_set:<set id>`): a request that no owner saw. The send ends as `expired` with the reason `not_seen`, in the same transaction as the plan change (`setOrgPlan` hook `onResumed`; `bun run org:plan`). The cascade is the one of `expireSend`: the draft (a reverse row or `expired`), the delegation (`cancelled`), one `action.expired` audit row. Each owner gets the result notice "you did not receive the approval request (the account was paused, or it did not go out)". The `pending` approval requests of the ended sends, and a `sending` one with a claim older than 5 min (a crash left it), become `failed` / `outdated`, so no stale request goes out; a `sending` row with a fresh claim finishes. A request that an owner already received stays: its send waits for a tap or ends by the 48 h rule. A send with `notified_at` null stays: the notifier queues its request after the resume with a fresh text. The expiry job (it also runs for a suspended organization) ends a send as `timeout` only when a `sent` outbox row of its request exists. An old request with no `sent` row ends as `not_seen` when the organization is not suspended; while it is suspended, the send waits for the resume hook. So no send ends as `timeout` without a delivered request.
+   - **Telegram.** Every command except `/help`, and every tap, answers "account paused" and changes nothing. `/start` linking still works.
+   - **Web.** Every write under `/api` answers `403 org_suspended`, except the paths in `SUSPENDED_WRITE_ALLOW` (none in S6a). Sign-out and the password routes are Better Auth paths outside `/api`, so they work. Reads work. The panel shows a paused banner with `OPERATOR_CONTACT`.
+     - Check against the code: `SUSPENDED_WRITE_ALLOW` has one entry now: `POST /api/me/terms` (a paused account can still accept the terms; it changes no mail and no organization data). The guard is `refuseSuspendedWrites`.
+   - **Resume.** The change from `suspended` to `trial` or `active` sets `resumed_at`. Mail with `received_at` more than 24 h before `resumed_at`, stored before `resumed_at` + 24 h and not backfilled, becomes `skipped` with `suspended_backlog` (no LLM call; the digest counts it on its own line). The sync-late notice and its 30 min grace count from `resumed_at`, and the urgent look-back starts at `resumed_at`. Stale `ready` actions expire at the first committer run (24 h rule).
+   - **48 h rule.** For every plan, the committer claims an `approved` send only when the tap is less than 48 h old. A send approved before a pause ends as `held_timeout` after it.
+   - **Mailbox limit.** `connectMailbox` (web and CLI) refuses a mailbox above `max_mailboxes` with `mailbox_limit` (web: `409`). The count runs under an advisory lock after the IMAP check, so two connects at once give one success.
+     - Check against the code: the check runs twice. A first check without a lock runs before any login, so an organization at its limit never opens a connection. The second check runs inside the transaction under the advisory lock `mailbox_limit:<org id>`, after the IMAP and SMTP checks. Every mailbox status counts (a paused or `auth_error` mailbox holds credentials). `org:plan --max-mailboxes N` sets the limit (0 to 100); the default is 2.
+4. **Plan changes.** `setOrgPlan` runs in one transaction: it locks the organization row, writes the new state and one audit row `org.plan_changed` (`from`, `to`, `max_from`, `max_to`, `trial_ends_at`), then runs the suspend or resume hook. A throw in a hook rolls back everything. A change that leaves every field the same is `unchanged` and writes nothing. A change to `trial` needs `--trial-days N` (1 to 365), or an organization that is already in `trial`. `--trial-days` with a plan other than `trial` is refused. `resumed_at` is set only when the plan leaves `suspended`.
+5. **Feature flags (F087):** `bun run org:flag --org-id <uuid> [--flag <key> --on|--off]` lists or changes the flags of one organization (audit row `org.flag_changed`). `FEATURES_OFF` turns flags off for every organization at the next restart (kill switch); an unknown key stops the start. The start log line `features off by FEATURES_OFF: <keys|none>` shows it.
+   - Check against the code: the start writes two JSON log events: `features_off` with `count`, and one `feature_killed` with `flag` for each killed key (`apps/server/src/main.ts`). The text form `features off by FEATURES_OFF: …` does not exist.
+   - The read order of `isFeatureOn` is: `FEATURES_OFF` (off, no query) → the row of `org_features` for the organization → the `default` of the registry (`packages/core/src/features.ts`). The registry holds each flag with `default`, `description`, `epic` and `removeBy`. Every flag of the registry is off by default. `setOrgFeature` locks the organization row, writes the row and the audit row in one transaction; a write with the same value is `unchanged` (no row change, no audit row).
+   - No code outside the CLI reads a flag yet: `isFeatureOn` has no caller in the server, and the panel does not read flags (the first users are E3a, E4-A and E5a, F100, F102, F104).
+6. **The operator role.** An operator is a user whose id is in `OPERATOR_USER_IDS` (a comma list of user ids; each must be a UUID, or the start fails). `requireOperator` guards the whole `/api/operator` prefix: any other user gets `404 not_found`, like a path that does not exist, and a `operator_route_refused` warn line with the user id. The one operator route is `GET /api/operator/flags`: every organization times every registry flag with its effective value. It is the only caller of `listOrgFeatureRowsOfAll`. The operator works through the CLIs (rule 7) and gets notices in a Telegram chat (`digest-and-notices.md`).
+7. **Operator CLIs.** They read `DATABASE_URL` and print ids, codes, dates and counts only.
+   - `bun run org:create --org-name <name> --email <email> --display-name <name> [--timezone <tz>] [--plan trial|active] [--trial-days N]` creates an organization with its owner. Defaults: `Europe/Warsaw`, `trial`, 30 days. `--trial-days` with `--plan active` is refused. An email that exists gives "user with this email already exists".
+   - `bun run org:invite --org-name <name> --email <email> --display-name <name> [--lang pl|en] [--timezone <tz>] [--trial-days N] [--print]` creates a trial organization like `org:create`, then makes a 24 h setup link for the owner. The link goes by mail when the mail sender is on, and is printed to stdout when it is off or with `--print`. It needs `WEB_BASE_URL` and `WEB_AUTH_SECRET`.
+   - `bun run org:plan --org-id <uuid> [--plan trial|active|suspended] [--trial-days N] [--max-mailboxes N]` (rule 4).
+   - `bun run org:status [--org-id <uuid>]` prints three lines per organization: plan, trial end, mailbox limit, `resumed_at`; mailbox counts by status and the last sync; LLM calls today and linked Telegram chats.
+   - `bun run org:flag --org-id <uuid> [--flag <key> --on|--off]` (rule 5).
+8. **Organization settings.** `PATCH /api/organization` (owner) changes the time zone (it must be a supported IANA name: `timezone_invalid`) and the signature text. Each changed field writes one audit row (`org.timezone_changed`, `org.style_changed`); the style audit row holds no text. Every member can change their own digest times (`PATCH /api/me/digest-times`) and accept the current terms (`POST /api/me/terms`; an old version gives `409 terms_outdated`).
+
+## Entry points
+
+| Kind     | Name                                                                              | Where                                                    |
+| -------- | --------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| CLI      | `bun run org:create`                                                              | `apps/server/src/scripts/org-create.ts`                  |
+| CLI      | `bun run org:invite`                                                              | `apps/server/src/scripts/org-invite.ts`                  |
+| CLI      | `bun run org:plan`                                                                | `apps/server/src/scripts/org-plan.ts`                    |
+| CLI      | `bun run org:status`                                                              | `apps/server/src/scripts/org-status.ts`                  |
+| CLI      | `bun run org:flag`                                                                | `apps/server/src/scripts/org-flag.ts`                    |
+| route    | `GET /api/me`, `GET /api/organization`, `PATCH /api/organization` (owner)         | `apps/server/src/modules/tenancy/routes.ts`              |
+| route    | `PATCH /api/me/digest-times`, `POST /api/me/terms`, `GET /api/me/sessions`        | `apps/server/src/modules/tenancy/routes.ts`              |
+| route    | `POST /api/onboarding/keep-mode` (owner)                                          | `apps/server/src/modules/tenancy/routes.ts`              |
+| route    | `GET /api/operator/flags` (operator)                                              | `apps/server/src/modules/tenancy/operator-routes.ts`     |
+| function | `requireTenant`, `requireOwner`, `requireOperator`, `refuseSuspendedWrites`       | `apps/server/src/platform/http.ts`                       |
+| function | `createOrganizationWithOwner`, `setOrgPlan`, `setOrgFeature`                      | `apps/server/src/modules/tenancy/service.ts`             |
+| function | `updateOrganizationSettings`, `organizationView`, `isSupportedTimeZone`           | `apps/server/src/modules/tenancy/service.ts`             |
+| function | `isFeatureOn`, `featureStates`, `featureStatesOfAll`, `configureFeatures`         | `apps/server/src/modules/tenancy/features.ts`            |
+| function | `getOrgPlan`, `isOrgSuspended`, `listOrganizations`, `getMembership`              | `apps/server/src/modules/tenancy/repo.ts`                |
+| function | `getOrgFeature`, `upsertOrgFeature`, `listOrgFeatureRowsOfAll`                    | `apps/server/src/modules/tenancy/repo.ts`                |
+| function | `listSyncTargets`, `listMailboxTargets`                                           | `apps/server/src/modules/mail/repo/targets.ts`           |
+| function | `connectMailbox`                                                                  | `apps/server/src/modules/mail/connect.ts`                |
+| function | `cancelPendingOutboxOfOrg`, `cancelPendingApprovalRequestsOfClosedSends`          | `apps/server/src/modules/channels/repo.ts`               |
+| function | `listLinkedChats`                                                                 | `apps/server/src/modules/channels/repo.ts`               |
+| function | `resumeHook`                                                                      | `apps/server/src/composition.ts`                         |
+| function | `expireUnseenApprovals`                                                           | `apps/server/src/modules/actions/expire.ts`              |
+| function | `resolveFeature`, `expiredFlags`, `isFeatureKey`                                  | `packages/core/src/features.ts`                          |
+
+## Data
+
+`organizations`: `id`, `name`, `timezone`, `style_text`, `plan` (`trial`, `active` or `suspended`), `trial_ends_at` (required when the plan is `trial`), `max_mailboxes` (default 2, at least 0), `resumed_at`, `data_retention_days` (default 30, at least 1), `created_at`.
+
+`users`: `id`, `email`, `display_name`, `locale`, `terms_version`, `terms_accepted_at` (and the Better Auth columns). `memberships`: `org_id`, `user_id`, `role` (`owner` or `assistant`), `digest_times`, `created_at`.
+
+`org_features`: `org_id`, `flag`, `enabled`, `set_by` (`cli` or a user id), `set_at`; one row per organization and flag. No row means the registry default.
+
+Audit events: `org.plan_changed`, `org.flag_changed`, `org.timezone_changed`, `org.style_changed`.
+
+Plan states:
+
+```
+trial     → active | suspended     (org:plan; trial_ends_at is kept only in trial)
+active    → trial | suspended      (org:plan --plan trial needs --trial-days)
+suspended → trial | active         (org:plan; sets resumed_at and runs the resume hook)
+```
+
+## Limits
+
+- No sign-up and no billing: the operator creates every organization (PD-001, PD-047). A trial that ends does not change the plan by itself; only the operator notice `trial_ending` goes out (`digest-and-notices.md`).
+- No account delete and no data export for an organization: E7-T3 (F106).
+- No operator console page and no other operator route than `GET /api/operator/flags`: E7-T2 (F099). The operator uses the CLIs.
+- No row-level security: the tenant filter is in code only (F092).
+- No way to add a second member (an `assistant`) with a CLI or a route. The role exists in the code and in the e2e seed only.
+- No flag has a reader in the server yet (rule 5). The registry has three flags: `stats_page`, `approvals_page` and `sent_sync`.
+
+## Decisions
+
+- ADR 0001 (multi-tenant model; accepted).
+- ADR 0027 (operator role and feature flags; accepted, landed by F087; the console and TOTP stay open for E7).
+- PD-045 (feature flags per organization), PD-046 (operator console), PD-047 (no billing port; the plan state stays).
+
+## Tests
+
+- `apps/server/test/integration/tenancy.test.ts`, `tenancy-organization.test.ts`, `tenancy-plan.test.ts`, `tenancy-features.test.ts`, `tenancy-flag-write.test.ts`, `tenancy-digest-times.test.ts`, `tenancy-user-profile.test.ts`
+- `apps/server/test/integration/scope-two-orgs.test.ts`
+- `apps/server/test/integration/org-cli.test.ts`, `org-flag-cli.test.ts`, `org-invite-cli.test.ts`
+- `packages/core/src/features.test.ts`, `packages/core/src/tenancy.test.ts`
