@@ -13,7 +13,7 @@ Ticket: [ticket.md](ticket.md). Small defaults for the owner: [questions.md](que
 - [x] stage-02-astro-7 [written]
 - [x] stage-03-docs [written]
 - [x] stage-04-vps-deploy [written]
-- [ ] Cold review (`plan-review-1.md`), fixes logged in "Cold review".
+- [ ] Cold review (`plan-review-1.md`), fixes logged in "Cold review". (plan complete and committed; review next)
 
 ## Input
 
