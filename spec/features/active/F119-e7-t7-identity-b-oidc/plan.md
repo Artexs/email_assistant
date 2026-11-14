@@ -103,11 +103,11 @@ Parallel: 07 ∥ 05–06; 09 ∥ 06, 08; 11 ∥ 12.
 
 ## Planning progress
 
-Stages 01–15 `[written]`; `wc -w` (refresh 1): plan 1,499, stages 698, 697, 698, 695, 666, 600, 699, 691, 675, 689, 691, 544, 681, 389, 514.
+Stages 01–15 `[written]`; `wc -w` (refresh 1): plan 1,499, stages 698, 697, 698, 695, 666, 600, 700, 691, 675, 689, 691, 544, 681, 389, 514.
 
 ## Cold review
 
-Review 1 (`claude-opus-5-5`, `[risky]` stages): FAIL, 2 blocking, 16 notes; 15 fixed, N10 accepted ([plan-review-1.md](plan-review-1.md), [response](plan-review-1-response.md)). Refresh 1: review 2 (opus, auth and migration).
+Review 1 (`claude-opus-5-5`, `[risky]` stages): FAIL, 2 blocking, 16 notes; 15 fixed, N10 accepted ([plan-review-1.md](plan-review-1.md), [response](plan-review-1-response.md)). Refresh 1: review 2 below.
 
 ## Log
 
