@@ -112,4 +112,11 @@ describe("Polish dictionary", () => {
       expect(plPlurals[key].one).not.toBe(plPlurals[key].few);
     }
   });
+
+  test("the device line does not put an unknown system after 'na'", () => {
+    setLocaleForTest("pl");
+    const line = t("device_on", { browser: t("browser_unknown"), os: t("os_unknown") });
+    expect(line).toBe("Nieznana przeglądarka (nieznany system)");
+    expect(line).not.toContain("na nieznany system");
+  });
 });
