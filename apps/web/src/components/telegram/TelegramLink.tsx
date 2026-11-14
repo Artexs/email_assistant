@@ -57,6 +57,11 @@ export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
     // A link cannot be made while linked, so `linkOpen` alone never fires this.
   }, [linked, linkOpen]);
 
+  // The tick is for one link: a chat that is linked, or that gets unlinked, needs a new tick for the next link.
+  useEffect(() => {
+    if (linked) setAgreed(false);
+  }, [linked]);
+
   // A poll that says "available" clears a `telegram_off` from an earlier 409.
   useEffect(() => {
     if (available === true) setOff(false);
@@ -84,6 +89,7 @@ export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
     try {
       await api("/api/channels/telegram/link", z.undefined(), { method: "DELETE" });
       setConfirmOpen(false);
+      setAgreed(false);
       toast.success(t("tg_unlinked_toast"));
       reload();
       onChange?.();

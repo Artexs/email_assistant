@@ -201,12 +201,12 @@ export const pl: Record<TextKey, string> = {
   tg_unlink: "Rozłącz",
   tg_unlink_title: "Rozłączyć Telegram?",
   tg_unlink_text:
-    "Podsumowania, komunikaty i zatwierdzenia przestaną przychodzić, dopóki znów nie połączysz Telegramu.",
+    "Podsumowania, komunikaty i zatwierdzenia przestaną przychodzić, dopóki znów nie połączysz Telegrama.",
   tg_unlinked_toast: "Telegram rozłączony.",
   tg_consent_title: "Co trafia do Telegrama",
   tg_consent_text:
-    "Telegram otrzymuje wiadomości tego bota: nadawcę i temat Twoich wiadomości, krótkie uzasadnienie lub podsumowanie AI, treść szkiców czekających na Twoje zatwierdzenie wraz z cytowaną częścią oryginalnej wiadomości, imiona wykonawców i adresy Twoich skrzynek. Serwery Telegrama są poza UE, a czaty z botem nie są szyfrowane end-to-end. Telegram przechowuje wiadomości, dopóki nie usuniesz ich z czatu. Możesz odłączyć Telegram w każdej chwili.",
-  tg_consent_label: "Zgadzam się na przekazywanie tych danych do Telegrama.",
+    "Telegram otrzymuje komunikaty tego bota: nadawcę i temat Twoich wiadomości, krótkie uzasadnienie lub podsumowanie AI, treść szkiców czekających na Twoje zatwierdzenie wraz z cytowaną częścią oryginalnej wiadomości, imiona i nazwiska wykonawców oraz adresy Twoich skrzynek. Telegram to usługa spoza UE, a dane mogą być przetwarzane poza Europejskim Obszarem Gospodarczym. Czaty z botem nie są szyfrowane metodą end-to-end (od nadawcy do odbiorcy). Telegram przechowuje komunikaty, dopóki nie usuniesz ich z czatu. Możesz w każdej chwili wycofać zgodę, odłączając Telegram. Komunikaty, które już są w czacie, zostają tam, dopóki ich nie usuniesz.",
+  tg_consent_label: "Wyrażam zgodę na przekazywanie tych danych do Telegrama.",
   tg_consent_outdated: "Treść zgody się zmieniła. Odśwież stronę i przeczytaj ją ponownie.",
   // onboarding
   ob_mailbox_title: "Połącz skrzynkę",
