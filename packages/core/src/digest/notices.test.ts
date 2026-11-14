@@ -7,11 +7,13 @@ import {
   feedbackButtons,
   renderActionFailedNotice,
   renderAuthErrorNotice,
+  renderHostBlockedNotice,
   renderSendHeldNotice,
   renderSyncOkNotice,
   renderSyncStaleNotice,
   renderUrgentNotice,
 } from "./notices";
+import { cutText } from "./text";
 
 const ID = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b";
 const timeZone = "Europe/Warsaw";
@@ -97,6 +99,40 @@ describe("other notices", () => {
     expect(message.text).toContain("mb-1");
     expect(message.text).toContain("at 07:40");
     expect(message.buttons).toEqual([]);
+  });
+
+  test("host_blocked: four lines, no button, no host name and no address", () => {
+    const input = { address: "me@firma.test", since: new Date("2026-11-06T06:40:00Z"), now, timeZone };
+    const message = renderHostBlockedNotice(input, textTables.en);
+    expect(message.text).toBe(
+      [
+        "⛔ The system stopped connecting to the mail server of me@firma.test at 07:40.",
+        "The server name points to a private or local network address, and the system never connects there.",
+        "The system does not read or send mail of this mailbox now. No mail is lost: it stays on the mail server.",
+        "The system checks the server again at each sync and starts the mailbox again by itself. /status shows the state.",
+      ].join("\n")
+    );
+    expect(message.buttons).toEqual([]);
+    for (const text of [message.text, renderHostBlockedNotice(input, textTables.pl).text]) {
+      expect(text).not.toContain("imap.x.test");
+      expect(text).not.toContain("smtp.x.test");
+      expect(text).not.toContain("10.0.0.7");
+    }
+    const polish = renderHostBlockedNotice(input, textTables.pl).text.split("\n");
+    expect(polish).toHaveLength(4);
+    expect(polish[0]).toBe("⛔ System przestał łączyć się z serwerem poczty skrzynki me@firma.test (od 07:40).");
+  });
+
+  test("host_blocked: a start of the day before shows the date; a long address is cut", () => {
+    const earlier = renderHostBlockedNotice(
+      { address: "me@firma.test", since: new Date("2026-11-05T13:00:00Z"), now, timeZone },
+      textTables.en
+    );
+    expect(earlier.text.split("\n")[0]).toEndWith("at 5 Nov 14:00.");
+    const address = `${"a".repeat(80)}@firma.test`;
+    const long = renderHostBlockedNotice({ address, since: now, now, timeZone }, textTables.en).text;
+    expect(long).toContain(cutText(address, 60));
+    expect(long).not.toContain("a".repeat(61));
   });
 
   test("sync late, never synced", () => {
@@ -308,7 +344,7 @@ describe("Polish notices", () => {
       [5, "5 wiadomości czeka"],
     ] as const) {
       expect(renderSendHeldNotice({ ...base, waiting }, pl).text).toBe(
-        `⏸ Wysyłanie czeka (skrzynka: me@firma.test): osiągnięto godzinny limit wysyłania z tej skrzynki.\n${count}; następna wyjdzie około 12:10.`
+        `⏸ Wysyłanie czeka (skrzynka me@firma.test): osiągnięto godzinny limit wysyłania z tej skrzynki.\n${count}; następna wyjdzie około 12:10.`
       );
     }
   });

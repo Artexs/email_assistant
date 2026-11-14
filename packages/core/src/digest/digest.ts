@@ -1,5 +1,6 @@
 import type { CoreTexts } from "../texts";
 import type { Category, MailboxMode } from "../triage/categories";
+import type { MailboxStatus } from "../web/mailboxes";
 
 import { categoryTag } from "./labels";
 import { llmPauseLine, type LlmPause } from "./llm-pause";
@@ -19,7 +20,7 @@ const CATEGORY_ORDER: readonly Category[] = [...ACTION_CATEGORIES, ...OTHER_CATE
 export interface DigestMailbox {
   id: string;
   address: string;
-  status: "active" | "auth_error" | "paused";
+  status: MailboxStatus;
   lastSyncedAt: Date | null;
   statusChangedAt: Date;
   mode: MailboxMode | "none";
@@ -96,17 +97,21 @@ function mailboxLine(input: DigestInput, mailbox: DigestMailbox, texts: CoreText
   const sync = (at: Date | null): string => (at === null ? texts.digest.never : clock(at));
   const suffix = input.mailboxes.length > 1 ? ` · ${cutText(mailbox.address, 40)}` : "";
   const { lastSyncedAt } = mailbox;
-  if (mailbox.status === "paused") {
-    return `${texts.digest.mailbox.paused(clock(mailbox.statusChangedAt), sync(lastSyncedAt))}${suffix}`;
+  switch (mailbox.status) {
+    case "paused":
+      return `${texts.digest.mailbox.paused(clock(mailbox.statusChangedAt), sync(lastSyncedAt))}${suffix}`;
+    case "auth_error":
+      return `${texts.digest.mailbox.authError(clock(mailbox.statusChangedAt), sync(lastSyncedAt))}${suffix}`;
+    case "host_blocked":
+      return `${texts.digest.mailbox.hostBlocked(clock(mailbox.statusChangedAt), sync(lastSyncedAt))}${suffix}`;
+    case "active": {
+      if (lastSyncedAt === null) return `${texts.digest.mailbox.neverSynced}${suffix}`;
+      if (now.getTime() - lastSyncedAt.getTime() > SYNC_LATE_MS) {
+        return `${texts.digest.mailbox.late(clock(lastSyncedAt))}${suffix}`;
+      }
+      return `${texts.digest.mailbox.ok(clock(lastSyncedAt))}${suffix}`;
+    }
   }
-  if (mailbox.status === "auth_error") {
-    return `${texts.digest.mailbox.authError(clock(mailbox.statusChangedAt), sync(lastSyncedAt))}${suffix}`;
-  }
-  if (lastSyncedAt === null) return `${texts.digest.mailbox.neverSynced}${suffix}`;
-  if (now.getTime() - lastSyncedAt.getTime() > SYNC_LATE_MS) {
-    return `${texts.digest.mailbox.late(clock(lastSyncedAt))}${suffix}`;
-  }
-  return `${texts.digest.mailbox.ok(clock(lastSyncedAt))}${suffix}`;
 }
 
 function itemBlock(n: number, item: DigestItem, texts: CoreTexts): string[] {

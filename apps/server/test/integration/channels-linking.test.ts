@@ -197,6 +197,8 @@ describe("chat linking", () => {
       const other = await createOrgWithMailbox(trx);
       const chatId = randomChatId();
       await linkChat(trx, { orgId }, userId, chatId, now);
+      // The fixture user has `en`; no choice (null) must still give `pl`.
+      await trx.updateTable("users").set({ locale: null }).where("id", "=", userId).execute();
 
       const found = await findChatLink(trx, chatId);
       expect(found).toEqual({ orgId, userId, role: "owner", chatId, linkedAt: now, locale: "pl" });
@@ -267,6 +269,8 @@ describe("chat linking", () => {
       const chatB = randomChatId();
       await linkChat(trx, { orgId }, userId, chatA, now);
       await linkChat(trx, { orgId }, second, chatB, now);
+      // The fixture users have `en`; no choice (null) must still give `pl`.
+      await trx.updateTable("users").set({ locale: null }).where("id", "in", [userId, second]).execute();
       const all = await listLinkedChats(trx, { includeSuspended: true });
       expect(all).toContainEqual({ orgId, userId, role: "owner", chatId: chatA, linkedAt: now, locale: "pl" });
       expect(all).toContainEqual({
@@ -285,6 +289,7 @@ describe("chat linking", () => {
       const { orgId, userId } = await createOrgWithMailbox(trx);
       const english = await addMember(trx, orgId);
       const polish = await addMember(trx, orgId);
+      await trx.updateTable("users").set({ locale: null }).where("id", "=", userId).execute();
       await trx.updateTable("users").set({ locale: "en" }).where("id", "=", english).execute();
       await trx.updateTable("users").set({ locale: "pl" }).where("id", "=", polish).execute();
       const chats = { [userId]: randomChatId(), [english]: randomChatId(), [polish]: randomChatId() };

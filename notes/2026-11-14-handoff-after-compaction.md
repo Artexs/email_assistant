@@ -75,3 +75,8 @@ For F100 stage 19 (docs) and later web work:
 - Page text gap: below 30 labels the page drops the auto mark ("29 of 30 rated mails needed" has no "· auto"). Add `stats_evidence_few_auto` (en, pl) so a category on auto shows it.
 - kept 0 shows "–", not "0 of 30 needed": acceptable; decide later.
 - Cleanup idea: extract a pure `statsView({mailboxId,data,error,loading})` from StatsPage.tsx and unit test the state cases (the page has no component test).
+
+## F105 s05 review carry-over
+- Stage 07 (operator reset) must split `modules/tenancy/repo.ts` into `repo/` before adding `listBreakGlassOrgIdsOfUser` (the file is at 399 lines; code-patterns limit about 400).
+- Stage 14 docs: `tenancy-and-plans.md` rule 7 (Operator CLIs) may need the `org:break-glass` line too, next to `web-panel.md`.
+- The two-org owner test (setBreakGlassFlag org filter) is added in the s05 fix job before landing.
