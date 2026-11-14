@@ -74,7 +74,8 @@ describe("GET /api/stats", () => {
     expect(weeks[0]?.weekStart).toBe(WEEK);
     expect(weeks[1]?.weekStart).toBe("2026-11-09");
     const direct = await weekStats(db, seeded.orgA.ctx, { weekStart: WEEK, mailboxId: null, now: NOW }, deps);
-    expect(weeks[0]).toEqual(direct as object);
+    if (direct === "not_found") throw new Error("not_found");
+    expect(weeks[0]).toEqual(direct);
     expect(weeks[0]?.m3.total).toBe(4);
     expect(weeks[0]?.m8).toHaveLength(5);
     expect(weeks.slice(1).every((week) => week.m8.length === 0)).toBe(true);
