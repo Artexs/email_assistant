@@ -26,6 +26,7 @@ export async function setUserLocale(db: DbOrTrx, userId: string, locale: UserLoc
 - `GET /me`: `user.locale = profile?.locale ?? null` (the route reads `getUserAuthProfile` already).
 - `PATCH /me/locale` in `tenancyRoutes`: `parseBody(c, localeBodySchema)` → `setUserLocale(deps.db, c.get("session").userId, body.locale)` → `false` gives 404 `not_found`, else 204. No `requireOwner`; no audit row.
 - `SUSPENDED_WRITE_ALLOW` gets `{ method: "PATCH", path: /^\/api\/me\/locale$/ }`; extend the comment above the list: the language, like the terms, changes no mail and no organization data.
+- `apps/server/test/integration/web-suspended.test.ts` lists every write route and fails on a new one: add `"PATCH /api/me/locale"` to `WRITE_ROUTES` (keep the sort order) and to `ALLOWED_WHEN_SUSPENDED`, and change the count in its comment ("The 18 write routes" → 19).
 
 **Decisions.** D8, P3.
 
@@ -39,9 +40,9 @@ export async function setUserLocale(db: DbOrTrx, userId: string, locale: UserLoc
 6. A user of a suspended organization (set `organizations.plan = 'suspended'` as `web-terms.test.ts:323` does) → 204 and the value is stored; in the same setup a `PATCH /api/me/digest-times` still answers 403 `org_suspended` (the allow entry is exact).
 7. A fresh user with a null locale: `GET /api/me` → `user.locale === null`.
 
-**Check.** `bun test apps/server/test/integration/web-locale.test.ts apps/server/test/integration/web-me.test.ts`; `bun run typecheck`.
+**Check.** `bun test apps/server/test/integration/web-locale.test.ts apps/server/test/integration/web-me.test.ts apps/server/test/integration/web-suspended.test.ts`; `bun run typecheck`.
 
-**Done when.** Tests 1–7 pass; `web-me.test.ts` passes.
+**Done when.** Tests 1–7 pass; `web-me.test.ts` and `web-suspended.test.ts` pass.
 
 **Out of scope.** Telegram (stage 08). Any audit row.
 
