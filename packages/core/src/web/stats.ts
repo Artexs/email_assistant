@@ -1,7 +1,11 @@
 // The numbers of one week (M1–M5, M7, M8). Counts and numbers only: no address, no subject, no mail id.
+import { EVIDENCE_MIN_LABELS } from "../metrics/m8";
 import { barCategories } from "../triage/metrics";
 
 import { z } from "./zod";
+
+// The evidence of a category shows its precision only from this many real labels (PD-066).
+export { EVIDENCE_MIN_LABELS };
 
 const count = z.number().int().min(0);
 const rate = z.number().min(0).max(1).nullable();
