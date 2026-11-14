@@ -111,7 +111,7 @@ Workers read `ticket.md`, this file and their one stage file. A gap or a deviati
 6. Every Telegram text — each notice kind, the digest, the bot replies, the tap answers, the edits — is in Polish for `pl` and null users and byte-identical English for `en` users (core unit tests per section; `channels-locale.test.ts`).
 7. The activity list shows Polish phrases for a Polish request and English for an English one (`web-activity.test.ts`, stage 08).
 8. A link request without the current consent version is refused and makes no token; an accepted one writes one `web.telegram_consent` row (`web-telegram.test.ts`); the panel shows the consent and needs the tick (`onboarding.spec.ts`).
-9. `docs/code-patterns.md` § "Texts carry a locale" exists; `docs/architecture.md` and `docs/modules.md` name the texts registry and the routes.
+9. `docs/code-patterns.md` § "Texts carry a locale" exists; `docs/modules.md` names the texts registry and the routes; the capability pages of the web panel and of Telegram notices (when they exist) state the language rules, and `bun test apps/server/src/capability-map.test.ts` passes.
 10. `bun run lint`, `bun run typecheck`, `bun run test:unit:ci`, `bun run test:int:ci` pass after each stage; `bun run web:build` and `bun run test:e2e` pass after each stage that changes a page (01–05, 08).
 
 ## Rules for every stage
@@ -127,6 +127,7 @@ Workers read `ticket.md`, this file and their one stage file. A gap or a deviati
 - Comments state the rule in one sentence and name an ADR or a ticket folder path if a source is needed. No bare codes (`D12`, `S6c`, `F088`) in new comments.
 - Test data uses `example.test` addresses and marker strings. No secret or `.env` value in a test, a log or a commit message.
 - No migration, no `bun.lock` change, no new dependency in any stage.
+- Capability pages (PD-009; `docs/capabilities/README.md`, landed on `master` after this plan's base `3bdb753` by the close-the-MVP ticket F095): a stage that changes what a user sees (02, 03, 04, 08) updates the page that the index lists for it (the web panel page; the digest-and-notices or Telegram page) in the same change, and refreshes its "Checked against" line. Behaviour rules go there, not into `docs/architecture.md`. If the page does not exist at your base, say so in the final message; stage 08 then writes the rules into the page if it exists by then, else into `docs/code-patterns.md` only.
 - e2e (stages 01–05, 08): this machine runs Playwright with the system Chromium. Before the first e2e run, give the job its own e2e database: `sed -i -E '/^E2E_(MIGRATOR_)?DATABASE_URL=/d' .env`, then `bun run db:worktree f098_sNN_e2e | grep -E '^(DATABASE_URL|MIGRATOR_DATABASE_URL)=' | sed 's/^/E2E_/' >> .env` (NN = your stage). Never point e2e at the shared `email_assistant_e2e`. Run `test:e2e` only under `flock /tmp/email-assistant-shared-tests.lock` (fixed ports 8081 and 8092).
 - Before each commit: `git diff --staged`; look for bugs, secrets, debug code and changes outside the stage.
 
