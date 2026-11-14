@@ -3,6 +3,7 @@ import type { UserLocale } from "../tenancy";
 
 import { aiTextTexts, type AiTextTexts } from "./ai-text";
 import { answerTexts, type AnswerTexts } from "./answers";
+import { approvalTexts, type ApprovalTexts } from "./approvals";
 import { categoryTexts, type CategoryTexts } from "./categories";
 import { clockTexts, type ClockTexts } from "./clock";
 import { commonTexts, type CommonTexts } from "./common";
@@ -14,6 +15,7 @@ export type { ActionTense, SendPhraseStatus } from "./would-do";
 export type {
   AiTextTexts,
   AnswerTexts,
+  ApprovalTexts,
   CategoryTexts,
   ClockTexts,
   CommonTexts,
@@ -31,8 +33,9 @@ export interface CoreTexts {
   wouldDo: WouldDoTexts;
   common: CommonTexts;
   notices: NoticeTexts;
+  approvals: ApprovalTexts;
   review: ReviewTexts;
-  // Stages 09–11 add approvals, digest, bot.
+  // Stages 10–11 add digest, bot.
 }
 
 export const textTables: Record<UserLocale, CoreTexts> = {
@@ -45,6 +48,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     wouldDo: wouldDoTexts.en,
     common: commonTexts.en,
     notices: noticeTexts.en,
+    approvals: approvalTexts.en,
     review: reviewTexts.en,
   },
   pl: {
@@ -56,6 +60,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     wouldDo: wouldDoTexts.pl,
     common: commonTexts.pl,
     notices: noticeTexts.pl,
+    approvals: approvalTexts.pl,
     review: reviewTexts.pl,
   },
 };

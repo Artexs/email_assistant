@@ -2,6 +2,7 @@ import type { z } from "zod";
 
 import { approvalEdit } from "../digest/approvals";
 import { MESSAGE_MAX_CHARS, type OutMessage, outButtonsSchema } from "../digest/message";
+import { textsFor } from "../texts";
 
 import type { NoticeKind, NoticeRenderOptions } from "./kinds";
 import { type NoticeRenderer, noticeRenderers } from "./renderers";
@@ -30,7 +31,7 @@ export type NoticeEditInput = Parameters<typeof approvalEdit>[0];
 export const noticeEditRenderers: {
   telegram: { full: (input: NoticeEditInput, opts: NoticeRenderOptions) => OutMessage };
 } = {
-  telegram: { full: (input) => approvalEdit(input) },
+  telegram: { full: (input, opts) => approvalEdit(input, textsFor(opts.locale)) },
 };
 
 // The edited message after a tap: the stored text of the card plus one status line. Throws like approvalEdit.

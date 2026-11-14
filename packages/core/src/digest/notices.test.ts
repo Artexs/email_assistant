@@ -224,17 +224,17 @@ describe("renderSendHeldNotice", () => {
   };
 
   test("names the limit, the count and the local time of the next send", () => {
-    expect(renderSendHeldNotice(base)).toEqual({
+    expect(renderSendHeldNotice(base, textTables.en)).toEqual({
       text: "⏸ Sends from boss@x.test wait: the hourly send limit of this mailbox is reached.\n3 waiting; the next one goes out at about 11:10.",
       buttons: [],
     });
   });
 
   test("the two other limits have their own text", () => {
-    expect(renderSendHeldNotice({ ...base, limit: "mailbox_day" }).text).toContain(
+    expect(renderSendHeldNotice({ ...base, limit: "mailbox_day" }, textTables.en).text).toContain(
       "wait: the daily send limit of this mailbox is reached."
     );
-    expect(renderSendHeldNotice({ ...base, limit: "recipient_day" }).text).toContain(
+    expect(renderSendHeldNotice({ ...base, limit: "recipient_day" }, textTables.en).text).toContain(
       "wait: the daily limit for one recipient is reached."
     );
   });
@@ -289,6 +289,27 @@ describe("Polish notices", () => {
       const lines = renderActionFailedNotice({ ...base, attempts }, pl).text.split("\n");
       expect(lines[0]).toBe("⚠️ Nie udało się przenieść wiadomości do folderu: AI/Info");
       expect(lines[3]).toBe(`${tried} Wiadomość zostaje w folderze: INBOX. /status pokazuje stan skrzynki.`);
+    }
+  });
+
+  test("the send-held notice names the limit and counts with the Polish plural", () => {
+    const base = {
+      address: "me@firma.test",
+      mailboxId: "mb-1",
+      limit: "mailbox_hour" as const,
+      waiting: 1,
+      nextAt: new Date("2026-11-14T11:10:00Z"),
+      now: plNow,
+      timeZone,
+    };
+    for (const [waiting, count] of [
+      [1, "1 wiadomość czeka"],
+      [3, "3 wiadomości czekają"],
+      [5, "5 wiadomości czeka"],
+    ] as const) {
+      expect(renderSendHeldNotice({ ...base, waiting }, pl).text).toBe(
+        `⏸ Wysyłanie czeka (skrzynka: me@firma.test): osiągnięto godzinny limit wysyłania z tej skrzynki.\n${count}; następna wyjdzie około 12:10.`
+      );
     }
   });
 

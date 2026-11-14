@@ -71,26 +71,24 @@ export function renderAuthErrorNotice(
   };
 }
 
-const SEND_HELD_LIMIT_TEXT: Record<SendLimitKind, string> = {
-  mailbox_hour: "the hourly send limit of this mailbox is reached",
-  mailbox_day: "the daily send limit of this mailbox is reached",
-  recipient_day: "the daily limit for one recipient is reached",
-};
-
 // Sends of one mailbox wait on a send limit (PD-044). The view holds no limit number: the text names the window.
-export function renderSendHeldNotice(input: {
-  address: string;
-  mailboxId: string;
-  limit: SendLimitKind;
-  waiting: number;
-  nextAt: Date;
-  now: Date;
-  timeZone: string;
-}): OutMessage {
+export function renderSendHeldNotice(
+  input: {
+    address: string;
+    mailboxId: string;
+    limit: SendLimitKind;
+    waiting: number;
+    nextAt: Date;
+    now: Date;
+    timeZone: string;
+  },
+  texts: CoreTexts
+): OutMessage {
+  const held = texts.notices.sendHeld;
   return {
     text: [
-      `⏸ Sends from ${cutText(input.address, 60)} wait: ${SEND_HELD_LIMIT_TEXT[input.limit]}.`,
-      `${input.waiting} waiting; the next one goes out at about ${formatClock(input.nextAt, input.timeZone, input.now, "en")}.`,
+      held.first(cutText(input.address, 60), held.limit[input.limit]),
+      held.waiting(input.waiting, formatClock(input.nextAt, input.timeZone, input.now, texts.locale)),
     ].join("\n"),
     buttons: [],
   };

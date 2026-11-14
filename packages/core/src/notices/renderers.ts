@@ -93,25 +93,30 @@ export const noticeRenderers = {
   }),
   approval: defineRenderer({
     schema: noticeViewSchemas.approval,
-    telegram: { full: (view) => renderApprovalRequest(view) },
+    telegram: { full: (view, opts) => renderApprovalRequest(view, textsFor(opts.locale)) },
   }),
   approval_set: defineRenderer({
     schema: noticeViewSchemas.approval_set,
-    telegram: { full: (view) => renderApprovalSetRequest(view) },
+    telegram: { full: (view, opts) => renderApprovalSetRequest(view, textsFor(opts.locale)) },
   }),
   send_result: defineRenderer({
     schema: noticeViewSchemas.send_result,
     telegram: {
-      full: (view) =>
-        renderSendResult({
-          ...view,
-          recipient: { name: view.recipient.name, address: view.recipient.address ?? "(unknown)" },
-        }),
+      full: (view, opts) => {
+        const texts = textsFor(opts.locale);
+        return renderSendResult(
+          {
+            ...view,
+            recipient: { name: view.recipient.name, address: view.recipient.address ?? texts.common.unknownAddress },
+          },
+          texts
+        );
+      },
     },
   }),
   delegation_answered: defineRenderer({
     schema: noticeViewSchemas.delegation_answered,
-    telegram: { full: (view) => renderDelegationAnswered(view) },
+    telegram: { full: (view, opts) => renderDelegationAnswered(view, textsFor(opts.locale)) },
   }),
   mailbox_removed: defineRenderer({
     schema: noticeViewSchemas.mailbox_removed,
@@ -119,6 +124,6 @@ export const noticeRenderers = {
   }),
   send_held: defineRenderer({
     schema: noticeViewSchemas.send_held,
-    telegram: { full: (view) => renderSendHeldNotice(view) },
+    telegram: { full: (view, opts) => renderSendHeldNotice(view, textsFor(opts.locale)) },
   }),
 } satisfies Record<NoticeKind, NoticeRenderer<z.ZodType>>;
