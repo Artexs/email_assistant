@@ -25,7 +25,7 @@ const extras = {
   botUsername: null,
 };
 
-// The 18 write routes of S6a (F4), written out: a new write route fails this test until it is listed here.
+// The 20 write routes of S6a (F4), written out: a new write route fails this test until it is listed here.
 const WRITE_ROUTES = [
   "DELETE /api/channels/telegram/link",
   "DELETE /api/mailboxes/:id",

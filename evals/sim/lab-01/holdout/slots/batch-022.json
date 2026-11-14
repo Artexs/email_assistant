@@ -1,0 +1,1338 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-022",
+  "slots": [
+    {
+      "id": "b-not-0131",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "news-global",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-22T06:34:00.000Z",
+      "category": "notification",
+      "topic": "branza-newsletter",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-global.lists.supplychain-weekly.test>",
+        "List-Unsubscribe": "<https://lists.supplychain-weekly.test/u/2580>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 29,
+        "byCategory": {
+          "notification": 25,
+          "info": 4
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 39,
+        "lastSeenDaysAgo": 14,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an automated message from Supply Chain Weekly about Wiadomosci branzowe i rynek frachtow; no person writes it"
+    },
+    {
+      "id": "b-not-0132",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "erp-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-15T13:42:00.000Z",
+      "category": "notification",
+      "topic": "wms-awaria",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 62,
+        "byCategory": {
+          "notification": 62
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "noreply",
+          "auto_submitted"
+        ],
+        "firstSeenDaysAgo": 40,
+        "lastSeenDaysAgo": 13,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an automated message from System ERP Kordelan about System magazynowy i awarie ERP; no person writes it"
+    },
+    {
+      "id": "b-not-0133",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "news-global",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-19T15:54:00.000Z",
+      "category": "notification",
+      "topic": "branza-newsletter",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-global.lists.supplychain-weekly.test>",
+        "List-Unsubscribe": "<https://lists.supplychain-weekly.test/u/5321>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 29,
+        "byCategory": {
+          "notification": 25,
+          "info": 4
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 39,
+        "lastSeenDaysAgo": 14,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an automated message from Supply Chain Weekly about Wiadomosci branzowe i rynek frachtow; no person writes it"
+    },
+    {
+      "id": "b-not-0134",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "erp-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-12T12:04:00.000Z",
+      "category": "notification",
+      "topic": "wms-awaria",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 62,
+        "byCategory": {
+          "notification": 62
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "noreply",
+          "auto_submitted"
+        ],
+        "firstSeenDaysAgo": 40,
+        "lastSeenDaysAgo": 13,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an automated message from System ERP Kordelan about System magazynowy i awarie ERP; no person writes it"
+    },
+    {
+      "id": "b-not-0135",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "news-branza",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-15T15:09:00.000Z",
+      "category": "notification",
+      "topic": "karty-paliwowe",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "html",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-branza.lists.logistyka-dzis.test>",
+        "List-Unsubscribe": "<https://lists.logistyka-dzis.test/u/2699>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 29,
+        "byCategory": {
+          "notification": 25,
+          "info": 4
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 69,
+        "lastSeenDaysAgo": 10,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an automated message from Magazyn Logistyka Dzis about Karty paliwowe i ceny paliw; no person writes it"
+    },
+    {
+      "id": "b-not-0137",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "erp-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-13T11:58:00.000Z",
+      "category": "notification",
+      "topic": "wms-awaria",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 62,
+        "byCategory": {
+          "notification": 62
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "noreply",
+          "auto_submitted"
+        ],
+        "firstSeenDaysAgo": 40,
+        "lastSeenDaysAgo": 13,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "a system message about System magazynowy i awarie ERP, sent by System ERP Kordelan, with no personal text"
+    },
+    {
+      "id": "b-not-0138",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "news-global",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-19T16:49:00.000Z",
+      "category": "notification",
+      "topic": "branza-newsletter",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "html",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-global.lists.supplychain-weekly.test>",
+        "List-Unsubscribe": "<https://lists.supplychain-weekly.test/u/5417>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 29,
+        "byCategory": {
+          "notification": 25,
+          "info": 4
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 39,
+        "lastSeenDaysAgo": 14,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "a system message about Wiadomosci branzowe i rynek frachtow, sent by Supply Chain Weekly, with no personal text"
+    },
+    {
+      "id": "b-not-0139",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "news-global",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-14T12:46:00.000Z",
+      "category": "notification",
+      "topic": "branza-newsletter",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "html",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-global.lists.supplychain-weekly.test>",
+        "List-Unsubscribe": "<https://lists.supplychain-weekly.test/u/9719>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 29,
+        "byCategory": {
+          "notification": 25,
+          "info": 4
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 39,
+        "lastSeenDaysAgo": 14,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "a system message about Wiadomosci branzowe i rynek frachtow, sent by Supply Chain Weekly, with no personal text"
+    },
+    {
+      "id": "b-not-0140",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "bank-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-11T11:47:00.000Z",
+      "category": "notification",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 54,
+        "byCategory": {
+          "notification": 54
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "noreply",
+          "auto_submitted"
+        ],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 8,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an automated message from Powiadomienia Bankowe about Faktury i platnosci; no person writes it"
+    },
+    {
+      "id": "b-not-0141",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "bank-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-20T11:14:00.000Z",
+      "category": "notification",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 54,
+        "byCategory": {
+          "notification": 54
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "noreply",
+          "auto_submitted"
+        ],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 8,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "a system message about Faktury i platnosci, sent by Powiadomienia Bankowe, with no personal text"
+    },
+    {
+      "id": "b-not-0142",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "bank-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-15T11:43:00.000Z",
+      "category": "notification",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "html",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 54,
+        "byCategory": {
+          "notification": 54
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "noreply",
+          "auto_submitted"
+        ],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 8,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "a system message about Faktury i platnosci, sent by Powiadomienia Bankowe, with no personal text"
+    },
+    {
+      "id": "b-not-0143",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "news-global",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-19T15:58:00.000Z",
+      "category": "notification",
+      "topic": "branza-newsletter",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-global.lists.supplychain-weekly.test>",
+        "List-Unsubscribe": "<https://lists.supplychain-weekly.test/u/6009>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 29,
+        "byCategory": {
+          "notification": 25,
+          "info": 4
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 39,
+        "lastSeenDaysAgo": 14,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an automated message from Supply Chain Weekly about Wiadomosci branzowe i rynek frachtow; no person writes it"
+    },
+    {
+      "id": "b-not-0144",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "news-global",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-11T11:29:00.000Z",
+      "category": "notification",
+      "topic": "branza-newsletter",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-global.lists.supplychain-weekly.test>",
+        "List-Unsubscribe": "<https://lists.supplychain-weekly.test/u/2502>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 29,
+        "byCategory": {
+          "notification": 25,
+          "info": 4
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 39,
+        "lastSeenDaysAgo": 14,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "a system message about Wiadomosci branzowe i rynek frachtow, sent by Supply Chain Weekly, with no personal text"
+    },
+    {
+      "id": "b-not-0145",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "erp-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-21T10:07:00.000Z",
+      "category": "notification",
+      "topic": "wms-awaria",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 62,
+        "byCategory": {
+          "notification": 62
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "noreply",
+          "auto_submitted"
+        ],
+        "firstSeenDaysAgo": 40,
+        "lastSeenDaysAgo": 13,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an automated message from System ERP Kordelan about System magazynowy i awarie ERP; no person writes it"
+    },
+    {
+      "id": "b-not-0146",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "bank-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-18T16:00:00.000Z",
+      "category": "notification",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 54,
+        "byCategory": {
+          "notification": 54
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "noreply",
+          "auto_submitted"
+        ],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 8,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "a system message about Faktury i platnosci, sent by Powiadomienia Bankowe, with no personal text"
+    },
+    {
+      "id": "b-not-0147",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "news-global",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-13T09:11:00.000Z",
+      "category": "notification",
+      "topic": "branza-newsletter",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-global.lists.supplychain-weekly.test>",
+        "List-Unsubscribe": "<https://lists.supplychain-weekly.test/u/6163>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 29,
+        "byCategory": {
+          "notification": 25,
+          "info": 4
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 39,
+        "lastSeenDaysAgo": 14,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "a system message about Wiadomosci branzowe i rynek frachtow, sent by Supply Chain Weekly, with no personal text"
+    },
+    {
+      "id": "b-not-0148",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "news-branza",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-11T13:30:00.000Z",
+      "category": "notification",
+      "topic": "karty-paliwowe",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-branza.lists.logistyka-dzis.test>",
+        "List-Unsubscribe": "<https://lists.logistyka-dzis.test/u/7215>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 29,
+        "byCategory": {
+          "notification": 25,
+          "info": 4
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 69,
+        "lastSeenDaysAgo": 10,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "a system message about Karty paliwowe i ceny paliw, sent by Magazyn Logistyka Dzis, with no personal text"
+    },
+    {
+      "id": "b-not-0149",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "news-branza",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-15T11:06:00.000Z",
+      "category": "notification",
+      "topic": "karty-paliwowe",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-branza.lists.logistyka-dzis.test>",
+        "List-Unsubscribe": "<https://lists.logistyka-dzis.test/u/6127>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 29,
+        "byCategory": {
+          "notification": 25,
+          "info": 4
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 69,
+        "lastSeenDaysAgo": 10,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "a system message about Karty paliwowe i ceny paliw, sent by Magazyn Logistyka Dzis, with no personal text"
+    },
+    {
+      "id": "b-not-0150",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "news-global",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-18T09:19:00.000Z",
+      "category": "notification",
+      "topic": "branza-newsletter",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-global.lists.supplychain-weekly.test>",
+        "List-Unsubscribe": "<https://lists.supplychain-weekly.test/u/8383>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 29,
+        "byCategory": {
+          "notification": 25,
+          "info": 4
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 39,
+        "lastSeenDaysAgo": 14,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "a system message about Wiadomosci branzowe i rynek frachtow, sent by Supply Chain Weekly, with no personal text"
+    },
+    {
+      "id": "b-not-0151",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "news-global",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-20T11:26:00.000Z",
+      "category": "notification",
+      "topic": "branza-newsletter",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-global.lists.supplychain-weekly.test>",
+        "List-Unsubscribe": "<https://lists.supplychain-weekly.test/u/4552>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 29,
+        "byCategory": {
+          "notification": 25,
+          "info": 4
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 39,
+        "lastSeenDaysAgo": 14,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an automated message from Supply Chain Weekly about Wiadomosci branzowe i rynek frachtow; no person writes it"
+    },
+    {
+      "id": "b-not-0152",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "news-branza",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-15T15:55:00.000Z",
+      "category": "notification",
+      "topic": "karty-paliwowe",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-branza.lists.logistyka-dzis.test>",
+        "List-Unsubscribe": "<https://lists.logistyka-dzis.test/u/3465>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 29,
+        "byCategory": {
+          "notification": 25,
+          "info": 4
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 69,
+        "lastSeenDaysAgo": 10,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an automated message from Magazyn Logistyka Dzis about Karty paliwowe i ceny paliw; no person writes it"
+    },
+    {
+      "id": "b-not-0154",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "erp-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-20T11:38:00.000Z",
+      "category": "notification",
+      "topic": "wms-awaria",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 62,
+        "byCategory": {
+          "notification": 62
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "noreply",
+          "auto_submitted"
+        ],
+        "firstSeenDaysAgo": 40,
+        "lastSeenDaysAgo": 13,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "a system message about System magazynowy i awarie ERP, sent by System ERP Kordelan, with no personal text"
+    },
+    {
+      "id": "b-not-0155",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "bank-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-12T13:23:00.000Z",
+      "category": "notification",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 54,
+        "byCategory": {
+          "notification": 54
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "noreply",
+          "auto_submitted"
+        ],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 8,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an automated message from Powiadomienia Bankowe about Faktury i platnosci; no person writes it"
+    },
+    {
+      "id": "b-not-0156",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "news-branza",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-11T13:50:00.000Z",
+      "category": "notification",
+      "topic": "branza-newsletter",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-branza.lists.logistyka-dzis.test>",
+        "List-Unsubscribe": "<https://lists.logistyka-dzis.test/u/4981>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 29,
+        "byCategory": {
+          "notification": 25,
+          "info": 4
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 69,
+        "lastSeenDaysAgo": 10,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an automated message from Magazyn Logistyka Dzis about Wiadomosci branzowe i rynek frachtow; no person writes it"
+    },
+    {
+      "id": "b-not-0157",
+      "part": "holdout",
+      "batch": "batch-022",
+      "persona": "erp-system",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-15T11:17:00.000Z",
+      "category": "notification",
+      "topic": "wms-awaria",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 62,
+        "byCategory": {
+          "notification": 62
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "noreply",
+          "auto_submitted"
+        ],
+        "firstSeenDaysAgo": 40,
+        "lastSeenDaysAgo": 13,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "a system message about System magazynowy i awarie ERP, sent by System ERP Kordelan, with no personal text"
+    }
+  ]
+}

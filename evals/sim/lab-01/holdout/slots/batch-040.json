@@ -1,0 +1,1296 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-040",
+  "slots": [
+    {
+      "id": "b-spa-0175",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "marketing-targi",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-11T15:57:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<marketing-targi.lists.targi-magazynowe.test>",
+        "List-Unsubscribe": "<https://lists.targi-magazynowe.test/u/6378>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "spam": 9,
+          "notification": 6
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 46,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an unsolicited promo from Targi Magazynowe Expo that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "b-spa-0177",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "phishing-paliwa",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-20T13:15:00.000Z",
+      "category": "spam",
+      "topic": "karty-paliwowe",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 1,
+        "byCategory": {
+          "spam": 1
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 1,
+        "lastSeenDaysAgo": 1,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "new"
+      },
+      "brief": "an unsolicited promo from Paliwa Flota Billing that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "b-spa-0178",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "spam-seo",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-18T15:25:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 3,
+        "byCategory": {
+          "spam": 3
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 2,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 54,
+        "lastSeenDaysAgo": 0,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an unsolicited promo from Premium Leads Pro that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "b-spa-0179",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "marketing-targi",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-19T06:12:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<marketing-targi.lists.targi-magazynowe.test>",
+        "List-Unsubscribe": "<https://lists.targi-magazynowe.test/u/9537>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "spam": 9,
+          "notification": 6
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 46,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "Targi Magazynowe Expo pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "b-spa-0180",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "marketing-targi",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-18T09:57:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<marketing-targi.lists.targi-magazynowe.test>",
+        "List-Unsubscribe": "<https://lists.targi-magazynowe.test/u/7058>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "spam": 9,
+          "notification": 6
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 46,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "Targi Magazynowe Expo pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "b-spa-0181",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "marketing-targi",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-19T16:59:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<marketing-targi.lists.targi-magazynowe.test>",
+        "List-Unsubscribe": "<https://lists.targi-magazynowe.test/u/4712>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "spam": 9,
+          "notification": 6
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 46,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "Targi Magazynowe Expo pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "b-spa-0182",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "spam-seo",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-13T07:40:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 3,
+        "byCategory": {
+          "spam": 3
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 2,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 54,
+        "lastSeenDaysAgo": 0,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "Premium Leads Pro pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "b-spa-0183",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "marketing-targi",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-15T13:44:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<marketing-targi.lists.targi-magazynowe.test>",
+        "List-Unsubscribe": "<https://lists.targi-magazynowe.test/u/7099>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "spam": 9,
+          "notification": 6
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 46,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "Targi Magazynowe Expo pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "b-spa-0185",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "phishing-paliwa",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-13T16:10:00.000Z",
+      "category": "spam",
+      "topic": "karty-paliwowe",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "html",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 1,
+        "byCategory": {
+          "spam": 1
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 1,
+        "lastSeenDaysAgo": 1,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "new"
+      },
+      "brief": "an unsolicited promo from Paliwa Flota Billing that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "b-spa-0186",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "phishing-paliwa",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-21T13:48:00.000Z",
+      "category": "spam",
+      "topic": "karty-paliwowe",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "html",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 1,
+        "byCategory": {
+          "spam": 1
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 1,
+        "lastSeenDaysAgo": 1,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "new"
+      },
+      "brief": "Paliwa Flota Billing pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "b-spa-0187",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "spam-seo",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-14T08:24:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 3,
+        "byCategory": {
+          "spam": 3
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 2,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 54,
+        "lastSeenDaysAgo": 0,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an unsolicited promo from Premium Leads Pro that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "b-spa-0188",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "marketing-targi",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-13T07:55:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<marketing-targi.lists.targi-magazynowe.test>",
+        "List-Unsubscribe": "<https://lists.targi-magazynowe.test/u/4798>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "spam": 9,
+          "notification": 6
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 46,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "Targi Magazynowe Expo pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "b-spa-0189",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "marketing-targi",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-14T07:39:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<marketing-targi.lists.targi-magazynowe.test>",
+        "List-Unsubscribe": "<https://lists.targi-magazynowe.test/u/5779>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "spam": 9,
+          "notification": 6
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 46,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an unsolicited promo from Targi Magazynowe Expo that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "b-spa-0190",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "phishing-paliwa",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-20T12:17:00.000Z",
+      "category": "spam",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 1,
+        "byCategory": {
+          "spam": 1
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 1,
+        "lastSeenDaysAgo": 1,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "new"
+      },
+      "brief": "an unsolicited promo from Paliwa Flota Billing that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "b-spa-0191",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "marketing-targi",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-11T11:20:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<marketing-targi.lists.targi-magazynowe.test>",
+        "List-Unsubscribe": "<https://lists.targi-magazynowe.test/u/7939>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "spam": 9,
+          "notification": 6
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 46,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "Targi Magazynowe Expo pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "b-spa-0192",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "phishing-paliwa",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-12T15:45:00.000Z",
+      "category": "spam",
+      "topic": "karty-paliwowe",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 1,
+        "byCategory": {
+          "spam": 1
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 1,
+        "lastSeenDaysAgo": 1,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "new"
+      },
+      "brief": "Paliwa Flota Billing pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "b-spa-0193",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "phishing-paliwa",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-19T12:59:00.000Z",
+      "category": "spam",
+      "topic": "karty-paliwowe",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 1,
+        "byCategory": {
+          "spam": 1
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 1,
+        "lastSeenDaysAgo": 1,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "new"
+      },
+      "brief": "Paliwa Flota Billing pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "b-spa-0194",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "spam-seo",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-11T15:34:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 3,
+        "byCategory": {
+          "spam": 3
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 2,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 54,
+        "lastSeenDaysAgo": 0,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an unsolicited promo from Premium Leads Pro that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "b-spa-0198",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "spam-seo",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-14T08:40:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 3,
+        "byCategory": {
+          "spam": 3
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 2,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 54,
+        "lastSeenDaysAgo": 0,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an unsolicited promo from Premium Leads Pro that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "b-spa-0199",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "spam-seo",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-14T12:37:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 3,
+        "byCategory": {
+          "spam": 3
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 2,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 54,
+        "lastSeenDaysAgo": 0,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an unsolicited promo from Premium Leads Pro that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "b-spa-0201",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "marketing-targi",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-20T15:09:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<marketing-targi.lists.targi-magazynowe.test>",
+        "List-Unsubscribe": "<https://lists.targi-magazynowe.test/u/2534>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "spam": 9,
+          "notification": 6
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 46,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an unsolicited promo from Targi Magazynowe Expo that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "b-spa-0202",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "marketing-targi",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-20T17:14:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<marketing-targi.lists.targi-magazynowe.test>",
+        "List-Unsubscribe": "<https://lists.targi-magazynowe.test/u/6172>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "spam": 9,
+          "notification": 6
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 46,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "Targi Magazynowe Expo pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "b-spa-0204",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "phishing-paliwa",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-15T07:41:00.000Z",
+      "category": "spam",
+      "topic": "karty-paliwowe",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 1,
+        "byCategory": {
+          "spam": 1
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 1,
+        "lastSeenDaysAgo": 1,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "new"
+      },
+      "brief": "Paliwa Flota Billing pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "b-spa-0205",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "marketing-targi",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-18T10:43:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<marketing-targi.lists.targi-magazynowe.test>",
+        "List-Unsubscribe": "<https://lists.targi-magazynowe.test/u/3021>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "spam": 9,
+          "notification": 6
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 46,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "Targi Magazynowe Expo pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "b-spa-0206",
+      "part": "holdout",
+      "batch": "batch-040",
+      "persona": "phishing-paliwa",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-14T09:24:00.000Z",
+      "category": "spam",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "html",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 1,
+        "byCategory": {
+          "spam": 1
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 1,
+        "lastSeenDaysAgo": 1,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "new"
+      },
+      "brief": "an unsolicited promo from Paliwa Flota Billing that offers something unrelated to the executive's work"
+    }
+  ]
+}

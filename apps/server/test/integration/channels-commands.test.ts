@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { textTables } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -16,7 +17,6 @@ import {
   type CommandDeps,
   type LinkedChat,
 } from "../../src/modules/channels";
-import { accountPausedText, helpText } from "../../src/modules/channels/texts";
 import { insertDefaultSettings } from "../../src/modules/config";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { insertMailbox, listSyncTargets, markSynced, setMailboxStatus } from "../../src/modules/mail/repo";
@@ -100,13 +100,25 @@ async function setup(trx: Transaction<DB>) {
 
 describe("helpMessage", () => {
   test("is the help text without buttons", () => {
-    expect(helpMessage()).toEqual({ text: helpText(), buttons: [] });
+    const helpLink: LinkedChat = {
+      orgId: randomUUID(),
+      userId: randomUUID(),
+      role: "owner",
+      chatId: 1,
+      linkedAt: new Date(0),
+      locale: "en",
+    };
+    expect(helpMessage(helpLink)).toEqual({ text: textTables.en.bot.help, buttons: [] });
   });
 
   test("has the Undo line", () => {
-    expect(helpText()).toContain("↩️ under a digest line undoes what the system did to that mail (7 days).");
-    expect(helpText()).toContain("📤 under an approval sends the draft; ✖️ rejects it (the draft is removed).");
-    expect(helpText()).toContain("✅ Done under an answered delegation closes it.");
+    expect(textTables.en.bot.help).toContain(
+      "↩️ under a digest line undoes what the system did to that mail (7 days)."
+    );
+    expect(textTables.en.bot.help).toContain(
+      "📤 under an approval sends the draft; ✖️ rejects it (the draft is removed)."
+    );
+    expect(textTables.en.bot.help).toContain("✅ Done under an answered delegation closes it.");
   });
 });
 
@@ -610,12 +622,15 @@ describe("commands of a suspended organization", () => {
       const handlers = createUpdateHandlers(depsAt(trx, T, { operatorContact: CONTACT }));
 
       for (const name of ["digest", "status", "pause", "resume"] as const) {
-        expect(await handlers.command(link, name)).toEqual({ text: accountPausedText(CONTACT), buttons: [] });
+        expect(await handlers.command(link, name)).toEqual({
+          text: textTables.en.bot.accountPaused(CONTACT),
+          buttons: [],
+        });
       }
       expect((await handlers.command(link, "pause")).text).toEndWith(`contact ${CONTACT}.`);
       expect((await mailboxRow(trx, a.mailboxId)).status).toBe("active");
       expect(await auditRows(trx, a.orgId, auditEvents.mailboxPaused)).toEqual([]);
-      expect(await handlers.command(link, "help")).toEqual(helpMessage());
+      expect(await handlers.command(link, "help")).toEqual(helpMessage(link));
     });
   });
 
@@ -654,7 +669,7 @@ describe("runCommand and createUpdateHandlers", () => {
       const { link } = await setup(trx);
       const handlers = createUpdateHandlers(depsAt(trx, T));
 
-      expect(await handlers.command(link, "help")).toEqual(helpMessage());
+      expect(await handlers.command(link, "help")).toEqual(helpMessage(link));
       expect(await handlers.callback(link, `fx:${randomUUID()}`)).toEqual({
         answer: "",
         edit: { text: "✏️ Cancelled.", buttons: [] },
