@@ -1,0 +1,357 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-034",
+  "cases": [
+    {
+      "id": "w-7-011",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Board calendar for the spring - for your information",
+      "body": "Dear Mr Szalewski,\n\nfor your information, the secretary of the board has finished the calendar of the supervisory board for the spring. There are three regular meetings: 12.02.2027 on the budget, 25.03.2027 on the fleet investment, and 29.04.2027 on the half-year results. All dates are already entered in the calendars of the members.\n\nThe board will also visit the warehouse in Poznan on 18.03.2027, as planned. The visit does not replace any meeting, so the dates of the meetings stay as they are.\n\nThis message needs no answer. I send it so that you have the full picture of the board's year.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-012",
+      "from": "Matthias Brandt <matthias.brandt@trailerwerk-sued.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Cennik naczep na 2027 - Pana stanowisko",
+      "body": "Szanowny Panie Prezesie,\n\nprzesyłam informację o nowym cenniku naczep na rok 2027. Z powodu wzrostu cen stali musieliśmy podnieść ceny o 3 procent, ale dla Państwa chcemy zaproponować wyjątek. Jeżeli złożą Państwo zamówienie na 10 naczep do końca lutego, utrzymamy dotychczasową cenę z roku 2026 i zachowamy czas dostawy około 12 tygodni.\n\nRozumiem, że decyzja o wielkości zamówienia należy do Państwa zarządu. Dlatego chciałbym zapytać wprost: czy Państwa spółka przyjmuje nowy cennik z podwyżką 3 procent, czy woli Pan zawalczyć o stały cennik przy zamówieniu 10 naczep? Proszę o odpowiedź na piśmie, abym mógł przygotować ofertę dla naszego działu handlowego.\n\nMit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-013",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Kopia zapasowa bazy WMS zakończona",
+      "body": "Kopia zapasowa bazy systemu magazynowego została wykonana dziś o godzinie 09:20. Rozmiar kopii: 14,2 GB. Błędy: 0. Wiadomość wysłano automatycznie.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-014",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Rozmowy z finalistami - wpis do kalendarza",
+      "body": "Cześć Wiktorze,\n\nDorota potwierdziła, że rozmowy z finalistami są już wpisane do Twojego kalendarza na 4 i 5.02.2027.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [
+        {
+          "from": "rafal.kwiecinski@kordelan.test",
+          "subject": "Rozmowy z finalistami - wpis do kalendarza",
+          "body": "Cześć Wiktorze,\n\npoproś Dorotę Wilczyńską, żeby wpisała do Twojego kalendarza rozmowy z finalistami: 4 i 5.02.2027, po 2 godziny rano.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-7-015",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Szkolenie dla rekruterów - prelekcja o ofercie",
+      "body": "Cześć Wiktorze,\n\nw nawiązaniu do szkolenia dla rekruterów, które odbędzie się 12.02.2027: uczestnicy chcą lepiej poznać naszą ofertę sprzedażową i podstawowe zasady umów z klientami, aby trafniej oceniać kandydatów do działu sprzedaży.\n\nPoproś, proszę, Piotra Lewandrowskiego, żeby przygotował 30-minutowe wystąpienie na ten temat i przesłał mi wcześniej krótki opis umów ramowych, o których ma opowiedzieć. Piotr zna nasze umowy najlepiej, więc to naturalny wybór. Ja zajmę się salą, listą uczestników i cateringiem, a od Piotra potrzebuję tylko prezentacji.",
+      "thread": [
+        {
+          "from": "rafal.kwiecinski@kordelan.test",
+          "subject": "Szkolenie dla rekruterów",
+          "body": "Cześć Wiktorze,\n\nszkolenie dla zespołu rekrutacyjnego odbędzie się 12.02.2027, a udział potwierdziło 6 osób.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-7-016",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Twoja subskrypcja wygasa za 14 dni",
+      "body": "Przypomnienie o koncie\n\nTwoja subskrypcja serwisu Magazyn Logistyka Dzis na konto wiktor.szalewski@kordelan.test wygasa 14.02.2027. Jeżeli włączone jest automatyczne odnawianie, subskrypcja zostanie przedłużona na kolejny rok i obciążymy kartę zapisaną w koncie.\n\nAby zmienić sposób płatności albo wyłączyć odnowienie, wejdź do ustawień konta i otwórz zakładkę Subskrypcje. Zmiany zapisane do 13.02.2027 obowiązują już od najbliższego okresu rozliczeniowego, a potwierdzenie każdej zmiany wyślemy na ten sam adres e-mail. Wiadomość została wygenerowana automatycznie i nie wymaga odpowiedzi.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-017",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Payment terms for the fuel card invoices",
+      "body": "Dear Mr Szalewski,\n\nthank you for your patience on the payment terms. I have checked the numbers with our finance team, and I can now offer a clear comparison. With 14 days, the discount stays at 1.5 percent. With 30 days, the discount falls to 0.8 percent, and the card limit rises by 20 percent.\n\nWhich option do you prefer for the contract that starts in March? I would be grateful for your decision in writing, as I need it to prepare the final draft of the annex. I will not change the terms of either option before I hear from you.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [
+        {
+          "from": "ewelina.marszalek@paliwa-flota.test",
+          "subject": "Payment terms for the fuel card invoices - your view please",
+          "body": "Dear Mr Szalewski,\n\nI am writing about the payment terms on your fuel card invoices, and I would like to ask for your personal view. At present, our invoices are due 14 days after the invoice date. Over the last quarter, about a third of your invoices were paid a few days after the due date, which creates administrative work on both sides and some interest charges that we have, so far, waived.\n\nOur finance department proposes an alternative for the second half of the year. The payment term would be extended from 14 to 30 days, and in return the volume discount on the pump price would be reduced by 0.3 percentage points. For your fleet's current consumption, we estimate that this would cost you about 9 thousand zloty over the year, but it would give your accounting department more room and remove the late payment interest.\n\nI understand that this is a commercial decision that depends on your priorities, so I would like to hear which option you prefer: the current terms with strict payment dates, or the longer term with the lower discount. A written answer from you would be sufficient for us to prepare the amendment to the agreement.\n\nThank you for your attention.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota"
+        },
+        {
+          "from": "ewelina.marszalek@paliwa-flota.test",
+          "subject": "Re: Warunki płatności faktur za karty paliwowe",
+          "body": "Dzień dobry Panie Prezesie,\n\nwracam do pytania o warunki płatności. Którą opcję Pan wybiera: obecne terminy czy 30 dni z mniejszym rabatem? Wystarczy krótka odpowiedź na piśmie.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota"
+        },
+        {
+          "from": "ewelina.marszalek@paliwa-flota.test",
+          "subject": "Re: Payment terms for the fuel card invoices",
+          "body": "Dear Mr Szalewski,\n\nI am returning to the payment terms once more. Which option do you choose: the current 14 days, or 30 days with the lower discount? A short written answer is enough.\n\nEwelina Marszalek"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-7-018",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Ostrzeżenie: wolne miejsce na dysku serwera WMS",
+      "body": "Komunikat systemowy\n\nMonitoring serwera systemu magazynowego zarejestrował, że wolne miejsce na dysku danych spadło poniżej 20 procent.\n\nSerwer: wms-db-01\nWolne miejsce: 18 procent (214 GB)\nCzas pomiaru: 31.01.2027, godzina 10:25\nPoziom: ostrzeżenie\n\nZgodnie z harmonogramem system automatycznie usunie stare pliki tymczasowe o godzinie 23:00. Zgłoszenie do zespołu IT zostało utworzone automatycznie i otrzymało numer w systemie zgłoszeń. Zespół IT widzi pełny raport z monitoringu, w tym wykres zajętości dysku z ostatnich siedmiu dni. Wiadomość wygenerował System ERP Kordelan, prosimy na nią nie odpowiadać.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-019",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rabat 20% na paliwo dla stałych klientów",
+      "body": "Specjalny rabat 20% na paliwo dla wybranych klientów tylko w tym tygodniu! Aby go aktywować, odpowiedz na tę wiadomość i potwierdź numer karty paliwowej oraz dane konta bankowego.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-020",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "10,000 Instagram followers for only $5",
+      "body": "Grow your brand today! Buy 10,000 Instagram followers for only $5, delivered in 24 hours. 100% safe, no password needed. Reply YES to get the offer.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-021",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Pytanie o agenta celnego na trasie do Norwegii",
+      "body": "Szanowny Panie Prezesie,\n\nzwracam się do Pana z pytaniem, które dotyczy obsługi celnej nowej trasy eksportowej do Norwegii, o której rozmawialiśmy w styczniu. Chcemy ruszyć z regularnymi wysyłkami w marcu, a pierwsze kontenery z żywnością zaplanowaliśmy na koniec lutego.\n\nMamy dwie możliwości. Pierwsza to skorzystanie z agenta celnego z Gdyni, z którym nasz zespół współpracuje od lat na innych trasach. Zna procedury, dokumenty i ludzi w urzędzie, a jego stawka jest niższa o około 12 procent od oferty konkurencji. Wadą jest to, że przy większej liczbie zleceń bywa przeciążony, a czasy odprawy w styczniu wydłużyły się do dwóch dni roboczych.\n\nDruga możliwość to agent z Oslo, którego poleca nasz partner w Norwegii. Jego stawki są wyższe o około 20 procent, ale gwarantuje on odprawę w ciągu jednego dnia roboczego i ma własne biuro przy przejściu granicznym. Zależy nam na szybkości, bo towar spożywczy ma krótki termin ważności.\n\nRóżnica kosztów przy planowanej liczbie wysyłek wynosi według naszych szacunków kilkanaście tysięcy euro rocznie, więc decyzja ma znaczenie finansowe dla obu naszych firm. Dlatego pytam wprost: którego agenta Pan wybiera dla nowej trasy, gdyńskiego czy norweskiego? Jeżeli ma Pan inną propozycję, chętnie ją omówię.\n\nBędę wdzięczny za Pana odpowiedź w tej sprawie, ponieważ muszę ją przekazać mojemu zespołowi przed rozpoczęciem przygotowań dokumentów.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-022",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Purchase order approved - status update",
+      "body": "Document status\n\nThe purchase order for the supply of pallets was approved in the ERP system and moved to status \"Sent to supplier\".\n\nDocument type: Purchase order\nValue: 14,820.00 PLN\nApproved by: Magdalena Czerniak\nApproval date: 31.01.2027, 12:08\nNew status: Sent to supplier\n\nYou can view the document and its history in the ERP panel under Purchasing. This message was generated automatically by System ERP Kordelan. Please do not reply to this address.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-023",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie ustawień powiadomień",
+      "body": "Ustawienia alertów o cenach paliw zapisano. Wiadomość wysłano automatycznie.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-024",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Update: Gothenburg customs clearance - new process in place",
+      "body": "Dear Mr Szalewski,\n\nThank you for your reply and for the quick correction of the invoice. I confirm that the corrected invoice arrived at our accounting team, so that point is closed.\n\nI would like to ask for your view on a related matter, because it affects our planning for the second quarter. Until now, our containers have been cleared in Gothenburg under the new process you described. The first six clearances went without delays, and our logistics team is satisfied. However, we are now preparing a larger order of chilled goods for April, and for these goods the situation is different.\n\nFor chilled goods, the clearance time is critical, because the cold chain cannot be interrupted for more than a few hours. In Gothenburg, the inspection of chilled goods depends on the availability of the veterinary officer, which was an issue last year. The alternative is to ship the chilled goods through the port of Gdynia and to continue by road, which adds about one day to the transport time, but gives a more predictable clearance.\n\nHere are the two options in short:\n1. Keep Gothenburg for all goods, including chilled, and accept the risk of delays.\n2. Use Gdynia for the chilled goods only, and Gothenburg for all other goods.\n\nWhich option do you prefer for the April order? I would be grateful for your answer in writing, so that I can pass it to our logistics team and confirm the plan with our customers.\n\nBest regards",
+      "thread": [
+        {
+          "from": "karin.lindqvist@nordicfoods-trade.test",
+          "subject": "Update: Gothenburg customs clearance - new process in place",
+          "body": "Dear Mr Szalewski,\n\nI am writing to let you know that our customs broker in Gothenburg has completed the switch to the new digital declaration process for all inbound shipments from Poland. The first three clearances under the new process took less than two hours each, compared with about six hours before.\n\nThe broker also confirmed that the tariff codes for your chilled product range were accepted without queries. Our team sees no open points on the customs side at the moment.\n\nThis is a status report for your information only.\n\nBest regards,\nKarin Lindqvist"
+        },
+        {
+          "from": "karin.lindqvist@nordicfoods-trade.test",
+          "subject": "Re: Update: Gothenburg customs clearance - new process in place",
+          "body": "Dear Mr Szalewski,\n\nThank you for the update. One point is open on our side: the broker's fee invoice for the first three clearances still shows the old company name. Could you ask Magdalena Czerniak in your accounting team to issue a corrected invoice this week?\n\nBest regards"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-7-025",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana regulaminu serwisu Logistyka Dzis",
+      "body": "Informacja o koncie\n\nInformujemy, że od 1.03.2027 zmieni się regulamin serwisu Magazyn Logistyka Dzis oraz polityka prywatności. Zmiany dotyczą zasad przetwarzania adresów e-mail subskrybentów i sposobu zarządzania zgodami marketingowymi.\n\nJeżeli korzystasz z konta bez zmian, nie musisz nic robić. Pełny tekst nowego regulaminu jest dostępny w panelu konta, w zakładce Dokumenty. Wiadomość została wygenerowana automatycznie i dotyczy wszystkich kont w serwisie.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-026",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nowe logowanie do bankowości internetowej",
+      "body": "Powiadomienie o bezpieczeństwie\n\nWykryliśmy logowanie do bankowości internetowej Twojej firmy z nowego urządzenia.\n\nData i godzina: 31.01.2027, godzina 14:08\nUrządzenie: przeglądarka na komputerze z systemem Linux\nLokalizacja: Polska\nRachunek: PL00-TEST-4821\n\nJeżeli to Ty się logowałeś, nie musisz nic robić. Jeżeli nie rozpoznajesz tej aktywności, skorzystaj z procedury zgłaszania opisanej w regulaminie bankowości. Bank nigdy nie prosi o podanie hasła ani kodu autoryzacyjnego w wiadomości e-mail, a urządzenia, z których logowano się w ostatnich 30 dniach, znajdziesz w ustawieniach bezpieczeństwa w panelu. Wiadomość została wygenerowana automatycznie i nie wymaga odpowiedzi.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-027",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie wypisania z listy tematów",
+      "body": "Wypisano Cię z listy tematów \"Przetargi publiczne\". Zmiana zacznie działać od jutra. Wiadomość wysłano automatycznie.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-028",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Delivery windows - status for February",
+      "body": "Dear Mr Szalewski,\n\nI would like to share a short status of the delivery windows for February, so that you have the full picture. This message is for your information only, and I do not need an answer.\n\nThe delivery windows for the first half of the month are confirmed by our warehouse. Deliveries arrive on Tuesdays and Thursdays, between 7:00 and 11:00, and the unloading takes about two hours per truck. In January, 11 of 12 deliveries arrived within the agreed window, and the one late delivery was only 40 minutes behind.\n\nIn the second half of February, our warehouse will take part in the annual stocktaking. For this reason, the unloading will be possible only on Wednesdays, between 8:00 and 12:00, from 16.02.2027 to 26.02.2027. I have already informed my team and I added the change to our shared planning sheet, so your planners have the dates available.\n\nTwo other points. First, we will use a new type of pallet from March, with a slightly larger base of 120 by 100 cm. I checked it with our quality team, and the pallet fits the trucks of your standard fleet without any change in loading. Second, the certificates for the frozen products are now sent by our quality department in electronic form, one day before the delivery, which should shorten the check on arrival.\n\nIf anything changes in our plan, I will write again.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-029",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Wspólne przetargi - aktualizacja przed dokumentacją",
+      "body": "Szanowny Panie Prezesie,\n\nczy podział 60 do 40 ma obowiązywać także w ofercie częściowej na Łotwę? Proszę o krótką odpowiedź na piśmie.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "daniel.hargreaves@baltic-freight-partners.test",
+          "subject": "Wspólne przetargi - wyniki prekwalifikacji",
+          "body": "Szanowny Panie Prezesie,\n\ninformuję, że nasze wspólne zgłoszenie do przetargu na obsługę logistyczną sieci supermarketów w regionie bałtyckim przeszło etap prekwalifikacji. Zamawiający potwierdził to w piątek, a pełna dokumentacja przetargowa będzie dostępna dla zakwalifikowanych oferentów od 8.02.2027.\n\nZ pięciu zgłoszonych konsorcjów do dalszego etapu zakwalifikowały się trzy. Nasz udział w ofercie pozostaje zgodny z wcześniejszymi ustaleniami, czyli 60 procent po stronie Kordelan i 40 procent po stronie Baltic Freight Partners.\n\nPiszę wyłącznie dla Pana wiadomości, aby miał Pan aktualny obraz sytuacji. O kolejnych krokach poinformuję, gdy tylko zamawiający opublikuje harmonogram.\n\nDaniel Hargreaves"
+        },
+        {
+          "from": "daniel.hargreaves@baltic-freight-partners.test",
+          "subject": "Wspólne przetargi - aktualizacja przed dokumentacją",
+          "body": "Szanowny Panie Prezesie,\n\npiszę krótko, aby przekazać Panu stan prac przed udostępnieniem dokumentacji przetargowej, która będzie dostępna od 8.02.2027. Uznałem, że lepiej, aby miał Pan pełny obraz wcześniej.\n\nPo pierwsze, nasz zespół ofertowy w Rydze zakończył wstępną analizę wymagań zamawiającego. Największym wyzwaniem będzie wymóg całodobowej obsługi centrów dystrybucyjnych w trzech krajach. Według wstępnych wyliczeń podział 60 do 40 procent pozostaje uzasadniony, bo większość kosztów stałych leży po stronie Kordelan.\n\nPo drugie, zmienił się skład części konkurencyjnych konsorcjów. Jeden z uczestników, który przeszedł prekwalifikację, połączył siły z lokalnym operatorem kolejowym. To może wzmocnić jego ofertę w części dotyczącej transportu intermodalnego, więc przyjrzymy się temu przy ocenie cen.\n\nPo trzecie, przygotowaliśmy roboczą wersję umowy konsorcjum. Nasi prawnicy skończą jej przegląd do końca tygodnia, a ostateczny tekst przekażemy Pana prawnikom, gdy zamawiający opublikuje harmonogram. Nie ma w tej chwili żadnych decyzji do podjęcia, a ta wiadomość ma charakter wyłącznie informacyjny. Warto też wiedzieć, że zamawiający dopuścił składanie ofert częściowych na każdy kraj osobno, co daje nam dodatkową elastyczność przy kalkulacji. Kolejną aktualizację prześlę, gdy dokumentacja będzie już dostępna i nasz zespół przejrzy jej pierwsze strony.\n\nZ wyrazami szacunku\nDaniel Hargreaves"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-7-030",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Win a FREE smart watch!",
+      "body": "Congratulations! You are our lucky visitor. Claim your FREE smart watch today, only a small shipping fee applies. Reply now, the offer ends tonight!",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-031",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Reklamacja uszkodzonej palety - zamknięcie sprawy",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że reklamacja uszkodzonej palety z ostatniej dostawy została u nas zamknięta, a uszkodzony towar zutylizowano.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-032",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Exclusive loyalty offer: 15% off your next fuel card top-up",
+      "body": "Dear valued customer,\n\nWe are pleased to inform you that your company has been selected for our new Loyalty Rewards Programme. As a thank-you for your long partnership, you can now receive an exclusive 15% discount on your next fuel card top-up, a free upgrade of your card to the Premium level, and a gift voucher worth 200 EUR for a hotel stay in the destination of your choice.\n\nThis offer is available only to a limited group of customers and it is valid for the next seven days. To activate your benefits, please reply to this message and confirm the full name of your company, the number of your fuel cards and the bank account that you use for payments. Our billing team will then prepare your personal discount code and send it back to you within one working day.\n\nThe Premium level gives you many advantages:\n- Higher monthly limit on every card\n- Priority support for blocked cards\n- Free monthly report on fuel consumption\n- Cashback of 2% on every purchase\n\nMany customers in your region have already joined the programme, and we do not want you to miss it. The number of vouchers is limited, and the offer cannot be extended after the deadline. If you do not confirm your details in time, the discount will be given to another company.\n\nThank you for your trust in us, and we look forward to your reply.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-033",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Hamburg group booking closes tonight",
+      "body": "Dear Mr Szalewski,\n\nThe airline holds the board's group booking to Hamburg only until 20:00 today. Please approve the traveller list before then, or the seats are released and the trip must be rebooked at double the fare.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-034",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "You have won a luxury holiday - claim your prize",
+      "body": "Dear customer,\n\nCongratulations! Your company was randomly selected in our annual customer prize draw, and you have won a luxury holiday for two in the Maldives, including flights and seven nights in a five-star resort. The total value of the prize is 6,500 EUR.\n\nTo receive your prize, you must confirm your claim within the next five days. Our prize team will contact you after you reply to this message with the following details: the full name of the winner, the company name, the number of your fuel card and the bank account that we may use to settle the small administrative fee of 89 EUR. The fee covers insurance and the transfer of the prize documents. After we receive the fee, the travel voucher is sent to you the same day.\n\nHow the prize works:\n- The holiday is valid for 12 months from the date of the claim\n- You may choose from 20 destinations in Europe, Asia and the Caribbean\n- The prize can be given to a member of your family or to a colleague\n\nThis is a limited promotion. Prizes that are not claimed on time are given to the next company on the list. Do not lose this unique opportunity, and reply to this message today.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-035",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Odchudzanie bez diety - nowy suplement za 39 zł",
+      "body": "Dzień dobry,\n\nmasz dość diet i ćwiczeń, które nie działają? Mamy rozwiązanie, które zmieniło życie już ponad 20 000 klientów! Nasz nowy suplement SlimFast Ultra pozwala schudnąć nawet 12 kg w 30 dni, bez głodzenia się i bez wysiłku. Wystarczy jedna kapsułka dziennie.\n\nSpecjalna cena tylko w tym tygodniu: 39 zł zamiast 199 zł! Przy zakupie dwóch opakowań trzecie dostajesz gratis, a do tego darmową dostawę kurierem. Produkt jest w 100% naturalny, przebadany przez niezależnych ekspertów i polecany przez znanych lekarzy.\n\nCo zyskujesz po zakupie?\n- szybszy metabolizm już po pierwszym tygodniu\n- więcej energii przez cały dzień\n- gwarancję zwrotu pieniędzy w ciągu 60 dni, bez pytań\n- darmowy e-book z przepisami na lekkie dania\n\nZamów już teraz, bo zapas jest ograniczony, a promocja kończy się w niedzielę o północy. Odpowiedz na tę wiadomość słowem TAK, a nasz konsultant przyśle Ci formularz zamówienia. Nie czekaj, bo kolejna taka okazja może się nie powtórzyć! Setki opinii zadowolonych klientów znajdziesz w naszym katalogu, który wyślemy razem z formularzem zamówienia.\n\nSkorzystaj z oferty już dziś i przekonaj się, jak łatwo można zadbać o sylwetkę. Zamówienia przyjmujemy również dla firm, a przy większych zamówieniach przygotujemy indywidualny rabat dla całego zespołu.",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}
