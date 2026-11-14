@@ -134,7 +134,7 @@ function renderListed(input: DigestInput, listed: readonly DigestItem[], texts: 
 
   const parts = CATEGORY_ORDER.flatMap((category) => {
     const rest = Math.max(0, (counts[category] ?? 0) - listed.filter((item) => item.category === category).length);
-    return rest > 0 ? [{ rest, name: texts.digest.moreName[category] }] : [];
+    return rest > 0 ? [{ rest, name: texts.digest.moreName[category](rest) }] : [];
   });
   const footer: string[] = [];
   const more = parts.reduce((sum, part) => sum + part.rest, 0);

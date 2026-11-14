@@ -21,7 +21,8 @@ export interface DigestTexts {
   actionTitle: string;
   otherTitle: string;
   more: (count: number, parts: string) => string;
-  moreName: Record<Category, string>;
+  // The name of a category after its count in the "+N more" line: the form follows the count.
+  moreName: Record<Category, (count: number) => string>;
   notProcessedOld: (count: number) => string;
   notProcessedBacklog: (count: number) => string;
   waiting: (count: number) => string;
@@ -32,6 +33,18 @@ export interface DigestTexts {
 const PL_MAILS = { one: "wiadomość", few: "wiadomości", many: "wiadomości", other: "wiadomości" } as const;
 const PL_NEED = { one: "wymaga", few: "wymagają", many: "wymaga", other: "wymaga" } as const;
 const PL_WAIT = { one: "czeka", few: "czekają", many: "czeka", other: "czeka" } as const;
+
+// A name with one form for every count.
+const fixed =
+  (name: string) =>
+  (_count: number): string =>
+    name;
+
+// A Polish name with its one, few and many forms.
+const polishForms =
+  (one: string, few: string, many: string) =>
+  (count: number): string =>
+    ({ one, few, many, other: many })[pluralCategory("pl", count)];
 
 export const digestTexts = {
   en: {
@@ -53,13 +66,13 @@ export const digestTexts = {
     otherTitle: "OTHER MAIL",
     more: (count, parts) => `+${count} more: ${parts}`,
     moreName: {
-      urgent: "urgent",
-      needs_reply: "reply",
-      delegation: "delegate",
-      unsure: "unsure",
-      info: "info",
-      notification: "notification",
-      spam: "spam",
+      urgent: fixed("urgent"),
+      needs_reply: fixed("reply"),
+      delegation: fixed("delegate"),
+      unsure: fixed("unsure"),
+      info: fixed("info"),
+      notification: fixed("notification"),
+      spam: fixed("spam"),
     },
     notProcessedOld: (count) => `📭 Not processed (older than 7 days): ${count}`,
     notProcessedBacklog: (count) => `📭 Not processed (from the account pause): ${count}`,
@@ -76,8 +89,8 @@ export const digestTexts = {
     noMailbox: "Ostatnia synchronizacja: brak połączonej skrzynki",
     never: "nigdy",
     mailbox: {
-      paused: (since, last) => `⏸ Wstrzymana od ${since} · ostatnia synchronizacja ${last}`,
-      authError: (since, last) => `❌ Błąd logowania od ${since} · ostatnia synchronizacja ${last}`,
+      paused: (since, last) => `⏸ Wstrzymana od ${since} · ostatnia synchronizacja: ${last}`,
+      authError: (since, last) => `❌ Błąd logowania od ${since} · ostatnia synchronizacja: ${last}`,
       neverSynced: "⚠️ Ostatnia synchronizacja: nigdy",
       late: (last) => `⚠️ Ostatnia synchronizacja ${last} (spóźniona)`,
       ok: (last) => `🔄 Ostatnia synchronizacja ${last}`,
@@ -85,15 +98,15 @@ export const digestTexts = {
     actionTitle: "WYMAGA DZIAŁANIA",
     otherTitle: "POZOSTAŁE",
     more: (count, parts) => `+${count} więcej: ${parts}`,
-    // Each name follows a count: "5 do odpowiedzi", "2 pilne".
+    // Each name follows a count: "1 pilna", "2 pilne", "5 pilnych".
     moreName: {
-      urgent: "pilne",
-      needs_reply: "do odpowiedzi",
-      delegation: "do przekazania",
-      unsure: "niepewne",
-      info: "info",
-      notification: "powiadomienia",
-      spam: "spam",
+      urgent: polishForms("pilna", "pilne", "pilnych"),
+      needs_reply: fixed("do odpowiedzi"),
+      delegation: fixed("do przekazania"),
+      unsure: polishForms("niepewna", "niepewne", "niepewnych"),
+      info: fixed("info"),
+      notification: polishForms("powiadomienie", "powiadomienia", "powiadomień"),
+      spam: fixed("spam"),
     },
     notProcessedOld: (count) => `📭 Nieprzetworzone (starsze niż 7 dni): ${count}`,
     notProcessedBacklog: (count) => `📭 Nieprzetworzone (z czasu wstrzymania konta): ${count}`,

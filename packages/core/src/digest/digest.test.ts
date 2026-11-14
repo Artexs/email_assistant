@@ -368,14 +368,48 @@ describe("renderDigest in Polish", () => {
         { ...mailbox, status: "paused", statusChangedAt: new Date("2026-11-05T13:00:00Z"), lastSyncedAt: null },
       ],
     });
-    expect(paused.text.split("\n")[2]).toBe("⏸ Wstrzymana od 5 lis 14:00 · ostatnia synchronizacja nigdy");
+    expect(paused.text.split("\n")[2]).toBe("⏸ Wstrzymana od 5 lis 14:00 · ostatnia synchronizacja: nigdy");
   });
 
-  test("over the limit: the text is cut and the footer counts the rest", () => {
-    const items = Array.from({ length: 15 }, (_, i) => item(i + 1, "urgent", { subject: "S".repeat(300) }));
-    const message = polish({ items, counts: { urgent: 40 } });
+  test("over the limit: the text is cut to the limit", () => {
+    const mailboxes = Array.from({ length: 100 }, (_, i) => ({ ...mailbox, id: `m${i}`, address: "x".repeat(60) }));
+    const message = polish({ mailboxes });
     expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
-    const more = polish({ items: items.slice(0, 3), counts: { urgent: 5, info: 4 } }).text;
+    expect(message.text.length).toBe(MESSAGE_MAX_CHARS);
+    expect(message.text.endsWith("…")).toBe(true);
+    expect(message.text).toStartWith("📬 Podsumowanie 08:00");
+  });
+
+  test("over the item limit: the rest goes to the +N more line", () => {
+    const items = Array.from({ length: 3 }, (_, i) => item(i + 1, "urgent"));
+    const more = polish({ items, counts: { urgent: 5, info: 4 } }).text;
     expect(more).toContain("+6 więcej: 2 pilne, 4 info");
+  });
+
+  test("the category names in the +N more line follow the count", () => {
+    const more = (category: Category, rest: number): string => {
+      const text = polish({ items: [], counts: { [category]: rest } }).text;
+      return text.split("\n").find((line) => line.startsWith("+")) as string;
+    };
+    // `items: []` lists nothing, so the whole count is the rest.
+    expect([1, 2, 5, 22].map((n) => more("urgent", n))).toEqual([
+      "+1 więcej: 1 pilna",
+      "+2 więcej: 2 pilne",
+      "+5 więcej: 5 pilnych",
+      "+22 więcej: 22 pilne",
+    ]);
+    expect([1, 2, 5, 22].map((n) => more("unsure", n))).toEqual([
+      "+1 więcej: 1 niepewna",
+      "+2 więcej: 2 niepewne",
+      "+5 więcej: 5 niepewnych",
+      "+22 więcej: 22 niepewne",
+    ]);
+    expect([1, 2, 5, 22].map((n) => more("notification", n))).toEqual([
+      "+1 więcej: 1 powiadomienie",
+      "+2 więcej: 2 powiadomienia",
+      "+5 więcej: 5 powiadomień",
+      "+22 więcej: 22 powiadomienia",
+    ]);
+    expect(more("needs_reply", 5)).toBe("+5 więcej: 5 do odpowiedzi");
   });
 });
