@@ -120,12 +120,14 @@ export const hardCaseRules: readonly HardCaseRule[] = [
       "from a VIP, but looks like a promo or newsletter"
     );
   }),
-  rule("urgent_no_keyword", "unk", ["urgent"], (slot) =>
-    withBrief(
-      { ...slot, urgencySource: "text" },
+  rule("urgent_no_keyword", "unk", ["urgent"], (slot) => {
+    const rest = { ...slot };
+    delete rest.contextRef;
+    return withBrief(
+      { ...rest, urgencySource: "text" },
       "needs action today; the text never names how pressing it is (see the keyword list of the code checks)"
-    )
-  ),
+    );
+  }),
   rule("delegation_missing_data", "dmd", ["delegation"], (slot) => {
     const rest = { ...slot };
     delete rest.expectedDelegate;

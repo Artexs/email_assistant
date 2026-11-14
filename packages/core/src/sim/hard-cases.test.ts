@@ -75,6 +75,15 @@ describe("hard-case registry", () => {
     }
   });
 
+  test("urgent_no_keyword drops a contextRef when it sets the source to text", () => {
+    const out = ruleOf("urgent_no_keyword").apply(
+      { ...base, category: "urgent", urgencySource: "context", contextRef: { kind: "topic", index: 0 } },
+      { scenario: miniScenario, rng: createRng(3) }
+    );
+    expect(out.urgencySource).toBe("text");
+    expect(out.contextRef).toBeUndefined();
+  });
+
   test("facts of the table", () => {
     const ctx = () => ({ scenario: miniScenario, rng: createRng(3) });
     const run = (id: string, draft: Partial<SlotDraft> = {}) => ruleOf(id).apply({ ...base, ...draft }, ctx());
