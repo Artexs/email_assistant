@@ -34,7 +34,7 @@ Two steps in module `delegation`: the list, then Done and Cancel. Remind now is 
     - `sent` or `overdue`: lock the delegation, mark `cancelled` / `user_cancelled`, expire the waiting reminders (the existing reminder close), audit `delegation.cancelled` with `{ reason: "user_cancelled", via }`.
     - `answered`, `done`, `cancelled` → 409 `not_open`.
   - Status flow: new edges `drafted | sent | overdue → cancelled (user_cancelled)`. `user_cancelled` is final: "Send again" and "It went out" do not reopen it.
-  - Lock order stays send, then delegation.
+  - Lock orders stay as today: `drafted` = send, then delegation (`reject`); `sent` or `overdue` = delegation, then its reminder sends (as the chaser).
 - **Test** (integration; the T1 data; U1 owner, M1 member):
   - T5: M1 `done` on D4 → 200; D4 `done`; audit with `via` `web`. Again → 409 `already`. On D2 → 409 `not_closable`.
   - T6: M1 `cancel` → 403 `owner_only`.
