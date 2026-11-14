@@ -5,12 +5,13 @@ import { t } from "../../i18n";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "../ui/sheet";
 import { Skeleton } from "../ui/skeleton";
-import { ONBOARDING_ITEM, TAB_ITEMS, type NavItem, type NavKey } from "./nav-items";
+import { ONBOARDING_ITEM, OPERATOR_ITEM, TAB_ITEMS, type NavItem, type NavKey } from "./nav-items";
 import { UserMenu } from "./UserMenu";
 
 export interface NavMenuProps {
   active: NavKey;
   onboardingOpen: boolean;
+  operator: boolean;
   email: string | null;
   loading: boolean;
   onLogOut: () => void;
@@ -56,8 +57,9 @@ function SidebarLink({ item, active }: { item: NavItem; active: NavKey }) {
   );
 }
 
-export function Sidebar({ active, onboardingOpen, email, loading, onLogOut }: NavMenuProps) {
-  const items = onboardingOpen ? [ONBOARDING_ITEM, ...TAB_ITEMS] : TAB_ITEMS;
+export function Sidebar({ active, onboardingOpen, operator, email, loading, onLogOut }: NavMenuProps) {
+  const tabs = onboardingOpen ? [ONBOARDING_ITEM, ...TAB_ITEMS] : TAB_ITEMS;
+  const items = operator ? [...tabs, OPERATOR_ITEM] : tabs;
   return (
     <aside className="hidden border-r lg:flex lg:flex-col">
       <p className="px-6 py-4 text-lg font-semibold">{t("brand")}</p>
@@ -81,7 +83,7 @@ export function Sidebar({ active, onboardingOpen, email, loading, onLogOut }: Na
   );
 }
 
-export function MenuSheet({ active, onboardingOpen, email, loading, onLogOut }: NavMenuProps) {
+export function MenuSheet({ active, onboardingOpen, operator, email, loading, onLogOut }: NavMenuProps) {
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -96,6 +98,7 @@ export function MenuSheet({ active, onboardingOpen, email, loading, onLogOut }: 
         </SheetHeader>
         <div className="flex flex-1 flex-col gap-4 px-4 pb-4">
           {onboardingOpen && <SidebarLink item={ONBOARDING_ITEM} active={active} />}
+          {operator && <SidebarLink item={OPERATOR_ITEM} active={active} />}
           <div className="mt-auto flex flex-col gap-3">
             {email !== null ? (
               <p className="truncate text-sm" title={email}>
