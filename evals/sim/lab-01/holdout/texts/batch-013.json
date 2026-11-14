@@ -22,14 +22,15 @@
       "body": "Dear Mr Szalewski,\n\nFurther to the question raised by Ms Lindqvist in her earlier message, I would like to confirm the position of our customs team and to give you a complete picture, so that your colleagues in export do not have to look for the details elsewhere.\n\nFrom 1 February, shipments of chilled and frozen food to Sweden and Denmark require electronic pre-notification at least two hours before the truck reaches the border. Our office submits the notifications for all Kordelan loads that we clear, and the system confirmed the registration of your company numbers this week. We tested the process on three trial consignments and the answers from the authorities arrived within minutes.\n\nThe temperature records from the trailers will be attached automatically, as the data flow from your loggers to our platform has already been tested. Your drivers will carry only the usual transport documents. Hand-written certificates will no longer be accepted, but Kordelan does not use them in any case.\n\nThe estimated change in clearance time is minimal. In the trial period the average was 34 minutes, compared with 41 minutes under the old procedure. We do not expect extra costs for your side.\n\nThis message is for your information. We will write again only if the authorities change the rules.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
       "thread": [
         {
-          "subject": "Re: Customs requirements for the Nordic lane",
-          "body": "Dear Daniel, thank you for the details. Our export team will pass them to the broker. Best regards, Wiktor Szalewski"
-        },
-        {
           "subject": "Customs requirements for the Nordic lane",
           "body": "Dear Mr Szalewski, we have heard that the customs rules for chilled food will change in February. Could your broker confirm the impact on the Gothenburg deliveries? Karin Lindqvist"
+        },
+        {
+          "subject": "Re: Customs requirements for the Nordic lane",
+          "body": "Dear Daniel, thank you for the details. Our export team will pass them to the broker. Best regards, Wiktor Szalewski"
         }
-      ]
+      ],
+      "note": "rewritten: thread order fixed"
     },
     {
       "id": "b-inf-0113",
