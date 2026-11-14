@@ -9,8 +9,7 @@ const baseKeys = ["time", "level", "module", "event", "msg"];
 const allowedKeys = new Set<string>([...baseKeys, ...logFieldNames, "dropped_fields"]);
 
 // F089 acceptance: with LOG_FORMAT=json the server writes one JSON object per line, with the base keys and allow-listed fields only.
-// Quarantined 2026-11-14: fails in CI without a code change. Fix: spec/features/planned/F123-main-start-log-test-no-longer-fails-with-exit-143-after-sigterm-flaky-twice-f098-stages-03-and-06/
-test.skip("bun apps/server/src/main.ts writes JSON event lines", async () => {
+test("bun apps/server/src/main.ts writes JSON event lines", async () => {
   // A free port: bind 0, read it, release it.
   const probe = Bun.serve({ port: 0, fetch: () => new Response() });
   const port = probe.port;

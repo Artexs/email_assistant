@@ -8,6 +8,7 @@ import { categoryTexts, type CategoryTexts } from "./categories";
 import { clockTexts, type ClockTexts } from "./clock";
 import { commonTexts, type CommonTexts } from "./common";
 import { noticeTexts, type NoticeTexts } from "./notices";
+import { reviewTexts, type ReviewTexts } from "./review";
 import { wouldDoTexts, type WouldDoTexts } from "./would-do";
 
 export type { ActionTense, SendPhraseStatus } from "./would-do";
@@ -19,6 +20,7 @@ export type {
   ClockTexts,
   CommonTexts,
   NoticeTexts,
+  ReviewTexts,
   WouldDoTexts,
 };
 
@@ -32,6 +34,7 @@ export interface CoreTexts {
   common: CommonTexts;
   notices: NoticeTexts;
   approvals: ApprovalTexts;
+  review: ReviewTexts;
   // Stages 10–11 add digest, bot.
 }
 
@@ -46,6 +49,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     common: commonTexts.en,
     notices: noticeTexts.en,
     approvals: approvalTexts.en,
+    review: reviewTexts.en,
   },
   pl: {
     locale: "pl",
@@ -57,6 +61,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     common: commonTexts.pl,
     notices: noticeTexts.pl,
     approvals: approvalTexts.pl,
+    review: reviewTexts.pl,
   },
 };
 

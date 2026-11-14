@@ -10,20 +10,20 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 - Standing models: worker and reviewer `--engine pi --provider claude-bridge --model claude-sonnet-5-5 --thinking high`, with the personal Claude route (`~/.pi/agent/AGENTS.md` § Limen). Prepare: `--prepare 'bash scripts/limen-prepare.sh'` (own `.env`, `node_modules`, own DB; drop the job DB by hand after the job). Log lint backlog (E8a): 395 old-form log calls warn after F089 stage 06 (2026-11-13); the converted files (`platform/`, `main.ts`) are at error.
 - Now: S6 pre-sale moves to Limen segment by segment (S6a = F077). The S6 master plan and `s6b`–`s6f` still sit in `tasks/` until `plan-task` plans them here; the old `run-task` flow is removed.
-- CI on `master`: red several times on 2026-11-14 from two flaky tests that failed without a code change; both are quarantined (`test.skip`) with fix tickets F123 (`main-start-log`) and F126 (`mail-folders-cli`). Last known all-green run before that: 2026-11-13 (run 43449221495). Bun pin `.bun-version` 1.4.4. After each land, check `gh run list --branch master --workflow CI --limit 3`; a red run → `docs/code-patterns.md` § Tests (quarantine the same day).
+- CI on `master`: red several times on 2026-11-14 from two flaky tests that failed without a code change; F123 (`main-start-log`) is fixed and landed; F126 (`mail-folders-cli`) is fixed and landed; no test is quarantined now. Last known all-green run before that: 2026-11-13 (run 43449221495). Bun pin `.bun-version` 1.4.4. After each land, check `gh run list --branch master --workflow CI --limit 3`; a red run → `docs/code-patterns.md` § Tests (quarantine the same day).
 
 ## NOW
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F101-panel-to-astro-7` (🟠 ACTIVE): Panel to Astro 7
+- `F100-e3a-measure` (🟠 ACTIVE): Every Stage 2 metric is measured on real mail and the executive gets a weekly report that leads with misses and mistakes
 - `F099-e7-t2-platform-controls-send-limits-feature-flags-operator-console-security-log` (🟠 ACTIVE): E7-T2 Platform controls (send limits, feature flags, operator console, security log)
 - `F098-e7-t1-polish-ui-i18n-frame-first` (🟠 ACTIVE): E7-T1 Polish UI (i18n frame first)
 - `F097-e2a-offline-lab` (🟠 ACTIVE): Every category has a measured precision and recall on a frozen synthetic corpus, and real labels start
 - `F095-e1-close-the-mvp` (🟠 ACTIVE): E1 Close the MVP (capability map, docs boundary, NEXT sweep of the old planned tickets)
 - `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟠 ACTIVE): The server image, CI and local checks run one current Bun (1.4.x)
 - `F071-limen-transition` (🟠 ACTIVE): Move the agent workflow to Limen
-- `F069-compose-network-subnet` (🟠 ACTIVE): Pin the Compose network subnet
 
 ## NEXT
 
@@ -62,20 +62,22 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F120-e11a-sender-context` (🔴 PLANNED, needs plan): E11a Sender context; sequenced after E3a, E5a, E4-B; gate —.
 - `F121-e10b-public-pages-and-demo` (🔴 PLANNED, needs plan): E10b Public pages and demo; sequenced after E2b, E3a, E4-B, E7-T4, E8b; gate —.
 - `F122-e6b-style-from-sent` (🔴 PLANNED, needs plan): E6b Style from Sent; sequenced after E6a, E5a; gate Gated: only if the E2a judge shows a gain.
+- `F124-the-unit-and-integration-suites-run-in-parallel-and-no-unit-test-waits-for-a-real-multi-second-timeout` (🔴 PLANNED, plan landed, 2 stages, no migration): unit and int run with `--parallel=4` and no unit test waits for a multi-second production timeout; sequenced after none; gate —.
+- `F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged` (🔴 PLANNED, plan landed, 7 read-only stages + cut stages after G1, no migration): a test audit report with approval groups, then owner-approved cuts; sequenced after none (cut stages after F124); gate G1 second pass after stage 07 (the owner marks `audit/report.md`; a real stop).
 - Order rule (owner, 2026-11-14): plan a ticket only after the tickets it needs (§2.1 "Needs") have landed; build it; then plan the next one that depends on it. Independent tickets may be planned in parallel with builds. Do not plan ahead of the code (F098 plan clashed with F091 code). Quota rule: set a `limen rule` wake at the quota reset time plus 2 minutes whenever jobs stop on the 5-hour limit; resume failed jobs with `limen continue` and the claude-bridge flags. Builders have no cap (owner), planners at most three at once; with 5 to 7 jobs the quota lasts about one hour per 5-hour window.
 
 ## PROVEN
 
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F126-mailbox-settings-sync-folder-test-off-then-on-with-a-plain-db-passes-every-time` (🟢 PROVEN): The sync-folder CLI test passes every time; landed 2026-11-14
+- `F123-main-start-log-test-no-longer-fails-with-exit-143-after-sigterm-flaky-twice-f098-stages-03-and-06` (🟢 PROVEN): The server start-log test passes every time: no exit 143 after SIGTERM; landed 2026-11-14
 - `F096-e8-lr-log-rotation` (🟢 PROVEN): E8-LR Log rotation; landed 2026-11-14
 - `F092-rls-safety-net` (🟢 PROVEN): Row-level security is a safety net under the tenant filter for every table with `org_id`; landed 2026-11-14
 - `F091-repo-split` (🟢 PROVEN): The big repositories are split by aggregate and action handling is table-driven with a completeness test; landed 2026-11-14
 - `F088-notices-as-facts` (🟢 PROVEN): Notices are stored as facts and rendered per channel, detail and locale by a renderer registry; landed 2026-11-14
 - `F082-s6b-public-login` (🟢 PROVEN): The panel login has the production shape: invite only, lockout, leaked-password check, terms, session list; landed 2026-11-14
 - `F078-auth-verifications-cleanup` (🟢 PROVEN): Expired Better Auth `auth_verifications` rows are deleted by the retention job; landed 2026-11-14
+- `F069-compose-network-subnet` (🟢 PROVEN): Pin the Compose network subnet; landed 2026-11-14
 - `F030-telegram-picker-already-saved` (🟢 PROVEN): Telegram picker: say "Already saved" in the message too; landed 2026-11-14
-- `F093-ci-green` (🟢 PROVEN): CI on master is green and a flaky test is quarantined the same day; landed 2026-11-13
-- `F090-llm-roles` (🟢 PROVEN): LLM calls name a role; provider, model, cap share and prompt version follow the role; landed 2026-11-13
-- `F089-structured-logs` (🟢 PROVEN): Logs are events with allow-listed fields and run ids, with a lint rule in warn mode; landed 2026-11-13
-- 2026-11: 61 landed. spec/features/done/2026-11/
+- 2026-11: 64 landed. spec/features/done/2026-11/

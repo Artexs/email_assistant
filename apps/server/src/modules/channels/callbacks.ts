@@ -45,6 +45,7 @@ import { getLabelTarget, recordFeedback, undoWithFeedback } from "../triage";
 
 import type { CallbackResult, LinkedChat } from "./port";
 import { findOutboxByDedup } from "./repo";
+import { cancelledText, feedbackTap, reviewPickerMessage } from "./review-taps";
 
 const log = createLog("channels");
 
@@ -128,37 +129,35 @@ export async function handleCallback(deps: CallbackDeps, link: LinkedChat, data:
   const ctx = { orgId: link.orgId, userId: link.userId };
   const texts = textsFor(link.locale);
   if (!isFeedbackCallback(callback)) return handleApprovalCallback(deps, link, ctx, callback, texts);
-  if (callback.kind === "cancel") {
-    return { answer: "", edit: { text: "✏️ Cancelled.", buttons: [] } };
-  }
-  if (callback.kind === "undo") {
-    const result = await undoWithFeedback(deps.db, ctx, callback.emailId, {
+  const { tap, source } = feedbackTap(callback);
+  if (tap.kind === "cancel") return { answer: "", edit: { text: cancelledText(source, texts), buttons: [] } };
+  if (tap.kind === "undo") {
+    const result = await undoWithFeedback(deps.db, ctx, tap.emailId, {
       now: deps.now(),
       userId: link.userId,
       scope: deps.actionsScope,
     });
     return { answer: result.kind === "not_found" ? NOT_FOUND_TEXT : texts.answers.undo[result.kind] };
   }
-  const target = await getLabelTarget(deps.db, ctx, callback.emailId);
-  if (!target) {
-    return { answer: NOT_FOUND_TEXT };
-  }
-  if (callback.kind === "edit") {
-    return { answer: "", send: pickerMessage(callback.emailId, target.subject, target.category, texts) };
+  const target = await getLabelTarget(deps.db, ctx, tap.emailId);
+  if (!target) return { answer: NOT_FOUND_TEXT };
+  if (tap.kind === "edit") {
+    const picker = source === "review" ? reviewPickerMessage : pickerMessage;
+    return { answer: "", send: picker(tap.emailId, target.subject, target.category, texts) };
   }
   const saved = await recordFeedback(deps.db, ctx, {
-    emailId: callback.emailId,
-    trueCategory: callback.category,
-    source: "telegram",
+    emailId: tap.emailId,
+    trueCategory: tap.category,
+    source,
     userId: link.userId,
     skipIfSame: true,
   });
-  if (callback.kind === "right") {
-    return { answer: rightAnswer(saved.saved, callback.category, texts) };
+  if (tap.kind === "right") {
+    return { answer: rightAnswer(saved.saved, tap.category, texts) };
   }
   return {
     answer: pickAnswer(saved.saved, texts),
-    edit: { text: pickedText(callback.category, target.category, saved.saved, texts), buttons: [] },
+    edit: { text: pickedText(tap.category, target.category, saved.saved, texts), buttons: [] },
   };
 }
 

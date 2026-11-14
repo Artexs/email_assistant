@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-12
+landed: 2026-11-14
 ---
 
 # F069 · Pin the Compose network subnet

@@ -33,7 +33,7 @@ const categoryIntent: Record<ValueCategory, string> = {
   needs_reply: "a question that needs an answer",
   delegation: "a task for the team",
   info: "plain information",
-  notification: "an automated notification",
+  notification: "an automated system message",
   spam: "an unwanted promo",
 };
 

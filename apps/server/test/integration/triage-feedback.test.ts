@@ -159,6 +159,25 @@ describe("recordFeedback", () => {
     });
   });
 
+  test("the review source is stored and an unknown source violates the check", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId };
+      const emailId = await createTriagedEmail(trx, a);
+
+      await recordFeedback(trx, ctx, { emailId, trueCategory: "info", source: "review" });
+      expect((await feedbackRows(trx, emailId)).map((row) => row.source)).toEqual(["review"]);
+
+      // The failed insert aborts the transaction, so it is the last statement.
+      await expect(
+        trx
+          .insertInto("triage_feedback")
+          .values({ org_id: a.orgId, email_id: emailId, verdict: "right", true_category: "info", source: "other" })
+          .execute()
+      ).rejects.toThrow(/triage_feedback_source_check/);
+    });
+  });
+
   test("an email of another org is an error", async () => {
     await withRollback(db, async (trx) => {
       const a = await createOrgWithMailbox(trx);

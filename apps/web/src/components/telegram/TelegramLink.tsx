@@ -1,4 +1,10 @@
-import { telegramLinkSchema, telegramStateSchema, formatClock, type TelegramLink as LinkState } from "@ea/core/web";
+import {
+  TELEGRAM_CONSENT_VERSION,
+  telegramLinkSchema,
+  telegramStateSchema,
+  formatClock,
+  type TelegramLink as LinkState,
+} from "@ea/core/web";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -24,6 +30,7 @@ export interface TelegramLinkProps {
 export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
   const [link, setLink] = useState<LinkState | null>(null);
   const [off, setOff] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const { me } = useMe();
   const [working, setBusy] = useState(false);
   // A paused organization takes no link and no unlink: the buttons are off.
@@ -50,6 +57,11 @@ export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
     // A link cannot be made while linked, so `linkOpen` alone never fires this.
   }, [linked, linkOpen]);
 
+  // The tick is for one link: a chat that is linked, or that gets unlinked, needs a new tick for the next link.
+  useEffect(() => {
+    if (linked) setAgreed(false);
+  }, [linked]);
+
   // A poll that says "available" clears a `telegram_off` from an earlier 409.
   useEffect(() => {
     if (available === true) setOff(false);
@@ -58,7 +70,12 @@ export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
   const makeLink = async () => {
     setBusy(true);
     try {
-      setLink(await api("/api/channels/telegram/link", telegramLinkSchema, { method: "POST" }));
+      setLink(
+        await api("/api/channels/telegram/link", telegramLinkSchema, {
+          method: "POST",
+          body: { consentVersion: TELEGRAM_CONSENT_VERSION },
+        })
+      );
     } catch (error) {
       if (error instanceof ApiError && error.code === "telegram_off") setOff(true);
       else toast.error(t(errorText(error)));
@@ -72,6 +89,7 @@ export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
     try {
       await api("/api/channels/telegram/link", z.undefined(), { method: "DELETE" });
       setConfirmOpen(false);
+      setAgreed(false);
       toast.success(t("tg_unlinked_toast"));
       reload();
       onChange?.();
@@ -144,7 +162,19 @@ export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
     return (
       <div className="flex flex-col items-start gap-3">
         <p className="text-sm">{t("tg_intro")}</p>
-        <Button disabled={busy} onClick={makeLink}>
+        <h3 className="text-sm font-medium">{t("tg_consent_title")}</h3>
+        <p className="text-sm text-muted-foreground">{t("tg_consent_text")}</p>
+        <div className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            id="tg-consent"
+            className="accent-primary mt-0.5 size-4"
+            checked={agreed}
+            onChange={(event) => setAgreed(event.target.checked)}
+          />
+          <Label htmlFor="tg-consent">{t("tg_consent_label")}</Label>
+        </div>
+        <Button disabled={busy || !agreed} onClick={makeLink}>
           {t("tg_link")}
         </Button>
       </div>
@@ -156,7 +186,7 @@ export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
     return (
       <div className="flex flex-wrap items-center gap-3">
         <p className="text-sm text-muted-foreground">{t("tg_expired")}</p>
-        <Button disabled={busy} onClick={makeLink}>
+        <Button disabled={busy || !agreed} onClick={makeLink}>
           {t("tg_new_link")}
         </Button>
       </div>

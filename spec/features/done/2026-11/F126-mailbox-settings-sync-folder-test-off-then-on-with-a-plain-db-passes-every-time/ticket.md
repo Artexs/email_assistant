@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-14
+landed: 2026-11-14
 ---
 
 # F126 · The sync-folder CLI test passes every time
@@ -25,6 +26,10 @@ opened: 2026-11-14
 ## Notes
 
 Failed twice in CI on `master` on 2026-11-14 (01:32 and 09:19 UTC) with no change to the test file or the code it tests. Quarantined the same day by the coordinator (owner decision, `docs/code-patterns.md` § Tests).
+
+### Cause (F126)
+
+The test read the two `mailbox.sync_folder_changed` audit rows with no `ORDER BY`. Both calls of `setSyncFolderEnabled` used the same `at`, so both rows had the same `created_at`. Postgres returns rows with no `ORDER BY` in an order it does not promise. The CI log of master run 43579977972 (2026-11-14 09:23 UTC) shows the same two rows in swapped order (`enabled: true` first, then `false`). Code and data were right; the test assumed an order. Fix, in the test only: the second call uses a later `at`, and the query uses `.orderBy("created_at")`. No retry, no timeout change. The code has no bug. That a row order that was only unspecified (not a race with the script) caused the swap is the reading that fits the log; no run reproduced the swap locally.
 
 ## Sequenced
 
