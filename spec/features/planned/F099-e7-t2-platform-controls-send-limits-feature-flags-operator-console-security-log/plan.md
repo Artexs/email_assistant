@@ -1,6 +1,6 @@
 # F099 · E7-T2 Platform controls: plan
 
-> **Status 2026-11-14 — planning.** Stages being written; cold review pending (see "Cold review"). Builds after F082 and F091 are in `done/`. Nothing is built yet.
+> **Status 2026-11-14 — planned.** 15 stages written; cold review pending (see "Cold review"). Builds after F082 and F091 are in `done/`. Nothing is built yet.
 
 Ticket: [ticket.md](ticket.md). Open defaults for the owner: [questions.md](questions.md).
 

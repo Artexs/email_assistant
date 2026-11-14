@@ -37,7 +37,7 @@ Each with its expected result:
 4. `curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/health` → `200`.
 5. `$C exec db psql … -Atc "SELECT count(*) FROM actions WHERE type = 'send' AND status = 'applied' AND send_started_at IS NULL"` → `0` (the backfill ran).
 6. `$C exec db psql … -Atc "SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'outbox_kind_check'"` → the list ends with `'send_held'`.
-7. `$C run --rm server bun run org:flag --org-id <pilot org id>` → `security_log on (row)`, the other flags as before.
+7. `$C run --rm server bun run org:flag --org-id <pilot org id>` → a line `org <pilot org id>: security_log on (row)`; the other flags as before.
 8. Wait 11 minutes; `$C logs --since "$T" server | grep -E "sync_done|synced"` → lines for the pilot mailbox, and `grep -E "committer .* failed|send_limited"` → no line (no send hit a limit at deploy).
 9. `curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/operator` → `302` (no session: the login redirect, as any page).
 
