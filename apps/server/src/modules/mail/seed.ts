@@ -22,6 +22,21 @@ export function isSyntheticMessageId(messageId: string | null): boolean {
   return messageId !== null && messageId.toLowerCase().endsWith(`@${SYNTHETIC_MESSAGE_ID_DOMAIN}>`);
 }
 
+/** Lower-case sender addresses whose mail is test mail (TEST_SENDER_ADDRESSES). */
+export interface TestMailRule {
+  senders: readonly string[];
+}
+export const NO_TEST_SENDERS: TestMailRule = { senders: [] };
+
+// Test mail = a synthetic Message-ID, or a sender in the rule. Not a security boundary: a sender can forge both.
+export function isTestMail(
+  mail: { messageIdHeader: string | null; fromAddress: string | null },
+  rule: TestMailRule
+): boolean {
+  if (isSyntheticMessageId(mail.messageIdHeader)) return true;
+  return mail.fromAddress !== null && rule.senders.includes(mail.fromAddress.toLowerCase());
+}
+
 function isAscii(text: string): boolean {
   for (let i = 0; i < text.length; i += 1) {
     if (text.charCodeAt(i) > 0x7f) return false;

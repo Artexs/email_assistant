@@ -2,6 +2,7 @@ import type { Category } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import {
   buildRealPredictions,
   buildRealReport,
@@ -65,7 +66,10 @@ async function addLabeled(trx: Transaction<DB>, tenant: { orgId: string; mailbox
 
 async function predictionsFor(trx: Transaction<DB>, tenant: { orgId: string; mailboxId: string }, rows: Labeled[]) {
   for (const row of rows) await addLabeled(trx, tenant, row);
-  const labeled = await listLabeledResults(trx, { orgId: tenant.orgId }, tenant.mailboxId, { mail: "real" });
+  const labeled = await listLabeledResults(trx, { orgId: tenant.orgId }, tenant.mailboxId, {
+    mail: "real",
+    testMail: NO_TEST_SENDERS,
+  });
   return { labeled, predictions: buildRealPredictions(labeled) };
 }
 
@@ -173,7 +177,10 @@ describe("buildRealPredictions", () => {
       await addLabeled(trx, tenant, { verdict: "right", messageId: "<s@ea-seed.test>" });
       await addLabeled(trx, tenant, { verdict: "right", messageId: "<r@x.test>" });
 
-      const real = await listLabeledResults(trx, { orgId: tenant.orgId }, tenant.mailboxId, { mail: "real" });
+      const real = await listLabeledResults(trx, { orgId: tenant.orgId }, tenant.mailboxId, {
+        mail: "real",
+        testMail: NO_TEST_SENDERS,
+      });
       expect(buildRealPredictions(real)).toHaveLength(1);
     });
   });

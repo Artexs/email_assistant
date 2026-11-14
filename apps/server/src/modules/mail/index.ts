@@ -83,10 +83,13 @@ export type { EmailMeta, MailKind } from "./repo";
 export type { ClaimedEmail, Cursor, MailboxRow, MailboxStatus, MailboxSummary, NewEmail, SyncFolderRow } from "./repo";
 export {
   isSyntheticMessageId,
+  isTestMail,
+  NO_TEST_SENDERS,
   renderSeedMessage,
   SYNTHETIC_MESSAGE_ID_DOMAIN,
   SYNTHETIC_MESSAGE_ID_LIKE,
   type SeedMessage,
+  type TestMailRule,
 } from "./seed";
 export {
   backfillInbox,

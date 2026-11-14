@@ -121,7 +121,7 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
       },
       textTables.en
     ),
-    wouldDo: describeActions(actions.get(row.email_id) ?? [], names, { stayFolder: row.folder }),
+    wouldDo: describeActions(actions.get(row.email_id) ?? [], names, { stayFolder: row.folder }, textTables.en),
     undoable: isUndoable(actions.get(row.email_id) ?? [], request.now),
   }));
 

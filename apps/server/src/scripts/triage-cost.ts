@@ -4,7 +4,7 @@ import { costPerMail, DEFAULT_MAILS_PER_DAY, llmPrices, monthlyCost } from "@ea/
 import { z } from "zod";
 
 import { listUsageSince, type MailKind, type UsageRow } from "../modules/triage";
-import { loadConfig } from "../platform/config";
+import { loadConfig, testMailRule } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 import { createLog } from "../platform/log";
@@ -118,7 +118,10 @@ async function main(): Promise<number> {
     await assertAppRole(db);
     const now = new Date();
     const since = new Date(now.getTime() - options.days * DAY_MS);
-    const rows = await listUsageSince(db, { orgId: options.orgId }, options.mailboxId, since, { mail: options.mail });
+    const rows = await listUsageSince(db, { orgId: options.orgId }, options.mailboxId, since, {
+      mail: options.mail,
+      testMail: testMailRule(config),
+    });
 
     out(`triage cost, mailbox ${options.mailboxId}, ${options.mail} mail, last ${options.days} days`);
     const byModel = new Map<string, UsageRow[]>();

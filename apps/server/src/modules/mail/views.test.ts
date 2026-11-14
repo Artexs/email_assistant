@@ -3,8 +3,14 @@ import { describe, expect, test } from "bun:test";
 
 import { claimFilterFor, sendFilterFor, type ActionsScope, type SendScope } from "../actions";
 
+import { NO_TEST_SENDERS } from "./seed";
+
 describe("mailboxScopeBadges follows the committer filters", () => {
-  const actionsScopes: ActionsScope[] = [{ kind: "off" }, { kind: "synthetic" }, { kind: "all" }];
+  const actionsScopes: ActionsScope[] = [
+    { kind: "off" },
+    { kind: "synthetic", testMail: NO_TEST_SENDERS },
+    { kind: "all" },
+  ];
   const sendScopes: SendScope[] = [{ kind: "off" }, { kind: "self", addresses: ["me@example.test"] }, { kind: "all" }];
 
   test("actions badge matches claimFilterFor", () => {

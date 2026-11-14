@@ -89,7 +89,7 @@ function claimableWhere(eb: ClaimEb, ctx: TenantContext, mailboxId: string, opts
     mailbox.kind === "none"
       ? eb("actions.type", "=", "save_summary")
       : mailbox.kind === "synthetic"
-        ? eb.or([eb("actions.type", "=", "save_summary"), mailKindFilter("synthetic")])
+        ? eb.or([eb("actions.type", "=", "save_summary"), mailKindFilter("synthetic", mailbox.testMail)])
         : sqlTrue,
   ]);
   // A draft is made only while its send waits; an `applying` one is the recovery (D12) and stays behind the mailbox filter.

@@ -1,6 +1,7 @@
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 
 import { insertDefaultSettings } from "../../src/modules/config";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { createLlmPause, createTriageJob } from "../../src/modules/triage";
 import type { GenerateFn } from "../../src/platform/llm";
 import { createFixedLlmClient } from "../../src/platform/llm/testing";
@@ -100,6 +101,7 @@ describe("triage logs", () => {
           pause: createLlmPause(),
           scope: { kind: "all" },
           batchSize: 5,
+          testMail: NO_TEST_SENDERS,
           dailyCap: 1000,
           now: () => clock.at,
         });

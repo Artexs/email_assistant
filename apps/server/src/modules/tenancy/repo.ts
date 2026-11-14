@@ -343,3 +343,9 @@ export async function listOrgFeatureRowsOfAll(
     .orderBy("flag")
     .execute();
 }
+
+// No TenantContext: the user gives the row. False for an unknown user.
+export async function setUserLocale(db: Db | Transaction<DB>, userId: string, locale: UserLocale): Promise<boolean> {
+  const result = await db.updateTable("users").set({ locale }).where("id", "=", userId).executeTakeFirst();
+  return Number(result.numUpdatedRows) === 1;
+}

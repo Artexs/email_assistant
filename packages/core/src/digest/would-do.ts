@@ -1,3 +1,5 @@
+import type { CoreTexts } from "../texts";
+import type { ActionTense, SendPhraseStatus } from "../texts/would-do";
 import type { DraftKind } from "../triage/payloads";
 import { type ActionType, MOVE_TARGET_NAMES, type MoveTarget } from "../triage/planners";
 
@@ -21,99 +23,120 @@ export type WouldDoAction = Pick<
   "type" | "status" | "folder" | "reverse" | "kind" | "delegateId" | "waiting"
 >;
 
-const TENSES: Record<string, string> = {
+const TENSES: Record<string, ActionTense> = {
   logged: "would",
   ready: "will",
   applying: "will",
   awaiting_approval: "will",
   approved: "will",
-  applied: "done:",
-  undone: "undone:",
-  failed: "failed:",
+  applied: "done",
+  undone: "undone",
+  failed: "failed",
 };
 
 // A draft that was undone (a send followed) or expired is not shown: the line reads from the send.
-const DRAFT_TENSES: Record<string, string> = {
+const DRAFT_TENSES: Record<string, ActionTense> = {
   logged: "would",
   ready: "will",
   applying: "will",
-  applied: "done:",
-  failed: "failed:",
+  applied: "done",
+  failed: "failed",
 };
 
-const SEND_LIMIT_WAIT_PHRASE = "approved, waiting: send limit";
+const SEND_STATUSES: ReadonlySet<string> = new Set<SendPhraseStatus>([
+  "logged",
+  "awaiting_approval",
+  "approved",
+  "applying",
+  "applied",
+  "rejected",
+  "expired",
+  "failed",
+]);
 
 // A send phrase has no tense.
-const SEND_PHRASES: Record<string, string> = {
-  logged: "would ask you to send it",
-  awaiting_approval: "waits for your approval",
-  approved: "approved, sending",
-  applying: "sending",
-  applied: "sent",
-  rejected: "rejected",
-  expired: "not sent (approval expired)",
-  failed: "not sent (failed)",
-};
-
-function sendPhrase(action: WouldDoAction): string | undefined {
-  if (action.status === "approved" && action.waiting === "send_limit") return SEND_LIMIT_WAIT_PHRASE;
-  return SEND_PHRASES[action.status];
+function sendPhrase(action: WouldDoAction, texts: CoreTexts): string | undefined {
+  if (action.status === "approved" && action.waiting === "send_limit") return texts.wouldDo.sendLimitWait;
+  return SEND_STATUSES.has(action.status) ? texts.wouldDo.send[action.status as SendPhraseStatus] : undefined;
 }
 
-function draftPhrase(action: WouldDoAction, names: ReadonlyMap<string, string>): string {
-  const name = (action.delegateId === null ? undefined : names.get(action.delegateId)) ?? "a delegate";
-  if (action.kind === "clarification") return "draft a question to the sender";
-  return action.kind === "reminder" ? `draft a reminder to ${name}` : `draft a delegation to ${name}`;
+function draftPhrase(
+  action: WouldDoAction,
+  names: ReadonlyMap<string, string>,
+  tense: ActionTense,
+  texts: CoreTexts
+): string {
+  const name = action.delegateId === null ? null : (names.get(action.delegateId) ?? null);
+  return texts.wouldDo.draft(tense, action.kind ?? "delegation", name);
 }
 
-function phrase(action: WouldDoAction, names: ReadonlyMap<string, string>): string | null {
+function phrase(
+  action: WouldDoAction,
+  names: ReadonlyMap<string, string>,
+  tense: ActionTense,
+  texts: CoreTexts
+): string | null {
   switch (action.type) {
     case "flag":
-      return "flag";
+      return texts.wouldDo.flag(tense);
     case "mark_read":
-      return "mark read";
+      return texts.wouldDo.markRead(tense);
     case "move":
-      return action.folder === null ? "move" : `move to ${MOVE_TARGET_NAMES[action.folder]}`;
+      return texts.wouldDo.move(tense, action.folder === null ? null : MOVE_TARGET_NAMES[action.folder]);
     case "create_draft":
-      return draftPhrase(action, names);
+      return draftPhrase(action, names, tense, texts);
     case "save_summary":
     case "send":
       return null;
   }
 }
 
+function tenseOf(action: WouldDoAction): ActionTense | undefined {
+  return action.type === "create_draft" ? DRAFT_TENSES[action.status] : TENSES[action.status];
+}
+
 // The phrase of one original action, or null when it has none. Same tense rules as `describeActions`.
-export function describeAction(action: WouldDoAction, names: ReadonlyMap<string, string> = new Map()): string | null {
+export function describeAction(
+  action: WouldDoAction,
+  names: ReadonlyMap<string, string>,
+  texts: CoreTexts
+): string | null {
   if (action.reverse) return null;
-  if (action.type === "send") return sendPhrase(action) ?? null;
-  const tense = action.type === "create_draft" ? DRAFT_TENSES[action.status] : TENSES[action.status];
-  const text = phrase(action, names);
-  return tense === undefined || text === null ? null : `${tense} ${text}`;
+  if (action.type === "send") return sendPhrase(action, texts) ?? null;
+  const tense = tenseOf(action);
+  if (tense === undefined) return null;
+  const text = phrase(action, names, tense, texts);
+  return text === null ? null : `${texts.wouldDo.tense[tense]} ${text}`;
 }
 
 // The "what the system does or would do" line of a digest or notice. `names` maps delegate ids to names.
 export function describeActions(
   actions: readonly WouldDoAction[],
-  names: ReadonlyMap<string, string> = new Map(),
-  opts: { stayFolder?: string } = {}
+  names: ReadonlyMap<string, string>,
+  opts: { stayFolder?: string },
+  texts: CoreTexts
 ): string {
-  const groups = new Map<string, string[]>();
+  const groups = new Map<ActionTense, string[]>();
   const sends: string[] = [];
   for (const action of actions) {
     if (action.reverse) continue;
     if (action.type === "send") {
-      const text = sendPhrase(action);
+      const text = sendPhrase(action, texts);
       if (text !== undefined) sends.push(text);
       continue;
     }
-    const tense = action.type === "create_draft" ? DRAFT_TENSES[action.status] : TENSES[action.status];
-    const text = phrase(action, names);
-    if (tense === undefined || text === null) continue;
+    const tense = tenseOf(action);
+    if (tense === undefined) continue;
+    const text = phrase(action, names, tense, texts);
+    if (text === null) continue;
     groups.set(tense, [...(groups.get(tense) ?? []), text]);
   }
-  const all = [...[...groups].map(([tense, phrases]) => `${tense} ${phrases.join(", ")}`), ...sends];
+  const all = [
+    ...[...groups].map(([tense, phrases]) => `${texts.wouldDo.tense[tense]} ${phrases.join(", ")}`),
+    ...sends,
+  ];
   const parts = all.filter((part, index) => part !== all[index - 1]); // the same phrase never twice in a row
   return parts.length === 0
-    ? `stays in ${opts.stayFolder === undefined ? "INBOX" : cutText(opts.stayFolder, 30)}`
+    ? texts.wouldDo.staysIn(opts.stayFolder === undefined ? "INBOX" : cutText(opts.stayFolder, 30))
     : parts.join("; ");
 }

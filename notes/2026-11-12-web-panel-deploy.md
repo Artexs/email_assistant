@@ -42,3 +42,7 @@ The repo is public. Never write the tailnet name or the full `ts.net` host name.
 - Phone sign-in (OnePlus 12, Android; the phone was offline at every check) and the phone cut-off check (mobile data without Tailscale must not open the panel).
 - The ↩️ and ✏️ buttons on real mail. The bottom sheet with a long AI text on the phone.
 - The user decides if the temporary password should change (it is probably the same as the real one).
+
+## Owner decision 2026-11-14: the panel password and `~/.cache/ea-smoke.pw` stay
+
+The owner keeps the panel password and the agents' smoke file `~/.cache/ea-smoke.pw`. The file is the agents' sign-in for full tests of the panel on the VPS. It is intentional, not a finding: later audits must not flag it. The VPS file `~/email_assistant/.env.bak-s5e` stays too, unless the owner says otherwise. F074 is dropped for this reason (`spec/features/dropped/2026-11/F074-*/outcome.md`).

@@ -1,6 +1,7 @@
 import {
   deviceOf,
   digestTimesBodySchema,
+  localeBodySchema,
   orgPlanSchema,
   organizationPatchSchema,
   parseDigestTimes,
@@ -21,7 +22,14 @@ import { parseBody, requireOwner, ValidationError, type ApiEnv } from "../../pla
 import { auditEvents, recordAudit } from "../audit";
 
 import { featureStates, isFeatureOn } from "./features";
-import { getMembership, getOrganization, getUserAuthProfile, setDigestTimes, setUserTerms } from "./repo";
+import {
+  getMembership,
+  getOrganization,
+  getUserAuthProfile,
+  setDigestTimes,
+  setUserLocale,
+  setUserTerms,
+} from "./repo";
 import { listSecurityLog } from "./security-log";
 import { organizationView, updateOrganizationSettings } from "./service";
 
@@ -54,7 +62,7 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
     const profile = await getUserAuthProfile(deps.db, userId);
     const organizationPlan = orgPlanSchema.parse(organization.plan);
     const me: Me = {
-      user: { id: userId, email: member.email, displayName: member.display_name },
+      user: { id: userId, email: member.email, displayName: member.display_name, locale: profile?.locale ?? null },
       organization: {
         id: organization.id,
         name: organization.name,
@@ -114,6 +122,14 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
       return c.json({ error: "not_found" }, 404);
     }
     return c.json({ times });
+  });
+
+  // The language of the panel, Telegram and the account e-mails. Any member, own user only; no audit row (a display setting).
+  app.patch("/me/locale", async (c) => {
+    const body = await parseBody(c, localeBodySchema);
+    if (!(await setUserLocale(deps.db, c.get("session").userId, body.locale)))
+      return c.json({ error: "not_found" }, 404);
+    return c.body(null, 204);
   });
 
   // L17: any member accepts the current terms; an old version answers 409 so the dialog reloads.

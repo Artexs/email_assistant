@@ -4,7 +4,7 @@ import { meSchema, scopeInfoOf } from "./me";
 
 const scope = scopeInfoOf("triage", "off");
 const me = {
-  user: { id: "0190f5a0-0000-7000-8000-000000000001", email: "a@b.com", displayName: "Ann" },
+  user: { id: "0190f5a0-0000-7000-8000-000000000001", email: "a@b.com", displayName: "Ann", locale: null },
   organization: {
     id: "0190f5a0-0000-7000-8000-000000000002",
     name: "Org",

@@ -15,6 +15,7 @@ import {
   operatorUserIds,
   sendLimits,
   sendTestAddresses,
+  testMailRule,
   mailAllowLocal,
   mailAllowLocalFromEnv,
   webTrustedOrigins,
@@ -386,6 +387,23 @@ describe("SEND_SCOPE", () => {
       SEND_TEST_ADDRESSES: "A@x.test, b@x.test,a@X.test",
     });
     expect(sendTestAddresses(config)).toEqual(["a@x.test", "b@x.test"]);
+  });
+
+  test("testMailRule splits, trims, lower-cases and removes duplicates", () => {
+    expect(testMailRule(loadConfig({ ...fullEnv, TEST_SENDER_ADDRESSES: " A@b.test, c@d.test ,a@B.test," }))).toEqual({
+      senders: ["a@b.test", "c@d.test"],
+    });
+  });
+
+  test("testMailRule is empty when TEST_SENDER_ADDRESSES is empty or missing", () => {
+    expect(testMailRule(loadConfig({ ...fullEnv, TEST_SENDER_ADDRESSES: "" }))).toEqual({ senders: [] });
+    expect(testMailRule(loadConfig(fullEnv))).toEqual({ senders: [] });
+  });
+
+  test("TEST_SENDER_ADDRESSES refuses an entry that is not an address and names only the key", () => {
+    const error = configError({ ...fullEnv, TEST_SENDER_ADDRESSES: "a@b.test, not-an-address" });
+    expect(error.keys).toEqual(["TEST_SENDER_ADDRESSES"]);
+    expect(error.message).not.toContain("not-an-address");
   });
 
   test("all needs no other key", () => {

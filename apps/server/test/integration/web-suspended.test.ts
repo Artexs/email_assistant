@@ -50,6 +50,7 @@ const WRITE_ROUTES = [
 // Write routes in `SUSPENDED_WRITE_ALLOW`: a paused account may still call them (web-terms.test.ts proves it).
 const ALLOWED_WHEN_SUSPENDED = [
   "POST /api/me/terms",
+  "PATCH /api/me/locale",
   "POST /api/operator/orgs/:orgId/flags",
   "POST /api/operator/orgs/:orgId/plan",
 ];

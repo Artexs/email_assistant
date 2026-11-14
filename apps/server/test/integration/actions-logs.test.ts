@@ -5,6 +5,7 @@ import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 
 import { createCommitterJob, noDelegationHooks } from "../../src/modules/actions";
 import { detectNotices, handleCallback, type LinkedChat } from "../../src/modules/channels";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { createFakeMailProvider, type FakeMailProvider } from "../../src/modules/mail/fake";
 import { insertCredentials, markSynced } from "../../src/modules/mail/repo";
 import { contentHash } from "../../src/modules/mail/sync-rules";
@@ -113,7 +114,7 @@ describe("actions logs", () => {
           db: trx,
           secrets,
           openProvider: async () => fake,
-          scope: { kind: "synthetic" },
+          scope: { kind: "synthetic", testMail: NO_TEST_SENDERS },
           now: () => clock,
         });
         // The hard error hits the flag of the first mail on each of three runs.
@@ -155,7 +156,7 @@ describe("actions logs", () => {
           {
             db: trx,
             now: () => clock,
-            actionsScope: { kind: "synthetic" },
+            actionsScope: { kind: "synthetic", testMail: NO_TEST_SENDERS },
             hooks: noDelegationHooks,
             uidplus: async () => true,
             sendScope: { kind: "off" },

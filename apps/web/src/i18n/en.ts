@@ -332,6 +332,11 @@ export const en = {
   acct_this_device: "This device",
   acct_last_active: "Last active {date}",
   acct_unknown_address: "Unknown address",
+  acct_language_label: "Language",
+  acct_language_help: "For this panel, Telegram and the account e-mails.",
+  acct_language_pl: "Polski",
+  acct_language_en: "English",
+  acct_language_saved: "Language saved.",
   // security log (Account card)
   sec_title: "Security log",
   sec_help: "Sign-ins, lockouts, password changes and ended sessions of this organization in the last 90 days.",

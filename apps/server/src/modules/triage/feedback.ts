@@ -11,6 +11,7 @@ import type { Transaction } from "kysely";
 import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 import { listSummaries } from "../actions";
+import type { TestMailRule } from "../mail";
 
 import {
   getLabelTarget,
@@ -131,7 +132,7 @@ export async function listForLabeling(
   db: Db,
   ctx: TenantContext,
   mailboxId: string,
-  opts: { limit: number; mail: MailKind }
+  opts: { limit: number; mail: MailKind; testMail: TestMailRule }
 ): Promise<LabelItem[]> {
   const rows = await listUnlabeled(db, ctx, mailboxId, opts);
   const summaries = await listSummaries(

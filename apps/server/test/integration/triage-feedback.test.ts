@@ -2,6 +2,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import { createPlanned } from "../../src/modules/actions";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { insertTriageResult, listForLabeling, recordFeedback } from "../../src/modules/triage";
 import type { DB } from "../../src/platform/db";
 import { HardError } from "../../src/platform/errors";
@@ -195,7 +196,7 @@ describe("listForLabeling", () => {
         { type: "save_summary", payload: { summary: "short summary" }, status: "logged", idempotencyKey: "fb-summary" },
       ]);
 
-      const real = await listForLabeling(trx, ctx, a.mailboxId, { limit: 10, mail: "real" });
+      const real = await listForLabeling(trx, ctx, a.mailboxId, { limit: 10, mail: "real", testMail: NO_TEST_SENDERS });
       expect(real.map((item) => item.emailId).sort()).toEqual([withSummary, noSummary].sort());
       expect(real.find((item) => item.emailId === withSummary)).toMatchObject({
         category: "info",
@@ -205,11 +206,19 @@ describe("listForLabeling", () => {
       });
       expect(real.find((item) => item.emailId === noSummary)).toMatchObject({ modelCategory: null, summary: null });
 
-      const fake = await listForLabeling(trx, ctx, a.mailboxId, { limit: 10, mail: "synthetic" });
+      const fake = await listForLabeling(trx, ctx, a.mailboxId, {
+        limit: 10,
+        mail: "synthetic",
+        testMail: NO_TEST_SENDERS,
+      });
       expect(fake.map((item) => item.emailId)).toEqual([synthetic]);
 
       await recordFeedback(trx, ctx, { emailId: noSummary, verdict: "right", source: "cli" });
-      const after = await listForLabeling(trx, ctx, a.mailboxId, { limit: 10, mail: "real" });
+      const after = await listForLabeling(trx, ctx, a.mailboxId, {
+        limit: 10,
+        mail: "real",
+        testMail: NO_TEST_SENDERS,
+      });
       expect(after.map((item) => item.emailId)).toEqual([withSummary]);
     });
   });

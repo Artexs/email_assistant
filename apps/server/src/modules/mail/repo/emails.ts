@@ -1,20 +1,27 @@
-import { expressionBuilder, type Expression, type Insertable, type SqlBool } from "kysely";
+import { expressionBuilder, sql, type Expression, type Insertable, type SqlBool } from "kysely";
 
 import type { DB, TenantContext } from "../../../platform/db";
-import { SYNTHETIC_MESSAGE_ID_LIKE } from "../seed";
+import { SYNTHETIC_MESSAGE_ID_LIKE, type TestMailRule } from "../seed";
 
 import { mailboxStatusSchema, type MailboxStatus } from "./mailboxes";
 import type { DbOrTrx } from "./shared";
 
 export type MailKind = "real" | "synthetic";
-// Filter on `emails.message_id_header`: real mail is every row without a synthetic Message-ID (also NULL).
-export function mailKindFilter(kind: MailKind): Expression<SqlBool> {
+// Test mail = a synthetic Message-ID (`emails.message_id_header`) or a sender in the rule (`lower(emails.from_address)`); real mail is every other row (NULL columns count as not test).
+// An empty sender list adds no `IN ()` clause: Postgres refuses an empty IN list.
+export function mailKindFilter(kind: MailKind, rule: TestMailRule): Expression<SqlBool> {
   const eb = expressionBuilder<DB, "emails">();
-  if (kind === "synthetic") return eb("emails.message_id_header", "ilike", SYNTHETIC_MESSAGE_ID_LIKE);
-  return eb.or([
+  const fromSender = sql<boolean>`lower(emails.from_address) in (${sql.join(rule.senders)})`;
+  if (kind === "synthetic") {
+    const synthetic = eb("emails.message_id_header", "ilike", SYNTHETIC_MESSAGE_ID_LIKE);
+    return rule.senders.length === 0 ? synthetic : eb.or([synthetic, fromSender]);
+  }
+  const notSynthetic = eb.or([
     eb("emails.message_id_header", "is", null),
     eb("emails.message_id_header", "not ilike", SYNTHETIC_MESSAGE_ID_LIKE),
   ]);
+  if (rule.senders.length === 0) return notSynthetic;
+  return eb.and([notSynthetic, eb.or([eb("emails.from_address", "is", null), eb.not(fromSender)])]);
 }
 // `source_folder` has a DB default (INBOX), but no insert path may rely on it (D6).
 export type NewEmail = Omit<
@@ -131,11 +138,14 @@ export async function getEmailMailbox(
   db: DbOrTrx,
   ctx: TenantContext,
   emailId: string
-): Promise<{ mailboxId: string; mailboxStatus: MailboxStatus; messageIdHeader: string | null } | undefined> {
+): Promise<
+  | { mailboxId: string; mailboxStatus: MailboxStatus; messageIdHeader: string | null; fromAddress: string | null }
+  | undefined
+> {
   const row = await db
     .selectFrom("emails")
     .innerJoin("mailboxes", "mailboxes.id", "emails.mailbox_id")
-    .select(["emails.mailbox_id", "mailboxes.status", "emails.message_id_header"])
+    .select(["emails.mailbox_id", "mailboxes.status", "emails.message_id_header", "emails.from_address"])
     .where("emails.org_id", "=", ctx.orgId)
     .where("emails.id", "=", emailId)
     .executeTakeFirst();
@@ -144,6 +154,7 @@ export async function getEmailMailbox(
     mailboxId: row.mailbox_id,
     mailboxStatus: mailboxStatusSchema.parse(row.status),
     messageIdHeader: row.message_id_header,
+    fromAddress: row.from_address,
   };
 }
 export interface EmailMeta {

@@ -6,6 +6,7 @@ import { listActionsForEmail } from "../../src/modules/actions";
 import { auditEvents, countLlmCallsSince, recordAudit } from "../../src/modules/audit";
 import { getMailboxSettings, insertDefaultSettings } from "../../src/modules/config";
 import { claimEmails, ensureSyncFolders, getJunkFolderPath, type ClaimedEmail } from "../../src/modules/mail";
+import { NO_TEST_SENDERS, type TestMailRule } from "../../src/modules/mail";
 import {
   finishTriageError,
   saveTriage,
@@ -298,7 +299,7 @@ async function setupMail(
   trx: Transaction<DB>,
   overrides: Parameters<typeof insertTestEmail>[3] = {},
   rules: TriageMailbox["rules"] = [],
-  syntheticOnly = false
+  syntheticOnly: false | { testMail: TestMailRule } = false
 ) {
   const base = await setup(trx);
   const emailId = await insertTestEmail(trx, base.ctx, base.mailbox.id, overrides);
@@ -323,7 +324,12 @@ describe("triageOne", () => {
       const { ctx, emailId, email, mailbox } = await setupMail(trx, { from_address: "news@shop.test" });
       const llm = fakeLlm(analysis());
       expect(
-        await triageOne({ db: trx, llm, pause: fakePause(), dailyCap: 1000, now: () => now }, ctx, mailbox, email)
+        await triageOne(
+          { db: trx, llm, pause: fakePause(), testMail: NO_TEST_SENDERS, dailyCap: 1000, now: () => now },
+          ctx,
+          mailbox,
+          email
+        )
       ).toEqual({
         kind: "triaged",
       });
@@ -365,7 +371,12 @@ describe("triageOne", () => {
       ]);
       const llm = fakeLlm(analysis());
       expect(
-        await triageOne({ db: trx, llm, pause: fakePause(), dailyCap: 1000, now: () => now }, ctx, mailbox, email)
+        await triageOne(
+          { db: trx, llm, pause: fakePause(), testMail: NO_TEST_SENDERS, dailyCap: 1000, now: () => now },
+          ctx,
+          mailbox,
+          email
+        )
       ).toEqual({
         kind: "triaged",
       });
@@ -385,14 +396,19 @@ describe("triageOne", () => {
         { pattern: "corp.test", kind: "whitelist" },
       ]);
       const llm = fakeLlm(analysis());
-      await triageOne({ db: trx, llm, pause: fakePause(), dailyCap: 1000, now: () => now }, ctx, mailbox, email);
+      await triageOne(
+        { db: trx, llm, pause: fakePause(), testMail: NO_TEST_SENDERS, dailyCap: 1000, now: () => now },
+        ctx,
+        mailbox,
+        email
+      );
 
       expect(llm.requests).toHaveLength(1);
       const system = llm.requests[0]?.system ?? "";
       const other = fakeLlm(analysis());
       const plain = await setupMail(trx, { from_address: "someone@else.test" });
       await triageOne(
-        { db: trx, llm: other, pause: fakePause(), dailyCap: 1000, now: () => now },
+        { db: trx, llm: other, pause: fakePause(), testMail: NO_TEST_SENDERS, dailyCap: 1000, now: () => now },
         plain.ctx,
         plain.mailbox,
         plain.email
@@ -407,7 +423,12 @@ describe("triageOne", () => {
     await withRollback(db, async (trx) => {
       const { ctx, emailId, email, mailbox } = await setupMail(trx);
       const llm = fakeLlm(analysis({ confidence: 0.5, reason_code: "fyi" }));
-      await triageOne({ db: trx, llm, pause: fakePause(), dailyCap: 1000, now: () => now }, ctx, mailbox, email);
+      await triageOne(
+        { db: trx, llm, pause: fakePause(), testMail: NO_TEST_SENDERS, dailyCap: 1000, now: () => now },
+        ctx,
+        mailbox,
+        email
+      );
 
       const [row] = await results(trx, emailId);
       expect(row).toMatchObject({ category: "unsure", reason_code: "fyi", confidence: 0.5 });
@@ -422,7 +443,12 @@ describe("triageOne", () => {
       const { ctx, emailId, email, mailbox } = await setupMail(trx);
       const llm = fakeLlm(new LlmSoftError("http_429", "fake-model"));
       const pause = fakePause();
-      const outcome = await triageOne({ db: trx, llm, pause, dailyCap: 1000, now: () => now }, ctx, mailbox, email);
+      const outcome = await triageOne(
+        { db: trx, llm, pause, testMail: NO_TEST_SENDERS, dailyCap: 1000, now: () => now },
+        ctx,
+        mailbox,
+        email
+      );
 
       const until = new Date(now.getTime() + 5 * 60_000);
       expect(outcome).toEqual({ kind: "paused", until });
@@ -450,7 +476,12 @@ describe("triageOne", () => {
         const { ctx, emailId, email, mailbox } = await setupMail(trx);
         const llm = fakeLlm(new LlmConfigError(code, "fake-model"));
         const pause = fakePause();
-        const outcome = await triageOne({ db: trx, llm, pause, dailyCap: 1000, now: () => now }, ctx, mailbox, email);
+        const outcome = await triageOne(
+          { db: trx, llm, pause, testMail: NO_TEST_SENDERS, dailyCap: 1000, now: () => now },
+          ctx,
+          mailbox,
+          email
+        );
 
         expect(outcome.kind).toBe("paused");
         expect(pause.trips).toEqual([{ kind: "config", code }]);
@@ -467,7 +498,12 @@ describe("triageOne", () => {
       const { ctx, emailId, email, mailbox } = await setupMail(trx);
       const llm = fakeLlm(new LlmBlockedError("fake-model"));
       const pause = fakePause();
-      const outcome = await triageOne({ db: trx, llm, pause, dailyCap: 1000, now: () => now }, ctx, mailbox, email);
+      const outcome = await triageOne(
+        { db: trx, llm, pause, testMail: NO_TEST_SENDERS, dailyCap: 1000, now: () => now },
+        ctx,
+        mailbox,
+        email
+      );
 
       expect(outcome).toEqual({ kind: "triaged" });
       expect(llm.requests).toHaveLength(1);
@@ -503,7 +539,14 @@ describe("triageOne", () => {
   test("finishTriageError saves unsure with the triage_error code", async () => {
     await withRollback(db, async (trx) => {
       const { ctx, emailId, email, mailbox } = await setupMail(trx);
-      const deps = { db: trx, llm: fakeLlm(analysis()), pause: fakePause(), dailyCap: 1000, now: () => now };
+      const deps = {
+        db: trx,
+        llm: fakeLlm(analysis()),
+        pause: fakePause(),
+        testMail: NO_TEST_SENDERS,
+        dailyCap: 1000,
+        now: () => now,
+      };
       expect(await finishTriageError(deps, ctx, mailbox, email)).toEqual({ kind: "triaged" });
       const [row] = await results(trx, emailId);
       expect(row).toMatchObject({ category: "unsure", reason_code: "triage_error", confidence: 0, model: null });
@@ -526,7 +569,7 @@ describe("triageOne", () => {
 
         for (let run = 1; run <= 3; run += 1) {
           const outcome = await triageOne(
-            { db: trx, llm, pause, dailyCap: 1000, now: () => clock },
+            { db: trx, llm, pause, testMail: NO_TEST_SENDERS, dailyCap: 1000, now: () => clock },
             ctx,
             mailbox,
             email
@@ -572,7 +615,14 @@ describe("triageOne", () => {
           .where("id", "=", emailId)
           .execute();
         const outcome = await triageOne(
-          { db: trx, llm: fakeLlm(error), pause: fakePause(), dailyCap: 1000, now: () => now },
+          {
+            db: trx,
+            llm: fakeLlm(error),
+            pause: fakePause(),
+            testMail: NO_TEST_SENDERS,
+            dailyCap: 1000,
+            now: () => now,
+          },
           ctx,
           mailbox,
           email
@@ -595,7 +645,14 @@ describe("triageOne", () => {
       const { ctx, emailId, email, mailbox } = await setupMail(trx);
       const pause = fakePause();
       const soft = await triageOne(
-        { db: trx, llm: fakeLlm(new LlmSoftError("http_429", "fake-model")), pause, dailyCap: 1000, now: () => now },
+        {
+          db: trx,
+          llm: fakeLlm(new LlmSoftError("http_429", "fake-model")),
+          pause,
+          testMail: NO_TEST_SENDERS,
+          dailyCap: 1000,
+          now: () => now,
+        },
         ctx,
         mailbox,
         email
@@ -615,7 +672,7 @@ describe("triageOne", () => {
       if (!again) throw new Error("claim failed");
 
       const outcome = await triageOne(
-        { db: trx, llm: fakeLlm(analysis()), pause, dailyCap: 1000, now: () => clock },
+        { db: trx, llm: fakeLlm(analysis()), pause, testMail: NO_TEST_SENDERS, dailyCap: 1000, now: () => clock },
         ctx,
         mailbox,
         again
@@ -646,7 +703,7 @@ describe("triageOne", () => {
         const pause = fakePause();
         const llm = fakeLlm(new LlmSoftError("http_503", "fake-model"));
         const outcome = await triageOne(
-          { db: failing, llm, pause, dailyCap: 1000, now: () => now },
+          { db: failing, llm, pause, testMail: NO_TEST_SENDERS, dailyCap: 1000, now: () => now },
           ctx,
           mailbox,
           email
@@ -697,7 +754,7 @@ describe("triageOne", () => {
       if (!email) throw new Error("claim failed");
       const llm = fakeLlm(analysis());
       await triageOne(
-        { db: trx, llm, pause: fakePause(), dailyCap: 1000, now: () => now },
+        { db: trx, llm, pause: fakePause(), testMail: NO_TEST_SENDERS, dailyCap: 1000, now: () => now },
         base.ctx,
         base.mailbox,
         email
@@ -739,13 +796,13 @@ describe("triageOne", () => {
         now,
         limit: 10,
         staleBefore: new Date(now.getTime() - 5 * 60_000),
-        syntheticOnly: true,
+        syntheticOnly: { testMail: NO_TEST_SENDERS },
       });
       const email = claimed.find((row) => row.id === currentId);
       if (!email) throw new Error("claim failed");
       const llm = fakeLlm(analysis());
       await triageOne(
-        { db: trx, llm, pause: fakePause(), dailyCap: 1000, now: () => now },
+        { db: trx, llm, pause: fakePause(), testMail: NO_TEST_SENDERS, dailyCap: 1000, now: () => now },
         base.ctx,
         base.mailbox,
         email
@@ -764,7 +821,7 @@ describe("triageOne: cost gates", () => {
   const eightDaysAgo = new Date(now.getTime() - 8 * 24 * 3_600_000);
 
   function deps(trx: Transaction<DB>, llm: LlmClient, dailyCap = 1000) {
-    return { db: trx, llm, pause: fakePause(), dailyCap, now: () => now };
+    return { db: trx, llm, pause: fakePause(), testMail: NO_TEST_SENDERS, dailyCap, now: () => now };
   }
 
   async function addLlmCalls(trx: Transaction<DB>, ctx: TenantContext, mailboxId: string, at: Date[]) {
@@ -952,7 +1009,7 @@ const delegationAnswer = (delegateId: string | null, overrides: Record<string, u
   });
 
 function triageDeps(trx: Transaction<DB>, llm: LlmClient, clock: Date = now) {
-  return { db: trx, llm, pause: fakePause(), dailyCap: 1000, now: () => clock };
+  return { db: trx, llm, pause: fakePause(), testMail: NO_TEST_SENDERS, dailyCap: 1000, now: () => clock };
 }
 
 async function dependsOn(trx: Transaction<DB>, actionId: string | undefined) {

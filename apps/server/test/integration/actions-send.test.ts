@@ -22,6 +22,7 @@ import { buildDraftMessage } from "../../src/modules/actions/drafts";
 import { getMailboxSettings, insertDefaultSettings } from "../../src/modules/config";
 import { delegationHooks } from "../../src/modules/delegation";
 import { composeMessage, MailAuthError, SmtpSendError } from "../../src/modules/mail";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { createFakeMailProvider, type FakeMailProvider } from "../../src/modules/mail/fake";
 import { createFakeMailSender, type FakeMailSender } from "../../src/modules/mail/fake/sender";
 import { claimEmails, insertCredentials } from "../../src/modules/mail/repo";
@@ -1009,6 +1010,7 @@ describe("send end to end", () => {
         db: trx,
         llm: fakeLlm(answer),
         pause,
+        testMail: NO_TEST_SENDERS,
         dailyCap: 1000,
         now: () => NOW,
       });

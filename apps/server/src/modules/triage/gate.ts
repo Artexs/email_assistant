@@ -3,6 +3,7 @@ import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 import { setCategoryAuto, type SettingsChange, type SettingsDeps } from "../config";
+import type { TestMailRule } from "../mail";
 
 import { buildRealReport } from "./eval-real";
 import { listLabeledResults } from "./repo";
@@ -12,9 +13,10 @@ export async function goNoGoFor(
   db: Db | Transaction<DB>,
   ctx: TenantContext,
   mailboxId: string,
-  now: Date
+  now: Date,
+  testMail: TestMailRule
 ): Promise<Record<BarCategory, GateView>> {
-  const rows = await listLabeledResults(db, ctx, mailboxId, { mail: "real" });
+  const rows = await listLabeledResults(db, ctx, mailboxId, { mail: "real", testMail });
   const report = buildRealReport(rows, { bar: GATE_BAR, minKept: GATE_MIN_KEPT, mail: "real", now });
   const result = {} as Record<BarCategory, GateView>;
   for (const category of barCategories) {
@@ -48,7 +50,8 @@ export async function setCategoryAutoWithGate(
   deps: SettingsDeps,
   ctx: TenantContext,
   mailboxId: string,
-  input: { category: BarCategory; auto: boolean; force: boolean; threshold?: number; actor: string }
+  input: { category: BarCategory; auto: boolean; force: boolean; threshold?: number; actor: string },
+  testMail: TestMailRule
 ): Promise<AutoGateResult> {
   if (!input.auto) {
     const change = await setCategoryAuto(deps, ctx, mailboxId, {
@@ -60,7 +63,7 @@ export async function setCategoryAutoWithGate(
     });
     return { kind: "changed", change, gate: null };
   }
-  const gate = (await goNoGoFor(deps.db, ctx, mailboxId, deps.now()))[input.category];
+  const gate = (await goNoGoFor(deps.db, ctx, mailboxId, deps.now(), testMail))[input.category];
   if (gate.decision !== "go" && !input.force) {
     return { kind: "refused", gate };
   }

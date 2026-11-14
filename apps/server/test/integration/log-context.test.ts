@@ -1,6 +1,7 @@
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 
 import { insertDefaultSettings } from "../../src/modules/config";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { tenancyRoutes } from "../../src/modules/tenancy";
 import { createLlmPause, createTriageJob } from "../../src/modules/triage";
 import type { GenerateFn } from "../../src/platform/llm";
@@ -88,6 +89,7 @@ describe("log context", () => {
           pause: createLlmPause(),
           scope: { kind: "all" },
           batchSize: 5,
+          testMail: NO_TEST_SENDERS,
           dailyCap: 1000,
           now: () => new Date("2026-11-20T10:00:00Z"),
         });

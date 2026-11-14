@@ -9,6 +9,7 @@ import {
   composeMessage,
   createMailSyncJob,
   mailboxHasUidplus,
+  NO_TEST_SENDERS,
   openImapProvider,
   openSmtpSender,
 } from "../../../apps/server/src/modules/mail";
@@ -43,7 +44,7 @@ test("link, urgent notice, digest and undo run against the fake, the DB and Gree
       startedAt,
       llmDailyCap: 300,
       triageScope: "synthetic",
-      actionsScope: { kind: "synthetic" },
+      actionsScope: { kind: "synthetic", testMail: NO_TEST_SENDERS },
       llm: { provider: "gemini", classifierModel: "fake-model" },
       hooks,
       uidplus: (uidCtx, mailboxId) => mailboxHasUidplus(trx, uidCtx, mailboxId),
@@ -58,7 +59,7 @@ test("link, urgent notice, digest and undo run against the fake, the DB and Gree
       openSender: openSmtpSender,
       compose: composeMessage,
       hooks,
-      scope: { kind: "synthetic" },
+      scope: { kind: "synthetic", testMail: NO_TEST_SENDERS },
       sendScope: { kind: "off" },
       now,
     });
@@ -98,8 +99,9 @@ test("link, urgent notice, digest and undo run against the fake, the DB and Gree
         db: trx,
         llm: urgentLlm(),
         pause: createLlmPause({ configHint: "test" }),
-        scope: { kind: "synthetic" },
+        scope: { kind: "synthetic", testMail: NO_TEST_SENDERS },
         batchSize: 5,
+        testMail: NO_TEST_SENDERS,
         dailyCap: 300,
         now,
       }).run();
