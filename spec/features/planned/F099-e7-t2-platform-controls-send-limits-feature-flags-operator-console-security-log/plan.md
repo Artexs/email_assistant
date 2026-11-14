@@ -12,7 +12,7 @@ Ticket: [ticket.md](ticket.md). Open defaults for the owner: [questions.md](ques
 - [x] stage-01-send-limit-rule [written]
 - [x] stage-02-send-started-column [written]
 - [x] stage-03-hold-in-the-committer [written]
-- [ ] stage-04-visible-wait-and-operator-notice
+- [x] stage-04-visible-wait-and-operator-notice [written]
 - [ ] stage-05-send-held-notice
 - [ ] stage-06-operator-module-and-me
 - [ ] stage-07-operator-org-list
