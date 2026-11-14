@@ -95,11 +95,12 @@ emails.status:   pending → processing → triaged → done                (don
                  processing → processing                              (stale claim: locked_at older than 5 min, taken again by a later run;
                                                                        the take-back counts one attempt; a mail at 3 attempts ends as unsure / triage_error without an LLM call)
                  processing → skipped                                 (older than 7 days and not backfilled, reason too_old)
-                 processing → skipped                                 (received more than 24 h before resumed_at and not backfilled, reason suspended_backlog; docs/architecture.md §8)
+                 processing → skipped                                 (received more than 24 h before resumed_at and not backfilled, reason suspended_backlog; tenancy-and-plans.md § Rules, rule 3, Resume)
                  skipped → pending                                    (one-off backfill re-queue of too_old mail in the window)
 ```
 
 - `emails.status` is one of `pending`, `processing`, `triaged`, `done`, `skipped`; `skip_reason` holds `too_old`, `suspended_backlog` or `body_expired`; `attempts`, `next_attempt_at` and `locked_at` drive the claim (`FOR UPDATE SKIP LOCKED`).
+  - Check against the code: no code writes the status `done`. The check constraint of `emails.status` allows it, but a mail stays `triaged` when its actions end, so the flow `triaged → done` above does not happen today.
 - `triage_results`: `category`, `vip`, `confidence`, `reason_code`, `reason`, `fields` (with `model_category`), `model`, `prompt_version`, `tokens_in`, `tokens_out`, `latency_ms`. A mail can have several rows; the newest wins.
 - `triage_feedback`: `verdict` (`right`, `wrong`), `true_category`, `source` (`cli`, `telegram`, `undo`, `imap_move`, `web`), `user_id`.
 - `mailbox_settings`: `mode`, `tool_switches`, `category_policy` (per category: `threshold`, `auto`); the job compares a settings version (rule 9).

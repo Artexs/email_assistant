@@ -48,14 +48,15 @@
 
 ## Pages
 
-| Page                                           | Capability         | Main modules                                                                                                                                                                |
-| ---------------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [sync.md](sync.md)                             | Sync               | `modules/mail`, `packages/core/src/mail`                                                                                                                                    |
-| [triage.md](triage.md)                         | Triage             | `modules/triage`, `modules/config` (rules), `packages/core/src/triage`, `platform/llm`                                                                                      |
-| [actions-and-undo.md](actions-and-undo.md)     | Actions and Undo   | `modules/actions`, `modules/triage` (`returned.ts`, `undo.ts`), `modules/config` (settings), `packages/core/src/triage`                                                     |
-| [drafts-and-send.md](drafts-and-send.md)       | Drafts and send    | `modules/actions` (`drafts.ts`, `send.ts`, `approvals.ts`, `expiry.ts`), `modules/mail/imap/smtp.ts`, `packages/core/src/outgoing`, `packages/core/src/digest/approvals.ts` |
-| [delegation.md](delegation.md)                 | Delegation         | `modules/delegation`, `modules/triage/service.ts`, `packages/core/src/triage/planners.ts`                                                                                   |
-| [digest-and-notices.md](digest-and-notices.md) | Digest and notices | `modules/channels`, `modules/reports` (`digest.ts`), `packages/core/src/digest`, `packages/core/src/notices`                                                                |
-| [web-panel.md](web-panel.md)                   | Web panel          | `apps/web`, `web.ts`, `platform/http.ts`, `platform/auth.ts`, the `routes.ts` of each module                                                                                |
-
-Planned pages (F095 stage 07): tenancy and plans, retention, backups.
+| Page                                           | Capability         | Main modules                                                                                                                                                                        |
+| ---------------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [sync.md](sync.md)                             | Sync               | `modules/mail`, `packages/core/src/mail`                                                                                                                                            |
+| [triage.md](triage.md)                         | Triage             | `modules/triage`, `modules/config` (rules), `packages/core/src/triage`, `platform/llm`                                                                                              |
+| [actions-and-undo.md](actions-and-undo.md)     | Actions and Undo   | `modules/actions`, `modules/triage` (`returned.ts`, `undo.ts`), `modules/config` (settings), `packages/core/src/triage`                                                             |
+| [drafts-and-send.md](drafts-and-send.md)       | Drafts and send    | `modules/actions` (`drafts.ts`, `send.ts`, `approvals.ts`, `expiry.ts`), `modules/mail/imap/smtp.ts`, `packages/core/src/outgoing`, `packages/core/src/digest/approvals.ts`         |
+| [delegation.md](delegation.md)                 | Delegation         | `modules/delegation`, `modules/triage/service.ts`, `packages/core/src/triage/planners.ts`                                                                                           |
+| [digest-and-notices.md](digest-and-notices.md) | Digest and notices | `modules/channels`, `modules/reports` (`digest.ts`), `packages/core/src/digest`, `packages/core/src/notices`                                                                        |
+| [web-panel.md](web-panel.md)                   | Web panel          | `apps/web`, `web.ts`, `platform/http.ts`, `platform/auth.ts`, the `routes.ts` of each module                                                                                        |
+| [tenancy-and-plans.md](tenancy-and-plans.md)   | Tenancy and plans  | `modules/tenancy`, `packages/core/src/tenancy.ts`, `packages/core/src/features.ts`, `platform/http.ts` (`requireTenant`, `requireOwner`, `requireOperator`), the `org-*.ts` scripts |
+| [retention.md](retention.md)                   | Retention          | `retention.ts`, the `clear*` functions of `modules/mail`, `modules/triage`, `modules/actions`, `modules/delegation` and `modules/channels`                                          |
+| [backups.md](backups.md)                       | Backups            | `deploy/backup.sh`, `deploy/restore-test.sh`, `deploy/README.md`                                                                                                                    |

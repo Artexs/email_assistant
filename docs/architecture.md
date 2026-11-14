@@ -192,7 +192,7 @@ One category per mail (Zod enum `Category` in `packages/core`). One folder per m
 There is no auto-send mode in MVP (ADR 0003). Each action type has an ON/OFF switch per mailbox (`tool_switches`).
 The policy is the first gate. `ACTIONS_SCOPE` (env, S3) is a second gate next to the mode, and the committer checks it when it claims:
 `off` (default) = the committer applies no mailbox change (only `save_summary`); `synthetic` = mailbox changes only for mail with a synthetic `Message-ID` (`@ea-seed.test>`), in every mailbox;
-`all` = every active mailbox of an organization that is not `suspended` (§8), by the mode, the switches and the `auto` flags of each mailbox. The modes are the consent (D2): `shadow` changes nothing in the mailbox. No scope reads `TEST_MAILBOX_ADDRESS` (only the `testmail` and probe tools read it).
+`all` = every active mailbox of an organization that is not `suspended` ([tenancy-and-plans.md](capabilities/tenancy-and-plans.md) § Rules, rule 3), by the mode, the switches and the `auto` flags of each mailbox. The modes are the consent (D2): `shadow` changes nothing in the mailbox. No scope reads `TEST_MAILBOX_ADDRESS` (only the `testmail` and probe tools read it).
 Actions that the scope holds back stay `ready` and wait (they expire after 24 h, §4.1 rule 7). `synthetic` is a test gate, not a security boundary: any sender can write such an id.
 `SEND_SCOPE` (env, S4) is a third gate, for the send only. `off` (default) = no send goes out: an approved send waits and ends as `held_timeout` 48 h after the tap; `self` = only a send whose every recipient is in `SEND_TEST_ADDRESSES`; `all` = every send of every active mailbox of an organization that is not `suspended` (delegations, reminders and clarification questions to the original sender); a send still needs the owner's tap. The server refuses `self` without a valid address list. A draft is made under `ACTIONS_SCOPE`: with `off`, no draft is made, so no approval request goes out. A tap on 📤 Send is the approval; the scope still decides whether the mail goes out.
 The mode, the `auto` flags and the switches change only through `bun run mailbox:settings` (audit rows `mailbox.mode_changed`, `mailbox.policy_changed`, `mailbox.switch_changed`).
@@ -516,24 +516,28 @@ Tenancy:
 
 ## 8. Reliability and operations
 
-- **Scheduler** (in the server process, `croner`, one tick never overlaps the next): mail sync every 5 min per mailbox;
-  triage worker, committer and returned job every 15 s; approval expiry hourly; retention job `platform.retention` daily at 02:40 (the backup runs at 03:30);
-  operator notices `channels.operator` hourly at minute 13; chaser every 15 min (S4, acts at 07:30 local time).
-  Moved to [docs/capabilities/digest-and-notices.md](capabilities/digest-and-notices.md) § Rules (F095): the S2 jobs `channels.notifier` and `channels.digest`.
+- **Scheduler** (in the server process, `croner`, one tick never overlaps the next). Every job of `apps/server/src/main.ts`; the detail of a job is on its page:
+
+  | Job                  | Schedule                                                                      | Page                                                        |
+  | -------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------- |
+  | `mail.sync`          | `*/5 * * * *` (every 5 min)                                                   | [sync.md](capabilities/sync.md)                             |
+  | `platform.heartbeat` | `*/5 * * * *` (every 5 min)                                                   | Liveness, below                                             |
+  | `channels.operator`  | `0 13 * * * *` (hourly at minute 13)                                          | [digest-and-notices.md](capabilities/digest-and-notices.md) |
+  | `triage.worker`      | `*/15 * * * * *` (every 15 s; only when the triage scope is not `off`)        | [triage.md](capabilities/triage.md)                         |
+  | `actions.committer`  | `*/15 * * * * *` (every 15 s)                                                 | [actions-and-undo.md](capabilities/actions-and-undo.md)     |
+  | `actions.expiry`     | `0 7 * * * *` (hourly at minute 7)                                            | [drafts-and-send.md](capabilities/drafts-and-send.md)       |
+  | `delegation.chaser`  | `20 */15 * * * *` (every 15 min; acts from 07:30 local time)                  | [delegation.md](capabilities/delegation.md)                 |
+  | `triage.returned`    | `*/15 * * * * *` (every 15 s)                                                 | [actions-and-undo.md](capabilities/actions-and-undo.md)     |
+  | `platform.retention` | `0 40 2 * * *` (daily at 02:40; the backup runs at 03:30, from the host cron) | [retention.md](capabilities/retention.md)                   |
+  | `channels.notifier`  | `*/15 * * * * *` (every 15 s; only when Telegram is on)                       | [digest-and-notices.md](capabilities/digest-and-notices.md) |
+  | `channels.digest`    | `5 * * * * *` (every minute at second 5; only when Telegram is on)            | [digest-and-notices.md](capabilities/digest-and-notices.md) |
+
 - Moved to [docs/capabilities/actions-and-undo.md](capabilities/actions-and-undo.md) § Rules (F095).
 - Moved to [docs/capabilities/drafts-and-send.md](capabilities/drafts-and-send.md) § Rules (F095).
 - Moved to [docs/capabilities/delegation.md](capabilities/delegation.md) § Rules (F095).
 - Moved to [docs/capabilities/drafts-and-send.md](capabilities/drafts-and-send.md) § Rules, rule 10 (F095).
-- **Plan state (S6a):** `organizations.plan` is `trial`, `active` or `suspended`. The operator changes it with `bun run org:plan` (audit row `org.plan_changed`). A `suspended` organization is paused by the operator:
-  - **Jobs.** These skip it: mail sync, triage worker, `triage.returned`, committer, chaser, notice detection, digests and the outbox sender (its pending rows wait). The approval expiry and `platform.retention` still run for it. Every job reaches mailboxes through `listSyncTargets`, `listMailboxTargets` or `listLinkedChats`, which skip a `suspended` organization unless the caller sets `includeSuspended`. The sync, triage and committer loops check the plan before each mailbox, so a run that started before the change stops at the next mailbox. A send in flight finishes.
-  - **Queued messages.** The change to `suspended` sets every `pending` outbox row of the organization to `failed` / `outdated`, except the kinds `approval` and `approval_set` (the notifier queues them only once).
-  - **Approval requests at resume (F079).** The change from `suspended` to `trial` or `active` ends every send that is `awaiting_approval` with `notified_at` before `resumed_at` and no `sent` outbox row of its request (`approval:<send id>` or `approval_set:<set id>`): a request that no owner saw. The send ends as `expired` with the reason `not_seen`, in the same transaction as the plan change (`setOrgPlan` hook `onResumed`; `bun run org:plan`). The cascade is the one of `expireSend`: the draft (a reverse row or `expired`), the delegation (`cancelled`), one `action.expired` audit row. Each owner gets the result notice "you did not receive the approval request (the account was paused, or it did not go out)". The `pending` approval requests of the ended sends, and a `sending` one with a claim older than 5 min (a crash left it), become `failed` / `outdated`, so no stale request goes out; a `sending` row with a fresh claim finishes. A request that an owner already received stays: its send waits for a tap or ends by the 48 h rule. A send with `notified_at` null stays: the notifier queues its request after the resume with a fresh text. The expiry job (it also runs for a suspended organization) ends a send as `timeout` only when a `sent` outbox row of its request exists. An old request with no `sent` row ends as `not_seen` when the organization is not suspended; while it is suspended, the send waits for the resume hook. So no send ends as `timeout` without a delivered request.
-  - **Telegram.** Every command except `/help`, and every tap, answers "account paused" and changes nothing. `/start` linking still works.
-  - **Web.** Every write under `/api` answers `403 org_suspended`, except the paths in `SUSPENDED_WRITE_ALLOW` (none in S6a). Sign-out and the password routes are Better Auth paths outside `/api`, so they work. Reads work. The panel shows a paused banner with `OPERATOR_CONTACT`.
-  - **Resume.** The change from `suspended` to `trial` or `active` sets `resumed_at`. Mail with `received_at` more than 24 h before `resumed_at`, stored before `resumed_at` + 24 h and not backfilled, becomes `skipped` with `suspended_backlog` (no LLM call; the digest counts it on its own line). The sync-late notice and its 30 min grace count from `resumed_at`, and the urgent look-back starts at `resumed_at`. Stale `ready` actions expire at the first committer run (24 h rule).
-  - **48 h rule.** For every plan, the committer claims an `approved` send only when the tap is less than 48 h old. A send approved before a pause ends as `held_timeout` after it.
-  - **Mailbox limit.** `connectMailbox` (web and CLI) refuses a mailbox above `max_mailboxes` with `mailbox_limit` (web: `409`). The count runs under an advisory lock after the IMAP check, so two connects at once give one success.
-- **Feature flags (F087):** `bun run org:flag --org-id <uuid> [--flag <key> --on|--off]` lists or changes the flags of one organization (audit row `org.flag_changed`). `FEATURES_OFF` turns flags off for every organization at the next restart (kill switch); an unknown key stops the start. The start log line `features off by FEATURES_OFF: <keys|none>` shows it.
+- Moved to [docs/capabilities/tenancy-and-plans.md](capabilities/tenancy-and-plans.md) § Rules (F095).
+- Moved to [docs/capabilities/tenancy-and-plans.md](capabilities/tenancy-and-plans.md) § Rules, rule 5 (F095).
 - Moved to [docs/capabilities/digest-and-notices.md](capabilities/digest-and-notices.md) § Rules (F095).
 - **Work queue:** `emails` and `actions` rows with `status`, `attempts`, `next_attempt_at`, `locked_at`, claimed with `FOR UPDATE SKIP LOCKED`.
 - Moved to [docs/capabilities/sync.md](capabilities/sync.md) § Rules (F095).
@@ -541,8 +545,7 @@ Tenancy:
 - **Liveness:** the server sends a heartbeat every 5 min to Healthchecks.io (`HEARTBEAT_URL`, outbound only; period 5 min, grace 10 min, email alert). The service alerts when heartbeats stop.
   A Telegram admin notice goes out when the last good sync is older than 30 min. Every digest shows "last sync HH:MM", also when it is empty.
 - **`GET /health`:** DB reachable, last good sync per mailbox.
-- **Backups:** `deploy/backup.sh` at 03:30 every night: `pg_dump`, encrypted with `age` (only the public key on the VPS), copied with `rclone` to a
-  Backblaze B2 bucket with a write-only key; remote retention is a bucket lifecycle rule. `deploy/restore-test.sh` on the Mac; one restore test per month.
+- Moved to [docs/capabilities/backups.md](capabilities/backups.md) § Rules (F095).
 - **Logging (ADR 0024):** one JSON object per line (`LOG_FORMAT=json`, the VPS) with `time`, `level`, `module`, `event`, `msg` and allow-listed fields (`platform/log-fields.ts`); every line of a job tick has `job` and `run_id`, every line of an HTTP request has `request_id` (also the `x-request-id` response header); `LOG_FORMAT=text` in dev. The start lines name each job with `job_scheduled`; the schedules are in this section. Module lines move to the event form in E8a; until then they appear as `event: legacy_text` with their old text in `msg`.
 
 ## 9. Testing

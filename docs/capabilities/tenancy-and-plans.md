@@ -40,30 +40,30 @@ Every row of the system belongs to one organization. An organization has members
 
 ## Entry points
 
-| Kind     | Name                                                                              | Where                                                    |
-| -------- | --------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| CLI      | `bun run org:create`                                                              | `apps/server/src/scripts/org-create.ts`                  |
-| CLI      | `bun run org:invite`                                                              | `apps/server/src/scripts/org-invite.ts`                  |
-| CLI      | `bun run org:plan`                                                                | `apps/server/src/scripts/org-plan.ts`                    |
-| CLI      | `bun run org:status`                                                              | `apps/server/src/scripts/org-status.ts`                  |
-| CLI      | `bun run org:flag`                                                                | `apps/server/src/scripts/org-flag.ts`                    |
-| route    | `GET /api/me`, `GET /api/organization`, `PATCH /api/organization` (owner)         | `apps/server/src/modules/tenancy/routes.ts`              |
-| route    | `PATCH /api/me/digest-times`, `POST /api/me/terms`, `GET /api/me/sessions`        | `apps/server/src/modules/tenancy/routes.ts`              |
-| route    | `POST /api/onboarding/keep-mode` (owner)                                          | `apps/server/src/modules/tenancy/routes.ts`              |
-| route    | `GET /api/operator/flags` (operator)                                              | `apps/server/src/modules/tenancy/operator-routes.ts`     |
-| function | `requireTenant`, `requireOwner`, `requireOperator`, `refuseSuspendedWrites`       | `apps/server/src/platform/http.ts`                       |
-| function | `createOrganizationWithOwner`, `setOrgPlan`, `setOrgFeature`                      | `apps/server/src/modules/tenancy/service.ts`             |
-| function | `updateOrganizationSettings`, `organizationView`, `isSupportedTimeZone`           | `apps/server/src/modules/tenancy/service.ts`             |
-| function | `isFeatureOn`, `featureStates`, `featureStatesOfAll`, `configureFeatures`         | `apps/server/src/modules/tenancy/features.ts`            |
-| function | `getOrgPlan`, `isOrgSuspended`, `listOrganizations`, `getMembership`              | `apps/server/src/modules/tenancy/repo.ts`                |
-| function | `getOrgFeature`, `upsertOrgFeature`, `listOrgFeatureRowsOfAll`                    | `apps/server/src/modules/tenancy/repo.ts`                |
-| function | `listSyncTargets`, `listMailboxTargets`                                           | `apps/server/src/modules/mail/repo/targets.ts`           |
-| function | `connectMailbox`                                                                  | `apps/server/src/modules/mail/connect.ts`                |
-| function | `cancelPendingOutboxOfOrg`, `cancelPendingApprovalRequestsOfClosedSends`          | `apps/server/src/modules/channels/repo.ts`               |
-| function | `listLinkedChats`                                                                 | `apps/server/src/modules/channels/repo.ts`               |
-| function | `resumeHook`                                                                      | `apps/server/src/composition.ts`                         |
-| function | `expireUnseenApprovals`                                                           | `apps/server/src/modules/actions/expire.ts`              |
-| function | `resolveFeature`, `expiredFlags`, `isFeatureKey`                                  | `packages/core/src/features.ts`                          |
+| Kind     | Name                                                                        | Where                                                |
+| -------- | --------------------------------------------------------------------------- | ---------------------------------------------------- |
+| CLI      | `bun run org:create`                                                        | `apps/server/src/scripts/org-create.ts`              |
+| CLI      | `bun run org:invite`                                                        | `apps/server/src/scripts/org-invite.ts`              |
+| CLI      | `bun run org:plan`                                                          | `apps/server/src/scripts/org-plan.ts`                |
+| CLI      | `bun run org:status`                                                        | `apps/server/src/scripts/org-status.ts`              |
+| CLI      | `bun run org:flag`                                                          | `apps/server/src/scripts/org-flag.ts`                |
+| route    | `GET /api/me`, `GET /api/organization`, `PATCH /api/organization` (owner)   | `apps/server/src/modules/tenancy/routes.ts`          |
+| route    | `PATCH /api/me/digest-times`, `POST /api/me/terms`, `GET /api/me/sessions`  | `apps/server/src/modules/tenancy/routes.ts`          |
+| route    | `POST /api/onboarding/keep-mode` (owner)                                    | `apps/server/src/modules/tenancy/routes.ts`          |
+| route    | `GET /api/operator/flags` (operator)                                        | `apps/server/src/modules/tenancy/operator-routes.ts` |
+| function | `requireTenant`, `requireOwner`, `requireOperator`, `refuseSuspendedWrites` | `apps/server/src/platform/http.ts`                   |
+| function | `createOrganizationWithOwner`, `setOrgPlan`, `setOrgFeature`                | `apps/server/src/modules/tenancy/service.ts`         |
+| function | `updateOrganizationSettings`, `organizationView`, `isSupportedTimeZone`     | `apps/server/src/modules/tenancy/service.ts`         |
+| function | `isFeatureOn`, `featureStates`, `featureStatesOfAll`, `configureFeatures`   | `apps/server/src/modules/tenancy/features.ts`        |
+| function | `getOrgPlan`, `isOrgSuspended`, `listOrganizations`, `getMembership`        | `apps/server/src/modules/tenancy/repo.ts`            |
+| function | `getOrgFeature`, `upsertOrgFeature`, `listOrgFeatureRowsOfAll`              | `apps/server/src/modules/tenancy/repo.ts`            |
+| function | `listSyncTargets`, `listMailboxTargets`                                     | `apps/server/src/modules/mail/repo/targets.ts`       |
+| function | `connectMailbox`                                                            | `apps/server/src/modules/mail/connect.ts`            |
+| function | `cancelPendingOutboxOfOrg`, `cancelPendingApprovalRequestsOfClosedSends`    | `apps/server/src/modules/channels/repo.ts`           |
+| function | `listLinkedChats`                                                           | `apps/server/src/modules/channels/repo.ts`           |
+| function | `resumeHook`                                                                | `apps/server/src/composition.ts`                     |
+| function | `expireUnseenApprovals`                                                     | `apps/server/src/modules/actions/expire.ts`          |
+| function | `resolveFeature`, `expiredFlags`, `isFeatureKey`                            | `packages/core/src/features.ts`                      |
 
 ## Data
 
