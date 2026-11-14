@@ -61,6 +61,12 @@ export const featureFlags = {
     epic: "E3a",
     removeBy: "2027-03-01",
   },
+  answered_check: {
+    default: false,
+    description: "In /review: mails you replied to that the assistant did not mark 'needs reply'.",
+    epic: "E3a",
+    removeBy: "2027-03-01",
+  },
 } as const satisfies Record<string, FeatureFlag>;
 
 export type FeatureKey = keyof typeof featureFlags;

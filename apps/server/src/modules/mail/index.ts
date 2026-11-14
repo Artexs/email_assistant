@@ -88,6 +88,7 @@ export {
   setMailboxStatus,
   requeueTooOld,
   setFolderMapEntry,
+  setAnsweredCheck,
   setUndoPending,
   touchEmailFlags,
   updateEmailLocation,

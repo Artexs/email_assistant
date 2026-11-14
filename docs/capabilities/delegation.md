@@ -36,7 +36,7 @@ An organization keeps a list of delegates: people who get tasks from the user. T
 | CLI      | `bun run delegates:add`, `delegates:list`, `delegates:disable`, `delegates:enable`             | `apps/server/src/scripts/delegates.ts`                            |
 | CLI      | `bun run delegations:list`, `delegations:done`                                                 | `apps/server/src/scripts/delegations.ts`                          |
 | CLI      | `bun run job:run --name delegation.chaser [--force]`                                           | `apps/server/src/scripts/job-run.ts`                              |
-| Telegram | callback `dd:<delegation id>` (the ✅ Done button); `as:` and `rs:` for a reminder set         | `apps/server/src/modules/channels/callbacks.ts`                   |
+| Telegram | callback `dd:<delegation id>` (the ✅ Done button); `as:` and `rs:` for a reminder set         | `apps/server/src/modules/channels/approval-taps.ts`               |
 | function | `addDelegate`, `setDelegateState`                                                              | `apps/server/src/modules/delegation/service.ts`                   |
 | function | `createDelegation`, `detectReply`, `markAnswered`, `cancelDelegation`, `closeDelegation`       | `apps/server/src/modules/delegation/service.ts`                   |
 | function | `delegationHooks`                                                                              | `apps/server/src/modules/delegation/service.ts`                   |
