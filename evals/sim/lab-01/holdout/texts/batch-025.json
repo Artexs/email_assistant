@@ -12,9 +12,10 @@
     },
     {
       "id": "b-not-0224",
-      "subject": "Logistyka Dziś: biuletyn z 8 stycznia",
-      "body": "W tym wydaniu: stawki spotowe na trasach bałtyckich, nowe limity emisji dla ciężarówek, wyniki przetargów na usługi magazynowe.\n\nStawki frachtowe. Na początku roku przewoźnicy na trasie Gdynia–Malmö podnieśli stawki średnio o cztery procent. Spedytorzy tłumaczą to mniejszą liczbą wolnych naczep po świętach i wyższymi kosztami paliwa. Analitycy rynku spodziewają się stabilizacji dopiero pod koniec lutego.\n\nRegulacje. Komisja zapowiedziała zmiany w zasadach rozliczania opłat drogowych dla pojazdów powyżej dwunastu ton. Projekt trafi do konsultacji w przyszłym miesiącu, a firmy transportowe mają czas na uwagi do połowy marca.\n\nPrzetargi. Dwie duże sieci handlowe ogłosiły postępowania na obsługę magazynów regionalnych. Terminy składania ofert upływają w lutym. Szczegóły warunków udziału publikujemy w dziale przetargów.\n\nDo zobaczenia w piątek.",
-      "thread": []
+      "subject": "Potwierdzenie zmiany ustawień prenumeraty",
+      "body": "Zmieniono ustawienia prenumeraty biuletynu Logistyka Dziś.\n\nKonto: wiktor.szalewski@kordelan.test\nZmiana: częstotliwość wysyłki z codziennej na cotygodniową\nData zmiany: 14.01.2027, godzina 12:54\nŹródło zmiany: panel prenumeraty\nPoprzednie ustawienie: wysyłka codzienna od 09.11.2026\n\nNowe ustawienie obowiązuje od najbliższego wydania. Jeśli nie wprowadzałeś tej zmiany, zaloguj się do panelu i zmień hasło do konta. Ustawienie możesz zmienić ponownie w dowolnej chwili w panelu prenumeraty.\n\nTo jest wiadomość wygenerowana automatycznie. Prosimy na nią nie odpowiadać.",
+      "thread": [],
+      "note": "rewritten: account event (subscription settings change), no editorial content"
     },
     {
       "id": "b-not-0225",
@@ -36,40 +37,46 @@
     },
     {
       "id": "b-not-0228",
-      "subject": "Supply Chain Weekly: container rates ease, air cargo tightens",
-      "body": "This week in global freight\n\nOcean rates. Spot container rates from Asia to Northern Europe fell for the third week in a row, down about six percent on the month. Carriers added blank sailings to hold prices, but port congestion in the North Sea has cleared and transit times are back to normal.\n\nAir cargo. Capacity on transatlantic routes tightened after two carriers withdrew older freighters. Forwarders report rate increases of eight to ten percent on short notice bookings.\n\nRoad freight. European road rates stayed flat. Driver shortages remain the main constraint in the Baltic region, and several operators now offer retention bonuses.\n\nAlso this week:\n- Two large retailers extend their winter surcharge until the end of February.\n- A new rail link between Poland and Lithuania opens for container traffic in March.\n- Fuel surcharge indices were mixed across the continent.\n\nOur new quarterly report on freight cost trends is available to subscribers at a reduced price this month.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
-      "thread": []
+      "subject": "Subscription renewal notice: Supply Chain Weekly",
+      "body": "Your Supply Chain Weekly subscription renews automatically.\n\nAccount: wiktor.szalewski@kordelan.test\nPlan: Standard, one seat\nRenewal date: 01.02.2027\nAmount: 49,00 EUR, charged to the card ending 4417\n\nNo action is needed. To change the plan or the card, open your account settings before the renewal date. If you do not want the renewal, cancel it before 31.01.2027.\n\nThis is an automated message. Replies are not monitored.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "note": "rewritten: subscription renewal notice, no news content"
     },
     {
       "id": "b-not-0229",
-      "subject": "Freight Rates Briefing: what moved in the market",
-      "body": "Good morning from the Supply Chain Weekly desk. Three things moved the freight market in the last seven days.\n\n1. Bunker fuel prices rose for the second week, which pushes carriers to review their surcharges. Expect announcements before the end of the month.\n\n2. Warehouse vacancy in Central Europe dropped below five percent for the first time in two years, according to a regional property survey. Rents for logistics space in Poland and the Czech Republic are rising accordingly.\n\n3. A major European forwarder reported its quarterly results. Volumes grew by three percent, margins stayed under pressure, and management expects a slow first half of the year.\n\nWhat to watch next week: the preliminary figures on December exports from the major port authorities, and the planned vote on new cabotage rules.\n\nReaders who want the full data tables can order our paid Freight Outlook report, which includes route-by-route forecasts for the next two quarters.",
-      "thread": []
+      "subject": "Security alert: new sign-in to your Supply Chain Weekly account",
+      "body": "We detected a new sign-in to your Supply Chain Weekly account.\n\nTime of sign-in: 14.01.2027, 06:48 UTC\nAccount: wiktor.szalewski@kordelan.test\nDevice: Windows desktop, Edge browser\nApproximate location: Gdansk, Poland\n\nIf this was you, you do not need to do anything. If you do not recognise this sign-in, reset your password in your account settings and sign out of all devices.\n\nThis message was sent automatically by the account security system. Please do not reply.",
+      "thread": [],
+      "note": "rewritten: security alert about a new sign-in, no news content"
     },
     {
       "id": "b-not-0232",
-      "subject": "Karty paliwowe: nowy cennik od lutego",
-      "body": "Dostawcy kart paliwowych zapowiadają nowe rabaty od 1 lutego.\n\nPorównanie stawek w tabeli na stronie biuletynu.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
-      "thread": []
+      "subject": "Potwierdzenie: zapisano Cię na alerty cen paliw",
+      "body": "Zapisano Twój adres na alerty cen paliw.\n\nAlerty będą przychodzić raz w tygodniu. Zmienisz to w ustawieniach konta.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "note": "rewritten: subscription confirmation, no news content"
     },
     {
       "id": "b-not-0234",
-      "subject": "Weekly digest: ports, tariffs and trucking capacity",
-      "body": "Your weekly summary of supply chain news.\n\nPorts. Rotterdam and Gdansk both reported record container throughput for the final quarter. Gdansk cites growth in transshipment to the Baltic states. Berth waiting times stayed under one day at both ports.\n\nTariffs. New customs rules for e-commerce parcels take effect for shipments entering the union from the start of March. Brokers advise exporters to update their documentation templates early to avoid delays at the border.\n\nTrucking capacity. The spot market shows more available trailers than a month ago, but long-haul rates remain above last year's level. Analysts link this to higher insurance costs and tighter rules on driver rest time.\n\nTechnology. A group of logistics operators announced a shared platform for booking loading slots at warehouses. A pilot starts in the spring with six participants.\n\nThat is all for this week. Our paid market outlook covers all these topics in detail and is available with a discount for new readers.",
-      "thread": []
+      "subject": "Payment receipt: Supply Chain Weekly premium",
+      "body": "Thank you. We received your payment for the Supply Chain Weekly premium plan.\n\nReceipt number: SCW-2027-0153\nAccount: wiktor.szalewski@kordelan.test\nPaid on: 13.01.2027\nAmount: 49,00 EUR\nPeriod covered: 01.02.2027 to 31.01.2028\n\nYour invoice is ready for download in the billing section of your account. Access to the premium archive starts on the first day of the period.\n\nThis is an automated receipt. Replies to this address are not read.",
+      "thread": [],
+      "note": "rewritten: automated payment receipt for a subscription"
     },
     {
       "id": "b-not-0235",
-      "subject": "Ceny kart paliwowych: co się zmieniło w styczniu",
-      "body": "Karty paliwowe w styczniu. Przegląd zmian w ofertach największych dostawców dla firm transportowych.\n\nCeny. Średnia cena oleju napędowego w rozliczeniu kartowym wzrosła o trzy grosze na litrze w porównaniu z grudniem. Największe podwyżki dotknęły stacje przy autostradach, najmniejsze stacje sieci regionalnych na północy kraju.\n\nRabaty. Dwóch dostawców wprowadziło rabaty progowe dla flot powyżej pięćdziesięciu pojazdów. Pierwszy próg zaczyna się od miesięcznego wolumenu dwudziestu tysięcy litrów. Trzeci dostawca zapowiada podobny model od lutego.\n\nOpłaty. Kilka firm podniosło opłatę za wydanie nowej karty oraz za obsługę faktur w formie papierowej. Przedsiębiorcy powinni sprawdzić zapisy aneksów do swoich umów.\n\nBezpieczeństwo. Przypominamy o limitach dziennych i o blokadzie kart w razie zgubienia.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
-      "thread": []
+      "subject": "Hasło do konta Logistyka Dziś zostało zmienione",
+      "body": "Hasło do Twojego konta w serwisie Logistyka Dziś zostało zmienione.\n\nKonto: wiktor.szalewski@kordelan.test\nData zmiany: 14.01.2027, godzina 11:20\nUrządzenie: przeglądarka na komputerze\n\nJeśli to Ty zmieniłeś hasło, nie musisz nic robić. Jeśli nie rozpoznajesz tej zmiany, skorzystaj z odzyskiwania konta w ustawieniach logowania, a następnie wyloguj wszystkie sesje.\n\nTa wiadomość została wysłana automatycznie. Prosimy na nią nie odpowiadać.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "note": "rewritten: security message about a password change"
     },
     {
       "id": "b-not-0236",
-      "subject": "Biuletyn branżowy: krótko o rynku",
-      "body": "Najważniejsze wiadomości tygodnia dla branży transportowej.\n\nStawki frachtowe na trasach krajowych bez zmian. Spedytorzy czekają na dane o eksporcie za grudzień.\n\nDwa nowe terminale przeładunkowe ruszą w tym roku w północnej Polsce. Szczegóły w kolejnym wydaniu.\n\nDo przeczytania w przyszłym tygodniu.",
-      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Najważniejsze wiadomości tygodnia dla branży transportowej.</p><p style=\"margin:0 0 12px 0\">Stawki frachtowe na trasach krajowych bez zmian. Spedytorzy czekają na dane o eksporcie za grudzień.</p><p style=\"margin:0 0 12px 0\">Dwa nowe terminale przeładunkowe ruszą w tym roku w północnej Polsce. Szczegóły w kolejnym wydaniu.</p><p style=\"margin:0 0 12px 0\">Do przeczytania w przyszłym tygodniu.</p></div>",
-      "thread": []
+      "subject": "Potwierdzenie adresu e-mail w serwisie Logistyka Dziś",
+      "body": "Potwierdź adres e-mail, aby dokończyć rejestrację konta w serwisie Logistyka Dziś.\n\nKod potwierdzający: 482915. Kod wygasa po 30 minutach.\n\nJeśli nie zakładałeś konta, zignoruj tę wiadomość.",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Potwierdź adres e-mail, aby dokończyć rejestrację konta w serwisie Logistyka Dziś.</p><p style=\"margin:0 0 12px 0\">Kod potwierdzający: 482915. Kod wygasa po 30 minutach.</p><p style=\"margin:0 0 12px 0\">Jeśli nie zakładałeś konta, zignoruj tę wiadomość.</p></div>",
+      "thread": [],
+      "note": "rewritten: automated account verification code"
     },
     {
       "id": "b-not-0237",
@@ -86,9 +93,10 @@
     },
     {
       "id": "b-not-0239",
-      "subject": "Magazyn Logistyka Dziś: wydanie specjalne o rynku magazynowym",
-      "body": "Wydanie specjalne: rynek magazynowy na początku roku\n\nNowy rok przyniósł zmiany na rynku powierzchni magazynowych. Przygotowaliśmy zestawienie najważniejszych informacji dla operatorów i właścicieli firm dystrybucyjnych.\n\nWolna powierzchnia. Według przeglądu agencji nieruchomości wskaźnik pustostanów w regionie Trójmiasta spadł poniżej czterech procent. W województwie mazowieckim odsetek wolnych hal jest wyższy, ale i tu popyt rośnie. Najemcy z branży spożywczej szukają obiektów z kontrolowaną temperaturą, a oferta takich hal jest wciąż ograniczona.\n\nCzynsze. Stawki za metr kwadratowy w nowych obiektach wzrosły średnio o pięć procent w skali roku. Deweloperzy zapowiadają kolejne podwyżki, tłumacząc je kosztami budowy i cenami energii. Część najemców negocjuje umowy z indeksacją powiązaną z inflacją.\n\nAutomatyzacja. Coraz więcej operatorów inwestuje w systemy zarządzania magazynem i w skanery nowej generacji. Eksperci zwracają uwagę, że wdrożenie nowego systemu w środku sezonu zwykle kończy się opóźnieniami, dlatego warto planować je na okres mniejszego ruchu.\n\nPracownicy. Agencje pracy tymczasowej donoszą o trudnościach w rekrutacji magazynierów. Wynagrodzenia na stanowiskach operatorów wózków widłowych wzrosły o osiem procent. Firmy coraz częściej oferują dodatki za pracę w nocy oraz opłacane szkolenia na uprawnienia.\n\nPrawo. Ministerstwo przygotowuje nowe przepisy o przechowywaniu materiałów łatwopalnych. Projekt przewiduje dodatkowe wymogi dla hal powyżej pięciu tysięcy metrów kwadratowych.\n\nPełny raport o rynku magazynowym przygotujemy na koniec miesiąca. Zapraszamy do lektury kolejnych wydań.",
-      "thread": []
+      "subject": "Potwierdzenie zamówienia prenumeraty: Magazyn Logistyka Dziś",
+      "body": "Dziękujemy za zamówienie prenumeraty. Poniżej znajdziesz potwierdzenie i dane konta.\n\nNumer zamówienia: LD-2027-0187\nData zamówienia: 12.01.2027, godzina 15:42\nKonto: wiktor.szalewski@kordelan.test\nPakiet: Prenumerata firmowa, trzy stanowiska\nOkres prenumeraty: od 01.02.2027 do 31.01.2028\nOpłata roczna: 1 770,00 PLN netto\nSposób płatności: przelew na rachunek wydawcy\n\nFaktura proforma jest dostępna w sekcji Rozliczenia w Twoim koncie. Termin płatności to 26.01.2027. Dostęp do pakietu uruchomimy automatycznie po zaksięgowaniu wpłaty.\n\nZaproszenia dla pozostałych dwóch użytkowników wyślemy po aktywacji pakietu. Każdy użytkownik dostanie osobny link do ustawienia hasła. Link jest ważny przez siedem dni od wysłania.\n\nDane do faktury możesz poprawić w ustawieniach konta do dnia płatności. Po wystawieniu faktury końcowej zmiana wymaga nowego zamówienia.\n\nZamówienie anulujesz w koncie do dnia poprzedzającego start prenumeraty. Anulowanie nie wiąże się z żadną opłatą.\n\nZamówienie złożono z adresu IP przypisanego do sieci biura w Gdańsku. Zapisaliśmy je w historii konta razem z godziną i nazwą przeglądarki, abyś mógł je później sprawdzić.\n\nFaktura końcowa trafi do Twojego konta po zaksięgowaniu wpłaty.\n\nDo zamówienia dołączono zgodę na elektroniczne doręczanie faktur. Zgodę wycofasz w ustawieniach konta w sekcji Rozliczenia, a wtedy wystawimy faktury w formie papierowej.\n\nTo jest wiadomość wygenerowana automatycznie. Prosimy na nią nie odpowiadać.",
+      "thread": [],
+      "note": "rewritten: automated order confirmation for a subscription"
     },
     {
       "id": "b-not-0240",
@@ -104,45 +112,52 @@
     },
     {
       "id": "b-not-0242",
-      "subject": "Supply Chain Weekly: quick update",
-      "body": "Container spot rates edged lower again this week.\n\nFull figures in the members area.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
-      "thread": []
+      "subject": "Twój kod logowania: Supply Chain Weekly",
+      "body": "Your one-time sign-in code is 538201. It expires in 10 minutes.\n\nIf you did not ask for it, ignore this message.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "note": "rewritten: automated sign-in code message"
     },
     {
       "id": "b-not-0245",
-      "subject": "Karty paliwowe: ostrzeżenia i nowe zasady rozliczeń",
-      "body": "Karty paliwowe. Co zmienia się w rozliczeniach flotowych.\n\nNowe zasady. Dwaj duzi dostawcy zmieniają okres rozliczeniowy z miesięcznego na dwutygodniowy. Dla firm z mniejszym obrotem oznacza to częstsze faktury i krótszy czas na płatność. Przedsiębiorcy powinni sprawdzić, czy ich system księgowy obsłuży nowy cykl.\n\nLimity. Banki i wystawcy kart przypominają, że limity kredytowe dla firm transportowych są weryfikowane raz na kwartał. Opóźnienia w płatności mogą skutkować czasową blokadą kart.\n\nOszustwa. Rośnie liczba prób wyłudzeń danych kart paliwowych, w tym fałszywych wiadomości o rzekomej blokadzie. Przypominamy, że dostawcy nie proszą o podanie numeru karty w mailu.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
-      "thread": []
+      "subject": "Płatność za prenumeratę nie powiodła się",
+      "body": "Nie udało się pobrać opłaty za prenumeratę serwisu Logistyka Dziś.\n\nKonto: wiktor.szalewski@kordelan.test\nKwota: 147,50 PLN\nData próby: 14.01.2027, godzina 04:10\nPowód: karta została odrzucona przez bank wydawcy\n\nPonowimy próbę 17.01.2027. Dostęp do archiwum pozostaje aktywny do 20.01.2027. Aby uniknąć przerwy, zaktualizuj dane karty w ustawieniach płatności w swoim koncie.\n\nTa wiadomość została wysłana automatycznie. Prosimy na nią nie odpowiadać.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "note": "rewritten: automated billing alert, failed subscription payment"
     },
     {
       "id": "b-not-0246",
-      "subject": "Logistyka Dziś: biuletyn z 15 stycznia, wydanie rozszerzone",
-      "body": "Wydanie rozszerzone. Temat numeru: jak firmy dystrybucyjne planują rok.\n\nPrognozy. Analitycy branży oceniają, że popyt na usługi transportowe w pierwszym kwartale wzrośnie o dwa do trzech procent. Największy wzrost dotyczy przewozów żywności i produktów chemii gospodarczej. Słabiej wygląda sektor meblarski, gdzie zamówienia na eksport nadal spadają.\n\nKoszty. Firmy przewozowe wskazują trzy główne źródła rosnących kosztów: paliwo, wynagrodzenia kierowców i ubezpieczenia floty. Wiele z nich renegocjuje umowy z klientami, wprowadzając klauzule indeksacyjne. Klienci zwykle zgadzają się na nie, ale żądają ograniczenia wysokości podwyżek.\n\nFlota. Ceny nowych naczep wzrosły w ubiegłym roku o dziewięć procent, a czas oczekiwania na dostawę wydłużył się do pięciu miesięcy. Część przewoźników przedłuża więc eksploatację starszych pojazdów i inwestuje w serwis. Producenci zapowiadają zwiększenie mocy produkcyjnych dopiero w drugiej połowie roku.\n\nCła i granice. Na wschodniej granicy czas oczekiwania dla ciężarówek skrócił się średnio o godzinę. Natomiast odprawy eksportowe do krajów skandynawskich nadal wymagają starannego przygotowania dokumentów, zwłaszcza faktur handlowych i świadectw pochodzenia.\n\nPrzetargi. Dwie sieci handlowe zapowiedziały przetargi na obsługę logistyczną sklepów regionalnych. Organizatorzy chcą wybrać wykonawców do końca marca.\n\nKalendarz. Najbliższe targi logistyczne odbędą się w lutym. Lista wystawców jest już dostępna w serwisie.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
-      "thread": []
+      "subject": "Zestawienie logowań do konta Logistyka Dziś za styczeń",
+      "body": "Miesięczne zestawienie bezpieczeństwa Twojego konta w serwisie Logistyka Dziś.\n\nKonto: wiktor.szalewski@kordelan.test\nOkres: od 01.01.2027 do 15.01.2027\nData wygenerowania zestawienia: 15.01.2027, godzina 06:00\n\nZalogowano się 9 razy. Wszystkie logowania udały się z zaufanych urządzeń.\n\nLogowania:\n- 02.01.2027, godzina 08:14, komputer, przeglądarka Chrome, Gdańsk\n- 05.01.2027, godzina 07:52, telefon, aplikacja mobilna, Gdańsk\n- 07.01.2027, godzina 09:03, komputer, przeglądarka Chrome, Gdańsk\n- 09.01.2027, godzina 18:40, telefon, aplikacja mobilna, Sopot\n- 12.01.2027, godzina 08:21, komputer, przeglądarka Chrome, Gdańsk\n\nCztery kolejne logowania z tego okresu mają ten sam układ urządzenia i lokalizacji. Nie wykryliśmy żadnych nieudanych prób logowania ani zmian adresu e-mail.\n\nUstawienia zabezpieczeń:\n- uwierzytelnianie dwuskładnikowe: włączone\n- powiadomienia o nowych urządzeniach: włączone\n- ostatnia zmiana hasła: 14.01.2027\n- kod odzyskiwania konta: wygenerowany 03.12.2026\n- zaufane urządzenia: dwa, komputer i telefon\n\nNie zapisujemy treści stron ani innych danych o Twojej aktywności w serwisie. Zestawienie obejmuje wyłącznie zdarzenia związane z logowaniem i ustawieniami konta. Wysyłamy je automatycznie dwa razy w miesiącu, zawsze o tej samej porze.\n\nJeśli nie rozpoznajesz któregoś logowania, zmień hasło i wyloguj wszystkie sesje w ustawieniach konta.\n\nTo jest wiadomość wygenerowana automatycznie. Prosimy na nią nie odpowiadać.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "note": "rewritten: automated monthly account security report"
     },
     {
       "id": "b-not-0249",
-      "subject": "Ceny paliw: tygodniowy przegląd dla flot",
-      "body": "Tygodniowy przegląd cen paliw dla firm transportowych\n\nOlej napędowy w hurcie potaniał w tym tygodniu o około dwa procent. Obniżka wynika z niższych notowań ropy na rynkach światowych i mocniejszego złotego. Dla odbiorców detalicznych zmiana będzie widoczna na stacjach dopiero za kilka dni.\n\nRafinerie zapowiadają na przyszły tydzień niewielką korektę w górę, związaną z rosnącym popytem w Europie Zachodniej. Analitycy ostrzegają, że prognozy na luty pozostają niepewne.\n\nW dziale kart paliwowych porównujemy trzy popularne oferty dla flot średniej wielkości: różnice w rabatach, opłatach za wydanie karty i długości okresów płatności. Najkorzystniejsza oferta zależy od profilu tras i od tego, ile paliwa firma kupuje poza granicami kraju.\n\nDane do tabel pochodzą z publicznych cenników i oświadczeń dostawców. Redakcja nie pobiera opłat za umieszczenie ofert w zestawieniu.",
-      "thread": []
+      "subject": "Alert ceny paliwa: Twój próg został osiągnięty",
+      "body": "Alert cenowy, który ustawiłeś w swoim koncie, właśnie zadziałał.\n\nAlert: hurtowa cena oleju napędowego poniżej 5,90 PLN za litr\nUstawiono: 02.01.2027\nAktualna wartość: 5,86 PLN za litr (notowanie z 14.01.2027, godzina 08:00)\n\nAlert wyłączył się po pierwszym uruchomieniu. Aby ustawić nowy próg lub zmienić sposób powiadamiania, otwórz panel alertów w ustawieniach konta.\n\nTo jest wiadomość wygenerowana automatycznie na podstawie Twojego ustawienia. Prosimy na nią nie odpowiadać.",
+      "thread": [],
+      "note": "rewritten: automated price alert triggered by the user's own setting"
     },
     {
       "id": "b-not-0250",
-      "subject": "Biuletyn: stawki paliwowe w skrócie",
-      "body": "Dostawcy paliw ogłosili nowe stawki na luty.\n\nZestawienie cen w tabeli w serwisie.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
-      "thread": []
+      "subject": "Potwierdzenie: alert został wyłączony",
+      "body": "Wyłączono alert „stawki paliwowe” w Twoim koncie. Nie wyślemy już powiadomień o tym alercie.\n\nZmianę cofniesz w ustawieniach konta.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "note": "rewritten: automated confirmation of an account setting change"
     },
     {
       "id": "b-not-0251",
-      "subject": "Supply Chain Weekly: last mile, labour and rates",
-      "body": "Highlights from the freight world this week.\n\nLast mile. Parcel carriers in Western Europe report a rise in failed first deliveries during the winter weeks, which pushes costs up for retailers. Several operators now test delivery slots confirmed by app notification.\n\nLabour. A survey of two hundred logistics employers shows that wage growth for warehouse staff averaged four percent last year. Employers expect similar growth in the coming year and say retention is a bigger challenge than hiring.\n\nRates. Truckload rates in Northern Europe edged up one percent. Reefer capacity remains tight on routes from Poland to Scandinavia.\n\nPolicy. A group of transport ministers will meet next month to discuss common rules for driver rest areas.\n\nSubscribe to our premium service to receive the full regional rate tables each Monday.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
-      "thread": []
+      "subject": "New user added to your Supply Chain Weekly team plan",
+      "body": "A new user was added to your Supply Chain Weekly team plan.\n\nAccount owner: wiktor.szalewski@kordelan.test\nAdded user: dorota.wilczynska@kordelan.test\nAdded on: 12.01.2027, 16:40\nSeats used: 2 of 3\n\nThe new user received an invitation by email and must set a password within seven days. The invitation stays valid until then.\n\nIf you did not expect this change, remove the user in the team settings of your account and change your password.\n\nThis is an automated message. Replies are not monitored.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "note": "rewritten: automated team plan account event"
     },
     {
       "id": "b-not-0252",
-      "subject": "Logistyka Dziś: podsumowanie tygodnia w transporcie",
-      "body": "Podsumowanie tygodnia w transporcie drogowym i magazynowaniu.\n\nInfrastruktura. Zakończono remont odcinka drogi ekspresowej prowadzącej do portu w Gdyni. Przewoźnicy zapowiadają krótsze czasy dojazdu, szczególnie w godzinach porannych. Zarządca drogi ostrzega, że prace wykończeniowe mogą jeszcze powodować utrudnienia nocą.\n\nPrzewoźnicy. Rośnie liczba firm, które wdrażają elektroniczne listy przewozowe. Według przeglądu branżowego ponad połowa średnich przedsiębiorstw korzysta już z takiego rozwiązania, co skraca czas rozliczeń o kilka dni.\n\nRynek pracy. Kierowcy z uprawnieniami na przewóz towarów niebezpiecznych mogą liczyć na wyższe stawki. Firmy szkoleniowe odnotowały wzrost zapisów na kursy ADR.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
-      "thread": []
+      "subject": "Faktura za prenumeratę została wystawiona",
+      "body": "Wystawiono fakturę za prenumeratę serwisu Logistyka Dziś.\n\nNumer faktury: LD/2027/0412\nData wystawienia: 13.01.2027\nKwota do zapłaty: 725,70 PLN brutto\nTermin płatności: 27.01.2027\nRachunek wydawcy: PL00-TEST-7710\n\nFakturę pobierzesz w sekcji Rozliczenia w swoim koncie. Gdy płatność zostanie zaksięgowana, wyślemy automatyczne potwierdzenie. Jeśli dane nabywcy na fakturze są błędne, popraw je w ustawieniach konta przed terminem płatności.\n\nTa wiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "note": "rewritten: automated invoice notification for a subscription"
     },
     {
       "id": "b-not-0254",
