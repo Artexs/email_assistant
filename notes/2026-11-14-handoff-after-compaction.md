@@ -92,3 +92,10 @@ For F100 stage 19 (docs) and later web work:
 - N4 (plausible, not tested): delete_organization's `gone` select takes no lock on memberships. An invite into org B that commits during a delete of org A can lose its new membership through the users cascade. Stage 02 (module `privacy`, deleteOrganization) must either lock the `gone` users' membership rows and re-check, or note why it is acceptable; test it if deterministic.
 - N3: a user whose only membership is A can have B rows from an earlier B membership: they lose the user link (SET NULL) and the user is deleted; audit_log.actor text in B keeps the id. Accepted edge case.
 - N5: trigger emails_skip_tombstoned has no pinned search_path (it qualifies public.dsr_tombstones): low risk.
+
+## F097 s20 review carry-over (Opus PASS, 2026-11-14)
+- N1: D34 exception. 31 holdout urgent cases (b-urg-0025 … b-urg-0181, notes "rewritten: round 2 urgent event") disagreed twice and were rewritten a second time, not dropped. Without it holdout urgent = 189 < 200 (P3). Recorded here because no other file holds it. The owner may add these 31 to the O1 audit by hand.
+- N2: holdout vip-urgent (54) now mostly means a deadline in the text (46 rewritten). Stage 21 report must say that the P5 urgent-recall for source vip measures text urgency, or re-tag the source.
+- N3: injection tag 8/10 = 0.80 (dev 1 of 3; holdout 7/7). Exactly at the floor.
+- N6: audit list lacks receivedAt and VIP status; 13 holdout texts sit in audit/. Stage 22 or the owner step may add them.
+- N7: quirks: German greeting in non-de slots (dev 6, holdout 17, week 4); en slots with Polish-diacritic subject (dev 1, holdout 5, week 7). Not blocking.
