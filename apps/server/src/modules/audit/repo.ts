@@ -74,6 +74,7 @@ export const auditEvents = {
   webBackupCodesGenerated: "web.backup_codes_generated", // data: via
   webBackupCodeUsed: "web.backup_code_used", // data: via
   webTwoFactorLocked: "web.two_factor_locked", // data: via, locked_until
+  webTwoFactorReset: "web.two_factor_reset", // data: via, sessions_ended
   operatorNotice: "operator.notice", // data: kind, key
 } as const;
 

@@ -12,7 +12,7 @@ import { apiRouters } from "../../src/web";
 
 import { insertAction, insertTestEmail, testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
-import { as, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
+import { as, noBackupCodes, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
 // F099 stage 07: GET /api/operator/orgs (plan D13 to D18).
 const db = testDb();
@@ -44,7 +44,8 @@ const app = () =>
       db,
       extras,
       () => NOW,
-      async () => []
+      async () => [],
+      noBackupCodes
     ),
     operatorUserIds: new Set([org.assistantId]),
   });

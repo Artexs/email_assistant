@@ -136,15 +136,16 @@
       "body": "Dear Mr Szalewski,\n\nI am following up on the price quotation for the 2027 deliveries, which your Head of Export sent us earlier this month. Our annual budget closes on 5 February, and our finance team has told me that all supplier prices must be locked in the system before the end of this week. The quotation is valid only if Kordelan confirms it in writing, and I have not yet seen your confirmation.\n\nThe attached summary shows the three price lines we plan to enter: the pallet rate, the cold chain surcharge and the customs fee. If any of them has changed since the quotation, please let me know before my colleague starts the data entry this afternoon. I would be grateful for your answer today.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
       "thread": [
         {
-          "subject": "Re: Nordic 2027 prices",
-          "body": "Karin, the quotation from Oliver stands. I will confirm it in writing once the board has seen the final numbers. Regards, Wiktor"
-        },
-        {
           "subject": "Nordic 2027 prices",
           "body": "Hello Karin, please find the price quotation for the 2027 deliveries: pallet rate, cold chain surcharge and customs fee. The offer is valid until the end of January. Oliver"
+        },
+        {
+          "subject": "Re: Nordic 2027 prices",
+          "body": "Karin, the quotation from Oliver stands. I will confirm it in writing once the board has seen the final numbers. Regards, Wiktor"
         }
       ],
-      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222\"><p style=\"margin:0 0 12px\">Dear Mr Szalewski,</p><p style=\"margin:0 0 12px\">I am following up on the price quotation for the 2027 deliveries, which your Head of Export sent us earlier this month. Our annual budget closes on 5 February, and our finance team has told me that all supplier prices must be locked in the system before the end of this week. The quotation is valid only if Kordelan confirms it in writing, and I have not yet seen your confirmation.</p><p style=\"margin:0 0 12px\">The attached summary shows the three price lines we plan to enter: the pallet rate, the cold chain surcharge and the customs fee. If any of them has changed since the quotation, please let me know before my colleague starts the data entry this afternoon. I would be grateful for your answer today.</p><p style=\"margin:0 0 12px\">Best regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade</p></div>"
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222\"><p style=\"margin:0 0 12px\">Dear Mr Szalewski,</p><p style=\"margin:0 0 12px\">I am following up on the price quotation for the 2027 deliveries, which your Head of Export sent us earlier this month. Our annual budget closes on 5 February, and our finance team has told me that all supplier prices must be locked in the system before the end of this week. The quotation is valid only if Kordelan confirms it in writing, and I have not yet seen your confirmation.</p><p style=\"margin:0 0 12px\">The attached summary shows the three price lines we plan to enter: the pallet rate, the cold chain surcharge and the customs fee. If any of them has changed since the quotation, please let me know before my colleague starts the data entry this afternoon. I would be grateful for your answer today.</p><p style=\"margin:0 0 12px\">Best regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade</p></div>",
+      "note": "rewritten: thread order fixed"
     },
     {
       "id": "b-urg-0144",
@@ -202,14 +203,15 @@
       "body": "Wiktor,\n\nGenowefa znowu pyta o awarię systemu, bo w nocy nie wyszły jej dwie dostawy i chce wiedzieć, czy dostanie zwrot za opóźnienia. Powiedziałem jej, że to Twoja decyzja. Ona oczekuje odpowiedzi do końca dnia, bo jutro rano ma rozmowę z zarządem swojej sieci. Zgodzisz się na zwrot 5 procent wartości tych dwóch dostaw jako gest handlowy? Jeśli tak, podeślę jej od razu potwierdzenie, jeśli nie, zadzwoń do niej sam.",
       "thread": [
         {
-          "subject": "Re: Awaria systemu – opóźnione dostawy",
-          "body": "Genowefo, wiem, że sytuacja jest trudna. Awaria systemu magazynowego dotknęła nas wszystkich, ale pracujemy nad rozwiązaniem. Proszę dać nam jeszcze dzień, wtedy ustalimy z Panią konkrety.\n\nWiktor"
-        },
-        {
           "subject": "Awaria systemu – dwie dostawy nie wyszły",
           "body": "Piotr, w nocy nie wyszły dwie nasze dostawy z powodu awarii u Was. Proszę o informację, kiedy system będzie działał i jak zostaniemy zrekompensowani. Genowefa"
+        },
+        {
+          "subject": "Re: Awaria systemu – opóźnione dostawy",
+          "body": "Genowefo, wiem, że sytuacja jest trudna. Awaria systemu magazynowego dotknęła nas wszystkich, ale pracujemy nad rozwiązaniem. Proszę dać nam jeszcze dzień, wtedy ustalimy z Panią konkrety.\n\nWiktor"
         }
-      ]
+      ],
+      "note": "rewritten: thread order fixed"
     },
     {
       "id": "b-urg-0182",

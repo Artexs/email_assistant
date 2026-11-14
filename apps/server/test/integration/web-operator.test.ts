@@ -11,7 +11,7 @@ import { createSecretBox } from "../../src/platform/crypto";
 import { apiRouters } from "../../src/web";
 
 import { testDb } from "./helpers";
-import { as, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
+import { as, noBackupCodes, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
 const db = testDb();
 const key = randomBytes(32).toString("base64");
@@ -37,7 +37,8 @@ const routers = () =>
     db,
     extras,
     () => new Date(),
-    async () => []
+    async () => [],
+    noBackupCodes
   );
 const operatorApp = (
   operatorUserIds: ReadonlySet<string> = new Set([org.assistantId]),
