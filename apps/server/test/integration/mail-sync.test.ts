@@ -4,6 +4,8 @@ import type { Transaction } from "kysely";
 import { isOwnActionId } from "../../src/modules/actions";
 import {
   CursorMovedError,
+  findUserMoves,
+  refreshFlags,
   syncMailbox,
   type MailboxSyncResult,
   type MailProvider,
@@ -2158,7 +2160,7 @@ describe("syncMailbox: sync folders", () => {
     });
   });
 
-  test("8.4 a mail of source INBOX that the user files into Oferty below its cursor is not seen (known limit)", async () => {
+  test("8.4 a mail of source INBOX that the user files into Oferty below its cursor: the pass does not see it, the move finder after the flag refresh returns it", async () => {
     await withRollback(db, async (trx) => {
       const s = await folderSetup(trx);
       await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
@@ -2178,6 +2180,19 @@ describe("syncMailbox: sync folders", () => {
       expect(await storedRows(trx, s.mailboxId)).toEqual(before);
       const row = await rowById(trx, rowId);
       expect(row).toMatchObject({ folder: "AI/Info", source_folder: "INBOX", returned_at: null });
+
+      const refreshed = await refreshFlags({ db: trx, provider: s.fake, now: () => FOLDER_NOW }, s.ctx, s.mailboxId);
+      expect(refreshed.gone.map((target) => target.emailId)).toEqual([rowId]);
+      const moves = await findUserMoves(
+        { db: trx, provider: s.fake, now: () => FOLDER_NOW },
+        s.ctx,
+        s.mailboxId,
+        refreshed.gone
+      );
+      expect(moves).toEqual({ checked: 1, returned: 1, relocated: 0, retry: 0 });
+      const found = await rowById(trx, rowId);
+      expect(found).toMatchObject({ folder: OFFERS, source_folder: OFFERS, uid, inbox_uid: uid });
+      expect(found.returned_at).toEqual(FOLDER_NOW);
     });
   });
 
