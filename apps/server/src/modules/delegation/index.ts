@@ -34,6 +34,7 @@ export {
   markDelegationSent,
   markReminderPlanned,
 } from "./repo";
+export { listDelegationDueRows } from "./metrics-repo";
 export type { DelegateRow, DelegationRow, DelegationStatus, LatestDelegationRow } from "./repo";
 export {
   CHASER_LOCAL_TIME,

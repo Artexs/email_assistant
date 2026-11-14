@@ -1,4 +1,4 @@
-import { textTables } from "@ea/core";
+import { botCommandNames, textTables, type UserLocale } from "@ea/core";
 import { GrammyError, type Bot } from "grammy";
 
 import { createLog } from "../../../platform/log";
@@ -8,14 +8,12 @@ import { telegramErrorLabel } from "./errors";
 
 const log = createLog("telegram");
 
-export const BOT_COMMANDS: readonly { command: CommandName; description: string }[] = [
-  { command: "digest", description: "The digest now" },
-  { command: "status", description: "Mailboxes, last sync, LLM calls" },
-  { command: "pause", description: "Stop reading and triage" },
-  { command: "resume", description: "Start reading and triage again" },
-  { command: "review", description: textTables.en.review.commandDescription },
-  { command: "help", description: "The command list" },
-];
+function commandList(locale: UserLocale): { command: CommandName; description: string }[] {
+  return botCommandNames.map((command) => ({ command, description: textTables[locale].bot.commands[command] }));
+}
+
+// The default menu is English; the Polish menu is for Telegram apps set to Polish (F098 D20).
+export const BOT_COMMANDS: readonly { command: CommandName; description: string }[] = commandList("en");
 
 const BASE_DELAY_MS = 60_000;
 const MAX_DELAY_MS = 30 * 60_000;
@@ -67,9 +65,13 @@ export function startPolling(bot: Bot, deps?: PollingDeps): Polling {
 
   const onStart = (info: { id: number; username: string }): void => {
     log.info(`telegram: polling as @${info.username} (id ${info.id})`);
-    bot.api.setMyCommands(BOT_COMMANDS).catch((error: unknown) => {
-      log.warn(`telegram: setMyCommands failed: ${telegramErrorLabel(error)}`);
-    });
+    // One call after the other: the default menu first. A failure of one call does not stop the other.
+    const warn = (error: unknown): void => log.warn(`telegram: setMyCommands failed: ${telegramErrorLabel(error)}`);
+    void bot.api
+      .setMyCommands(BOT_COMMANDS)
+      .catch(warn)
+      .then(() => bot.api.setMyCommands(commandList("pl"), { language_code: "pl" }))
+      .catch(warn);
   };
 
   const run = async (): Promise<void> => {

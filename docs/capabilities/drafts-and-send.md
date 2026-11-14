@@ -1,6 +1,6 @@
 # Drafts and send
 
-> Checked against the code at `cf125cf`, 2026-11-14.
+> Checked against the code at `e8164ad`, 2026-11-14.
 
 ## What it does now
 
@@ -114,34 +114,43 @@ For a delegation mail, or for a mail that needs one clarifying question, triage 
    - `bun run mailbox:probe-send` is a manual probe for a test mailbox: it needs `TEST_MAILBOX_ADDRESS` and one recipient that is the mailbox itself or is in `SEND_TEST_ADDRESSES`.
 10. **The job `actions.expiry`** (`actions/expiry.ts`, every hour at minute 7; all mailboxes, also paused ones) ends a send that nobody answered or that is held: `timeout` (`awaiting_approval` 48 h after `notified_at`, with a `sent` outbox row of its request), `not_seen` (the same age and no `sent` row; not for a suspended organization), `draft_missing` (its draft is `failed` or `undone`), `not_notified` (no approval request went out within 7 days of creation) and `held_timeout` (`approved` 48 h after the tap, not locked). It cascades in one transaction: the send, the draft (a reverse row or `expired`) and the delegation (`cancelled`). A send in flight (`applying`, or `approved` with a fresh lock) finishes. The log line holds the counts per reason.
     - `bun run job:run --name <job> [--force]` runs one of them once (`actions.expiry`, `delegation.chaser`, `actions.committer`, `channels.notifier`, `platform.retention`); `--force` skips the 07:30 and once-per-day gate of the chaser (`delegation.md`).
+11. **Reject reasons and the mistake mark (the flag `mistake_capture`, default off).** Two optional taps write the labels of the measure plan (`measurement.md` rule M3) through `recordRejectReason` and `markSentMistake` (`actions/feedback.ts`); only an owner can use them.
+    - After a single reject (`ar:`), the edited card carries one row of three buttons: wrong person, wrong content, not needed (`rw:<p|c|n>:<action id>`). A tap writes one `action_feedback` row of kind `reject_reason` for a `send` with status `rejected`; a later tap replaces the earlier reason. The card then ends with "Reason: …" and has no buttons. A set reject (`rs:`) gets no reason buttons.
+    - A `send_result` notice of kind `sent` carries ⚠️ "This was a mistake" (`mk:<action id>`). A tap writes one row of kind `mistake` for a `send` with status `applied` and `applied_at` within the last 7 days (`MISTAKE_WINDOW_MS`); a second tap answers "Already marked." After 7 days it answers "Too late". The detector `sendResultDetector` reads the flag once per run and sets `mistakeButton: true` in the view only for a `sent` result.
+    - Every tap and route checks the flag itself: with the flag off (also through `FEATURES_OFF`, the kill switch) a button that went out before answers "This button is off now." and writes nothing.
+    - The web has the same two actions, owner only: `POST /api/actions/:id/reject-reason` with `{ reason }` and `POST /api/actions/:id/mistake` (`actions/routes.ts`). Flag off or an unknown or foreign id: 404; a bad id or reason: 400; an action in the wrong state: 409 (`not_rejected`, `not_sent`, `too_late`); a mistake that was marked before: 200 `{ status: "already" }`.
+    - One `action_feedback` row per action and kind. Each write adds an audit row in the same transaction: `action.reject_reason` (the reason in `reason_code`) or `action.mistake`; `data.via` is `telegram` or `web`.
 
 ## Entry points
 
-| Kind     | Name                                                                                                           | Where                                                     |
-| -------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| job      | `actions.expiry` (`0 7 * * * *`, hourly at minute 7)                                                           | `apps/server/src/modules/actions/expiry.ts`               |
-| job      | `actions.committer` (`*/15 * * * * *`; applies drafts and sends, see `actions-and-undo.md`)                    | `apps/server/src/modules/actions/committer.ts`            |
-| job      | `channels.notifier` (every 15 s; its detectors queue the approval and result notices)                          | `apps/server/src/modules/channels/notices/index.ts`       |
-| CLI      | `bun run job:run --name <job> [--force]`                                                                       | `apps/server/src/scripts/job-run.ts`                      |
-| CLI      | `bun run mailbox:probe-send` (a test mailbox only; sends one real mail)                                        | `apps/server/src/scripts/mailbox-probe-send.ts`           |
-| Telegram | callbacks `ap:`, `ar:`, `as:`, `rs:`, `ag:`, `gw:` (Send, Reject, Send all, Skip all, Send again, It went out) | `apps/server/src/modules/channels/callbacks.ts`           |
-| function | `applyDraft`, `buildDraftMessage`                                                                              | `apps/server/src/modules/actions/drafts.ts`               |
-| function | `applySend`, `sendOutcomeOf`                                                                                   | `apps/server/src/modules/actions/send.ts`                 |
-| function | `approve`, `reject`, `approveSet`, `rejectSet`, `sendAgain`, `markWentOut`                                     | `apps/server/src/modules/actions/approvals.ts`            |
-| function | `createExpiryJob`, `expireSend`, `closeDraftOfSend`, `expireReminderActions`                                   | `apps/server/src/modules/actions/expiry.ts`               |
-| function | `expireUnseenApprovals`                                                                                        | `apps/server/src/modules/actions/expire.ts`               |
-| function | `sendFilterFor`, `sendScopeAdmits`                                                                             | `apps/server/src/modules/actions/scope.ts`                |
-| function | `sendScope`                                                                                                    | `apps/server/src/composition.ts`                          |
-| function | `openSmtpSender`, `classifySmtpError`                                                                          | `apps/server/src/modules/mail/imap/smtp.ts`               |
-| function | `probeSend`                                                                                                    | `apps/server/src/modules/mail/imap/probe-send.ts`         |
-| function | `approvalViewFor`                                                                                              | `apps/server/src/modules/channels/notices/approval.ts`    |
-| function | `sendResultDetector`                                                                                           | `apps/server/src/modules/channels/notices/send-result.ts` |
-| function | `buildOutgoingMessage`, `outgoingMessageId`, `outgoingSubject`                                                 | `packages/core/src/outgoing/message.ts`                   |
-| function | `renderTemplate`                                                                                               | `packages/core/src/outgoing/templates.ts`                 |
-| function | `quoteOriginal`, `quoteCut`                                                                                    | `packages/core/src/outgoing/quote.ts`                     |
-| function | `isExternalSender`, `approvalViewOf`                                                                           | `packages/core/src/outgoing/sender.ts`                    |
-| function | `renderApprovalRequest`, `renderSendResult`, `approvalEdit`                                                    | `packages/core/src/digest/approvals.ts`                   |
-| function | `draftPayloadSchema`, `sendPayloadSchema`, `sendPayloadFor`                                                    | `packages/core/src/triage/payloads.ts`                    |
+| Kind     | Name                                                                                                           | Where                                                      |
+| -------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| job      | `actions.expiry` (`0 7 * * * *`, hourly at minute 7)                                                           | `apps/server/src/modules/actions/expiry.ts`                |
+| job      | `actions.committer` (`*/15 * * * * *`; applies drafts and sends, see `actions-and-undo.md`)                    | `apps/server/src/modules/actions/committer.ts`             |
+| job      | `channels.notifier` (every 15 s; its detectors queue the approval and result notices)                          | `apps/server/src/modules/channels/notices/index.ts`        |
+| CLI      | `bun run job:run --name <job> [--force]`                                                                       | `apps/server/src/scripts/job-run.ts`                       |
+| CLI      | `bun run mailbox:probe-send` (a test mailbox only; sends one real mail)                                        | `apps/server/src/scripts/mailbox-probe-send.ts`            |
+| Telegram | callbacks `ap:`, `ar:`, `as:`, `rs:`, `ag:`, `gw:` (Send, Reject, Send all, Skip all, Send again, It went out) | `apps/server/src/modules/channels/callbacks.ts`            |
+| Telegram | callbacks `rw:` (reject reason) and `mk:` (this was a mistake), behind `mistake_capture`                       | `apps/server/src/modules/channels/action-feedback-taps.ts` |
+| route    | `POST /api/actions/:id/reject-reason`, `POST /api/actions/:id/mistake` (owner only, behind `mistake_capture`)  | `apps/server/src/modules/actions/routes.ts`                |
+| function | `recordRejectReason`, `markSentMistake`                                                                        | `apps/server/src/modules/actions/feedback.ts`              |
+| function | `applyDraft`, `buildDraftMessage`                                                                              | `apps/server/src/modules/actions/drafts.ts`                |
+| function | `applySend`, `sendOutcomeOf`                                                                                   | `apps/server/src/modules/actions/send.ts`                  |
+| function | `approve`, `reject`, `approveSet`, `rejectSet`, `sendAgain`, `markWentOut`                                     | `apps/server/src/modules/actions/approvals.ts`             |
+| function | `createExpiryJob`, `expireSend`, `closeDraftOfSend`, `expireReminderActions`                                   | `apps/server/src/modules/actions/expiry.ts`                |
+| function | `expireUnseenApprovals`                                                                                        | `apps/server/src/modules/actions/expire.ts`                |
+| function | `sendFilterFor`, `sendScopeAdmits`                                                                             | `apps/server/src/modules/actions/scope.ts`                 |
+| function | `sendScope`                                                                                                    | `apps/server/src/composition.ts`                           |
+| function | `openSmtpSender`, `classifySmtpError`                                                                          | `apps/server/src/modules/mail/imap/smtp.ts`                |
+| function | `probeSend`                                                                                                    | `apps/server/src/modules/mail/imap/probe-send.ts`          |
+| function | `approvalViewFor`                                                                                              | `apps/server/src/modules/channels/notices/approval.ts`     |
+| function | `sendResultDetector`                                                                                           | `apps/server/src/modules/channels/notices/send-result.ts`  |
+| function | `buildOutgoingMessage`, `outgoingMessageId`, `outgoingSubject`                                                 | `packages/core/src/outgoing/message.ts`                    |
+| function | `renderTemplate`                                                                                               | `packages/core/src/outgoing/templates.ts`                  |
+| function | `quoteOriginal`, `quoteCut`                                                                                    | `packages/core/src/outgoing/quote.ts`                      |
+| function | `isExternalSender`, `approvalViewOf`                                                                           | `packages/core/src/outgoing/sender.ts`                     |
+| function | `renderApprovalRequest`, `renderSendResult`, `approvalEdit`                                                    | `packages/core/src/digest/approvals.ts`                    |
+| function | `draftPayloadSchema`, `sendPayloadSchema`, `sendPayloadFor`                                                    | `packages/core/src/triage/payloads.ts`                     |
 
 ## Data
 
@@ -156,7 +165,8 @@ Rows of `actions` with `type` `create_draft` or `send` (the status flow is in `a
 - `provider_result` of a draft: `uid`, `folder`, `found`. Of a send: `response`, `accepted`, `message_id`, `sent_copy` (`pending`, `appended`, `found`, `failed`); on a failure `stage`, `response_code`, `code`, `cap` (`soft_retry`), `recovered`.
 - `payload` of a draft: `kind`, `to`, `language`, `task` or `question`, `due_date`, `delegate_id`, `delegate_name`; a reminder adds `delegation_id`, `reminder` (1 or 2) and `thread`. A send repeats `kind`, `to`, `delegate_id`, `delegation_id`, `reminder`, and adds `set_id` for a reminder set. The retention job clears old payloads.
 - `outbox` kinds of this capability: `approval`, `approval_set`, `send_result`, `delegation_answered`. `organizations.style_text` is the signature.
-- Audit events: `action.applying`, `action.applied`, `action.approved`, `action.rejected`, `action.expired`, `action.failed`, `action.send_again`, `action.went_out`, `action.sent_copy_failed`, `action.send_limited`.
+- `action_feedback` (`org_id`, `action_id`, `kind`, `reason`, `user_id`, `via`, `created_at`, `updated_at`; unique `(org_id, action_id, kind)`): `reject_reason` rows hold `wrong_person`, `wrong_content` or `not_needed`; `mistake` rows have no reason. `via` is `telegram`, `web` or `cli`.
+- Audit events: `action.applying`, `action.applied`, `action.approved`, `action.rejected`, `action.expired`, `action.failed`, `action.send_again`, `action.went_out`, `action.sent_copy_failed`, `action.send_limited`, `action.reject_reason`, `action.mistake`.
 
 ## Limits
 
@@ -181,6 +191,8 @@ Rows of `actions` with `type` `create_draft` or `send` (the status flow is in `a
 - `apps/server/test/integration/actions-approvals.test.ts`
 - `apps/server/test/integration/actions-resume-approvals.test.ts`
 - `apps/server/test/integration/actions-close.test.ts`
+- `apps/server/test/integration/actions-feedback.test.ts`
+- `apps/server/test/integration/web-actions.test.ts`
 - `apps/server/test/integration/smtp-send.test.ts`
 - `apps/server/test/integration/actions-send-logs.test.ts`
 - `packages/core/src/outgoing/message.test.ts`

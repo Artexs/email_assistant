@@ -13,20 +13,42 @@ describe("isAllowedAuthPath", () => {
     expect(isAllowedAuthPath("POST", "/request-password-reset", { resetRequest: false })).toBe(false);
     expect(isAllowedAuthPath("POST", "/request-password-reset", { resetRequest: true })).toBe(true);
     expect(isAllowedAuthPath("GET", "/request-password-reset", { resetRequest: true })).toBe(false);
-    expect(AUTH_ALLOWED_PATHS.size).toBe(7);
+    expect(AUTH_ALLOWED_PATHS.size).toBe(12);
   });
 
   test("refuses /list-sessions: it returns the session tokens (F6)", () => {
-    expect(AUTH_ALLOWED_PATHS.size).toBe(7);
+    expect(AUTH_ALLOWED_PATHS.size).toBe(12);
     expect(isAllowedAuthPath("GET", "/list-sessions")).toBe(false);
     expect(isAllowedAuthPath("POST", "/list-sessions")).toBe(false);
   });
 
-  test("allows the seven paths with POST and GET", () => {
-    expect(AUTH_ALLOWED_PATHS.size).toBe(7);
+  test("allows the twelve paths with POST and GET", () => {
+    expect(AUTH_ALLOWED_PATHS.size).toBe(12);
     for (const path of AUTH_ALLOWED_PATHS) {
       expect(isAllowedAuthPath("POST", path)).toBe(true);
       expect(isAllowedAuthPath("GET", path)).toBe(true);
+    }
+  });
+
+  test("allows the five two-factor paths and refuses every other /two-factor/* path", () => {
+    for (const path of [
+      "/two-factor/enable",
+      "/two-factor/disable",
+      "/two-factor/verify-totp",
+      "/two-factor/verify-backup-code",
+      "/two-factor/generate-backup-codes",
+    ]) {
+      expect(isAllowedAuthPath("POST", path)).toBe(true);
+    }
+    for (const path of [
+      "/two-factor/get-totp-uri",
+      "/two-factor/send-otp",
+      "/two-factor/verify-otp",
+      "/two-factor/view-backup-codes",
+      "/two-factor/generate-totp",
+    ]) {
+      expect(isAllowedAuthPath("POST", path)).toBe(false);
+      expect(isAllowedAuthPath("GET", path)).toBe(false);
     }
   });
 

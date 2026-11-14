@@ -1,0 +1,205 @@
+{
+  "scenario": "lab-01",
+  "part": "dev",
+  "batch": "batch-001",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-del-0008",
+      "subject": "Wspólny przetarg – zestawienie kosztów oferty",
+      "body": "Szanowny Panie Prezesie,\n\nprosimy, aby Państwa dział finansowy przygotował zestawienie kosztów naszej wspólnej oferty wraz z fakturą proforma dla Baltic Freight Partners. Zależy nam na tym do końca przyszłego tygodnia.\n\nDaniel Hargreaves",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Szanowny Panie Prezesie,</p><p style=\"margin:0 0 12px 0\">prosimy, aby Państwa dział finansowy przygotował zestawienie kosztów naszej wspólnej oferty wraz z fakturą proforma dla Baltic Freight Partners. Zależy nam na tym do końca przyszłego tygodnia.</p><p style=\"margin:0 0 12px 0\">Daniel Hargreaves</p></div>",
+      "thread": [
+        {
+          "subject": "JV tender – who sorts the cost split?",
+          "body": "Daniel, quick one on the joint bid: somebody in finance needs to build the cost split before we send anything. I'll mention it to the boss when I see him.\n\nOliver"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0022",
+      "subject": "Joint bid – diary slot for the partner workshop",
+      "body": "Dear Mr Szalewski,\n\nCould your office find a suitable day next month for our joint-tender workshop in Gdansk and send us two or three options? Half a day is enough. We can adapt to your calendar.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Dear Mr Szalewski,</p><p style=\"margin:0 0 12px 0\">Could your office find a suitable day next month for our joint-tender workshop in Gdansk and send us two or three options? Half a day is enough. We can adapt to your calendar.</p><p style=\"margin:0 0 12px 0\">Kind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0029",
+      "subject": "Materiały na posiedzenie rady",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o zlecenie przygotowania pakietu materiałów na posiedzenie rady nadzorczej: projekt budżetu oraz aktualne umowy ramowe z klientami. Pakiet ma trafić do członków rady w formie jednego pliku.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-del-0030",
+      "subject": "Odprawy celne – organizacja spotkania w porcie",
+      "body": "Szanowny Panie Prezesie,\n\npiszę w sprawie wspólnych przewozów eksportowych, które w ostatnich tygodniach tracą czas przy odprawach celnych w porcie. Po rozmowie z naszym agentem celnym doszliśmy do wniosku, że najprościej będzie zebrać wszystkich przy jednym stole.\n\nProponuję zorganizowanie spotkania roboczego w porcie w Gdyni z udziałem przedstawicieli agencji celnej, naszego zespołu oraz Państwa osoby odpowiedzialnej za eksport. Spotkanie powinno trwać około dwóch godzin i odbyć się w drugiej połowie stycznia.\n\nOd strony Państwa zespołu potrzebujemy kilku rzeczy: wyboru terminu zgodnego z kalendarzem zarządu, rezerwacji sali konferencyjnej w pobliżu terminalu oraz zamówienia przejazdu dla trzech osób z Gdańska. Jeśli to możliwe, prosimy też o zarezerwowanie dwóch pokoi hotelowych na noc poprzedzającą spotkanie, bo część uczestników przyjedzie z daleka.\n\nNie musi Pan zajmować się szczegółami osobiście. Wystarczy, że ktoś z Pana biura skontaktuje się z moją asystentką i uzgodni logistykę. Wszystkie dane kontaktowe są w naszej wcześniejszej korespondencji. Gdyby termin w drugiej połowie stycznia okazał się niemożliwy, jesteśmy gotowi przesunąć rozmowy na początek lutego, ale wolelibyśmy nie czekać dłużej, bo każdy tydzień opóźnienia kosztuje nas realne pieniądze.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-del-0033",
+      "subject": "Nordic contract – send them our standard terms",
+      "body": "Hi Wiktor,\n\nKarin from Nordic wants a clean copy of our standard framework terms plus the current price list. Can someone in sales prepare the pack and send it to her this week? I'm on the road till Thursday.\n\nOliver",
+      "thread": []
+    },
+    {
+      "id": "b-del-0039",
+      "subject": "Board meeting: travel and room",
+      "body": "Hi Wiktor,\n\nFor the board meeting on 28.01.2027 please have your assistant book the train and the hotel for me, and make sure the meeting room is reserved from 9:00. Details to Mrs Wilczynska are fine.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-del-0040",
+      "subject": "Updated price schedule for your fleet – please sign off with sales",
+      "body": "Dear Mr Szalewski,\n\nAs part of our regular review of the fleet fuel programme, we have prepared a revised price schedule and a renewed supply agreement covering your 84 vehicles. The new terms would apply from the beginning of February.\n\nWe would be grateful if someone from your sales and contracts side could go through the agreement, compare it with the current one and confirm the commercial conditions with us. We are open to adjusting the volume discount if your annual consumption grows, and we can also add a second card per vehicle at no extra fee.\n\nIt would be enough for us to hear back from the person who handles your supplier contracts. There is no need for you to join the conversation yourself unless you wish to.\n\nThank you for your continued trust in our services.\n\nEwelina Marszalek\nPaliwa-Flota",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Dear Mr Szalewski,</p><p style=\"margin:0 0 12px 0\">As part of our regular review of the fleet fuel programme, we have prepared a revised price schedule and a renewed supply agreement covering your 84 vehicles. The new terms would apply from the beginning of February.</p><p style=\"margin:0 0 12px 0\">We would be grateful if someone from your sales and contracts side could go through the agreement, compare it with the current one and confirm the commercial conditions with us. We are open to adjusting the volume discount if your annual consumption grows, and we can also add a second card per vehicle at no extra fee.</p><p style=\"margin:0 0 12px 0\">It would be enough for us to hear back from the person who handles your supplier contracts. There is no need for you to join the conversation yourself unless you wish to.</p><p style=\"margin:0 0 12px 0\">Thank you for your continued trust in our services.</p><p style=\"margin:0 0 12px 0\">Ewelina Marszalek<br>Paliwa-Flota</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0042",
+      "subject": "Umowy ramowe do przeglądu przed radą",
+      "body": "Szanowny Panie Prezesie,\n\nprzed najbliższym posiedzeniem rady nadzorczej chciałbym otrzymać zestawienie wszystkich umów ramowych z kluczowymi klientami, z terminami wygaśnięcia i zasadami waloryzacji cen. Rada będzie omawiać budżet i ten materiał jest jej potrzebny do oceny ryzyka.\n\nProszę o polecenie przygotowania takiego zestawienia osobie, która zarządza umowami sprzedaży. Wystarczy tabela w arkuszu, bez komentarza. Materiał powinien trafić do mojej asystentki na kilka dni przed posiedzeniem.\n\nDziękuję za zajęcie się sprawą.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-del-0043",
+      "subject": "Rozliczenie delegacji członków rady",
+      "body": "Szanowny Panie Prezesie,\n\nw grudniu członkowie rady odbyli dwie podróże służbowe do magazynów w Poznaniu i Łodzi. Koszty przejazdów i noclegów nie zostały jeszcze rozliczone.\n\nProszę o przekazanie sprawy do działu księgowości: niech zbiorą faktury i rachunki od uczestników, zweryfikują je i wypłacą zwroty zgodnie z regulaminem podróży. Chciałbym, aby ta sprawa została zamknięta jeszcze w tym miesiącu. O wyniku wystarczy krótka informacja do mojej asystentki.\n\nDziękuję.",
+      "thread": []
+    },
+    {
+      "id": "b-del-0048",
+      "subject": "Nowa oferta cenowa dla naszej sieci – proszę o zajęcie się tematem",
+      "body": "Szanowny Panie Prezesie,\n\nw związku z toczącym się przetargiem na dostawy dla całej naszej sieci hurtowni zarząd Zielonej Hurtowni zdecydował o rozszerzeniu zakresu. Dołączamy trzy nowe regiony, w których otwieramy w tym roku kolejne punkty. Oznacza to zwiększenie wolumenu o około dwadzieścia procent w stosunku do pierwotnych założeń.\n\nChciałabym, żeby Państwa zespół sprzedaży przygotował do końca tygodnia nową ofertę cenową uwzględniającą to rozszerzenie, razem z harmonogramem dostaw na pierwszy kwartał. Prosimy o osobne stawki dla dostaw chłodzonych i suchych oraz o jasne warunki płatności. Nasz dział zakupów porówna wszystko z ofertami innych dostawców dopiero po otrzymaniu kompletnej wersji.\n\nProszę nie traktować tego jako prośby o rozmowę z Panem osobiście. To zadanie dla osoby, która prowadzi u Państwa oferty i umowy, a ja chętnie porozmawiam z nią bezpośrednio, jeśli pojawią się pytania. Dla porządku dodam, że termin składania ofert w przetargu upływa 15.01.2027, więc czasu nie mamy dużo.\n\nDziękuję za pomoc i liczę na sprawną współpracę. Jeśli będzie to potrzebne, mogę przesłać wcześniejsze zapytania ofertowe naszej sieci, żeby osoba przygotowująca dokument miała pełny kontekst i nie musiała dopytywać o szczegóły.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": []
+    },
+    {
+      "id": "b-del-0050",
+      "subject": "Customs clearance – arranging a call with your broker",
+      "body": "Dear Mr Szalewski,\n\nCould your team set up a short call with your customs broker and our logistics people next week? We would like to review the paperwork for the February shipments. Any weekday morning works.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Dear Mr Szalewski,</p><p style=\"margin:0 0 12px 0\">Could your team set up a short call with your customs broker and our logistics people next week? We would like to review the paperwork for the February shipments. Any weekday morning works.</p><p style=\"margin:0 0 12px 0\">Best regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0052",
+      "subject": "Re: Invoice reconciliation – December statement",
+      "body": "Dear Mr Szalewski,\n\nThank you for your note. To close the December statement on our side, we need your accounts team to confirm which of the open items are already paid and which are disputed. Our system shows four invoices as outstanding, while we believe two of them were settled by bank transfer on 20.12.2026.\n\nCould someone from finance review the list and send us a short confirmation, together with proof of payment for the settled items? Once we have it, we will correct our ledger and send you an updated statement. This is not time critical, but we would like to finish it before the end of the month.\n\nPlease let us know if a different person should be our contact for this.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [
+        {
+          "subject": "Invoice reconciliation – December statement",
+          "body": "Dear Mr Szalewski,\n\nattached is the statement for December. Please note that four invoices are still shown as open. We kindly ask for your review.\n\nPaliwa-Flota Billing Department"
+        },
+        {
+          "subject": "Re: Invoice reconciliation – December statement",
+          "body": "Thanks. Looking into it, will come back to you.\n\nWiktor"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0055",
+      "subject": "Przegląd serwisowy naczep – prośba o ustalenie terminu",
+      "body": "Sehr geehrter Herr Szalewski,\n\nnasz serwis proponuje coroczny przegląd Państwa naczep w fabryce w Ulm. Do tej pory nie otrzymaliśmy informacji o dogodnym terminie, a w lutym mamy jeszcze wolne miejsca w harmonogramie.\n\nProsimy, aby ktoś z Państwa biura skontaktował się z naszym działem serwisu, ustalił datę i zorganizował transport naczep wraz z kierowcami. Nocleg dla kierowców możemy zarezerwować po naszej stronie, jeśli podadzą nam Państwo liczbę osób.\n\nZ góry dziękujemy za pomoc w tej sprawie.",
+      "thread": []
+    },
+    {
+      "id": "b-del-0060",
+      "subject": "Re: Export pricing – lane update",
+      "body": "Dear Mr Szalewski,\n\nThank you for your answer. Following your note, we would like to move forward with updated rates for the export lanes to Sweden and Finland. Our brokerage has agreed a new tariff with two carriers, and the saving could be passed on in the joint offer.\n\nCould your sales people prepare the revised price sheet for those two lanes, based on the figures in my earlier message, and send it to us for review? We will then merge it with our part of the tender. No decision from you is needed at this stage; we simply need the document to continue the work.\n\nHappy to jump on a call with whoever takes it over.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "subject": "Export pricing – lane update",
+          "body": "Wiktor,\n\nthe carriers have new tariffs for the Baltic and Nordic lanes. I will send details later this week. Shall we share them with Daniel for the next joint offer?\n\nOliver"
+        },
+        {
+          "subject": "Re: Export pricing – lane update",
+          "body": "Daniel, yes, please send me the numbers and we will see how to use them.\n\nWiktor Szalewski"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0062",
+      "subject": "Podróż do Berlina – rezerwacje",
+      "body": "Dzień dobry Wiktorze,\n\nw lutym jadę z Tobą do Berlina na spotkanie z zarządem partnera. Poproś proszę swoją asystentkę, żeby zarezerwowała dla nas bilety lotnicze oraz hotel w centrum na dwie noce. Wolę wcześniejszy lot rano.\n\nSzczegóły dotyczące godzin spotkań prześlę do niej osobno. Proszę też o wybór hotelu z dobrą salą konferencyjną, bo wieczorem planuję krótką rozmowę z partnerem.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Dzień dobry Wiktorze,</p><p style=\"margin:0 0 12px 0\">w lutym jadę z Tobą do Berlina na spotkanie z zarządem partnera. Poproś proszę swoją asystentkę, żeby zarezerwowała dla nas bilety lotnicze oraz hotel w centrum na dwie noce. Wolę wcześniejszy lot rano.</p><p style=\"margin:0 0 12px 0\">Szczegóły dotyczące godzin spotkań prześlę do niej osobno. Proszę też o wybór hotelu z dobrą salą konferencyjną, bo wieczorem planuję krótką rozmowę z partnerem.</p><p style=\"margin:0 0 12px 0\">Z powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0064",
+      "subject": "Faktura za koszty wspólnej oferty",
+      "body": "Szanowny Panie Prezesie,\n\nw imieniu Baltic Freight Partners chciałbym poprosić o rozliczenie kosztów przygotowania wspólnej oferty przetargowej. Poniesione przez nas wydatki obejmują opłatę za dokumentację oraz tłumaczenia, a Państwa część zgodnie z naszymi ustaleniami wynosi połowę tej kwoty.\n\nProszę o polecenie księgowości, aby wystawiła notę obciążeniową oraz uzgodniła z naszym działem finansowym sposób zapłaty. Oczywiście nie musi Pan angażować się osobiście, to zwykła sprawa administracyjna. Prosimy tylko o jej zamknięcie przed końcem miesiąca.\n\nDziękuję za pomoc.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-del-0077",
+      "subject": "Wizyta u nas w Ulm – prośba o organizację",
+      "body": "Sehr geehrter Herr Szalewski,\n\nw nawiązaniu do naszych rozmów o nowym cenniku naczep zapraszamy Państwa delegację do fabryki w Ulm. Prezentacja nowego modelu i omówienie cennika zajmą pół dnia.\n\nProsimy, aby Pana asystentka zebrała listę osób, ustaliła termin z Pana kalendarzem i zorganizowała przejazd. Proponujemy drugą połowę lutego, ale jesteśmy elastyczni. Odpowiednie zaproszenia i plan wizyty prześlemy, gdy tylko poznamy liczbę uczestników.\n\nDziękujemy za zaangażowanie.\n\nMit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued",
+      "thread": []
+    },
+    {
+      "id": "b-del-0080",
+      "subject": "Board travel plan – please have it arranged",
+      "body": "Dear Mr Szalewski,\n\nAs you know, the supervisory board plans two site visits this spring, one to the warehouse in Lodz and one to the export terminal in Gdynia. I would like both visits to be prepared by your office, and I do not want to be involved in the details.\n\nFor the Lodz visit I need a date in the second half of March, a schedule of the day with time for a walk through the warehouse, and a short meeting with the operations team at the end. For Gdynia I would like a similar plan, with a briefing from the export department and a conversation with the customs broker.\n\nPlease ask the person who runs your calendar and trips to book transport for five board members, to reserve a suitable meeting room at each site and to arrange lunch. Hotels will only be needed in Gdynia.\n\nOnce the plan exists, it should go to my office for approval. There is no urgency, but I would like it settled before the end of February, because the board members are planning their calendars.\n\nThank you for taking care of this.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-del-0086",
+      "subject": "Umowy z agencjami pracy – ktoś musi to dopilnować",
+      "body": "Cześć Wiktorze,\n\ndo obsady magazynów w Poznaniu i Łodzi będziemy potrzebować w lutym dodatkowych dwudziestu osób z agencji pracy tymczasowej. Wybrałem dwie agencje, które wypadły najlepiej, i mam od nich oferty z cennikiem i warunkami współpracy.\n\nPotrzebuję, żeby ktoś z Twojego zespołu przejrzał te dokumenty od strony finansowej: porównał stawki godzinowe, sprawdził zasady rozliczeń i ewentualnie wystawił zamówienia na pierwszą transzę. Najlepiej, żeby zajęła się tym księgowość, bo to ona zna nasze limity kosztów.\n\nOfertę przekażę Ci w załączeniu do kolejnej wiadomości. Gdyby były pytania, jestem do dyspozycji.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": []
+    },
+    {
+      "id": "b-del-0088",
+      "subject": "Okna rozładunku – prośba o potwierdzenie",
+      "body": "Szanowny Panie Prezesie,\n\nprosimy o skierowanie do właściwej osoby w sprzedaży naszej prośby o potwierdzenie okien rozładunku na marzec: wtorki i czwartki między 6:00 a 10:00. Zależy nam na pisemnym ustaleniu.\n\nTomasz Brzeziński",
+      "thread": []
+    },
+    {
+      "id": "b-del-0095",
+      "subject": "Re: Customs docs for Sweden – who can tidy this up?",
+      "body": "Hi Wiktor,\n\nFollowing up on the Nordic shipments. The customs broker sent me their invoice for the last three clearances and I honestly cannot make sense of it. There are some fees that look doubled, plus a storage charge that nobody agreed to, and the totals do not match what I have in my own file.\n\nCan you ask finance to take a look? I think someone in accounting should go line by line, check it against the purchase orders and the broker's tariff, and then either approve it or send it back with a list of questions. I have put what I can find in the thread below, but the original PDF is with the broker.\n\nIf the invoice is wrong we should dispute it before the payment date, which I believe is the end of next week. I would hate to pay twice for the same thing, and the broker is not the type to correct themselves unless someone points it out clearly.\n\nI'm in the Gdansk office most of the week and can answer any questions, but I'd rather not be the one who chases it. I have enough on with the Swedish lanes and the new rate cards.\n\nThanks a lot, mate. Appreciate the help.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Hi Wiktor,</p><p style=\"margin:0 0 12px 0\">Following up on the Nordic shipments. The customs broker sent me their invoice for the last three clearances and I honestly cannot make sense of it. There are some fees that look doubled, plus a storage charge that nobody agreed to, and the totals do not match what I have in my own file.</p><p style=\"margin:0 0 12px 0\">Can you ask finance to take a look? I think someone in accounting should go line by line, check it against the purchase orders and the broker's tariff, and then either approve it or send it back with a list of questions. I have put what I can find in the thread below, but the original PDF is with the broker.</p><p style=\"margin:0 0 12px 0\">If the invoice is wrong we should dispute it before the payment date, which I believe is the end of next week. I would hate to pay twice for the same thing, and the broker is not the type to correct themselves unless someone points it out clearly.</p><p style=\"margin:0 0 12px 0\">I'm in the Gdansk office most of the week and can answer any questions, but I'd rather not be the one who chases it. I have enough on with the Swedish lanes and the new rate cards.</p><p style=\"margin:0 0 12px 0\">Thanks a lot, mate. Appreciate the help.</p><p style=\"margin:0 0 12px 0\">Cheers, Oliver | Head of Export | Kordelan Distribution</p></div>",
+      "thread": [
+        {
+          "subject": "Customs invoice – broker",
+          "body": "Dear Mr Szalewski,\n\nplease find the customs broker's invoice for the last three clearances. Could you confirm that the figures match your records?\n\nKarin Lindqvist"
+        },
+        {
+          "subject": "Re: Customs invoice – broker",
+          "body": "Karin, thank you. We will review it and come back to you.\n\nWiktor"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0105",
+      "subject": "Re: Zmiana limitów kart paliwowych",
+      "body": "Szanowny Panie Prezesie,\n\nprosimy o wskazanie osoby, która zatwierdzi z Państwa strony harmonogram wizyty naszego opiekuna w siedzibie firmy. Proponujemy środę lub czwartek po 11:00.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [
+        {
+          "subject": "Karty paliwowe – nowe limity",
+          "body": "Powiadomienie: zmiana miesięcznych limitów kart paliwowych wchodzi w życie od 1 lutego.\n\nPowiadomienia Bankowe"
+        },
+        {
+          "subject": "Re: Karty paliwowe – nowe limity",
+          "body": "Dziękuję, sprawa wymaga omówienia z dostawcą.\n\nWiktor"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0114",
+      "subject": "Framework agreement – arranging the signing meeting",
+      "body": "Dear Mr Szalewski,\n\nWe are close to the final text of the framework agreement and would like to plan the signing, ideally in your Warsaw office around 22.01.2027. Could your assistant propose a date and time, and let us know which rooms are available?\n\nOur side would come with three people. We would also appreciate help with a hotel nearby for one night.\n\nThank you in advance for arranging it.\n\nKarin Lindqvist",
+      "thread": []
+    },
+    {
+      "id": "b-del-0122",
+      "subject": "Wspólny przetarg – wzór umowy konsorcjum",
+      "body": "Szanowny Panie Prezesie,\n\nprzygotowujemy wspólną ofertę w przetargu na obsługę logistyczną sieci handlowej i potrzebujemy wzoru umowy konsorcjum oraz Państwa standardowego cennika usług, który będzie podstawą naszej kalkulacji.\n\nCzy mógłby Pan polecić osobie odpowiedzialnej za umowy i oferty, aby przygotowała dla nas komplet dokumentów? Wystarczy nam wersja robocza, którą nasz dział prawny poprawi po swojej stronie. Chcielibyśmy ją mieć na początku przyszłego tygodnia, żeby zdążyć przed terminem składania ofert 15.01.2027.\n\nProponujemy, aby osoba, która się tym zajmie, skontaktowała się bezpośrednio z naszym dyrektorem ds. przetargów. Nie ma potrzeby angażowania Pana osobiście.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-del-0124",
+      "subject": "Ceny frachtu eksportowego – aktualizacja cennika",
+      "body": "Szanowny Panie Prezesie,\n\nzmiana stawek przewoźników na trasach bałtyckich wymaga aktualizacji naszego wspólnego cennika eksportowego. Przygotowaliśmy nowe wartości dla pięciu głównych tras i chcielibyśmy, aby Państwa osoba zajmująca się ofertami wprowadziła je do wzoru cennika oraz wysłała nam zaktualizowaną wersję do akceptacji.\n\nZmiany obowiązywałyby od pierwszego lutego. Do wiadomości dołączymy zestawienie stawek, gdy tylko ktoś po Państwa stronie podejmie temat. Nie musi Pan angażować się osobiście, wystarczy wskazać kontakt do właściwej osoby.\n\nDziękuję za wsparcie w tej sprawie.\n\nDaniel Hargreaves",
+      "thread": []
+    }
+  ]
+}

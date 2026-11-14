@@ -259,7 +259,7 @@ describe("requireTenant", () => {
   const appFor = (rows: Rows) => {
     const app = new Hono<ApiEnv>();
     app.use("*", async (c, next) => {
-      c.set("session", { userId: c.req.header("x-user") ?? "u-none", sessionId: "s-test" });
+      c.set("session", { userId: c.req.header("x-user") ?? "u-none", sessionId: "s-test", twoFactorEnabled: true });
       await next();
     });
     app.use("*", requireTenant({ listMembershipsOfUser: async () => rows }));
@@ -297,7 +297,7 @@ describe("requireTenant scope (RLS safety net, ADR 0011)", () => {
   const appFor = (rows: { org_id: string; role: "owner" }[], onHandler?: () => void) => {
     const app = new Hono<ApiEnv>();
     app.use("*", async (c, next) => {
-      c.set("session", { userId: "u-scope", sessionId: "s-test" });
+      c.set("session", { userId: "u-scope", sessionId: "s-test", twoFactorEnabled: true });
       await next();
     });
     app.use("*", requireTenant({ listMembershipsOfUser: async () => rows }));
@@ -352,7 +352,11 @@ describe("requireOperator", () => {
   const appFor = (operatorUserIds?: ReadonlySet<string>) => {
     const app = new Hono<ApiEnv>();
     app.use("*", async (c, next) => {
-      c.set("session", { userId: c.req.header("x-user") ?? "u-none", sessionId: "s-test" });
+      c.set("session", {
+        userId: c.req.header("x-user") ?? "u-none",
+        sessionId: "s-test",
+        twoFactorEnabled: c.req.header("x-totp") !== "off",
+      });
       c.set("web", (operatorUserIds === undefined ? {} : { operatorUserIds }) as WebDeps);
       await next();
     });
@@ -380,6 +384,30 @@ describe("requireOperator", () => {
     }
   });
 
+  test("answers 403 two_factor_required to an operator without TOTP and logs the user id only", async () => {
+    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    try {
+      const res = await appFor(new Set(["u-op"])).request("/x", { headers: { "x-user": "u-op", "x-totp": "off" } });
+      expect(res.status).toBe(403);
+      expect(await res.json()).toEqual({ error: "two_factor_required" });
+      const lines = errorSpy.mock.calls.map((call) => call.join(" "));
+      expect(lines.filter((line) => line.includes("operator_two_factor_required user_id=u-op"))).toHaveLength(1);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test("answers 404, not 403, to a non-operator without TOTP", async () => {
+    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    try {
+      const res = await appFor(new Set(["u-op"])).request("/x", { headers: { "x-user": "u-other", "x-totp": "off" } });
+      expect(res.status).toBe(404);
+      expect(await res.json()).toEqual({ error: "not_found" });
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
   test("fails closed when the web has no operator list", async () => {
     const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
     try {
@@ -396,7 +424,7 @@ describe("requireOperator", () => {
       const web = {
         auth: {
           handler: async () => new Response(null),
-          getSession: async () => ({ userId: "u-owner", sessionId: "s1" }),
+          getSession: async () => ({ userId: "u-owner", sessionId: "s1", twoFactorEnabled: true }),
         },
         db: {} as WebDeps["db"],
         now: () => new Date("2026-11-20T10:00:00Z"),
@@ -427,7 +455,7 @@ describe("requireOperator", () => {
     const web = {
       auth: {
         handler: async () => new Response(null),
-        getSession: async () => ({ userId: "u-owner", sessionId: "s1" }),
+        getSession: async () => ({ userId: "u-owner", sessionId: "s1", twoFactorEnabled: true }),
       },
       db: {} as WebDeps["db"],
       now: () => new Date("2026-11-20T10:00:00Z"),

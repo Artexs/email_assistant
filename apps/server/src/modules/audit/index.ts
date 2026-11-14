@@ -1,3 +1,4 @@
+export { listLlmCallRows } from "./metrics-repo";
 export {
   auditEvents,
   countEventsBetween,

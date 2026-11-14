@@ -15,4 +15,5 @@ export {
   type DigestRequest,
 } from "./digest";
 export { insertDigest, lastDigestSentAt, lastDigestSlotKey, lastSentDigestEnd, markDigestSent } from "./repo";
-export { activityRoutes, type ActivityRouteDeps } from "./routes";
+export { recentWeekStats, weekStats, type UrgentNoticeReader, type WeekStatsDeps } from "./metrics";
+export { activityRoutes, statsRoutes, type ActivityRouteDeps, type StatsRouteDeps } from "./routes";

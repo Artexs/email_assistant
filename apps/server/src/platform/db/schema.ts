@@ -113,6 +113,17 @@ export interface AuthSessions {
   user_id: string;
 }
 
+export interface AuthTwoFactors {
+  backup_codes: string;
+  created_at: Generated<Timestamp>;
+  failed_verification_count: Generated<number>;
+  id: Generated<string>;
+  locked_until: Timestamp | null;
+  secret: string;
+  user_id: string;
+  verified: Generated<boolean>;
+}
+
 export interface AuthVerifications {
   created_at: Generated<Timestamp>;
   expires_at: Timestamp;
@@ -306,6 +317,7 @@ export interface MailboxSettings {
 }
 
 export interface Memberships {
+  break_glass: Generated<boolean>;
   created_at: Generated<Timestamp>;
   digest_times: Generated<string[]>;
   org_id: string;
@@ -407,6 +419,7 @@ export interface Users {
   locale: string | null;
   terms_accepted_at: Timestamp | null;
   terms_version: string | null;
+  two_factor_enabled: Generated<boolean>;
   updated_at: Generated<Timestamp>;
 }
 
@@ -417,6 +430,7 @@ export interface DB {
   auth_accounts: AuthAccounts;
   auth_lockouts: AuthLockouts;
   auth_sessions: AuthSessions;
+  auth_two_factors: AuthTwoFactors;
   auth_verifications: AuthVerifications;
   chat_link_tokens: ChatLinkTokens;
   chat_links: ChatLinks;

@@ -5,9 +5,14 @@ import { getConnInfo } from "@hono/bun";
 import type { Context } from "hono";
 
 import { orgPlanHooks, settingsDeps } from "./composition";
-import type { ActionsScope } from "./modules/actions";
+import { actionRoutes, type ActionsScope } from "./modules/actions";
 import { auditEvents, hasAuditEvent, recordAudit, recordAuditOnce } from "./modules/audit";
-import { channelRoutes, getChatLinkForUser, queueMailboxRemovedNotices } from "./modules/channels";
+import {
+  channelRoutes,
+  getChatLinkForUser,
+  listUrgentNoticeTimes,
+  queueMailboxRemovedNotices,
+} from "./modules/channels";
 import { countSenderRules, rulesRoutes, settingsRoutes, type SettingsRouteDeps } from "./modules/config";
 import {
   listMailboxes,
@@ -20,7 +25,7 @@ import {
   WEB_MAIL_TIMEOUTS,
 } from "./modules/mail";
 import { operatorRoutes } from "./modules/operator";
-import { activityRoutes } from "./modules/reports";
+import { activityRoutes, statsRoutes } from "./modules/reports";
 import {
   getUserAuthProfile,
   isOrgSuspended,
@@ -284,7 +289,9 @@ export function apiRouters(
     api.route("/", settingsRoutes(settingsRouteDeps(db, now, testMailRule(config))));
     api.route("/", rulesRoutes({ db, now }));
     api.route("/", activityRoutes({ db, now }));
+    api.route("/", statsRoutes({ db, now, urgentNotices: listUrgentNoticeTimes, testMail: testMailRule(config) }));
     api.route("/", triageRoutes({ db, now, actionsScope: extras.actionsScope }));
+    api.route("/", actionRoutes({ db, now }));
     api.route("/", channelRoutes({ db, now, botUsername: extras.botUsername }));
   };
 }
@@ -350,6 +357,7 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     return {
       userId: response.response.user.id,
       sessionId: response.response.session.id,
+      twoFactorEnabled: response.response.user.twoFactorEnabled === true,
       setCookie: response.headers.getSetCookie(),
     };
   };

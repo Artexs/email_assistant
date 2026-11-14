@@ -1,0 +1,168 @@
+{
+  "scenario": "lab-01",
+  "part": "dev",
+  "batch": "batch-011",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-spa-0171",
+      "subject": "Exclusive Fleet Club: your VIP upgrade is ready",
+      "body": "Dear fleet manager,\n\nAs a thank-you for your loyalty, Paliwa-Flota invites you to join our new Fleet Club. Members enjoy free car-wash vouchers, discounts on tyres from selected partners, a private concierge line and a gift package delivered to your office. Membership is normally 299 EUR per year, but your company qualifies for a free upgrade this month.\n\nTo activate the VIP status, log in to your account at http://paliwa-fiota.test/club and confirm the company details and the card numbers you would like to include in the program. The form takes less than two minutes. Please complete it within the next 24 hours, because the invitation expires automatically and we cannot reissue it.\n\nThis message is not connected with any invoice, and no payment is required. It is simply a special offer for our best customers.\n\nAs a member you will also receive a quarterly newsletter with fuel-saving tips, an invitation to our annual drivers' day at a partner race track, and priority support on weekends. Several hundred companies have already joined, and we would like your fleet to be among them.\n\nWe hope to see you in the Fleet Club soon.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222\"><p style=\"margin:0 0 12px\">Dear fleet manager,</p><p style=\"margin:0 0 12px\">As a thank-you for your loyalty, Paliwa-Flota invites you to join our new Fleet Club. Members enjoy free car-wash vouchers, discounts on tyres from selected partners, a private concierge line and a gift package delivered to your office. Membership is normally 299 EUR per year, but your company qualifies for a free upgrade this month.</p><p style=\"margin:0 0 12px\">To activate the VIP status, log in to your account at http://paliwa-fiota.test/club and confirm the company details and the card numbers you would like to include in the program. The form takes less than two minutes. Please complete it within the next 24 hours, because the invitation expires automatically and we cannot reissue it.</p><p style=\"margin:0 0 12px\">This message is not connected with any invoice, and no payment is required. It is simply a special offer for our best customers.</p><p style=\"margin:0 0 12px\">As a member you will also receive a quarterly newsletter with fuel-saving tips, an invitation to our annual drivers' day at a partner race track, and priority support on weekends. Several hundred companies have already joined, and we would like your fleet to be among them.</p><p style=\"margin:0 0 12px\">We hope to see you in the Fleet Club soon.</p><p style=\"margin:0 0 12px\">Paliwa-Flota Billing Department</p></div>"
+    },
+    {
+      "id": "b-spa-0176",
+      "subject": "Chcesz więcej klientów? Zrobimy Ci stronę w 3 dni",
+      "body": "Dzień dobry,\n\ntworzymy strony internetowe dla firm, które chcą sprzedawać więcej. Nowoczesny wygląd, wersja mobilna, formularz kontaktowy i podstawowe pozycjonowanie, wszystko w cenie 990 zł zamiast 3900 zł. Promocja trwa tylko do końca tygodnia.\n\nWystarczy, że odpiszą Państwo na tę wiadomość, a prześlemy bezpłatny projekt graficzny w ciągu doby. W cenie jest także rok hostingu, certyfikat bezpieczeństwa i pomoc przy pierwszych wpisach.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222\"><p style=\"margin:0 0 12px\">Dzień dobry,</p><p style=\"margin:0 0 12px\">tworzymy strony internetowe dla firm, które chcą sprzedawać więcej. Nowoczesny wygląd, wersja mobilna, formularz kontaktowy i podstawowe pozycjonowanie, wszystko w cenie 990 zł zamiast 3900 zł. Promocja trwa tylko do końca tygodnia.</p><p style=\"margin:0 0 12px\">Wystarczy, że odpiszą Państwo na tę wiadomość, a prześlemy bezpłatny projekt graficzny w ciągu doby. W cenie jest także rok hostingu, certyfikat bezpieczeństwa i pomoc przy pierwszych wpisach.</p><p style=\"margin:0 0 12px\">Premium Leads Pro | Sales Team</p></div>"
+    },
+    {
+      "id": "b-spa-0184",
+      "subject": "Unlock your LinkedIn growth: 5,000 followers in a week",
+      "body": "Hello,\n\nDo you want a stronger presence on LinkedIn? We can add 5,000 real-looking followers to your company page in only seven days, and our service also includes automatic connection requests to managers in your industry.\n\nSpecial offer for new clients: first 1,000 followers for free, the rest for just $79. No password needed, we only need the link to your page. Reply with your company name today to get the free followers right away.\n\nPremium Leads Pro | Sales Team",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0195",
+      "subject": "Konferencja online: sekrety sprzedaży B2B za 19 zł",
+      "body": "Dzień dobry,\n\nzapraszamy na konferencję internetową \"Sekrety sprzedaży B2B\", na której pięciu mówców zdradzi, jak zwiększyć przychody w 30 dni. Zwykła cena biletu to 490 zł, ale dla Państwa firmy mamy kod rabatowy: bilet za 19 zł do północy.\n\nPo zakupie biletu dostaniecie Państwo nagrania, szablony ofert i dostęp do zamkniętej grupy. Odpowiedz na tę wiadomość, a wyślemy link do płatności.\n\nPremium Leads Pro | Sales Team",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0196",
+      "subject": "Zostań partnerem naszego programu – zarabiaj 5000 zł miesięcznie z domu",
+      "body": "Szanowni Państwo,\n\nposzukujemy firm i osób prywatnych do współpracy w programie partnerskim Premium Leads Pro. Nie potrzebujesz doświadczenia, kapitału ani własnej firmy. Wystarczy komputer i dostęp do internetu. Nasi najlepsi partnerzy zarabiają od pięciu do dwudziestu tysięcy złotych miesięcznie, pracując po dwie godziny dziennie.\n\nJak to działa? Kupujesz od nas pakiet startowy za 1490 zł, w którym dostajesz szkolenie, gotowe szablony wiadomości i bazę 10 tysięcy kontaktów do firm. Następnie wysyłasz oferty do kontaktów i za każdego klienta otrzymujesz prowizję 30 procent. Do tej pory do programu dołączyło ponad 4000 osób z całej Polski, a liczba ta rośnie z dnia na dzień.\n\nDlaczego tylko teraz? Ponieważ w tym tygodniu pakiet startowy kosztuje o 60 procent mniej niż zwykle, a my przyjmujemy tylko 100 nowych partnerów. Kto się spóźni, dostanie miejsce na liście oczekujących na kolejny kwartał.\n\nNie wymagamy umowy o pracę ani rejestracji działalności gospodarczej, a rozliczamy się co tydzień przelewem. Aby dołączyć, odpowiedz na tę wiadomość słowem PARTNER, a opiekun przedstawi szczegóły i prześle numer konta do wpłaty. Nie czekaj, bo to jedyna taka okazja w tym roku.\n\nPremium Leads Pro | Sales Team",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0197",
+      "subject": "Rabat na paliwo dla klientów korporacyjnych – odbierz kod",
+      "body": "Szanowni Państwo,\n\nw ramach akcji \"Zima bez kosztów\" udostępniamy kod rabatowy na zakupy w sklepie internetowym naszego partnera: 25 procent zniżki na odzież zimową i akcesoria samochodowe. Kod jest ważny do końca tygodnia.\n\nAby go aktywować, proszę wejść na http://paliwa-fiota.test/zima i zalogować się danymi swojego konta flotowego. Kod można wykorzystać tylko raz, a rabat nie łączy się z innymi promocjami. Z akcji mogą skorzystać wszystkie firmy z aktywną kartą flotową.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222\"><p style=\"margin:0 0 12px\">Szanowni Państwo,</p><p style=\"margin:0 0 12px\">w ramach akcji \"Zima bez kosztów\" udostępniamy kod rabatowy na zakupy w sklepie internetowym naszego partnera: 25 procent zniżki na odzież zimową i akcesoria samochodowe. Kod jest ważny do końca tygodnia.</p><p style=\"margin:0 0 12px\">Aby go aktywować, proszę wejść na http://paliwa-fiota.test/zima i zalogować się danymi swojego konta flotowego. Kod można wykorzystać tylko raz, a rabat nie łączy się z innymi promocjami. Z akcji mogą skorzystać wszystkie firmy z aktywną kartą flotową.</p><p style=\"margin:0 0 12px\">Paliwa-Flota Billing Department</p></div>"
+    },
+    {
+      "id": "b-spa-0200",
+      "subject": "Nowość na Targach Magazynowych Expo: strefa startupów",
+      "body": "Dzień dobry,\n\ninformujemy, że w tym roku na Targach Magazynowych Expo pojawi się specjalna strefa dla startupów logistycznych. Młode firmy mogą wynająć małe stoisko w obniżonej cenie, a dla pierwszych dwudziestu zgłoszeń przewidzieliśmy dodatkową promocję w naszych mediach.\n\nJeśli znają Państwo takie firmy, prosimy o przekazanie im zaproszenia. Formularz zgłoszeniowy jest dostępny na naszej stronie, a w razie pytań odpowiada nasz dział handlowy.",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0203",
+      "subject": "Zarabiaj na kryptowalutach już od 250 zł",
+      "body": "Cześć! Nasz zespół pokaże Ci, jak zacząć zarabiać na kryptowalutach już od 250 zł. Zyski nawet 400 procent w miesiąc. Odpowiedz, a wyślemy link do zapisu.",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0209",
+      "subject": "Targi Magazynowe Expo: pakiet reklamowy w katalogu wystawców",
+      "body": "Szanowni Państwo,\n\nzapraszamy do zakupu pakietu reklamowego w oficjalnym katalogu wystawców Targów Magazynowych Expo. Katalog trafia do wszystkich uczestników targów, a jego wersja cyfrowa jest rozsyłana do ponad dwudziestu tysięcy firm z branży logistycznej.\n\nDo wyboru mają Państwo trzy pakiety: podstawowy z jedną stroną, rozszerzony z okładką wewnętrzną oraz premium z reklamą na tylnej okładce i artykułem sponsorowanym. Przy zamówieniu do końca miesiąca obowiązuje rabat 15 procent. Cennik i specyfikację przyślemy po odpowiedzi na tę wiadomość.",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0220",
+      "subject": "Targi Expo: ostatnie 5 stoisk w hali B!",
+      "body": "Halo, tu Targi Magazynowe Expo!\n\nW hali B zostało tylko pięć wolnych stoisk! Rabat 10 procent przy zgłoszeniu w tym tygodniu. Napisz do nas teraz.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0230",
+      "subject": "Free website review",
+      "body": "Hello! We will review your website for free and send you a list of mistakes in 24 hours. Reply with your website address.\n\nPremium Leads Pro | Sales Team",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0242",
+      "subject": "Kurs inwestowania w nieruchomości – tylko dla wybranych",
+      "body": "Szanowni Państwo,\n\nczy marzyli Państwo kiedyś o pasywnym dochodzie? Nasz kurs \"Nieruchomości bez kredytu\" pokaże krok po kroku, jak kupować mieszkania za gotówkę, której nie masz, i zarabiać na wynajmie nawet 8 tysięcy złotych miesięcznie. Kurs prowadzi trener, który zainwestował już w ponad 120 lokali w całej Polsce.\n\nW pakiecie dostajecie Państwo dwadzieścia godzin wideo, szablony umów najmu, kalkulator rentowności oraz dostęp do zamkniętej grupy inwestorów. Normalna cena to 4900 zł, ale tylko w tym tygodniu pakiet kosztuje 497 zł, a pierwszych pięćdziesięciu kupujących dostaje dodatkowo bezpłatną konsultację indywidualną.\n\nDlaczego mamy tak niską cenę? Bo chcemy, żeby jak najwięcej osób poznało naszą metodę, zanim rynek zmieni się ponownie. Do tej pory kurs ukończyło 2300 osób, a według ankiet aż 94 procent z nich kupiło pierwszą nieruchomość w ciągu roku.\n\nJeżeli chcą Państwo skorzystać z promocji, wystarczy odpowiedzieć na tę wiadomość. Dołączy do Państwa także zestaw darmowych e-booków o negocjacjach. Nie zwlekaj. Oferta wygasa w niedzielę o północy.\n\nPo zakupie kursu otrzymają Państwo dostęp natychmiast, a jeśli metoda nie spodoba się Państwu w ciągu czternastu dni, zwrócimy całą kwotę. Brzmi zbyt dobrze? Zobaczą Państwo sami, że to działa.",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0244",
+      "subject": "Targi Magazynowe Expo: zaproszenie na konferencję i kolację branżową",
+      "body": "Szanowni Państwo,\n\nserdecznie zapraszamy do udziału w konferencji towarzyszącej Targom Magazynowym Expo oraz w kolacji branżowej, która odbędzie się w pierwszy wieczór targów. W programie konferencji znajdą Państwo trzy bloki tematyczne: automatyzacja magazynów, zrównoważony transport i prawo pracy w logistyce, a po każdym z nich dyskusję panelową z udziałem ekspertów.\n\nBilet na konferencję kosztuje 690 zł netto, a na kolację 350 zł netto, ale przy zakupie obu biletów do końca tygodnia oferujemy pakiet w cenie 790 zł. Liczba miejsc jest ograniczona do 300 osób, a do tej pory sprzedaliśmy już ponad dwie trzecie.\n\nDla firm, które kupią więcej niż pięć biletów, mamy dodatkowy rabat i bezpłatny wpis w katalogu uczestników. Zachęcamy też do zakupu pakietu dla całego zespołu, który obejmuje zniżkę dla wszystkich pracowników z jednej firmy.\n\nAby się zarejestrować, prosimy o wypełnienie formularza na naszej stronie lub odpowiedź na tę wiadomość. Potwierdzenie wyślemy w ciągu 24 godzin.\n\nNa miejscu zapewniamy także szatnię, poczęstunek w przerwach oraz bezpłatny parking dla uczestników, którzy przyjadą własnym samochodem.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0250",
+      "subject": "Rabat na bilety Expo: 2 w cenie 1",
+      "body": "Co za okazja!\n\nTylko dziś dwa bilety w cenie jednego. Odbierz kod rabatowy w naszym serwisie.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222\"><p style=\"margin:0 0 12px\">Co za okazja!</p><p style=\"margin:0 0 12px\">Tylko dziś dwa bilety w cenie jednego. Odbierz kod rabatowy w naszym serwisie.</p><p style=\"margin:0 0 12px\">Zespol Targi Magazynowe Expo | Dzial Handlowy</p></div>"
+    },
+    {
+      "id": "b-spa-0262",
+      "subject": "Cheap Instagram ads for B2B companies",
+      "body": "Hello,\n\nWe manage Instagram and Facebook ads for B2B companies. For the first month we charge only $39 plus the ad budget, and we promise at least 500 new leads. Our team has worked with more than 300 brands in Europe.\n\nTo receive your free strategy plan, reply to this email and tell us your industry.\n\nPremium Leads Pro | Sales Team",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0011",
+      "subject": "Deklaracja konsorcjum – potrzebuję Pana podpisu do 17:00",
+      "body": "Szanowny Panie Prezesie,\n\nGdańsk wymaga, aby deklaracja konsorcjum została podpisana przez obu liderów jeszcze dziś do godziny 17:00. Wysłałem Panu skan na adres asystentki i potrzebuję tylko Pana podpisu i zwrotu pliku. Bez tego nasza oferta zostanie odrzucona formalnie, a konkurent złożył już swoją.\n\nProszę o telefon, jeśli ma Pan jakiekolwiek zastrzeżenia do treści, bo ostatnią wersję mogę poprawić w ciągu pół godziny. Do godziny 17:00 jestem dostępny pod numerem, który ma Pan w kontaktach.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0015",
+      "subject": "Referencje dla Zielonej Hurtowni",
+      "body": "Szanowny Panie Prezesie,\n\nZielona Hurtownia poprosiła nas dziś rano o list referencyjny dotyczący współpracy z Kordelanem i potrzebuje go jeszcze przed końcem dnia, ponieważ składa dokumenty przetargowe. Czy może Pan potwierdzić, że Meblodrew może wymienić Kordelan jako dostawcę usług?\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0018",
+      "subject": "Palety z uszkodzeniami – decyzja przed załadunkiem",
+      "body": "Dear Mr Szalewski,\n\ntwo pallets of dairy goods arrived damaged at our Lublin warehouse. Please tell me today whether Kordelan will replace them, as we load the shop shipment at 18:00. A call this afternoon would be fine.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0019",
+      "subject": "Pełnomocnictwo dla agenta celnego – dziś",
+      "body": "Szanowny Panie Prezesie,\n\nkontener Nordic Foods stoi w porcie od wczoraj, a agent celny nie zwolni go bez pełnomocnictwa podpisanego przez Pana. Muszę mieć podpisany dokument jeszcze dzisiaj przed 15:00, bo urząd zamyka okno odpraw. Przesłałem wzór Pana asystentce. Proszę o podpis i zwrot.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0023",
+      "subject": "Oferta dla Zielonej Hurtowni – podpis do 16:00",
+      "body": "Cześć Wiktor,\n\ndziś mija termin złożenia oferty w przetargu Zielonej Hurtowni. Platforma zamyka przyjmowanie dokumentów o 16:00, a ja nie mogę nic wysłać, dopóki nie podpiszesz formularza ofertowego i oświadczenia o niekaralności.\n\nOba dokumenty leżą w Twojej skrzynce od rana. Potrzebuję ich z powrotem do 15:00, żeby zdążyć z wgraniem plików. Gdybyś miał jakieś uwagi do ceny, napisz do mnie od razu, to poprawimy je w kilka minut.\n\nPozdrawiam | Dorota Wilczynska | Asystentka Zarzadu",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0024",
+      "subject": "Przeniesienie podróży do Frankfurtu – potrzebna zgoda",
+      "body": "Szanowny Panie Prezesie,\n\nwczoraj wieczorem organizatorzy zmienili termin spotkania akcjonariuszy we Frankfurcie. Zamiast w piątek odbędzie się dziś o 18:00 czasu lokalnego, co oznacza, że musi Pan wylecieć z Warszawy najpóźniej o 11:45. Pani Wilczyńska sprawdziła połączenia i jedyny lot, który to umożliwia, ma miejsca tylko do godziny 12:00.\n\nPotrzebuję Pana decyzji dziś rano: czy Pan leci, czy mamy zgłosić udział przez łącze wideo. Jeśli leci Pan osobiście, wystarczy, że poda Pan pani Wilczyńskiej zgodę na zakup biletu, a ona zajmie się resztą, łącznie z transferem z lotniska. Jeśli nie, muszę jeszcze dziś przekazać organizatorom, kto będzie reprezentować spółkę przy głosowaniu.\n\nZależy mi, żeby zarząd był obecny w sprawie podziału dywidendy, bo akcjonariusze mniejszościowi zapowiedzieli, że zgłoszą sprzeciw wobec propozycji rady, a nieobecność prezesa osłabiłaby nasze stanowisko w głosowaniu. Nie jest to łatwa decyzja, wiem o tym, ale czas nas goni. Pani Wilczyńska przygotowała już teczkę z dokumentami, którą może Pan zabrać w podróż. Proszę o odpowiedź przed godziną 10:00, bo później nie zdążymy zorganizować ani jednego, ani drugiego rozwiązania.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0033",
+      "subject": "Framework agreement – we need your decision today",
+      "body": "Dear Mr Szalewski,\n\nI am writing about the framework agreement. Our legal team reviewed your latest draft yesterday, and we are ready to sign, with one remaining point: clause 7.3 on the price indexation. Your draft links the indexation to the fuel price index every quarter, and we would prefer a half-yearly review with a cap at four percent.\n\nOur board meets at 16:00 today, Central European Time. If you can accept the half-yearly review, we will present the agreement for approval and sign it this week. If you cannot, we have to tell the board that the negotiations continue, and the first deliveries under the new terms will move to March, which neither of us wants.\n\nI would therefore be grateful for a clear yes or no from you before 15:00 today. If the answer is no, please tell us which alternative you can accept, so that I can prepare the board for it. I am available by phone and email the whole afternoon, and I can have our lawyer join a short call if that helps.\n\nThank you for your help with this.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0037",
+      "subject": "Fwd: dokumenty celne Nordic – wymagana decyzja dziś",
+      "body": "Szanowny Panie Prezesie,\n\nprzekazuję poniżej wiadomość od pani Lindqvist. Agent w Gdyni potrzebuje dziś do końca dnia Pana decyzji, czy wysyłamy towar z deklaracją tymczasową, czy czekamy na komplet certyfikatów. Jeśli czekamy, statek odpłynie bez naszego kontenera.\n\nProszę o odpowiedź dziś przed 16:00. Pani Lindqvist czeka na naszą decyzję i zapowiedziała, że w przeciwnym razie zleci przewóz innemu operatorowi. To nasz pierwszy kontener w ramach nowej umowy, więc zależy mi, żeby nie zaczynać od opóźnienia.",
+      "thread": [
+        {
+          "subject": "Customs documents for the Nordic container",
+          "body": "Hello Daniel,\n\nthe broker in Gdynia says the phytosanitary certificates are still missing two pages. He can ship with a provisional declaration, but only if Kordelan confirms in writing that the missing pages will be delivered within three days. I need this confirmation today, because the vessel leaves tonight.\n\nBest regards\nKarin Lindqvist\nProcurement Lead\nNordic Foods Trade"
+        }
+      ]
+    },
+    {
+      "id": "b-urg-0038",
+      "subject": "Dziś 15:00",
+      "body": "Wiktor, dziś o 15:00 potrzebuję Twojej zgody na wypłatę zaliczki dla audytora, inaczej nie zacznie badania w poniedziałek. Zadzwoń, jak tylko to zobaczysz.",
+      "thread": [],
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222\"><p style=\"margin:0 0 12px\">Wiktor, dziś o 15:00 potrzebuję Twojej zgody na wypłatę zaliczki dla audytora, inaczej nie zacznie badania w poniedziałek. Zadzwoń, jak tylko to zobaczysz.</p></div>"
+    },
+    {
+      "id": "b-urg-0040",
+      "subject": "Czas pracy w Poznaniu – decyzja",
+      "body": "Cześć Wiktor,\n\nsystem magazynowy w Poznaniu nie działa od rana i 40 osób nie może się zalogować do rejestracji czasu pracy. Potrzebuję Twojej zgody na papierowe listy obecności, zanim zmiana wyjdzie na halę o 14:00.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": []
+    }
+  ]
+}

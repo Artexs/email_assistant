@@ -1,0 +1,304 @@
+{
+  "scenario": "lab-01",
+  "part": "dev",
+  "batch": "batch-007",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-not-0233",
+      "subject": "Potwierdzenie rezygnacji z newslettera specjalnego",
+      "body": "Wiadomość systemowa.\n\nRezygnacja z cotygodniowego newslettera „Przetargi i rynek” została zarejestrowana 14.01.2027. Wysyłka ustanie od następnego wydania.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0243",
+      "subject": "Your Supply Chain Weekly password reset request",
+      "body": "This is an automated security message.\n\nWe received a request to reset the password of your Supply Chain Weekly account on 14.01.2027 at 11:04. Use the one-time code 705318 on the reset page. The code is valid for 20 minutes and works only once.\n\nIf you did not request a reset, ignore this message. Your password stays unchanged and no one can use the code without access to your mailbox. For security reasons, our staff never asks for the code or the password.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": []
+    },
+    {
+      "id": "b-not-0244",
+      "subject": "ERP: invoice export to accounting finished",
+      "body": "ERP system notice\n\nExport of sales invoices to the accounting module finished on 14.01.2027, 6:30. Documents exported: 312. Documents with errors: 0. Status: success.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0247",
+      "subject": "ERP: user access change recorded",
+      "body": "ERP system notice\n\nAccess rights were changed on 13.01.2027, 13:12.\nUser: warehouse supervisor, Poznan\nChange: added role \"Stock corrections\"\nChanged by: system administrator\nStatus: active",
+      "thread": []
+    },
+    {
+      "id": "b-not-0248",
+      "subject": "Odnowienie karty firmowej – potwierdzenie wysyłki",
+      "body": "Powiadomienie bankowe\n\nNowa karta firmowa kończąca się numerem 4821 została wysłana kurierem 13.01.2027. Przewidywany czas doręczenia: 2 do 3 dni roboczych. Przesyłka zostanie doręczona na adres korespondencyjny firmy.\n\nDotychczasowa karta pozostaje aktywna do 31.01.2027. Nową kartę należy aktywować w bankowości internetowej, w zakładce Karty, po jej odebraniu.\n\nWiadomość wygenerowana automatycznie, prosimy na nią nie odpowiadać. Jeśli karta nie dotrze w tym terminie, możesz sprawdzić status przesyłki w bankowości internetowej, w zakładce Karty, po numerze zlecenia CARD-27-0118.",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Powiadomienie bankowe</p><p style=\"margin:0 0 12px 0\">Nowa karta firmowa kończąca się numerem 4821 została wysłana kurierem 13.01.2027. Przewidywany czas doręczenia: 2 do 3 dni roboczych. Przesyłka zostanie doręczona na adres korespondencyjny firmy.</p><p style=\"margin:0 0 12px 0\">Dotychczasowa karta pozostaje aktywna do 31.01.2027. Nową kartę należy aktywować w bankowości internetowej, w zakładce Karty, po jej odebraniu.</p><p style=\"margin:0 0 12px 0\">Wiadomość wygenerowana automatycznie, prosimy na nią nie odpowiadać. Jeśli karta nie dotrze w tym terminie, możesz sprawdzić status przesyłki w bankowości internetowej, w zakładce Karty, po numerze zlecenia CARD-27-0118.</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-not-0253",
+      "subject": "Faktura za wydanie specjalne – raport o kosztach floty",
+      "body": "Wystawiliśmy fakturę za zamówiony raport „Koszty floty 2026”.\n\nNumer dokumentu: FV/LD/2027/0211\nKwota: 390,00 PLN brutto\nStatus płatności: opłacona kartą, 13.01.2027\nRaport: do pobrania w zakładce Moje zakupy\n\nDokument sprzedaży zapisano w koncie w zakładce Płatności i można go pobrać jako plik PDF. Raport będzie dostępny w koncie przez 12 miesięcy od daty zakupu, a jego nowa edycja ukaże się w styczniu 2028 roku. Wiadomość wygenerowana automatycznie, prosimy na nią nie odpowiadać.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0255",
+      "subject": "Podsumowanie zmian w serwisie cen paliw",
+      "body": "Informacja systemowa o zmianach na koncie i w usłudze.\n\nOd 14.01.2027 w serwisie cen paliw obowiązują następujące zmiany:\n- dane o cenach hurtowych są aktualizowane dwa razy dziennie, o 7:00 i 15:00,\n- nowa kolumna z ceną netto i brutto w tabeli notowań,\n- eksport tabeli do pliku CSV dostępny z poziomu panelu,\n- zakres województw w alertach rozszerzony do sześciu.\n\nTwoje ustawienia konta pozostają bez zmian. Dotychczasowe alerty cenowe działają według wcześniej wybranych progów i częstotliwości, a dodatkowe województwa możesz włączyć w ustawieniach alertów. Jeśli nie zrobisz tego, alerty będą nadal obejmować wyłącznie cztery województwa wybrane przy zakładaniu usługi.\n\nZmiana częstotliwości aktualizacji nie wpływa na opłatę za subskrypcję. Plan Premium obejmuje dostęp do wszystkich notowań, historii cen z ostatnich trzech lat oraz eksportu danych. Historia zmian w serwisie jest dostępna w dokumentacji w panelu, a poprzednie wersje tabel notowań są przechowywane w archiwum przez 12 miesięcy.\n\nJeśli zauważysz nieprawidłowości w danych, zgłoś je przez formularz w panelu, w zakładce Pomoc. Zgłoszenia są rozpatrywane w ciągu pięciu dni roboczych.\n\nWiadomość wygenerowana automatycznie, prosimy na nią nie odpowiadać.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0256",
+      "subject": "ERP: weekly report on warehouse documents and errors",
+      "body": "ERP system notice\n\nWeekly report for the period 04.01.2027 to 10.01.2027 has been generated.\n\nDocuments created:\n- customer orders: 1,284\n- delivery notes: 1,197\n- goods receipts: 402\n- stock corrections: 63\n- returns: 29\n\nDocuments with validation errors: 14 (1.1%). Most errors concerned missing pallet counts on goods receipts at the Lodz warehouse. All documents with errors were corrected by warehouse staff within the same working day, and no document stays in the error queue.\n\nAverage document processing time: 1.8 seconds. Peak load was recorded on Wednesday 06.01.2027 between 10:00 and 11:00 with 212 documents per hour. The system did not record any timeouts during that time. The number of API calls from the scanners was 41,200 for the week, which is within the usual range, and the database size grew by 1.3 GB.\n\nSystem performance for the week:\n- availability: 99.94%\n- unplanned downtime: 6 minutes (the restart of the picking service on 07.01.2027)\n- scheduled maintenance: none\n\nThe full report with the list of documents is available in the ERP module Reports, under Weekly, and is stored there for 12 months. This message was generated automatically by the system. Do not reply to it.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0260",
+      "subject": "Opłata za prowadzenie rachunku pobrana",
+      "body": "Informacja o transakcji\n\nPobrano opłatę za prowadzenie rachunku PL00-TEST-4821 w wysokości 99,00 PLN. Data księgowania: 14.01.2027. Wiadomość automatyczna.",
+      "thread": []
+    },
+    {
+      "id": "b-rep-0002",
+      "subject": "Budżet na 2027 – Pana stanowisko",
+      "body": "Szanowny Panie Prezesie,\n\nprzed posiedzeniem rady, które odbędzie się 28.01.2027, chciałbym poznać Pana stanowisko w sprawie projektu budżetu na 2027 rok. Interesuje mnie przede wszystkim, czy zarząd planuje utrzymać zaplanowany poziom inwestycji we flotę, skoro prognoza przychodów została obniżona.\n\nProszę o odpowiedź pisemną, w kilku zdaniach, w ciągu najbliższych dni. Odpowiedź Pana własna jest dla mnie ważniejsza niż zestawienie liczb. Rada będzie omawiać ten punkt jako jeden z pierwszych, więc chciałbym przyjść na posiedzenie z jasnym obrazem sytuacji i bez niespodzianek.",
+      "thread": [],
+      "expectedPoints": [
+        "Czy zarząd utrzymuje poziom inwestycji we flotę mimo niższej prognozy przychodów",
+        "Uzasadnienie stanowiska w kilku zdaniach",
+        "Czy zmieniły się założenia budżetu"
+      ],
+      "mustNot": [
+        "Nie zobowiązywać się do cięcia inwestycji bez decyzji zarządu"
+      ]
+    },
+    {
+      "id": "b-rep-0018",
+      "subject": "Termin kolacji z członkami rady",
+      "body": "Cześć Wiktor,\n\nczy wolisz kolację z członkami rady w środę 27.01.2027 czy zaraz po posiedzeniu 28.01.2027? Daj znać, jaka opcja Ci bardziej odpowiada.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "expectedPoints": [
+        "Wybór terminu kolacji: środa 27.01.2027 albo po posiedzeniu 28.01.2027"
+      ]
+    },
+    {
+      "id": "b-rep-0021",
+      "subject": "Re: Oferta na nowe naczepy – pytanie o decyzję",
+      "body": "Sehr geehrter Herr Szalewski,\n\nw nawiązaniu do rozmowy z Pani dyrektor operacyjną chciałbym zapytać Pana bezpośrednio o jedną sprawę, która zadecyduje o kształcie naszej oferty.\n\nPaństwa dział operacyjny zapytał nas o dostawę sześciu naczep typu firanka w pierwszym kwartale. Możemy to zrobić, ale wymaga to rezerwacji mocy produkcyjnych już teraz. Dla pełnego zamówienia oferujemy rabat w wysokości sześciu procent. Jeśli zdecydują się Państwo na zamówienie rozłożone na dwa kwartały, rabat spada do trzech procent, a termin dostawy dla drugiej partii wydłuża się o cztery tygodnie.\n\nDlatego pytam wprost: czy chce Pan zamówić wszystkie sześć naczep w jednym zamówieniu, czy woli Pan podzielić dostawę na dwa etapy? Ta decyzja wpływa na cenę, harmonogram i warunki płatności, więc chciałbym usłyszeć Pana wybór, a nie opinię któregoś z pracowników.\n\nDodam, że oferta w obecnej formie obowiązuje do końca stycznia. Po tym terminie musielibyśmy ją przeliczyć według nowego cennika materiałów. Jeśli zdecyduje się Pan na pełne zamówienie, przygotujemy umowę i harmonogram płatności w ciągu tygodnia.\n\nCzekam na Pana odpowiedź i dziękuję za zaufanie. Jeśli potrzebuje Pan dodatkowych danych technicznych albo porównania z modelem z zeszłego roku, mogę je przesłać w ciągu jednego dnia roboczego.\n\nMit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued",
+      "thread": [
+        {
+          "subject": "Naczepy – zapytanie na pierwszy kwartał",
+          "body": "Dzień dobry Panie Matthias,\n\nzapytuję o dostępność sześciu naczep typu firanka w pierwszym kwartale oraz o warunki cenowe.\n\nHalina Strzemecka"
+        }
+      ],
+      "expectedPoints": [
+        "Czy zamówienie na sześć naczep ma być jednorazowe, czy rozłożone na dwa etapy",
+        "Akceptacja lub odrzucenie rabatu sześciu procent przy pełnym zamówieniu",
+        "Termin odpowiedzi przed końcem ważności oferty"
+      ],
+      "mustNot": [
+        "Nie składać zamówienia bez decyzji prezesa",
+        "Nie ustalać warunków płatności"
+      ]
+    },
+    {
+      "id": "b-rep-0028",
+      "subject": "Nordic: your call on the delivery clause",
+      "body": "Hi Wiktor,\n\nNordic wants us to guarantee delivery within 48 hours of order for their top 10 products, with a penalty of 1% of the order value per day of delay. Piotr thinks it's a stretch, I think we can do it for four or five of the items.\n\nWhat's your view? Do we accept the penalty for the products we can cover, or do we say no to the clause altogether? I need to answer Karin by Friday and I'd rather have your steer than guess.",
+      "thread": [],
+      "expectedPoints": [
+        "Czy akceptujemy karę 1 proc. za dzień opóźnienia dla produktów, które możemy pokryć",
+        "Czy odrzucamy klauzulę w całości",
+        "Odpowiedź przed piątkiem"
+      ],
+      "mustNot": [
+        "Nie obiecywać Karin dostawy w 48 godzin dla wszystkich produktów",
+        "Nie godzić się na karę bez zgody prezesa"
+      ]
+    },
+    {
+      "id": "b-rep-0030",
+      "subject": "Cennik serwisu na 2027 – pytanie o wybór wariantu",
+      "body": "Sehr geehrter Herr Szalewski,\n\nczy wybiera Pan roczny pakiet serwisowy za stałą kwotę, czy rozliczenie za każdą wizytę? Prosimy o odpowiedź do końca miesiąca.\n\nMit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued",
+      "thread": [],
+      "expectedPoints": [
+        "Wybór między rocznym pakietem serwisowym a rozliczeniem za każdą wizytę",
+        "Odpowiedź do końca miesiąca"
+      ]
+    },
+    {
+      "id": "b-rep-0036",
+      "subject": "Re: Nordic – which version do we send?",
+      "body": "Wiktor,\n\nKarin replied and asked which version of the framework we want to use: the one with the shared tracking portal or the plain one without. The portal version adds about 4% to the price, but Nordic says they'd sign faster if we include it.\n\nYour decision please, I don't want to answer without you. Also tell me if you'd like me to say anything about the signing date.",
+      "thread": [
+        {
+          "subject": "Nordic – tracking portal option",
+          "body": "Oliver, Karin asked about the tracking portal. Please find out what it would cost us.\n\nWiktor"
+        }
+      ],
+      "expectedPoints": [
+        "Wybór wersji umowy: z portalem śledzenia (cena wyższa o około 4 proc.) czy bez portalu",
+        "Czy wspomnieć Karin o terminie podpisania"
+      ],
+      "mustNot": [
+        "Nie ustalać ceny z Karin bez zgody prezesa"
+      ]
+    },
+    {
+      "id": "b-rep-0037",
+      "subject": "Re: Okna rozładunku w Łodzi – która opcja?",
+      "body": "Cześć Wiktor,\n\nmamy dwie opcje na okna w Łodzi: 6:00 do 10:00 albo 14:00 do 18:00. Która Ci pasuje?\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [
+        {
+          "subject": "Okna rozładunku w Łodzi",
+          "body": "Halina, muszę wiedzieć, jakie opcje mamy na okna rozładunku w Łodzi od marca.\n\nWiktor"
+        },
+        {
+          "subject": "Re: Okna rozładunku w Łodzi",
+          "body": "Wiktor, sprawdzam z kierownikiem magazynu i wrócę z opcjami.\n\nHalina"
+        }
+      ],
+      "expectedPoints": [
+        "Wybór okna rozładunku w Łodzi: 6:00 do 10:00 albo 14:00 do 18:00"
+      ]
+    },
+    {
+      "id": "b-rep-0042",
+      "subject": "Re: Reklamacja z grudnia – czekam na Pana odpowiedź",
+      "body": "Szanowny Panie Prezesie,\n\nnie dostałam jeszcze odpowiedzi na pytanie, które zadałam w ostatniej wiadomości. Chcę wiedzieć, czy zamierza Pan uznać naszą reklamację w całości, czyli zwrócić wartość uszkodzonych palet i koszt dodatkowego transportu, czy tylko w części.\n\nRozmawiałam z moim zarządem i potrzebujemy Pana osobistego stanowiska, nie komunikatu od działu reklamacji. Proszę o odpowiedź pisemną. Sprawa ciągnie się od trzech tygodni, a nasza współpraca jest dla mnie zbyt ważna, żeby traktować ją byle jak.",
+      "thread": [
+        {
+          "subject": "Reklamacja z grudnia – uszkodzone palety",
+          "body": "Szanowna Pani,\n\nprzeanalizujemy Pani zgłoszenie i skontaktujemy się z propozycją rozwiązania.\n\nWiktor Szalewski"
+        }
+      ],
+      "expectedPoints": [
+        "Czy reklamacja zostaje uznana w całości czy tylko w części",
+        "Czy zwrot obejmuje koszt dodatkowego transportu",
+        "Osobiste stanowisko prezesa na piśmie"
+      ],
+      "mustNot": [
+        "Nie uznawać reklamacji w całości bez decyzji prezesa",
+        "Nie podawać kwot odszkodowania"
+      ]
+    },
+    {
+      "id": "b-rep-0044",
+      "subject": "Wspólna oferta – czy wchodzą Państwo w Szwecję?",
+      "body": "Szanowny Panie Prezesie,\n\npotrzebuję Pana decyzji, czy Kordelan dołącza do naszej oferty na trasę do Szwecji. Odpowiedź tak lub nie wystarczy.",
+      "thread": [],
+      "expectedPoints": [
+        "Decyzja, czy Kordelan dołącza do oferty na trasie do Szwecji"
+      ],
+      "mustNot": [
+        "Nie składać zobowiązań w imieniu Kordelan"
+      ]
+    },
+    {
+      "id": "b-rep-0045",
+      "subject": "Pytanie o wybór wyposażenia nowych naczep",
+      "body": "Sehr geehrter Herr Szalewski,\n\nprzygotowując zamówienie na naczepy, musimy poznać Pana wybór: czy mają być wyposażone w standardowy system hamulcowy, czy w wersję z dodatkowym wspomaganiem, która podnosi cenę o około 1800 euro za sztukę?\n\nDruga wersja jest zalecana przy trasach górskich, dlatego pytam, czy Państwa trasy tego wymagają. Prosimy o decyzję do końca tygodnia, bo od niej zależy zamówienie części u naszego poddostawcy.\n\nMit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued",
+      "thread": [],
+      "expectedPoints": [
+        "Wybór wyposażenia hamulcowego: standard czy wersja z wspomaganiem (około 1800 euro więcej za sztukę)",
+        "Czy trasy firmy wymagają wersji górskiej",
+        "Decyzja do końca tygodnia"
+      ],
+      "mustNot": [
+        "Nie zamawiać droższej wersji bez zgody prezesa"
+      ]
+    },
+    {
+      "id": "b-rep-0071",
+      "subject": "Joint tender: do you want a stake in the Riga lane?",
+      "body": "Dear Mr Szalewski,\n\nI would like to ask you a direct question about our joint tender. The Latvian customer has added a separate lot for the Riga lane, and we need to know whether Kordelan wants a share in that lot or prefers to stay with the original scope.\n\nIf you join, we would propose a 60/40 split of the work and revenue in your favour on the Polish leg. If you stay out, we will bid for the Riga lot alone with another partner. Please give me your decision when you can, because the bid documents need to be adjusted accordingly.\n\nDaniel",
+      "thread": [],
+      "expectedPoints": [
+        "Czy Kordelan chce udziału w locie na trasie do Rygi",
+        "Akceptacja lub odrzucenie podziału 60/40",
+        "Termin decyzji potrzebny przed korektą dokumentów"
+      ],
+      "mustNot": [
+        "Nie godzić się na podział przychodów bez decyzji prezesa"
+      ]
+    },
+    {
+      "id": "b-rep-0074",
+      "subject": "Request for your position: risk review before the board meeting",
+      "body": "Dear Mr Szalewski,\n\nBefore the board meets on 28.01.2027 I would like to hear your personal position on a question that the board will certainly raise.\n\nThe company's three largest customers account for more than 60% of revenue, and one of them, Zielona Hurtownia, is currently running a tender that decides its supplier for the next two years. If Kordelan loses that tender, the revenue forecast for 2027 will fall below the level that supports the planned investments in the fleet and in the new warehouse in Lodz. The board needs to know whether you see this concentration as an acceptable risk, or whether you plan measures to reduce it.\n\nSpecifically, I ask for your answer to three points. First, how do you assess the probability of winning the tender, and what is your fallback if the result is negative? Second, do you intend to keep the investment plan unchanged until the result of the tender is known, or to postpone part of it? Third, which measures to diversify the customer base are realistic in 2027, and which of them would you present to the board?\n\nI expect a written reply in your own words, and not a summary prepared by the staff. A reply of one page is enough. The board will use it to decide how to treat the budget proposal, so it should reach me at least a few days before the meeting.\n\nThank you in advance for your answer.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "expectedPoints": [
+        "Ocena szans wygrania przetargu Zielonej Hurtowni i plan awaryjny w razie porażki",
+        "Czy plan inwestycji pozostaje bez zmian do czasu wyniku przetargu",
+        "Realistyczne działania dywersyfikacji bazy klientów w 2027",
+        "Odpowiedź własnymi słowami, do jednej strony, kilka dni przed posiedzeniem"
+      ],
+      "mustNot": [
+        "Nie obiecywać zmian budżetu przed decyzją rady",
+        "Nie podawać prognoz przychodów bez zatwierdzenia przez finanse"
+      ]
+    },
+    {
+      "id": "b-rep-0083",
+      "subject": "Wspólne przetargi – prośba o Pana decyzję w sprawie podziału kosztów",
+      "body": "Szanowny Panie Prezesie,\n\nzwracam się do Pana osobiście w sprawie, która wymaga Pana decyzji i której nie chciałbym uzgadniać z nikim innym w Państwa firmie.\n\nKoszt przygotowania wspólnej oferty przetargowej dla sieci handlowej okazał się wyższy, niż zakładaliśmy na początku. Poza kosztem tłumaczeń i opłaty wadialnej doszedł koszt audytu finansowego, którego wymagał zamawiający, na kwotę około 24 tysięcy złotych. Zgodnie z naszym porozumieniem koszty te mają być dzielone po połowie, ale audyt nie był w nim wymieniony wprost.\n\nProponuję, abyśmy podzielili ten dodatkowy koszt po połowie, tak jak pozostałe. Rozważam także wariant, w którym Baltic Freight Partners ponosi całość tego kosztu, a w zamian otrzymuje wyższy udział w wynagrodzeniu, gdy przetarg zostanie wygrany. Który wariant Pan preferuje? Chciałbym też wiedzieć, czy zgadza się Pan na wspólne zlecenie audytu u tej samej firmy w przyszłych ofertach, co obniżyłoby jego koszt o około jedną piątą, bo firma audytorska zaproponowała nam stałą stawkę przy większej liczbie zleceń.\n\nPana odpowiedź pozwoli mi zamknąć rozliczenia w styczniu. Proszę o krótką wiadomość z Pana stanowiskiem, w dowolnej formie.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Szanowny Panie Prezesie,</p><p style=\"margin:0 0 12px 0\">zwracam się do Pana osobiście w sprawie, która wymaga Pana decyzji i której nie chciałbym uzgadniać z nikim innym w Państwa firmie.</p><p style=\"margin:0 0 12px 0\">Koszt przygotowania wspólnej oferty przetargowej dla sieci handlowej okazał się wyższy, niż zakładaliśmy na początku. Poza kosztem tłumaczeń i opłaty wadialnej doszedł koszt audytu finansowego, którego wymagał zamawiający, na kwotę około 24 tysięcy złotych. Zgodnie z naszym porozumieniem koszty te mają być dzielone po połowie, ale audyt nie był w nim wymieniony wprost.</p><p style=\"margin:0 0 12px 0\">Proponuję, abyśmy podzielili ten dodatkowy koszt po połowie, tak jak pozostałe. Rozważam także wariant, w którym Baltic Freight Partners ponosi całość tego kosztu, a w zamian otrzymuje wyższy udział w wynagrodzeniu, gdy przetarg zostanie wygrany. Który wariant Pan preferuje? Chciałbym też wiedzieć, czy zgadza się Pan na wspólne zlecenie audytu u tej samej firmy w przyszłych ofertach, co obniżyłoby jego koszt o około jedną piątą, bo firma audytorska zaproponowała nam stałą stawkę przy większej liczbie zleceń.</p><p style=\"margin:0 0 12px 0\">Pana odpowiedź pozwoli mi zamknąć rozliczenia w styczniu. Proszę o krótką wiadomość z Pana stanowiskiem, w dowolnej formie.</p><p style=\"margin:0 0 12px 0\">Kind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners</p></div>",
+      "thread": [],
+      "expectedPoints": [
+        "Wybór wariantu podziału kosztu audytu: po połowie czy w całości po stronie Baltic Freight Partners",
+        "Czy akceptuje wyższy udział w wynagrodzeniu dla Baltic w zamian za pokrycie kosztu",
+        "Czy zgadza się na wspólne zlecanie audytu w przyszłych ofertach"
+      ],
+      "mustNot": [
+        "Nie zatwierdzać kwoty audytu bez decyzji prezesa",
+        "Nie zmieniać zasad podziału wynagrodzenia"
+      ]
+    },
+    {
+      "id": "b-rep-0085",
+      "subject": "Re: Odnowienie umowy na karty paliwowe – decyzja",
+      "body": "Szanowny Panie Prezesie,\n\nczy odnawia Pan umowę na karty paliwowe na dotychczasowych warunkach, czy chce Pan negocjować niższą stawkę? Potrzebuję Pana decyzji.",
+      "thread": [
+        {
+          "subject": "Odnowienie umowy na karty paliwowe",
+          "body": "Dzień dobry Pani Ewelino, proszę o przesłanie warunków odnowienia umowy. Wrócę do tematu.\n\nWiktor Szalewski"
+        }
+      ],
+      "expectedPoints": [
+        "Odnowienie na dotychczasowych warunkach czy negocjacja niższej stawki"
+      ]
+    },
+    {
+      "id": "b-rep-0089",
+      "subject": "Quick one: which date for the Nordic visit?",
+      "body": "Hi Wiktor, Karin can visit us on 3 or 10 February. Which date works for you? Tell me and I'll confirm.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Hi Wiktor, Karin can visit us on 3 or 10 February. Which date works for you? Tell me and I'll confirm.</p><p style=\"margin:0 0 12px 0\">Cheers, Oliver | Head of Export | Kordelan Distribution</p></div>",
+      "thread": [],
+      "expectedPoints": [
+        "Wybór daty wizyty Karin: 3 lub 10 lutego"
+      ]
+    },
+    {
+      "id": "b-rep-0095",
+      "subject": "Re: Fuel card agreement – your decision on the discount tier",
+      "body": "Dear Mr Szalewski,\n\nthank you for coming back to us. To finalise the renewal I need one decision from you: do you take the standard tier or the volume tier with a higher discount and a minimum purchase commitment?\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [
+        {
+          "subject": "Fuel card agreement renewal",
+          "body": "Dear Mr Szalewski,\n\nthe agreement for your fleet fuel cards ends on 31.01.2027. We propose two renewal tiers, details in the attachment.\n\nEwelina Marszalek"
+        },
+        {
+          "subject": "Re: Fuel card agreement renewal",
+          "body": "Ewelina, thank you. I will review both tiers and come back to you.\n\nWiktor Szalewski"
+        }
+      ],
+      "expectedPoints": [
+        "Wybór poziomu: standardowy czy wolumenowy z minimalnym zobowiązaniem zakupowym"
+      ],
+      "mustNot": [
+        "Nie wybierać poziomu wolumenowego bez decyzji prezesa"
+      ]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
 
-import { simParts, type SimPart } from "@ea/core";
+import { defaultFreezeFloors, simParts, type SimPart } from "@ea/core";
 
 export const usage = [
   "usage:",
@@ -12,6 +12,9 @@ export const usage = [
   "  bun run sim label-import <scenario> --part <part> --batch <NNN> --checker <model id> --file <path> [--root <dir>]",
   "  bun run sim stale <scenario> --part <part> --batches <from>-<to> [--root <dir>]",
   "  bun run sim reconcile <scenario> --part <part> --batches <from>-<to> [--root <dir>]",
+  "  bun run sim freeze <scenario> --version <v> --date <YYYY-MM-DD> [--min-dev 50] [--min-holdout 200] [--root <dir>]",
+  "  bun run sim audit-list <scenario> --version <v> [--root <dir>]",
+  "  bun run sim audit-apply <scenario> --version <v> --date <YYYY-MM-DD> [--root <dir>]",
   "  Exit 0: ok. Exit 1: usage error, refusal or an issue found.",
 ].join("\n");
 
@@ -34,7 +37,10 @@ export type SimCommand =
   | (Base & { kind: "blind-export"; part: SimPart; range: BatchRange })
   | (Base & { kind: "stale"; part: SimPart; range: BatchRange })
   | (Base & { kind: "reconcile"; part: SimPart; range: BatchRange })
-  | (Base & { kind: "label-import"; part: SimPart; batch: number; checker: string; file: string });
+  | (Base & { kind: "label-import"; part: SimPart; batch: number; checker: string; file: string })
+  | (Base & { kind: "freeze"; version: string; date: string; minDev: number; minHoldout: number })
+  | (Base & { kind: "audit-list"; version: string })
+  | (Base & { kind: "audit-apply"; version: string; date: string });
 
 const SCENARIO_ID = /^[a-z0-9-]{1,40}$/;
 
@@ -66,7 +72,23 @@ const allowed: Record<string, readonly string[]> = {
   "label-import": ["part", "batch", "checker", "file"],
   stale: ["part", "batches"],
   reconcile: ["part", "batches"],
+  freeze: ["version", "date", "min-dev", "min-holdout"],
+  "audit-list": ["version"],
+  "audit-apply": ["version", "date"],
 };
+
+const VERSION = /^\d+(\.\d+)?$/;
+
+function parseDate(text: string | undefined): string | undefined {
+  if (text === undefined || !/^\d{4}-\d{2}-\d{2}$/.test(text)) return undefined;
+  const date = new Date(`${text}T00:00:00Z`);
+  return Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== text ? undefined : text;
+}
+
+function parseCount(text: string | undefined, fallback: number): number | undefined {
+  if (text === undefined) return fallback;
+  return /^\d{1,5}$/.test(text) ? Number(text) : undefined;
+}
 
 // Returns undefined on any bad argument; the script prints the usage.
 export function parseSimArgs(argv: string[]): SimCommand | undefined {
@@ -81,6 +103,10 @@ export function parseSimArgs(argv: string[]): SimCommand | undefined {
         batches: { type: "string" },
         checker: { type: "string" },
         file: { type: "string" },
+        version: { type: "string" },
+        date: { type: "string" },
+        "min-dev": { type: "string" },
+        "min-holdout": { type: "string" },
       },
       allowPositionals: true,
       strict: true,
@@ -100,7 +126,20 @@ export function parseSimArgs(argv: string[]): SimCommand | undefined {
     const batch = parseBatch(values.batch);
     if (values.batch !== undefined && batch === undefined) return undefined;
 
+    const version = values.version !== undefined && VERSION.test(values.version) ? values.version : undefined;
+    const date = parseDate(values.date);
+    const minDev = parseCount(values["min-dev"], defaultFreezeFloors.minDev);
+    const minHoldout = parseCount(values["min-holdout"], defaultFreezeFloors.minHoldout);
+
     switch (kind) {
+      case "freeze":
+        return version === undefined || date === undefined || minDev === undefined || minHoldout === undefined
+          ? undefined
+          : { ...base, kind, version, date, minDev, minHoldout };
+      case "audit-list":
+        return version === undefined ? undefined : { ...base, kind, version };
+      case "audit-apply":
+        return version === undefined || date === undefined ? undefined : { ...base, kind, version, date };
       case "plan":
         return { ...base, kind, force: values.force ?? false };
       case "status":

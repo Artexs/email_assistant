@@ -12,7 +12,7 @@ import {
 } from "../../actions";
 import { auditEvents, findActionActor } from "../../audit";
 import { isSyntheticMessageId } from "../../mail";
-import { listMemberships } from "../../tenancy";
+import { isFeatureOn, listMemberships } from "../../tenancy";
 import { type LinkedChat } from "../port";
 
 import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped, type Detector } from "./run";
@@ -98,6 +98,8 @@ async function detectSendResults(db: DbOrTrx, ctx: TenantContext, owners: Linked
     pendingCopyMaxAgeMs: SENT_COPY_PENDING_MAX_AGE_MS,
   });
   if (rows.length === 0) return;
+  // One flag read for the run; the button shows only on a `sent` result (plan D21).
+  const mistakeButton = await isFeatureOn(db, ctx, "mistake_capture");
   const names = new Map((await listMemberships(db, ctx)).map((member) => [member.user_id, member.display_name]));
   for (const row of rows) {
     try {
@@ -107,13 +109,15 @@ async function detectSendResults(db: DbOrTrx, ctx: TenantContext, owners: Linked
       const sendKind = SEND_KINDS.find((known) => known === row.payload.kind) ?? "delegation";
       const to = Array.isArray(row.payload.to) ? stringOf(row.payload.to[0]) : null;
       const draftTo = Array.isArray(draftRow?.payload.to) ? stringOf(draftRow.payload.to[0]) : null;
+      const result = await resultKindOf(db, ctx, row, draftRemoved, names);
       const view = {
         actionId: row.id,
         sendKind,
-        result: await resultKindOf(db, ctx, row, draftRemoved, names),
+        result,
         recipient: { name: stringOf(draftRow?.payload.delegate_name), address: to ?? draftTo },
         subject: outgoingSubject(sendKind, row.email.subject),
         synthetic: isSyntheticMessageId(row.email.message_id_header),
+        ...(mistakeButton && result.kind === "sent" ? { mistakeButton: true } : {}),
       };
       await inTransaction(db, async (trx) => {
         for (const owner of owners) {

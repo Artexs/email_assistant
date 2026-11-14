@@ -1,0 +1,337 @@
+{
+  "id": "lab-01",
+  "company": {
+    "name": "Kordelan Dystrybucja Sp. z o.o.",
+    "domain": "kordelan.test"
+  },
+  "executive": {
+    "key": "prezes-zarzadu",
+    "displayName": "Wiktor Szalewski",
+    "address": "wiktor.szalewski@kordelan.test",
+    "lang": "pl",
+    "timeZone": "Europe/Warsaw"
+  },
+  "personas": [
+    {
+      "key": "przewodniczacy-rady",
+      "displayName": "Zbigniew Orlowicz",
+      "address": "z.orlowicz@rada-kordelan.test",
+      "group": "boss",
+      "lang": "pl",
+      "voice": "Przewodniczacy rady nadzorczej. Pisze rzadko, krotko i rzeczowo, pyta o wyniki, budzet i ryzyka. Ton chlodny, formalny, bez ozdobnikow. Zwykle 2-4 zdania, czasem prosi o odpowiedz jeszcze dzisiaj.",
+      "signature": "Z powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej"
+    },
+    {
+      "key": "dyr-operacyjny",
+      "displayName": "Halina Strzemecka",
+      "address": "halina.strzemecka@kordelan.test",
+      "group": "team",
+      "lang": "pl",
+      "voice": "Dyrektor operacyjna, odpowiada za magazyny i transport. Pisze konkretnie, z liczbami, o opoznieniach, obsadzie i awariach. Ton cieply, ale zdecydowany, srednia dlugosc wiadomosci, lubi punkty.",
+      "signature": "Pozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja"
+    },
+    {
+      "key": "dyr-hr",
+      "displayName": "Rafal Kwiecinski",
+      "address": "rafal.kwiecinski@kordelan.test",
+      "group": "team",
+      "lang": "pl",
+      "voice": "Dyrektor HR. Pisze dlugo i uprzejmie, o rekrutacjach, urlopach, szkoleniach i sprawach pracowniczych. Ton formalny, rozbudowane zdania, czesto prosi o decyzje lub zgode.",
+      "signature": "Z wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych"
+    },
+    {
+      "key": "head-export",
+      "displayName": "Oliver Pemberton",
+      "address": "oliver.pemberton@kordelan.test",
+      "group": "team",
+      "lang": "en",
+      "voice": "Head of Export, a British manager based in the Gdansk office. Writes in casual, quick English, often from his phone, with typos and short sentences. Topics: export lanes, customs delays, key accounts abroad.",
+      "signature": "Cheers, Oliver | Head of Export | Kordelan Distribution"
+    },
+    {
+      "key": "asystentka",
+      "displayName": "Dorota Wilczynska",
+      "address": "dorota.wilczynska@kordelan.test",
+      "group": "delegate",
+      "lang": "pl",
+      "voice": "Asystentka zarzadu. Pisze uprzejmie i zwiezle o kalendarzu, podrozach, salach i terminach, zawsze z konkretna data i godzina. Ton profesjonalny, bez emocji.",
+      "signature": "Pozdrawiam | Dorota Wilczynska | Asystentka Zarzadu"
+    },
+    {
+      "key": "ksiegowa",
+      "displayName": "Magdalena Czerniak",
+      "address": "magdalena.czerniak@kordelan.test",
+      "group": "delegate",
+      "lang": "pl",
+      "voice": "Glowna ksiegowa. Pisze sucho, technicznie, o fakturach, przelewach, VAT i zamknieciu miesiaca. Uzywa numerow dokumentow i kwot, lubi krotkie wyliczenia, nigdy zartow.",
+      "signature": "Magdalena Czerniak | Glowna Ksiegowa | Dzial Finansow"
+    },
+    {
+      "key": "koordynator-sprzedazy",
+      "displayName": "Piotr Lewandrowski",
+      "address": "piotr.lewandrowski@kordelan.test",
+      "group": "delegate",
+      "lang": "pl",
+      "voice": "Koordynator sprzedazy i umow. Pisze potocznie, energicznie, o ofertach, cennikach, umowach ramowych i klientach. Dlugosc srednia, czasem wykrzykniki, lubi skroty myslowe.",
+      "signature": "Piotr L. | Koordynator Sprzedazy | tel. wew. 214"
+    },
+    {
+      "key": "klient-hurtownia",
+      "displayName": "Genowefa Jastrzebska",
+      "address": "g.jastrzebska@hurtownia-zielona.test",
+      "group": "client",
+      "lang": "pl",
+      "voice": "Wlascicielka sieci hurtowni spozywczych, najwazniejszy klient. Pisze bezposrednio, czasem ostro, o dostawach, reklamacjach i cenach. Zwykle srednia dlugosc, ton wymagajacy, ale lojalny.",
+      "signature": "Genowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes"
+    },
+    {
+      "key": "klient-meble",
+      "displayName": "Tomasz Brzezinski",
+      "address": "tomasz.brzezinski@meblodrew.test",
+      "group": "client",
+      "lang": "pl",
+      "voice": "Dyrektor zakupow producenta mebli. Pisze uprzejmie i dokladnie, pyta o terminy dostaw, wyceny transportu i warunki umowy. Ton biznesowy, zwiezle akapity, czesto z zalacznikiem.",
+      "signature": "Z powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew"
+    },
+    {
+      "key": "klient-nordic",
+      "displayName": "Karin Lindqvist",
+      "address": "karin.lindqvist@nordicfoods-trade.test",
+      "group": "client",
+      "lang": "en",
+      "voice": "Procurement lead of a Nordic food importer. Writes polite, precise English, with numbered questions about delivery windows, pallets and certificates. Medium length, never emotional.",
+      "signature": "Best regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade"
+    },
+    {
+      "key": "partner-brokers",
+      "displayName": "Daniel Hargreaves",
+      "address": "daniel.hargreaves@baltic-freight-partners.test",
+      "group": "partner",
+      "lang": "en",
+      "voice": "Managing partner of a freight brokerage in a joint venture with the company. Writes confident, relationship-focused English, about joint tenders, capacity and strategy. Medium to long, friendly tone.",
+      "signature": "Kind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners"
+    },
+    {
+      "key": "dostawca-paliw",
+      "displayName": "Ewelina Marszalek",
+      "address": "ewelina.marszalek@paliwa-flota.test",
+      "group": "vendor",
+      "lang": "en",
+      "voice": "Account manager at a fuel card and fleet services supplier. Writes brief, polished English about card limits, invoices and price changes. Slightly sales-like, short messages with a clear request.",
+      "signature": "Regards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota"
+    },
+    {
+      "key": "dostawca-naczepy",
+      "displayName": "Matthias Brandt",
+      "address": "matthias.brandt@trailerwerk-sued.test",
+      "group": "vendor",
+      "lang": "de",
+      "voice": "Vertriebsleiter eines deutschen Anhaenger-Herstellers. Schreibt sachlich und hoeflich auf Deutsch, ueber Lieferzeiten, Angebote und Wartungsvertraege. Mittellange Mails, formelle Anrede.",
+      "signature": "Mit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued"
+    },
+    {
+      "key": "news-branza",
+      "displayName": "Magazyn Logistyka Dzis",
+      "address": "redakcja@logistyka-dzis.test",
+      "group": "newsletter",
+      "lang": "pl",
+      "voice": "Tygodnik branzowy o logistyce, wysylany w piatki. Dlugi, zbiorczy newsletter z kilkoma tematami: ceny paliw, regulacje, przetargi. Ton dziennikarski, naglowki i linki.",
+      "signature": "Redakcja Logistyka Dzis | wypisz sie z listy"
+    },
+    {
+      "key": "news-global",
+      "displayName": "Supply Chain Weekly",
+      "address": "digest@supplychain-weekly.test",
+      "group": "newsletter",
+      "lang": "en",
+      "voice": "English weekly digest on global supply chains and freight rates. Medium-length, bullet-style, neutral tone, ends with a promo for a paid report.",
+      "signature": "Supply Chain Weekly | Unsubscribe | Manage preferences"
+    },
+    {
+      "key": "marketing-targi",
+      "displayName": "Targi Magazynowe Expo",
+      "address": "oferty@targi-magazynowe.test",
+      "group": "marketing",
+      "lang": "pl",
+      "voice": "Organizator targow, wysyla agresywne zaproszenia i oferty wystawiennicze. Krzykliwy ton, wykrzykniki, limit miejsc, rabaty dla pierwszych firm. Krotkie wiadomosci.",
+      "signature": "Zespol Targi Magazynowe Expo | Dzial Handlowy"
+    },
+    {
+      "key": "erp-system",
+      "displayName": "System ERP Kordelan",
+      "address": "noreply@erp-kordelan.test",
+      "group": "system",
+      "lang": "pl",
+      "voice": "Automatyczny system ERP firmy. Wysyla powiadomienia o zatwierdzeniach, zamowieniach i statusach dokumentow. Szablonowy, bezosobowy ton, numer dokumentu i data.",
+      "signature": ""
+    },
+    {
+      "key": "bank-system",
+      "displayName": "Powiadomienia Bankowe",
+      "address": "noreply@bank-aurum.test",
+      "group": "system",
+      "lang": "pl",
+      "voice": "Automatyczne powiadomienia banku firmowego: potwierdzenia przelewow, limity, logowania. Krotki szablon, bez podpisu osoby, zawsze z kwota i data.",
+      "signature": ""
+    },
+    {
+      "key": "spam-seo",
+      "displayName": "Premium Leads Pro",
+      "address": "deals@premium-leads-pro.test",
+      "group": "spammer",
+      "lang": "en",
+      "voice": "Mass spam selling email lists and SEO services. Pushy, generic English with bold promises, fake urgency, and awkward grammar. Short to medium, no personal details.",
+      "signature": "Premium Leads Pro | Sales Team"
+    },
+    {
+      "key": "phishing-paliwa",
+      "displayName": "Paliwa Flota Billing",
+      "address": "billing@paliwa-fiota.test",
+      "group": "phishing",
+      "lang": "en",
+      "voice": "Impersonates the fuel card vendor billing team using a look-alike domain. Writes formal English about an overdue invoice and asks to confirm new bank details through a link. Pressure, threat of blocked cards.",
+      "signature": "Paliwa-Flota Billing Department"
+    }
+  ],
+  "delegates": [
+    {
+      "persona": "asystentka",
+      "tags": ["kalendarz", "podroze"]
+    },
+    {
+      "persona": "ksiegowa",
+      "tags": ["faktury", "ksiegowosc", "platnosci"]
+    },
+    {
+      "persona": "koordynator-sprzedazy",
+      "tags": ["umowy", "oferty", "sprzedaz"]
+    }
+  ],
+  "urgency": {
+    "vip": ["przewodniczacy-rady", "klient-hurtownia"],
+    "profile": {
+      "topics": [
+        {
+          "label": "Przetarg sieci Zielona Hurtownia",
+          "keywords": ["przetarg", "zielona", "hurtownia"]
+        },
+        {
+          "label": "Awaria systemu magazynowego",
+          "keywords": ["awaria", "WMS", "magazyn"]
+        },
+        {
+          "label": "Posiedzenie rady nadzorczej",
+          "keywords": ["rada", "posiedzenie", "budzet"]
+        },
+        {
+          "label": "Kontrola celna w porcie",
+          "keywords": ["cla", "kontrola", "port"]
+        }
+      ],
+      "deadlines": [
+        {
+          "label": "Zlozenie oferty w przetargu Zielonej Hurtowni",
+          "due": "2027-01-15"
+        },
+        {
+          "label": "Posiedzenie rady nadzorczej",
+          "due": "2027-01-28"
+        },
+        {
+          "label": "Podpisanie umowy z Nordic Foods Trade",
+          "due": "2027-01-22"
+        },
+        {
+          "label": "Zamkniecie budzetu rocznego",
+          "due": "2027-02-05"
+        }
+      ]
+    }
+  },
+  "calendar": {
+    "bankStart": "2027-01-11",
+    "weekStart": "2027-01-25"
+  },
+  "topics": [
+    {
+      "key": "przetarg-zielona",
+      "label": "Przetarg sieci Zielona Hurtownia",
+      "personas": ["klient-hurtownia", "koordynator-sprzedazy"]
+    },
+    {
+      "key": "reklamacje",
+      "label": "Reklamacje i uszkodzone dostawy",
+      "personas": ["klient-hurtownia", "klient-meble", "dyr-operacyjny"]
+    },
+    {
+      "key": "umowa-nordic",
+      "label": "Umowa ramowa z Nordic Foods Trade",
+      "personas": ["klient-nordic", "koordynator-sprzedazy", "head-export"]
+    },
+    {
+      "key": "terminy-dostaw",
+      "label": "Terminy dostaw i okna rozladunku",
+      "personas": ["klient-meble", "klient-nordic", "dyr-operacyjny"]
+    },
+    {
+      "key": "faktury",
+      "label": "Faktury i platnosci",
+      "personas": ["ksiegowa", "dostawca-paliw", "bank-system", "phishing-paliwa"]
+    },
+    {
+      "key": "karty-paliwowe",
+      "label": "Karty paliwowe i ceny paliw",
+      "personas": ["dostawca-paliw", "news-branza", "phishing-paliwa"]
+    },
+    {
+      "key": "flota-naczepy",
+      "label": "Zakup naczep i serwis floty",
+      "personas": ["dostawca-naczepy", "dyr-operacyjny"]
+    },
+    {
+      "key": "rada-nadzorcza",
+      "label": "Posiedzenie rady nadzorczej i budzet",
+      "personas": ["przewodniczacy-rady", "asystentka", "ksiegowa"]
+    },
+    {
+      "key": "kalendarz-podroze",
+      "label": "Kalendarz zarzadu i podroze sluzbowe",
+      "personas": ["asystentka", "przewodniczacy-rady"]
+    },
+    {
+      "key": "rekrutacje",
+      "label": "Rekrutacje i obsada magazynow",
+      "personas": ["dyr-hr", "dyr-operacyjny"]
+    },
+    {
+      "key": "eksport-cla",
+      "label": "Eksport i odprawy celne",
+      "personas": ["head-export", "partner-brokers", "klient-nordic"]
+    },
+    {
+      "key": "joint-venture",
+      "label": "Wspolne przetargi z Baltic Freight Partners",
+      "personas": ["partner-brokers", "koordynator-sprzedazy"]
+    },
+    {
+      "key": "wms-awaria",
+      "label": "System magazynowy i awarie ERP",
+      "personas": ["erp-system", "dyr-operacyjny"]
+    },
+    {
+      "key": "branza-newsletter",
+      "label": "Wiadomosci branzowe i rynek frachtow",
+      "personas": ["news-branza", "news-global"]
+    },
+    {
+      "key": "targi-oferty",
+      "label": "Targi i oferty marketingowe",
+      "personas": ["marketing-targi", "spam-seo"]
+    },
+    {
+      "key": "umowy-sprzedaz",
+      "label": "Umowy i cenniki sprzedazy",
+      "personas": ["koordynator-sprzedazy", "klient-meble", "dostawca-naczepy"]
+    }
+  ]
+}
