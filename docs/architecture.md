@@ -148,48 +148,7 @@ Pipeline rules:
      Only in the source: move, then `applied`. Nowhere: `failed` with `mail_not_found`. When the source folder is the target (a reverse after the user moved the mail back), it only locates and never deletes.
      After the IMAP call, `emails.folder`, `uid`, `moved_at`, the action status, `applied_at` and the audit row go in one transaction.
      A crash between the IMAP call and that commit leaves the action `ready`; the next run finds the mail in the target and writes the rows without a second IMAP change.
-   - `create_draft` (S4, `actions/drafts.ts`): the committer commits `applying`, builds the message and looks for it in Drafts by the header `X-EA-Action-Id` (`locateByActionId`, §6.1).
-     Found → `applied`. Not found → APPEND with `\Draft` and the INTERNALDATE = `created_at`, then `applied` with the folder and the UID in `provider_result`.
-     After a crash in `applying`, the next claim locates first, so the draft exists once. An error before the APPEND returns a row that started in this call to `ready`; an error at the APPEND leaves it `applying`.
-     A draft is made only while its send waits for approval. When that send has ended before the APPEND (`rejected`, `expired`), no draft is made: the row becomes `expired` (`status_reason` = `send_closed`).
-     A soft error waits 5 min with no count. The third hard error makes the draft `failed` (`hard_error`) and expires its open sends (`draft_missing`).
-   - `send` (S4, `actions/send.ts`): the committer claims a send only when it is `approved` with `approved_at` set, its draft is `applied` and `SEND_SCOPE` admits it (§4.3).
-     It builds the same message as the draft (same `Message-ID` `<ea-<draft id>@<domain>>`, same `Date`, header `X-EA-Action-Id` = the id of the draft action).
-     Before the call it commits `applying` with the `Message-ID` in `outgoing_message_id` (own commit). Then it makes one SMTP call (`MailSender`, one connection per call, no retry inside it).
-     When SMTP accepts the mail (250 after DATA), the committer at once commits `applied` with the SMTP response and the audit row.
-     In the same transaction the delegation becomes `sent` and the draft gets a reverse row (§4.5).
-     The copy to Sent is a separate step after that: locate in Sent by the header and APPEND with `\Seen` only if missing. `provider_result.sent_copy` goes from `pending` to `appended`, `found` or `failed`.
-     If the copy fails, the action stays `applied` and the user gets the notice "sent; no copy in Sent".
-     After a crash in `applying`, the committer never sends again by itself: it searches Sent for the header. Found → `applied` (`recovered`). Not found → `failed` (`outcome_unknown`) and a notice.
-     A soft error inside this recovery leaves the row `applying`. A hard error counts, and the third ends as `outcome_unknown`.
-     A new send needs a new tap on "Send again" (below).
-   - **SMTP stage (D10).** `openSmtpSender` (`mail/imap/smtp.ts`) uses nodemailer's `SMTPConnection` directly. Every error is a `SmtpSendError` with a `stage`: `connect`, `login`, `envelope`, `content` or `unknown`.
-     A logger hook of the connection counts the client lines and the server replies (counts and flags only, no text).
-     A server reply after the client `DATA` line (the `(2 + recipients)`-th reply after `MAIL FROM`; the reply code does not matter, because nodemailer accepts any 2xx or 3xx reply to `DATA`) starts the content phase.
-     The nodemailer code `EENVELOPE` gives `envelope`, `EMESSAGE` gives `content`. Another error during the send step gives `unknown` when the content phase started or no client line was seen, else `envelope`.
-     An error that is not a `SmtpSendError` is `unknown` too. `content` and `unknown` mean that the server may have the mail: the committer never retries after them.
-   - **"Send again":** after `smtp_error` and `outcome_unknown` the notice has the button 📤 Send again (callback `ag:<action id>`).
-     The tap is the approval: it inserts one new `approved` send for the same draft (key `<failed id>:again`, so one resend per failed row) when the draft is still `applied` and the delegation, if any, is open.
-   - **"It went out":** after `outcome_unknown` of a delegation send the notice has a second button ✅ It went out (callback `gw:<action id>`). Only an owner can tap it.
-     It makes no SMTP call and no new send row. In one transaction (lock order: send, then delegation) it checks that the send is `failed` / `outcome_unknown`, has a stored `outgoing_message_id` and has no resend (key `<failed id>:again`).
-     Then the `onWentOut` hook sets the delegation from `cancelled` (`outcome_unknown`) to `sent` with `sent_message_id` = that message id, so a reply of the delegate is matched and the chaser works. The send row stays `failed`.
-     Audit: `action.went_out` and `delegation.sent` (`went_out: true`), both with the owner as actor. A second tap, a delegation in another state, a resent send and a send that is not `outcome_unknown` answer with a toast and change nothing. Reminder and clarification sends have no such button: a failed reminder does not cancel the delegation.
-     After `smtp_rejected` there is no button: the address is wrong, so the user fixes the delegate and the mail is a new one.
-
-**Outcomes of a send error (rule 6, `sendOutcomeOf`):**
-
-| Error                                                                               | The row goes to                                                                                      | `attempts`                                                          |
-| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Login refused (`EAUTH`)                                                             | `approved`; the mailbox becomes `auth_error`                                                         | no change                                                           |
-| Soft error at `connect`, `login` or `envelope` (lost connection, timeout, DNS, 4xx) | `approved`, retry in 5 min, no notice; from 6 h after the tap `failed` / `smtp_error` (the soft cap) | no change (retry without a count)                                   |
-| Hard error at `connect`, `login` or `envelope` (not a 5xx at `envelope`)            | `approved`, retry in 5 min                                                                           | + 1 (retry with a count); the third ends as `failed` / `smtp_error` |
-| 5xx at `envelope`, or 5xx after the content                                         | `failed` / `smtp_rejected`                                                                           | no change                                                           |
-| 4xx or another error after the content (`content`)                                  | `failed` / `smtp_error`, no retry                                                                    | no change                                                           |
-| `unknown` stage, or an error that is not a `SmtpSendError`                          | `failed` / `outcome_unknown`                                                                         | no change                                                           |
-
-A compose error before `applying` returns the row to `approved` with a count; the third ends as `failed` / `smtp_error`. Each `failed` send gets a result notice (§4.5).
-**The soft cap (F044):** a soft error before the content (`connect`, `login` or `envelope`) retries every 5 min without a count. A soft error that comes 6 h or more after the tap (`approved_at`, constant `SEND_SOFT_CAP_MS`) ends the send as `failed` / `smtp_error` with `provider_result.cap = "soft_retry"`, `attempts` unchanged, and the delegation `cancelled` (`send_failed`). The result notice has its own text ("did not accept the mail for 6 hours … nothing was sent") and the button 📤 Send again; the tap sets a new `approved_at`, so the new send gets its own 6 h.
-The cap does not touch a retry with a count (a hard error keeps its 3 tries) and there is no retry after `content`. A send that waits for another reason (a draft not applied, a mailbox in `auth_error`) also uses up the 6 h; the first soft error after that ends it. `held_timeout` (48 h, §4.6) still ends an `approved` send that no try reaches.
+   - Moved to [docs/capabilities/drafts-and-send.md](capabilities/drafts-and-send.md) § Rules (F095).
 
 7. **Retries live on the row that failed.** LLM errors retry the email (`emails.attempts`); mailbox errors retry the action (`actions.attempts`).
    Soft errors wait with backoff (`next_attempt_at`) and do not count; the row keeps its status.
@@ -289,52 +248,11 @@ The known limits of the folder sync are in ADR 0014 (D24).
   The tap answers with a toast only: started, already requested, nothing to undo, too old (7 days), not possible now (`ACTIONS_SCOPE=off` or a paused mailbox: nothing is written), or "not in your account" (the same text as the feedback buttons).
   A move that a committer run holds at the second of the tap still finishes; the line then shows ↩️ again and the user taps again.
 - Moved to [docs/capabilities/triage.md](capabilities/triage.md) § Rules (F095).
-- **Digest lines for delegations (S4):** a `logged` send reads "would ask you to send it"; the phrases for the other statuses are `waits for your approval`, `approved, sending`, `sending`, `sent`, `rejected`, `not sent (approval expired)` and `not sent (failed)`. The footer shows `👥 Delegations: <n> waiting for a reply, <m> overdue` when there are open delegations.
+- Moved to [docs/capabilities/delegation.md](capabilities/delegation.md) § Rules (F095).
 
 ### 4.5 Approval flow (Telegram)
 
-```mermaid
-sequenceDiagram
-    participant W as Triage worker
-    participant DB as Postgres
-    participant N as Notifier
-    participant TG as Telegram
-    participant U as User
-    participant C as Committer
-    participant M as Mail server
-
-    W->>DB: create_draft = ready, send = awaiting_approval (depends on the draft)
-    C->>M: APPEND the draft to Drafts (under ACTIONS_SCOPE)
-    N->>TG: only after the draft is applied - recipient, original sender with external-sender warning, full draft text, quote, [Send] [Reject]
-    U->>TG: taps [Send]
-    TG->>DB: handler checks chat → user → owner role → org owns the action, then status = approved only WHERE status = awaiting_approval
-    TG-->>U: toast, and the message gets the line "Approved HH:MM, sending"
-    C->>DB: store the outgoing Message-ID, status = applying (own commit)
-    C->>M: SMTP send with X-EA-Action-Id and the stored Message-ID
-    C->>DB: at once after the 250 - status = applied + SMTP response + audit row (one transaction)
-    C->>M: copy to Sent (search first, APPEND if missing), remove the draft
-    N->>TG: a new message: Sent to <recipient> (or the failure text)
-```
-
-- **The approval message** (`renderApprovalRequest`, plain text, at most 4096 characters): the title (`📤 Send? Delegation to <name> <address>`, `Question to the sender <address>` or `Reminder to <name> <address>`), `From:` the original sender with `⚠️ external sender` when the sender is not the mailbox, a delegate, a whitelisted or a VIP address,
-  `Subject:`, `Due:`, `Draft:` with the full template text, `Quoted original:` with at most 1500 characters (links show as `[link]`; the quote shrinks first when the message is too long) and the line "The system sends it after your tap. Do not send the draft from your mail client."
-  Buttons: 📤 Send and ✖️ Reject. A reminder has no quote and no sender line. Mail with a synthetic `Message-ID` is marked `🧪 test`.
-  The notifier and the committer build the text with the same function, so the user sees what goes out.
-- **Reminder sets:** the chaser (§8) plans up to 10 reminders at once. They go as one message `📤 Send <n> reminders?` with 📤 Send all and ✖️ Skip all (`as:<set id>`, `rs:<set id>`). Each item shows the recipient, the subject and the task (cut to 150 characters).
-  A tap approves only the sends that the message showed.
-- **Taps:** the callback data is a kind and a UUID: `ap:` approve, `ar:` reject, `as:` send all, `rs:` skip all, `ag:` send again, `dd:` done. The handler checks the chat link, then the role: **only an owner can approve, reject or send again**; `dd:` (Done) works for every linked member.
-  An unknown id and an id of another organization get the same answer. A second tap finds the status changed and answers with it. An expired or rejected action cannot send.
-  `approve` refuses while the draft is not `applied` (`draft_not_ready`), and a tap later than 48 h after `notified_at` expires the send (the hourly job can be late by up to an hour).
-- **The edit after the tap:** the approval message keeps its text (the stored text of the sent card) and gets one line: `⏳ Approved HH:MM, sending.`, `✖️ Rejected HH:MM.`, `⌛ Expired HH:MM. The mail was not sent.` or `✅ Done HH:MM.` or `✅ Marked as sent HH:MM.` (after ✅ It went out). An approved send that is held (by `SEND_SCOPE`, a paused mailbox or a login error) says so, keeps the ✖️ Reject button and expires 48 h after the tap.
-- **The result notice** is a new message (outbox kind `send_result`), one per owner, when the send ends: `✅ Sent to …`, `❌ Not sent …` (`smtp_rejected`, `smtp_error`), `⚠️ Unknown whether the mail … went out` (`outcome_unknown`; "Check Sent or ask the recipient before you send again"), `⌛ Not sent: …` for each `expired` reason, `✖️ Rejected`.
-  A `sent` notice adds "No copy in Sent" when the copy failed and "The draft stays in Drafts" when the server has no UIDPLUS. A `pending` Sent copy older than 10 min counts as failed. An edit of the approval message instead of a new message is a follow-up (`spec/features/planned/F039-approval-edit-in-place/plan.md`).
-- **Notice kinds (S4):** `approval`, `approval_set`, `send_result` (owners only) and `delegation_answered` (every linked member, with a ✅ Done button). The notifier queues a request only after the draft is `applied`, and only for an `active` mailbox.
-  With no linked owner it queues nothing and sets nothing: `notified_at` stays null, and after 7 days from creation the expiry job ends the send as `not_notified`.
-- A `send` action has `depends_on_action_id` = its `create_draft` action. The policy makes the send `log_only` when its draft is `log_only`. The expiry job (§8) ends a send that nobody answered, and a send whose draft is `failed` or `undone` (`draft_missing`).
-- The send uses the text that the user approved (the draft payload in the DB). Edits of the draft in the mail client do not count in MVP (Phase 2: send the edited draft, `spec/features/planned/F043-send-draft-edits/plan.md`). The approval record is `approved_by`, `approved_at` and `approved_via`; a database check refuses `approved`, `applying` and `applied` sends without `approved_at`, and a send is never `ready`.
-- After a send is `applied`, a reverse `create_draft` row removes the draft from Drafts when the server has UIDPLUS; else the draft stays, and the notice says so. A reject or an expiry removes the draft the same way. A send that the server refused (`smtp_rejected`) or that failed keeps its draft, so the user can read it.
-- Never retry a send by itself (§4.1 rule 6).
-- "Send all reminders" (brief, follow-up) is one approval for a listed set of reminder actions (above).
+Moved to [docs/capabilities/drafts-and-send.md](capabilities/drafts-and-send.md) § Rules (F095).
 
 ### 4.6 Status flows
 
@@ -366,14 +284,9 @@ actions.status:  (code map: apps/server/src/modules/actions/transitions.ts; test
                  ready | approved | applying → failed                 (after 3 hard errors; notice to the user)
                  ready → failed                                       (mail_not_found, bad_payload: at once, no count)
                  approved → failed                                    (send: bad_payload, or the third compose error with smtp_error, before the SMTP call)
-
-delegations.status: drafted → sent                                    (the delegation send is applied; due_at = 3 days later when the mail states no date)
-                 drafted → cancelled                                  (reason: rejected | expired | draft_missing | send_failed | outcome_unknown)
-                 cancelled → sent                                     ("Send again" after send_failed | outcome_unknown, when the new send is applied; or "It went out" after outcome_unknown, with the stored outgoing_message_id and no new send)
-                 sent → overdue                                       (the chaser, after due_at)
-                 sent | overdue → answered                            (a mail from the delegate in the thread of the sent mail; the pending reminders expire)
-                 answered | overdue → done                            (the Done tap, or bun run delegations:done; the pending reminders expire)
 ```
+
+Moved to [docs/capabilities/delegation.md](capabilities/delegation.md) § Data (F095).
 
 ## 5. Data model (MVP, tenant-aware)
 
@@ -669,9 +582,9 @@ Tenancy:
   and `triage.returned` (every 15 s, always on; turns `returned_at` into feedback, §4.4).
   `channels.notifier` also detects failed actions: one `action_failed` notice per failed action (not for `save_summary`) to the linked owners (dedup `action_failed:<action id>`; `actions.notified_at` is set in the same transaction;
   a row older than 24 h is marked notified with no notice; an original row with `mail_not_found` gets none). The text names the action, the cleaned subject, "tried 3 times" and where the mail is.
-- **S4 jobs:** `actions.expiry` (`actions/expiry.ts`, every hour at minute 7; all mailboxes, also paused ones) ends a send that nobody answered or that is held: `timeout` (`awaiting_approval` 48 h after `notified_at`, with a `sent` outbox row of its request), `not_seen` (the same age and no `sent` row; not for a suspended organization), `draft_missing` (its draft is `failed` or `undone`), `not_notified` (no approval request went out within 7 days of creation) and `held_timeout` (`approved` 48 h after the tap, not locked). It cascades in one transaction: the send, the draft (a reverse row or `expired`) and the delegation (`cancelled`). A send in flight (`applying`, or `approved` with a fresh lock) finishes. The log line holds the counts per reason.
-  `delegation.chaser` (`delegation/chaser.ts`, a tick every 15 min) acts once per local day per mailbox, from 07:30 in the organization timezone, only in `assist` mode with the switch `create_draft` on: it marks `sent` delegations past `due_at` as `overdue` and plans a reminder (draft + send, `awaiting_approval`) for every overdue delegation with an active delegate, at most 2 reminders per delegation, 3 days apart, at most 10 per run (one set message, §4.5). A reminder is never sent without a tap. The run writes an audit row `delegation.chaser_run`; the first statement of its transaction share-locks the settings row and compares the settings version (the S3 `saveTriage` rule), so a settings change makes it skip.
-  `bun run job:run --name <job> [--force]` runs one of them once (`actions.expiry`, `delegation.chaser`, `actions.committer`, `channels.notifier`, `platform.retention`); `--force` skips the 07:30 and once-per-day gate of the chaser.
+- Moved to [docs/capabilities/drafts-and-send.md](capabilities/drafts-and-send.md) § Rules (F095).
+- Moved to [docs/capabilities/delegation.md](capabilities/delegation.md) § Rules (F095).
+- Moved to [docs/capabilities/drafts-and-send.md](capabilities/drafts-and-send.md) § Entry points (F095).
 - **Plan state (S6a):** `organizations.plan` is `trial`, `active` or `suspended`. The operator changes it with `bun run org:plan` (audit row `org.plan_changed`). A `suspended` organization is paused by the operator:
   - **Jobs.** These skip it: mail sync, triage worker, `triage.returned`, committer, chaser, notice detection, digests and the outbox sender (its pending rows wait). The approval expiry and `platform.retention` still run for it. Every job reaches mailboxes through `listSyncTargets`, `listMailboxTargets` or `listLinkedChats`, which skip a `suspended` organization unless the caller sets `includeSuspended`. The sync, triage and committer loops check the plan before each mailbox, so a run that started before the change stops at the next mailbox. A send in flight finishes.
   - **Queued messages.** The change to `suspended` sets every `pending` outbox row of the organization to `failed` / `outdated`, except the kinds `approval` and `approval_set` (the notifier queues them only once).
