@@ -45,7 +45,7 @@ import { getLabelTarget, recordFeedback, undoWithFeedback } from "../triage";
 
 import type { CallbackResult, LinkedChat } from "./port";
 import { findOutboxByDedup } from "./repo";
-import { cancelledText, feedbackTap, reviewPickerMessage } from "./review-taps";
+import { feedbackTap, reviewPickerMessage } from "./review-taps";
 
 const log = createLog("channels");
 
@@ -58,50 +58,6 @@ export interface CallbackDeps {
   sendScope: SendScope;
 }
 
-export const APPROVAL_TEXTS = {
-  owner_only: "Only an owner can approve or reject a send.",
-  approved: "⏳ Sending within a minute.",
-  approved_held: "Approved. Sending is held by SEND_SCOPE on the server; /status shows it.",
-  approved_paused: "Approved. The mailbox is paused, so the send waits; /status shows it.",
-  approved_auth_error:
-    "Approved. The mailbox login fails, so the send waits until the password is fixed; /status shows it.",
-  already_approved: (clock: string) => `Already approved ${clock}.`,
-  sending: "Already approved, sending now.",
-  sent: "Already sent.",
-  rejected: "This send was rejected.",
-  expired: "This approval expired (48 h). The mail was not sent.",
-  failed: "This send failed. See the result notice.",
-  draft_not_ready: "The draft is not in Drafts yet. Tap again in a minute.",
-  rejected_now: "✖️ Rejected. The draft will be removed.",
-  not_found: "This mail is not in your account.", // the S2 text
-  send_again: "⏳ A new send was approved. Sending within a minute.",
-  send_again_held: {
-    scope: "A new send was approved. Sending is held by SEND_SCOPE on the server; /status shows it.",
-    paused: "A new send was approved. The mailbox is paused, so the send waits; /status shows it.",
-    auth_error: "A new send was approved. The mailbox login fails, so the send waits; /status shows it.",
-  },
-  held_notes: {
-    scope: "Sending is held by SEND_SCOPE on the server",
-    paused: "The mailbox is paused, so the sends wait",
-    auth_error: "The mailbox login fails, so the sends wait",
-  },
-  send_again_already: "A resend was already approved for this mail.",
-  send_again_not_failed: "This send is not in a failed state.",
-  send_again_draft_gone: "The draft is gone: the mail must be triaged again.",
-  set_nothing: "Nothing to approve: the reminders were handled already.",
-  done: "✅ Done.",
-  done_already: "Already done.",
-  done_not_closable: "This delegation is not answered yet.",
-  send_again_delegation_closed: "The delegation is closed: no resend.",
-  went_out: "✅ The delegation is marked as sent. A reply from the delegate is matched now.",
-  went_out_already: "Already marked as sent.",
-  went_out_sent_again: "The mail was sent again: no change.",
-  went_out_not_unknown: "This send is not in the unknown state: no change.",
-  went_out_delegation_not_open: "The delegation is not waiting for this answer any more: no change.",
-};
-
-const NOT_FOUND_TEXT = APPROVAL_TEXTS.not_found;
-
 export function pickerMessage(
   emailId: string,
   subject: string | null,
@@ -113,11 +69,11 @@ export function pickerMessage(
     data: encodeCallback({ kind: "pick", category, emailId }),
   });
   return {
-    text: `✏️ Pick the right category\n${cleanSubject(subject, texts)}\nAI said: ${categoryTag(current, texts)}`,
+    text: texts.bot.taps.picker.title(cleanSubject(subject, texts), categoryTag(current, texts)),
     buttons: [
       [pick("urgent"), pick("needs_reply")],
       [pick("info"), pick("notification")],
-      [pick("spam"), { text: "✖️ Cancel", data: encodeCallback({ kind: "cancel", emailId }) }],
+      [pick("spam"), { text: texts.bot.taps.picker.cancelButton, data: encodeCallback({ kind: "cancel", emailId }) }],
     ],
   };
 }
@@ -125,22 +81,23 @@ export function pickerMessage(
 // The tenant comes from the link. An unknown mail id and a mail of another organization give the same answer.
 export async function handleCallback(deps: CallbackDeps, link: LinkedChat, data: string): Promise<CallbackResult> {
   const callback = parseCallback(data);
-  if (callback === null) return { answer: "This button is not valid any more." };
-  const ctx = { orgId: link.orgId, userId: link.userId };
   const texts = textsFor(link.locale);
+  const taps = texts.bot.taps;
+  if (callback === null) return { answer: taps.invalid };
+  const ctx = { orgId: link.orgId, userId: link.userId };
   if (!isFeedbackCallback(callback)) return handleApprovalCallback(deps, link, ctx, callback, texts);
   const { tap, source } = feedbackTap(callback);
-  if (tap.kind === "cancel") return { answer: "", edit: { text: cancelledText(source, texts), buttons: [] } };
+  if (tap.kind === "cancel") return { answer: "", edit: { text: taps.cancelled, buttons: [] } };
   if (tap.kind === "undo") {
     const result = await undoWithFeedback(deps.db, ctx, tap.emailId, {
       now: deps.now(),
       userId: link.userId,
       scope: deps.actionsScope,
     });
-    return { answer: result.kind === "not_found" ? NOT_FOUND_TEXT : texts.answers.undo[result.kind] };
+    return { answer: result.kind === "not_found" ? taps.notFound : texts.answers.undo[result.kind] };
   }
   const target = await getLabelTarget(deps.db, ctx, tap.emailId);
-  if (!target) return { answer: NOT_FOUND_TEXT };
+  if (!target) return { answer: taps.notFound };
   if (tap.kind === "edit") {
     const picker = source === "review" ? reviewPickerMessage : pickerMessage;
     return { answer: "", send: picker(tap.emailId, target.subject, target.category, texts) };
@@ -163,14 +120,17 @@ export async function handleCallback(deps: CallbackDeps, link: LinkedChat, data:
 
 type ApprovalCallback = Exclude<Callback, FeedbackCallback>;
 
-const STATUS_TEXTS: Record<string, string> = {
-  applied: APPROVAL_TEXTS.sent,
-  applying: APPROVAL_TEXTS.sending,
-  approved: APPROVAL_TEXTS.sending,
-  rejected: APPROVAL_TEXTS.rejected,
-  expired: APPROVAL_TEXTS.expired,
-  failed: APPROVAL_TEXTS.failed,
-};
+function statusText(taps: CoreTexts["bot"]["taps"], status: string): string | undefined {
+  const texts: Record<string, string> = {
+    applied: taps.sent,
+    applying: taps.sending,
+    approved: taps.sending,
+    rejected: taps.rejected,
+    expired: taps.expired,
+    failed: taps.failed,
+  };
+  return texts[status];
+}
 
 function inTransaction<T>(db: Db | Transaction<DB>, run: (trx: Transaction<DB>) => Promise<T>): Promise<T> {
   return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
@@ -185,12 +145,13 @@ async function handleApprovalCallback(
   callback: ApprovalCallback,
   texts: CoreTexts
 ): Promise<CallbackResult> {
-  if (callback.kind !== "delegation_done" && link.role !== "owner") return { answer: APPROVAL_TEXTS.owner_only };
+  const taps = texts.bot.taps;
+  if (callback.kind !== "delegation_done" && link.role !== "owner") return { answer: taps.ownerOnly };
   const now = deps.now();
   const id = "actionId" in callback ? callback.actionId : "setId" in callback ? callback.setId : callback.delegationId;
   log.info(`tap ${callback.kind} ${id} by user ${link.userId}`);
   const organization = await getOrganization(deps.db, ctx);
-  if (organization === undefined) return { answer: NOT_FOUND_TEXT };
+  if (organization === undefined) return { answer: taps.notFound };
   const timeZone = organization.timezone;
   const approvals: ApprovalDeps = { db: deps.db, hooks: deps.hooks, uidplus: deps.uidplus };
   const input = { userId: link.userId, via: "telegram" as const, now };
@@ -220,7 +181,7 @@ async function handleApprovalCallback(
         case "approved": {
           const heldBy = await heldReason(deps, ctx, callback.actionId);
           return {
-            answer: heldBy === undefined ? APPROVAL_TEXTS.approved : HELD_ANSWERS[heldBy],
+            answer: heldBy === undefined ? taps.approved : heldAnswers(taps)[heldBy],
             edit: await edit(
               `approval:${callback.actionId}`,
               heldBy === undefined ? "approved" : "approved_held",
@@ -229,25 +190,25 @@ async function handleApprovalCallback(
           };
         }
         case "already_approved":
-          return { answer: APPROVAL_TEXTS.already_approved(formatClock(result.at, timeZone, now, texts.locale)) };
+          return { answer: taps.alreadyApproved(formatClock(result.at, timeZone, now, texts.locale)) };
         case "expired":
           // Only the tap that expired the row edits the message; a later tap on an expired row only answers.
           return {
-            answer: APPROVAL_TEXTS.expired,
+            answer: taps.expired,
             edit: result.byThisTap ? await edit(`approval:${callback.actionId}`, "expired") : undefined,
           };
         case "sending":
-          return { answer: APPROVAL_TEXTS.sending };
+          return { answer: taps.sending };
         case "sent":
-          return { answer: APPROVAL_TEXTS.sent };
+          return { answer: taps.sent };
         case "rejected":
-          return { answer: APPROVAL_TEXTS.rejected };
+          return { answer: taps.rejected };
         case "failed":
-          return { answer: APPROVAL_TEXTS.failed };
+          return { answer: taps.failed };
         case "draft_not_ready":
-          return { answer: APPROVAL_TEXTS.draft_not_ready };
+          return { answer: taps.draftNotReady };
         case "not_found":
-          return { answer: NOT_FOUND_TEXT };
+          return { answer: taps.notFound };
       }
       break;
     }
@@ -255,22 +216,22 @@ async function handleApprovalCallback(
       const result = await reject(approvals, ctx, callback.actionId, input);
       if (result.kind === "rejected") {
         return {
-          answer: APPROVAL_TEXTS.rejected_now,
+          answer: taps.rejectedNow,
           edit: await edit(`approval:${callback.actionId}`, "rejected"),
         };
       }
-      if (result.kind === "already") return { answer: STATUS_TEXTS[result.status] ?? NOT_FOUND_TEXT };
-      return { answer: NOT_FOUND_TEXT };
+      if (result.kind === "already") return { answer: statusText(taps, result.status) ?? taps.notFound };
+      return { answer: taps.notFound };
     }
     case "approve_set": {
       const result = await approveSet(approvals, ctx, callback.setId, input);
-      if (result.approved === 0) return { answer: APPROVAL_TEXTS.set_nothing };
+      if (result.approved === 0) return { answer: taps.setNothing };
       const heldBy = await heldReasonOfAny(deps, ctx, result.approvedIds);
       return {
         answer:
           heldBy === undefined
-            ? `⏳ ${result.approved} reminders go out within a minute, ${result.skipped} skipped.`
-            : `⏳ ${result.approved} reminders approved, ${result.skipped} skipped. ${APPROVAL_TEXTS.held_notes[heldBy]}; /status shows it.`,
+            ? taps.setApproved(result.approved, result.skipped)
+            : taps.setApprovedHeld(result.approved, result.skipped, taps.heldNotes[heldBy]),
         edit:
           heldBy === undefined
             ? await edit(`approval_set:${callback.setId}`, "approved_set", {
@@ -281,9 +242,9 @@ async function handleApprovalCallback(
     }
     case "reject_set": {
       const result = await rejectSet(approvals, ctx, callback.setId, input);
-      if (result.rejected === 0) return { answer: APPROVAL_TEXTS.set_nothing };
+      if (result.rejected === 0) return { answer: taps.setNothing };
       return {
-        answer: `✖️ ${result.rejected} reminders skipped.`,
+        answer: taps.setRejected(result.rejected),
         edit: await edit(`approval_set:${callback.setId}`, "rejected_set", {
           counts: { done: result.rejected, skipped: result.skipped },
         }),
@@ -295,7 +256,7 @@ async function handleApprovalCallback(
         case "created": {
           const heldBy = await heldReason(deps, ctx, result.actionId);
           return {
-            answer: heldBy === undefined ? APPROVAL_TEXTS.send_again : APPROVAL_TEXTS.send_again_held[heldBy],
+            answer: heldBy === undefined ? taps.sendAgain : taps.sendAgainHeld[heldBy],
             edit:
               heldBy === undefined
                 ? await edit(`send_result:${callback.actionId}`, "approved")
@@ -306,15 +267,15 @@ async function handleApprovalCallback(
           };
         }
         case "already":
-          return { answer: APPROVAL_TEXTS.send_again_already };
+          return { answer: taps.sendAgainAlready };
         case "not_failed":
-          return { answer: APPROVAL_TEXTS.send_again_not_failed };
+          return { answer: taps.sendAgainNotFailed };
         case "draft_gone":
-          return { answer: APPROVAL_TEXTS.send_again_draft_gone };
+          return { answer: taps.sendAgainDraftGone };
         case "delegation_closed":
-          return { answer: APPROVAL_TEXTS.send_again_delegation_closed };
+          return { answer: taps.sendAgainDelegationClosed };
         case "not_found":
-          return { answer: NOT_FOUND_TEXT };
+          return { answer: taps.notFound };
       }
       break;
     }
@@ -323,19 +284,19 @@ async function handleApprovalCallback(
       switch (result.kind) {
         case "went_out":
           return {
-            answer: APPROVAL_TEXTS.went_out,
+            answer: taps.wentOut,
             edit: await edit(`send_result:${callback.actionId}`, "went_out"),
           };
         case "already":
-          return { answer: APPROVAL_TEXTS.went_out_already };
+          return { answer: taps.wentOutAlready };
         case "sent_again":
-          return { answer: APPROVAL_TEXTS.went_out_sent_again };
+          return { answer: taps.wentOutSentAgain };
         case "not_unknown":
-          return { answer: APPROVAL_TEXTS.went_out_not_unknown };
+          return { answer: taps.wentOutNotUnknown };
         case "delegation_not_open":
-          return { answer: APPROVAL_TEXTS.went_out_delegation_not_open };
+          return { answer: taps.wentOutDelegationNotOpen };
         case "not_found":
-          return { answer: NOT_FOUND_TEXT };
+          return { answer: taps.notFound };
       }
       break;
     }
@@ -346,26 +307,24 @@ async function handleApprovalCallback(
       switch (result.kind) {
         case "done":
           return {
-            answer: APPROVAL_TEXTS.done,
+            answer: taps.done,
             edit: await edit(`delegation_answered:${callback.delegationId}`, "done"),
           };
         case "already":
-          return { answer: APPROVAL_TEXTS.done_already };
+          return { answer: taps.doneAlready };
         case "not_closable":
-          return { answer: APPROVAL_TEXTS.done_not_closable };
+          return { answer: taps.doneNotClosable };
         case "not_found":
-          return { answer: NOT_FOUND_TEXT };
+          return { answer: taps.notFound };
       }
     }
   }
-  return { answer: NOT_FOUND_TEXT };
+  return { answer: taps.notFound };
 }
 
-const HELD_ANSWERS = {
-  scope: APPROVAL_TEXTS.approved_held,
-  paused: APPROVAL_TEXTS.approved_paused,
-  auth_error: APPROVAL_TEXTS.approved_auth_error,
-};
+function heldAnswers(taps: CoreTexts["bot"]["taps"]) {
+  return { scope: taps.approvedHeld, paused: taps.approvedPaused, auth_error: taps.approvedAuthError };
+}
 
 // Why the committer will not claim the send just approved: the state of the mailbox first, then the scope (as /status).
 // A send or mailbox that cannot be read counts as held by the scope: the toast must not promise a send.

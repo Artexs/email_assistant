@@ -73,7 +73,7 @@ describe("chat linking", () => {
       expect(audit).toHaveLength(1);
       expect(audit[0]?.actor).toBe(userId);
 
-      expect(await consumeLinkToken(trx, { token, chatId, now: minutes(14) })).toEqual({ kind: "used" });
+      expect(await consumeLinkToken(trx, { token, chatId, now: minutes(14) })).toEqual({ kind: "used", userId });
       expect(await linkRows(trx, orgId)).toHaveLength(1);
     });
   });
@@ -84,6 +84,7 @@ describe("chat linking", () => {
       const { token } = await createLinkToken(trx, { orgId }, userId, now);
       expect(await consumeLinkToken(trx, { token, chatId: randomChatId(), now: minutes(15) })).toEqual({
         kind: "expired",
+        userId,
       });
       expect(await linkRows(trx, orgId)).toHaveLength(0);
     });
