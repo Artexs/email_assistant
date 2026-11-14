@@ -87,6 +87,27 @@ describe("acquireStateLock", () => {
     expect(readdirSync(dir)).toEqual([]);
   });
 
+  test("a parked lock that proves fresh again is linked back, the run is refused, no parked file stays", () => {
+    const state = join(dir, "race.jsonl");
+    const lockPath = `${state}.lock`;
+    const stale = new Date(now.getTime() - 7 * 3_600_000).toISOString();
+    writeFileSync(lockPath, `${stale}\n`);
+    // The race cannot be timed in a test, so the clock moves back between the two staleness checks (before the
+    // rename and after it): the parked file then looks fresh, as if another run had just replaced the stale lock.
+    const readings = [now.getTime(), now.getTime() - 8 * 3_600_000];
+    const clock = new (class extends Date {
+      override getTime(): number {
+        return readings.shift() ?? super.getTime();
+      }
+    })(now);
+    expect(() => acquireStateLock(state, clock, { fresh: true })).toThrow(
+      `state file is locked by another run: ${lockPath}`
+    );
+    expect(readings).toEqual([]);
+    expect(readdirSync(dir)).toEqual(["race.jsonl.lock"]);
+    expect(readFileSync(lockPath, "utf8").trim()).toBe(stale);
+  });
+
   test("a lock with unreadable content is never taken over", () => {
     const state = join(dir, "odd.jsonl");
     writeFileSync(`${state}.lock`, "garbage\n");

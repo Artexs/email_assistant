@@ -13,7 +13,7 @@ import {
   renderEvalReport,
   runEval,
 } from "../modules/triage";
-import { ConfigError, llmRoleTable, loadConfig } from "../platform/config";
+import { type Config, ConfigError, llmRoleTable, loadConfig } from "../platform/config";
 import { createLlmClient, LlmConfigError, type LlmRoleTable } from "../platform/llm";
 import { createLog } from "../platform/log";
 
@@ -40,11 +40,22 @@ function out(text: string): void {
   process.stdout.write(`${text}\n`);
 }
 
+// What a test replaces: the CLI passes none of them.
+export interface SimDeps {
+  config?: Config;
+  createLlmClient?: typeof createLlmClient;
+  now?: () => Date;
+  root?: string;
+  runsDir?: string;
+}
+
 // `eval --sim`: a corpus part through the worker pool, under the run cap and the month cap.
-export async function runSim(options: EvalOptions): Promise<number> {
+export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<number> {
   const scenario = options.sim as string;
   const part = options.part as NonNullable<EvalOptions["part"]>;
-  const config = loadConfig();
+  const config = deps.config ?? loadConfig();
+  const root = deps.root ?? simRoot;
+  const runs = deps.runsDir ?? runsDir;
   let table: LlmRoleTable;
   try {
     table = llmRoleTable(config, {
@@ -69,7 +80,7 @@ export async function runSim(options: EvalOptions): Promise<number> {
   const effort = row.reasoningEffort;
 
   // A model without a price today cannot be held to a cap, and a zero estimate would mean no cap.
-  const startedAt = new Date();
+  const startedAt = (deps.now ?? (() => new Date()))();
   const estimateUsd = firstEstimateUsd(model, startedAt);
   if (estimateUsd === null) {
     log.error(`no price for model ${model}: add it to llmPrices before a sim run`);
@@ -78,7 +89,7 @@ export async function runSim(options: EvalOptions): Promise<number> {
 
   let loaded: Awaited<ReturnType<typeof loadSimCases>>;
   try {
-    loaded = await loadSimCases({ root: simRoot, scenario, part, requireManifest: part === "holdout" });
+    loaded = await loadSimCases({ root, scenario, part, requireManifest: part === "holdout" });
   } catch (error) {
     log.error(
       error instanceof Error && error.message === HOLDOUT_NEEDS_FREEZE
@@ -119,10 +130,10 @@ export async function runSim(options: EvalOptions): Promise<number> {
     ...table,
     providers: { ...table.providers, [row.provider]: { ...keys, rpm: options.rpm as number } },
   };
-  const llm = createLlmClient({ table: limited });
+  const llm = (deps.createLlmClient ?? createLlmClient)({ table: limited });
 
   const stateFile = resolve(
-    runsDir,
+    runs,
     evalStateFileName({
       model,
       reasoningEffort: effort,
