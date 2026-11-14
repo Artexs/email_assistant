@@ -19,6 +19,8 @@ const SAME_IN_BOTH: TextKey[] = [
   "menu_title", // "Menu" in both languages
   "tg_title", // the product name "Telegram"
   "tg_link_label", // "Link" in both languages
+  "acct_language_pl", // each option is written in its own language
+  "acct_language_en",
   "preset_interia", // provider names
   "preset_gmail",
   "preset_onet",

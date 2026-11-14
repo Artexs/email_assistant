@@ -1,8 +1,9 @@
+import { resolveLocale } from "@ea/core/web";
 import { useEffect, type ReactNode } from "react";
 
 import { authClient } from "../../lib/auth-client";
 import { ApiError } from "../../lib/api";
-import { t, useLocale, type TextKey } from "../../i18n";
+import { setLocale, t, useLocale, type TextKey } from "../../i18n";
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
 import { Toaster } from "../ui/sonner";
@@ -35,6 +36,13 @@ function onLogOut() {
 
 function Frame({ active, title, children }: AppShellProps) {
   const { me, error, loading, reload } = useMe();
+
+  // After a sign-in on any device the panel follows the stored choice, else the browser. The same locale changes nothing.
+  const userLocale = me?.user.locale;
+  useEffect(() => {
+    if (userLocale === undefined) return;
+    setLocale(resolveLocale(userLocale, navigator.language));
+  }, [userLocale]);
 
   if (error instanceof ApiError && error.code === "no_organization") {
     return (
