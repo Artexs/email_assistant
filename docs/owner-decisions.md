@@ -17,6 +17,12 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Source: the file and item, for example `spec/features/active/FNNN-slug/questions.md` Q2.
 ```
 
+### 2026-11-14 · Gate G1 of company sign-in passed on a default after the spike (F119) · scope · new
+- Choice: the second pass on PD-040 and PD-041 after the spike stage was passed by the coordinator. The build goes on after stage 01.
+- Why: all ten spike checks pass and no plan decision broke (`spike.md`). Your order says owner checkpoints are not a stop.
+- Undo: tell the coordinator to hold stage 03 and later. Stage 03 is the first change to `bun.lock`, and the secret storage (Q1) can still change before it.
+- Source: `spec/features/active/F119-e7-t7-identity-b-oidc/spike.md`, `plan.md` G1.
+
 ### 2026-11-14 · Company sign-in: the IdP client secret is stored in clear in `sso_providers` (F119) · security · new
 - Choice: the OIDC plugin reads the client secret from `sso_providers.oidc_config` itself, so it stays in clear there. The secret is never exported or logged. Options at gate G1: an Entra certificate, or a decrypt plugin.
 - Why: the plugin has no read hook. A decrypt plugin changes every auth path.
