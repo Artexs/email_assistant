@@ -164,6 +164,8 @@ const sendResultView = z.strictObject({
   recipient: z.strictObject({ name: nullableText, address: nullableText }),
   subject: text,
   synthetic: z.boolean(),
+  // Optional: rows queued before the flag existed (and those with the flag off) have none.
+  mistakeButton: z.boolean().optional(),
 });
 
 const delegationAnsweredView = z.strictObject({

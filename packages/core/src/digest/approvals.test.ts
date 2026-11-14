@@ -710,3 +710,97 @@ describe("approvalEdit in Polish", () => {
     expect(parseCallback(message.buttons[0]?.[0]?.data ?? "")).toEqual({ kind: "reject", actionId: ID });
   });
 });
+
+describe("reject reasons and the mistake mark", () => {
+  const at = new Date("2026-11-07T10:07:00Z"); // 11:07 in Warsaw
+  const original = "📤 Send? Delegation to Anna\nDraft:\nHi";
+  const base = { original, at, timeZone: TZ, actionId: ID };
+
+  test("rejected with reasonButtons: the same line and three reason buttons", () => {
+    const message = approvalEdit({ ...base, outcome: "rejected", reasonButtons: true }, textTables.en);
+    expect(message.text).toBe(`${original}\n\n✖️ Rejected 11:07.`);
+    expect(message.buttons).toHaveLength(1);
+    expect(message.buttons[0]?.map((button) => button.text)).toEqual([
+      "✖️ Wrong person",
+      "✖️ Wrong content",
+      "Not needed",
+    ]);
+    expect(message.buttons[0]?.map((button) => button.data)).toEqual([`rw:p:${ID}`, `rw:c:${ID}`, `rw:n:${ID}`]);
+  });
+
+  test("rejected without reasonButtons has no button (old behaviour)", () => {
+    expect(approvalEdit({ ...base, outcome: "rejected" }, textTables.en).buttons).toEqual([]);
+  });
+
+  test("rejected with reasonButtons but no action id has no button", () => {
+    const message = approvalEdit(
+      { ...base, actionId: undefined, outcome: "rejected", reasonButtons: true },
+      textTables.en
+    );
+    expect(message.buttons).toEqual([]);
+  });
+
+  test.each([
+    ["wrong_person", "✖️ Rejected. Reason: wrong person."],
+    ["wrong_content", "✖️ Rejected. Reason: wrong content."],
+    ["not_needed", "✖️ Rejected. Reason: not needed."],
+  ] as const)("rejected_reason %s: last line without a clock, no buttons", (reason, line) => {
+    const message = approvalEdit({ ...base, outcome: "rejected_reason", reason }, textTables.en);
+    expect(message.text).toBe(`${original}\n\n${line}`);
+    expect(message.buttons).toEqual([]);
+  });
+
+  test("rejected_reason without a reason throws", () => {
+    expect(() => approvalEdit({ ...base, outcome: "rejected_reason" }, textTables.en)).toThrow("needs reason");
+  });
+
+  test("marked_mistake: a line with the time, no buttons", () => {
+    const message = approvalEdit({ ...base, outcome: "marked_mistake" }, textTables.en);
+    expect(message.text).toBe(`${original}\n\n⚠️ Marked as a mistake 11:07.`);
+    expect(message.buttons).toEqual([]);
+  });
+
+  test("the Polish lines and buttons", () => {
+    const rejected = approvalEdit({ ...base, outcome: "rejected", reasonButtons: true }, textTables.pl);
+    expect(rejected.buttons[0]?.map((button) => button.text)).toEqual(["✖️ Zła osoba", "✖️ Zła treść", "Niepotrzebne"]);
+    const reason = approvalEdit({ ...base, outcome: "rejected_reason", reason: "wrong_content" }, textTables.pl);
+    expect(reason.text.endsWith("\n\n✖️ Odrzucono. Powód: zła treść.")).toBe(true);
+    expect(
+      approvalEdit({ ...base, outcome: "marked_mistake" }, textTables.pl).text.endsWith("⚠️ Oznaczono jako błąd 11:07.")
+    ).toBe(true);
+  });
+
+  test("renderSendResult: a sent result with mistakeButton has one mistake button", () => {
+    const sent: SendResultKind = { kind: "sent", sentCopy: "appended", draftRemoved: true };
+    const input = {
+      actionId: ID,
+      sendKind: "delegation",
+      result: sent,
+      recipient,
+      subject: "Fwd: Offer",
+      synthetic: false,
+    } as const;
+    const message = renderSendResult({ ...input, mistakeButton: true }, textTables.en);
+    expect(message.buttons).toEqual([[{ text: "⚠️ This was a mistake", data: `mk:${ID}` }]]);
+    expect(renderSendResult({ ...input, mistakeButton: true }, textTables.pl).buttons[0]?.[0]?.text).toBe(
+      "⚠️ To był błąd"
+    );
+    expect(renderSendResult(input, textTables.en).buttons).toEqual([]);
+    expect(renderSendResult({ ...input, mistakeButton: false }, textTables.en).buttons).toEqual([]);
+  });
+
+  test("renderSendResult: a failed result with mistakeButton keeps only its old buttons", () => {
+    const failed: SendResultKind = { kind: "failed", cause: "tries", code: null, tries: 3 };
+    const input = {
+      actionId: ID,
+      sendKind: "delegation",
+      result: failed,
+      recipient,
+      subject: "Fwd: Offer",
+      synthetic: false,
+    } as const;
+    const withFlag = renderSendResult({ ...input, mistakeButton: true }, textTables.en);
+    expect(withFlag.buttons).toEqual(renderSendResult(input, textTables.en).buttons);
+    expect(withFlag.buttons.flat().map((button) => button.data)).toEqual([`ag:${ID}`]);
+  });
+});
