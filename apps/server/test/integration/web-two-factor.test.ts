@@ -659,6 +659,110 @@ describe("two-factor events", () => {
   });
 });
 
+describe("two-factor enrolment edge cases", () => {
+  const errorLines = () => errorSpy.mock.calls.map((call) => call.map((part: unknown) => String(part)).join(" "));
+
+  // One user with a second session (jar B) and one trusted-device row; TOTP is off.
+  async function plant() {
+    const owner = await createOwner();
+    const jarA = new Client();
+    const jarB = new Client();
+    await jarA.signIn(owner.email);
+    await jarB.signIn(owner.email);
+    await sql`
+      INSERT INTO auth_verifications (identifier, value, expires_at)
+      VALUES (${`trust-${randomUUID()}`}, ${owner.userId}, now() + interval '30 days')`.execute(db);
+    return { ...owner, jarA, jarB };
+  }
+
+  test("D9 fail closed: a failed purge takes the enrolment back, then a retry works", async () => {
+    const user = await plant();
+    const context = await handle.auth.$context;
+    const enabled = await user.jarA.post("/two-factor/enable", { password: PASSWORD });
+    expect(enabled.status).toBe(200);
+    const uri = String(enabled.json?.totpURI);
+    secrets.push(uri, secretOfUri(uri), ...(enabled.json?.backupCodes as string[]));
+
+    const failing = spyOn(context.internalAdapter, "listSessions").mockRejectedValueOnce(new Error("purge down"));
+    const warnsBefore = errorLines().length;
+    const failed = await user.jarA.post("/two-factor/verify-totp", { code: typedCode(secretOfUri(uri)) });
+    failing.mockRestore();
+    expect(failed.status).toBe(500);
+    expect(await twoFactorFlag(user.userId)).toBe(false);
+    expect(await twoFactorRow(user.userId)).toBeUndefined();
+    expect(await trustRows(user.userId)).toHaveLength(1);
+    expect((await user.jarB.call("GET", "/get-session")).json).not.toBeNull();
+    expect(await auditRows(user.orgId, "web.two_factor_enabled")).toHaveLength(0);
+    const rollback = errorLines()
+      .slice(warnsBefore)
+      .filter((line) => line.includes("two_factor_enrol_rollback"));
+    expect(rollback).toHaveLength(1);
+    expect(rollback[0]).toContain(user.userId);
+    expect(rollback[0]).not.toContain("two_factor_enrol_rollback_failed");
+
+    // The retry: a new sign-in (the 500 dropped the cookie of the enrolling device), then a full enrolment.
+    const retry = new Client();
+    expect((await retry.signIn(user.email)).status).toBe(200);
+    const again = await retry.post("/two-factor/enable", { password: PASSWORD });
+    expect(again.status).toBe(200);
+    const secret = secretOfUri(String(again.json?.totpURI));
+    secrets.push(secret, String(again.json?.totpURI), ...(again.json?.backupCodes as string[]));
+    expect((await retry.post("/two-factor/verify-totp", { code: typedCode(secret) })).status).toBe(200);
+    expect(await twoFactorFlag(user.userId)).toBe(true);
+    expect(await auditRows(user.orgId, "web.two_factor_enabled")).toHaveLength(1);
+    expect(await trustRows(user.userId)).toHaveLength(0);
+    expect((await user.jarB.call("GET", "/get-session")).json).toBeNull();
+    expect(await countSessions(user.userId)).toBe(1);
+  });
+
+  test("D9 fail closed: a failed compensation logs the failure and the answer stays a 500", async () => {
+    const user = await plant();
+    const context = await handle.auth.$context;
+    const enabled = await user.jarA.post("/two-factor/enable", { password: PASSWORD });
+    const uri = String(enabled.json?.totpURI);
+    secrets.push(uri, secretOfUri(uri), ...(enabled.json?.backupCodes as string[]));
+
+    const purge = spyOn(context.internalAdapter, "listSessions").mockRejectedValueOnce(new Error("purge down"));
+    const compensation = spyOn(context.adapter, "transaction").mockRejectedValueOnce(new Error("rollback down"));
+    const linesBefore = errorLines().length;
+    const failed = await user.jarA.post("/two-factor/verify-totp", { code: typedCode(secretOfUri(uri)) });
+    purge.mockRestore();
+    compensation.mockRestore();
+    expect(failed.status).toBe(500);
+    const lines = errorLines()
+      .slice(linesBefore)
+      .filter((line) => line.includes("two_factor_enrol_rollback_failed"));
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain(user.userId);
+    expect(await auditRows(user.orgId, "web.two_factor_enabled")).toHaveLength(0);
+  });
+
+  test("N3: an enrolled user's session past updateAge verifying a code is not an enrolment", async () => {
+    const user = await createEnrolled();
+    const other = await challenge(user);
+    expect((await other.post("/two-factor/verify-totp", { code: typedCode(user.secret) })).status).toBe(200);
+    // updateAge is one day: a session that expires in 28 of its 30 days is refreshed by the next request.
+    await sql`UPDATE auth_sessions SET expires_at = now() + interval '28 days' WHERE user_id = ${user.userId}`.execute(
+      db
+    );
+    const answer = await user.client.post("/two-factor/verify-totp", { code: typedCode(user.secret) });
+    expect(answer.status).toBe(200);
+    expect(await auditRows(user.orgId, "web.two_factor_enabled")).toHaveLength(1);
+    expect((await other.call("GET", "/get-session")).json).not.toBeNull();
+    expect(await countSessions(user.userId)).toBe(2);
+  });
+
+  test("N5: on the backup-code path the login row comes before the backup_code_used row", async () => {
+    const user = await createEnrolled();
+    const client = await challenge(user);
+    expect((await client.post("/two-factor/verify-backup-code", { code: user.codes[0] ?? "" })).status).toBe(200);
+    const rows = await sql<{ event: string }>`
+      SELECT event FROM audit_log
+      WHERE org_id = ${user.orgId} AND event IN ('web.login', 'web.backup_code_used') ORDER BY id`.execute(db);
+    expect(rows.rows.slice(-2).map((row) => row.event)).toEqual(["web.login", "web.backup_code_used"]);
+  });
+});
+
 // The last test of the file: it checks every console line of the run above.
 describe("secrets", () => {
   test("no console line holds a secret, a code or otpauth", () => {

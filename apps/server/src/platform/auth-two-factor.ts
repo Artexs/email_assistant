@@ -90,13 +90,33 @@ async function reportLockOnce(ctx: AuditContext, report: AuthReport): Promise<vo
 }
 
 // D9: TOTP turns on. Every older trusted device and every other session of the user ends: none of
-// them passed a second factor. No `try` (fail closed): an error is a 500 after the enrolment is stored.
+// them passed a second factor. The read comes first, so a failed read changes nothing.
 async function endOlderAccess(ctx: AuditContext, userId: string, keepSessionId: string): Promise<void> {
-  await ctx.context.adapter.deleteMany({ model: "verification", where: [{ field: "value", value: userId }] });
   const others = (await ctx.context.internalAdapter.listSessions(userId))
     .filter((row) => row.id !== keepSessionId)
     .map((row) => row.token);
+  await ctx.context.adapter.deleteMany({ model: "verification", where: [{ field: "value", value: userId }] });
   if (others.length > 0) await ctx.context.internalAdapter.deleteSessions(others);
+}
+
+// D9, fail closed: the plugin has stored the enrolment before this hook runs. When the purge fails,
+// the hook takes the enrolment back (one transaction), so the user is not enrolled, the old access is
+// unchanged and a retry works. It then rethrows: the answer stays a 500. Trusted-device rows stay:
+// they are old access, and the retry purges them.
+async function rollbackEnrolment(ctx: AuditContext, userId: string): Promise<void> {
+  try {
+    await ctx.context.adapter.transaction(async (trx) => {
+      await trx.update({
+        model: "user",
+        where: [{ field: "id", value: userId }],
+        update: { twoFactorEnabled: false },
+      });
+      await trx.deleteMany({ model: "twoFactor", where: [{ field: "userId", value: userId }] });
+    });
+    log.warn("two_factor_enrol_rollback", { user_id: userId });
+  } catch (error) {
+    log.error("two_factor_enrol_rollback_failed", { user_id: userId, ...errorFields(error) });
+  }
 }
 
 // Listed after `twoFactorPlugin()` in `plugins`. The plugin's own after hook has then deleted the
@@ -159,7 +179,12 @@ export function signInAuditPlugin(report: AuthReport) {
             if (ctx.path === VERIFY_TOTP_PATH && requestSession && newSession && !twoFactorOn(requestSession.user)) {
               // The enrolment: the check has a session, TOTP was off before it, and the plugin made a new session.
               const userId = requestSession.user.id;
-              await endOlderAccess(ctx, userId, newSession.session.id);
+              try {
+                await endOlderAccess(ctx, userId, newSession.session.id);
+              } catch (error) {
+                await rollbackEnrolment(ctx, userId);
+                throw error;
+              }
               await report("two_factor_enabled", userId);
               return;
             }
