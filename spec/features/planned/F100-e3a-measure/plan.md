@@ -212,7 +212,7 @@ None. The coordinator builds on the review results; the decisions marked "defaul
    - Lane B (schema): 04 after F097 stage 03 has landed on `master` (it changes the same CHECK). Stages 04 and 14 are the migrations of this ticket: never next to another ticket's migration stage, and C1 runs after each.
    - Lane C (core): 08 → 09 (any time; next to lanes A and B).
    - 07 any time after 02 (both edit `main.ts` and `mail/jobs.ts` area lightly: not next to 06).
-   - 10 after 04, 09, and F097 stages 01 and 03 landed. 11 after 10. 12 after 04 and 09 (next to 10/11 is fine; 12 and 13 both edit `channels/callbacks.ts`: not next to each other). 13 after 06 and F097 stage 04 landed. 14 after 11 and 12 (both edit `send-result`/notice files: in order). 15 after 11. 16 after all.
+   - 10 after 04, 09, and F097 stages 01 and 03 landed. 11 after 10. 12 after 04 and 09 (next to 10/11 is fine; 12 and 13 both edit `channels/callbacks.ts`: not next to each other). 13 after 06, 10 and F097 stage 04 landed. 14 after 11 and 12 (both edit `send-result`/notice files: in order). 15 after 11. 16 after all.
 3. Shared files with other tickets (advisory, `05-execution-plan.md` § 2.4): stage 02 and 05 edit `mail/sync.ts`, `mail/port.ts`, both mail adapters (F097 stage 01 edits `mail/repo/emails.ts`; F085 and E5a F104 edit the sync later); stage 12 and 13 edit `channels/callbacks.ts` and `packages/core/src/digest/callback.ts` (F097 stages 03–04 edit the same files: F100 12 and 13 run after them). The later job merges `master` before its proof.
 4. Spawn a stage (`NN`, `<slug>` from the stage list):
 
