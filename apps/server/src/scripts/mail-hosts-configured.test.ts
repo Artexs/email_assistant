@@ -4,8 +4,9 @@ import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 
 const SERVER_SRC = join(import.meta.dir, "..");
-// A `-load.ts` file reads corpus files and parses mail text; it opens no connection (the entry point that calls it does).
-const EXCLUDED_SUFFIXES = [".test.ts", "-args.ts", "-lines.ts", "-rows.ts", "-load.ts"];
+// Helper files of a script are no entry points: they open no mail connection. A `-load.ts` file reads corpus files
+// and parses mail text; the entry point that calls it owns the process.
+const EXCLUDED_SUFFIXES = [".test.ts", "-args.ts", "-lines.ts", "-rows.ts", "-commands.ts", "-load.ts"];
 const MAIL_IMPORT = /from "\.\.\/modules\/mail|from "\.\.\/composition"/;
 
 function selectedFiles(): string[] {
