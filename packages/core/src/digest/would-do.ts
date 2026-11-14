@@ -13,9 +13,10 @@ export interface ActionView {
   appliedAt: Date | null;
   kind: DraftKind | null; // from the payload of a draft or a send
   delegateId: string | null;
+  waiting?: "send_limit"; // an approved send held by the send limit (F099 D11 a)
 }
 
-export type WouldDoAction = Pick<ActionView, "type" | "status" | "folder" | "reverse" | "kind" | "delegateId">;
+export type WouldDoAction = Pick<ActionView, "type" | "status" | "folder" | "reverse" | "kind" | "delegateId" | "waiting">;
 
 const TENSES: Record<string, string> = {
   logged: "would",
@@ -37,6 +38,8 @@ const DRAFT_TENSES: Record<string, string> = {
   failed: "failed:",
 };
 
+const SEND_LIMIT_WAIT_PHRASE = "approved, waiting: send limit";
+
 // A send phrase has no tense.
 const SEND_PHRASES: Record<string, string> = {
   logged: "would ask you to send it",
@@ -48,6 +51,11 @@ const SEND_PHRASES: Record<string, string> = {
   expired: "not sent (approval expired)",
   failed: "not sent (failed)",
 };
+
+function sendPhrase(action: WouldDoAction): string | undefined {
+  if (action.status === "approved" && action.waiting === "send_limit") return SEND_LIMIT_WAIT_PHRASE;
+  return SEND_PHRASES[action.status];
+}
 
 function draftPhrase(action: WouldDoAction, names: ReadonlyMap<string, string>): string {
   const name = (action.delegateId === null ? undefined : names.get(action.delegateId)) ?? "a delegate";
@@ -74,7 +82,7 @@ function phrase(action: WouldDoAction, names: ReadonlyMap<string, string>): stri
 // The phrase of one original action, or null when it has none. Same tense rules as `describeActions`.
 export function describeAction(action: WouldDoAction, names: ReadonlyMap<string, string> = new Map()): string | null {
   if (action.reverse) return null;
-  if (action.type === "send") return SEND_PHRASES[action.status] ?? null;
+  if (action.type === "send") return sendPhrase(action) ?? null;
   const tense = action.type === "create_draft" ? DRAFT_TENSES[action.status] : TENSES[action.status];
   const text = phrase(action, names);
   return tense === undefined || text === null ? null : `${tense} ${text}`;
@@ -91,8 +99,8 @@ export function describeActions(
   for (const action of actions) {
     if (action.reverse) continue;
     if (action.type === "send") {
-      const sendPhrase = SEND_PHRASES[action.status];
-      if (sendPhrase !== undefined) sends.push(sendPhrase);
+      const text = sendPhrase(action);
+      if (text !== undefined) sends.push(text);
       continue;
     }
     const tense = action.type === "create_draft" ? DRAFT_TENSES[action.status] : TENSES[action.status];

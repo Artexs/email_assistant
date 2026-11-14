@@ -76,7 +76,8 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
   const actions = await listActionsForEmails(
     db,
     ctx,
-    rows.map((row) => row.email_id)
+    rows.map((row) => row.email_id),
+    request.now
   );
   const summaries = await listSummaries(
     db,

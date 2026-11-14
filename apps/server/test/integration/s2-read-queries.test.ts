@@ -255,14 +255,14 @@ describe("listActionsForEmails and countEventsBetween", () => {
         .where("type", "=", "move")
         .execute();
 
-      const map = await listActionsForEmails(trx, ctx, [e1, e2, eb]);
+      const map = await listActionsForEmails(trx, ctx, [e1, e2, eb], new Date());
       expect(map.get(e1)).toMatchObject([
         { type: "mark_read", status: "logged", folder: null },
         { type: "move", status: "logged", folder: "ai_info" },
       ]);
       expect(map.get(e2)).toMatchObject([{ type: "move", status: "ready", folder: null }]);
       expect(map.has(eb)).toBe(false);
-      expect((await listActionsForEmails(trx, ctx, [])).size).toBe(0);
+      expect((await listActionsForEmails(trx, ctx, [], new Date())).size).toBe(0);
     });
   });
 

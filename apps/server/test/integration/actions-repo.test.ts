@@ -569,7 +569,7 @@ describe("tenant filter", () => {
       });
       expect(await claimActions(trx, b.ctx, a.mailboxId, claimOpts())).toEqual([]);
       expect(await expireStaleReady(trx, b.ctx, a.mailboxId, { now: NOW, staleBefore: STALE_BEFORE })).toEqual([]);
-      expect((await listActionsForEmails(trx, b.ctx, [mail.emailId])).size).toBe(0);
+      expect((await listActionsForEmails(trx, b.ctx, [mail.emailId], new Date())).size).toBe(0);
 
       await trx.updateTable("actions").set({ locked_at: NOW }).where("id", "in", [flag, move]).execute();
       expect(await finishAction(trx, b.ctx, flag, NOW, { status: "applied", at: NOW })).toBe(false);
@@ -640,7 +640,7 @@ describe("listActionsForEmails (grown view)", () => {
         createdAt: ago(60_000),
       });
 
-      const views = (await listActionsForEmails(trx, a.ctx, [mail.emailId])).get(mail.emailId);
+      const views = (await listActionsForEmails(trx, a.ctx, [mail.emailId], new Date())).get(mail.emailId);
       expect(views).toEqual([
         {
           id: original,
@@ -679,7 +679,7 @@ describe("listActionsForEmails (grown view)", () => {
         actions: [{ type: "move", status: "logged", payload: { folder: "inbox" } }],
       });
 
-      const views = (await listActionsForEmails(trx, a.ctx, [mail.emailId])).get(mail.emailId);
+      const views = (await listActionsForEmails(trx, a.ctx, [mail.emailId], new Date())).get(mail.emailId);
       expect(views?.map((view) => [view.type, view.folder])).toEqual([["move", "inbox"]]);
     });
   });
@@ -706,7 +706,7 @@ describe("listActionsForEmails (grown view)", () => {
       const { a, b } = await createTwoTenants(trx);
       const delegateId = await insertDelegate(trx, a.ctx);
       const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { delegateId, task: "Prepare the offer" });
-      const views = (await listActionsForEmails(trx, a.ctx, [pair.emailId])).get(pair.emailId);
+      const views = (await listActionsForEmails(trx, a.ctx, [pair.emailId], new Date())).get(pair.emailId);
       expect(views?.map((view) => [view.type, view.kind, view.delegateId]).sort()).toEqual([
         ["create_draft", "delegation", delegateId],
         ["send", "delegation", delegateId],

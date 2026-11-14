@@ -91,6 +91,16 @@ describe("describeActions for drafts and sends", () => {
     expect(describeActions([send(status)], names)).toBe(expected);
   });
 
+  test("an approved send held by the send limit says so; every other status keeps its phrase", () => {
+    const held = { ...send("approved"), waiting: "send_limit" as const };
+    expect(describeAction(held, names)).toBe("approved, waiting: send limit");
+    expect(describeAction(send("approved"), names)).toBe("approved, sending");
+    expect(describeActions([draft("ready"), held], names)).toBe(
+      "will draft a delegation to Anna Nowak; approved, waiting: send limit"
+    );
+    expect(describeActions([act("flag", "ready"), held], names)).toBe("will flag; approved, waiting: send limit");
+  });
+
   test("the stay folder is named when no action applies", () => {
     expect(describeActions([], new Map(), { stayFolder: "Wiadomości-śmieci" })).toBe("stays in Wiadomości-śmieci");
     expect(describeActions([])).toBe("stays in INBOX");

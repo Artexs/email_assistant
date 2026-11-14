@@ -84,7 +84,7 @@ export async function listActivity(
   if (last === undefined) return { items: [], nextBefore: null };
 
   const ids = rows.map((row) => row.email_id);
-  const actions = await listActionsForEmails(db, ctx, ids);
+  const actions = await listActionsForEmails(db, ctx, ids, now);
   const infoIds = rows.filter((row) => row.category === "info").map((row) => row.email_id);
   const summaries = infoIds.length === 0 ? new Map<string, string>() : await listSummaries(db, ctx, infoIds);
   const delegationIds = rows.filter((row) => row.category === "delegation").map((row) => row.email_id);
