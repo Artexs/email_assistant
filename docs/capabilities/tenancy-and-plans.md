@@ -88,7 +88,7 @@ suspended → trial | active         (org:plan; sets resumed_at and runs the res
 
 - No sign-up and no billing: the operator creates every organization (PD-001, PD-047). A trial that ends does not change the plan by itself; only the operator notice `trial_ending` goes out (`digest-and-notices.md`).
 - No account delete and no data export for an organization: E7-T3 (F106).
-- No operator console page and no other operator route than `GET /api/operator/flags`: E7-T2 (F099). The operator uses the CLIs.
+- Platform controls (F099): send limits, the operator console (`/operator`, `/api/operator/*`) and the security log (`GET /api/security-log`, flag `security_log`). The console shows ids, codes, counts and dates only. The CLIs stay.
 - No way to add a second member (an `assistant`) with a CLI or a route. The role exists in the code and in the e2e seed only.
 - No flag has a reader in the server yet (rule 5). The registry has three flags: `stats_page`, `approvals_page` and `sent_sync`.
 

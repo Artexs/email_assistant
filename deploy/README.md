@@ -355,6 +355,26 @@ How a delegation goes (details: `docs/capabilities/drafts-and-send.md` and `docs
 - `self`: a mail goes out only when every recipient is in `SEND_TEST_ADDRESSES` (your own addresses, comma-separated). The server refuses to start with `self` and no valid list.
 - `all`: every approved send of every active mailbox of an organization that is not `suspended` goes out: delegations and reminders to real delegates, and also clarification questions to the original sender of a mail. Each mail still needs the owner's tap.
 
+### Send limits
+
+Each mailbox has three limits (PD-044). Set them in the VPS `.env`; an empty key gives the default. The value is an integer from 1 to 10 000.
+
+| Key                        | Default | Meaning                                              |
+| -------------------------- | ------- | ---------------------------------------------------- |
+| `SEND_LIMIT_MAILBOX_HOUR`  | 20      | Sends of one mailbox in the last 60 minutes          |
+| `SEND_LIMIT_MAILBOX_DAY`   | 100     | Sends of one mailbox in the last 24 hours            |
+| `SEND_LIMIT_RECIPIENT_DAY` | 5       | Sends of one mailbox to one address in the last 24 h |
+
+What a hold looks like:
+
+- The approved send stays `approved` and waits. The panel line says "approved, waiting: send limit".
+- The owner gets the Telegram notice `send_held` (once per mailbox and day).
+- The operator gets the notice `send_limit` (once per mailbox and UTC day) in the operator chat. A failed notice is tried again the next hour.
+- The audit row `action.send_limited` names the limit, the end of the window and the mailbox. `last_error` of the action is `send_limit:<kind>`.
+- The send goes out at its next claim after the window ends. A send that waits more than 48 hours after the tap expires (`held_timeout`).
+
+To raise a limit: set the key in `.env`, then restart: `$C up -d server`. Never set a limit above the limit of the mail provider. Exchange Online allows 30 mails a minute and 10 000 recipients a day. Gmail allows 2 000 a day (500 for a trial account). Source: the E07 discovery notes W11 and W12.
+
 ### Result notices
 
 Each notice says what happened. The left part is the start of the text.
@@ -447,6 +467,29 @@ $C run --rm server bun run org:status [--org-id <org id>]
 - The start log line `scope targets: <n> active mailboxes in <m> organizations, <k> suspended organizations` shows whom a scope `all` acts on.
 
 **Before you set a scope to `all` on a server with more than one mailbox, run `org:status` and pause every mailbox whose owner did not agree (D2).** The modes are the consent: a mailbox in `shadow` mode changes nothing in the mailbox, and a send always needs a tap. Pause a mailbox with the Pause button of an owner in the panel or with `/pause` in Telegram. Or move the whole organization to `suspended` with `org:plan`.
+
+### Operator console
+
+The page `/operator` shows all customers in one place. It reads the same data as `org:status` and writes the same audit rows as `org:plan` and `org:flag`.
+
+Set up (once, on the server):
+
+1. Find your user id: `$C exec -T db psql -U postgres -d email_assistant -c "select id from users where email = '<your email>'"`. A user id is not a secret, but keep it out of the repo.
+2. Put the id in the VPS `.env`: `OPERATOR_USER_IDS=<user id>` (a comma list for more than one operator). Restart: `$C up -d server`.
+3. You must be a member of an organization: the page works inside your own sign-in. Every other user gets the 404 page, also for `/operator/index.html` and the same path in other forms.
+
+What the page shows:
+
+- **Organizations:** plan, trial end, mailboxes (all and with login error), last sync, failures in the last 24 hours (sends and notices), AI calls and cost today. It holds ids, codes, counts and dates only: no organization name, no address, no mail text. Map an id to a customer with `org:status` on the server.
+- **One organization:** plan state, mailbox limit, each mailbox by id and status, the last runs (sync, AI triage, digest, send, notice), failures, AI calls of the day by model and the feature flags with their source (`off by the server list`, `set by the operator`, `default`).
+- **Notices:** the operator notices of all organizations for the last 1, 7 or 30 days (kind and key).
+- **Changes:** the plan (with trial days or the mailbox limit) and each flag (on or off) of an organization. A change calls the same function as `org:plan` or `org:flag` and writes the same audit row into that organization, with your user id as actor. It works while your own organization is `suspended`.
+
+The security log of an organization (a card in Settings for owners) is behind the flag `security_log`. Turn it on for an organization:
+
+```sh
+$C run --rm server bun run org:flag --org-id <org id> --flag security_log --on
+```
 
 ## Reboot
 
