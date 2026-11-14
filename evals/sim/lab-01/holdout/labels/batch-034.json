@@ -36,8 +36,8 @@
     },
     {
       "id": "b-rep-0255",
-      "category": "urgent",
-      "blindHash": "742fedeb17437af77bb3cd9ad0d88c4f45584b581ebacdb0c1602b47d0dece04"
+      "category": "needs_reply",
+      "blindHash": "996755674d58525138b98baf41e73560c1afad4c067b9f7a1f05524fdeb3f312"
     },
     {
       "id": "b-rep-0256",
@@ -71,8 +71,8 @@
     },
     {
       "id": "b-rep-0262",
-      "category": "delegation",
-      "blindHash": "6ba199cd5b1820245dfd6b6644e38d2d328d1c32170382a2cb5e826a27a6a4db"
+      "category": "needs_reply",
+      "blindHash": "aa7332a21eee666d0f8a6e0b78644bc6cd169745a310b1945a2bd1c54585e9e4"
     },
     {
       "id": "b-rep-0263",
