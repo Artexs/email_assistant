@@ -1,0 +1,133 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-010",
+  "checker": "claude-haiku-5-5",
+  "labels": [
+    {
+      "id": "b-inf-0019",
+      "category": "info",
+      "blindHash": "f3ca8b50bfc5c97668e6c43ee88aabaceb7e7017d6272d8cc1d6029d4023d6d7"
+    },
+    {
+      "id": "b-inf-0020",
+      "category": "info",
+      "blindHash": "9539e488aa1bdef178d249233214037e947328f739faf2e05cd0016bd34d380f"
+    },
+    {
+      "id": "b-inf-0021",
+      "category": "info",
+      "blindHash": "811f3f3725b294b25c7099a0b51d61a916453c277e5d9bec69f0fd483de5148c"
+    },
+    {
+      "id": "b-inf-0023",
+      "category": "info",
+      "blindHash": "a0997c68eed6d56cb7f61a0daaab9f6313a5fb20cee0c0356d48c51161b317af"
+    },
+    {
+      "id": "b-inf-0024",
+      "category": "info",
+      "blindHash": "7213964c280ef46ffd50890caa2f40dd319c6fcedab75ce07473de25b561ed42"
+    },
+    {
+      "id": "b-inf-0025",
+      "category": "info",
+      "blindHash": "6bc5940fd21fb28dd9e00bd68e125d836372e6391511399e92bccdd2c7b9fee6"
+    },
+    {
+      "id": "b-inf-0026",
+      "category": "info",
+      "blindHash": "a7b0fb9a44184960d9194fccff96ebe1d03960e6ddf1909db68259f62abe8ca1"
+    },
+    {
+      "id": "b-inf-0028",
+      "category": "info",
+      "blindHash": "fc0c8e28575841dc83bbe9606b9997cb516e17c294df5d59edf9fd6436d3569d"
+    },
+    {
+      "id": "b-inf-0029",
+      "category": "info",
+      "blindHash": "41326d3a62dc4d79aa229873c936db3fa0d77e33edb1d4619427c37985acb8aa"
+    },
+    {
+      "id": "b-inf-0030",
+      "category": "info",
+      "blindHash": "6c5d327ef0088f4af012a161844d37b09872af1eee22c0d86ce28596feb42587"
+    },
+    {
+      "id": "b-inf-0031",
+      "category": "info",
+      "blindHash": "368ee775039da796dab97772d86a9e2c0f99dd7b18c618c0121f8bd7384d795f"
+    },
+    {
+      "id": "b-inf-0033",
+      "category": "info",
+      "blindHash": "ded3678d284df6ff44d1caf2f03e2a7eb202d402265c559e9beeb35758723622"
+    },
+    {
+      "id": "b-inf-0034",
+      "category": "info",
+      "blindHash": "5ff9e6d8b16e341ef202ed9de1aa4f9b2cc833bb2f10c0e7865b9fb688afd31c"
+    },
+    {
+      "id": "b-inf-0035",
+      "category": "info",
+      "blindHash": "300c003258bf54ead5a5b99c347af8f4b53c8f578f643cb759788db4e9d98dff"
+    },
+    {
+      "id": "b-inf-0036",
+      "category": "info",
+      "blindHash": "8f6bdf87e2dc971fae41ec93e92205ab95cb4db1c22de656a1fca4846d56719d"
+    },
+    {
+      "id": "b-inf-0037",
+      "category": "info",
+      "blindHash": "c1b6c9e7625e8f00771e00bded2957e8cd796169cdf74b2da6f6a8e771dbffbb"
+    },
+    {
+      "id": "b-inf-0039",
+      "category": "info",
+      "blindHash": "54d2793a7ae11713d5483b4d91bef04f7df14a735a5e50d94383704798747f95"
+    },
+    {
+      "id": "b-inf-0040",
+      "category": "info",
+      "blindHash": "e0508cdceb43c29af301b124f9c69064f53757751d3485227a7862d38ba9ea14"
+    },
+    {
+      "id": "b-inf-0041",
+      "category": "info",
+      "blindHash": "09d4f5e00b565e03d939a9669e69b2a57f2bcbb2008c2c2e0eff8c1994024fa1"
+    },
+    {
+      "id": "b-inf-0042",
+      "category": "info",
+      "blindHash": "db5e165930f8ba80fe9822a39b47e7f084e305d3e3f48f4ae97b875493bec5bd"
+    },
+    {
+      "id": "b-inf-0043",
+      "category": "info",
+      "blindHash": "f27e8d68a3919d0ec802b4b748eb6f15c7d4be5337e15bcd6aa263c1c6e9e8d6"
+    },
+    {
+      "id": "b-inf-0044",
+      "category": "info",
+      "blindHash": "af0ea3e7e9be8b19e46d64f49c8e918a55366c22a053f992443eb60df676d20f"
+    },
+    {
+      "id": "b-inf-0045",
+      "category": "info",
+      "blindHash": "a8afcb8f7981ace56af961676b676059862612cddffea80cc618e3c5a2053ea8"
+    },
+    {
+      "id": "b-inf-0046",
+      "category": "info",
+      "blindHash": "396c444b30cc9f6d0e10b8f29d3816b50b940ded20fc33ceeab9b04eee7e62f8"
+    },
+    {
+      "id": "b-inf-0047",
+      "category": "info",
+      "blindHash": "362654e0d390e24aa0538297000f36bdc03e1f91ba4a66a7a6f5279a3c8fe29d"
+    }
+  ]
+}
