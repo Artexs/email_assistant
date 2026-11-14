@@ -1,6 +1,6 @@
 # Drafts and send
 
-> Checked against the code at `1ca3052`, 2026-11-14.
+> Checked against the code at `334f5a0`, 2026-11-14.
 
 ## What it does now
 
@@ -24,7 +24,7 @@ For a delegation mail, or for a mail that needs one clarifying question, triage 
    - A soft error waits 5 min with no count. The third hard error makes the draft `failed` (`hard_error`) and expires its open sends (`draft_missing`).
 3. **`send`** (S4, `actions/send.ts`): the committer claims a send only when it is `approved` with `approved_at` set, its draft is `applied` and `SEND_SCOPE` admits it (`docs/architecture.md` §4.3).
    - It builds the same message as the draft (same `Message-ID` `<ea-<draft id>@<domain>>`, same `Date`, header `X-EA-Action-Id` = the id of the draft action).
-   - Before the call it commits `applying` with the `Message-ID` in `outgoing_message_id` (own commit). Then it makes one SMTP call (`MailSender`, one connection per call, no retry inside it).
+   - Before the call it checks the send limits and commits `applying` with the `Message-ID` in `outgoing_message_id` and the time in `send_started_at` (own commit; `actions/send-limit.ts`). The check and the commit run under a lock of the mailbox, so two committers never pass a limit together. Over a limit (per mailbox 20 an hour and 100 in 24 h, per recipient 5 in 24 h, counted by `send_started_at`), the send goes back to `approved` with no counted try and `next_attempt_at` at the end of the window, `last_error` = `send_limit:<kind>` and the audit event `action.send_limited`; the owner gets the notice `send_held` and the operator the notice `send_limit` (once per mailbox and day). Then it makes one SMTP call (`MailSender`, one connection per call, no retry inside it).
    - When SMTP accepts the mail (250 after DATA), the committer at once commits `applied` with the SMTP response and the audit row.
    - In the same transaction the delegation becomes `sent` and the draft gets a reverse row (rule 8).
    - The copy to Sent is a separate step after that: locate in Sent by the header and APPEND with `\Seen` only if missing. `provider_result.sent_copy` goes from `pending` to `appended`, `found` or `failed`.
@@ -152,11 +152,11 @@ Rows of `actions` with `type` `create_draft` or `send` (the status flow is in `a
 - `idempotency_key`: `<email id>:create_draft` and `<email id>:send`; a reminder uses `<email id>:create_draft:reminder:<day>` and `<email id>:send:reminder:<day>`; "Send again" uses `<failed id>:again`. Unique per organization.
 - `outgoing_message_id`: the `Message-ID` that the send stores before the SMTP call.
 - `approved_by`, `approved_at`, `approved_via` (`telegram` or `cli`); the checks `actions_send_approved_check` (an `approved`, `applying` or `applied` send has `approved_at`) and `actions_send_never_ready_check` (a send is never `ready`).
-- `notified_at`: the approval request was queued. `result_notified_at`: the result notice was queued.
+- `notified_at`: the approval request was queued. `result_notified_at`: the result notice was queued. `send_started_at`: the time of the latest SMTP try of a send; each new try after a release sets it again; the send limits count by it.
 - `provider_result` of a draft: `uid`, `folder`, `found`. Of a send: `response`, `accepted`, `message_id`, `sent_copy` (`pending`, `appended`, `found`, `failed`); on a failure `stage`, `response_code`, `code`, `cap` (`soft_retry`), `recovered`.
 - `payload` of a draft: `kind`, `to`, `language`, `task` or `question`, `due_date`, `delegate_id`, `delegate_name`; a reminder adds `delegation_id`, `reminder` (1 or 2) and `thread`. A send repeats `kind`, `to`, `delegate_id`, `delegation_id`, `reminder`, and adds `set_id` for a reminder set. The retention job clears old payloads.
 - `outbox` kinds of this capability: `approval`, `approval_set`, `send_result`, `delegation_answered`. `organizations.style_text` is the signature.
-- Audit events: `action.applying`, `action.applied`, `action.approved`, `action.rejected`, `action.expired`, `action.failed`, `action.send_again`, `action.went_out`, `action.sent_copy_failed`.
+- Audit events: `action.applying`, `action.applied`, `action.approved`, `action.rejected`, `action.expired`, `action.failed`, `action.send_again`, `action.went_out`, `action.sent_copy_failed`, `action.send_limited`.
 
 ## Limits
 
