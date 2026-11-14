@@ -19,7 +19,7 @@ Ticket: [ticket.md](ticket.md). Open defaults for the owner: [questions.md](ques
 - [x] stage-08-operator-org-detail-and-notices [written]
 - [x] stage-09-operator-writes [written]
 - [x] stage-10-operator-page [written]
-- [ ] stage-11-operator-page-writes
+- [x] stage-11-operator-page-writes [written]
 - [ ] stage-12-security-log-route
 - [ ] stage-13-security-log-card
 - [ ] stage-14-docs-and-standards
