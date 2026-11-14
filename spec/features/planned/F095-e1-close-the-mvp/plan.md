@@ -128,7 +128,7 @@ The 02 §7 text that PD-001 approves, word for word:
 ## Done when
 
 1. `docs/capabilities/` holds `README.md` and the ten pages of D1; `bun run test:unit:ci` passes with `apps/server/src/capability-map.test.ts`.
-2. `docs/architecture.md` keeps the D5 frame; the moved sections are link lines; `grep -c "" docs/architecture.md` is below 600 (from 814).
+2. `docs/architecture.md` keeps the D5 frame: the moved sections are link lines (`grep -c "Moved to \[\`docs/capabilities/" docs/architecture.md` ≥ 14), and §8 keeps exactly the five D5 bullets (stage 07 step 4).
 3. The boundary grep of stage 01 step 3 returns exactly the expected lines.
 4. `docs/code-patterns.md` and `.agents/limen/styleguide.md` hold the PD-009 / PD-100 rule.
 5. `next.md` in this folder lists every folder of `planned/` and `active/` with its epic or verdict (D10); the coordinator has put it into `spec/build.md` NEXT.
@@ -143,7 +143,7 @@ The 02 §7 text that PD-001 approves, word for word:
 - **Commit with explicit paths.** Never `git add -A` or `git add .`. Review `git diff --staged` before each commit (`CLAUDE.md`).
 - **Private data.** No mailbox address, subject, sender name, delegate address, mail text, token or `.env` value in any file, log, commit message or final message. Ids of the pilot org and mailbox, counts, codes and dates are fine. The test-mail sender address may appear in a SQL filter, never in a result.
 - **No VPS write and no deploy in a worker stage.** Only stage 09 touches the VPS, read-only (D13).
-- **Do not edit** `spec/build.md`, `spec/features/done/**`, `spec/features/dropped/**`, `docs/product/stage-2/**`, `docs/decisions/0*.md`, or another ticket folder, except the files a step names (F037 and F047 `plan.md` in stages 09 and 10).
+- **Do not edit** `spec/build.md`, `spec/features/done/**`, `spec/features/dropped/**`, `docs/product/stage-2/**`, `docs/decisions/0*.md`, or another ticket folder, except the files a step names: F037 and F047 `plan.md` (stages 09, 10), and one result line each in the § Log of F005 and F006 `plan.md` (stages 09, 10; F037 and F047 name it as the one allowed edit of a done file).
 - **Pages state the code** (D7). Read the code you describe. "Checked against" carries `git rev-parse --short HEAD` of your base commit and today's date.
 - **Merge first.** Start each stage with `git log --oneline -1` and `git log --oneline <plan commit>..HEAD -- docs/architecture.md` (plan commit: the last commit of this folder, `git log -1 --format=%h -- spec/features/active/F095-e1-close-the-mvp/plan.md`). Move the newest text of a section, not the text of this plan's line numbers.
 - **Line numbers in this plan are hints** (taken at `9d9bfb8`). Find text by its words.
@@ -186,8 +186,8 @@ Every stage gets one review job before the land (reviewer: the board's standing 
 
 - [ ] Stage 01 — boundary docs (PD-001), vision bullet, roadmap state — [`stages/stage-01-boundary-docs.md`](stages/stage-01-boundary-docs.md)
 - [ ] Stage 02 — capability map frame: index, template, rule, the map test — [`stages/stage-02-capability-frame.md`](stages/stage-02-capability-frame.md)
-- [ ] Stage 03 — pages `sync.md`, `triage.md`; move rules 7 (triage) and 8, §4.4 feedback part, §8 mailbox errors — [`stages/stage-03-cap-sync-triage.md`](stages/stage-03-cap-sync-triage.md)
-- [ ] Stage 04 — page `actions-and-undo.md`; move rule 6 (idempotent part), rule 7 (committer part), §4.4 Undo, §4.6 emails and actions flows, §8 S3 jobs — [`stages/stage-04-cap-actions-undo.md`](stages/stage-04-cap-actions-undo.md)
+- [ ] Stage 03 — pages `sync.md`, `triage.md`; move rule 7 (triage part), rule 8, §4.4 feedback part, §4.6 `emails` flow, §8 mailbox errors — [`stages/stage-03-cap-sync-triage.md`](stages/stage-03-cap-sync-triage.md)
+- [ ] Stage 04 — page `actions-and-undo.md`; move rule 6 (idempotent part), rule 7 (committer part), §4.4 Undo and moved back, §4.6 `actions` flow, §8 S3 jobs — [`stages/stage-04-cap-actions-undo.md`](stages/stage-04-cap-actions-undo.md)
 - [ ] Stage 05 — pages `drafts-and-send.md`, `delegation.md`; move rule 6 (drafts, send), §4.5, §4.6 delegations, §8 S4 jobs — [`stages/stage-05-cap-drafts-send-delegation.md`](stages/stage-05-cap-drafts-send-delegation.md)
 - [ ] Stage 06 — pages `digest-and-notices.md`, `web-panel.md`; move §8 S2 jobs, notices, operator notices — [`stages/stage-06-cap-notices-panel.md`](stages/stage-06-cap-notices-panel.md)
 - [ ] Stage 07 — pages `tenancy-and-plans.md`, `retention.md`, `backups.md`; move the rest of §8; final shape of `architecture.md` — [`stages/stage-07-cap-tenancy-retention-backups.md`](stages/stage-07-cap-tenancy-retention-backups.md)
