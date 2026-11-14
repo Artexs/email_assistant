@@ -12,13 +12,15 @@ export async function markApplying(
   ctx: TenantContext,
   id: string,
   lockedAt: Date,
-  opts?: { outgoingMessageId?: string }
+  opts?: { outgoingMessageId?: string; sendStartedAt?: Date }
 ): Promise<boolean> {
   const result = await db
     .updateTable("actions")
     .set((eb) => ({
       status: "applying",
       outgoing_message_id: opts?.outgoingMessageId ?? eb.ref("outgoing_message_id"),
+      // PD-044: the send limits count by this time; each new SMTP try (after a release) restamps it.
+      send_started_at: opts?.sendStartedAt ?? eb.ref("send_started_at"),
       updated_at: sql<Date>`now()`,
     }))
     .where("id", "=", id)

@@ -387,7 +387,12 @@ export async function applySend(
 
   // (2) Own commit, before any SMTP call.
   const started = await inTransaction(deps.db, async (trx) => {
-    if (!(await markApplying(trx, ctx, action.id, action.locked_at, { outgoingMessageId: message.messageId }))) {
+    if (
+      !(await markApplying(trx, ctx, action.id, action.locked_at, {
+        outgoingMessageId: message.messageId,
+        sendStartedAt: now,
+      }))
+    ) {
       return false;
     }
     await recordAudit(trx, ctx, {

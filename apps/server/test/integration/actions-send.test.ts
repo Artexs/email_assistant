@@ -679,6 +679,7 @@ describe("applySend", () => {
 
       expect(seen).toMatchObject({ status: "applying" });
       expect(seen?.outgoing_message_id).toMatch(/^<.+>$/);
+      expect(seen?.send_started_at).toEqual(NOW);
       expect(created.sender.sent).toHaveLength(1);
     } finally {
       await db.deleteFrom("organizations").where("id", "=", created.ctx.orgId).execute();

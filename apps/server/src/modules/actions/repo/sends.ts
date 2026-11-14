@@ -1,3 +1,4 @@
+import type { RecentSend } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, TenantContext } from "../../../platform/db";
@@ -267,4 +268,43 @@ export async function insertSendAgain(
     .returning("id")
     .executeTakeFirst();
   return row?.id ?? null;
+}
+
+// PD-044 (D4): the sends of one mailbox that may have reached people and started after `since`.
+// An `approved` row with an old stamp (put back before a retry), `rejected`, `expired` and refused sends do not count.
+// `to` holds the strings of `payload.to`; retention may have cleared the payload, then `to` is [].
+export async function listRecentSends(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  since: Date
+): Promise<RecentSend[]> {
+  const rows = await db
+    .selectFrom("actions")
+    .innerJoin("emails", (join) =>
+      join.onRef("emails.id", "=", "actions.email_id").onRef("emails.org_id", "=", "actions.org_id")
+    )
+    .select(["actions.id", "actions.send_started_at", "actions.payload"])
+    .where("actions.org_id", "=", ctx.orgId)
+    .where("emails.org_id", "=", ctx.orgId)
+    .where("emails.mailbox_id", "=", mailboxId)
+    .where("actions.type", "=", "send")
+    .where("actions.send_started_at", ">", since)
+    .where((eb) =>
+      eb.or([
+        eb("actions.status", "in", ["applying", "applied"]),
+        eb.and([eb("actions.status", "=", "failed"), eb("actions.status_reason", "=", "outcome_unknown")]),
+      ])
+    )
+    .orderBy("actions.send_started_at")
+    .orderBy("actions.id")
+    .execute();
+  return rows.flatMap((row) =>
+    row.send_started_at === null ? [] : [{ startedAt: row.send_started_at, to: recipientsOf(row.payload) }]
+  );
+}
+
+function recipientsOf(payload: unknown): string[] {
+  const to = (payload as { to?: unknown } | null)?.to;
+  return Array.isArray(to) ? to.filter((entry): entry is string => typeof entry === "string") : [];
 }
