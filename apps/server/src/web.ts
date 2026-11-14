@@ -18,13 +18,13 @@ import {
   verifySmtpLogin,
   WEB_MAIL_TIMEOUTS,
 } from "./modules/mail";
+import { operatorRoutes } from "./modules/operator";
 import { activityRoutes } from "./modules/reports";
 import {
   getUserAuthProfile,
   isOrgSuspended,
   listMembershipsOfUser,
   setUserTerms,
-  operatorRoutes,
   tenancyRoutes,
   type TenancyRouteDeps,
 } from "./modules/tenancy";

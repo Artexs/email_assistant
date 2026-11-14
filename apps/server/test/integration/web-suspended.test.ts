@@ -117,6 +117,24 @@ describe("a suspended organization on the web (D4, S2)", () => {
     expect(pause.status).toBe(404);
   });
 
+  test("an operator write under /api/operator passes the gate while its organization is suspended (D21)", async () => {
+    const app = webTestApp({
+      db,
+      sessions: sessions(),
+      routers: routers(),
+      isOrgSuspended: (id) => isOrgSuspended(db, { orgId: id }),
+      operatorUserIds: new Set([org.assistantId]),
+    });
+    // No POST route exists under /api/operator yet: the gate lets the call through and the router answers 404.
+    const post = await app.request("/api/operator/flags", as("assistant", { method: "POST", body: {} }));
+    expect({ status: post.status, body: await post.json() }).toEqual({ status: 404, body: { error: "not_found" } });
+    const other = await app.request("/api/rules", as("assistant", { method: "POST", body: {} }));
+    expect({ status: other.status, body: await other.json() }).toEqual({
+      status: 403,
+      body: { error: "org_suspended" },
+    });
+  });
+
   test("reads stay", async () => {
     const app = suspendedApp();
     expect((await app.request("/api/me", as("owner"))).status).toBe(200);

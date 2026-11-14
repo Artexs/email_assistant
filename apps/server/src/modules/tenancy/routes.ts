@@ -19,6 +19,7 @@ import type { Db, TenantContext } from "../../platform/db";
 import { parseBody, requireOwner, ValidationError, type ApiEnv } from "../../platform/http";
 import { auditEvents, recordAudit } from "../audit";
 
+import { featureStates } from "./features";
 import { getMembership, getOrganization, getUserAuthProfile, setDigestTimes, setUserTerms } from "./repo";
 import { organizationView, updateOrganizationSettings } from "./service";
 
@@ -69,6 +70,9 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
       mailboxesInAuthError: mailboxes.inAuthError,
       digestTimes: parseDigestTimes(member.digest_times),
       terms: { accepted: profile?.termsVersion === TERMS_VERSION, current: TERMS_VERSION },
+      // The same set that requireOperator reads (plan D23). The body never lists the operator ids.
+      operator: c.get("web").operatorUserIds?.has(userId) === true,
+      features: (await featureStates(deps.db, ctx)).filter((state) => state.enabled).map((state) => state.flag),
     };
     return c.json(me);
   });

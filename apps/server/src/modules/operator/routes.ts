@@ -3,8 +3,7 @@ import { Hono } from "hono";
 
 import type { Db } from "../../platform/db";
 import type { ApiEnv } from "../../platform/http";
-
-import { featureStatesOfAll } from "./features";
+import { featureStatesOfAll } from "../tenancy";
 
 export interface OperatorRouteDeps {
   db: Db;

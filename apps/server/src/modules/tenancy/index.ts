@@ -22,7 +22,6 @@ export {
   type UserAuthProfile,
   type UserMembership,
 } from "./repo";
-export { operatorRoutes, type OperatorRouteDeps } from "./operator-routes";
 export { tenancyRoutes, type TenancyRouteDeps } from "./routes";
 export {
   createOrganizationWithOwner,

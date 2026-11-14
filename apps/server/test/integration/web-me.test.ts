@@ -5,7 +5,13 @@ import { hashPassword } from "better-auth/crypto";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { insertMailbox, setMailboxStatus } from "../../src/modules/mail/repo";
-import { isOrgSuspended, setDigestTimes, tenancyRoutes } from "../../src/modules/tenancy";
+import {
+  configureFeatures,
+  isOrgSuspended,
+  setDigestTimes,
+  tenancyRoutes,
+  upsertOrgFeature,
+} from "../../src/modules/tenancy";
 import { insertUser } from "../../src/modules/tenancy/repo";
 import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
@@ -23,6 +29,7 @@ const orgs: WebOrg[] = [];
 const userIds: string[] = [];
 
 afterEach(async () => {
+  configureFeatures({ off: [] });
   for (const org of orgs) await org.cleanup();
   if (userIds.length > 0) await db.deleteFrom("users").where("id", "in", userIds).execute();
   orgs.length = 0;
@@ -60,12 +67,14 @@ async function setup() {
 
 function appFor(
   ids: { ownerId: string; assistantId: string; nobodyId: string },
-  operatorContact: string | null = null
+  operatorContact: string | null = null,
+  operatorUserIds?: ReadonlySet<string>
 ) {
   return webTestApp({
     db,
     sessions: { "good-owner": ids.ownerId, "good-assistant": ids.assistantId, "good-nobody": ids.nobodyId },
     isOrgSuspended: (orgId) => isOrgSuspended(db, { orgId }),
+    ...(operatorUserIds ? { operatorUserIds } : {}),
     routers: (api) =>
       api.route(
         "/",
@@ -111,6 +120,37 @@ describe("GET /api/me", () => {
       rules: 0,
       done: false,
     });
+  });
+
+  test("operator and features: a plain owner has none; a flag row turns one on; the kill list turns it off (D23)", async () => {
+    const ids = await setup();
+    const read = async (app = appFor(ids)) => {
+      const body = await (await app.request("/api/me", as("good-owner"))).json();
+      return { me: meSchema.parse(body), raw: JSON.stringify(body) };
+    };
+    const plain = await read();
+    expect(plain.me.operator).toBe(false);
+    expect(plain.me.features).toEqual([]);
+
+    await upsertOrgFeature(
+      db,
+      { orgId: ids.orgId },
+      { flag: "stats_page", enabled: true, setBy: "test", setAt: new Date("2026-11-20T10:00:00Z") }
+    );
+    expect((await read()).me.features).toEqual(["stats_page"]);
+
+    configureFeatures({ off: ["stats_page"] });
+    expect((await read()).me.features).toEqual([]);
+    configureFeatures({ off: [] });
+
+    const otherOperatorId = randomUUID();
+    const operator = await read(appFor(ids, null, new Set([ids.ownerId, otherOperatorId])));
+    expect(operator.me.operator).toBe(true);
+    const other = await read(appFor(ids, null, new Set([randomUUID()])));
+    expect(other.me.operator).toBe(false);
+    // The body holds no list of operator ids.
+    expect(Object.keys(operator.me).sort()).toEqual(Object.keys(plain.me).sort());
+    expect(operator.raw).not.toContain(otherOperatorId);
   });
 
   test("returns the trial end and the plan to every member", async () => {

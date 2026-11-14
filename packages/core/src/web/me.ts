@@ -53,5 +53,7 @@ export const meSchema = z.object({
   mailboxesInAuthError: z.number().int().min(0),
   digestTimes: z.array(z.string()),
   terms: z.object({ accepted: z.boolean(), current: z.string() }),
+  operator: z.boolean(),
+  features: z.array(z.string()), // the registry keys that are on for the organization (plan D23)
 });
 export type Me = z.infer<typeof meSchema>;

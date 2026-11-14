@@ -22,6 +22,8 @@ const me = {
   mailboxesInAuthError: 0,
   digestTimes: ["08:00"],
   terms: { accepted: false, current: "2026-11-12" },
+  operator: false,
+  features: [] as string[],
 };
 
 describe("scopeInfoOf", () => {
@@ -52,6 +54,13 @@ describe("meSchema", () => {
 
   test("refuses an object without operatorContact", () => {
     expect(meSchema.safeParse({ ...me, operatorContact: undefined }).success).toBe(false);
+  });
+
+  test("refuses an object without operator or without features, and accepts a future flag key (D23)", () => {
+    expect(meSchema.safeParse({ ...me, operator: undefined }).success).toBe(false);
+    expect(meSchema.safeParse({ ...me, features: undefined }).success).toBe(false);
+    expect(meSchema.safeParse({ ...me, operator: "yes" }).success).toBe(false);
+    expect(meSchema.safeParse({ ...me, operator: true, features: ["future_flag"] }).success).toBe(true);
   });
 
   test("refuses an object without digestTimes", () => {
