@@ -26,6 +26,7 @@ export {
   type UserAuthProfile,
   type UserMembership,
 } from "./repo";
+export { resolveSsoMember } from "./sso-resolve";
 export { listSecurityLog } from "./security-log";
 export { tenancyRoutes, type TenancyRouteDeps } from "./routes";
 export {

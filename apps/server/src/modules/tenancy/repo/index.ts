@@ -23,3 +23,10 @@ export {
 export { getUserAuthProfile, insertUser, setUserLocale, setUserTerms, type UserAuthProfile } from "./users";
 export { getBreakGlassUserId, isBreakGlassOwner, listBreakGlassOrgIdsOfUser, setBreakGlassFlag } from "./break-glass";
 export { getOrgFeature, listOrgFeatureRows, listOrgFeatureRowsOfAll, upsertOrgFeature } from "./org-features";
+export {
+  getSsoLinkUserId,
+  getSsoProviderByProviderId,
+  getUserIdByEmail,
+  hasOtherSsoAccount,
+  type SsoProviderRow,
+} from "./sso";

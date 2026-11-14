@@ -1,7 +1,12 @@
 import { sso } from "@better-auth/sso";
 import type { SSOUserResolution, SSOUserResolutionInput } from "@better-auth/sso";
-import type { SsoRefusal } from "@ea/core";
-import { APIError } from "better-auth/api";
+import type { SsoIdentity, SsoRefusal, SsoResolution } from "@ea/core";
+import { APIError, createAuthMiddleware } from "better-auth/api";
+
+import { errorFields } from "./errors";
+import { createLog } from "./log";
+
+const log = createLog("auth_sso");
 
 // The sign-in with a company identity provider (F119). This file is the only one that imports `@better-auth/sso` (ESLint).
 // Better Auth loads the plugin with a small surface: two paths, no provider endpoints, no sign-up.
@@ -22,23 +27,22 @@ export function isAllowedSsoPath(method: string, path: string): boolean {
   return providerId.length > 0 && !providerId.includes("/");
 }
 
-// What the IdP says about the person. `null` = the IdP sent no such claim.
-export interface SsoIdentity {
-  providerId: string;
-  issuer: string;
-  subject: string;
-  email: string;
-  emailVerified: boolean | null;
-  hostedDomain: string | null;
-}
+export type { SsoIdentity, SsoResolution };
 
-export type SsoResolution =
-  | { kind: "link"; userId: string; orgId: string; firstLink: boolean }
-  | { kind: "reject"; code: SsoRefusal; orgId: string | null };
+// A row for the audit log (ADR 0026 point 8). `data` is flat: ids and codes only, never the IdP e-mail.
+export interface SsoEvent {
+  kind: "login" | "refused";
+  orgId: string;
+  // null = the person is unknown (a refusal).
+  userId: string | null;
+  data: Record<string, string | boolean>;
+}
 
 export interface SsoDeps {
   // Absent = every identity is refused with `sso_off`. It runs inside the callback transaction.
   resolveMember?: (identity: SsoIdentity) => Promise<SsoResolution>;
+  // It never throws into Better Auth: a failure is logged as `sso_audit_failed`.
+  onSsoEvent?: (event: SsoEvent) => Promise<void>;
 }
 
 // The body keys of `POST /sign-in/sso` that we accept. Every other key reaches the plugin, which then looks for
@@ -82,19 +86,91 @@ function identityOf(input: SSOUserResolutionInput & { protocol: "oidc" }): SsoId
   };
 }
 
-function resolver(deps: SsoDeps) {
+async function reportSsoEvent(deps: SsoDeps, event: SsoEvent): Promise<void> {
+  if (event.kind === "login") log.info("sso_sign_in", { org_id: event.orgId, user_id: event.userId });
+  else log.warn("sso_refused", { org_id: event.orgId, code: String(event.data.code) });
+  if (!deps.onSsoEvent) return;
+  try {
+    await deps.onSsoEvent(event);
+  } catch (error) {
+    log.error("sso_audit_failed", { kind: event.kind, ...errorFields(error) });
+  }
+}
+
+// A resolution that no callback session followed (the plugin rolled back) is dropped after this time.
+const PENDING_LOGIN_MAX_AGE_MS = 60_000;
+
+function resolver(deps: SsoDeps, pending: Map<string, PendingLogin>) {
   return async (input: SSOUserResolutionInput): Promise<SSOUserResolution> => {
     if (!deps.resolveMember) return { action: "reject", code: "sso_off" satisfies SsoRefusal };
     // Providers hold OIDC only (the `saml_config` column is always null), so SAML never gets here.
     if (input.protocol !== "oidc") return { action: "reject", code: "no_provider" satisfies SsoRefusal };
     const resolution = await deps.resolveMember(identityOf(input));
-    if (resolution.kind === "reject") return { action: "reject", code: resolution.code };
+    if (resolution.kind === "reject") {
+      // Only a refusal of our own resolver that names an organization gets a row; each one needs a real IdP sign-in.
+      if (resolution.orgId !== null) {
+        await reportSsoEvent(deps, {
+          kind: "refused",
+          orgId: resolution.orgId,
+          userId: null,
+          data: { provider_id: input.providerId, code: resolution.code },
+        });
+      }
+      return { action: "reject", code: resolution.code };
+    }
+    pending.set(resolution.userId, {
+      orgId: resolution.orgId,
+      providerId: input.providerId,
+      firstLink: resolution.firstLink,
+      at: Date.now(),
+    });
     return { action: "link", userId: resolution.userId, profile: "preserve" };
   };
 }
 
-// Plugin order in `platform/auth.ts`: `twoFactorPlugin()`, `ssoPlugin(...)`, `signInAuditPlugin(report)` last.
-export function ssoPlugin(deps: SsoDeps) {
+interface PendingLogin {
+  orgId: string;
+  providerId: string;
+  firstLink: boolean;
+  at: number;
+}
+
+// `sso.login` is written once per callback session, after the plugin transaction has committed (`spike.md`: a reject rolls the transaction back).
+// The resolver notes the login in `pending`; the after-hook of the callback writes it.
+function ssoAuditPlugin(deps: SsoDeps, pending: Map<string, PendingLogin>) {
+  return {
+    id: "ea-sso-audit",
+    hooks: {
+      after: [
+        {
+          // `ctx.path` is the route template `/sso/callback/:providerId` (`spike.md`, finding on `ctx.path`).
+          matcher: (context: { path?: string }) => context.path?.startsWith(SSO_CALLBACK_PREFIX) === true,
+          handler: createAuthMiddleware(async (ctx) => {
+            const userId = ctx.context.newSession?.user.id;
+            if (userId === undefined) return;
+            const login = pending.get(userId);
+            pending.delete(userId);
+            if (!login || Date.now() - login.at > PENDING_LOGIN_MAX_AGE_MS) return;
+            await reportSsoEvent(deps, {
+              kind: "login",
+              orgId: login.orgId,
+              userId,
+              data: { provider_id: login.providerId, first_link: login.firstLink },
+            });
+          }),
+        },
+      ],
+    },
+  };
+}
+
+// Plugin order in `platform/auth.ts`: `twoFactorPlugin()`, `...ssoPlugins(...)`, `signInAuditPlugin(report)` last.
+export function ssoPlugins(deps: SsoDeps) {
+  const pending = new Map<string, PendingLogin>();
+  return [ssoPlugin(deps, pending), ssoAuditPlugin(deps, pending)] as const;
+}
+
+function ssoPlugin(deps: SsoDeps, pending: Map<string, PendingLogin>) {
   return sso({
     modelName: "sso_providers",
     fields: {
@@ -112,6 +188,6 @@ export function ssoPlugin(deps: SsoDeps) {
     providersLimit: () => 0,
     domainVerification: { enabled: true },
     disableImplicitSignUp: true,
-    resolveUser: resolver(deps),
+    resolveUser: resolver(deps, pending),
   });
 }
