@@ -193,7 +193,7 @@ export function createExpiryJob(deps: ExpiryDeps): { run(): Promise<void> } {
   return {
     async run() {
       const targets = await listMailboxTargets(deps.db, {
-        statuses: ["active", "paused", "auth_error"],
+        statuses: ["active", "paused", "auth_error", "host_blocked"],
         includeSuspended: true,
       });
       for (const { orgId, mailboxId } of targets) {

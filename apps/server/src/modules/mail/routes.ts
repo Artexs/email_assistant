@@ -75,7 +75,7 @@ export function mailRoutes(deps: MailRouteDeps): Hono<ApiEnv> {
       now: deps.now(),
     });
     if (result.kind === "not_found") return c.json({ error: "not_found" }, 404);
-    if (result.kind === "auth_error") return c.json({ error: "wrong_status" }, 409);
+    if (result.kind === "auth_error" || result.kind === "host_blocked") return c.json({ error: "wrong_status" }, 409);
     const view = await getMailboxView(db, ctx, id, scopeEnv);
     return view ? c.json(view) : c.json({ error: "not_found" }, 404);
   };

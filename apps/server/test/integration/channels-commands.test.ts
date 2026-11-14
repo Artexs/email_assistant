@@ -210,6 +210,10 @@ describe("statusMessage", () => {
       expect(broken.text).toContain("1 approved, held: the mailbox login fails");
       // The mailbox state comes before the scope: scope off and auth_error names the login.
       expect(broken.text).not.toContain("SEND_SCOPE=off");
+      await trx.updateTable("mailboxes").set({ status: "host_blocked" }).where("id", "=", a.mailboxId).execute();
+      const blocked = await statusMessage(depsAt(trx, T), link);
+      expect(blocked.text).toContain("1 approved, held: the mail server is not allowed");
+      expect(blocked.text).not.toContain("SEND_SCOPE=off");
     });
   });
 
@@ -273,6 +277,11 @@ describe("statusMessage", () => {
       await setBox({ status: "auth_error", status_changed_at: utc("2026-11-06T09:40:00Z") });
       expect((await statusMessage(depsAt(trx, T), link)).text).toContain(
         "Status: login error since 10:40 (run mailbox:password)"
+      );
+
+      await setBox({ status: "host_blocked", status_changed_at: utc("2026-11-06T09:40:00Z") });
+      expect((await statusMessage(depsAt(trx, T), link)).text).toContain(
+        "Status: mail server not allowed since 10:40 (checked again at each sync)"
       );
 
       await setBox({ last_synced_at: utc("2026-11-06T09:20:00Z") });
@@ -557,6 +566,37 @@ describe("pauseMailboxes and resumeMailboxes", () => {
       const reply = await resumeMailboxes(depsAt(trx, at(2 * MIN)), link);
       expect(reply.text).toStartWith("❌ ");
       expect((await mailboxRow(trx, a.mailboxId)).status).toBe("auth_error");
+    });
+  });
+
+  test("a host_blocked mailbox stays host_blocked and the active one changes", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, ctx, link, address } = await setup(trx);
+      const otherId = randomUUID();
+      await insertMailbox(trx, ctx, {
+        id: otherId,
+        address: "blocked-box@x.test",
+        imapHost: "imap.x.test",
+        imapPort: 993,
+        smtpHost: "smtp.x.test",
+        smtpPort: 465,
+        capabilities: testCapabilities,
+        folderMap: { drafts: "Drafts" },
+      });
+      await setMailboxStatus(trx, ctx, otherId, "host_blocked", at(-MIN));
+      const skip = "⛔ blocked-box@x.test: its mail server is not allowed; the system checks it again at each sync.";
+
+      const paused = await pauseMailboxes(depsAt(trx, T), link);
+      expect(paused.text).toContain(`⏸ Paused: ${address}\n`);
+      expect(paused.text).toContain(skip);
+      const resumed = await resumeMailboxes(depsAt(trx, at(MIN)), link);
+      expect(resumed.text).toContain(skip);
+
+      expect((await mailboxRow(trx, a.mailboxId)).status).toBe("active");
+      const row = await mailboxRow(trx, otherId);
+      expect(row.status).toBe("host_blocked");
+      expect(row.status_changed_at).toEqual(at(-MIN));
+      expect(await auditRows(trx, a.orgId, auditEvents.mailboxPaused)).toHaveLength(1);
     });
   });
 

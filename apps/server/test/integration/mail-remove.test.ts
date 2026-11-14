@@ -409,6 +409,22 @@ describe("removeMailbox", () => {
     expect(await counts(s.orgId, s.ids)).toEqual(before);
   });
 
+  test("a host_blocked mailbox is removed as it is, with no pause", async () => {
+    const s = await setup();
+    await db.updateTable("mailboxes").set({ status: "host_blocked" }).where("id", "=", s.mailboxId).execute();
+
+    const result = await removeMailbox(deps, s.ctx, s.mailboxId, {
+      userId: s.userId,
+      confirmAddress: await addressOf(s.mailboxId),
+      now,
+    });
+
+    expect(result.kind).toBe("removed");
+    expect(await statusOf(s.mailboxId)).toBeUndefined();
+    expect((await auditRows(s.orgId, "mailbox.removed")).length).toBe(1);
+    expect(await auditRows(s.orgId, "mailbox.paused")).toEqual([]);
+  });
+
   test("the notice goes to the owners of the organization only", async () => {
     const a = await setup();
     const b = await setup();

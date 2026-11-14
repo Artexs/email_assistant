@@ -9,6 +9,7 @@ export {
   lockMailbox,
   lockMailboxLimit,
   mailboxHasUidplus,
+  mailboxStatusSchema,
   markSynced,
   setFolderMapEntry,
   setMailboxStatus,

@@ -50,7 +50,11 @@ const app = () =>
   });
 const rowOf = (body: OperatorOrgList, orgId: string) => body.orgs.find((row) => row.orgId === orgId);
 
-async function insertMailboxRow(orgId: string, status: "active" | "auth_error", lastSyncedAt: Date | null) {
+async function insertMailboxRow(
+  orgId: string,
+  status: "active" | "auth_error" | "host_blocked",
+  lastSyncedAt: Date | null
+) {
   const id = randomUUID();
   await insertMailbox(
     db,
@@ -80,6 +84,8 @@ beforeAll(async () => {
   const ctx = { orgId: org.orgId };
   const active = await insertMailboxRow(org.orgId, "active", at(-5 * MINUTE));
   await insertMailboxRow(org.orgId, "auth_error", null);
+  await insertMailboxRow(org.otherOrgId, "active", null);
+  await insertMailboxRow(org.otherOrgId, "host_blocked", null);
   await db
     .insertInto("chat_links")
     .values({
@@ -165,7 +171,7 @@ describe("GET /api/operator/orgs (F099 stage 07)", () => {
     expect(rest).toMatchObject({
       members: 2,
       linkedChats: 1,
-      mailboxes: { total: 2, active: 1, paused: 0, authError: 1 },
+      mailboxes: { total: 2, active: 1, paused: 0, authError: 1, hostBlocked: 0 },
       lastSyncAt: at(-5 * MINUTE).toISOString(),
       failures24h: { sends: 1, outbox: 1 },
     });
@@ -175,7 +181,7 @@ describe("GET /api/operator/orgs (F099 stage 07)", () => {
     expect(b).toMatchObject({
       members: 1,
       linkedChats: 0,
-      mailboxes: { total: 0, active: 0, paused: 0, authError: 0 },
+      mailboxes: { total: 2, active: 1, paused: 0, authError: 0, hostBlocked: 1 },
       lastSyncAt: null,
       failures24h: { sends: 0, outbox: 0 },
       llmToday: { calls: 0, costUsd: 0, unpricedCalls: 0 },

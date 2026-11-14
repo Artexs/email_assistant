@@ -41,7 +41,7 @@ export async function orgStatusLines(
     blocks.push(
       [
         `org ${org.id} plan=${org.plan} trial_ends_at=${iso(org.trialEndsAt) ?? "-"} max_mailboxes=${state?.maxMailboxes ?? "-"} resumed_at=${iso(org.resumedAt) ?? "-"}`,
-        `  mailboxes total=${mailboxes.length} active=${count("active")} paused=${count("paused")} auth_error=${count("auth_error")} last_sync=${iso(lastSync) ?? "never"}`,
+        `  mailboxes total=${mailboxes.length} active=${count("active")} paused=${count("paused")} auth_error=${count("auth_error")} host_blocked=${count("host_blocked")} last_sync=${iso(lastSync) ?? "never"}`,
         `  llm_calls_today=${llmCalls} telegram_chats=${chats.length}`,
       ].join("\n")
     );
