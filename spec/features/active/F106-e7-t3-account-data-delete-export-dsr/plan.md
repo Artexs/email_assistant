@@ -126,3 +126,5 @@ Word counts after the fixes: plan 1498; stages 01–12: 697, 555, 636, 697, 697,
 ## Log
 
 - 2026-11-14: planned.
+
+- 2026-11-14 F106 stage 12 (VPS deploy, coordinator): deployed `69473f4e` (VPS before: `997ae4a5`), backup ok, rollback image `ea-server:pre-f106`. Checks 1 to 6 held: health 200; throwaway org made, exported (mode 600, 1373 bytes), `--find` for an unknown address `mails 0` exit 0, deleted, `org:status` not found; no `dropped_fields` or `_failed` line. Check 7 held: 11 sync lines for the pilot mailbox in 22 minutes, 0 failure lines. Finding: the export needed `--user <host uid>:<gid>` (EACCES for container uid 1000); fixed in `deploy/README.md` (`c5334c40`). `org_delete` stays off for the pilot (owner step U2). Close after 24 h without a problem: `docker image rm ea-server:pre-f106`, `limen ticket done F106`.
