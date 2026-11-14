@@ -89,6 +89,21 @@ The runner and the worker share one Gemini project quota (free tier).
 
 OpenAI has no free daily quota. The project budget and the rate limit apply. A 108-case run with `gpt-6-luna` costs about $0.01.
 
+## Sim corpora
+
+`bun run eval --sim <scenario> --part dev|holdout|week` classifies one part of a synthetic corpus in `evals/sim/<scenario>/`. It cannot be combined with `--real`, `--set`, `--per-category` or `--state`.
+
+- `--part dev|holdout|week` (required): the part to run. `holdout` needs a frozen corpus (`manifest.json`) and prints no case ids in its report. `dev` and `week` run on a draft corpus.
+- `--concurrency <n>`: calls in flight. Default 8 (the old command keeps 1).
+- `--rpm <n>`: requests per minute of the classifier provider, for this process only. Default 240 (the old command keeps the config value).
+- `--budget-usd <n>`: run cap. Default 1. The run also stops at the month cap of $20 minus the month spend in the ledger; at 0 left it exits 1 with `month budget used`.
+- `--spend-ledger <file>`: the ledger file, one JSON line per run `{ runId, at, usd, label }`. Default `$XDG_STATE_HOME/email-assistant/eval-spend.jsonl` (else `~/.local/state/email-assistant/eval-spend.jsonl`). It lives outside git.
+- `--fresh`: delete the state file first. `--fresh-lock`: take over a lock file older than 6 hours.
+- `--provider`, `--model`, `--reasoning-effort`, `--retries`, `--limit`, `--bar`, `--min-kept`, `--out`: as above.
+
+The run refuses to start when the classifier model has no price in `llmPrices`. A new call starts only while `spent + (in flight + 1) × average call cost` stays under the cap (the first estimate is the price of 2,000 tokens in and 300 out). Calls in flight finish and count. The exit code is 2 when the run stops at a cap or after 3 errors in a row; the same command resumes it.
+The state file is `evals/.runs/<model>[-<effort>]-<prompt-version>-sim-<scenario>-v<version>-<part>.jsonl`; a lock file `<state>.lock` keeps two runs off it. The ledger gets one line per run, also after a stop, with the new spend only.
+
 ## Subset rule
 
 `selectCases` picks the same subset every time.
