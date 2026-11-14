@@ -28,6 +28,13 @@ interface Ctx {
 
 const BRIEF_MAX = 200;
 
+// The one place that names the tag of a mail with an HTML part and no text part.
+const htmlOnlyTag = "html_only";
+
+export function isHtmlOnly(slot: Pick<Slot, "hardCases">): boolean {
+  return (slot.hardCases as readonly string[]).includes(htmlOnlyTag);
+}
+
 const categoryIntent: Record<ValueCategory, string> = {
   urgent: "an urgent matter that needs action today",
   needs_reply: "a question that needs an answer",
@@ -155,7 +162,7 @@ export const hardCaseRules: readonly HardCaseRule[] = [
     (slot) => withBrief({ ...slot, lang: "pl" }, "use many Polish letters (ą ć ę ł ń ó ś ź ż)"),
     { lang: "pl" }
   ),
-  rule("html_only", "html", ["notification", "info", "spam"], (slot) =>
+  rule(htmlOnlyTag, "html", ["notification", "info", "spam"], (slot) =>
     withBrief({ ...slot, style: { ...slot.style, format: "html" } }, "send an HTML part only, with no text part")
   ),
   rule("attachments", "att", ["needs_reply", "info", "delegation"], (slot, ctx) =>
