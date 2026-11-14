@@ -1,14 +1,13 @@
 import { buildOutgoingMessage, draftPayloadSchema, type OutgoingMessage } from "@ea/core";
-import type { Transaction } from "kysely";
 import { z } from "zod";
 
-import type { DB, TenantContext } from "../../platform/db";
+import type { TenantContext } from "../../platform/db";
 import { describeError, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
 import { locateByActionId, MailAuthError, type MailProvider } from "../mail";
 
-import type { ApplyDeps, ApplyOutcome } from "./apply";
+import { inTransaction, type ApplyDeps, type ApplyOutcome } from "./apply-shared";
 import { HARD_ERROR_TRIES, RETRY_WAIT_MS } from "./constants";
 import { closeDraftOfSend, expireSend } from "./expiry";
 import {
@@ -27,10 +26,6 @@ const log = createLog("actions");
 const OPEN_SEND_STATUSES = ["awaiting_approval", "approved", "applying"];
 
 type DraftResult = Record<string, string | number | boolean | null>;
-
-function inTransaction<T>(db: ApplyDeps["db"], run: (trx: Transaction<DB>) => Promise<T>): Promise<T> {
-  return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
-}
 
 // D8: the message of a draft row, from the payload, the original mail and the mailbox. Throws on a payload that does not parse.
 export function buildDraftMessage(deps: ApplyDeps, action: ClaimedAction): OutgoingMessage {

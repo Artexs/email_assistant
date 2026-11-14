@@ -1,0 +1,14 @@
+# F097 — open questions (defaults taken; the build does not wait)
+
+Each item is a small question: the stages stay the same with any answer. The plan uses the default. To change one, the owner tells the coordinator; the change goes into the stage before it is built.
+
+| # | Question | Default (plan decision) | Why |
+| --- | --- | --- | --- |
+| Q1 | When does the owner audit (50 cases per corpus version, PD-014) gate? `05-execution-plan.md` § 2.1 lists it as a gate "before the build starts", but the corpus it audits is built by this ticket. | The audit runs after stage 20 freezes v1 and does not stop the build; reports and the gate file print `owner audit: pending` until it is done; a `wrong` verdict makes v1.1 and the coordinator re-runs the holdout gate once (D36). | The audit cannot run before the corpus exists; owner checkpoints do not stop builds (`spec/build.md` NEXT). |
+| Q2 | `/review` order: random sample only, or "thin categories first" (the old F028 idea)? | Random sample only, 10 per page, last 30 days, real mail only (D4). | PD-058 needs the random part for an unbiased M1 estimate; a category-first order would bias it. |
+| Q3 | Judge model and its speed. | `--judge-provider gemini --judge-model gemini-3.5-flash-lite` on the free tier (made-up mail only); the judge pass is outside the "under 10 min" exit (D31). | PD-026 needs another family than the OpenAI drafter; the free-tier RPM (12) makes about 200 judged drafts take about 17 min. A paid Gemini key or another model is a later change of two flags. |
+| Q4 | Hard-case volume. | 10 per tag (3 dev + 7 holdout), 5 per reply-injection tag (2 + 3); bank total 1,808 (D13). | Enough for a per-tag rate in the report without doubling the writer time. |
+| Q5 | Sim gate rule: the Wilson 95 % lower bound of precision must reach the 0.98 bar (ADR 0028 point 1). With 200 holdout cases this means at least 189 kept rows and zero false positives (fact F4); one error needs 280 kept rows. | Keep the rule as ADR 0028 states it (D24). | A change is a product decision (PD-024); the report shows the lower bound, so E3b sees how far each category is. |
+| Q6 | Where the month spend ledger lives. | `~/.local/state/email-assistant/eval-spend.jsonl` (or `$XDG_STATE_HOME`), one per machine (D26). | Job worktrees each have their own `evals/.runs/`; a ledger there would not see the other jobs' spend. |
+| Q7 | Test sender list on the VPS. | `TEST_SENDER_ADDRESSES=ea-testmail-75wd@agentmail.to` (C2). Old feedback on that mail leaves the real labels at once (D1). | The AgentMail inbox is the only test sender; F057 asked for this retroactive effect. |
+| Q8 | Gate evidence check in CI. | A unit test requires a gate file for the current classifier prompt version (any model); the model on the VPS is a release-checklist line for E8 (D29). | CI has no LLM key (PD-025); it can check the evidence, not run the eval. |

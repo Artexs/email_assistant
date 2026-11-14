@@ -144,3 +144,14 @@ Size: about 30 stages, 7k lines (E2a ≈ 14 / 3k, E2b ≈ 16 / 4k); corpus writi
 - E3b tunes prompt v3 only on the dev set; the holdout runs only as the gate (PD-015, PD-061).
 - The week plants phishing cases that try an urgent push, a delegation and an unsubscribe; M3 counts an unwarned urgent push (PD-057, PD-063).
 - The week also checks the PD-044 send limits (PD-068).
+
+## Input from the other discoveries (applied in the F097 plan, 2026-11-14)
+
+- E4: PD-030 changes PD-018. The E2a holdout result is the global evidence; real labels only measure and block.
+- E4: newsletter and marketing mail carries `List-Unsubscribe` and `List-Id` headers.
+- E5: the Sent bank is E5b's work with the E2a tools.
+- E6: `needs_reply` cases carry `expected_points` and `must_not`. The judge has a `reply` rubric. The reply-injection set is in the hard cases.
+- E11: bank cases carry the sender history (counts only), and the week starts with a 30-day prior history. Each own-model candidate gets one holdout run and needs a price row.
+- E3: E3b tunes only on `dev/`.
+- Bank plan: 53 + 210 per category (floors of 50 and 200 after drops).
+- E4-B (F110) rule to carry: never unlock `auto` from a gate file with `provisional: true` or an old corpus version. E8b (F114) release checklist: the model in the VPS `.env` has a gate file in `evals/results/gate/` for the running prompt version.

@@ -5,6 +5,7 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 import { auditEvents, recordAudit } from "../audit";
 
+import { inTransaction } from "./apply-shared";
 import { APPROVAL_TTL_MS, DELEGATION_DUE_AFTER_MS, STALE_AFTER_MS } from "./constants";
 import { closeDraftOfSend, expireSend } from "./expiry";
 import type { DelegationHooks } from "./hooks";
@@ -60,10 +61,6 @@ export type WentOutResult =
   | { kind: "not_unknown" }
   | { kind: "delegation_not_open" }
   | { kind: "not_found" };
-
-function inTransaction<T>(db: Db | Transaction<DB>, run: (trx: Transaction<DB>) => Promise<T>): Promise<T> {
-  return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
-}
 
 function isStale(lockedAt: Date | null, now: Date): boolean {
   return lockedAt === null || lockedAt.getTime() < now.getTime() - STALE_AFTER_MS;
