@@ -4,24 +4,24 @@ Part of [`../plan.md`](../plan.md). Web. New Polish text (review before the land
 
 ## Step 1 — the dialog in the Account card
 
-**Goal.** An owner sees the delete button at the end of the Account card while the flag `org_delete` is on, and can delete.
+**Goal.** With the flag `org_delete` on, an owner can delete from the end of the Account card.
 
-**Files.** `apps/web/src/components/settings/` (a new `DeleteOrganization.tsx`, used by `AccountCard.tsx`); `apps/web/src/i18n/en.ts`, `pl.ts`; the error map of `lib/errors.ts`.
+**Files.** A new `components/settings/DeleteOrganization.tsx` in `AccountCard.tsx`; `i18n/en.ts`, `pl.ts`; `lib/errors.ts`.
 
 **Decisions.** P1, P2, D5, P6.
 
 - Shown only for role `owner` with `org_delete` in `/api/me` `features`; else nothing renders.
 - The button `del_title` opens a dialog (like the mailbox remove dialog) with `del_text`, `del_imap_note`, the password field (`autocomplete="current-password"`), the name field, Cancel and `del_submit`. `del_submit` is disabled until the typed name matches (`orgNameMatches` from `@ea/core/web`, stage 02).
 - On 200: write the `mailboxAddresses` into `sessionStorage` key `ea.deleted_mailboxes` (JSON array), then `location.assign("/login?deleted=1")`.
-- `wrong_password`, `wrong_name`, `locked` show their text; any other error `del_failed`. Each error clears the password field.
+- `wrong_password`, `wrong_name`, `locked` show their text, any other error `del_failed`; each clears the password field.
 
 ## Step 2 — the notice on the login page
 
-**Goal.** After the delete, the person sees which mailbox passwords to change.
+**Goal.** The person sees which mailbox passwords to change.
 
 **Files.** `apps/web/src/islands/LoginPage.tsx`; the i18n files.
 
-**Decisions.** D5. With `?deleted=1`: `del_done_title`, `del_done_text`, and below it the addresses from `sessionStorage` `ea.deleted_mailboxes` (plain text); then the key is removed. No key or bad JSON (a reload): no list. Language: the stored browser choice.
+**Decisions.** D5. When `sessionStorage` `ea.deleted_mailboxes` holds a JSON array, also without `?deleted=1` (a 401 of the `/api/me` poll can land on `/login?next=…` first): `del_done_title`, `del_done_text`, the addresses as plain text; then the key goes. `?deleted=1` with no key or bad JSON: the texts, no list. Language: the stored browser choice.
 
 **Texts.** Copy word for word. `{name}` is the organization name.
 
@@ -42,15 +42,15 @@ Part of [`../plan.md`](../plan.md). Web. New Polish text (review before the land
 
 Cancel uses the existing `cancel` key. `SAME_IN_BOTH` in `i18n.test.ts` does not change.
 
-**Test** (web unit tests as the existing ones; where the web tests no islands, test the pure helpers):
+**Test** (web unit tests; where the web tests no islands, test pure helpers):
 
 1. Not owner, or flag off → no delete button (`del_title`).
 2. Submit stays disabled for `"Acme"` against "Acme Test" and turns on for `" acme test "`.
 3. A 400 `wrong_password` answer shows `del_wrong_password` and clears the password field.
-4. A 200 answer writes `["a@x.test","b@x.test"]` to `ea.deleted_mailboxes` and goes to `/login?deleted=1`.
-5. The login notice lists both addresses and removes the key; no key, or the key `"{bad"`, shows the texts without a list.
+4. A 200 answer stops the `/api/me` poll if the shell allows it, writes `["a@x.test","b@x.test"]` to `ea.deleted_mailboxes` and goes to `/login?deleted=1`.
+5. The login notice lists both addresses on `/login?next=/settings` too, and removes the key; `?deleted=1` with no key, or the key `"{bad"`, shows the texts without a list.
 6. `i18n.test.ts` passes.
 
 **Done when.** Tests 1–6 pass and the plan Proof (web chain) prints `PROOF_OK`.
 
-**Out of scope.** Playwright (stage 10); security-log texts (stage 09).
+**Out of scope.** Playwright (stage 11); security-log texts (stage 10).

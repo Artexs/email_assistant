@@ -1,4 +1,4 @@
-# F106 stage 10 — Playwright: the delete flow
+# F106 stage 11 — Playwright: the delete flow
 
 Part of [`../plan.md`](../plan.md).
 
@@ -25,12 +25,12 @@ Part of [`../plan.md`](../plan.md).
 8. No browser console line holds the password.
 9. Polish: with the browser language `pl`, step 1 shows `Usuń organizację`.
 
-**Check.** Give the job its own e2e database first (the commands in `CLAUDE.md` § Rules and the F105 plan rule): `sed -i -E '/^E2E_(MIGRATOR_)?DATABASE_URL=/d' .env`, then `bun run db:worktree f106_s10_e2e | grep -E '^(DATABASE_URL|MIGRATOR_DATABASE_URL)=' | sed 's/^/E2E_/' >> .env`. Never use the shared e2e database.
+**Check.** Give the job its own e2e database first (the commands in `CLAUDE.md` § Rules and the F105 plan rule): `sed -i -E '/^E2E_(MIGRATOR_)?DATABASE_URL=/d' .env`, then `bun run db:worktree f106_s11_e2e | grep -E '^(DATABASE_URL|MIGRATOR_DATABASE_URL)=' | sed 's/^/E2E_/' >> .env`. Never use the shared e2e database.
 
 **Proof.**
 
 ```
-mkdir -p /tmp/f106-s10 && bun run lint > /tmp/f106-s10/lint.log 2>&1 && bun run typecheck > /tmp/f106-s10/typecheck.log 2>&1 && bun run test:unit:ci > /tmp/f106-s10/unit.log 2>&1 && bun run web:build > /tmp/f106-s10/web.log 2>&1 && flock /tmp/email-assistant-shared-tests.lock env CHROMIUM_PATH=/usr/bin/chromium bun run test:e2e > /tmp/f106-s10/e2e.log 2>&1 && echo PROOF_OK
+mkdir -p /tmp/f106-s11 && bun run lint > /tmp/f106-s11/lint.log 2>&1 && bun run typecheck > /tmp/f106-s11/typecheck.log 2>&1 && bun run test:unit:ci > /tmp/f106-s11/unit.log 2>&1 && bun run web:build > /tmp/f106-s11/web.log 2>&1 && flock /tmp/email-assistant-shared-tests.lock env CHROMIUM_PATH=/usr/bin/chromium bun run test:e2e > /tmp/f106-s11/e2e.log 2>&1 && echo PROOF_OK
 ```
 
 The whole e2e suite runs: the seed change touches every spec.

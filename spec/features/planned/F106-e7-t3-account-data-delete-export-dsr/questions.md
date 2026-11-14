@@ -15,3 +15,7 @@ No blocking question. Each item is a default in `plan.md` or a stage file; the p
 11. [minor] **The typed organization name** matches after trim and case-insensitively. (stage 02)
 12. [minor] **New dependency** `age-encryption` 0.3.1 (BSD-3-Clause, by the `age` author), exact pin, server only. (stage 05)
 13. [minor] **The address is on the CLI command line**, so it is in the operator's shell history; the runbook says to clear that line. (stage 09)
+14. [important: privacy] **A mail whose only Reply-To is the person goes** like a mail from the person (a contact form: `From: noreply@…`, the person's message in the body). Added after cold review 1 (N4). (D9, stage 06)
+15. [important: irreversible] **After a backup restore**, deletes and erases made after the backup come back. The operator keeps each `deleted …` and `record: …` CLI line off the server and runs them again after a restore; no ledger table (a restore would roll it back too). (D20, stage 10)
+16. [important: privacy] **Digest and approval-set rows** stored since the earliest erased mail are blanked (`[removed]`), and pending digests are dropped, as the mailbox remove does. This also blanks the stored copies of other mails' digests of that time; the Telegram chat keeps what it got. (D19, stage 09)
+17. [minor] **Actions of kept mails that point at an action of an erased mail** are deleted with it, so the erase never stops on these references. (D10, stage 08)

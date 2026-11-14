@@ -1,4 +1,4 @@
-# F106 stage 09 — Security-log kinds and docs
+# F106 stage 10 — Security-log kinds and docs
 
 Part of [`../plan.md`](../plan.md). New Polish text (review before the land).
 
@@ -30,21 +30,20 @@ Part of [`../plan.md`](../plan.md). New Polish text (review before the land).
 
 **Goal.** The docs describe what landed; the operator has the steps.
 
-**Files.** A new `docs/capabilities/account-data.md` (the capability page shape of `tenancy-and-plans.md`: what it does, rules, entry points, data, limits, decisions, tests) and its line in `docs/capabilities/README.md`; the `Limits` lines about F106 in `tenancy-and-plans.md`, `retention.md` and `web-panel.md`; a tombstone rule in `sync.md`; `docs/architecture.md` §7 ("Delete": organization delete, DSR erase, tombstones); `docs/code-patterns.md`; `deploy/README.md`; `docs/modules.md` (module `privacy`).
+**Files.** A new `docs/capabilities/account-data.md` (shape of `tenancy-and-plans.md`) and its line in the capabilities `README.md`; the F106 `Limits` lines of `tenancy-and-plans.md`, `retention.md`, `web-panel.md`; a tombstone rule in `sync.md`; `docs/architecture.md` §7 "Delete"; `docs/code-patterns.md`; `docs/modules.md`; `deploy/README.md`.
 
-**Decisions.** D1, D16, D18, P2.
+**Decisions.** D1, D18, D20, P2.
 
-- `docs/code-patterns.md` § Data access: (a) module `privacy` runs generic SQL over `EXPORT_MAP` and `DSR_ADDRESS_MAP`, the exception to "the module that owns a text column clears it"; (b) a new table or column: classify it in `EXPORT_MAP`, and, when the completeness test of stage 06 lists it, in `DSR_ADDRESS_MAP` or `NOT_PERSONAL`, in the ticket of its migration; (c) a new table with `org_id` or `user_id` gets a seed in the deletion test of stage 01.
-- `deploy/README.md`, a section "Account data (F106)":
+- `docs/code-patterns.md` § Data access: (a) module `privacy` runs generic SQL over its registries, the exception to "the module that owns a text column clears it"; in the ticket of a migration: (b) classify each new table and column in `EXPORT_MAP`, and each new candidate column (stage 06) in `DSR_ADDRESS_MAP` or `NOT_PERSONAL`; (c) a new `org_id` or `user_id` table gets a seed in the deletion test; (d) a new mail table gets the tombstone trigger; (e) a new notice kind gets its `NOTICE_MAIL_CONTENT` class.
+- `deploy/README.md`, section "Account data (F106)":
   - Delete: `org:delete --org-id <id> --confirm <name>`; tell the owner which mailbox passwords to change.
-  - Export: `mkdir -m 700 <host folder>`, then `$C run --rm -v <host folder>:/exports server bun run org:export --org-id <id> --recipient <age1…> --out /exports/<org id>-<date>.age`; give the file to the owner by a private channel; delete it after the delivery.
-  - Data request (GDPR Art. 12(3): answer within one month): act only on the owner's written instruction; run `--find` (with a report for an access request), send the report to the owner, then `--erase --confirm` when the owner asks; on `open_actions`, the owner rejects or finishes those sends first; delegates and rules that hold the address stay until the owner changes them; the mail stays in the mailbox (P2), the owner deletes it there if wanted; backups keep the rows until they expire.
-  - The address is in the shell history of the command: clear that line after the run.
+  - Export: `mkdir -m 700 <host folder>`; `$C run --rm -v <host folder>:/exports server bun run org:export --org-id <id> --recipient <age1…> --out /exports/<org id>-<date>.age`; hand the file over by a private channel; delete it after the delivery.
+  - Data request (GDPR Art. 12(3): answer within one month), only on the owner's written instruction: `--find` (with a report for an access request) → report to the owner → `--erase --confirm` when the owner asks. `open_actions`: the owner rejects or finishes those sends first. `blocked`: a bug, report the constraint. Delegates and rules with the address stay until the owner changes them. The mail stays in the mailbox and delivered Telegram messages stay in the chat (P2); the owner deletes them there if wanted. Backups keep rows until they expire.
+  - Restore (D20): a backup restore brings back deletes and erases made after the backup. Keep each `deleted …` and `record: …` line outside the server; the owner keeps the request. After a restore (`deploy/README.md` § Backups), run them again before the panel opens.
+  - Clear the shell-history line that holds the address. Remove a deleted user's id from `OPERATOR_USER_IDS` at the next `.env` change.
 - The flag `org_delete`: off by default; `org:flag … --flag org_delete --on` per organization.
 
 **Test.** `bunx prettier --check` on the changed docs.
-
-**Check.** `bun test packages/core apps/web` and the security-log integration test; `bun run web:build`.
 
 **Done when.** Step 1 tests pass, every doc above is changed, and the plan Proof (web chain) prints `PROOF_OK`.
 

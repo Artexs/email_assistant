@@ -23,7 +23,7 @@ export async function deleteOrganization(
 
 `orgNameMatches(name: string, typed: string): boolean` (trim both, compare `toLowerCase()`; empty typed text is false) goes to `packages/core/src/web/` (pure), so the dialog of stage 04 uses the same rule.
 
-`auditEvents` gets `orgDeleteRefused: "org.delete_refused"` (data `reason`; stage 03 writes it), `orgExported: "org.exported"` (data `tables`, `rows`; stage 05), `dsrFind: "dsr.find"` and `dsrErase: "dsr.erase"` (data `address_hash`, `counts`; stages 07, 08). One stage adds all four, so stage 09 can map them.
+`auditEvents` gets `orgDeleteRefused: "org.delete_refused"`, `orgExported: "org.exported"`, `dsrFind: "dsr.find"` and `dsrErase: "dsr.erase"`, so stage 10 can map them. `AuditData` is flat (no nested objects, `modules/audit/repo.ts`); the data keys, all flat: `org.delete_refused` `reason`, `via` (stage 03); `org.exported` `tables`, `rows` (two totals, stage 05); `dsr.find` `address_hash`, `mails`, `mentions` (total), `listed_delegates`, `listed_sender_rules`, `open_actions` (stage 07); `dsr.erase` the same plus `tombstones`, `chain_actions`, `outbox_blanked`, `outbox_dropped` (stages 08, 09). The comment of each entry names its keys.
 
 **Decisions.** D1, D4, D16, D17.
 
@@ -58,4 +58,4 @@ export async function deleteOrganization(
 
 **Done when.** Tests pass, the module graph is fresh (`layers.test.ts`), and the plan Proof (server chain) prints `PROOF_OK`.
 
-**Out of scope.** The web route, the flag (stage 03); docs (stage 09).
+**Out of scope.** The web route, the flag (stage 03); docs (stage 10).

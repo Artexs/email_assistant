@@ -8,11 +8,13 @@ Part of [`../plan.md`](../plan.md). `[risky]` (privacy).
 
 **Files.** `modules/privacy/dsr.ts`; `platform/crypto.ts`; `apps/server/src/scripts/org-dsr.ts`; root `package.json` script `org:dsr`; tests.
 
-**Interfaces** (stage 08 extends the CLI and reuses the counts):
+**Interfaces** (stages 08 and 09 extend the CLI and reuse the counts):
 
 ```ts
-export type DsrCounts = { mails: number; mentions: Record<string, number>; listed: { delegates: number; sender_rules: number }; open_actions: number };
+export type DsrCounts = { mails: number; mentions: Record<string, number>; listed: { delegates: number; sender_rules: number }; open_actions: number; chain_actions: number };
 export function dsrCounts(match: DsrMatch): DsrCounts;
+// Flat audit data (AuditData allows no nested object): address_hash, mails, mentions (total), listed_delegates, listed_sender_rules, open_actions.
+export function dsrAuditData(addressHash: string, counts: DsrCounts): AuditData;
 export async function findSubjectData(db: Db, input: {
   orgId: string; address: string; credentialsKey: string; report?: { recipient: string; out: string };
 }): Promise<
@@ -26,10 +28,10 @@ export function dsrAddressHash(credentialsKeyBase64: string, address: string): s
 **Decisions.** D12, D13, D14, D17.
 
 - `findSubjectData` normalizes the address (`bad_address`), checks the organization (`not_found`), runs `matchSubject` in one `REPEATABLE READ READ ONLY` transaction, refuses `ownAddress` (`own_address`, no audit row).
-- `found`: one audit row `dsr.find`, actor `cli`, data `{ address_hash, counts }`. Never the address.
+- `found`: one audit row `dsr.find`, actor `cli`, data `dsrAuditData` (stage 02 keys). Never the address.
 - **Report** (optional): `writeEncryptedFile` of stage 05 writes `{"format":"ea-dsr-report","version":1,"org_id","made_at","address","mails":[{id, mailbox_id, received_at, from_address, to_addresses, cc_addresses, subject, body_text, category}],"mentions":{"table.column":[ids]},"listed":{"delegates":[{id,name,email}],"sender_rules":[{id,kind,pattern}]},"open_actions":[ids]}`. `category` is the latest triage result. The address is in the file: the file is encrypted to the controller's key. `exists` as in stage 05; the audit row is written only after the file is complete.
 - **Hash** (plan F6): HMAC-SHA256 hex of the normalized address; key = HKDF-SHA256 of the base64-decoded `CREDENTIALS_KEY`, empty salt, info `ea/dsr-address/v1`, 32 bytes. Pure function; the CLI passes the config value.
-- **CLI.** `bun run org:dsr --org-id <uuid> --address <a> --find [--recipient <age1…> --out <path>]`. Stdout: `mails <n>`, one `mention <table.column> <n>` per non-zero key, `listed delegates <n>`, `listed sender_rules <n>`, `open actions <n>`, and `report <bytes> bytes` with a report. Never the address. Refusals → event `org_dsr_refused` with `reason` (`not_found`, `own_address`, `bad_address`, `exists`), exit 1. Usage errors (no mode, `--recipient` without `--out` or the reverse, bad recipient) → exit 2. Stage 08 adds `--erase`; a call with both modes is a usage error then.
+- **CLI.** `bun run org:dsr --org-id <uuid> --address <a> --find [--recipient <age1…> --out <path>]`. Stdout: `mails <n>`, one `mention <table.column> <n>` per non-zero key, `listed delegates <n>`, `listed sender_rules <n>`, `open actions <n>`, and `report <bytes> bytes` with a report. Never the address. Refusals → event `org_dsr_refused` with `reason` (`not_found`, `own_address`, `bad_address`, `exists`), exit 1. Usage errors (no mode, `--recipient` without `--out` or the reverse, bad recipient) → exit 2. Stage 08 adds `--erase`; both modes in one call is a usage error then.
 
 **Test** (integration, `privacy-dsr-find.test.ts`, seed of stage 06 test 2–5):
 
@@ -46,4 +48,4 @@ export function dsrAddressHash(credentialsKeyBase64: string, address: string): s
 
 **Done when.** Tests 1–8 pass and the plan Proof (server chain) prints `PROOF_OK`.
 
-**Out of scope.** Erase (stage 08); the security-log kind and the runbook (stage 09).
+**Out of scope.** Erase (stages 08, 09); the security-log kind and the runbook (stage 10).

@@ -13,6 +13,7 @@ An owner can delete their organization and all its data from the Account card, w
 - One privileged database function deletes an organization; the route, the dialog and `org:delete` use it.
 - `org:export`: an `age`-encrypted file of every table that the export registry names.
 - `org:dsr --find | --erase` over one address registry, with tombstones that sync, rescan and backfill skip.
+- Erase also blanks stored Telegram digests that listed the erased mail.
 - Security-log kinds for export, refused delete and DSR; docs and runbook; the VPS smoke check.
 
 ## Out of scope
@@ -31,14 +32,14 @@ An owner can delete their organization and all its data from the Account card, w
 
 ## Slices
 
-Eleven stages, one worker job each; stage 11 is run by the coordinator. Stage 01 is the only migration; stage 05 is the only `bun.lock` change. Order and parallel lanes: [plan.md](plan.md) § How to run. No owner checkpoint.
+Twelve stages, one worker job each; stage 12 is run by the coordinator. Stage 01 is the only migration; stage 05 is the only `bun.lock` change. Order and parallel lanes: [plan.md](plan.md) § How to run. No owner checkpoint.
 
 ## Sequenced
 
 - Plan after: F105 (identity A; its tables `auth_two_factors` and `memberships.break_glass` are on `master` and the deletion test covers them) and F099 (the security-log registry, done).
 - Build after: F082 and F098 (E7-T1), both in `spec/features/done/`.
-- Gate: —. Advisory file overlap: F105 stage 11 (Account card) with stage 04, F105 stage 13 (security-log registry and texts) with stage 09; on a land conflict, merge `master` and prove again.
+- Gate: —. Advisory file overlap: F105 stage 11 (Account card) with stage 04, F105 stage 13 (security-log registry and texts) with stage 10; on a land conflict, merge `master` and prove again.
 
 ## Notes
 
-Defaults for the owner: [questions.md](questions.md) (13 items, 8 important). Sources: `docs/product/stage-2/epics/E07-platform-and-trust.md`, `E07-discovery-notes.md` §4, §11; `tasks/planned/s6c-account-data.md` (history). F078 (expired `auth_verifications` cleanup) is done separately and not part of this ticket.
+Defaults for the owner: [questions.md](questions.md) (17 items, 11 important). Sources: `docs/product/stage-2/epics/E07-platform-and-trust.md`, `E07-discovery-notes.md` §4, §11; `tasks/planned/s6c-account-data.md` (history). F078 (expired `auth_verifications` cleanup) is done separately and not part of this ticket.

@@ -1,6 +1,6 @@
-# F106 stage 11 — VPS deploy and smoke checks
+# F106 stage 12 — VPS deploy and smoke checks
 
-Part of [`../plan.md`](../plan.md). `[risky]` (the real system). **The coordinator runs this stage itself** (`spec/build.md`: VPS steps are pre-approved; backup first, name the rollback target, verify after). No worker job. Needs stages 01–10 landed and the `master` CI run of the last land green.
+Part of [`../plan.md`](../plan.md). `[risky]` (the real system). **The coordinator runs this stage itself** (`spec/build.md`: VPS steps are pre-approved; backup first, name the rollback target, verify after). No worker job. Needs stages 01–11 landed and the `master` CI run of the last land green.
 
 **Rule of this stage:** no command deletes, erases or exports data of the pilot organization. Every check uses a throwaway test organization made in step 1 of the checks.
 

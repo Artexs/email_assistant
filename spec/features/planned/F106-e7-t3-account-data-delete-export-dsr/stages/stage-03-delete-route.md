@@ -13,7 +13,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (auth, data delete).
 - Flag `org_delete`: `{ default: false, description: "Delete the organization in the Account card (owners).", epic: "E7-T3", removeBy: "2027-03-01" }`. Stage 04 reads it from `/api/me` `features`.
 - `orgDeleteRequestSchema = z.object({ password: z.string().min(1).max(128), confirmName: z.string().min(1).max(200) })`; `orgDeleteResponseSchema = z.object({ mailboxAddresses: z.array(z.string()) })` in `@ea/core/web`.
 - `PrivacyRouteDeps.verifyPassword(headers: Headers, password: string): Promise<boolean>`: `web.ts` fills it with `auth.api.verifyPassword({ body: { password }, headers })` (plan F4); `APIError` with `INVALID_PASSWORD` → false; any other error is thrown (500).
-- `PrivacyRouteDeps.lockout`: the `LockoutStore` of `platform/auth-lockout.ts` that sign-in uses, and the same lock follow-up as a failed sign-in (the `web.login_locked` audit row and the lock mail rule). Reuse the sign-in failure path; do not copy it.
+- `recordPasswordFailure(deps: { lockout: LockoutStore; now: () => Date; onEvent: AuthDeps["onEvent"]; sendLockoutMail?: AuthDeps["sendLockoutMail"] }, user: { id: string; email: string }): Promise<void>`, exported from `platform/auth-lockout.ts`: the body of the private sign-in failure counting in `platform/auth.ts` (count, lock, `web.login_locked` event, lock mail rule), moved out of the hook. The sign-in hook and the route both call it (review 1, N10). `PrivacyRouteDeps` gets `lockout` and this function's deps from `web.ts`.
 - `ApiErrorCode` (core) gets `wrong_name`, `wrong_password` and `locked`; stage 04 maps them to texts.
 - `SUSPENDED_WRITE_ALLOW` gets `{ method: "DELETE", path: /^\/api\/organization$/ }` (S6a decision S2: a paused account can still delete itself).
 
@@ -25,7 +25,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (auth, data delete).
 4. Body invalid → the answer that the other `/api` write routes give for a bad body.
 5. `orgNameMatches(name, confirmName)` false → `400 wrong_name`. No audit row, no lockout count.
 6. `lockout.isLocked(userId)` → `429 locked`.
-7. `verifyPassword` false → count the failure (step 6's store), write `org.delete_refused` with `{ reason: "wrong_password", via: "web" }` and the user id as actor, `400 wrong_password`.
+7. `verifyPassword` false → `recordPasswordFailure`, write `org.delete_refused` with `{ reason: "wrong_password", via: "web" }` and the user id as actor, `400 wrong_password`.
 8. `deleteOrganization({ via: "web" })`; `not_found` → `404 not_found`; `name_mismatch` (renamed in between) → `400 wrong_name`; `deleted` → `200 { mailboxAddresses }` with a `Set-Cookie` that expires the Better Auth session cookie (`ea.session_token` with the attributes Better Auth sets; the worker reads the name from Better Auth at `HEAD`).
 
 A right password does not reset the lockout counter (only a sign-in does). The password, the typed name and the organization name never reach a log line, an error text or an audit row.
@@ -47,4 +47,4 @@ A right password does not reset the lockout counter (only a sign-in does). The p
 
 **Done when.** Tests 1–10 pass, `docs/capabilities` are not touched yet, and the plan Proof (server chain) prints `PROOF_OK`.
 
-**Out of scope.** The dialog (stage 04); the security-log kind (stage 09).
+**Out of scope.** The dialog (stage 04); the security-log kind (stage 10).
