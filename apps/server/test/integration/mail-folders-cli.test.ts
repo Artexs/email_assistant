@@ -13,6 +13,7 @@ const db = testDb();
 const repoRoot = resolve(import.meta.dir, "../../../..");
 const settingsScript = resolve(import.meta.dir, "../../src/scripts/mailbox-settings.ts");
 const at = new Date("2026-11-09T10:00:00.000Z");
+const later = new Date("2026-11-09T10:05:00.000Z");
 const offers = { key: "offers", path: "Oferty", role: "sort" } as const;
 
 afterAll(async () => {
@@ -37,8 +38,7 @@ async function runSettings(args: string[]) {
 
 describe("mailbox:settings sync-folder", () => {
   // The script passes a plain Db: the function opens its own transaction.
-  // Quarantined 2026-11-14: fails in CI without a code change. Fix: spec/features/planned/F126-mailbox-settings-sync-folder-test-off-then-on-with-a-plain-db-passes-every-time/
-  test.skip("off, then on with a plain Db: audit rows with actor cli, the cursor is null", async () => {
+  test("off, then on with a plain Db: audit rows with actor cli, the cursor is null", async () => {
     const created = await db.transaction().execute(async (trx) => {
       const box = await createOrgWithMailbox(trx);
       await ensureSyncFolders(trx, { orgId: box.orgId }, box.mailboxId, [offers], at);
@@ -54,7 +54,7 @@ describe("mailbox:settings sync-folder", () => {
     try {
       expect(await setSyncFolderEnabled(db, ctx, created.mailboxId, "offers", false, "cli", at)).toBe("changed");
       expect((await getSyncFolder(db, ctx, created.mailboxId, "offers"))?.enabled).toBe(false);
-      expect(await setSyncFolderEnabled(db, ctx, created.mailboxId, "offers", true, "cli", at)).toBe("changed");
+      expect(await setSyncFolderEnabled(db, ctx, created.mailboxId, "offers", true, "cli", later)).toBe("changed");
       const row = await getSyncFolder(db, ctx, created.mailboxId, "offers");
       expect({ enabled: row?.enabled, uv: row?.uidvalidity, last: row?.last_uid }).toEqual({
         enabled: true,
@@ -66,6 +66,7 @@ describe("mailbox:settings sync-folder", () => {
         .select(["actor", "data"])
         .where("org_id", "=", ctx.orgId)
         .where("event", "=", "mailbox.sync_folder_changed")
+        .orderBy("created_at")
         .execute();
       expect(audit.map((item) => item.actor)).toEqual(["cli", "cli"]);
       expect(audit.map((item) => item.data)).toEqual([
