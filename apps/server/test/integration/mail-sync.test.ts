@@ -466,6 +466,7 @@ describe("syncMailbox: incremental", () => {
         mode: "incremental",
         fetched: 2,
         stored: 2,
+        captureMissing: 0,
         uidUpdated: 0,
         returned: 0,
         relocated: 0,
