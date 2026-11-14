@@ -71,16 +71,16 @@ describe("bot texts", () => {
   test("the Polish reminder-set texts agree with the count", () => {
     const { taps } = textTables.pl.bot;
     expect([1, 2, 5, 22].map((n) => taps.setApproved(n, 3))).toEqual([
-      "⏳ 1 przypomnienie wyjdzie w ciągu minuty, pominięto: 3.",
-      "⏳ 2 przypomnienia wyjdą w ciągu minuty, pominięto: 3.",
-      "⏳ 5 przypomnień wyjdzie w ciągu minuty, pominięto: 3.",
-      "⏳ 22 przypomnienia wyjdą w ciągu minuty, pominięto: 3.",
+      "⏳ 1 przypomnienie wyjdzie w ciągu minuty (pominięto 3).",
+      "⏳ 2 przypomnienia wyjdą w ciągu minuty (pominięto 3).",
+      "⏳ 5 przypomnień wyjdzie w ciągu minuty (pominięto 3).",
+      "⏳ 22 przypomnienia wyjdą w ciągu minuty (pominięto 3).",
     ]);
     expect([1, 2, 5, 22].map((n) => taps.setApprovedHeld(n, 0, "NOTE"))).toEqual([
-      "⏳ Zatwierdzono 1 przypomnienie, pominięto: 0. NOTE; /status pokazuje szczegóły.",
-      "⏳ Zatwierdzono 2 przypomnienia, pominięto: 0. NOTE; /status pokazuje szczegóły.",
-      "⏳ Zatwierdzono 5 przypomnień, pominięto: 0. NOTE; /status pokazuje szczegóły.",
-      "⏳ Zatwierdzono 22 przypomnienia, pominięto: 0. NOTE; /status pokazuje szczegóły.",
+      "⏳ Zatwierdzono 1 przypomnienie (pominięto 0). NOTE; /status pokazuje szczegóły.",
+      "⏳ Zatwierdzono 2 przypomnienia (pominięto 0). NOTE; /status pokazuje szczegóły.",
+      "⏳ Zatwierdzono 5 przypomnień (pominięto 0). NOTE; /status pokazuje szczegóły.",
+      "⏳ Zatwierdzono 22 przypomnienia (pominięto 0). NOTE; /status pokazuje szczegóły.",
     ]);
     expect([1, 2, 5, 22].map((n) => taps.setRejected(n))).toEqual([
       "✖️ Pominięto 1 przypomnienie.",
@@ -137,5 +137,15 @@ describe("bot texts", () => {
     expect(pl(5)).toStartWith("Następna synchronizacja ruszy najpóźniej za 5 minut. ");
     expect(pl(12)).toStartWith("Następna synchronizacja ruszy najpóźniej za 12 minut. ");
     for (const text of [en(2), pl(2)]) expect(text).not.toContain(":");
+  });
+
+  // The edit of a card and the answer of a tap use one style for the same idea: the skipped count in parentheses.
+  test("the set tap answer and the set card edit write the skipped count the same way", () => {
+    const { taps } = textTables.pl.bot;
+    const { edit } = textTables.pl.approvals;
+    expect(taps.setApproved(2, 1)).toContain("(pominięto 1)");
+    expect(taps.setApprovedHeld(2, 1, "NOTE")).toContain("(pominięto 1)");
+    expect(edit.approvedSet("11:07", 2, 1)).toContain("(pominięto 1)");
+    expect(edit.rejectedSet("11:07", 2, 1)).toContain("(pominięto 1)");
   });
 });
