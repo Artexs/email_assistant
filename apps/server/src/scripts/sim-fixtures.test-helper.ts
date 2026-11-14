@@ -4,7 +4,9 @@ import { join, resolve } from "node:path";
 
 import { defaultWeekSpec, miniScenario, type CaseText, type PlanSpec, type Scenario, type Slot } from "@ea/core";
 
-import { parseSimArgs } from "./sim-args";
+import { describeError } from "../platform/errors";
+
+import { parseSimArgs, usage } from "./sim-args";
 import { runSim } from "./sim-commands";
 import { writeJson } from "./sim-files";
 
@@ -56,6 +58,20 @@ const scriptPath = resolve(import.meta.dir, "sim.ts");
 export function runSimCli(args: string[]): { code: number; stdout: string; stderr: string } {
   const result = Bun.spawnSync(["bun", scriptPath, ...args]);
   return { code: result.exitCode, stdout: result.stdout.toString(), stderr: result.stderr.toString() };
+}
+
+// Runs the same steps as sim.ts in this process. A child process costs about 0.4 s of Bun start-up per call,
+// and a test that runs the script a dozen times then needs about 4 s, near the 5 s default under load.
+export async function runSimInProcess(args: string[]): Promise<{ code: number; stdout: string; stderr: string }> {
+  const cmd = parseSimArgs(args);
+  if (cmd === undefined) return { code: 1, stdout: "", stderr: `${usage}\n` };
+  try {
+    const result = await runSim(cmd);
+    const stdout = result.lines.length > 0 ? `${result.lines.join("\n")}\n` : "";
+    return { code: result.code, stdout, stderr: "" };
+  } catch (error) {
+    return { code: 1, stdout: "", stderr: `sim failed: ${describeError(error)}\n` };
+  }
 }
 
 const sentences: Record<string, string> = {
