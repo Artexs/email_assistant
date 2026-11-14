@@ -53,8 +53,14 @@ async function withWhitelist(
       rules = await listSenderRules(db, ctx, move.mailboxId);
       rulesByMailbox.set(move.mailboxId, rules);
     }
-    const { mailboxId: _mailboxId, fromAddress, ...row } = move;
-    result.push({ ...row, whitelisted: matchSender(fromAddress, rules).whitelisted });
+    result.push({
+      emailId: move.emailId,
+      appliedAt: move.appliedAt,
+      folder: move.folder,
+      truth: move.truth,
+      vip: move.vip,
+      whitelisted: matchSender(move.fromAddress, rules).whitelisted,
+    });
   }
   return result;
 }
