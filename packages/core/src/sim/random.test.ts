@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { createRng, deriveSeed } from "./random";
+import { createRng, deriveSeed, largestRemainder, quota } from "./random";
 
 describe("createRng", () => {
   test("seed 97 gives the fixed first values", () => {
@@ -31,5 +31,21 @@ describe("deriveSeed", () => {
     expect(deriveSeed(97, "dev:urgent")).not.toBe(deriveSeed(97, "holdout:urgent"));
     expect(deriveSeed(97, "dev:urgent")).toBe(deriveSeed(97, "dev:urgent"));
     expect(deriveSeed(97, "dev:urgent")).not.toBe(deriveSeed(98, "dev:urgent"));
+  });
+});
+
+describe("largestRemainder and quota", () => {
+  test("counts add up to the total and follow the shares", () => {
+    expect(largestRemainder([0.6, 0.4], 20)).toEqual([12, 8]);
+    expect(largestRemainder([0.6, 0.4], 5)).toEqual([3, 2]);
+    expect(largestRemainder([0.5, 0.25, 0.25], 20)).toEqual([10, 5, 5]);
+    expect(largestRemainder([0.5, 0.25, 0.25], 1)).toEqual([1, 0, 0]);
+    expect(largestRemainder([0.3, 0.5, 0.2], 7).reduce((a, b) => a + b, 0)).toBe(7);
+  });
+
+  test("quota shuffles the items and keeps the counts", () => {
+    const out = quota(createRng(3), ["a", "b"], [0.6, 0.4], 10);
+    expect(out.filter((x) => x === "a")).toHaveLength(6);
+    expect(out).toHaveLength(10);
   });
 });
