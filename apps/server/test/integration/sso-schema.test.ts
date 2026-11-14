@@ -22,7 +22,10 @@ const UNIQUE = "23505";
 const CHECK = "23514";
 const RLS = "42501";
 
-type Org = { orgId: string; userId: string };
+interface Org {
+  orgId: string;
+  userId: string;
+}
 
 async function seedOrg(trx: Trx): Promise<Org> {
   const id = randomUUID();
@@ -38,14 +41,14 @@ async function seedOrg(trx: Trx): Promise<Org> {
 // A domain that no committed row of another test file can own.
 const freshDomain = () => `d${randomUUID().replaceAll("-", "")}.x.test`;
 
-type ProviderFields = {
+interface ProviderFields {
   issuer?: string;
   domain?: string;
   domain_verified?: boolean;
   domain_proof?: string | null;
   saml_config?: string | null;
   user_id?: string | null;
-};
+}
 
 async function insertProvider(trx: Trx, orgId: string, fields: ProviderFields = {}): Promise<void> {
   const issuer = fields.issuer ?? "https://idp.x.test";
@@ -92,7 +95,11 @@ async function insertSession(
   return id;
 }
 
-type SessionRow = { method: string; capped: boolean; left_s: number };
+interface SessionRow {
+  method: string;
+  capped: boolean;
+  left_s: number;
+}
 
 // `capped`: the end is exactly 12 h after the IdP sign-in. `left_s`: seconds from now to the end.
 async function readSession(trx: Trx, id: string): Promise<SessionRow> {
