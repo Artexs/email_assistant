@@ -15,6 +15,7 @@ import {
 } from "../../platform/llm";
 
 import { type CaseResult, evalStateFileName, parseCaseResults, runEval, toClassifierInput, toPrediction } from "./eval";
+import { firstEstimateUsd } from "./eval-pool";
 import { evalExitCode } from "./eval-report";
 import { PROMPT_VERSION } from "./prompts/classifier-v2";
 
@@ -707,6 +708,113 @@ describe("runEval worker pool", () => {
   test("without a budget the cost is zero and no cap shows", async () => {
     const report = await runEval(harness().deps(fakeLlm([answer("info")]).llm), { ...opts, cases: [makeCase()] });
     expect(report.cost).toEqual({ spentUsd: 0, capUsd: null, stoppedByBudget: false });
+  });
+
+  describe("the money cap", () => {
+    const budgetOf = (capUsd: number, callCostUsd: () => number | null = () => 0.0003) => ({
+      capUsd,
+      callCostUsd,
+      firstEstimateUsd: 0.0003,
+    });
+
+    test("failed attempts, retries included, are charged at the estimate", async () => {
+      const { llm, started } = delayedLlm(() => ({ ms: 1, step: soft() }));
+      const report = await runEval(harness().deps(llm), {
+        ...opts,
+        retries: 4,
+        cases: idCases(6),
+        budget: budgetOf(0.001),
+      });
+      // 3 attempts reach 0.0009; a 4th would pass the cap, so the case ends and the run stops.
+      expect(started).toHaveLength(3);
+      expect(report.cost.spentUsd).toBeCloseTo(0.0009, 12);
+      expect(report.cost.stoppedByBudget).toBe(true);
+      expect(report.cases).toHaveLength(1);
+      expect(report.cases[0]?.errorCode).toBe("http_503");
+    });
+
+    test("a blocked answer is a call: it is charged", async () => {
+      const { llm, started } = delayedLlm(() => ({ ms: 1, step: new LlmBlockedError("m") }));
+      const report = await runEval(harness().deps(llm), { ...opts, cases: idCases(8), budget: budgetOf(0.001) });
+      expect(started).toHaveLength(3);
+      expect(report.cost.spentUsd).toBeCloseTo(0.0009, 12);
+      expect(report.cost.stoppedByBudget).toBe(true);
+    });
+
+    test("onSpend sees every charge of the run", async () => {
+      const { llm } = delayedLlm((id) => ({ ms: 1, step: id === "c00" ? soft() : answer("info") }));
+      const seen: number[] = [];
+      const report = await runEval(harness().deps(llm), {
+        ...opts,
+        retries: 1,
+        cases: idCases(2),
+        budget: { ...budgetOf(1), onSpend: (usd) => seen.push(usd) },
+      });
+      // one failed attempt, then two answers
+      expect(seen).toHaveLength(3);
+      expect(seen.reduce((sum, usd) => sum + usd, 0)).toBeCloseTo(report.cost.spentUsd, 12);
+    });
+
+    test("an earlier blocked result of a resumed run is charged at the estimate", async () => {
+      const first = await runEval(harness().deps(fakeLlm([new LlmBlockedError("m")]).llm), {
+        ...opts,
+        cases: idCases(1),
+      });
+      expect(first.cases[0]).toMatchObject({ usage: null, errorCode: null, source: "llm" });
+      const { llm } = delayedLlm(() => ({ ms: 1, step: answer("info") }));
+      const report = await runEval(harness().deps(llm), {
+        ...opts,
+        cases: idCases(3),
+        done: first.cases,
+        budget: budgetOf(1),
+      });
+      expect(report.cost.spentUsd).toBeCloseTo(0.0003 * 3, 12);
+    });
+
+    test("a NaN, infinite or unknown cost is charged at the estimate; a negative cost counts as zero", async () => {
+      for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, null]) {
+        const { llm, started } = delayedLlm(() => ({ ms: 1, step: answer("info") }));
+        const report = await runEval(harness().deps(llm), {
+          ...opts,
+          cases: idCases(8),
+          budget: budgetOf(0.001, () => bad),
+        });
+        expect(started).toHaveLength(3);
+        expect(report.cost.spentUsd).toBeCloseTo(0.0009, 12);
+        expect(report.cost.stoppedByBudget).toBe(true);
+      }
+      const { llm } = delayedLlm(() => ({ ms: 1, step: answer("info") }));
+      const negative = await runEval(harness().deps(llm), {
+        ...opts,
+        cases: idCases(4),
+        budget: budgetOf(0.001, () => -5),
+      });
+      expect(negative.cost.spentUsd).toBe(0);
+      expect(negative.complete).toBe(true);
+    });
+
+    test("a zero, NaN or negative estimate, or a NaN cap, is refused", async () => {
+      const { llm, started } = delayedLlm(() => ({ ms: 1, step: answer("info") }));
+      for (const budget of [
+        { ...budgetOf(1), firstEstimateUsd: 0 },
+        { ...budgetOf(1), firstEstimateUsd: Number.NaN },
+        { ...budgetOf(1), firstEstimateUsd: -1 },
+        budgetOf(Number.NaN),
+      ]) {
+        await expect(runEval(harness().deps(llm), { ...opts, cases: idCases(2), budget })).rejects.toThrow(
+          "budget needs a finite cap"
+        );
+      }
+      expect(started).toHaveLength(0);
+    });
+
+    test("firstEstimateUsd needs a price today: unknown and inherited names give null", () => {
+      const at = new Date("2026-11-14T12:00:00Z");
+      expect(firstEstimateUsd("gemini-3.5-flash-lite", at)).toBeGreaterThan(0);
+      expect(firstEstimateUsd("gpt-6-luna", at)).toBeGreaterThan(0);
+      expect(firstEstimateUsd("no-such-model", at)).toBeNull();
+      expect(firstEstimateUsd("toString", at)).toBeNull();
+    });
   });
 });
 

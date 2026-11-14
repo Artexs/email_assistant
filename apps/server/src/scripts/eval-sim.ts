@@ -2,11 +2,12 @@ import { randomUUID } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-import { costPerMail, llmPrices } from "@ea/core";
+import { costPerMail } from "@ea/core";
 
 import {
   evalExitCode,
   evalStateFileName,
+  firstEstimateUsd,
   parseCaseResults,
   prompts,
   renderEvalReport,
@@ -19,6 +20,7 @@ import { createLog } from "../platform/log";
 import { type EvalOptions, evalUsage } from "./eval-args";
 import {
   acquireStateLock,
+  appendLedgerLine,
   defaultLedgerPath,
   ledgerLine,
   MONTH_CAP_USD,
@@ -33,9 +35,6 @@ const log = createLog("eval");
 
 const simRoot = resolve(import.meta.dir, "../../../../evals/sim");
 const runsDir = resolve(import.meta.dir, "../../../../evals/.runs");
-
-// The firstEstimateUsd of the budget rule: the price of 2,000 tokens in and 300 tokens out.
-const FIRST_ESTIMATE_TOKENS = { in: 2000, out: 300 };
 
 function out(text: string): void {
   process.stdout.write(`${text}\n`);
@@ -69,8 +68,10 @@ export async function runSim(options: EvalOptions): Promise<number> {
   const model = row.model;
   const effort = row.reasoningEffort;
 
-  // A model without a price cannot be held to a cap.
-  if (!Object.hasOwn(llmPrices, model)) {
+  // A model without a price today cannot be held to a cap, and a zero estimate would mean no cap.
+  const startedAt = new Date();
+  const estimateUsd = firstEstimateUsd(model, startedAt);
+  if (estimateUsd === null) {
     log.error(`no price for model ${model}: add it to llmPrices before a sim run`);
     return 1;
   }
@@ -91,10 +92,15 @@ export async function runSim(options: EvalOptions): Promise<number> {
     `corpus ${scenario} v${loaded.version} part ${part}: ${cases.length} cases, skipped dropped ${loaded.skipped.dropped} unwritten ${loaded.skipped.unwritten} sent ${loaded.skipped.sent}`
   );
 
-  const ledgerPath =
-    options["spend-ledger"] ??
-    defaultLedgerPath({ XDG_STATE_HOME: process.env.XDG_STATE_HOME, HOME: process.env.HOME });
-  const startedAt = new Date();
+  let ledgerPath: string;
+  try {
+    ledgerPath =
+      options["spend-ledger"] ??
+      defaultLedgerPath({ XDG_STATE_HOME: process.env.XDG_STATE_HOME, HOME: process.env.HOME });
+  } catch (error) {
+    log.error(error instanceof Error ? error.message : "no ledger path");
+    return 1;
+  }
   const cap = runCap({
     requested: options.budgetUsd,
     monthSpent: monthSpend(readLedger(ledgerPath), monthOf(startedAt)),
@@ -147,7 +153,6 @@ export async function runSim(options: EvalOptions): Promise<number> {
         now: () => new Date(),
         onResult: async (result) => {
           appendFileSync(stateFile, `${JSON.stringify(result)}\n`);
-          if (result.usage !== null) newSpendUsd += callCostUsd(result.usage, new Date()) ?? 0;
         },
       },
       {
@@ -163,7 +168,11 @@ export async function runSim(options: EvalOptions): Promise<number> {
         budget: {
           capUsd: cap,
           callCostUsd,
-          firstEstimateUsd: costPerMail(model, FIRST_ESTIMATE_TOKENS.in, FIRST_ESTIMATE_TOKENS.out, startedAt) ?? 0,
+          firstEstimateUsd: estimateUsd,
+          // Every charge of the run, also a failed attempt: the ledger line holds the new spend.
+          onSpend: (usd) => {
+            newSpendUsd += usd;
+          },
         },
       }
     );
@@ -183,8 +192,7 @@ export async function runSim(options: EvalOptions): Promise<number> {
     throw error;
   } finally {
     // One ledger line per run, also after a stop or an error: the new spend only.
-    mkdirSync(dirname(ledgerPath), { recursive: true });
-    appendFileSync(
+    appendLedgerLine(
       ledgerPath,
       ledgerLine({ runId: randomUUID(), at: new Date(), usd: newSpendUsd, label: `${scenario}-${part}-${model}` })
     );

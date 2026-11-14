@@ -41,7 +41,7 @@ import {
 import { createLog } from "../../platform/log";
 
 import { type ClassifierEmail, classifyEmail } from "./classifier";
-import { type EvalBudget, runPool } from "./eval-pool";
+import { type AttemptHooks, type EvalBudget, runPool } from "./eval-pool";
 import { prompts } from "./prompts";
 import { type ClassifierDelegate, EXCERPT_CHARS } from "./prompts/classifier-v2";
 import type { MailKind } from "./repo";
@@ -329,7 +329,8 @@ async function classifyWithRetry(
   c: EvalCase,
   allowed: Category[],
   sender: { whitelisted: boolean; vip: boolean; noreply: boolean },
-  input: { model: string; retries: number }
+  input: { model: string; retries: number },
+  attempts?: AttemptHooks
 ): Promise<Classified> {
   for (let attempt = 0; ; attempt += 1) {
     try {
@@ -343,8 +344,10 @@ async function classifyWithRetry(
       return { kind: "ok", result };
     } catch (error) {
       if (error instanceof LlmConfigError) throw error;
+      // Every other failed attempt may be billed: the pool charges it, and may refuse the retry at the cap.
+      attempts?.failed();
       if (error instanceof LlmBlockedError) return { kind: "blocked" };
-      if (error instanceof SoftError && attempt < input.retries) {
+      if (error instanceof SoftError && attempt < input.retries && (attempts?.mayRetry() ?? true)) {
         const wait = RETRY_WAITS_MS[Math.min(attempt, RETRY_WAITS_MS.length - 1)] as number;
         log.warn(`soft error on case ${c.id}, retry ${attempt + 1} after ${wait} ms`);
         await deps.sleep(wait);
@@ -379,7 +382,12 @@ function isRuleSpam(c: EvalCase): boolean {
   return rulesOf(c).kind === "spam";
 }
 
-async function runCase(deps: Deps, c: EvalCase, input: { model: string; retries: number }): Promise<CaseResult> {
+async function runCase(
+  deps: Deps,
+  c: EvalCase,
+  input: { model: string; retries: number },
+  attempts?: AttemptHooks
+): Promise<CaseResult> {
   const expected = c.expected.category;
   const rules = rulesOf(c);
   const base = { id: c.id, kind: c.kind, expected };
@@ -407,7 +415,8 @@ async function runCase(deps: Deps, c: EvalCase, input: { model: string; retries:
     c,
     rules.allowed,
     { whitelisted: rules.whitelisted, vip: rules.vip, noreply: rules.noreply },
-    input
+    input,
+    attempts
   );
   if (classified.kind === "error") {
     log.warn(`case ${c.id} failed: ${classified.code}`);
@@ -481,7 +490,7 @@ export async function runEval(
     errorStopReason: STOP_REASON,
     now: startedAt,
     usesLlm: (c) => !isRuleSpam(c),
-    run: (c) => runCase(deps, c, input),
+    run: (c, attempts) => runCase(deps, c, input, attempts),
     onResult: async (result) => {
       await deps.onResult?.(result);
       log.info(`case ${result.id}: ${result.finalCategory ?? `error ${result.errorCode}`}`);

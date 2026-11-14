@@ -1,10 +1,10 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
-import { acquireStateLock, defaultLedgerPath, ledgerLine, monthSpend, runCap } from "./eval-ledger";
+import { acquireStateLock, appendLedgerLine, defaultLedgerPath, ledgerLine, monthSpend, runCap } from "./eval-ledger";
 
 let dir = "";
 beforeEach(() => {
@@ -23,6 +23,18 @@ describe("monthSpend", () => {
       ledgerLine({ runId: "c", at: new Date("2026-10-31T23:59:59Z"), usd: 3, label: "lab-01-dev-m" }),
     ].join("");
     expect(monthSpend(text, "2026-11")).toBeCloseTo(0.9, 10);
+  });
+
+  test("a negative or non-finite usd never lowers the month spend", () => {
+    const at = "2026-11-03T10:00:00Z";
+    const text = [
+      `{"runId":"a","at":"${at}","usd":0.4,"label":"l"}`,
+      `{"runId":"b","at":"${at}","usd":-5,"label":"l"}`,
+      `{"runId":"c","at":"${at}","usd":1e999,"label":"l"}`,
+      `{"runId":"d","at":"${at}","usd":"NaN","label":"l"}`,
+      `{"runId":"e","at":"${at}","usd":null,"label":"l"}`,
+    ].join("\n");
+    expect(monthSpend(text, "2026-11")).toBeCloseTo(0.4, 12);
   });
 
   test("a line has the run id, the ISO time, the dollars and the label", () => {
@@ -65,6 +77,22 @@ describe("acquireStateLock", () => {
     release();
   });
 
+  test("a takeover leaves no parked lock behind and the new lock holds the new time", () => {
+    const state = join(dir, "taken.jsonl");
+    writeFileSync(`${state}.lock`, `${new Date(now.getTime() - 7 * 3_600_000).toISOString()}\n`);
+    const release = acquireStateLock(state, now, { fresh: true });
+    expect(readFileSync(`${state}.lock`, "utf8").trim()).toBe(now.toISOString());
+    expect(readdirSync(dir).filter((name) => name.includes(".stale-"))).toEqual([]);
+    release();
+    expect(readdirSync(dir)).toEqual([]);
+  });
+
+  test("a lock with unreadable content is never taken over", () => {
+    const state = join(dir, "odd.jsonl");
+    writeFileSync(`${state}.lock`, "garbage\n");
+    expect(() => acquireStateLock(state, now, { fresh: true })).toThrow(`${state}.lock`);
+  });
+
   test("a lock younger than 6 h is never taken over", () => {
     const state = join(dir, "young.jsonl");
     writeFileSync(`${state}.lock`, `${new Date(now.getTime() - 3_600_000).toISOString()}\n`);
@@ -72,7 +100,40 @@ describe("acquireStateLock", () => {
   });
 });
 
+describe("appendLedgerLine", () => {
+  test("a file without a final newline gets one first; a new file and a clean file get none extra", () => {
+    const path = join(dir, "deep", "spend.jsonl");
+    const first = ledgerLine({ runId: "a", at: new Date("2026-11-03T10:00:00Z"), usd: 0.1, label: "l" });
+    appendLedgerLine(path, first);
+    expect(readFileSync(path, "utf8")).toBe(first);
+    const second = ledgerLine({ runId: "b", at: new Date("2026-11-03T11:00:00Z"), usd: 0.2, label: "l" });
+    appendLedgerLine(path, second);
+    expect(readFileSync(path, "utf8")).toBe(`${first}${second}`);
+
+    const cut = join(dir, "cut.jsonl");
+    writeFileSync(cut, first.trimEnd());
+    appendLedgerLine(cut, second);
+    expect(readFileSync(cut, "utf8")).toBe(`${first}${second}`);
+    expect(monthSpend(readFileSync(cut, "utf8"), "2026-11")).toBeCloseTo(0.3, 12);
+  });
+});
+
 describe("defaultLedgerPath", () => {
+  test("an empty XDG_STATE_HOME or HOME counts as unset", () => {
+    expect(defaultLedgerPath({ XDG_STATE_HOME: "", HOME: "/home/x" })).toBe(
+      "/home/x/.local/state/email-assistant/eval-spend.jsonl"
+    );
+    expect(defaultLedgerPath({ XDG_STATE_HOME: "  ", HOME: "/home/x" })).toBe(
+      "/home/x/.local/state/email-assistant/eval-spend.jsonl"
+    );
+  });
+
+  test("no usable HOME and no XDG_STATE_HOME refuses: never a relative path or /.local", () => {
+    for (const env of [{}, { HOME: "" }, { XDG_STATE_HOME: "", HOME: "" }, { HOME: "relative/home" }]) {
+      expect(() => defaultLedgerPath(env)).toThrow("no place for the spend ledger");
+    }
+  });
+
   test("HOME gives the .local/state path; XDG_STATE_HOME wins", () => {
     expect(defaultLedgerPath({ HOME: "/home/x" })).toBe("/home/x/.local/state/email-assistant/eval-spend.jsonl");
     expect(defaultLedgerPath({ HOME: "/home/x", XDG_STATE_HOME: "/s" })).toBe("/s/email-assistant/eval-spend.jsonl");

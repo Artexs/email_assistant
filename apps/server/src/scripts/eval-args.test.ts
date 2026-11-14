@@ -12,6 +12,10 @@ describe("parseEvalArgs", () => {
     expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--org-id", org])).toBeUndefined();
   });
 
+  test("--state with --sim is a usage error: the corpus fixes the state file", () => {
+    expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--state", "x.jsonl"])).toBeUndefined();
+  });
+
   test("--sim needs --part dev|holdout|week", () => {
     expect(parseEvalArgs(["--sim", "lab-01"])).toBeUndefined();
     expect(parseEvalArgs(["--sim", "lab-01", "--part", "other"])).toBeUndefined();
