@@ -12,3 +12,8 @@ Steps after the owner says "start":
 6. 2026-11-15 01:10: rule f094-next-day: the next-day VPS check, then `limen ticket done F094`.
 7. Land rules: `limen land <done job id> --yes [--keep-open]`; if the continue job has no commits, merge the parent branch by hand (`limen ticket check`, `git merge --no-ff`), then `limen ticket done FNNN`. Read the land output before closing a ticket. For history-merge branches, land only when master equals the branch base.
 8. Notes with follow-ups: notes/2026-11-13-s2-foundation-followups.md. State summaries: notes/2026-11-14-overnight-summary.md, notes/2026-11-13-stage-2-foundation-state.md.
+
+## Incident 2026-11-14 ~12:40 UTC: /tmp had no free inodes
+`/tmp` (tmpfs, 1,048,576 inodes) was 100% full of inodes: `/tmp/node-compile-cache` held 823,000 files; old review folders (`f086-review`, `f090-review`, `f091-review`, `ea-s5-*`) held about 200,000. Jobs fail with ENOSPC when this happens (a review reported TLS/SMTP tests failing). I deleted those folders (4% used after). If it returns: `df -i /tmp`, then `rm -rf /tmp/node-compile-cache`. A follow-up idea: set `NODE_COMPILE_CACHE` to a folder outside /tmp or clear it in `scripts/limen-prepare.sh`.
+## Landing rule (my own mistake, three times today)
+Run `limen land` ALONE. Read its last lines. "Recorded preimage" or CONFLICT = not landed: resume the worker with "git merge master, keep both sides, re-run the proof"; do NOT drop its databases and do NOT spawn the next stage until it landed.
