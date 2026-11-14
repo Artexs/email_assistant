@@ -18,7 +18,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 - `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟠 ACTIVE): The server image, CI and local checks run one current Bun (1.4.x)
 - `F095-e1-close-the-mvp` (🔴 PLANNED, needs plan): E1 Close the MVP (capability map, docs boundary, NEXT sweep of the old planned tickets); sequenced after — (F077 landed); gate Owner: F047 A phone test; vision text OK (owner-owned).
-- `F096-e8-lr-log-rotation` (🔴 PLANNED, plan landed): Docker rotates every Compose service log (5 × 10 MB), a CI check keeps it; one stage; sequenced after none; gate —.
+- `F096-e8-lr-log-rotation` (🔴 PLANNED, plan landed): Docker rotates every Compose service log (5 × 10 MB), a CI check keeps it; one stage, closed after the check at the next VPS deploy; sequenced after none; gate —.
 - `F097-e2a-offline-lab` (🔴 PLANNED, needs plan): E2a Offline lab; sequenced after E1; gate Owner audit of 50 cases per corpus version.
 - `F098-e7-t1-polish-ui-i18n-frame-first` (🔴 PLANNED, needs plan): E7-T1 Polish UI (i18n frame first); sequenced after F082; gate —.
 - `F099-e7-t2-platform-controls-send-limits-feature-flags-operator-console-security-log` (🔴 PLANNED, needs plan): E7-T2 Platform controls (send limits, feature flags, operator console, security log); sequenced after F082; gate —.

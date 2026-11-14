@@ -6,7 +6,7 @@ opened: 2026-11-13
 
 ## Outcome
 
-Docker rotates the log of every Compose service: each container keeps at most 5 files of 10 MB, so a log flood cannot fill the VPS disk. A check script fails when a service in any Compose file has no rotation, and CI runs it. The VPS gets the change with its next normal deploy; the deploy runbook checks it.
+Docker rotates the log of every Compose service: each container keeps at most 5 files of 10 MB, so a log flood cannot fill the VPS disk. A check script fails when a service in a Compose file of `deploy/` has no rotation, or when a new Compose file there is not checked, and CI runs it. The VPS gets the change with its next normal deploy; the deploy runbook checks it, and the ticket closes after that check.
 
 ## Scope
 
@@ -23,13 +23,15 @@ Docker rotates the log of every Compose service: each container keeps at most 5 
 
 ## Acceptance
 
-- `bash deploy/check-logging.sh` exits 0 on the repo and exits 1 on each broken copy of `plan.md` § Done when.
+- `bash deploy/check-logging.sh` prints `logging ok: db greenmail server` and exits 0 on the repo.
+- It exits 1 on each broken copy of stage 01 Step 2, tests 2–4 and 7.
 - The CI `image` job runs the check on `master` and stays green.
-- `plan.md` § Done when, items 1–5.
+- After the next VPS deploy, `docker inspect` shows `json-file 10m 5` for `db` and `server`.
+- `plan.md` § Done when, items 1–6.
 
 ## Slices
 
-One stage, one worker job: [`stages/stage-01-compose-rotation.md`](stages/stage-01-compose-rotation.md). No migration, no `bun.lock` change: it may run next to any other build. No owner checkpoint. How to run: `plan.md` § How to run.
+One stage, one worker job: [`stages/stage-01-compose-rotation.md`](stages/stage-01-compose-rotation.md), landed with `--keep-open`. Then a coordinator check at the next VPS deploy closes the ticket. No migration, no `bun.lock` change: it may run next to any other build. No owner checkpoint. How to run: `plan.md` § How to run.
 
 ## Sequenced
 
