@@ -231,7 +231,7 @@ describe("findSubjectData", () => {
 
   test("a bad address or an unknown organization is refused with no audit row", async () => {
     const w = await seed();
-    for (const address of ["p@x.test.", "p@.test", "p@x..test", `p@x.test​`, "ｐ@x.test", "p@x", "no at"]) {
+    for (const address of ["p@x.test.", "p@.test", "p@x..test", "p@x.test\u200b", "ｐ@x.test", "p@x", "no at"]) {
       expect(await findSubjectData(db, { orgId: w.orgId, address, credentialsKey: KEY })).toEqual({
         kind: "bad_address",
       });
