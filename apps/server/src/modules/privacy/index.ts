@@ -9,3 +9,4 @@ export {
   type AddressRule,
 } from "./address-map";
 export { matchSubject, type DsrMatch } from "./dsr-match";
+export { privacyRoutes, type PrivacyRouteDeps } from "./routes";

@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Skeleton } from "../ui/skeleton";
 import { Switch } from "../ui/switch";
 import { SecurityLog } from "./SecurityLog";
+import { TwoFactorSection } from "./TwoFactorSection";
 
 type Field = "current" | "password" | "repeat";
 type FieldErrors = Partial<Record<Field, TextKey>>;
@@ -259,6 +260,9 @@ export function AccountCard() {
             </p>
           )}
         </form>
+        <div className="border-t pt-4">
+          <TwoFactorSection />
+        </div>
         <div className="flex flex-col items-start gap-2 border-t pt-4">
           <div className="w-full">
             <SessionsList />

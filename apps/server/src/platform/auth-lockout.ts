@@ -1,6 +1,11 @@
 import { sql } from "kysely";
 
+import type { AuthDeps } from "./auth";
 import type { Db } from "./db";
+import { errorFields } from "./errors";
+import { createLog } from "./log";
+
+const log = createLog("auth");
 
 // L12: a fixed window. The 10th failure inside 15 minutes locks the user for 15 minutes.
 export const LOCKOUT_MAX_FAILURES = 10;
@@ -80,4 +85,32 @@ export function createLockoutStore(db: Db): LockoutStore {
       return result.rows.length > 0;
     },
   };
+}
+
+export interface PasswordFailureDeps {
+  lockout: LockoutStore;
+  now: () => Date;
+  onEvent: AuthDeps["onEvent"];
+  sendLockoutMail?: AuthDeps["sendLockoutMail"];
+}
+
+// One wrong password of a user. The sign-in hook and the delete route count it the same way.
+// A failure during a lock is not counted. The 10th failure in the window locks the user, writes the
+// `web.login_locked` event and sends the lock mail (at most 3 per UTC day). An error of the event is logged, not thrown.
+export async function recordPasswordFailure(
+  deps: PasswordFailureDeps,
+  user: { id: string; email: string }
+): Promise<void> {
+  const { lockout, now } = deps;
+  if (await lockout.isLocked(user.id, now())) return;
+  const lock = await lockout.recordFailure(user.id, now());
+  if (lock === null) return;
+  try {
+    await deps.onEvent("login_locked", user.id, { locked_until: lock.lockedUntil.toISOString() });
+  } catch (error) {
+    log.error("auth_event_failed", { kind: "login_locked", ...errorFields(error) });
+  }
+  if (deps.sendLockoutMail && (await lockout.claimMail(user.id, now()))) {
+    deps.sendLockoutMail({ userId: user.id, email: user.email });
+  }
 }

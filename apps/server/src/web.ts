@@ -25,6 +25,7 @@ import {
   WEB_MAIL_TIMEOUTS,
 } from "./modules/mail";
 import { operatorRoutes } from "./modules/operator";
+import { privacyRoutes, type PrivacyRouteDeps } from "./modules/privacy";
 import { activityRoutes, statsRoutes } from "./modules/reports";
 import {
   getUserAuthProfile,
@@ -36,7 +37,14 @@ import {
   type TenancyRouteDeps,
 } from "./modules/tenancy";
 import { goNoGoFor, setCategoryAutoWithGate, triageRoutes } from "./modules/triage";
-import { createAuth, listUserSessions, type AuthDeps, type AuthEventKind } from "./platform/auth";
+import {
+  createAuth,
+  expiredSessionCookie,
+  listUserSessions,
+  verifyOwnPassword,
+  type AuthDeps,
+  type AuthEventKind,
+} from "./platform/auth";
 import { createLockoutStore } from "./platform/auth-lockout";
 import { createAuthMailer, createAuthMailTasks } from "./platform/auth-mail";
 import type { AuthMailKind } from "./platform/auth-mail-texts";
@@ -257,7 +265,8 @@ export function apiRouters(
   extras: WebExtras,
   now: () => Date,
   sessions: TenancyRouteDeps["sessions"],
-  backupCodes: TenancyRouteDeps["backupCodesLeft"]
+  backupCodes: TenancyRouteDeps["backupCodesLeft"],
+  privacy: Omit<PrivacyRouteDeps, "db" | "now">
 ): NonNullable<WebDeps["routers"]> {
   const scopes = scopeInfos(config);
   const allowLocalHosts = mailAllowLocal(config);
@@ -275,6 +284,7 @@ export function apiRouters(
         ...onboardingDeps(db, extras.botUsername),
       })
     );
+    api.route("/", privacyRoutes({ db, now, ...privacy }));
     api.route("/operator", operatorRoutes({ db, now, planHooks: orgPlanHooks(db) }));
     api.route(
       "/",
@@ -332,25 +342,28 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
       : "auth mail: on (reset by e-mail is open)"
   );
   if (config.AUTH_PWNED_CHECK === "off") log.warn("AUTH_PWNED_CHECK=off: leaked passwords are not refused");
+  const lockout = createLockoutStore(db);
+  const onEvent = auditWebEvent(db);
+  const sendLockoutMail: AuthDeps["sendLockoutMail"] =
+    mailTasks === null
+      ? undefined
+      : ({ userId, email }) => {
+          mailTasks.start({ kind: "lockout", userId, to: email, url: `${baseUrl.origin}/forgot` });
+        };
   const handle = createAuth({
     databaseUrl: config.DATABASE_URL,
     baseUrl: config.WEB_BASE_URL,
     secret: config.WEB_AUTH_SECRET ?? "", // the config check guarantees it
     trustedOrigins: origins,
-    onEvent: auditWebEvent(db),
+    onEvent,
     onTermsAccepted: termsAcceptedHandler(db, () => new Date()),
     resetLinkTtlSeconds: 3_600,
-    lockout: createLockoutStore(db),
+    lockout,
     keepsTwoFactor: (userId) => isBreakGlassOwner(db, userId),
     ...(config.AUTH_PWNED_CHECK === "on"
       ? { pwnedCheck: (password: string) => checkPwnedPassword(password, { fetch, timeoutMs: 5_000 }) }
       : {}),
-    sendLockoutMail:
-      mailTasks === null
-        ? undefined
-        : ({ userId, email }) => {
-            mailTasks.start({ kind: "lockout", userId, to: email, url: `${baseUrl.origin}/forgot` });
-          },
+    sendLockoutMail,
     sendResetPassword:
       mailTasks === null
         ? undefined
@@ -392,7 +405,14 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
       extras,
       now,
       (userId) => listUserSessions(handle, userId),
-      (userId) => backupCodesLeft(handle, userId)
+      (userId) => backupCodesLeft(handle, userId),
+      {
+        lockout,
+        onEvent,
+        sendLockoutMail,
+        verifyPassword: (headers, password) => verifyOwnPassword(handle, headers, password),
+        expiredSessionCookie: () => expiredSessionCookie(handle),
+      }
     ),
     operatorUserIds: operators,
     isOrgSuspended: (orgId) => isOrgSuspended(db, { orgId }),

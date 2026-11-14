@@ -12,7 +12,7 @@ import { apiRouters } from "../../src/web";
 
 import { testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
-import { as, noBackupCodes, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
+import { as, noBackupCodes, noPrivacy, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
 // RLS safety net (ADR 0011): every /api route except /api/operator/* runs in the tenant scope of the session's
 // organization, and a query that forgets its org_id filter still sees only that organization.
@@ -68,7 +68,8 @@ const realRouters = apiRouters(
   extras,
   () => new Date(),
   async () => [],
-  noBackupCodes
+  noBackupCodes,
+  noPrivacy
 );
 
 const walkApp = () =>
