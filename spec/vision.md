@@ -4,7 +4,7 @@
 
 ## Product principles
 
-- Product: an AI email assistant for executives and managers, sold as SaaS to business owners. It sorts, summarizes and delegates mail, and filters spam. Source of truth: `docs/product-brief.md`.
+- Product: an AI email assistant for executives and managers, built as a multi-tenant product that business owners could buy (sell-ready, not sold: see "Current direction"). It sorts, summarizes and delegates mail, and filters spam. Source of truth: `docs/product-brief.md`.
 - Users: the executive wants a clean inbox, only important items, and proof that delegated work gets follow-up. The assistant (EA) sets rules and checks drafts. MVP merges both into one power user.
 - Value: time saved and trust. The user always sees what the system did and why (audit log, report, Undo for every change).
 - The system never sends mail by itself. It sends only after the user approves (button or explicit command). Labels, moves and archive are allowed.
@@ -12,14 +12,15 @@
 - Mailbox modes: `shadow` (report only) and `assist` (moves and drafts). Each automatic action has an ON/OFF switch and must pass the go/no-go bar for its category first.
 - LLM text is untrusted: never a recipient, a folder name or a command. A Zod schema checks every LLM answer.
 - Multi-tenant from day one: every table carries `org_id`, even with one tenant.
-- Privacy and GDPR are product features: encrypted mailbox secrets, tenant isolation, retention limits, EU location before external customers. Telegram never gets raw mail bodies.
+- Privacy and GDPR are product features: encrypted mailbox secrets, tenant isolation, retention limits, EU location before any outside user's mail. Telegram never gets raw mail bodies.
 - Telegram is the main channel; the web panel is for setup and control. One channel-neutral backend API serves both.
 - Mail access: IMAP + SMTP with the mailbox password (Interia first). Gmail and Microsoft 365 (OAuth) are Phase 2.
 - Phase 2, not MVP: style learning, two-way chat, voice, meetings and calendar, mobile app, EA review flow.
 
 ## Current direction
 
-- Pilot MVP (S0–S4) and the web panel lite (S5) are built and run on the home VPS on the user's own Interia mailbox. Detail: `docs/roadmap.md`.
-- Now: S6 pre-sale, so the first external customer can sign up: sign-up, billing, account and data deletion, hosted EU production, Vertex AI EU, privacy policy and DPA, cost model. It runs in the old flow (`tasks/active/s6-pre-sale.md`).
-- Open product question for S6: which mail providers the target customers use (market check P9 not done).
+- Goal (owner, 2026-11-12): a sell-ready product that is not sold. It is built, tested, documented and operated as a real product for other people, but it runs only on the owner's home VPS for the owner and test organizations. No real customer, billing account, company or lawyer. Each feature must meet the bar a paying customer would set.
+- The MVP (S0–S5 and S6a customer core) is built and runs on the home VPS on the user's own Interia mailbox. Detail: `docs/roadmap.md`.
+- Now: Stage 2, sell-ready (`docs/product/stage-2/`). Ticket order: `docs/product/stage-2/05-execution-plan.md` §2. The old S6 segments are E7 tickets.
+- Open product question: which mail providers the target executives use (PD-007: five conversations, the owner's call).
 - Pilot results (one week of `assist` on real mail, the S4 pilot week) can change the go/no-go of each category. Read them before you widen any automatic action.

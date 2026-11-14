@@ -339,7 +339,7 @@ Built in S5. The routers are mounted under `/api` (`api.route("/", …)` in `app
 | `assistant` | Two-way chat: intents (new email, find mail, status, reminders), chat state, voice → text      |
 | `brain`     | Style learning (sent mail, draft vs sent diff), trust score per contact, competence extraction |
 | `meetings`  | Calendar port (Google first), conflict check, slot proposals                                   |
-| `billing`   | Plans, payments, limits (S6)                                                                   |
+| `billing`   | Dropped (PD-047): no payments; the plan state lives in tenancy                                 |
 
 ## 4. `apps/web` — pages
 
