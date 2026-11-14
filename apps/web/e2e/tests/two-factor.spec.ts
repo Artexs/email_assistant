@@ -210,6 +210,8 @@ test("a trusted device skips the code step at the next sign-in", async ({ browse
   await page.getByRole("button", { name: en.tf_verify }).click();
   await expect(page).toHaveURL(/\/onboarding$/);
 
+  // Leave the app first: a signed-out page may redirect on its own and abort the next navigation.
+  await page.goto("about:blank");
   const out = await page.request.post("/api/auth/sign-out", { headers: { origin: E2E_BASE_URL }, data: {} });
   expect(out.ok()).toBe(true);
 
