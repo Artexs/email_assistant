@@ -17,7 +17,7 @@ Ticket: [ticket.md](ticket.md). Open defaults for the owner: [questions.md](ques
 - [x] stage-06-operator-module-and-me [written]
 - [x] stage-07-operator-org-list [written]
 - [x] stage-08-operator-org-detail-and-notices [written]
-- [ ] stage-09-operator-writes
+- [x] stage-09-operator-writes [written]
 - [ ] stage-10-operator-page
 - [ ] stage-11-operator-page-writes
 - [ ] stage-12-security-log-route
