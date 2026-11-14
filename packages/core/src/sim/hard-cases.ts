@@ -21,7 +21,10 @@ export interface HardCaseRule {
   replyInjection: boolean;
 }
 
-type Ctx = { scenario: Scenario; rng: Rng };
+interface Ctx {
+  scenario: Scenario;
+  rng: Rng;
+}
 
 const BRIEF_MAX = 200;
 
@@ -124,7 +127,8 @@ export const hardCaseRules: readonly HardCaseRule[] = [
     )
   ),
   rule("delegation_missing_data", "dmd", ["delegation"], (slot) => {
-    const { expectedDelegate: _dropped, ...rest } = slot;
+    const rest = { ...slot };
+    delete rest.expectedDelegate;
     return withBrief(
       { ...rest, expectedDraft: "clarification" },
       "a task for the team, but who, what or by when is unclear"

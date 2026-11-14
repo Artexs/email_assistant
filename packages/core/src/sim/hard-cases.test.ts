@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import { hardCaseRules, hardCaseTagIds, type SlotDraft } from "./hard-cases";
 import { miniScenario } from "./fixtures";
+import { hardCaseRules, hardCaseTagIds, type SlotDraft } from "./hard-cases";
 import { createRng } from "./random";
 import { valueCategories } from "./slot";
 
