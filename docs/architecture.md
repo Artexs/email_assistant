@@ -142,12 +142,7 @@ Pipeline rules:
    the provider result, the audit row and the new status in one transaction.
 6. **Exactly-once for mail and drafts, at-most-once for send.** Unique key per email: `(mailbox_id, dedup_key)` (§6.1).
    Each action has an idempotency key. Drafts and sent mail carry the header `X-EA-Action-Id`.
-   - Idempotent actions (move, flag, mark read, save summary) go `ready → applied` with no `applying` status and may repeat (S3, `actions/apply.ts`).
-     The committer makes it so (the ensure rule, D5). A move first locates the mail by identity (§6.1) in the target folder and in the source folder.
-     In both: delete the source copy (a leftover of a COPY before a crash), then `applied`. Only in the target: `applied` (the IMAP part was done before a crash).
-     Only in the source: move, then `applied`. Nowhere: `failed` with `mail_not_found`. When the source folder is the target (a reverse after the user moved the mail back), it only locates and never deletes.
-     After the IMAP call, `emails.folder`, `uid`, `moved_at`, the action status, `applied_at` and the audit row go in one transaction.
-     A crash between the IMAP call and that commit leaves the action `ready`; the next run finds the mail in the target and writes the rows without a second IMAP change.
+   - Moved to [docs/capabilities/actions-and-undo.md](capabilities/actions-and-undo.md) § Rules (F095).
    - Moved to [docs/capabilities/drafts-and-send.md](capabilities/drafts-and-send.md) § Rules (F095).
 
 7. **Retries live on the row that failed.** LLM errors retry the email (`emails.attempts`); mailbox errors retry the action (`actions.attempts`).
@@ -157,16 +152,7 @@ Pipeline rules:
 
    Moved to [docs/capabilities/triage.md](capabilities/triage.md) § Rules (F095).
 
-   The committer (S3; `actions/committer.ts`, `actions/apply.ts`, every 15 s) applies the rule to the action row as follows:
-   - **Soft error** (a lost connection, a timeout): the row goes back to `ready` with `next_attempt_at` = now + 5 min and gets no count. The run stops for this mailbox; the rest of its batch is released.
-   - **Login error** (`MailAuthError`): the mailbox becomes `auth_error` (the S2 notice), the batch is released with no count.
-   - **Hard error:** `attempts` + 1 and a wait of 5 min. At 3 tries the action is `failed` (`status_reason` = `hard_error`) and the linked owners get an `action_failed` notice (§8).
-   - **`mail_not_found`:** the action is `failed` at once, with no count. An original row gets no notice (the user moved or deleted the mail). A reverse row gets a notice.
-   - **`bad_payload`** (a move without a known folder key): `failed` at once, no count, with a notice.
-   - **Stale claim:** a row with `locked_at` older than 10 min is taken back with no count (the actions are idempotent).
-   - **Expiry (D21):** the committer claims an original `move`, `flag` or `mark_read` only within 24 h of `created_at` and only for mail received in the last 7 days.
-     At the start of each mailbox run it sets older `ready` originals to `expired` (`status_reason` = `stale`, audit `action.expired`). Reverse rows and `save_summary` never expire.
-   - The committer opens one IMAP connection per mailbox per run, and only when it claims a mailbox-changing action. Order per mail: `save_summary`, `flag`, `mark_read`, `move`.
+   Moved to [docs/capabilities/actions-and-undo.md](capabilities/actions-and-undo.md) § Rules (F095).
 
 8. **Cost limits.**
 
@@ -231,22 +217,7 @@ The known limits of the folder sync are in ADR 0014 (D24).
 ### 4.4 Feedback, Undo and the success metric
 
 - Moved to [docs/capabilities/triage.md](capabilities/triage.md) § Rules (F095).
-- **Moved back by the user:** `mail.sync` only sets `emails.returned_at` (when the system moved the mail, §6.1).
-  The job `triage.returned` (every 15 s, no LLM) handles each flagged mail in one transaction. It locks the mail's latest original `move` action (the lock Undo takes too, so the two never both write feedback).
-  When the move is `applied` and has no reverse row, or only a `failed` one, it sets the move to `undone` (`status_reason` = `user_moved_back`).
-  It writes one feedback row (verdict `wrong`, source `imap_move`) only when there is no reverse row at all, the latest category is not `unsure`, and the latest feedback row has no `true_category` (a ✏️ label stays).
-  It always clears `returned_at` and writes the audit row `email.returned`. A mail returned after an Undo gets no row, because the Undo wrote one.
-  A second return of the same mail at Interia is not seen: after the first return the row says its source folder and leaves the below-cursor list (D12).
-- **Undo (S3):** the ↩️ button on a digest line (callback `fu:<emailId>`) works per mail. The tap runs `actions.undo()` in one transaction:
-  it locks the mail's original actions and, for each `applied` original (`move`, `flag`, `mark_read`) whose `applied_at` is at most 7 days old and that has no reverse row, inserts a reverse row
-  (same type and payload, `reverses_action_id` = the original, `ready`) and the audit row `action.undo_requested`. A `ready` original of the mail (a move in a retry wait) becomes `expired` (`status_reason` = `undo`).
-  The committer applies the reverse row as the inverse operation (move: ensure the mail in its source folder, `emails.source_folder`; flag: remove `\Flagged`; mark read: remove `\Seen`),
-  then sets the original to `undone` and writes the new location in one transaction. A reverse move that stops between the copy and the expunge leaves the mail in both folders;
-  `emails.undo_pending_at` tells the sync to store no copy of it meanwhile (D22). An Undo into a `sort` folder (`Oferty`, `Społeczności`, `Rachunki`) is an APPEND transfer, not a COPY (U11, §6.1).
-  A final failure of such an APPEND move (also of the rescue) leaves the mail in both folders; the `action_failed` notice tells the user (ADR 0014).
-  The caller (the Telegram handler) writes the feedback row (verdict `wrong`, source `undo`) in the same transaction when at least one reverse row was created and the latest category is not `unsure`.
-  The tap answers with a toast only: started, already requested, nothing to undo, too old (7 days), not possible now (`ACTIONS_SCOPE=off` or a paused mailbox: nothing is written), or "not in your account" (the same text as the feedback buttons).
-  A move that a committer run holds at the second of the tap still finishes; the line then shows ↩️ again and the user taps again.
+- Moved to [docs/capabilities/actions-and-undo.md](capabilities/actions-and-undo.md) § Rules (F095).
 - Moved to [docs/capabilities/triage.md](capabilities/triage.md) § Rules (F095).
 - Moved to [docs/capabilities/delegation.md](capabilities/delegation.md) § Rules (F095).
 
@@ -258,33 +229,7 @@ Moved to [docs/capabilities/drafts-and-send.md](capabilities/drafts-and-send.md)
 
 Moved to [docs/capabilities/triage.md](capabilities/triage.md) § Data (F095).
 
-```
-actions.status:  (code map: apps/server/src/modules/actions/transitions.ts; tests compare it with the guards)
-                 ready → applied                                      (idempotent: move, flag, mark read, save summary; the ensure rule, §4.1 rule 6)
-                 ready → expired                                      (stale: older than 24 h; policy_changed; undo; manual)
-                 ready → applying → applied | expired                 (create_draft; expired = send_closed: its send ended before the APPEND)
-                 ready | applying → failed                            (create_draft: bad_payload, or hard_error after 3 tries; its open sends expire: draft_missing)
-                 awaiting_approval → approved → applying → applied    (send: applied at once after the SMTP 250)
-                 awaiting_approval → rejected                         (the Reject tap)
-                 approved → rejected                                  (the Reject tap on an approved send that no committer holds, or whose lock is stale)
-                 awaiting_approval → expired                          (timeout: 48 h after notified_at, request received | draft_missing | not_notified: 7 days after creation, no owner | not_seen: request not received, at the resume of a suspended organization or 48 h after notified_at |
-                                                                       policy_changed | delegation_closed)
-                 approved → expired                                   (held_timeout: 48 h after the tap, when no committer holds it; or delegation_closed)
-                 applied → undone                                     (Undo button, or the user moved the mail back: user_moved_back)
-                 logged                                               (policy log_only, for example shadow mode)
-                 ready | approved → same status, retry later          (soft error: no count; hard error: attempts + 1)
-                 applying → applied                                   (create_draft recovery: Drafts search)
-                 applying → ready                                     (create_draft: an error before the APPEND, on a row that the same call set to applying)
-                 applying → applying                                  (create_draft APPEND error, or send recovery error: the row stays applying; the next claim tries again)
-                 applying → approved                                  (send, a known stage before the content: a soft error without a count, a hard error with attempts + 1)
-                 applying → applied | failed                          (send recovery: Sent search, else outcome_unknown)
-                 applying → failed                                    (send: smtp_rejected | smtp_error | outcome_unknown; the third hard error before the content: smtp_error)
-                 failed → new send row, approved                      ("Send again" after smtp_error | outcome_unknown; the failed row stays failed)
-                 create_draft reverse row: ready → applied            (removes the draft after sent | rejected | expired; the original draft becomes undone; failed after 3 hard errors)
-                 ready | approved | applying → failed                 (after 3 hard errors; notice to the user)
-                 ready → failed                                       (mail_not_found, bad_payload: at once, no count)
-                 approved → failed                                    (send: bad_payload, or the third compose error with smtp_error, before the SMTP call)
-```
+Moved to [docs/capabilities/actions-and-undo.md](capabilities/actions-and-undo.md) § Data (F095).
 
 Moved to [docs/capabilities/delegation.md](capabilities/delegation.md) § Data (F095).
 
@@ -578,10 +523,7 @@ Tenancy:
   a 429 waits `retry_after`, a network error or HTTP 5xx backs off from 30 s to 15 min, a 401 pauses sending for 10 min,
   a 403 marks the row `failed` / `blocked`, a row older than 24 h becomes `failed` / `expired`) and `channels.digest` every minute
   (the digest at each member's times in the organization timezone; a missed slot is sent if the server is back within 6 hours).
-- **S3 jobs:** `actions.committer` (every 15 s; per active mailbox it expires stale `ready` originals, claims by `ACTIONS_SCOPE`, applies, §4.1 rules 6 and 7)
-  and `triage.returned` (every 15 s, always on; turns `returned_at` into feedback, §4.4).
-  `channels.notifier` also detects failed actions: one `action_failed` notice per failed action (not for `save_summary`) to the linked owners (dedup `action_failed:<action id>`; `actions.notified_at` is set in the same transaction;
-  a row older than 24 h is marked notified with no notice; an original row with `mail_not_found` gets none). The text names the action, the cleaned subject, "tried 3 times" and where the mail is.
+- Moved to [docs/capabilities/actions-and-undo.md](capabilities/actions-and-undo.md) § Rules (F095).
 - Moved to [docs/capabilities/drafts-and-send.md](capabilities/drafts-and-send.md) § Rules (F095).
 - Moved to [docs/capabilities/delegation.md](capabilities/delegation.md) § Rules (F095).
 - Moved to [docs/capabilities/drafts-and-send.md](capabilities/drafts-and-send.md) § Entry points (F095).
