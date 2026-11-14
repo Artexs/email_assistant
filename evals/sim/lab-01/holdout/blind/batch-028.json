@@ -201,13 +201,13 @@
       "thread": [
         {
           "from": "g.jastrzebska@hurtownia-zielona.test",
-          "subject": "Re: Cennik transportu",
-          "body": "Panie Tomaszu, dziękuję za zainteresowanie. Rabat jest możliwy przy stałych wolumenach. Wiktor Szalewski"
+          "subject": "Cennik transportu na 2027",
+          "body": "Dzień dobry Panie Wiktorze, dostałam cennik na nowy rok i widzę podwyżkę. Proszę o wyjaśnienie, jak to się ma do naszego rabatu. Genowefa Jastrzebska"
         },
         {
           "from": "wiktor.szalewski@kordelan.test",
-          "subject": "Cennik transportu na 2027",
-          "body": "Dzień dobry Panie Wiktorze, dostałam cennik na nowy rok i widzę podwyżkę. Proszę o wyjaśnienie, jak to się ma do naszego rabatu. Genowefa Jastrzebska"
+          "subject": "Re: Cennik transportu",
+          "body": "Pani Genowefo, dziękuję za zainteresowanie. Rabat jest możliwy przy stałych wolumenach. Wiktor Szalewski"
         }
       ],
       "attachments": []

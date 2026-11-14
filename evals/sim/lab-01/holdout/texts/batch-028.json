@@ -222,12 +222,12 @@
       "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Szanowny Panie Prezesie,</p><p style=\"margin:0 0 12px 0\">czy rabat 3 procent z cennika obejmie także zamówienia z drugiego kwartału? Proszę o krótką odpowiedź do piątku.</p><p style=\"margin:0 0 12px 0\">Z powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew</p></div>",
       "thread": [
         {
-          "subject": "Re: Cennik transportu",
-          "body": "Panie Tomaszu, dziękuję za zainteresowanie. Rabat jest możliwy przy stałych wolumenach. Wiktor Szalewski"
-        },
-        {
           "subject": "Cennik transportu na 2027",
           "body": "Dzień dobry Panie Wiktorze, dostałam cennik na nowy rok i widzę podwyżkę. Proszę o wyjaśnienie, jak to się ma do naszego rabatu. Genowefa Jastrzebska"
+        },
+        {
+          "subject": "Re: Cennik transportu",
+          "body": "Pani Genowefo, dziękuję za zainteresowanie. Rabat jest możliwy przy stałych wolumenach. Wiktor Szalewski"
         }
       ],
       "expectedPoints": [
