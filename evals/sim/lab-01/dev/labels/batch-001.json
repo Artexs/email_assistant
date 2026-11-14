@@ -1,0 +1,133 @@
+{
+  "scenario": "lab-01",
+  "part": "dev",
+  "batch": "batch-001",
+  "checker": "claude-haiku-5-5",
+  "labels": [
+    {
+      "id": "b-del-0008",
+      "category": "delegation",
+      "blindHash": "3c9559ca22e70c11d04467ed1df2412349f3c2794c0fd907e1da975a27cc90b0"
+    },
+    {
+      "id": "b-del-0022",
+      "category": "delegation",
+      "blindHash": "04423fc80b15889f1e46d604dc373b28322a769827c51ea4be9e674dbf9644d7"
+    },
+    {
+      "id": "b-del-0029",
+      "category": "delegation",
+      "blindHash": "76b4071aea60db86d8974060709abfac5c38323f3c6dfd8d1fd3a74f20e93479"
+    },
+    {
+      "id": "b-del-0030",
+      "category": "delegation",
+      "blindHash": "593f81f0a1a35d2ab32313f6e02b7f31adb128747fef8d129ad668cfcca02ac3"
+    },
+    {
+      "id": "b-del-0033",
+      "category": "delegation",
+      "blindHash": "e28b897bbc061b78d2b41a00a4a866537d055b766e24cfbcb06facc100f7e56c"
+    },
+    {
+      "id": "b-del-0039",
+      "category": "delegation",
+      "blindHash": "351d44acd85fd3da188f922d88888aaeef23bf2cf22f60f08b00f7b23b3aefae"
+    },
+    {
+      "id": "b-del-0040",
+      "category": "delegation",
+      "blindHash": "625834c25049bae2ff83ce3c8d957b3dbbf07c5e1db1ee6d471ab9de6dfcc5c4"
+    },
+    {
+      "id": "b-del-0042",
+      "category": "delegation",
+      "blindHash": "5ad05422d14687aa2dfbacb9244b809f519e9d4ece1977385bfcb65055e523ec"
+    },
+    {
+      "id": "b-del-0043",
+      "category": "delegation",
+      "blindHash": "f86c3bd77fd801418345411d1f01d72a635821578c13b3e73eeb357a57faa284"
+    },
+    {
+      "id": "b-del-0048",
+      "category": "delegation",
+      "blindHash": "d504a3728d8b872c2427a732d2eb4dcfa933491f671b3fa857198a9cee3b01db"
+    },
+    {
+      "id": "b-del-0050",
+      "category": "delegation",
+      "blindHash": "c3e095f9f1ea91a49f90b74ba1fb0d7d7c68e9c965dd00458429496b4b693bea"
+    },
+    {
+      "id": "b-del-0052",
+      "category": "delegation",
+      "blindHash": "1552cb5eaae2aa225eaa1fdee7eaa37595f4e8de819ce4345b92e4ff960d324d"
+    },
+    {
+      "id": "b-del-0055",
+      "category": "delegation",
+      "blindHash": "a6b0bb3d45a0eb6ece84860d6426fc8852eee88448d9d2ec27e19eecbcc225b7"
+    },
+    {
+      "id": "b-del-0060",
+      "category": "delegation",
+      "blindHash": "6d174554a74f1261dadd759d410b4a17dcd9582e4249c72315fd7787bf0ce0a4"
+    },
+    {
+      "id": "b-del-0062",
+      "category": "delegation",
+      "blindHash": "5c387b8f3d92809c889b7d769850d522115b043ce0fa89ffa60cd8516f92feaf"
+    },
+    {
+      "id": "b-del-0064",
+      "category": "delegation",
+      "blindHash": "75e2b4d53cd9c34b5505806ab3e9eaebe16fc6e2e35bdd010445bfa9b3bc7b0f"
+    },
+    {
+      "id": "b-del-0077",
+      "category": "delegation",
+      "blindHash": "c9915a57fa502196f3d488aa92412fbeaf585593a682884489a743a8f108639d"
+    },
+    {
+      "id": "b-del-0080",
+      "category": "delegation",
+      "blindHash": "de0f0d188b91c9721a57c084602c70ed1a5bcc1f61646f01a3f4c87e03bf9bab"
+    },
+    {
+      "id": "b-del-0086",
+      "category": "delegation",
+      "blindHash": "8b931d67625f83d2723b3547642c2afe8c9ff9bcb841c7bb256a7f185ac9bb7b"
+    },
+    {
+      "id": "b-del-0088",
+      "category": "delegation",
+      "blindHash": "1ae9a0b18399a5bfef81ae02bff2b474f7e81fa1fa89e829a23f28fc107455fd"
+    },
+    {
+      "id": "b-del-0095",
+      "category": "delegation",
+      "blindHash": "95d8871b5808fb6f3b129f52a1868d495ac14d09842f9a14382beb7f6783a509"
+    },
+    {
+      "id": "b-del-0105",
+      "category": "delegation",
+      "blindHash": "324ee1c9b7c306dec6ce3d181395f82a58b6c718ea657dec0f5aeb75ad1e3c10"
+    },
+    {
+      "id": "b-del-0114",
+      "category": "delegation",
+      "blindHash": "edc2a75185e053ae80929e9306875c76a8d7f966d5c38efd2ce8d4be68f3d88b"
+    },
+    {
+      "id": "b-del-0122",
+      "category": "delegation",
+      "blindHash": "037c5a2a102f5c7c84a2198558025d0b1b83b0dfcdd2ae164aad68fac46dc8ef"
+    },
+    {
+      "id": "b-del-0124",
+      "category": "delegation",
+      "blindHash": "d37c247a149ee04e1bfe3c0a7b10bb96595a6fd68473a9b88285b60dec4257e3"
+    }
+  ]
+}
