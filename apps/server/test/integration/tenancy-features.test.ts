@@ -169,6 +169,7 @@ describe("org_features", () => {
         { flag: "stats_page", enabled: true, source: "row" },
         { flag: "approvals_page", enabled: false, source: "default" },
         { flag: "sent_sync", enabled: false, source: "env" },
+        { flag: "security_log", enabled: false, source: "default" },
       ]);
     });
   });

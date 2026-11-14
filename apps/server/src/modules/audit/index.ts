@@ -6,10 +6,12 @@ export {
   findActionActor,
   hasAuditEvent,
   hasAuditKey,
+  listAuditEvents,
   recordAudit,
   recordAuditOnce,
   recordLlmCall,
   type AuditData,
   type AuditEvent,
+  type AuditEventRow,
   type LlmCallRecord,
 } from "./repo";

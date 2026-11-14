@@ -252,3 +252,40 @@ export async function findActionActor(
     .executeTakeFirst();
   return row?.actor;
 }
+
+export interface AuditEventRow {
+  id: string;
+  at: Date;
+  actor: string;
+  event: string;
+  reasonCode: string | null;
+  data: unknown;
+}
+
+// The newest rows of the organization with an event in `events` and `created_at >= since`, newest first (created_at, then id).
+// Index audit_log_org_event_created_idx (org_id, event, created_at) serves it. The security log and the operator notice list read through it.
+export async function listAuditEvents(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { events: readonly string[]; since: Date; limit: number }
+): Promise<AuditEventRow[]> {
+  if (opts.events.length === 0) return [];
+  const rows = await db
+    .selectFrom("audit_log")
+    .select(["id", "created_at", "actor", "event", "reason_code", "data"])
+    .where("org_id", "=", ctx.orgId)
+    .where("event", "in", [...opts.events])
+    .where("created_at", ">=", opts.since)
+    .orderBy("created_at", "desc")
+    .orderBy("id", "desc")
+    .limit(opts.limit)
+    .execute();
+  return rows.map((row) => ({
+    id: String(row.id),
+    at: row.created_at,
+    actor: row.actor,
+    event: row.event,
+    reasonCode: row.reason_code,
+    data: row.data,
+  }));
+}

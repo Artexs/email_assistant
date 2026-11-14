@@ -38,6 +38,13 @@ describe("featureFlags registry", () => {
     expect(featureFlags.sent_sync.default).toBe(false);
   });
 
+  test("security_log exists, defaults off and has the epic E7-T2 and remove-by 2027-03-01", () => {
+    expect(featureFlags.security_log.default).toBe(false);
+    expect(featureEpicPattern.test(featureFlags.security_log.epic)).toBe(true);
+    expect(featureFlags.security_log.epic).toBe("E7-T2");
+    expect(featureFlags.security_log.removeBy).toBe("2027-03-01");
+  });
+
   test("featureKeys lists the registry keys in registry order", () => {
     expect<string[]>(featureKeys).toEqual(Object.keys(featureFlags));
     expect(featureKeys.slice(0, 3)).toEqual(["stats_page", "approvals_page", "sent_sync"]);
