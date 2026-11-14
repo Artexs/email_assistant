@@ -10,7 +10,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 - Standing models: worker and reviewer `--engine pi --provider claude-bridge --model claude-sonnet-5-5 --thinking high`, with the personal Claude route (`~/.pi/agent/AGENTS.md` § Limen). Prepare: `--prepare 'bash scripts/limen-prepare.sh'` (own `.env`, `node_modules`, own DB; drop the job DB by hand after the job). Log lint backlog (E8a): 395 old-form log calls warn after F089 stage 06 (2026-11-13); the converted files (`platform/`, `main.ts`) are at error.
 - Now: S6 pre-sale moves to Limen segment by segment (S6a = F077). The S6 master plan and `s6b`–`s6f` still sit in `tasks/` until `plan-task` plans them here; the old `run-task` flow is removed.
-- CI on `master`: red several times on 2026-11-14 from two flaky tests that failed without a code change; both are quarantined (`test.skip`) with fix tickets F123 (`main-start-log`) and F126 (`mail-folders-cli`). Last known all-green run before that: 2026-11-13 (run 43449221495). Bun pin `.bun-version` 1.4.4. After each land, check `gh run list --branch master --workflow CI --limit 3`; a red run → `docs/code-patterns.md` § Tests (quarantine the same day).
+- CI on `master`: red several times on 2026-11-14 from two flaky tests that failed without a code change; F123 (`main-start-log`) is fixed and landed; F126 (`mail-folders-cli`) is still quarantined (`test.skip`). Last known all-green run before that: 2026-11-13 (run 43449221495). Bun pin `.bun-version` 1.4.4. After each land, check `gh run list --branch master --workflow CI --limit 3`; a red run → `docs/code-patterns.md` § Tests (quarantine the same day).
 
 ## NOW
 
