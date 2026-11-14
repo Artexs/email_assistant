@@ -218,7 +218,8 @@ describe("telegram router", () => {
       expect(warned).toHaveLength(1);
       expect(warned[0]?.text).toContain(userId);
       expect(warned[0]?.text).not.toContain("MARKER-DB-DOWN");
-      // A working read: no row choice gives pl; a stored choice wins.
+      // A working read: no choice (null) gives pl; a stored choice wins. The fixture user has `en`.
+      await trx.updateTable("users").set({ locale: null }).where("id", "=", userId).execute();
       expect(await localeOfUser(trx, userId)).toBe("pl");
       await trx.updateTable("users").set({ locale: "en" }).where("id", "=", userId).execute();
       expect(await localeOfUser(trx, userId)).toBe("en");

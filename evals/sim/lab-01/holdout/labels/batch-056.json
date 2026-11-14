@@ -21,8 +21,8 @@
     },
     {
       "id": "h-rfa-03",
-      "category": "urgent",
-      "blindHash": "e7834708d241227dec58f94d8d9a3638f45b49b883ab3cc0a6a2a1cf52ba64d4"
+      "category": "needs_reply",
+      "blindHash": "a740e0e234693c51475f51797bf4d48e11c92a560d2e51c3320a2f8a4b950a27"
     },
     {
       "id": "h-rfa-04",
@@ -66,8 +66,8 @@
     },
     {
       "id": "h-rig-01",
-      "category": "delegation",
-      "blindHash": "929e0bcbcfb7dcc5df34fbc41a546045759fd2d841ad1f1ea50a355253d40e2e"
+      "category": "needs_reply",
+      "blindHash": "e3fac5e9ddef4f6f11f5f2503efc02eb4fcb7fceef8305b35846e315cc3165c3"
     },
     {
       "id": "h-rig-02",

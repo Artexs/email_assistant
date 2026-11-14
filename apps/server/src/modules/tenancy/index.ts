@@ -1,5 +1,6 @@
 export { configureFeatures, featureSettings, featureStates, featureStatesOfAll, isFeatureOn } from "./features";
 export {
+  getBreakGlassUserId,
   getMembership,
   getOrganization,
   getOrgFeature,
@@ -7,6 +8,7 @@ export {
   getUserAuthProfile,
   insertMembership,
   insertUser,
+  isBreakGlassOwner,
   isOrgSuspended,
   listMemberships,
   listMembershipsOfUser,
@@ -26,14 +28,18 @@ export {
 export { listSecurityLog } from "./security-log";
 export { tenancyRoutes, type TenancyRouteDeps } from "./routes";
 export {
+  clearBreakGlassOwner,
   createOrganizationWithOwner,
   isSupportedTimeZone,
   organizationView,
+  setBreakGlassOwner,
   setOrgFeature,
   setOrgPlan,
   updateOrganizationSettings,
+  type ClearBreakGlassResult,
   type CreateOrganizationInput,
   type OrgPlanInput,
+  type SetBreakGlassResult,
   type SetOrgFeatureInput,
   type SetOrgFeatureResult,
   type SetOrgPlanHooks,

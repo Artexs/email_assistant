@@ -47,14 +47,15 @@
     },
     {
       "id": "h-de-06",
-      "subject": "Logistyka Dziś: Wochenübersicht für Ihre Flotte",
-      "body": "Die Wochenübersicht der Redaktion Logistyka Dziś, diesmal in deutscher Sprache für unsere Leser in Deutschland und Österreich.\n\nDieselpreise: Der Preis für Diesel an den Großhandelsstationen in Polen ist in dieser Woche um durchschnittlich zwei Prozent gesunken, und auch in Deutschland gaben die Preise leicht nach. Analysten erwarten, dass der Trend bis Ende Januar anhält, doch große Flottenbetreiber rechnen weiterhin mit starken Schwankungen.\n\nMautgebühren: Mehrere Länder Mitteleuropas planen für das zweite Quartal höhere Mautsätze für schwere Lastwagen. Besonders betroffen sind Fahrzeuge der Emissionsklasse Euro 5, deren Tarife im Durchschnitt um acht Prozent steigen sollen.\n\nAusschreibungen: Drei große Handelsketten haben neue Ausschreibungen für Transportdienstleistungen veröffentlicht. Die Fristen laufen bis Mitte Februar, und die meisten Auftraggeber verlangen eine Garantie für pünktliche Lieferungen während der Saisonspitzen.\n\nFahrermangel: Der Verband der Transportunternehmer meldet, dass im ersten Quartal etwa 12 000 Fahrer fehlen werden. Die Unternehmen setzen verstärkt auf Ausbildung im eigenen Betrieb und auf höhere Löhne für Nachtschichten. Mehrere Betriebe bieten außerdem Prämien für neue Fahrer an, die sich für mindestens zwei Jahre verpflichten, und prüfen die Anwerbung von Fahrern aus Nachbarländern.\n\nUnser nächstes Heft erscheint am Freitag. Darin finden Sie einen ausführlichen Bericht über neue Lagersysteme und einen Vergleich der Versicherungen für Kühlfahrzeuge.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
-      "thread": []
+      "subject": "Logistyka Dziś: Ihr Abonnement-Konto - Zahlung und Sicherheitshinweis",
+      "body": "Dies ist eine automatische Nachricht Ihres Abonnement-Kontos bei Logistyka Dziś. Bitte antworten Sie nicht auf diese E-Mail.\n\nKonto: wiktor.szalewski@kordelan.test\nEreignis: Verlängerung des Abonnements\n\nIhr Jahresabonnement für die Wochenausgabe wurde am 18.01.2027 automatisch verlängert und gilt nun bis zum 31.12.2027. Der Betrag von 480,00 PLN wurde Ihrer hinterlegten Karte belastet. Die Rechnung mit der Nummer FV-LD-2027-0412 steht in Ihrem Konto zum Abruf bereit.\n\nÄnderung der Einstellungen: Die Sprache der Wochenausgabe wurde auf Deutsch gesetzt, die Zustellung erfolgt weiterhin freitags. Wenn Sie diese Änderung nicht selbst vorgenommen haben, können Sie sie in den Konto-Einstellungen jederzeit zurücksetzen.\n\nSicherheitshinweis: Am 18.01.2027 um 13:12 Uhr wurde Ihr Konto auf einem neuen Gerät angemeldet. Waren Sie das nicht, ändern Sie bitte umgehend Ihr Passwort und beenden Sie alle aktiven Sitzungen. Wir fragen Sie niemals per E-Mail nach Ihrem Passwort.\n\nDie Zahlungsdaten und Ihre Zustelladresse können Sie unter Konto, Abonnement und Rechnungen prüfen. Diese Nachricht wurde vom System erzeugt, weil sich Daten Ihres Kontos geändert haben.\n\nHinweis zur Zustellung: Die nächste Ausgabe wird am Freitag an die oben genannte Adresse gesendet. Möchten Sie keine Benachrichtigungen mehr erhalten, können Sie diese in den Konto-Einstellungen deaktivieren.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "note": "rewritten: automated subscription, payment and account security message, no editorial content"
     },
     {
       "id": "h-de-07",
-      "subject": "Lieferfenster in Göteborg: Ihre Bestätigung",
-      "body": "Sehr geehrter Herr Szalewski,\n\nbitte bestätigen Sie mir, ob Ihr Fahrer am Donnerstag das Zeitfenster um 10:00 in Göteborg nutzen kann. Antwort bitte bis morgen.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "subject": "Lieferfenster in Göteborg: Ihre Zusage",
+      "body": "Sehr geehrter Herr Szalewski,\n\nich möchte von Ihnen persönlich wissen, ob Kordelan das Zeitfenster am Donnerstag um 10:00 in Göteborg zusagt. Eine kurze Antwort bis morgen genügt.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
       "thread": [],
       "expectedPoints": [
         "Confirm whether the driver can use the Thursday 10:00 window",
@@ -62,7 +63,8 @@
       ],
       "mustNot": [
         "Do not agree to a different delivery date without the operations director"
-      ]
+      ],
+      "note": "rewritten: plain question for the executive, no task for the team, no deadline panic"
     },
     {
       "id": "h-de-08",
@@ -216,17 +218,17 @@
     },
     {
       "id": "h-fwd-08",
-      "subject": "Fwd: Przegląd naczep - Pani Haliny pytanie",
-      "body": "Szanowny Panie Prezesie,\n\nprzekazuję pytanie Pana dyrektor operacyjnej, czy przegląd naczep w lutym jest możliwy.\n\n---------- Przekazana wiadomość ----------\nCzy przegląd dwunastu naczep może odbyć się w lutym? Halina\n\nMit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued",
-      "html": "<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#222\"><p style=\"margin:0 0 10px\">Szanowny Panie Prezesie,</p><p style=\"margin:0 0 10px\">przekazuję pytanie Pana dyrektor operacyjnej, czy przegląd naczep w lutym jest możliwy.</p><p style=\"margin:0 0 10px\">---------- Przekazana wiadomość ----------<br>Czy przegląd dwunastu naczep może odbyć się w lutym? Halina</p><p style=\"margin:0 0 10px\">Mit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued</p></div>",
+      "subject": "Fwd: Przegląd naczep - pytanie Pani Haliny do Pana",
+      "body": "Szanowny Panie Prezesie,\n\nPani Halina zapytała, czy przegląd naczep może odbyć się w lutym. Czy zgadza się Pan na ten termin?\n\n---------- Przekazana wiadomość ----------\nCzy przegląd dwunastu naczep może odbyć się w lutym? Halina\n\nMit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued",
+      "html": "<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#222\"><p style=\"margin:0 0 10px\">Szanowny Panie Prezesie,</p><p style=\"margin:0 0 10px\">Pani Halina zapytała, czy przegląd naczep może odbyć się w lutym. Czy zgadza się Pan na ten termin?</p><p style=\"margin:0 0 10px\">---------- Przekazana wiadomość ----------<br>Czy przegląd dwunastu naczep może odbyć się w lutym? Halina</p><p style=\"margin:0 0 10px\">Mit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued</p></div>",
       "thread": [
         {
           "subject": "Przegląd naczep",
           "body": "Czy przegląd dwunastu naczep może odbyć się w lutym? Halina"
         },
         {
-          "subject": "Fwd: Przegląd naczep - Pani Haliny pytanie",
-          "body": "Przekazuję pytanie Pana dyrektor operacyjnej do decyzji. Matthias Brandt"
+          "subject": "Fwd: Przegląd naczep - pytanie Pani Haliny do Pana",
+          "body": "Pani Halina pyta, czy zgadza się Pan na przegląd w lutym. Czekam na Pana odpowiedź. Matthias Brandt"
         }
       ],
       "expectedPoints": [
@@ -234,7 +236,8 @@
       ],
       "mustNot": [
         "Do not approve the service budget in this reply"
-      ]
+      ],
+      "note": "rewritten: forward note asks the executive himself for a yes or no on the February service"
     },
     {
       "id": "h-fwd-09",
@@ -268,10 +271,11 @@
     },
     {
       "id": "h-html-01",
-      "subject": "Logistyka Dziś: wydanie z piątku",
+      "subject": "Logistyka Dziś: potwierdzenie odnowienia prenumeraty",
       "body": "",
-      "html": "<div style=\"font-family:Georgia,serif;font-size:15px;color:#222\"><h2 style=\"margin:0 0 8px\">Logistyka Dziś - wydanie tygodniowe</h2><ul style=\"margin:0 0 10px\"><li>Ceny oleju napędowego spadły o dwa procent.</li><li>Nowe stawki opłat drogowych od marca.</li><li>Trzy przetargi sieci handlowych.</li></ul><p style=\"margin:0;color:#666\">Redakcja Logistyka Dzis | wypisz sie z listy</p></div>",
-      "thread": []
+      "html": "<div style=\"font-family:Georgia,serif;font-size:15px;color:#222\"><h2 style=\"margin:0 0 8px\">Potwierdzenie odnowienia prenumeraty</h2><p style=\"margin:0 0 10px\">Prenumerata została odnowiona do 31.12.2027. Płatność 480,00 PLN kartą, faktura FV-LD-2027-0412. To automatyczna wiadomość konta, nie odpowiadaj na nią.</p><p style=\"margin:0;color:#666\">Redakcja Logistyka Dzis | wypisz sie z listy</p></div>",
+      "thread": [],
+      "note": "rewritten: automated subscription renewal and payment confirmation, no editorial content"
     },
     {
       "id": "h-html-03",
