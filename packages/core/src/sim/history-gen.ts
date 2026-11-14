@@ -102,10 +102,15 @@ const profiles: Record<SimPersonaGroup, Profile> = {
   },
 };
 
+// The ranges of `profiles` hold for a history of this many days; a shorter history scales the counts.
+const PROFILE_DAYS = 90;
+
 const PERSON_GROUPS: readonly SimPersonaGroup[] = ["boss", "team", "delegate", "client", "partner", "vendor"];
 
-function between(rng: Rng, [low, high]: Range): number {
-  return low + rng.int(high - low + 1);
+function between(rng: Rng, [low, high]: Range, scale = 1): number {
+  const from = Math.round(low * scale);
+  const to = Math.max(from, Math.round(high * scale));
+  return from + rng.int(to - from + 1);
 }
 
 function replyHours(rng: Rng): number {
@@ -115,7 +120,8 @@ function replyHours(rng: Rng): number {
 // The history of one sender over `days` days before the mail (D9, X3): counts and flags, never text.
 export function senderHistoryFor(persona: SimPersona, scenario: Scenario, rng: Rng, days: number): SenderHistory {
   const profile = profiles[persona.group];
-  const received = between(rng, profile.received);
+  const scale = days / PROFILE_DAYS;
+  const received = between(rng, profile.received, scale);
   const categoryList = Object.keys(profile.mix) as Category[];
   const split = largestRemainder(
     categoryList.map((c) => profile.mix[c] as number),
@@ -127,8 +133,8 @@ export function senderHistoryFor(persona: SimPersona, scenario: Scenario, rng: R
   });
 
   const answered = Math.round((received * between(rng, profile.answeredPct)) / 100);
-  const userMailsTo = received === 0 ? 0 : between(rng, profile.userMailsTo);
-  const delegationsTo = profile.delegationsTo ? between(rng, profile.delegationsTo) : 0;
+  const userMailsTo = received === 0 ? 0 : between(rng, profile.userMailsTo, scale);
+  const delegationsTo = profile.delegationsTo ? between(rng, profile.delegationsTo, scale) : 0;
   const present = Object.keys(byCategory) as Category[];
   const corrections: SenderHistory["corrections"] = {};
   if (PERSON_GROUPS.includes(persona.group) && received >= 20 && rng.int(4) === 0) {
@@ -139,7 +145,10 @@ export function senderHistoryFor(persona: SimPersona, scenario: Scenario, rng: R
   let firstSeenDaysAgo: number | null = null;
   let lastSeenDaysAgo: number | null = null;
   if (received > 0) {
-    firstSeenDaysAgo = profile.fresh ? rng.int(3) : Math.min(days, 30 + rng.int(Math.max(1, days - 29)));
+    const earliest = Math.round(30 * scale);
+    firstSeenDaysAgo = profile.fresh
+      ? rng.int(3)
+      : Math.min(days, earliest + rng.int(Math.max(1, days - earliest + 1)));
     lastSeenDaysAgo = rng.int(Math.min(firstSeenDaysAgo, 14) + 1);
   }
   const bulkSignalList = received > 0 ? [...profile.bulk] : [];

@@ -23,6 +23,7 @@ Two steps. About 230 changed lines.
     export async function setBreakGlassFlag(trx: Transaction<DB>, ctx: TenantContext, userId: string, on: boolean): Promise<boolean>; // true = a row changed
     // No TenantContext (the user gives the rows; listed in docs/code-patterns.md by stage 14):
     export async function isBreakGlassOwner(db: Db | Transaction<DB>, userId: string): Promise<boolean>; // any membership of the user with break_glass
+    // RLS (plan F13): it reads memberships of every organization, so call it only with no tenant scope (`/api/auth/*`, a CLI, a job). The comment above the function says so.
 
     // tenancy/service.ts
     export type SetBreakGlassResult =

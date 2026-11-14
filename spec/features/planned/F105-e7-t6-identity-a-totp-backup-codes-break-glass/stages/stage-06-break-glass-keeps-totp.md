@@ -29,7 +29,7 @@ One step. About 120 changed lines.
     // web.ts createAuth({ …, keepsTwoFactor: (userId) => isBreakGlassOwner(db, userId) })
     ```
 
-    An error of `keepsTwoFactor` is not caught: the request fails (500) and nothing changes (fail closed).
+    An error of `keepsTwoFactor` is not caught: the request fails (500) and nothing changes (fail closed). The hook runs inside `/api/auth/*`, which has no tenant scope (plan F13, D12), so `isBreakGlassOwner` sees every membership of the user.
   - Decisions: D12.
   - Test (`web-two-factor.test.ts`, the handle gets `keepsTwoFactor: (userId) => isBreakGlassOwner(db, userId)`):
     1. An enrolled owner marked break-glass (`setBreakGlassOwner`) → `POST /two-factor/disable { password }` → 403 `BREAK_GLASS_NEEDS_TWO_FACTOR`; `two_factor_enabled` stays true, the row stays, no `web.two_factor_disabled` row.

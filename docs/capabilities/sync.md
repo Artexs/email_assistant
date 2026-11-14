@@ -1,6 +1,6 @@
 # Sync
 
-> Checked against the code at `334f5a0`, 2026-11-14.
+> Checked against the code at `949c81d`, 2026-11-14.
 
 ## What it does now
 
@@ -33,7 +33,7 @@ Sync brings mail from an IMAP mailbox into the `emails` table. An owner connects
     - `updateMailboxPassword` tests the IMAP and SMTP login with the new password first; a failed login stores nothing. An `auth_error` mailbox becomes `active`; a `paused` one stays paused. The web route is `POST /api/mailboxes/:id/password` (owner only).
 14. **Remove.** `DELETE /api/mailboxes/:id` (owner only) needs the typed address (`confirm_mismatch` gives `400`). The mailbox is paused first; then one transaction runs `delete_mailbox`, writes the audit row `mailbox.removed` and queues the owners' notice. A deadlock is retried once. On any other error a mailbox that this call paused returns to `active`.
 15. **Backfill (one-off).** `bun run mailbox:backfill --org-id <uuid> --mailbox-id <uuid> [--days 1-180]` (default 30) reads INBOX mail of the last days, stores the missing mail with `emails.backfilled_at` set, and never moves the cursor. It changes nothing in the mailbox. It refuses a window above 180 days, a mailbox that was never synced, a changed UIDVALIDITY (wait for the regular rescan) and a suspended organization. After the store it re-queues real mail of the window that the worker skipped as `too_old` (`triage.md`).
-16. **Operator tools.** `bun run mailbox:seed` appends synthetic mail into INBOX or a sync folder; it refuses every mailbox except the one in `TEST_MAILBOX_ADDRESS`. `bun run mailbox:audit --org-id <uuid> --mailbox-id <uuid> --since <ISO time>` is read-only: it compares the mail of each enabled synced folder on the server with the stored rows (exit 0 no difference in INBOX, exit 2 lost or duplicate INBOX mail). Run it right after a sync, because mail of the last 5 minutes can show as missing.
+16. **Operator tools.** `bun run mailbox:seed` appends synthetic mail into INBOX or a sync folder; it refuses every mailbox except the one in `TEST_MAILBOX_ADDRESS`. `bun run mailbox:audit --org-id <uuid> --mailbox-id <uuid> --since <ISO time>` is read-only: it compares the mail of each enabled synced folder on the server with the stored rows (exit 0 no difference in INBOX, exit 2 lost or duplicate INBOX mail). Run it right after a sync, because mail of the last 5 minutes can show as missing. `bun run mailbox:signals --org-id <uuid> --mailbox-id <uuid> [--days 30]` is read-only: it prints counts of INBOX mail of the window (`\Answered`, `\Seen`, `\Flagged`, `Authentication-Results`, `List-Unsubscribe`) and the mail server names of `Authentication-Results`; it prints no subject, address or UID and writes nothing.
 17. **Mailbox limit.** `organizations.max_mailboxes` caps the mailboxes; connect checks it twice (rule 1). See [tenancy-and-plans.md](tenancy-and-plans.md).
 
 ## Entry points
@@ -55,6 +55,7 @@ Sync brings mail from an IMAP mailbox into the `emails` table. An owner connects
 | CLI      | `bun run mailbox:backfill`                                  | `apps/server/src/scripts/mailbox-backfill.ts`  |
 | CLI      | `bun run mailbox:seed`                                      | `apps/server/src/scripts/mailbox-seed.ts`      |
 | CLI      | `bun run mailbox:audit`                                     | `apps/server/src/scripts/mailbox-audit.ts`     |
+| CLI      | `bun run mailbox:signals`                                   | `apps/server/src/scripts/mailbox-signals.ts`   |
 | CLI      | `bun run mailbox:settings` (`sync-folder`)                  | `apps/server/src/scripts/mailbox-settings.ts`  |
 | function | `syncMailbox`, `backfillInbox`                              | `apps/server/src/modules/mail/sync.ts`         |
 | function | `connectMailbox`, `updateMailboxPassword`, `buildFolderMap` | `apps/server/src/modules/mail/connect.ts`      |
