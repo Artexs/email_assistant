@@ -20,4 +20,5 @@ Each item is a default that the planner took. The stages do not change with the 
 - **Q9 [minor]** Edit limits: subject 1–200 characters, body 1–3000 (the Telegram card must fit 4096 characters).
 - **Q11 [minor]** An edit restarts the 48 h approval time: the new version is a new request with its own card.
 - **Q13 [minor]** An approved send that waits (held by `SEND_SCOPE`, a paused mailbox, a login error or a refused host) shows on the approvals page with Reject only, as the Telegram card.
+- **Q15 [minor]** A panel decision on a reminder that belongs to a set does not edit the set card (`approval_set:`). The set tap answers with its counts. Stage 09.
 - **Q14 [minor]** The OpenAPI file hides the operator routes and `/api/auth/*` (Better Auth). Reason: the E10 docs site publishes the file.
