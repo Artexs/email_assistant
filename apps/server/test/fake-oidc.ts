@@ -15,6 +15,8 @@ export interface FakeOidc {
   clientId: string;
   clientSecret: string;
   setUser(user: FakeOidcUser): void;
+  // The callback URL of a provider row (`<base>/api/auth/sso/callback/<providerId>`). `/authorize` refuses any other `redirect_uri`.
+  registerRedirectUri(uri: string): void;
   // Every request the IdP got, as `METHOD /path`.
   requests: string[];
   // Every authorization code and id_token the IdP issued: the log tests search the output for them.
@@ -30,7 +32,7 @@ export interface FakeOidcOptions {
 
 interface IssuedCode {
   nonce: string | undefined;
-  challenge: string | undefined;
+  challenge: string;
   redirectUri: string;
   user: FakeOidcUser;
 }
@@ -57,6 +59,7 @@ export async function startFakeOidc(opts: FakeOidcOptions = {}): Promise<FakeOid
   const requests: string[] = [];
   const issuedCodes: string[] = [];
   const issuedIdTokens: string[] = [];
+  const redirectUris = new Set<string>();
   // Set once the server listens (the port is random); a request always comes after that.
   let origin = "";
 
@@ -85,16 +88,18 @@ export async function startFakeOidc(opts: FakeOidcOptions = {}): Promise<FakeOid
       if (url.pathname === "/authorize") {
         const query = url.searchParams;
         if (query.get("client_id") !== clientId) return new Response("bad client", { status: 400 });
-        if (query.get("code_challenge") !== null && query.get("code_challenge_method") !== "S256") {
-          return new Response("bad pkce method", { status: 400 });
-        }
+        // PKCE with S256 is required, as at a real IdP that the provider config asks for it.
+        const challenge = query.get("code_challenge");
+        if (challenge === null || challenge === "") return new Response("code_challenge is required", { status: 400 });
+        if (query.get("code_challenge_method") !== "S256") return new Response("bad pkce method", { status: 400 });
         const redirectUri = query.get("redirect_uri");
         if (redirectUri === null) return new Response("no redirect_uri", { status: 400 });
+        if (!redirectUris.has(redirectUri)) return new Response("redirect_uri is not registered", { status: 400 });
         const code = randomBytes(12).toString("hex");
         issuedCodes.push(code);
         codes.set(code, {
           nonce: query.get("nonce") ?? undefined,
-          challenge: query.get("code_challenge") ?? undefined,
+          challenge,
           redirectUri,
           user,
         });
@@ -115,11 +120,9 @@ export async function startFakeOidc(opts: FakeOidcOptions = {}): Promise<FakeOid
         if (!entry || entry.redirectUri !== form.get("redirect_uri")) {
           return Response.json({ error: "invalid_grant" }, { status: 400 });
         }
-        if (entry.challenge !== undefined) {
-          const verifier = form.get("code_verifier") ?? "";
-          if (base64url(createHash("sha256").update(verifier).digest()) !== entry.challenge) {
-            return Response.json({ error: "invalid_grant", error_description: "pkce" }, { status: 400 });
-          }
+        const verifier = form.get("code_verifier") ?? "";
+        if (verifier === "" || base64url(createHash("sha256").update(verifier).digest()) !== entry.challenge) {
+          return Response.json({ error: "invalid_grant", error_description: "pkce" }, { status: 400 });
         }
         const now = Math.floor(Date.now() / 1000);
         const claims: Record<string, unknown> = {
@@ -166,6 +169,9 @@ export async function startFakeOidc(opts: FakeOidcOptions = {}): Promise<FakeOid
     issuedIdTokens,
     setUser(next) {
       user = next;
+    },
+    registerRedirectUri(uri) {
+      redirectUris.add(uri);
     },
     stop() {
       void server.stop(true);

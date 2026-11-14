@@ -154,6 +154,7 @@ async function memberWithProvider(opts: { proved: boolean; domain?: string; host
       oidc_config: fakeOidcConfig(fake),
     })
     .execute();
+  fake.registerRedirectUri(`${SSO_TEST_ORIGIN}/api/auth/sso/callback/${orgId}`);
   fake.setUser({
     sub: `sub-${randomUUID()}`,
     email,
@@ -231,6 +232,8 @@ describe("the SSO plugin surface", () => {
       "/sso/saml2/callback/x",
       "/sso/saml2/sp/metadata",
       "/sso/saml2/sp/acs/x",
+      "/sso/saml2/sp/slo/x",
+      "/sso/saml2/logout/x",
     ];
     for (const path of closed) {
       for (const withCookie of [undefined, cookie]) {
@@ -342,6 +345,11 @@ describe("the SSO plugin surface", () => {
   });
 
   test("9: a body key outside the allow-list answers 400, not 500, and writes no better_auth_error line", async () => {
+    // The body is valid for the plugin (a member of a proved provider, a callbackURL), so only our allow-list refuses it.
+    // Without the allow-list the plugin looks for a model that we do not have and answers 500.
+    const setup = await memberWithProvider({ proved: true });
+    const valid = await post(plainApp, "/sign-in/sso", { email: setup.email, callbackURL: "/app" });
+    expect(valid.status).toBe(200);
     const from = captured.length;
     for (const extra of [
       { organizationSlug: "a" },
@@ -349,13 +357,48 @@ describe("the SSO plugin surface", () => {
       { loginHint: "a@x.test" },
       { scopes: ["x"] },
     ]) {
-      const response = await post(plainApp, "/sign-in/sso", { email: `a@${freshDomain()}`, ...extra });
+      const response = await post(plainApp, "/sign-in/sso", { email: setup.email, callbackURL: "/app", ...extra });
       expect([Object.keys(extra)[0], response.status]).toEqual([Object.keys(extra)[0], 400]);
       expect(((await response.json()) as { code?: string }).code).toBe("BAD_BODY");
     }
     const lines = captured.slice(from).join("\n");
     expect(lines).not.toContain("better_auth_error");
     expect(lines).not.toContain("SERVER_ERROR");
+  });
+
+  test("14: a foreign callbackURL or errorCallbackURL answers 403; a relative and a same-origin value answer 200", async () => {
+    const setup = await memberWithProvider({ proved: true });
+    const foreign = [
+      "https://evil.test/x",
+      "//evil.test/x",
+      "/\\evil.test",
+      "\\\\evil.test",
+      `${SSO_TEST_ORIGIN}.evil.test/`,
+      "javascript:alert(1)",
+    ];
+    const fields = [
+      ["callbackURL", "INVALID_CALLBACK_URL"],
+      ["errorCallbackURL", "INVALID_ERROR_CALLBACK_URL"],
+    ] as const;
+    for (const [field, code] of fields) {
+      for (const url of foreign) {
+        const response = await post(plainApp, "/sign-in/sso", {
+          email: setup.email,
+          callbackURL: "/app",
+          [field]: url,
+        });
+        expect([field, url, response.status]).toEqual([field, url, 403]);
+        expect(((await response.json()) as { code?: string }).code).toBe(code);
+      }
+      for (const url of ["/app", `${SSO_TEST_ORIGIN}/app`]) {
+        const response = await post(plainApp, "/sign-in/sso", {
+          email: setup.email,
+          callbackURL: "/app",
+          [field]: url,
+        });
+        expect([field, url, response.status]).toEqual([field, url, 200]);
+      }
+    }
   });
 
   test("10: a callback with an unknown state redirects to the error URL and logs oauth_state_failed", async () => {

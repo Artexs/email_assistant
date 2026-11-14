@@ -35,15 +35,17 @@ Part of [`../plan.md`](../plan.md). `[risky]` (auth). The only `bun.lock` change
 **Test** (`apps/server/test/integration/web-sso-plugin.test.ts`, new; `auth-sso.test.ts` unit):
 
 1. Unit: `isAllowedSsoPath` true for `POST /sign-in/sso`, `GET /sso/callback/<uuid>`; false for `GET /sign-in/sso`, `GET /sso/callback`, `GET /sso/callback/a/b` and every other path of F1.
-2. Each path of F1 outside D2, with and without a session, answers 404 through `createApp`.
+2. Each path of F1 outside D2, with and without a session, answers 404 through `createApp`. The list holds the SAML single-logout paths `/sso/saml2/sp/slo/<id>` and `/sso/saml2/logout/<id>` (review N1).
 3. A signed-in user calling `auth.api.registerSSOProvider` gets an error, no row (S8).
 4. A provider row by SQL for org A (`x.test`, proof `dns`, fake IdP config), member `ann@x.test`: `ssoSignIn` ends at the error URL with `error=sso_off`; no account or session row for Ann.
 5. The same provider unproved: `/sign-in/sso` refuses (no IdP redirect).
 6. `POST /sign-in/sso` for `bob@y.test` (no provider): an error, no redirect.
 7. The 11th `/sign-in/sso` in 60 s from one address: 429.
 8. Log capture over tests 4–7, with stdout and stderr (better-call writes a 500 by `console.error`, spike C4): no client secret, no `code`, no `id_token`, no `ann@x.test`.
-9. `POST /sign-in/sso` with `{ organizationSlug: "a" }` or with `domain`: 400, no `better_auth_error` line.
+9. `POST /sign-in/sso` with `{ organizationSlug: "a" }` or with `domain`, and with a `callbackURL` so that the plugin schema accepts the body: 400 `BAD_BODY`, no `better_auth_error` line (review N4).
 10. A callback with an unknown `state`: a redirect to `/login?sso=failed&error=state_mismatch` (spike C4); the log reason is `oauth_state_failed`: a new `BETTER_AUTH_REASONS` entry for the message start `Failed to parse state` (review 2, N4), with its `docs/known-alerts.md` row.
+14. Review N2: a foreign `callbackURL` or `errorCallbackURL` (`https://evil.test/x`, `//evil.test/x`, `/\evil.test`, `http://127.0.0.1:8080.evil.test/`, `javascript:`) answers 403 `INVALID_CALLBACK_URL` or `INVALID_ERROR_CALLBACK_URL`; a relative and a same-origin value answer 200.
+15. Review N9: the fake IdP requires a PKCE S256 `code_challenge`, a registered `redirect_uri` and a matching verifier (`apps/server/test/fake-oidc.test.ts`).
 
 No SSO test asserts the cookie `Max-Age` (30 days on each refresh; the session row decides the end; spike C4).
 

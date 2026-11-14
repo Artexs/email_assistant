@@ -18,6 +18,8 @@ const CLOSED_PATHS = [
   "/sso/callback/",
   "/sso/saml2/callback/x",
   "/sso/saml2/sp/metadata",
+  "/sso/saml2/sp/slo/p1",
+  "/sso/saml2/logout/p1",
   "/sign-up/email",
   "/sign-in/social",
   "/sign-in/oauth2",
