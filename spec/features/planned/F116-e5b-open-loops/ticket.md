@@ -30,3 +30,5 @@ E5b Open loops: the Stage 2 ticket in row 22 of `docs/product/stage-2/05-executi
 ## Notes
 
 Source row: §2.1 # 22. Needs plan: run the planner job (`notes/2026-11-13-limen-planner-role.md`).
+
+Design input from the architecture review (`docs/product/stage-2/06-architecture-review.md` §5, §8 decision 3): waiting replies, promises and delegations are three kinds of one open loop with one chaser. Plan a `loops` module that owns `open_loops` and the chaser, in the layer list of `apps/server/src/modules/layers.json`; `delegation` becomes a loop kind over time. Do not build a second chaser next to the delegation one.

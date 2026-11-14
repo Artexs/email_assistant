@@ -30,3 +30,5 @@ E9a Mailbox OAuth: the Stage 2 ticket in row 23 of `docs/product/stage-2/05-exec
 ## Notes
 
 Source row: §2.1 # 23. Needs plan: run the planner job (`notes/2026-11-13-limen-planner-role.md`).
+
+Design input from the architecture review (`docs/product/stage-2/06-architecture-review.md` §3.7): the IMAP adapter takes an auth-material union (`password` | `oauth` access token) instead of a password field; `mail/open.ts` resolves the stored secret into it (the token refresh with its per-mailbox lock lives there); the sender comes from a mailbox column (`smtp` | `graph`). Add a `MailSender` contract suite next to the `MailProvider` one before the Graph adapter.
