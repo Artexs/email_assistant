@@ -3,6 +3,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { createPlanned } from "../../src/modules/actions";
 import { auditEvents, recordAudit, recordLlmCall } from "../../src/modules/audit";
 import { insertDefaultSettings } from "../../src/modules/config";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { markSynced } from "../../src/modules/mail/repo";
 import {
   buildDigestMessage,
@@ -25,6 +26,7 @@ import {
   insertTriagedWithActions,
 } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
+import { seedWeek } from "./metrics-fixtures";
 
 const db = testDb();
 
@@ -125,6 +127,7 @@ describe("buildDigestMessage", () => {
     slot: { date: "2026-11-06", time: "08:00", late: false },
     now: T,
     locale: "en" as const,
+    testMail: NO_TEST_SENDERS,
   };
 
   test("lines, buttons, sync time, no data of another org", async () => {
@@ -386,6 +389,7 @@ describe("buildDigestMessage with delegations", () => {
     slot: { date: "2026-11-06", time: "08:00", late: false },
     now: T,
     locale: "en" as const,
+    testMail: NO_TEST_SENDERS,
   };
 
   test("a delegation line shows the draft, the approval and the task; the footer counts", async () => {
@@ -457,6 +461,30 @@ describe("buildDigestMessage with delegations", () => {
       await insertTriaged(trx, { orgId: a.orgId }, a.mailboxId, { category: "info", createdAt: at(-HOUR) });
       const message = await buildDigestMessage(trx, { orgId: a.orgId }, request);
       expect(message.text).not.toContain("Delegations");
+    });
+  });
+});
+
+describe("buildDigestMessage with the handled share", () => {
+  const request = {
+    kind: "on_demand" as const,
+    periodStart: new Date("2026-11-20T08:00:00Z"),
+    periodEnd: new Date("2026-11-21T08:00:00Z"),
+    slot: null,
+    now: new Date("2026-11-21T08:00:00Z"),
+    locale: "en" as const,
+    testMail: NO_TEST_SENDERS,
+  };
+
+  test("the line is behind the flag `handled_share`", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgA } = await seedWeek(trx);
+      const off = await buildDigestMessage(trx, orgA.ctx, request);
+      expect(off.text).not.toContain("🤖 Handled in the last 7 days:");
+
+      await setOrgFeature(trx, orgA.ctx, { flag: "handled_share", enabled: true, actor: "cli", now: request.now });
+      const on = await buildDigestMessage(trx, orgA.ctx, request);
+      expect(on.text).toContain("🤖 Handled in the last 7 days:");
     });
   });
 });

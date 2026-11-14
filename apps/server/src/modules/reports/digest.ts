@@ -1,6 +1,7 @@
 import {
   aiTextFor,
   describeActions,
+  handledShare,
   isUndoable,
   mailboxModes,
   renderDigest,
@@ -18,9 +19,9 @@ import { listActionsForEmails, listDraftTasks, listSummaries } from "../actions"
 import { auditEvents, countEventsBetween } from "../audit";
 import { getMailboxSettings } from "../config";
 import { countOpenDelegations, listDelegateNames } from "../delegation";
-import { countWaiting, INBOX, isSyntheticMessageId, listMailboxes } from "../mail";
-import { getOrganization } from "../tenancy";
-import { countTriagedBetween, listTriagedBetween } from "../triage";
+import { countWaiting, INBOX, isSyntheticMessageId, listMailboxes, type TestMailRule } from "../mail";
+import { getOrganization, isFeatureOn } from "../tenancy";
+import { countTriagedBetween, listHandledRows, listTriagedBetween } from "../triage";
 
 import { llmPauseToShow } from "./llm-pause";
 import { lastSentDigestEnd } from "./repo";
@@ -29,6 +30,7 @@ export const DIGEST_ITEM_LIMIT = 100;
 export const DIGEST_MAX_PERIOD_MS = 7 * 24 * 3_600_000;
 export const FIRST_DIGEST_LOOKBACK_MS = 24 * 3_600_000;
 export const WAITING_WINDOW_MS = 7 * 24 * 3_600_000;
+const HANDLED_WINDOW_MS = 7 * 24 * 3_600_000;
 
 const modeSchema = z.enum(mailboxModes);
 
@@ -39,6 +41,7 @@ export interface DigestRequest {
   slot: { date: string; time: string; late: boolean } | null;
   now: Date;
   locale: UserLocale;
+  testMail: TestMailRule;
 }
 
 // A digest that failed (never sent) does not move the start, so the next sent digest covers its mail.
@@ -134,6 +137,16 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
   });
   const waiting = await countWaiting(db, ctx, { receivedSince: new Date(request.now.getTime() - WAITING_WINDOW_MS) });
   const llmPause = await llmPauseToShow(db, ctx, request.now);
+  // The handled share of the last 7 days, behind the flag `handled_share`.
+  const handled = (await isFeatureOn(db, ctx, "handled_share"))
+    ? handledShare(
+        await listHandledRows(db, ctx, {
+          range: { start: new Date(request.now.getTime() - HANDLED_WINDOW_MS), end: request.now },
+          mailboxId: null,
+          testMail: request.testMail,
+        })
+      )
+    : null;
 
   return renderDigest(
     {
@@ -150,6 +163,9 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
       waiting,
       delegations,
       ...(llmPause === null ? {} : { llmPause }),
+      ...(handled === null
+        ? {}
+        : { handled: { ...handled, shadowOnly: mailboxes.every((mailbox) => mailbox.mode === "shadow") } }),
     },
     texts
   );
