@@ -1,4 +1,4 @@
-# F097 stage 12 — Report: Wilson bound, sim gate, tables, gate file, gap command
+# F097 stage 14 — Report: Wilson bound, sim gate, tables, gate file
 
 Part of [`../plan.md`](../plan.md).
 
@@ -63,7 +63,8 @@ export interface SimReportInput {
 export function renderSimSections(input: SimReportInput): string[];
 export function buildGateFile(input: SimReportInput & { now: Date }): GateFile;
 export const gateFileSchema: z.ZodType<GateFile>;
-export function gateFileName(input: { role: LlmRole; promptVersion: string; model: string }): string; // `${role}-${promptVersion}-${model with [^\w.-] → _}.json`
+export function gateFileName(input: { role: LlmRole; promptVersion: string; model: string; reasoningEffort: string | null; scenario: string; version: string }): string;
+// `${role}-${promptVersion}-${model}-${effort ?? "default"}-${scenario}-v${version}.json`, every part with [^\w.-] → _
 ```
 
 `renderEvalReport(report, { title, sim?: SimReportInput })`: with `sim`, the header gains `- corpus: <scenario> v<version> (<part>), manifest <first 12 hex>, owner audit: <status>` and `- cost: $<spent 4 dp> of cap $<cap 2 dp>`; after the shared parts it adds:
@@ -75,7 +76,9 @@ export function gateFileName(input: { role: LlmRole; promptVersion: string; mode
 5. `## Hard cases` — one row per tag present: n, right (final category = expected; for `kind: injection` also `injectionPassed`), rate.
 6. With `hideIds` (holdout): the failed injection id line becomes `Failed injection cases: <count>`; the "blocked" line prints a count, no ids; no other section prints an id.
 
-`buildGateFile` (D27): `{ scenario, version, manifestSha, audit, part, date, role, provider, model, reasoningEffort, promptVersion, bar, categories: { [bar category]: SimGateRow }, urgentRecallBySource: { text, vip, context: { n, recall } }, injection: { passed, total } }`. No case id, no text. `scripts/eval.ts` writes it only for `--part holdout` with `complete: true`, to `evals/results/gate/<gateFileName>`; it also writes the markdown to `--out` when given.
+`buildGateFile` (D27): `{ scenario, version, manifestSha, audit, provisional, part, date, role, provider, model, reasoningEffort, promptVersion, bar, minKept, categories: { [bar category]: SimGateRow & { metrics: { tp, fp, fn, support } } }, urgentRecallBySource: { text, vip, context: { n, recall } }, injection: { passed, total } }`. `provisional` = `audit !== "done"` (a consumer such as E4-B must not unlock `auto` from a provisional file; plan § Seams). `metrics` = `computeMetrics` of the final predictions (no threshold), the measure the gap check compares (stage 15). No case id, no text.
+
+`scripts/eval.ts` writes the gate file only when all of these hold, else it prints `no gate file: <reason>` and writes none: `--part holdout`; `complete: true`; `--bar` is 0.98 and `--min-kept` is 30 (the defaults: a gate file never carries a looser bar); no `--limit`. It writes to `evals/results/gate/<gateFileName>` and overwrites an older file of the same name (same prompt, model, effort and corpus version). It also writes the markdown to `--out` when given.
 
 **Decisions.** D27, D28, P5, P9.
 
@@ -84,48 +87,13 @@ export function gateFileName(input: { role: LlmRole; promptVersion: string; mode
 1. `renderSimSections` holds the five section titles; the urgent-by-source table has the right n and recall for a fixture with text 2/3, vip 1/1, context 0/2.
 2. `hideIds: true` → the rendered text contains none of the 12 case ids; `hideIds: false` → the failed injection id is present.
 3. `buildGateFile` parses with `gateFileSchema`; its JSON contains no case id.
-4. `gateFileName({ role: "classifier", promptVersion: "classifier-v2", model: "gpt-6-luna" })` → `classifier-classifier-v2-gpt-6-luna.json`.
+4. `gateFileName({ role: "classifier", promptVersion: "classifier-v2", model: "gpt-6-luna", reasoningEffort: "none", scenario: "lab-01", version: "1.1" })` → `classifier-classifier-v2-gpt-6-luna-none-lab-01-v1.1.json`; effort `null` → `…-default-…`.
+6. The gate-file guard (exported pure function `gateFileRefusal(options, report)`): `--bar 0.9` → `no gate file: bar is not 0.98`; `--limit 10` → refusal; `--part dev` → refusal; an incomplete run → refusal; defaults on a complete holdout run → `null`.
+7. `buildGateFile` with audit `pending` → `provisional: true`; with `done` → `false`.
 5. The old report tests (`eval-report.test.ts`) pass unchanged (no `sim` option → same text).
 
 **Check.** `bun test apps/server/src/modules/triage/eval-report.test.ts apps/server/src/modules/triage/eval-sim-report.test.ts`
 
-**Done when.** Cases 1–5 pass.
+**Done when.** Cases 1–7 pass.
 
-## Step 3 — `--real --json` and the gap command
-
-**Goal.** Sim and real numbers for `notification` and `spam` side by side (D32, P7).
-
-**Files.** `apps/server/src/scripts/eval.ts`, `apps/server/src/modules/triage/eval-gap.ts` (new), `eval-gap.test.ts`, `evals/README.md` (flags).
-
-**Interfaces.**
-
-```
-bun run eval --real --org-id <uuid> --mailbox-id <uuid> [--json <file>]   // counts only
-bun run eval --gap --sim-json <gate file> --real-json <file> [--out <file.md>]
-```
-
-```ts
-export const realCountsSchema = z.object({
-  date: z.iso.date(), labeled: z.number().int(),
-  categories: z.record(z.enum(categories), z.object({ tp: z.number().int(), fp: z.number().int(), fn: z.number().int(), support: z.number().int() }).strict()),
-}).strict();
-export function realCounts(report: RealEvalReport): RealCounts;
-export function renderGap(input: { sim: GateFile; real: RealCounts }): string; // markdown
-```
-
-The gate file holds per bar category `kept`, `tp`, `support`, `recall`; `renderGap` for `notification` and `spam`: sim precision with Wilson interval (`tp` of `kept`), sim recall; real precision with Wilson interval (`tp` of `tp + fp`), real recall, real n; verdict `gap` when the two precision intervals do not overlap, `no gap` when they overlap, `too few real labels` when real `tp + fp < 30` (P9 real-label clause). `--gap` needs no DB and no LLM key.
-
-**Decisions.** D32, P7, P9.
-
-**Test.**
-
-1. Sim notification 200/200 kept, real 28 tp + 2 fp → real interval [0.7868, 0.9815] overlaps the sim interval [0.9812, 1.0] → `no gap`.
-2. Real 20 tp + 10 fp → interval [0.4878, 0.8077] → `gap`.
-3. Real 10 tp + 5 fp → `too few real labels`.
-4. `realCounts` JSON contains no email id and no address (fixture with ids in the report rows).
-
-**Check.** `bun test apps/server/src/modules/triage/eval-gap.test.ts`
-
-**Done when.** Cases 1–4 pass.
-
-**Out of scope.** Running the gap on real data (stage 19).
+**Out of scope.** `--real --json` and the gap command (stage 15).

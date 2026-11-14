@@ -1,4 +1,4 @@
-# F097 stage 14 — Scenario `lab-01` and its slots
+# F097 stage 17 — Scenario `lab-01` and its slots
 
 Part of [`../plan.md`](../plan.md). Content stage: one writer job (Claude Sonnet 5.5, the board's worker model) writes the scenario; code plans the slots.
 
@@ -74,14 +74,14 @@ Expected counts: bank dev 6 × 53 + 19 × 3 + 8 × 2 = 391 slots (16 batches); h
 
 **Test.** None beyond the command output.
 
-**Check.** `bun run sim plan lab-01 > /tmp/f097-s14/plan.log && bun run sim status lab-01 > /tmp/f097-s14/status.log`
+**Check.** `bun run sim plan lab-01 > /tmp/f097-s17/plan.log && bun run sim status lab-01 > /tmp/f097-s17/status.log`
 
-**Done when.** Both commands exit 0; the final message gives the batch count per part (the coordinator uses it for the stage 15 and 16 ranges).
+**Done when.** Both commands exit 0; the final message gives the batch count per part (the coordinator uses it for the stage 18 and 19 ranges).
 
 ## Proof (this stage)
 
 ```
-mkdir -p /tmp/f097-s14 && bun run sim status lab-01 > /tmp/f097-s14/status.log 2>&1 && bunx prettier --check evals/sim/lab-01/scenario.json evals/sim/lab-01/plan-spec.json > /tmp/f097-s14/prettier.log 2>&1 && bun run test:unit:ci > /tmp/f097-s14/unit.log 2>&1 && echo PROOF_OK
+mkdir -p /tmp/f097-s17 && bun run sim status lab-01 > /tmp/f097-s17/status.log 2>&1 && bunx prettier --check evals/sim/lab-01/scenario.json evals/sim/lab-01/plan-spec.json > /tmp/f097-s17/prettier.log 2>&1 && bun run test:unit:ci > /tmp/f097-s17/unit.log 2>&1 && echo PROOF_OK
 ```
 
 Commit `scenario.json`, `plan-spec.json` and the generated files by explicit paths (`git add evals/sim/lab-01`; this one folder is the stage's output).

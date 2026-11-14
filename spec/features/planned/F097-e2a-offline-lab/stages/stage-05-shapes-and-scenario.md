@@ -74,6 +74,9 @@ export const senderHistorySchema = z
     delegationsTo: z.number().int().min(0),
     bulkSignals: z.array(z.enum(bulkSignals)),
     firstSeenDaysAgo: z.number().int().min(0).nullable(),
+    lastSeenDaysAgo: z.number().int().min(0).nullable(),
+    medianUserReplyHours: z.number().min(0).nullable(),   // the user's reply delay to them (null below 5 samples, E11 §2.2)
+    medianTheirReplyHours: z.number().min(0).nullable(),  // their reply delay to the user (null below 5 samples)
     relation: z.enum(senderRelations),
   })
   .strict();
@@ -100,7 +103,7 @@ export function relationOf(input: {
 2. `isVip: true` (not delegate) → `vip`.
 3. `received: 10, bulkMails: 6` → `bulk`; `bulkMails: 5` → not `bulk`.
 4. `answered: 1` → `known`; `userMailsTo: 1` → `known`; all zero → `new`.
-5. `senderHistorySchema` refuses an extra key `note` (no text field can sneak in).
+5. `senderHistorySchema` refuses an extra key `note` (no text field can sneak in); it has every field of the E11 §2.2 list (`docs/product/stage-2/epics/E11-discovery-notes.md` § 2.2): assert the key list.
 
 **Check.** `bun test packages/core/src/triage/sender-history.test.ts`
 
@@ -187,4 +190,4 @@ Validator rules: persona keys and the executive key unique; addresses unique and
 
 **Done when.** Cases 1–10 pass; the old testmail tests pass.
 
-**Out of scope.** The real scenario `lab-01` (stage 14). The planner (stages 06–07).
+**Out of scope.** The real scenario `lab-01` (stage 17). The planner (stages 07–08).

@@ -33,13 +33,13 @@ An agent or the owner runs one command and gets, in under 10 minutes, per-catego
 
 ## Slices
 
-19 stages, one worker job each, except stages 15 (writer) and 16 (blind checker): several jobs each, by batch range. Lanes, parallel rules, the only migration (stage 03), review jobs and coordinator steps: [plan.md](plan.md) § "How to run". No owner checkpoint; owner step O1 (audit 50 cases) after stage 17 does not stop the build.
+22 stages, one worker job each, except stages 18 (writer) and 19 (blind checker): several jobs each, by batch range. Lanes, parallel rules, the only migration (stage 03), review jobs and coordinator steps: [plan.md](plan.md) § "How to run". No owner checkpoint; owner step O1 (audit 50 cases) after stage 20 does not stop the build.
 
 ## Sequenced
 
 - Plan after: none (the plan uses no interface of another unplanned ticket).
 - Build after: F095 (E1 Close the MVP) in `spec/features/done/`.
-- Gate: Owner audit of 50 cases per corpus version — it runs after stage 17 (the corpus freeze) and does not stop the build (plan D36, questions Q1).
+- Gate: Owner audit of 50 cases per corpus version — it runs after stage 20 (the corpus freeze) and does not stop the build (plan D36, questions Q1).
 
 ## Notes
 

@@ -1,4 +1,4 @@
-# F097 stage 10 — Freeze, manifest and the owner audit commands
+# F097 stage 12 — Freeze, manifest and the owner audit commands
 
 Part of [`../plan.md`](../plan.md).
 
@@ -25,27 +25,31 @@ export const manifestSchema = z.object({
 
 export interface FreezeInput { slots: Record<SimPart, Slot[]>; texts: Record<SimPart, Map<string, CaseText>>; labels: Record<SimPart, Map<string, ValueCategory>>; spec: PlanSpec }
 export type FreezeIssue = { code: "unwritten" | "unlabelled" | "open_disagreement" | "too_few" | "hard_too_few" | "week_dropped"; detail: string };
-export function freezeIssues(input: FreezeInput): FreezeIssue[];
+export interface FreezeFloors { minDev: number; minHoldout: number; hardShare: number } // CLI defaults 50, 200, 0.8 (P3)
+export function freezeIssues(input: FreezeInput, floors: FreezeFloors): FreezeIssue[];
 export function partHash(slots: readonly Slot[], texts: Map<string, CaseText>): string; // sha256 over JSON of [slot, text] pairs sorted by id, dropped texts excluded; node:crypto is allowed in core (eval-case.ts uses it)
 ```
 
-Rules: every slot has a text (`unwritten`); every non-dropped case has a label (`unlabelled`); a label ≠ slot category without a `borderline:` note (`open_disagreement`); per value category non-dropped dev ≥ `devPerCategory − 3` and holdout ≥ 200 (`too_few`; holdout 200 is P3's floor, not the planned 210); per hard-case tag non-dropped ≥ 80 % of planned (`hard_too_few`); a dropped week case (`week_dropped`: week cases may not be dropped; they are rewritten or marked borderline, D34).
+Rules: every slot has a text (`unwritten`); every non-dropped case has a fresh label (`unlabelled`; a stale label, whose `blindHash` differs from the current blind entry, counts as missing); a label ≠ slot category without a `borderline:` note (`open_disagreement`); per value category non-dropped dev ≥ `floors.minDev` and holdout ≥ `floors.minHoldout` (`too_few`; P3's floors 50 and 200, not the planned 53 and 210); per hard-case tag non-dropped ≥ `floors.hardShare` × planned (`hard_too_few`); a dropped week case (`week_dropped`: week cases may not be dropped; they are rewritten or marked borderline, D34).
 
-`bun run sim freeze <scenario> --version <v> --date <YYYY-MM-DD>`: runs `check` on all parts (exit 1 on any issue), then `freezeIssues` (exit 1, print codes and counts), then writes `manifest.json` with `audit.status: "pending"`. `--date` is required (no clock in the command; the stage that freezes passes the day).
+`bun run sim freeze <scenario> --version <v> --date <YYYY-MM-DD> [--min-dev 50] [--min-holdout 200]`: runs `check` on all parts (exit 1 on any issue), then `freezeIssues` (exit 1, print codes and counts), then writes `manifest.json` with `audit.status: "pending"`. `--date` is required (no clock in the command; the stage that freezes passes the day).
+
+`bun run sim status` (stage 11) gains its first line: `manifest: v<version> audit <pending|done> (<wrong> wrong)` when `manifest.json` exists, else `manifest: not frozen`.
 
 **Decisions.** D34, D36, P3.
 
 **Test** (unit; fixture corpus with all texts and labels written by the test helper):
 
-1. A complete fixture → `freezeIssues` `[]`; `freeze` writes a manifest that parses; the same input twice → the same hashes.
+1. A complete fixture with floors `{ minDev: 5, minHoldout: 20, hardShare: 0.8 }` (the stage 11 fixture is small) → `freezeIssues` `[]`; `freeze` writes a manifest that parses; the same input twice → the same hashes.
 2. Change one text's body → that part's hash changes, the others do not.
 3. One label differs, no note → `open_disagreement`; with `borderline:` → no issue.
 4. A dropped week text → `week_dropped`.
-5. Holdout with 199 non-dropped cases of one category → `too_few` naming the category.
+5. Floors `{ minDev: 5, minHoldout: 20, … }` and 19 non-dropped holdout cases of one category → `too_few` naming the category; with the CLI defaults (50, 200) the fixture gives `too_few` for every category (the defaults are P3's).
+6. `status` before `freeze` prints `manifest: not frozen`; after `freeze --version 1` it prints `manifest: v1 audit pending (0 wrong)`.
 
 **Check.** `bun test packages/core/src/sim/manifest.test.ts apps/server/src/scripts/sim-files.test.ts`
 
-**Done when.** Cases 1–5 pass.
+**Done when.** Cases 1–6 pass.
 
 ## Step 2 — `audit-list` and `audit-apply`
 
@@ -69,7 +73,7 @@ export function applyVerdict(slot: Slot, verdict: string): Slot; // see rules
 
 `bun run sim audit-list <scenario> --version <v>`: writes `audit/v<v>-list.md` (one section per case: id, part, slot category, urgency source, hard-case tags, `brief`, expected delegate, expected points; then the mail as the checker sees it: from, to, cc, subject, body, thread, attachment names) and `audit/v<v>-verdicts.json` with every id `pending`. Prints only the two paths and the counts. Refuses when the manifest's `audit.status` is `done` for that version.
 
-`bun run sim audit-apply <scenario> --version <v> --date <YYYY-MM-DD>`: for each `wrong: <category>` verdict, `applyVerdict` rewrites the slot in its batch file: set `category`; for `urgent` set `urgencySource: "text"`; for `delegation` set `expectedDraft: "clarification"`; clear `urgencySource`, `contextRef`, `expectedDelegate`, `expectedDraft` where they no longer fit `slotSchema`'s rules. Then: when any slot changed, the version becomes `<v>.1` (or `+0.1`) and the hashes are recomputed; `audit.wrong` = the number of `wrong` verdicts; `audit.status` = `done` when no verdict is `pending`, else stays `pending`. Prints counts only.
+`bun run sim audit-apply <scenario> --version <v> --date <YYYY-MM-DD>`: for each `wrong: <category>` verdict, `applyVerdict` rewrites the slot in its batch file: set `category`; for `urgent` set `urgencySource: "text"`; for `delegation` set `expectedDraft: "clarification"`; clear `urgencySource`, `contextRef`, `expectedDelegate`, `expectedDraft` where they no longer fit `slotSchema`'s rules. Then: when any slot changed, the minor version goes up by one (`1` → `1.1`, `1.1` → `1.2`) and the hashes are recomputed; `audit.wrong` = the number of `wrong` verdicts; `audit.status` = `done` when no verdict is `pending`, else stays `pending`. Prints counts only.
 
 README § 6 (owner audit): open `audit/v<v>-list.md`, read each case, set its line in `audit/v<v>-verdicts.json` to `ok` or `wrong: <category>`; about 15 min; the coordinator runs `audit-apply` and commits.
 
@@ -81,7 +85,7 @@ README § 6 (owner audit): open `audit/v<v>-list.md`, read each case, set its li
 2. Fewer than 30 ids → all ids random, contested `[]`.
 3. `applyVerdict(urgent slot with source vip, "wrong: info")` → category `info`, no `urgencySource`; the result parses with `slotSchema`.
 4. `applyVerdict(info slot, "wrong: delegation")` → `expectedDraft: "clarification"`, no `expectedDelegate`.
-5. `audit-apply` with one `wrong` and no `pending` → manifest version `1.1`, `audit.status: "done"`, `audit.wrong: 1`, a changed hash for that part only.
+5. `audit-apply` with one `wrong` and no `pending` → manifest version `1.1` (a second change later → `1.2`), `audit.status: "done"`, `audit.wrong: 1`, a changed hash for that part only.
 6. `audit-list` stdout holds no case text (assert it does not contain the subject of any case).
 
 **Check.** `bun test packages/core/src/sim/audit.test.ts apps/server/src/scripts/sim-files.test.ts`

@@ -1,4 +1,4 @@
-# F097 stage 13 — Draft judge
+# F097 stage 16 — Draft judge
 
 Part of [`../plan.md`](../plan.md). **[risky]**: a new LLM prompt and an LLM-scored quality number. Review job before the land.
 
@@ -111,6 +111,8 @@ Rules:
 1. With `judge` set, after a case plans a `create_draft` of kind `delegation` or `clarification`, run `draftCodeChecks` (expected recipient: `expectedDelegate`'s delegate address for `delegation`, the sender for `clarification`; `planted` from `sim.planted`), then `judgeDraft(kind "delegation")` with the case subject and body and the draft text. Judge soft errors retry like classifier calls; a final error → `{ errorCode }`. The judge call's cost counts in the budget.
 2. CLI: `--judge`, `--judge-provider <id>`, `--judge-model <id>` (overrides of the `judge` role row, D31). Before any call: if the judge row's provider equals the classifier row's provider → exit 1 with `judge provider must differ from the classifier provider (PD-026)`. The judge model needs a price (D26).
 3. Report section `## Draft judge` (sim reports, when any case has `judge`): judged n, errors n, code checks passed n (and per failed code), rubric item means, pass n and rate with Wilson lower; `hideIds` hides ids.
+4. Judge errors (N11 of the cold review): a judge call that ends in an error after its retries counts in `errorsInRow` like a classifier error (a spent Gemini quota stops the run instead of finishing "complete" with every judge result an error). On resume with `--judge`, an earlier result is reused only if `draftKind` is `none` or its `judge` holds scores; a result with `judge: null` (run without `--judge`) or `judge.errorCode` while a draft was planned runs again (classifier and judge). `evalExitCode` returns 1 when more than 10 % of judged cases end in a judge error.
+5. Key check: before any call the CLI checks the judge provider's API key like the classifier's (`keys.apiKey === undefined` → print the key **name**, exit 1); stage 21 turns that into owner step O2.
 
 **Decisions.** D30, D31, P11.
 
@@ -120,11 +122,13 @@ Rules:
 2. A case with no draft → `judge: null`; no judge call (count).
 3. Judge fake throws a soft error, retries 0 → `judge: { kind, errorCode }`; the classifier result is kept.
 4. An old state line without `judge` parses (`judge: null`).
-5. CLI check (exported function): classifier `openai` + judge `openai` → refusal message; `gemini` → allowed.
+5. CLI check (exported function): classifier `openai` + judge `openai` → refusal message; `gemini` → allowed; `gemini` without `GEMINI_API_KEY` in the test config → the message names `GEMINI_API_KEY` and holds no other config value.
+7. Judge fake fails 3 times in a row (retries 0), concurrency 1 → the run stops issuing (`complete: false`); a resume with `done` = those results and a working fake re-runs exactly those 3 cases.
+8. `evalExitCode` with 10 judged, 2 judge errors → 1; with 1 error → as before.
 6. Report: 3 judged (2 pass) → the section shows `pass 2 of 3`.
 
 **Check.** `bun test apps/server/src/modules/triage/ apps/server/src/scripts/`
 
-**Done when.** Cases 1–6 pass. No real LLM call in this stage.
+**Done when.** Cases 1–8 pass. No real LLM call in this stage.
 
 **Out of scope.** Reply drafts (E6a calls the `reply` rubric). Judge calibration against human labels (plan N5).

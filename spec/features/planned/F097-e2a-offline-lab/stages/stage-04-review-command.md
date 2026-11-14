@@ -37,14 +37,14 @@ export const REVIEW_OFF_TEXT = "This command is not on for your account.";
 export function renderReviewPage(input: { items: readonly ReviewItem[]; now: Date; timeZone: string }): OutMessage;
 ```
 
-Page text: first line `Review: ${n} ${n === 1 ? "mail" : "mails"} without a label (random sample of the last 30 days). Tap ✅ when the AI category is right, ✏️ to correct it.`; then per item a block like a digest item (reuse `categoryTag`, `senderLabel`, `cleanSubject`, `cutText`, `formatClock` from the digest helpers; do not copy them), numbered `1.` … Buttons: one row per item, `[✅ n]` (only when `isLabelCategory(category)`) with `review_right`, `[✏️ n]` with `review_edit`. The whole message ≤ `MESSAGE_MAX_CHARS`: drop items from the end until it fits (as `renderDigest` does). No mail body: the page shows the AI summary (`aiText`) only, as the digest does (ADR 0005).
+Page text: first line `Review: ${n} ${n === 1 ? "mail" : "mails"} without a label (random sample of the last 30 days). Tap ✅ when the AI category is right, ✏️ to correct it.`; then per item a block like a digest item (reuse `categoryTag`, `senderLabel`, `cleanSubject`, `cutText`, `formatClock` from the digest helpers; do not copy them), numbered `1.` … Buttons: one row per item, `[✅ n]` (when the category is one of `reviewLabelCategories`, so also `delegation`; not for `unsure`) with `review_right`, `[✏️ n]` with `review_edit`. The whole message ≤ `MESSAGE_MAX_CHARS`: drop items from the end until it fits (as `renderDigest` does). No mail body: the page shows the AI summary (`aiText`) only, as the digest does (ADR 0005).
 
 **Decisions.** D4, D5, D6.
 
 **Test** (unit, `review.test.ts`; `now = 2026-11-20T12:00:00Z`, `timeZone = "Europe/Warsaw"`):
 
 1. 0 items → `REVIEW_EMPTY_TEXT`, no buttons.
-2. 2 items (`info`, `unsure`) → header says `2 mails`; item 1 has buttons `vr:i:…` and `ve:…`; item 2 (`unsure`) has only `ve:…`.
+2. 3 items (`info`, `unsure`, `delegation`) → header says `3 mails`; item 1 has buttons `vr:i:…` and `ve:…`; item 2 (`unsure`) has only `ve:…`; item 3 has `vr:d:…` and `ve:…`.
 3. 10 items with 400-char summaries → text length ≤ 4096 and the button rows match the items kept.
 4. `featureFlags.review_command.default === false` and `epic === "E2a"` (the registry test in `features.test.ts` already checks the patterns).
 

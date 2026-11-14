@@ -1,4 +1,4 @@
-# F097 stage 09 — `bun run sim`: plan, status, brief, check, blind export, reconcile; the runbook
+# F097 stage 11 — `bun run sim`: plan, status, brief, check, blind export, reconcile; the runbook
 
 Part of [`../plan.md`](../plan.md).
 
@@ -35,14 +35,14 @@ Commands:
 
 1. `plan` on the mini fixture writes the three parts and `history.json`; a second `plan` without `--force` exits 1; with `--force` and no texts it rewrites identical files (byte-equal).
 2. With one `texts/batch-001.json` present, `plan --force` exits 1.
-3. `status` after `plan` prints `written 0` for every category and the slot counts of stage 06 test 2.
+3. `status` after `plan` prints `written 0` for every category and the slot counts of stage 07 test 2.
 4. `sim-args`: unknown command → usage + exit 1; `--root` without a value → usage.
 
 **Check.** `bun test apps/server/src/scripts/sim-args.test.ts apps/server/src/scripts/sim-files.test.ts`
 
 **Done when.** Cases 1–4 pass.
 
-## Step 2 — `brief`, `check`, `blind-export`, `reconcile`
+## Step 2 — `brief`, `check`, `blind-export`, `label-import`, `stale`, `reconcile`
 
 **Goal.** The writer gets one batch's facts; code checks gate every written batch; the checker gets a truth-free view; disagreements are listed (D17, D18, D33, D34).
 
@@ -51,9 +51,11 @@ Commands:
 Commands:
 
 - `bun run sim brief <scenario> --part <p> --batch <NNN>`: prints JSON `{ scenario: { company, executive, topics, urgency }, personas: [the personas the batch uses, with voice and signature], delegates, slots: [the batch's slots] }`. This is plan data, no mail text exists yet; stdout is allowed.
-- `bun run sim check <scenario> [--part <p>] [--batches <from>-<to>]`: for each batch in range: file schemas (slots, texts, blind, labels when present), every slot has a text (`text_missing`) and every text a slot (`slot_unknown`), `checkCase` issues, then `checkSpread` for each part whose every slot has a text. Prints `case <id> <code>` lines and spread lines, then `ok` or `issues <n>`; exit 1 on any issue. Without `--part` it checks all parts. A range with no texts at all → `nothing written in range`, exit 1.
-- `bun run sim blind-export <scenario> --part <p> --batches <from>-<to>`: writes `blind/batch-NNN.json` per batch from the joined case (D33: `from` = display name + address, `to`, `cc`, `subject`, `body` (the html's text for html slots, through the same `htmlBodyText` as `toEvalCase`), `thread` (from, subject, body), attachment names). Never a slot field. Skips `dropped` cases.
-- `bun run sim reconcile <scenario> --part <p> --batches <from>-<to>`: prints `disagree <id> slot <category> blind <category> round <1|2>` for each case whose label differs from the slot and whose text has no `borderline:` note; round 2 when the text's `note` starts with `rewritten:` (the writer marks a rewrite so, D34). Exit 0.
+- `bun run sim check <scenario> [--part <p>] [--batches <from>-<to>]`: for each batch in range: file schemas (slots, texts, blind, labels when present), every slot has a text (`text_missing`) and every text a slot (`slot_unknown`), `checkCase` and `checkBatch` issues, `label_stale` for a label whose `blindHash` differs from the current blind entry (plus `label_unknown` for a label id with no blind entry), then `checkSpread` for each part whose every slot has a text. Prints `case <id> <code>` lines and spread lines, then `ok` or `issues <n>`; exit 1 on any issue. Without `--part` it checks all parts. A range with no texts at all → `nothing written in range`, exit 1.
+- `bun run sim blind-export <scenario> --part <p> --batches <from>-<to>`: writes `blind/batch-NNN.json` per batch from the joined case (D33: `from` = display name + address, `to`, `cc`, `subject`, `body` (the text part; for `html_only` the html's text through the same `htmlBodyText` as `toEvalCase`), `thread` (from, subject, body; for a week reply the parent chain as in `toEvalCase`), attachment names). Never a slot field. Skips `dropped` cases. Rewrites the whole batch file each time (a case whose text did not change gets a byte-equal entry, so its label stays fresh).
+- `bun run sim label-import <scenario> --part <p> --batch <NNN> --checker <model id> --file <path>`: reads `[{ id, category }]` from `<path>` (the checker's output in `/tmp`), sets `blindHash` = sha256 of the JSON of the case's current blind entry, and merges into `labels/batch-NNN.json`: given ids are replaced or added, others stay. Refuses an id with no blind entry. Prints counts only.
+- `bun run sim stale <scenario> --part <p> --batches <from>-<to>`: prints `stale <id>` for each non-dropped case with no label or a stale label (the ids the next checker job labels). Exit 0.
+- `bun run sim reconcile <scenario> --part <p> --batches <from>-<to>`: prints `disagree <id> slot <category> blind <category> round <1|2>` for each case with a fresh (not stale) label that differs from the slot and whose text has no `borderline:` note and no `dropped`; round 2 when the text's `note` starts with `rewritten:` (the writer marks a rewrite so, D34). Exit 0.
 
 **Decisions.** D17, D18, D33, D34.
 
@@ -63,11 +65,12 @@ Commands:
 2. One text with `tel. 600 700 800` → `case <id> phone_number`, exit 1; stdout holds no part of the body (assert `!stdout.includes("600")`).
 3. A text for an unknown slot id → `slot_unknown`.
 4. `blind-export` → the blind file parses with `blindBatchFileSchema`; its JSON contains none of the strings `category`, `urgencySource`, `brief`, `expectedDelegate`, `hardCases` (keys of the slot).
-5. Labels file with one case labelled differently → `reconcile` prints one `disagree … round 1` line; after the text gets `note: "rewritten: …"` → `round 2`; with `note: "borderline: …"` → no line.
+5. `label-import` of one batch with one case labelled differently → `reconcile` prints one `disagree … round 1` line. Rewrite that text with `note: "rewritten: …"` and `blind-export` again → `stale` prints only that id, `reconcile` prints nothing for it, `check` reports `label_stale`; after a new `label-import` of that id with the same wrong label → `round 2`; with `note: "borderline: …"` → no line.
+6. `blind-export` twice with no text change → byte-equal file; no label becomes stale.
 
 **Check.** `bun test apps/server/src/scripts/sim-files.test.ts`
 
-**Done when.** Cases 1–5 pass.
+**Done when.** Cases 1–6 pass.
 
 ## Step 3 — The runbook
 
@@ -79,10 +82,10 @@ Content (headings and the exact rules; write it in plain technical English):
 
 1. **What this is.** Two frozen corpora per scenario (bank: dev + holdout; week), label first. Layout (D12). Data rule: `evals/README.md` § Data rule.
 2. **Holdout rule.** "Never open `holdout/` for prompt work. Only corpus stages and the gate run read it." (P3.)
-3. **Writer procedure** (Claude Sonnet): `bun run sim brief … --batch NNN` → write `texts/batch-NNN.json` (schema `textBatchFileSchema`), one text per slot, in the slot's language and the persona's voice, keeping every slot fact: the category intent of the `brief`, the length bucket, the format (html: a realistic simple HTML mail, inline styles only; `html_only`: `body` is `""`), signature (copy the persona's signature line exactly), greeting style, thread texts for `slot.thread`, attachment names mentioned in the text, headers are not text. For `needs_reply`: `expectedPoints` (what the reply must answer) and `mustNot`. For injection slots: the attack text and its `planted` strings. Never write the category name; never use a real company, person, address, phone number or URL; only the scenario's reserved domains. Vary openings, length and structure; no two mails in a batch open with the same sentence. Then `bun run sim check … --batches NNN-NNN` until `ok`. Commit only the text files of your range.
+3. **Writer procedure** (Claude Sonnet): `bun run sim brief … --batch NNN` → write `texts/batch-NNN.json` (schema `textBatchFileSchema`), one text per slot, in the slot's language and the persona's voice, keeping every slot fact: the category intent of the `brief`, the length bucket, the format (`html`: write both the text part in `body` and a realistic simple HTML version in `html`, inline styles only; `html_only`: `html` only and `body` is `""`), signature (copy the persona's signature line exactly), greeting style, thread texts for `slot.thread`, attachment names mentioned in the text, headers are not text. For `needs_reply`: `expectedPoints` (what the reply must answer) and `mustNot`. For injection slots: the attack text and its `planted` strings. Never use a real company, person, address, phone number or URL; only the scenario's reserved domains. No run of 9 or more digits (the phone check refuses it): write dates as `12.01.2027` or in words, times as `14:30`, and planted account numbers in a fake short form such as `PL00-TEST-4821`. Vary openings, length and structure; no two mails in a batch open with the same sentence. Then `bun run sim check … --batches NNN-NNN` until `ok`. Commit only the text files of your range.
 4. **Rewrite procedure** (writer, after `reconcile`): rewrite the text once so its slot label is clear, set `note: "rewritten: <short reason>"`; or, when the mail is truly ambiguous, keep it and set `note: "borderline: <short reason>"`. A second disagreement → set `dropped: true` (D34).
-5. **Checker procedure** (Claude Haiku): read only `blind/batch-NNN.json` and this section; never open `slots/`, `texts/` or `plan-spec.json`. For each case pick one of `urgent`, `needs_reply`, `delegation`, `info`, `notification`, `spam` with the meanings below (copy the six meanings of `prompts/classifier-v2.ts` `MEANINGS`, as text in the README, plus "the executive's delegates are <names and tags from the scenario>"); write `labels/batch-NNN.json` (`labelBatchFileSchema`, `checker: "claude-haiku-5-5"`); then `bun run sim check … --batches NNN-NNN`.
-6. **Owner audit** (filled by stage 10).
+5. **Checker procedure** (Claude Haiku): read only `blind/batch-NNN.json` and this section; never open `slots/`, `texts/` or `plan-spec.json`. For each case pick one of `urgent`, `needs_reply`, `delegation`, `info`, `notification`, `spam` with the meanings below (copy the six meanings of `prompts/classifier-v2.ts` `MEANINGS`, as text in the README, plus "the executive's delegates are <names and tags from the scenario>"); write `/tmp/f097-s19/labels-NNN.json` as `[{ "id": …, "category": … }]` for the ids that `bun run sim stale … --batches NNN-NNN` prints (all cases on the first pass), then `bun run sim label-import … --batch NNN --checker <your model id> --file /tmp/f097-s19/labels-NNN.json`, then `bun run sim check … --batches NNN-NNN`. Never open `slots/`, `texts/`, `labels/` of other batches, `plan-spec.json` or `scenario.json`: the coordinator checks the job's tool log for those paths and discards the labels of a job that opened them.
+6. **Owner audit** (filled by stage 12).
 7. **Limits.** One writer job = the batch range in its spawn text; up to 3 writer jobs at once on disjoint bank ranges; week batches one job at a time in time order (threads span batches).
 
 **Decisions.** P2, P3, D17, D33, D34, D37.
@@ -93,4 +96,4 @@ Content (headings and the exact rules; write it in plain technical English):
 
 **Done when.** The file holds the 7 sections.
 
-**Out of scope.** Writing any corpus text (stages 14–17). Freeze and audit commands (stage 10).
+**Out of scope.** Writing any corpus text (stages 17–20). Freeze and audit commands (stage 12).

@@ -76,7 +76,7 @@ Build the order with `sql<string>\`md5(${sql.ref("triage_results.email_id")}::te
 
 **Decisions.** D1, D4.
 
-**Test** (integration, fixed `now = 2026-11-20T12:00:00Z`, two orgs from `createTwoTenants`, org A one mailbox with 14 triaged mails received 2026-11-01 … 2026-11-14 at 09:00Z; mail 3 has a feedback row; mail 5 is from `t@agentmail.test` with rule `{ senders: ["t@agentmail.test"] }`; mail 7 has a synthetic Message-ID; mail 1 was received 2026-10-15 (outside the window); org B has 3 triaged unlabelled mails):
+**Test** (integration, fixed `now = 2026-11-20T12:00:00Z`, two orgs made with `createOrgWithMailbox` from `apps/server/test/integration/fixtures.ts` (the `createTwoTenants` helpers in other test files are private), org A one mailbox with 14 triaged mails received 2026-11-01 … 2026-11-14 at 09:00Z; mail 3 has a feedback row; mail 5 is from `t@agentmail.test` with rule `{ senders: ["t@agentmail.test"] }`; mail 7 has a synthetic Message-ID; mail 1 was received 2026-10-15 (outside the window); org B has 3 triaged unlabelled mails):
 
 1. `seed = "s1"`, limit 10 → 10 rows, none of mails 1, 3, 5, 7, none of org B.
 2. The same call twice → the same ids in the same order.
@@ -100,19 +100,23 @@ Build the order with `sql<string>\`md5(${sql.ref("triage_results.email_id")}::te
 **Interfaces.**
 
 ```ts
+// The review page may also confirm or pick `delegation` (code `d`): without it a delegation mail could never leave the review sample.
+export const reviewLabelCategories = [...labelCategories, "delegation"] as const;
+export type ReviewLabelCategory = (typeof reviewLabelCategories)[number];
+
 export type FeedbackCallback =
   | … the five existing kinds …
-  | { kind: "review_right"; category: LabelCategory; emailId: string }  // vr:<code>:<uuid>
-  | { kind: "review_pick"; category: LabelCategory; emailId: string }   // vc:<code>:<uuid>
+  | { kind: "review_right"; category: ReviewLabelCategory; emailId: string }  // vr:<code>:<uuid>
+  | { kind: "review_pick"; category: ReviewLabelCategory; emailId: string }   // vc:<code>:<uuid>
   | { kind: "review_edit"; emailId: string }                            // ve:<uuid>
   | { kind: "review_cancel"; emailId: string };                         // vx:<uuid>
 
 export function isReviewCallback(c: Callback): boolean; // the four kinds above
 ```
 
-The regexes `WITH_CODE` and `WITHOUT_CODE` gain the prefixes. `isFeedbackCallback` stays `"emailId" in callback` (true for the new kinds). The longest value stays 41 bytes.
+The regexes `WITH_CODE` and `WITHOUT_CODE` gain the prefixes; the review prefixes accept the codes `u r i n s d` (`d` = `delegation`), the old prefixes keep `u r i n s` only (`fr:d:…` still parses to `null`). `isFeedbackCallback` stays `"emailId" in callback` (true for the new kinds). The longest value stays 41 bytes.
 
-`apps/server/src/modules/channels/callbacks.ts` must keep compiling: map each review kind to the same branch as its plain kind with a `source` variable (`"review"` for the review kinds, `"telegram"` for the others), and the review picker's buttons use `review_pick` / `review_cancel` so the whole flow stays `review`. This is the only change in `callbacks.ts` in this stage; keep it small (F088 stage 05 edits the same file).
+`apps/server/src/modules/channels/callbacks.ts` must keep compiling: map each review kind to the same branch as its plain kind with a `source` variable (`"review"` for the review kinds, `"telegram"` for the others), and the review picker's buttons use `review_pick` / `review_cancel` so the whole flow stays `review`. The review picker offers the six `reviewLabelCategories` (the digest picker keeps its five). This is the only change in `callbacks.ts` in this stage; keep it small (F088 stage 05 edits the same file).
 
 **Decisions.** D5.
 
@@ -120,11 +124,11 @@ The regexes `WITH_CODE` and `WITHOUT_CODE` gain the prefixes. `isFeedbackCallbac
 
 1. `encodeCallback({ kind: "review_right", category: "info", emailId: id })` → `vr:i:${id}`; `parseCallback` of it → the same object.
 2. The same round trip for `review_pick` (`vc:s:…`), `review_edit` (`ve:…`), `review_cancel` (`vx:…`).
-3. `parseCallback("vr:z:" + id)` → `null`; `parseCallback("vq:" + id)` → `null`.
+3. `parseCallback("vr:z:" + id)` → `null`; `parseCallback("vq:" + id)` → `null`; `parseCallback("vr:d:" + id)` → `{ kind: "review_right", category: "delegation", … }`; `parseCallback("fr:d:" + id)` → `null`.
 4. Every old prefix still parses to its old kind (keep the existing cases green).
 5. Byte length of every encoded review callback ≤ 64.
 
-Integration (`apps/server/test/integration/channels-callbacks.test.ts`, one new case): a `vr:` tap on a triaged mail writes one `triage_feedback` row with `source = 'review'` and `verdict = 'right'`; a `ve:` tap answers with a picker whose buttons start with `vc:` and `vx:`.
+Integration (`apps/server/test/integration/channels-callbacks.test.ts`, one new case): a `vr:` tap on a triaged mail writes one `triage_feedback` row with `source = 'review'` and `verdict = 'right'`; a `ve:` tap answers with a picker whose buttons start with `vc:` and `vx:` and include `vc:d:` (delegation); a `vc:d:` tap writes `true_category = 'delegation'`, `source = 'review'`.
 
 **Check.** `bun test packages/core/src/digest/callback.test.ts apps/server/test/integration/channels-callbacks.test.ts`
 

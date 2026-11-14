@@ -1,4 +1,4 @@
-# F097 stage 07 — Week planner and prior history
+# F097 stage 08 — Week planner and prior history
 
 Part of [`../plan.md`](../plan.md).
 
@@ -56,20 +56,20 @@ export type WeekHistory = z.infer<typeof weekHistorySchema>;
 
 Rules (seed streams `deriveSeed(seed, "week:<day>")`):
 
-1. Categories per day from `dayCounts`; senders by the stage 06 group rule; urgency sources 50/25/25 within the week's urgent slots; language 70/30 by largest remainder over the week.
+1. Categories per day from `dayCounts`; senders by the stage 07 group rule; urgency sources 50/25/25 within the week's urgent slots; language 70/30 by largest remainder over the week.
 2. Times: weekdays uniform in 07:00–20:00 Europe/Warsaw for `1 − offHoursShare`, the rest in 20:00–23:59 or 05:00–06:59; weekend days uniform 08:00–22:00. `localToInstant` for the UTC time. No two slots at the same minute (shift by one minute on a clash).
 3. Threads: `replyShare` of person-sent slots (groups boss, team, client, partner, vendor, delegate) reply to an earlier slot of the same week with the same topic, between the same two people (the executive is always one end); `parentId` = the earlier slot, `threadId` = the root's id; depth ≤ `maxThreadDepth`; a parent is at least 10 minutes earlier.
 4. Executive-started threads (X4): `sentThreadsPerWeekday` slots per weekday with `direction: "sent"`, `persona` = the executive key, `to` = a person; category `info` (the label is not scored: E5 scores these later); 2 of 3 get a planned reply slot 4–48 h later (category `needs_reply` or `info`), 1 of 3 gets none (the dropped-thread case). These come on top of the 830 incoming mails.
 5. Delegation slots get `delegateBehaviour` by the `behaviour` shares (largest remainder over the week's delegation slots, then shuffled), plus `expectedDraft` and `expectedDelegate` like the bank.
 6. Hard cases in the week: 1 of each `phishing_*` tag per weekday (P14), replacing a `spam` slot of that day; 2 `auto_reply` and 1 `bounce` per weekday replacing `notification` slots; all other tags are bank only.
-7. Headers and style as in stage 06.
+7. Headers and style as in stage 07.
 
 **Decisions.** D19, P14, X4.
 
 **Test** (`miniScenario`, spec with `weekdayMails: 20, weekendMails: 6`, the default shares, `sentThreadsPerWeekday: 1`, seed 5):
 
 1. Determinism: two calls are `JSON.stringify` equal.
-2. Incoming slot count = 112; `sent` slots = 5; planned replies to sent threads (`parentId` → a `sent` slot) between 3 and 5 (assert the exact pinned value).
+2. Slots from `dayCounts` = 112 (the mix slots, incoming); `sent` slots = 5; planned replies to sent threads (`parentId` → a `sent` slot) are extra incoming slots on top of the 112: between 3 and 4 for 5 sent threads at 2 of 3 (assert the exact pinned value). Total slots = 112 + 5 + replies.
 3. Every `parentId` points to an earlier slot (≥ 10 min) of the same `threadId`; no thread is deeper than 5.
 4. Every slot of day d has a local date `weekStart + d − 1` in Europe/Warsaw; at most `ceil(0.05 × weekday count) + 1` weekday slots per day are outside 07:00–20:00.
 5. Every delegation slot has a `delegateBehaviour`; the counts over the week follow the shares by largest remainder.
@@ -86,7 +86,7 @@ Rules (seed streams `deriveSeed(seed, "week:<day>")`):
 
 **Files.** `packages/core/src/sim/plan-week.ts`, `plan-week.test.ts`.
 
-**Interfaces.** `planWeek(...).history`: one `SenderHistory` with `days: spec.week.historyDays` per persona that sends at least one week slot, keyed by persona address; from `senderHistoryFor` (stage 06) with `days = 30`. Phishing and spammer personas get `received: 0`, `relation: "new"` (they are new in the week).
+**Interfaces.** `planWeek(...).history`: one `SenderHistory` with `days: spec.week.historyDays` per persona that sends at least one week slot, keyed by persona address; from `senderHistoryFor` (stage 07) with `days = 30`. Phishing and spammer personas get `received: 0`, `relation: "new"` (they are new in the week).
 
 **Decisions.** D9, X3.
 

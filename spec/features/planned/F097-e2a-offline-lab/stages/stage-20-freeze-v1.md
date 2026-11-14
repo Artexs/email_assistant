@@ -1,18 +1,18 @@
-# F097 stage 17 — Reconcile, freeze v1, audit list
+# F097 stage 20 — Reconcile, freeze v1, audit list
 
 Part of [`../plan.md`](../plan.md). Content stage. Review job before the land (the corpus becomes gate evidence). Owner step O1 after the land; the build does not wait (D36).
 
 After this stage corpus `lab-01` v1 is frozen: every value category has ≥ 50 dev and ≥ 200 holdout cases with text, blind label and passing code checks, every hard-case tag has ≥ 80 % of its planned cases, the manifest holds the hashes, and the owner's audit list exists (P2, P3, D34–D36).
 
-Precondition (coordinator): all stage 15 and 16 jobs, including the rewrite rounds, have landed, and `bun run sim reconcile lab-01 --part <p> --batches 001-<last>` prints no `round 1` line for any part. If round-1 lines remain, run stage 15 rewrite mode and stage 16 for those ranges first.
+Precondition (coordinator): all stage 18 and 19 jobs, including the rewrite rounds, have landed, and `bun run sim reconcile lab-01 --part <p> --batches 001-<last>` prints no `round 1` line for any part. If round-1 lines remain, run stage 18 rewrite mode and stage 19 for those ranges first.
 
 ## Step 1 — Final checks
 
 **Goal.** The corpus is complete and clean.
 
-**Files.** None changed, unless a check finds a missing label or a bad text in a single case: then fix that one case (text: README § 3/§ 4 rules; label: never — a missing label goes back to a stage 16 job). List every change in the final message.
+**Files.** None changed, unless a check finds a missing label or a bad text in a single case: then fix that one case (text: README § 3/§ 4 rules; label: never — a missing label goes back to a stage 19 job). List every change in the final message.
 
-Commands: `bun run sim check lab-01` (all parts; exit 0), `bun run sim status lab-01` (counts), `bun run sim reconcile lab-01 --part <p> --batches 001-<last>` for each part (no round 1 or 2 line without a `borderline:` or `dropped`).
+Commands: `bun run sim check lab-01` (all parts; exit 0), `bun run sim status lab-01` (counts), `bun run sim reconcile lab-01 --part <p> --batches 001-<last>` for each part (prints nothing) and `bun run sim stale lab-01 --part <p> --batches 001-<last>` for each part (prints nothing).
 
 **Check.** The three commands above.
 
@@ -35,7 +35,7 @@ Commands: `bun run sim freeze lab-01 --version 1 --date <today UTC>`, then `bun 
 ## Proof
 
 ```
-mkdir -p /tmp/f097-s17 && bun run sim check lab-01 > /tmp/f097-s17/check.log 2>&1 && bun run sim status lab-01 > /tmp/f097-s17/status.log 2>&1 && bun run test:unit:ci > /tmp/f097-s17/unit.log 2>&1 && echo PROOF_OK
+mkdir -p /tmp/f097-s20 && bun run sim check lab-01 > /tmp/f097-s20/check.log 2>&1 && bun run sim status lab-01 > /tmp/f097-s20/status.log 2>&1 && bun run test:unit:ci > /tmp/f097-s20/unit.log 2>&1 && echo PROOF_OK
 ```
 
 ## Review job focus
