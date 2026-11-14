@@ -9,6 +9,7 @@ import { detectNotices } from "../../src/modules/channels";
 import { insertSenderRule } from "../../src/modules/config";
 import { ensureSyncFolders } from "../../src/modules/mail";
 import { insertMailbox, markSynced, type MailboxStatus } from "../../src/modules/mail/repo";
+import { setOrgFeature } from "../../src/modules/tenancy";
 import type { DB, TenantContext } from "../../src/platform/db";
 
 import {
@@ -1130,6 +1131,41 @@ describe("send result notices", () => {
 
       expect((await resultText(trx, o, removed.sendId)).text).not.toContain("no UIDPLUS");
       expect((await resultText(trx, o, stays.sendId)).text).toContain("The draft stays in Drafts (no UIDPLUS");
+    });
+  });
+
+  test("(1c) the mistake button: flag on adds it to a sent result and to the view; flag off and a failed result do not", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await sendOrg(trx);
+      const sent = { status: "applied", appliedAt: at(-20 * MINUTE), providerResult: { sent_copy: "appended" } };
+      const before = await ended(trx, o, sent);
+      await run(trx);
+      expect((await resultText(trx, o, before.sendId)).data).toEqual([]);
+      const viewOf = async (sendId: string) =>
+        (
+          await trx
+            .selectFrom("outbox")
+            .select("view")
+            .where("org_id", "=", o.orgId)
+            .where("dedup_key", "=", `send_result:${sendId}`)
+            .executeTakeFirstOrThrow()
+        ).view as Record<string, unknown>;
+      expect("mistakeButton" in (await viewOf(before.sendId))).toBe(false);
+
+      await setOrgFeature(trx, { orgId: o.orgId }, { flag: "mistake_capture", enabled: true, actor: "cli", now: T });
+      const after = await ended(trx, o, sent);
+      const failed = await ended(trx, o, {
+        status: "failed",
+        reason: "smtp_rejected",
+        providerResult: { stage: "envelope" },
+      });
+      await run(trx);
+
+      expect((await resultText(trx, o, after.sendId)).data).toEqual([`mk:${after.sendId}`]);
+      expect((await viewOf(after.sendId)).mistakeButton).toBe(true);
+      expect((await resultText(trx, o, failed.sendId)).data).toEqual([]);
+      expect("mistakeButton" in (await viewOf(failed.sendId))).toBe(false);
     });
   });
 

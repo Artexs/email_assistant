@@ -2,10 +2,11 @@ import type { Transaction } from "kysely";
 
 import type { SecretBox } from "../../platform/crypto";
 import type { DB, Db, TenantContext } from "../../platform/db";
-import { SoftError } from "../../platform/errors";
+import { errorFields, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { isOrgSuspended } from "../tenancy";
 
+import { FLAGS_REFRESH_EVERY_MS, refreshFlags } from "./flags";
 import type { ImapConnectOptions } from "./imap/client";
 import { openMailboxProvider } from "./open";
 import { MailAuthError, type MailProvider } from "./port";
@@ -27,7 +28,8 @@ async function syncOne(
   deps: MailSyncJobDeps,
   ctx: TenantContext,
   mailboxId: string,
-  failures: Map<string, number>
+  failures: Map<string, number>,
+  lastFlagsAt: Map<string, number>
 ): Promise<void> {
   const { provider } = await openMailboxProvider(deps, ctx, mailboxId);
   try {
@@ -49,6 +51,17 @@ async function syncOne(
       failures.set(`${mailboxId}:${key}`, count);
       if (count === 3) log.error(`sync ${mailboxId} folder ${key}: failed 3 runs in a row`);
     }
+    // D6: the flag refresh reads FLAGS only, on this connection, at most every 10 min per mailbox. An error here never fails the sync.
+    const flagsNow = deps.now().getTime();
+    if (flagsNow - (lastFlagsAt.get(mailboxId) ?? 0) >= FLAGS_REFRESH_EVERY_MS) {
+      lastFlagsAt.set(mailboxId, flagsNow);
+      try {
+        const refreshed = await refreshFlags({ db: deps.db, provider, now: deps.now }, ctx, mailboxId);
+        log.info("flags_refreshed", { mailbox_id: mailboxId, count: refreshed.written });
+      } catch (error) {
+        log.warn("flags_refresh_failed", { mailbox_id: mailboxId, ...errorFields(error) });
+      }
+    }
   } finally {
     await provider.close().catch((error: unknown) => {
       log.warn(`close ${mailboxId} failed:`, error instanceof Error ? error.message : String(error));
@@ -58,6 +71,7 @@ async function syncOne(
 
 export function createMailSyncJob(deps: MailSyncJobDeps): { run(): Promise<void> } {
   const failures = new Map<string, number>();
+  const lastFlagsAt = new Map<string, number>();
   return {
     async run() {
       const targets = await listSyncTargets(deps.db);
@@ -66,7 +80,7 @@ export function createMailSyncJob(deps: MailSyncJobDeps): { run(): Promise<void>
         try {
           // D4: a suspend during the run stops the next mailbox, not only the next run.
           if (await isOrgSuspended(deps.db, ctx)) continue;
-          await syncOne(deps, ctx, mailboxId, failures);
+          await syncOne(deps, ctx, mailboxId, failures, lastFlagsAt);
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           if (error instanceof MailAuthError) {

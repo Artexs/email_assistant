@@ -53,7 +53,14 @@ const operatorApp = (
 
 const flagOn = (
   orgId: string,
-  flag: "stats_page" | "approvals_page" | "sent_sync" | "security_log" | "old_flag",
+  flag:
+    | "stats_page"
+    | "approvals_page"
+    | "sent_sync"
+    | "security_log"
+    | "review_command"
+    | "mistake_capture"
+    | "old_flag",
   enabled = true
 ) => upsertOrgFeature(db, { orgId }, { flag: flag as "stats_page", enabled, setBy: "test", setAt: SET_AT });
 
