@@ -2,6 +2,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "
 import type { Transaction } from "kysely";
 
 import { detectNotices, scheduleDigests } from "../../src/modules/channels";
+import { failedAttemptKeys } from "../../src/modules/channels/notices/weekly-report";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { setDigestTimes, setOrgFeature } from "../../src/modules/tenancy";
 import type { DB, TenantContext } from "../../src/platform/db";
@@ -19,17 +20,22 @@ afterAll(async () => {
 // Monday 2026-11-23, Europe/Warsaw (UTC+1): the report is for the week of 2026-11-16.
 const MONDAY_0830 = new Date("2026-11-23T07:30:00Z");
 const MONDAY_0900 = new Date("2026-11-23T08:00:00Z");
+const NEXT_MONDAY_0900 = new Date("2026-11-30T08:00:00Z");
 const TUESDAY = new Date("2026-11-24T08:00:00Z");
 const MINUTE = 60_000;
 const DEDUP = "weekly_report:2026-11-16";
 
+let errorLines: string[] = [];
 let logSpy: ReturnType<typeof spyOn>;
 let errorSpy: ReturnType<typeof spyOn>;
 let warnSpy: ReturnType<typeof spyOn>;
 
 beforeEach(() => {
   logSpy = spyOn(console, "log").mockImplementation((): void => undefined);
-  errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+  errorLines = [];
+  errorSpy = spyOn(console, "error").mockImplementation((...args: unknown[]) => {
+    errorLines.push(args.join(" "));
+  });
   warnSpy = spyOn(console, "warn").mockImplementation((): void => undefined);
 });
 
@@ -191,6 +197,53 @@ describe("weekly report detector", () => {
 
       await tick(trx, new Date(MONDAY_0900.getTime() + 15 * MINUTE));
       expect(await weeklyRows(trx, o.ctx.orgId)).toHaveLength(2);
+    });
+  });
+
+  test("a later week's failure logs again, with the week in the log id", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await orgA(trx);
+      await flag(trx, o.ctx, "weekly_report");
+      const broken = {
+        get senders(): string[] {
+          throw new Error("test failure");
+        },
+      };
+      const warnings = () => errorLines.filter((line) => line.includes(`weekly_report ${o.ctx.orgId}:`));
+
+      await tick(trx, MONDAY_0900, broken);
+      // The retry after the window fails again: the same week and the same id log once only.
+      await tick(trx, new Date(MONDAY_0900.getTime() + 20 * MINUTE), broken);
+      expect(warnings()).toHaveLength(1);
+      expect(warnings()[0]).toContain(`${o.ctx.orgId}:2026-11-16`);
+
+      await tick(trx, NEXT_MONDAY_0900, broken);
+      expect(warnings()).toHaveLength(2);
+      expect(warnings()[1]).toContain(`${o.ctx.orgId}:2026-11-23`);
+    });
+  });
+
+  test("the failure record holds one week per organization: a later week drops the earlier one", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await orgA(trx);
+      await flag(trx, o.ctx, "weekly_report");
+      const broken = {
+        get senders(): string[] {
+          throw new Error("test failure");
+        },
+      };
+      const mine = () => failedAttemptKeys().filter((key) => key.startsWith(`${o.ctx.orgId}:`));
+
+      await tick(trx, MONDAY_0900, broken);
+      expect(mine()).toEqual([`${o.ctx.orgId}:2026-11-16`]);
+      await tick(trx, TUESDAY, broken);
+      expect(mine()).toEqual([`${o.ctx.orgId}:2026-11-16`]);
+
+      await tick(trx, NEXT_MONDAY_0900, broken);
+      expect(mine()).toEqual([`${o.ctx.orgId}:2026-11-23`]);
+      // A later tick on a day that is not Monday drops the old key too.
+      await tick(trx, new Date("2026-12-08T08:00:00Z"));
+      expect(mine()).toEqual([]);
     });
   });
 

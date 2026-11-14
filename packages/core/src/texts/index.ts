@@ -76,10 +76,6 @@ export const textTables: Record<UserLocale, CoreTexts> = {
   },
 };
 
-// Telegram and the panel phrases switch to Polish together in stage 12 of the plan in the ticket folder
-// F098-e7-t1-polish-ui-i18n-frame-first (D10); until then every locale gets English.
-const POLISH_MESSAGES_ON = false;
-
 export function textsFor(locale: UserLocale): CoreTexts {
-  return POLISH_MESSAGES_ON ? textTables[locale] : textTables.en;
+  return textTables[locale];
 }

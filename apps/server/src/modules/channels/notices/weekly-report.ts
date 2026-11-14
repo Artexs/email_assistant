@@ -19,17 +19,24 @@ export function weeklySlot(digestTimes: readonly string[]): string {
 }
 
 // The time of the last failed attempt per organization and week. A failing run waits 15 minutes: the notifier ticks every
-// 15 s, and each attempt would read the whole week again.
+// 15 s, and each attempt would read the whole week again. Each run drops the keys of other weeks, so the map holds at
+// most one key per organization.
 const failedAt = new Map<string, number>();
+
+/** The keys of the failed attempts on record (for tests). */
+export const failedAttemptKeys = (): string[] => [...failedAt.keys()];
 
 // On Monday, every linked member gets the numbers of the last finished week at the member's own slot (F100 plan, weekly report).
 async function detectWeeklyReport(run: OrgRun): Promise<void> {
   const { db, ctx, now, timeZone } = run;
+  const weekStart = lastFinishedWeek(now, timeZone);
+  const key = `${ctx.orgId}:${weekStart}`;
+  for (const old of failedAt.keys()) {
+    if (old.startsWith(`${ctx.orgId}:`) && old !== key) failedAt.delete(old);
+  }
   if (!(await isFeatureOn(db, ctx, "weekly_report"))) return;
   const today = localDateTime(now, timeZone);
   if (today.weekday !== 1) return;
-  const weekStart = lastFinishedWeek(now, timeZone);
-  const key = `${ctx.orgId}:${weekStart}`;
   const failed = failedAt.get(key);
   if (failed !== undefined && now.getTime() - failed < WEEKLY_RETRY_MS) return;
 
@@ -76,7 +83,7 @@ async function detectWeeklyReport(run: OrgRun): Promise<void> {
     failedAt.delete(key);
   } catch (error) {
     failedAt.set(key, now.getTime());
-    warnSkipped("weekly_report", ctx.orgId, error);
+    warnSkipped("weekly_report", `${ctx.orgId}:${weekStart}`, error);
   }
 }
 

@@ -121,8 +121,8 @@
     },
     {
       "id": "b-urg-0025",
-      "subject": "Re: Kalendarz zarządu – wyjazd do Hamburga",
-      "body": "Szanowny Panie Prezesie,\n\nproszę o osobistą odpowiedź w sprawie wyjazdu do Hamburga. Dotyczy to terminu spotkania z radą oraz tego, czy zarząd będzie reprezentowany w całości.\n\nCzekam na Pana stanowisko, ponieważ chcę uzgodnić dalsze kroki jeszcze w tym tygodniu. Proszę też o informację, czy Pan Prezes zabiera ze sobą dyrektora operacyjnego, bo rada chce znać skład delegacji z wyprzedzeniem.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "subject": "Delegacja do Hamburga – podpis wniosku do 16:00",
+      "body": "Szanowny Panie Prezesie,\n\nlinia lotnicza przesłała dziś ofertę grupową na wyjazd zarządu do Hamburga 02.02.2027: sześć miejsc za 14 800 zł. Oferta wygasa o 16:00. Wniosek o delegację wymaga Pańskiego podpisu w systemie obiegu dokumentów, bo tylko Pan zatwierdza wydatki powyżej limitu sekretariatu rady.\n\nJeśli wniosek nie będzie podpisany do 16:00, linia zwolni miejsca jeszcze dziś, a bilety kupimy po cenie wyższej o 5 900 zł. Wniosek czeka w Pańskiej skrzynce zatwierdzeń.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
       "thread": [
         {
           "subject": "Kalendarz zarządu – wyjazd do Hamburga",
@@ -132,7 +132,8 @@
           "subject": "Re: Kalendarz zarządu – wyjazd do Hamburga",
           "body": "Panie Prezesie, to zależy od wyników rozmów z portem. Proszę o więcej informacji w najbliższych dniach. Zbigniew Orlowicz"
         }
-      ]
+      ],
+      "note": "rewritten: round 2 urgent event: fare offer expires 16:00 today; delegation request needs the executive's signature"
     },
     {
       "id": "b-urg-0026",
@@ -158,9 +159,10 @@
     },
     {
       "id": "b-urg-0028",
-      "subject": "Reklamacja – dostawa do centrum w Radomiu",
-      "body": "Panie Wiktorze,\n\ndzwonię w sprawie reklamacji z ubiegłego tygodnia. Dostawa do naszego centrum w Radomiu miała trzy puste palety w dokumentach, a nasz klient nie przyjął towaru. Chciałabym, żeby ktoś z Pana zespołu zajął się wyjaśnieniem, ale oczekuję, że sprawę zna Pan osobiście.\n\nProszę, żeby Pan sam do mnie oddzwonił po rozmowie z dyrektor operacyjną. Wiem, że ma Pan dużo na głowie, ale ta sprawa dotyczy naszej współpracy w całej sieci.",
-      "thread": []
+      "subject": "Reklamacja Radom – decyzja o ładunku chłodniczym do 16:30",
+      "body": "Panie Wiktorze,\n\ntrzy palety z mrożonkami dotarły do naszego centrum w Radomiu z uszkodzonymi opakowaniami, a temperatura w naczepie wzrosła do plus 6 stopni. Nasz kontroler jakości wstrzymał rozładunek. Samochód stoi na rampie od 13:00, a o 17:00 rampa przechodzi do kolejnych dostaw.\n\nPotrzebuję Pańskiej pisemnej decyzji do 16:30: albo zatwierdza Pan odesłanie całego ładunku na koszt Kordelanu, albo wyraża Pan zgodę na utylizację. Bez decyzji o 17:00 naliczam karę umowną 5 000 zł za blokowanie rampy, a towar chłodniczy nie przetrwa nocy.\n\nGenowefa Jastrzebska",
+      "thread": [],
+      "note": "rewritten: round 2 urgent event: reefer truck blocks ramp; return or disposal decision by 16:30, penalty at 17:00"
     },
     {
       "id": "b-urg-0029",
@@ -177,9 +179,10 @@
     },
     {
       "id": "b-urg-0031",
-      "subject": "Complaint: damaged pallets – a call, please",
-      "body": "Dear Mr Szalewski,\n\nI would like to talk to you about the damaged pallets that reached our Radom centre last week. I know your claims department has the papers, but this concerns our whole relationship and I would like to hear your view directly.\n\nWhen you have a moment this afternoon, please call me. I will be in the office until five, and I would be grateful for a few minutes of your time.",
-      "thread": []
+      "subject": "Damaged pallets – credit note must be signed before 17:00",
+      "body": "Dear Mr Szalewski,\n\nmy board meets at 17:00 today and votes on the transport contract for the second half of the year. The claim for the damaged pallets that reached our Radom centre last week is still open, and the board cannot vote with an open claim of 86 000 PLN.\n\nYour claims department has prepared a credit note, but it is valid only with your signature. Please sign it and send it back before 17:00. If the signed note does not reach me by then, the board moves one third of our volume to another carrier today and withdraws the contract offer.\n\nGenowefa Jastrzebska",
+      "thread": [],
+      "note": "rewritten: round 2 urgent event: credit note needs the executive's signature before 17:00 board vote; volume moves today"
     }
   ]
 }

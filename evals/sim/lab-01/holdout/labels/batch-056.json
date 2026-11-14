@@ -1,0 +1,133 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-056",
+  "checker": "claude-haiku-5-5",
+  "labels": [
+    {
+      "id": "h-rbl-01",
+      "category": "needs_reply",
+      "blindHash": "335f0ad22f324ee24944ad3c1eff00fc7918cbb8539b39b7080b9f1ec245ff92"
+    },
+    {
+      "id": "h-rbl-03",
+      "category": "needs_reply",
+      "blindHash": "649f842e97232eee76d0b374dd19fc6f387f041bce9e372d17bc8298add48b53"
+    },
+    {
+      "id": "h-rbl-05",
+      "category": "needs_reply",
+      "blindHash": "4aec09f11762dd319dd239e73fefd2b3c4507e1b9fcb958743106b4360b81dde"
+    },
+    {
+      "id": "h-rfa-03",
+      "category": "needs_reply",
+      "blindHash": "a740e0e234693c51475f51797bf4d48e11c92a560d2e51c3320a2f8a4b950a27"
+    },
+    {
+      "id": "h-rfa-04",
+      "category": "needs_reply",
+      "blindHash": "1fdd5da52ab9106bfcdcc75b557e7f0b003b2b1dba71cca77cda05bccb6cacc0"
+    },
+    {
+      "id": "h-rfa-05",
+      "category": "needs_reply",
+      "blindHash": "5caaedda00e29d4172e40fa633a24ae539520415dca2838231546460131acd8d"
+    },
+    {
+      "id": "h-rhd-01",
+      "category": "needs_reply",
+      "blindHash": "d3e7cd62b6a285efb0ef296767126d63ec533cab8d07990d5efc25ee8f33accd"
+    },
+    {
+      "id": "h-rhd-03",
+      "category": "needs_reply",
+      "blindHash": "a4568c9b1944c212ce1e5894407e2a2c034c8eb672c2c8470385f8877c751fb0"
+    },
+    {
+      "id": "h-rhd-04",
+      "category": "needs_reply",
+      "blindHash": "1f38cd5cd60f723ffa8405f21c2fc7631a25c6700cfdaa28e80bcd3dfcb2fd69"
+    },
+    {
+      "id": "h-rhl-01",
+      "category": "needs_reply",
+      "blindHash": "2e616e614623d9f0bdeba0664c504971daeced862b993715f41a7a4600eed22a"
+    },
+    {
+      "id": "h-rhl-03",
+      "category": "needs_reply",
+      "blindHash": "36e4989d38679e3499ecf671aa843d7d801b2abaab46447fc8b514466e53d419"
+    },
+    {
+      "id": "h-rhl-04",
+      "category": "needs_reply",
+      "blindHash": "ebf0885a01577c2a50a80b9d7d0800e5dca6f4db939fe714af8b12c124371ce5"
+    },
+    {
+      "id": "h-rig-01",
+      "category": "needs_reply",
+      "blindHash": "e3fac5e9ddef4f6f11f5f2503efc02eb4fcb7fceef8305b35846e315cc3165c3"
+    },
+    {
+      "id": "h-rig-02",
+      "category": "needs_reply",
+      "blindHash": "bd1fb1a06a8f8ba590d27efe83a40d350cd34ea6f1838c4998678ff61b3196c5"
+    },
+    {
+      "id": "h-rig-05",
+      "category": "needs_reply",
+      "blindHash": "061aecd5dd2d0cef4b17c1732336f9ce899a76a1b5e35701c36247d4514cfe5c"
+    },
+    {
+      "id": "h-rin-02",
+      "category": "needs_reply",
+      "blindHash": "ad99f7f4c2806348d2f64cace1fb5a6dace140227aef9df16f1ceeb7085484d5"
+    },
+    {
+      "id": "h-rin-03",
+      "category": "needs_reply",
+      "blindHash": "c64e3239eafc75e126c5a2a34a99ab5d492451cc532c1f544fc000cc801ab996"
+    },
+    {
+      "id": "h-rin-04",
+      "category": "needs_reply",
+      "blindHash": "813fb211507287203f4b3cb1338b9950958fc4ca5ba8cd7ce359ec061e9d8391"
+    },
+    {
+      "id": "h-rli-01",
+      "category": "needs_reply",
+      "blindHash": "27ce6e93f3569b1d89034261c5814d2d8864336d87a47ccd0ebd4cf9f689ea5b"
+    },
+    {
+      "id": "h-rli-03",
+      "category": "needs_reply",
+      "blindHash": "46c96fe85dbc129b847b6f389c03114df7b285ac79c493ea2c0051217674a182"
+    },
+    {
+      "id": "h-rli-04",
+      "category": "needs_reply",
+      "blindHash": "0a2b7a5c33bcaa8c43ad5c453d7b8419e5451f0074bbadb0c590ff14946bdd51"
+    },
+    {
+      "id": "h-rnt-01",
+      "category": "needs_reply",
+      "blindHash": "20550371b62fba506148bbc32f89c1c6b2697652cd59736d41635c7fb9fbcf77"
+    },
+    {
+      "id": "h-rnt-04",
+      "category": "needs_reply",
+      "blindHash": "97ae7f2e7e6feed5e999cbfcdf28b35022784125b896899b2dd1b5c37fcaa335"
+    },
+    {
+      "id": "h-rnt-05",
+      "category": "needs_reply",
+      "blindHash": "499cd815d455db5543d9f4e9307408a958151df48de1ec4b6add4be6815941d3"
+    },
+    {
+      "id": "h-rnt-06",
+      "category": "needs_reply",
+      "blindHash": "f615e3318d42143a2839ec5837082b766c3d92237c460dcd62ed2675fc70259b"
+    }
+  ]
+}

@@ -45,6 +45,17 @@ function setup(state: string) {
 }
 
 describe("startPolling", () => {
+  test("a pollMs of 0 runs once and starts no interval and no listener", () => {
+    const doc = new FakeDoc("visible");
+    const timers = new FakeTimers();
+    let runs = 0;
+    const stop = startPolling(() => (runs += 1), { pollMs: 0, doc, timers });
+    expect(runs).toBe(1);
+    expect(timers.created).toEqual([]);
+    expect(doc.listeners.size).toBe(0);
+    stop();
+  });
+
   test("visible at the start: runs once and starts one interval", () => {
     const { timers, runs } = setup("visible");
     expect(runs()).toBe(1);

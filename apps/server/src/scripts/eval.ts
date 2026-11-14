@@ -8,10 +8,16 @@ import {
   buildRealReport,
   evalExitCode,
   evalStateFileName,
+  GapInputError,
+  gateFileError,
+  gateFileSchema,
   listLabeledResults,
   parseCaseResults,
   prompts,
+  realCounts,
+  realCountsSchema,
   renderEvalReport,
+  renderGap,
   runEval,
 } from "../modules/triage";
 import { ConfigError, llmRoleTable, loadConfig, testMailRule } from "../platform/config";
@@ -55,9 +61,35 @@ async function runReal(options: EvalOptions, orgId: string, mailboxId: string): 
     });
     out(markdown);
     if (options.out !== undefined) writeFileSync(options.out, markdown);
+    // Counts only (D32): no mail id, no address, no text.
+    if (options.json !== undefined) writeFileSync(options.json, `${JSON.stringify(realCounts(report), null, 2)}\n`);
     return evalExitCode(report);
   } finally {
     await db.destroy();
+  }
+}
+
+// The sim-vs-real gap: two files, no DB, no LLM key (D32).
+function runGap(options: EvalOptions): number {
+  try {
+    const sim = gateFileSchema.safeParse(JSON.parse(readFileSync(options["sim-json"] as string, "utf8")));
+    if (!sim.success) throw gateFileError(sim.error.issues[0]?.path ?? []);
+    const real = realCountsSchema.safeParse(JSON.parse(readFileSync(options["real-json"] as string, "utf8")));
+    if (!real.success) throw new GapInputError((real.error.issues[0]?.path ?? []).map(String).join("."), "real counts");
+    const markdown = renderGap({ sim: sim.data, real: real.data });
+    out(markdown);
+    if (options.out !== undefined) writeFileSync(options.out, markdown);
+    return 0;
+  } catch (error) {
+    if (
+      error instanceof GapInputError ||
+      error instanceof SyntaxError ||
+      (error as { code?: string }).code === "ENOENT"
+    ) {
+      log.error(error instanceof GapInputError ? `${error.message}` : "cannot read or parse an input file");
+      return 1;
+    }
+    throw error;
   }
 }
 
@@ -67,6 +99,7 @@ async function main(): Promise<number> {
     log.error(evalUsage);
     return 1;
   }
+  if (options.gap) return runGap(options);
   if (options.sim !== undefined) return runSim(options);
   if (options.real) return runReal(options, options["org-id"] as string, options["mailbox-id"] as string);
 

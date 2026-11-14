@@ -1684,7 +1684,7 @@ describe("stored views and locales", () => {
     });
   });
 
-  test("a member without a locale gets Polish rows with the same English text", async () => {
+  test("a member without a locale gets Polish rows and Polish text", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
@@ -1699,7 +1699,8 @@ describe("stored views and locales", () => {
       const polish = found.find((row) => row.user_id === o.assistantId);
       expect(english?.locale).toBe("en");
       expect(polish?.locale).toBe("pl");
-      expect(polish?.text).toBe(english?.text);
+      expect(english?.text).toStartWith("🔴 Urgent mail");
+      expect(polish?.text).toStartWith("🔴 Pilna wiadomość");
     });
   });
 

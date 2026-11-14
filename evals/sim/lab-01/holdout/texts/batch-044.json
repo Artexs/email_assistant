@@ -12,15 +12,17 @@
     },
     {
       "id": "b-urg-0034",
-      "subject": "Przetarg – krótka prośba",
-      "body": "Szanowny Panie Prezesie,\n\nproszę o krótki telefon w sprawie naszego przetargu. Chciałabym omówić z Panem zakres umowy, zanim przekażę materiały dyrektorom.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
-      "thread": []
+      "subject": "Przetarg – podpis umowy do 12:00",
+      "body": "Szanowny Panie Prezesie,\n\numowa ramowa dla sieci jest gotowa i czeka na Pański podpis elektroniczny. Podpisy obu stron muszą wpłynąć do 12:00. O 12:30 wycofuję ofertę, a umowę dostaje inny przewoźnik.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "note": "rewritten: round 2 urgent event: framework contract signature due 12:00; offer withdrawn 12:30"
     },
     {
       "id": "b-urg-0035",
-      "subject": "Calendar: the Hamburg meeting",
-      "body": "Dear Mr Szalewski,\n\nI would like you to call me about the board's calendar and your trip to Hamburg. A few minutes will be enough.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
-      "thread": []
+      "subject": "Hamburg fares: payment approval needed by 12:00",
+      "body": "Dear Mr Szalewski,\n\nthe Hamburg fares for the delegation expire at 12:30 today. Please approve the transfer of 38 400 PLN in the bank portal before 12:00, or the booking is cancelled and the same seats cost 11 200 PLN more.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "note": "rewritten: round 2 urgent event: fare payment approval due 12:00; booking cancelled 12:30"
     },
     {
       "id": "b-urg-0036",
@@ -52,9 +54,10 @@
     },
     {
       "id": "b-urg-0043",
-      "subject": "Reklamacja – proszę o telefon",
-      "body": "Panie Wiktorze,\n\nproszę o krótki telefon w sprawie reklamacji z ostatniej dostawy. Muszę wiedzieć, jakie stanowisko zajmuje Pana firma.",
-      "thread": []
+      "subject": "Reklamacja – podpis ugody do 20:00",
+      "body": "Panie Wiktorze,\n\nugoda w sprawie uszkodzonej dostawy jest uzgodniona i czeka w Pańskim systemie podpisów. Proszę ją podpisać do 20:00. O 21:00 ubezpieczyciel zamyka zgłoszenie szkody, a bez ugody wyślę mu roszczenie na 120 000 zł.",
+      "thread": [],
+      "note": "rewritten: round 2 urgent event: settlement needs signature by 20:00; insurer claim window closes 21:00"
     },
     {
       "id": "b-urg-0044",
@@ -92,14 +95,15 @@
     },
     {
       "id": "b-urg-0049",
-      "subject": "Re: Damaged deliveries – a request for a call",
-      "body": "Dear Wiktor,\n\nthank you for your short note about the damaged deliveries. I do appreciate it, but I would like to speak with you personally, as I think the matter now goes beyond a single claim.\n\nOver the last month we received five deliveries with damaged packaging in three of our warehouses. Every case is described in the protocol that your claims team has, and the photos are attached to each protocol. I do not want to argue about each pallet. What I want is a change in the way your drivers unload and secure the goods, because the same problem returns again and again, and my warehouse managers lose patience.\n\nI have spoken with my logistics director, and we could accept a new process that begins on the first of February, if you agree to a short pilot in the Radom centre, where most of the damage happens. We would also like your drivers to wait at the ramp until our staff checks the pallets and signs the protocol.\n\nI know you are very busy, but a call from you would mean a lot to me. I am in the office the whole afternoon and my phone is on.\n\nGenowefa Jastrzebska\nZielona Hurtownia sp.j.",
+      "subject": "Re: Damaged deliveries – pilot agreement must be signed before 17:00",
+      "body": "Dear Wiktor,\n\nthank you for your short note about the damaged deliveries. Since then the situation in Radom has become worse, and I need a decision from you today.\n\nOver the last month we received five deliveries with damaged packaging in three of our warehouses. Every case is described in the protocol that your claims team has, and the photos are attached to each protocol. I do not want to argue about each pallet. What I want is a change in the way your drivers unload and secure the goods, and I have put it into a short pilot agreement for the Radom centre. It starts on the first of February. Your drivers wait at the ramp until our staff checks the pallets, and both sides sign the protocol on the spot.\n\nThe agreement is ready, and only you can sign it for Kordelan. It needs your signature in the e-signature system before 17:00 today. At 17:00 our warehouse managers close the ramp schedule for tomorrow. Without the signed agreement they remove your trucks from the schedule, and the four trucks planned for 6:00 tomorrow will be turned away at the gate. At the same hour we also invoice the contractual penalty for the late delivery of 14 pallets, 38 000 PLN.\n\nI would much prefer to avoid all this.\n\nGenowefa Jastrzebska\nZielona Hurtownia sp.j.",
       "thread": [
         {
           "subject": "Reklamacje – uszkodzone dostawy",
           "body": "Pani Genowefo, dziękuję za informację. Poproszę dział reklamacji o szczegóły i wrócę do Pani. Wiktor Szalewski"
         }
-      ]
+      ],
+      "note": "rewritten: round 2 urgent event: pilot agreement signature before 17:00; trucks removed from ramp schedule and penalty invoiced"
     },
     {
       "id": "b-urg-0050",
@@ -150,9 +154,10 @@
     },
     {
       "id": "b-urg-0057",
-      "subject": "A question before the board meets",
-      "body": "Hi Wiktor,\n\nI have a modest request before the supervisory board meeting. As you know, the budget for next year will be the main point, and I would like to hear your view on the capital expenditure plan before I read the papers of the other members. I do not want to hear a summary from the finance team, I want your own opinion on which items are solid and which you doubt.\n\nIn particular, I am interested in three things. First, the fleet renewal: is the schedule for the new trailers realistic after the talks with the German supplier? Second, the warehouse system: do you expect more costs after the recent failures in the ERP? Third, the joint tenders with the Baltic partner: how much capital do you plan to commit?\n\nI know you will present everything at the meeting, but a frank conversation beforehand helps me to prepare good questions and avoids surprises for both of us. A call this morning would suit me, and if you prefer, I can come to your office.\n\nThank you for your time.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
-      "thread": []
+      "subject": "Board papers go out at noon – your signature is missing",
+      "body": "Hi Wiktor,\n\nthe secretary sends the board papers to all members today at 12:00, and one document in the package is still unsigned: the management statement on the capital expenditure plan for next year. It covers the fleet renewal, the warehouse system and the joint tenders with the Baltic partner. Only you can sign it for the management board, and it waits in your approval queue.\n\nPlease sign it before 11:30, so that the secretary has time to check the package. The portal of the board does not accept a package without this statement. If the package goes out incomplete at 12:00, the budget item is removed from the agenda of 28 January, and the offer of the German trailer supplier, 2.4 million PLN, lapses together with the vote.\n\nI know the morning is full, but the signature takes one minute. The text of the statement is the same as the one the finance team sent you on Friday, and I have read it twice. If you change a word, the secretary must send it back to the finance team, and then we lose the whole morning.\n\nThank you for taking care of it.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "note": "rewritten: round 2 urgent event: management statement unsigned; board package goes out 12:00 without budget item"
     },
     {
       "id": "b-urg-0059",
@@ -162,20 +167,22 @@
     },
     {
       "id": "b-urg-0060",
-      "subject": "Kalendarz – prośba o telefon",
-      "body": "Panie Prezesie,\n\nproszę o telefon w sprawie kalendarza zarządu i wyjazdu do Hamburga. Rozmowa zajmie kilka minut.",
-      "thread": []
+      "subject": "Hotel w Hamburgu – przelew gwarancyjny do 14:00",
+      "body": "Panie Prezesie,\n\nhotel w Hamburgu wymaga gwarancji 4 200 euro za pokoje zarządu na 02.02.2027. Proszę zatwierdzić przelew w systemie bankowym do 14:00. O 14:30 blokada pokoi wygasa i hotel sprzedaje je innym gościom.",
+      "thread": [],
+      "note": "rewritten: round 2 urgent event: hotel deposit transfer approval by 14:00; room block expires 14:30"
     },
     {
       "id": "b-urg-0061",
-      "subject": "Re: Przetarg Zielona Hurtownia – krótka rozmowa",
-      "body": "Szanowny Panie Prezesie,\n\npo rozmowie z Pańskim koordynatorem chciałabym omówić z Panem warunki przetargu. Proszę o krótki telefon.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "subject": "Re: Przetarg Zielona Hurtownia – podpis oferty do 13:00",
+      "body": "Szanowny Panie Prezesie,\n\noferta końcowa po uwagach Pańskiego koordynatora jest gotowa i wymaga Pańskiego podpisu. Proszę ją podpisać do 13:00. O 14:00 zarząd sieci zamyka przyjmowanie ofert, a niepodpisana oferta zostaje odrzucona.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
       "thread": [
         {
           "subject": "Przetarg Zielona Hurtownia – warunki oferty",
           "body": "Pani Genowefo, przesyłam wstępny zarys warunków oferty dla sieci. Proszę o uwagi. Piotr Lewandrowski"
         }
-      ]
+      ],
+      "note": "rewritten: round 2 urgent event: final offer needs signature by 13:00; network closes offers 14:00"
     },
     {
       "id": "b-urg-0064",
