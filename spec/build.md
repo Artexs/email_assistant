@@ -24,7 +24,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F095-e1-close-the-mvp` (🟠 ACTIVE): E1 Close the MVP (capability map, docs boundary, NEXT sweep of the old planned tickets)
 - `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟠 ACTIVE): The server image, CI and local checks run one current Bun (1.4.x)
 - `F071-limen-transition` (🟠 ACTIVE): Move the agent workflow to Limen
-- `F069-compose-network-subnet` (🟠 ACTIVE): Pin the Compose network subnet
 
 ## NEXT
 
@@ -79,6 +78,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F088-notices-as-facts` (🟢 PROVEN): Notices are stored as facts and rendered per channel, detail and locale by a renderer registry; landed 2026-11-14
 - `F082-s6b-public-login` (🟢 PROVEN): The panel login has the production shape: invite only, lockout, leaked-password check, terms, session list; landed 2026-11-14
 - `F078-auth-verifications-cleanup` (🟢 PROVEN): Expired Better Auth `auth_verifications` rows are deleted by the retention job; landed 2026-11-14
+- `F069-compose-network-subnet` (🟢 PROVEN): Pin the Compose network subnet; landed 2026-11-14
 - `F030-telegram-picker-already-saved` (🟢 PROVEN): Telegram picker: say "Already saved" in the message too; landed 2026-11-14
-- `F093-ci-green` (🟢 PROVEN): CI on master is green and a flaky test is quarantined the same day; landed 2026-11-13
-- 2026-11: 63 landed. spec/features/done/2026-11/
+- 2026-11: 64 landed. spec/features/done/2026-11/
