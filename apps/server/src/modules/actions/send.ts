@@ -1,13 +1,12 @@
 import { draftPayloadSchema, sendPayloadSchema, type OutgoingMessage, type SendPayload } from "@ea/core";
-import type { Transaction } from "kysely";
 
-import type { DB, TenantContext } from "../../platform/db";
+import type { TenantContext } from "../../platform/db";
 import { describeError, HardError, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit, type AuditData } from "../audit";
 import { locateByActionId, MailAuthError, SmtpSendError, type MailProvider } from "../mail";
 
-import type { ApplyDeps, ApplyOutcome } from "./apply";
+import { inTransaction, type ApplyDeps, type ApplyOutcome } from "./apply-shared";
 import { DELEGATION_DUE_AFTER_MS, HARD_ERROR_TRIES, RETRY_WAIT_MS, SEND_SOFT_CAP_MS } from "./constants";
 import { buildDraftMessage } from "./drafts";
 import {
@@ -55,10 +54,6 @@ export function sendOutcomeOf(error: unknown, attempts: number, sinceTapMs = 0):
   }
   if (attempts + 1 >= SEND_HARD_TRIES) return { kind: "failed", reason: "smtp_error" };
   return { kind: "retry", soft: false, count: true };
-}
-
-function inTransaction<T>(db: ApplyDeps["db"], run: (trx: Transaction<DB>) => Promise<T>): Promise<T> {
-  return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
 }
 
 interface Prepared {
