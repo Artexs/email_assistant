@@ -20,12 +20,16 @@ describe("tp", () => {
     expect(tp("expired_suffix", 3)).toBe("3 planned actions were cancelled.");
   });
 
-  test("Polish picks the few form until the Polish tables exist (the English plural)", () => {
+  test("Polish picks one, few and many, and few differs from many", () => {
     setLocaleForTest("pl");
     expect(getLocale()).toBe("pl");
     expect(dateLocale()).toBe("pl-PL");
-    expect(tp("ob_rules", 2)).toBe("2 rules");
-    expect(tp("ob_rules", 1)).toBe("1 rule");
+    expect(tp("ob_rules", 1)).toBe("1 reguła");
+    expect(tp("ob_rules", 2)).toBe("2 reguły");
+    expect(tp("ob_rules", 5)).toBe("5 reguł");
+    expect(tp("auth_error_banner", 3)).toBe("3 skrzynki mają błąd logowania.");
+    expect(tp("auth_error_banner", 5)).toBe("5 skrzynek ma błąd logowania.");
+    expect(tp("ob_rules", 2)).not.toBe(tp("ob_rules", 5).replace("5", "2"));
   });
 });
 

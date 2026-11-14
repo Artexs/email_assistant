@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import { localeOfLanguageTag, pluralCategory, type UserLocale } from "@ea/core/web";
 
 import { en, enPlurals, type PluralKey, type TextKey } from "./en";
+import { pl, plPlurals } from "./pl";
 
 export type { PluralKey, TextKey };
 export type Dictionary = Record<TextKey, string>;
@@ -12,14 +13,8 @@ export interface PluralTables {
 
 type Vars = Record<string, string | number>;
 
-// Until the Polish tables exist, Polish shows the English texts (spec/features/active/F098-e7-t1-polish-ui-i18n-frame-first).
-const dictionaries: Record<UserLocale, Dictionary> = { en, pl: en };
-const plurals: PluralTables = {
-  en: enPlurals,
-  pl: Object.fromEntries(
-    Object.entries(enPlurals).map(([key, forms]) => [key, { one: forms.one, few: forms.other, many: forms.other }])
-  ) as PluralTables["pl"],
-};
+const dictionaries: Record<UserLocale, Dictionary> = { en, pl };
+const plurals: PluralTables = { en: enPlurals, pl: plPlurals };
 
 export const LOCALE_STORAGE_KEY = "ea.locale";
 
