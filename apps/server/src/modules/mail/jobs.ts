@@ -7,6 +7,7 @@ import { createLog } from "../../platform/log";
 import { isOrgSuspended } from "../tenancy";
 
 import { FLAGS_REFRESH_EVERY_MS, refreshFlags } from "./flags";
+import { recheckBlockedHosts } from "./host-status";
 import type { ImapConnectOptions } from "./imap/client";
 import { findUserMoves } from "./moves";
 import { openMailboxProvider } from "./open";
@@ -86,6 +87,8 @@ export function createMailSyncJob(deps: MailSyncJobDeps): { run(): Promise<void>
   const lastFlagsAt = new Map<string, number>();
   return {
     async run() {
+      // D18: a blocked mailbox that the guard now allows is active again, and this run syncs it. It never throws.
+      await recheckBlockedHosts({ db: deps.db, now: deps.now });
       const targets = await listSyncTargets(deps.db);
       for (const { orgId, mailboxId } of targets) {
         const ctx = { orgId };
