@@ -62,7 +62,6 @@ Two steps. About 300 changed lines.
 
     ```ts
     // packages/core/src/web/operator.ts
-    export const operatorOrgParamsSchema = z.object({ orgId: z.uuid() });
     export const operatorNoticesQuerySchema = z.object({ days: z.coerce.number().int().min(1).max(30).default(7) });
     export const operatorOrgDetailSchema = z.strictObject({
       orgId: z.uuid(),
@@ -108,8 +107,8 @@ Two steps. About 300 changed lines.
     //   kind = data.kind, key = data.key (rows whose kind or key is not a string are skipped)
 
     // operator/routes.ts
-    //   app.get("/orgs/:orgId", …)  parse params with operatorOrgParamsSchema (a bad uuid → ValidationError → 400);
-    //                               not_found → 404 { error: "not_found" }
+    //   app.get("/orgs/:orgId", …)  a path id that is not a UUID → 404 { error: "not_found" } with no DB call (the
+    //                               `mailboxIdOf` rule of config/routes.ts); not_found from the service → the same 404
     //   app.get("/notices", …)      parseQuery(c, operatorNoticesQuerySchema)
     ```
 
@@ -118,7 +117,7 @@ Two steps. About 300 changed lines.
     3. Route matrix for both routes: no session → 401; the owner of A → 404; the owner of B → 404.
     4. The operator, `GET /orgs/<A>` → 200; `operatorOrgDetailSchema.parse` passes; `mailboxes` has the two ids with their statuses and times; `lastRuns` = { sync −5 min, triage −10 min, digest −3 h, send −1 h, notice −20 min }; `flags` holds `{ flag: "stats_page", enabled: true, source: "row" }`.
     5. `GET /orgs/<B>` → 200 with `lastRuns` all null and `mailboxes: []`.
-    6. `GET /orgs/not-a-uuid` → 400 `validation`; `GET /orgs/<random uuid>` → 404 `{ error: "not_found" }`.
+    6. `GET /orgs/not-a-uuid` → 404 `{ error: "not_found" }` (no DB call); `GET /orgs/<random uuid>` → 404 `{ error: "not_found" }`.
     7. `GET /notices` → the A `trial_ending` row and the B `llm_cap` row (filtered to A and B), newest first, with `kind` and `key` as stored; not the −10 days row. `GET /notices?days=30` → also the −10 days row. `?days=0` and `?days=31` → 400.
     8. Neither body holds an organization name, a mailbox address, `@x.test` or a display name.
   - Check: `bun test apps/server/test/integration/web-operator-detail.test.ts apps/server/test/integration/web-operator-orgs.test.ts apps/server/test/integration/web-operator.test.ts apps/server/test/integration/operator-reads.test.ts`; `bun run typecheck`; `bun run lint`.

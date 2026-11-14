@@ -67,7 +67,7 @@ Ticket: [ticket.md](ticket.md). Open defaults for the owner: [questions.md](ques
 - **D15 Ids, codes, counts and dates only.** No organization name, no mailbox address, no user e-mail address or name, no mail text, no log text. Mailboxes are shown by id and status. The operator maps ids to customers with `org:status` on the server.
 - **D16 Routes.** All under `/api/operator`, guarded by `requireOperator` (F087):
   - `GET /orgs` → `OperatorOrgList` (stage 07);
-  - `GET /orgs/:orgId` → `OperatorOrgDetail` (stage 08); bad uuid → 400; unknown id → 404 `{ error: "not_found" }`;
+  - `GET /orgs/:orgId` → `OperatorOrgDetail` (stage 08); a path id that is not a UUID or an unknown id → 404 `{ error: "not_found" }` (the path-id rule of `config/routes.ts`);
   - `GET /notices?days=N` (1–30, default 7) → `OperatorNotices` (stage 08);
   - `GET /flags` (F087, unchanged);
   - `POST /orgs/:orgId/plan` and `POST /orgs/:orgId/flags` (stage 09).
