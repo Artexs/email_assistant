@@ -1,0 +1,185 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-043",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-urg-0001",
+      "subject": "Przetarg Zielona Hurtownia – stawki na trasie północnej",
+      "body": "Szanowny Panie Prezesie,\n\nZielona Hurtownia otworzyła dziś rano zapytanie uzupełniające do przetargu na obsługę transportową sieci i prosi o korekty cenowe dla trasy północnej. Portal zamawiającego przyjmuje poprawki tylko do godziny 16:00 dzisiejszego dnia, a później zamyka okno uzupełnień.\n\nW konsorcjum przygotowaliśmy dwa warianty stawki: wariant A obniża cenę za paletę o 3%, wariant B utrzymuje cenę, ale skraca czas dostawy do 24 godzin. Wybór wariantu należy do Pana jako lidera oferty, bo ma wpływ na marżę obu stron.\n\nProszę o wskazanie wariantu, a my wprowadzimy korektę w portalu.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0002",
+      "subject": "Wyjazd do Frankfurtu – pilna decyzja co do terminu",
+      "body": "Szanowny Panie Prezesie,\n\nlinie lotnicze przetrzymują rezerwacje na delegację zarządu do Frankfurtu tylko do końca dzisiejszego dnia roboczego. Później bilety na lot 26.01.2027 przepadają, a ceny rosną o ponad połowę.\n\nPotrzebuję Pana osobistej decyzji jeszcze dziś, czy leci Pan we wtorek rano, czy w środę po południu, bo od tego zależy, czy zdąży Pan na spotkanie z bankiem. Asystentka nie może jej podjąć za Pana.\n\nProszę o odpowiedź dziś, do wieczora.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0003",
+      "subject": "Posiedzenie rady – krótka rozmowa o budżecie",
+      "body": "Szanowny Panie Prezesie,\n\nprzygotowuję materiały na posiedzenie rady nadzorczej i mam wątpliwości co do planowanego budżetu na rok 2027. Zwłaszcza pozycja inwestycji we flotę wymaga Pana komentarza, bo różni się o kilka milionów od wersji, którą rada widziała jesienią.\n\nProszę o krótką rozmowę telefoniczną dziś po południu. Wystarczy kwadrans, a spokojnie omówimy te liczby oraz ewentualne zmiany, które trzeba będzie przedstawić pozostałym członkom rady.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0004",
+      "subject": "Reklamacja uszkodzonej dostawy mebli – prośba o Pana decyzję",
+      "body": "Szanowny Panie Prezesie,\n\nwczorajsza dostawa płyt meblowych na nasz zakład w Kaliszu przyjechała z uszkodzonym ładunkiem: 14 palet ma pogięte rogi i zawilgocone opakowania. Zdjęcia i protokół szkody przesyłam w osobnej wiadomości.\n\nLinia produkcyjna stanie dzisiaj o 15:00, jeżeli nie dostaniemy wymiany materiału. Nasz dział produkcji pyta, czy Państwo wyślą zastępczą dostawę jeszcze dziś, czy mamy zamówić materiał od innego przewoźnika na Państwa koszt. Taką decyzję może podjąć tylko Pan.\n\nProszę o odpowiedź jeszcze dzisiaj, bo inaczej zatrzymamy produkcję.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#222;line-height:1.45;\">\n<h3 style=\"margin:0 0 10px 0;color:#7a4b1f;\">Szanowny Panie Prezesie,</h3>\n<p style=\"margin:0 0 10px 0;\">wczorajsza dostawa płyt meblowych na nasz zakład w Kaliszu przyjechała z uszkodzonym ładunkiem: 14 palet ma pogięte rogi i zawilgocone opakowania. Zdjęcia i protokół szkody przesyłam w osobnej wiadomości.</p>\n<p style=\"margin:0 0 10px 0;\">Linia produkcyjna stanie dzisiaj o 15:00, jeżeli nie dostaniemy wymiany materiału. Nasz dział produkcji pyta, czy Państwo wyślą zastępczą dostawę jeszcze dziś, czy mamy zamówić materiał od innego przewoźnika na Państwa koszt. Taką decyzję może podjąć tylko Pan.</p>\n<p style=\"margin:0 0 10px 0;\">Proszę o odpowiedź jeszcze dzisiaj, bo inaczej zatrzymamy produkcję.</p>\n<p style=\"margin:12px 0 0 0;color:#666;font-size:12px;\">Z powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew</p>\n</body></html>"
+    },
+    {
+      "id": "b-urg-0005",
+      "subject": "Złożenie oferty w przetargu – podpis dziś",
+      "body": "Hej Wiktor,\n\ntoday is 15.01.2027, the closing date for the Zielona Hurtownia tender offer. The documents are ready in the folder, but the tender portal still waits for your qualified signature on the offer form and on the declaration of the board.\n\nThe portal accepts uploads until 15:30. Please sign the two files in the next hour, so I can send them from your account. I stay at my desk the whole morning.\n\nPozdrawiam | Dorota Wilczynska | Asystentka Zarzadu",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0006",
+      "subject": "Cennik transportu 2027 – zgoda na stawki do zatwierdzenia",
+      "body": "Szanowny Panie Prezesie,\n\nw sprawie cennika transportu na rok 2027 potrzebuję Pana ostatecznej decyzji jeszcze dziś. Nasz dział zakupów podpisuje umowy z dostawcami płyt i okuć z końcem dnia, a w kalkulacji musimy mieć Państwa stawkę za kilometr.\n\nPaństwa propozycja to 4,35 zł za kilometr przy minimum 20 przejazdów miesięcznie. Zgadzamy się na nią, jeżeli Pan potwierdzi, że stawka nie wzrośnie przed lipcem. Bez Pana potwierdzenia dzisiaj musimy odłożyć podpisanie umów o miesiąc.\n\nProszę o szybką odpowiedź.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#222;line-height:1.45;\">\n<h3 style=\"margin:0 0 10px 0;color:#7a4b1f;\">Szanowny Panie Prezesie,</h3>\n<p style=\"margin:0 0 10px 0;\">w sprawie cennika transportu na rok 2027 potrzebuję Pana ostatecznej decyzji jeszcze dziś. Nasz dział zakupów podpisuje umowy z dostawcami płyt i okuć z końcem dnia, a w kalkulacji musimy mieć Państwa stawkę za kilometr.</p>\n<p style=\"margin:0 0 10px 0;\">Państwa propozycja to 4,35 zł za kilometr przy minimum 20 przejazdów miesięcznie. Zgadzamy się na nią, jeżeli Pan potwierdzi, że stawka nie wzrośnie przed lipcem. Bez Pana potwierdzenia dzisiaj musimy odłożyć podpisanie umów o miesiąc.</p>\n<p style=\"margin:0 0 10px 0;\">Proszę o szybką odpowiedź.</p>\n<p style=\"margin:12px 0 0 0;color:#666;font-size:12px;\">Z powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew</p>\n</body></html>"
+    },
+    {
+      "id": "b-urg-0007",
+      "subject": "Awaria WMS w magazynie w Poznaniu",
+      "body": "Cześć Wiktor,\n\nsystem WMS w magazynie w Poznaniu nie działa od 12:50. Skanery nie łączą się z bazą, a 6 ciężarówek stoi na rampach i czeka na dokumenty wydania.\n\nDostawca systemu mówi, że może przywrócić działanie, jeżeli zgodzisz się na awaryjny restart z utratą dzisiejszych zapisów, bo to koszt rzędu kilkudziesięciu tysięcy złotych. Ta zgoda musi pochodzić od Ciebie.\n\nZadzwoń do mnie, jak tylko przeczytasz tę wiadomość.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0008",
+      "subject": "Board meeting 28.01.2027 – fuel contract",
+      "body": "Dear Mr Szalewski,\n\nwe need your signature on the fleet fuel contract addendum before it goes to your supervisory board meeting on 28.01.2027. The legal department waits for the signed copy today.\n\nPlease sign and return it.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0009",
+      "subject": "Budget package for the supervisory board – your approval",
+      "body": "Hi Wiktor,\n\nthe supervisory board budget package for the next meeting must go to the members today. I need you to confirm in writing that the capital expenditure table on page 6 is final, because the board will vote on it without further changes.\n\nThe numbers still differ from the finance version by 1.2 million zloty. Please settle the difference with the chief accountant and tell me this evening which table we send. I do not send anything without your word.\n\nPlease answer by 19:00.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0010",
+      "subject": "Odprawa celna w Gdyni – potrzebna Pana zgoda",
+      "body": "Szanowny Panie Prezesie,\n\nładunek eksportowy dla Nordic Foods stoi w Gdyni, a agencja celna wymaga dziś Pana zgody na gwarancję zabezpieczenia kwoty cła. Bez niej kontener nie opuści portu dzisiaj.",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0012",
+      "subject": "Rada nadzorcza: lista uczestników i budżet – odpowiedź dziś",
+      "body": "Dzień dobry Wiktorze,\n\nna jutro rano rada nadzorcza zbiera się na posiedzeniu w sprawie budżetu rocznego. Do dziś wieczorem muszę dostać od Ciebie jedno potwierdzenie: czy przedstawisz budżet osobiście, czy poprosisz główną księgową.\n\nOd tej decyzji zależy, kto dostaje materiały i kto jest wpisany na listę uczestników. Nikt inny nie może jej podjąć.\n\nCzekam na Twoją odpowiedź do końca dnia.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0013",
+      "subject": "Podróż służbowa do Rotterdamu – zmiana terminu",
+      "body": "Dzień dobry Wiktorze,\n\npiszę w sprawie Twojej podróży służbowej do Rotterdamu. Biuro podróży poinformowało mnie dzisiaj, że lot z 25.01.2027 został odwołany, a kolejne wolne miejsca są na 24.01.2027 oraz na 27.01.2027.\n\nJeżeli polecisz wcześniej, w dniu spotkania z portem nie będzie czasu na przygotowanie dokumentów, ale zdążysz na rozmowę z zarządem terminalu, która rozpoczyna się o 9:00. Jeżeli wybierzesz 27.01.2027, spotkanie z portem trzeba będzie przenieść, a nie wiem, czy zgodzi się na to druga strona. To ważne, bo w tym samym tygodniu masz też posiedzenie rady nadzorczej.\n\nRezerwację na 24.01.2027 mogę utrzymać tylko do godziny 20:00 dzisiaj. Po tym czasie linia zwalnia miejsca i odświeża ceny, a według pierwszego sprawdzenia nowe będą wyższe o około 40%.\n\nDo tej pory nikt z biura nie potwierdził też noclegu, więc hotel w centrum Rotterdamu również zależy od tej decyzji, a w tygodniu targów miejsc prawie nie ma. Proszę, daj znać jeszcze dziś, który termin wybierasz. Nie mogę podjąć tej decyzji za Ciebie, bo wymaga ona zmian w Twoim kalendarzu i uzgodnienia z radą.\n\nPotrzebuję odpowiedzi dziś, najlepiej przed 18:00.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0014",
+      "subject": "Eksport: umowa z armatorem do podpisania dziś",
+      "body": "Szanowny Panie Prezesie,\n\narmator oczekuje Pana podpisu pod umową na slot na statku do Göteborga, który odpływa jutro rano. Umowa jest w załączonym pliku do akceptacji. Jeżeli nie dostaniemy podpisu dzisiaj do godziny 17:00, miejsce przechodzi na innego klienta, a następne wolne miejsce będzie dopiero za dziesięć dni.\n\nWiem, że to zła chwila, ale tylko Pan może podpisać taką umowę. Proszę o odpowiedź i podpis jeszcze dziś, a zajmiemy się resztą formalności z naszym zespołem.",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0016",
+      "subject": "Reklamacja z Zielonej Hurtowni – proszę o telefon",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o osobistą rozmowę w sprawie ostatniej reklamacji naszych magazynów. W ubiegłym tygodniu otrzymaliśmy kilka dostaw z uszkodzonymi opakowaniami, a nasza kontrola jakości potwierdziła, że problem dotyczy trzech kolejnych partii. Zdjęcia i protokoły ma Pański dział reklamacji.\n\nNie piszę tej wiadomości, żeby kogoś obwiniać. Współpracujemy od lat i chcę, żebyśmy razem ustalili, jak uniknąć takich sytuacji w przyszłości. Sprawa dotyczy jednak szerszej zmiany: sposobu pakowania, zasad odbioru towaru na rampie oraz ewentualnego przeniesienia dostaw z sobotnich okien na dni robocze.\n\nRozmawiałam już z moim dyrektorem logistyki i wiem, jakie mamy oczekiwania. Chodzi o to, żeby nowe zasady obowiązywały od początku lutego, a nie dopiero od drugiego kwartału, kiedy ruszy nasz nowy sezon sprzedaży w sieci. W ubiegłym roku podobne rozmowy zajęły nam wiele tygodni i nikt tego nie chce powtarzać. Chciałabym przekazać je bezpośrednio Panu, bo tylko Pan może zdecydować o zmianie standardów u Państwa w firmie.\n\nGdyby okazało się, że ktoś z Pana działu logistyki zna szczegóły lepiej, chętnie porozmawiam także z nim, ale najpierw chcę usłyszeć Pana stanowisko. Proszę o kontakt telefoniczny po południu. Jestem pod swoim zwykłym numerem do godziny 17:00.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0017",
+      "subject": "Customs clearance – please confirm the guarantee today",
+      "body": "Dear Mr Szalewski,\n\nthe customs agent in Gdynia needs your written confirmation of the duty guarantee today. Without it the shipment cannot leave the port this evening.\n\nPlease confirm by return mail.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [
+        {
+          "subject": "Re: Eksport i odprawy celne",
+          "body": "Karin, please send me the exact amount of the guarantee and the name of the agent. I will look at it today. Wiktor"
+        }
+      ]
+    },
+    {
+      "id": "b-urg-0020",
+      "subject": "Naczepy – zamówienie do potwierdzenia",
+      "body": "Cześć Wiktor,\n\ndostawca naczep dał nam ofertę na sześć sztuk z dostawą w marcu, ale cena jest ważna tylko dziś. Jeśli jej nie potwierdzimy do końca dnia, wracamy do stawek z cennika, a to jest 190 tysięcy złotych więcej za cały zakup.\n\nMam dwa warianty: wersja z hamulcami tarczowymi (droższa o 4%) albo wersja podstawowa. Potrzebuję Twojej decyzji, bo to zakup floty na kilka lat i pieniądze są w Twojej puli.\n\nDaj znać, który wariant. Czekam do 17:00.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0021",
+      "subject": "Cennik na 2027 – podpis dziś",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o podpisanie aneksu do cennika dziś rano. Bez tego nie wystawimy zamówień na początek lutego.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0022",
+      "subject": "Wspólny przetarg BFP – zgoda na gwarancję przetargową",
+      "body": "Szanowny Panie Prezesie,\n\nmamy wspólny przetarg na obsługę centrum dystrybucyjnego, a organizator wymaga wadium w gwarancji bankowej do godziny 12:00 dzisiaj. Bank potrzebuje Pana zgody na obciążenie linii kredytowej Kordelan w połowie kwoty gwarancji.\n\nWadium wynosi 600 tysięcy złotych, z czego nasza część to 300 tysięcy. Bez Pana zgody dzisiaj konsorcjum odpada z przetargu. To bardzo istotne, bo oferta jest już gotowa i złożona.\n\nProszę o szybką decyzję i telefon do banku.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0025",
+      "subject": "Re: Kalendarz zarządu – wyjazd do Hamburga",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o osobistą odpowiedź w sprawie wyjazdu do Hamburga. Dotyczy to terminu spotkania z radą oraz tego, czy zarząd będzie reprezentowany w całości.\n\nCzekam na Pana stanowisko, ponieważ chcę uzgodnić dalsze kroki jeszcze w tym tygodniu. Proszę też o informację, czy Pan Prezes zabiera ze sobą dyrektora operacyjnego, bo rada chce znać skład delegacji z wyprzedzeniem.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "subject": "Kalendarz zarządu – wyjazd do Hamburga",
+          "body": "Panie Przewodniczący, rozważam wyjazd do Hamburga 02.02.2027. Czy rada widzi potrzebę mojej obecności? Wiktor Szalewski"
+        },
+        {
+          "subject": "Re: Kalendarz zarządu – wyjazd do Hamburga",
+          "body": "Panie Prezesie, to zależy od wyników rozmów z portem. Proszę o więcej informacji w najbliższych dniach. Zbigniew Orlowicz"
+        }
+      ]
+    },
+    {
+      "id": "b-urg-0026",
+      "subject": "Posiedzenie rady – odpowiedź dziś",
+      "body": "Dear Mr Szalewski,\n\nthe supervisory board meeting needs your decision today: will you present the budget yourself? Please answer by 18:00.",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#222;line-height:1.45;\">\n<h3 style=\"margin:0 0 10px 0;color:#222;\">Dear Mr Szalewski,</h3>\n<p style=\"margin:0 0 10px 0;\">the supervisory board meeting needs your decision today: will you present the budget yourself? Please answer by 18:00.</p>\n</body></html>"
+    },
+    {
+      "id": "b-urg-0027",
+      "subject": "Re: Business trip calendar – approval needed today",
+      "body": "Dear Mr Szalewski,\n\nI have read the note from the chief accountant and your short reply, and I must ask you to take a decision today.\n\nThe chief accountant wrote that the travel budget for the first quarter will be exceeded by 38,000 zloty if the board members travel to Hamburg and to Rotterdam as planned. In your reply you asked to keep both trips. I accept this, but the board's travel policy requires my written consent for any excess above 25,000 zloty, and I will give it only if you confirm that the two journeys really are necessary and that no meeting can be held by video call.\n\nPlease explain to me in a few sentences which of the two trips is critical for the company's contract with the port and which one the supervisory board can skip. I also need the information on who from the management team travels with you and what the total cost is for each person.\n\nI cannot let the bookings stand without this answer, because the airline fixes the fares at the end of today. If I do not hear from you by 17:00 today, I will ask the assistant to cancel the Rotterdam booking and keep only Hamburg.\n\nPlease answer today.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "subject": "Travel budget Q1: Hamburg and Rotterdam",
+          "body": "Mr Szalewski, the planned trips exceed the quarter budget by 38,000 zloty. I need your decision on which trips we keep. Magdalena Czerniak"
+        },
+        {
+          "subject": "Re: Travel budget Q1: Hamburg and Rotterdam",
+          "body": "Magdalena, I would like to keep both trips. I will explain this to the chairman. Wiktor"
+        }
+      ]
+    },
+    {
+      "id": "b-urg-0028",
+      "subject": "Reklamacja – dostawa do centrum w Radomiu",
+      "body": "Panie Wiktorze,\n\ndzwonię w sprawie reklamacji z ubiegłego tygodnia. Dostawa do naszego centrum w Radomiu miała trzy puste palety w dokumentach, a nasz klient nie przyjął towaru. Chciałabym, żeby ktoś z Pana zespołu zajął się wyjaśnieniem, ale oczekuję, że sprawę zna Pan osobiście.\n\nProszę, żeby Pan sam do mnie oddzwonił po rozmowie z dyrektor operacyjną. Wiem, że ma Pan dużo na głowie, ale ta sprawa dotyczy naszej współpracy w całej sieci.",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0029",
+      "subject": "Posiedzenie rady nadzorczej – materiały i podpis",
+      "body": "Hi Wiktor,\n\nthe board papers for the supervisory board meeting are in your folder: the agenda, the budget summary and the draft resolution. The chairman asked for your signature on the draft resolution before the pack leaves for the members, and the courier collects the pack at 18:00 today.\n\nPlease look at the resolution and sign the last page. I wait in the office until the courier arrives.\n\nDorota",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0030",
+      "subject": "Export: Customs inspection in Gdynia",
+      "body": "Dear Wiktor,\n\ncustoms opened a physical inspection of our container. They need your decision today: full check now, or the bonded warehouse at 120 euro per day.\n\nPlease tell me before 15:00.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#222;line-height:1.45;\">\n<h3 style=\"margin:0 0 10px 0;color:#1a4a7a;\">Dear Wiktor,</h3>\n<p style=\"margin:0 0 10px 0;\">customs opened a physical inspection of our container. They need your decision today: full check now, or the bonded warehouse at 120 euro per day.</p>\n<p style=\"margin:0 0 10px 0;\">Please tell me before 15:00.</p>\n<p style=\"margin:12px 0 0 0;color:#666;font-size:12px;\">Kind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners</p>\n</body></html>"
+    },
+    {
+      "id": "b-urg-0031",
+      "subject": "Complaint: damaged pallets – a call, please",
+      "body": "Dear Mr Szalewski,\n\nI would like to talk to you about the damaged pallets that reached our Radom centre last week. I know your claims department has the papers, but this concerns our whole relationship and I would like to hear your view directly.\n\nWhen you have a moment this afternoon, please call me. I will be in the office until five, and I would be grateful for a few minutes of your time.",
+      "thread": []
+    }
+  ]
+}

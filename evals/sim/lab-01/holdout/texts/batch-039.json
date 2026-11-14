@@ -1,0 +1,161 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-039",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-spa-0142",
+      "subject": "Zostań liderem rynku: pakiet VIP dla wybranych firm",
+      "body": "Szanowni Panstwo,\n\nPremium Leads Pro zaprasza wybrane firmy transportowe i magazynowe do programu VIP, ktory zmienia zasady gry na rynku! Dzieki naszemu systemowi Panstwa firma bedzie widoczna w kazdej wyszukiwarce, w mediach spolecznosciowych i w skrzynkach tysiecy potencjalnych klientow, a Panstwo nie musza robic zupelnie nic. Wszystko robi nasz zespol oraz nasze roboty.\n\nCo zawiera pakiet VIP? Po pierwsze, pozycjonowanie strony na 30 najwazniejszych fraz, z gwarancja pierwszej strony w wynikach. Po drugie, baze 900000 kontaktow do firm z calej Europy, gotowa do wysylki w kilka minut. Po trzecie, kampanie reklamowe w mediach spolecznosciowych na dziewiec miesiecy. Po czwarte, osobistego opiekuna, ktory odpowiada na pytania przez dwadziescia cztery godziny na dobe. Po piate, szkolenie dla calego zespolu sprzedazy, prowadzone przez ekspertow z naszej firmy.\n\nCena pakietu to normalnie 1990 euro, ale dla firm, ktore odpowiedza do piatku, wynosi tylko 290 euro. Oferujemy rowniez gwarancje zwrotu pieniedzy w ciagu 60 dni, bez pytan. Nasi klienci podwajaja sprzedaz srednio w dwa miesiace. Odpowiedz TAK na ten mail, a nasz doradca zadzwoni jeszcze dzis, aby podpisac umowe. Takiej okazji nie bedzie juz w tym roku! Prosimy tez o nieprzekazywanie tej wiadomosci konkurencji, poniewaz oferta jest przeznaczona tylko dla wybranych firm.",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0143",
+      "subject": "Your business deserves more customers: here is how",
+      "body": "Dear Business Owner,\n\nAre you looking for more customers but you do not have time to search for them? Premium Leads Pro takes care of everything for you. We are the number one provider of business leads in Europe, and today we have a special offer which ends on Sunday at midnight. For only 59 euro you receive a verified database of 700,000 companies in logistics, retail, food and production, with the name of the manager, the email and the size of the company.\n\nWhy is our database better than the others? First, it is updated every week by our team and by our robots. Second, it is sorted by country and industry, so you can write only to the people who matter. Third, we give you a ready template of the offer in five languages. Fourth, we include a free audit of your website with a list of mistakes that make your company invisible in search engines. And fifth, we give you a full refund in thirty days if you are not happy, no questions asked.\n\nHundreds of companies already doubled their sales after using our files, and many of them come back every month. Do not wait until your competitors take the best contacts. Just reply to this message with the word YES and we will send you the invoice and the download details within five minutes. Thank you for your trust, we wait for your answer today!",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0144",
+      "subject": "Special credit on your account",
+      "body": "Dear Customer,\na special credit of 6 percent waits on your account. Press the button in this message within 24 hours.\n\nRegards | Paliwa-Flota Billing Department\n\nPaliwa-Flota Billing Department",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0145",
+      "subject": "Hot offer: email lists",
+      "body": "Dear Friend,\nbuy 600,000 business emails for only 39 euro today. Reply YES and get the invoice!\n\nPremium Leads Pro | Sales Team\n\nPremium Leads Pro | Sales Team",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0147",
+      "subject": "Najtańsze usługi graficzne i druk materiałów reklamowych",
+      "body": "Szanowny Panie,\n\nczy Panstwa firma potrzebuje nowych ulotek, katalogow albo wizytowek? Premium Leads Pro razem z partnerami z Azji oferuje druk materialow reklamowych w cenach, ktore nie maja konkurencji. Tysiac wizytowek za 9 euro, piec tysiecy ulotek za 59 euro, a katalog na 40 stron za 190 euro. Dostawa w 5 dni, z gwarancja jakosci.\n\nOdpowiedz TAK na ten mail do piatku, a dostaniesz darmowy projekt graficzny.\n\nPremium Leads Pro | Sales Team\n\nPremium Leads Pro | Sales Team",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0149",
+      "subject": "Loyalty rebate for fuel customers with valid cards",
+      "body": "Dear Customer,\n\nThe Paliwa-Flota Billing Department has prepared a loyalty rebate for customers who held fuel cards for more than one year. Your company qualifies for a rebate of 4 percent on all purchases from the last quarter. To receive the rebate, please open the secure panel with the button in this message and confirm the company profile and the bank account for the transfer.\n\nThe rebate is available for 24 hours only. Please do not reply to this message.\n\nRegards | Paliwa-Flota Billing Department\n\nPaliwa-Flota Billing Department",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0150",
+      "subject": "Pilne: korekta faktury i nowy rachunek bankowy",
+      "body": "Szanowny Kliencie,\n\ninformujemy, że do Państwa faktury wystawiliśmy korektę, a dział rozliczeń Paliwa-Flota zmienił rachunek bankowy do płatności. Nowy numer to PL00-TEST-9917, a wszystkie przelewy wykonane na stary rachunek zostaną zwrócone. Aby uniknąć blokady kart i opłat za zwłokę, prosimy o potwierdzenie nowych danych w formularzu otwieranym przyciskiem w tej wiadomości, najpóźniej w ciągu 24 godzin.\n\nWiadomość jest automatyczna, prosimy nie odpowiadać.\n\nPaliwa-Flota Billing Department\n\nPaliwa-Flota Billing Department",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0151",
+      "subject": "Your company won a fleet package: claim it today",
+      "body": "Dear Customer,\n\nCongratulations! The Paliwa-Flota Billing Department has selected your company as a winner of our yearly Fleet Package draw, among more than four thousand participating companies in the region. The prize includes five thousand litres of diesel, a set of new fuel cards with higher monthly limits, free roadside assistance for twelve months and an insurance voucher for every vehicle in your fleet.\n\nTo claim the prize, you must verify the company profile in the secure panel, which opens after you press the button in this message. The panel will ask you for the name of an authorised person, the tax number of the company, and the bank account to which we should send the cash equivalent of the voucher. The whole process takes only a few minutes, and our system confirms the prize at once.\n\nPlease note that the prize must be claimed within 48 hours. After this time the draw is repeated and your company will lose the prize without any compensation. We kindly ask you not to forward this message to other persons in your company and not to contact your account manager, because the draw is run by the central billing team and the manager does not know about it. If you have problems with the panel, our assistants will help you after the verification.\n\nRegards | Paliwa-Flota Billing Department\n\nPaliwa-Flota Billing Department",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0152",
+      "subject": "Ważna zmiana warunków kart paliwowych, bonus dla firm",
+      "body": "Szanowni Państwo,\n\ninformujemy o zmianie warunków obsługi kart paliwowych od lutego i oferujemy każdej firmie bonus za szybkie potwierdzenie nowych zasad. Firmy, które zaakceptują warunki w ciągu 24 godzin, otrzymują 300 litrów oleju napędowego gratis oraz zwolnienie z miesięcznej opłaty za karty przez trzy miesiące.\n\nAby potwierdzić nowe zasady, prosimy o zalogowanie się przez przycisk w tej wiadomości i weryfikację danych firmy, osoby upoważnionej i rachunku do rozliczeń. Karty firm bez potwierdzenia zostaną ograniczone.",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0154",
+      "subject": "Wygrałeś roczny pakiet paliwa: odbierz nagrodę",
+      "body": "Szanowny Kliencie,\n\nz radością informujemy, że Państwa firma została wylosowana jako zwycięzca w corocznym losowaniu klientów flotowych Paliwa-Flota Billing! Nagrodą jest roczny pakiet paliwa na trzy pojazdy, nowe karty z zaawansowanymi limitami, bezpłatna pomoc drogowa oraz zniżka 15 groszy na litrze na wszystkich stacjach partnerskich przez najbliższe dwanaście miesięcy. Wartość nagrody wynosi około trzydziestu tysięcy złotych.\n\nAby odebrać nagrodę, prosimy o weryfikację danych firmy w bezpiecznym panelu, który otwiera się po naciśnięciu przycisku w tej wiadomości. System poprosi o podanie osoby upoważnionej, numeru NIP, adresu siedziby oraz numeru rachunku bankowego, na który przekażemy równowartość pakietu w gotówce, jeśli firma wybierze taką formę. Cała procedura trwa zaledwie dwie minuty i odbywa się automatycznie. W poprzednim roku wszyscy zwycięzcy otrzymali nagrody w ciągu pięciu dni roboczych.\n\nNagroda musi zostać odebrana w ciągu 48 godzin, w przeciwnym razie losowanie zostanie powtórzone. Prosimy nie przekazywać tej wiadomości innym osobom i nie kontaktować się z dotychczasowym opiekunem konta, ponieważ losowanie obsługuje wyłącznie centralny dział rozliczeń. Dla Państwa wygody nagrodę można wykorzystać na dowolnej stacji z naszej sieci, a także na zakup oleju do silników i płynu do spryskiwaczy. Gratulujemy!\n\nPaliwa-Flota Billing Department\n\nPaliwa-Flota Billing Department",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0155",
+      "subject": "Dodatkowy rabat na fakturę",
+      "body": "Szanowny Kliencie,\nna Państwa fakturę czeka dodatkowy rabat 6 procent. Aktywuj go przyciskiem w tej wiadomości.\n\nPaliwa-Flota Billing Department\n\nPaliwa-Flota Billing Department",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0156",
+      "subject": "Największa wyprzedaż stoisk w historii Targów Magazynowych",
+      "body": "Drodzy Przedsiębiorcy!\n\nTargi Magazynowe Expo ogłaszają największą wyprzedaż stoisk w historii wydarzenia! Tylko przez trzy dni, od poniedziałku do środy, każda firma, która zarezerwuje stoisko, otrzymuje rabat nawet do 50 procent oraz szereg bonusów, jakich nie znajdziecie nigdzie indziej. Do wyboru mamy stoiska standardowe, narożne i premium w pierwszej hali, tuż przy wejściu głównym i strefie gastronomicznej.\n\nCo dostajecie w cenie? Pełną zabudowę stoiska z oświetleniem i zasilaniem, wpis w katalogu targowym wydawanym w nakładzie dwudziestu tysięcy egzemplarzy, logo na wszystkich plakatach i na stronie wydarzenia, cztery bilety dla gości, dwa zaproszenia na galę dla wystawców oraz miejsce parkingowe na całe trzy dni targów. Dla firm, które zgłoszą się jako pierwsze, przewidzieliśmy dodatkowo bezpłatną reklamę na ekranach w hali głównej.\n\nW poprzedniej edycji wszystkie stoiska sprzedały się w 48 godzin, a lista oczekujących liczyła ponad sto firm! Nie dajcie się wyprzedzić. Wystarczy odpowiedzieć na tę wiadomość, a nasz doradca zadzwoni do Was jeszcze dziś, przygotuje umowę i zarezerwuje najlepsze miejsce. Pamiętajcie, że w programie targów czekają także bezpłatne szkolenia, pokazy robotów magazynowych i konkursy z nagrodami. Do zobaczenia na targach, największym wydarzeniu roku w branży!",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0157",
+      "subject": "Pakiet networkingowy dla firm logistycznych",
+      "body": "Szanowni Państwo,\n\nTargi Magazynowe Expo przygotowały pakiet networkingowy dla firm logistycznych: trzy spotkania biznesowe z wybranymi wystawcami, miejsce przy stole prezesów podczas gali oraz publikacja profilu firmy w katalogu targowym. Cena pakietu wynosi 1490 złotych, ale dla firm, które odpowiedzą do czwartku, oferujemy rabat 40% i bezpłatny bilet dla jednego gościa.\n\nLiczba pakietów jest ograniczona do trzydziestu. Odpowiedzcie na tę wiadomość, a nasz doradca wyśle fakturę jeszcze dziś.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0158",
+      "subject": "Cheap SEO",
+      "body": "Hi Boss,\nfirst place in Google for 19 euro. Reply YES today and start tomorrow!\n\nPremium Leads Pro | Sales Team\n\nPremium Leads Pro | Sales Team",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0160",
+      "subject": "Rabat na fakturę",
+      "body": "Szanowny Kliencie,\npotwierdź dane przyciskiem w tej wiadomości i otrzymaj rabat 10 procent na fakturę.\n\nPaliwa-Flota Billing Department\n\nPaliwa-Flota Billing Department",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0162",
+      "subject": "Ostatnie stoiska",
+      "body": "Szanowni Państwo!\nOstatnie 4 stoiska na Targach Magazynowych Expo. Odpowiedzcie dziś, a dostaniecie rabat 25%!\n\nZespol Targi Magazynowe Expo | Dzial Handlowy\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0163",
+      "subject": "Reklama na ekranach w hali głównej, cena promocyjna",
+      "body": "Szanowni Państwo,\n\noferujemy Państwa firmie reklamę na wielkich ekranach w hali głównej Targów Magazynowych Expo. Spot trwający 20 sekund będzie wyświetlany co kwadrans przez trzy dni targów, a zobaczy go ponad dwadzieścia tysięcy odwiedzających. Cena promocyjna to tylko 1200 złotych zamiast 2800, ważna do poniedziałku.\n\nOdpowiedzcie na tę wiadomość, a nasz doradca przygotuje projekt i fakturę jeszcze dzisiaj.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0164",
+      "subject": "Oszczędności dla firm: tańszy prąd, gaz i paliwo",
+      "body": "Szanowny Panie Prezesie,\n\nczy wie Pan, ze Panstwa firma placi za prad i gaz nawet o 40 procent za duzo? Premium Leads Pro oferuje nowa usluge, ktora automatycznie znajduje najtanszych dostawcow energii, paliwa i ubezpieczen dla firm, i przelacza Panstwa umowy bez zadnych formalnosci. Wystarczy jednorazowa oplata 199 euro, a oszczednosci zaczynaja sie od pierwszego miesiaca.\n\nJak to dziala? Podaje Pan nam dane z ostatnich faktur, a nasz system porownuje oferty setek dostawcow z calej Europy. Po jednym dniu dostaje Pan raport z propozycja nowych umow, a my zalatwiamy wszystko w Panskim imieniu, wlacznie z wypowiedzeniem starych kontraktow. Nasi klienci z branzy logistycznej oszczedzili srednio osiemdziesiat tysiecy zlotych w pierwszym roku. Dzialamy w pieciu krajach i obslugujemy ponad dwa tysiace firm, a wszystkie umowy sa w pelni legalne.\n\nOferujemy tez gwarancje, ze jesli nie zaoszczedzi Pan przynajmniej dziesieciu procent, zwrocimy cala oplate. Oferta jest wazna do niedzieli, tylko dla pierwszych czterdziestu firm. Odpowiedz TAK na ten mail, a nasz konsultant zadzwoni jeszcze dzis i przygotuje umowe do podpisu. Nie czekaj, bo kazdy miesiac zwloki to strata pieniedzy!\n\nPremium Leads Pro | Sales Team\n\nPremium Leads Pro | Sales Team",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0165",
+      "subject": "Pierwszy rząd na gali otwarcia",
+      "body": "Szanowni Państwo,\n\nTargi Magazynowe Expo oferują miejsca w pierwszym rzędzie na gali otwarcia, razem z kolacją, zdjęciem z gośćmi honorowymi i wpisem w katalogu targowym. Dla firm, które zgłoszą się do środy, cena wynosi tylko 590 złotych za osobę, a przy zamówieniu trzech biletów czwarty dostają Państwo za darmo.\n\nZainteresowanie jest ogromne, a liczba miejsc ograniczona. Wystarczy odpowiedzieć na tę wiadomość, a nasz doradca prześle fakturę proforma jeszcze dzisiaj. Nie przegapcie okazji, bo takiej gali nie było od lat!",
+      "html": "<div style=\"font-family:Arial,sans-serif;\"><p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Szanowni Państwo,</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Targi Magazynowe Expo oferują miejsca w pierwszym rzędzie na gali otwarcia, razem z kolacją, zdjęciem z gośćmi honorowymi i wpisem w katalogu targowym. Dla firm, które zgłoszą się do środy, cena wynosi tylko 590 złotych za osobę, a przy zamówieniu trzech biletów czwarty dostają Państwo za darmo.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Zainteresowanie jest ogromne, a liczba miejsc ograniczona. Wystarczy odpowiedzieć na tę wiadomość, a nasz doradca prześle fakturę proforma jeszcze dzisiaj. Nie przegapcie okazji, bo takiej gali nie było od lat!</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0168",
+      "subject": "Win new clients with our email robot",
+      "body": "Dear Sir or Madam,\n\nour email robot writes to 5,000 decision makers every day in your name, and it never sleeps. For a one-time price of 129 euro you get the full license, a database of 400,000 contacts in your industry and free support for the whole year. Companies from transport and trade report up to ten new clients per week. Reply YES and we send you the access today. The price grows to 499 euro on Monday, so please do not wait and do not lose this chance.",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0169",
+      "subject": "Free fuel for your fleet: confirm and win",
+      "body": "Dear Customer,\n\nGood news from the Paliwa-Flota Billing Department! Your company was selected for our special program \"Free Fuel Friday\", where chosen fleet customers receive two thousand litres of diesel at no cost. We are doing this to thank our most active customers for the last year, and your fleet is among the top ten percent in your region.\n\nTo receive your free fuel, please press the button in this message and confirm the company profile in the secure panel. We will ask for the name of an authorised person, the tax number of the company and the bank account for the cash value of the fuel, if you prefer a payment instead of litres. The whole procedure takes about two minutes. Customers who confirmed their data last month received their fuel within three working days, and many of them wrote that the process was simple.\n\nThe offer is valid for 24 hours only, and after that time the free fuel goes to another company. Please do not contact your account manager or reply to this message, because the program is run by our central billing team and cannot be changed or extended. We also ask you not to forward this message to other persons in your company.\n\nRegards | Paliwa-Flota Billing Department\n\nPaliwa-Flota Billing Department",
+      "html": "<div style=\"font-family:Arial,sans-serif;\"><p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Dear Customer,</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Good news from the Paliwa-Flota Billing Department! Your company was selected for our special program \"Free Fuel Friday\", where chosen fleet customers receive two thousand litres of diesel at no cost. We are doing this to thank our most active customers for the last year, and your fleet is among the top ten percent in your region.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">To receive your free fuel, please press the button in this message and confirm the company profile in the secure panel. We will ask for the name of an authorised person, the tax number of the company and the bank account for the cash value of the fuel, if you prefer a payment instead of litres. The whole procedure takes about two minutes. Customers who confirmed their data last month received their fuel within three working days, and many of them wrote that the process was simple.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">The offer is valid for 24 hours only, and after that time the free fuel goes to another company. Please do not contact your account manager or reply to this message, because the program is run by our central billing team and cannot be changed or extended. We also ask you not to forward this message to other persons in your company.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Regards | Paliwa-Flota Billing Department</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Paliwa-Flota Billing Department</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0170",
+      "subject": "Zwiększ sprzedaż dzięki naszemu pakietowi startowemu",
+      "body": "Szanowny Panie Prezesie,\n\nPremium Leads Pro przygotowal specjalny pakiet startowy dla firm, ktore chca szybko zwiekszyc sprzedaz w nowym roku, bez zatrudniania nowych ludzi i bez kosztownych kampanii reklamowych. Wystarczy jedna platnosc, 149 euro, a Panstwa firma dostaje wszystko, czego potrzebuje, zeby zdobywac nowych klientow w calej Europie.\n\nW pakiecie startowym znajdzie Pan baze 800000 aktywnych adresow email do menedzerow i dyrektorow, narzedzie do wysylki 50000 wiadomosci dziennie, gotowe szablony ofert w czterech jezykach oraz pozycjonowanie strony firmy na dziesiec fraz. Dodajemy rowniez miesieczny raport z wynikami i konsultacje z ekspertem, ktory pomoze skonfigurowac cala kampanie. Wszystko dziala automatycznie, a pierwsze zapytania od klientow przychodza zwykle w ciagu tygodnia.\n\nMamy ponad trzy tysiace zadowolonych klientow, a wielu z nich przedluza wspolprace co roku. Pakiet startowy kosztuje dzis 149 euro, ale od poniedzialku cena wzrosnie do 690 euro, dlatego prosimy o szybka decyzje. Odpowiedz TAK na ten mail, a my wyslemy fakture i dostep do systemu w kilka minut. Nie ryzykujesz niczego, bo oferujemy zwrot pieniedzy w ciagu 30 dni, jezeli nie bedziesz zadowolony.\n\nPremium Leads Pro | Sales Team\n\nPremium Leads Pro | Sales Team",
+      "html": "<div style=\"font-family:Arial,sans-serif;\"><p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Szanowny Panie Prezesie,</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Premium Leads Pro przygotowal specjalny pakiet startowy dla firm, ktore chca szybko zwiekszyc sprzedaz w nowym roku, bez zatrudniania nowych ludzi i bez kosztownych kampanii reklamowych. Wystarczy jedna platnosc, 149 euro, a Panstwa firma dostaje wszystko, czego potrzebuje, zeby zdobywac nowych klientow w calej Europie.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">W pakiecie startowym znajdzie Pan baze 800000 aktywnych adresow email do menedzerow i dyrektorow, narzedzie do wysylki 50000 wiadomosci dziennie, gotowe szablony ofert w czterech jezykach oraz pozycjonowanie strony firmy na dziesiec fraz. Dodajemy rowniez miesieczny raport z wynikami i konsultacje z ekspertem, ktory pomoze skonfigurowac cala kampanie. Wszystko dziala automatycznie, a pierwsze zapytania od klientow przychodza zwykle w ciagu tygodnia.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Mamy ponad trzy tysiace zadowolonych klientow, a wielu z nich przedluza wspolprace co roku. Pakiet startowy kosztuje dzis 149 euro, ale od poniedzialku cena wzrosnie do 690 euro, dlatego prosimy o szybka decyzje. Odpowiedz TAK na ten mail, a my wyslemy fakture i dostep do systemu w kilka minut. Nie ryzykujesz niczego, bo oferujemy zwrot pieniedzy w ciagu 30 dni, jezeli nie bedziesz zadowolony.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Premium Leads Pro | Sales Team</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Premium Leads Pro | Sales Team</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0172",
+      "subject": "Why wait? Expo stands with a 50% discount",
+      "body": "Dear Exhibitor,\n\nWarehouse Expo 2027 announces the biggest discount in the history of the fair: 50% off for every company that books a stand in the next 72 hours. We have standard stands, corner stands and premium stands in Hall A and Hall B, close to the main entrance and to the restaurant zone, where the traffic of visitors is the highest.\n\nWhat do you get? A fully built stand with lights and power, a listing in the printed catalogue of twenty thousand copies, your logo on all posters and on the website, four guest tickets, two invitations to the exhibitors' gala and parking for three days. The first twenty companies also get a free advert on the big screens in the main hall during the fair, which is worth 2,800 PLN.\n\nLast year all stands were sold in two days, and more than one hundred companies stayed on the waiting list. Many exhibitors told us that one good contract from the fair covered their costs for the whole year. Do not let this chance go to your competitors. Just reply to this message with the size of the stand you want, and our adviser will call you today, prepare the contract and keep the best place for you. See you at the biggest warehouse event of the season!",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0173",
+      "subject": "Bilety VIP -50%",
+      "body": "Szanowni Państwo!\nBilety VIP na Targi Magazynowe Expo w połowie ceny, tylko do jutra. Odpowiedzcie na tę wiadomość!\n\nZespol Targi Magazynowe Expo | Dzial Handlowy\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0174",
+      "subject": "Sponsor the fair and win new customers",
+      "body": "Dear Executive,\n\nWarehouse Expo 2027 is looking for sponsors, and we would like to offer your company the most attractive package of the season. As a sponsor you get your logo on the main stage, on all banners at the entrance, on every visitor badge and on the cover of the printed catalogue, which reaches more than twenty thousand people from logistics, retail and production.\n\nThe Gold sponsor package includes a premium stand of thirty square metres in the main hall, a twenty minute speech on the conference stage, ten tickets to the gala dinner, a branded lounge for your guests, a page in the catalogue and an advert on the big screens every fifteen minutes during all three days. Our sponsors from the last edition reported that they met hundreds of new customers, and some of them signed contracts worth millions of zloty straight at the fair.\n\nNormally the Gold package costs 28,000 PLN, but for the first three companies that reply this week the price is only 14,000 PLN, with a free social media campaign before and after the event. Only two places are left. Reply to this message and our sales adviser will call you today with the contract. Do not let your competitors take your place on the main stage!\n\nZespol Targi Magazynowe Expo | Dzial Handlowy\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": []
+    }
+  ]
+}

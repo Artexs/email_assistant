@@ -79,7 +79,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F068-actions-transitions-runtime` (🔴 PLANNED, plan landed): `actions.status` writers read the transitions map at runtime; `keep`: F091 landed, so plan now (it moves the same writers); epic none.
 - `F072-llm-provider-fallback` (🔴 PLANNED, plan landed): automatic fallback between LLM providers; `parked`: out of Stage 2 (PD-067); the degraded-mode notice of F109 covers Stage 2; epic none.
 - `F076-vertex-ai-eu` (🔴 PLANNED, plan landed): the LLM calls run on Vertex AI in an EU region; `parked`: fallback of PD-110 only if OpenAI refuses the EU project (F111 gate); epic none.
-- `F085-a-mailbox-whose-host-the-guard-refuses-gets-a-status-and-a-notice` (🔴 PLANNED, needs plan): a mailbox whose host the guard refuses gets a status and a notice; `keep`: F088 landed (detector registry, outbox migration), so plan now; epic none.
+- `F085-a-mailbox-whose-host-the-guard-refuses-gets-a-status-and-a-notice` (🟠 ACTIVE, plan landed, 7 stages, stage 02 the only migration): a mailbox whose host the guard refuses gets a status and a notice; `keep`: F088 landed (detector registry, outbox migration), so plan now; epic none.
 
 ## PROVEN
 

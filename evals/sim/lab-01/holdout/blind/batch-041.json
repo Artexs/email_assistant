@@ -1,0 +1,307 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-041",
+  "cases": [
+    {
+      "id": "b-spa-0207",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Verified decision-maker emails: 50% off today",
+      "body": "Dear Business Owner,\n\nAre you tired of slow sales? Our team has a fresh database of 480,000 verified decision-maker emails from the logistics, retail and manufacturing sectors. Every address is checked, every contact is real, and you can start sending in minutes.\n\nWhy wait? Your competitors already use our lists and they are growing fast. We guarantee ten new customers in the first week or you get a full refund (conditions apply).\n\nSpecial price only until midnight: 50% discount on the Gold Package. Just reply YES to this message and we send the files at once.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0208",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rabat 40% na bazy firm i pozycjonowanie – tylko do piątku",
+      "body": "Szanowni Państwo,\n\nCzy Państwa firma jest widoczna w wyszukiwarce? Premium Leads Pro oferuje skuteczne pozycjonowanie stron i gotowe bazy adresów e-mail firm z całej Polski. Nasza oferta jest wyjątkowa i nie powtórzy się.\n\nW tym tygodniu przygotowaliśmy specjalną promocję dla nowych klientów. Kupując pakiet Standard, dostają Państwo rabat 40% na pierwszy miesiąc pracy naszych specjalistów oraz bazę 20 000 aktualnych kontaktów gratis. To oferta, jakiej nikt inny Państwu nie da.\n\nCo zyskują Państwo w pakiecie?\n\n- pierwsze miejsce w wynikach wyszukiwania w ciągu dwóch tygodni (gwarantujemy!)\n- bazę firm z branży handlowej, produkcyjnej i usługowej\n- raport z widoczności strony co tydzień\n- pomoc doradcy bez dodatkowych opłat\n\nNasi klienci mówią, że po miesiącu współpracy zapytania ofertowe rosną dwukrotnie. Nie czekajcie, bo promocja kończy się w piątek, a liczba pakietów jest ograniczona do trzydziestu sztuk. Wystarczy odpowiedzieć na tę wiadomość słowem TAK, a nasz doradca oddzwoni jeszcze dziś i omówi szczegóły. Państwa konkurencja nie śpi, więc proszę nie tracić okazji na tanią reklamę w internecie.\n\nGwarantujemy też, że w razie braku wyników zwrócimy pieniądze, bez zbędnych pytań i formalności. Dołączamy do oferty szkolenie online dla Państwa pracowników, aby mogli samodzielnie dbać o treść strony.\n\nPozdrawiamy i czekamy na odpowiedź.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0210",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "WYSTAWCY! Ostatnie 12 stoisk na Targach Magazynowych Expo!!!",
+      "body": "Ostatnie wolne stoiska!\n\nTargi Magazynowe Expo zapraszają wszystkich, którzy chcą pokazać swoją firmę! W tym roku do wystawców należy już ponad 200 marek, ale zostało tylko 12 stoisk w hali B. Firmy, które zgłoszą się jako pierwsze, dostaną rabat 25% na powierzchnię wystawienniczą oraz darmowy wpis w katalogu targowym.\n\nNie czekaj, aż konkurencja zajmie najlepsze miejsca przy wejściu! Zgłoś swoją firmę już dziś, a nasz opiekun przygotuje dla Ciebie ofertę w ciągu godziny.\n\nW pakiecie wystawcy: stoisko 9 m2, dwa identyfikatory, wpis w katalogu i miejsce na ulotki.\n\nLiczba miejsc ograniczona! Odpowiedz na tę wiadomość i zarezerwuj stoisko!",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0211",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Final notice: your website is losing customers",
+      "body": "Hello,\n\nI visited your company website and found 14 serious problems that stop customers from finding you on the internet. This is very bad for business and it gets worse every day. Our SEO experts can fix all problems fast and cheap.\n\nWe offer complete service: keywords, backlinks, new meta titles and a monthly report. Price starts from only 99 euro per month, with a 30% discount for the first three months if you decide this week.\n\nMany companies like yours already earn more after our work. We can show you examples after your reply. Please answer to this message with the word START and we prepare a free audit for you.\n\nDo not miss this chance, the offer is valid only for few days.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0212",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wyjątkowa promocja: 15% rabatu na karty flotowe tylko dziś",
+      "body": "Szanowni Państwo,\n\nzespół Paliwa Flota Billing informuje, że wybrani klienci mogą dziś skorzystać z wyjątkowej promocji na karty flotowe. Przy zamówieniu pięciu kart otrzymają Państwo 15% rabatu na pierwsze tankowanie oraz zerową opłatę za wydanie kart.\n\nAby aktywować rabat, prosimy potwierdzić dane firmy i numer konta do rozliczeń w portalu klienta, do którego link przesyłamy w osobnej wiadomości. Promocja ważna jest tylko do końca dnia, a nieaktywowane oferty wygasają bez możliwości przedłużenia.\n\nProsimy o szybką odpowiedź, aby nie stracić korzyści.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0213",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Boost your revenue with our email marketing blast!!",
+      "body": "Hi there,\n\nWant 1000 new leads every month without any effort? Premium Leads Pro delivers real people who are ready to buy right now. Our blast service sends your message to 100,000 inboxes in a single day, and open rates are amazing.\n\nWhy pay more to other agencies? Our price is the lowest on the market, and we give you a bonus pack of 5,000 extra contacts for free when you order before Friday. No contract, no hidden fees, no risk.\n\nSend us a short reply with the word BLAST and we start your campaign today. Limited places available this month, so please act quickly and do not wait until it is too late for you!",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0214",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zaproszenie dla firm: strefa partnerska z rabatem 30%",
+      "body": "Dzień dobry,\n\nTargi Magazynowe Expo mają dla Was wyjątkową ofertę! Strefa partnerska w hali A kosztuje w tym tygodniu o 30% mniej, ale dotyczy to tylko pierwszych dziesięciu firm. Reklama na ekranach przy wejściu jest w cenie!\n\nW cenie macie też logo na bannerze, stoisko 12 m2 i dwa zaproszenia na bankiet dla wystawców. Odpowiedzcie dziś na tę wiadomość, a nasz doradca przygotuje umowę jeszcze przed weekendem.\n\nSzkoda czasu, bo miejsca znikają szybciej, niż myślisz! Liczymy na Was!\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0215",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Quick question about your marketing – special offer inside",
+      "body": "Good day,\n\nMy name is Kevin and I work for the sales department of Premium Leads Pro. I am writing to you today because we have a very special offer that is made only for selected companies like yours. We looked at many firms in your area and your company was chosen for our new VIP program.\n\nHere is what you get in the VIP package, at the price of the basic one:\n\n- 100,000 verified business emails, sorted by industry\n- weekly newsletter service with our own templates\n- full SEO audit of your website, completely free\n- personal manager who answers within one hour\n\nWe know that your time is valuable, so we keep this message short. Many managers and company owners told us that our service changed their business in only one month. We cannot show every opinion here, but we are happy to send you more details after your answer.\n\nThe VIP package is normally 790 euro, but this week the price is only 395 euro for new customers. After Friday the offer will be closed, and we cannot promise that the same price will come back. Please answer this message with the word VIP and my colleague calls you today. We really look forward to working with your team and growing your sales together!",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0216",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Promocja na pozycjonowanie – gwarancja pierwszej strony Google",
+      "body": "Dzień dobry,\n\nproponujemy Państwu pozycjonowanie strony firmy z gwarancją wyników. Działamy od lat i mamy tysiące zadowolonych klientów, którzy dzięki nam sprzedają więcej każdego dnia.\n\nObecna cena to tylko 199 zł miesięcznie, zamiast 499 zł. Oferta jest ważna do końca tygodnia, a liczba miejsc ograniczona. W cenie przygotujemy dla Państwa listę słów kluczowych, raport miesięczny i nowe opisy stron.\n\nWystarczy odpowiedzieć na tę wiadomość, a konsultant skontaktuje się jeszcze dziś. Nie przegapcie okazji!\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0217",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "TARGI MAGAZYNOWE EXPO: promocja dla pierwszych firm – 35% taniej!!!",
+      "body": "Wystawco, to Twoja szansa!\n\nTargi Magazynowe Expo to największe spotkanie branży magazynowej i transportowej w regionie! W tym roku spodziewamy się ponad 8000 odwiedzających, setek wystawców i dziesiątek premier sprzętu. Jeśli chcesz, żeby zobaczyli Twoją firmę, zadzwoń dziś, bo czas ucieka!\n\nPrzygotowaliśmy dla Ciebie specjalny pakiet Premium z rabatem 35%, który obejmuje:\n\n- stoisko o powierzchni 12 m2 w najlepszym miejscu hali A\n- baner reklamowy przy głównym wejściu\n- 20 zaproszeń dla Twoich klientów i partnerów\n- wpis w katalogu i na stronie wydarzenia\n- miejsce w sesji prezentacji produktów na scenie głównej\n\nKto zgłosi się pierwszy, ten wybiera miejsce! Dla pierwszych dziesięciu firm mamy dodatkowo darmowe zaproszenie na bankiet wystawców i wspólne zdjęcie na scenie. Rabat obowiązuje tylko do czwartku, a potem ceny wracają do normy, więc nie warto zwlekać ani dnia dłużej.\n\nNasz doradca czeka na Twoją odpowiedź i na pewno znajdzie dla Ciebie najlepsze rozwiązanie. Odpisz na tę wiadomość, podaj nazwę firmy i metraż, a my przygotujemy ofertę w godzinę!\n\nPamiętaj, że w ubiegłym roku wszystkie stoiska w hali A sprzedały się w dwa tygodnie, a tegoroczna lista chętnych jest jeszcze dłuższa.\n\nNie zostawaj w tyle za konkurencją! Pokaż się na Targach Magazynowych Expo!!!",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0218",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Bazy e-mail firm z Polski – cena specjalna tylko dla Państwa",
+      "body": "Szanowni Państwo,\n\noferujemy najlepsze bazy adresów e-mail firm w całej Polsce: 85 000 zweryfikowanych kontaktów, podzielonych według branż i województw. Państwa konkurencja już z nich korzysta i zdobywa nowych klientów.\n\nPromocja trwa do końca miesiąca: pakiet Silver za 290 zł zamiast 890 zł. Do każdego zamówienia dodajemy szablon wiadomości i krótką instrukcję wysyłki.\n\nOdpowiedzcie TAK, a wyślemy próbkę 500 kontaktów za darmo.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0219",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Exclusive Fleet Savings Programme – confirm your eligibility",
+      "body": "Dear Customer,\n\nPaliwa-Flota Billing is pleased to inform you that your company has been pre-selected for our Exclusive Fleet Savings Programme. Participants receive a discount of 18% on every refuelling of every fuel card for the next twelve months, and the discount is applied automatically on your monthly statement.\n\nThe programme is available only to a limited number of customers, and the places are assigned in the order of confirmation. To keep your place, you must confirm your company registration details and your settlement bank account in the customer portal, using the secure link from this message. Please complete the confirmation within 24 hours. After this time your place is given to the next company on the waiting list, and the offer cannot be restored.\n\nPlease note the following conditions of the programme:\n\n- the discount covers diesel and petrol at all partner stations\n- a minimum of five active cards is required\n- all cards of your company must be verified before the first refuelling with the discount\n- cards that are not verified will be blocked until the verification is finished\n\nWe understand that your time is limited, but a quick answer protects your savings and prevents any interruption in the use of your fleet cards. Please do not forward this message to other persons, because the offer is personal and tied to your company profile.\n\nThank you for your fast cooperation.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0221",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Tanie bazy mailowe",
+      "body": "Dzień dobry,\n\nsprzedajemy aktualne bazy e-mail firm, 50 tys. kontaktów za 149 zł. Oferta ważna 48 godzin. Odpowiedz TAK, a wyślemy próbkę.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0222",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Last places! Exhibit at Warehouse Expo with 30% off",
+      "body": "Hello,\n\nWarehouse Expo is almost sold out and we still have six stands for the first companies who answer! Our price list changed this week: the Partner Zone package costs now 30% less, but only until Thursday. After this day the normal price comes back, and we cannot promise any other discount.\n\nYou get a stand of 12 m2 in hall A, your logo on the banner at the main entrance and ten invitations for your best customers. Last year more than 8,000 visitors came to our fair and our exhibitors told us that they signed new contracts already on the first day!\n\nDo not wait until your competitors take the best places near the main entrance. Our adviser can send you the contract today, you only have to answer this message with the name of your firm and the size of the stand.\n\nFree entry to the exhibitors' banquet is added for the first ten companies. This year we also prepare a free workshop for exhibitors about how to find new customers during the fair. We are waiting for your answer and we really hope to see you at our event!\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0223",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Oferta specjalna: tankowanie z rabatem dla stałych klientów",
+      "body": "Szanowni Państwo,\n\nw ramach programu lojalnościowego Paliwa Flota Billing przygotowaliśmy dla Państwa ofertę, która nie jest dostępna publicznie. Za każdy zatankowany litr oleju napędowego w tym miesiącu zwrócimy 12 groszy na konto rozliczeniowe.\n\nWarunek jest jeden: prosimy o aktualizację danych bankowych firmy w naszym portalu, bo bez tego nie możemy wypłacić zwrotu. Aktualizacja zajmuje dwie minuty, a link do portalu dostają Państwo w kolejnej wiadomości.\n\nPromocja kończy się dzisiaj o 18:00. Po tym terminie konta bez aktualizacji zostaną czasowo wstrzymane.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0224",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rabat flotowy do 20% – potwierdź swój udział",
+      "body": "Szanowni Państwo,\n\ninformujemy, że Państwa firma została wybrana do udziału w rabacie flotowym Paliwa Flota Billing. Rabat do 20% obejmuje wszystkie karty paliwowe zamówione do końca miesiąca, a koszt wydania kart jest zerowy.\n\nAby zachować rabat, wystarczy potwierdzić dane do faktur i konto bankowe, na które mamy wypłacać zwroty. Potwierdzenie składa się w formularzu online. Prosimy zrobić to jak najszybciej, bo pula rabatów jest ograniczona, a po wyczerpaniu nie będzie już dostępna.\n\nBrak potwierdzenia w ciągu 24 godzin oznacza rezygnację z oferty i wstrzymanie wydania kart.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0225",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Tylko dziś: -50% na reklamę w katalogu!!!",
+      "body": "Szybka oferta!\n\nKatalog targowy Expo ma ostatnie 5 miejsc reklamowych! Dziś reklama kosztuje o połowę mniej! Odpowiedz teraz, zanim je zajmą inni!",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0226",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Cheap email lists – only today",
+      "body": "Hello,\n\n<b>Premium Leads Pro</b> sells 100,000 business emails for only 99 euro. Today only! Reply YES and get a free sample.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0227",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Skuteczna reklama w internecie – pierwszy miesiąc za darmo",
+      "body": "Dzień dobry,\n\nzajmujemy się kampaniami reklamowymi dla firm i mamy dla Państwa propozycję: pierwszy miesiąc prowadzenia reklam jest całkowicie darmowy, jeśli podpiszą Państwo umowę na pół roku. Prowadzimy kampanie w wyszukiwarkach, w mediach społecznościowych i w newsletterach.\n\nNasi klienci osiągają średnio trzykrotny wzrost liczby zapytań. Dla branży handlowej przygotowaliśmy specjalny pakiet startowy z gotowymi reklamami i raportem tygodniowym. Nie potrzebują Państwo żadnej wiedzy, wszystko robimy za Państwa.\n\nOferta jest ważna do piątku. Proszę odpisać na tę wiadomość, a doradca zadzwoni jeszcze dziś i wszystko wyjaśni.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0228",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Exhibitors wanted: Warehouse Expo, spring edition",
+      "body": "Good morning,\n\nWarehouse Expo spring edition is coming, and your company can be there! We have a special welcome offer for new exhibitors: 25% off the stand price and a free place in our exhibitors' guide.\n\nOnly 15 stands are left in hall B, and the first firms who answer get the best location near the main entrance. We can prepare the contract for you in one day. Just answer this message with your company name, and our adviser calls you.\n\nDo not miss this chance to meet thousands of visitors from the logistics sector!\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0229",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rabat na karty paliwowe tylko dziś",
+      "body": "Szanowni Państwo,\n\ntylko dziś 25% rabatu na nowe karty flotowe. Prosimy o potwierdzenie danych konta w portalu klienta.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0231",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Make your website number one – free audit",
+      "body": "Greetings,\n\nWe are a team of experienced SEO specialists, and we want to help your company to be number one in the search results. Today we have a gift for you: a free audit of your website, with a list of all errors and recommendations how to repair them.\n\nAfter the audit you can choose one of our packages. The Start package costs 149 euro per month and includes ten keywords, monthly report and link building. The Pro package costs 299 euro per month and includes thirty keywords, a blog and social media posts. Every new customer gets a 20% discount for three months if he or she signs before the end of this week.\n\nReply with the word AUDIT and we send you the report in 24 hours. It is free and without any obligation.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0232",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Stoisko z rabatem!",
+      "body": "Cześć!\n\nOstatnie stoiska na Expo z rabatem 20%! Odpisz dziś, a dostaniesz bonus: miejsce na ulotki gratis!\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0233",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Oferta specjalna: bazy kontaktów i kampanie e-mail dla Państwa firmy",
+      "body": "Szanowni Państwo,\n\nnazywam się Michał i reprezentuję firmę Premium Leads Pro. Piszę do Państwa, bo mamy ofertę, która może całkowicie zmienić sprzedaż Państwa firmy, i to już w pierwszym tygodniu współpracy. Naprawdę nie ma drugiej takiej okazji na rynku.\n\nSprzedajemy aktualne bazy e-mail firm z całej Polski, ale to nie wszystko. Oferujemy również kampanie mailingowe, w których sami wysyłamy wiadomości do tysięcy firm w Państwa imieniu. Wystarczy, że wskażą Państwo branżę i region, a my zajmiemy się resztą. Nie trzeba żadnej wiedzy ani żadnego sprzętu.\n\nW ofercie specjalnej, którą przygotowaliśmy tylko dla wybranych firm, dostają Państwo:\n\n- bazę 100 000 firm z Państwa branży\n- trzy kampanie mailingowe na początek\n- raport z wynikami po każdej kampanii\n- stałego opiekuna, który odpowiada na pytania\n\nCena standardowa to 2900 zł, ale dzisiaj dajemy rabat 60%, czyli płacą Państwo tylko 1160 zł. Oferta jest ważna wyłącznie do końca tygodnia, a liczba pakietów jest ściśle ograniczona. Jeśli Państwo nie zdecydują się teraz, nie możemy zagwarantować tej ceny w przyszłości.\n\nWystarczy odpowiedzieć na tę wiadomość słowem TAK, a my od razu zaczniemy pracę.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0234",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Get 10,000 website visitors this week – guaranteed",
+      "body": "Hello friend,\n\nDo you want more visitors on your website? We can send 10,000 real visitors to your page in seven days, guaranteed. Our traffic service is cheap, fast and safe, and thousands of firms already use it.\n\nToday we offer a special price: 79 euro instead of 249 euro. This price is only for new customers who answer in the next two days. After that the price goes up, so please decide fast.\n\nAnswer YES to this email and we start your order immediately. No questions, no problems!\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}
