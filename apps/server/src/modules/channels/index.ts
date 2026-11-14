@@ -70,3 +70,4 @@ export {
   statusMessage,
   type CommandDeps,
 } from "./commands";
+export { listUrgentNoticeTimes } from "./metrics-repo";
