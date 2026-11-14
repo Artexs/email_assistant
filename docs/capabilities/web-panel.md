@@ -1,0 +1,97 @@
+# Web panel
+
+> Checked against the code at `8b2eac9`, 2026-11-14.
+
+## What it does now
+
+The web panel is a static Astro build with one React island per page (`apps/web`). The server serves it from `WEB_DIST` and answers the JSON API under `/api` from the same process (`apps/server/src/web.ts`, `apps/server/src/platform/http.ts`). A user signs in with an e-mail and a password (Better Auth, 12 to 128 characters), gets a session cookie, and reaches eight pages: Onboarding, Activity, Mailboxes, Settings and Rules after sign-in, and Login, Setup and Forgot before it, plus the legal stubs. The panel connects and manages mailboxes, shows what the system did to each mail with Undo and feedback buttons, sets the mode, the switches, the category policy, the sync folders, the digest times, the time zone and the signature, manages the sender rules, links Telegram, and lists the live sessions. The panel is reachable only through Tailscale Serve on the tailnet of the owner. It is off while `WEB_BASE_URL` is empty. An operator (a user in `OPERATOR_USER_IDS`) has one route that reads across organizations. The panel has no approvals, delegates or delegations page: those stay in Telegram.
+
+## Rules
+
+1. **The web is on only with `WEB_BASE_URL`.** An empty value logs "web is off" and the server serves `/health` only. The config check needs `WEB_AUTH_SECRET` (at least 32 characters) when `WEB_BASE_URL` is set. The server listens on `127.0.0.1:8080`; Tailscale Serve adds HTTPS (`deploy/README.md` § Web panel, ADR 0017). The panel is never reached by another path.
+2. **Pages and the session.** Every page except `/login`, `/setup`, `/forgot`, `/legal/<pl|en>/<privacy|terms|dpa>`, `/404.html` and the static assets (`PUBLIC_PAGE_PATHS`) redirects to `/login?next=<path>` without a session. `/` redirects to `/activity` when the onboarding checklist is done and to `/onboarding` when it is not (`homePathOf`). A page that is not in the build answers the `404.html` page. When `WEB_DIST` has no build, every page answers `503` "The web build is missing. Run bun run web:build.".
+3. **Sign-in.** The client calls Better Auth under `/api/auth/*`, and only these paths reach it (`AUTH_ALLOWED_PATHS`): `sign-in/email`, `sign-out`, `get-session`, `reset-password` (POST, and GET `reset-password/<token>`), `change-password`, `revoke-other-sessions`, `revoke-sessions`, and `request-password-reset` (POST) when the auth-mail sender is on. Every other path answers `404`. The session lasts 30 days and renews after one day of use; the cookie has the prefix `ea`. The tenant is the oldest membership of the session user; the request never names it (`requireTenant`). A `401` from `/api` sends the browser to `/login`.
+4. **Login hardening** (the rules and their numbers are in `docs/architecture.md` §7 "Web security"; each one is in the code at the checked commit):
+   - Lockout: 10 failed sign-ins in 15 minutes lock the user for 15 minutes (`auth-lockout.ts`); one lock mail per lock, at most 3 per UTC day; the audit row `web.login_locked`.
+   - Leaked-password check: a password set or change asks the Have I Been Pwned range API (`pwned.ts`); it fails closed (`400 PASSWORD_COMPROMISED`, `503` when the API is down). `AUTH_PWNED_CHECK=off` turns it off (tests only).
+   - Terms: a password set through a link needs `termsVersion` (`400 TERMS_REQUIRED`); every member sees the terms dialog once at the next sign-in; `POST /api/me/terms` records the acceptance (`409 terms_outdated` for an old version).
+   - Session list: `GET /api/me/sessions` lists the live sessions of the member (device, address, last use), never the token; the Account card ends all sessions or all other sessions.
+   - Reset by e-mail: open only when the four `AUTH_SMTP_*` keys and `AUTH_MAIL_FROM` are set (`resetRequestOpen`); otherwise `/forgot` says "Reset by e-mail is off" and the CLI prints the links. Reset requests are limited by address (3 per 15 minutes) and by Better Auth (`reset-password` and `change-password`: 5 per 60 s).
+5. **Invite.** `bun run org:invite --org-name <name> --email <email> --display-name <name> [--lang pl|en] [--timezone <tz>] [--trial-days N] [--print]` makes an organization with a `trial` plan (30 days by default) and its owner, then makes a 24 h setup link. `bun run web:invite --org-id <uuid> [--user-id <uuid>] [--print]` makes a setup or reset link for an existing member. With the auth-mail sender on and no `--print`, the link goes by mail; otherwise the command prints it. The link works once. The owner opens it on a device in the tailnet, accepts the terms and sets a password (`/setup`). The link never goes to a log.
+6. **The `/api` guards** (`createApp`): every `/api` route needs a session (`401 unauthorized`) and a tenant (`403 no_organization`). A write method needs an allowed `Origin` (`403 bad_origin`); the body limit is 64 KB (`413`). A route marked "owner" answers `403 owner_only` to a member (`requireOwner`). A write in an organization with the plan `suspended` answers `403 org_suspended`, except `POST /api/me/terms` (`refuseSuspendedWrites`, `SUSPENDED_WRITE_ALLOW`); reads work. An unknown `/api` path answers `404 not_found`. A body that fails its schema answers `400 validation` with the details.
+7. **The `/api` route groups** (one row per router that `apiRouters` mounts; the paths are under `/api`):
+
+   | Router           | Routes                                                                                                                                                                                                  | Role                                                             |
+   | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+   | `tenancyRoutes`  | `GET /me`, `GET /organization`, `PATCH /organization`, `PATCH /me/digest-times`, `POST /me/terms`, `GET /me/sessions`, `POST /onboarding/keep-mode`                                                     | owner for `PATCH /organization` and `POST /onboarding/keep-mode` |
+   | `operatorRoutes` | `GET /operator/flags`                                                                                                                                                                                   | operator (rule 8)                                                |
+   | `mailRoutes`     | `GET /mailboxes`, `POST /mailboxes`, `POST /mailboxes/:id/password`, `POST /mailboxes/:id/pause`, `POST /mailboxes/:id/resume`, `DELETE /mailboxes/:id`                                                 | owner for every write                                            |
+   | `settingsRoutes` | `GET /settings/:mailboxId`, `PATCH /settings/:mailboxId/mode`, `PATCH /settings/:mailboxId/switches/:name`, `PATCH /settings/:mailboxId/auto/:category`, `PATCH /settings/:mailboxId/sync-folders/:key` | owner for every write                                            |
+   | `rulesRoutes`    | `GET /rules`, `POST /rules`, `DELETE /rules/:id`                                                                                                                                                        | owner for the writes                                             |
+   | `activityRoutes` | `GET /activity` (filters, cursor `before`, `limit`)                                                                                                                                                     | any member                                                       |
+   | `triageRoutes`   | `POST /feedback`, `POST /actions/undo`                                                                                                                                                                  | any member                                                       |
+   | `channelRoutes`  | `GET /channels/telegram`, `POST /channels/telegram/link`, `DELETE /channels/telegram/link`                                                                                                              | any member (each user links their own chat)                      |
+
+   `GET /health` (DB reachable) is outside `/api`. The behaviour behind each group is in its capability page: mailboxes in [sync.md](sync.md), settings in [actions-and-undo.md](actions-and-undo.md), feedback in [triage.md](triage.md), Telegram link and digest times in [digest-and-notices.md](digest-and-notices.md).
+
+8. **The operator route.** Every path under `/api/operator` answers a user who is not in `OPERATOR_USER_IDS` with `404 not_found` and a log line with the user id (`requireOperator`). `OPERATOR_USER_IDS` is an env list of user ids; a DB write cannot make an operator (ADR 0027). Today the route is `GET /api/operator/flags`: the feature flags of every organization. `docs/architecture.md` §7 "Operator" has the rule.
+9. **The pages** (rule 2 lists the public ones): Onboarding is a checklist (connect a mailbox, link Telegram, choose the mode or keep shadow mode, add sender rules; optional); Activity lists what happened to each mail and why, with filters (mailbox, category, "needs my action", range, "only not rated"), a detail panel, the ✅ / ✏️ feedback buttons and Undo, and reloads every 30 s while the tab is visible; Mailboxes connects (address and password), pauses, resumes, changes the password and removes a mailbox, and links Telegram; Settings holds the mode, the switches, the category policy with the go/no-go gate, the sync folders, the digest times, the time zone, the signature and the Account card (change password, sessions, sign out everywhere); Rules holds the VIP, whitelist and blocklist; Login, Setup and Forgot are the sign-in pages; the legal pages are draft stubs until E7-T4 (F107). A banner shows a paused account (with `OPERATOR_CONTACT`), a mailbox in `auth_error`, and the trial end. `/api/me` is read every 30 s.
+10. **The static build.** `bun run web:build` writes the folder `dist` in `apps/web` (Astro `output: "static"`, a meta CSP on every page). The server serves it with `serveStatic` from `WEB_DIST` (default `WEB_DIST=apps/web/dist`): files under `/_astro/` are cached for a year, every other file has `private, no-store`. `bun run web:dev` runs the dev server and proxies `/api` to `127.0.0.1:8080`. The container image runs `bun run web:build` and sets `WEB_DIST=/app/apps/web/dist` (`deploy/Dockerfile`; `deploy/README.md` § Web panel).
+11. **Texts.** Every visible text is in `apps/web/src/i18n/en.ts` (English). `apps/web/src/i18n/en.test.ts` checks the keys. The browser calls the API through `api()` in `apps/web/src/lib/api.ts`, which parses each answer with a Zod schema from `@ea/core/web`.
+
+## Entry points
+
+| Kind     | Name                                                                                                      | Where                                         |
+| -------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| page     | `/login` (Login)                                                                                          | `apps/web/src/islands/LoginPage.tsx`          |
+| page     | `/setup` (first password and reset from a link)                                                           | `apps/web/src/islands/SetupPage.tsx`          |
+| page     | `/forgot` (reset request)                                                                                 | `apps/web/src/islands/ForgotPage.tsx`         |
+| page     | `/onboarding` (checklist)                                                                                 | `apps/web/src/islands/OnboardingPage.tsx`     |
+| page     | `/activity` (what happened, Undo, feedback)                                                               | `apps/web/src/islands/ActivityPage.tsx`       |
+| page     | `/mailboxes` (connect, pause, password, remove, Telegram link)                                            | `apps/web/src/islands/MailboxesPage.tsx`      |
+| page     | `/settings` (mode, switches, categories, sync folders, digest times, time zone, signature, account)       | `apps/web/src/islands/SettingsPage.tsx`       |
+| page     | `/rules` (VIP, whitelist, blocklist)                                                                      | `apps/web/src/islands/RulesPage.tsx`          |
+| page     | `/legal/<lang>/<doc>` (draft legal stubs)                                                                 | `apps/web/src/pages/legal/[lang]/[doc].astro` |
+| page     | `/` (redirect to `/onboarding`; the server redirects by `homePathOf`)                                     | `apps/web/src/pages/index.astro`              |
+| route    | `/api/*` (the 8 routers of rule 7)                                                                        | `apps/server/src/web.ts`                      |
+| route    | `/api/auth/*` (the Better Auth allow-list of rule 3)                                                      | `apps/server/src/platform/http.ts`            |
+| route    | `GET /health`                                                                                             | `apps/server/src/platform/http.ts`            |
+| CLI      | `bun run org:invite`                                                                                      | `apps/server/src/scripts/org-invite.ts`       |
+| CLI      | `bun run web:invite`                                                                                      | `apps/server/src/scripts/web-invite.ts`       |
+| CLI      | `bun run web:build`, `bun run web:dev`                                                                    | `package.json`                                |
+| function | `webDeps`, `apiRouters`, `homePathOf`, `distPath`                                                         | `apps/server/src/web.ts`                      |
+| function | `createApp`, `requireTenant`, `requireOwner`, `requireOperator`, `refuseSuspendedWrites`, `originAllowed` | `apps/server/src/platform/http.ts`            |
+| function | `createAuth`, `isAllowedAuthPath`, `listUserSessions`                                                     | `apps/server/src/platform/auth.ts`            |
+| function | `createLockoutStore`                                                                                      | `apps/server/src/platform/auth-lockout.ts`    |
+| function | `checkPwnedPassword`                                                                                      | `apps/server/src/platform/pwned.ts`           |
+| function | `createApi`                                                                                               | `apps/web/src/lib/api.ts`                     |
+
+## Data
+
+- Better Auth tables: `users` (with `locale`, `terms_version`, `terms_accepted_at`), `auth_sessions`, `auth_accounts`, `auth_verifications` (reset and invite tokens; deleted 1 day after `expires_at`), `auth_lockouts` (`failed_count`, `locked_until`, the lock mails of the day). The full list is in `docs/architecture.md` §5.
+- `memberships` (the role and `digest_times`) give the tenant and the role of a session; `organizations` hold `plan`, `trial_ends_at`, `timezone` and `style_text` (the signature).
+- Audit events of the web: `web.login`, `web.password_set`, `web.password_changed`, `web.login_locked`, `web.terms_accepted`, `web.sessions_revoked`, `web.other_sessions_revoked`, `onboarding.mode_kept`; each write route of the groups of rule 7 writes the audit rows of its capability.
+
+## Limits
+
+- No approvals, delegates or delegations page: E4-A (F102).
+- English only: the Polish texts and the i18n frame come with E7-T1 (F098).
+- No live updates: Activity and `/api/me` poll every 30 s while the tab is visible, the Telegram card every 5 s while a link waits (F055-web-live-updates).
+- The build uses Astro 5 (`apps/web/package.json`); the move to Astro 7 is F101.
+- No second factor and no single sign-on: TOTP and break-glass owner are E7-T6 (F105, ADR 0026 proposed); OIDC is E7-T7 (F119).
+- The API has no OpenAPI description yet (ADR 0023 proposed, E4-A F102).
+- The legal pages are draft stubs until the papers of E7-T4 (F107). There is no account page that deletes the account or exports data (E7-T3, F106).
+- The operator route reads the feature flags only; there is no operator console yet (E7-T2, F099).
+- A user belongs to the oldest of their memberships; the panel has no organization switcher.
+
+## Decisions
+
+- ADR 0016 (Astro static build with React islands, login with Better Auth), ADR 0017 (web access only through Tailscale Serve), ADR 0027 (operator role and feature flags).
+- ADR 0023 (proposed: every user action is a typed HTTP command described in OpenAPI) and ADR 0026 (proposed: identity tier 1, OIDC, TOTP, break-glass owner).
+- `docs/architecture.md` §7 holds the auth and web security rules and §10 the deployment; `docs/modules.md` §4 lists the pages by slice.
+
+## Tests
+
+- `apps/server/test/integration/web-http.test.ts`, `apps/server/test/integration/web-auth.test.ts`, `apps/server/test/integration/web-me.test.ts`, `apps/server/test/integration/web-mailboxes.test.ts`, `apps/server/test/integration/web-settings.test.ts`, `apps/server/test/integration/web-rules.test.ts`, `apps/server/test/integration/web-activity.test.ts`, `apps/server/test/integration/web-feedback-undo.test.ts`, `apps/server/test/integration/web-telegram.test.ts`, `apps/server/test/integration/web-operator.test.ts`, `apps/server/test/integration/web-suspended.test.ts`, `apps/server/test/integration/web-lockout.test.ts`, `apps/server/test/integration/web-pwned.test.ts`, `apps/server/test/integration/web-terms.test.ts`, `apps/server/test/integration/web-sessions.test.ts`, `apps/server/test/integration/web-reset-request.test.ts`, `apps/server/test/integration/web-invite-cli.test.ts`.
+- `apps/server/src/web.test.ts`, `apps/server/src/platform/http.test.ts`, `apps/server/src/platform/auth.test.ts`, `apps/server/src/platform/pwned.test.ts`.
+- `apps/web/e2e/tests/` (Playwright, run with `bun run test:e2e`), `apps/web/src/i18n/en.test.ts`, and the unit tests of `apps/web/src/lib/`.

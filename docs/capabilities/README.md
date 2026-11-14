@@ -48,10 +48,12 @@
 
 ## Pages
 
-| Page                                       | Capability       | Main modules                                                                                                            |
-| ------------------------------------------ | ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| [sync.md](sync.md)                         | Sync             | `modules/mail`, `packages/core/src/mail`                                                                                |
-| [triage.md](triage.md)                     | Triage           | `modules/triage`, `modules/config` (rules), `packages/core/src/triage`, `platform/llm`                                  |
-| [actions-and-undo.md](actions-and-undo.md) | Actions and Undo | `modules/actions`, `modules/triage` (`returned.ts`, `undo.ts`), `modules/config` (settings), `packages/core/src/triage` |
+| Page                                           | Capability         | Main modules                                                                                                            |
+| ---------------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| [sync.md](sync.md)                             | Sync               | `modules/mail`, `packages/core/src/mail`                                                                                |
+| [triage.md](triage.md)                         | Triage             | `modules/triage`, `modules/config` (rules), `packages/core/src/triage`, `platform/llm`                                  |
+| [actions-and-undo.md](actions-and-undo.md)     | Actions and Undo   | `modules/actions`, `modules/triage` (`returned.ts`, `undo.ts`), `modules/config` (settings), `packages/core/src/triage` |
+| [digest-and-notices.md](digest-and-notices.md) | Digest and notices | `modules/channels`, `modules/reports` (`digest.ts`), `packages/core/src/digest`, `packages/core/src/notices`            |
+| [web-panel.md](web-panel.md)                   | Web panel          | `apps/web`, `web.ts`, `platform/http.ts`, `platform/auth.ts`, the `routes.ts` of each module                            |
 
-Planned pages (F095 stages 05–07): drafts and send, delegation, digest and notices, web panel, tenancy and plans, retention, backups.
+Planned pages (F095 stages 05 and 07): drafts and send, delegation, tenancy and plans, retention, backups.
