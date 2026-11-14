@@ -29,7 +29,7 @@ When the user moves a known mail back or between folders, the stored row follows
 - That row is `returned` when the system had moved it, else `relocated`.
 - Test 8.4 of `mail-sync.test.ts` asserts the new result instead of the known limit.
 - A sync pass makes no new IMAP call; a flag refresh adds at most (synced folders) × 6 UID fetches.
-- All checks: `plan.md` § Done when (8 items).
+- All checks: `plan.md` § Done when (9 items).
 
 ## Slices
 

@@ -111,8 +111,8 @@ All at `d70e2bf` (2026-11-14) unless a source says otherwise.
 2. The old folder-check results stay: one copy still there → `new #2`; a cross copy → `cross_copy`; a first gone copy → `returned`. Shown by: the existing tests of `mail-sync.test.ts` and `sync-rules.test.ts` pass with the new shape (stage 01).
 3. A user move below a synced folder's cursor gets the new `folder`: `relocated` for (g) and (f), `returned` for (a). Shown by: stage 03 tests 3.1–3.4.
 4. Test 8.4 of `mail-sync.test.ts` asserts the new result. Shown by: stage 04 step 2.
-5. No IMAP call in a sync pass; per refresh at most ⌈n/500⌉ `fetchByUidsIn` calls per searched folder, and none when nothing is gone. Shown by: stage 03 tests 3.9–3.10.
-6. The guards hold: a moved row, a fresh marker, a moved cursor, a UID held by an identical row → no write. Shown by: stage 02 tests 2.4–2.6 and stage 03 tests 3.5–3.8.
+5. No IMAP call in a sync pass; per refresh at most ⌈n/500⌉ `fetchByUidsIn` calls per searched folder, and none when nothing is gone. Shown by: stage 03 tests 3.10–3.11.
+6. The guards hold: a moved row, a fresh marker, a moved cursor, a UID held by an identical row → no write. Shown by: stage 02 tests 2.4–2.6 and stage 03 tests 3.5–3.9.
 7. The capture and the flag refresh keep their behaviour: `mail-sync-capture.test.ts` and `mail-flags.test.ts` pass (the latter with the `gone` field added); a refresh that throws starts no finder. Shown by: the stage 04 proof and stage 04 tests 4.2–4.3.
 8. The docs describe the new rules and `capability-map.test.ts` passes. Shown by: the stage 01 and stage 04 proofs.
 9. On the VPS, 24 h after the deploy: no `user_moves_failed` line. Shown by: stage 05 check 2.
@@ -199,7 +199,7 @@ What the F032 plan should take from here (an outside edit for the coordinator, �
 - [x] Collect: ticket F029, F064, F032 (old task files), F058 plan D4–D9, D24, ADR 0014, architecture §6.1, Interia notes, F100 plan D6 and stage 06 code, F103 D19, F104 jobs wiring, F062 goal, code at `d70e2bf` (sync, sync-rules, flags, jobs, repo copies/emails/folders/flags, locate, imap client, fake, the sync and flag tests).
 - [x] ticket.md, plan.md, questions.md
 - [x] stage files 01–05 (2026-11-14)
-- [ ] cold review 1
+- [ ] cold review 1 (next: commit, then the review job)
 
 ## Cold review
 
