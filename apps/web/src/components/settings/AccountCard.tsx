@@ -18,6 +18,7 @@ import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Skeleton } from "../ui/skeleton";
 import { Switch } from "../ui/switch";
+import { DeleteOrganization } from "./DeleteOrganization";
 import { SecurityLog } from "./SecurityLog";
 import { TwoFactorSection } from "./TwoFactorSection";
 
@@ -288,6 +289,9 @@ export function AccountCard() {
             <SecurityLog timeZone={me.organization.timezone} />
           </div>
         ) : null}
+        <div className="border-t pt-4">
+          <DeleteOrganization />
+        </div>
       </CardContent>
     </Card>
   );

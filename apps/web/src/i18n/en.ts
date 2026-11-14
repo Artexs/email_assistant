@@ -90,6 +90,24 @@ export const en = {
   tf_copy: "Copy",
   tf_copied: "Codes copied.",
   tf_copy_failed: "The codes could not be copied. Write them down.",
+  // delete organization (F106)
+  del_title: "Delete organization",
+  del_text:
+    "This deletes the organization {name} and all its data here at once: mailboxes, mail, triage results, actions, delegations, rules, Telegram links, history and the accounts of its members. It cannot be undone. Backups keep a copy until they expire; the privacy policy gives the period.",
+  del_imap_note:
+    "Drafts and folders that the assistant made in your mailboxes stay there. Delete them in your mail program if you do not want them.",
+  del_password_label: "Your password",
+  del_confirm_label: "Type the organization name to confirm",
+  del_submit: "Delete everything",
+  del_deleting: "Deleting",
+  del_wrong_password: "Wrong password.",
+  del_wrong_name: "The name does not match.",
+  del_locked: "Too many wrong passwords. Try again in 15 minutes.",
+  del_failed: "The delete failed. Nothing was deleted. Try again.",
+  del_done_title: "Organization deleted",
+  del_done_text:
+    "All data is deleted and the session is ended. Change the passwords of your mailboxes in your mail provider's settings now: the assistant knew them.",
+  del_done_mailboxes: "Mailboxes of the deleted organization:",
   tf_codes_done: "I saved the codes",
   tf_on_without_codes: "Two-factor sign-in is on, but your backup codes were not shown. Make new backup codes now.",
   tf_error_password: "Wrong password.",

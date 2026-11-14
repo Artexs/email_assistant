@@ -96,6 +96,24 @@ export const pl: Record<TextKey, string> = {
   tf_copy: "Kopiuj",
   tf_copied: "Kody skopiowane.",
   tf_copy_failed: "Nie udało się skopiować kodów. Zapisz je.",
+  // delete organization (F106)
+  del_title: "Usuń organizację",
+  del_text:
+    "To od razu usunie organizację {name} i wszystkie jej dane w aplikacji: skrzynki, wiadomości, wyniki klasyfikacji, działania, zlecenia, reguły, połączenia z Telegramem, historię i konta jej członków. Tego nie można cofnąć. Kopie zapasowe przechowują dane do czasu ich wygaśnięcia; okres podaje polityka prywatności.",
+  del_imap_note:
+    "Szkice i foldery, które asystent utworzył w Twoich skrzynkach, zostaną w nich. Usuń je w programie pocztowym, jeśli ich nie chcesz.",
+  del_password_label: "Twoje hasło",
+  del_confirm_label: "Wpisz nazwę organizacji, aby potwierdzić",
+  del_submit: "Usuń wszystko",
+  del_deleting: "Usuwanie",
+  del_wrong_password: "Nieprawidłowe hasło.",
+  del_wrong_name: "Nazwa się nie zgadza.",
+  del_locked: "Zbyt wiele błędnych haseł. Spróbuj ponownie za 15 minut.",
+  del_failed: "Usuwanie nie powiodło się. Nic nie zostało usunięte. Spróbuj ponownie.",
+  del_done_title: "Organizacja usunięta",
+  del_done_text:
+    "Wszystkie dane zostały usunięte, a sesja zakończona. Zmień teraz hasła swoich skrzynek w ustawieniach dostawcy poczty: asystent je znał.",
+  del_done_mailboxes: "Skrzynki usuniętej organizacji:",
   tf_codes_done: "Mam zapisane kody",
   tf_on_without_codes:
     "Logowanie dwuetapowe jest włączone, ale kody zapasowe nie zostały pokazane. Utwórz teraz nowe kody zapasowe.",
