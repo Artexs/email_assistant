@@ -105,3 +105,8 @@ For F100 stage 19 (docs) and later web work:
 - Note 7, stage 07 find: `normalizeDsrAddress` accepts a trailing dot or an empty domain label (`p@x.`, `p@.test`, `p@x..test`). Reject them or print a warning. A find with zero mails, zero mentions and zero listed rows prints a warning ("no match: check the spelling"), not a silent success.
 - Done in the review fixes: the pattern is wider (atext look-behind, non-ASCII letters, `_` in the look-ahead); `email_headers.auth_results` (text) and `email_headers.attachments` (json) are mapped; the completeness test now covers every text, array and jsonb column of every table with `org_id` and `organizations` (`NO_PERSONAL_TABLES` for whole tables).
 - `email_headers.attachments` is mapped as `json` (jsonb), not `text`: stage 08 must scrub an address inside a jsonb attachments value (cast to text, replace, cast back to jsonb; not a text replace on the column), and stage 07's find must show the `email_headers.attachments` mentions.
+
+## F106 s08 review carry-over (Opus PASS, 2026-11-14)
+- Stage 10 runbook: say 'erase again after a backfill, after the first sync of a newly enabled sync folder and after a newly connected mailbox' (mail never stored has no tombstone). Document that `p@x.test.vcf` style file names are not matched (look-ahead rejects `.x` after the address; same rule keeps a@b.com.pl apart).
+- N5 hardening (RLS as a second guard for the erase/find CLI via the tenant scope helper): see the stage 08 fix job; if skipped it stays a note.
+- N4: `config-settings.test.ts` 'setToolSwitch flag off audits' flakes (auditRows has no ORDER BY): fixed in the stage 08 fix job.
