@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-14
 ---
 
 # F096 · E8-LR Log rotation
