@@ -47,6 +47,9 @@ export interface AuthDeps {
   onTermsAccepted: (userId: string, version: string) => Promise<void>;
   // Absent = no check (the CLIs and the tests that do not test it). Never rejects.
   pwnedCheck?: (password: string) => Promise<PwnedResult>;
+  // True = the user may not turn TOTP off (the break-glass owner, F105 D12). Absent = every user may.
+  // Not caught: an error fails the request (500) and nothing changes (fail closed).
+  keepsTwoFactor?: (userId: string) => Promise<boolean>;
 }
 
 export type Auth = ReturnType<typeof createBetterAuth>;
@@ -146,6 +149,7 @@ export function onAuthError(error: unknown): void {
 
 const SIGN_IN_PATH = "/sign-in/email";
 const RESET_PASSWORD_PATH = "/reset-password";
+const TWO_FACTOR_DISABLE_PATH = "/two-factor/disable";
 const CHANGE_PASSWORD_PATH = "/change-password";
 const NEW_PASSWORD_PATHS: ReadonlySet<string> = new Set(["/reset-password", "/change-password"]);
 const MIN_PASSWORD_LENGTH = 12;
@@ -402,6 +406,15 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
         if (ctx.path === RESET_PASSWORD_PATH) rejectMissingTerms(ctx);
         if (NEW_PASSWORD_PATHS.has(ctx.path) && deps.pwnedCheck) {
           await rejectLeakedPassword(ctx, deps.pwnedCheck);
+        }
+        if (ctx.path === TWO_FACTOR_DISABLE_PATH && deps.keepsTwoFactor) {
+          const session = await getSessionFromCtx(ctx);
+          if (session && (await deps.keepsTwoFactor(session.user.id))) {
+            throw APIError.from("FORBIDDEN", {
+              code: "BREAK_GLASS_NEEDS_TWO_FACTOR",
+              message: "The break-glass owner keeps two-factor sign-in.",
+            });
+          }
         }
         return undefined;
       }),
