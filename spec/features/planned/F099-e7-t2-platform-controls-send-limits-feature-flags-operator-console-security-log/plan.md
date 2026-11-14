@@ -23,7 +23,7 @@ Ticket: [ticket.md](ticket.md). Open defaults for the owner: [questions.md](ques
 - [x] stage-12-security-log-route [written]
 - [x] stage-13-security-log-card [written]
 - [x] stage-14-docs-and-standards [written]
-- [ ] stage-15-vps-deploy
+- [x] stage-15-vps-deploy [written]
 - [ ] Cold review (`plan-review-1.md`), fixes logged in "Cold review".
 
 ## Input
