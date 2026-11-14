@@ -19,6 +19,12 @@ Decisions that agents took for the owner with a default, so the work did not sto
 
 ## Entries
 
+### 2026-11-14 · Row-level security joined the foundation group, built as a per-connection tenant scope (F092) · security · new
+- Choice: the coordinator planned and built RLS on the review's default "yes". The web sets `app.org_id` on each connection acquire from an async tenant scope, not in one request transaction. A caller that runs raw SQL as `app` can still clear the setting, so the docs say "a safety net against a missed org_id filter".
+- Why: existing code opens transactions inside requests (Kysely refuses nesting), so one request transaction would break it; the scope needs no route or repository change.
+- Undo: roll back migration `20261114100002_rls_tenant_policies.sql` (`db:rollback`); the code still runs because jobs and unset scope are admitted by the policy. Not deployed to the VPS yet.
+- Source: `spec/features/done/2026-11/F092-rls-safety-net/questions.md` Q1 and D7, D23.
+
 ### 2026-11-14 · Plans for Logs (F103) and Astro 7 (F101) written before E1 closed (F095) · rule-exception · new
 - Choice: the coordinator planned F101 and F103 while E1 was still building, although the owner rule says "plan a ticket only after the tickets it needs have landed".
 - Why: the capability pages these plans read were already merged (E1 stages 02–07).
