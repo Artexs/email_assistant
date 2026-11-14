@@ -158,7 +158,7 @@ export default function LoginPage() {
               value={code}
               onChange={(event) => setCode(event.target.value)}
               aria-invalid={codeError !== null}
-              aria-describedby={`${inputId}-help`}
+              aria-describedby={codeError === null ? `${inputId}-help` : `${inputId}-help tf-error`}
             />
             <p id={`${inputId}-help`} className="text-muted-foreground text-sm">
               {t(totp ? "tf_code_help" : "tf_backup_help")}
@@ -175,7 +175,7 @@ export default function LoginPage() {
             {pending ? t("tf_verifying") : t("tf_verify")}
           </Button>
           {codeError === null ? null : (
-            <p role="alert" className="text-destructive text-sm">
+            <p id="tf-error" role="alert" className="text-destructive text-sm">
               {t(codeError)}
             </p>
           )}

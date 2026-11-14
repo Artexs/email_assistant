@@ -44,7 +44,7 @@ export const en = {
   tf_code_label: "Code from your authenticator app",
   tf_code_help: "Open the app and type the 6-digit code for Email Assistant.",
   tf_backup_label: "Backup code",
-  tf_backup_help: "Type one of your saved backup codes, for example abcde-12345. Each code works once.",
+  tf_backup_help: "Type one of your saved backup codes, for example abcde-12345. Case matters. Each code works once.",
   tf_use_backup: "Use a backup code",
   tf_use_app: "Use the authenticator app",
   tf_trust_device: "Trust this device for 30 days",

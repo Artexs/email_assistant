@@ -15,7 +15,9 @@ export function codeStepError(error: { status?: number; code?: string } | null |
   if (error.code === "INVALID_BACKUP_CODE") return { key: "tf_error_backup_code", restart: false };
   if (error.code === "TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE") return { key: "tf_error_attempts", restart: true };
   if (error.code === "INVALID_TWO_FACTOR_COOKIE") return { key: "tf_error_expired", restart: true };
-  if (error.code === "TOTP_NOT_ENABLED") return { key: "tf_error_state", restart: false };
+  if (error.code === "TOTP_NOT_ENABLED" || error.code === "BACKUP_CODES_NOT_ENABLED") {
+    return { key: "tf_error_state", restart: false };
+  }
   return { key: "error_generic", restart: false };
 }
 

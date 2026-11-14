@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { pl } from "../i18n/pl";
 import { cleanBackupCode, cleanTotpCode, codeStepError } from "./two-factor-errors";
 
 describe("codeStepError", () => {
@@ -25,6 +26,10 @@ describe("codeStepError", () => {
       restart: true,
     });
     expect(codeStepError({ status: 400, code: "TOTP_NOT_ENABLED" })).toEqual({ key: "tf_error_state", restart: false });
+    expect(codeStepError({ status: 400, code: "BACKUP_CODES_NOT_ENABLED" })).toEqual({
+      key: "tf_error_state",
+      restart: false,
+    });
     expect(codeStepError({ status: 500, code: "SOMETHING_ELSE" })).toEqual({ key: "error_generic", restart: false });
     expect(codeStepError({})).toEqual({ key: "error_generic", restart: false });
   });
@@ -44,5 +49,11 @@ describe("cleanBackupCode", () => {
     expect(cleanBackupCode(" abcde-12345 ")).toBe("abcde-12345");
     expect(cleanBackupCode("abcde12345")).toBe("abcde-12345");
     for (const bad of ["abcd-12345", "abcde_12345", ""]) expect(cleanBackupCode(bad)).toBeNull();
+  });
+});
+
+describe("Polish texts of the code step", () => {
+  test("pins one fixed Polish value", () => {
+    expect(pl.tf_error_expired).toBe("Czas na wpisanie kodu minął. Zaloguj się ponownie.");
   });
 });
