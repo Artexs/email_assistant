@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
 
-import { activityPageSchema } from "@ea/core";
+import { activityPageSchema, textTables } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { activityRoutes } from "../../src/modules/reports";
+import { setUserLocale } from "../../src/modules/tenancy";
 import { insertFeedback } from "../../src/modules/triage/repo";
 
 import { insertTriagedWithActions, testCapabilities } from "./fixtures";
@@ -180,5 +181,39 @@ describe("GET /activity", () => {
     const res = await app.request(`/api/activity?categories=${junk}`, as("owner"));
     expect(res.status).toBe(400);
     expect(await res.text()).not.toContain("JUNKVALUE");
+  });
+});
+
+describe("GET /activity phrase language", () => {
+  async function phraseFor(opts: { locale: "en" | "pl" | null; header?: string }): Promise<string> {
+    const { app, org, m2 } = await setup();
+    if (opts.locale !== null) await setUserLocale(db, org.ownerId, opts.locale);
+    const base = as("owner");
+    const init: RequestInit = {
+      ...base,
+      headers: {
+        ...(base.headers as Record<string, string>),
+        ...(opts.header ? { "accept-language": opts.header } : {}),
+      },
+    };
+    const page = activityPageSchema.parse(await json(await app.request("/api/activity", init)));
+    const item = page.items.find((i) => i.emailId === m2);
+    return item?.phrase ?? "";
+  }
+
+  const stays = (locale: "en" | "pl") => textTables[locale].wouldDo.staysIn("INBOX");
+
+  test("null locale follows the browser language", async () => {
+    expect(await phraseFor({ locale: null, header: "pl-PL,pl;q=0.9" })).toBe(stays("pl"));
+    expect(stays("pl")).toBe("zostaje w INBOX");
+  });
+
+  test("null locale and no header gives English", async () => {
+    expect(await phraseFor({ locale: null })).toBe(stays("en"));
+  });
+
+  test("the stored choice wins over the header", async () => {
+    expect(await phraseFor({ locale: "en", header: "pl-PL" })).toBe(stays("en"));
+    expect(await phraseFor({ locale: "pl", header: "en-US" })).toBe(stays("pl"));
   });
 });
