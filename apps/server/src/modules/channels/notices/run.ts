@@ -4,7 +4,7 @@ import { type Transaction } from "kysely";
 import { type DB, type Db, type TenantContext } from "../../../platform/db";
 import { describeError } from "../../../platform/errors";
 import { createLog } from "../../../platform/log";
-import { type MailboxSummary } from "../../mail";
+import { type MailboxSummary, type TestMailRule } from "../../mail";
 import { queueNotice, type QueueNoticeInput } from "../notice-queue";
 import { type LinkedChat } from "../port";
 
@@ -17,6 +17,7 @@ export interface NoticeDeps {
   now(): Date;
   // The process start time (from `main.ts`).
   startedAt: Date;
+  testMail: TestMailRule;
 }
 
 export type DbOrTrx = Db | Transaction<DB>;

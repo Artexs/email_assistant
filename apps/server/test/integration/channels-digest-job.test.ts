@@ -2,6 +2,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "
 import type { Transaction } from "kysely";
 
 import { scheduleDigests } from "../../src/modules/channels";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { markSynced } from "../../src/modules/mail/repo";
 import { markDigestSent } from "../../src/modules/reports";
 import { setDigestTimes } from "../../src/modules/tenancy";
@@ -63,7 +64,7 @@ async function org(trx: Transaction<DB>, times: string[] = ["08:00", "16:00"]): 
 }
 
 async function run(trx: Transaction<DB>, iso: string): Promise<void> {
-  await scheduleDigests({ db: trx, now: () => new Date(iso) });
+  await scheduleDigests({ db: trx, now: () => new Date(iso), testMail: NO_TEST_SENDERS });
 }
 
 async function digests(trx: Transaction<DB>, orgId: string, userId?: string) {

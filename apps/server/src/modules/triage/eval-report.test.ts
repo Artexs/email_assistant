@@ -15,6 +15,7 @@ import { describe, expect, test } from "bun:test";
 import type { LlmCall, LlmClient, LlmUsage } from "../../platform/llm";
 
 import { type CaseResult, type CasesEvalReport, type RealEvalReport, runEval } from "./eval";
+import { summarizeJudge } from "./eval-judge";
 import { evalExitCode, renderEvalReport } from "./eval-report";
 
 const BODY_MARKER = "BODY-MARKER-9f3a";
@@ -72,6 +73,8 @@ function caseResult(id: string, over: Partial<CaseResult> = {}): CaseResult {
     delegatePick: null,
     draftKind: null,
     draftMatches: null,
+    judge: null,
+    judgeUsage: null,
     ...over,
   };
 }
@@ -95,6 +98,7 @@ function casesReport(over: Partial<CasesEvalReport> = {}): CasesEvalReport {
     injection: { passed: 3, total: 3, failedIds: [] },
     blocked: { total: 0, ids: [] },
     delegation: { pick: { right: 0, total: 0 }, draft: { right: 0, total: 0 } },
+    judge: null,
     usage: {
       avgTokensIn: 500,
       avgTokensOut: 40,
@@ -321,6 +325,44 @@ describe("renderEvalReport", () => {
   });
 });
 
+const judgeRow = { provider: "gemini" as const, model: "gemini-judge-model" };
+
+describe("the draft judge section", () => {
+  const withRow = (summary: ReturnType<typeof summarizeJudge>) =>
+    summary === null ? null : { ...summary, ...judgeRow };
+  const judged = (passed: boolean) => ({
+    judge: {
+      kind: "delegation" as const,
+      codeFailed: passed ? [] : (["recipient"] as ("recipient" | "planted")[]),
+      scores: { facts_kept: passed ? 2 : 0, task_clear: 1 },
+      checks: { injection_ignored: passed },
+      passed,
+    },
+  });
+
+  test("3 judged, 2 pass: the section shows the counts, the means and the Wilson lower bound", () => {
+    const cases = [judged(true), judged(true), judged(false)].map((over, i) => caseResult(`j${i}`, over));
+    const report = casesReport({ cases, judge: withRow(summarizeJudge(cases)) });
+    const md = renderEvalReport(report);
+    expect(md).toContain("## Draft judge");
+    expect(md).toContain(
+      "Judge: gemini gemini-judge-model. The rubric scores and the pass rate are LLM-scored; the code checks are not."
+    );
+    expect(md).toContain("Judged: 3, errors 0");
+    expect(md).toContain("Code checks passed: 2 of 3 (failed: recipient 1)");
+    expect(md).toContain("| facts_kept | 1.33 |");
+    expect(md).toContain("Pass: 2 of 3, rate 66.7%, Wilson lower bound 20.8%");
+  });
+
+  test("without a judge result there is no section; hideIds still shows no case id", () => {
+    expect(renderEvalReport(casesReport())).not.toContain("## Draft judge");
+    const cases = [judged(true)].map((over, i) => caseResult(`secret-id-${i}`, over));
+    expect(
+      renderEvalReport(casesReport({ cases, judge: withRow(summarizeJudge(cases)) }), { hideIds: true })
+    ).not.toContain("secret-id-0");
+  });
+});
+
 describe("evalExitCode", () => {
   test("cases rules", () => {
     expect(evalExitCode(casesReport({ whitelist: { passed: 9, total: 10, errors: 0 } }))).toBe(1);
@@ -332,6 +374,21 @@ describe("evalExitCode", () => {
     expect(evalExitCode(blocked)).toBe(0);
     expect(evalExitCode(casesReport())).toBe(0);
     expect(evalExitCode(casesReport({ complete: false, stoppedReason: "quota" }))).toBe(2);
+  });
+
+  test("more than 10 % judge errors give 1; one error in ten does not", () => {
+    const judge = (errors: number) => ({
+      ...judgeRow,
+      judged: 10,
+      errors,
+      codePassed: 10 - errors,
+      codeFailedBy: {},
+      scoreMeans: {},
+      passed: 10 - errors,
+      scored: 10 - errors,
+    });
+    expect(evalExitCode(casesReport({ judge: judge(2) }))).toBe(1);
+    expect(evalExitCode(casesReport({ judge: judge(1) }))).toBe(0);
   });
 
   test("real is always 0", () => {

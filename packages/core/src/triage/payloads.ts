@@ -15,6 +15,11 @@ const recipientSchema = z.array(addressSchema).length(1);
 // `YYYY-MM-DD` or "" for none. The regex checks the shape only.
 const dueDateSchema = z.string().regex(/^(\d{4}-\d{2}-\d{2})?$/);
 
+// LLM text in a draft holds no address, no link and no long number (the marking removes them; this proves it).
+export function textIsClean(text: string): boolean {
+  return !/@|http|www\./i.test(text) && !/\d{9,}/.test(text.replace(/[ -]/g, ""));
+}
+
 export const draftPayloadSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("delegation"),
