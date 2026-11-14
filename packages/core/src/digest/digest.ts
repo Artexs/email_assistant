@@ -7,6 +7,7 @@ import { formatClock, formatDay, localDateTime, localToInstant } from "./local-t
 import { MESSAGE_MAX_CHARS, type OutButton, type OutMessage } from "./message";
 import { feedbackButtons } from "./notices";
 import { cleanSubject, cutText, senderLabel } from "./text";
+import { rateText } from "./weekly";
 
 export const DIGEST_MAX_LINES = 15;
 
@@ -38,6 +39,13 @@ export interface DigestItem {
   undoable: boolean;
 }
 
+export interface DigestHandled {
+  handled: number;
+  wouldHandle: number;
+  triaged: number;
+  shadowOnly: boolean;
+}
+
 export interface DigestInput {
   kind: "scheduled" | "on_demand";
   now: Date;
@@ -55,6 +63,8 @@ export interface DigestInput {
   delegations?: { open: number; overdue: number };
   // The LLM pause (F100 stage 07, flag `llm_pause_line`). Set: its line is the first line of the footer.
   llmPause?: LlmPause;
+  // The handled share of the last 7 days (D24): set only while `handled_share` is on.
+  handled?: DigestHandled;
   maxLines?: number;
 }
 
@@ -151,6 +161,12 @@ function renderListed(input: DigestInput, listed: readonly DigestItem[], texts: 
   }
   if (total > 0 && input.mailboxes.length > 0 && input.mailboxes.every((mailbox) => mailbox.mode === "shadow")) {
     footer.push(texts.digest.shadow);
+  }
+  // The handled share is the last footer line, after the pause line (the first line) and the shadow line.
+  if (input.handled !== undefined && input.handled.triaged > 0) {
+    const { handled, wouldHandle, triaged, shadowOnly } = input.handled;
+    if (handled > 0 || !shadowOnly) footer.push(texts.digest.handled(rateText(handled, triaged, texts.common.of)));
+    else footer.push(texts.digest.wouldHandle(rateText(wouldHandle, triaged, texts.common.of)));
   }
   if (footer.length > 0) lines.push("", ...footer);
 

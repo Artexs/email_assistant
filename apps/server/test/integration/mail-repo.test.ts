@@ -20,6 +20,7 @@ import {
   listEmailsByMessageIds,
   listFolderUids,
   listFolderEmailKeys,
+  listMoveCandidates,
   listRecentlyMoved,
   listSyncFolders,
   listSyncTargets,
@@ -668,6 +669,141 @@ describe("mail repository: emails", () => {
       await insertEmail(trx, a.ctx, newEmail(a.mailboxId, { folder: "AI/Info" }));
       const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
       expect(await markEmailRelocated(trx, a.ctx, id, { from: "AI/Info", to: "Oferty", uid: 80 })).toBe(false);
+    });
+  });
+
+  test("markEmailReturned with `from` changes the row only while it has that folder and UID", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      await insertEmail(trx, a.ctx, newEmail(a.mailboxId, { folder: "AI/Info" }));
+      const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
+      const at = new Date("2026-11-03T13:00:00Z");
+      const read = () =>
+        trx
+          .selectFrom("emails")
+          .select(["folder", "source_folder", "uid", "inbox_uid", "returned_at"])
+          .where("id", "=", id)
+          .executeTakeFirstOrThrow();
+
+      expect(
+        await markEmailReturned(trx, a.ctx, id, 60, at, { folder: "Oferty", from: { folder: "AI/Info", uid: 2 } })
+      ).toBe(false);
+      expect(
+        await markEmailReturned(trx, a.ctx, id, 60, at, { folder: "Oferty", from: { folder: "AI/Spam", uid: 1 } })
+      ).toBe(false);
+      let row = await read();
+      expect({
+        folder: row.folder,
+        source: row.source_folder,
+        uid: Number(row.uid),
+        returnedAt: row.returned_at,
+      }).toEqual({
+        folder: "AI/Info",
+        source: "INBOX",
+        uid: 1,
+        returnedAt: null,
+      });
+
+      expect(
+        await markEmailReturned(trx, a.ctx, id, 60, at, { folder: "Oferty", from: { folder: "AI/Info", uid: 1 } })
+      ).toBe(true);
+      row = await read();
+      expect({ ...row, uid: Number(row.uid), inbox_uid: Number(row.inbox_uid) }).toEqual({
+        folder: "Oferty",
+        source_folder: "Oferty",
+        uid: 60,
+        inbox_uid: 60,
+        returned_at: at,
+      });
+    });
+  });
+
+  test("markEmailRelocated with `fromUid` changes the row only while it has that UID", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      await insertEmail(trx, a.ctx, newEmail(a.mailboxId));
+      const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
+      const change = { from: "INBOX", to: "Oferty", uid: 80 };
+
+      expect(await markEmailRelocated(trx, a.ctx, id, { ...change, fromUid: 9 })).toBe(false);
+      expect(Number((await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1")).uid)).toBe(1);
+
+      expect(await markEmailRelocated(trx, a.ctx, id, { ...change, fromUid: 1 })).toBe(true);
+      const row = await trx
+        .selectFrom("emails")
+        .select(["folder", "source_folder", "uid", "inbox_uid", "returned_at"])
+        .where("id", "=", id)
+        .executeTakeFirstOrThrow();
+      expect({ ...row, uid: Number(row.uid), inbox_uid: Number(row.inbox_uid) }).toEqual({
+        folder: "Oferty",
+        source_folder: "Oferty",
+        uid: 80,
+        inbox_uid: 80,
+        returned_at: null,
+      });
+    });
+  });
+});
+
+describe("mail repository: listMoveCandidates", () => {
+  test("returns the rows of the ids in the mailbox with all fields, and leaves out other orgs and unknown mailboxes", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b } = await createTwoTenants(trx);
+      await insertEmail(
+        trx,
+        a.ctx,
+        newEmail(a.mailboxId, { dedup_key: "mid:<1@x.test>:hash-1", folder: "AI/Info", uid: 7 })
+      );
+      await insertEmail(
+        trx,
+        a.ctx,
+        newEmail(a.mailboxId, {
+          dedup_key: "mid:<2@x.test>:hash-2",
+          message_id_header: null,
+          content_hash: "hash-2",
+          uid: 8,
+          from_address: null,
+        })
+      );
+      await insertEmail(trx, b.ctx, newEmail(b.mailboxId));
+      const idA1 = (await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1")).id;
+      const idA2 = (await emailRow(trx, a.mailboxId, "mid:<2@x.test>:hash-2")).id;
+      const idB = (await emailRow(trx, b.mailboxId, "mid:<1@x.test>:hash-1")).id;
+
+      const rows = await listMoveCandidates(trx, a.ctx, a.mailboxId, [idA1, idA2, idB]);
+      expect(rows.sort((x, y) => x.uid - y.uid)).toEqual([
+        {
+          id: idA1,
+          folder: "AI/Info",
+          source_folder: "INBOX",
+          uid: 7,
+          message_id_header: "<1@x.test>",
+          content_hash: "hash-1",
+          from_address: "sender@x.test",
+          received_at: new Date("2026-11-03T10:00:00Z"),
+          undo_pending_at: null,
+        },
+        {
+          id: idA2,
+          folder: "INBOX",
+          source_folder: "INBOX",
+          uid: 8,
+          message_id_header: null,
+          content_hash: "hash-2",
+          from_address: null,
+          received_at: new Date("2026-11-03T10:00:00Z"),
+          undo_pending_at: null,
+        },
+      ]);
+      expect(await listMoveCandidates(trx, b.ctx, a.mailboxId, [idA1, idA2, idB])).toEqual([]);
+      expect(await listMoveCandidates(trx, a.ctx, randomUUID(), [idA1])).toEqual([]);
+    });
+  });
+
+  test("returns [] for an empty id list", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      expect(await listMoveCandidates(trx, a.ctx, a.mailboxId, [])).toEqual([]);
     });
   });
 });

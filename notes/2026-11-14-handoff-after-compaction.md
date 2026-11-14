@@ -56,3 +56,7 @@ Run `limen land` ALONE. Read its last lines. "Recorded preimage" or CONFLICT = n
 - Fixed on master: mermaid node quoted; two CLI texts no longer say 5 minutes.
 - Open, optional: web panel texts `mb_resumed_toast` and `connected_toast` (en.ts 107, 168, and pl) still say "within 5 minutes". Fix in F100 stage 18/19 or a later web ticket.
 - Soft-pause line vanishes after 10 min while a doubled soft pause runs; other orgs see no pause line (plan D8, N17). Owner step O1 note after land: set MAIL_SYNC_EVERY_MIN only if 2 is wrong.
+
+## F100 s16 review carry-over (landed)
+- N6 open for the owner/F098 follow-up: Polish `Załatwiłbym` (digest and weekly wouldHandle) is a masculine first-person verb; the F098 glossary has no neutral form. Polish stays off until F098 s12. Decide the assistant's grammatical voice before Polish goes live (neutral: "Do załatwienia przez asystenta: …").
+- Migration 20261114140001 applied on the shared dev DB.

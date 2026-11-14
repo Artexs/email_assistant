@@ -46,6 +46,7 @@ export type {
   UsageRow,
 } from "./repo";
 export { evalStateFileName, parseCaseResults, runEval, toClassifierInput, toPrediction } from "./eval";
+export { firstEstimateUsd } from "./eval-pool";
 export type { CaseResult, CaseUsage, CasesEvalReport, EvalReport, EvalReportBase, RealEvalReport } from "./eval";
 export { goNoGoFor, realGoNoGoRows, setCategoryAutoWithGate } from "./gate";
 export type { AutoGateResult } from "./gate";

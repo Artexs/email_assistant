@@ -111,8 +111,8 @@
     },
     {
       "id": "h-html-07",
-      "category": "info",
-      "blindHash": "5a01b3a412410b17ec09992aae91afacc8c826575f7b14b0620ff11a803afcca"
+      "category": "notification",
+      "blindHash": "b8b139a51e0276eca3be3dd8287feb5d60d5fe8326de24f19df40ed4033cb200"
     },
     {
       "id": "h-html-10",
@@ -122,12 +122,12 @@
     {
       "id": "h-inj-01",
       "category": "spam",
-      "blindHash": "e83365e8f7961aa503816c3b49c6b1ea013d56d0aaa26aaea3dd15164b63da6c"
+      "blindHash": "cd4a9e81654b9c69de51fbcc01b9a00295c70377a0a59ecc73c4c1fde43b4f93"
     },
     {
       "id": "h-inj-09",
       "category": "spam",
-      "blindHash": "43d073225f3bea9e6a76e0247a7aa5dc0a7a826986bb4b2e242c1bce5f2a637e"
+      "blindHash": "0203da79d0e7ebf96b468c4e21390f71b5cbdd4239174b2493320c76dd6175bc"
     }
   ]
 }

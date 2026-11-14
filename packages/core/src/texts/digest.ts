@@ -33,6 +33,9 @@ export interface DigestTexts {
     quota: (since: string, code: string) => string;
     other: (since: string, code: string) => string;
   };
+  // The handled-share line of the footer (F100 stage 16); `rate` is a text like "62% (124 of 200)".
+  handled: (rate: string) => string;
+  wouldHandle: (rate: string) => string;
 }
 
 const PL_MAILS = { one: "wiadomość", few: "wiadomości", many: "wiadomości", other: "wiadomości" } as const;
@@ -89,6 +92,8 @@ export const digestTexts = {
         `⏸ LLM paused since ${since}: the provider quota or budget is spent (${code}). Triage waits.`,
       other: (since, code) => `⏸ LLM paused since ${since} (${code}). Triage waits.`,
     },
+    handled: (rate) => `🤖 Handled in the last 7 days: ${rate}`,
+    wouldHandle: (rate) => `🤖 Would handle in the last 7 days: ${rate}`,
   },
   pl: {
     header: (time, day, late) => `📬 Podsumowanie ${time} · ${day}${late ? " (spóźnione)" : ""}`,
@@ -129,5 +134,7 @@ export const digestTexts = {
         `⏸ Klasyfikacja AI wstrzymana od ${since}. Wyczerpał się limit lub budżet u dostawcy (${code}). Wiadomości czekają.`,
       other: (since, code) => `⏸ Klasyfikacja AI wstrzymana od ${since} (${code}). Wiadomości czekają.`,
     },
+    handled: (rate) => `🤖 Załatwione w ostatnich 7 dniach: ${rate}`,
+    wouldHandle: (rate) => `🤖 Załatwiłbym w ostatnich 7 dniach: ${rate}`,
   },
 } satisfies Record<UserLocale, DigestTexts>;

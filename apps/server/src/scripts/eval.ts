@@ -1,6 +1,5 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { parseArgs } from "node:util";
 
 import { type EvalCase, evalCaseSchema, selectCases } from "@ea/core";
 import { z } from "zod";
@@ -15,93 +14,18 @@ import {
   renderEvalReport,
   runEval,
 } from "../modules/triage";
-import { ConfigError, llmRoleTable, loadConfig, openAiReasoningEfforts, testMailRule } from "../platform/config";
+import { ConfigError, llmRoleTable, loadConfig, testMailRule } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
-import { createLlmClient, LlmConfigError, llmProviderIds, type LlmRoleTable } from "../platform/llm";
+import { createLlmClient, LlmConfigError, type LlmRoleTable } from "../platform/llm";
 import { createLog } from "../platform/log";
+
+import { type EvalOptions, evalUsage, parseEvalArgs } from "./eval-args";
+import { runSim } from "./eval-sim";
 
 const log = createLog("eval");
 
 const casesDir = resolve(import.meta.dir, "../../../../evals/cases");
 const runsDir = resolve(import.meta.dir, "../../../../evals/.runs");
-const sets = ["synthetic", "injection", "delegation", "all"] as const;
-
-const usage = [
-  "usage: bun run eval [--provider gemini|openai] [--model <id>] [--reasoning-effort <value>] [--set synthetic|injection|delegation|all] [--bar 0.98] [--min-kept 30]",
-  "                    [--retries 4] [--limit n] [--per-category n] [--state <file.jsonl>] [--fresh]",
-  "                    [--out <file.md>]",
-  "       bun run eval --real --org-id <uuid> --mailbox-id <uuid> [--synthetic] [--model <id>] [--bar 0.98] [--min-kept 30]",
-  "                    [--out <file.md>]",
-].join("\n");
-
-const optionsSchema = z.object({
-  provider: z.enum(llmProviderIds).optional(),
-  model: z.string().min(1).optional(),
-  "reasoning-effort": z.enum(openAiReasoningEfforts).optional(),
-  set: z.enum(sets).default("all"),
-  bar: z.coerce.number().min(0).max(1).default(0.98),
-  "min-kept": z.coerce.number().int().positive().default(30),
-  retries: z.coerce.number().int().min(0).default(4),
-  limit: z.coerce.number().int().positive().optional(),
-  "per-category": z.coerce.number().int().positive().optional(),
-  state: z.string().min(1).optional(),
-  fresh: z.boolean().default(false),
-  out: z.string().min(1).optional(),
-  real: z.boolean().default(false),
-  synthetic: z.boolean().default(false),
-  "org-id": z.uuid().optional(),
-  "mailbox-id": z.uuid().optional(),
-});
-
-// --real reads labels from the DB and takes no case-run options; the case run takes no DB options.
-const realOnly = ["org-id", "mailbox-id", "synthetic"] as const;
-const casesOnly = [
-  "provider",
-  "reasoning-effort",
-  "set",
-  "retries",
-  "limit",
-  "per-category",
-  "state",
-  "fresh",
-] as const;
-
-function readOptions() {
-  try {
-    const { values } = parseArgs({
-      args: process.argv.slice(2),
-      options: {
-        provider: { type: "string" },
-        model: { type: "string" },
-        "reasoning-effort": { type: "string" },
-        set: { type: "string" },
-        bar: { type: "string" },
-        "min-kept": { type: "string" },
-        retries: { type: "string" },
-        limit: { type: "string" },
-        "per-category": { type: "string" },
-        state: { type: "string" },
-        fresh: { type: "boolean" },
-        out: { type: "string" },
-        real: { type: "boolean" },
-        synthetic: { type: "boolean" },
-        "org-id": { type: "string" },
-        "mailbox-id": { type: "string" },
-      },
-      strict: true,
-    });
-    const parsed = optionsSchema.safeParse(values);
-    if (!parsed.success) return undefined;
-    const wrong = parsed.data.real
-      ? casesOnly.some((key) => values[key] !== undefined) ||
-        parsed.data["org-id"] === undefined ||
-        parsed.data["mailbox-id"] === undefined
-      : realOnly.some((key) => values[key] !== undefined);
-    return wrong ? undefined : parsed.data;
-  } catch {
-    return undefined;
-  }
-}
 
 function out(text: string): void {
   process.stdout.write(`${text}\n`);
@@ -112,11 +36,7 @@ function loadCases(file: string): EvalCase[] {
 }
 
 // Real labels from triage_feedback: no case file, no LLM call, no API key.
-async function runReal(
-  options: NonNullable<ReturnType<typeof readOptions>>,
-  orgId: string,
-  mailboxId: string
-): Promise<number> {
+async function runReal(options: EvalOptions, orgId: string, mailboxId: string): Promise<number> {
   const config = loadConfig();
   const db = createDb(config.DATABASE_URL);
   try {
@@ -142,11 +62,12 @@ async function runReal(
 }
 
 async function main(): Promise<number> {
-  const options = readOptions();
+  const options = parseEvalArgs(process.argv.slice(2));
   if (!options) {
-    log.error(usage);
+    log.error(evalUsage);
     return 1;
   }
+  if (options.sim !== undefined) return runSim(options);
   if (options.real) return runReal(options, options["org-id"] as string, options["mailbox-id"] as string);
 
   const config = loadConfig();
@@ -161,7 +82,7 @@ async function main(): Promise<number> {
     });
   } catch (error) {
     if (!(error instanceof ConfigError)) throw error;
-    log.error(usage);
+    log.error(evalUsage);
     return 1;
   }
   const row = table.roles.classifier;

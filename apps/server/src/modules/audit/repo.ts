@@ -66,6 +66,11 @@ export const auditEvents = {
   webTelegramConsent: "web.telegram_consent", // data: via, version
   webSessionsRevoked: "web.sessions_revoked", // data: via
   webOtherSessionsRevoked: "web.other_sessions_revoked", // data: via
+  webTwoFactorEnabled: "web.two_factor_enabled", // data: via
+  webTwoFactorDisabled: "web.two_factor_disabled", // data: via
+  webBackupCodesGenerated: "web.backup_codes_generated", // data: via
+  webBackupCodeUsed: "web.backup_code_used", // data: via
+  webTwoFactorLocked: "web.two_factor_locked", // data: via, locked_until
   operatorNotice: "operator.notice", // data: kind, key
 } as const;
 

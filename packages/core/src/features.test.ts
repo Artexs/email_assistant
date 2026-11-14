@@ -58,6 +58,14 @@ describe("featureFlags registry", () => {
     expect(featureEpicPattern.test(featureFlags.llm_pause_line.epic)).toBe(true);
   });
 
+  test("weekly_report and handled_share default off and have the epic E3a", () => {
+    for (const key of ["weekly_report", "handled_share"] as const) {
+      expect(featureFlags[key].default).toBe(false);
+      expect(featureFlags[key].epic).toBe("E3a");
+      expect(featureEpicPattern.test(featureFlags[key].epic)).toBe(true);
+    }
+  });
+
   test("answered_check defaults off and has the epic E3a", () => {
     expect(featureFlags.answered_check.default).toBe(false);
     expect(featureFlags.answered_check.epic).toBe("E3a");

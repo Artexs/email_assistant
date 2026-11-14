@@ -74,6 +74,13 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Undo: stop the two jobs; run `Refresh F100` again before the later stages (they wait for F097 stages 03-04 and F098 stages 08-11 anyway).
 - Source: `scripts/plan-drift.sh spec/features/planned/F100-e3a-measure a6690e4`; owner rule plan-refresh in `spec/build.md`.
 
+### 2026-11-14 · Telegram texts follow the Account language; a user with no language gets Polish (F098) · user-visible · new
+- Choice: from F098 stage 12 on, every Telegram text is in the user's Account language (`users.locale`); an unset language reads as Polish. English users see byte-identical English texts.
+- Why: one Account setting must drive both channels; the pilot owner is Polish-speaking. The panel stays in the browser language until the user sets one.
+- Effect after deploy: every production user with no language set gets Polish Telegram text at once, possibly the owner. An old English card queued before the deploy gets Polish status lines on edit (up to 7 days).
+- Undo: set the language to English in Settings → Account, or revert F098 stage 12 (the hold flag no longer exists after it).
+- Source: `spec/features/active/F098-e7-t1-polish-ui-i18n-frame-first/questions.md` items 8, 9, 11; review `2026-11-14-f098-review-s12-df316a0c` note 8.
+
 ### 2026-11-14 · Telegram and panel texts of F100 follow the F098 registry state (F100) · user-visible · new
 - Choice: a new F100 text goes into the F098 section file of its kind with en and pl only if that file exists when the stage starts; otherwise it stays English inline. Panel texts always get en and pl keys.
 - Why: F098 moves the Telegram texts into a registry stage by stage; F100 must not block on it or undo it.

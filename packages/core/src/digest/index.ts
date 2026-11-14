@@ -15,3 +15,4 @@ export * from "./text";
 export * from "./would-do";
 export * from "./digest";
 export * from "./undo";
+export * from "./weekly";

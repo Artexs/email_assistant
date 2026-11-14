@@ -173,6 +173,8 @@ describe("org_features", () => {
         { flag: "review_command", enabled: false, source: "default" },
         { flag: "mistake_capture", enabled: false, source: "default" },
         { flag: "llm_pause_line", enabled: false, source: "default" },
+        { flag: "weekly_report", enabled: false, source: "default" },
+        { flag: "handled_share", enabled: false, source: "default" },
         { flag: "answered_check", enabled: false, source: "default" },
       ]);
     });
