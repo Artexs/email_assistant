@@ -11,13 +11,13 @@ Part of [`../plan.md`](../plan.md). Review before the land (step 3 decides which
 export type SentFolderReader = Pick<MailProvider, "folderStatus" | "fetchAbove" | "fetchContent" | "searchSinceIn" | "fetchByUidsIn">;
 ```
 
-`fetchSince` in `mail/sync.ts` takes `Pick<MailProvider, "searchSinceIn" | "fetchByUidsIn">` (callers stay valid).
+`fetchSince` in `apps/server/src/modules/mail/sync.ts` takes `Pick<MailProvider, "searchSinceIn" | "fetchByUidsIn">` (callers stay valid).
 
-**Test** (`mail/sent-reader.test.ts`, a type test): one `// @ts-expect-error` line per write method on a `SentFolderReader` (`moveMessage`, `transferByAppend`, `deleteMessage`, `setFlags`, `appendMessage`, `ensureFolder`); one case passes `createFakeMailProvider()` as a reader. `bun run typecheck` passes.
+**Test** (`apps/server/src/modules/mail/sent-reader.test.ts`, a type test): one `// @ts-expect-error` line per write method on a `SentFolderReader` (`moveMessage`, `transferByAppend`, `deleteMessage`, `setFlags`, `appendMessage`, `ensureFolder`); one case passes `createFakeMailProvider()` as a reader. `bun run typecheck` passes.
 
 ## Step 2 — Pure rules
 
-**Files.** `mail/sent-rules.ts`, `mail/sent-rules.test.ts` (new).
+**Files.** `apps/server/src/modules/mail/sent-rules.ts`, `apps/server/src/modules/mail/sent-rules.test.ts` (new).
 
 **Interfaces.**
 
@@ -36,7 +36,7 @@ toNewSentEmail(meta, { mailboxId, path, uidValidity, now, textWindowMs, origin }
 firstPerDedupKey(rows): rows                            // the first row of each key, in order
 ```
 
-`toNewSentEmail` (D6): null when `internalDate < now − 30 d` (the bound is inclusive). It uses `normalizeMessageId`, `baseDedupKey`, `contentHash` and `threadKey` of `sync-rules.ts`, as the incoming row does. `sentAt` = the `Date` header when valid, else INTERNALDATE. `origin "system"` only for `system`; `actionId` kept for `system` and `draft`, null for null. `content` = `headers_only` for system rows and for mail older than `textWindowMs`, else `pending`.
+`toNewSentEmail` (D6): null when `internalDate < now − 30 d` (the bound is inclusive). It uses `normalizeMessageId`, `baseDedupKey`, `contentHash` and `threadKey` of `apps/server/src/modules/mail/sync-rules.ts`, as the incoming row does. `sentAt` = the `Date` header when valid, else INTERNALDATE. `origin "system"` only for `system`; `actionId` kept for `system` and `draft`, null for null. `content` = `headers_only` for system rows and for mail older than `textWindowMs`, else `pending`.
 
 **Test** (no DB; `NOW = 2026-11-20T10:00:00Z`; `meta()` = uid 1, size 100, internal date and date `NOW − 1 d`, `messageId "<s1@x.test>"`, from `me@x.test`, to `anna@x.test`):
 
@@ -52,7 +52,7 @@ firstPerDedupKey(rows): rows                            // the first row of each
 
 ## Step 3 — `sentOriginOf` in `actions`
 
-**Files.** `actions/repo/planned.ts` (next to `isOwnActionId`), exported by `actions/index.ts`; `actions-sent-origin.test.ts` (new).
+**Files.** `apps/server/src/modules/actions/repo/planned.ts` (next to `isOwnActionId`), exported by `apps/server/src/modules/actions/index.ts`; `apps/server/test/integration/actions-sent-origin.test.ts` (new).
 
 **Interface.**
 
@@ -62,7 +62,7 @@ sentOriginOf(db, ctx, mailboxId, actionId: string): Promise<"system" | "draft" |
 
 Rule (one query; any sender can write the header): not a uuid → null without a query. The action of this org and id, type `create_draft` or `send`, whose email is in `mailboxId` (the join of `isOwnActionId`); none → null. A `send` that went out (`status = 'applied'` or `send_started_at` set) → `system`. A `create_draft` with such a `send` (`depends_on_action_id` = the draft) → `system`. Else → `draft`.
 
-**Test** (`insertDraftAndSend` of `fixtures.ts`):
+**Test** (`insertDraftAndSend` of `apps/server/test/integration/fixtures.ts`):
 
 1. Draft with its send `applied` → `system`; the send id → `system`.
 2. Send `awaiting_approval` or `rejected` → `draft`.

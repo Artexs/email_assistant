@@ -51,7 +51,7 @@ Owner words, word for word:
 - **F5** `isFeatureOn` and `getOrganization` come from `tenancy` (now `tenancy/repo/`).
 - **F6** Layers: `mail`, `config` layer 2; `actions` 3; `channels` 4; `privacy` 5. `config` and `mail` get functions injected.
 - **F7** F106 tests fail for an unclassified table: `privacy-export-map`, `privacy-dsr-match` test 1, `account-data-delete` tests 1 and 9; `findMentions` throws without a `ROW_SHAPE`.
-- **F8** 14 notice kinds, last `host_blocked` (`20261114154826_mailbox_host_blocked.sql`); newest migration `20261114170001_sso.sql`.
+- **F8** 14 notice kinds, last `host_blocked` (`db/migrations/20261114154826_mailbox_host_blocked.sql`); newest migration `db/migrations/20261114170001_sso.sql`.
 - **F9** Log names: one flat list (F103 stage 01 not landed). `mail.sync` runs once at a time.
 
 ## Not verified
@@ -66,7 +66,7 @@ The ticket's Acceptance holds, shown by the tests of stages 04–12 and the chec
 
 - Read `ticket.md`, this file and your stage. A gap or a deviation is a question, not a choice.
 - Sent code takes a `SentFolderReader`. Sent mail never enters `emails`, triage, digest, moves or Undo.
-- Logs: event form, names from `platform/log-fields.ts`; never a subject, address, path, text or `error.message`.
+- Logs: event form, names from `apps/server/src/platform/log-fields.ts`; never a subject, address, path, text or `error.message`.
 - Repository functions take a `TenantContext`, filter by `org_id`, and get a two-org test.
 - Tests: `withRollback`; `NOW = 2026-11-20T10:00:00Z`; flags by `upsertOrgFeature` after `configureFeatures({ off: [] })`.
 - Migrations: up and down, then `bun run db:types`; never next to another migration in build.

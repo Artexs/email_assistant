@@ -8,7 +8,7 @@ After this stage each `mail.sync` run reads Sent for every mailbox with the flag
 
 **Goal.** Prove D3 on a real IMAP server.
 
-**Files.** `imap-sent-greenmail.test.ts` (new), in the form of `imap-sync-greenmail.test.ts` (random address, `withRollback`, connect through `connectMailbox`).
+**Files.** `apps/server/test/integration/imap-sent-greenmail.test.ts` (new), in the form of `apps/server/test/integration/imap-sync-greenmail.test.ts` (random address, `withRollback`, connect through `connectMailbox`).
 
 Setup: `folder_map.sent = "Sent"`; `appendRaw` two mails dated now − 1 h into `Sent`: raw1 with `inReplyTo` and no flags, raw2 with a text and `\Seen`; flag and switch on. Read `before` = `folderStatus("Sent")` and `fetchFlagsIn` of both UIDs; run `syncSentFolder` with `sentOriginOf: async () => null`; read `after`.
 
@@ -23,9 +23,9 @@ If case 2 fails, stop and report (N1); do not change the test.
 
 ## Step 2 — The job calls the pass
 
-**Files.** `mail/jobs.ts`, `main.ts`, `mail-jobs.test.ts`.
+**Files.** `apps/server/src/modules/mail/jobs.ts`, `apps/server/src/main.ts`, `apps/server/test/integration/mail-jobs.test.ts`.
 
-**Interfaces.** `MailSyncJobDeps` gains `sentOriginOf: SentSyncDeps["sentOriginOf"]`; `main.ts` wires it next to `isOwnActionId` from `actions`; every other creator of the job deps passes it too.
+**Interfaces.** `MailSyncJobDeps` gains `sentOriginOf: SentSyncDeps["sentOriginOf"]`; `apps/server/src/main.ts` wires it next to `isOwnActionId` from `actions`; every other creator of the job deps passes it too.
 
 `syncOne` calls a private `runSentPass(deps, ctx, mailboxId, provider)` after `markSynced`, before `provider.close()` (order to the flag refresh block is free). `runSentPass`:
 - calls `syncSentFolder` with the job's provider (as a `SentFolderReader`);

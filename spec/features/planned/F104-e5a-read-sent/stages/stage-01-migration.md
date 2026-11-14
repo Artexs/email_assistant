@@ -23,16 +23,16 @@ After this stage both tables exist with RLS and the tombstone trigger, and the F
 - `mailbox_id` PK; `org_id`; the same FK. `enabled boolean NOT NULL DEFAULT false`, `enabled_at`, `path` (1–200), `uidvalidity`, `last_uid bigint`, `first_pass_at`, `last_pass_at`, `last_error_code` CHECK in (`no_folder`, `folder_missing`, `failed`); `created_at`, `updated_at`; index `(org_id)`.
 - Checks: `enabled = (enabled_at IS NOT NULL)`; `(uidvalidity IS NULL) = (last_uid IS NULL)`; `mailbox_sent_sync_off_check`: off → `path`, cursor, `first_pass_at`, `last_pass_at`, `last_error_code` null.
 
-Both: RLS and the `tenant_rows` policy as the `emails` block of `20261114100002_rls_tenant_policies.sql`; no `GRANT`. `sent_emails` gets trigger `emails_skip_tombstoned` (`BEFORE INSERT`, the F106 function of the same name; test 9 of `account-data-delete.test.ts` looks for that name). Down: trigger, policies, tables.
+Both: RLS and the `tenant_rows` policy as the `emails` block of `db/migrations/20261114100002_rls_tenant_policies.sql`; no `GRANT`. `sent_emails` gets trigger `emails_skip_tombstoned` (`BEFORE INSERT`, the F106 function of the same name; test 9 of `apps/server/test/integration/account-data-delete.test.ts` looks for that name). Down: trigger, policies, tables.
 
 **Check.** `bun run db:migrate && bun run db:rollback && bun run db:migrate && bun run db:types`.
 
 ## Step 2 — Schema tests and fixtures
 
-- `fillMailbox` (`mailbox-rows.ts`) inserts one sent row and one enabled state row; `countMailboxRows` gains both keys.
-- `TENANT_TABLES` (`rls-policy.test.ts`) and `DELETE_SEEDS` (`account-data-delete.test.ts`, seeded by `fillMailbox`) gain both tables.
+- `fillMailbox` (`apps/server/test/integration/mailbox-rows.ts`) inserts one sent row and one enabled state row; `countMailboxRows` gains both keys.
+- `TENANT_TABLES` (`apps/server/test/integration/rls-policy.test.ts`) and `DELETE_SEEDS` (`apps/server/test/integration/account-data-delete.test.ts`, seeded by `fillMailbox`) gain both tables.
 
-**Test** (`mail-schema.test.ts`; minimal row: `dedup_key "mid:<a@x.test>:h1"`, `path "Sent"`, `uidvalidity 7`, `uid 1`, `thread_key "<a@x.test>"`, `origin "user"`, `content "pending"`):
+**Test** (`apps/server/test/integration/mail-schema.test.ts`; minimal row: `dedup_key "mid:<a@x.test>:h1"`, `path "Sent"`, `uidvalidity 7`, `uid 1`, `thread_key "<a@x.test>"`, `origin "user"`, `content "pending"`):
 
 1. The minimal row inserts; arrays default to `{}`.
 2. Org A's mailbox with org B's `org_id` → `23503`.
@@ -47,9 +47,9 @@ Both: RLS and the `tenant_rows` policy as the `emails` block of `20261114100002_
 
 ## Step 3 — Account-data registries (D18)
 
-- `privacy/export-map.ts`: both tables, every column, by `org_id`.
-- `privacy/address-map.ts` `sent_emails`: `to_addresses`, `cc_addresses` → `recipients`; `from_address` → `equal`; `subject`, `body_text` → `text`. `NOT_PERSONAL`: `dedup_key`, `message_id`, `parent_message_id`, `references_ids`, `thread_key` (Message-IDs), `path` (folder name), `origin`, `content`, `auto_submitted`, `precedence` (codes), `list_id` (list name). `NO_PERSONAL_TABLES`: `mailbox_sent_sync` (path, cursor, codes).
-- `privacy/dsr-match.ts` `ROW_SHAPE`: `sent_emails` rows belong to no incoming mail, so their mentions are always scrubbed; let the shape type say "no mail column".
+- `apps/server/src/modules/privacy/export-map.ts`: both tables, every column, by `org_id`.
+- `apps/server/src/modules/privacy/address-map.ts` `sent_emails`: `to_addresses`, `cc_addresses` → `recipients`; `from_address` → `equal`; `subject`, `body_text` → `text`. `NOT_PERSONAL`: `dedup_key`, `message_id`, `parent_message_id`, `references_ids`, `thread_key` (Message-IDs), `path` (folder name), `origin`, `content`, `auto_submitted`, `precedence` (codes), `list_id` (list name). `NO_PERSONAL_TABLES`: `mailbox_sent_sync` (path, cursor, codes).
+- `apps/server/src/modules/privacy/dsr-match.ts` `ROW_SHAPE`: `sent_emails` rows belong to no incoming mail, so their mentions are always scrubbed; let the shape type say "no mail column".
 
 **Test.**
 

@@ -8,7 +8,7 @@ After this stage `org:dsr --find` counts the person's sent mails, and `org:dsr -
 
 ## Step 1 — Find and erase [risky]
 
-**Files.** `privacy/dsr-match.ts`, `privacy/erase.ts`, `privacy/dsr.ts`, `scripts/org-dsr.ts`; tests in `privacy-dsr-find.test.ts`, `privacy-dsr-erase.test.ts` and a new `privacy-dsr-sent.test.ts`.
+**Files.** `apps/server/src/modules/privacy/dsr-match.ts`, `apps/server/src/modules/privacy/erase.ts`, `apps/server/src/modules/privacy/dsr.ts`, `apps/server/src/scripts/org-dsr.ts`; tests in `apps/server/test/integration/privacy-dsr-find.test.ts`, `apps/server/test/integration/privacy-dsr-erase.test.ts` and a new `apps/server/test/integration/privacy-dsr-sent.test.ts`.
 
 **Interfaces.**
 - `DsrMatch.sentMails: { id: string; dedupKey: string }[]`: sent rows of the org where the person is in `to_addresses` or `cc_addresses` (or is `from_address`), and every other address of `from_address`, `to_addresses`, `cc_addresses` is an own mailbox address (the own list of `findMails`). Mentions never list a sent mail that goes.
@@ -40,7 +40,7 @@ After this stage `org:dsr --find` counts the person's sent mails, and `org:dsr -
 - `docs/capabilities/sent-mail.md`: a rule for data requests; refresh "Checked against".
 - `docs/architecture.md` §7 Delete or DSR lines: sent mail joins the data requests.
 
-**Test.** `capability-map.test.ts` passes.
+**Test.** `apps/server/src/capability-map.test.ts` passes.
 
 ## Done when
 

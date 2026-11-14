@@ -1,10 +1,10 @@
 # F104 stage 04 — Header pass
 
-Part of [`../plan.md`](../plan.md). **[risky]**: sync, dedup, a cursor, a read-only guarantee (review before the land). Needs stage 03. Read D3–D6, D8 and the `syncFolder` pattern of `mail/sync.ts`.
+Part of [`../plan.md`](../plan.md). **[risky]**: sync, dedup, a cursor, a read-only guarantee (review before the land). Needs stage 03. Read D3–D6, D8 and the `syncFolder` pattern of `apps/server/src/modules/mail/sync.ts`.
 
 ## Step 1 — `syncSentHeaders` [risky]
 
-**Files.** `mail/sent-sync.ts`, `mail-sent-sync.test.ts` (new).
+**Files.** `apps/server/src/modules/mail/sent-sync.ts`, `apps/server/test/integration/mail-sent-sync.test.ts` (new).
 
 **Interfaces.**
 
@@ -64,4 +64,4 @@ No log lines here. No path, subject or address in an error text.
 
 ## Done when
 
-Cases 1–17 pass; `sent-sync.ts` uses no `MailProvider`; the Proof passes (`/tmp/f104-s04`).
+Cases 1–17 pass; `apps/server/src/modules/mail/sent-sync.ts` uses no `MailProvider`; the Proof passes (`/tmp/f104-s04`).

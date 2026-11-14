@@ -4,7 +4,7 @@ Part of [`../plan.md`](../plan.md). Needs stage 01 on `master`. Read D2, D4–D7
 
 ## Step 1 — State functions
 
-**Files.** `mail/repo/sent-state.ts`; test `mail-sent-repo.test.ts` (new).
+**Files.** `apps/server/src/modules/mail/repo/sent-state.ts`; test `apps/server/test/integration/mail-sent-repo.test.ts` (new).
 
 **Interfaces** (names later stages use):
 
@@ -38,7 +38,7 @@ Rules: `enabled_at` = `at` (or now) when on, else null. The last three change on
 
 ## Step 2 — Row functions
 
-**Files.** `mail/repo/sent-emails.ts`; the same test file.
+**Files.** `apps/server/src/modules/mail/repo/sent-emails.ts`; the same test file.
 
 **Interfaces.**
 

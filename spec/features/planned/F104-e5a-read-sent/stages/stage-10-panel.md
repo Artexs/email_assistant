@@ -1,10 +1,10 @@
 # F104 stage 10 — Panel: card and connect line
 
-Part of [`../plan.md`](../plan.md). Needs stage 09. Read D13, D17, and `components/settings/SyncFoldersCard.tsx` (the card model) and `components/mailboxes/ConnectDialog.tsx`.
+Part of [`../plan.md`](../plan.md). Needs stage 09. Read D13, D17, and `apps/web/src/components/settings/SyncFoldersCard.tsx` (the card model) and `apps/web/src/components/mailboxes/ConnectDialog.tsx`.
 
 ## Step 1 — Status helper and texts
 
-**Files.** `apps/web/src/lib/sent-text.ts`, `sent-text.test.ts` (new); `apps/web/src/i18n/en.ts`, `pl.ts`.
+**Files.** `apps/web/src/lib/sent-text.ts`, `apps/server/test/integration/sent-text.test.ts` (new); `apps/web/src/i18n/en.ts`, `apps/web/src/i18n/pl.ts`.
 
 **Interface.**
 
@@ -13,7 +13,7 @@ Part of [`../plan.md`](../plan.md). Needs stage 09. Read D13, D17, and `componen
 sentStatusLine(view: SentSyncView): { key: TextKey; vars?: Record<string, string> } | null
 ```
 
-Rules for `enabled` true, first match wins: `flagOn` false → `sent_paused`; no folder or `no_folder` → `sent_no_folder`; `folder_missing` → `sent_folder_missing`; `failed` → `sent_failed`; no first pass → `sent_first_pass`; no `lastSentAt` or `storedCount 0` → `sent_none`; else `sent_last` with `vars.at = lastSentAt`. The card renders `sent_last` with `formatClock` in the org time zone, as `MailboxCard.tsx` renders `mb_last_sync`.
+Rules for `enabled` true, first match wins: `flagOn` false → `sent_paused`; no folder or `no_folder` → `sent_no_folder`; `folder_missing` → `sent_folder_missing`; `failed` → `sent_failed`; no first pass → `sent_first_pass`; no `lastSentAt` or `storedCount 0` → `sent_none`; else `sent_last` with `vars.at = lastSentAt`. The card renders `sent_last` with `formatClock` in the org time zone, as `apps/web/src/components/mailboxes/MailboxCard.tsx` renders `mb_last_sync`.
 
 Texts (both files; Polish per D17):
 
@@ -42,9 +42,9 @@ Texts (both files; Polish per D17):
 
 ## Step 2 — Card and connect line
 
-- `components/settings/SentMailCard.tsx` (new), props as `SyncFoldersCard` plus `timeZone`: `data-card="sent"`, title, one `Switch` (label `sent_switch`; disabled for a member, while pending, and when paused and off) that calls `patchSettings(id, "/sent-sync", { enabled })`, then a toast key; under it `sent_line`, the folder path, the status line (muted), `sent_off_note` (muted). Errors as the folder card; a 404 calls `onMissing`. Only existing `ui/` components.
-- `islands/SettingsPage.tsx`: the card after `SyncFoldersCard` when `sentSync !== null`.
-- `ConnectDialog.tsx`: a prop `sentSyncLine`; true → one muted `sent_line` paragraph above the footer. `MailboxesPage.tsx` passes `me.features.includes("sent_sync")`.
+- `apps/web/src/components/settings/SentMailCard.tsx` (new), props as `SyncFoldersCard` plus `timeZone`: `data-card="sent"`, title, one `Switch` (label `sent_switch`; disabled for a member, while pending, and when paused and off) that calls `patchSettings(id, "/sent-sync", { enabled })`, then a toast key; under it `sent_line`, the folder path, the status line (muted), `sent_off_note` (muted). Errors as the folder card; a 404 calls `onMissing`. Only existing `ui/` components.
+- `apps/web/src/islands/SettingsPage.tsx`: the card after `SyncFoldersCard` when `sentSync !== null`.
+- `apps/web/src/components/mailboxes/ConnectDialog.tsx`: a prop `sentSyncLine`; true → one muted `sent_line` paragraph above the footer. `apps/web/src/islands/MailboxesPage.tsx` passes `me.features.includes("sent_sync")`.
 
 **Check.** `bun run lint && bun run typecheck`; the card has no literal text.
 

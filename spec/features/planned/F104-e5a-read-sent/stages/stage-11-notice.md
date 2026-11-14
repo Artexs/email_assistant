@@ -6,7 +6,7 @@ After this stage an owner gets one Telegram notice when a mailbox with the switc
 
 ## Step 1 — Core: kind, view, texts, renderer
 
-**Files.** `packages/core/src/notices/kinds.ts`, `views.ts`, `renderers.ts`, `packages/core/src/texts/notices.ts`, `packages/core/src/digest/notices.ts`, and their tests.
+**Files.** `packages/core/src/notices/kinds.ts`, `packages/core/src/notices/views.ts`, `packages/core/src/notices/renderers.ts`, `packages/core/src/texts/notices.ts`, `packages/core/src/digest/notices.ts`, and their tests.
 
 **Interfaces.**
 
@@ -36,15 +36,15 @@ renderSentMissingNotice({ address, since, now, timeZone }, texts): OutMessage //
 
 **Files.** `db/migrations/<timestamp>_outbox_sent_missing.sql`, later than every file at your base.
 
-Read the newest migration that sets `outbox_kind_check` at your base (`20261114154826_mailbox_host_blocked.sql` at the plan base). Up: the CHECK with every kind of that list plus `'sent_missing'` last; `outbox_sent_missing_mailbox_check`: `kind <> 'sent_missing' OR mailbox_id IS NOT NULL`. Down: delete `sent_missing` rows, drop the new check, restore the list.
+Read the newest migration that sets `outbox_kind_check` at your base (`db/migrations/20261114154826_mailbox_host_blocked.sql` at the plan base). Up: the CHECK with every kind of that list plus `'sent_missing'` last; `outbox_sent_missing_mailbox_check`: `kind <> 'sent_missing' OR mailbox_id IS NOT NULL`. Down: delete `sent_missing` rows, drop the new check, restore the list.
 
-**Test.** `telegram-schema.test.ts` compares the CHECK with `noticeKinds`; one new case: `sent_missing` without `mailbox_id` → `23514`.
+**Test.** `apps/server/test/integration/telegram-schema.test.ts` compares the CHECK with `noticeKinds`; one new case: `sent_missing` without `mailbox_id` → `23514`.
 
 **Check.** `bun run db:migrate && bun run db:rollback && bun run db:migrate`.
 
 ## Step 3 — Detector
 
-**Files.** `channels/notices/sent-missing.ts` (new); `channels/notices/index.ts` (`detectors`, after the host-blocked one); `channels/repo.ts` (the kind union of `cancelPendingOutbox`); `channels-notices.test.ts`.
+**Files.** `apps/server/src/modules/channels/notices/sent-missing.ts` (new); `apps/server/src/modules/channels/notices/index.ts` (`detectors`, after the host-blocked one); `apps/server/src/modules/channels/repo.ts` (the kind union of `cancelPendingOutbox`); `apps/server/test/integration/channels-notices.test.ts`.
 
 **Interface.** `export const SENT_MISSING_AFTER_MS = 7 * 24 * 3_600_000;` and `sentMissingDetector: Detector` (name and kind `sent_missing`).
 

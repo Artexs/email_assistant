@@ -6,7 +6,7 @@ After this stage `syncSentFolder` runs the header pass, then fetches the text of
 
 ## Step 1 — `fetchSentTexts` and `syncSentFolder`
 
-**Files.** `mail/sent-texts.ts` (new), `mail/sent-sync.ts`, `mail/index.ts`, `mail-sent-texts.test.ts` (new).
+**Files.** `apps/server/src/modules/mail/sent-texts.ts` (new), `apps/server/src/modules/mail/sent-sync.ts`, `apps/server/src/modules/mail/index.ts`, `apps/server/test/integration/mail-sent-texts.test.ts` (new).
 
 **Interfaces.**
 
@@ -36,7 +36,7 @@ syncSentFolder(deps: SentSyncDeps, ctx, mailboxId): Promise<SentPassResult>
 **Test** (the setup of stage 04's file):
 
 1. Initial over A (`NOW − 1 d`, text "Offer by Friday", `Auto-Submitted: no`), B (`− 20 d`), D (system send, `− 2 d`) → `texts.stored 1`; A `stored` with the text and `auto_submitted "no"`; B and D `headers_only`, no text.
-2. `List-Id: <team.x.test>`, `Precedence: bulk` → `list_id "<team.x.test>"`, `precedence "bulk"` (the capture rules of `mail/imap/capture.ts`).
+2. `List-Id: <team.x.test>`, `Precedence: bulk` → `list_id "<team.x.test>"`, `precedence "bulk"` (the capture rules of `apps/server/src/modules/mail/imap/capture.ts`).
 3. A fake with `bodyLimitBytes: 1000` and a mail of `size 5000` → `stored`, text null, markers set.
 4. 3 pending and `limit 2` → the 2 oldest stored; the next call stores the third.
 5. A pending row whose mail the fake removed → `gone`.
@@ -48,7 +48,7 @@ syncSentFolder(deps: SentSyncDeps, ctx, mailboxId): Promise<SentPassResult>
 11. Path change with pending rows A1, A2 of `"Sent"`; `"Wysłane"` holds two mails with the same UIDs → only the `Wysłane` texts are stored; A1, A2 stay `pending` without text, and turn `headers_only` after their window.
 12. Retention 3 d: a pending row at `NOW − 5 d` → `expired 1`, no `fetchContent` for it.
 
-**Check.** `bun test` on `mail-sent-texts.test.ts` and `mail-sent-sync.test.ts`.
+**Check.** `bun test` on `apps/server/test/integration/mail-sent-texts.test.ts` and `apps/server/test/integration/mail-sent-sync.test.ts`.
 
 **Out of scope.** The job and logs (06); retention (07).
 

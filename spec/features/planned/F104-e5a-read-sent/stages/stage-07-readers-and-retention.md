@@ -6,7 +6,7 @@ After this stage other code can ask "did the user answer this mail, and when", t
 
 ## Step 1 — Readers
 
-**Files.** `mail/repo/sent-readers.ts` (new), exported by `mail`; `mail-sent-readers.test.ts` (new).
+**Files.** `apps/server/src/modules/mail/repo/sent-readers.ts` (new), exported by `mail`; `apps/server/test/integration/mail-sent-readers.test.ts` (new).
 
 **Interfaces** (later stages and tickets use them):
 
@@ -37,7 +37,7 @@ Rules:
 
 ## Step 2 — Retention
 
-**Files.** `mail/repo/retention.ts`, `apps/server/src/retention.ts`, `retention-clear.test.ts`, `retention-job.test.ts`.
+**Files.** `apps/server/src/modules/mail/repo/retention.ts`, `apps/server/src/retention.ts`, `apps/server/test/integration/retention-clear.test.ts`, `apps/server/test/integration/retention-job.test.ts`.
 
 **Interfaces.**
 
@@ -54,7 +54,7 @@ Both batch by id with `FOR UPDATE SKIP LOCKED`, as `clearMailBodies`. `clearSent
 2. Headers before `NOW − 90 d`: a row at `− 91 d` loses subject, from, to, cc, references, keeps parent, thread, Message-ID; `− 89 d` unchanged; a repeat → 0.
 3. `batch: 1` with 3 old rows → 3.
 4. Org B's run never touches org A.
-5. `retention-job.test.ts`: the expected count objects gain both keys; one filled case gives 1 and 1.
+5. `apps/server/test/integration/retention-job.test.ts`: the expected count objects gain both keys; one filled case gives 1 and 1.
 6. `listUserAnswers` still answers after `clearSentHeaders`.
 
 ## Step 3 — Docs
@@ -63,7 +63,7 @@ Both batch by id with `FOR UPDATE SKIP LOCKED`, as `clearMailBodies`. `clearSent
 - `docs/capabilities/retention.md`: rows for both clear functions, counted from `internal_date`.
 - `docs/capabilities/sent-mail.md`: rules for the readers and retention; entry points.
 
-**Test.** `capability-map.test.ts` passes.
+**Test.** `apps/server/src/capability-map.test.ts` passes.
 
 ## Done when
 

@@ -6,7 +6,7 @@ After this stage one service function changes "Track my sent mail" (on starts a 
 
 ## Step 1 — `setSentSync`
 
-**Files.** `mail/sent-switch.ts` (new), exported by `mail`; `audit/repo.ts`; `mail-sent-switch.test.ts` (new).
+**Files.** `apps/server/src/modules/mail/sent-switch.ts` (new), exported by `mail`; `apps/server/src/modules/audit/repo.ts`; `apps/server/test/integration/mail-sent-switch.test.ts` (new).
 
 **Interfaces.**
 
@@ -43,11 +43,11 @@ The event is not added to the security log registry (`packages/core/src/security
 
 ## Step 2 — Connect sets the switch
 
-**Files.** `mail/connect.ts`, `scripts/mailbox-connect.ts`, `mail-connect.test.ts`.
+**Files.** `apps/server/src/modules/mail/connect.ts`, `apps/server/src/scripts/mailbox-connect.ts`, `apps/server/test/integration/mail-connect.test.ts`.
 
 **Interfaces.**
 - `connectMailbox` reads `isFeatureOn(…, "sent_sync")` before its transaction and inserts the state row in it with that value. The `mailbox.connected` audit data gains `sent_sync: <boolean>`. The return value gains `sentSync: boolean`.
-- `mailbox-connect.ts`: when `sentSync`, one more line after `connected mailbox <id>`: `sent mail: tracked, read only`. Stage 09 adds the off command to it.
+- `apps/server/src/scripts/mailbox-connect.ts`: when `sentSync`, one more line after `connected mailbox <id>`: `sent mail: tracked, read only`. Stage 09 adds the off command to it.
 
 **Test.**
 
@@ -63,7 +63,7 @@ Existing connect cases pass (update an expected audit `data` object).
 - `docs/capabilities/sync.md` rule 1: the connect transaction also inserts the Sent switch row.
 - `docs/architecture.md` §5 `audit_log` row: the new event.
 
-**Test.** `capability-map.test.ts` passes.
+**Test.** `apps/server/src/capability-map.test.ts` passes.
 
 ## Done when
 
