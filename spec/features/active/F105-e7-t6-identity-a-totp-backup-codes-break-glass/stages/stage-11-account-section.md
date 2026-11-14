@@ -29,9 +29,9 @@ One step (one component and its wiring). About 300 changed lines.
     | --- | --- | --- |
     | `tf_title` | Two-factor sign-in | Logowanie dwuetapowe |
     | `tf_off_text` | Off. Turn it on to ask for a code from an authenticator app at each sign-in. | Wyłączone. Włącz je, aby przy każdym logowaniu podawać kod z aplikacji uwierzytelniającej. |
-    | `tf_on_text` | On. Each sign-in asks for a code from your authenticator app. | Włączone. Każde logowanie prosi o kod z aplikacji uwierzytelniającej. |
-    | `tf_required_operator` | Your role needs two-factor sign-in: the operator console opens only with it. | Twoja rola wymaga logowania dwuetapowego: konsola operatora otwiera się tylko z nim. |
-    | `tf_required_break_glass` | You are the break-glass owner of your organization: two-factor sign-in must stay on. | Jesteś właścicielem awaryjnym organizacji: logowanie dwuetapowe musi zostać włączone. |
+    | `tf_on_text` | On. Each sign-in asks for a code from your authenticator app. | Włączone. Przy każdym logowaniu podajesz kod z aplikacji uwierzytelniającej. |
+    | `tf_required_operator` | Your role needs two-factor sign-in: the operator console opens only with it. | Twoja rola wymaga logowania dwuetapowego: bez niego konsola operatora się nie otworzy. |
+    | `tf_required_break_glass` | You are the break-glass owner of your organization: two-factor sign-in must stay on. | Jesteś właścicielem awaryjnym organizacji: logowanie dwuetapowe musi pozostać włączone. |
     | `tf_break_glass_note` | You are the break-glass owner, so you cannot turn it off. | Jesteś właścicielem awaryjnym, więc nie możesz go wyłączyć. |
     | `tf_turn_on` | Turn on | Włącz |
     | `tf_turn_off` | Turn off | Wyłącz |
@@ -43,14 +43,14 @@ One step (one component and its wiring). About 300 changed lines.
     | `tf_password_help_codes` | Type your password. The old backup codes stop working. | Wpisz hasło. Stare kody zapasowe przestaną działać. |
     | `tf_password_help_disable` | Type your password. Sign-in then asks only for the password. | Wpisz hasło. Logowanie będzie wtedy wymagać tylko hasła. |
     | `tf_scan_title` | Connect your authenticator app | Połącz aplikację uwierzytelniającą |
-    | `tf_scan_step_app` | Open an authenticator app on your phone, for example Google Authenticator, Microsoft Authenticator or Aegis, and scan this code. | Otwórz aplikację uwierzytelniającą w telefonie, na przykład Google Authenticator, Microsoft Authenticator lub Aegis, i zeskanuj ten kod. |
+    | `tf_scan_step_app` | Open an authenticator app on your phone, for example Google Authenticator, Microsoft Authenticator or Aegis, and scan this code. | Otwórz aplikację uwierzytelniającą w telefonie, na przykład Google Authenticator, Microsoft Authenticator lub Aegis, i zeskanuj ten kod QR. |
     | `tf_scan_key` | Or type this key in the app: | Albo wpisz w aplikacji ten klucz: |
     | `tf_open_app` | Open in the authenticator app on this device | Otwórz w aplikacji uwierzytelniającej na tym urządzeniu |
     | `tf_scan_step_code` | Then type the 6-digit code that the app shows. | Potem wpisz 6-cyfrowy kod, który pokazuje aplikacja. |
     | `tf_on_toast` | Two-factor sign-in is on. | Logowanie dwuetapowe jest włączone. |
     | `tf_off_toast` | Two-factor sign-in is off. | Logowanie dwuetapowe jest wyłączone. |
     | `tf_codes_title` | Your backup codes | Twoje kody zapasowe |
-    | `tf_codes_help` | Each code works once, when you do not have your phone. Keep them in a safe place, for example a password manager. You see them only now. | Każdy kod działa raz, gdy nie masz telefonu. Przechowuj je w bezpiecznym miejscu, na przykład w menedżerze haseł. Widzisz je tylko teraz. |
+    | `tf_codes_help` | Each code works once, when you do not have your phone. Keep them in a safe place, for example a password manager. You see them only now. | Każdy kod działa tylko raz i przydaje się, gdy nie masz przy sobie telefonu. Przechowuj je w bezpiecznym miejscu, na przykład w menedżerze haseł. Widzisz je tylko teraz. |
     | `tf_copy` | Copy | Kopiuj |
     | `tf_copied` | Codes copied. | Kody skopiowane. |
     | `tf_copy_failed` | The codes could not be copied. Write them down. | Nie udało się skopiować kodów. Zapisz je. |

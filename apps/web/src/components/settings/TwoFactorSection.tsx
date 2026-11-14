@@ -1,5 +1,5 @@
 import { FEW_BACKUP_CODES, twoFactorStatusSchema, type TwoFactorStatus } from "@ea/core/web";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { t, type TextKey } from "../../i18n";
@@ -7,6 +7,7 @@ import { api } from "../../lib/api";
 import { authClient } from "../../lib/auth-client";
 import { singleFlight } from "../../lib/single-flight";
 import { groupSecret, totpSecretOf } from "../../lib/totp-setup";
+import { withoutCodesAfter, type FlowEvent } from "../../lib/two-factor-flow";
 import { accountTwoFactorError, cleanTotpCode, type AccountTwoFactorError } from "../../lib/two-factor-errors";
 import { useResource } from "../../lib/use-resource";
 import { Alert } from "../ui/alert";
@@ -45,12 +46,26 @@ export function TwoFactorSection() {
   const [error, setError] = useState<TextKey | null>(null);
   const [withoutCodes, setWithoutCodes] = useState(false);
   const [pending, setPending] = useState(false);
+  const passwordInput = useRef<HTMLInputElement>(null);
+  const codeInput = useRef<HTMLInputElement>(null);
+  const codesHeading = useRef<HTMLHeadingElement>(null);
+
+  // Move focus to the first control of the view that opens.
+  useEffect(() => {
+    if (view === "password") passwordInput.current?.focus();
+    else if (view === "scan") codeInput.current?.focus();
+    else if (view === "codes") codesHeading.current?.focus();
+  }, [view]);
 
   useEffect(() => {
     if (new URLSearchParams(location.search).get("two_factor") === "required") {
       document.getElementById("two-factor")?.scrollIntoView();
     }
   }, []);
+
+  function flow(event: FlowEvent) {
+    setWithoutCodes((current) => withoutCodesAfter(current, event));
+  }
 
   function show(failure: AccountTwoFactorError) {
     if (failure.field === null) setError(failure.key);
@@ -84,7 +99,7 @@ export function TwoFactorSection() {
     try {
       const fresh = await api("/api/me/two-factor", twoFactorStatusSchema);
       status.mutate(fresh);
-      setWithoutCodes(fresh.enabled);
+      flow({ type: "verify_failed_status", enabled: fresh.enabled });
     } catch {
       status.reload();
     }
@@ -112,7 +127,7 @@ export function TwoFactorSection() {
           const failure = accountTwoFactorError(authError);
           if (failure !== null) return show(failure);
           if (data === null || data === undefined) return setError("error_generic");
-          setWithoutCodes(false);
+          flow({ type: "codes_made" });
           setCodes(data.backupCodes);
           setView("codes");
         } else {
@@ -120,6 +135,7 @@ export function TwoFactorSection() {
           const failure = accountTwoFactorError(authError);
           if (failure !== null) return show(failure);
           toast.success(t("tf_off_toast"));
+          flow({ type: "turned_off" });
           toStatus();
           status.reload();
         }
@@ -145,6 +161,7 @@ export function TwoFactorSection() {
         const failure = accountTwoFactorError(authError);
         if (failure !== null) return show(failure);
         toast.success(t("tf_on_toast"));
+        flow({ type: "verified" });
         setCodes(setup.codes);
         setSetup(null);
         setCode("");
@@ -181,7 +198,6 @@ export function TwoFactorSection() {
           {data.requiredBy.map((reason) => (
             <Alert key={reason}>{t(reason === "operator" ? "tf_required_operator" : "tf_required_break_glass")}</Alert>
           ))}
-          {withoutCodes ? <Alert variant="destructive">{t("tf_on_without_codes")}</Alert> : null}
           <div>
             <Button type="button" onClick={() => start("enable")}>
               {t("tf_turn_on")}
@@ -243,6 +259,7 @@ export function TwoFactorSection() {
           <div className="flex flex-col gap-2">
             <Label htmlFor="tf-password">{t("password_label")}</Label>
             <Input
+              ref={passwordInput}
               id="tf-password"
               name="current-password"
               type="password"
@@ -289,6 +306,7 @@ export function TwoFactorSection() {
           <div className="flex flex-col gap-2">
             <Label htmlFor="tf-setup-code">{t("tf_code_label")}</Label>
             <Input
+              ref={codeInput}
               id="tf-setup-code"
               name="one-time-code"
               inputMode="numeric"
@@ -321,7 +339,9 @@ export function TwoFactorSection() {
       ) : null}
       {view === "codes" && codes !== null ? (
         <div className="flex flex-col gap-3">
-          <h4 className="text-sm font-medium">{t("tf_codes_title")}</h4>
+          <h4 ref={codesHeading} tabIndex={-1} className="text-sm font-medium outline-none">
+            {t("tf_codes_title")}
+          </h4>
           <p className="text-muted-foreground text-sm">{t("tf_codes_help")}</p>
           <ul data-backup-codes className="grid grid-cols-2 gap-1 font-mono text-sm">
             {codes.map((backupCode) => (

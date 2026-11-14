@@ -70,7 +70,7 @@ export const pl: Record<TextKey, string> = {
   tf_title: "Logowanie dwuetapowe",
   tf_off_text: "Wyłączone. Włącz je, aby przy każdym logowaniu podawać kod z aplikacji uwierzytelniającej.",
   tf_on_text: "Włączone. Przy każdym logowaniu podajesz kod z aplikacji uwierzytelniającej.",
-  tf_required_operator: "Twoja rola wymaga logowania dwuetapowego: konsola operatora działa tylko z nim.",
+  tf_required_operator: "Twoja rola wymaga logowania dwuetapowego: bez niego konsola operatora się nie otworzy.",
   tf_required_break_glass: "Jesteś właścicielem awaryjnym organizacji: logowanie dwuetapowe musi pozostać włączone.",
   tf_break_glass_note: "Jesteś właścicielem awaryjnym, więc nie możesz go wyłączyć.",
   tf_turn_on: "Włącz",
@@ -92,7 +92,7 @@ export const pl: Record<TextKey, string> = {
   tf_off_toast: "Logowanie dwuetapowe jest wyłączone.",
   tf_codes_title: "Twoje kody zapasowe",
   tf_codes_help:
-    "Każdy kod działa tylko raz i służy na wypadek, gdy nie masz telefonu. Przechowuj je w bezpiecznym miejscu, na przykład w menedżerze haseł. Widzisz je tylko teraz.",
+    "Każdy kod działa tylko raz i przydaje się, gdy nie masz przy sobie telefonu. Przechowuj je w bezpiecznym miejscu, na przykład w menedżerze haseł. Widzisz je tylko teraz.",
   tf_copy: "Kopiuj",
   tf_copied: "Kody skopiowane.",
   tf_copy_failed: "Nie udało się skopiować kodów. Zapisz je.",
