@@ -16,11 +16,11 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F119-e7-t7-identity-b-oidc` (🟠 ACTIVE): E7-T7 Identity B (OIDC)
 - `F106-e7-t3-account-data-delete-export-dsr` (🟠 ACTIVE): E7-T3 Account data (delete, export, DSR)
 - `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (🟠 ACTIVE): E7-T6 Identity A (TOTP, backup codes, break-glass)
 - `F101-panel-to-astro-7` (🟠 ACTIVE): Panel to Astro 7
 - `F097-e2a-offline-lab` (🟠 ACTIVE): Every category has a measured precision and recall on a frozen synthetic corpus, and real labels start
-- `F095-e1-close-the-mvp` (🟠 ACTIVE): E1 Close the MVP (capability map, docs boundary, NEXT sweep of the old planned tickets)
 - `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟠 ACTIVE): The server image, CI and local checks run one current Bun (1.4.x)
 - `F071-limen-transition` (🟠 ACTIVE): Move the agent workflow to Limen
 - `F064-sync-return-to-other-folder` (🟠 ACTIVE): Sync: see a user move into a synced folder below that folder's cursor
@@ -93,8 +93,8 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F099-e7-t2-platform-controls-send-limits-feature-flags-operator-console-security-log` (🟢 PROVEN): E7-T2 Platform controls (send limits, feature flags, operator console, security log); landed 2026-11-14
 - `F098-e7-t1-polish-ui-i18n-frame-first` (🟢 PROVEN): E7-T1 Polish UI (i18n frame first); landed 2026-11-14
 - `F096-e8-lr-log-rotation` (🟢 PROVEN): E8-LR Log rotation; landed 2026-11-14
+- `F095-e1-close-the-mvp` (🟢 PROVEN): E1 Close the MVP (capability map, docs boundary, NEXT sweep of the old planned tickets); landed 2026-11-14
 - `F092-rls-safety-net` (🟢 PROVEN): Row-level security is a safety net under the tenant filter for every table with `org_id`; landed 2026-11-14
 - `F091-repo-split` (🟢 PROVEN): The big repositories are split by aggregate and action handling is table-driven with a completeness test; landed 2026-11-14
 - `F088-notices-as-facts` (🟢 PROVEN): Notices are stored as facts and rendered per channel, detail and locale by a renderer registry; landed 2026-11-14
-- `F085-a-mailbox-whose-host-the-guard-refuses-gets-a-status-and-a-notice` (🟢 PROVEN): A mailbox whose host the guard refuses gets a status and a notice; landed 2026-11-14
-- 2026-11: 68 landed. spec/features/done/2026-11/
+- 2026-11: 69 landed. spec/features/done/2026-11/
