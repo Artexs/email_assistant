@@ -1,0 +1,1285 @@
+{
+  "scenario": "lab-01",
+  "part": "dev",
+  "batch": "batch-009",
+  "slots": [
+    {
+      "id": "b-rep-0211",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-14T16:30:00.000Z",
+      "category": "needs_reply",
+      "topic": "joint-venture",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 13,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 5,
+          "urgent": 1,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 6,
+        "lastUserMailDaysAgo": 17,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 3,
+        "medianUserReplyHours": 30.1,
+        "medianTheirReplyHours": 20.4,
+        "relation": "known"
+      },
+      "brief": "Daniel Hargreaves wants the executive's view on Wspolne przetargi z Baltic Freight Partners and asks for a written answer"
+    },
+    {
+      "id": "b-rep-0216",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-11T11:18:00.000Z",
+      "category": "needs_reply",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 13,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 5,
+          "urgent": 1,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 6,
+        "lastUserMailDaysAgo": 17,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 3,
+        "medianUserReplyHours": 30.1,
+        "medianTheirReplyHours": 20.4,
+        "relation": "known"
+      },
+      "brief": "Daniel Hargreaves wants the executive's view on Eksport i odprawy celne and asks for a written answer"
+    },
+    {
+      "id": "b-rep-0217",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "klient-nordic",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-20T09:40:00.000Z",
+      "category": "needs_reply",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 36,
+        "byCategory": {
+          "needs_reply": 18,
+          "info": 9,
+          "urgent": 5,
+          "delegation": 4
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 24,
+        "flagged": 2,
+        "unseen7d": 2,
+        "userMailsTo": 30,
+        "lastUserMailDaysAgo": 25,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 52,
+        "lastSeenDaysAgo": 11,
+        "medianUserReplyHours": 18.1,
+        "medianTheirReplyHours": 0.9,
+        "relation": "known"
+      },
+      "brief": "asks the executive a direct question about Eksport i odprawy celne and waits for an answer"
+    },
+    {
+      "id": "b-rep-0219",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "dyr-hr",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-20T09:01:00.000Z",
+      "category": "needs_reply",
+      "topic": "rekrutacje",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 62,
+        "byCategory": {
+          "info": 25,
+          "needs_reply": 19,
+          "urgent": 6,
+          "delegation": 6,
+          "notification": 6
+        },
+        "corrections": {
+          "urgent": 1
+        },
+        "movedBack": 2,
+        "answered": 43,
+        "flagged": 0,
+        "unseen7d": 3,
+        "userMailsTo": 34,
+        "lastUserMailDaysAgo": 22,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 34.6,
+        "medianTheirReplyHours": 39.4,
+        "relation": "known"
+      },
+      "brief": "Rafal Kwiecinski wants the executive's view on Rekrutacje i obsada magazynow and asks for a written answer"
+    },
+    {
+      "id": "b-rep-0226",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-19T07:56:00.000Z",
+      "category": "needs_reply",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 59,
+        "byCategory": {
+          "needs_reply": 26,
+          "urgent": 15,
+          "info": 12,
+          "delegation": 6
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 37,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 36,
+        "lastUserMailDaysAgo": 29,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 57,
+        "lastSeenDaysAgo": 12,
+        "medianUserReplyHours": 0.9,
+        "medianTheirReplyHours": 12.3,
+        "relation": "vip"
+      },
+      "brief": "Zbigniew Orlowicz wants the executive's view on Posiedzenie rady nadzorczej i budzet and asks for a written answer"
+    },
+    {
+      "id": "b-rep-0227",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-19T16:45:00.000Z",
+      "category": "needs_reply",
+      "topic": "joint-venture",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 13,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 5,
+          "urgent": 1,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 6,
+        "lastUserMailDaysAgo": 17,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 3,
+        "medianUserReplyHours": 30.1,
+        "medianTheirReplyHours": 20.4,
+        "relation": "known"
+      },
+      "brief": "asks the executive a direct question about Wspolne przetargi z Baltic Freight Partners and waits for an answer"
+    },
+    {
+      "id": "b-rep-0229",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "klient-meble",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-21T15:49:00.000Z",
+      "category": "needs_reply",
+      "topic": "umowy-sprzedaz",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 10,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 3,
+          "urgent": 1,
+          "delegation": 1
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 12,
+        "lastUserMailDaysAgo": 13,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 83,
+        "lastSeenDaysAgo": 6,
+        "medianUserReplyHours": 32,
+        "medianTheirReplyHours": 2.4,
+        "relation": "known"
+      },
+      "brief": "asks the executive a direct question about Umowy i cenniki sprzedazy and waits for an answer"
+    },
+    {
+      "id": "b-rep-0234",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-11T12:22:00.000Z",
+      "category": "needs_reply",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 59,
+        "byCategory": {
+          "needs_reply": 26,
+          "urgent": 15,
+          "info": 12,
+          "delegation": 6
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 37,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 36,
+        "lastUserMailDaysAgo": 29,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 57,
+        "lastSeenDaysAgo": 12,
+        "medianUserReplyHours": 0.9,
+        "medianTheirReplyHours": 12.3,
+        "relation": "vip"
+      },
+      "brief": "Zbigniew Orlowicz wants the executive's view on Posiedzenie rady nadzorczej i budzet and asks for a written answer"
+    },
+    {
+      "id": "b-rep-0235",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-11T09:25:00.000Z",
+      "category": "needs_reply",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": false,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 59,
+        "byCategory": {
+          "needs_reply": 26,
+          "urgent": 15,
+          "info": 12,
+          "delegation": 6
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 37,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 36,
+        "lastUserMailDaysAgo": 29,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 57,
+        "lastSeenDaysAgo": 12,
+        "medianUserReplyHours": 0.9,
+        "medianTheirReplyHours": 12.3,
+        "relation": "vip"
+      },
+      "brief": "asks the executive a direct question about Posiedzenie rady nadzorczej i budzet and waits for an answer"
+    },
+    {
+      "id": "b-rep-0236",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "dyr-hr",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-19T08:42:00.000Z",
+      "category": "needs_reply",
+      "topic": "rekrutacje",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 62,
+        "byCategory": {
+          "info": 25,
+          "needs_reply": 19,
+          "urgent": 6,
+          "delegation": 6,
+          "notification": 6
+        },
+        "corrections": {
+          "urgent": 1
+        },
+        "movedBack": 2,
+        "answered": 43,
+        "flagged": 0,
+        "unseen7d": 3,
+        "userMailsTo": 34,
+        "lastUserMailDaysAgo": 22,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 34.6,
+        "medianTheirReplyHours": 39.4,
+        "relation": "known"
+      },
+      "brief": "Rafal Kwiecinski wants the executive's view on Rekrutacje i obsada magazynow and asks for a written answer"
+    },
+    {
+      "id": "b-rep-0247",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "dostawca-paliw",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-13T13:55:00.000Z",
+      "category": "needs_reply",
+      "topic": "karty-paliwowe",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 10,
+        "byCategory": {
+          "info": 4,
+          "needs_reply": 4,
+          "notification": 1,
+          "delegation": 1
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 6,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 12,
+        "lastUserMailDaysAgo": 28,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 73,
+        "lastSeenDaysAgo": 0,
+        "medianUserReplyHours": 9.6,
+        "medianTheirReplyHours": 25.5,
+        "relation": "known"
+      },
+      "brief": "asks the executive a direct question about Karty paliwowe i ceny paliw and waits for an answer"
+    },
+    {
+      "id": "b-rep-0250",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-21T12:36:00.000Z",
+      "category": "needs_reply",
+      "topic": "joint-venture",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "prezes-zarzadu",
+          "brief": "the executive's earlier answer about Wspolne przetargi z Baltic Freight Partners"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 13,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 5,
+          "urgent": 1,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 6,
+        "lastUserMailDaysAgo": 17,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 3,
+        "medianUserReplyHours": 30.1,
+        "medianTheirReplyHours": 20.4,
+        "relation": "known"
+      },
+      "brief": "Daniel Hargreaves wants the executive's view on Wspolne przetargi z Baltic Freight Partners and asks for a written answer"
+    },
+    {
+      "id": "b-spa-0005",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "phishing-paliwa",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-12T07:06:00.000Z",
+      "category": "spam",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 2,
+        "byCategory": {
+          "spam": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 2,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 2,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "new"
+      },
+      "brief": "an unsolicited promo from Paliwa Flota Billing that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "b-spa-0008",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "phishing-paliwa",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-20T15:42:00.000Z",
+      "category": "spam",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 2,
+        "byCategory": {
+          "spam": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 2,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 2,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "new"
+      },
+      "brief": "an unsolicited promo from Paliwa Flota Billing that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "b-spa-0019",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "spam-seo",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-20T17:24:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 10,
+        "byCategory": {
+          "spam": 10
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 45,
+        "lastSeenDaysAgo": 9,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an unsolicited promo from Premium Leads Pro that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "b-spa-0023",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "phishing-paliwa",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-21T09:32:00.000Z",
+      "category": "spam",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 2,
+        "byCategory": {
+          "spam": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 2,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 2,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "new"
+      },
+      "brief": "an unsolicited promo from Paliwa Flota Billing that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "b-spa-0025",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "spam-seo",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-19T10:52:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 10,
+        "byCategory": {
+          "spam": 10
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 45,
+        "lastSeenDaysAgo": 9,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "Premium Leads Pro pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "b-spa-0028",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "marketing-targi",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-18T17:15:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "html",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<marketing-targi.lists.targi-magazynowe.test>",
+        "List-Unsubscribe": "<https://lists.targi-magazynowe.test/u/2994>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 18,
+        "byCategory": {
+          "spam": 11,
+          "notification": 7
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 75,
+        "lastSeenDaysAgo": 10,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an unsolicited promo from Targi Magazynowe Expo that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "b-spa-0036",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "spam-seo",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-13T11:52:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 10,
+        "byCategory": {
+          "spam": 10
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 45,
+        "lastSeenDaysAgo": 9,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "Premium Leads Pro pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "b-spa-0040",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "spam-seo",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-14T06:53:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 10,
+        "byCategory": {
+          "spam": 10
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 45,
+        "lastSeenDaysAgo": 9,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "Premium Leads Pro pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "b-spa-0041",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "marketing-targi",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-18T11:24:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<marketing-targi.lists.targi-magazynowe.test>",
+        "List-Unsubscribe": "<https://lists.targi-magazynowe.test/u/5191>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 18,
+        "byCategory": {
+          "spam": 11,
+          "notification": 7
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 75,
+        "lastSeenDaysAgo": 10,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "an unsolicited promo from Targi Magazynowe Expo that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "b-spa-0054",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "phishing-paliwa",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-19T12:58:00.000Z",
+      "category": "spam",
+      "topic": "karty-paliwowe",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 2,
+        "byCategory": {
+          "spam": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 2,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 2,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "new"
+      },
+      "brief": "an unsolicited promo from Paliwa Flota Billing that offers something unrelated to the executive's work"
+    },
+    {
+      "id": "b-spa-0055",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "phishing-paliwa",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-20T11:24:00.000Z",
+      "category": "spam",
+      "topic": "karty-paliwowe",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 2,
+        "byCategory": {
+          "spam": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 2,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 2,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "new"
+      },
+      "brief": "Paliwa Flota Billing pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "b-spa-0060",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "marketing-targi",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-22T06:53:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<marketing-targi.lists.targi-magazynowe.test>",
+        "List-Unsubscribe": "<https://lists.targi-magazynowe.test/u/7779>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 18,
+        "byCategory": {
+          "spam": 11,
+          "notification": 7
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 1,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 75,
+        "lastSeenDaysAgo": 10,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "Targi Magazynowe Expo pushes a discount or an offer that nobody asked for"
+    },
+    {
+      "id": "b-spa-0062",
+      "part": "dev",
+      "batch": "batch-009",
+      "persona": "spam-seo",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-15T08:29:00.000Z",
+      "category": "spam",
+      "topic": "targi-oferty",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 10,
+        "byCategory": {
+          "spam": 10
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 45,
+        "lastSeenDaysAgo": 9,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "Premium Leads Pro pushes a discount or an offer that nobody asked for"
+    }
+  ]
+}

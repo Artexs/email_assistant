@@ -1,0 +1,1336 @@
+{
+  "scenario": "lab-01",
+  "part": "dev",
+  "batch": "batch-004",
+  "slots": [
+    {
+      "id": "b-inf-0135",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-18T14:04:00.000Z",
+      "category": "info",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 13,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 5,
+          "urgent": 1,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 6,
+        "lastUserMailDaysAgo": 17,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 3,
+        "medianUserReplyHours": 30.1,
+        "medianTheirReplyHours": 20.4,
+        "relation": "known"
+      },
+      "brief": "shares plain information about Eksport i odprawy celne; no question and no request"
+    },
+    {
+      "id": "b-inf-0144",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-15T16:24:00.000Z",
+      "category": "info",
+      "topic": "kalendarz-podroze",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "html",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 59,
+        "byCategory": {
+          "needs_reply": 26,
+          "urgent": 15,
+          "info": 12,
+          "delegation": 6
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 37,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 36,
+        "lastUserMailDaysAgo": 29,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 57,
+        "lastSeenDaysAgo": 12,
+        "medianUserReplyHours": 0.9,
+        "medianTheirReplyHours": 12.3,
+        "relation": "vip"
+      },
+      "brief": "shares plain information about Kalendarz zarzadu i podroze sluzbowe; no question and no request"
+    },
+    {
+      "id": "b-inf-0145",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-15T15:33:00.000Z",
+      "category": "info",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 13,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 5,
+          "urgent": 1,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 6,
+        "lastUserMailDaysAgo": 17,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 3,
+        "medianUserReplyHours": 30.1,
+        "medianTheirReplyHours": 20.4,
+        "relation": "known"
+      },
+      "brief": "Daniel Hargreaves reports a status on Eksport i odprawy celne for the executive's awareness"
+    },
+    {
+      "id": "b-inf-0149",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "dyr-hr",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-19T08:03:00.000Z",
+      "category": "info",
+      "topic": "rekrutacje",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 62,
+        "byCategory": {
+          "info": 25,
+          "needs_reply": 19,
+          "urgent": 6,
+          "delegation": 6,
+          "notification": 6
+        },
+        "corrections": {
+          "urgent": 1
+        },
+        "movedBack": 2,
+        "answered": 43,
+        "flagged": 0,
+        "unseen7d": 3,
+        "userMailsTo": 34,
+        "lastUserMailDaysAgo": 22,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 34.6,
+        "medianTheirReplyHours": 39.4,
+        "relation": "known"
+      },
+      "brief": "shares plain information about Rekrutacje i obsada magazynow; no question and no request"
+    },
+    {
+      "id": "b-inf-0155",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "news-branza",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-12T11:29:00.000Z",
+      "category": "info",
+      "topic": "branza-newsletter",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-branza.lists.logistyka-dzis.test>",
+        "List-Unsubscribe": "<https://lists.logistyka-dzis.test/u/4689>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 40,
+        "byCategory": {
+          "notification": 34,
+          "info": 6
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 3,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 70,
+        "lastSeenDaysAgo": 14,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "Magazyn Logistyka Dzis reports a status on Wiadomosci branzowe i rynek frachtow for the executive's awareness"
+    },
+    {
+      "id": "b-inf-0158",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "news-global",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-11T10:38:00.000Z",
+      "category": "info",
+      "topic": "branza-newsletter",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-global.lists.supplychain-weekly.test>",
+        "List-Unsubscribe": "<https://lists.supplychain-weekly.test/u/1060>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 49,
+        "byCategory": {
+          "notification": 42,
+          "info": 7
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 2,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 42,
+        "lastSeenDaysAgo": 3,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "Supply Chain Weekly reports a status on Wiadomosci branzowe i rynek frachtow for the executive's awareness"
+    },
+    {
+      "id": "b-inf-0164",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-21T07:03:00.000Z",
+      "category": "info",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "head-export",
+          "brief": "the first mail of the exchange about Eksport i odprawy celne"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 13,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 5,
+          "urgent": 1,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 6,
+        "lastUserMailDaysAgo": 17,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 3,
+        "medianUserReplyHours": 30.1,
+        "medianTheirReplyHours": 20.4,
+        "relation": "known"
+      },
+      "brief": "shares plain information about Eksport i odprawy celne; no question and no request"
+    },
+    {
+      "id": "b-inf-0167",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "klient-meble",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-22T14:54:00.000Z",
+      "category": "info",
+      "topic": "terminy-dostaw",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 10,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 3,
+          "urgent": 1,
+          "delegation": 1
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 12,
+        "lastUserMailDaysAgo": 13,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 83,
+        "lastSeenDaysAgo": 6,
+        "medianUserReplyHours": 32,
+        "medianTheirReplyHours": 2.4,
+        "relation": "known"
+      },
+      "brief": "shares plain information about Terminy dostaw i okna rozladunku; no question and no request"
+    },
+    {
+      "id": "b-inf-0170",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "head-export",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-11T17:44:00.000Z",
+      "category": "info",
+      "topic": "umowa-nordic",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "koordynator-sprzedazy",
+          "brief": "an earlier message of the exchange about Umowa ramowa z Nordic Foods Trade"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 30,
+        "byCategory": {
+          "info": 12,
+          "needs_reply": 9,
+          "urgent": 3,
+          "delegation": 3,
+          "notification": 3
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 18,
+        "flagged": 2,
+        "unseen7d": 4,
+        "userMailsTo": 43,
+        "lastUserMailDaysAgo": 11,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 66,
+        "lastSeenDaysAgo": 4,
+        "medianUserReplyHours": 31.1,
+        "medianTheirReplyHours": 11.3,
+        "relation": "known"
+      },
+      "brief": "shares plain information about Umowa ramowa z Nordic Foods Trade; no question and no request"
+    },
+    {
+      "id": "b-inf-0173",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "news-branza",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-12T16:43:00.000Z",
+      "category": "info",
+      "topic": "branza-newsletter",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-branza.lists.logistyka-dzis.test>",
+        "List-Unsubscribe": "<https://lists.logistyka-dzis.test/u/2179>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 40,
+        "byCategory": {
+          "notification": 34,
+          "info": 6
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 3,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 70,
+        "lastSeenDaysAgo": 14,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "shares plain information about Wiadomosci branzowe i rynek frachtow; no question and no request"
+    },
+    {
+      "id": "b-inf-0178",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "news-global",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-19T11:48:00.000Z",
+      "category": "info",
+      "topic": "branza-newsletter",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": true,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-global.lists.supplychain-weekly.test>",
+        "List-Unsubscribe": "<https://lists.supplychain-weekly.test/u/7505>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 49,
+        "byCategory": {
+          "notification": 42,
+          "info": 7
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 2,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 42,
+        "lastSeenDaysAgo": 3,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "Supply Chain Weekly reports a status on Wiadomosci branzowe i rynek frachtow for the executive's awareness"
+    },
+    {
+      "id": "b-inf-0179",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "dyr-operacyjny",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-22T11:18:00.000Z",
+      "category": "info",
+      "topic": "flota-naczepy",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 67,
+        "byCategory": {
+          "info": 27,
+          "needs_reply": 20,
+          "urgent": 7,
+          "delegation": 7,
+          "notification": 6
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 34,
+        "flagged": 2,
+        "unseen7d": 1,
+        "userMailsTo": 32,
+        "lastUserMailDaysAgo": 0,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 73,
+        "lastSeenDaysAgo": 13,
+        "medianUserReplyHours": 36.2,
+        "medianTheirReplyHours": 9.6,
+        "relation": "known"
+      },
+      "brief": "Halina Strzemecka reports a status on Zakup naczep i serwis floty for the executive's awareness"
+    },
+    {
+      "id": "b-inf-0183",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-15T17:30:00.000Z",
+      "category": "info",
+      "topic": "kalendarz-podroze",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 59,
+        "byCategory": {
+          "needs_reply": 26,
+          "urgent": 15,
+          "info": 12,
+          "delegation": 6
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 37,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 36,
+        "lastUserMailDaysAgo": 29,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 57,
+        "lastSeenDaysAgo": 12,
+        "medianUserReplyHours": 0.9,
+        "medianTheirReplyHours": 12.3,
+        "relation": "vip"
+      },
+      "brief": "Zbigniew Orlowicz reports a status on Kalendarz zarzadu i podroze sluzbowe for the executive's awareness"
+    },
+    {
+      "id": "b-inf-0185",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "dyr-hr",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-14T14:49:00.000Z",
+      "category": "info",
+      "topic": "rekrutacje",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 62,
+        "byCategory": {
+          "info": 25,
+          "needs_reply": 19,
+          "urgent": 6,
+          "delegation": 6,
+          "notification": 6
+        },
+        "corrections": {
+          "urgent": 1
+        },
+        "movedBack": 2,
+        "answered": 43,
+        "flagged": 0,
+        "unseen7d": 3,
+        "userMailsTo": 34,
+        "lastUserMailDaysAgo": 22,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 34.6,
+        "medianTheirReplyHours": 39.4,
+        "relation": "known"
+      },
+      "brief": "Rafal Kwiecinski reports a status on Rekrutacje i obsada magazynow for the executive's awareness"
+    },
+    {
+      "id": "b-inf-0191",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "dyr-hr",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-15T10:18:00.000Z",
+      "category": "info",
+      "topic": "rekrutacje",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 62,
+        "byCategory": {
+          "info": 25,
+          "needs_reply": 19,
+          "urgent": 6,
+          "delegation": 6,
+          "notification": 6
+        },
+        "corrections": {
+          "urgent": 1
+        },
+        "movedBack": 2,
+        "answered": 43,
+        "flagged": 0,
+        "unseen7d": 3,
+        "userMailsTo": 34,
+        "lastUserMailDaysAgo": 22,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 34.6,
+        "medianTheirReplyHours": 39.4,
+        "relation": "known"
+      },
+      "brief": "shares plain information about Rekrutacje i obsada magazynow; no question and no request"
+    },
+    {
+      "id": "b-inf-0205",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "klient-nordic",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-21T09:39:00.000Z",
+      "category": "info",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 36,
+        "byCategory": {
+          "needs_reply": 18,
+          "info": 9,
+          "urgent": 5,
+          "delegation": 4
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 24,
+        "flagged": 2,
+        "unseen7d": 2,
+        "userMailsTo": 30,
+        "lastUserMailDaysAgo": 25,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 52,
+        "lastSeenDaysAgo": 11,
+        "medianUserReplyHours": 18.1,
+        "medianTheirReplyHours": 0.9,
+        "relation": "known"
+      },
+      "brief": "Karin Lindqvist reports a status on Eksport i odprawy celne for the executive's awareness"
+    },
+    {
+      "id": "b-inf-0206",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "head-export",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-21T08:29:00.000Z",
+      "category": "info",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "prezes-zarzadu",
+          "brief": "the executive's earlier answer about Eksport i odprawy celne"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 30,
+        "byCategory": {
+          "info": 12,
+          "needs_reply": 9,
+          "urgent": 3,
+          "delegation": 3,
+          "notification": 3
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 18,
+        "flagged": 2,
+        "unseen7d": 4,
+        "userMailsTo": 43,
+        "lastUserMailDaysAgo": 11,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 66,
+        "lastSeenDaysAgo": 4,
+        "medianUserReplyHours": 31.1,
+        "medianTheirReplyHours": 11.3,
+        "relation": "known"
+      },
+      "brief": "Oliver Pemberton reports a status on Eksport i odprawy celne for the executive's awareness"
+    },
+    {
+      "id": "b-inf-0209",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-18T12:16:00.000Z",
+      "category": "info",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 13,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 5,
+          "urgent": 1,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 6,
+        "lastUserMailDaysAgo": 17,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 3,
+        "medianUserReplyHours": 30.1,
+        "medianTheirReplyHours": 20.4,
+        "relation": "known"
+      },
+      "brief": "Daniel Hargreaves reports a status on Eksport i odprawy celne for the executive's awareness"
+    },
+    {
+      "id": "b-inf-0213",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-21T14:06:00.000Z",
+      "category": "info",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "prezes-zarzadu",
+          "brief": "the executive's earlier answer about Eksport i odprawy celne"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 13,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 5,
+          "urgent": 1,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 6,
+        "lastUserMailDaysAgo": 17,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 3,
+        "medianUserReplyHours": 30.1,
+        "medianTheirReplyHours": 20.4,
+        "relation": "known"
+      },
+      "brief": "Daniel Hargreaves reports a status on Eksport i odprawy celne for the executive's awareness"
+    },
+    {
+      "id": "b-inf-0217",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "dyr-operacyjny",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-19T16:09:00.000Z",
+      "category": "info",
+      "topic": "flota-naczepy",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 67,
+        "byCategory": {
+          "info": 27,
+          "needs_reply": 20,
+          "urgent": 7,
+          "delegation": 7,
+          "notification": 6
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 34,
+        "flagged": 2,
+        "unseen7d": 1,
+        "userMailsTo": 32,
+        "lastUserMailDaysAgo": 0,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 73,
+        "lastSeenDaysAgo": 13,
+        "medianUserReplyHours": 36.2,
+        "medianTheirReplyHours": 9.6,
+        "relation": "known"
+      },
+      "brief": "shares plain information about Zakup naczep i serwis floty; no question and no request"
+    },
+    {
+      "id": "b-inf-0229",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "dyr-operacyjny",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-19T15:37:00.000Z",
+      "category": "info",
+      "topic": "wms-awaria",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 67,
+        "byCategory": {
+          "info": 27,
+          "needs_reply": 20,
+          "urgent": 7,
+          "delegation": 7,
+          "notification": 6
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 34,
+        "flagged": 2,
+        "unseen7d": 1,
+        "userMailsTo": 32,
+        "lastUserMailDaysAgo": 0,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 73,
+        "lastSeenDaysAgo": 13,
+        "medianUserReplyHours": 36.2,
+        "medianTheirReplyHours": 9.6,
+        "relation": "known"
+      },
+      "brief": "Halina Strzemecka reports a status on System magazynowy i awarie ERP for the executive's awareness"
+    },
+    {
+      "id": "b-inf-0232",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-22T12:27:00.000Z",
+      "category": "info",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 13,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 5,
+          "urgent": 1,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 6,
+        "lastUserMailDaysAgo": 17,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 3,
+        "medianUserReplyHours": 30.1,
+        "medianTheirReplyHours": 20.4,
+        "relation": "known"
+      },
+      "brief": "shares plain information about Eksport i odprawy celne; no question and no request"
+    },
+    {
+      "id": "b-inf-0233",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-18T06:31:00.000Z",
+      "category": "info",
+      "topic": "kalendarz-podroze",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "html",
+        "signature": false,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 59,
+        "byCategory": {
+          "needs_reply": 26,
+          "urgent": 15,
+          "info": 12,
+          "delegation": 6
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 37,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 36,
+        "lastUserMailDaysAgo": 29,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 57,
+        "lastSeenDaysAgo": 12,
+        "medianUserReplyHours": 0.9,
+        "medianTheirReplyHours": 12.3,
+        "relation": "vip"
+      },
+      "brief": "Zbigniew Orlowicz reports a status on Kalendarz zarzadu i podroze sluzbowe for the executive's awareness"
+    },
+    {
+      "id": "b-inf-0237",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "news-branza",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-18T15:42:00.000Z",
+      "category": "info",
+      "topic": "branza-newsletter",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "none"
+      },
+      "headers": {
+        "List-Id": "<news-branza.lists.logistyka-dzis.test>",
+        "List-Unsubscribe": "<https://lists.logistyka-dzis.test/u/5309>"
+      },
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 40,
+        "byCategory": {
+          "notification": 34,
+          "info": 6
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 0,
+        "flagged": 0,
+        "unseen7d": 3,
+        "userMailsTo": 0,
+        "lastUserMailDaysAgo": null,
+        "delegationsTo": 0,
+        "bulkSignals": [
+          "list_id",
+          "list_unsubscribe"
+        ],
+        "firstSeenDaysAgo": 70,
+        "lastSeenDaysAgo": 14,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": null,
+        "relation": "bulk"
+      },
+      "brief": "shares plain information about Wiadomosci branzowe i rynek frachtow; no question and no request"
+    },
+    {
+      "id": "b-inf-0239",
+      "part": "dev",
+      "batch": "batch-004",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-19T17:33:00.000Z",
+      "category": "info",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 13,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 5,
+          "urgent": 1,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 6,
+        "lastUserMailDaysAgo": 17,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 3,
+        "medianUserReplyHours": 30.1,
+        "medianTheirReplyHours": 20.4,
+        "relation": "known"
+      },
+      "brief": "Daniel Hargreaves reports a status on Eksport i odprawy celne for the executive's awareness"
+    }
+  ]
+}

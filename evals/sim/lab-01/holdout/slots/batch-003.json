@@ -1,0 +1,1409 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-003",
+  "slots": [
+    {
+      "id": "b-del-0067",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "klient-hurtownia",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-12T12:45:00.000Z",
+      "category": "delegation",
+      "topic": "przetarg-zielona",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "ksiegowa",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "koordynator-sprzedazy",
+          "brief": "the first mail of the exchange about Przetarg sieci Zielona Hurtownia"
+        },
+        {
+          "persona": "prezes-zarzadu",
+          "brief": "a short earlier note of the executive about Przetarg sieci Zielona Hurtownia"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 33,
+        "byCategory": {
+          "needs_reply": 17,
+          "info": 8,
+          "urgent": 5,
+          "delegation": 3
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 15,
+        "flagged": 2,
+        "unseen7d": 3,
+        "userMailsTo": 11,
+        "lastUserMailDaysAgo": 9,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 34.2,
+        "medianTheirReplyHours": 10.5,
+        "relation": "vip"
+      },
+      "brief": "a task in faktury: asks the executive to have Przetarg sieci Zielona Hurtownia handled by the team"
+    },
+    {
+      "id": "b-del-0068",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "dyr-hr",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-13T10:32:00.000Z",
+      "category": "delegation",
+      "topic": "rekrutacje",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "asystentka",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "prezes-zarzadu",
+          "brief": "a short earlier note of the executive about Rekrutacje i obsada magazynow"
+        },
+        {
+          "persona": "dyr-hr",
+          "brief": "the first mail of the exchange about Rekrutacje i obsada magazynow"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 61,
+        "byCategory": {
+          "info": 25,
+          "needs_reply": 18,
+          "urgent": 6,
+          "delegation": 6,
+          "notification": 6
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 31,
+        "flagged": 0,
+        "unseen7d": 3,
+        "userMailsTo": 16,
+        "lastUserMailDaysAgo": 26,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 78,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 26.2,
+        "relation": "known"
+      },
+      "brief": "a task in kalendarz: asks the executive to have Rekrutacje i obsada magazynow handled by the team"
+    },
+    {
+      "id": "b-del-0069",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-15T13:38:00.000Z",
+      "category": "delegation",
+      "topic": "kalendarz-podroze",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "ksiegowa",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "a task in faktury: Zbigniew Orlowicz wants someone to take care of Kalendarz zarzadu i podroze sluzbowe"
+    },
+    {
+      "id": "b-del-0070",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-13T16:31:00.000Z",
+      "category": "delegation",
+      "topic": "joint-venture",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "asystentka",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "needs_reply": 6,
+          "info": 5,
+          "urgent": 2,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 9,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 13,
+        "lastUserMailDaysAgo": 8,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 38,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 3.7,
+        "medianTheirReplyHours": 21.7,
+        "relation": "known"
+      },
+      "brief": "a task in kalendarz: Daniel Hargreaves wants someone to take care of Wspolne przetargi z Baltic Freight Partners"
+    },
+    {
+      "id": "b-del-0071",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-15T15:08:00.000Z",
+      "category": "delegation",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "asystentka",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": false,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "a task in kalendarz: Zbigniew Orlowicz wants someone to take care of Posiedzenie rady nadzorczej i budzet"
+    },
+    {
+      "id": "b-del-0072",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "dyr-operacyjny",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-14T07:27:00.000Z",
+      "category": "delegation",
+      "topic": "reklamacje",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "ksiegowa",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 57,
+        "byCategory": {
+          "info": 23,
+          "needs_reply": 17,
+          "urgent": 6,
+          "delegation": 6,
+          "notification": 5
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 40,
+        "flagged": 2,
+        "unseen7d": 1,
+        "userMailsTo": 27,
+        "lastUserMailDaysAgo": 19,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 63,
+        "lastSeenDaysAgo": 1,
+        "medianUserReplyHours": 43.5,
+        "medianTheirReplyHours": 0.6,
+        "relation": "known"
+      },
+      "brief": "a task in faktury: asks the executive to have Reklamacje i uszkodzone dostawy handled by the team"
+    },
+    {
+      "id": "b-del-0073",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-22T17:32:00.000Z",
+      "category": "delegation",
+      "topic": "joint-venture",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "asystentka",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "head-export",
+          "brief": "the first mail of the exchange about Wspolne przetargi z Baltic Freight Partners"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "needs_reply": 6,
+          "info": 5,
+          "urgent": 2,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 9,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 13,
+        "lastUserMailDaysAgo": 8,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 38,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 3.7,
+        "medianTheirReplyHours": 21.7,
+        "relation": "known"
+      },
+      "brief": "a task in kalendarz: asks the executive to have Wspolne przetargi z Baltic Freight Partners handled by the team"
+    },
+    {
+      "id": "b-del-0074",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-19T17:47:00.000Z",
+      "category": "delegation",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "ksiegowa",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "a task in faktury: Zbigniew Orlowicz wants someone to take care of Posiedzenie rady nadzorczej i budzet"
+    },
+    {
+      "id": "b-del-0075",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-15T12:50:00.000Z",
+      "category": "delegation",
+      "topic": "kalendarz-podroze",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "asystentka",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "a task in kalendarz: Zbigniew Orlowicz wants someone to take care of Kalendarz zarzadu i podroze sluzbowe"
+    },
+    {
+      "id": "b-del-0076",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "klient-hurtownia",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-11T07:00:00.000Z",
+      "category": "delegation",
+      "topic": "przetarg-zielona",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "asystentka",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 33,
+        "byCategory": {
+          "needs_reply": 17,
+          "info": 8,
+          "urgent": 5,
+          "delegation": 3
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 15,
+        "flagged": 2,
+        "unseen7d": 3,
+        "userMailsTo": 11,
+        "lastUserMailDaysAgo": 9,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 34.2,
+        "medianTheirReplyHours": 10.5,
+        "relation": "vip"
+      },
+      "brief": "a task in kalendarz: Genowefa Jastrzebska wants someone to take care of Przetarg sieci Zielona Hurtownia"
+    },
+    {
+      "id": "b-del-0078",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "klient-meble",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-19T07:46:00.000Z",
+      "category": "delegation",
+      "topic": "umowy-sprzedaz",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "koordynator-sprzedazy",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 16,
+        "byCategory": {
+          "needs_reply": 8,
+          "info": 4,
+          "urgent": 2,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 9,
+        "flagged": 3,
+        "unseen7d": 4,
+        "userMailsTo": 28,
+        "lastUserMailDaysAgo": 5,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 35,
+        "lastSeenDaysAgo": 9,
+        "medianUserReplyHours": 14.9,
+        "medianTheirReplyHours": 19.5,
+        "relation": "known"
+      },
+      "brief": "a task in umowy: Tomasz Brzezinski wants someone to take care of Umowy i cenniki sprzedazy"
+    },
+    {
+      "id": "b-del-0079",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-18T13:20:00.000Z",
+      "category": "delegation",
+      "topic": "kalendarz-podroze",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "koordynator-sprzedazy",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "prezes-zarzadu",
+          "brief": "the executive's earlier answer about Kalendarz zarzadu i podroze sluzbowe"
+        },
+        {
+          "persona": "przewodniczacy-rady",
+          "brief": "an earlier message of the exchange about Kalendarz zarzadu i podroze sluzbowe"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "a task in umowy: Zbigniew Orlowicz wants someone to take care of Kalendarz zarzadu i podroze sluzbowe"
+    },
+    {
+      "id": "b-del-0081",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-18T15:01:00.000Z",
+      "category": "delegation",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "ksiegowa",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": false,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "asystentka",
+          "brief": "an earlier message of the exchange about Posiedzenie rady nadzorczej i budzet"
+        },
+        {
+          "persona": "prezes-zarzadu",
+          "brief": "a short earlier note of the executive about Posiedzenie rady nadzorczej i budzet"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "a task in faktury: Zbigniew Orlowicz wants someone to take care of Posiedzenie rady nadzorczej i budzet"
+    },
+    {
+      "id": "b-del-0082",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-18T13:27:00.000Z",
+      "category": "delegation",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "ksiegowa",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "needs_reply": 6,
+          "info": 5,
+          "urgent": 2,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 9,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 13,
+        "lastUserMailDaysAgo": 8,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 38,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 3.7,
+        "medianTheirReplyHours": 21.7,
+        "relation": "known"
+      },
+      "brief": "a task in faktury: Daniel Hargreaves wants someone to take care of Eksport i odprawy celne"
+    },
+    {
+      "id": "b-del-0083",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-11T08:14:00.000Z",
+      "category": "delegation",
+      "topic": "joint-venture",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "ksiegowa",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "needs_reply": 6,
+          "info": 5,
+          "urgent": 2,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 9,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 13,
+        "lastUserMailDaysAgo": 8,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 38,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 3.7,
+        "medianTheirReplyHours": 21.7,
+        "relation": "known"
+      },
+      "brief": "a task in faktury: asks the executive to have Wspolne przetargi z Baltic Freight Partners handled by the team"
+    },
+    {
+      "id": "b-del-0084",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "dostawca-paliw",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-15T08:58:00.000Z",
+      "category": "delegation",
+      "topic": "karty-paliwowe",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "koordynator-sprzedazy",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 14,
+        "byCategory": {
+          "info": 6,
+          "needs_reply": 5,
+          "notification": 2,
+          "delegation": 1
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 4,
+        "flagged": 1,
+        "unseen7d": 4,
+        "userMailsTo": 12,
+        "lastUserMailDaysAgo": 21,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 57,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": 16.6,
+        "relation": "known"
+      },
+      "brief": "a task in umowy: asks the executive to have Karty paliwowe i ceny paliw handled by the team"
+    },
+    {
+      "id": "b-del-0085",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "dostawca-paliw",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-18T14:04:00.000Z",
+      "category": "delegation",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "asystentka",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "prezes-zarzadu",
+          "brief": "a short earlier note of the executive about Faktury i platnosci"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 14,
+        "byCategory": {
+          "info": 6,
+          "needs_reply": 5,
+          "notification": 2,
+          "delegation": 1
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 4,
+        "flagged": 1,
+        "unseen7d": 4,
+        "userMailsTo": 12,
+        "lastUserMailDaysAgo": 21,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 57,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": 16.6,
+        "relation": "known"
+      },
+      "brief": "a task in kalendarz: Ewelina Marszalek wants someone to take care of Faktury i platnosci"
+    },
+    {
+      "id": "b-del-0087",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-14T09:35:00.000Z",
+      "category": "delegation",
+      "topic": "kalendarz-podroze",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "ksiegowa",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "a task in faktury: Zbigniew Orlowicz wants someone to take care of Kalendarz zarzadu i podroze sluzbowe"
+    },
+    {
+      "id": "b-del-0089",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-19T15:32:00.000Z",
+      "category": "delegation",
+      "topic": "kalendarz-podroze",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "ksiegowa",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "a task in faktury: asks the executive to have Kalendarz zarzadu i podroze sluzbowe handled by the team"
+    },
+    {
+      "id": "b-del-0090",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-20T16:02:00.000Z",
+      "category": "delegation",
+      "topic": "kalendarz-podroze",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "koordynator-sprzedazy",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "a task in umowy: Zbigniew Orlowicz wants someone to take care of Kalendarz zarzadu i podroze sluzbowe"
+    },
+    {
+      "id": "b-del-0091",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-13T07:27:00.000Z",
+      "category": "delegation",
+      "topic": "joint-venture",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "koordynator-sprzedazy",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "needs_reply": 6,
+          "info": 5,
+          "urgent": 2,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 9,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 13,
+        "lastUserMailDaysAgo": 8,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 38,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 3.7,
+        "medianTheirReplyHours": 21.7,
+        "relation": "known"
+      },
+      "brief": "a task in umowy: asks the executive to have Wspolne przetargi z Baltic Freight Partners handled by the team"
+    },
+    {
+      "id": "b-del-0092",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "dostawca-paliw",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-21T09:31:00.000Z",
+      "category": "delegation",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "ksiegowa",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "prezes-zarzadu",
+          "brief": "the executive's earlier answer about Faktury i platnosci"
+        },
+        {
+          "persona": "dostawca-paliw",
+          "brief": "an earlier message of the exchange about Faktury i platnosci"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 14,
+        "byCategory": {
+          "info": 6,
+          "needs_reply": 5,
+          "notification": 2,
+          "delegation": 1
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 4,
+        "flagged": 1,
+        "unseen7d": 4,
+        "userMailsTo": 12,
+        "lastUserMailDaysAgo": 21,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 57,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": 16.6,
+        "relation": "known"
+      },
+      "brief": "a task in faktury: asks the executive to have Faktury i platnosci handled by the team"
+    },
+    {
+      "id": "b-del-0093",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-15T15:44:00.000Z",
+      "category": "delegation",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "asystentka",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "needs_reply": 6,
+          "info": 5,
+          "urgent": 2,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 9,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 13,
+        "lastUserMailDaysAgo": 8,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 38,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 3.7,
+        "medianTheirReplyHours": 21.7,
+        "relation": "known"
+      },
+      "brief": "a task in kalendarz: asks the executive to have Eksport i odprawy celne handled by the team"
+    },
+    {
+      "id": "b-del-0094",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-20T16:25:00.000Z",
+      "category": "delegation",
+      "topic": "kalendarz-podroze",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "koordynator-sprzedazy",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "a task in umowy: Zbigniew Orlowicz wants someone to take care of Kalendarz zarzadu i podroze sluzbowe"
+    },
+    {
+      "id": "b-del-0096",
+      "part": "holdout",
+      "batch": "batch-003",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-20T16:59:00.000Z",
+      "category": "delegation",
+      "topic": "joint-venture",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "asystentka",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "needs_reply": 6,
+          "info": 5,
+          "urgent": 2,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 9,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 13,
+        "lastUserMailDaysAgo": 8,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 38,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 3.7,
+        "medianTheirReplyHours": 21.7,
+        "relation": "known"
+      },
+      "brief": "a task in kalendarz: Daniel Hargreaves wants someone to take care of Wspolne przetargi z Baltic Freight Partners"
+    }
+  ]
+}
