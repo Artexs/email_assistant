@@ -417,11 +417,11 @@ describe("requireOperator", () => {
   test("answers 403 password_sign_in_required to an operator with an SSO session and logs the user id only", async () => {
     const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
     try {
-      const res = await appFor(new Set(["u-op"])).request("/x", { headers: { "x-user": "u-op", "x-method": "sso" } });
+      const res = await appFor(new Set([U_OP])).request("/x", { headers: { "x-user": U_OP, "x-method": "sso" } });
       expect(res.status).toBe(403);
       expect(await res.json()).toEqual({ error: "password_sign_in_required" });
       const lines = errorSpy.mock.calls.map((call) => call.join(" "));
-      expect(lines.filter((line) => line.includes("operator_sso_session_refused user_id=u-op"))).toHaveLength(1);
+      expect(lines.filter((line) => line.includes(`operator_sso_session_refused user_id=${U_OP}`))).toHaveLength(1);
     } finally {
       errorSpy.mockRestore();
     }
@@ -430,11 +430,11 @@ describe("requireOperator", () => {
   test("the SSO rule comes before the TOTP rule, and the 404 for a non-operator comes first", async () => {
     const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
     try {
-      const app = appFor(new Set(["u-op"]));
-      const noTotp = await app.request("/x", { headers: { "x-user": "u-op", "x-method": "sso", "x-totp": "off" } });
+      const app = appFor(new Set([U_OP]));
+      const noTotp = await app.request("/x", { headers: { "x-user": U_OP, "x-method": "sso", "x-totp": "off" } });
       expect(noTotp.status).toBe(403);
       expect(await noTotp.json()).toEqual({ error: "password_sign_in_required" });
-      const other = await app.request("/x", { headers: { "x-user": "u-other", "x-method": "sso" } });
+      const other = await app.request("/x", { headers: { "x-user": U_OTHER, "x-method": "sso" } });
       expect(other.status).toBe(404);
       expect(await other.json()).toEqual({ error: "not_found" });
     } finally {
@@ -453,7 +453,7 @@ describe("requireOperator", () => {
           web: {
             auth: {
               handler: async () => new Response(null),
-              getSession: async () => ({ userId: "u-op", sessionId: "s1", twoFactorEnabled, signInMethod }),
+              getSession: async () => ({ userId: U_OP, sessionId: "s1", twoFactorEnabled, signInMethod }),
             },
             db: {} as WebDeps["db"],
             now: () => new Date("2026-11-20T10:00:00Z"),
@@ -463,7 +463,7 @@ describe("requireOperator", () => {
             trustedProxies: buildTrustedProxies([]),
             connInfo: () => undefined,
             listMembershipsOfUser: async () => [],
-            operatorUserIds: new Set(["u-op"]),
+            operatorUserIds: new Set([U_OP]),
             routers: () => undefined,
           } satisfies WebDeps,
         });
@@ -473,7 +473,9 @@ describe("requireOperator", () => {
       expect(sso.headers.get("cache-control")).toBe("private, no-store");
       const lines = errorSpy.mock.calls.map((call) => call.join(" "));
       // The page route logs a request id between the event and the fields.
-      expect(lines.filter((line) => /operator_sso_session_refused .*user_id=u-op$/.test(line))).toHaveLength(1);
+      expect(
+        lines.filter((line) => line.endsWith(`user_id=${U_OP}`) && line.includes("operator_sso_session_refused"))
+      ).toHaveLength(1);
       // An operator without TOTP and with an SSO session: the SSO rule comes first, so the answer is the 404 page, not the redirect.
       const ssoNoTotp = await pageApp("sso", false).request("/operator");
       expect(ssoNoTotp.status).toBe(404);
