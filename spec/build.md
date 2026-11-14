@@ -42,7 +42,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F098-e7-t1-polish-ui-i18n-frame-first` (🔴 PLANNED, plan landed, 13 stages, no migration): the panel and Telegram follow each user's language (pl/en; Telegram null = Polish), with a Telegram consent step; sequenced after F082 (closed); gate none.
 - `F099-e7-t2-platform-controls-send-limits-feature-flags-operator-console-security-log` (🔴 PLANNED, plan landed, 15 stages): send limits, operator console, /api/me flags, owner security log; sequenced after F082 and F091 (both closed); gate none.
 - `F100-e3a-measure` (🔴 PLANNED, plan landed + refreshed, 19 stages): every Stage 2 metric is measured on real mail and a weekly report leads with misses and mistakes; sequenced after F095; stage-level waits on F097 stages 01, 03, 04; gate none.
-- `F101-panel-to-astro-7` (needs refresh, plan landed, 4 stages): Panel to Astro 7; sequenced after E1; gate —.
+- `F101-panel-to-astro-7` (plan refreshed 2026-11-15 (plan-refresh-1.md), base 560e74e7, 4 stages): Panel to Astro 7; sequenced after E1; gate —.
 - `F102-e4-a-act-from-the-panel` (🔴 PLANNED, needs plan): E4-A Act from the panel; sequenced after E1, E7-T1, Astro 7; gate —.
 - `F103-e8a-logs` (plan landed, 19 stages): every log line an event, CLI output apart, log store on the tailnet; sequenced after E1; gate —.
 - `F104-e5a-read-sent` (plan landed, cold review 1 fixed, 12 stages): E5a Read Sent; build after F095 closes (F099 closed); drift check first; gate —.
