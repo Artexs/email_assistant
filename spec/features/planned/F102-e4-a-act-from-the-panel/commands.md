@@ -17,7 +17,7 @@ Schemas live in `packages/core/src/web/approvals.ts` and `packages/core/src/web/
 | `POST /delegates` | owner | `{ name, email, tags }` | 201 `Delegate` | 409 `exists`; 400 `mailbox_address` |
 | `PATCH /delegates/:id` | owner | `{ name?, tags?, active? }` (at least one) | `Delegate` | — |
 | `GET /delegations?filter=&before=&limit=` | member | — | `{ items: DelegationItem[], next: string \| null }` | — |
-| `POST /delegations/:id/remind` | owner | `{}` | `{ status: "planned", sendId }` | 409 `not_open`, `limit_reached`, `reminder_waiting`, `drafts_off` |
+| `POST /delegations/:id/remind` | owner | `{}` | `{ status: "planned", sendId }` | 409 `not_open`, `limit_reached`, `reminder_waiting`, `drafts_off`, `delegate_inactive` |
 | `POST /delegations/:id/done` | member | `{}` | `{ status: "done" }` | 409 `already`, `not_closable` |
 | `POST /delegations/:id/cancel` | owner | `{}` | `{ status: "cancelled" }` | 409 `not_open`, `sending` |
 
