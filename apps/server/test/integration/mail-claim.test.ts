@@ -2,6 +2,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import { claimEmails, finishEmail, listThreadContext, releaseEmail, type ClaimedEmail } from "../../src/modules/mail";
+import { NO_TEST_SENDERS, type TestMailRule } from "../../src/modules/mail";
 import type { DB, TenantContext } from "../../src/platform/db";
 
 import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
@@ -21,8 +22,10 @@ function minutesFromNow(minutes: number): Date {
   return new Date(now.getTime() + minutes * 60_000);
 }
 
-function claimOpts(overrides: Partial<{ limit: number; syntheticOnly: boolean }> = {}) {
-  return { now, limit: 10, staleBefore, syntheticOnly: false, ...overrides };
+type SyntheticOnly = false | { testMail: TestMailRule };
+
+function claimOpts(overrides: Partial<{ limit: number; syntheticOnly: SyntheticOnly }> = {}) {
+  return { now, limit: 10, staleBefore, syntheticOnly: false as SyntheticOnly, ...overrides };
 }
 
 async function tenant(trx: Transaction<DB>): Promise<{ ctx: TenantContext; mailboxId: string }> {
@@ -139,7 +142,9 @@ describe("claimEmails", () => {
       await insertTestEmail(trx, ctx, mailboxId, { message_id_header: "<e@ea-seed.test.evil>" });
       await insertTestEmail(trx, ctx, mailboxId, { message_id_header: null });
 
-      expect(ids(await claimEmails(trx, ctx, mailboxId, claimOpts({ syntheticOnly: true })))).toEqual([lower, upper]);
+      expect(
+        ids(await claimEmails(trx, ctx, mailboxId, claimOpts({ syntheticOnly: { testMail: NO_TEST_SENDERS } })))
+      ).toEqual([lower, upper]);
       expect(await claimEmails(trx, ctx, mailboxId, claimOpts())).toHaveLength(3);
     });
   });
@@ -331,7 +336,9 @@ describe("listThreadContext", () => {
         });
       }
 
-      const synthetic = await listThreadContext(trx, ctx, mailboxId, thread, now, current, { syntheticOnly: true });
+      const synthetic = await listThreadContext(trx, ctx, mailboxId, thread, now, current, {
+        syntheticOnly: { testMail: NO_TEST_SENDERS },
+      });
       expect(synthetic.map((row) => row.subject)).toEqual(["s1", "s2"]);
       const all = await listThreadContext(trx, ctx, mailboxId, thread, now, current, { syntheticOnly: false });
       expect(all.map((row) => row.subject)).toEqual(["s1", "r1", "s2"]);

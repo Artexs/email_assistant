@@ -4,6 +4,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import type { KyselyPlugin, Transaction } from "kysely";
 
 import { undo } from "../../src/modules/actions";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import {
   decodeActivityCursor,
   encodeActivityCursor,
@@ -124,7 +125,11 @@ describe("listActivity", () => {
           { type: "mark_read", status: "applied" },
         ],
       });
-      const result = await undo(trx, ctxA, emailId, { now: NOW, userId: a.userId, scope: { kind: "synthetic" } });
+      const result = await undo(trx, ctxA, emailId, {
+        now: NOW,
+        userId: a.userId,
+        scope: { kind: "synthetic", testMail: NO_TEST_SENDERS },
+      });
       expect(result.kind).toBe("started");
 
       const pending = one((await listActivity(trx, ctxA, query, NOW)).items);

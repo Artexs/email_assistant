@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import {
   insertFeedback,
   insertTriageResult,
@@ -258,25 +259,43 @@ describe("triage repository", () => {
       const since = new Date(Date.now() - 60 * 60 * 1000);
 
       // Another org's context with org A's mailbox id reads nothing.
-      expect(await listUnlabeled(trx, b.ctx, a.mailboxId, { limit: 10, mail: "real" })).toEqual([]);
-      expect(await listLabeledResults(trx, b.ctx, a.mailboxId, { mail: "real" })).toEqual([]);
-      expect(await listUsageSince(trx, b.ctx, a.mailboxId, since, { mail: "real" })).toEqual([]);
+      expect(
+        await listUnlabeled(trx, b.ctx, a.mailboxId, { limit: 10, mail: "real", testMail: NO_TEST_SENDERS })
+      ).toEqual([]);
+      expect(await listLabeledResults(trx, b.ctx, a.mailboxId, { mail: "real", testMail: NO_TEST_SENDERS })).toEqual(
+        []
+      );
+      expect(await listUsageSince(trx, b.ctx, a.mailboxId, since, { mail: "real", testMail: NO_TEST_SENDERS })).toEqual(
+        []
+      );
 
       // Each org reads only its own rows.
       expect(
-        (await listUnlabeled(trx, a.ctx, a.mailboxId, { limit: 10, mail: "real" })).map((r) => r.email_id)
+        (await listUnlabeled(trx, a.ctx, a.mailboxId, { limit: 10, mail: "real", testMail: NO_TEST_SENDERS })).map(
+          (r) => r.email_id
+        )
       ).toEqual([emailA]);
       expect(
-        (await listUnlabeled(trx, b.ctx, b.mailboxId, { limit: 10, mail: "real" })).map((r) => r.email_id)
+        (await listUnlabeled(trx, b.ctx, b.mailboxId, { limit: 10, mail: "real", testMail: NO_TEST_SENDERS })).map(
+          (r) => r.email_id
+        )
       ).toEqual([emailB]);
-      expect((await listLabeledResults(trx, a.ctx, a.mailboxId, { mail: "real" })).map((r) => r.email_id)).toEqual([
-        labeledA,
-      ]);
-      expect((await listLabeledResults(trx, b.ctx, b.mailboxId, { mail: "real" })).map((r) => r.email_id)).toEqual([
-        labeledB,
-      ]);
-      expect(await listUsageSince(trx, a.ctx, a.mailboxId, since, { mail: "real" })).toHaveLength(2);
-      expect(await listUsageSince(trx, b.ctx, b.mailboxId, since, { mail: "real" })).toHaveLength(2);
+      expect(
+        (await listLabeledResults(trx, a.ctx, a.mailboxId, { mail: "real", testMail: NO_TEST_SENDERS })).map(
+          (r) => r.email_id
+        )
+      ).toEqual([labeledA]);
+      expect(
+        (await listLabeledResults(trx, b.ctx, b.mailboxId, { mail: "real", testMail: NO_TEST_SENDERS })).map(
+          (r) => r.email_id
+        )
+      ).toEqual([labeledB]);
+      expect(
+        await listUsageSince(trx, a.ctx, a.mailboxId, since, { mail: "real", testMail: NO_TEST_SENDERS })
+      ).toHaveLength(2);
+      expect(
+        await listUsageSince(trx, b.ctx, b.mailboxId, since, { mail: "real", testMail: NO_TEST_SENDERS })
+      ).toHaveLength(2);
     });
   });
 
@@ -288,9 +307,13 @@ describe("triage repository", () => {
         await insertTriageResult(trx, a.ctx, resultRow(emailId));
       }
 
-      const real = await listUnlabeled(trx, a.ctx, a.mailboxId, { limit: 10, mail: "real" });
+      const real = await listUnlabeled(trx, a.ctx, a.mailboxId, { limit: 10, mail: "real", testMail: NO_TEST_SENDERS });
       expect(real.map((r) => r.email_id)).toEqual([kinds.real, kinds.nullId]);
-      const synthetic = await listUnlabeled(trx, a.ctx, a.mailboxId, { limit: 10, mail: "synthetic" });
+      const synthetic = await listUnlabeled(trx, a.ctx, a.mailboxId, {
+        limit: 10,
+        mail: "synthetic",
+        testMail: NO_TEST_SENDERS,
+      });
       expect(synthetic.map((r) => r.email_id)).toEqual([kinds.syntheticUpper, kinds.synthetic]);
     });
   });
@@ -310,9 +333,12 @@ describe("triage repository", () => {
         });
       }
 
-      const real = await listLabeledResults(trx, a.ctx, a.mailboxId, { mail: "real" });
+      const real = await listLabeledResults(trx, a.ctx, a.mailboxId, { mail: "real", testMail: NO_TEST_SENDERS });
       expect(sortedIds(real.map((r) => r.email_id))).toEqual(sortedIds([kinds.real, kinds.nullId]));
-      const synthetic = await listLabeledResults(trx, a.ctx, a.mailboxId, { mail: "synthetic" });
+      const synthetic = await listLabeledResults(trx, a.ctx, a.mailboxId, {
+        mail: "synthetic",
+        testMail: NO_TEST_SENDERS,
+      });
       expect(sortedIds(synthetic.map((r) => r.email_id))).toEqual(sortedIds([kinds.synthetic, kinds.syntheticUpper]));
     });
   });
@@ -328,9 +354,12 @@ describe("triage repository", () => {
       await insertTriageResult(trx, a.ctx, resultRow(kinds.real, { tokensIn: 104 }));
       const since = new Date(Date.now() - 60 * 60 * 1000);
 
-      const real = await listUsageSince(trx, a.ctx, a.mailboxId, since, { mail: "real" });
+      const real = await listUsageSince(trx, a.ctx, a.mailboxId, since, { mail: "real", testMail: NO_TEST_SENDERS });
       expect(real.map((r) => r.tokens_in).sort()).toEqual([103, 104]);
-      const synthetic = await listUsageSince(trx, a.ctx, a.mailboxId, since, { mail: "synthetic" });
+      const synthetic = await listUsageSince(trx, a.ctx, a.mailboxId, since, {
+        mail: "synthetic",
+        testMail: NO_TEST_SENDERS,
+      });
       expect(synthetic.map((r) => r.tokens_in).sort()).toEqual([101, 102]);
     });
   });
@@ -367,14 +396,18 @@ describe("triage repository", () => {
         userId: null,
       });
 
-      const rows = await listUnlabeled(trx, a.ctx, a.mailboxId, { limit: 10, mail: "real" });
+      const rows = await listUnlabeled(trx, a.ctx, a.mailboxId, { limit: 10, mail: "real", testMail: NO_TEST_SENDERS });
       expect(rows.map((r) => r.email_id)).toEqual([newer, older]);
       const olderRow = rows.find((r) => r.email_id === older);
       expect(olderRow).toMatchObject({ category: "spam", reason_code: "llm", fields: { n: 2 } });
       expect(olderRow?.confidence).toBeCloseTo(0.6, 5);
       expect(olderRow?.received_at).toEqual(new Date("2026-11-01T08:00:00Z"));
 
-      const limited = await listUnlabeled(trx, a.ctx, a.mailboxId, { limit: 1, mail: "real" });
+      const limited = await listUnlabeled(trx, a.ctx, a.mailboxId, {
+        limit: 1,
+        mail: "real",
+        testMail: NO_TEST_SENDERS,
+      });
       expect(limited.map((r) => r.email_id)).toEqual([newer]);
     });
   });
@@ -417,7 +450,7 @@ describe("triage repository", () => {
       await setFeedbackCreatedAt(trx, latestFeedback, 1);
       await setFeedbackCreatedAt(trx, oldFeedback, 5);
 
-      const rows = await listLabeledResults(trx, a.ctx, a.mailboxId, { mail: "real" });
+      const rows = await listLabeledResults(trx, a.ctx, a.mailboxId, { mail: "real", testMail: NO_TEST_SENDERS });
       expect(rows).toHaveLength(1);
       expect(rows[0]).toMatchObject({
         email_id: emailId,
@@ -453,7 +486,7 @@ describe("triage repository", () => {
       await setResultCreatedAt(trx, tooOld, 120);
       const since = new Date(Date.now() - 60 * 60 * 1000);
 
-      const rows = await listUsageSince(trx, a.ctx, a.mailboxId, since, { mail: "real" });
+      const rows = await listUsageSince(trx, a.ctx, a.mailboxId, since, { mail: "real", testMail: NO_TEST_SENDERS });
       expect(rows).toHaveLength(1);
       expect(rows[0]).toMatchObject({
         model: "gemini-3.5-flash-lite",

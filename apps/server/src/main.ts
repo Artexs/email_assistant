@@ -13,6 +13,7 @@ import {
   mailAllowLocal,
   operatorChatId,
   sendLimits,
+  testMailRule,
   type Config,
 } from "./platform/config";
 import { createSecretBox } from "./platform/crypto";
@@ -50,7 +51,7 @@ function triageScope(config: Config, provider: LlmProviderId): TriageScope | nul
   }
   if (config.TRIAGE_LLM_SCOPE === "synthetic") {
     log.info("triage_scope", { scope: "synthetic" });
-    return { kind: "synthetic" };
+    return { kind: "synthetic", testMail: testMailRule(config) };
   }
   log.warn("triage_scope", { scope: "all", provider });
   return { kind: "all" };
@@ -148,6 +149,7 @@ if (scope !== null) {
     llm,
     pause: createLlmPause({ configHint: provider.configHint }),
     scope,
+    testMail: testMailRule(config),
     batchSize: 5,
     dailyCap: config.LLM_DAILY_CAP,
     now: () => new Date(),

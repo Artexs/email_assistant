@@ -3,13 +3,15 @@ import { describe, expect, test } from "bun:test";
 import type { SendClaimFilter } from "./repo";
 import { claimFilterFor, scopeAdmits, sendFilterFor, sendScopeAdmits } from "./scope";
 
+const rule = { senders: ["t@a.test"] };
+
 describe("claimFilterFor", () => {
   test("off holds back every mailbox change", () => {
     expect(claimFilterFor({ kind: "off" })).toEqual({ kind: "none" });
   });
 
-  test("synthetic applies to every mailbox", () => {
-    expect(claimFilterFor({ kind: "synthetic" })).toEqual({ kind: "synthetic" });
+  test("synthetic applies to every mailbox and keeps the test sender rule", () => {
+    expect(claimFilterFor({ kind: "synthetic", testMail: rule })).toEqual({ kind: "synthetic", testMail: rule });
   });
 
   test("all gives `all` for every mailbox", () => {
@@ -19,25 +21,30 @@ describe("claimFilterFor", () => {
 });
 
 describe("scopeAdmits", () => {
-  const synthetic = "<a@ea-seed.test>";
-  const real = "<a@real.test>";
+  const synthetic = { messageIdHeader: "<a@ea-seed.test>", fromAddress: "boss@firma.test" };
+  const real = { messageIdHeader: "<a@real.test>", fromAddress: "boss@firma.test" };
+  const fromTestSender = { messageIdHeader: "<r@x.test>", fromAddress: "t@a.test" };
+  const nothing = { messageIdHeader: null, fromAddress: null };
 
   test("all admits every mail", () => {
     expect(scopeAdmits({ kind: "all" }, synthetic)).toBe(true);
     expect(scopeAdmits({ kind: "all" }, real)).toBe(true);
-    expect(scopeAdmits({ kind: "all" }, null)).toBe(true);
+    expect(scopeAdmits({ kind: "all" }, nothing)).toBe(true);
   });
 
-  test("synthetic admits only a synthetic Message-ID", () => {
-    expect(scopeAdmits({ kind: "synthetic" }, synthetic)).toBe(true);
-    expect(scopeAdmits({ kind: "synthetic" }, real)).toBe(false);
-    expect(scopeAdmits({ kind: "synthetic" }, null)).toBe(false);
+  test("synthetic admits a synthetic Message-ID or a sender of the rule", () => {
+    const filter = { kind: "synthetic", testMail: rule } as const;
+    expect(scopeAdmits(filter, synthetic)).toBe(true);
+    expect(scopeAdmits(filter, fromTestSender)).toBe(true);
+    expect(scopeAdmits(filter, { ...fromTestSender, fromAddress: "T@A.test" })).toBe(true);
+    expect(scopeAdmits(filter, real)).toBe(false);
+    expect(scopeAdmits(filter, nothing)).toBe(false);
   });
 
   test("none admits nothing", () => {
     expect(scopeAdmits({ kind: "none" }, synthetic)).toBe(false);
-    expect(scopeAdmits({ kind: "none" }, real)).toBe(false);
-    expect(scopeAdmits({ kind: "none" }, null)).toBe(false);
+    expect(scopeAdmits({ kind: "none" }, fromTestSender)).toBe(false);
+    expect(scopeAdmits({ kind: "none" }, nothing)).toBe(false);
   });
 });
 

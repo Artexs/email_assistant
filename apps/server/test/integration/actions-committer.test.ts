@@ -10,6 +10,7 @@ import {
   type MailSender,
   type SmtpConnectOptions,
 } from "../../src/modules/mail";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { createFakeMailProvider, type FakeMailProvider } from "../../src/modules/mail/fake";
 import { createFakeMailSender } from "../../src/modules/mail/fake/sender";
 import { insertCredentials, insertMailbox, insertSyncFolders } from "../../src/modules/mail/repo";
@@ -168,7 +169,7 @@ describe("createCommitterJob", () => {
       const real = await addMail(trx, box, { messageId: "<r1@x.test>", actions: [{ type: "flag" }] });
       const opener = openerFor([box]);
 
-      await jobFor(trx, opener, { kind: "synthetic" }).run();
+      await jobFor(trx, opener, { kind: "synthetic", testMail: NO_TEST_SENDERS }).run();
 
       expect((await actionState(trx, synthetic.actionIds[0] as string)).status).toBe("applied");
       expect((await actionState(trx, synthetic.actionIds[1] as string)).status).toBe("applied");
@@ -230,7 +231,7 @@ describe("createCommitterJob", () => {
       await addMail(trx, box, { messageId: "<r4@x.test>", actions: [{ type: "flag", status: "applied" }] });
       const opener = openerFor([box]);
 
-      await jobFor(trx, opener, { kind: "synthetic" }).run();
+      await jobFor(trx, opener, { kind: "synthetic", testMail: NO_TEST_SENDERS }).run();
 
       expect(opener.calls).toEqual([]);
     });
@@ -305,7 +306,7 @@ describe("createCommitterJob", () => {
       const opener = openerFor([bad, good]);
       opener.failures.set(bad.address, new Error("boom"));
 
-      await jobFor(trx, opener, { kind: "synthetic" }).run();
+      await jobFor(trx, opener, { kind: "synthetic", testMail: NO_TEST_SENDERS }).run();
 
       expect((await actionState(trx, mail.actionIds[0] as string)).status).toBe("applied");
       expect(opener.calls).toHaveLength(2);

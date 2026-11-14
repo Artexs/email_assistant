@@ -4,7 +4,7 @@ import { barCategories, noGoBodySchema, settingsChangeSchema, settingsViewSchema
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { insertDefaultSettings, settingsRoutes } from "../../src/modules/config";
-import { ensureSyncFolders } from "../../src/modules/mail";
+import { ensureSyncFolders, NO_TEST_SENDERS } from "../../src/modules/mail";
 import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { settingsRouteDeps } from "../../src/web";
 
@@ -53,7 +53,7 @@ async function setup() {
   const app = webTestApp({
     db,
     sessions: { owner: org.ownerId, assistant: org.assistantId, other: org.otherOwnerId },
-    routers: (api) => api.route("/", settingsRoutes(settingsRouteDeps(db, () => NOW))),
+    routers: (api) => api.route("/", settingsRoutes(settingsRouteDeps(db, () => NOW, NO_TEST_SENDERS))),
   });
   return { org, app, m1, m2, ctx: { orgId: org.orgId } };
 }

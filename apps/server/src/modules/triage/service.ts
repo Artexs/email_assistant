@@ -29,11 +29,12 @@ import { lockSettingsForShare } from "../config";
 import { createDelegation, detectReply, markAnswered } from "../delegation";
 import {
   finishEmail,
-  isSyntheticMessageId,
+  isTestMail,
   listThreadContext,
   PENDING_BODY_DAYS,
   releaseEmail,
   type ClaimedEmail,
+  type TestMailRule,
 } from "../mail";
 
 import { classifyEmail, type ClassifierEmail } from "./classifier";
@@ -85,6 +86,8 @@ export interface TriageDeps {
   db: Db | Transaction<DB>;
   llm: LlmClient;
   pause: LlmPause;
+  // Thread context of a test mail comes from test mail only.
+  testMail: TestMailRule;
   // The most `llm.call` rows of one mailbox per quota day.
   dailyCap: number;
   now(): Date;
@@ -469,7 +472,12 @@ export async function triageOne(
   }
 
   const threadRows = await listThreadContext(deps.db, ctx, mailbox.id, email.thread_key, email.received_at, email.id, {
-    syntheticOnly: isSyntheticMessageId(email.message_id_header),
+    syntheticOnly: isTestMail(
+      { messageIdHeader: email.message_id_header, fromAddress: email.from_address },
+      deps.testMail
+    )
+      ? { testMail: deps.testMail }
+      : false,
   });
   const classifierEmail: ClassifierEmail = {
     from: email.from_address,

@@ -15,6 +15,7 @@ import {
   mailRoutes,
   openImapProvider,
   setSyncFolderEnabled,
+  type TestMailRule,
   verifySmtpLogin,
   WEB_MAIL_TIMEOUTS,
 } from "./modules/mail";
@@ -39,6 +40,7 @@ import {
   operatorUserIds,
   webTrustedOrigins,
   webTrustedProxies,
+  testMailRule,
   type Config,
 } from "./platform/config";
 import type { SecretBox } from "./platform/crypto";
@@ -194,15 +196,15 @@ export function homePathOf(
 }
 
 // D8, D16: the web calls the same setters as the CLI, with the one `settingsDeps` builder.
-export function settingsRouteDeps(db: Db, now: () => Date): SettingsRouteDeps {
+export function settingsRouteDeps(db: Db, now: () => Date, testMail: TestMailRule): SettingsRouteDeps {
   const settings = settingsDeps(db, now);
   return {
     db,
     now,
     settings,
-    goNoGo: (ctx, id, at) => goNoGoFor(db, ctx, id, at),
+    goNoGo: (ctx, id, at) => goNoGoFor(db, ctx, id, at, testMail),
     setAuto: async (ctx, id, input) => {
-      const result = await setCategoryAutoWithGate(settings, ctx, id, input);
+      const result = await setCategoryAutoWithGate(settings, ctx, id, input, testMail);
       return result.kind === "refused" ? result : { kind: "changed", change: result.change };
     },
     listSyncFolders: async (ctx, id) =>
@@ -279,7 +281,7 @@ export function apiRouters(
         },
       })
     );
-    api.route("/", settingsRoutes(settingsRouteDeps(db, now)));
+    api.route("/", settingsRoutes(settingsRouteDeps(db, now, testMailRule(config))));
     api.route("/", rulesRoutes({ db, now }));
     api.route("/", activityRoutes({ db, now }));
     api.route("/", triageRoutes({ db, now, actionsScope: extras.actionsScope }));

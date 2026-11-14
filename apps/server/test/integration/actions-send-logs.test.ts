@@ -8,6 +8,7 @@ import { detectNotices, handleCallback, type CallbackDeps, type LinkedChat } fro
 import { getMailboxSettings, insertDefaultSettings, updateMailboxSettings } from "../../src/modules/config";
 import { createChaserJob, delegationHooks } from "../../src/modules/delegation";
 import { composeMessage, SmtpSendError } from "../../src/modules/mail";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { createFakeMailProvider } from "../../src/modules/mail/fake";
 import { createFakeMailSender } from "../../src/modules/mail/fake/sender";
 import { insertCredentials, markSynced } from "../../src/modules/mail/repo";
@@ -145,7 +146,7 @@ describe("send logs", () => {
           openSender: async () => sender,
           compose: composeMessage,
           hooks,
-          scope: { kind: "synthetic" },
+          scope: { kind: "synthetic", testMail: NO_TEST_SENDERS },
           sendScope: { kind: "self", addresses: [MARKERS.delegate] },
           now: () => clock,
         });
@@ -192,7 +193,7 @@ describe("send logs", () => {
         const tapDeps: CallbackDeps = {
           db: trx,
           now: () => clock,
-          actionsScope: { kind: "synthetic" },
+          actionsScope: { kind: "synthetic", testMail: NO_TEST_SENDERS },
           hooks,
           uidplus: async () => true,
           sendScope: { kind: "self", addresses: [MARKERS.delegate] },

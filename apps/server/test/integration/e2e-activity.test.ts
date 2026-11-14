@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import type { ActionsScope } from "../../src/modules/actions";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { listActivity } from "../../src/modules/reports";
 import { getLabelTarget, undoWithFeedback } from "../../src/modules/triage";
 import { seedActivityRows, seedOtherOrgMail } from "../../src/scripts/e2e-activity-rows";
@@ -20,7 +21,7 @@ afterAll(async () => {
 });
 
 const NOW = new Date("2026-11-11T12:00:00Z");
-const SYNTHETIC: ActionsScope = { kind: "synthetic" };
+const SYNTHETIC: ActionsScope = { kind: "synthetic", testMail: NO_TEST_SENDERS };
 
 describe("e2e activity rows", () => {
   test("(1) 56 mails with the phrases of B12", async () => {

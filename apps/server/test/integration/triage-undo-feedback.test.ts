@@ -4,6 +4,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
 import type { ActionsScope } from "../../src/modules/actions";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { insertFeedback, recordWebFeedback, undoWithFeedback } from "../../src/modules/triage";
 import type { DB } from "../../src/platform/db";
 import { HardError } from "../../src/platform/errors";
@@ -28,7 +29,7 @@ const DAY = 24 * HOUR;
 const T = new Date("2026-11-11T10:00:00Z");
 const NOW = new Date(T.getTime() + HOUR);
 const MESSAGE_ID = "<a@ea-seed.test>";
-const SYNTHETIC: ActionsScope = { kind: "synthetic" };
+const SYNTHETIC: ActionsScope = { kind: "synthetic", testMail: NO_TEST_SENDERS };
 
 async function setup(trx: Transaction<DB>) {
   const a = await createOrgWithMailbox(trx);

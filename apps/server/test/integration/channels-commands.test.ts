@@ -18,6 +18,7 @@ import {
 } from "../../src/modules/channels";
 import { accountPausedText, helpText } from "../../src/modules/channels/texts";
 import { insertDefaultSettings } from "../../src/modules/config";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { insertMailbox, listSyncTargets, markSynced, setMailboxStatus } from "../../src/modules/mail/repo";
 import { insertDigest, markDigestSent } from "../../src/modules/reports";
 import { setDigestTimes } from "../../src/modules/tenancy";
@@ -152,7 +153,10 @@ describe("statusMessage", () => {
       expect(all.text).toContain(
         "Actions: real mail, by the mode of each mailbox (ACTIONS_SCOPE=all) · last 24 h: applied 2, undone 0, failed 1"
       );
-      const synthetic = await statusMessage(depsAt(trx, T, { actionsScope: { kind: "synthetic" } }), link);
+      const synthetic = await statusMessage(
+        depsAt(trx, T, { actionsScope: { kind: "synthetic", testMail: NO_TEST_SENDERS } }),
+        link
+      );
       expect(synthetic.text).toContain("Actions: test mail only (ACTIONS_SCOPE=synthetic) · last 24 h: applied 2");
     });
   });
