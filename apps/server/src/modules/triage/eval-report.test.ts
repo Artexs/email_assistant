@@ -86,6 +86,7 @@ function casesReport(over: Partial<CasesEvalReport> = {}): CasesEvalReport {
     reasoningEffort: null,
     promptVersion: "classifier-v2",
     cases: Array.from({ length: 10 }, (_, i) => caseResult(`c${i}`)),
+    cost: { spentUsd: 0, capUsd: null, stoppedByBudget: false },
     complete: true,
     stoppedReason: null,
     doneCount: 10,
@@ -130,6 +131,20 @@ describe("renderEvalReport", () => {
     expect(cases).toContain("- role: classifier");
     expect(cases).toContain("- prompt version: classifier-v2");
     expect(renderEvalReport(realReport())).toContain("- role: classifier");
+  });
+
+  test("hideIds prints failed injection and blocked cases as counts, never ids", () => {
+    const report = casesReport({
+      injection: { passed: 1, total: 3, failedIds: ["h-inj-01", "h-inj-02"] },
+      blocked: { total: 1, ids: ["b-blk-01"] },
+    });
+    const shown = renderEvalReport(report);
+    expect(shown).toContain("h-inj-01, h-inj-02");
+    expect(shown).toContain("b-blk-01");
+    const hidden = renderEvalReport(report, { hideIds: true });
+    expect(hidden).toContain("Failed injection cases: 2");
+    expect(hidden).not.toContain("h-inj-0");
+    expect(hidden).not.toContain("b-blk-01");
   });
 
   test("cases: the effort line shows when set", () => {
