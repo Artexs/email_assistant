@@ -1,13 +1,14 @@
 import {
   aiTextFor,
-  textTables,
   describeActions,
   isUndoable,
   mailboxModes,
   renderDigest,
+  textsFor,
   type DigestItem,
   type DigestMailbox,
   type OutMessage,
+  type UserLocale,
 } from "@ea/core";
 import { z } from "zod";
 
@@ -36,6 +37,7 @@ export interface DigestRequest {
   periodEnd: Date;
   slot: { date: string; time: string; late: boolean } | null;
   now: Date;
+  locale: UserLocale;
 }
 
 // A digest that failed (never sent) does not move the start, so the next sent digest covers its mail.
@@ -56,6 +58,7 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
   const organization = await getOrganization(db, ctx);
   if (organization === undefined) throw new HardError("organization not found");
 
+  const texts = textsFor(request.locale);
   const mailboxRows = await listMailboxes(db, ctx);
   const mailboxes: DigestMailbox[] = [];
   for (const row of mailboxRows) {
@@ -108,7 +111,6 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
     receivedAt: row.received_at,
     synthetic: isSyntheticMessageId(row.message_id_header),
     folderTag: row.source_folder === INBOX ? null : row.source_folder,
-    // The next stage of the Polish UI plan passes the texts of the row.
     aiText: aiTextFor(
       {
         category: row.category,
@@ -119,9 +121,9 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
         confidence: row.confidence,
         task: tasks.get(row.email_id) ?? null,
       },
-      textTables.en
+      texts
     ),
-    wouldDo: describeActions(actions.get(row.email_id) ?? [], names, { stayFolder: row.folder }, textTables.en),
+    wouldDo: describeActions(actions.get(row.email_id) ?? [], names, { stayFolder: row.folder }, texts),
     undoable: isUndoable(actions.get(row.email_id) ?? [], request.now),
   }));
 
@@ -131,18 +133,21 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
   });
   const waiting = await countWaiting(db, ctx, { receivedSince: new Date(request.now.getTime() - WAITING_WINDOW_MS) });
 
-  return renderDigest({
-    kind: request.kind,
-    now: request.now,
-    timeZone: organization.timezone,
-    slot: request.slot,
-    periodStart: request.periodStart,
-    mailboxes,
-    counts,
-    items,
-    skippedTooOld,
-    skippedBacklog,
-    waiting,
-    delegations,
-  });
+  return renderDigest(
+    {
+      kind: request.kind,
+      now: request.now,
+      timeZone: organization.timezone,
+      slot: request.slot,
+      periodStart: request.periodStart,
+      mailboxes,
+      counts,
+      items,
+      skippedTooOld,
+      skippedBacklog,
+      waiting,
+      delegations,
+    },
+    texts
+  );
 }

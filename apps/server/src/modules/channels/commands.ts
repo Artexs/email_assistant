@@ -193,7 +193,14 @@ export async function digestNowMessage(deps: CommandDeps, link: LinkedChat): Pro
   const now = deps.now();
   const ctx = { orgId: link.orgId, userId: link.userId };
   const periodStart = await digestPeriodStart(deps.db, ctx, { userId: link.userId, linkedAt: link.linkedAt }, now);
-  return buildDigestMessage(deps.db, ctx, { kind: "on_demand", periodStart, periodEnd: now, slot: null, now });
+  return buildDigestMessage(deps.db, ctx, {
+    kind: "on_demand",
+    periodStart,
+    periodEnd: now,
+    slot: null,
+    now,
+    locale: link.locale,
+  });
 }
 
 // The /review page (F097 D4, D6): behind the flag `review_command`; a seeded random sample of unlabelled real mail.

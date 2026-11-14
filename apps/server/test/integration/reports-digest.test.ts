@@ -123,6 +123,7 @@ describe("buildDigestMessage", () => {
     periodEnd: T,
     slot: { date: "2026-11-06", time: "08:00", late: false },
     now: T,
+    locale: "en" as const,
   };
 
   test("lines, buttons, sync time, no data of another org", async () => {
@@ -353,6 +354,7 @@ describe("buildDigestMessage with delegations", () => {
     periodEnd: T,
     slot: { date: "2026-11-06", time: "08:00", late: false },
     now: T,
+    locale: "en" as const,
   };
 
   test("a delegation line shows the draft, the approval and the task; the footer counts", async () => {

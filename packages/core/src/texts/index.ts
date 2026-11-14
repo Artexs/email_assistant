@@ -7,6 +7,7 @@ import { approvalTexts, type ApprovalTexts } from "./approvals";
 import { categoryTexts, type CategoryTexts } from "./categories";
 import { clockTexts, type ClockTexts } from "./clock";
 import { commonTexts, type CommonTexts } from "./common";
+import { digestTexts, type DigestTexts } from "./digest";
 import { noticeTexts, type NoticeTexts } from "./notices";
 import { reviewTexts, type ReviewTexts } from "./review";
 import { wouldDoTexts, type WouldDoTexts } from "./would-do";
@@ -19,6 +20,7 @@ export type {
   CategoryTexts,
   ClockTexts,
   CommonTexts,
+  DigestTexts,
   NoticeTexts,
   ReviewTexts,
   WouldDoTexts,
@@ -35,7 +37,8 @@ export interface CoreTexts {
   notices: NoticeTexts;
   approvals: ApprovalTexts;
   review: ReviewTexts;
-  // Stages 10–11 add digest, bot.
+  digest: DigestTexts;
+  // Stage 11 adds bot.
 }
 
 export const textTables: Record<UserLocale, CoreTexts> = {
@@ -50,6 +53,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     notices: noticeTexts.en,
     approvals: approvalTexts.en,
     review: reviewTexts.en,
+    digest: digestTexts.en,
   },
   pl: {
     locale: "pl",
@@ -62,6 +66,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     notices: noticeTexts.pl,
     approvals: approvalTexts.pl,
     review: reviewTexts.pl,
+    digest: digestTexts.pl,
   },
 };
 
