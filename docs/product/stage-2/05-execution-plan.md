@@ -42,7 +42,7 @@ One row per `plan-task` run. "Plan name" is the working name until `plan-task` g
 | 9 | E8a Logs | E08 | 19 | E1 | — | F103 |
 | 10 | E5a Read Sent | E05 | ≈ 7 | E1, E7-T2 | — | F104 |
 | 11 | E7-T6 Identity A (TOTP, backup codes, break-glass) | E07 notes §11 | 15 | F082 | — | F105 |
-| 12 | E7-T3 Account data (delete, export, DSR) | E07 notes §11 | ≈ 8 | F082, E7-T1 | — | F106 |
+| 12 | E7-T3 Account data (delete, export, DSR) | E07 notes §11 | 12 | F082, E7-T1 | — | F106 |
 | 13 | E7-T4 Papers and cost | E07 notes §11 | ≈ 6 | E7-T3 | — | F107 |
 | 14 | E7-T5 Production on the VPS | E07 notes §11 | ≈ 4 | E7-T1 … T4; the E8b drill proves its restore | — | F108 |
 | 15 | E3b Improve | E03 | ≈ 14 | E2a, E3a | Second pass after the first E2a holdout report (PD-060, PD-061) | F109 |

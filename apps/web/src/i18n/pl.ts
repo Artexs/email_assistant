@@ -498,7 +498,7 @@ export const pl: Record<TextKey, string> = {
   op_col_org: "Organizacja",
   op_col_plan: "Plan",
   op_col_trial_end: "Koniec okresu próbnego",
-  op_col_mailboxes: "Skrzynki (wszystkie / błąd logowania)",
+  op_col_mailboxes: "Skrzynki (wszystkie / błąd logowania / serwer niedozwolony)",
   op_col_last_sync: "Ostatnia synchronizacja",
   op_col_failures: "Błędy z 24 h (wysyłki / komunikaty)",
   op_col_llm: "AI dziś",

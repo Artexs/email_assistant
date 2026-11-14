@@ -219,6 +219,16 @@ describe("mailbox routes", () => {
     expect(await res.json()).toEqual({ error: "wrong_status" });
   });
 
+  test("pause and resume of a mailbox in host_blocked give 409", async () => {
+    const { org, app, m2 } = await setup();
+    await setMailboxStatus(db, { orgId: org.orgId }, m2, "host_blocked");
+    for (const action of ["pause", "resume"]) {
+      const res = await app.request(`/api/mailboxes/${m2}/${action}`, as("owner", { method: "POST" }));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ error: "wrong_status" });
+    }
+  });
+
   test("delete takes the typed address, notifies the linked owner and then gives 404", async () => {
     const { org, app, m1, m2, address1 } = await setup();
     await db.transaction().execute((trx) => linkChat(trx, { orgId: org.orgId }, org.ownerId, randomChatId(), NOW));

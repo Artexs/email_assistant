@@ -62,7 +62,7 @@ export function OrgTable({ orgs, selected, now, onSelect }: OrgTableProps) {
                     <PlanBadge plan={org.plan} />
                   </TableCell>
                   <TableCell>{dayText(org.trialEndsAt)}</TableCell>
-                  <TableCell>{`${org.mailboxes.total} / ${org.mailboxes.authError}`}</TableCell>
+                  <TableCell>{`${org.mailboxes.total} / ${org.mailboxes.authError} / ${org.mailboxes.hostBlocked}`}</TableCell>
                   <TableCell>{ageText(org.lastSyncAt, now)}</TableCell>
                   <TableCell>{`${org.failures24h.sends} / ${org.failures24h.outbox}`}</TableCell>
                   <TableCell>{llmTodayText(org.llmToday)}</TableCell>

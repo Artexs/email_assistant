@@ -87,6 +87,13 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Undo: change D31 in the F100 plan.
 - Source: `spec/features/planned/F100-e3a-measure/questions.md` Q15.
 
+### 2026-11-14 · Account data: delete, export and erase defaults (F106) · privacy · new
+- Choice: the F106 plan took its defaults. A wrong password in the delete dialog counts toward the sign-in lockout (10 in 15 minutes). The DSR address hash key comes from `CREDENTIALS_KEY` by HKDF. Export and DSR report encrypt to one `age` public key, no passphrase mode. A DSR for a member's or the organization's own address is refused. A mail whose only Reply-To is the person is erased like a mail from the person. Erase also writes `[removed]` into kept rows and blanks stored digest copies. The delete dialog sits behind the flag `org_delete`, default off.
+- Why: data leaves or is removed only on an explicit, logged, owner-side act; no new secret; no copy of the person's data survives in a Telegram row.
+- Effect: a backup restore brings back deletes and erases made after the backup; the runbook says to keep each CLI record line outside the server and run them again after a restore. If `CREDENTIALS_KEY` changes, old DSR hashes no longer match.
+- Undo: change the plan defaults before the stages run; after a delete or erase no undo.
+- Source: `spec/features/planned/F106-e7-t3-account-data-delete-export-dsr/questions.md` Q1 to Q17.
+
 ### 2026-11-14 · Row-level security joined the foundation group, built as a per-connection tenant scope (F092) · security · ok
 - Choice: the coordinator planned and built RLS on the review's default "yes". The web sets `app.org_id` on each connection acquire from an async tenant scope, not in one request transaction. A caller that runs raw SQL as `app` can still clear the setting, so the docs say "a safety net against a missed org_id filter".
 - Why: existing code opens transactions inside requests (Kysely refuses nesting), so one request transaction would break it; the scope needs no route or repository change.

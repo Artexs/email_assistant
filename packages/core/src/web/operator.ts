@@ -36,6 +36,7 @@ export const operatorOrgRowSchema = z.strictObject({
     active: z.number().int(),
     paused: z.number().int(),
     authError: z.number().int(),
+    hostBlocked: z.number().int(),
   }),
   lastSyncAt: z.iso.datetime().nullable(), // newest mailboxes.last_synced_at
   failures24h: z.strictObject({ sends: z.number().int(), outbox: z.number().int() }),
