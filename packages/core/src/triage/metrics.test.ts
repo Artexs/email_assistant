@@ -9,6 +9,7 @@ import {
   ruleSummary,
   THRESHOLDS,
   thresholdSweep,
+  wilsonInterval,
   type Prediction,
 } from "./metrics";
 
@@ -230,5 +231,27 @@ describe("confidenceHistogram", () => {
       { ...llm("spam", "spam", 1), source: "rule" } as Prediction,
     ];
     expect(confidenceHistogram(rows, "spam")[6]).toEqual({ bucket: "0.95–1.00", total: 2, correct: 1 });
+  });
+});
+
+describe("wilsonInterval", () => {
+  test("n = 0 knows nothing", () => {
+    expect(wilsonInterval(0, 0)).toEqual({ lower: 0, upper: 1 });
+  });
+
+  test("10 of 10", () => {
+    const { lower, upper } = wilsonInterval(10, 10);
+    expect(Math.abs(lower - 0.7225)).toBeLessThan(0.0005);
+    expect(upper).toBe(1);
+  });
+
+  test("189 of 189", () => {
+    expect(wilsonInterval(189, 189).lower).toBeGreaterThanOrEqual(0.98);
+  });
+
+  test("5 of 10", () => {
+    const { lower, upper } = wilsonInterval(5, 10);
+    expect(Math.abs(lower - 0.2366)).toBeLessThan(0.0005);
+    expect(Math.abs(upper - 0.7634)).toBeLessThan(0.0005);
   });
 });
