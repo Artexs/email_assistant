@@ -30,7 +30,7 @@ const userIds: string[] = [];
 // better-call writes a 500 by `console.error` outside our logger.
 const spies: ReturnType<typeof spyOn>[] = [];
 
-// What the resolver of the member handle answers (the stage 04 resolver does not exist yet).
+// What the resolver of the member handle answers (a stand-in: `web-sso-resolve.test.ts` runs the real resolver).
 const seen: SsoIdentity[] = [];
 let resolveMode: "link" | "domain_mismatch" = "link";
 
@@ -413,7 +413,7 @@ describe("the SSO plugin surface", () => {
   });
 });
 
-describe("the SSO callback with a resolver (stage 04 builds the real one)", () => {
+describe("the SSO callback with a stand-in resolver", () => {
   test("11: no IdP token is stored on the first link or on a later sign-in", async () => {
     const setup = await memberWithProvider({ proved: true });
     const first = await ssoSignIn(linkingApp, fake, { email: setup.email });

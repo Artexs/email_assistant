@@ -10,9 +10,10 @@ import { recordPasswordFailure, type LockoutStore } from "./auth-lockout";
 import {
   isAllowedSsoPath,
   rejectUnknownSsoBodyKeys,
-  ssoPlugin,
+  ssoPlugins,
   SSO_SIGN_IN_PATH,
   withoutIdpTokens,
+  type SsoEvent,
   type SsoIdentity,
   type SsoResolution,
 } from "./auth-sso";
@@ -62,6 +63,8 @@ export interface AuthDeps {
   keepsTwoFactor?: (userId: string) => Promise<boolean>;
   // Who may sign in with the company IdP (F119). Absent = every identity is refused with `sso_off`.
   resolveSsoMember?: (identity: SsoIdentity) => Promise<SsoResolution>;
+  // The audit row of an SSO sign-in or refusal (stage 04). It never throws into Better Auth.
+  onSsoEvent?: (event: SsoEvent) => Promise<void>;
 }
 
 export type Auth = ReturnType<typeof createBetterAuth>;
@@ -455,8 +458,12 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
         [SSO_SIGN_IN_PATH]: { window: 60, max: 10 },
       },
     },
-    // Order matters: the audit plugin comes last, after `twoFactorPlugin()` and `ssoPlugin()` (it reads the result of the code step).
-    plugins: [twoFactorPlugin(), ssoPlugin({ resolveMember: deps.resolveSsoMember }), signInAuditPlugin(report)],
+    // Order matters: the audit plugin comes last, after `twoFactorPlugin()` and `ssoPlugins()` (it reads the result of the code step).
+    plugins: [
+      twoFactorPlugin(),
+      ...ssoPlugins({ resolveMember: deps.resolveSsoMember, onSsoEvent: deps.onSsoEvent }),
+      signInAuditPlugin(report),
+    ],
     databaseHooks: {
       account: {
         // No IdP token is stored (an `id_token` holds the IdP e-mail in clear).

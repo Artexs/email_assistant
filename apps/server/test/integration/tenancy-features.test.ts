@@ -177,6 +177,7 @@ describe("org_features", () => {
         { flag: "handled_share", enabled: false, source: "default" },
         { flag: "answered_check", enabled: false, source: "default" },
         { flag: "org_delete", enabled: false, source: "default" },
+        { flag: "sso_sign_in", enabled: false, source: "default" },
       ]);
     });
   });

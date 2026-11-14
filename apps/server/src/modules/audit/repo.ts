@@ -82,6 +82,9 @@ export const auditEvents = {
   orgExported: "org.exported", // data: tables, rows
   dsrFind: "dsr.find", // data: address_hash, mails, mentions, listed_delegates, listed_sender_rules, open_actions
   dsrErase: "dsr.erase", // data: the keys of dsr.find, tombstones, chain_actions, chain_delegations, outbox_blanked, outbox_dropped
+  // F119. Flat; never the IdP e-mail or a token. The organization is the provider's.
+  ssoLogin: "sso.login", // actor: the user; data: provider_id, first_link
+  ssoRefused: "sso.refused", // actor: system; data: provider_id, code
 } as const;
 
 export interface AuditEvent {
