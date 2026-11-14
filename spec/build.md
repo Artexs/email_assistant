@@ -57,6 +57,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F120-e11a-sender-context` (🔴 PLANNED, needs plan): E11a Sender context; sequenced after E3a, E5a, E4-B; gate —.
 - `F121-e10b-public-pages-and-demo` (🔴 PLANNED, needs plan): E10b Public pages and demo; sequenced after E2b, E3a, E4-B, E7-T4, E8b; gate —.
 - `F122-e6b-style-from-sent` (🔴 PLANNED, needs plan): E6b Style from Sent; sequenced after E6a, E5a; gate Gated: only if the E2a judge shows a gain.
+- Order rule (owner, 2026-11-14): plan a ticket only after the tickets it needs (§2.1 "Needs") have landed; build it; then plan the next one that depends on it. Independent tickets may be planned in parallel with builds. Do not plan ahead of the code (F098 plan clashed with F091 code). Quota rule: set a `limen rule` wake at the quota reset time plus 2 minutes whenever jobs stop on the 5-hour limit; resume failed jobs with `limen continue` and the claude-bridge flags. Builders have no cap (owner), planners at most three at once; with 5 to 7 jobs the quota lasts about one hour per 5-hour window.
 
 ## PROVEN
 
