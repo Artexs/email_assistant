@@ -1,0 +1,201 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-007",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-del-0195",
+      "subject": "Spotkanie w sprawie oferty",
+      "body": "Szanowny Panie Wiktorze,\n\nproszę, aby Pana asystentka ustaliła z moim biurem termin spotkania w sprawie oferty na przyszły wtorek.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": []
+    },
+    {
+      "id": "b-del-0196",
+      "subject": "Contract appendix for the delivery windows",
+      "body": "Dear Mr Szalewski,\n\nplease ask your sales contracts colleague to send us the updated appendix with the new delivery windows for signature.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": []
+    },
+    {
+      "id": "b-del-0198",
+      "subject": "Re-invoicing of the demurrage charges",
+      "body": "Dear Wiktor,\n\nThe shipping line has charged demurrage for the containers that waited at the Gdynia terminal in December, and the invoice has reached us as the booking party. As the delay was caused by the customs hold on your consignment, the charge should be re-invoiced to Kordelan under the joint venture terms.\n\nCould you ask your accounting team to confirm the amount against their records and to issue the debit note to us for our share of 40 percent? They can send the confirmation straight to our finance desk.\n\nI would be glad if this could be closed this month. Thank you for your help.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Dear Wiktor,</p><p style=\"margin:0 0 12px 0\">The shipping line has charged demurrage for the containers that waited at the Gdynia terminal in December, and the invoice has reached us as the booking party. As the delay was caused by the customs hold on your consignment, the charge should be re-invoiced to Kordelan under the joint venture terms.</p><p style=\"margin:0 0 12px 0\">Could you ask your accounting team to confirm the amount against their records and to issue the debit note to us for our share of 40 percent? They can send the confirmation straight to our finance desk.</p><p style=\"margin:0 0 12px 0\">I would be glad if this could be closed this month. Thank you for your help.</p><p style=\"margin:0 0 12px 0\">Kind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0199",
+      "subject": "Rozliczenie kosztów przetargu - proszę o przekazanie księgowości",
+      "body": "Szanowny Panie Wiktorze,\n\nw nawiązaniu do wiadomości, którą wysłał do Pana Oliver Pemberton, chciałbym prosić o pomoc w uporządkowaniu rozliczeń związanych z przygotowaniem wspólnej oferty przetargowej. Koszty obejmują opłatę za dokumentację przetargową, wadium, tłumaczenia przysięgłe oraz usługi doradcy prawnego. Zgodnie z umową o współpracy powinny zostać rozdzielone pomiędzy nasze firmy w stosunku sześćdziesiąt do czterdziestu.\n\nProszę o polecenie księgowości Kordelana trzech czynności. Po pierwsze, sprawdzenia zestawienia kosztów, które przygotował nasz dział finansowy. Po drugie, wystawienia noty obciążeniowej na naszą część. Po trzecie, przesłania nam potwierdzenia, że wadium zostało wpłacone w ustalonej wysokości. Pomoże to nam zamknąć rozliczenie przed terminem składania ofert, który zbliża się szybko.\n\nNasz kontroler finansowy zna wszystkie dokumenty i jest do dyspozycji, jeśli w Państwa księgowości pojawią się pytania. Prosiłbym tylko o wskazanie, do kogo ma się zgłosić, żeby nie zajmować Pana uwagi.\n\nProszę o przekazanie sprawy jeszcze w tym tygodniu. Nie oczekuję osobistej odpowiedzi od Pana, wystarczy krótkie potwierdzenie od osoby, która zajmie się rozliczeniem, gdy będzie gotowe. Zależy nam na tym, aby w rozliczeniu nie pozostały niewyjaśnione różnice, bo zamawiający może poprosić o dokumenty potwierdzające wydatki, a wtedy każda niezgodność kosztuje nas czas. Kopie wszystkich faktur prześlemy od razu po otrzymaniu adresu odbiorcy.\n\nZ wyrazami szacunku\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "subject": "Przetarg - koszty wspólne",
+          "body": "Cześć Daniel, przesyłam wstępne zestawienie kosztów przetargu po naszej stronie. Do uzupełnienia są jeszcze tłumaczenia. Oliver"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0200",
+      "subject": "Weryfikacja i płatność faktur za organizację posiedzenia",
+      "body": "Szanowny Panie Prezesie,\n\nw nawiązaniu do wcześniejszej korespondencji z Panią Czerniak chciałbym prosić o uporządkowanie rozliczeń dotyczących posiedzenia rady, które odbyło się w grudniu. Księgowość otrzymała kilka faktur od dostawców usług: za wynajem sali, catering, tłumaczenia symultaniczne i transport członków rady. Nie wszystkie zostały jeszcze zapłacone, a kilka wymaga uzgodnienia z moim sekretariatem.\n\nProszę o polecenie księgowości, aby zweryfikowała wszystkie faktury z porządkiem posiedzenia i budżetem, który rada przyjęła w listopadzie, a następnie zleciła płatności. W przypadku faktur, w których kwota przekracza budżet o więcej niż dziesięć procent, proszę o krótką informację z podaniem powodu. Nie chcę, aby rada dowiedziała się o przekroczeniach dopiero z kwartalnego sprawozdania.\n\nProszę także o to, aby zestawienie kosztów posiedzenia trafiło do mojego sekretariatu przed 22.01.2027. Posłuży mi ono do przygotowania uwag do budżetu na kolejny kwartał.\n\nWiem, że sprawa dotyczy wyłącznie kwestii księgowych, a dodatkowo rada otrzyma pełne zestawienie wszystkich kosztów w styczniu. Rozumiem, że nie jest to sprawa wymagająca Pana osobistego zaangażowania. Dlatego proszę jedynie o przekazanie polecenia właściwemu zespołowi. W razie pytań księgowość może zwrócić się bezpośrednio do mojej asystentki.\n\nZ poważaniem\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "subject": "Faktury z posiedzenia rady",
+          "body": "Dzień dobry, w dziale księgowości czeka pięć faktur związanych z grudniowym posiedzeniem rady. Dwie z nich przekraczają planowane kwoty. Magdalena Czerniak"
+        },
+        {
+          "subject": "Re: Faktury z posiedzenia rady",
+          "body": "Dziękuję, Magdaleno. Poinformuję przewodniczącego rady i poproszę o wskazówki. Wiktor"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0201",
+      "subject": "Corrected invoice for the delivery of 11.01.2027",
+      "body": "Dear Mr Szalewski,\n\nour receiving team has noticed that the invoice for the delivery of 11.01.2027 lists the wrong number of pallets. Please ask your accounting team to correct it and to send us the new version. Our finance desk will then release the payment.\n\nThank you very much for taking care of this.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": []
+    },
+    {
+      "id": "b-del-0203",
+      "subject": "Prośba o potwierdzenie przelewu za karty",
+      "body": "Szanowny Panie Prezesie,\n\nw naszym systemie widnieje nieopłacona faktura za grudniowe rozliczenie kart paliwowych. Prosimy o polecenie Państwa księgowości sprawdzenia, czy przelew został zlecony, i o przesłanie nam potwierdzenia płatności z numerem faktury w tytule przelewu, ponieważ bez niego system nie dopasuje wpłaty.\n\nJeśli płatność nie została jeszcze dokonana, prosimy o podanie planowanej daty. Faktura została wystawiona 05.01.2027 z terminem płatności do 19.01.2027. Dziękujemy za pomoc w wyjaśnieniu sprawy.",
+      "thread": []
+    },
+    {
+      "id": "b-del-0204",
+      "subject": "Przegląd umowy o wspólnym przetargu - lista uwag",
+      "body": "Szanowny Panie Wiktorze,\n\nnasi prawnicy zakończyli pierwszy przegląd projektu umowy o wspólnym przetargu i przygotowali listę uwag, które wymagają odpowiedzi po Państwa stronie. Dotyczą one głównie odpowiedzialności za opóźnienia w realizacji poszczególnych tras, zasad rozliczania kosztów dodatkowych oraz klauzuli o wyłączności, która w obecnym brzmieniu ogranicza także nasze działania poza przetargiem.\n\nProszę o polecenie koordynatorowi sprzedaży, aby zapoznał się z uwagami i przygotował odpowiedź w formie poprawionego projektu. Najlepiej, aby zmiany były widoczne w trybie śledzenia, wtedy nasi prawnicy szybko ocenią, co zostało zaakceptowane, a co wymaga dalszej rozmowy. Piotr Lewandrowski brał udział w poprzednich rozmowach, więc będzie wiedział, które punkty były już uzgodnione ustnie.\n\nZależy nam na zamknięciu tego etapu do końca przyszłego tygodnia, ponieważ w kolejnym tygodniu chcemy już przejść do uzgodnienia załączników cenowych. Nie ma potrzeby, aby angażował się Pan osobiście. Gdyby pojawiły się trudności, które wymagają decyzji zarządu, koordynator może mnie o tym powiadomić, a ja przedstawię je zarządowi Baltic Freight Partners.\n\nDziękuję za pomoc i za dotychczasową dobrą współpracę. Jeśli koordynator woli omówić zmiany telefonicznie, nasz główny prawnik jest dostępny w tygodniu od poniedziałku do czwartku między dziesiątą a czternastą i chętnie przejdzie z nim przez wszystkie punkty.\n\nZ wyrazami szacunku\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Szanowny Panie Wiktorze,</p><p style=\"margin:0 0 12px 0\">nasi prawnicy zakończyli pierwszy przegląd projektu umowy o wspólnym przetargu i przygotowali listę uwag, które wymagają odpowiedzi po Państwa stronie. Dotyczą one głównie odpowiedzialności za opóźnienia w realizacji poszczególnych tras, zasad rozliczania kosztów dodatkowych oraz klauzuli o wyłączności, która w obecnym brzmieniu ogranicza także nasze działania poza przetargiem.</p><p style=\"margin:0 0 12px 0\">Proszę o polecenie koordynatorowi sprzedaży, aby zapoznał się z uwagami i przygotował odpowiedź w formie poprawionego projektu. Najlepiej, aby zmiany były widoczne w trybie śledzenia, wtedy nasi prawnicy szybko ocenią, co zostało zaakceptowane, a co wymaga dalszej rozmowy. Piotr Lewandrowski brał udział w poprzednich rozmowach, więc będzie wiedział, które punkty były już uzgodnione ustnie.</p><p style=\"margin:0 0 12px 0\">Zależy nam na zamknięciu tego etapu do końca przyszłego tygodnia, ponieważ w kolejnym tygodniu chcemy już przejść do uzgodnienia załączników cenowych. Nie ma potrzeby, aby angażował się Pan osobiście. Gdyby pojawiły się trudności, które wymagają decyzji zarządu, koordynator może mnie o tym powiadomić, a ja przedstawię je zarządowi Baltic Freight Partners.</p><p style=\"margin:0 0 12px 0\">Dziękuję za pomoc i za dotychczasową dobrą współpracę. Jeśli koordynator woli omówić zmiany telefonicznie, nasz główny prawnik jest dostępny w tygodniu od poniedziałku do czwartku między dziesiątą a czternastą i chętnie przejdzie z nim przez wszystkie punkty.</p><p style=\"margin:0 0 12px 0\">Z wyrazami szacunku</p><p style=\"margin:0 0 12px 0\">Kind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0205",
+      "subject": "Wizyty w magazynie",
+      "body": "Wiktor,\n\nniech asystentka zaplanuje wizyty nowych kierowników w magazynach w Poznaniu i w Gdyni, po jednym dniu w każdym.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": []
+    },
+    {
+      "id": "b-del-0206",
+      "subject": "Rozliczenie opłat za wspólny punkt odpraw",
+      "body": "Szanowny Panie Wiktorze,\n\nproszę o przekazanie księgowości prośby o rozliczenie wspólnego kosztu wynajmu punktu odpraw celnych za grudzień i styczeń. Faktura od wynajmującego została wystawiona na nasze biuro, a część Kordelana wynosi czterdzieści procent. Proszę o wystawienie noty obciążeniowej na naszą firmę, jeśli to my mamy zapłacić większą część, albo o przesłanie przelewu na nasz rachunek.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "subject": "Wspólny punkt odpraw",
+          "body": "Daniel, punkt w Gdyni działa już bez przerw. Opłaty za wynajem rozliczmy z księgowością. Oliver"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0207",
+      "subject": "Faktura agencji za obsadę magazynu - do sprawdzenia",
+      "body": "Cześć Wiktor,\n\npamiętasz, jak Genowefa Jastrzębska pisała, że dostawy do jej sieci się opóźniają, bo na naszym magazynie w Łodzi brakowało ludzi na zmianach? Zleciliśmy wtedy agencji pilną obsadę dodatkowych dwudziestu stanowisk na dwa tygodnie. Teraz agencja przysłała fakturę i wydaje mi się, że jest zawyżona: naliczono nam godziny nadliczbowe, których według moich informacji nikt nie przepracował, i dopłatę za pracę w nocy dla zmian, które kończyły się o dwudziestej drugiej.\n\nNie chcę, żebyś tracił na to czas. Poproś proszę Magdalenę, żeby porównała fakturę z listami obecności, które mamy w systemie kadrowym, i wstrzymała płatność w części, która się nie zgadza. Niech też napisze do agencji z prośbą o korektę lub wyjaśnienie, jak liczono godziny. Listy obecności mogę jej wysłać z działu operacyjnego jeszcze dzisiaj, wystarczy, że poda adres.\n\nZależy mi na tym, żeby sprawa została zamknięta jak najszybciej, bo agencja często potem ponawia wezwania do zapłaty z odsetkami, a nie chcę dostać od niej dwóch przypomnień. Jeśli kwota po sprawdzeniu okaże się wyższa niż pięć tysięcy złotych, to wtedy daj mi znać. Gdyby agencja się upierała, niech Magdalena powoła się na punkt umowy o rozliczaniu według rzeczywistych godzin, który podpisaliśmy w listopadzie.\n\nDzięki za pomoc!\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [
+        {
+          "subject": "Dostawy do sieci - opóźnienia",
+          "body": "Panie Wiktorze, kolejna dostawa do naszego centrum przyszła z opóźnieniem. Wygląda na to, że w Państwa magazynie brakuje ludzi. Proszę o wyjaśnienie. Genowefa Jastrzębska"
+        },
+        {
+          "subject": "Re: Dostawy do sieci - opóźnienia",
+          "body": "Szanowna Pani Genowefo, rozumiem. Dyrektor operacyjna zajmie się obsadą i wróci z informacją. Wiktor Szalewski"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0208",
+      "subject": "Faktury - termin spotkania",
+      "body": "Szanowny Panie Prezesie, proszę o polecenie asystentce umówienia rozmowy z naszym działem rozliczeń w przyszłym tygodniu.",
+      "thread": []
+    },
+    {
+      "id": "b-del-0209",
+      "subject": "Aneks o prowizji",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o przekazanie koordynatorowi sprzedaży aneksu o zmianie prowizji do przeglądu.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Szanowny Panie Prezesie,</p><p style=\"margin:0 0 12px 0\">proszę o przekazanie koordynatorowi sprzedaży aneksu o zmianie prowizji do przeglądu.</p><p style=\"margin:0 0 12px 0\">Regards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0211",
+      "subject": "Port fees statement",
+      "body": "Dear Wiktor,\n\nI am sending a short note about the statement of port fees for January. Our finance team has put together the amounts for the consignments that we handle together and notes that some of them were billed to us although the goods belong to your side.\n\nPlease ask your accounting team to check the statement, accept the lines that are correct and send us an invoice for the part that belongs to Kordelan. It would be good to have it settled by the end of next week.\n\nThank you for taking care of it.",
+      "thread": []
+    },
+    {
+      "id": "b-del-0212",
+      "subject": "Contract points for the Gdansk-Hamburg lane",
+      "body": "Dear Wiktor,\n\nthe Hamburg forwarder has asked for a change to the notice period in the lane contract, from 30 to 60 days. I would prefer not to answer before someone who knows our contract standards has looked at the clause.\n\nCould you ask your sales coordinator to review the clause and to propose a short reply to the forwarder? An email draft of three or four lines is enough. We have until the end of next week to answer.\n\nMany thanks for your help.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-del-0214",
+      "subject": "Spotkania z nowymi pracownikami - kalendarz",
+      "body": "Wiktor,\n\nnowa grupa magazynierów zaczyna pracę 1 lutego i chcielibyśmy, żeby przywitał ich ktoś z zarządu. Poproś asystentkę, żeby wpisała do kalendarza półgodzinne spotkanie powitalne w poniedziałek rano, zarezerwowała salę szkoleniową i rozesłała zaproszenia do dwunastu osób z listy, którą przygotuje mój zespół. Zrobiłbym to sam, ale nie mam dostępu do kalendarza zarządu.\n\nNie musisz uczestniczyć, jeśli się nie da. Chodzi tylko o rezerwację.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": []
+    },
+    {
+      "id": "b-del-0215",
+      "subject": "Logistics for the joint tender kick-off in Gdansk",
+      "body": "Dear Wiktor,\n\nWe have agreed with your team that the kick-off of the joint tender will take place at your Gdansk office on 08.02.2027, and I would like to make sure that the practical side is in good order well in advance. Seven people from our side will travel, and the day should run smoothly without any last-minute changes.\n\nI would be grateful if you could ask your assistant to take care of the following. First, to reserve the large meeting room from 09:00 until 17:00 and to enter the event in your calendar, so that the key members of your team keep the day free. Second, to organise lunch for fourteen people, with vegetarian options. Third, to book a minibus transfer from the airport on the morning of the meeting and back in the evening. Fourth, to send a short note with the programme and the address to my colleagues, once the schedule is final.\n\nThe names and flight numbers will be sent to her directly by my assistant as soon as the tickets are booked. I would like to keep the arrangements out of your own agenda, since you will be busy with the content of the meeting itself.\n\nA short confirmation from your assistant, once the room and the transfers are fixed, will be enough for us.\n\nThank you very much for your help, and I look forward to a productive day.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Dear Wiktor,</p><p style=\"margin:0 0 12px 0\">We have agreed with your team that the kick-off of the joint tender will take place at your Gdansk office on 08.02.2027, and I would like to make sure that the practical side is in good order well in advance. Seven people from our side will travel, and the day should run smoothly without any last-minute changes.</p><p style=\"margin:0 0 12px 0\">I would be grateful if you could ask your assistant to take care of the following. First, to reserve the large meeting room from 09:00 until 17:00 and to enter the event in your calendar, so that the key members of your team keep the day free. Second, to organise lunch for fourteen people, with vegetarian options. Third, to book a minibus transfer from the airport on the morning of the meeting and back in the evening. Fourth, to send a short note with the programme and the address to my colleagues, once the schedule is final.</p><p style=\"margin:0 0 12px 0\">The names and flight numbers will be sent to her directly by my assistant as soon as the tickets are booked. I would like to keep the arrangements out of your own agenda, since you will be busy with the content of the meeting itself.</p><p style=\"margin:0 0 12px 0\">A short confirmation from your assistant, once the room and the transfers are fixed, will be enough for us.</p><p style=\"margin:0 0 12px 0\">Thank you very much for your help, and I look forward to a productive day.</p><p style=\"margin:0 0 12px 0\">Kind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0216",
+      "subject": "Please have the lane contract checked",
+      "body": "Hi Wiktor,\n\nKarin forwarded me the new lane terms for the Nordic shipments, and some of the clauses on delays and compensation are different from what we signed last year. I don't have the time to read them closely.\n\nCan the sales coordinator go through the terms and tell me what has changed? A short list is fine. I will pass it on to Karin after that.\n\nThanks\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [
+        {
+          "subject": "Lane terms 2027",
+          "body": "Hello Oliver, our legal team has updated the lane terms for the new year. Please find the main changes in the next message. Best regards, Karin"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0217",
+      "subject": "Umowy z agencjami - uzupełnienie",
+      "body": "Wiktor,\n\nagencje pracy tymczasowej przysłały nowe wzory umów na kolejny rok i część zapisów się zmieniła, między innymi zasady rozliczania nadgodzin i okres wypowiedzenia. Jako dział kadr nie jesteśmy pewni, czy te zmiany są dla nas korzystne.\n\nPoproś koordynatora sprzedaży, żeby porównał nowe wzory ze starymi i przygotował krótką notatkę z różnicami. Wystarczy lista punktów, bez opinii prawnej. Chciałbym ją mieć w przyszłym tygodniu, bo agencje czekają na odpowiedź.\n\nDzięki, że to przekażesz dalej.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": []
+    },
+    {
+      "id": "b-del-0218",
+      "subject": "Zmiana warunków płatności",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o polecenie koordynatorowi sprzedaży przygotowania aneksu o zmianie terminu płatności faktur do czternastu dni.",
+      "thread": []
+    },
+    {
+      "id": "b-del-0219",
+      "subject": "Rescheduling my trip",
+      "body": "Hi Wiktor,\n\nmy trip to the session has to move by one day because of a conflict with another meeting. Could your assistant change the train tickets and the hotel night from 27.01 to 26.01.2027, and update the calendar entry? The new arrival time is around 16:00.\n\nThe new arrival time is only a guess, so she should check the trains after 15:00. I do not need an answer from you; it is only logistics. Regards\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Hi Wiktor,</p><p style=\"margin:0 0 12px 0\">my trip to the session has to move by one day because of a conflict with another meeting. Could your assistant change the train tickets and the hotel night from 27.01 to 26.01.2027, and update the calendar entry? The new arrival time is around 16:00.</p><p style=\"margin:0 0 12px 0\">The new arrival time is only a guess, so she should check the trains after 15:00. I do not need an answer from you; it is only logistics. Regards</p><p style=\"margin:0 0 12px 0\">Z powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0220",
+      "subject": "Overview of the advisory contracts",
+      "body": "Dear Mr Szalewski,\n\nplease have your sales contracts coordinator prepare an overview of the open advisory contracts of the board for the meeting on 28.01.2027. The overview should show the name of the adviser, the subject, the value and the end date of the contract, in a simple table.\n\nA copy to my office by 25.01.2027 would be appreciated. I do not need a reply from you personally.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-del-0221",
+      "subject": "Calendar slot for the Nordic signing",
+      "body": "Hi Wiktor,\n\nthe sales coordinator just told me that the Nordic legal team has agreed on the final text and is ready to sign. Could your assistant find a slot next week for the signing meeting, around 45 minutes, and put it into everyone's calendar? I would suggest Thursday or Friday late morning, either in Gdansk or by video call, whichever she finds easier to organise.\n\nShe will probably also need to book a room and send the invitation to Karin's team. I can send her the list of names, but only after she confirms the date, and the coordinator will be at the signing as well, so he should be on the invitation too. Karin's colleagues will need at least three days' notice to travel, so it is better to fix the date early.\n\nPlease don't take this on yourself, it is just a matter of the diary. If she has questions, she can call me on the mobile, I am in the Hamburg office until Wednesday and can answer any time.\n\nCheers, and thanks for handling this\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [
+        {
+          "subject": "Nordic agreement - status",
+          "body": "Oliver, the Nordic legal team confirmed that they have no more comments. I expect their signature next week. Piotr"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0224",
+      "subject": "Travel plan for the audit committee chair",
+      "body": "Dear Mr Szalewski,\n\nplease ask your assistant to arrange the trip of the chair of our audit committee, who will join the board session on 28.01.2027. She needs a train from Warsaw on the evening of the 27th, a room at the hotel next to your office and a return ticket for the 29th in the morning.\n\nThe chair's details will be sent by the board secretary directly. No answer is needed from you.",
+      "thread": []
+    },
+    {
+      "id": "b-del-0225",
+      "subject": "Korekta faktury po reklamacji",
+      "body": "Szanowny Panie Wiktorze,\n\ndostawa do naszego centrum w Łodzi z 12.01.2027 przyszła z uszkodzonymi opakowaniami, a Państwa dyrektor operacyjna uznała reklamację w całości. Proszę teraz o polecenie księgowości wystawienia faktury korygującej na wartość uszkodzonego towaru oraz przesłania jej do mojej księgowej.\n\nWartość reklamacji wynosi według naszych dokumentów około dziewięciu tysięcy złotych, ale dokładną kwotę ustali księgowość na podstawie protokołu szkody. Wystarczy mi sama faktura, nie potrzebuję odpowiedzi od Pana osobiście.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": []
+    }
+  ]
+}
