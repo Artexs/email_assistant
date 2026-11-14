@@ -696,8 +696,8 @@ describe("approvalEdit in Polish", () => {
     ["approved", "⏳ Zatwierdzono 11:07, trwa wysyłanie."],
     ["rejected", "✖️ Odrzucono 11:07."],
     ["expired", "⌛ Wygasło 11:07. Wiadomość nie została wysłana."],
-    ["approved_set", "⏳ Zatwierdzono 11:07. Wysyłanie: 2, pominięto: 1."],
-    ["rejected_set", "✖️ Pominięto 11:07. Odrzucono: 2, pominięto: 1."],
+    ["approved_set", "⏳ Zatwierdzono 11:07. Wysyłanie: 2 (pominięto 1)."],
+    ["rejected_set", "✖️ Pominięto 11:07. Odrzucono: 2 (pominięto 1)."],
     ["went_out", "✅ Oznaczono jako wysłane 11:07."],
     ["done", "✅ Gotowe 11:07."],
   ])("%s keeps the stored text and adds one Polish line", (outcome, line) => {

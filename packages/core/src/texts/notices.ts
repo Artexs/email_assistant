@@ -182,10 +182,10 @@ export const noticeTexts = {
     urgentTitle: "🔴 Pilna wiadomość",
     received: (clock) => `Odebrano ${clock}`,
     authError: {
-      first: (address, since) => `❌ Nie udało się zalogować do skrzynki: ${address}. Błąd od: ${since}.`,
+      first: (address, since) => `❌ Nie udało się zalogować do skrzynki: ${address}. Błąd trwa od ${since}.`,
       noRead: "System nie czyta teraz tej skrzynki. Żadna wiadomość nie ginie: zostaje na serwerze poczty.",
       fix: (mailboxId) =>
-        `Aby to naprawić: sprawdź hasło, potem uruchom mailbox:password dla skrzynki: ${mailboxId} (instrukcja: deploy/README.md).`,
+        `Aby to naprawić, sprawdź hasło i uruchom mailbox:password dla skrzynki ${mailboxId} (instrukcja: deploy/README.md).`,
     },
     hostBlocked: {
       first: (address, since) => `⛔ System przestał łączyć się z serwerem poczty skrzynki ${address} (od ${since}).`,
@@ -201,12 +201,12 @@ export const noticeTexts = {
       status: "/status pokazuje stan.",
       never: "nigdy",
     },
-    syncOk: (address, last) => `✅ Synchronizacja poczty znów działa: ${address}. Ostatnia synchronizacja: ${last}.`,
+    syncOk: (address, last) => `✅ Synchronizacja poczty znów działa: ${address}. Ostatnia synchronizacja ${last}.`,
     actionFailed: {
       first: {
         move: {
           original: "Nie udało się przenieść wiadomości",
-          reverse: "Cofnięcie nie powiodło się: nie udało się przenieść wiadomości z powrotem. Folder:",
+          reverse: "Cofnięcie nie powiodło się. Nie udało się przenieść wiadomości z powrotem do folderu:",
         },
         flag: {
           original: "Nie udało się oznaczyć wiadomości",
@@ -235,7 +235,7 @@ export const noticeTexts = {
     },
     mailboxRemoved: "Skrzynka usunięta. Zmień teraz jej hasło w ustawieniach dostawcy poczty.",
     sendHeld: {
-      first: (address, limit) => `⏸ Wysyłanie czeka (skrzynka: ${address}): ${limit}.`,
+      first: (address, limit) => `⏸ Wysyłanie czeka (skrzynka ${address}): ${limit}.`,
       limit: {
         mailbox_hour: "osiągnięto godzinny limit wysyłania z tej skrzynki",
         mailbox_day: "osiągnięto dzienny limit wysyłania z tej skrzynki",
