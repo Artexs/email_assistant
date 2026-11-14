@@ -38,7 +38,8 @@ const normalizeAddress = (address: string): string => address.trim().toLowerCase
 function windowUntil(counted: readonly Date[], cap: number, windowMs: number): Date | null {
   if (counted.length < cap) return null;
   const times = counted.map((startedAt) => startedAt.getTime()).sort((a, b) => a - b);
-  return new Date(times[times.length - cap] + windowMs);
+  const oldest = times[times.length - cap];
+  return oldest === undefined ? null : new Date(oldest + windowMs);
 }
 
 export function checkSendLimits(input: {
