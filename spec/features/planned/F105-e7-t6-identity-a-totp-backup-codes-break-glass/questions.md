@@ -10,3 +10,4 @@ Each has a default that the plan uses now. Answer only to change one. No questio
 6. **Who may turn TOTP off?** Default: every member, except the break-glass owner (refused). An operator may turn it off; the console then refuses until it is on again. (D10, D12)
 7. **The operator reset ends every session and trusted device of the user and clears the break-glass designation.** Default: yes; the user signs in again with the password and can enrol again. The operator checks the person's identity outside the system first (docs). (D13)
 8. **No mail about 2FA changes.** Default: no mail (the auth-mail sender is off on the VPS); the security log shows every change. (D7, PD-048)
+9. **Polish text of the button "I saved the codes".** [minor] Default: "Mam zapisane kody" (neutral), not "Zapisałem kody" (male speaker). `pl.ts` has no first-person past form, which in Polish shows the speaker's gender. (stage 11, refresh 1)

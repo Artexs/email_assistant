@@ -35,7 +35,7 @@ Two steps. About 220 changed lines (plus `bun.lock`).
 
 - [ ] **10.2 The QR component and the error map of the Account section**
   - Goal: one component draws the QR code, and one tested helper maps every error of enable, verify, disable and new codes to a field and a text.
-  - Files: add `apps/web/src/components/settings/TotpQr.tsx`; change `apps/web/src/lib/two-factor-errors.ts` and its test; change `apps/web/src/i18n/en.ts` (and `pl.ts` if it exists, D20).
+  - Files: add `apps/web/src/components/settings/TotpQr.tsx`; change `apps/web/src/lib/two-factor-errors.ts` and its test; change `apps/web/src/i18n/en.ts` and `apps/web/src/i18n/pl.ts` (every key in both files: `pl.ts` is on `master` and its type requires each key, D20).
   - Interfaces:
 
     ```tsx

@@ -6,9 +6,9 @@ One step (one component and its wiring). About 300 changed lines.
 
 - [ ] **11.1 `TwoFactorSection` in the Account card**
   - Goal: a member turns TOTP on (password → QR → code → backup codes once), sees how many backup codes are left, makes new ones, and turns TOTP off; the section says when the role needs TOTP.
-  - Files: add `apps/web/src/components/settings/TwoFactorSection.tsx`; change `apps/web/src/components/settings/AccountCard.tsx` (one wrapper and one element); change `apps/web/src/i18n/en.ts` (and `pl.ts` if it exists, D20).
+  - Files: add `apps/web/src/components/settings/TwoFactorSection.tsx`; change `apps/web/src/components/settings/AccountCard.tsx` (one wrapper and one element); change `apps/web/src/i18n/en.ts` and `apps/web/src/i18n/pl.ts` (every key in both files: `pl.ts` is on `master` and its type requires each key, D20).
   - Interfaces and behaviour:
-    - `AccountCard`: between the password `<form>` and the sessions block, add `<div className="border-t pt-4"><TwoFactorSection /></div>`. Nothing else in the card changes.
+    - `AccountCard`: between the password `<form>` and the sessions block, add `<div className="border-t pt-4"><TwoFactorSection /></div>`. Nothing else in the card changes. At ff61cbc the card holds, in order: `LanguageSelect` (F098 stage 04), the password `<form>`, the sessions block (`<div className="flex flex-col items-start gap-2 border-t pt-4">` with `SessionsList`), and the owner's `SecurityLog` (F099 stage 13). `SecurityLog.tsx` in the same folder is the pattern for a section component in its own file.
     - `TwoFactorSection` root: `<section id="two-factor" data-section="two-factor" className="flex flex-col gap-3">`, title `<h3 className="text-sm font-medium">{t("tf_title")}</h3>`.
     - Status: `useResource(() => api("/api/me/two-factor", twoFactorStatusSchema))`, loading `Skeleton`, error `load_error_text` + Retry (as `SessionsList`).
     - On mount: when `new URLSearchParams(location.search).get("two_factor") === "required"`, call `document.getElementById("two-factor")?.scrollIntoView()` once.
@@ -54,10 +54,10 @@ One step (one component and its wiring). About 300 changed lines.
     | `tf_copy` | Copy | Kopiuj |
     | `tf_copied` | Codes copied. | Kody skopiowane. |
     | `tf_copy_failed` | The codes could not be copied. Write them down. | Nie udało się skopiować kodów. Zapisz je. |
-    | `tf_codes_done` | I saved the codes | Zapisałem kody |
+    | `tf_codes_done` | I saved the codes | Mam zapisane kody |
     | `tf_on_without_codes` | Two-factor sign-in is on, but your backup codes were not shown. Make new backup codes now. | Logowanie dwuetapowe jest włączone, ale kody zapasowe nie zostały pokazane. Utwórz teraz nowe kody zapasowe. |
 
-    `tf_codes_done` in Polish uses the neutral form if the F098 style guide for `pl.ts` asks for one (check its stage 02 notes; else keep this text and say so in the final message).
+    `tf_codes_done` in Polish is the neutral "Mam zapisane kody": `pl.ts` has no first-person past form, which in Polish shows the speaker's gender (default, owner to confirm: questions.md Q9).
   - Decisions: D14, D17, D20, D25.
   - Test: the helpers of stages 09–10 carry the logic; stage 12 drives this section in the browser.
   - Check: `bun run typecheck`; `bun run lint`; `bun run web:build`; `bun test apps/web/src/i18n apps/web/src/lib`.

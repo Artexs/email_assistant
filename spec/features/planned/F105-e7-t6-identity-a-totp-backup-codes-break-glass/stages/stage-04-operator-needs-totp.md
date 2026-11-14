@@ -40,7 +40,7 @@ Two steps. About 180 changed lines.
 
 - [ ] **04.2 The operator guards ask for TOTP**
   - Goal: an operator without TOTP cannot use the console; everyone else sees the same answers as before.
-  - Files: change `apps/server/src/platform/http.ts` (`requireOperator`, the page guard in `createApp`); change `apps/server/src/platform/http.test.ts` (`describe("requireOperator")`); change `apps/server/test/integration/web-operator-page.test.ts` (new cases).
+  - Files: change `apps/server/src/platform/http.ts` (`requireOperator`, the page guard in `createApp`); change `apps/server/src/platform/http.test.ts` (`describe("requireOperator")`); change `apps/server/test/integration/web-operator-page.test.ts`, `web-operator.test.ts` and `web-operator-writes.test.ts` (new cases).
   - Interfaces:
 
     ```ts
@@ -59,15 +59,16 @@ Two steps. About 180 changed lines.
     }
     ```
 
-    Keep the order of the existing branches; the TOTP branch runs only for an operator. Keep the form of the final `next()` call as you find it: the RLS ticket (F092 stage 03, in build) wraps it in `withoutTenantScope(() => next())`; if that landed, the TOTP branch goes before that call; if a land conflict shows it, merge both. The comment above `requireOperator` names ADR 0027 and ADR 0026 point 1.
+    Keep the order of the existing branches; the TOTP branch runs only for an operator. At ff61cbc `requireOperator` ends with `await withoutTenantScope(() => next());` (F092 stage 03, plan F13): the TOTP branch goes between the 404 branch and that call, and the call stays as it is. Add no other `withoutTenantScope` or `withTenantScope` call (`tenant-scope-sites.test.ts`). The comment above `requireOperator` names ADR 0027 and ADR 0026 point 1.
   - Decisions: D10.
   - Test:
     1. `http.test.ts` `requireOperator`: an operator with `twoFactorEnabled: true` → 200; an operator with `false` → 403 `{ error: "two_factor_required" }` and one captured line holding `operator_two_factor_required user_id=u-op`; a non-operator with `false` → 404 `not_found` (not 403).
     2. `web-operator-page.test.ts`: an operator (the assistant of `webOrg`, as the file sets it) listed in `twoFactorOff` → every form of `FORMS` answers 302 with `location: /settings?two_factor=required` and `cache-control: private, no-store`; the owner (no operator) still gets the 404 page in every form; the same operator without `twoFactorOff` still gets the page (200).
-    3. `web-operator-page.test.ts` (or `web-operator.test.ts`, whichever builds the app with `operatorUserIds`): `GET /api/operator/flags` for the operator in `twoFactorOff` → 403 `two_factor_required`; for the owner → 404.
+    3. `web-operator.test.ts` (it builds the real `apiRouters` with `operatorUserIds`; add `twoFactorOff` to its `operatorApp` helper): `GET /api/operator/flags` and `GET /api/operator/orgs` for the operator in `twoFactorOff` → 403 `two_factor_required`; for the owner → 404.
+    3a. `web-operator-writes.test.ts` (F099 stage 09; its `flagUrl`, `post`, `auditOfB` helpers and its valid body): a write is refused too. `POST /api/operator/orgs/<org B>/flags` by the operator in `twoFactorOff` → 403 `two_factor_required`, and organization B gets no new `audit_log` row.
     4. `web-me.test.ts` (it builds the real tenancy routes): `GET /api/me` of an operator in `twoFactorOff` still answers `operator: true` (the nav keeps its link; the page sends the user to the settings).
-  - Check: `bun test apps/server/src/platform/http.test.ts apps/server/test/integration/web-operator-page.test.ts apps/server/test/integration/web-operator.test.ts apps/server/test/integration/web-me.test.ts`; `bun run lint`.
-  - Done when: tests 1–4 pass and the old cases pass.
+  - Check: `bun test apps/server/src/platform apps/server/test/integration/web-operator-page.test.ts apps/server/test/integration/web-operator.test.ts apps/server/test/integration/web-operator-writes.test.ts apps/server/test/integration/web-operator-orgs.test.ts apps/server/test/integration/web-operator-detail.test.ts apps/server/test/integration/web-tenant-scope.test.ts apps/server/test/integration/web-me.test.ts`; `bun run lint`.
+  - Done when: tests 1–4 and 3a pass and the old cases pass (the F099 operator suites and the F092 route walk keep their meaning: their fake sessions have TOTP on).
   - Out of scope: the settings page text for `?two_factor=required` (stage 11); operator CLIs (no change).
 
 ## Done when
