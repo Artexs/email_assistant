@@ -1,0 +1,358 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-009",
+  "cases": [
+    {
+      "id": "b-del-0253",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Joint tender workshop - could your assistant set it up?",
+      "body": "Dear Wiktor,\n\nThank you for the productive call last week. Both teams now agree that the joint tender for the northern retail chain needs a full working day in one room before we submit anything. I suggest Gdansk, since most of your pricing people sit there.\n\nCould you ask your assistant, Dorota Wilczynska, to find a day in the week of 25 January when your calendar and the meeting room allow it? She can propose two or three options to my office. We will bring four people from the Baltic Freight Partners side, including our lawyer, and we need a working lunch for all of them.\n\nYou do not need to join the planning itself. A short note from Dorota with the proposed dates is enough, and my assistant will confirm the same day.\n\nMany thanks for your help with this.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0254",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Customs briefing for the export team - scheduling",
+      "body": "Dear Wiktor,\n\nOur customs specialist will visit Gdansk in the last week of January, and I would like to use the trip for a short briefing for your export team. The new transit rules for the Baltic ports affect all your Nordic lanes, so it is worth an hour of their time.\n\nCould you ask your team to arrange this? In practice someone should check the calendars of Oliver Pemberton and the two export coordinators, book a meeting room with a projector and add the invitation to your shared calendar. If it fits better, a late afternoon slot is fine for us.\n\nDorota Wilczynska would know how your booking system works, so she seems the natural person. A short confirmation of the date to my office is all I need. I will send the slides one day before the session.\n\nThank you for your support.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0255",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Termin rozmowy o cenniku",
+      "body": "Dzień dobry Panie Wiktorze,\n\nproszę o polecenie asystentce ustalenia terminu rozmowy z Piotrem Lewandrowskim w sprawie nowego cennika na ten rok. Proponuję czwartek lub piątek po południu, ale dostosujemy się do Państwa kalendarza.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Cennik transportu na 2027",
+          "body": "Panie Tomaszu, dziękuję za zestawienie. Proszę wysłać szczegóły, przeanalizujemy je po naszej stronie. Wiktor Szalewski"
+        },
+        {
+          "from": "tomasz.brzezinski@meblodrew.test",
+          "subject": "Cennik transportu na 2027",
+          "body": "Szanowny Panie Wiktorze, przesyłam zestawienie naszych oczekiwań wobec stawek na trasach do Kielc i Poznania. Chcielibyśmy omówić je przed podpisaniem aneksu. Tomasz Brzeziński"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0256",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Odbiór naczep - terminy",
+      "body": "Cześć Wiktor,\n\nserwisant potwierdził, że nowe naczepy będą gotowe do odbioru w środę, ale ktoś musi wpisać termin do kalendarza i zarezerwować kierowców. Przekaż to proszę Dorocie, żeby się tym zajęła.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [
+        {
+          "from": "g.jastrzebska@hurtownia-zielona.test",
+          "subject": "Re: Naczepy - odbiór i serwis",
+          "body": "Dzięki za info. Daj znać, kiedy serwis skończy przegląd, wtedy ustalimy dzień. W."
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Naczepy - odbiór i serwis",
+          "body": "Panie Wiktorze, jak zapowiadałam, w sprawie naczep sprawdzimy po naszej stronie dostępność kierowców do końca tygodnia. G. Jastrzębska"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0257",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Podróż na posiedzenie rady",
+      "body": "Wiktor,\n\nna posiedzenie rady 28 stycznia przyjadę z Poznania pociągiem, a wracam dzień później. Załatw proszę przez asystentkę bilety oraz nocleg blisko siedziby. Preferuję pokój cichy, bez śniadania. Wystarczy, że Dorota wyśle mi potwierdzenie rezerwacji na mój adres w radzie. Pozostałe sprawy organizacyjne ustalimy na miejscu.\n\nDziękuję.",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Posiedzenie rady - logistyka",
+          "body": "Panie Przewodniczący, zajmie się tym asystentka, wróci do Pana z propozycją. Wiktor Szalewski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0259",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Board meeting logistics",
+      "body": "Wiktor,\n\nLet's make the January board meeting run smoothly this time. Could you ask Dorota to take care of the logistics? She should book the large meeting room for the full morning, order coffee and lunch for nine people and print ten copies of the budget pack that your finance team sends by Monday.\n\nThe auditors will join us for the second part, so please make sure they get visitor passes at the reception. I do not need to see the arrangements in advance.\n\nThanks for taking care of it.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0260",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Uszkodzone palety - nota korygująca",
+      "body": "Szanowny Panie Wiktorze,\n\nw zeszłym tygodniu dostarczono nam trzy palety płyt meblowych z widocznymi uszkodzeniami od wózka, co opisaliśmy w protokole przy rozładunku. Dyrektor operacyjna potwierdziła, że reklamacja została uznana.\n\nProszę o przekazanie sprawy księgowości, aby wystawiła notę korygującą do faktury za tę dostawę na kwotę uszkodzonego towaru oraz przesłała ją na adres naszego działu zakupów. Protokół szkody oraz zdjęcia są już u Państwa.\n\nOdpowiedź ode mnie nie jest potrzebna. Wystarczy, że księgowa potwierdzi wystawienie noty, a my zaksięgujemy ją po naszej stronie.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0261",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Customs docs for Monday",
+      "body": "Hi Wiktor,\n\nquick one from the road: can someone on your side book a call with our broker in Gdynia for Monday morning? Need to go through the new customs paperwork for the Nordic lane before the first truck leaves. Dorota can sort it with their office.\n\nThx.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0262",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Aktualny cennik do przetargu",
+      "body": "Szanowny Panie Wiktorze,\n\ndo przetargu potrzebujemy aktualnego cennika transportu z uwzględnieniem nowych stawek paliwowych. Proszę polecić koordynatorowi sprzedaży przygotowanie i przesłanie go na mój adres.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0263",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Fleet card statement - please have it reconciled",
+      "body": "Dear Mr Szalewski,\n\nThe December statement for your fleet cards is ready, and our system shows three transactions with a different price per litre than the one agreed in the contract. The difference is small, but it should be settled before the next invoice run.\n\nCould you ask your accounting team to compare the statement with their own records and to confirm which of the three transactions they accept? Magdalena Czerniak already knows our billing format. If she agrees with our numbers, we will issue the corrected invoice immediately.\n\nThis is a routine matter, so a reply from the accounting side is perfectly fine.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0001",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rates ease on Baltic lanes",
+      "body": "Freight Rates Brief, issue 3\n\nSpot rates on Baltic and North Sea container lanes fell about two percent this week as new capacity entered service. Road rates in Central Europe stayed flat, with a slight rise only in the Polish-German corridor.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0002",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Board budget pack - status of preparations",
+      "body": "Dear Mr Szalewski,\n\nI write to inform you about the state of preparations for the supervisory board meeting on 28 January. The audit committee has completed its review of the draft annual budget and will present its findings during the first hour. The committee found no material objections to the revenue assumptions, but it recommends that the board discusses the fuel cost scenario separately, since the supplier contracts will be renegotiated in the spring.\n\nThe agenda has been fixed in the form circulated earlier. The first part covers the budget and the report of the audit committee, the second part covers the joint tender with the freight partner, and the third part covers staffing of the new warehouses. Two board members will take part by video link and the secretary has confirmed the technical arrangements with the company's IT department.\n\nThe auditors will attend the second part of the meeting, as agreed last year. The minutes of the previous meeting have been approved in writing by all members and require no further steps. I mention this only for the record.\n\nI also wish to note that the chairman's report to the shareholders will be shortened this year at the request of the committee. The full text will remain available to all members in the board portal after the meeting.\n\nRespectfully,\nZbigniew Orlowicz",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0004",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Podsumowanie przygotowań do posiedzenia rady",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że komitet audytu zakończył przegląd projektu budżetu na ten rok i nie zgłosił zastrzeżeń do założeń dotyczących przychodów. Porządek obrad pozostaje bez zmian. Dwóch członków rady weźmie udział w posiedzeniu zdalnie, a sekretarz potwierdził połączenie z działem IT. Protokół z poprzedniego posiedzenia został podpisany przez wszystkich członków.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Posiedzenie rady - przygotowania",
+          "body": "Panie Przewodniczący, dziękuję za informację. Materiały budżetowe zostaną przesłane w poniedziałek. Wiktor Szalewski"
+        },
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Posiedzenie rady - przygotowania",
+          "body": "Szanowny Panie Prezesie, przesyłam wstępny porządek posiedzenia rady na 28 stycznia. Z poważaniem, Zbigniew Orłowicz"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0005",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Audit committee - budget review completed",
+      "body": "Dear Mr Szalewski,\n\nFor your information: the audit committee has closed its review of the annual budget draft. It found the revenue assumptions reasonable and noted only that the fuel cost line will need a separate discussion in spring.\n\nThe board portal now holds the final version of the committee report. Members will read it before the meeting on 28 January. The agenda does not change.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0006",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wspólne przetargi - stan na koniec tygodnia",
+      "body": "Szanowny Panie Wiktorze,\n\nchciałbym przekazać krótką informację o stanie naszych wspólnych ofert przetargowych. Wszystkie trzy postępowania, w których startujemy razem, są obecnie na etapie uzupełniania dokumentacji. Nasz zespół zakończył przygotowanie zestawień kosztów tras oraz tłumaczeń przysięgłych, a Państwa dział sprzedaży przekazał nam komplet cenników, za co dziękuję. Spójność liczb sprawdził nasz kontroler finansowy i nie znalazł rozbieżności większych niż jedna dziesiąta procenta.\n\nW przetargu dla sieci hurtowni zamawiający przesunął termin zadawania pytań o kilka dni, co daje nam więcej czasu na dopracowanie harmonogramu dostaw. W drugim postępowaniu, dotyczącym transportu towarów chłodzonych, komisja przetargowa opublikowała wyniki oceny formalnej i obie nasze oferty zostały dopuszczone do dalszego etapu. Trzecie postępowanie jest dopiero w fazie wstępnej, a zamawiający zapowiedział publikację pełnych warunków na początku lutego.\n\nZ naszej strony wszystko przebiega zgodnie z planem. Wiadomość ma charakter informacyjny, nie wymaga Pańskiej odpowiedzi ani decyzji. Kolejne podsumowanie przekażę w przyszłym tygodniu, jeśli pojawią się jakiekolwiek zmiany po stronie zamawiających. Cieszę się z dobrej współpracy naszych zespołów, która w tych postępowaniach naprawdę procentuje.\n\nZ wyrazami szacunku",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0008",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Budżet - krótko",
+      "body": "Wiktor,\n\nkomitet audytu zamknął przegląd budżetu bez uwag. Szczegóły są w portalu rady.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0009",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: ceny paliw i karty flotowe",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nCeny oleju napędowego na stacjach w Polsce spadły w tym tygodniu o trzy grosze na litrze, według cotygodniowego zestawienia rynkowego. Spadek wynika głównie z niższych notowań hurtowych na początku miesiąca.\n\nDostawcy kart flotowych zapowiadają od lutego zmiany w opłatach za obsługę kont. Większość firm zachowa dotychczasowe zasady dla klientów z dużymi flotami, a nowe stawki dotkną głównie małych przewoźników. Branża spodziewa się, że rabaty wolumenowe zostaną zachowane.\n\nW kolejnym numerze: regulacje dotyczące opłat drogowych oraz przegląd przetargów na transport w regionie.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0010",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Przetarg - status oferty",
+      "body": "Szanowny Panie Wiktorze,\n\ninformuję, że nasza komisja przetargowa zakończyła wstępną ocenę ofert dla sieci i do kolejnego etapu przeszły trzy firmy, w tym Państwa. Rozmowy z finalistami odbędą się w trzecim tygodniu stycznia. Szczegółowy harmonogram prześlemy, gdy będzie gotowy.\n\nMówię o tym, żeby Pan wiedział, na jakim etapie jesteśmy. Odpowiedź nie jest konieczna.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [
+        {
+          "from": "piotr.lewandrowski@kordelan.test",
+          "subject": "Re: Przetarg - ceny i warunki",
+          "body": "Pani Genowefo, dziękuję za informacje. Piotr Lewandrowski przygotuje wyjaśnienia do tabeli stawek. Wiktor Szalewski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0012",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Porządek obrad - wersja ostateczna",
+      "body": "Szanowny Panie Prezesie,\n\nostateczny porządek obrad na 28 stycznia został rozesłany członkom rady. Zmiany dotyczą tylko kolejności punktów.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0013",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Update on our delivery windows for February",
+      "body": "Dear Mr Szalewski,\n\nI would like to share a short status. Our warehouse in Gothenburg has confirmed the delivery windows for February: Tuesdays and Thursdays between 08:00 and 12:00, with a reserve window on Fridays. These windows replace the January schedule, which was only a provisional arrangement.\n\nThe certificates for the chilled pallets have been renewed and our quality department found them complete. The first shipment under the new schedule will arrive in the second week of February. We have also informed our carriers about the changed windows.\n\nThis is for your records and requires no action from your side.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0014",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Raport komitetu - w portalu",
+      "body": "Szanowny Panie Prezesie,\n\nraport komitetu audytu opublikowano w portalu rady. Posiedzenie odbędzie się 28 stycznia bez zmian.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0015",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Customs rules for Nordic exports - short summary",
+      "body": "Dear Mr Szalewski,\n\nI would like to pass on the summary of the new customs procedure for food exports to the Nordic countries that our compliance team prepared this week. From 1 February, electronic pre-notification is mandatory for chilled and frozen goods. Our importer accounts are already registered in the new system, so the change does not affect the clearance time of your shipments.\n\nThe Swedish authorities have confirmed that existing certificates remain valid until their expiry date. Hand-written certificates will no longer be accepted at the border. We have checked the paperwork of the last three shipments and found it consistent with the new rules.\n\nBest regards on this, and thank you for the smooth cooperation so far.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0016",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "FYI - Hamburg lane update",
+      "body": "Wiktor,\n\njust a heads up on the Hamburg lane: the border queue this week is much shorter than in December, mostly 2-3 hours for trucks with pre-notification. The two delayed loads from last Friday arrived Monday morning, all docs fine. Customs did random checks on about one in five trucks but found nothing.\n\nI will keep tracking it and let you know if the picture changes. Nothing needed from you for now.\n\nOliver",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0017",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rekrutacje do magazynów - aktualny stan",
+      "body": "Cześć Wiktor,\n\nkrótko o rekrutacjach do magazynów. W Poznaniu mamy już dwunastu z dwudziestu kandydatów, którzy podpisali umowy i zaczną pracę pierwszego lutego. W Gdyni trwają jeszcze rozmowy z ośmioma osobami, a agencja obiecała uzupełnić braki do połowy miesiąca. Szkolenia BHP odbędą się w pierwszym tygodniu lutego, każdego dnia dla innej grupy.\n\nNie trzeba nic robić, informuję tylko, żebyś miał obraz sytuacji. Kolejną informację dostaniesz po zakończeniu rozmów w Gdyni.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0018",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Obsada magazynów - status",
+      "body": "Cześć Wiktor,\n\ndla porządku: Halina przekazała mi plan obsady magazynów na luty i uwzględniłem go w harmonogramie szkoleń. Zmiany nocne w Poznaniu będą obsadzone w całości przez pracowników etatowych, a w Gdyni agencja zapewni dodatkowe osoby na weekendy.\n\nPierwsze szkolenia BHP zaczną się w poniedziałek, a lista uczestników jest już w systemie. Wszystkie dokumenty są kompletne i nie ma rozbieżności z planem dyrektor operacyjnej. Zgłaszam to wyłącznie informacyjnie.",
+      "thread": [
+        {
+          "from": "halina.strzemecka@kordelan.test",
+          "subject": "Obsada magazynów w lutym",
+          "body": "Cześć Rafał, przesyłam plan obsady magazynów na luty - w Poznaniu pełny etat, w Gdyni agencja na weekendy. Halina"
+        }
+      ],
+      "attachments": []
+    }
+  ]
+}

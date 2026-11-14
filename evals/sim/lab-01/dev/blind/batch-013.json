@@ -1,0 +1,379 @@
+{
+  "scenario": "lab-01",
+  "part": "dev",
+  "batch": "batch-013",
+  "cases": [
+    {
+      "id": "b-urg-0190",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "The London trip – call me tonight",
+      "body": "Dear Wiktor,\n\nI have a short request about the London trip next week. Please call me tonight, before your assistant books anything tomorrow morning. The meeting with the investors may be moved, and I do not want you to travel for nothing, nor to commit to a date before we have spoken.\n\nThe matter touches on the budget, the supervisory board and one confidential point that I prefer not to put in writing. I am reachable on my mobile phone until midnight. Please do not forward this note to anyone, including the assistant, until we have spoken.\n\nThe investors expect an answer from me by noon tomorrow. If I cannot tell them where you stand, I will have to tell them that Kordelan is not ready. I would much rather handle this particular topic between the two of us, in a conversation, and not through a chain of messages with copies.\n\nThank you in advance for your call.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0206",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wylot do Frankfurtu – Twoja decyzja",
+      "body": "Wiktor,\n\nakcjonariusze we Frankfurcie przenieśli spotkanie na dziś na 17:00, więc musisz zdecydować, czy lecisz. Jeśli lecisz, bilet trzeba kupić w ciągu godziny, bo później nie ma już miejsc w klasie biznes. Jeśli nie lecisz, ktoś musi wystąpić z pełnomocnictwem, a ja nie mam nikogo na zapas. Daj znać, co robisz, żeby nikt nie zgadywał.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0207",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Board agenda",
+      "body": "Wiktor, please confirm the agenda today. Dorota says she is waiting for your word.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "from": "dorota.wilczynska@kordelan.test",
+          "subject": "Board agenda for 28 January",
+          "body": "Dear Mr Orlowicz, I am sending you the draft agenda of the board meeting on behalf of Mr Szalewski. Please let me know if you want to add something, otherwise I will ask the president to confirm it. Best regards, Dorota Wilczynska"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0209",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Hotel for the board meeting guests",
+      "body": "Dear Wiktor,\n\ncould you please approve the hotel arrangements for the two guests I plan to invite to the board meeting? Dorota has sent me three options, and the cheapest one is booked until the end of today, after which the price goes up by a third. I would like to have your approval before the end of the day, as I do not want to spend the company's money without you knowing about it.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0211",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Decyzja w sprawie wspólnej oferty portowej",
+      "body": "Szanowny Panie Prezesie,\n\nGdańsk przesunął zamknięcie przyjmowania ofert na dziś, na godzinę 14:00, więc muszę usłyszeć od Pana jeszcze przed południem, czy składamy ofertę razem. Jeśli Pan się zgadza, przygotuję dokumenty w godzinę. Jeśli nie, BFP złoży ofertę samodzielnie, ale wtedy konsorcjum przestaje istnieć. Proszę o jednoznaczną odpowiedź dziś rano. Dokumenty konsorcjum są gotowe od wczoraj, a nasz prawnik czeka w biurze na Pana decyzję. Nie chcę stracić tej oferty z powodu jednego dnia zwłoki, skoro prace trwały od połowy listopada.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0215",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "The tender offer – call me today",
+      "body": "Dear Mr Szalewski,\n\nI would like you to look at the offer for our tender personally and call me today, before 15:00. Piotr sent me the draft yesterday, and I find the delivery schedule in clause 4 too weak for a contract of this size. My board decides on the tender tomorrow at 9:00. If I have not heard from you by then, I will have to tell them that we cannot accept the offer.\n\nI do not want to argue with your sales team about details. I prefer to settle it with you, as always. The conversation should not take longer than ten minutes.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0219",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Container 4412 – decision on the guarantee letter",
+      "body": "Hi Wiktor,\n\nthe broker in Gdynia needs your decision today on the guarantee letter for the container. Without it customs will not release the goods before the weekend.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0222",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zwolnienie kontenera w Gdyni – potrzebna Pana interwencja dziś",
+      "body": "Szanowny Panie Prezesie,\n\nkontener z towarem dla Nordic Foods stoi w Gdyni od trzech dni. Urząd celny chce dodatkowych dokumentów, a nasz agent twierdzi, że może je uzupełnić tylko wtedy, gdy Kordelan wystawi oświadczenie o wartości celnej na papierze firmowym, podpisane przez członka zarządu. Nikt poza Panem nie ma takiego upoważnienia, a ja nie mogę go zastąpić. Urząd przyjmuje dokumenty do godziny 15:00, a w piątek zamyka rejestr przed weekendem, więc jeśli nie zdążymy dziś, towar poczeka do poniedziałku.\n\nTo oznacza kary postojowe, które w przypadku kontenera chłodniczego wynoszą kilkaset euro dziennie, a także ryzyko utraty towaru, bo agregat chłodniczy ma zapas paliwa tylko do soboty. Nordic Foods już zapytał mnie, co się dzieje, a ja nie chcę im odpowiadać, że nie mamy podpisu.\n\nWzór oświadczenia wysłałem do Pana asystentki godzinę temu. Wystarczy podpis i skan odesłany do mnie. Jeśli ma Pan jakiekolwiek wątpliwości co do treści, proszę zadzwonić od razu, bo mogę poprawić dokument w kilka minut. Czekam na Pana odpowiedź i jestem dostępny przez cały dzień. Mogę też osobiście zawieźć dokument do urzędu, jeśli tylko dostanę Pański podpis, więc nie będzie potrzebny kurier ani dodatkowe pośrednictwo agenta.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0231",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Signature page for the framework agreement",
+      "body": "Dear Mr Szalewski,\n\nour legal department has finished its review, and the framework agreement is ready for signature. We need the signed pages from you by 16:00 today, because our board member leaves for a business trip in the afternoon and will be unavailable until next week. If the pages arrive after he has left, the signing moves to the following Monday, and the first order under the agreement moves with it.\n\nThe signature pages are attached to the e-mail from our contract team. Could you please check them and return them signed? If anything in the final text is not acceptable to you, a short call to me before 14:00 would help us react in time.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0232",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Nordic signing",
+      "body": "Wiktor, Karin just confirmed that the board signs at 16:00 today. I need your signed pages before that, or the whole thing slips to Monday. Can you do it now?\n\nOliver",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Nordic agreement draft",
+          "body": "Oliver, I have read the draft. I accept the two-hour delivery windows, but I want the penalty clause 7 unchanged. Please tell Karin. Wiktor"
+        },
+        {
+          "from": "oliver.pemberton@kordelan.test",
+          "subject": "Nordic agreement draft",
+          "body": "Wiktor, the legal team of Nordic sent us the last draft of the agreement. Can you read it and tell me what you think of clause 7? Oliver"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0233",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Odprawa w porcie – potrzebuję Pana akceptacji",
+      "body": "Szanowny Panie Prezesie,\n\nagent celny w Gdyni poinformował mnie rano, że urząd wyznaczył kontrolę fizyczną naszego kontenera na jutro, ale pod warunkiem, że do dziś do godziny 17:00 zatwierdzimy koszt dodatkowej usługi rozładunku i ponownego załadunku. Koszt to około 4200 euro, a decyzja należy do Pana, bo przekracza limit mojej zgody. Jeśli Pan się nie zgodzi, kontrola przesunie się na przyszły tydzień i kontener będzie stał w porcie jeszcze kilka dni. Proszę o akceptację w odpowiedzi na ten e-mail.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0237",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Board materials: your approval today",
+      "body": "Dear Wiktor,\n\nthe board secretary will print the materials this afternoon. Please send me your approval of the final management report before 14:00.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0238",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rekrutacja kierowników zmian – decyzja dziś",
+      "body": "Cześć Wiktor,\n\ndwóch kandydatów na kierowników zmian w Poznaniu dostało dziś rano oferty od konkurencji, a my musimy odpowiedzieć do końca dnia, jeśli chcemy ich zatrzymać. Chodzi o pana Nowaka z doświadczeniem z centrum dystrybucyjnego pod Łodzią i o panią Kowalską, która do tej pory prowadziła zmianę w dużym magazynie chłodniczym. Oboje przeszli rozmowy techniczne z Haliną i oboje dostali od niej bardzo dobre oceny.\n\nProblem polega na tym, że kandydaci oczekują wynagrodzenia o dziesięć procent wyższego niż w naszej siatce płac, a to wymaga Twojej zgody jako wyjątek od polityki. Kosztowałoby nas to około 18 tysięcy złotych rocznie na osobę. Moja rekomendacja jest taka, żeby się zgodzić, bo szukanie nowych kandydatów zajmie nam co najmniej dwa miesiące, a obsada nowej zmiany startuje w lutym.\n\nPotrzebuję Twojej decyzji dziś do końca dnia. Jeśli się zgodzisz, wyślę oferty jeszcze dziś wieczorem, jeśli nie, muszę poinformować kandydatów, że ich wynagrodzenie będzie zgodne z siatką, co prawdopodobnie zakończy rekrutację. Daj mi znać, co postanowiłeś, a ja zajmę się resztą formalności. Pamiętaj, że Halina już zaplanowała szkolenie wstępne dla obu osób na pierwszy tydzień lutego, więc każda zwłoka opóźni także start nowej zmiany.\n\nRafał",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0244",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Request regarding the board meeting",
+      "body": "Dear Wiktor,\n\nplease call me today before 15:00. The agenda of the board meeting goes out to all members tomorrow morning, and I want your view on the order of the items before I send it.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0246",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Presentation at the board meeting",
+      "body": "Dear Mr Szalewski,\n\nplease confirm today whether I present the Nordic proposal at the board meeting on 28 January. The agenda closes tonight.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [
+        {
+          "from": "piotr.lewandrowski@kordelan.test",
+          "subject": "Presentation at the board meeting",
+          "body": "Dzień dobry Pani Karin, zarząd prosi, żeby Nordic Foods Trade przedstawił swoją propozycję na posiedzeniu rady nadzorczej 28 stycznia. Proszę o potwierdzenie obecności. Piotr Lewandrowski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0248",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nasze warunki w związku z posiedzeniem rady",
+      "body": "Szanowny Panie Prezesie,\n\ndowiedziałem się od Państwa koordynatora sprzedaży, że rada nadzorcza Kordelanu zajmie się na swoim posiedzeniu zmianami w cenniku transportu. Nasz zarząd obraduje jutro rano i chciałbym przedstawić mu Państwa stanowisko, zanim podejmiemy decyzję o przedłużeniu umowy. Proszę o krótkie potwierdzenie na piśmie, że obecny rabat wolumenowy w umowie pozostaje bez zmian do końca roku.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0250",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Customs inspection tomorrow – your approval needed today",
+      "body": "Dear Wiktor,\n\nthe port authority has scheduled a physical inspection of our containers for tomorrow morning, and the broker says it will go ahead only if you approve the extra handling fee today. The fee is about 3,800 euro. If we miss the window, the next slot is in ten days, and by then the goods will have been in the port for two weeks.\n\nCould you reply to this e-mail with your approval before the end of the day? I can then confirm the booking with the broker immediately, and we keep our place in the queue.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0256",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana cennika – wymagana Pana zgoda do końca dnia",
+      "body": "Szanowny Panie Prezesie,\n\nw nawiązaniu do rozmowy z Pańskim koordynatorem sprzedaży piszę w sprawie nowego cennika na 2027 rok. Meblodrew jest gotowy zaakceptować podwyżkę stawek o trzy procent, ale pod warunkiem że rabat wolumenowy z umowy zostanie zachowany bez zmian. Piotr Lewandrowski przekazał mi dziś rano, że zapis o rabacie jest do dyskusji, a ja nie mogę podpisać nowej umowy, dopóki nie dostanę jasnej odpowiedzi od Pana.\n\nNasz zarząd zamyka budżet logistyki dzisiaj o 17:00 i jeżeli do tego czasu nie będę miał od Państwa potwierdzenia, muszę wpisać do budżetu stawki z kolejnych ofert innych przewoźników. Mamy dwie takie oferty, obie o około siedem procent niższe niż Państwa nowy cennik. Nie chcę z nich korzystać, bo cenię współpracę z Kordelanem od lat, ale nie mogę ignorować różnicy.\n\nProszę o jednoznaczną odpowiedź: czy rabat wolumenowy w obecnym kształcie pozostaje w umowie na 2027 rok, tak czy nie. Wystarczy jedno zdanie w mailu albo krótka rozmowa telefoniczna. Czekam na wiadomość do godziny 16:00, żebym miał czas wpisać właściwe dane do systemu.\n\nDziękuję za pomoc w tej sprawie.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-ans-01",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: naczepy – dzięki, jest jasne",
+      "body": "Cześć Wiktor,\n\ndzięki za odpowiedź w sprawie naczep, wszystko jasne. Skoro zgadzasz się na wariant z leasingiem operacyjnym, nie robię już nic więcej po swojej stronie i wracam do bieżącej pracy. Niczego od Ciebie nie potrzebuję.\n\nDla porządku napiszę tylko, co się dzieje z naszej strony, żebyś miał pełny obraz. Dział finansów dostał już od nas wyceny od dwóch firm leasingowych i na ich podstawie sam przygotuje zestawienie rat. Zespół floty zaktualizował harmonogram przeglądów dla sześciu nowych naczep, które mają dotrzeć pod koniec marca, a kierownik warsztatu zamówił już komplet opon zimowych na zapas. Dostawca z Niemiec potwierdził, że faktura będzie wystawiona po odbiorze, a nie przed.\n\nUmowę serwisową Trailerwerk przekazałem do przeglądu prawnikom i dopiero wtedy ją podpiszemy. Nie ma na to żadnego pośpiechu, bo pierwsza naczepa przyjeżdża dopiero za kilka tygodni. Wszystkie kolejne kroki ustaliliśmy już w zespole, więc nie musisz się niczym zajmować.\n\nJeszcze raz dzięki, że tak szybko się zdecydowałeś. To bardzo nam ułatwiło pracę przy planowaniu kwartału i pozwoliło zamknąć temat, który od tygodni wisiał w naszych notatkach z poniedziałkowych spotkań.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [
+        {
+          "from": "halina.strzemecka@kordelan.test",
+          "subject": "Naczepy – leasing czy zakup?",
+          "body": "Cześć Wiktor, dostawca zaproponował dwa warianty finansowania sześciu naczep: zakup za gotówkę albo leasing operacyjny na pięć lat. Który wariant wybieramy? Halina"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Naczepy – leasing czy zakup?",
+          "body": "Halina, wybierzcie leasing operacyjny. Gotówkę zostawiamy na magazyn w Poznaniu. Wiktor"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "h-ans-03",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Nordic – OK, thanks",
+      "body": "Hi Wiktor,\n\nthanks for your reply on the Nordic delivery windows. That settles it, and I will tell Karin that you accept the two-hour slots in Gothenburg. Nothing else needed from you on this one, I will take it from here and close it on my side. Karin was worried that the Gothenburg depot would not manage the change, but they checked with their warehouse team and it works for them too. Good result for both sides.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [
+        {
+          "from": "oliver.pemberton@kordelan.test",
+          "subject": "Nordic delivery windows",
+          "body": "Wiktor, Karin asks whether we can accept two-hour delivery windows at their depot instead of four. Operations can live with it. Do you agree? Oliver"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Nordic delivery windows",
+          "body": "Oliver, yes, I agree with two hours. Keep the penalty clause as it is. Wiktor"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "h-ans-08",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Dziękuję za odpowiedź",
+      "body": "Szanowny Panie Prezesie, dziękuję za jasną odpowiedź w sprawie terminów dostaw w przetargu. To mi wystarcza, nie potrzebuję już niczego więcej. Do usłyszenia przy okazji.",
+      "thread": [
+        {
+          "from": "g.jastrzebska@hurtownia-zielona.test",
+          "subject": "Terminy dostaw w ofercie",
+          "body": "Szanowny Panie Prezesie, czy terminy dostaw w ofercie przetargowej pozostają takie same jak w obecnej umowie? Genowefa Jastrzebska"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Terminy dostaw w ofercie",
+          "body": "Szanowna Pani Genowefo, tak, terminy pozostają bez zmian. Wiktor Szalewski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "h-att-01",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Materiały na kolację z inwestorami – proszę o Twoją opinię",
+      "body": "Wiktor,\n\nprzesyłam kilka dokumentów, które chciałbym, abyś przejrzał przed kolacją z inwestorami w przyszłym tygodniu. W pliku budget-1.xlsx masz nowy projekt budżetu na pierwszy kwartał, w schedule-2.xlsx harmonogram Twoich podróży i spotkań na luty, a w offer-3.pdf ofertę hotelu, który proponuje dla gości z zagranicy.\n\nMam kilka uwag, które chciałbym z Tobą uzgodnić. Po pierwsze, w budżecie koszty podróży zarządu są wyższe niż w zeszłym roku o około piętnaście procent i nie jestem pewny, czy rada to zaakceptuje bez wyjaśnień. Po drugie, w harmonogramie widzę dwa dni z kolejnymi spotkaniami w różnych miastach, co wydaje mi się nierealne. Po trzecie, oferta hotelu jest dobra cenowo, ale nie zawiera śniadań, a goście z Londynu na pewno będą tego oczekiwać.\n\nNapisz mi proszę, co o tym sądzisz. Chcę wiedzieć, czy zostawiamy budżet w obecnym kształcie, czy przesuwamy jedno ze spotkań i czy rezerwujemy hotel z tej oferty. Zależy mi, żebyśmy przed kolacją mieli jedną spójną wersję wszystkich trzech dokumentów, bo inwestorzy zwykle pytają o najdrobniejsze liczby. Jeśli możesz odpowiedzieć przed końcem tygodnia, zdążę wprowadzić poprawki przed kolacją, a Dorota zdąży zaktualizować kalendarz i wysłać gościom zaproszenia.",
+      "thread": [],
+      "attachments": [
+        "budget-1.xlsx",
+        "schedule-2.xlsx",
+        "offer-3.pdf"
+      ]
+    },
+    {
+      "id": "h-att-02",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Dokumenty do wspólnej oferty portowej – do wiadomości",
+      "body": "Szanowny Panie Prezesie,\n\nprzesyłam do wiadomości komplet dokumentów po spotkaniu z zespołem BFP. W pliku offer-1.pdf znajdzie Pan wersję oferty, którą złożyliśmy w Gdańsku, w pliku list-2.xlsx listę pojazdów zadeklarowanych do konsorcjum, a w budget-3.xlsx nasz wstępny kosztorys na pierwszy rok.\n\nNiczego od Pana nie potrzebuję, to wyłącznie informacja dla Pana archiwum. Pani Lindqvist z Nordic Foods pytała o postęp prac, więc zostawiam poniżej jej pierwszą wiadomość w tej sprawie.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "karin.lindqvist@nordicfoods-trade.test",
+          "subject": "Joint tender in Gdansk",
+          "body": "Dear Mr Hargreaves, I heard that you plan to bid for the Gdansk port tender together with Kordelan. Could you tell me how this would affect the delivery windows for our cargo? Best regards, Karin Lindqvist"
+        }
+      ],
+      "attachments": [
+        "offer-1.pdf",
+        "list-2.xlsx",
+        "budget-3.xlsx"
+      ]
+    },
+    {
+      "id": "h-att-06",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Updated customs schedule",
+      "body": "Hi Wiktor, the new customs schedule for February is in schedule-1.xlsx. Could somebody on your team check the dates against your trucks and update the sheet where needed?\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": [
+        "schedule-1.xlsx"
+      ]
+    },
+    {
+      "id": "h-auto-04",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Automatyczna odpowiedź: Poza biurem",
+      "body": "Dzień dobry,\n\ndziękujemy za wiadomość. Redakcja Logistyka Dzis znajduje się obecnie poza biurem i wróci do pracy w poniedziałek, 18 stycznia. W tym czasie odpowiadamy na wiadomości z opóźnieniem. Jeśli sprawa dotyczy ogłoszeń lub reklamy, prosimy o kontakt z działem handlowym wydawnictwa. Jest to wiadomość wygenerowana automatycznie, prosimy na nią nie odpowiadać. Dziękujemy za cierpliwość i życzymy miłego dnia.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}

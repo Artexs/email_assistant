@@ -309,6 +309,32 @@ describe("delegations footer", () => {
   });
 });
 
+describe("LLM pause footer line", () => {
+  const pause = { code: "http_429_quota", since: new Date("2026-11-06T06:30:00Z") };
+  const line = "⏸ LLM paused since 07:30: the provider quota or budget is spent (http_429_quota). Triage waits.";
+
+  test("the line is the first footer line", () => {
+    const text = render(
+      input({ items: [item(1, "info")], counts: { info: 1 }, waiting: 2, skippedTooOld: 1, llmPause: pause })
+    ).text;
+    const lines = text.split("\n");
+    expect(lines).toContain(line);
+    expect(lines.indexOf(line)).toBe(lines.indexOf("📭 Not processed (older than 7 days): 1") - 1);
+    expect(lines.indexOf(line)).toBeGreaterThan(lines.indexOf(""));
+  });
+
+  test("a digest with nothing else in the footer shows the line after one blank line", () => {
+    const text = render(input({ llmPause: { code: "timeout", since: new Date("2026-11-06T06:30:00Z") } })).text;
+    expect(text.endsWith("\n\n⏸ LLM paused since 07:30 (timeout). Triage waits.")).toBe(true);
+  });
+
+  test("without a pause the text does not change", () => {
+    const base = input({ waiting: 2 });
+    expect(render({ ...base, llmPause: undefined }).text).toBe(render(base).text);
+    expect(render(base).text).not.toContain("⏸ LLM");
+  });
+});
+
 describe("renderDigest in Polish", () => {
   const pl = textTables.pl;
   const polish = (extra: Partial<DigestInput> = {}): OutMessage => render(input(extra), pl);

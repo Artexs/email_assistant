@@ -71,4 +71,43 @@ describe("parseSimArgs", () => {
     expect(parseSimArgs(["blind-export", "lab-01", "--part", "dev", "--batches", "0-2"])).toBeUndefined();
     expect(parseSimArgs(["label-import", "lab-01", "--part", "dev", "--batch", "1", "--checker", "m"])).toBeUndefined();
   });
+
+  test("freeze, audit-list and audit-apply need a version and (freeze, apply) a real date", () => {
+    expect(parseSimArgs(["freeze", "lab-01", "--version", "1", "--date", "2026-11-14"])).toEqual({
+      kind: "freeze",
+      scenario: "lab-01",
+      version: "1",
+      date: "2026-11-14",
+      minDev: 50,
+      minHoldout: 200,
+    });
+    expect(
+      parseSimArgs([
+        "freeze",
+        "lab-01",
+        "--version",
+        "1.1",
+        "--date",
+        "2026-11-14",
+        "--min-dev",
+        "5",
+        "--min-holdout",
+        "20",
+      ])
+    ).toMatchObject({ version: "1.1", minDev: 5, minHoldout: 20 });
+    expect(parseSimArgs(["audit-list", "lab-01", "--version", "1"])).toEqual({
+      kind: "audit-list",
+      scenario: "lab-01",
+      version: "1",
+    });
+    expect(parseSimArgs(["audit-apply", "lab-01", "--version", "1", "--date", "2026-11-14"])).toMatchObject({
+      kind: "audit-apply",
+      date: "2026-11-14",
+    });
+    expect(parseSimArgs(["freeze", "lab-01", "--version", "1"])).toBeUndefined();
+    expect(parseSimArgs(["freeze", "lab-01", "--version", "v1", "--date", "2026-11-14"])).toBeUndefined();
+    expect(parseSimArgs(["freeze", "lab-01", "--version", "1", "--date", "2026-13-40"])).toBeUndefined();
+    expect(parseSimArgs(["audit-list", "lab-01", "--version", "1", "--date", "2026-11-14"])).toBeUndefined();
+    expect(parseSimArgs(["audit-apply", "lab-01", "--date", "2026-11-14"])).toBeUndefined();
+  });
 });

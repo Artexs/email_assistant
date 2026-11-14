@@ -59,7 +59,7 @@ export interface BotTexts {
     pausedExplain: string;
     pausedResume: string;
     resumedHeader: (list: string) => string;
-    resumedExplain: string;
+    resumedExplain: (minutes: number) => string; // minutes: the sync interval (2, 3 or 5)
     noMailbox: string;
   };
   taps: {
@@ -101,6 +101,10 @@ export interface BotTexts {
     wentOutDelegationNotOpen: string;
   };
 }
+
+// The sync interval in the /resume text: the form follows the number (pl: "za minutę", "za 2 minuty", "za 5 minut").
+const EN_MINUTES = { one: "minute", few: "minutes", many: "minutes", other: "minutes" } as const;
+const PL_MINUTES = { one: "minutę", few: "minuty", many: "minut", other: "minut" } as const;
 
 const EN_HELP = [
   "Commands:",
@@ -229,8 +233,8 @@ export const botTexts = {
         "The system does not read or triage these mailboxes now and sends no urgent notice for them. Digests still come.",
       pausedResume: "/resume starts them again.",
       resumedHeader: (list) => `▶️ Resumed: ${list}`,
-      resumedExplain:
-        "The next sync runs within 5 minutes. Mail that came during the pause is read then; mail older than 7 days is not triaged.",
+      resumedExplain: (minutes) =>
+        `The next sync runs within ${minutes} ${EN_MINUTES[pluralCategory("en", minutes)]}. Mail that came during the pause is read then; mail older than 7 days is not triaged.`,
       noMailbox: "No mailbox connected.",
     },
     taps: {
@@ -345,8 +349,8 @@ export const botTexts = {
         "System nie czyta ani nie klasyfikuje tych skrzynek i nie wysyła o nich pilnych komunikatów. Podsumowania nadal przychodzą.",
       pausedResume: "/resume wznawia je.",
       resumedHeader: (list) => `▶️ Wznowiono: ${list}`,
-      resumedExplain:
-        "Następna synchronizacja ruszy w ciągu 5 minut. Wiadomości z czasu wstrzymania zostaną wtedy odczytane; wiadomości starsze niż 7 dni nie są klasyfikowane.",
+      resumedExplain: (minutes) =>
+        `Następna synchronizacja ruszy najpóźniej za ${minutes} ${PL_MINUTES[pluralCategory("pl", minutes)]}. Wiadomości z czasu wstrzymania zostaną wtedy odczytane; wiadomości starsze niż 7 dni nie są klasyfikowane.`,
       noMailbox: "Brak połączonej skrzynki.",
     },
     taps: {

@@ -43,6 +43,12 @@ export const featureFlags = {
     epic: "E3a",
     removeBy: "2027-03-01",
   },
+  llm_pause_line: {
+    default: false,
+    description: "/status and the digest name an LLM pause and its cause.",
+    epic: "E3a",
+    removeBy: "2027-03-01",
+  },
   answered_check: {
     default: false,
     description: "In /review: mails you replied to that the assistant did not mark 'needs reply'.",

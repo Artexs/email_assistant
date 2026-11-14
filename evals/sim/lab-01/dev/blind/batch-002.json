@@ -1,0 +1,347 @@
+{
+  "scenario": "lab-01",
+  "part": "dev",
+  "batch": "batch-002",
+  "cases": [
+    {
+      "id": "b-del-0126",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rozliczenie opłat za karty paliwowe za IV kwartał",
+      "body": "Szanowny Panie Prezesie,\n\nw imieniu Paliwa-Flota zwracam się z prośbą o uporządkowanie rozliczeń za karty paliwowe w ostatnim kwartale ubiegłego roku. Przy cotygodniowym uzgadnianiu danych zauważyliśmy, że część transakcji z przełomu listopada i grudnia została wystawiona w dwóch fakturach zbiorczych, a Państwa system księgowy prawdopodobnie widzi tylko jedną z nich.\n\nProsimy, aby dział księgowości po Państwa stronie przejrzał oba zestawienia, porównał je z wyciągami z kart i potwierdził, które pozycje zostały już zapłacone. Jeśli któraś kwota została uregulowana dwukrotnie, wystawimy korektę albo zaliczymy nadpłatę na poczet styczniowej faktury. Chcielibyśmy to zamknąć przed zamknięciem naszych ksiąg, czyli do połowy przyszłego miesiąca.\n\nDo pełnego obrazu przesyłamy też listę numerów kart z najwyższymi obrotami, bo to właśnie tam różnice są największe. Dla pewności dodam, że nie chodzi o spór: to zwykłe porządki w dokumentach. Wystarczy, że ktoś po Państwa stronie podejmie temat i odpisze na ten adres.\n\nW razie pytań nasz zespół rozliczeń chętnie wyjaśni szczegóły telefonicznie lub w wiadomości. Jeśli łatwiej będzie Państwu pracować na jednym pliku, możemy przygotować wspólne zestawienie w arkuszu, w którym każda pozycja będzie miała numer faktury, datę i kwotę.\n\nDziękuję za pomoc i pozdrawiam,\nEwelina Marszalek",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0127",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Spring site visits – practical arrangements please",
+      "body": "Dear Mr Szalewski,\n\nTwo practical matters concerning the board's expenses for the last quarter need your attention, although not your personal time. I would be grateful if you would pass them to the right person in your finance department.\n\nFirst, the travel costs of the board members for the December visits to Poznan and Lodz have not been settled. Receipts exist for train tickets, two hotel nights and several taxi rides, and every member has handed them to my office. Someone in accounting should collect them, check them against the travel policy and reimburse the members.\n\nSecond, the invoice of the catering company for the November board dinner arrived at my office by mistake. It is made out to Kordelan, so I forward it to you. Please ask your accounts payable team to approve and pay it, since I do not want to be in the payment chain.\n\nI do not need a reply with details. A short note from accounting that both matters are closed would be enough for me. If any document is missing, my assistant can supply it within a day.\n\nThank you for sorting this out.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0129",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Signing date for the framework agreement",
+      "body": "Dear Mr Szalewski,\n\nWe have agreed the final wording of the framework agreement. Could someone in your office find a time slot on 22.01.2027 for the signing and confirm it to us?\n\nKarin Lindqvist",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0132",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wizyta rady w magazynie w Łodzi – umowy z podwykonawcami",
+      "body": "Szanowny Panie Prezesie,\n\nrada nadzorcza chce w tym roku zobaczyć nowe centrum logistyczne w Łodzi oraz zapoznać się z pracą magazynu. Zamiast samodzielnie ustalać szczegóły, proszę o polecenie komuś z Pana zespołu odpowiedzialnemu za umowy przygotowania krótkiej umowy z firmą cateringową oraz firmą transportową obsługującą wizytę.\n\nUmowy powinny obejmować dzień wizyty, liczbę osób oraz ceny, które zostaną zatwierdzone przez dział finansowy. Wzory dokumentów proszę przekazać do mojego biura do wglądu.\n\nProszę o zajęcie się sprawą w najbliższych tygodniach.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0138",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Calendar: contract signing and dinner",
+      "body": "Dear Mr Szalewski,\n\nPlease ask your assistant to book a dinner for six people on the evening of the signing, in a restaurant close to your office, and send us the address.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0149",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Swedish lane rates – someone needs to update the sheet",
+      "body": "Hi Wiktor,\n\nSpoke to the carriers this morning. Rates for Sweden and Finland went up around 6%, so our price sheet for export customers is now out of date. Can somebody in sales fix the sheet and send the new version to our key accounts? I can supply the carrier quotes if needed.\n\nAlso the contract template for Nordic still lists the old rates in annex 2. That should be updated at the same time.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0151",
+      "from": "Matthias Brandt <matthias.brandt@trailerwerk-sued.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Serwis naczep – faktura do zatwierdzenia i opłacenia",
+      "body": "Sehr geehrter Herr Szalewski,\n\nw załączeniu przesyłamy fakturę za przegląd i naprawę trzech naczep, które były w naszym serwisie w grudniu. Płatność jest wymagana w ciągu trzydziestu dni od daty wystawienia.\n\nUprzejmie prosimy o przekazanie dokumentu do działu księgowości, aby ktoś zweryfikował kwoty i zlecił przelew. Jeśli faktura wymaga akceptacji osoby odpowiedzialnej za flotę, prosimy o kontakt z nami, a prześlemy potrzebne protokoły z przeglądu.\n\nW razie pytań pozostajemy do dyspozycji.\n\nMit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0152",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wzór umowy dla pracowników sezonowych",
+      "body": "Wiktorze, cześć,\n\nzbliża się sezon wzmożonych dostaw i do magazynów dołączy około trzydziestu pracowników sezonowych. Mamy co prawda stary wzór umowy, ale nie odpowiada on obecnym zasadom, bo w grudniu zmieniliśmy warunki dotyczące nadgodzin.\n\nChciałbym, żeby osoba z Twojego zespołu odpowiedzialna za umowy przygotowała nowy wzór, uzgodniła go z prawnikiem i przesłała mi gotową wersję. Wystarczy, że zmieści się w dwóch stronach. Oczywiście nie musisz zajmować się tym osobiście.\n\nDaj znać, kto się tym zajmie, to przekażę mu nasze uwagi.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0153",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Board dinner and hotels",
+      "body": "Hi Wiktor,\n\ncould you ask your assistant to arrange the evening before the board meeting? We need a table for eight at a restaurant near the office, and two rooms for the members who come from abroad. Keep it simple, nothing fancy. Dinner should finish by 21:00, because two of the members fly back early the next morning and need a quiet night.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0167",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zwrot kosztów za wspólną ofertę",
+      "body": "Szanowny Panie Prezesie,\n\npragnę zwrócić się z prośbą dotyczącą rozliczeń w ramach naszego wspólnego przedsięwzięcia. W grudniu zapłaciliśmy w całości za tłumaczenia dokumentów przetargowych oraz opłatę wadialną, a zgodnie z naszym porozumieniem koszty te mają być dzielone po połowie.\n\nCzy mógłby Pan polecić księgowości, aby sprawdziła nasze zestawienie wydatków i przelała na nasze konto należną kwotę? Dokumenty źródłowe prześlemy każdemu, kto się tym zajmie. Chcielibyśmy zamknąć sprawę przed końcem stycznia, aby nie przenosić jej na kolejny kwartał.\n\nDziękuję za pomoc i pozdrawiam serdecznie.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0170",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rozbieżności na fakturach – prośba o weryfikację cennika",
+      "body": "Szanowny Panie Prezesie,\n\nzwracam się do Pana z prośbą o pomoc w sprawie, która dotyczy rozliczeń między naszymi firmami. W styczniu otrzymaliśmy trzy faktury za transport mebli na trasie do Niemiec i w każdej z nich stawka za kilometr jest inna niż w cenniku, który obowiązuje od połowy zeszłego roku w ramach naszej umowy.\n\nRóżnica nie jest duża, ale po zsumowaniu daje kilka tysięcy złotych. Wolałbym nie rozstrzygać tego przez telefon, bo wtedy znowu nikt nie będzie wiedział, co dokładnie ustalono. Nie chcę robić z tego sporu, tym bardziej że współpraca układa się dobrze. Zależy mi jednak na wyjaśnieniu, czy faktury zostały wystawione prawidłowo, a jeśli nie, na ich skorygowaniu.\n\nProszę o przekazanie sprawy osobie z działu księgowości, która odpowiada za rozliczenia z klientami. Mogę dosłać kopie wszystkich trzech faktur wraz z obowiązującym cennikiem oraz tabelą z przeliczeniem, którą przygotował nasz dział zakupów. Wystarczy, że ktoś się z nami skontaktuje i potwierdzi, jak do tego doszło.\n\nZ góry dziękuję za zajęcie się tym tematem. Gdyby coś było niejasne, chętnie wyjaśnię szczegóły.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0176",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wyjazd do Lyonu – bilety i hotel",
+      "body": "Cześć Wiktor,\n\nna początku marca jedziemy do Lyonu na spotkanie z europejskim stowarzyszeniem przewoźników, a przy okazji chciałbym obejrzeć jeden z ich terminali. Wyjazd potrwa trzy dni, od wtorku do czwartku.\n\nPoproś swoją asystentkę, żeby zajęła się organizacją: lot z Warszawy w poniedziałek po południu albo we wtorek rano, hotel w centrum z dobrym dojazdem do terminalu, a także transfer z lotniska. Dla mnie wystarczy zwykły pokój jednoosobowy, ale koniecznie z możliwością późnego wymeldowania w czwartek.\n\nPrzy okazji upewnijcie się, że w kalendarzu nie mamy żadnych spotkań, które się z tym kolidują, i w razie potrzeby przełóżcie je na kolejny tydzień. Wolę, żeby takie rzeczy były uzgodnione z wyprzedzeniem, a nie w ostatniej chwili.\n\nNie potrzebuję szczegółowego raportu. Wystarczy mi plik z biletami i adresem hotelu na kilka dni przed wyjazdem. Gdyby były jakieś problemy z rezerwacjami, niech Dorota po prostu da znać mojej asystentce. Wiem, że marzec jest w branży pracowity, dlatego wolałbym, żeby sprawa została zamknięta jeszcze w tym miesiącu i nie czekała na ostatnią chwilę, kiedy ceny biletów i hoteli rosną.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0177",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Delivery windows – February schedule",
+      "body": "Dear Mr Szalewski,\n\nPlease ask the person who manages your sales contracts to confirm the unloading windows for February with our warehouse team. We need two fixed slots a week.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0180",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Customs agent invoices",
+      "body": "Dear Mr Szalewski,\n\nMany thanks for your reply. As promised, here is where we stand. Our brokerage paid the customs agent's invoices for the October and November shipments out of our own account, in order to keep the cargo moving, and under our agreement your company should reimburse its share.\n\nI would be grateful if your finance people could check the attached statement against your own shipment records and arrange the transfer. The total is just under 9,000 euros, split across seven shipments. If any line differs from your records, we can discuss it, but I expect most will match.\n\nThere is no rush before the end of the month, and nothing needs a decision from you personally. A short confirmation from accounting is all we need.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Customs agent invoices",
+          "body": "Daniel, I understand you have the agent's invoices. Please send them over and tell me what you expect from us.\n\nWiktor"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0182",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Przejazd członków rady na posiedzenie",
+      "body": "Dzień dobry Wiktorze,\n\nna posiedzenie rady 28.01.2027 przyjadą trzy osoby z Wrocławia. Niech Twoja asystentka zamówi dla nich transport z dworca do biura i z powrotem, oraz zadba o kawę i lekki obiad na sali. Proszę, żeby transport czekał na dworcu już od godziny 8:15, bo pociąg ma przyjechać o 8:40, a posiedzenie zaczyna się o 9:00.\n\nJeśli potrzebne są jakieś dane, mój sekretarz je przekaże.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0187",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Uszkodzona dostawa – ustalenie terminu oględzin",
+      "body": "Szanowny Panie Prezesie,\n\nw zeszłym tygodniu dotarła do nas dostawa płyt meblowych z widocznymi uszkodzeniami opakowań. Zgłosiliśmy to już Państwa kierowcy, ale chcielibyśmy, aby ktoś z Państwa strony przyjechał do naszego magazynu i obejrzał towar z naszym kontrolerem jakości.\n\nProsiłbym o umówienie takiej wizyty w przyszłym tygodniu, najlepiej w środę lub czwartek przed południem. Prosimy też o wskazanie osoby, z którą mamy ustalić szczegóły. Nie jest to sprawa wymagająca Pana osobistego udziału.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0189",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Umowa i cennik dla naszej sieci",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o przekazanie osobie, która prowadzi u Państwa umowy, aby przygotowała aneks z nowym cennikiem na kwiecień. Chcemy go mieć w komplecie do końca stycznia.\n\nGenowefa",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Umowa i cennik dla naszej sieci",
+          "body": "Szanowna Pani,\n\nz uwagi na rosnące koszty paliwa możemy rozmawiać o zmianie cennika dostaw na kolejny kwartał. Proszę o Pani propozycję.\n\nWiktor Szalewski"
+        },
+        {
+          "from": "g.jastrzebska@hurtownia-zielona.test",
+          "subject": "Re: Umowa i cennik dla naszej sieci",
+          "body": "Szanowny Panie Prezesie,\n\ndziękuję. Przygotujemy własne wyliczenia i wrócimy do tematu w styczniu.\n\nGenowefa Jastrzebska"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0191",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nordic annex – quick favour",
+      "body": "Hi Wiktor, can someone in sales send Nordic the draft annex with the new Finland rates? Karin keeps asking. I can't find the latest version on my phone.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0192",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Board pack – contracts and offers",
+      "body": "Dear Mr Szalewski,\n\nThank you for the notes from your office. Before the board meets on 28.01.2027 I would like to see all current customer offers that are still open, together with their expected value and the date on which each one expires. The board will use this to judge the sales outlook for the year.\n\nI assume that your sales coordinator holds this material, and I ask you to instruct him to prepare it for me. A simple table is sufficient, and I do not need comments or a presentation. If an offer is subject to a discount that the board has not yet approved, please mark it clearly, because the board may want to discuss it.\n\nIn addition, I would like a one-page overview of the framework agreements that expire this year, with the notice periods. My assistant has some of the information, but it is not complete and I prefer a single source.\n\nThe package should reach my office at least five days before the meeting. If something cannot be delivered by then, please tell my assistant in advance and propose a date.\n\nThank you for your help in this matter.",
+      "thread": [
+        {
+          "from": "dorota.wilczynska@kordelan.test",
+          "subject": "Board pack – status",
+          "body": "Dear Mr Orlowicz,\n\nthe first part of the board materials is ready and sits with the executive's office. Please tell us if you want anything added.\n\nDorota Wilczynska\nAssistant to the CEO"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0197",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Reklamacja – odpowiedź dla klienta",
+      "body": "Szanowny Panie Prezesie,\n\nproszę, aby zespół sprzedaży odpowiedział na naszą reklamację z grudnia i potwierdził wysokość noty uznaniowej.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0202",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Aktualizacja umowy na dostawy paliwa",
+      "body": "Szanowny Panie Prezesie,\n\nw związku ze zmianą cennika hurtowego chcemy zaktualizować umowę na dostawy paliwa dla Państwa floty od lutego. Nowe stawki są niższe o około dwa procent dla zakupów powyżej określonego wolumenu, a okres rozliczeniowy zostanie skrócony do dwóch tygodni.\n\nProsimy, aby osoba odpowiedzialna u Państwa za umowy ze sprzedawcami zapoznała się z projektem aneksu, który dołączymy do kolejnej wiadomości, i zgłosiła uwagi. Jeśli propozycja jest akceptowalna, przygotujemy dokument do podpisu.\n\nDziękuję za zajęcie się tą sprawą.\n\nEwelina Marszalek",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0210",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Customs forms for the next pallets",
+      "body": "Dear Mr Szalewski,\n\nPlease ask your sales contact to send us the customs forms and the certificate of origin for the next shipment. We need them by Friday.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0213",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Faktura korygująca do cennika transportu",
+      "body": "Szanowny Panie Prezesie,\n\nzauważyliśmy, że faktura za transport z grudnia została wystawiona według starego cennika. Obowiązuje nas od stycznia nowa stawka, niższa o kilka procent.\n\nProsimy o przekazanie sprawy księgowości, aby wystawiła fakturę korygującą i przesłała nam ją do zaksięgowania. Dokument z ustaleniami cenowymi prześlemy na prośbę. Chodzi o faktury z numerami od FV/2026/0401 do FV/2026/0415, wszystkie wystawione w grudniu przez Państwa dział rozliczeń.\n\nDziękujemy za pomoc.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0222",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Wspólna oferta – przygotowanie załączników",
+      "body": "Szanowny Panie Prezesie,\n\npo rozmowie z Panem Oliverem Pembertonem doszliśmy do wniosku, że czas przygotować pełny pakiet dokumentów do wspólnej oferty. Składa się on z wzoru umowy konsorcjum, cennika usług, referencji z ostatnich trzech lat oraz oświadczeń wymaganych przez zamawiającego, którym jest duża sieć handlowa z Niemiec.\n\nChciałbym prosić, aby osoba, która u Państwa prowadzi oferty i umowy, zebrała te dokumenty i przesłała nam je w jednym pakiecie, najlepiej do końca przyszłego tygodnia. Po naszej stronie przygotowujemy część prawną oraz tłumaczenia na język niemiecki, więc wystarczy nam wersja po polsku, w formie plików PDF lub dokumentów edytowalnych, jak Państwu wygodniej. Jeśli brakuje którychś z referencji, prosimy o informację, abyśmy mogli poprosić o nie klientów bezpośrednio.\n\nNasza propozycja podziału prac jest następująca: Państwa zespół odpowiada za część handlową i cennik, my za część prawną i formalną. Zaznaczam, że nie potrzebujemy Pana osobistego udziału na tym etapie, tylko wskazania osoby, z którą mamy rozmawiać, i terminu, który można dotrzymać.\n\nDziękuję za pomoc i liczę na szybką odpowiedź, choć wiem, że zebranie referencji potrwa kilka dni.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "oliver.pemberton@kordelan.test",
+          "subject": "Joint offer – checklist of documents",
+          "body": "Wiktor, Daniel is asking what we can send for the joint offer. Can you tell me who should collect references and the price list?\n\nOliver"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Joint offer – checklist of documents",
+          "body": "Oliver, please ask the sales coordinator to help. I will write to Daniel.\n\nWiktor"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0223",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: naczepy – zamówienie przeglądu u dostawcy",
+      "body": "Cześć Wiktor,\n\ndostawca naczep przysłał fakturę za przegląd dwóch naczep z grudnia, ale kwota jest o jakieś 800 zł wyższa niż w ofercie, którą zatwierdziłeś. Zanim zapłacimy, niech księgowość to sprawdzi i porówna z zamówieniem.\n\nJeśli faktura jest poprawna, niech ją przepuszczą do płatności. Jeśli nie, trzeba zwrócić ją dostawcy do korekty. Mogę dosłać kopię oferty, gdyby brakowało jej w systemie.",
+      "thread": [
+        {
+          "from": "tomasz.brzezinski@meblodrew.test",
+          "subject": "Naczepy – pytanie o dostępność",
+          "body": "Dzień dobry Panie Prezesie,\n\nczy mógłby Pan potwierdzić, że naczepy z grudnia są wolne od kolejnych przeglądów do końca marca? Chciałbym wynająć jedną na nasz transport.\n\nTomasz Brzeziński"
+        }
+      ],
+      "attachments": []
+    }
+  ]
+}

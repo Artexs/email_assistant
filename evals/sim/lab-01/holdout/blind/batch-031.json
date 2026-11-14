@@ -1,0 +1,347 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-031",
+  "cases": [
+    {
+      "id": "b-rep-0146",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Joint tender for the grocery chain: the final question",
+      "body": "Dear Mr Szalewski,\n\nthank you for your earlier answer on the grocery chain tender. It helped us decide the structure of the bid. One question is still open and it needs your personal decision.\n\nThe client asks for a named account manager on each side, available during the first six months of the contract. We suggest Piotr from your team and one of ours. Do you agree to name him for this role, even if it takes part of his time?\n\nI need your answer by Thursday to finish the bid documents.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Joint tender grocery chain",
+          "body": "Daniel, the structure looks fine. Send me the open points when you have them. Wiktor"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0147",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Reklamacja nr 14: proszę o decyzję",
+      "body": "Panie Wiktorze,\n\nczy uzna Pan reklamację nr 14 na kwotę 8 750,00 PLN? Czekam na odpowiedź do jutra, inaczej wstrzymuję płatność kolejnej faktury.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0148",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Odprawa eksportowa: ostateczne pytanie o ubezpieczenie przesyłek",
+      "body": "Szanowny Panie Prezesie,\n\nw nawiązaniu do wcześniejszej korespondencji, w której Oliver zgłosił problem z ubezpieczeniem cennych przesyłek w tranzycie, oraz Pańskiej odpowiedzi, chciałbym zamknąć temat.\n\nNasz ubezpieczyciel przedstawił ofertę dodatkowej polisy na przesyłki powyżej 100 000 EUR, ze składką 0,18 procent wartości ładunku. Czy mamy ją wykupić w imieniu wspólnych tras? Jeśli tak, to czy koszt ma być dzielony po połowie?\n\nPotrzebuję Pańskiej decyzji do poniedziałku, bo oferta ubezpieczyciela wygasa we wtorek.\n\nDaniel Hargreaves",
+      "thread": [
+        {
+          "from": "oliver.pemberton@kordelan.test",
+          "subject": "Insurance for high value loads",
+          "body": "Wiktor, a Nordic Foods shipment worth over 120 000 EUR went out last week with standard cover. Too risky. Can we fix this? Oliver"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Insurance for high value loads",
+          "body": "Oliver, rozumiem. Proszę o propozycję ubezpieczenia, a ja zdecyduję. Wiktor"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0149",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rozliczenie za kwartał: prośba o akceptację zestawienia",
+      "body": "Szanowny Panie Prezesie,\n\nprzesyłam zestawienie rozliczeń za czwarty kwartał dla kart paliwowych Kordelan Dystrybucja. Łączna wartość zakupów wyniosła 412 600 PLN, a rabat od obrotu 17 980 PLN. W zestawieniu są też dwie korekty, które wynikają z błędnych odczytów licznika na stacjach.\n\nZgodnie z umową zestawienie wymaga akceptacji osoby upoważnionej po Państwa stronie. Czy akceptuje Pan zestawienie w obecnej formie? Jeśli ma Pan zastrzeżenia do którejś pozycji, proszę o ich wskazanie.\n\nProszę o odpowiedź w ciągu pięciu dni roboczych, aby wystawić fakturę rabatową.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0150",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Eksport do Danii: zgoda na dodatkową przesyłkę",
+      "body": "Szanowny Panie Prezesie,\n\nczy zgadza się Pan na dodatkową przesyłkę eksportową do Danii w przyszłym tygodniu w ramach wspólnej trasy? Proszę o krótką odpowiedź.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0151",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Faktura korygująca: Pana zgoda",
+      "body": "Szanowny Panie Prezesie,\n\nczy zgadza się Pan na fakturę korygującą na kwotę minus 1 200,00 PLN? Potrzebuję potwierdzenia do piątku.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0152",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Spotkanie z audytorem: kiedy Pan jest dostępny?",
+      "body": "Panie Prezesie,\n\naudytor chce spotkać się z Panem w ramach badania sprawozdania rocznego. Proponuje dwa terminy: 8 lub 9 lutego 2027, w godzinach od 10:00 do 12:00. Spotkanie będzie dotyczyć rozliczeń z podwykonawcami i oceny ryzyk.\n\nKtóry z terminów Panu odpowiada? Proszę też o wskazanie, czy chce Pan, aby w spotkaniu uczestniczyła główna księgowa. Proszę o odpowiedź do końca tygodnia, aby sekretariat mógł potwierdzić termin audytorowi.\n\nZbigniew Orlowicz",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0153",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Faktury za paliwo: forma e-faktury",
+      "body": "Szanowny Panie Prezesie,\n\nw odpowiedzi na Pana krótką wiadomość o fakturach za paliwo przesyłam konkretną propozycję. Od marca możemy wystawiać e-faktury w formacie strukturalnym, które trafiają bezpośrednio do Państwa systemu księgowego. Zmiana oszczędza Państwu czas i eliminuje ryzyko błędów w przepisywaniu danych.\n\nWymagane jest jednak wskazanie adresu odbiorcy e-faktur i potwierdzenie przez osobę upoważnioną. Czy zgadza się Pan na przejście na e-faktury od marca?\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Faktury za paliwo",
+          "body": "Pani Ewelino, faktury papierowe są dla nas uciążliwe. Proszę o propozycję elektroniczną. Wiktor Szalewski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0154",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Packaging requirements for the March order",
+      "body": "Dear Mr Szalewski,\n\nwe have a question about the packaging for the March order. Our warehouse in Malmo now requires that all pallets are wrapped in recyclable film and marked with a label showing the batch number. This is a new rule that applies to all suppliers from 01.03.2027.\n\nThe change will add about 0,40 EUR per pallet to your costs. We would like to ask whether Kordelan will bear this cost itself or whether you want to include it in the price of the framework agreement. Please let us know which option you prefer.\n\nWe would appreciate your written decision by 05.02.2027, so that we can update our order terms.\n\nKarin Lindqvist",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0157",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Fleet fuel report: do you want the monthly dashboard?",
+      "body": "Dear Mr Szalewski,\n\nwe have launched a monthly fuel dashboard for fleet customers. It shows consumption per vehicle, per driver and per route, and highlights unusual refuelling patterns. The service costs 180 PLN per month for your fleet size.\n\nI would like to know whether you want to activate it from February. If yes, please tell me who from your team should receive the report. If no, no action is needed, but I would be glad to hear your reasons.\n\nA short written reply by 25.01.2027 is enough.\n\nEwelina Marszalek",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0158",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wizyta audytora celnego: kto reprezentuje Kordelan?",
+      "body": "Szanowny Panie Prezesie,\n\nurząd celny zapowiedział audyt procedur eksportowych na wspólnych trasach w dniach 16–17.02.2027. Audytor chce rozmawiać z osobą odpowiedzialną za eksport po Państwa stronie.\n\nProponuję, aby Kordelan reprezentował Oliver Pemberton, a po naszej stronie ja. Czy zgadza się Pan? Jeżeli woli Pan wskazać kogoś innego, proszę o jego dane.\n\nOdpowiedź proszę przesłać do 02.02.2027. Przed audytem zorganizujemy krótkie spotkanie przygotowawcze, aby obie strony miały spójne informacje.\n\nDaniel Hargreaves",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0159",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wdrożenie nowej wersji WMS: termin",
+      "body": "Cześć Wiktor,\n\ndostawca WMS proponuje wdrożenie nowej wersji systemu w nocy z soboty na niedzielę 06.02.2027. Przestój potrwa około ośmiu godzin, a w tym czasie magazyny będą pracować na papierowych listach.\n\nAlternatywa to termin w połowie marca, ale wtedy mamy sezon wzmożonych wysyłek i ryzyko jest większe. Moim zdaniem lepiej zrobić to w lutym. Potrzebuję jednak Twojej zgody, bo przestój obejmuje też weekendowe wysyłki dla klientów.\n\nCzy zatwierdzasz termin 06.02? Daj znać do środy, bo dostawca musi zarezerwować swój zespół.\n\nHalina",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0161",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Board meeting: the closed session",
+      "body": "Hi Wiktor,\n\nyour comments on the agenda were helpful. I would like to ask one more thing. The board wants a closed session without management for the last thirty minutes of the meeting. Are you comfortable with that, and do you want to bring any point to the closed session before it starts?\n\nI will need your answer by Monday, so that the agenda can be finalised.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Board meeting agenda",
+          "body": "Zbigniew, the agenda looks good. I would only add a short point on the Nordic Foods agreement. Wiktor"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0163",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Obiad z członkami rady",
+      "body": "Wiktorze,\n\nczy możesz zjeść obiad z częścią rady w czwartek o 13:00? Potrzebuję tylko tak lub nie, najlepiej dziś.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0164",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Pallet temperature rules: your decision is needed",
+      "body": "Dear Mr Szalewski,\n\nI am writing about a rule that our quality department will introduce from 01.03.2027 for all chilled goods, and about which I would like to hear your personal view.\n\nAt present we require the temperature of chilled pallets at delivery to be between 2 and 6 degrees. The new rule narrows the range to 2 to 5 degrees and requires a continuous electronic record from the moment of loading. A consignment outside the range will be refused at the gate, and the cost of return will be charged to the carrier.\n\nWe know that this is a tighter standard than your current agreement says. Our quality team believes that your trucks can meet it, but only if the cooling units are checked before each trip. We would therefore like to ask three things. Do you accept the narrower range? Will you introduce the pre-trip check for all trucks that serve our warehouse? Are you ready to share the temperature records with us electronically after each delivery?\n\nA refusal at the gate is costly for both sides, so I would prefer to settle this with you before the rule applies. Could you reply in writing by 12.02.2027? If you need a transition period, please say how long.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0165",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Drivers hours Sweden - need decision",
+      "body": "Wiktor,\n\nour Swedish clients want the trucks for the Malmo lane to leave Gdynia at 04:00 instead of 07:00 from March. Drivers will not love it but customer says its the only way to hit the new dock windows.\n\nDo you agree? If yes I will tell the planners tomorow and ask HR about night allowances. Please come back to me by Thursday if you can.\n\nOliver",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0166",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Compliance policy: request for your opinion",
+      "body": "Dear Wiktor,\n\nthe compliance officer has drafted an updated policy on gifts and hospitality. The draft sets a limit of 150 PLN for gifts from suppliers and requires written approval for any invitation to events above 500 PLN.\n\nManagement knows the practical effect better than the board does. Do you consider these limits workable, or would you propose different numbers? Please reply in writing by the end of next week, so that I can bring your view to the board.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0168",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Dodatek za zmianę nocną: decyzja",
+      "body": "Cześć Wiktor,\n\nczy zatwierdzasz podniesienie dodatku za pracę w nocy w Tczewie o 2 PLN na godzinę od 01.02.2027? Proszę o decyzję do środy.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0169",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Nordic framework deal: delivery penalty clause, I need your call",
+      "body": "Wiktor,\n\nfollowing up on my first mail about the Nordic deal and your answer to it. I talked to Karin yesterday, and the last open point is the delivery penalty clause. I know you want to keep it low, but she told me the Nordic board will not sign without a number they can see.\n\nTheir proposal is a penalty of 0,3 percent of the shipment value per day of delay, with a cap at five percent of the shipment. Honestly, I think this is fair. Our on-time record is above ninety-five percent, so the clause will rarely bite. The risk is the winter season, when delays at the border can add up.\n\nI think we can accept it if we add a force majeure paragraph for border closures and severe weather, and if the penalty counts only delays above six hours. Karin said she can live with that.\n\nSo what do you say? Do we offer the 0,3 percent with the cap and the exceptions? If you want to counter with something different, tell me the numbers and I will go back to her.\n\nI have a call with Karin on Friday at 10:00, and I would like to give her an answer by then. If you can reply by Thursday evening, that would be perfect. Otherwise we will lose a week, and the signing date will slip into March.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Nordic deal",
+          "body": "Oliver, I will think about the penalty clause. Keep it low and send me the details of what Nordic proposes. Wiktor"
+        },
+        {
+          "from": "oliver.pemberton@kordelan.test",
+          "subject": "Nordic deal: open points",
+          "body": "Hi Wiktor, we are close with Nordic Foods on the framework deal. The last big thing is penalties for late delivery. Can we talk this week? Oliver"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0170",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wniosek o zgodę na wydatek inwestycyjny: stanowisko zarządu",
+      "body": "Panie Prezesie,\n\nna najbliższym posiedzeniu rada ma rozpatrzyć wniosek zarządu o zgodę na inwestycję w automatyzację magazynu w Gdyni. Zanim to nastąpi, chciałbym wyjaśnić kilka kwestii, które pojawiły się w rozmowach z członkami rady.\n\nWniosek zakłada wydatek 3,4 miliona PLN, z okresem zwrotu pięć lat. Część członków rady uważa ten okres za zbyt długi w obecnej sytuacji rynkowej. Pytają, czy zarząd rozważał wariant etapowy, w którym najpierw automatyzujemy tylko strefę kompletacji, co kosztowałoby około 1,6 miliona PLN i dałoby szybszy zwrot.\n\nProszę o Pańskie stanowisko w trzech sprawach. Po pierwsze, czy zarząd analizował wariant etapowy i jakie są jego wady. Po drugie, jakie ryzyko widzi Pan w wdrożeniu w sezonie wzmożonych wysyłek. Po trzecie, czy zarząd jest gotów przyjąć warunek, że drugi etap zostanie uruchomiony dopiero po osiągnięciu założonych oszczędności w pierwszym.\n\nOdpowiedź proszę przesłać na piśmie do 26.01.2027, aby umieścić ją w materiałach rady. Jeśli potrzebuje Pan dodatkowych danych od dyrektora operacyjnej, proszę o jej zaangażowanie od razu. Zależy mi na tym, aby rada podejmowała decyzję na podstawie pełnej informacji, a nie ogólnych deklaracji. Jeśli wariant etapowy okaże się lepszy, rada chętnie go rozważy, bo nie chcemy ryzykować płynności firmy w roku, w którym planujemy też zakup nowych naczep.\n\nZbigniew Orlowicz",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0171",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Tender submission: your signature",
+      "body": "Dear Mr Szalewski,\n\nthe tender documents need the signature of both managing officers by 05.02.2027. Can you sign them in Gdynia on 03.02.2027?\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0172",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Certificate of origin: your signatory",
+      "body": "Dear Mr Szalewski,\n\nour customs broker asks who at Kordelan is the authorised signatory for the certificates of origin from March. At present the documents are signed by the head of export, but the Swedish authority now wants a member of the management board.\n\nWould you be willing to sign them yourself, or will you name another board member? We need the name and a specimen of the signature by 15.02.2027.\n\nThank you for your help.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0173",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Brak odpowiedzi w sprawie rabatu reklamacyjnego: proszę o stanowisko",
+      "body": "Panie Wiktorze,\n\ndwa tygodnie temu zgłosiłam do Pana pracownika sprawę rabatu reklamacyjnego za grudniowe uszkodzenia. Do dziś nie otrzymałam odpowiedzi, więc piszę bezpośrednio do Pana.\n\nPrzypominam fakty. W grudniu dostaliśmy dziewięć dostaw z uszkodzonymi opakowaniami lub brakami. Policzyłam wartość strat na 19 300 PLN. Państwa dział reklamacji uznał jedynie część i zaproponował zwrot 6 000 PLN, co nie pokrywa nawet kosztów utylizacji towaru.\n\nMój zarząd oczekuje rabatu w wysokości 12 procent na wszystkie zamówienia w pierwszym kwartale, co byłoby uczciwym rozwiązaniem dla obu stron. W zamian jesteśmy gotowi podpisać aneks przedłużający współpracę o rok.\n\nChcę wiedzieć, czy zgadza się Pan na taki rabat. Jeżeli nie, proszę o konkretną kontrpropozycję, z kwotą, a nie z ogólnym zapewnieniem, że sprawa jest analizowana. Ta sprawa zaczyna wpływać na nasze zaufanie do Państwa jako dostawcy. Moi kierownicy sklepów tracą cierpliwość, bo muszą co tydzień tłumaczyć klientom braki na półkach, a ja nie mam dla nich dobrej odpowiedzi. Dodam, że oczekuję odpowiedzi od Pana, a nie od działu reklamacji, który do tej pory nie rozwiązał problemu.\n\nCzekam na odpowiedź do czwartku. Po tym terminie sprawę przekażę prawnikom.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0174",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Framework agreement: governing law and your position",
+      "body": "Dear Mr Szalewski,\n\nour legal teams have almost finished the text of the framework agreement, and one topic remains that my colleagues cannot settle without your decision: the governing law and the place of jurisdiction.\n\nThe current draft names Polish law and the courts in Gdynia. Our legal department prefers Swedish law and the courts in Malmo, because most of the deliveries end in Sweden and our warehouses are there. We understand that this is a serious point for Kordelan, and we do not want to push it without your view.\n\nA compromise that the lawyers discussed is Polish law with arbitration in Stockholm. Arbitration is neutral for both sides and the procedure is faster than in the courts, but it is more expensive for small disputes. The lawyers estimate the fee of the arbitration court at about 8 000 EUR for a typical dispute.\n\nCould you tell us which solution you prefer: Polish law with the courts in Gdynia, Swedish law with the courts in Malmo, or the arbitration compromise? A written reply by 04.02.2027 would help us to finalise the draft before the signing meeting.\n\nThank you for your understanding.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0175",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nordic call tomorrow",
+      "body": "Wiktor,\n\nKarin wants a call tomorrow at 15:00 about the contract. Can you do it? Yes or no please, I need to tell her tonight.\n\nOliver",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}

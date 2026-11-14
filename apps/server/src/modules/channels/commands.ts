@@ -3,6 +3,7 @@ import {
   cutText,
   formatClock,
   formatDay,
+  llmPauseLine,
   localDateTime,
   localToInstant,
   nextDigestTime,
@@ -33,7 +34,7 @@ import { countLlmCallsSince } from "../audit";
 import { getMailboxSettings } from "../config";
 import { countOpenDelegations } from "../delegation";
 import { countWaiting, listMailboxes, switchMailboxStatus, type MailboxSummary, type TestMailRule } from "../mail";
-import { buildDigestMessage, digestPeriodStart, WAITING_WINDOW_MS } from "../reports";
+import { buildDigestMessage, digestPeriodStart, llmPauseToShow, WAITING_WINDOW_MS } from "../reports";
 import { getMembership, getOrganization, isFeatureOn, isOrgSuspended } from "../tenancy";
 import { ANSWERED_CHECK_WINDOW_MS, listAnsweredCandidates, listForReview } from "../triage";
 
@@ -55,6 +56,8 @@ export interface CommandDeps {
   testMail: TestMailRule;
   // Public contact address for the paused answer. null = "the operator".
   operatorContact: string | null;
+  // Minutes between two mail syncs (MAIL_SYNC_EVERY_MIN), for the /resume text.
+  syncEveryMin: number;
 }
 
 const log = createLog("channels");
@@ -111,6 +114,8 @@ export async function statusMessage(deps: CommandDeps, link: LinkedChat): Promis
   const delegations = await countOpenDelegations(db, ctx);
   lines.push(t.delegations(delegations.open, delegations.overdue));
   lines.push(t.llm(deps.llm.provider, deps.llm.classifierModel));
+  const llmPause = await llmPauseToShow(db, ctx, now);
+  if (llmPause !== null) lines.push(llmPauseLine(llmPause, timeZone, now, texts));
 
   const member = await getMembership(db, ctx, link.userId);
   const times = parseDigestTimes(member?.digest_times ?? []);
@@ -261,15 +266,23 @@ async function switchMailboxes(deps: CommandDeps, link: LinkedChat, change: Stat
       extra.push(change.to === "paused" ? texts.alreadyPaused(address) : texts.alreadyActive(address));
     else if (result.kind === "auth_error") extra.push(loginError);
   }
-  return { text: [...changeLines(change.to, changed, texts), ...extra].join("\n") || texts.noMailbox, buttons: [] };
+  return {
+    text: [...changeLines(change.to, changed, texts, deps.syncEveryMin), ...extra].join("\n") || texts.noMailbox,
+    buttons: [],
+  };
 }
 
-function changeLines(to: "active" | "paused", changed: string[], texts: CoreTexts["bot"]["switch"]): string[] {
+function changeLines(
+  to: "active" | "paused",
+  changed: string[],
+  texts: CoreTexts["bot"]["switch"],
+  syncEveryMin: number
+): string[] {
   if (changed.length === 0) return [];
   const list = changed.join(", ");
   return to === "paused"
     ? [texts.pausedHeader(list), texts.pausedExplain, texts.pausedResume]
-    : [texts.resumedHeader(list), texts.resumedExplain];
+    : [texts.resumedHeader(list), texts.resumedExplain(syncEveryMin)];
 }
 
 export function pauseMailboxes(deps: CommandDeps, link: LinkedChat): Promise<OutMessage> {

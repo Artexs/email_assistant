@@ -1,0 +1,170 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-013",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-inf-0109",
+      "subject": "Status statusu AEO naszego biura",
+      "body": "Szanowny Panie Wiktorze,\n\ndla Pańskiej wiadomości: nasze biuro odpraw otrzymało przedłużenie statusu upoważnionego przedsiębiorcy AEO na kolejne trzy lata. Audytorzy urzędu celnego nie zgłosili uwag do procedur bezpieczeństwa. Dla Państwa zleceń oznacza to dalsze uproszczone zgłoszenia i niższy odsetek kontroli fizycznych.\n\nNie trzeba niczego podpisywać ani odsyłać. Dokument jest dostępny w naszym archiwum i udostępnimy go tylko na wyraźną prośbę audytorów.",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0110",
+      "subject": "Notes from the committee",
+      "body": "Wiktor,\n\nthe risk committee met today and did not find new issues. The register stays as it was in December. For your files only.",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0112",
+      "subject": "Re: Customs requirements for the Nordic lane - confirmation",
+      "body": "Dear Mr Szalewski,\n\nFurther to the question raised by Ms Lindqvist in her earlier message, I would like to confirm the position of our customs team and to give you a complete picture, so that your colleagues in export do not have to look for the details elsewhere.\n\nFrom 1 February, shipments of chilled and frozen food to Sweden and Denmark require electronic pre-notification at least two hours before the truck reaches the border. Our office submits the notifications for all Kordelan loads that we clear, and the system confirmed the registration of your company numbers this week. We tested the process on three trial consignments and the answers from the authorities arrived within minutes.\n\nThe temperature records from the trailers will be attached automatically, as the data flow from your loggers to our platform has already been tested. Your drivers will carry only the usual transport documents. Hand-written certificates will no longer be accepted, but Kordelan does not use them in any case.\n\nThe estimated change in clearance time is minimal. In the trial period the average was 34 minutes, compared with 41 minutes under the old procedure. We do not expect extra costs for your side.\n\nThis message is for your information. We will write again only if the authorities change the rules.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "subject": "Re: Customs requirements for the Nordic lane",
+          "body": "Dear Daniel, thank you for the details. Our export team will pass them to the broker. Best regards, Wiktor Szalewski"
+        },
+        {
+          "subject": "Customs requirements for the Nordic lane",
+          "body": "Dear Mr Szalewski, we have heard that the customs rules for chilled food will change in February. Could your broker confirm the impact on the Gothenburg deliveries? Karin Lindqvist"
+        }
+      ]
+    },
+    {
+      "id": "b-inf-0113",
+      "subject": "Odbiór towaru w Kielcach",
+      "body": "Szanowny Panie Wiktorze,\n\ninformuję, że wczorajsza dostawa do hurtowni w Kielcach dotarła w pełnym stanie.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Szanowny Panie Wiktorze,</p><p style=\"margin:0 0 12px 0\">informuję, że wczorajsza dostawa do hurtowni w Kielcach dotarła w pełnym stanie.</p><p style=\"margin:0 0 12px 0\">Genowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0114",
+      "subject": "Port strike notice",
+      "body": "Dear Wiktor,\n\nThe port union announced a four-hour work stoppage in Gdynia for Thursday morning, and our broker has already moved the pickups.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0115",
+      "subject": "Reklamacja zamknięta - potwierdzenie",
+      "body": "Szanowny Panie Wiktorze,\n\ndla Pańskiej wiadomości: reklamacja dotycząca uszkodzonych płyt z grudnia została u nas zamknięta. Nota korygująca dotarła do naszego działu zakupów i została zaksięgowana. Dyrektor operacyjna przekazała nam również opis działań, które mają zapobiec podobnym uszkodzeniom, i uważamy tę sprawę za wyjaśnioną.\n\nDziękuję za sprawne załatwienie reklamacji.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0116",
+      "subject": "Zamknięcie biura odpraw w święto",
+      "body": "Szanowny Panie Wiktorze,\n\ninformuję, że nasze biuro odpraw w Gdyni będzie nieczynne w dniu świątecznym przypadającym w lutym, a dyżur telefoniczny pełnić będzie jeden z naszych specjalistów. Zlecenia eksportowe, które przypadają na ten dzień, zostały już zaplanowane z jednodniowym wyprzedzeniem, więc nie spodziewamy się żadnych opóźnień.\n\nKierowcy Kordelana nie muszą zmieniać planu, a dokumenty dla tych kursów będą gotowe dzień wcześniej.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0117",
+      "subject": "Border times this week",
+      "body": "Wiktor,\n\nSome numbers on the borders this week, just for your radar. Swinoujscie ferry: no delays. Hamburg crossing: average two hours, one bad day on Tuesday. Gothenburg arrival slots: every truck on time. The new pre-notification system seems to be working well, only one rejected declaration, and it was a typo in the vehicle plate.\n\nI will pull the full stats on Monday and share them if anything looks strange. No need to do anything now.\n\nOliver",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0118",
+      "subject": "Zmiany w regulaminie pracy - krótka informacja",
+      "body": "Cześć Wiktor,\n\nwprowadziliśmy w regulaminie pracy dwie małe zmiany: nowy zapis o pracy zdalnej w dziale administracji oraz uproszczoną procedurę zgłaszania urlopów na żądanie. Zmiany były konsultowane ze związkami zawodowymi i nikt nie zgłosił zastrzeżeń. Wchodzą w życie pierwszego lutego.\n\nPiszę wyłącznie dla informacji, nie musisz niczego zatwierdzać, bo regulamin został już podpisany.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0119",
+      "subject": "Annual review of the supervisory board - note for the management",
+      "body": "Dear Mr Szalewski,\n\nI would like to share, for your information, the outcome of the annual review of the supervisory board that the secretary completed this month. The review covers the work of the board and its committees in the last year and is part of our governance procedures.\n\nMembers assessed the board's work as effective. The highest marks went to the quality of the management reports and to the cooperation with the auditors. The lowest mark concerned the time reserved for discussion during meetings, which members find short, and the board will therefore extend the January meeting by one hour. The change is already included in the agenda.\n\nThe review also noted that the rate of attendance was one hundred percent at all meetings last year, and that the committees met as planned. The board portal received positive feedback, especially for the speed of access to documents.\n\nThe full report will be discussed in the closing item of the meeting on 28 January. Members have already received it. For the management, it is for information only, and I do not expect any steps from the company before the meeting.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0120",
+      "subject": "Logistyka Dziś: szybka wiadomość z rynku",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nCeny frachtu drogowego w kraju wzrosły w tym tygodniu o jeden procent, głównie na trasach do Niemiec.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0121",
+      "subject": "Aneks do umowy - podpisany",
+      "body": "Szanowny Panie Wiktorze,\n\ninformuję, że aneks do umowy ramowej został po naszej stronie podpisany i wysłany pocztą. Nie są potrzebne żadne dalsze czynności.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Szanowny Panie Wiktorze,</p><p style=\"margin:0 0 12px 0\">informuję, że aneks do umowy ramowej został po naszej stronie podpisany i wysłany pocztą. Nie są potrzebne żadne dalsze czynności.</p><p style=\"margin:0 0 12px 0\">Z powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0122",
+      "subject": "Signing date unchanged",
+      "body": "Dear Mr Szalewski,\n\nOur team confirms that the signing date of the framework agreement stays as planned.",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0124",
+      "subject": "Supply Chain Weekly: quick brief",
+      "body": "Supply Chain Weekly - quick brief\n\nAir cargo demand rose two percent in December, led by electronics and pharmaceuticals.",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0125",
+      "subject": "Plan rekrutacji na pierwszy kwartał - stan i kolejne kroki",
+      "body": "Cześć Wiktor,\n\nmam dla Ciebie obszerniejszą informację o planie rekrutacji na pierwszy kwartał, bo w ostatnich dniach wiele się wyjaśniło i chcę, żebyś miał jeden dokument zamiast kilku krótkich wiadomości.\n\nPlan zakłada w sumie czterdzieści dwa nowe stanowiska: dwadzieścia w magazynach w Poznaniu, szesnaście w Gdyni oraz sześć w biurach, głównie w dziale obsługi klienta i w księgowości. Do tej pory obsadzono trzydzieści pięć stanowisk. Pozostałe siedem to dwóch specjalistów od obsługi klienta, trzech magazynierów w Gdyni oraz dwie osoby w księgowości, z którymi rozmowy odbędą się w przyszłym tygodniu.\n\nKoszty rekrutacji są zgodne z budżetem. Agencja pracy tymczasowej wystawiła pierwszą fakturę, a Magdalena potwierdziła, że mieści się ona w limicie przewidzianym na kwartał. Średni czas obsadzenia stanowiska wyniósł dwadzieścia trzy dni, co jest znacznie lepszym wynikiem niż rok temu.\n\nJeśli chodzi o jakość, wszyscy nowi pracownicy przeszli badania lekarskie i szkolenie BHP, a po trzech miesiącach przejdą ocenę okresową. Wyniki ankiet kandydatów pokazują, że najlepiej oceniają oni szybkość kontaktu z naszej strony i przejrzystość oferty.\n\nNic nie wymaga Twojej decyzji. Dostaniesz kolejną informację po zakończeniu rozmów.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0127",
+      "subject": "Wyniki ankiety pracowniczej",
+      "body": "Cześć Wiktor,\n\nwyniki krótkiej ankiety satysfakcji pracowników z magazynów są już gotowe. Odpowiedziało siedemdziesiąt trzy procent osób, a średnia ocena wyniosła cztery na pięć punktów. Najlepiej pracownicy ocenili atmosferę w zespołach i organizację zmian, a najniżej parking przy magazynie w Gdyni.\n\nNic nie trzeba robić, wyniki zostaną omówione z kierownikami magazynów w przyszłym tygodniu.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0128",
+      "subject": "Uszkodzone dostawy - podsumowanie rozliczeń za grudzień",
+      "body": "Szanowny Panie Wiktorze,\n\npragnę poinformować Pana o tym, jak wyglądają u nas rozliczenia reklamacji za grudzień, aby miał Pan jasny obraz tego, co zostało załatwione, a co jeszcze trwa. Piszę to dlatego, że w ostatnich miesiącach sprawy reklamacyjne były dla nas ważnym tematem w relacjach z Państwa firmą.\n\nW grudniu zgłosiliśmy trzy reklamacje: uszkodzone płyty meblowe, brakujące okucia w jednej dostawie oraz opóźnienie w odbiorze palet zwrotnych. Dwie pierwsze zostały uznane i rozliczone notami korygującymi, które otrzymał nasz dział finansowy. Trzecia sprawa została wyjaśniona rozmową z dyrektor operacyjną i nie wymaga rozliczenia.\n\nWartość wszystkich korekt wyniosła niespełna dwa procent obrotu z grudnia, co jest wynikiem lepszym niż w poprzednich miesiącach. Doceniamy, że Państwa zespół reaguje na zgłoszenia w ciągu jednego dnia i że informacje o przyczynach były rzetelne.\n\nWiadomość ma charakter informacyjny i nie wymaga odpowiedzi. Cieszymy się z dobrej współpracy i planujemy kontynuować ją w przyszłym roku.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0130",
+      "subject": "Logistyka Dziś: przegląd tygodnia - przetargi, regulacje, paliwa i rynek",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nPrzetargi. Zarząd dróg opublikował postępowanie na obsługę transportową magazynów materiałów drogowych w trzech województwach. Termin ofert upływa w marcu, a kryteria oceny obejmują cenę, czas dostawy i doświadczenie. Spółka energetyczna ogłosiła z kolei przetarg na przewóz urządzeń o dużych gabarytach, wartość zamówienia szacuje się na kilkanaście milionów złotych.\n\nRegulacje. Komisja Europejska przedstawiła projekt zmian w dyrektywie o czasie pracy kierowców. Przewiduje on między innymi dłuższe okresy odpoczynku dla kierowców pracujących w trasach międzynarodowych. Organizacje przewoźników ostrzegają, że zmiany mogą podnieść koszty obsługi tras.\n\nPaliwa. Ceny oleju napędowego zmieniły się niewiele. Hurtownicy zapowiadają stabilizację do końca lutego, choć wskazują na ryzyko wynikające z sytuacji geopolitycznej.\n\nRynek. Wskaźnik koniunktury w branży TSL wzrósł o dwa punkty, a przedsiębiorcy dobrze oceniają perspektywy na pierwszy kwartał. Największy optymizm panuje wśród firm zajmujących się logistyką kontraktową.\n\nTechnologie. Kilka dużych firm wdrożyło w magazynach systemy rozpoznawania obrazu do liczenia palet, co skraca czas inwentaryzacji o połowę.",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0131",
+      "subject": "Supply Chain Weekly: fuel and freight in brief",
+      "body": "Supply Chain Weekly - the numbers\n\nBrent crude fell one percent on the week, and diesel in the euro area followed with a small drop.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0132",
+      "subject": "Nowe ubezpieczenie grupowe - dla informacji",
+      "body": "Cześć Wiktor,\n\nod pierwszego lutego pracownicy mają nowe ubezpieczenie grupowe. Zmieniliśmy ubezpieczyciela, a zakres ochrony jest szerszy: obejmuje dodatkowo pakiet badań profilaktycznych oraz opiekę psychologiczną. Składka pozostaje na dotychczasowym poziomie, a nowe karty trafią do pracowników w przyszłym tygodniu.\n\nWszystko jest już podpisane, więc to tylko informacja do wiadomości.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0133",
+      "subject": "Logistyka Dziś: nowe parki magazynowe",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nDeweloper ogłosił budowę dwóch nowych hal magazynowych koło Poznania, o łącznej powierzchni czterdziestu tysięcy metrów.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0134",
+      "subject": "Reklamacja z Kielc - rozliczona",
+      "body": "Szanowny Panie Wiktorze,\n\ninformuję, że reklamacja dotycząca dostawy do hurtowni w Kielcach została rozliczona. Nota korygująca została zaksięgowana w naszym systemie, a towar zastępczy został przyjęty bez zastrzeżeń. Zespół hurtowni potwierdza, że sprawa jest zamknięta.\n\nWiadomość przekazuję do wiadomości, bez potrzeby odpowiedzi z Państwa strony.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Szanowny Panie Wiktorze,</p><p style=\"margin:0 0 12px 0\">informuję, że reklamacja dotycząca dostawy do hurtowni w Kielcach została rozliczona. Nota korygująca została zaksięgowana w naszym systemie, a towar zastępczy został przyjęty bez zastrzeżeń. Zespół hurtowni potwierdza, że sprawa jest zamknięta.</p><p style=\"margin:0 0 12px 0\">Wiadomość przekazuję do wiadomości, bez potrzeby odpowiedzi z Państwa strony.</p><p style=\"margin:0 0 12px 0\">Genowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0136",
+      "subject": "Przegląd naczep",
+      "body": "Cześć Wiktor,\n\nserwis potwierdził, że przegląd naczep zakończy się w piątek, bez uwag. Tylko info.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0137",
+      "subject": "Informacja o spotkaniu zespołów przetargowych",
+      "body": "Szanowny Panie Wiktorze,\n\ndla porządku informuję, że spotkanie robocze zespołów przetargowych, które omawialiśmy w grudniu, odbyło się w środę w naszym biurze. Uczestniczyło sześć osób z obu firm. Ustaliliśmy podział prac przy przygotowaniu wspólnej oferty oraz harmonogram do końca lutego. Notatka ze spotkania została rozesłana uczestnikom.\n\nZmiany po stronie Kordelana nie były potrzebne, a nasz kontroler finansowy potwierdził zgodność kosztorysu. Pozostałe sprawy są po stronie zespołów, więc nie angażuję Pana w szczegóły.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0138",
+      "subject": "Agenda update",
+      "body": "Wiktor,\n\nFor your information: the board secretary will send the final meeting pack on Monday morning. The pack contains the budget, the audit committee report and the tender summary. The versions you saw earlier have not changed, so there is no need to open it before the meeting.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    }
+  ]
+}

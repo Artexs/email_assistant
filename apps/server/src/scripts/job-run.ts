@@ -71,6 +71,7 @@ async function main(): Promise<number> {
           sendScope: sendScope(config),
           testMail: testMailRule(config),
           operatorContact: null,
+          syncEveryMin: Number(config.MAIL_SYNC_EVERY_MIN),
         });
         await runtime.notify();
       }

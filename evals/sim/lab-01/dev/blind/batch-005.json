@@ -1,0 +1,307 @@
+{
+  "scenario": "lab-01",
+  "part": "dev",
+  "batch": "batch-005",
+  "cases": [
+    {
+      "id": "b-inf-0246",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Informacja: nowe godziny przyjęć w naszych hurtowniach",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję Pana, że od lutego nasze hurtownie we Wrocławiu i w Opolu zmieniają godziny przyjęć towaru. Dostawy będą odbierane od poniedziałku do piątku między 5:30 a 11:00, a w soboty nie będziemy przyjmować żadnych dostaw.\n\nZmiana wynika z reorganizacji zmian w naszych magazynach i nie ma związku z jakością współpracy, którą oceniamy bardzo dobrze. Państwa dyspozytorzy otrzymali już ten sam komunikat od naszego działu logistyki, a harmonogramy kursów zostały dostosowane.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0254",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supply Chain Weekly: What to expect from the 2027 shipping season",
+      "body": "Industry forecasts for 2027 point to a year of moderate growth and cautious optimism in European freight.\n\nKey numbers from this week's reports:\n- Road freight volumes in Central Europe are expected to grow 2-3% over the year.\n- Warehouse vacancy in Poland stays below 6%.\n- Diesel prices are forecast to remain within a narrow band of the current level.\n\nAnalysts add that labour shortages in warehousing will continue to shape wage growth, particularly in logistics hubs near large cities.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0255",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Joint venture: a short note from the Baltic desk",
+      "body": "Dear Mr Szalewski,\n\nI wanted to let you know about a small development on our side. Baltic Freight Partners has just signed a framework agreement with a new regional carrier based in Riga, which gives us three additional trucks per week on the Latvian lane. The carrier already works with several of your competitors, so the lane is well known to the customs authorities.\n\nThis gives our joint offers more flexibility, and the rate level is in line with what we use today. No change is needed on your side; I only mention it so you can see the capacity we can draw on.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0256",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dzis: opłaty portowe w 2027 roku",
+      "body": "Port w Gdyni zapowiada podwyżkę opłat za postój kontenerów o 3 proc. od marca.\n\nOperatorzy terminali tłumaczą decyzję rosnącymi kosztami energii.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0258",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Status: Hamburg lane operational",
+      "body": "Dear Mr Szalewski,\n\nthe Hamburg lane has reopened after the maintenance work, and all bookings run on the standard schedule.\n\nDaniel",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0261",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nowe regiony w naszej sieci – informacja",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że w lutym otwieramy trzy nowe hurtownie na południu Polski, w Rzeszowie, Tarnowie i Nowym Sączu. Rozpoczęcie działalności zaplanowano na 3 lutego.\n\nNowe punkty będą zaopatrywane z naszego centrum dystrybucyjnego w Krakowie. Szczegóły dotyczące zamówień zostaną ustalone po zakończeniu przetargu, więc na razie piszę tylko dla Pana wiadomości. Każdy z nowych punktów będzie miał około 1800 metrów kwadratowych powierzchni magazynowej i zatrudni około trzydziestu osób.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0002",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie zapisu na newsletter",
+      "body": "Ta wiadomość została wygenerowana automatycznie.\n\nAdres wiktor.szalewski@kordelan.test został zapisany na listę „Logistyka Dzis – wydanie tygodniowe”. Pierwsze wydanie otrzymasz w najbliższy piątek.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0004",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana preferencji subskrypcji zapisana",
+      "body": "Twoje ustawienia subskrypcji zostały zaktualizowane.\n\nOd teraz otrzymujesz wydanie tygodniowe w piątki oraz skrót newslettera w środy. Zmiany obowiązują od najbliższej wysyłki, czyli od środy 20.01.2027.\n\nAktualne ustawienia konta:\n- wydanie tygodniowe: tak,\n- skrót w środy: tak,\n- powiadomienia o nowych raportach: nie,\n- język wiadomości: polski.\n\nWiadomość wysłana automatycznie, prosimy na nią nie odpowiadać. Ustawienia możesz zmienić w panelu konta w dowolnym momencie.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0017",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie przelewu wychodzącego",
+      "body": "Powiadomienie o transakcji\n\nSzanowny Kliencie,\ninformujemy, że w dniu 12.01.2027 o godzinie 10:42 zrealizowano przelew wychodzący z rachunku firmowego PL00-TEST-4821.\n\nKwota: 18 450,00 PLN\nOdbiorca: Trailerwerk Sued GmbH\nTytuł: faktura FV/2026/0415\nStatus: zaksięgowany\nSaldo po operacji: 394 210,55 PLN\nOpłata za przelew: 0,00 PLN\n\nTo jest wiadomość automatyczna. Nie odpowiadaj na ten adres. Szczegóły operacji znajdziesz w historii rachunku w bankowości internetowej.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0018",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Twoje wydanie jest gotowe do pobrania",
+      "body": "Wydanie tygodniowe Logistyka Dzis z 15.01.2027 jest dostępne w archiwum.\n\nNumer wydania: 3/2027. Liczba stron: 24. Format plików: PDF oraz wersja do czytania na telefonie. Wydanie zostanie przechowane w archiwum przez 90 dni, a po tym czasie będzie dostępne wyłącznie dla kont z planem rozszerzonym.\n\nAby je otworzyć, zaloguj się w panelu konta i wybierz zakładkę Archiwum.\n\nPowiadomienie wysłane automatycznie.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0019",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: dokument ZK/2027/0142 zatwierdzony",
+      "body": "Powiadomienie systemu ERP\n\nDokument: ZK/2027/0142 (zamówienie klienta)\nStatus: zatwierdzony\nData zatwierdzenia: 13.01.2027, 8:15\nZatwierdził: konto serwisowe WMS\nMagazyn realizujący: Poznań\nLiczba pozycji: 14\nWartość zamówienia: 38 920,00 PLN\n\nDokument został przekazany do realizacji w magazynie. Planowana data wysyłki to 15.01.2027. Przewoźnik: flota własna. Okno załadunku: rampa 4, 14:00 do 16:00. Dokument WZ zostanie utworzony automatycznie po kompletacji. Wiadomość wygenerowana automatycznie, nie odpowiadaj na nią.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0023",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Your subscription renewal receipt",
+      "body": "This is an automated message.\n\nYour Supply Chain Weekly subscription has been renewed for 12 months. Amount charged: 149.00 EUR. Payment method: card ending 4821. Next renewal date: 14.01.2028.\n\nYou can download your receipt in your account settings, under Billing. If you do not want the subscription to renew automatically next year, turn off auto-renewal there at any time. Please do not reply to this message, because the mailbox is not monitored.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0031",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Direct debit executed on your business account",
+      "body": "Transaction notice\n\nA direct debit was executed on your business account PL00-TEST-4821 on 13.01.2027.\n\nAmount: 2,340.00 PLN\nFee: 0.00 PLN\nPayee: Paliwa-Flota\nReference: monthly fee, fleet cards\nMandate: DD-2025-0172\nStatus: booked\nBalance after the operation: 391,870.55 PLN\n\nThis message was generated automatically. Replies are not monitored. You can review all active mandates in the banking portal under Payments. The next debit under this mandate is scheduled for 13.02.2027.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0032",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Account notice: password changed",
+      "body": "The password for your Supply Chain Weekly account was changed on 11.01.2027 at 9:12.\n\nIf you did not make this change, use the link in your account settings.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0039",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Karty paliwowe: potwierdzenie zmiany ustawień powiadomień",
+      "body": "Ustawienia powiadomień o cenach paliw zostały zapisane.\n\nOd 18.01.2027 będziesz otrzymywać codzienne zestawienie cen oleju napędowego dla czterech województw: mazowieckiego, wielkopolskiego, łódzkiego i pomorskiego. Zestawienie jest wysyłane automatycznie o godzinie 7:00 każdego dnia roboczego.\n\nZmiany obejmują następujące elementy konta:\n- częstotliwość wysyłki: codziennie,\n- zakres danych: ceny hurtowe i detaliczne,\n- format wiadomości: tekst z tabelą,\n- adres odbiorcy: wiktor.szalewski@kordelan.test.\n\nJeśli wolisz tygodniowe podsumowanie zamiast codziennego, możesz zmienić ustawienia w panelu subskrypcji, w zakładce Powiadomienia. Zmiany wchodzą w życie od następnego dnia roboczego po zapisaniu. Historia wysyłek za ostatnie 30 dni jest dostępna w archiwum konta, a każda zmiana ustawień jest zapisywana z datą i godziną, aby można było ją później sprawdzić.\n\nDane konta są przetwarzane zgodnie z polityką prywatności serwisu. Wniosek o usunięcie konta można złożyć w panelu, w zakładce Prywatność, a realizacja takiego wniosku trwa do siedmiu dni roboczych. Po usunięciu konta archiwum wydań przestaje być dostępne, a dane rozliczeniowe są przechowywane tylko tak długo, jak wymagają tego przepisy podatkowe.\n\nWiadomość wygenerowana przez system. Prosimy na nią nie odpowiadać. W sprawie problemów technicznych skorzystaj z formularza w panelu konta, w zakładce Pomoc.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0045",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: zamówienie ZZ/2027/0088 wysłane do dostawcy",
+      "body": "Powiadomienie systemu ERP\n\nZamówienie zakupu ZZ/2027/0088 zostało wysłane do dostawcy 14.01.2027, 7:40.\nStatus: oczekuje na potwierdzenie.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0053",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie przedłużenia dostępu do archiwum",
+      "body": "Dostęp do archiwum wydań Logistyka Dzis został przedłużony do 14.01.2028.\n\nKwota opłaty: 129,00 PLN. Sposób płatności: karta kończąca się na 4821. Dokument sprzedaży został dołączony do Twojego konta i jest dostępny w zakładce Płatności.\n\nJeśli nie chcesz, aby dostęp przedłużał się automatycznie, wyłącz odnawianie w ustawieniach konta. Wiadomość wygenerowana automatycznie. W razie pytań dotyczących faktury użyj formularza kontaktowego w panelu.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0056",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Podsumowanie konta: tydzień 2/2027",
+      "body": "To jest cotygodniowe automatyczne podsumowanie Twojego konta w serwisie Logistyka Dzis.\n\nAktywność w tym tygodniu:\n- otwarte wydania: 2 z 2,\n- pobrane załączniki: 1,\n- zapisane artykuły do przeczytania później: 3,\n- zmiany ustawień konta: brak.\n\nStatus subskrypcji: aktywna do 14.01.2028. Plan: wydanie tygodniowe z dostępem do archiwum, bez raportów specjalnych.\n\nPrzypominamy, że historia aktywności jest przechowywana przez 12 miesięcy i można ją pobrać w panelu konta w formacie tabeli. Dane z konta są przetwarzane zgodnie z polityką prywatności serwisu, a ich pełny zakres opisujemy w regulaminie dostępnym po zalogowaniu.\n\nZapisane artykuły są przechowywane przez 60 dni od dnia dodania, po tym czasie system usuwa je automatycznie z listy. Lista zapisanych artykułów jest widoczna tylko dla właściciela konta i nie jest udostępniana innym użytkownikom serwisu ani partnerom wydawcy.\n\nPowiadomienie wysłane przez system, bez możliwości odpowiedzi. Aby zmienić częstotliwość podsumowań, wejdź w ustawienia konta, w zakładkę Powiadomienia, i wybierz inną opcję z listy rozwijanej. Zmiana zadziała od następnego poniedziałku, a pierwsze podsumowanie w nowym trybie otrzymasz 25.01.2027. Jeśli wyłączysz podsumowania całkowicie, konto pozostanie aktywne, a wydania będą nadal przychodzić zgodnie z subskrypcją.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0059",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Monthly statement for your business account is available",
+      "body": "Account notice\n\nYour monthly statement for December 2026 is now available in the banking portal.\n\nAccount: PL00-TEST-4821\nPeriod: 01.12.2026 to 31.12.2026\nOpening balance: 412,300.55 PLN\nClosing balance: 388,901.20 PLN\nNumber of transactions: 214\nNumber of incoming transfers: 61\nNumber of outgoing transfers: 153\n\nThe statement is available as a PDF and as a CSV file. The files stay in the portal for 24 months. To open them, sign in to the banking portal with your regular credentials; no one from the bank will ever ask you for your password by email or phone.\n\nIf a transaction looks unfamiliar, use the report form in the portal, in the section Support. The bank processes such reports within three working days and informs you about the result in the portal. Paper statements are no longer issued, unless you request them in the portal settings; this service is charged according to the current price list of the bank. Statements of previous years can be downloaded in the portal for up to ten years back, and the full list of fees is published in the section Documents.\n\nThis message was created automatically. Please do not reply to this address, because the mailbox is not monitored by bank staff.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0060",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Powiadomienie o zmianie adresu rozliczeniowego",
+      "body": "Adres rozliczeniowy dla usługi „Ceny paliw – wydanie premium” został zmieniony 10.01.2027.\n\nNowy adres: ul. Magazynowa 14, 02-100 Warszawa. Nazwa odbiorcy faktur: Kordelan Dystrybucja Sp. z o.o. Poprzedni adres został zarchiwizowany i nie będzie używany na kolejnych dokumentach sprzedaży. Dokumenty wystawione przed zmianą pozostają bez korekty.\n\nZmiany można sprawdzić w panelu konta, w zakładce Płatności. Historia zmian danych rozliczeniowych jest przechowywana przez dwa lata.\n\nWiadomość wysłana automatycznie.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0079",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: raport zapasów dla magazynu Łódź wygenerowany",
+      "body": "Powiadomienie systemu ERP\n\nRaport RZ/2027/0021 (stan zapasów, magazyn Łódź) został wygenerowany 15.01.2027, 6:00.\nLiczba pozycji: 3 482. Pozycje poniżej stanu minimalnego: 17.\nPozycje powyżej stanu maksymalnego: 4.\nWartość zapasów: 2 184 300,00 PLN.\nPlik został zapisany w katalogu raportów magazynowych i będzie dostępny przez 30 dni. Raport tworzy się automatycznie każdego dnia o 6:00 i zawiera zestawienie wszystkich pozycji według grup towarowych.\n\nWiadomość wysłana automatycznie z systemu ERP. Nie odpowiadaj na nią.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0095",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Card payment authorised",
+      "body": "Card transaction notice\n\nA card payment was authorised on corporate card ending 4821.\n\nDate: 13.01.2027, 16:03\nMerchant: Paliwa-Flota Station\nAmount: 612.80 PLN\nAuthorisation code: A-7731\nStatus: authorised\nRemaining daily card limit: 9,387.20 PLN\nCardholder: fleet pool card, Warsaw\nChannel: terminal, contactless\n\nThis is an automated message. Replies are not monitored. If you do not recognise this transaction, block the card in the banking portal under Cards.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0097",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana limitu dziennego przelewów",
+      "body": "Informacja o zmianie ustawień\n\nDzienny limit przelewów w bankowości internetowej został zmieniony z 200 000,00 PLN na 250 000,00 PLN. Zmiana obowiązuje od 14.01.2027.\n\nWiadomość automatyczna.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0098",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: awaria jednostkowa usunięta",
+      "body": "Powiadomienie systemu ERP\n\nZgłoszenie INC/2027/0007 (moduł magazynowy, Poznań) zostało zamknięte 14.01.2027, 3:30. Status: rozwiązane.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0103",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiany w regulaminie serwisu Logistyka Dzis",
+      "body": "Informujemy, że od 1 lutego 2027 obowiązuje zaktualizowany regulamin serwisu Logistyka Dzis oraz polityka prywatności.\n\nNajważniejsze zmiany dotyczą następujących obszarów:\n- zasady korzystania z archiwum wydań,\n- warunki przedłużania subskrypcji,\n- zakres danych przechowywanych na koncie użytkownika,\n- sposób rozliczania opłat za dodatkowe raporty.\n\nPełny tekst regulaminu znajdziesz w panelu konta, w zakładce Dokumenty. Jeśli nie zgadzasz się z nowymi zasadami, możesz zrezygnować z subskrypcji w dowolnym momencie przed datą wejścia zmian w życie; ustawienia konta pozwalają to zrobić jednym kliknięciem. Dalsze korzystanie z serwisu po tym dniu oznacza akceptację nowych warunków. Poprzednia wersja regulaminu pozostaje dostępna w archiwum dokumentów przez dwanaście miesięcy, aby można było porównać zapisy.\n\nZmiany obejmują także aktualizację zasad dotyczących plików cookie na stronach serwisu oraz prostszy sposób wycofania zgody na komunikację marketingową. Zgody udzielone wcześniej pozostają ważne, o ile ich nie zmienisz. Zmieniamy również zasady przechowywania kopii zapasowych danych konta: będą usuwane po 180 dniach od zamknięcia konta, a nie po roku, jak dotychczas. Wprowadziliśmy też krótszy okres odpowiedzi na wnioski użytkowników, wynoszący teraz do siedmiu dni roboczych.\n\nTo jest wiadomość systemowa. Prosimy na nią nie odpowiadać.",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}

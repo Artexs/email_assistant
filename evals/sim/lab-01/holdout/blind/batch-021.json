@@ -1,0 +1,307 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-021",
+  "cases": [
+    {
+      "id": "b-not-0099",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: printer queue cleared",
+      "body": "ERP system Kordelan | Label printer queue in the Lodz warehouse was cleared at 07:35. 14 jobs reprinted, 0 errors. Automatic message.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0100",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: zmiana częstotliwości wydań",
+      "body": "USTAWIENIA SUBSKRYPCJI\n\nZmieniono częstotliwość wydań na raz w tygodniu. Wiadomość automatyczna.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0101",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: scanner firmware updated",
+      "body": "ERP system Kordelan | Firmware of 12 handheld scanners in Gdynia was updated to version 4.2 at 05:50. Status: completed. Automatic message.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0102",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie logowania do bankowości",
+      "body": "Aurum Bank | Zalogowano do bankowości internetowej 15.01.2027 o 07:58 z nowego adresu. Wiadomość automatyczna.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0104",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: raport wykorzystania rampy w magazynie w Gdyni",
+      "body": "System ERP Kordelan | Raport automatyczny\n\nRaport wykorzystania ramp w magazynie w Gdyni za dzień 14.01.2027 został wygenerowany o 22:00. W ciągu dnia obsłużono 27 dostaw na czterech rampach. Średni czas postoju pojazdu na rampie: 52 minuty. Największe obciążenie zanotowano między 9:00 a 11:00, kiedy zajęte były wszystkie cztery rampy. Dostawy awizowane na ten dzień: 29, nieawizowane: 0, odwołane przez przewoźników: 2.\n\nRaport zapisano w module raportów. Wiadomość wygenerowana automatycznie, nie odpowiadaj na ten adres.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0106",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: zestawienie zdarzeń z interfejsów zewnętrznych, tydzień 2",
+      "body": "SYSTEM ERP KORDELAN | Zestawienie interfejsów zewnętrznych\n\nZestawienie jest generowane automatycznie w poniedziałek o 06:30 i obejmuje wszystkie interfejsy modułu magazynowego. Okres: od 04.01.2027 do 10.01.2027. Poniżej wartości liczbowe, bez komentarza.\n\nInterfejs przewoźników (awizacje i statusy): 7 982 komunikaty, odrzucone 11, odsetek błędów 0,14 procent. Wszystkie odrzucone komunikaty wróciły do przewoźników z kodem błędu i zostały wysłane ponownie.\n\nInterfejs księgowy (eksport faktur): 1 411 dokumentów, odrzucone 0. Jedna próba eksportu z dnia 06.01.2027 została powtórzona automatycznie po 15 minutach.\n\nInterfejs bankowy (wymiana plików płatności): 11 wymian, każda w czasie krótszym niż 4 minuty. Pliki odrzucone przez bank: 0.\n\nInterfejs celny (zgłoszenia eksportowe): 64 zgłoszenia przekazane do agenta, 63 potwierdzone, 1 oczekuje na potwierdzenie od 08.01.2027. Zgłoszenie oczekujące zapisano na liście w module eksportu.\n\nInterfejs klienta sieciowego (zamówienia elektroniczne): 312 zamówień, w tym 308 przyjętych automatycznie i 4 skierowane do ręcznej weryfikacji z powodu brakujących danych adresowych.\n\nCzas pracy interfejsów w tygodniu: 99,95 procent. Zdarzenia krytyczne: brak.\n\nNastępne zestawienie zostanie wygenerowane 18.01.2027 o 06:30. Wersja zestawienia: 5. Wiadomość wygenerowana przez usługę monitoringu ERP. Nie odpowiadaj na ten adres. Pełny dziennik wymiany komunikatów jest przechowywany w systemie przez 90 dni.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0107",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Quarterly statement of fees and interest is available",
+      "body": "Aurum Bank | Quarterly notification for business customers\n\nYour quarterly statement of fees and interest for the business account PL00-TEST-4410 is ready. The statement covers the period from 01.10.2026 to 31.12.2026. It was generated automatically on 05.01.2027. This message contains the summary only; the full document is available in online banking.\n\nSummary of fees:\nAccount maintenance: 3 x 89,00 PLN, total 267,00 PLN.\nDomestic transfers: 412 operations, total 824,00 PLN.\nBulk transfer files: 18 files, total 216,00 PLN.\nForeign currency transfers: 9 operations, total 135,00 PLN.\nCard maintenance: 2 cards, total 60,00 PLN.\nPaper statements: 0.\nTotal fees: 1 502,00 PLN.\n\nSummary of interest:\nInterest on the account balance: 0,50 percent per year on the average balance, total 4 112,36 PLN gross.\nInterest on the overdraft facility: not used in this period, total 0,00 PLN.\n\nAll fees were charged on the last working day of each month, and the charges are visible in the daily statements. The interest was credited on 31.12.2026.\n\nTo download the statement, sign in to online banking and open the section Statements, then the tab Quarterly documents. The document is available there for 24 months. The statement is not a tax document.\n\nThis message was generated automatically. Do not reply to this address. The bank never asks for your password or card data in an e-mail.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0108",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supply Chain Weekly: your delivery address was confirmed",
+      "body": "SUPPLY CHAIN WEEKLY | Account notification\n\nYour delivery address for the weekly digest was confirmed after the automatic check of 15.01.2027. The check is run every 12 months on all active subscriber addresses, and it requires no action when it ends with success. The address passed the test, and the system will go on sending the digest every Friday at 07:00. The last bounce on this address was never registered. Nothing needs to be done on your side, and this message will not be repeated for another year. It was generated by the subscription system.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0109",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supply Chain Weekly: reminder about the end of the free trial of paid reports",
+      "body": "AUTOMATED REMINDER\n\nYour trial access to the paid report preview ends on 20.01.2027. No payment method is stored. Nothing will be charged.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0110",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Cash deposit confirmation at the bank branch",
+      "body": "Aurum Bank | Transaction notification\n\nA cash deposit was registered on your business account on 15.01.2027 at 12:05. Branch: Gdynia 2. Amount: 3 200,00 PLN. Deposit reference: PL00-TEST-5502. The funds were credited to the account at once. Your new available balance is 361 630,25 PLN, and the operation is shown in the daily statement.\n\nThis message was generated automatically. Do not reply to this address.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0111",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: kopia zapasowa ustawień konta gotowa",
+      "body": "KOMUNIKAT SYSTEMOWY | konto czytelnika\n\nSystem przygotował kopię zapasową ustawień Twojego konta: listę obserwowanych tematów, zapisanych artykułów i ustawionych alertów. Plik jest dostępny w zakładce Dane i prywatność przez 7 dni, do 22.01.2027. Po tym terminie system usunie go automatycznie. Kopia nie zawiera treści artykułów, tylko odnośniki i ustawienia. Wiadomość została wygenerowana automatycznie i nie wymaga odpowiedzi.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0112",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Informacja o terminach realizacji płatności w okresie świątecznym",
+      "body": "Aurum Bank | Komunikat dla klientów firmowych\n\nPoniższa wiadomość została wygenerowana automatycznie i dotyczy terminów realizacji przelewów oraz zleceń stałych w najbliższym okresie. Nie wymaga od Ciebie żadnych czynności.\n\nPrzelewy krajowe złożone w dni robocze do godziny 16:00 są realizowane tego samego dnia. Przelewy złożone po tej godzinie, w dni wolne od pracy oraz w niedziele są realizowane w najbliższy dzień roboczy.\n\nZlecenia stałe, których termin wypada w dzień wolny od pracy, są wykonywane w kolejnym dniu roboczym, chyba że w zleceniu wskazano inaczej. Dotyczy to między innymi opłat leasingowych oraz składek ubezpieczeniowych płaconych z rachunku PL00-TEST-4410.\n\nPrzelewy zagraniczne w walucie EUR w systemie SEPA są realizowane w ciągu jednego dnia roboczego. Przelewy w innych walutach mogą trwać do trzech dni roboczych.\n\nPolecenia zapłaty są księgowane w dniu wskazanym przez wierzyciela. Jeżeli ten dzień nie jest dniem roboczym, obciążenie następuje w następnym dniu roboczym.\n\nWyciągi dzienne są generowane zawsze po zamknięciu dnia księgowego, także w dni, w których nie było żadnych operacji, o ile na rachunku wystąpiły zdarzenia, takie jak naliczenie odsetek.\n\nPełna tabela terminów znajduje się w serwisie transakcyjnym w zakładce Informacje. Prosimy nie odpowiadać na tę wiadomość, została ona wysłana automatycznie.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0115",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Ustawienia powiadomień o operacjach zostały zmienione",
+      "body": "Aurum Bank | Powiadomienie bezpieczeństwa\n\nW bankowości internetowej zmieniono ustawienia powiadomień o operacjach dla rachunku firmowego. Powiadomienia o uznaniach powyżej 10 000,00 PLN będą od 15.01.2027 wysyłane na dwa adresy zamiast jednego. Zmiana została zatwierdzona przez administratora rachunku o 13:12. Pozostałe ustawienia powiadomień nie zmieniły się.\n\nWiadomość wygenerowana automatycznie. Prosimy na nią nie odpowiadać. Historia zmian ustawień jest dostępna w bankowości internetowej, w zakładce Ustawienia. Jeżeli zmiana nie została wprowadzona przez osobę upoważnioną, administrator rachunku może ją cofnąć w tym samym miejscu.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0116",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: dzienny alert cen paliw włączony",
+      "body": "ALERT DZIENNY\n\nWłączono dzienny alert cen paliw na kartach flotowych. Wiadomość automatyczna.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0117",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie złożenia dyspozycji zmiany limitu",
+      "body": "Aurum Bank | Potwierdzenie dyspozycji\n\nDyspozycja zmiany limitu dziennego przelewów wychodzących dla rachunku PL00-TEST-4410 została złożona 15.01.2027 o 14:20. Nowy limit: 300 000,00 PLN, dotychczasowy: 250 000,00 PLN. Status: oczekuje na zatwierdzenie przez drugiego użytkownika z uprawnieniem administratora.\n\nDo czasu zatwierdzenia obowiązuje dotychczasowy limit. Dyspozycja wygasa automatycznie po 7 dniach, jeśli nie zostanie zatwierdzona. Zmiany limitów obowiązują od chwili zatwierdzenia, a bank zapisuje je w historii ustawień rachunku. Wiadomość wygenerowana automatycznie. Prosimy na nią nie odpowiadać.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0118",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supply Chain Weekly: your login from a new device was recorded",
+      "body": "SUPPLY CHAIN WEEKLY | Security notification\n\nA sign-in to your reader account was recorded on 15.01.2027 at 07:11 from a new device, a laptop with a Linux system. The sign-in used your usual password. The system saved the device in the list of known devices on your account page. If the sign-in was yours, you do not need to do anything. This message was generated automatically, and the system sends it only for the first sign-in from a new device.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0119",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Raport z operacji na kartach firmowych za tydzień 2",
+      "body": "Aurum Bank | Raport automatyczny\n\nRaport z operacji na kartach firmowych za okres od 04.01.2027 do 10.01.2027 został wygenerowany automatycznie 11.01.2027. Dotyczy dwóch kart przypisanych do rachunku PL00-TEST-4410. Raport zawiera tylko wartości zbiorcze i nie zawiera danych posiadaczy.\n\nKarta kończąca się numerem 4821: liczba operacji 18, łączna kwota 4 920,60 PLN. Największa pojedyncza operacja: 1 126,40 PLN, stacja paliw. Pozostałe operacje: opłaty drogowe, parkingi, zakupy materiałów biurowych.\n\nKarta kończąca się numerem 7305: liczba operacji 9, łączna kwota 2 140,00 PLN. Największa pojedyncza operacja: 780,00 PLN, usługa hotelowa. Pozostałe operacje: bilety, taksówki.\n\nSuma operacji obu kart: 7 060,60 PLN. Wykorzystanie miesięcznych limitów: karta 4821 w 62 procentach, karta 7305 w 21 procentach.\n\nOperacje odrzucone: 1, karta 7305, 08.01.2027, powód: przekroczony limit jednorazowy dla terminala bez autoryzacji.\n\nOperacje w walutach obcych: 3, przeliczone według kursu banku z dnia operacji.\n\nSzczegóły operacji są widoczne w bankowości internetowej, w zakładce Karty. Raport wysyłamy automatycznie raz w tygodniu, w poniedziałek rano. Wiadomość nie wymaga odpowiedzi. Raporty z poprzednich tygodni są przechowywane w bankowości internetowej przez 12 miesięcy i można je pobrać w formie pliku. Limity kart można zmienić tylko w bankowości internetowej, po zatwierdzeniu zmiany przez administratora rachunku. Bank nie prosi o numery kart w wiadomościach e-mail.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0120",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: kopia ustawień i historia powiadomień z ostatniego kwartału",
+      "body": "KOMUNIKAT AUTOMATYCZNY | Logistyka Dziś, konto czytelnika\n\nWiadomość jest generowana przez system raz na kwartał i nie zawiera treści redakcyjnych. Poniżej podsumowanie powiadomień, które system wysłał na Twój adres w okresie od 01.10.2026 do 31.12.2026.\n\nWydania tygodnika: 13. Wszystkie dostarczone. Liczba wydań otwartych: 9.\n\nPowiadomienia o zmianach ustawień konta: 3. Dotyczyły zmiany adresu e-mail, zmiany hasła i dodania alertu o cenach paliw.\n\nAlerty cenowe: 4 wiadomości. Wszystkie wysłano po przekroczeniu progu ustawionego na koncie.\n\nPowiadomienia o pracach technicznych: 1. Dotyczyło zmiany godziny wysyłki wydania w tygodniu przed świętami.\n\nPotwierdzenia zapisów i rezygnacji: 2. Dotyczyły zapisu na wydanie specjalne i rezygnacji z jednego z działów.\n\nDane o aktywności: system przechowuje dane o otwarciach wydań przez 12 miesięcy, a potem usuwa szczegóły i zachowuje tylko sumy kwartalne. Dane można pobrać w formie pliku w zakładce Dane i prywatność.\n\nZasady wysyłki: wydania wysyłamy w piątki o 8:00. Wiadomości systemowe wysyłamy tylko wtedy, gdy zmienia się coś w koncie lub w usłudze. Nie wysyłamy wiadomości reklamowych z tego adresu.\n\nJeżeli chcesz ograniczyć rodzaje powiadomień, zmienisz to w ustawieniach konta, w zakładce Powiadomienia. Wiadomość została wygenerowana automatycznie, nie odpowiadaj na nią. Numer raportu: LD-Q4-3318.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0122",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: nowa lokalizacja magazynowa dodana do systemu",
+      "body": "System ERP Kordelan | Powiadomienie o konfiguracji\n\nW magazynie w Łodzi dodano do systemu nowy sektor E z 96 lokalizacjami paletowymi. Zmianę wprowadził administrator systemu 15.01.2027 o 08:40, na podstawie zatwierdzonego zlecenia zmiany. Nowe lokalizacje mają status dostępne i zostały dodane do mapy magazynu, a etykiety regałów wygenerowano automatycznie. Lokalizacje będą uwzględniane przy przydziale miejsc od następnego przyjęcia towaru.\n\nWiadomość wygenerowana automatycznie, nie odpowiadaj na ten adres.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0124",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Overdraft facility: annual review reminder",
+      "body": "Aurum Bank | Notification for business customers\n\nThis is an automatic reminder that the annual review of the overdraft facility linked to the business account PL00-TEST-4410 will take place in February 2027. The facility limit is 150 000,00 PLN and it was not used in the last 12 months. The bank prepares the review from the data of the account, and no documents are required from you at this stage. If the bank needs any, the system will send a separate notice. Please do not reply to this message.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0125",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supply Chain Weekly: unusual number of opens detected on your account",
+      "body": "SUPPLY CHAIN WEEKLY | Service notification\n\nThe system detected that the last digest was opened 14 times on 15.01.2027 from different devices. This can happen when a message is shared inside a company or opened by a mail filter that scans messages. No action is needed, and we did not change anything on your account. This is an automated message that is sent once when the number of opens passes a threshold. The threshold is described in the terms of the free plan. We use the opens only to prepare the statistics on your account page.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0126",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Powiadomienie o terminie ważności karty firmowej",
+      "body": "Aurum Bank | Powiadomienie o karcie\n\nInformujemy, że ważność karty firmowej kończącej się numerem 7305 upływa 28.02.2027. Nowa karta zostanie wydana automatycznie i wysłana na adres korespondencyjny rachunku w pierwszej połowie lutego. Po otrzymaniu karty należy ją aktywować w bankowości internetowej. Dotychczasowa karta działa do końca terminu ważności. Jeśli nowa karta nie dotrze do 20.02.2027, można ją zamówić ponownie w bankowości internetowej. Stary PIN nie ulega zmianie, a nowy numer karty zostanie podany w powiadomieniu o aktywacji.\n\nWiadomość wygenerowana automatycznie. Prosimy na nią nie odpowiadać.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0128",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supply Chain Weekly: weekly activity receipt",
+      "body": "SUPPLY CHAIN WEEKLY | Activity receipt\n\nThis is an automated receipt of your account activity for the week ending 15.01.2027. The digest was delivered on 15.01.2027 at 07:02 and opened once. You saved no articles, changed no settings and triggered no alerts in this period. The system sends this receipt only if your account was inactive for the whole week, to confirm that everything works. No action is needed. This message was generated automatically.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0129",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: kopia dziennika zdarzeń wysłana do archiwum",
+      "body": "ERP Kordelan | Dziennik zdarzeń z dnia 14.01.2027 przeniesiono do archiwum o 23:30. Wiadomość automatyczna.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0130",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Notice: scheduled statement delivery",
+      "body": "Aurum Bank | The daily statement for 14.01.2027 was generated and placed in online banking. Automatic message.",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}

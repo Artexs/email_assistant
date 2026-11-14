@@ -1,0 +1,133 @@
+{
+  "scenario": "lab-01",
+  "part": "dev",
+  "batch": "batch-012",
+  "checker": "claude-haiku-5-5",
+  "labels": [
+    {
+      "id": "b-urg-0041",
+      "category": "urgent",
+      "blindHash": "78f3c99427b969f4d43751a56eb2ce7de133539df0489b5a0e2fbb2d52f88c27"
+    },
+    {
+      "id": "b-urg-0047",
+      "category": "urgent",
+      "blindHash": "c3db54dccfb3077ff0f7e705f900de92823c2e8b1f2b56c62a4173e5e988f2b9"
+    },
+    {
+      "id": "b-urg-0056",
+      "category": "urgent",
+      "blindHash": "1bfe017be1706024d6246d487425842189a6e2b56818c30a40a809ec35e7ada2"
+    },
+    {
+      "id": "b-urg-0058",
+      "category": "urgent",
+      "blindHash": "ace270a4fe2ae032689651b410518f3242bd55368846abc707a1d7765d9cebeb"
+    },
+    {
+      "id": "b-urg-0062",
+      "category": "urgent",
+      "blindHash": "e8dd2a8a4a418b19dd58bf8ac17ead17eb6f7c15082bdc453408a11dd30627e7"
+    },
+    {
+      "id": "b-urg-0063",
+      "category": "urgent",
+      "blindHash": "13bba05a11918eee37752b3698d189fc35e5409deda59e6ec5fb6a9b58c5111d"
+    },
+    {
+      "id": "b-urg-0065",
+      "category": "needs_reply",
+      "blindHash": "8e2dd85e6fbcb03b899845bcf972ff55321f7fbda8d87bf02af9917c69c90bd9"
+    },
+    {
+      "id": "b-urg-0077",
+      "category": "urgent",
+      "blindHash": "bc72be07f3d4ef312eb721dc9d8797d281c1ca699f78387b4d1b0475735851ab"
+    },
+    {
+      "id": "b-urg-0083",
+      "category": "urgent",
+      "blindHash": "5330d39a0c497393dc41561d14f75bd1ee534334a061064bfb4595de41e3f1ae"
+    },
+    {
+      "id": "b-urg-0098",
+      "category": "urgent",
+      "blindHash": "86cdd0b989a1b230dc87392b20c5ee183dd2e1bbdc8c6c06790469b5f59d2b5f"
+    },
+    {
+      "id": "b-urg-0099",
+      "category": "urgent",
+      "blindHash": "25412c15f12e655fc21ebaba4d93d6c380762826e4dc08de666ffb76871c6585"
+    },
+    {
+      "id": "b-urg-0108",
+      "category": "needs_reply",
+      "blindHash": "1c5c495bba2adf7a3103dbeba0590b4de6be7266523265b7133cb1ac9837c285"
+    },
+    {
+      "id": "b-urg-0115",
+      "category": "needs_reply",
+      "blindHash": "88a9d03aac1ab37aaed66956641bd385c35992b1925c06d185e0027667d697d2"
+    },
+    {
+      "id": "b-urg-0117",
+      "category": "urgent",
+      "blindHash": "fb794838d7cad4a0e958183dc744d8cf39cc21c2c159aad5c09e7d4a84befdde"
+    },
+    {
+      "id": "b-urg-0134",
+      "category": "urgent",
+      "blindHash": "6e31ee32d34bd1b8d5bc6b80e39abf2d5f3f113da2f2b9fecd7ec86c1c1332dd"
+    },
+    {
+      "id": "b-urg-0140",
+      "category": "urgent",
+      "blindHash": "251f5b05c480f8ceb701a4c3226433036bf893fdfe389c1d950e56850a312bc7"
+    },
+    {
+      "id": "b-urg-0144",
+      "category": "urgent",
+      "blindHash": "73d7d9c87b21f68842b8c1f1db5e4a9cd51db427544d56a7e464f5124fe173e7"
+    },
+    {
+      "id": "b-urg-0162",
+      "category": "needs_reply",
+      "blindHash": "5e88cf06cfd8252b5c0d8dc60f54ef434c5187fbaa948db4059f7d374db3fb5f"
+    },
+    {
+      "id": "b-urg-0166",
+      "category": "urgent",
+      "blindHash": "a63c71f25520be5bbf8aa5f639965caa462a11ccb015eb67e3128d0c040e1a92"
+    },
+    {
+      "id": "b-urg-0168",
+      "category": "urgent",
+      "blindHash": "365c7e55556f20be2c5b7f50a24d42c76f8230d8276b80ef21e7cd1b07d5137b"
+    },
+    {
+      "id": "b-urg-0170",
+      "category": "needs_reply",
+      "blindHash": "4b8081e963f372ecdcb33fe4247e31dbc97ada237eecce81e52826f884ee4a24"
+    },
+    {
+      "id": "b-urg-0171",
+      "category": "urgent",
+      "blindHash": "0b156af6b42a77a0e5a5cdb5c4e1b4045f24737abf4d21881e1cdb8a46693eaa"
+    },
+    {
+      "id": "b-urg-0175",
+      "category": "needs_reply",
+      "blindHash": "f1ebf103fceeab1861f39c884aa1dd8f4d953721b23d13a93166cf424730d7a0"
+    },
+    {
+      "id": "b-urg-0180",
+      "category": "urgent",
+      "blindHash": "3e8358ab22bfd13f65ebc7e2a4c2172c410f0df57f4d30f5009003bb710e1a4b"
+    },
+    {
+      "id": "b-urg-0182",
+      "category": "urgent",
+      "blindHash": "8bbaa6a814c51a4b660a53f7d21547b71215bb3a9fa8843a8512525afa5b0071"
+    }
+  ]
+}

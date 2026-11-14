@@ -1,0 +1,307 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-024",
+  "cases": [
+    {
+      "id": "b-not-0191",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: alert o kartach paliwowych wstrzymany",
+      "body": "ALERT WSTRZYMANY\n\nAlert o kartach paliwowych wstrzymano na 14 dni na Twoją prośbę. Wiadomość automatyczna.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0192",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: automatyczne zamknięcie dnia magazynowego w Poznaniu",
+      "body": "System ERP Kordelan | Powiadomienie automatyczne\n\nDzień magazynowy 15.01.2027 w magazynie w Poznaniu został zamknięty przez system o 22:00. Wszystkie dokumenty przyjęcia i wydania z tego dnia mają status zatwierdzony. Dokumentów w statusie roboczym: 0. Stany magazynowe zostały zapisane w historii dziennej, a zestawienie dnia przekazano do modułu księgowego. Następne zamknięcie dnia nastąpi 16.01.2027 o 22:00. Zamknięcie jest wykonywane automatycznie w każdy dzień roboczy, a dokumenty zatwierdzone po zamknięciu trafiają do następnego dnia magazynowego.\n\nWiadomość wygenerowana automatycznie, nie odpowiadaj na ten adres.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0194",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: potwierdzenie usunięcia historii aktywności",
+      "body": "POTWIERDZENIE | dane konta\n\nHistoria Twojej aktywności w serwisie została usunięta 15.01.2027 na podstawie dyspozycji złożonej w zakładce Dane i prywatność. Usunięto szczegóły otwarć wydań i kliknięć w odnośniki. Zachowano ustawienia konta, listę alertów i zapisane artykuły. System nie przywraca usuniętej historii, a nowe dane o aktywności będą zapisywane od chwili usunięcia. Statystyki w raporcie rocznym obejmą tylko okres po usunięciu. Wiadomość została wygenerowana automatycznie i nie wymaga odpowiedzi.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0196",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: zmiana języka konta",
+      "body": "USTAWIENIA KONTA\n\nJęzyk komunikatów systemowych zmieniono na polski. Wiadomość automatyczna.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0197",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: zakończono import cennika transportowego",
+      "body": "System ERP Kordelan | Powiadomienie o imporcie\n\nImport cennika transportowego z pliku przekazanego przez księgowość zakończył się 15.01.2027 o 11:45. Zaimportowano 1 240 pozycji cennika, odrzucono 0. Zmiany cen obowiązują od 01.02.2027 i zapisano je z tą datą w module transportu. Poprzednia wersja cennika pozostaje w historii i można ją przywrócić w module administracyjnym, o ile nowe ceny nie zostały jeszcze użyte w zleceniach transportowych. Plik źródłowy zapisano w archiwum importów.\n\nWiadomość wygenerowana automatycznie, nie odpowiadaj na ten adres.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0199",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Statement ready",
+      "body": "Aurum Bank | The weekly statement for 11.01.2027 to 15.01.2027 is ready in online banking. Automatic message.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0200",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supply Chain Weekly: password changed",
+      "body": "PASSWORD CHANGED\n\nThe password of your account was changed on 15.01.2027. Automatic message.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0201",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: report job queued",
+      "body": "ERP system Kordelan | The monthly pallet report job was queued at 06:00 and will run at 23:00. Automatic message.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0202",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supply Chain Weekly: security and privacy summary of your account",
+      "body": "SUPPLY CHAIN WEEKLY | Security and privacy summary\n\nThis message is generated by the account system twice per year and sent to all active accounts. It contains no editorial content and no offer. It describes the state of the security and privacy settings of your account on 15.01.2027.\n\nSign-in security: your account uses a password that was last changed on 14.01.2027. Two-step verification is switched off. You can switch it on in the Security section of your account page. Known devices: 3. The oldest known device was added on 02.03.2026.\n\nSessions: one active session on a laptop and one on a mobile phone. You can end all sessions in one step from the account page.\n\nPrivacy settings: the reading summary is switched on. The system keeps the details of opens and clicks for 12 months. Sharing of statistics with third parties is switched off, and the system never shares the address of your account with advertisers.\n\nData requests: no request for access, correction or deletion of data was made in the last 12 months. Requests can be sent through the form in the Data and privacy section.\n\nNotifications: you receive account notices, delivery receipts and price alerts. Reminders and activity receipts are switched on.\n\nRetention: after the closing of an account the system deletes the data within 30 days, except for the records that the law requires to keep.\n\nIf any of the settings above looks wrong, open the account page and change it. The system does not need a reply to this message. It was generated automatically, please do not reply to this address.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0203",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: zmiana nazwy wyświetlanej w koncie",
+      "body": "POTWIERDZENIE ZMIANY | dane konta\n\nNazwa wyświetlana w Twoim koncie czytelnika została zmieniona 15.01.2027 o 13:25. Nowa nazwa jest widoczna tylko w ustawieniach konta i nie jest udostępniana innym osobom. Wydanie tygodniowe, alerty i zapisane artykuły pozostają bez zmian. Jeśli to nie Ty zmieniłeś nazwę, zmień hasło do konta. Wiadomość wygenerowana automatycznie, nie odpowiadaj na ten adres.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0204",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: potwierdzenie zapisu do archiwum wydań",
+      "body": "ARCHIWUM WYDAŃ | wiadomość systemowa\n\nZapis do archiwum wydań tygodnika został przyjęty 15.01.2027. Dostęp do archiwum obejmuje wydania z ostatnich 12 miesięcy i jest włączony w ramach Twojego konta czytelnika bez dodatkowej opłaty. Archiwum otworzysz w zakładce Archiwum w koncie. System zapisał też Twoje ustawienia wyszukiwania i listę ostatnio otwieranych wydań, aby ułatwić powrót do czytania. Archiwum nie zawiera wydań starszych niż rok. Wiadomość wygenerowana automatycznie, nie wymaga odpowiedzi.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0205",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supply Chain Weekly: yearly review of your alerts and settings",
+      "body": "SUPPLY CHAIN WEEKLY | Yearly review of alerts\n\nThis is an automated review of the alerts and settings on your account. It was generated on 15.01.2027 by the subscription system. It holds no editorial content and no offer.\n\nActive alerts: 3. The first alert watches the Baltic container rate index with a threshold of 1 480 points. The second watches the European road freight index with a threshold of 112 points. The third watches the diesel price index for Central Europe with a threshold of 1.45 euro per litre.\n\nTriggered in the last 12 months: 5 alerts, the most recent on 12.01.2027. Alerts that never triggered: 1.\n\nSettings: the weekly digest is sent on Fridays at 07:00. The delivery format is the full digest. Regions: Europe, Baltic Sea. Topics: freight rates, customs, warehousing, regulation.\n\nThe limit of alerts in the free plan is 5, and 2 places are free. When an alert triggers, the system sends one message and switches the alert off, as described in the terms of the service.\n\nSaved articles: 3 active, with the oldest saved on 20.12.2026. Items that are not opened for 90 days are removed automatically.\n\nIf an alert or a setting is no longer needed, you can remove it on the account page. The system does not need a reply. It was generated automatically, please do not reply to this address.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0206",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: alert o kartach paliwowych usunięty",
+      "body": "ALERT USUNIĘTY | konto czytelnika\n\nAlert o zmianach w kartach paliwowych usunięto z Twojego konta. Wiadomość automatyczna.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0207",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: automatyczne podsumowanie obserwowanych kart paliwowych",
+      "body": "PODSUMOWANIE AUTOMATYCZNE | karty paliwowe\n\nSystem przygotował podsumowanie kart paliwowych, które obserwujesz w serwisie, na dzień 15.01.2027. Obserwujesz 7 kart. W ostatnim tygodniu zmiana ceny wystąpiła w przypadku 2 kart: prowizja za tankowanie za granicą wzrosła o 0,10 punktu procentowego w jednej i spadła o 0,05 punktu w drugiej. Limity dzienne nie zmieniły się. Podsumowanie jest wysyłane raz w tygodniu i nie zawiera treści redakcyjnych. Wiadomość wygenerowana automatycznie.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0209",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: odnowienie dostępu do zestawień kart paliwowych",
+      "body": "KOMUNIKAT SYSTEMOWY | dostęp do zestawień\n\nDostęp do zestawień kart paliwowych w Twoim koncie został automatycznie odnowiony na kolejne 12 miesięcy, do 15.01.2028. Dostęp jest bezpłatny w ramach konta czytelnika i nie wymaga żadnej płatności. System odnawia go raz w roku, jeśli konto było aktywne w ostatnich 90 dniach. Odnowienie zapisano w historii konta. Wiadomość wygenerowana automatycznie, nie odpowiadaj na ten adres.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0210",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: kontrola ważności certyfikatów interfejsów",
+      "body": "System ERP Kordelan | Raport automatyczny\n\nCotygodniowa kontrola ważności certyfikatów interfejsów zewnętrznych zakończyła się 15.01.2027 o 03:00. Sprawdzono 6 certyfikatów: interfejs przewoźników, interfejs księgowy, interfejs bankowy, interfejs celny, interfejs klienta sieciowego i interfejs monitoringu. Najbliższy termin ważności: 14.04.2027, interfejs celny. Certyfikaty wygasające w ciągu 30 dni: brak. Wynik kontroli zapisano w dzienniku bezpieczeństwa. Następna kontrola odbędzie się 22.01.2027 o 03:00. Gdy certyfikat zbliża się do końca ważności, system wysyła osobne powiadomienie do administratorów na 30 dni przed terminem.\n\nWiadomość wygenerowana automatycznie, nie odpowiadaj na ten adres.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0211",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: nowa rola użytkownika przypisana",
+      "body": "System ERP Kordelan | Powiadomienie o uprawnieniach\n\nAdministrator systemu przypisał kontu użytkownika magazynu w Łodzi rolę Kierownik zmiany 15.01.2027 o 10:30. Rola obejmuje podgląd raportów zmiany oraz zatwierdzanie korekt stanów do wartości 500 sztuk na pozycję. Zmianę zapisano w dzienniku uprawnień z numerem zlecenia zmiany. Poprzednia rola konta została zastąpiona. Zmiana roli wymaga zatwierdzenia przez drugiego administratora, które zapisano w dzienniku uprawnień o 10:34. Wiadomość wygenerowana automatycznie, nie odpowiadaj na ten adres.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0212",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie wygenerowania potwierdzenia salda",
+      "body": "Aurum Bank | Powiadomienie o dokumencie\n\nNa Twoje zlecenie wygenerowano potwierdzenie salda rachunku PL00-TEST-4410 na dzień 31.12.2026. Dokument jest dostępny w bankowości internetowej w zakładce Dokumenty przez 30 dni, do 14.02.2027. Saldo na dzień 31.12.2026 wynosiło 297 682,25 PLN. Dokument ma formę pliku i jest opatrzony elektroniczną pieczęcią banku. Potwierdzenie salda można przekazać audytorowi lub kontrahentowi jako załącznik do korespondencji, bez dodatkowych opłat. Wiadomość wygenerowana automatycznie, prosimy na nią nie odpowiadać.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0214",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Notice: new statement format",
+      "body": "Aurum Bank | From 01.02.2027 the monthly statement will have a new layout. Automatic message.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0215",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: raport tygodniowy z wykorzystania terminali mobilnych",
+      "body": "System ERP Kordelan | Raport automatyczny\n\nRaport z wykorzystania terminali mobilnych w trzech magazynach za tydzień od 04.01.2027 do 10.01.2027. Aktywne terminale: Poznań 61, Gdynia 38, Łódź 27. Średni czas pracy na jednym terminalu w ciągu dnia: 6 godzin 20 minut. Skany: 118 240, z czego 0,3 procent odrzuconych z powodu nieczytelnego kodu. Terminale wymagające wymiany baterii: 9.\n\nRaport wysyłamy w poniedziałki. Wiadomość wygenerowana automatycznie, nie odpowiadaj na ten adres.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0216",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Roczne podsumowanie rachunku firmowego za 2026",
+      "body": "Aurum Bank | Podsumowanie roczne\n\nWiadomość została wygenerowana automatycznie 05.01.2027 i zawiera roczne podsumowanie rachunku firmowego PL00-TEST-4410 za rok 2026. Podsumowanie ma charakter informacyjny i nie jest dokumentem podatkowym.\n\nLiczba operacji w roku: 3 842, w tym 1 906 obciążeń i 1 936 uznań.\n\nSuma obciążeń: 17 482 910,30 PLN. Suma uznań: 17 540 212,40 PLN.\n\nSaldo na początek roku: 240 380,15 PLN. Saldo na koniec roku: 297 682,25 PLN.\n\nOpłaty bankowe w roku: 5 874,00 PLN, w tym opłaty za prowadzenie rachunku 1 068,00 PLN, za przelewy 3 232,00 PLN i za karty 240,00 PLN.\n\nOdsetki od salda: 14 210,10 PLN brutto.\n\nPrzelewy zagraniczne: 74 operacje, w tym 41 w EUR, 17 w SEK i 16 w GBP.\n\nLiczba użytkowników bankowości: 5. Zmiany uprawnień w roku: 3.\n\nOperacje odrzucone przez bank: 12, głównie z powodu przekroczenia limitów jednorazowych lub błędnych numerów rachunku odbiorcy.\n\nSzczegółowe wyciągi miesięczne są dostępne w bankowości internetowej, w zakładce Wyciągi, przez 24 miesiące. Podsumowanie wysyłamy raz w roku, w pierwszym tygodniu stycznia, do administratora rachunku i na adres powiadomień. Wartości liczbowe pochodzą z księgi rachunku według stanu na koniec dnia 31.12.2026. Prosimy nie odpowiadać na tę wiadomość. Bank nigdy nie prosi o podanie hasła ani danych karty w wiadomości e-mail.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0218",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: potwierdzenie anulowania zapisu",
+      "body": "ANULOWANO ZAPIS\n\nZapis na zestawienie kart paliwowych został anulowany. Wiadomość automatyczna.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0219",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: dzienne notowanie kart paliwowych bez zmian",
+      "body": "NOTOWANIE DZIENNE | wiadomość automatyczna\n\nDzienne notowanie kart paliwowych z 15.01.2027 nie wykazało zmian w ofertach, które obserwujesz. Wszystkie 7 pozycji ma takie same stawki prowizji i takie same limity dzienne jak w poprzednim notowaniu. System wysyła taką wiadomość tylko wtedy, gdy włączono w koncie opcję potwierdzania notowań bez zmian. Opcję wyłączysz w zakładce Powiadomienia. Jeśli któraś z ofert zmieni się w ciągu dnia, system wyśle osobne powiadomienie o zmianie. Wiadomość wygenerowana automatycznie.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0221",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supply Chain Weekly: reminder to confirm your topic selection",
+      "body": "AUTOMATED REMINDER | topic selection\n\nThe system asks every account to confirm the topic selection once per year. The selection of your account on 15.01.2027 is freight rates, customs, warehousing and regulation. If it is correct, you do not need to do anything, and the system will treat the selection as confirmed. If you want to change it, open the Topics section of your account page. This message was generated automatically, please do not reply to this address.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-not-0222",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: odnowienie ustawień powiadomień po aktualizacji serwisu",
+      "body": "KOMUNIKAT SYSTEMOWY | aktualizacja serwisu\n\nPo aktualizacji serwisu z 14.01.2027 system ponownie zapisał ustawienia powiadomień w Twoim koncie. Wszystkie wcześniejsze wybory zostały zachowane: wydanie tygodniowe w piątki, alerty cenowe i powiadomienia o zmianach w kartach paliwowych. Nie musisz sprawdzać ustawień ani niczego zmieniać. Jeśli któryś z wyborów wygląda inaczej niż poprzednio, możesz go poprawić w zakładce Powiadomienia w koncie. Wiadomość wygenerowana automatycznie i nie wymaga odpowiedzi.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}

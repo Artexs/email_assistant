@@ -1,6 +1,6 @@
 # Triage
 
-> Checked against the code at `8cc14c9`, 2026-11-14.
+> Checked against the code at `c757cc5`, 2026-11-14.
 
 ## What it does now
 
@@ -53,7 +53,7 @@ Triage turns a stored mail with status `pending` into a category, a short reason
 13. **Eval on real mail** (moved from `docs/architecture.md` §4.4): the eval runner reads the labels from `triage_feedback` in the DB. Real labels never go to git. Real labels leave out test mail: mail with a synthetic `Message-ID` and mail from a sender in `TEST_SENDER_ADDRESSES` (the check is case-insensitive and also drops old feedback on such mail).
     Real-mail evals use mail younger than 30 days (the body is cleared after that, `docs/architecture.md` §7). Pilot exception: backfilled mail up to 180 days (`docs/architecture.md` §6.1).
     - `bun run eval` runs the cases of `evals/cases` (80 synthetic, 16 injection, 12 delegation) against one provider and model, and prints precision and recall per category with a bar (default 0.98) and a minimum support (`--min-kept`, default 30). `bun run eval --real --org-id <uuid> --mailbox-id <uuid>` reads the labels from the DB and makes no LLM call. The gate for `auto` per category uses the same report (`goNoGoFor`: precision at least 98% on at least 30 labelled rows of the mailbox).
-    - Synthetic corpora (a made-up company, mail written by agents, labels fixed before the text) are planned and checked with `bun run sim`; the runbook is `evals/sim/README.md`.
+    - Synthetic corpora (a made-up company, mail written by agents, labels fixed before the text) are planned and checked with `bun run sim`; the runbook is `evals/sim/README.md`. A complete corpus freezes into a version with `manifest.json` (counts and hashes); the owner audit (30 random and up to 20 contested cases) is made and applied with `sim audit-list` and `sim audit-apply`.
 14. **Success metric** (moved from `docs/architecture.md` §4.4; not built) ("share of mail handled without the user", target 80–90%):
     handled = mail in `spam`, `notification`, `info`, or `delegation` sent after one tap, with an applied plan
     that the user did not undo or correct within 7 days. Share = handled ÷ all triaged mail. One line in the weekly digest.
@@ -121,7 +121,7 @@ emails.status:   pending → processing → triaged → done                (don
 - The gate on real labels (precision at least 98% on at least 30 labels) stays until ADR 0028 (proposed) changes it; E3 sets the numbers.
 - A junk-folder wave can use the shared daily cap: `F063-junk-llm-cap`.
 - Only the `classifier` role has a prompt. The roles `judge` (E2a), `drafter` (E6a), `extractor` (E5b) and `escalation` (E3b) have none yet.
-- The LLM pause is in memory: a restart clears it.
+- The LLM pause is in memory: a restart clears it. `/status` and the digest read the pause from the `llm.call` audit rows (`latestLlmPause`), so they show it after a restart too (flag `llm_pause_line`).
 
 ## Decisions
 

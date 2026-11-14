@@ -1,4 +1,4 @@
-import { barCategories, GATE_BAR, GATE_MIN_KEPT, type BarCategory, type GateView } from "@ea/core";
+import { barCategories, GATE_BAR, GATE_MIN_KEPT, type BarCategory, type GateView, type GoNoGoRow } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -8,6 +8,29 @@ import type { TestMailRule } from "../mail";
 import { buildRealReport } from "./eval-real";
 import { listLabeledResults } from "./repo";
 
+// The real-label report of one mailbox: the one source of `goNoGoFor` and of the M8 rows of the week service.
+async function realReportFor(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  now: Date,
+  testMail: TestMailRule
+) {
+  const rows = await listLabeledResults(db, ctx, mailboxId, { mail: "real", testMail });
+  return buildRealReport(rows, { bar: GATE_BAR, minKept: GATE_MIN_KEPT, mail: "real", now });
+}
+
+// The go/no-go row of each bar category from the labelled real mail (M8 input). Reads only.
+export async function realGoNoGoRows(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  now: Date,
+  testMail: TestMailRule
+): Promise<Record<BarCategory, GoNoGoRow>> {
+  return (await realReportFor(db, ctx, mailboxId, now, testMail)).goNoGo;
+}
+
 // The go/no-go row of each category from the labelled real mail (D10 (b)). One query for all five categories.
 export async function goNoGoFor(
   db: Db | Transaction<DB>,
@@ -16,8 +39,7 @@ export async function goNoGoFor(
   now: Date,
   testMail: TestMailRule
 ): Promise<Record<BarCategory, GateView>> {
-  const rows = await listLabeledResults(db, ctx, mailboxId, { mail: "real", testMail });
-  const report = buildRealReport(rows, { bar: GATE_BAR, minKept: GATE_MIN_KEPT, mail: "real", now });
+  const report = await realReportFor(db, ctx, mailboxId, now, testMail);
   const result = {} as Record<BarCategory, GateView>;
   for (const category of barCategories) {
     const row = report.goNoGo[category];
