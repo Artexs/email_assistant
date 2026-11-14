@@ -17,6 +17,12 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Source: the file and item, for example `spec/features/active/FNNN-slug/questions.md` Q2.
 ```
 
+### 2026-11-14 · Feedback source "review" added; its down migration deletes review rows (F097) · irreversible · new
+- Choice: migration `20261114110001_feedback_source_review.sql` adds the source `review` to the feedback CHECK. Rolling it back first deletes all `review` rows, because the old CHECK would reject them.
+- Why: the review sample (the owner's audit of 50 cases) must not mix with taps from the digest. Rows only exist after the review flow runs.
+- Undo: do not roll back after review rows hold real data; keep the rows by exporting them first.
+- Source: F097 stage 03; Opus review accepted it. F100 stage 04 changes the same CHECK and needs the same care.
+
 ### 2026-11-14 · Telegram link needs a consent tick; Polish consent text is an agent draft (F098) · privacy · new
 - Choice: the panel asks for a tick before it makes a Telegram link; the server refuses a link request without the current consent version and writes one `web.telegram_consent` audit row. The consent text says Telegram is a service outside the EU and data can be processed outside the EEA.
 - Why: the Telegram bot gets draft text and quoted mail parts, so the user must agree first (privacy principle).

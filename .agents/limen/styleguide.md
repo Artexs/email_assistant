@@ -20,6 +20,8 @@ Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit:
 
 - TypeScript strict. `const` / `let`. Template literals for strings with variables.
 - Typed Kysely repositories: one function = one clear query; each takes a `TenantContext` and filters by `org_id` (exceptions listed in `docs/code-patterns.md`).
+- Every send goes through the committer and `startSendWithinLimits` (advisory lock, count in the `applying` transaction); no send path calls SMTP itself or skips the limits (`docs/code-patterns.md` § Side effects).
+- The `operator` module owns `/api/operator/*`: tenant-scoped reads one organization at a time, answers with ids, codes, counts and dates only, writes through the CLI's service functions (`docs/code-patterns.md` § HTTP routes).
 - Status change and its `audit_log` row in one transaction. Conditional updates (`WHERE status = …`) guard status changes. Claim work with `FOR UPDATE SKIP LOCKED`.
 - Schema changes only as a new dbmate file `db/migrations/YYYYMMDDHHMMSS_<name>.sql` with up and down; then `bun run db:types`.
 - Typed errors: `SoftError` (timeout, 429, 503, lost connection), `HardError` for the rest; the job runner decides the retry.

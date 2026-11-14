@@ -163,7 +163,7 @@ Rows of `actions` with `type` `create_draft` or `send` (the status flow is in `a
 - No free-text reply drafts: E6a (F115).
 - Edits of a draft in the mail client do not count; the system sends the approved payload, not the Drafts copy. PD-076 (E6a, F115) changes it.
 - No web approval page: approvals work only in Telegram. E4-A (F102) adds the panel and the edit of a waiting draft (PD-031).
-- No send limits per mailbox or per recipient: E7-T2 (F099, PD-044).
+- Send limits (PD-044, F099): per mailbox 20 an hour and 100 in 24 h, per recipient 5 in 24 h (`SEND_LIMIT_*`). A send over a limit waits as `approved` with `last_error = send_limit:<kind>`; rules in `docs/code-patterns.md` § Side effects and `docs/architecture.md` §4.1. No per-organization limit and no limit in the panel: the operator sets the env keys.
 - A send needs an owner with a linked Telegram chat. With no linked owner the send ends as `not_notified` after 7 days.
 - The approval message is a new message; the edit in place of a card in the chat is E4-A (F102).
 - `SEND_SCOPE` is one setting for the whole server, not per organization.

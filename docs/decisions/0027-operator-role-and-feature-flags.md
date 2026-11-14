@@ -1,6 +1,6 @@
 # 0027 — Operator role in the panel and per-organization feature flags
 
-- Status: accepted (2026-11-13). Landed by F087: the flag registry, `org_features`, `FEATURES_OFF`, `isFeatureOn`, `org:flag`, `OPERATOR_USER_IDS` and `requireOperator` with `GET /api/operator/flags`. Open (E7): the console page and the other operator routes, TOTP for the operator.
+- Status: accepted (2026-11-13). Landed by F087 (flags, operator check, `GET /api/operator/flags`) and F099 (the `operator` module, the console page and routes, `/api/me` features). Open: TOTP for the operator (E7-T6), SSO provider setup (E7-T7).
 - Date: 2026-11-13
 
 ## Context
