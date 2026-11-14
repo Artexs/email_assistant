@@ -10,7 +10,7 @@ export default defineConfig({
   output: "static",
   integrations: [react(), cspStyleSrc()],
   build: { inlineStylesheets: "never" },
-  // No Markdown in the panel; Shiki inline styles clash with the CSP (ticket F101, D3).
+  // No Markdown in the panel; Shiki inline styles clash with the CSP (ticket F101-panel-to-astro-7).
   markdown: { syntaxHighlight: false },
   security: {
     csp: {

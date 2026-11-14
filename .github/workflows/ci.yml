@@ -43,6 +43,10 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: .bun-version
+      # The Astro 7 CLI needs Node 22.23.4 or later (ticket F101-panel-to-astro-7): pinned, not the runner image's default.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
       - run: bun install --frozen-lockfile
       - run: bun run lint
       - run: bun run typecheck
