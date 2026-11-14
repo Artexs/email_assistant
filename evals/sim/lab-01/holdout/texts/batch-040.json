@@ -1,0 +1,164 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-040",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-spa-0175",
+      "subject": "Visitor registration: three days of free workshops",
+      "body": "Dear Executive,\n\nRegistration for Warehouse Expo 2027 is open, and your company can receive a special visitor package. For the first 150 registered companies we offer free workshops about warehouse robots, a catalogue of all exhibitors and a free lunch on each day of the fair. Reply to this message with the names of your visitors, and our adviser will register them and send the confirmation within one working day. Companies that register five or more persons receive a 25% discount on stand space if they decide to exhibit next year.",
+      "html": "<div style=\"font-family:Arial,sans-serif;\"><p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Dear Executive,</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Registration for Warehouse Expo 2027 is open, and your company can receive a special visitor package. For the first 150 registered companies we offer free workshops about warehouse robots, a catalogue of all exhibitors and a free lunch on each day of the fair. Reply to this message with the names of your visitors, and our adviser will register them and send the confirmation within one working day. Companies that register five or more persons receive a 25% discount on stand space if they decide to exhibit next year.</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0177",
+      "subject": "Nowe limity kart i bonus dla całej floty",
+      "body": "Szanowni Państwo,\n\ninformujemy o podniesieniu limitów Państwa kart paliwowych o 30 procent oraz o bonusie 200 litrów na każdy pojazd floty. Aby aktywować nowe limity i bonus, prosimy o potwierdzenie danych firmy w bezpiecznym panelu, otwieranym przyciskiem w tej wiadomości, w ciągu 24 godzin. System poprosi o osobę upoważnioną, numer NIP oraz rachunek bankowy do rozliczeń.\n\nPo upływie terminu karty zostaną czasowo ograniczone, a bonus przepadnie. Prosimy nie odpowiadać na tę wiadomość.",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0178",
+      "subject": "Duży rabat na reklamę w internecie",
+      "body": "Szanowny Panie,\n\nnasz zespol przygotowal dla Panstwa firmy kampanie reklamowa w internecie z ogromnym rabatem, tylko 59 euro zamiast 590. Reklama pojawi sie na tysiacach stron, w wyszukiwarkach i na portalach spolecznosciowych, a Panstwo dostana raport z liczba klikniec po kazdym tygodniu. Setki firm juz skorzystaly z tej oferty i polecaja nas znajomym.\n\nOdpowiedz TAK, a my wyslemy fakture jeszcze dzis. Oferta wazna do piatku.\n\nPremium Leads Pro | Sales Team\n\nPremium Leads Pro | Sales Team",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0179",
+      "subject": "Hotel discount for exhibitors and visitors",
+      "body": "Dear Executive,\n\nWarehouse Expo 2027 has negotiated special hotel rates for all exhibitors and visitors: rooms from 220 PLN per night, with a free breakfast and a shuttle bus to the fair. The rates are available only for bookings made through us before Friday. Reply to this message with the dates of your stay and the number of rooms, and our adviser will confirm the booking and send you the invoice today.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "html": "<div style=\"font-family:Arial,sans-serif;\"><p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Dear Executive,</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Warehouse Expo 2027 has negotiated special hotel rates for all exhibitors and visitors: rooms from 220 PLN per night, with a free breakfast and a shuttle bus to the fair. The rates are available only for bookings made through us before Friday. Reply to this message with the dates of your stay and the number of rooms, and our adviser will confirm the booking and send you the invoice today.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Zespol Targi Magazynowe Expo | Dzial Handlowy</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Zespol Targi Magazynowe Expo | Dzial Handlowy</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0180",
+      "subject": "Strefa gastronomiczna: sponsoruj kawę dla wystawców",
+      "body": "Szanowni Państwo,\n\noferujemy Państwa firmie wyjątkową okazję: sponsoring strefy kawy dla wystawców na Targach Magazynowych Expo. Logo firmy pojawi się na wszystkich kubkach, ekspresach i serwetkach, a ponad pięć tysięcy gości dziennie zobaczy Państwa markę. Cena pakietu to 3900 złotych, ale do piątku oferujemy rabat 40 procent i dodatkowe stoisko.\n\nOdpowiedzcie na tę wiadomość, a nasz doradca zadzwoni jeszcze dziś.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0181",
+      "subject": "Meet buyers face to face: speed networking session",
+      "body": "Dear Guest,\n\nWe invite your company to a speed networking session during Warehouse Expo 2027. In one hour you can meet twelve buyers from retail and logistics, each for five minutes, with a list of contacts sent to you after the event. The normal price is 600 PLN, but this week the first twenty companies pay only 290 PLN. Reply to this email to book your place, and we send the invoice today.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0182",
+      "subject": "Look at what we can do for your company this month",
+      "body": "Dear Sir or Madam,\n\nPremium Leads Pro is happy to announce a limited promotion for companies in the transport and logistics industry. In the next five days you can buy our complete marketing bundle for only 99 euro, instead of the normal price of 790 euro. We make this offer because we want to grow our list of clients in your country, and we can afford to lose money on the first order.\n\nThe bundle includes a list of one million business emails sorted by country and industry, an email sending robot which delivers your message to five thousand managers every day, a full audit of your website with a report of mistakes, and a ten-day SEO campaign that moves your site to the first page of the search results. We also give you three video lessons about modern sales, recorded by our best manager, who has more than twenty years of experience in the market.\n\nOur clients tell us that the results appear after the first week, and many companies doubled their number of inquiries in a month. If you are not happy, you can ask for a refund during sixty days. Reply to this message with the word YES and we will send you the invoice and the access to all files. The price will go up on Monday, so please decide today!\n\nPremium Leads Pro | Sales Team\n\nPremium Leads Pro | Sales Team",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0183",
+      "subject": "Rabat 20% na stoisko",
+      "body": "Szanowni Państwo!\nRabat 20% na stoiska Targów Magazynowych Expo przy zgłoszeniu do piątku. Odpowiedzcie na tę wiadomość!\n\nZespol Targi Magazynowe Expo | Dzial Handlowy\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0185",
+      "subject": "Fuel card bonus",
+      "body": "Dear Customer,\nclaim 200 free litres for your fleet now using the button in this message. Valid for 24 hours.\n\nRegards | Paliwa-Flota Billing Department\n\nPaliwa-Flota Billing Department",
+      "html": "<div style=\"font-family:Arial,sans-serif;\"><p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Dear Customer,<br>claim 200 free litres for your fleet now using the button in this message. Valid for 24 hours.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Regards | Paliwa-Flota Billing Department</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Paliwa-Flota Billing Department</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0186",
+      "subject": "Zwrot kosztów paliwa za ostatni rok dla Państwa firmy",
+      "body": "Szanowni Państwo,\n\nPaliwa-Flota Billing Department ma przyjemność poinformować, że Państwa firma została zakwalifikowana do rocznego zwrotu kosztów paliwa w ramach programu dla stałych klientów flotowych. Z naszych danych wynika, że w ostatnich dwunastu miesiącach firma zrealizowała zakupy paliwa o dużej wartości, a program przewiduje zwrot do 3 procent tej kwoty na rachunek bankowy.\n\nAby otrzymać zwrot, prosimy o potwierdzenie danych w bezpiecznym panelu, który otwiera się po naciśnięciu przycisku w tej wiadomości. System poprosi o podanie osoby upoważnionej, numeru NIP firmy oraz numeru rachunku, na który mamy przekazać środki. Cała procedura trwa około dwóch minut i odbywa się całkowicie automatycznie. W zeszłym roku zwroty otrzymało ponad trzysta firm, a środki wpłynęły na konta w ciągu pięciu dni roboczych.\n\nZwrot jest dostępny wyłącznie przez 48 godzin od otrzymania tej wiadomości. Po tym czasie program zostanie zamknięty, a profil firmy oznaczony jako nieaktywny, co może spowodować ograniczenie kart paliwowych. Prosimy nie kontaktować się z opiekunem konta w tej sprawie, ponieważ zwroty obsługuje wyłącznie nasz centralny dział rozliczeń, a opiekun nie ma dostępu do tego programu. Prosimy też nie przekazywać tej wiadomości innym osobom w firmie.\n\nPaliwa-Flota Billing Department\n\nPaliwa-Flota Billing Department",
+      "html": "<div style=\"font-family:Arial,sans-serif;\"><p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Szanowni Państwo,</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Paliwa-Flota Billing Department ma przyjemność poinformować, że Państwa firma została zakwalifikowana do rocznego zwrotu kosztów paliwa w ramach programu dla stałych klientów flotowych. Z naszych danych wynika, że w ostatnich dwunastu miesiącach firma zrealizowała zakupy paliwa o dużej wartości, a program przewiduje zwrot do 3 procent tej kwoty na rachunek bankowy.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Aby otrzymać zwrot, prosimy o potwierdzenie danych w bezpiecznym panelu, który otwiera się po naciśnięciu przycisku w tej wiadomości. System poprosi o podanie osoby upoważnionej, numeru NIP firmy oraz numeru rachunku, na który mamy przekazać środki. Cała procedura trwa około dwóch minut i odbywa się całkowicie automatycznie. W zeszłym roku zwroty otrzymało ponad trzysta firm, a środki wpłynęły na konta w ciągu pięciu dni roboczych.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Zwrot jest dostępny wyłącznie przez 48 godzin od otrzymania tej wiadomości. Po tym czasie program zostanie zamknięty, a profil firmy oznaczony jako nieaktywny, co może spowodować ograniczenie kart paliwowych. Prosimy nie kontaktować się z opiekunem konta w tej sprawie, ponieważ zwroty obsługuje wyłącznie nasz centralny dział rozliczeń, a opiekun nie ma dostępu do tego programu. Prosimy też nie przekazywać tej wiadomości innym osobom w firmie.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Paliwa-Flota Billing Department</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Paliwa-Flota Billing Department</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0187",
+      "subject": "Okazja na bazę adresów firm transportowych",
+      "body": "Szanowny Panie,\n\nmamy dla Panstwa ostatnia okazje na zakup bazy 500000 adresow email firm transportowych i handlowych z calej Europy. Cena promocyjna wynosi tylko 59 euro, a dodatkowo dolaczamy darmowy audyt strony internetowej oraz miesiac pozycjonowania.\n\nOferta konczy sie w piatek o polnocy. Odpowiedz TAK na ten mail, a wyslemy fakture i plik w kilka minut. Gwarantujemy pelny zwrot pieniedzy w razie niezadowolenia, bez zadnych pytan.",
+      "html": "<div style=\"font-family:Arial,sans-serif;\"><p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Szanowny Panie,</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">mamy dla Panstwa ostatnia okazje na zakup bazy 500000 adresow email firm transportowych i handlowych z calej Europy. Cena promocyjna wynosi tylko 59 euro, a dodatkowo dolaczamy darmowy audyt strony internetowej oraz miesiac pozycjonowania.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Oferta konczy sie w piatek o polnocy. Odpowiedz TAK na ten mail, a wyslemy fakture i plik w kilka minut. Gwarantujemy pelny zwrot pieniedzy w razie niezadowolenia, bez zadnych pytan.</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0188",
+      "subject": "Early bird tickets for the conference programme",
+      "body": "Dear Executive,\n\nThe conference programme of Warehouse Expo 2027 is now open for early bird tickets. Choose from forty sessions about automation, green transport and warehouse robots, and get a 35% discount when you buy five or more tickets this week. Every ticket includes lunch, a certificate and access to the recordings. Reply to this message with the number of tickets, and our adviser will send the invoice today.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0189",
+      "subject": "Konkurs dla wystawców z nagrodą 10 000 zł",
+      "body": "Szanowni Państwo, ogłaszamy konkurs dla wystawców Targów Magazynowych Expo z nagrodą główną 10 000 złotych! Każda firma, która zarezerwuje stoisko do piątku, automatycznie bierze udział w losowaniu, a zwycięzca zostanie ogłoszony podczas gali otwarcia. Dodatkowo wszyscy uczestnicy otrzymają rabat 30 procent na reklamę w katalogu targowym oraz bezpłatny wpis na stronie wydarzenia. Liczba miejsc ograniczona, więc odpowiedzcie na tę wiadomość jeszcze dzisiaj, a nasz doradca przygotuje umowę i fakturę proforma.",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0190",
+      "subject": "Rabat za terminowość",
+      "body": "Szanowny Kliencie, aktywuj rabat za terminową płatność przyciskiem w tej wiadomości, w ciągu 24 godzin. Nie odpowiadaj na ten adres.",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0191",
+      "subject": "Visitor lounge",
+      "body": "Dear Guest,\nfree access to the visitor lounge at Warehouse Expo for the first 50 companies. Reply today!\n\nZespol Targi Magazynowe Expo | Dzial Handlowy\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0192",
+      "subject": "Przedłużenie promocji na karty paliwowe",
+      "body": "Szanowni Państwo,\n\npromocja na karty paliwowe dla firm została przedłużona do końca tygodnia! Każda firma, która aktywuje nową kartę, otrzymuje 250 litrów oleju napędowego gratis i zniżkę 12 groszy na litrze przez trzy miesiące. Aby aktywować kartę, prosimy o potwierdzenie danych firmy oraz rachunku do zwrotu w panelu otwieranym przyciskiem w tej wiadomości.\n\nPo upływie terminu promocja wygaśnie bez możliwości przedłużenia. Prosimy nie odpowiadać na tę wiadomość.\n\nPaliwa-Flota Billing Department\n\nPaliwa-Flota Billing Department",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0193",
+      "subject": "Nagroda lojalnościowa dla Państwa floty: odbiór w 24 godziny",
+      "body": "Szanowny Kliencie,\n\ndziękujemy za wieloletnią współpracę. Z tej okazji Paliwa-Flota Billing Department przygotowało dla stałych klientów flotowych nagrodę lojalnościową, a Państwa firma znalazła się wśród 100 wyróżnionych firm w regionie. Nagroda obejmuje bezpłatny przegląd wszystkich pojazdów floty w sieci serwisów partnerskich, pakiet paliwa o wartości 8 000 złotych oraz roczną zniżkę 18 groszy na litrze na wszystkich stacjach partnerskich.\n\nAby odebrać nagrodę, prosimy o zalogowanie się do bezpiecznego panelu za pomocą przycisku w tej wiadomości i potwierdzenie danych firmy. W formularzu należy wpisać osobę upoważnioną, numer NIP, adres siedziby oraz numer rachunku bankowego, na który przekażemy równowartość paliwa, jeżeli zdecydują się Państwo na wypłatę zamiast kart. Cała procedura trwa dwie minuty. W poprzednim roku nagrody otrzymało ponad dwieście firm, a wiele z nich napisało, że był to najprzyjemniejszy rabat, jaki dostały od dostawcy.\n\nNagroda jest ważna tylko 24 godziny. Po tym terminie zostanie przekazana kolejnej firmie z listy rezerwowej. Prosimy nie kontaktować się z opiekunem konta ani nie odpowiadać na tę wiadomość. Wiadomość została wysłana automatycznie do wszystkich wyróżnionych firm, a osoby, które nie potwierdzą danych, zostaną usunięte z listy nagrodzonych bez dodatkowego powiadomienia.\n\nRegards | Paliwa-Flota Billing Department\n\nPaliwa-Flota Billing Department",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0194",
+      "subject": "Specjalne ceny na tłumaczenia i korektę tekstów",
+      "body": "Szanowny Panie,\n\noferujemy profesjonalne tlumaczenia i korekte tekstow dla firm w cenach, ktore nie maja konkurencji. Tlumaczenie dokumentow na 25 jezykow za jedyne 4 euro za strone, a korekta tekstow za 2 euro. Nasi tlumacze pracuja przez cala dobe, wiec dokumenty sa gotowe w kilka godzin.\n\nOdpowiedz TAK na ten mail do piatku, a pierwsza strona tlumaczenia bedzie dla Pana darmowa.\n\nPremium Leads Pro | Sales Team\n\nPremium Leads Pro | Sales Team",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0198",
+      "subject": "Telefony służbowe w promocji dla firm",
+      "body": "Szanowny Panie Prezesie,\n\nmamy dla Panstwa firmy super okazje: nowe telefony sluzbowe z abonamentem w cenie 19 euro miesiecznie za sztuke, bez umowy i bez ukrytych oplat. Przy zamowieniu dziesieciu sztuk dokladamy dziesiec pokrowcow i dziesiec zestawow sluchawkowych za darmo. Oferta jest wazna tylko do niedzieli.\n\nOdpowiedz TAK na ten mail, a nasz doradca zadzwoni jeszcze dzis i przygotuje oferte.\n\nPremium Leads Pro | Sales Team\n\nPremium Leads Pro | Sales Team",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0199",
+      "subject": "Zostań partnerem: zarabiaj na poleceniach",
+      "body": "Dzien dobry Prezesie,\n\nzapraszamy do programu partnerskiego Premium Leads Pro! Wystarczy polecic nasze uslugi znajomym firmom, a my wyplacimy 30 procent prowizji od kazdej sprzedazy. Nasi najlepsi partnerzy zarabiaja nawet 5000 euro miesiecznie, nie robiac prawie nic. Rejestracja kosztuje jednorazowo 79 euro i obejmuje gotowe materialy reklamowe.\n\nOdpowiedz TAK, a wyslemy fakture i dane do logowania. Tylko dla pierwszych 100 partnerow.\n\nPremium Leads Pro | Sales Team\n\nPremium Leads Pro | Sales Team",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0201",
+      "subject": "Zaproszenie do udziału w konkursie na najlepszy magazyn roku",
+      "body": "Szanowni Państwo,\n\nz przyjemnością zapraszamy Państwa firmę do udziału w konkursie \"Magazyn Roku 2027\", organizowanym przez Targi Magazynowe Expo! To prestiżowa nagroda, o której mówi cała branża, a zwycięzca otrzymuje tytuł, statuetkę i reklamę w prasie branżowej. W ubiegłym roku w konkursie wzięło udział ponad sto firm z całego kraju, a zwycięzcy podkreślali, że wyróżnienie przyniosło im nowych klientów.\n\nUdział w konkursie jest bardzo prosty. Wystarczy wypełnić krótkie zgłoszenie, opłacić wpisowe w wysokości 1900 złotych i przesłać do nas kilka zdjęć magazynu. Komisja konkursowa oceni zgłoszenia w ciągu tygodnia, a laureaci zostaną ogłoszeni na gali podczas targów. Każdy uczestnik otrzymuje dyplom i wpis w katalogu targowym, a finaliści także darmowe stoisko na targach.\n\nDla firm, które zgłoszą się do piątku, wpisowe wynosi tylko 950 złotych, ponieważ chcemy, aby w konkursie wzięły udział najlepsze magazyny w kraju. Liczba miejsc ograniczona do pięćdziesięciu firm. Odpowiedzcie na tę wiadomość, a nasz doradca przygotuje formularz zgłoszeniowy i fakturę jeszcze dzisiaj. Nie przegapcie szansy! Zwycięzcy poprzednich edycji otrzymali także zaproszenia do udziału w panelach eksperckich oraz bezpłatne szkolenia dla swoich zespołów, a ich historie opisały magazyny branżowe w kilku krajach.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0202",
+      "subject": "VIP parking and fast entry for your guests",
+      "body": "Dear Guest,\n\nWarehouse Expo 2027 offers a VIP package for company guests: reserved parking close to the main gate, fast entry without a queue and a place in the visitor lounge with free coffee and snacks. The package costs 350 PLN per car, but the first thirty companies receive a 40% discount. Reply to this message with the number of cars and our adviser will send the invoice and the passes today.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0204",
+      "subject": "Bonus za aktywację",
+      "body": "Szanowny Kliencie,\nbonus 150 litrów czeka na aktywację. Użyj przycisku w tej wiadomości w ciągu 24 godzin.\n\nPaliwa-Flota Billing Department\n\nPaliwa-Flota Billing Department",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0205",
+      "subject": "Promocja na banery",
+      "body": "Szanowni Państwo!\nBanery reklamowe na Targach Magazynowych Expo w połowie ceny, tylko do czwartku. Odpowiedzcie dziś!\n\nZespol Targi Magazynowe Expo | Dzial Handlowy\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": []
+    },
+    {
+      "id": "b-spa-0206",
+      "subject": "Fuel savings summary: claim your loyalty payment",
+      "body": "Dear Customer,\n\nThe Paliwa-Flota Billing Department is writing to inform you that your company has been selected to receive a loyalty payment of up to 8,500 PLN, based on the fuel purchases made by your fleet in the last year. This payment is a part of our yearly program for customers who have a high number of active cards, and your company is among the top fifteen percent in your region.\n\nTo claim the payment, you must confirm your company profile in the secure panel, which opens after you press the button in this message. The panel will ask you for the name of an authorised person, the tax number of your company and the bank account to which we should send the money. The whole procedure takes about two minutes, and our system processes the payment automatically after the confirmation. Last year more than four hundred companies received their payment within three working days.\n\nPlease note that the loyalty payment is available for 48 hours only. After that time the offer is closed, the profile of your company is marked as inactive and the fuel cards connected to it may be limited without further notice. We kindly ask you not to forward this message to other persons in your company and not to contact your account manager, because the program is run only by the central billing team, and the manager cannot change or extend the deadline.\n\nRegards | Paliwa-Flota Billing Department\n\nPaliwa-Flota Billing Department",
+      "html": "<div style=\"font-family:Arial,sans-serif;\"><p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Dear Customer,</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">The Paliwa-Flota Billing Department is writing to inform you that your company has been selected to receive a loyalty payment of up to 8,500 PLN, based on the fuel purchases made by your fleet in the last year. This payment is a part of our yearly program for customers who have a high number of active cards, and your company is among the top fifteen percent in your region.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">To claim the payment, you must confirm your company profile in the secure panel, which opens after you press the button in this message. The panel will ask you for the name of an authorised person, the tax number of your company and the bank account to which we should send the money. The whole procedure takes about two minutes, and our system processes the payment automatically after the confirmation. Last year more than four hundred companies received their payment within three working days.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Please note that the loyalty payment is available for 48 hours only. After that time the offer is closed, the profile of your company is marked as inactive and the fuel cards connected to it may be limited without further notice. We kindly ask you not to forward this message to other persons in your company and not to contact your account manager, because the program is run only by the central billing team, and the manager cannot change or extend the deadline.</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Regards | Paliwa-Flota Billing Department</p>\n<p style=\"margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:14px;\">Paliwa-Flota Billing Department</p></div>",
+      "thread": []
+    }
+  ]
+}
