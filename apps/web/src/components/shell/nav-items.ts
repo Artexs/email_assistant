@@ -1,8 +1,8 @@
-import { Activity, ClipboardList, Inbox, ListFilter, Settings, type LucideIcon } from "lucide-react";
+import { Activity, ClipboardList, Inbox, ListFilter, Settings, ShieldCheck, type LucideIcon } from "lucide-react";
 
 import type { TextKey } from "../../i18n";
 
-export type NavKey = "onboarding" | "activity" | "mailboxes" | "settings" | "rules";
+export type NavKey = "onboarding" | "activity" | "mailboxes" | "settings" | "rules" | "operator";
 
 export interface NavItem {
   key: NavKey;
@@ -24,4 +24,12 @@ export const ONBOARDING_ITEM: NavItem = {
   href: "/onboarding",
   label: "nav_onboarding",
   icon: ClipboardList,
+};
+
+// Shown after the tabs, only to an operator (`me.operator`).
+export const OPERATOR_ITEM: NavItem = {
+  key: "operator",
+  href: "/operator",
+  label: "nav_operator",
+  icon: ShieldCheck,
 };
