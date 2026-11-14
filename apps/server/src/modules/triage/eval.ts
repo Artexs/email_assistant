@@ -160,12 +160,13 @@ export function toClassifierInput(c: EvalCase): ClassifierEmail {
     to: c.to.map((value) => splitAddress(value).address),
     cc: c.cc.map((value) => splitAddress(value).address),
     subject: c.subject,
-    receivedAt: EVAL_RECEIVED_AT,
+    receivedAt: c.receivedAt === undefined ? EVAL_RECEIVED_AT : new Date(c.receivedAt),
     bodyText: c.body,
     thread: c.thread.map((t, i) => ({
       from: splitAddress(t.from).address,
       subject: t.subject,
-      receivedAt: new Date(EVAL_RECEIVED_AT.getTime() - (n - i) * HOUR_MS),
+      receivedAt:
+        t.receivedAt === undefined ? new Date(EVAL_RECEIVED_AT.getTime() - (n - i) * HOUR_MS) : new Date(t.receivedAt),
       bodyExcerpt: t.body.slice(0, EXCERPT_CHARS),
     })),
   };
