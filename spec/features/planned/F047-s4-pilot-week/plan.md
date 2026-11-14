@@ -44,8 +44,8 @@ From 2026-11-09 15:21 UTC the server also syncs `Oferty`, `Społeczności`, `Rac
 - [x] A2. Step 22.2 steps 1–10 of the stage 22 file, with the Gmail as both the task sender and the delegate: task mail `Oferta dla firmy X` from Gmail to the pilot address; SQL and webmail checks; tap `📤 Send`; reply `Zrobione.`; reminder (`due_at` back 1 day, `job:run --name delegation.chaser --force`); a third mail → `✖️ Reject`; logs with no `error`, address, subject or task text; `mailbox:audit --since <t0>`. (done 2026-11-14 with deviations: AgentMail was the task sender; the reject step was skipped by the owner; see § Results.)
 - [x] A3. Write the facts into § Results and the Interia note (the 250 line shape, `sent_copy`, how Interia shows the draft, the `From` display in Gmail; check Gmail spam).
 - [ ] B1. Daily: `/status`, the digest lines, `$C logs --since 24h server | grep -cE "\[(actions|delegation)\].*error"` → 0.
-- [ ] B2. `date -u` ≥ 2026-11-14T22:40Z. Run the step 23.2.3 queries with `<START>` and the test-mail exclusion (§ "Test mail in the week") (sends by outcome, delegations by status, approval time, notices; real mail only); `triage:cost --days 7`; ask the user for wrong drafts and injection incidents.
-- [ ] B3. Write the tables in § Results; update the S4 state line in `docs/roadmap.md`; add a result line to `spec/features/done/2026-11/F006-s4-drafts-approvals-delegation/plan.md` (the one allowed edit of a done file; name this task).
+- [x] B2. `date -u` ≥ 2026-11-14T22:40Z. Run the step 23.2.3 queries with `<START>` and the test-mail exclusion (§ "Test mail in the week") (sends by outcome, delegations by status, approval time, notices; real mail only); `triage:cost --days 7`; ask the user for wrong drafts and injection incidents.
+- [x] B3. Write the tables in § Results; update the S4 state line in `docs/roadmap.md`; add a result line to `spec/features/done/2026-11/F006-s4-drafts-approvals-delegation/plan.md` (the one allowed edit of a done file; name this task).
 - [ ] B4 (owner answer recorded 2026-11-14: keep `SEND_SCOPE=all`; the move to `done/` is the coordinator's). Ask the user: keep `SEND_SCOPE=all`, add real delegates, or go back to `self`. Then `git mv` this file to `tasks/done/`.
 
 ## Results
@@ -77,11 +77,211 @@ Open points (observed, not explained; no check was run on them in this stage):
 
 ### Part B: owner answers (asked in the U1 session, 2026-11-14 12:46)
 
-The week tables (D16 window, counts only) are written by F095 stage 09.
+The week tables (D16 window, counts only) are in the next section.
 
 - Wrong drafts in the pilot week: 0 ("all are fine").
 - Injection incidents: 0 ("zero or all are fine").
 - B4, keep `SEND_SCOPE=all` and the one test delegate: "I suppose yes … I didn't change it for a few days". The owner did not re-check the setting; `/status` at 12:14 showed `SEND_SCOPE=all`. Treated as keep (default Q5 of F095).
+
+### Part B: week counts (F095 stage 09, 2026-11-14)
+
+Source: read-only SQL on the VPS through `ssh home_vm` at 2026-11-14 22:48–22:55 UTC, VPS commit `69473f4e`. Pilot org `ac6ed6a2-ee37-461f-9632-cc08cf549e40`. Window: `<START>` = 2026-11-07T22:40:00Z to `<START>` + 7 days (D16). The queries are those of step 23.2.3 of the stage 23 file of F006 with the window end. Real mail only: each query joins `emails e` (Delegations and Approval time got the join `e.id = <table>.email_id and e.org_id = <table>.org_id`, which the old text lacks) with the filter `(e.message_id_header is null or e.message_id_header not ilike '%@ea-seed.test>') and lower(e.from_address) is distinct from 'ea-testmail-75wd@agentmail.to'`. Counts only. Notices have no `emails` join (the outbox kinds `approval`, `approval_set`, `send_result`, `delegation_answered` of the live schema): they count real and test mail together.
+
+**Result in one line: real mail had 0 sends, 0 drafts, 0 approvals and 0 delegations in the week.** Every send and delegation of the week is test mail (the AgentMail sender, among them the part A round trip of 2026-11-14). So there is no median approval time of real mail. The test-mail rows (the real-mail filter inverted) are shown below for reference.
+
+**Sends by outcome, real mail**
+
+```sql
+select a.status, a.status_reason, a.payload->>'kind' as kind, count(*) from actions a join emails e on e.id = a.email_id and e.org_id = a.org_id where a.org_id = 'ac6ed6a2-ee37-461f-9632-cc08cf549e40' and a.type = 'send' and a.created_at >= '2026-11-07T22:40:00Z' and a.created_at < '2026-11-07T22:40:00Z'::timestamptz + interval '7 days' and (e.message_id_header is null or e.message_id_header not ilike '%@ea-seed.test>') and lower(e.from_address) is distinct from 'ea-testmail-75wd@agentmail.to' group by 1, 2, 3 order by 1, 2, 3;
+```
+
+Result:
+
+```
+status|status_reason|kind|count
+(0 rows)
+```
+
+**Sends by outcome, real mail, INBOX only**
+
+```sql
+select a.status, a.status_reason, a.payload->>'kind' as kind, count(*) from actions a join emails e on e.id = a.email_id and e.org_id = a.org_id where a.org_id = 'ac6ed6a2-ee37-461f-9632-cc08cf549e40' and a.type = 'send' and a.created_at >= '2026-11-07T22:40:00Z' and a.created_at < '2026-11-07T22:40:00Z'::timestamptz + interval '7 days' and e.source_folder = 'INBOX' and (e.message_id_header is null or e.message_id_header not ilike '%@ea-seed.test>') and lower(e.from_address) is distinct from 'ea-testmail-75wd@agentmail.to' group by 1, 2, 3 order by 1, 2, 3;
+```
+
+Result:
+
+```
+status|status_reason|kind|count
+(0 rows)
+```
+
+**Drafts and sends by status, real mail (all / INBOX only)**
+
+```sql
+select a.type, a.status, count(*) as n_all, count(*) filter (where e.source_folder = 'INBOX') as n_inbox from actions a join emails e on e.id = a.email_id and e.org_id = a.org_id where a.org_id = 'ac6ed6a2-ee37-461f-9632-cc08cf549e40' and a.type in ('create_draft', 'send') and a.created_at >= '2026-11-07T22:40:00Z' and a.created_at < '2026-11-07T22:40:00Z'::timestamptz + interval '7 days' and (e.message_id_header is null or e.message_id_header not ilike '%@ea-seed.test>') and lower(e.from_address) is distinct from 'ea-testmail-75wd@agentmail.to' group by 1, 2 order by 1, 2;
+```
+
+Result:
+
+```
+type|status|n_all|n_inbox
+(0 rows)
+```
+
+**Approvals (`approved_at` set), real mail (all / INBOX only)**
+
+```sql
+select count(*) as n_all, count(*) filter (where e.source_folder = 'INBOX') as n_inbox from actions a join emails e on e.id = a.email_id and e.org_id = a.org_id where a.org_id = 'ac6ed6a2-ee37-461f-9632-cc08cf549e40' and a.type = 'send' and a.approved_at is not null and a.created_at >= '2026-11-07T22:40:00Z' and a.created_at < '2026-11-07T22:40:00Z'::timestamptz + interval '7 days' and (e.message_id_header is null or e.message_id_header not ilike '%@ea-seed.test>') and lower(e.from_address) is distinct from 'ea-testmail-75wd@agentmail.to';
+```
+
+Result:
+
+```
+n_all|n_inbox
+0|0
+(1 row)
+```
+
+**Delegations by status, real mail**
+
+```sql
+select d.status, d.status_reason, count(*), sum(d.reminders_sent) as reminders from delegations d join emails e on e.id = d.email_id and e.org_id = d.org_id where d.org_id = 'ac6ed6a2-ee37-461f-9632-cc08cf549e40' and d.created_at >= '2026-11-07T22:40:00Z' and d.created_at < '2026-11-07T22:40:00Z'::timestamptz + interval '7 days' and (e.message_id_header is null or e.message_id_header not ilike '%@ea-seed.test>') and lower(e.from_address) is distinct from 'ea-testmail-75wd@agentmail.to' group by 1, 2 order by 1, 2;
+```
+
+Result:
+
+```
+status|status_reason|count|reminders
+(0 rows)
+```
+
+**Approval time, real mail (count, average, median, max)**
+
+```sql
+select count(*) as n, avg(a.approved_at - a.notified_at) as avg, percentile_cont(0.5) within group (order by a.approved_at - a.notified_at) as median, max(a.approved_at - a.notified_at) as max from actions a join emails e on e.id = a.email_id and e.org_id = a.org_id where a.org_id = 'ac6ed6a2-ee37-461f-9632-cc08cf549e40' and a.type = 'send' and a.approved_at is not null and a.notified_at is not null and a.created_at >= '2026-11-07T22:40:00Z' and a.created_at < '2026-11-07T22:40:00Z'::timestamptz + interval '7 days' and (e.message_id_header is null or e.message_id_header not ilike '%@ea-seed.test>') and lower(e.from_address) is distinct from 'ea-testmail-75wd@agentmail.to';
+```
+
+Result:
+
+```
+n|avg|median|max
+0|||
+(1 row)
+```
+
+**Notices (real and test mail together)**
+
+```sql
+select kind, status, count(*) from outbox where org_id = 'ac6ed6a2-ee37-461f-9632-cc08cf549e40' and created_at >= '2026-11-07T22:40:00Z' and created_at < '2026-11-07T22:40:00Z'::timestamptz + interval '7 days' and kind in ('approval', 'approval_set', 'send_result', 'delegation_answered') group by 1, 2 order by 1, 2;
+```
+
+Result:
+
+```
+kind|status|count
+approval|sent|4
+approval_set|sent|1
+delegation_answered|sent|1
+send_result|sent|5
+(4 rows)
+```
+
+**Rejected sends, real mail (the SQL part of wrong drafts)**
+
+```sql
+select count(*) from actions a join emails e on e.id = a.email_id and e.org_id = a.org_id where a.org_id = 'ac6ed6a2-ee37-461f-9632-cc08cf549e40' and a.type = 'send' and a.status = 'rejected' and a.created_at >= '2026-11-07T22:40:00Z' and a.created_at < '2026-11-07T22:40:00Z'::timestamptz + interval '7 days' and (e.message_id_header is null or e.message_id_header not ilike '%@ea-seed.test>') and lower(e.from_address) is distinct from 'ea-testmail-75wd@agentmail.to';
+```
+
+Result:
+
+```
+count
+0
+(1 row)
+```
+
+**Real-mail drafts (`create_draft`) in the week**
+
+```sql
+select count(*) from actions a join emails e on e.id = a.email_id and e.org_id = a.org_id where a.org_id = 'ac6ed6a2-ee37-461f-9632-cc08cf549e40' and a.type = 'create_draft' and a.created_at >= '2026-11-07T22:40:00Z' and a.created_at < '2026-11-07T22:40:00Z'::timestamptz + interval '7 days' and (e.message_id_header is null or e.message_id_header not ilike '%@ea-seed.test>') and lower(e.from_address) is distinct from 'ea-testmail-75wd@agentmail.to';
+```
+
+Result:
+
+```
+count
+0
+(1 row)
+```
+
+Reference, test mail only (the real-mail filter inverted with `not (…)`):
+
+**Sends, test mail, by status**
+
+```sql
+select a.status, count(*) from actions a join emails e on e.id = a.email_id and e.org_id = a.org_id where a.org_id = 'ac6ed6a2-ee37-461f-9632-cc08cf549e40' and a.type = 'send' and a.created_at >= '2026-11-07T22:40:00Z' and a.created_at < '2026-11-07T22:40:00Z'::timestamptz + interval '7 days' and not ((e.message_id_header is null or e.message_id_header not ilike '%@ea-seed.test>') and lower(e.from_address) is distinct from 'ea-testmail-75wd@agentmail.to') group by 1 order by 1;
+```
+
+Result:
+
+```
+status|count
+applied|3
+expired|1
+rejected|1
+(3 rows)
+```
+
+**Delegations, test mail, by status**
+
+```sql
+select d.status, count(*) from delegations d join emails e on e.id = d.email_id and e.org_id = d.org_id where d.org_id = 'ac6ed6a2-ee37-461f-9632-cc08cf549e40' and d.created_at >= '2026-11-07T22:40:00Z' and d.created_at < '2026-11-07T22:40:00Z'::timestamptz + interval '7 days' and not ((e.message_id_header is null or e.message_id_header not ilike '%@ea-seed.test>') and lower(e.from_address) is distinct from 'ea-testmail-75wd@agentmail.to') group by 1 order by 1;
+```
+
+Result:
+
+```
+status|count
+cancelled|2
+done|1
+overdue|1
+(3 rows)
+```
+
+**Delegations, test mail, answered / total**
+
+```sql
+select count(*) filter (where d.answered_at is not null) as answered, count(*) as total from delegations d join emails e on e.id = d.email_id and e.org_id = d.org_id where d.org_id = 'ac6ed6a2-ee37-461f-9632-cc08cf549e40' and d.created_at >= '2026-11-07T22:40:00Z' and d.created_at < '2026-11-07T22:40:00Z'::timestamptz + interval '7 days' and not ((e.message_id_header is null or e.message_id_header not ilike '%@ea-seed.test>') and lower(e.from_address) is distinct from 'ea-testmail-75wd@agentmail.to');
+```
+
+Result:
+
+```
+answered|total
+1|4
+(1 row)
+```
+
+**Approval time, test mail**
+
+```sql
+select count(*) as n, avg(a.approved_at - a.notified_at) as avg, percentile_cont(0.5) within group (order by a.approved_at - a.notified_at) as median, max(a.approved_at - a.notified_at) as max from actions a join emails e on e.id = a.email_id and e.org_id = a.org_id where a.org_id = 'ac6ed6a2-ee37-461f-9632-cc08cf549e40' and a.type = 'send' and a.approved_at is not null and a.notified_at is not null and a.created_at >= '2026-11-07T22:40:00Z' and a.created_at < '2026-11-07T22:40:00Z'::timestamptz + interval '7 days' and not ((e.message_id_header is null or e.message_id_header not ilike '%@ea-seed.test>') and lower(e.from_address) is distinct from 'ea-testmail-75wd@agentmail.to');
+```
+
+Result:
+
+```
+n|avg|median|max
+3|00:01:23.931667|00:00:30.579|00:03:10.748
+(1 row)
+```
+
+Cross-checks: sends created after the week end: 0 rows; delegations created after the week end: 0 rows; all `send` rows of the org (no filter): 3 `applied`, 1 `expired`, 1 `rejected`.
+
+- Wrong drafts: 0 rejected real-mail sends (SQL); owner count: 0 (asked in the U1 session, above).
+- Injection incidents: 0 (owner answer, above; stage 10 asked it).
+- Daily error counts (F047 B1): not collected daily; 24 h count of the F077 day check in `notes/2026-11-12-s6a-deploy-log.md`: 0 `error` lines, 5 `warn` lines.
+- `triage:cost --days 7` is in the F037 result section (`spec/features/planned/F037-s3-assist-week-result/plan.md`).
 
 ## S5e deploy (2026-11-11 23:37:21 UTC)
 
@@ -92,3 +292,4 @@ The week tables (D16 window, counts only) are written by F095 stage 09.
 ## Log
 
 - 2026-11-07: created at the S4 close (the user's decision): the real-mail checks of S4 stages 22.2 and 23.2 moved here.
+- 2026-11-14: part B week counts written by F095 stage 09: 0 real-mail sends and delegations; the sends of the week are test mail (see § Results).
