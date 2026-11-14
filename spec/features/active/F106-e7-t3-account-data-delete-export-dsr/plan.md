@@ -30,7 +30,7 @@ Product decisions:
 - **F2** An `emails` delete by `app` cascades to `audit_log`, although `app` has no `DELETE` there (same probe).
 - **F3** `age-encryption` 0.3.1 (BSD-3-Clause, npm 2026-08-28) runs in Bun: `encrypt(ReadableStream)`; a 3 MB stream decrypts with `age` 1.3.2.
 - **F4** Better Auth 1.7.18 has `auth.api.verifyPassword({ body: { password }, headers })` (server only, session needed; wrong → `400 INVALID_PASSWORD`).
-- **F5** The stage 06 pattern (Postgres look-behind) scrubs `bob@x.test.`, `<bob@x.test>`, `BOB@X.TEST` and JSON text, and leaves `jimbob@x.test` and `bob@x.test.pl`.
+- **F5** The stage 06 pattern (Postgres look-behind) scrubs `bob@x.test.`, `<bob@x.test>`, `BOB@X.TEST` and JSON text, and leaves `jimbob@x.test`, `bob@x.test.pl`, `o'bob@x.test`, `łbob@x.test`, `bob@x.test_x` and `bob@x.testé` (the look-behind and look-ahead classes were widened after the Opus review of stage 06; exact classes in stage 06).
 - **F6** `hkdfSync` and `createHmac` run in Bun.
 - **F7** `dedup_key` holds the Message-ID in clear; `insertEmail` is the only `emails` insert outside e2e seeds; the container has no `age` binary; `AuditData` is flat.
 - **F8** Sync and backfill apply chunks through `applyChunk` → `lockSyncFolder` (`modules/mail/sync.ts`).

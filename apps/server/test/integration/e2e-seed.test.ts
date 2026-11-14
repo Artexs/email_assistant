@@ -11,6 +11,7 @@ import {
   E2E_OWNER_EMAIL,
   E2E_PAUSED_ORG_NAME,
   E2E_TRIAL_ORG_NAME,
+  e2eTwoFactorOrgName,
   type SeedFile,
 } from "../../src/scripts/e2e-seed-args";
 
@@ -136,6 +137,26 @@ describe.skipIf(e2eAppUrl === "" || e2eMigratorUrl === "")("e2e seed of the plan
         expect(await termsOf(seed.members[project].userId)).toBe(TERMS_VERSION);
       }
 
+      for (const project of E2E_PROJECTS) {
+        const owner = seed.twoFactorOwners[project];
+        const org = await orgOf(e2eTwoFactorOrgName(project));
+        expect(owner.orgId).toBe(org.id);
+        const membership = await e2e
+          .selectFrom("memberships")
+          .select("role")
+          .where("org_id", "=", org.id)
+          .where("user_id", "=", owner.userId)
+          .executeTakeFirstOrThrow();
+        expect(membership.role).toBe("owner");
+        const user = await e2e
+          .selectFrom("users")
+          .select(["two_factor_enabled", "terms_version"])
+          .where("id", "=", owner.userId)
+          .executeTakeFirstOrThrow();
+        expect(user.two_factor_enabled).toBe(false);
+        expect(user.terms_version).toBe(TERMS_VERSION);
+      }
+
       expect(seed.trialOwner.userId).not.toBe(seed.pausedOwner.userId);
       for (const owner of [seed.trialOwner, seed.pausedOwner]) {
         expect(owner.email).toMatch(/^e2e-(trial|paused)-owner@x\.test$/);
@@ -144,4 +165,34 @@ describe.skipIf(e2eAppUrl === "" || e2eMigratorUrl === "")("e2e seed of the plan
       await e2e.destroy();
     }
   }, 60_000);
+
+  test("a second seed run gives new two-factor owners with the second factor off", async () => {
+    const env = { DATABASE_URL: e2eAppUrl, MIGRATOR_DATABASE_URL: e2eMigratorUrl };
+    const seedFile = resolve(repoRoot, "apps/web/e2e/.seed.json");
+    expect((await runSeed(env)).code).toBe(0);
+    const before = JSON.parse(readFileSync(seedFile, "utf8")) as SeedFile;
+    const e2e = createDb(e2eAppUrl);
+    try {
+      for (const project of E2E_PROJECTS) {
+        await e2e
+          .updateTable("users")
+          .set({ two_factor_enabled: true })
+          .where("id", "=", before.twoFactorOwners[project].userId)
+          .execute();
+      }
+      expect((await runSeed(env)).code).toBe(0);
+      const after = JSON.parse(readFileSync(seedFile, "utf8")) as SeedFile;
+      for (const project of E2E_PROJECTS) {
+        expect(after.twoFactorOwners[project].userId).not.toBe(before.twoFactorOwners[project].userId);
+        const user = await e2e
+          .selectFrom("users")
+          .select("two_factor_enabled")
+          .where("id", "=", after.twoFactorOwners[project].userId)
+          .executeTakeFirstOrThrow();
+        expect(user.two_factor_enabled).toBe(false);
+      }
+    } finally {
+      await e2e.destroy();
+    }
+  }, 90_000);
 });

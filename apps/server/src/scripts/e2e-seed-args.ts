@@ -27,6 +27,13 @@ export const E2E_TERMS_EMAILS: Record<E2eProject, string> = {
 };
 export const e2eTermsOrgName = (project: E2eProject): string => `E2E Terms ${project}`;
 
+// One owner per project whose second factor the two-factor spec turns on and off.
+export const E2E_TWO_FACTOR_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-two-factor-mobile@x.test",
+  desktop: "e2e-two-factor-desktop@x.test",
+};
+export const e2eTwoFactorOrgName = (project: E2eProject): string => `E2E Two-factor ${project}`;
+
 export const E2E_OTHER_ORG_NAME = "E2E Other";
 export const E2E_OTHER_OWNER_EMAIL = "e2e-other-owner@x.test";
 
@@ -58,6 +65,7 @@ export interface SeedFile {
   otherOrg: { orgId: string; emailId: string };
   activityMembers: Record<E2eProject, { userId: string; email: string; password: string }>;
   termsOwners: Record<E2eProject, { userId: string; email: string; password: string }>;
+  twoFactorOwners: Record<E2eProject, { userId: string; orgId: string; email: string; password: string }>;
   trialOwner: { userId: string; email: string; password: string; orgId: string; trialEndsAt: string };
   pausedOwner: { userId: string; email: string; password: string; orgId: string; mailboxId: string };
 }

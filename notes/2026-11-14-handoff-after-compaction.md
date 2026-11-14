@@ -99,3 +99,9 @@ For F100 stage 19 (docs) and later web work:
 - N3: injection tag 8/10 = 0.80 (dev 1 of 3; holdout 7/7). Exactly at the floor.
 - N6: audit list lacks receivedAt and VIP status; 13 holdout texts sit in audit/. Stage 22 or the owner step may add them.
 - N7: quirks: German greeting in non-de slots (dev 6, holdout 17, week 4); en slots with Polish-diacritic subject (dev 1, holdout 5, week 7). Not blocking.
+
+## F106 s06 review carry-over (Opus PASS, fixes applied 2026-11-14)
+- Note 6, stage 08: chain actions are found one level deep. Stage 08 must follow chains over several levels (an action K2 of a kept mail points at K1 of a kept mail, and K1 points at an action of a mail that goes), or K1 and K2 both stay and the FK blocks the delete. It must also handle `delegations.draft_action_id` and `send_action_id` (`ON DELETE CASCADE`): deleting an action of a mail that goes removes a kept delegation that points at it. Decide: list those delegations in the report, or refuse.
+- Note 7, stage 07 find: `normalizeDsrAddress` accepts a trailing dot or an empty domain label (`p@x.`, `p@.test`, `p@x..test`). Reject them or print a warning. A find with zero mails, zero mentions and zero listed rows prints a warning ("no match: check the spelling"), not a silent success.
+- Done in the review fixes: the pattern is wider (atext look-behind, non-ASCII letters, `_` in the look-ahead); `email_headers.auth_results` (text) and `email_headers.attachments` (json) are mapped; the completeness test now covers every text, array and jsonb column of every table with `org_id` and `organizations` (`NO_PERSONAL_TABLES` for whole tables).
+- `email_headers.attachments` is mapped as `json` (jsonb), not `text`: stage 08 must scrub an address inside a jsonb attachments value (cast to text, replace, cast back to jsonb; not a text replace on the column), and stage 07's find must show the `email_headers.attachments` mentions.
