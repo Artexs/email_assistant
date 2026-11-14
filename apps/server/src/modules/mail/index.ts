@@ -57,15 +57,18 @@ export {
   PENDING_BODY_DAYS,
   clearMailHeaders,
   clearReturned,
+  clearCapturedHeaders,
   countSyncTargets,
   countWaiting,
   finishEmail,
   forceRescan,
+  getEmailHeaders,
   getEmailMailbox,
   getEmailMeta,
   getJunkFolderPath,
   getMailbox,
   getMailboxSummary,
+  insertEmailHeaders,
   listAuthErrorMailboxesBefore,
   listEmailsByMessageIds,
   listFolderUids,
@@ -84,7 +87,7 @@ export {
   setUndoPending,
   updateEmailLocation,
 } from "./repo";
-export type { EmailMeta, MailKind } from "./repo";
+export type { EmailHeadersRow, EmailMeta, MailKind } from "./repo";
 export type { ClaimedEmail, Cursor, MailboxRow, MailboxStatus, MailboxSummary, NewEmail, SyncFolderRow } from "./repo";
 export {
   isSyntheticMessageId,
