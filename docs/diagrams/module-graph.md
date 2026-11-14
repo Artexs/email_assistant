@@ -26,6 +26,7 @@ flowchart BT
   end
   subgraph group5["Layer 5"]
     operator
+    privacy
   end
   actions --> audit
   actions --> mail

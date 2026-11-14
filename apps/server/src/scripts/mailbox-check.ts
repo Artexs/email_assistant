@@ -2,7 +2,13 @@ import { parseArgs } from "node:util";
 
 import { z } from "zod";
 
-import { checkMailbox, configureMailHosts, type CheckReport, type MailCapabilities } from "../modules/mail";
+import {
+  configureMailHosts,
+  inspectMailbox,
+  type CheckReport,
+  type MailCapabilities,
+  type MailboxInspection,
+} from "../modules/mail";
 import { loadConfig, mailAllowLocal } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
@@ -13,6 +19,7 @@ const log = createLog("mailbox-check");
 const usage = [
   "usage: bun run mailbox:check --org-id <uuid> --mailbox-id <uuid> [--probe]",
   "  --probe adds one draft and sends one mail to the mailbox itself: use it only on a test account.",
+  "  Exit 2: the host guard refuses a mail server of this mailbox.",
 ].join("\n");
 
 const CAPABILITY_LABELS: [keyof MailCapabilities, string][] = [
@@ -58,6 +65,21 @@ function reportLines(report: CheckReport): string[] {
   ];
 }
 
+// The lines and the exit code of one inspection. No host name and no address: only which side the guard refused.
+function inspectionLines(inspection: MailboxInspection): { lines: string[]; code: number } {
+  const { status, statusChangedAt, hosts, report } = inspection;
+  const lines = [
+    `status: ${status} since ${statusChangedAt.toISOString()}`,
+    `imap-host: ${hosts.imap}`,
+    `smtp-host: ${hosts.smtp}`,
+  ];
+  if (report !== null) return { lines: [...lines, ...reportLines(report)], code: 0 };
+  if (hosts.imap === "refused" || hosts.smtp === "refused") {
+    return { lines: [...lines, "the host guard refuses a mail server of this mailbox: no connection"], code: 2 };
+  }
+  return { lines: [...lines, "mail host lookup failed: no connection"], code: 1 };
+}
+
 async function main(): Promise<number> {
   const options = readOptions();
   if (!options) {
@@ -72,11 +94,12 @@ async function main(): Promise<number> {
   try {
     await assertAppRole(db);
     const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
-    const report = await checkMailbox({ db, secrets }, { orgId: options.orgId }, options.mailboxId, {
+    const inspection = await inspectMailbox({ db, secrets }, { orgId: options.orgId }, options.mailboxId, {
       probe: options.probe,
     });
-    for (const line of reportLines(report)) log.info(line);
-    return 0;
+    const { lines, code } = inspectionLines(inspection);
+    for (const line of lines) log.info(line);
+    return code;
   } catch (error) {
     log.error("failed:", error instanceof Error ? error.message : error);
     return 1;

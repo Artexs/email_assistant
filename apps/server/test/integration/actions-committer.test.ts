@@ -997,6 +997,37 @@ describe("createCommitterJob: a refused host blocks the mailbox", () => {
     });
   });
 
+  test("a failed DNS lookup of the SMTP host at send time keeps the mailbox active, with no block and no audit row", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const box = await addBox(trx);
+      const opener = openerFor([box]);
+      const smtp = senderOpener();
+      const guardedSmtp = smtp.openSender;
+      smtp.openSender = async (opts) => {
+        await resolveMailHost(opts.host);
+        return guardedSmtp(opts);
+      };
+      await pairOf(trx, box);
+      configureMailHosts({
+        allowLocal: false,
+        lookup: async () => {
+          throw new Error("ENOTFOUND");
+        },
+      });
+      const warnings = spyOn(console, "warn").mockImplementation(() => undefined);
+      try {
+        await sendJob(trx, opener, smtp, box).run();
+      } finally {
+        warnings.mockRestore();
+      }
+
+      expect((await mailboxOf(trx, box)).status).toBe("active");
+      expect(await blockAudit(trx, box)).toEqual([]);
+      expect(smtp.sender.sent).toHaveLength(0);
+    });
+  });
+
   test("an IMAP host that the guard refuses blocks the mailbox and releases the move with no count", async () => {
     await withRollback(db, async (trx) => {
       await pauseOtherMailboxes(trx);
