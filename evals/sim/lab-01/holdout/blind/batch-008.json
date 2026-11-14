@@ -1,0 +1,325 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-008",
+  "cases": [
+    {
+      "id": "b-del-0226",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wzory umów dla nowych pracowników magazynu",
+      "body": "Cześć Wiktor,\n\nod pierwszego lutego zatrudniamy w magazynach w Poznaniu i w Gdyni dwudziestu nowych pracowników, część na umowy o pracę, a część przez agencję. Okazało się, że wzory umów, których używamy, pochodzą jeszcze sprzed dwóch lat i nie uwzględniają zmian w przepisach o czasie pracy oraz nowych zasad pracy w nocy, które obowiązują od stycznia. Nie chciałbym, żebyśmy podpisywali dokumenty, które za kilka miesięcy trzeba będzie zmieniać aneksami.\n\nPoproś proszę koordynatora sprzedaży, żeby przygotował aktualne wzory: umowy o pracę na czas określony dla magazyniera i kierowcy wózka widłowego oraz aneks do umowy z agencją, który określi zasady przydziału pracowników do zmian. Piotr zna nasze standardy redakcyjne i wie, jak formułujemy zapisy o odpowiedzialności za sprzęt i o ochronie danych osobowych. Dobrze byłoby, żeby wzory były krótkie, bo nowi pracownicy czytają je przed pierwszą zmianą. W razie potrzeby niech skonsultuje przepisy z naszą kancelarią, ale tylko jeśli będzie miał wątpliwości.\n\nWzory potrzebuję do 29.01.2027, żeby zdążyć przed pierwszymi podpisami. Nie musisz niczego akceptować osobiście. Jeśli pojawi się coś, co wymaga decyzji zarządu, dam Ci znać, ale na razie wystarczy, że przekażesz sprawę dalej.\n\nDzięki za pomoc.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0227",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rozliczenie opłat za odprawy celne - styczeń",
+      "body": "Szanowny Panie Wiktorze,\n\nw styczniu obsługiwaliśmy wspólnie sześć odpraw celnych na lotnisku i w porcie, a opłaty zostały zafakturowane na nasze biuro. Proszę o polecenie księgowości Kordelana sprawdzenia zestawienia, które prześlemy do końca tygodnia, oraz wystawienia noty obciążeniowej na Państwa część według umowy o współpracy.\n\nChodzi o czynność rutynową, a ewentualne pytania księgowość może kierować do naszego kontrolera finansowego, który zna wszystkie dokumenty. Zestawienie obejmuje opłaty z sześciu zleceń i będzie zawierało numery deklaracji, kwoty w złotych oraz daty odpraw.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0228",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Agent contract",
+      "body": "Hi Wiktor,\n\npls have the sales coordinator draft a short agency agreement for the new Rotterdam agent. Terms as discussed.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0229",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Revised delivery terms for the Q1 orders",
+      "body": "Dear Mr Szalewski,\n\nI am writing to you about the delivery terms for our first-quarter orders under the framework agreement. During the last two months we have noticed that the unloading windows agreed in the contract do not match the shifts at our new cold store in Malmo, which causes waiting times for your drivers and extra costs for both sides.\n\nWe have put together a proposal for a revised annex that sets the unloading windows for each of our three warehouses separately. The windows would be 06:00 to 09:00 for the cold store, 08:00 to 12:00 for the dry goods warehouse and 10:00 to 14:00 for the pallet depot. The annex would also define how a missed window is handled: a new slot within 24 hours, without a penalty, if the driver informs us at least two hours before the arrival.\n\nWe would like to ask you to hand this over to the colleague who looks after sales and delivery contracts, so that she can read the proposal, adjust the wording to your template and send us a signed version. If your team prefers to prepare the annex from scratch, we can send our own model, which we use with other suppliers.\n\nOur aim is to have the new windows in force from the beginning of March. There is no need for you to deal with the details yourself, and we would be happy with a reply from the person who takes it on.\n\nThank you very much for your support, and best regards from Malmo.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0230",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Reconciliation of the fuel card statements for December",
+      "body": "Dear Mr Szalewski,\n\nOur accounts team has closed the December cycle for Kordelan, and I would like to ask for your help with three open points that need your accounting team's attention.\n\nFirst, the statement for the cards of the Poznan depot shows a total that is about 2,300 PLN higher than the amount on the invoice that your team paid. We believe the difference comes from three late transactions that were posted after the invoice date, but we would like your accountants to check this against their own ledger. Second, two cards that were blocked in November still appear on the statement with small fees. We have issued credit notes for them, and your team only needs to post those documents. Third, the bank details for the refund of the overpayment were not confirmed, so we need a written confirmation of the account number.\n\nIt would be enough if someone from your accounting team sent us a short list stating which items they accept and which they dispute. Our credit controller will then close the cycle within two working days. Your own involvement is not required, as this is a routine reconciliation.\n\nWe would like to finish this before the end of the month, to start the new quarter with a clean account.\n\nThank you for your help.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0231",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Aneks do umowy z biurem rachunkowym",
+      "body": "Szanowny Panie Prezesie,\n\nbiuro rachunkowe, które przygotowuje zestawienia dla rady, proponuje zmianę umowy: wyższy ryczałt miesięczny i dłuższy okres wypowiedzenia. Proszę o polecenie koordynatorowi sprzedaży porównania propozycji z obecną umową i przesłania mi krótkiej notatki z różnicami przed posiedzeniem rady. Interesuje mnie przede wszystkim, o ile wzrośnie roczny koszt usługi i czy nowy okres wypowiedzenia nie utrudni nam zmiany biura w drugiej połowie roku. Notatka może mieć pół strony, bez opinii prawnej. Nie oczekuję odpowiedzi od Pana osobiście.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0232",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wniosek o zmianę umowy o obsługę kart",
+      "body": "Szanowny Panie Prezesie,\n\nzwracamy się z prośbą o przekazanie osobie zajmującej się umowami wniosku o zmianę zasad rozliczania faktur za karty paliwowe. Chcielibyśmy, aby umowa przewidywała jedną fakturę zbiorczą na miesiąc zamiast trzech osobnych, z rozbiciem na pojazdy w załączniku do faktury.\n\nDla ułatwienia przygotowaliśmy krótki szkic nowego zapisu, który prześlemy bezpośrednio do osoby wskazanej przez Państwa. Prosimy o wskazanie kontaktu.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0233",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Request for a contract amendment: monthly credit limit",
+      "body": "Dear Mr Szalewski,\n\nThank you for your note on the fuel card limits. As we discussed, we would now like to put the new monthly credit limit into the agreement, so that it is binding on both sides and so that no misunderstanding arises about what happens when a limit is exceeded.\n\nWe propose a short addendum that does three things. It raises the combined monthly limit for all cards from 180,000 to 240,000 PLN, in line with the larger fleet. It states that the supplier will notify your accounting team by email when 80 percent of the limit is used. And it provides that, if the limit is exceeded, the cards are not blocked at once but after a grace period of two working days, during which your team can ask for an increase.\n\nWe would be grateful if you could ask your colleague who handles sales and supplier contracts to read the proposal, to suggest any changes to the wording and to send us the signed addendum. We can prepare the text in your template if she tells us which one to use.\n\nWe would like to have everything in place before the end of February, in time for the new tractor units that are due in March. Your own involvement is not necessary.\n\nThank you for your help, and kind regards.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Fuel card limits",
+          "body": "Ewelina, thank you for the information about the limits. We will look at the details with the team. Wiktor"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0235",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "hamburg meeting",
+      "body": "hi Wiktor,\n\ncan your assistant put a 30-minute call with the Hamburg office in your diary for Thursday? I'll send her the dial-in once I have it.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0236",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Płatność za usługi doradcze",
+      "body": "Panie Wiktorze,\n\nniech księgowość zapłaci fakturę kancelarii za opinię o umowie z audytorem. Faktura leży w sekretariacie rady, a termin płatności mija w piątek. Proszę tylko o krótką informację do mojego sekretariatu, gdy przelew zostanie zlecony. Kwota jest zgodna z umową i była już zatwierdzona przez komitet rady, więc księgowość nie musi nic uzgadniać z Panem. Numer rachunku jest na fakturze, a kopię faktury Dorota może dać Magdalenie od ręki.\n\nDziękuję za pomoc.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0237",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Delivery window annex - please prepare",
+      "body": "Dear Mr Szalewski,\n\ncould you ask your sales contracts coordinator to prepare an annex to the framework agreement with the new delivery windows for our warehouses in Malmo? The windows are 06:30 to 09:30 for chilled goods and 10:00 to 13:00 for dry goods. Please ask her to send the draft to our procurement team for review.\n\nWe would like to start using the new windows in March. A short confirmation from her is enough, and no reply from you is needed.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0238",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "customs invoice",
+      "body": "Wiktor,\n\nthe Gdynia broker's last invoice includes a storage fee we never agreed to. Can accounting question it and get a corrected one? Oliver\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0239",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Cost sharing for the tender consultant",
+      "body": "Dear Wiktor,\n\nas Oliver explained, our consultant for the Baltic port tender has sent a single invoice for the work done for both companies, and we would like to split it 60/40 as agreed. Could you ask your accounting team to prepare the internal charge for Kordelan's share, check it against the consultant's time sheet and send the confirmation to our finance desk?\n\nWe want to close this month, so I would be grateful for a quick handover. I do not need an answer from you directly.",
+      "thread": [
+        {
+          "from": "oliver.pemberton@kordelan.test",
+          "subject": "Consultant invoice for the tender",
+          "body": "Daniel, the consultant billed 120 hours in total. I think the split should follow the joint venture shares. Oliver"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0240",
+      "from": "Matthias Brandt <matthias.brandt@trailerwerk-sued.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Odbiór naczep chłodniczych w fabryce - organizacja",
+      "body": "Szanowny Panie Prezesie,\n\nnasza fabryka zakończyła produkcję dwóch zamówionych naczep chłodniczych i mogą Państwo je odebrać w ciągu najbliższych tygodni. Aby odbiór przebiegł sprawnie, prosimy o zorganizowanie po Państwa stronie kilku rzeczy, które nie wymagają Pana udziału, a są potrzebne od strony logistycznej.\n\nProsimy, aby asystentka ustaliła dzień odbioru z naszym działem wydań, najlepiej w ostatnim tygodniu lutego, i wpisała go do kalendarza floty. Prosimy o rezerwację noclegu dla dwóch kierowców, którzy przyjadą po naczepy, w hotelu w pobliżu zakładu, oraz o przesłanie nam ich imion i nazwisk co najmniej trzy dni przed przyjazdem, ponieważ wejście na teren zakładu wymaga rejestracji. Prosimy także o zaplanowanie drogi powrotnej tak, aby kierowcy nie musieli przekraczać dopuszczalnych godzin jazdy.\n\nNasz dział wydań potrzebuje około dwóch godzin na przygotowanie dokumentów i przekazanie pojazdów. Najlepiej, aby kierowcy przybyli rano, do dziesiątej, wtedy wszystko zdążymy załatwić jeszcze tego samego dnia. Jeśli asystentka ma pytania, chętnie na nie odpowiem.\n\nZ góry dziękujemy za pomoc w zorganizowaniu odbioru. Przypominamy też, że w dniu odbioru potrzebne będą dowód rejestracyjny ciągników i potwierdzenie ubezpieczenia, które kierowcy powinni mieć przy sobie, bo bez nich nie możemy wydać pojazdów.\n\nMit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0241",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Hotel invoice",
+      "body": "Hello Wiktor,\n\nplease ask accounting to pay the hotel invoice for the two board members before it is overdue. It is in my secretary's folder.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0242",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Korekta faktury za grudzień - prośba do księgowości",
+      "body": "Szanowny Panie Prezesie,\n\nw grudniowej fakturze za karty paliwowe znalazły się dwie transakcje, które Państwa kierowcy zakwestionowali, i dlatego wystawiliśmy do nich noty korygujące. Prosimy o polecenie księgowości zaksięgowania tych not oraz o potwierdzenie nam, że po ich uwzględnieniu saldo na koncie zgadza się z naszym zestawieniem.\n\nJeśli którakolwiek pozycja budzi wątpliwości, księgowość może się skontaktować z naszym działem rozliczeń. Dziękujemy.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0243",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "call with Gdynia",
+      "body": "Hi Wiktor,\n\ncan your assistant fix a 30-minute call with the Gdynia agent on Friday morning? Any time before noon is fine. Oliver\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0244",
+      "from": "Matthias Brandt <matthias.brandt@trailerwerk-sued.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rozliczenie zaliczki na naczepę",
+      "body": "Szanowny Panie Prezesie,\n\nzgodnie z umową kupna naczep wpłacili Państwo zaliczkę, która powinna zostać rozliczona na fakturze końcowej. W naszym systemie widnieje jednak wpłata w kwocie niższej niż wynikająca z umowy, więc potrzebne jest uzgodnienie.\n\nProszę o polecenie księgowości porównania wpłaty z umową i przesłania nam potwierdzenia przelewu. Wszystkie dokumenty prześlemy bezpośrednio do osoby, którą Państwo wskażą, w tym kopię umowy kupna i nasze zestawienie wpłat z października i listopada. Nie wymaga to Pana osobistego zaangażowania. Jeśli różnica okaże się wynikać z kursu waluty, wystarczy nam krótkie wyjaśnienie na piśmie, ponieważ nasz dział finansowy musi zamknąć miesiąc.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0246",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wizyta przedstawicieli w sprawie rozliczeń",
+      "body": "Szanowny Panie Prezesie,\n\nw lutym chcielibyśmy odwiedzić Państwa firmę w związku z nowym systemem rozliczania faktur za karty i paliwo. Wizyta ma być krótka i praktyczna: dwóch naszych przedstawicieli przedstawi Państwa dyrekcji finansowej i zespołowi floty nowy panel internetowy oraz format zestawień, a następnie odpowie na pytania.\n\nProsimy o polecenie asystentce zorganizowania całej wizyty od strony kalendarza i logistyki. Chodzi o znalezienie terminu w drugim tygodniu lutego, najlepiej we wtorek lub w czwartek, zarezerwowanie sali na około dwie godziny z projektorem i połączeniem sieciowym, rozesłanie zaproszeń do osób z działu finansowego i floty oraz zamówienie kawy dla uczestników. Jeśli to możliwe, prosimy także o rezerwację miejsca parkingowego dla naszych przedstawicieli.\n\nDo zaproszeń możemy dołączyć krótką agendę, jeśli asystentka poda adres, na który mamy ją przesłać. Nie ma potrzeby, aby uczestniczył Pan w spotkaniu osobiście, chyba że sam wyrazi Pan taką chęć. W przypadku zmiany terminu przez Państwa dział finansowy prosimy o jak najwcześniejszą informację, bo nasze kalendarze są już dość zapełnione w tym okresie. Wystarczy nam potwierdzenie terminu od asystentki. Dla porządku dodajemy, że nasi przedstawiciele przyjadą pociągiem z Warszawy i będą w Gdańsku od dziewiątej rano.\n\nDziękujemy za pomoc i za dotychczasową współpracę.\n\nZ poważaniem\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0247",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wspólne opłaty za odprawę",
+      "body": "Szanowny Panie Wiktorze,\n\nproszę o polecenie księgowości zlecenia przelewu za Państwa część opłat celnych z grudnia. Kwota wynika z zestawienia przesłanego w zeszłym tygodniu i jest zgodna z umową o współpracy. Proszę o przesłanie potwierdzenia do naszego biura, gdy przelew zostanie wykonany.\n\nDziękuję za pomoc w uregulowaniu sprawy. Jeśli księgowość zauważy różnicę w stosunku do własnych zapisów, prosimy o przesłanie nam jej wyliczenia, a my sprawdzimy je jeszcze tego samego dnia.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0248",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Review meeting",
+      "body": "Dear Mr Chairman,\n\nplease ask your assistant to schedule a one-hour card review with our team in the first week of February.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0249",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nota obciążeniowa",
+      "body": "Szanowny Panie Wiktorze,\n\nproszę o polecenie księgowości wystawienia noty obciążeniowej za opłaty celne z 11.01.2027.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0250",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Suspicious card update - please check with accounting",
+      "body": "Dear Mr Szalewski,\n\nwe have heard that a message with new bank details for our fuel card invoices circulated among our clients, and it did not come from us. Please ask your accounting team to check whether any payment went to the account named in the message, and to confirm to us that only our usual account is used for transfers.\n\nIf your team did pay to the other account, please let our credit desk know right away, and we will help to trace the money.\n\nThank you very much.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [
+        {
+          "from": "billing@paliwa-fiota.test",
+          "subject": "Update of your fuel card account details",
+          "body": "Dear customer, to keep your cards active please confirm your account details and pay all open invoices to our new account PL00-TEST-4821 within 24 hours. Paliwa-Flota Billing"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0251",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Opłata za tłumaczenie",
+      "body": "Wiktor,\n\nksięgowość niech przeleje należność za tłumaczenie materiałów dla rady, faktura jest w sekretariacie. Dzięki.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-del-0252",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Aneks do umowy",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o polecenie osobie zajmującej się umowami przesłania nam aneksu o zmianie terminu płatności do podpisu.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}
