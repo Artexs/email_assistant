@@ -182,6 +182,10 @@ const openaiImports = {
   group: ["openai", "openai/*", "!./openai"],
   message: "Only apps/server/src/platform/llm/providers/openai.ts imports openai (ADR 0014).",
 };
+const ssoImports = {
+  group: ["@better-auth/sso", "@better-auth/sso/*"],
+  message: "Only apps/server/src/platform/auth-sso.ts imports @better-auth/sso (F119).",
+};
 // Flat config: a later block replaces the rule options, so each file group lists all its patterns.
 const restrictImports = (patterns) => ({ "no-restricted-imports": ["error", { patterns }] });
 
@@ -239,26 +243,31 @@ export default tseslint.config(
       "apps/server/src/modules/channels/telegram/**",
       "apps/server/src/platform/llm/providers/gemini*.ts",
       "apps/server/src/platform/llm/providers/openai*.ts",
+      "apps/server/src/platform/auth-sso.ts",
     ],
+    rules: restrictImports([grammyImports, geminiImports, openaiImports, ssoImports]),
+  },
+  {
+    files: ["apps/server/src/platform/auth-sso.ts"],
     rules: restrictImports([grammyImports, geminiImports, openaiImports]),
   },
   {
     files: ["apps/server/src/modules/channels/telegram/**/*.ts"],
-    rules: restrictImports([geminiImports, openaiImports]),
+    rules: restrictImports([geminiImports, openaiImports, ssoImports]),
   },
   {
     files: [
       "apps/server/src/platform/llm/providers/gemini.ts",
       "apps/server/src/platform/llm/providers/gemini.test.ts",
     ],
-    rules: restrictImports([grammyImports, openaiImports]),
+    rules: restrictImports([grammyImports, openaiImports, ssoImports]),
   },
   {
     files: [
       "apps/server/src/platform/llm/providers/openai.ts",
       "apps/server/src/platform/llm/providers/openai.test.ts",
     ],
-    rules: restrictImports([grammyImports, geminiImports]),
+    rules: restrictImports([grammyImports, geminiImports, ssoImports]),
   },
   {
     // components/ui/** is excluded on purpose: the shadcn CLI writes sr-only texts there.

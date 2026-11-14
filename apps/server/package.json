@@ -6,6 +6,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@better-auth/sso": "1.7.18",
     "@ea/core": "workspace:*",
     "@google/genai": "^2.32.0",
     "@hono/bun": "1.0.1",

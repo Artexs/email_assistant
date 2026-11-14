@@ -74,6 +74,8 @@ describe("betterAuthLogReason", () => {
     ["Invalid origin: https://evil.test", "invalid_origin"],
     ["Database schema mismatch. Missing tables: x", "schema_mismatch"],
     ["Rate limiting could not determine a client IP address", "rate_limit_no_ip"],
+    ["Failed to parse state", "oauth_state_failed"],
+    ["Failed to parse state: x@y.test", "oauth_state_failed"],
     ["Something new for x@y.test", "other"],
     [new Error("e"), "other"],
   ])("%p gives the reason %p", (message, reason) => {

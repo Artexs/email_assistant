@@ -7,6 +7,15 @@ import { Pool } from "pg";
 import { z } from "zod";
 
 import { recordPasswordFailure, type LockoutStore } from "./auth-lockout";
+import {
+  isAllowedSsoPath,
+  rejectUnknownSsoBodyKeys,
+  ssoPlugin,
+  SSO_SIGN_IN_PATH,
+  withoutIdpTokens,
+  type SsoIdentity,
+  type SsoResolution,
+} from "./auth-sso";
 import { signInAuditPlugin, twoFactorPlugin, TWO_FACTOR_ALLOWED_PATHS } from "./auth-two-factor";
 import type { DB, Db } from "./db";
 import { errorFields } from "./errors";
@@ -51,6 +60,8 @@ export interface AuthDeps {
   // True = the user may not turn TOTP off (the break-glass owner, F105 D12). Absent = every user may.
   // Not caught: an error fails the request (500) and nothing changes (fail closed).
   keepsTwoFactor?: (userId: string) => Promise<boolean>;
+  // Who may sign in with the company IdP (F119). Absent = every identity is refused with `sso_off`.
+  resolveSsoMember?: (identity: SsoIdentity) => Promise<SsoResolution>;
 }
 
 export type Auth = ReturnType<typeof createBetterAuth>;
@@ -89,6 +100,7 @@ export const RESET_REQUEST_ANSWER = {
 // L9: the reset request is open only when the caller says so (the auth-mail sender is on).
 export function isAllowedAuthPath(method: string, path: string, opts?: { resetRequest: boolean }): boolean {
   if (path === RESET_REQUEST_PATH) return method === "POST" && opts?.resetRequest === true;
+  if (isAllowedSsoPath(method, path)) return true;
   return AUTH_ALLOWED_PATHS.has(path) || (method === "GET" && path.startsWith("/reset-password/"));
 }
 
@@ -132,6 +144,8 @@ const BETTER_AUTH_REASONS: readonly (readonly [string, string])[] = [
   ["Invalid origin", "invalid_origin"],
   ["Database schema mismatch", "schema_mismatch"],
   ["Rate limiting could not determine a client IP", "rate_limit_no_ip"],
+  // Every OAuth state failure (unknown, expired or changed state) has this start, so one code covers them all.
+  ["Failed to parse state", "oauth_state_failed"],
 ];
 
 export function betterAuthLogReason(message: unknown): string {
@@ -381,6 +395,7 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
     hooks: {
       // One dispatcher: later stages add their paths here.
       before: createAuthMiddleware(async (ctx) => {
+        if (ctx.path === SSO_SIGN_IN_PATH) rejectUnknownSsoBodyKeys(ctx.body);
         if (ctx.path === RESET_REQUEST_PATH) {
           const body = ctx.body as { email?: unknown } | undefined;
           const key = String(body?.email ?? "")
@@ -437,13 +452,17 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
         [RESET_REQUEST_PATH]: { window: 900, max: 3 },
         "/reset-password": { window: 60, max: 5 },
         "/change-password": { window: 60, max: 5 },
+        [SSO_SIGN_IN_PATH]: { window: 60, max: 10 },
       },
     },
-    // Order matters: the audit plugin must come after `twoFactorPlugin()` (it reads the result of the code step).
-    plugins: [twoFactorPlugin(), signInAuditPlugin(report)],
+    // Order matters: the audit plugin comes last, after `twoFactorPlugin()` and `ssoPlugin()` (it reads the result of the code step).
+    plugins: [twoFactorPlugin(), ssoPlugin({ resolveMember: deps.resolveSsoMember }), signInAuditPlugin(report)],
     databaseHooks: {
       account: {
+        // No IdP token is stored (an `id_token` holds the IdP e-mail in clear).
+        create: { before: async (account) => withoutIdpTokens(account) },
         update: {
+          before: async (account) => withoutIdpTokens(account),
           after: async (account, ctx) => {
             if (
               ctx?.path === "/change-password" &&
@@ -457,7 +476,8 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
         },
       },
     },
-    onAPIError: { onError: onAuthError },
+    // An OAuth state error redirects here (the default is a Better Auth error page that our server does not serve).
+    onAPIError: { onError: onAuthError, errorURL: "/login?sso=failed" },
     logger: {
       level: "warn",
       log: (level, message, ...args) => {

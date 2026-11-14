@@ -311,6 +311,14 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Run `bun run db:migrate`, then restart the server. The deploy runs the migration before `up` (`deploy/README.md`). The e2e server command runs `db:migrate` before the server starts (`apps/web/e2e/playwright.config.ts`).
 - **Status:** fixed (e2e config); a deploy that starts the server before the migration still gets it
 
+### `better_auth_log reason=oauth_state_failed` (new in F119; `error_code=state_mismatch` or another state code)
+
+- **First seen:** 2026-11-14 (F119 stage 03 test; not seen live)
+- **Source:** `apps/server/src/platform/auth.ts` (the Better Auth text `Failed to parse state` through the logger; `reason` from `betterAuthLogReason`). The state value never reaches the log.
+- **Cause:** A request to `/api/auth/sso/callback/<providerId>` carried a `state` that Better Auth could not use: an unknown, expired or changed value. Typical causes: the person waited too long at the IdP, opened the callback link twice, or the callback was called by hand. Better Auth answers a redirect to `/login?sso=failed&error=state_mismatch`.
+- **Fix:** No action for one line. Many lines from one address mean someone probes the callback route: the sign-in rate limit does not cover it, so check the proxy log for the address. A real person who sees the failure signs in again from the login page.
+- **Status:** investigating
+
 ### `better_auth_log reason=rate_limit_no_ip` (before F089: `better-auth: Rate limiting could not determine a client IP …`)
 
 - **First seen:** 2026-11-09 (S5a code; not seen live)
