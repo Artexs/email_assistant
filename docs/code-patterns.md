@@ -247,6 +247,7 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 - Lint: `no-restricted-syntax` in `eslint.config.js` (`logEventSelectors`) warns on any other log call in `apps/server/src`, and fails in the converted files (`platform/`, `main.ts`).
   E8a converts the modules one by one, moves each to the `error` block, and flips the rest at the end. A new log line in any file is an event from now on.
 - `docs/known-alerts.md` keys the entries of event lines by the event code.
+- CLI scripts (`apps/server/src/scripts/`) print to the operator's terminal through `createCliOutput(name)` (`platform/cli.ts`): `print` to stdout, `fail` to stderr, `[name] text`, always text. It is not a log line. Only scripts import it.
 
 ## Style
 

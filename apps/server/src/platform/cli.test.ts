@@ -8,8 +8,8 @@ describe("createCliOutput", () => {
   let errorSpy: ReturnType<typeof spyOn<Console, "error">>;
 
   beforeEach(() => {
-    logSpy = spyOn(console, "log").mockImplementation(() => {});
-    errorSpy = spyOn(console, "error").mockImplementation(() => {});
+    logSpy = spyOn(console, "log").mockImplementation(() => undefined);
+    errorSpy = spyOn(console, "error").mockImplementation(() => undefined);
   });
 
   afterEach(() => {

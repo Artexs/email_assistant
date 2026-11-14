@@ -17,11 +17,11 @@ import {
   upsertOrgFeature,
 } from "../modules/tenancy";
 import { createAuth } from "../platform/auth";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig, mailAllowLocal, webTrustedOrigins } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
-import { createLog } from "../platform/log";
 import { auditWebEvent, termsAcceptedHandler } from "../web";
 
 import { seedActivityRows, seedOtherOrgMail } from "./e2e-activity-rows";
@@ -54,7 +54,7 @@ import {
   seedTargetOk,
 } from "./e2e-seed-args";
 
-const log = createLog("e2e-seed");
+const out = createCliOutput("e2e-seed");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const TRIAL_DAYS = 10;
@@ -106,13 +106,13 @@ async function main(): Promise<number> {
   const migratorUrl = process.env.MIGRATOR_DATABASE_URL ?? "";
   const target = seedTargetOk(config.DATABASE_URL, migratorUrl);
   if (!target.ok) {
-    log.error(`refusing: ${target.reason}`);
+    out.fail(`refusing: ${target.reason}`);
     return 1;
   }
   const baseUrl = config.WEB_BASE_URL;
   const secret = config.WEB_AUTH_SECRET;
   if (baseUrl === undefined || secret === undefined) {
-    log.error("refusing: WEB_BASE_URL is empty");
+    out.fail("refusing: WEB_BASE_URL is empty");
     return 1;
   }
 
@@ -420,7 +420,7 @@ async function main(): Promise<number> {
       await rm(path, { force: true });
       await writeFile(path, `${JSON.stringify(seed, null, 2)}\n`, { mode: 0o600 });
 
-      log.info(
+      out.print(
         `seeded org ${seed.orgId} owner ${seed.owner.userId} assistants ${E2E_PROJECTS.map((project) => assistantIds[project]).join(",")} members ${E2E_PROJECTS.map((project) => memberIds[project]).join(",")} trial org ${trial.orgId} paused org ${paused.orgId}`
       );
       return 0;
@@ -435,6 +435,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((error) => {
-    log.error(`failed: ${describeError(error)}`);
+    out.fail(`failed: ${describeError(error)}`);
     process.exit(1);
   });
