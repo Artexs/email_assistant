@@ -143,6 +143,20 @@ describe("statsRows", () => {
     expect(cellOf(shown, "stats_m8_spam")).toBe("97% of 30 (≥ 83%)");
   });
 
+  test("below 30 labels a category on auto keeps its auto mark", () => {
+    const gate = { recall: 0.9, decision: "go" as const, mailboxId: MAILBOX, category: "spam" as const };
+    const few = statsRows([week({ m8: [{ ...gate, auto: true, kept: 29, precision: 1, wilsonLower: 0.88 }] })]);
+    expect(cellOf(few, "stats_m8_spam")).toBe("29 of 30 rated mails needed · auto");
+    const notAuto = statsRows([week({ m8: [{ ...gate, auto: false, kept: 29, precision: 1, wilsonLower: 0.88 }] })]);
+    expect(cellOf(notAuto, "stats_m8_spam")).toBe("29 of 30 rated mails needed");
+  });
+
+  test("a category with no labels shows a dash, auto or not", () => {
+    const gate = { recall: null, decision: "no-go: too few" as const, mailboxId: MAILBOX, category: "spam" as const };
+    const none = statsRows([week({ m8: [{ ...gate, auto: true, kept: 0, precision: null, wilsonLower: null }] })]);
+    expect(cellOf(none, "stats_m8_spam")).toBe("–");
+  });
+
   test("the label minimum is the one of the metrics", () => {
     expect(EVIDENCE_MIN_LABELS).toBe(30);
   });
@@ -159,7 +173,7 @@ describe("statsRows", () => {
     expect(cellOf(statsRows([week()]), "stats_m1")).toBe("20 % (1 z 5)");
     const gate = { recall: 0.9, decision: "go" as const, auto: true, mailboxId: MAILBOX, category: "spam" as const };
     const few = statsRows([week({ m8: [{ ...gate, kept: 3, precision: 1, wilsonLower: 0.44 }] })]);
-    expect(cellOf(few, "stats_m8_spam")).toBe("3 z 30 potrzebnych ocenionych wiadomości");
+    expect(cellOf(few, "stats_m8_spam")).toBe("3 z 30 potrzebnych ocenionych wiadomości · automat");
     const shown = statsRows([week({ m8: [{ ...gate, kept: 30, precision: 0.97, wilsonLower: 0.83 }] })]);
     expect(cellOf(shown, "stats_m8_spam")).toBe("97 % z 30 (≥ 83 %) · automat");
   });

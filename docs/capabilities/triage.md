@@ -1,6 +1,6 @@
 # Triage
 
-> Checked against the code at `c16849f`, 2026-11-14.
+> Checked against the code at `94d8ffcc`, 2026-11-14.
 
 ## What it does now
 
@@ -59,7 +59,7 @@ Triage turns a stored mail with status `pending` into a category, a short reason
 14. **Success metric** (moved from `docs/architecture.md` §4.4; not built) ("share of mail handled without the user", target 80–90%):
     handled = mail in `spam`, `notification`, `info`, or `delegation` sent after one tap, with an applied plan
     that the user did not undo or correct within 7 days. Share = handled ÷ all triaged mail. One line in the weekly digest.
-    The weekly line is not built yet (follow-up: the tickets F033-handled-share-metric and F042-handled-share-delegations, now part of E3a, F100).
+    The line is built (F100): M4 in `measurement.md` rule 6 (the weekly report and the stats page) and the line `🤖 Handled in the last 7 days` of the digest behind the flag `handled_share` (`digest-and-notices.md` rule 4).
 15. **Labels and cost tools.** `bun run triage:label --org-id <uuid> --mailbox-id <uuid>` shows unlabeled triaged mail one by one (`--synthetic` for test mail, also from a sender in `TEST_SENDER_ADDRESSES`); `--email-id <uuid>` with `--category`, `--right` or `--wrong` labels one mail. `bun run triage:cost --org-id <uuid> --mailbox-id <uuid> [--days 7] [--mail real|synthetic]` (test-sender mail counts as `synthetic`) prints per model the result count, the average tokens, the latency p50 and p95, the average cost per mail and the monthly cost. `bun run llm:check` sends the real triage schema to one provider.
 
 ## Entry points
@@ -120,7 +120,6 @@ emails.status:   pending → processing → triaged → done                (don
 ## Limits
 
 - No phishing flag, no attachments in the prompt, no urgency context: E3b (F109).
-- No weekly handled-share line: E3a (F100).
 - The gate on real labels (precision at least 98% on at least 30 labels) stays until ADR 0028 (proposed) changes it; E3 sets the numbers.
 - A junk-folder wave can use the shared daily cap: `F063-junk-llm-cap`.
 - Only the `classifier` role has a prompt. The roles `judge` (E2a), `drafter` (E6a), `extractor` (E5b) and `escalation` (E3b) have none yet.
