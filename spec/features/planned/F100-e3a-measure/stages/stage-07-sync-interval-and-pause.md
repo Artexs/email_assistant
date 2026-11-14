@@ -50,7 +50,7 @@ Add `minutes` to `platform/log-fields.ts` if it is not there.
 
 **Goal.** A pause and its code are visible to the user from the `llm.call` rows (D8, F073).
 
-**Files.** `apps/server/src/platform/llm/errors.ts` (export the code lists), `apps/server/src/platform/llm/index.ts`, `apps/server/src/modules/audit/repo.ts` or a new `audit/llm-pause.ts` (+ `audit/index.ts`), `packages/core/src/digest/notices.ts` or a new `packages/core/src/digest/llm-pause.ts` (+ index), `packages/core/src/digest/digest.ts` (`DigestInput.llmPause`), `apps/server/src/modules/reports/digest.ts`, `apps/server/src/modules/channels/commands.ts` (`statusMessage`), tests next to each.
+**Files.** `apps/server/src/platform/llm/errors.ts` (export the code lists), `apps/server/src/platform/llm/index.ts`, `apps/server/src/modules/audit/repo.ts` or a new `audit/llm-pause.ts` (+ `audit/index.ts`), `packages/core/src/digest/notices.ts` or a new `packages/core/src/digest/llm-pause.ts` (+ index), `packages/core/src/digest/digest.ts` (`DigestInput.llmPause`), `apps/server/src/modules/reports/digest.ts`, `apps/server/src/modules/channels/commands.ts` (`statusMessage`), `apps/server/test/integration/audit-llm-pause.test.ts` (new), unit tests next to the core files.
 
 **Interfaces.**
 

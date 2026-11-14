@@ -25,7 +25,7 @@ export interface SeededWeek {
 export async function seedWeek(trx: Transaction<DB>): Promise<SeededWeek>;
 ```
 
-Use `createOrgWithMailbox`, `insertTestEmail`, and the repository insert functions of each module (or plain Kysely inserts in the fixture; the fixture is test code). Organization A: time zone `Europe/Warsaw`, one mailbox in `assist` mode. Times are UTC.
+Use `createOrgWithMailbox`, `insertTestEmail`, and the repository insert functions of each module (or plain Kysely inserts in the fixture; the fixture is test code). Rows must pass the table CHECKs: a `send` with status `applied` needs `approved_at`; a delegation in `sent`, `answered` or `overdue` needs `sent_message_id` and `sent_at`; a send needs its `create_draft` row as `depends_on_action_id` if the existing fixtures build it that way (copy the shape from `actions-approvals.test.ts` and `delegation-repo.test.ts`). Organization A: time zone `Europe/Warsaw`, one mailbox in `assist` mode. Times are UTC.
 
 | Id | Mail | Triage (latest) | Rows |
 | --- | --- | --- | --- |

@@ -239,7 +239,8 @@ None. The coordinator builds on the review results; the decisions marked "defaul
 ## Planning progress
 
 - [written] ticket.md, plan.md, questions.md
-- stages: see the files in `stages/`; a stage is written when its file exists (resume at the first missing file of the § Stages list).
+- [written] stages 01–16 (2026-11-14)
+- [pending] cold review 1 (`plan-review-1.md`)
 
 ## Cold review
 
