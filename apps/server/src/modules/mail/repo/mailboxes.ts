@@ -1,4 +1,4 @@
-import type { FolderKey, SmtpSecurity } from "@ea/core";
+import { mailboxStatuses, type FolderKey, type MailboxStatus as CoreMailboxStatus, type SmtpSecurity } from "@ea/core";
 import { sql, type Selectable, type Transaction } from "kysely";
 import { z } from "zod";
 
@@ -118,8 +118,8 @@ export async function markSynced(db: DbOrTrx, ctx: TenantContext, mailboxId: str
     .where("id", "=", mailboxId)
     .execute();
 }
-export type MailboxStatus = "active" | "auth_error" | "paused";
-export const mailboxStatusSchema = z.enum(["active", "auth_error", "paused"]);
+export type MailboxStatus = CoreMailboxStatus;
+export const mailboxStatusSchema = z.enum(mailboxStatuses);
 // The update is unconditional (an `auth_error` from the sync job wins over a pause). `status_changed_at` moves only when the status really changes.
 export async function setMailboxStatus(
   db: DbOrTrx,

@@ -11,6 +11,7 @@ import { MESSAGE_MAX_CHARS, type OutMessage } from "../digest/message";
 import {
   renderActionFailedNotice,
   renderAuthErrorNotice,
+  renderHostBlockedNotice,
   renderSendHeldNotice,
   renderSyncOkNotice,
   renderSyncStaleNotice,
@@ -262,6 +263,12 @@ const cases: Case[] = [
     kind: "weekly_report",
     view: { week: weekStatsExample(), timeZone, answeredWaiting: 2 },
     direct: (texts) => renderWeeklyReport({ week: weekStatsExample(), timeZone, answeredWaiting: 2 }, texts),
+  },
+  {
+    kind: "host_blocked",
+    view: { address: "box@example.test", since: receivedAt, now, timeZone },
+    direct: (texts) =>
+      renderHostBlockedNotice({ address: "box@example.test", since: receivedAt, now, timeZone }, texts),
   },
 ];
 
