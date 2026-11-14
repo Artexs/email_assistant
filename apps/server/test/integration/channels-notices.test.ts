@@ -383,6 +383,33 @@ describe("host_blocked notices", () => {
       expect(await rows(trx, o.orgId, "auth_error")).toHaveLength(1);
     });
   });
+
+  test("(tenant) the rows of one organization name its own mailbox and owner only", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const a = await org(trx);
+      const b = await org(trx);
+      const c = await org(trx);
+      await setStatus(trx, a, "host_blocked", at(-20 * MINUTE));
+      // Organization C has a blocked mailbox too, but no linked chat: it gets no notice at all.
+      await trx.deleteFrom("chat_links").where("org_id", "=", c.orgId).execute();
+      await setStatus(trx, c, "host_blocked", at(-20 * MINUTE));
+
+      await run(trx);
+      expect(await rows(trx, b.orgId, "host_blocked")).toHaveLength(0);
+      expect(await rows(trx, c.orgId, "host_blocked")).toHaveLength(0);
+      const found = await rows(trx, a.orgId, "host_blocked");
+      expect(found).toHaveLength(1);
+      expect(found[0]?.mailbox_id).toBe(a.mailboxId);
+      expect(found[0]?.user_id).toBe(a.ownerId);
+      const all = await trx
+        .selectFrom("outbox")
+        .select(["org_id", "mailbox_id"])
+        .where("kind", "=", "host_blocked")
+        .execute();
+      expect(all).toEqual([{ org_id: a.orgId, mailbox_id: a.mailboxId }]);
+    });
+  });
 });
 
 describe("sync notices", () => {

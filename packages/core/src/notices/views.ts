@@ -198,7 +198,7 @@ const weeklyReportView = z.strictObject({
   answeredWaiting: z.number().int().min(0),
 });
 
-// The mail host guard refuses a host of the mailbox. The view holds the mailbox address only: no host name, no network address (F085 D8).
+// The mail host guard refuses a host of the mailbox. The view holds the mailbox address only: no host name, no network address.
 const hostBlockedView = z.strictObject({
   address: text,
   since: isoDate,

@@ -3,7 +3,7 @@ import { cancelPendingOutbox } from "../repo";
 import { queue, warnSkipped, type Detector } from "./run";
 
 // One notice per owner for each episode of the status `host_blocked` (the key holds `status_changed_at`).
-// The view holds the mailbox address only: never a host name or a network address (F085 D8).
+// The view holds the mailbox address only: never a host name or a network address.
 export const hostBlockedDetector: Detector = {
   name: "host-blocked",
   kinds: ["host_blocked"],
