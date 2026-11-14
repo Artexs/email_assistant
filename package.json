@@ -53,6 +53,7 @@
     "org:plan": "bun apps/server/src/scripts/org-plan.ts",
     "org:status": "bun apps/server/src/scripts/org-status.ts",
     "web:invite": "bun apps/server/src/scripts/web-invite.ts",
+    "web:two-factor-reset": "bun apps/server/src/scripts/web-two-factor-reset.ts",
     "e2e:seed": "bun apps/server/src/scripts/e2e-seed.ts",
     "telegram:check": "bun apps/server/src/scripts/telegram-check.ts",
     "telegram:link": "bun apps/server/src/scripts/telegram-link.ts",

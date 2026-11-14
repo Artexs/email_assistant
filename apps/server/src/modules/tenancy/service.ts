@@ -2,6 +2,7 @@ import { isFeatureKey, userLocaleSchema, type FeatureKey, type OrganizationView,
 import type { Transaction } from "kysely";
 import { z } from "zod";
 
+import { resetTwoFactorRows } from "../../platform/auth-two-factor-reset";
 import type { DB, Db, TenantContext } from "../../platform/db";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
@@ -14,6 +15,7 @@ import {
   insertMembership,
   insertOrganization,
   insertUser,
+  listBreakGlassOrgIdsOfUser,
   lockOrganization,
   planStateOfRow,
   setBreakGlassFlag,
@@ -323,15 +325,16 @@ export async function setBreakGlassOwner(
 export type ClearBreakGlassResult = { kind: "cleared"; userId: string } | { kind: "none" } | { kind: "not_found" };
 
 // Takes a transaction too: the operator reset (F105 stage 07) calls it inside its own.
+// `onlyUserId`: clear only when this user still holds the mark after the organization lock; else "none".
 export async function clearBreakGlassOwner(
   db: Db | Transaction<DB>,
   ctx: TenantContext,
-  input: { actor: string; now: Date; reason: "cli" | "two_factor_reset" }
+  input: { actor: string; now: Date; reason: "cli" | "two_factor_reset"; onlyUserId?: string }
 ): Promise<ClearBreakGlassResult> {
   const run = async (trx: Transaction<DB>): Promise<ClearBreakGlassResult> => {
     if (!(await lockOrganization(trx, ctx))) return { kind: "not_found" };
     const current = await getBreakGlassUserId(trx, ctx);
-    if (current === null) return { kind: "none" };
+    if (current === null || (input.onlyUserId !== undefined && current !== input.onlyUserId)) return { kind: "none" };
     await setBreakGlassFlag(trx, ctx, current, false);
     await recordAudit(trx, ctx, {
       actor: input.actor,
@@ -341,6 +344,45 @@ export async function clearBreakGlassOwner(
     });
     log.info("org_break_glass_cleared", { org_id: ctx.orgId, user_id: current, reason: input.reason });
     return { kind: "cleared", userId: current };
+  };
+
+  return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
+}
+
+export type ResetTwoFactorResult =
+  | { kind: "reset"; hadTwoFactor: boolean; sessionsEnded: number; breakGlassCleared: string[] } // org ids
+  | { kind: "not_member" };
+
+// The operator reset (F105 D13). One transaction holds every write: the second factor, the sessions, the trusted
+// devices, the break-glass marks and the audit rows. A repeat run changes nothing but the audit row (sessions_ended 0).
+// It writes the audit row also when the second factor was off: the operator ran it, the log shows it.
+export async function resetTwoFactor(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  input: { userId: string; actor: string; now: Date }
+): Promise<ResetTwoFactorResult> {
+  const run = async (trx: Transaction<DB>): Promise<ResetTwoFactorResult> => {
+    if (!(await getMembership(trx, ctx, input.userId))) return { kind: "not_member" };
+    const { hadTwoFactor, sessionsEnded } = await resetTwoFactorRows(trx, input.userId);
+    // The list is read before the organization locks. Another transaction may move the mark meanwhile, so each
+    // clear re-reads the owner after its lock and clears only this user's mark; the result lists the real changes.
+    const breakGlassCleared: string[] = [];
+    for (const orgId of await listBreakGlassOrgIdsOfUser(trx, input.userId)) {
+      const cleared = await clearBreakGlassOwner(
+        trx,
+        { orgId },
+        { actor: input.actor, now: input.now, reason: "two_factor_reset", onlyUserId: input.userId }
+      );
+      if (cleared.kind === "cleared") breakGlassCleared.push(orgId);
+    }
+    await recordAudit(trx, ctx, {
+      actor: input.actor,
+      event: auditEvents.webTwoFactorReset,
+      data: { via: "cli", sessions_ended: sessionsEnded },
+      at: input.now,
+    });
+    log.info("two_factor_reset", { org_id: ctx.orgId, user_id: input.userId, count: sessionsEnded });
+    return { kind: "reset", hadTwoFactor, sessionsEnded, breakGlassCleared };
   };
 
   return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);

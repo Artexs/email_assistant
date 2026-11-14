@@ -1,0 +1,101 @@
+import { membershipRoleSchema, type MembershipRole } from "@ea/core";
+import type { Transaction } from "kysely";
+
+import type { DB, Db, TenantContext } from "../../../platform/db";
+
+export interface MembershipWithUser {
+  org_id: string;
+  user_id: string;
+  role: MembershipRole;
+  digest_times: string[];
+  created_at: Date;
+  email: string;
+  display_name: string;
+  break_glass: boolean;
+}
+
+export interface UserMembership {
+  org_id: string;
+  role: MembershipRole;
+  created_at: Date;
+}
+
+// No TenantContext: the user gives the tenant (the web resolves the organization from the session, S5a).
+export async function listMembershipsOfUser(db: Db | Transaction<DB>, userId: string): Promise<UserMembership[]> {
+  const rows = await db
+    .selectFrom("memberships")
+    .select(["org_id", "role", "created_at"])
+    .where("user_id", "=", userId)
+    .orderBy("created_at")
+    .orderBy("org_id")
+    .execute();
+  return rows.map((row) => ({ ...row, role: membershipRoleSchema.parse(row.role) }));
+}
+
+export async function listMemberships(db: Db | Transaction<DB>, ctx: TenantContext): Promise<MembershipWithUser[]> {
+  const rows = await db
+    .selectFrom("memberships")
+    .innerJoin("users", "users.id", "memberships.user_id")
+    .select([
+      "memberships.org_id",
+      "memberships.user_id",
+      "memberships.role",
+      "memberships.digest_times",
+      "memberships.created_at",
+      "users.email",
+      "users.display_name",
+      "memberships.break_glass",
+    ])
+    .where("memberships.org_id", "=", ctx.orgId)
+    .orderBy("memberships.created_at")
+    .orderBy("users.email")
+    .execute();
+  return rows.map((row) => ({ ...row, role: membershipRoleSchema.parse(row.role) }));
+}
+
+export async function getMembership(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  userId: string
+): Promise<MembershipWithUser | undefined> {
+  const row = await db
+    .selectFrom("memberships")
+    .innerJoin("users", "users.id", "memberships.user_id")
+    .select([
+      "memberships.org_id",
+      "memberships.user_id",
+      "memberships.role",
+      "memberships.digest_times",
+      "memberships.created_at",
+      "users.email",
+      "users.display_name",
+      "memberships.break_glass",
+    ])
+    .where("memberships.org_id", "=", ctx.orgId)
+    .where("memberships.user_id", "=", userId)
+    .executeTakeFirst();
+  return row ? { ...row, role: membershipRoleSchema.parse(row.role) } : undefined;
+}
+
+export async function insertMembership(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  input: { userId: string; role: MembershipRole }
+): Promise<void> {
+  await db.insertInto("memberships").values({ org_id: ctx.orgId, user_id: input.userId, role: input.role }).execute();
+}
+
+export async function setDigestTimes(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  userId: string,
+  times: readonly string[]
+): Promise<boolean> {
+  const result = await db
+    .updateTable("memberships")
+    .set({ digest_times: [...times] })
+    .where("org_id", "=", ctx.orgId)
+    .where("user_id", "=", userId)
+    .executeTakeFirst();
+  return result.numUpdatedRows === 1n;
+}
