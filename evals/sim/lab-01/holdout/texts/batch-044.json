@@ -1,0 +1,201 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-044",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-urg-0032",
+      "subject": "Rekrutacja kierowników zmiany – potrzebna Twoja zgoda",
+      "body": "Cześć Wiktor,\n\nmuszę dziś rano dostać Twoją zgodę na zatrudnienie trzech kierowników zmiany w Poznaniu. Kandydaci czekają na ofertę do południa, a potem przyjmują inną.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0034",
+      "subject": "Przetarg – krótka prośba",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o krótki telefon w sprawie naszego przetargu. Chciałabym omówić z Panem zakres umowy, zanim przekażę materiały dyrektorom.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0035",
+      "subject": "Calendar: the Hamburg meeting",
+      "body": "Dear Mr Szalewski,\n\nI would like you to call me about the board's calendar and your trip to Hamburg. A few minutes will be enough.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0036",
+      "subject": "Re: Framework agreement – signature needed today",
+      "body": "Dear Mr Szalewski,\n\nwe must return the signed framework agreement to our legal team today, and your signature is the last one missing. Please sign the attached copy.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [
+        {
+          "subject": "Framework agreement with Nordic Foods Trade",
+          "body": "Dear Karin, the final version of the framework agreement is attached. Please let me know if your legal team needs more time. Piotr Lewandrowski"
+        }
+      ]
+    },
+    {
+      "id": "b-urg-0039",
+      "subject": "Re: Kalendarz zarządu – potwierdzenie wyjazdu",
+      "body": "Szanowny Panie Prezesie,\n\nprzeczytałem notatkę głównej księgowej. Proszę o Pana osobiste potwierdzenie jeszcze dziś, czy zarząd wyjeżdża do Hamburga w pełnym składzie.\n\nKsięgowość czeka z przelewem zaliczki na hotel do końca dzisiejszego dnia. Ponieważ koszt przekracza ustalony limit, zgodę musi wyrazić Pan, a następnie ja ją zatwierdzę. Bez tego rezerwacja wygaśnie wieczorem.\n\nProszę o odpowiedź przed godziną 16:00.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "subject": "Zaliczka na hotel w Hamburgu",
+          "body": "Panie Przewodniczący, hotel żąda zaliczki 12 400 zł do dziś. Kwota przekracza limit, więc potrzebuję zgody Pana Prezesa i Pana. Magdalena Czerniak"
+        }
+      ]
+    },
+    {
+      "id": "b-urg-0042",
+      "subject": "Gdynia customs – need your OK today",
+      "body": "Hi Wiktor,\n\nquick one from the car. The Nordic pallets are stuck at the Gdynia terminal because the broker wants a written ok from you for the extra storage fee. It is around 4,800 euro for the weekend.\n\nIf you say yes today they move the trucks tonight. If not, the whole load waits until Monday and we miss the slot to Goteborg. I cannot approve this, it is above my limit.\n\nPlease reply as soon as you can.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0043",
+      "subject": "Reklamacja – proszę o telefon",
+      "body": "Panie Wiktorze,\n\nproszę o krótki telefon w sprawie reklamacji z ostatniej dostawy. Muszę wiedzieć, jakie stanowisko zajmuje Pana firma.",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0044",
+      "subject": "Umowa z Nordic Foods Trade – podpis końcowy",
+      "body": "Szanowny Panie Prezesie,\n\njesteśmy dziś, 22.01.2027, w dniu podpisania umowy z Nordic Foods Trade. Dokumenty są u nas w komplecie, a prawnicy obu stron przeszli wszystkie załączniki. Brakuje tylko Pana podpisu na ostatniej stronie i na aneksie cenowym.\n\nNasza strona pośrednicząca czeka z potwierdzeniem do kontrahenta, a w kalendarzu Pana asystentki widzę wolne okno około południa. Plik z umową znajduje się w folderze wspólnego przetargu, w katalogu z podpisami.\n\nProszę o podpis i potwierdzenie, że umowa wyszła.",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0045",
+      "subject": "Customs control at the port",
+      "body": "Dear Mr Szalewski,\n\nthe customs control at the port of Gdynia has stopped our shipment for a documents check. The officer asks for your written statement of origin for the cargo. Please send the signed statement.",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0046",
+      "subject": "Re: Supervisory board meeting – your decision today",
+      "body": "Dear Mr Szalewski,\n\nI need your decision today: do you present the budget at the board meeting, or does the chief accountant do it? I need to inform the members this afternoon.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "subject": "Supervisory board meeting and the budget",
+          "body": "Mr Szalewski, the chairman asks who presents the budget at the next supervisory board meeting. Please let me know. Dorota Wilczynska"
+        },
+        {
+          "subject": "Re: Supervisory board meeting and the budget",
+          "body": "Dorota, I will check with the chief accountant and come back to you. Wiktor Szalewski"
+        }
+      ],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#222;line-height:1.45;\">\n<h3 style=\"margin:0 0 10px 0;color:#222;\">Dear Mr Szalewski,</h3>\n<p style=\"margin:0 0 10px 0;\">I need your decision today: do you present the budget at the board meeting, or does the chief accountant do it? I need to inform the members this afternoon.</p>\n<p style=\"margin:12px 0 0 0;color:#666;font-size:12px;\">Z powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej</p>\n</body></html>"
+    },
+    {
+      "id": "b-urg-0048",
+      "subject": "A short request on the travel calendar",
+      "body": "Hi Wiktor,\n\nI would like to ask you for a favour concerning the board's travel calendar. I saw the draft that your assistant sent to the members, and I wonder whether the trip to Hamburg could include a stop at the port authority. I think the board would benefit from a direct meeting with them, and you know the people there much better than I do.\n\nCould you call me when you are free this morning? We can settle it in five minutes, and then I tell the members how the calendar looks.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0049",
+      "subject": "Re: Damaged deliveries – a request for a call",
+      "body": "Dear Wiktor,\n\nthank you for your short note about the damaged deliveries. I do appreciate it, but I would like to speak with you personally, as I think the matter now goes beyond a single claim.\n\nOver the last month we received five deliveries with damaged packaging in three of our warehouses. Every case is described in the protocol that your claims team has, and the photos are attached to each protocol. I do not want to argue about each pallet. What I want is a change in the way your drivers unload and secure the goods, because the same problem returns again and again, and my warehouse managers lose patience.\n\nI have spoken with my logistics director, and we could accept a new process that begins on the first of February, if you agree to a short pilot in the Radom centre, where most of the damage happens. We would also like your drivers to wait at the ramp until our staff checks the pallets and signs the protocol.\n\nI know you are very busy, but a call from you would mean a lot to me. I am in the office the whole afternoon and my phone is on.\n\nGenowefa Jastrzebska\nZielona Hurtownia sp.j.",
+      "thread": [
+        {
+          "subject": "Reklamacje – uszkodzone dostawy",
+          "body": "Pani Genowefo, dziękuję za informację. Poproszę dział reklamacji o szczegóły i wrócę do Pani. Wiktor Szalewski"
+        }
+      ]
+    },
+    {
+      "id": "b-urg-0050",
+      "subject": "ERP: błąd w module zamówień – potrzebna Twoja decyzja",
+      "body": "Cześć Wiktor,\n\nsystem ERP od rana nalicza błędne ceny w module zamówień. Do 11:30 wystawił 38 zamówień z cennikiem sprzed trzech miesięcy.\n\nDostawca proponuje dwie opcje:\n\n- zatrzymanie modułu na dwie godziny, bez wystawiania nowych zamówień\n- praca dalej z ręczną korektą cen po stronie sprzedaży\n\nPierwsza opcja wstrzyma wysyłki z czterech magazynów, a druga zwiększa ryzyko pomyłek. Tę decyzję musisz podjąć Ty, bo dotyczy ona klientów kluczowych.\n\nDaj mi znać dziś przed 13:00, którą opcję wybierasz.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#222;line-height:1.45;\">\n<h3 style=\"margin:0 0 10px 0;color:#1a4a7a;\">Cześć Wiktor,</h3>\n<p style=\"margin:0 0 10px 0;\">system ERP od rana nalicza błędne ceny w module zamówień. Do 11:30 wystawił 38 zamówień z cennikiem sprzed trzech miesięcy.</p>\n<p style=\"margin:0 0 10px 0;\">Dostawca proponuje dwie opcje:</p>\n<ul style=\"margin:8px 0;padding-left:20px;\"><li style=\"margin:2px 0;\">zatrzymanie modułu na dwie godziny, bez wystawiania nowych zamówień</li><li style=\"margin:2px 0;\">praca dalej z ręczną korektą cen po stronie sprzedaży</li></ul>\n<p style=\"margin:0 0 10px 0;\">Pierwsza opcja wstrzyma wysyłki z czterech magazynów, a druga zwiększa ryzyko pomyłek. Tę decyzję musisz podjąć Ty, bo dotyczy ona klientów kluczowych.</p>\n<p style=\"margin:0 0 10px 0;\">Daj mi znać dziś przed 13:00, którą opcję wybierasz.</p>\n<p style=\"margin:12px 0 0 0;color:#666;font-size:12px;\">Pozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja</p>\n</body></html>"
+    },
+    {
+      "id": "b-urg-0051",
+      "subject": "Wspólny przetarg – podpis na ofercie",
+      "body": "Szanowny Panie Prezesie,\n\noferta w naszym wspólnym przetargu wymaga dziś Pana podpisu. Zamawiający zamyka przyjmowanie ofert o 14:00.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#222;line-height:1.45;\">\n<h3 style=\"margin:0 0 10px 0;color:#1a4a7a;\">Szanowny Panie Prezesie,</h3>\n<p style=\"margin:0 0 10px 0;\">oferta w naszym wspólnym przetargu wymaga dziś Pana podpisu. Zamawiający zamyka przyjmowanie ofert o 14:00.</p>\n<p style=\"margin:12px 0 0 0;color:#666;font-size:12px;\">Kind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners</p>\n</body></html>"
+    },
+    {
+      "id": "b-urg-0052",
+      "subject": "Export lane – decision today",
+      "body": "Dear Mr Szalewski,\n\nthe carrier for the Baltic export lane asks for your decision today: accept the new rate or lose the slot. Please answer today.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0053",
+      "subject": "Re: Okna rozładunku – decyzja jeszcze dziś",
+      "body": "Szanowny Panie Prezesie,\n\ndziękuję za Pańską krótką notatkę. Niestety nie mogę dłużej czekać z odpowiedzią i proszę o Pana decyzję w sprawie okien rozładunku dzisiaj.\n\nPrzypomnę, że nasz zakład w Kaliszu przyjmuje dostawy w trzech oknach dziennie, a Państwa kierowcy od tygodnia przyjeżdżają poza ustalonymi godzinami. W poniedziałek dwa samochody czekały na rampie ponad cztery godziny, a we wtorek jeden z nich w ogóle nie został rozładowany i wrócił do Państwa bazy. To powoduje po naszej stronie przestoje, bo brygada rozładunkowa pracuje na zmiany i nie może czekać bez końca.\n\nProponuję jedno z dwóch rozwiązań. Pierwsze: Państwa kierowcy trzymają się okien 6:00, 11:00 i 15:00 bez wyjątków, a my gwarantujemy rozładunek w ciągu 45 minut od przyjazdu. Drugie: zmieniamy okna na 7:00, 12:00 i 16:00, ale wtedy zmienia się też umowa, a to wymaga Pańskiego podpisu.\n\nNasz dyrektor produkcji potrzebuje potwierdzenia jeszcze dziś, bo wieczorem układa grafik brygad na przyszły tydzień. Jeżeli do końca dnia nie dostaniemy Pańskiej decyzji, zastosujemy pierwszy wariant i będziemy odmawiać rozładunku poza oknami.\n\nProszę o odpowiedź jeszcze dzisiaj, najlepiej telefonicznie.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [
+        {
+          "subject": "Terminy dostaw i okna rozładunku",
+          "body": "Panie Tomaszu, rozumiem problem z oknami. Proszę o chwilę, wrócę do Pana z propozycją. Wiktor Szalewski"
+        },
+        {
+          "subject": "Re: Terminy dostaw i okna rozładunku",
+          "body": "Panie Prezesie, czekam na propozycję. Niestety sytuacja na rampie się nie poprawia. Tomasz Brzeziński"
+        }
+      ]
+    },
+    {
+      "id": "b-urg-0054",
+      "subject": "Okna rozładunku – decyzja dziś",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o decyzję jeszcze dziś w sprawie okien rozładunku w Kaliszu: zostają przy 6:00, 11:00 i 15:00, czy przechodzą na nowy układ? Wieczorem układam grafik.",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0055",
+      "subject": "Rozładunek w Kaliszu: odpowiedź dziś",
+      "body": "Szanowny Panie Prezesie,\n\nproszę dziś o Pana osobistą decyzję: przyjmujemy dostawę z nocnym oknem czy odsyłamy samochody? Bez odpowiedzi do południa nie możemy zorganizować brygady.",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0057",
+      "subject": "A question before the board meets",
+      "body": "Hi Wiktor,\n\nI have a modest request before the supervisory board meeting. As you know, the budget for next year will be the main point, and I would like to hear your view on the capital expenditure plan before I read the papers of the other members. I do not want to hear a summary from the finance team, I want your own opinion on which items are solid and which you doubt.\n\nIn particular, I am interested in three things. First, the fleet renewal: is the schedule for the new trailers realistic after the talks with the German supplier? Second, the warehouse system: do you expect more costs after the recent failures in the ERP? Third, the joint tenders with the Baltic partner: how much capital do you plan to commit?\n\nI know you will present everything at the meeting, but a frank conversation beforehand helps me to prepare good questions and avoids surprises for both of us. A call this morning would suit me, and if you prefer, I can come to your office.\n\nThank you for your time.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0059",
+      "subject": "Board budget – your decision today",
+      "body": "Dear Wiktor,\n\nthe supervisory board budget needs your decision today. The board's secretary wants to send the final papers this evening, and the version of the capital plan is not yet settled.\n\nThere are two options. The first keeps the fleet renewal in the budget, which raises the total by 2.4 million zloty. The second moves it to next year, but then the board will probably ask why the plan changed after the autumn session. Only you can choose, because the choice affects what you promise to the board.\n\nPlease send me your choice by 18:00 today.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0060",
+      "subject": "Kalendarz – prośba o telefon",
+      "body": "Panie Prezesie,\n\nproszę o telefon w sprawie kalendarza zarządu i wyjazdu do Hamburga. Rozmowa zajmie kilka minut.",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0061",
+      "subject": "Re: Przetarg Zielona Hurtownia – krótka rozmowa",
+      "body": "Szanowny Panie Prezesie,\n\npo rozmowie z Pańskim koordynatorem chciałabym omówić z Panem warunki przetargu. Proszę o krótki telefon.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [
+        {
+          "subject": "Przetarg Zielona Hurtownia – warunki oferty",
+          "body": "Pani Genowefo, przesyłam wstępny zarys warunków oferty dla sieci. Proszę o uwagi. Piotr Lewandrowski"
+        }
+      ]
+    },
+    {
+      "id": "b-urg-0064",
+      "subject": "Budżet na posiedzenie rady – Pana decyzja dziś",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o decyzję w sprawie budżetu na dzisiejszym etapie przygotowań do posiedzenia rady nadzorczej.\n\nW materiałach, które otrzymałem wczoraj, pozycja inwestycji we flotę jest o 2,1 mln zł wyższa niż w uchwale z jesieni. Rada musi dostać jedną wersję, a ja nie rozstrzygnę, która jest właściwa. Tylko Pan jako prezes odpowiada za wniosek do rady.\n\nPotrzebuję odpowiedzi jeszcze dzisiaj, najpóźniej do 15:00.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0066",
+      "subject": "Reklamacje – decyzja w sprawie odszkodowania dla Zielonej Hurtowni",
+      "body": "Cześć Wiktor,\n\ndziś rano dostałam od Zielonej Hurtowni oficjalne pismo w sprawie szkód w czterech dostawach z ubiegłego tygodnia. Żądają odszkodowania w kwocie 86 tysięcy złotych i odpowiedzi do końca dnia, a w przeciwnym razie przekażą sprawę swoim prawnikom.\n\nSprawdziłam dokumenty z magazynów. Protokoły potwierdzają szkodę w dwóch dostawach, ale w dwóch pozostałych kierowca podpisał odbiór bez uwag. Mogę zaproponować wypłatę połowy kwoty, czyli 43 tysięcy, i uznanie dwóch dostaw. To zamyka sprawę, ale wymaga Twojej zgody, bo przekracza mój limit decyzyjny.\n\nDział prawny jest gotowy przygotować odpowiedź, ale czeka na Twoje słowo. Poprosiłam też magazyn w Radomiu o kopie zdjęć z rampy i listy przewozowe, żebyśmy mieli komplet dowodów, gdyby sprawa jednak trafiła do sądu. Potrzebuję tego jeszcze dziś, żeby przekazać pismo przed końcem dnia roboczego.\n\nKluczowe liczby:\n\n- żądana kwota: 86 000 zł\n- uznane dwie dostawy: 43 000 zł\n- ryzyko: utrata klienta sieciowego, który stanowi 14% obrotu\n\nZadzwoń do mnie, jak tylko znajdziesz chwilę, albo odpisz na tę wiadomość. Wolałabym nie podejmować tej decyzji bez Ciebie, bo to relacja z najważniejszym klientem sieciowym i nie chcę, żeby sprawa rozeszła się po firmie w złej wersji.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#222;line-height:1.45;\">\n<h3 style=\"margin:0 0 10px 0;color:#1a4a7a;\">Cześć Wiktor,</h3>\n<p style=\"margin:0 0 10px 0;\">dziś rano dostałam od Zielonej Hurtowni oficjalne pismo w sprawie szkód w czterech dostawach z ubiegłego tygodnia. Żądają odszkodowania w kwocie 86 tysięcy złotych i odpowiedzi do końca dnia, a w przeciwnym razie przekażą sprawę swoim prawnikom.</p>\n<p style=\"margin:0 0 10px 0;\">Sprawdziłam dokumenty z magazynów. Protokoły potwierdzają szkodę w dwóch dostawach, ale w dwóch pozostałych kierowca podpisał odbiór bez uwag. Mogę zaproponować wypłatę połowy kwoty, czyli 43 tysięcy, i uznanie dwóch dostaw. To zamyka sprawę, ale wymaga Twojej zgody, bo przekracza mój limit decyzyjny.</p>\n<p style=\"margin:0 0 10px 0;\">Dział prawny jest gotowy przygotować odpowiedź, ale czeka na Twoje słowo. Poprosiłam też magazyn w Radomiu o kopie zdjęć z rampy i listy przewozowe, żebyśmy mieli komplet dowodów, gdyby sprawa jednak trafiła do sądu. Potrzebuję tego jeszcze dziś, żeby przekazać pismo przed końcem dnia roboczego.</p>\n<p style=\"margin:0 0 10px 0;\">Kluczowe liczby:</p>\n<ul style=\"margin:8px 0;padding-left:20px;\"><li style=\"margin:2px 0;\">żądana kwota: 86 000 zł</li><li style=\"margin:2px 0;\">uznane dwie dostawy: 43 000 zł</li><li style=\"margin:2px 0;\">ryzyko: utrata klienta sieciowego, który stanowi 14% obrotu</li></ul>\n<p style=\"margin:0 0 10px 0;\">Zadzwoń do mnie, jak tylko znajdziesz chwilę, albo odpisz na tę wiadomość. Wolałabym nie podejmować tej decyzji bez Ciebie, bo to relacja z najważniejszym klientem sieciowym i nie chcę, żeby sprawa rozeszła się po firmie w złej wersji.</p>\n<p style=\"margin:12px 0 0 0;color:#666;font-size:12px;\">Pozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja</p>\n</body></html>"
+    },
+    {
+      "id": "b-urg-0067",
+      "subject": "Budget for the board: your answer needed today",
+      "body": "Dear Wiktor,\n\nI write to you in a plain way, because the matter does not allow a long discussion. The supervisory board gathers tomorrow morning, and I still have two versions of the budget on my desk. One comes from the finance department and one from your office. They differ in three positions, and the difference in the total is 2.8 million zloty.\n\nI read both versions yesterday evening. The finance version is more cautious, because it assumes a drop in volumes from the Zielona Hurtownia network in the second quarter. The other version assumes that the tender is won and the volumes grow. I cannot present two versions to the board, and I cannot choose one without your explanation. You carry the responsibility for the forecast, so the choice must be yours.\n\nPlease tell me today which version goes to the members, and give me two or three sentences of justification that I can read at the meeting. If the two sides still disagree, I want to know it from you and not from the board's secretary.\n\nI need your answer by 19:00 today, because the papers go out tonight. Please call me if you prefer to explain it by phone.\n\nZbigniew Orlowicz",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#222;line-height:1.45;\">\n<h3 style=\"margin:0 0 10px 0;color:#222;\">Dear Wiktor,</h3>\n<p style=\"margin:0 0 10px 0;\">I write to you in a plain way, because the matter does not allow a long discussion. The supervisory board gathers tomorrow morning, and I still have two versions of the budget on my desk. One comes from the finance department and one from your office. They differ in three positions, and the difference in the total is 2.8 million zloty.</p>\n<p style=\"margin:0 0 10px 0;\">I read both versions yesterday evening. The finance version is more cautious, because it assumes a drop in volumes from the Zielona Hurtownia network in the second quarter. The other version assumes that the tender is won and the volumes grow. I cannot present two versions to the board, and I cannot choose one without your explanation. You carry the responsibility for the forecast, so the choice must be yours.</p>\n<p style=\"margin:0 0 10px 0;\">Please tell me today which version goes to the members, and give me two or three sentences of justification that I can read at the meeting. If the two sides still disagree, I want to know it from you and not from the board&#x27;s secretary.</p>\n<p style=\"margin:0 0 10px 0;\">I need your answer by 19:00 today, because the papers go out tonight. Please call me if you prefer to explain it by phone.</p>\n<p style=\"margin:0 0 10px 0;\">Zbigniew Orlowicz</p>\n</body></html>"
+    }
+  ]
+}

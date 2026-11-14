@@ -1,0 +1,374 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-048",
+  "cases": [
+    {
+      "id": "b-urg-0153",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Eksport – potrzebna Pana zgoda na zmianę trasy kontenerów",
+      "body": "Szanowny Panie Prezesie,\n\nzwracam się do Pana w sprawie wspólnych kontenerów eksportowych do Szwecji. Z powodu zamknięcia terminalu w Gdyni na dwa dni musimy dziś zdecydować, czy przekierowujemy cały ładunek przez Gdańsk, czy czekamy na ponowne otwarcie.\n\nPrzekierowanie kosztuje 14 tysięcy euro więcej, ale pozwala dotrzymać terminu dostaw u klienta w Göteborgu. Czekanie jest tańsze, lecz ryzykujemy karę umowną za opóźnienie. Wybór wpływa na Państwa umowy z klientami eksportowymi, dlatego decyzja należy do Pana.\n\nArmator potrzebuje odpowiedzi do godziny 16:00 dzisiaj.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0154",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Damaged deliveries – a short request",
+      "body": "Dear Wiktor,\n\ncould you call me today about the damaged deliveries? I would like to hear your view directly.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0155",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Przetarg Zielona Hurtownia – obsada zespołu",
+      "body": "Wiktor,\n\nw związku z przetargiem Zielonej Hurtowni potrzebuję dziś Twojej zgody na dodatkowych sześciu kierowców.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [
+        {
+          "from": "halina.strzemecka@kordelan.test",
+          "subject": "Przetarg Zielona Hurtownia – zasoby",
+          "body": "Rafał, jeśli wygramy przetarg, ilu dodatkowych kierowców potrzebujemy od lutego? Halina"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0156",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Kalendarz – proszę o kontakt",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o krótką rozmowę telefoniczną w sprawie kalendarza zarządu i planowanych podróży służbowych. Chciałbym omówić z Panem, w których wyjazdach rada widzi potrzebę Pańskiej osobistej obecności, a które może Pan przekazać innym członkom zarządu.\n\nWystarczy kilka minut, bo nie chodzi o szczegóły, tylko o ogólny kierunek. Proszę o telefon w dogodnym dla Pana czasie, najlepiej dziś przed południem, ponieważ rada otrzymuje w tym tygodniu pierwszy projekt planu roku.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0157",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Tender offer, 15.01.2027 – final signature",
+      "body": "Dear Mr Szalewski,\n\nthe offer in the tender of Zielona Hurtownia is due today, 15.01.2027. I spoke this morning to the head of export, and he told me that the final package is complete and waits only for your signature on the declaration of the management board.\n\nAs chairman of the supervisory board, I ask you to sign it and to confirm to me that the offer has been submitted. The portal accepts uploads until 16:00.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0158",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Reklamacje – krótka prośba",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o telefon w sprawie reklamacji. Chcę omówić ją z Panem osobiście.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [
+        {
+          "from": "piotr.lewandrowski@kordelan.test",
+          "subject": "Reklamacje – uszkodzone dostawy",
+          "body": "Pani Genowefo, przesyłam protokoły szkód z trzech dostaw. Proszę o uwagi. Piotr Lewandrowski"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Reklamacje – uszkodzone dostawy",
+          "body": "Pani Genowefo, proszę dać mi dzień na sprawdzenie sprawy. Wiktor Szalewski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0159",
+      "from": "Piotr Lewandrowski <piotr.lewandrowski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "WMS outage – I need your okay",
+      "body": "Hi Wiktor,\n\nthe warehouse system in Poznan is down, and the vendor asks for your okay to start the emergency restart. It will wipe the data of the last three hours, which means around 200 documents that we must enter by hand.\n\nThe warehouse staff is waiting and the customers' trucks stand at the ramps. I talked to Halina, and she says the restart is the only way, but she cannot approve the data loss on her own.\n\nPlease call me or Halina and say yes or no.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0160",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Calendar and the Hamburg trip: your decision today",
+      "body": "Wiktor,\n\nI need your answer today about Hamburg. The port authority wants the names of our delegation by the end of the day, and I cannot give them yours without your word.\n\nIf you go, keep 02.02.2027 free from morning to the evening. If you stay, tell me who goes in your place. Either way, I need a clear answer before 18:00.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0161",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Posiedzenie rady nadzorczej – lista uczestników",
+      "body": "Szanowny Panie Prezesie,\n\nw nawiązaniu do wiadomości Pani Lindqvist proszę o potwierdzenie, że delegacja Nordic Foods Trade zostanie zaproszona na część otwartą posiedzenia rady, 28.01.2027. Lista gości zostaje dziś zamknięta.",
+      "thread": [
+        {
+          "from": "karin.lindqvist@nordicfoods-trade.test",
+          "subject": "Board meeting – can we attend?",
+          "body": "Dear Mr Hargreaves, could you ask Mr Szalewski whether our delegation can join the open part of the supervisory board meeting on 28.01.2027? Karin Lindqvist"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0163",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Kalendarz zarządu – prośba o rozmowę",
+      "body": "Szanowny Panie Prezesie,\n\ndziękuję za Pańską krótką notatkę. Po lekturze wiadomości od pani księgowej chciałbym osobiście porozmawiać z Panem o planie podróży zarządu i o tym, jak wpływa on na budżet na pierwszy kwartał. Wolę omówić to głosem, a nie w korespondencji, bo sprawa dotyczy kilku osób i nie chcę, żeby ktokolwiek poczuł się niezręcznie.\n\nPrzypominam, że rada na każdym posiedzeniu pyta o koszty delegacji, a w tym roku koszty zarządu wzrosły o prawie jedną trzecią w porównaniu z poprzednim rokiem. Nie sugeruję, że wyjazdy są zbędne. Chciałbym jednak zrozumieć, które z nich mają bezpośredni związek z umowami, a które są wyjazdami reprezentacyjnymi, żebym mógł rzeczowo odpowiedzieć na pytania członków rady.\n\nZależy mi także na Pańskim zdaniu o tym, czy właściwa jest obecna praktyka, że do każdej podróży zabiera Pan asystentkę, czy lepiej zostawić ją w biurze i zorganizować część spraw zdalnie. Nie mam gotowej opinii i chcę ją wyrobić dopiero po rozmowie z Panem.\n\nProszę o telefon, gdy tylko znajdzie Pan chwilę w ciągu dnia. Jestem dostępny pod swoim zwykłym numerem i oddzwonię, jeśli nie odbiorę od razu. Dziękuję z góry za poświęcony czas i za otwartość w tej sprawie.",
+      "thread": [
+        {
+          "from": "magdalena.czerniak@kordelan.test",
+          "subject": "Koszty podróży zarządu",
+          "body": "Panie Przewodniczący, koszty delegacji zarządu w czwartym kwartale wyniosły 212 tysięcy złotych, o 31% więcej niż rok wcześniej. Szczegóły w załączniku. Magdalena Czerniak"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Koszty podróży zarządu",
+          "body": "Dziękuję, Magdaleno. Porozmawiam z Przewodniczącym. Wiktor Szalewski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0164",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Naczepy dla Zielonej Hurtowni – decyzja dziś",
+      "body": "Cześć Wiktor,\n\nGenowefa pisze, że chce dziś usłyszeć od nas, czy dostarczymy dla jej sieci trzy dedykowane naczepy chłodnicze od lutego. Serwis floty potwierdził, że mamy tylko dwie wolne jednostki, a trzecia wymaga zakupu nowej naczepy, co kosztuje około 190 tysięcy złotych.\n\nDostawca naczep trzyma cenę do końca dzisiejszego dnia. Jeżeli zamówimy teraz, naczepa będzie w marcu. Jeżeli nie, Genowefa dostaje tylko dwie i musimy jej to powiedzieć jeszcze dziś. Ta decyzja jest Twoja, bo dotyczy zakupu i umowy z klientem.\n\nDaj znać do 17:00.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [
+        {
+          "from": "g.jastrzebska@hurtownia-zielona.test",
+          "subject": "Naczepy chłodnicze dla sieci",
+          "body": "Panie Wiktorze, czy dostarczą Państwo od lutego trzy dedykowane naczepy chłodnicze dla naszej sieci? Potrzebuję odpowiedzi. Genowefa Jastrzebska"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Naczepy chłodnicze dla sieci",
+          "body": "Halina, sprawdź, ile mamy wolnych naczep, i wróć do mnie. Wiktor"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0165",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Okna rozładunku – Pana decyzja dziś",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o Pana decyzję jeszcze dziś w sprawie okien rozładunku w naszym zakładzie. Od tygodnia Państwa kierowcy przyjeżdżają poza ustalonymi godzinami i nasza brygada rozładunkowa nie nadąża z przyjmowaniem towaru.\n\nProponuję, żebyśmy utrzymali okna 6:00, 11:00 i 15:00 i żeby kierowcy, którzy się spóźnią, czekali na kolejne okno. Alternatywą jest zmiana umowy, co wymaga Pańskiego podpisu. Nasz dyrektor produkcji potrzebuje odpowiedzi do końca dnia, bo wieczorem ustala grafik pracy na przyszły tydzień.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0167",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Export: customs documents – we need your decision today",
+      "body": "Dear Mr Szalewski,\n\nI am writing about our export shipment to Denmark and I must ask you for a decision today.\n\nThe customs broker told us this morning that the certificate of origin of one pallet group is missing a signature. The goods are in the Gdynia terminal, and the documents must be corrected before the departure of the ferry tomorrow at 06:00. Our broker can issue a corrected certificate, but he needs a signed letter from your company that confirms the origin of the goods and takes responsibility for the previous version.\n\nWithout this letter, the pallets stay in Gdynia and miss the ferry. The next departure is in four days, and this would cause a delay of the whole order, which includes products for our supermarket customers. Some of them have promotions that start on the day after tomorrow, and they cannot be moved.\n\nWe therefore ask you to sign the attached letter and send it back to our broker today. I realise that this is a short time, and I apologise for the trouble. Our broker, whose contact details are in the attachment, waits for your reply until 17:00 today.\n\nThank you very much for your help with this matter.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0169",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rekrutacja – decyzja o ofercie dla kandydata",
+      "body": "Wiktor,\n\nkandydat na kierownika zmiany w Łodzi czeka na ofertę do końca dnia. Potrzebuję Twojej zgody na wynagrodzenie, bo wykracza ono poza budżet.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0172",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Joint tender – confirm today",
+      "body": "Dear Mr Szalewski,\n\nthe joint tender needs your confirmation of the final price today. The authority closes the window at 17:00.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0173",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supervisory board meeting – a paper that needs you",
+      "body": "Wiktor,\n\nthe secretary of the supervisory board has just told me that the resolution on the budget is still without your signature. The papers for the meeting, including the budget and the agenda, wait for it before they can go out to the members.\n\nI know you are busy, but only you can sign it. Please look at the last page and let me know when it is done.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0174",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Nordic Foods Trade agreement, signing date 22.01.2027",
+      "body": "Dear Wiktor,\n\nfollowing the earlier messages I confirm that the signing of the framework agreement with Nordic Foods Trade is set for today, 22.01.2027. Karin Lindqvist told me this morning that her side has signed and that the document waits for your signature.\n\nI attach the final version, which includes the corrected price annex discussed on Monday. Please sign the last page and the annex, and send me the scanned copy, so I can forward it to Karin and to our legal team. If something in the text needs a change, call me and we settle it by phone.",
+      "thread": [
+        {
+          "from": "karin.lindqvist@nordicfoods-trade.test",
+          "subject": "Signing of the framework agreement",
+          "body": "Dear Daniel, our board is ready to sign the framework agreement with Kordelan on 22.01.2027. Could you coordinate the exchange of signatures? Karin Lindqvist"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Signing of the framework agreement",
+          "body": "Daniel, please send me the final version and the price annex. I will sign when I have both. Wiktor Szalewski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0176",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "A call about the claims",
+      "body": "Dear Wiktor,\n\ncould you call me today about the claims on the damaged deliveries? I would like to discuss it with you directly.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0177",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Budżet i posiedzenie rady – prośba o rozmowę",
+      "body": "Szanowny Panie Prezesie,\n\nzwracam się do Pana z prośbą o rozmowę przed posiedzeniem rady nadzorczej. Chciałbym omówić z Panem kilka kwestii związanych z budżetem na rok 2027, zanim zapoznam się z opiniami pozostałych członków rady.\n\nNajbardziej interesuje mnie plan inwestycji we flotę i w system magazynowy. W ostatnich miesiącach pojawiły się trudności z działaniem systemu ERP, a jednocześnie w budżecie rośnie pozycja zakupu naczep. Chciałbym wiedzieć, jak Pan ocenia ryzyko, że oba te obszary pochłoną więcej środków, niż przewidziano. Ważne jest dla mnie również to, jakie założenia przyjęto co do wyniku przetargu sieci Zielona Hurtownia, bo od niego zależą przychody w drugim i trzecim kwartale.\n\nNie oczekuję liczb ani dokumentów. Zależy mi na Pańskiej ocenie jako osoby, która zna spółkę najlepiej. Takie rozmowy ułatwiają mi przygotowanie pytań i pozwalają unikać niepotrzebnych sporów na posiedzeniu.\n\nProszę o telefon w czasie, który będzie dla Pana wygodny. Jestem dostępny przez cały dzień pod swoim zwykłym numerem. Dziękuję z góry za poświęcony czas, a także za to, że zawsze znajduje Pan chwilę na takie rozmowy, nawet w bardzo napiętym terminarzu.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0178",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Wspólny przetarg – decyzja dziś",
+      "body": "Szanowny Panie Prezesie,\n\nzgodnie z wiadomością Pani Lindqvist proszę o Pana decyzję dziś: czy konsorcjum oferuje obniżkę o 2%?\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "karin.lindqvist@nordicfoods-trade.test",
+          "subject": "Joint tender – price",
+          "body": "Dear Daniel, Nordic Foods Trade would like to join the joint tender as a customer reference. Could the consortium reduce the price by 2%? Karin Lindqvist"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Joint tender – price",
+          "body": "Daniel, ask me again with a clear number and I will decide. Wiktor Szalewski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0179",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wspólny przetarg – wymagana Pana zgoda na zmianę składu konsorcjum",
+      "body": "Szanowny Panie Prezesie,\n\npiszę w sprawie naszego wspólnego przetargu na obsługę centrum dystrybucyjnego, bo organizator wprowadził zmianę, która wymaga Pana decyzji jeszcze dziś.\n\nW godzinach popołudniowych organizator opublikował komunikat, że do przetargu mogą przystąpić tylko konsorcja, w których lider posiada certyfikat jakości na obsługę żywności w temperaturze kontrolowanej. Certyfikat ma Kordelan, ale nie ma go Baltic Freight Partners. Dotychczas liderem oferty był nasz zespół, co wynikało z historii rozmów, i teraz musimy to zmienić, aby oferta pozostała ważna.\n\nZmiana lidera oznacza, że Pański zarząd bierze na siebie odpowiedzialność wobec organizatora, w tym gwarancję należytego wykonania umowy, która wynosi 5% wartości kontraktu, czyli około 900 tysięcy złotych. Z drugiej strony oferta przestałaby być zagrożona odrzuceniem. Moi prawnicy przygotowali dokument zmiany lidera, który wymaga Pana podpisu i podpisu mojego wspólnika.\n\nTermin składania zmian mija jutro rano, ale organizator przyjmuje dokumenty tylko w dni robocze do godziny 18:00, więc musimy je dziś przekazać kurierowi. Jeśli Pan odmówi, zgłosimy ofertę bez zmian i ryzykujemy odrzucenie.\n\nProszę o Pana decyzję jeszcze dzisiaj, najlepiej telefonicznie. Jestem do dyspozycji do późnego wieczora.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0181",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Kalendarz – krótka prośba",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o krótki telefon w sprawie kalendarza zarządu. Mam jedno pytanie dotyczące wyjazdu.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0183",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Customs control at the port of Gdynia – a request for your written statement",
+      "body": "Dear Mr Szalewski,\n\nI write to you in relation to the customs control at the port, where a part of our shipment from your warehouse is held since this morning. According to the information from our broker, the control concerns the documents of the chilled products and the temperature records during transport.\n\nThe customs officer asks for two things from your side: a copy of the temperature log of the truck from the moment of loading, and a written statement of the person responsible for the carriage that the cold chain was not interrupted. Our broker says that the officer will release the goods after he sees both documents, and that the statement should be signed by a member of your management board.\n\nWe have checked our side and there is no problem with the documents from the customer. The goods are food products with a short shelf life, so every hour of waiting reduces the time that they can be sold. Some of the pallets are intended for a retail customer who expects them tomorrow morning.\n\nOur broker, who stays at the terminal, can accept the documents by email or on paper. His contact is in the attachment. I would be grateful if you could confirm that the documents are on the way.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0184",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Annual budget closing – your signature on the joint tender accrual",
+      "body": "Dear Mr Szalewski,\n\nI am writing about the closing of your annual budget on 05.02.2027 and the joint tender accounts between our two companies. Your chief accountant asked us last week to confirm the amount of the accrual for the joint tender costs, and our finance team prepared the confirmation yesterday.\n\nThe amount is 186,000 euro for the period from September to December. It includes the costs of the bid preparation, the legal fees, the bank guarantee for the bid bond and the share of the costs of the joint office in Gdansk. We split everything according to the agreed 60/40 key. The final document needs a signature of a member of your board, because the accrual must be recorded in your accounts before the books close.\n\nOur auditors work on our side at the same time and need the signed copy to finish their report. If we receive the confirmation today, they can include it in the balance of the year, and we avoid a correction later. If not, we must postpone the closing of the accounts for the tender, and this will complicate the settlement between us.\n\nI attach the document and a short explanation prepared by our finance director. Please sign the last page and send me the scan today.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0185",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Przetarg sieci Zielona Hurtownia – potwierdzenie ceny paliwa",
+      "body": "Szanowny Panie Prezesie,\n\nw związku z Państwa udziałem w przetargu sieci Zielona Hurtownia chcemy potwierdzić warunki cenowe na paliwo, które mają Państwo uwzględnić w ofercie transportowej. Nasz dział handlowy przygotował umowę rabatową na olej napędowy dla floty obsługującej sieć, z rabatem 7% przy zakupach powyżej 400 tysięcy litrów rocznie.\n\nUmowa musi zostać podpisana dzisiaj, aby cena paliwa została zamrożona na okres składania ofert i obowiązywała przez pierwsze dwanaście miesięcy kontraktu. Po Pańskim podpisie prześlemy potwierdzenie do Państwa działu przetargów.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}
