@@ -6,27 +6,41 @@ opened: 2026-11-13
 
 ## Outcome
 
-Panel to Astro 7: the Stage 2 ticket in row 7 of `docs/product/stage-2/05-execution-plan.md` §2.1 (about ≈ 3 stages). The outcome, the user value and the acceptance come from the epic page `docs/product/stage-2/epics/E10-go-to-market-readiness.md` and its discovery notes `docs/product/stage-2/epics/E10-discovery-notes.md`; the planning job turns them into stages.
+The web panel builds on Astro 7 with the same pages, texts and Content Security Policy as on Astro 5. The workspace then has one Astro major, which the docs site (Starlight needs Astro 7.2.10 or later) and the new panel pages of E4-A use. A build that loses the CSP of a page now fails instead of shipping. Source: E10 discovery decision 3 (PD-097), `docs/product/stage-2/epics/E10-discovery-notes.md` §5 and §7.
 
 ## Scope
 
-- The epic page and discovery notes above set the boundary. The planning job reads them first, then the repo at HEAD, and splits the work into stages of at most one worker job each.
-- Product questions are answered in those pages. A planning job only turns decisions into stages and records small defaults in `questions.md`.
+- The web app's Astro, React integration and Tailwind versions, and the lockfile.
+- The Astro config: the CSP option moved out of `experimental` in Astro 6.
+- The post-build CSP integration (`apps/web/integrations/`): it also checks every page.
+- The CI job that builds the web app: the Astro 7 CLI needs a newer Node.
+- The docs that name the Astro version or the CSP flag, and one VPS deploy.
 
 ## Out of scope
 
-- Work that belongs to other rows of §2.1. The plan names the seams.
+- The docs app, Starlight and ADR 0030: the E10a Docs site ticket (F112).
+- New pages, Polish texts, visual changes: E4-A (F102) and E7-T1 (F098).
+- Other dependency upgrades (React, better-auth, Playwright, ESLint plugins).
 
 ## Acceptance
 
-- The planned stages together deliver the epic outcome for this row, each stage with its own proof, as `plan-task` requires.
+- `bun run web:build` on Astro 7.4.12 builds 16 pages and logs `csp checked in 16 page(s)`.
+- A built page without the CSP meta, or with `'unsafe-inline'` in `script-src`, fails the build (unit tests of stage 01).
+- The full e2e suite passes on the desktop and mobile projects with no CSP violation.
+- The `ci`, `e2e` and `image` jobs of the first `master` CI run after the Astro 7 land are green.
+- On the VPS, `/login` carries the CSP meta of ADR 0016 and its `/_astro/` script answers 200.
+- All checks: [plan.md](plan.md) § Done when (7 items).
+
+## Slices
+
+Four stages in order ([plan.md](plan.md) § Stages): 01 CSP build check; 02 `[risky]` Astro 7 move, the only `bun.lock` change (never next to another `bun.lock` change of any ticket); 03 docs; 04 VPS deploy, run by the coordinator. No migration, no owner checkpoint, no owner step. Commands: [plan.md](plan.md) § "How to run (coordinator)".
 
 ## Sequenced
 
-- Plan after: none (planning may run ahead of the build).
-- Build after: E1 (landed, in `spec/features/done/`).
-- Gate: —
+- Plan after: none.
+- Build after: F095 (E1 Close the MVP) in `spec/features/done/` (§2.1 row 7 of `docs/product/stage-2/05-execution-plan.md`: needs E1; stage 03 edits the web-panel capability page that F095 writes).
+- Gate: —. Stage 02 waits while another `bun.lock` change is in build.
 
 ## Notes
 
-Source row: §2.1 # 7. Needs plan: run the planner job (`notes/2026-11-13-limen-planner-role.md`).
+These wait for this ticket: E4-A Act from the panel (F102) and E10a Docs site (F112). Small defaults: [questions.md](questions.md).
