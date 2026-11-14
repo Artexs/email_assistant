@@ -109,6 +109,23 @@ describe("switchMailboxStatus", () => {
     });
   });
 
+  test("a host_blocked mailbox stays as it is", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const ctx = { orgId: a.orgId, userId: a.userId };
+      await setMailboxStatus(trx, ctx, a.mailboxId, "host_blocked", T0);
+      for (const to of ["paused", "active"] as const) {
+        const result = await switchMailboxStatus(trx, ctx, a.mailboxId, { to, actor: a.userId, via: "web", now: T1 });
+        expect(result).toEqual({ kind: "host_blocked" });
+      }
+      const row = await mailboxRow(trx, a.mailboxId);
+      expect(row.status).toBe("host_blocked");
+      expect(row.status_changed_at).toEqual(T0);
+      expect(await auditRows(trx, a.orgId, auditEvents.mailboxPaused)).toEqual([]);
+      expect(await auditRows(trx, a.orgId, auditEvents.mailboxResumed)).toEqual([]);
+    });
+  });
+
   test("a mailbox of another organization or an unknown id is not found", async () => {
     await withRollback(db, async (trx) => {
       const a = await createOrgWithMailbox(trx);

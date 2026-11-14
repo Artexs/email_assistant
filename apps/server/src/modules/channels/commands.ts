@@ -136,8 +136,17 @@ function approvedText(
   t: CoreTexts["bot"]["status"]
 ): string {
   const total = count.held + count.sending;
-  if (mailbox?.status === "paused") return t.approvedPaused(total);
-  if (mailbox?.status === "auth_error") return t.approvedAuthError(total);
+  switch (mailbox?.status) {
+    case "paused":
+      return t.approvedPaused(total);
+    case "auth_error":
+      return t.approvedAuthError(total);
+    case "host_blocked":
+      return t.approvedHostBlocked(total);
+    case "active":
+    case undefined:
+      break;
+  }
   if (count.held > 0) return t.approvedHeld(count.held, deps.sendScope.kind);
   return t.approvedSending(count.sending);
 }
@@ -178,9 +187,16 @@ async function approvalLines(
 function statusText(mailbox: MailboxSummary, clock: (at: Date) => string, texts: CoreTexts): string {
   const t = texts.bot.status;
   const since = clock(mailbox.status_changed_at);
-  if (mailbox.status === "paused") return t.statePaused(since);
-  if (mailbox.status === "auth_error") return t.stateAuthError(since);
-  return t.stateActive;
+  switch (mailbox.status) {
+    case "active":
+      return t.stateActive;
+    case "paused":
+      return t.statePaused(since);
+    case "auth_error":
+      return t.stateAuthError(since);
+    case "host_blocked":
+      return t.stateHostBlocked(since);
+  }
 }
 
 // The period does not move: no `digests` row and no outbox row; the router sends the reply at once.
@@ -195,6 +211,7 @@ export async function digestNowMessage(deps: CommandDeps, link: LinkedChat): Pro
     slot: null,
     now,
     locale: link.locale,
+    testMail: deps.testMail,
   });
 }
 
@@ -250,9 +267,9 @@ async function switchMailboxes(deps: CommandDeps, link: LinkedChat, change: Stat
   const extra: string[] = [];
   for (const mailbox of await listMailboxes(deps.db, ctx)) {
     const address = cutText(mailbox.address, ADDRESS_MAX);
-    const loginError = texts.loginError(address);
-    if (mailbox.status === "auth_error") {
-      extra.push(loginError);
+    const skip = skipText(mailbox.status, address, texts);
+    if (skip !== null) {
+      extra.push(skip);
       continue;
     }
     const result = await switchMailboxStatus(deps.db, ctx, mailbox.id, {
@@ -264,12 +281,26 @@ async function switchMailboxes(deps: CommandDeps, link: LinkedChat, change: Stat
     if (result.kind === "changed") changed.push(address);
     else if (result.kind === "already")
       extra.push(change.to === "paused" ? texts.alreadyPaused(address) : texts.alreadyActive(address));
-    else if (result.kind === "auth_error") extra.push(loginError);
+    else if (result.kind === "auth_error") extra.push(texts.loginError(address));
+    else if (result.kind === "host_blocked") extra.push(texts.hostBlocked(address));
   }
   return {
     text: [...changeLines(change.to, changed, texts, deps.syncEveryMin), ...extra].join("\n") || texts.noMailbox,
     buttons: [],
   };
+}
+
+// A mailbox in a state that only the system leaves is not paused or resumed: its own line says why.
+function skipText(status: MailboxSummary["status"], address: string, texts: CoreTexts["bot"]["switch"]): string | null {
+  switch (status) {
+    case "auth_error":
+      return texts.loginError(address);
+    case "host_blocked":
+      return texts.hostBlocked(address);
+    case "active":
+    case "paused":
+      return null;
+  }
 }
 
 function changeLines(

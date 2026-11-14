@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-14
 ---
 
 # F100 · Every Stage 2 metric is measured on real mail and the executive gets a weekly report that leads with misses and mistakes

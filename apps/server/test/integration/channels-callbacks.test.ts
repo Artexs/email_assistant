@@ -550,12 +550,13 @@ describe("approval taps", () => {
     });
   });
 
-  test("(5a) a paused or auth_error mailbox holds the send and names the cause", async () => {
+  test("(5a) a paused, auth_error or host_blocked mailbox holds the send and names the cause", async () => {
     await withRollback(db, async (trx) => {
       const s = await approvalSetup(trx);
       const one = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, { notifiedAt: T, createdAt: T });
       const two = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, { notifiedAt: T, createdAt: T });
-      for (const id of [one, two]) await queueFor(trx, s.ctx, s.o1, "approval", id.sendId, id.emailId);
+      const three = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, { notifiedAt: T, createdAt: T });
+      for (const id of [one, two, three]) await queueFor(trx, s.ctx, s.o1, "approval", id.sendId, id.emailId);
 
       await trx.updateTable("mailboxes").set({ status: "paused" }).where("id", "=", s.a.mailboxId).execute();
       const paused = await handleCallback(s.deps, s.owner1, `ap:${one.sendId}`);
@@ -566,6 +567,11 @@ describe("approval taps", () => {
       await trx.updateTable("mailboxes").set({ status: "auth_error" }).where("id", "=", s.a.mailboxId).execute();
       const broken = await handleCallback(s.deps, s.owner1, `ap:${two.sendId}`);
       expect(broken.answer).toBe(textTables.en.bot.taps.approvedAuthError);
+
+      await trx.updateTable("mailboxes").set({ status: "host_blocked" }).where("id", "=", s.a.mailboxId).execute();
+      const blocked = await handleCallback(s.deps, s.owner1, `ap:${three.sendId}`);
+      expect(blocked.answer).toBe(textTables.en.bot.taps.approvedHostBlocked);
+      expect(blocked.edit?.text).toContain("The mail server is not allowed, so the send waits");
     });
   });
 
@@ -646,6 +652,24 @@ describe("approval taps", () => {
     });
   });
 
+  test("(7c) approve set of a host_blocked mailbox names the cause", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const setId = randomUUID();
+      const send = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, {
+        reminder: 1,
+        setId,
+        notifiedAt: T,
+        createdAt: T,
+      });
+      await queueFor(trx, s.ctx, s.o1, "approval_set", setId, send.emailId, "📤 Send 1 reminder?");
+      await trx.updateTable("mailboxes").set({ status: "host_blocked" }).where("id", "=", s.a.mailboxId).execute();
+
+      const tap = await handleCallback(s.deps, s.owner1, `as:${setId}`);
+      expect(tap.answer).toContain(textTables.en.bot.taps.heldNotes.host_blocked);
+    });
+  });
+
   test("(7b) reject set skips the waiting reminders", async () => {
     await withRollback(db, async (trx) => {
       const s = await approvalSetup(trx);
@@ -719,6 +743,27 @@ describe("approval taps", () => {
       });
       const notFailed = await handleCallback(s.deps, s.owner1, `ag:${applied.sendId}`);
       expect(notFailed).toEqual({ answer: textTables.en.bot.taps.sendAgainNotFailed });
+    });
+  });
+
+  test("(8b) send again of a host_blocked mailbox names the cause", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const failed = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, {
+        sendStatus: "failed",
+        notifiedAt: T,
+        createdAt: T,
+      });
+      await trx
+        .updateTable("actions")
+        .set({ status_reason: "outcome_unknown" })
+        .where("id", "=", failed.sendId)
+        .execute();
+      await queueFor(trx, s.ctx, s.o1, "send_result", failed.sendId, failed.emailId, "⚠️ Unknown whether it went out");
+      await trx.updateTable("mailboxes").set({ status: "host_blocked" }).where("id", "=", s.a.mailboxId).execute();
+
+      const tap = await handleCallback(s.deps, s.owner1, `ag:${failed.sendId}`);
+      expect(tap.answer).toBe(textTables.en.bot.taps.sendAgainHeld.host_blocked);
     });
   });
 

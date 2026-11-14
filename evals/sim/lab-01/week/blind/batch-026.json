@@ -1,0 +1,318 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-026",
+  "cases": [
+    {
+      "id": "w-5-008",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Win a weekend in the mountains for two",
+      "body": "Congratulations in advance!\n\nEvery customer of our billing portal now takes part in a free prize draw. Reply to this message with your company name and win a weekend for two in a mountain spa hotel.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-009",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logowanie do bankowości z nowego urządzenia",
+      "body": "Nowe logowanie do bankowości internetowej\n\nTo jest automatyczna wiadomość z banku firmowego Aurum. W dniu 29.01.2027 o godzinie 06:20 zalogowano się do bankowości internetowej Twojej firmy z urządzenia, którego system wcześniej nie znał.\n\nUrządzenie: przeglądarka na komputerze, system Windows\nPrzybliżona lokalizacja: Gdańsk, Polska\nUżytkownik: wiktor.szalewski@kordelan.test\nWynik logowania: udane, po autoryzacji kodem z aplikacji\n\nJeżeli to Ty zalogowałeś się z nowego urządzenia, nie musisz nic robić. Bank nie prosi w wiadomościach e-mail o podanie haseł ani kodów. Listę zaufanych urządzeń możesz sprawdzić i zmienić w ustawieniach zabezpieczeń. Ta wiadomość została wygenerowana automatycznie.\n\nPowiadomienia Bankowe",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-010",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Pozycjonowanie strony - promocja tylko dziś",
+      "body": "Szanowni Państwo, specjalna oferta!\n\nGwarantujemy pierwszą stronę wyników wyszukiwania w 14 dni lub zwracamy pieniądze. Pakiet startowy już od 149 EUR. Odpowiedz na ten list, a zaczynamy od razu.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-011",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "FINAL WARNING: account suspension in 2 hours",
+      "body": "Dear customer,\n\nOur system shows that the payment for your fuel card account is overdue. The amount of 5 240 EUR was not settled on the due date, and our billing department has started the suspension procedure.\n\nYour cards will be BLOCKED today at 10:00 CET, and all tank transactions will be declined at every station in the network. In addition, a penalty of 15 percent will be added to the amount due, and the case may be handed to a debt collection agency.\n\nTo stop the suspension, you must act now. Confirm the new bank account of our company by replying to this message with your company name and the last digits of your current card. Then use the secure payment option placed at the bottom of this message and complete the transfer within two hours. After that time we cannot guarantee that the cards will remain active.\n\nPlease note that this is the last notice. Earlier reminders were sent to the accounting department but received no answer. If you have already paid, please ignore this message only after confirming the payment with the same reply, so that we can remove your account from the suspension list.\n\nWe regret any inconvenience this may cause.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-012",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Targi Ogrodnicze 2027 - stoiska w promocyjnej cenie",
+      "body": "Rabat 25% dla pierwszych zgłoszeń!\n\nSzanowni Państwo, w czerwcu odbędą się Targi Ogrodnicze 2027 w Poznaniu: sadzonki, narzędzia, maszyny do pielęgnacji trawników i nawozy. Spodziewamy się 9 tysięcy odwiedzających.\n\nDla firm, które zgłoszą się do końca lutego, mamy rabat 25% na stoisko, bezpłatny wpis w katalogu i dwa bilety na bankiet. Liczba miejsc jest ograniczona, a najlepsze lokalizacje w hali znikają zwykle po kilku dniach, więc odpowiedz na ten list już dziś. Nasz doradca skontaktuje się z Państwem jeszcze tego samego dnia i przygotuje ofertę dopasowaną do wielkości stoiska.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-013",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Cennik dostaw na 2027 - przyjęte warunki po stronie Meblodrew",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że nasz dział prawny zakończył przegląd cennika dostaw na rok 2027 i nie zgłasza uwag do proponowanych stawek za transport krajowy. Stawki za dostawy do magazynu w Poznaniu uznajemy za zgodne z naszymi założeniami budżetowymi.\n\nPodpisany egzemplarz cennika wyślemy do Państwa w przyszłym tygodniu razem z aneksem do umowy ramowej. Dla porządku podaję też, że nasze zamówienia na luty złożymy zgodnie z dotychczasowym harmonogramem.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-014",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "WMS maintenance window completed",
+      "body": "Maintenance completed\n\nThis is an automatic message from the ERP system. The scheduled maintenance of the warehouse management module finished on 29.01.2027 at 06:40. All services are running, no errors were logged.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-015",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Reklamacja palet - zamknięta bez uwag",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że reklamacja uszkodzonych palet z zeszłego tygodnia została u nas zamknięta, a korekta faktury jest zaksięgowana.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-016",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Aneks do umowy - klauzula o odprawach celnych na Litwie",
+      "body": "Szanowny Panie Prezesie,\n\nw związku z naszym wspólnym przetargiem na trasy przez Kłajpedę zwracam się z prośbą o skierowanie do właściwej osoby w Państwa firmie zadania związanego z umową. Chodzi o aneks do umowy ramowej, który powinien jasno opisywać podział obowiązków przy odprawach celnych na Litwie.\n\nProszę o przekazanie sprawy Piotrowi Lewandrowskiemu. Z naszych dotychczasowych kontaktów wiem, że zajmuje się umowami i ofertami sprzedaży, więc to właściwa osoba. Chciałbym, aby przygotował on projekt aneksu zawierającego trzy elementy: wskazanie, która strona wybiera agenta celnego, zasadę dzielenia kosztów gwarancji celnej oraz termin zgłoszenia zmian w kalkulacji.\n\nPrzesyłam w załączeniu moje uwagi do obecnego brzmienia umowy ramowej oraz wzór klauzuli, którą stosujemy w innych naszych konsorcjach. Piotr może z niej skorzystać jako punktu wyjścia, ale nie musi się do niej stosować, jeśli Państwa dział prawny zaproponuje lepsze rozwiązanie.\n\nProjekt chciałbym otrzymać w przyszłym tygodniu, aby nasi prawnicy mieli czas na przejrzenie go przed złożeniem dokumentów zamawiającemu. Piotr może skontaktować się ze mną bezpośrednio, jeśli będzie potrzebował wyjaśnień. Jeśli zadanie wymaga dodatkowych informacji z naszej strony, na przykład wykazu agentów celnych, z którymi dotąd współpracujemy, przekażę je jeszcze w tym tygodniu.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-017",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Joint bid for the Gdynia terminal contract - will you co-sign?",
+      "body": "Dear Mr Szalewski,\n\nI would like to ask for your personal answer on a matter that goes beyond the day to day work of our teams. The operator of the Gdynia container terminal invited a small number of companies to bid for a multi year contract to run the customs brokerage and trucking of imported goods from the terminal to inland warehouses. Baltic Freight Partners would like to submit the bid together with Kordelan as a joint venture, because neither of us has the full set of licences and trucks that the buyer expects.\n\nThe proposal is simple. We would carry the customs brokerage and the contacts with the terminal, while your company would provide the fleet and the warehouses in Gdynia and Poznan. The profit would be split in proportion to the share of the work, and we estimate that to be about 55 percent for your side and 45 percent for ours. The buyer wants the bid to be signed by a member of the management board of each partner, so the formal decision has to be yours.\n\nBefore I spend more time on the documents, I need to know two things. First, do you agree in principle that Kordelan takes part in this bid as our partner? Second, are you willing to sign the joint declaration yourself, or would you prefer another board member to do it? A short written answer is enough, and I will plan the next steps around it.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-018",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wspólne przetargi - kolejne dokumenty od podwykonawców",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że od środy otrzymaliśmy komplet dokumentów od czterech z sześciu podwykonawców potrzebnych do pierwszego przetargu. Dwa brakujące zestawy mają dotrzeć do końca tygodnia, a nasz dział prawny sprawdzi je w poniedziałek.\n\nW drugim przetargu zamawiający przesunął termin składania ofert o tydzień, co daje nam więcej czasu na kalkulację. Dane o stawkach przewoźników zostaną uzupełnione po otrzymaniu ostatnich ofert.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-019",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Targi Motoryzacyjne - ostatnie wolne stoiska",
+      "body": "Szanowni Państwo,\n\nzapraszamy do udziału w Targach Części i Akcesoriów Motoryzacyjnych, które odbędą się w maju w Katowicach. Zgłoś firmę, a w katalogu targowym pojawi się Państwa wpis w kategorii usług dodatkowych. Dla pierwszych 15 firm przygotowaliśmy bezpłatny pakiet reklamowy w aplikacji targowej oraz zniżkę 20% na stoisko.\n\nWystarczy odpowiedzieć na tę wiadomość, a nasz doradca skontaktuje się z Państwem w ciągu jednego dnia.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-020",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Swedish broker rate increase - call to sign",
+      "body": "Hi Wiktor,\n\nplease ask Dorota Wilczynska to book a 30 minute call with the Gothenburg broker for next Tuesday, so we can sign the renewal.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [
+        {
+          "from": "oliver.pemberton@kordelan.test",
+          "subject": "Swedish broker rate increase - accept or switch?",
+          "body": "Hi Wiktor,\n\nour broker in Gothenburg sent a note that his fee per declaration goes up by 6 percent from April. Not huge, but with our volumes it adds up to about 7 thousand euro a year.\n\nI can try to negotiate, or we could look at another broker, but I do not want to go down that road without knowing what you prefer. So, do we accept the increase, or should I start looking for an alternative? Your call, a short answer is fine.\n\nOliver"
+        },
+        {
+          "from": "oliver.pemberton@kordelan.test",
+          "subject": "Re: Swedish broker rate increase - accept or switch?",
+          "body": "Hi Wiktor,\n\nquick update on the Gothenburg broker. He called me back this morning and agreed to hold the current fee until July if we sign the two-year renewal he sent. I looked at the numbers and the renewal is fine for us, the extra cost would only start from next summer.\n\nSo I will close it on my side and tell him we go ahead. Nothing to decide for you here, I am sending this just so you know where it stands.\n\nOliver"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-5-021",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Targi Wyposażenia Biur - zarezerwuj stoisko z rabatem 30%",
+      "body": "Szanowni Państwo,\n\nzapraszamy na Targi Wyposażenia Biur, które odbędą się w kwietniu w Warszawie. To okazja do zaprezentowania Państwa firmy kilku tysiącom kupujących, którzy szukają nowych dostawców mebli, drukarek i akcesoriów biurowych.\n\nPrzy rezerwacji do 15 lutego oferujemy rabat 30% na stoisko oraz bezpłatny wpis w katalogu. Pula stoisk jest ograniczona, więc nie czekaj.\n\nOdpowiedz na tę wiadomość, a nasz doradca przygotuje ofertę jeszcze dziś.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-022",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Targi Turystyczne Morze i Góry - wystaw się u nas!",
+      "body": "Szanowni Państwo,\n\nserdecznie zapraszamy do udziału w Targach Turystycznych Morze i Góry, które odbędą się w marcu w Gdańsku. Wydarzenie przyciąga co roku ponad 15 tysięcy gości, w tym właścicieli pensjonatów, biur podróży i firm organizujących wyjazdy integracyjne. To idealne miejsce, aby zaprezentować usługi, o których nikt jeszcze nie słyszał!\n\nCo oferujemy wystawcom, którzy zgłoszą się do końca lutego:\n- rabat 35% na standardowe stoisko o powierzchni 9 metrów kwadratowych\n- bezpłatny wpis do katalogu drukowanego i do aplikacji mobilnej\n- dwa bilety na uroczystą kolację dla wystawców\n- baner reklamowy przy wejściu do hali, o wartości 900 EUR\n- pierwszeństwo przy wyborze lokalizacji stoiska\n\nDo tej pory zgłosiło się już 230 firm, a stoiska w najlepszych miejscach znikają w kilka dni. Wystarczy odpowiedzieć na tę wiadomość, podając nazwę firmy i wielkość stoiska, a nasz doradca przygotuje umowę jeszcze tego samego dnia. Przyjmujemy też zamówienia na reklamę w materiałach targowych oraz na pakiety gadżetów dla gości, takich jak torby, długopisy i kubki z logo firmy, z dostawą prosto do Państwa biura.\n\nNie przegap tej okazji i zarezerwuj miejsce dla swojej firmy jeszcze dziś, zanim zabraknie wolnych stoisk!\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-023",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Your subscription will renew on 05.02.2027",
+      "body": "Subscription renewal\n\nThis is an automatic message from Supply Chain Weekly. Your reader subscription renews on 05.02.2027 for 12 months. The fee is charged to the card saved in your account.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-024",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Odprawy celne w styczniu - zestawienie",
+      "body": "Szanowny Panie Prezesie,\n\nprzesyłam krótkie zestawienie odpraw celnych na wspólnych trasach za styczeń. Zrealizowaliśmy 47 zgłoszeń, z czego 44 zwolniono w ciągu jednego dnia, a trzy w ciągu dwóch dni z powodu braków w dokumentach producenta. Żadna przesyłka nie została wstrzymana dłużej niż trzy dni.\n\nŚredni koszt zgłoszenia wyniósł 118 euro i był o 4 euro niższy niż w grudniu. Pełna tabela jest do wglądu w naszym wspólnym arkuszu, a kolejne zestawienie wyślę na początku marca.\n\nZ poważaniem, Daniel Hargreaves",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-025",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Your free reading limit for this month is almost used",
+      "body": "Reading limit notice\n\nYour reader account wiktor.szalewski@kordelan.test has a monthly limit of free articles. You have used 4 of 5 free articles in January 2027.\n\nThe limit resets on 01.02.2027. Subscribers with a paid plan have no limit. You can check your plan and your usage in the account settings. This message is generated by the system and replies are not read.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-026",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Automatyczna odpowiedź: integracje ERP - urlop",
+      "body": "Wiadomość automatyczna\n\nDziękujemy za kontakt. Osoba odpowiedzialna za integracje systemu ERP przebywa na urlopie do dnia 05.02.2027 i w tym czasie nie odczytuje poczty.\n\nWiadomość została zapisana w kolejce zgłoszeń integracji. Zespół opracuje ją po powrocie osoby odpowiedzialnej, w kolejności zgłoszeń. Czas odpowiedzi po powrocie wynosi zwykle dwa dni robocze. W sprawach dotyczących działania systemu magazynowego prosimy skorzystać z procedury zgłoszeń opisanej na stronie wewnętrznej firmy.\n\nTo jest wiadomość wygenerowana automatycznie.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-027",
+      "from": "System ERP Kordelan <mailer-daemon@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Undelivered Mail Returned to Sender: Cennik dostaw na 2027",
+      "body": "To jest automatyczna wiadomość serwera pocztowego.\n\nNie udało się dostarczyć Twojej wiadomości o temacie \"Cennik dostaw na 2027\" do adresata: a.nowicki@meblodrew.test. Serwer odbiorcy zwrócił błąd 550: konto użytkownika zostało wyłączone. Wiadomość nie została dostarczona.\n\nSzczegóły wiadomości, której nie dostarczono\nWysłano: 29.01.2027 o godzinie 07:12\nNadawca: wiktor.szalewski@kordelan.test\nAdresat: a.nowicki@meblodrew.test\nTemat: Cennik dostaw na 2027\nKod błędu serwera: 550 5.1.1\n\nCo możesz zrobić\nSprawdź pisownię adresu odbiorcy i upewnij się, że konto nadal istnieje. Jeżeli adres jest poprawny, a komunikat powtarza się, skontaktuj się z administratorem poczty odbiorcy lub spróbuj wysłać wiadomość na inny adres tej firmy. Serwer nie będzie ponawiał próby dostarczenia tej wiadomości. Adresat nie zobaczy żadnej części tej wiadomości, a nadawca nie otrzyma dalszych raportów w tej sprawie.\n\nKopia nagłówków wiadomości, której nie udało się dostarczyć, jest dołączona do tego raportu. Raport został wygenerowany automatycznie przez serwer pocztowy firmy Kordelan. Prosimy na niego nie odpowiadać.\n\nInformacja techniczna: serwer pocztowy, który przyjął wiadomość od Ciebie, nie zapisał jej w skrzynce nadawcy jako niedostarczonej. Jeżeli chcesz wysłać ją ponownie, skorzystaj z historii wiadomości wysłanych w programie pocztowym. Zachowaliśmy także identyfikator wiadomości w dzienniku serwera przez 30 dni, na wypadek gdyby administrator miał sprawdzić przyczynę błędu lub zgłosić ją dostawcy poczty odbiorcy.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-028",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie przelewu zagranicznego z 29.01.2027",
+      "body": "Przelew zagraniczny wykonany\n\nBank firmowy Aurum informuje automatycznie, że przelew zagraniczny z rachunku firmowego został wykonany dnia 29.01.2027 o godzinie 07:20.\n\nKwota: 3 400,00 EUR\nOdbiorca: Baltic Freight Partners\nTytuł: rozliczenie kosztów gwarancji celnej, styczeń\nOpłata bankowa: 35,00 PLN\nStatus: wykonany\n\nŚrodki powinny dotrzeć do banku odbiorcy w ciągu dwóch dni roboczych. Potwierdzenie przelewu w pliku PDF jest dostępne w bankowości internetowej, w zakładce historii przelewów. Wiadomość została wygenerowana automatycznie i nie wymaga odpowiedzi.\n\nPowiadomienia Bankowe",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-029",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nota obciążeniowa za gwarancję celną w Hamburgu",
+      "body": "Szanowny Panie Prezesie,\n\nw nawiązaniu do rozliczenia kosztów gwarancji celnej w Hamburgu proszę o skierowanie zadania do Magdaleny Czerniak. Potrzebuję, aby przygotowała notę obciążeniową dla Baltic Freight Partners na połowę kwoty gwarancji, czyli 1 500 euro, i wysłała ją do naszego działu finansowego razem z dokumentem potwierdzającym wysokość kosztu.\n\nJeżeli będzie potrzebowała kopii pierwotnej faktury od agenta w Hamburgu, prześlę ją od razu. Nota powinna być gotowa w przyszłym tygodniu, abyśmy zamknęli rozliczenie stycznia.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-030",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Alert cenowy: olej napędowy w Polsce",
+      "body": "Alert cenowy dla Twojego konta\n\nTo jest automatyczny alert z serwisu cen paliw Magazynu Logistyka Dzis. Ustawiony przez Ciebie próg ceny został przekroczony.\n\nProdukt: olej napędowy, średnia cena hurtowa w Polsce\nAktualna cena: 6,12 PLN za litr netto\nUstawiony próg: 6,00 PLN za litr netto\nZmiana w ciągu tygodnia: plus 0,07 PLN\n\nAlerty cenowe możesz włączyć, wyłączyć lub zmienić w panelu konta, w zakładce alertów. W planie podstawowym dostępne są cztery aktywne alerty. Ta wiadomość jest generowana automatycznie.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-031",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Twoja subskrypcja wygasa za 10 dni",
+      "body": "Przypomnienie o odnowieniu\n\nTo jest automatyczna wiadomość serwisu Magazynu Logistyka Dzis. Subskrypcja serwisu cen paliw przypisana do konta wiktor.szalewski@kordelan.test wygasa 08.02.2027.\n\nOdnowienie na kolejne 12 miesięcy kosztuje 290,40 PLN brutto i zostanie pobrane automatycznie z karty zapisanej w koncie. Faktura zostanie wystawiona w dniu płatności i dostępna w zakładce faktur i płatności. Automatyczne odnowienie możesz wyłączyć w ustawieniach konta do dnia wygaśnięcia.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-032",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Raport nocnych zadań systemu magazynowego",
+      "body": "Raport zadań nocnych\n\nTo jest automatyczny raport systemu ERP Kordelan z zadań nocnych modułu magazynowego, wykonanych w nocy z 28.01.2027 na 29.01.2027. Raport obejmuje magazyny w Gdyni, Poznaniu i Łodzi.\n\nWyniki zadań\nPrzeliczenie stanów magazynowych: wykonane, czas 14 minut\nSynchronizacja zamówień z modułem sprzedaży: wykonana, 312 dokumentów\nAktualizacja lokalizacji palet: wykonana, 1 840 pozycji\nGenerowanie etykiet transportowych: wykonane, 96 etykiet\nArchiwizacja dokumentów starszych niż 90 dni: wykonana, 4 120 dokumentów\n\nOstrzeżenia\nW magazynie w Łodzi jedno zadanie synchronizacji zostało powtórzone po przekroczeniu limitu czasu. Powtórzenie zakończyło się powodzeniem, a żadne dane nie zostały utracone. Zdarzenie zapisano w dzienniku systemu.\n\nStan systemu\nWszystkie moduły działają prawidłowo. Zapas miejsca w bazie danych wynosi 63 procent, a średni czas odpowiedzi systemu w nocy wynosił 0,4 sekundy. Pełny dziennik zadań jest dostępny w panelu administracyjnym w zakładce zadań nocnych. Raport został wygenerowany automatycznie, a kolejny zostanie wysłany jutro o tej samej porze. Jeżeli zadanie zakończy się błędem, system zapisuje szczegóły w dzienniku zdarzeń i ponawia próbę zgodnie z konfiguracją harmonogramu zadań, a po trzeciej nieudanej próbie oznacza zadanie jako wymagające uwagi administratora. Zmiany konfiguracji harmonogramu wymagają zatwierdzenia przez administratora systemu.\n\nSystem ERP Kordelan",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}

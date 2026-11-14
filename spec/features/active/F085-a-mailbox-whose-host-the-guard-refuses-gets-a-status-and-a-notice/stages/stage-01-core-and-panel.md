@@ -62,7 +62,7 @@ No migration, no server change except what typecheck forces (none expected). Aft
   - Test (`notices.test.ts`, the file's `now` = `2026-11-06T07:00:00Z`, `timeZone` = `Europe/Warsaw`):
     1. `renderHostBlockedNotice({ address: "me@firma.test", since: 2026-11-06T06:40:00Z, now, timeZone }, textTables.en)` → text exactly:
        `⛔ The system stopped connecting to the mail server of me@firma.test at 07:40.\nThe server name points to a private or local network address, and the system never connects there.\nThe system does not read or send mail of this mailbox now. No mail is lost: it stays on the mail server.\nThe system checks the server again at each sync and starts the mailbox again by itself. /status shows the state.`; buttons `[]`.
-    2. The same input with `textTables.pl` → the first line exactly `⛔ System przestał łączyć się z serwerem poczty skrzynki: me@firma.test. Od: 07:40.` and four lines in all.
+    2. The same input with `textTables.pl` → the first line exactly `⛔ System przestał łączyć się z serwerem poczty skrzynki me@firma.test (od 07:40).` and four lines in all.
     3. A `since` of the day before (`2026-11-05T13:00:00Z`) → the first `en` line ends `at 5 Nov 14:00.`
     4. An address of 80 characters is cut to 60 code points (`cutText`), as in the `auth_error` test.
   - Check: `bun test packages/core/src/digest/notices.test.ts packages/core/src/texts`.

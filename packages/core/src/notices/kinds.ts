@@ -17,6 +17,7 @@ export const noticeKinds = [
   "mailbox_removed",
   "send_held",
   "weekly_report",
+  "host_blocked",
 ] as const;
 export type NoticeKind = (typeof noticeKinds)[number];
 export const noticeKindSchema = z.enum(noticeKinds);

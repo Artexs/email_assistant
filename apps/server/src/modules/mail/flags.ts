@@ -27,6 +27,8 @@ export interface FlagsRefreshResult {
   notFound: number;
   /** Targets whose UID now names another mail (a UIDVALIDITY change, cold review N3). */
   mismatch: number;
+  /** The targets counted in `notFound`, in read order: mail that left its folder (the move finder looks for it). */
+  gone: FlagTarget[];
 }
 
 const flagNames = { seen: "\\seen", answered: "\\answered", flagged: "\\flagged" } as const;
@@ -57,7 +59,7 @@ export async function refreshFlags(
   const byFolder = new Map<string, FlagTarget[]>();
   for (const target of targets) byFolder.set(target.folder, [...(byFolder.get(target.folder) ?? []), target]);
 
-  const result: FlagsRefreshResult = { checked: targets.length, written: 0, notFound: 0, mismatch: 0 };
+  const result: FlagsRefreshResult = { checked: targets.length, written: 0, notFound: 0, mismatch: 0, gone: [] };
   for (const [folder, inFolder] of byFolder) {
     for (let from = 0; from < inFolder.length; from += FLAGS_CHUNK) {
       const chunk = inFolder.slice(from, from + FLAGS_CHUNK);
@@ -75,6 +77,7 @@ export async function refreshFlags(
         const found = fetched.get(target.uid);
         if (found === undefined) {
           result.notFound += 1;
+          result.gone.push(target);
           unread.push(target);
         } else if (!sameMail(target, found)) {
           result.mismatch += 1;

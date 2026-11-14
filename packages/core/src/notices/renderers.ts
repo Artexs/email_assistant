@@ -11,6 +11,7 @@ import type { OutMessage } from "../digest/message";
 import {
   renderActionFailedNotice,
   renderAuthErrorNotice,
+  renderHostBlockedNotice,
   renderSendHeldNotice,
   renderSyncOkNotice,
   renderSyncStaleNotice,
@@ -130,5 +131,9 @@ export const noticeRenderers = {
   weekly_report: defineRenderer({
     schema: noticeViewSchemas.weekly_report,
     telegram: { full: (view, opts) => renderWeeklyReport(view, textsFor(opts.locale)) },
+  }),
+  host_blocked: defineRenderer({
+    schema: noticeViewSchemas.host_blocked,
+    telegram: { full: (view, opts) => renderHostBlockedNotice(view, textsFor(opts.locale)) },
   }),
 } satisfies Record<NoticeKind, NoticeRenderer<z.ZodType>>;

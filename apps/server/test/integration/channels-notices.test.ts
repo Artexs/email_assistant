@@ -7,7 +7,7 @@ import { listSendLimitHolds, SENT_COPY_PENDING_MAX_AGE_MS } from "../../src/modu
 import { auditEvents, recordAudit } from "../../src/modules/audit";
 import { detectNotices } from "../../src/modules/channels";
 import { insertSenderRule } from "../../src/modules/config";
-import { ensureSyncFolders } from "../../src/modules/mail";
+import { ensureSyncFolders, NO_TEST_SENDERS } from "../../src/modules/mail";
 import { insertMailbox, markSynced, type MailboxStatus } from "../../src/modules/mail/repo";
 import { setOrgFeature } from "../../src/modules/tenancy";
 import type { DB, TenantContext } from "../../src/platform/db";
@@ -88,7 +88,7 @@ async function org(trx: Transaction<DB>): Promise<Org> {
 }
 
 async function run(trx: Transaction<DB>, startedAt = at(-HOUR)): Promise<void> {
-  await detectNotices({ db: trx, now: () => T, startedAt });
+  await detectNotices({ db: trx, now: () => T, startedAt, testMail: NO_TEST_SENDERS });
 }
 
 async function setStatus(trx: Transaction<DB>, o: Org, status: MailboxStatus, changedAt?: Date): Promise<void> {
@@ -304,6 +304,110 @@ describe("auth_error notices", () => {
       expect(found).toHaveLength(1);
       expect(found[0]?.status).toBe("failed");
       expect(found[0]?.error_code).toBe("outdated");
+    });
+  });
+});
+
+describe("host_blocked notices", () => {
+  test("one row for the owner per episode; the view holds the address only; a new episode makes the old row outdated", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      const s = at(-20 * MINUTE);
+      await setStatus(trx, o, "host_blocked", s);
+
+      await run(trx);
+      await run(trx);
+      let found = await rows(trx, o.orgId, "host_blocked");
+      expect(found).toHaveLength(1);
+      expect(found[0]?.user_id).toBe(o.ownerId);
+      expect(found[0]?.dedup_key).toBe(`host_blocked:${o.mailboxId}:${s.getTime()}`);
+      expect(found[0]?.mailbox_id).toBe(o.mailboxId);
+      expect(found[0]?.status).toBe("pending");
+      expect(found.some((r) => r.user_id === o.assistantId)).toBe(false);
+
+      const address = (
+        await trx.selectFrom("mailboxes").select("address").where("id", "=", o.mailboxId).executeTakeFirstOrThrow()
+      ).address;
+      expect(found[0]?.view).toEqual({
+        address,
+        since: s.toISOString(),
+        now: T.toISOString(),
+        timeZone: "Europe/Warsaw",
+      });
+      expect(found[0]?.text).toContain(address);
+      expect(found[0]?.text).not.toContain("imap.x.test");
+      expect(found[0]?.text).not.toContain("smtp.x.test");
+
+      const s2 = at(-2 * MINUTE);
+      await setStatus(trx, o, "active");
+      await setStatus(trx, o, "host_blocked", s2);
+      await run(trx);
+      found = await rows(trx, o.orgId, "host_blocked");
+      expect(found).toHaveLength(2);
+      const first = found.find((r) => r.dedup_key === `host_blocked:${o.mailboxId}:${s.getTime()}`);
+      const second = found.find((r) => r.dedup_key === `host_blocked:${o.mailboxId}:${s2.getTime()}`);
+      expect(first?.status).toBe("failed");
+      expect(first?.error_code).toBe("outdated");
+      expect(second?.status).toBe("pending");
+    });
+  });
+
+  test("a pending row becomes outdated when the mailbox is active again", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      await setStatus(trx, o, "host_blocked", at(-20 * MINUTE));
+      await run(trx);
+      await setStatus(trx, o, "active");
+
+      await run(trx);
+      const found = await rows(trx, o.orgId, "host_blocked");
+      expect(found).toHaveLength(1);
+      expect(found[0]?.status).toBe("failed");
+      expect(found[0]?.error_code).toBe("outdated");
+    });
+  });
+
+  test("a paused mailbox and an auth_error mailbox give no host_blocked row", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      await setStatus(trx, o, "paused", at(-20 * MINUTE));
+      await run(trx);
+      expect(await rows(trx, o.orgId, "host_blocked")).toHaveLength(0);
+
+      await setStatus(trx, o, "auth_error", at(-10 * MINUTE));
+      await run(trx);
+      expect(await rows(trx, o.orgId, "host_blocked")).toHaveLength(0);
+      expect(await rows(trx, o.orgId, "auth_error")).toHaveLength(1);
+    });
+  });
+
+  test("(tenant) the rows of one organization name its own mailbox and owner only", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const a = await org(trx);
+      const b = await org(trx);
+      const c = await org(trx);
+      await setStatus(trx, a, "host_blocked", at(-20 * MINUTE));
+      // Organization C has a blocked mailbox too, but no linked chat: it gets no notice at all.
+      await trx.deleteFrom("chat_links").where("org_id", "=", c.orgId).execute();
+      await setStatus(trx, c, "host_blocked", at(-20 * MINUTE));
+
+      await run(trx);
+      expect(await rows(trx, b.orgId, "host_blocked")).toHaveLength(0);
+      expect(await rows(trx, c.orgId, "host_blocked")).toHaveLength(0);
+      const found = await rows(trx, a.orgId, "host_blocked");
+      expect(found).toHaveLength(1);
+      expect(found[0]?.mailbox_id).toBe(a.mailboxId);
+      expect(found[0]?.user_id).toBe(a.ownerId);
+      const all = await trx
+        .selectFrom("outbox")
+        .select(["org_id", "mailbox_id"])
+        .where("kind", "=", "host_blocked")
+        .execute();
+      expect(all).toEqual([{ org_id: a.orgId, mailbox_id: a.mailboxId }]);
     });
   });
 });
@@ -1350,7 +1454,12 @@ describe("send_held notices", () => {
   const LIMIT_ERROR = "send_limit:mailbox_hour";
 
   async function runAt(trx: Transaction<DB>, now: Date): Promise<void> {
-    await detectNotices({ db: trx, now: () => now, startedAt: new Date(now.getTime() - HOUR) });
+    await detectNotices({
+      db: trx,
+      now: () => now,
+      startedAt: new Date(now.getTime() - HOUR),
+      testMail: NO_TEST_SENDERS,
+    });
   }
 
   // An approved send that waits on a limit (or on `lastError`) until `nextAttemptAt`.
@@ -1593,7 +1702,12 @@ describe("after a resume (D4)", () => {
   }
 
   async function runAt(trx: Transaction<DB>, now: Date): Promise<void> {
-    await detectNotices({ db: trx, now: () => now, startedAt: new Date(now.getTime() - HOUR) });
+    await detectNotices({
+      db: trx,
+      now: () => now,
+      startedAt: new Date(now.getTime() - HOUR),
+      testMail: NO_TEST_SENDERS,
+    });
   }
 
   test("no sync-late row in the first 30 minutes after the resume; one after, unless the sync is fresh", async () => {

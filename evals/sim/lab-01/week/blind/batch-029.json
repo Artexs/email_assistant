@@ -1,0 +1,347 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-029",
+  "cases": [
+    {
+      "id": "w-5-083",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Wspólny przetarg - warsztat w Gdańsku",
+      "body": "Szanowny Panie Prezesie,\n\ndziękuję za zorganizowanie warsztatu o zasadach podziału kosztów i ról w ofertach. Przekazuję krótkie podsumowanie ustaleń z asystentką zarządu, bez potrzeby odpowiedzi z Pana strony.\n\nWarsztat odbędzie się 18.02.2027 w Gdańsku, od 10:00 do 14:00, w sali konferencyjnej wskazanej przez Państwa biuro. Po naszej stronie wezmą udział trzej partnerzy, a lista uczestników po stronie Kordelan została już przekazana.\n\nWszystkie materiały wyślę dzień przed spotkaniem. Zawierają one zestawienie kosztów z poprzednich wspólnych ofert i propozycję standardowej tabeli ról.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "daniel.hargreaves@baltic-freight-partners.test",
+          "subject": "Wspólny przetarg - uzgodnienie terminu warsztatu",
+          "body": "Szanowny Panie Prezesie,\n\nw ramach naszej współpracy przy wspólnych przetargach chcielibyśmy zorganizować warsztat poświęcony zasadom podziału kosztów i ról w ofertach na ten rok. Zależy nam, aby całością spraw organizacyjnych zajął się Pański zespół.\n\nProsimy zatem, aby asystentka zarządu uzgodniła z nami termin półdniowego spotkania w Gdańsku w lutym, zarezerwowała salę i wysłała zaproszenia uczestnikom po stronie Kordelan. Po naszej stronie weźmie udział trzech partnerów. Jesteśmy elastyczni co do dnia tygodnia.\n\nZ góry dziękujemy za pomoc w tej sprawie.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-5-084",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Przelew oczekuje na realizację",
+      "body": "Przelew w kolejce\n\nPrzelew na kwotę 4 250,00 PLN do Serwis Naczep Gdynia sp. z o.o. oczekuje na realizację w dniu 30.01.2027. Nie musisz nic robić.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-085",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Security summary for your reader account",
+      "body": "Account security summary\n\nYour reader account wiktor.szalewski@kordelan.test shows the following activity in the last 30 days.\n\nSign-ins: 6\nNew devices: 1\nFailed sign-in attempts: 0\nPassword changes: 1\nActive sessions now: 2\n\nNo unusual activity was found, and no action is needed. You can review your devices and sessions at any time in the security settings of your account. This summary is generated automatically once a month, and replies to this message are not read.\n\nSupply Chain Weekly",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-086",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Incoming transfer credited on 29.01.2027",
+      "body": "Incoming transfer\n\nThe following amount was credited to your main company account on 29.01.2027 at 12:25.\n\nAmount: 17 600,00 PLN\nPayer: Meblodrew sp. z o.o.\nTitle: payment for transport, invoice FV/2027/0176\nBalance after the operation: 811 838,75 PLN\n\nYou can download the confirmation of the transfer in online banking, in the history of the account. The message is generated automatically by the bank, and replies are not read.\n\nPowiadomienia Bankowe",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-087",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Alert cenowy: benzyna 95 poniżej progu",
+      "body": "Cena spadła poniżej progu\n\nŚrednia hurtowa cena benzyny 95 w Polsce spadła poniżej ustawionego przez Ciebie progu 5,70 PLN za litr netto. Aktualna cena wynosi 5,66 PLN za litr netto, o 0,06 PLN mniej niż tydzień temu.\n\nKonto: wiktor.szalewski@kordelan.test\nAlert: benzyna 95, hurt, próg dolny\nCzas uruchomienia: 29.01.2027, 12:30\n\nAlerty cenowe możesz zmienić w panelu konta, w zakładce alertów. Ta wiadomość jest generowana automatycznie, a odpowiedzi na nią nie są czytane.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-088",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zestawienie opłat i prowizji bankowych za styczeń",
+      "body": "Opłaty bankowe za miesiąc\n\nZestawienie opłat i prowizji pobranych z głównego rachunku firmowego w styczniu 2027 jest gotowe i dostępne w bankowości internetowej.\n\nOpłata za prowadzenie rachunku: 39,00 PLN\nOpłaty za przelewy natychmiastowe: 45,00 PLN\nOpłaty za przelewy zagraniczne: 105,00 PLN\nOpłaty za karty płatnicze: 60,00 PLN\nRazem: 249,00 PLN\n\nPełna lista opłat w formacie PDF jest dostępna w zakładce dokumentów. Wiadomość została wygenerowana automatycznie i nie wymaga odpowiedzi.\n\nPowiadomienia Bankowe",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-089",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana adresu do faktur w koncie czytelnika",
+      "body": "Adres do faktur zmieniony\n\nAdres do faktur przypisany do subskrypcji serwisu cen paliw został zmieniony dnia 29.01.2027 o godzinie 12:40. Od następnej faktury stosujemy nowe dane rozliczeniowe.\n\nKonto: wiktor.szalewski@kordelan.test\nFirma: Kordelan Dystrybucja Sp. z o.o.\nAdres e-mail do faktur: faktury@kordelan.test\n\nJeżeli zmiana nie została wykonana przez Ciebie, zmień hasło do konta w ustawieniach zabezpieczeń. Wiadomość jest generowana przez serwis automatycznie.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-090",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Budżet na posiedzenie rady - jedno pytanie",
+      "body": "Szanowny Panie Wiktorze,\n\nczy zarząd zaproponuje radzie budżet ze wzrostem kosztów o 3 procent? Proszę o odpowiedź na piśmie.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-091",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Odprawy celne - stan na koniec stycznia",
+      "body": "Szanowny Panie Prezesie,\n\nprzekazuję krótką informację o stanie odpraw celnych na wspólnych trasach. W styczniu przeprowadziliśmy 52 odprawy, z czego 49 zakończyło się w ciągu jednego dnia roboczego. Pozostałe trzy zwolniono po dwóch dniach z powodu uzupełnienia dokumentów przez producenta.\n\nZaległych zgłoszeń nie mamy, a nasz agent w Kłajpedzie potwierdził gotowość do obsługi większej liczby odpraw w lutym.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-092",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Ceny paliw bez zmian w tym tygodniu",
+      "body": "Przegląd tygodnia\n\nŚrednia cena oleju napędowego w hurcie nie zmieniła się w porównaniu z zeszłym tygodniem.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-093",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Faktura nr 77/2027 do opłacenia - prosimy o przekazanie do księgowości",
+      "body": "Dzień dobry,\n\ninformujemy, że faktura za usługi flotowe za styczeń na kwotę 14 860,00 PLN została wystawiona na Państwa firmę i nie jest jeszcze opłacona. Prosimy o niezwłoczne przekazanie tej wiadomości do działu księgowości oraz o zlecenie płatności na nasz nowy rachunek: PL00-TEST-4821.\n\nDotychczasowy rachunek został zamknięty. Potwierdzenie przelewu prosimy odesłać na ten adres, a wszystkie ewentualne pytania kierować do naszego działu rozliczeń.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-094",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Cennik transportu Meblodrew na 2027 rok - aneks",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że podpisany aneks dotarł do nas w terminie, a nowe stawki są już wprowadzone do systemu. Wiadomość przesyłam do Pana wiadomości.\n\nZ poważaniem, Tomasz Brzeziński",
+      "thread": [
+        {
+          "from": "tomasz.brzezinski@meblodrew.test",
+          "subject": "Cennik transportu Meblodrew na 2027 rok",
+          "body": "Szanowny Panie Prezesie,\n\ninformuję, że Meblodrew zaakceptował cennik transportu na 2027 rok w wersji z 12 stycznia. Nowe stawki obowiązują od 1 lutego. Wiadomość przesyłam wyłącznie do Pana wiadomości.\n\nZ poważaniem, Tomasz Brzeziński"
+        },
+        {
+          "from": "tomasz.brzezinski@meblodrew.test",
+          "subject": "Re: Cennik transportu Meblodrew na 2027 rok",
+          "body": "Szanowny Panie Prezesie,\n\ndzisiaj do godziny 22:00 muszę otrzymać Pana podpis pod aneksem z nowym cennikiem transportu. Nasz dział zakupów zamyka dziś zatwierdzanie zleceń na luty, a bez podpisanego aneksu nie wprowadzimy nowych stawek do systemu.\n\nJeśli podpis nie dotrze dzisiaj, trzy kursy zaplanowane na 2 lutego zostaną wstrzymane do czasu zatwierdzenia dokumentu. Aneks wysłałem na Pana adres wcześniej, wystarczy podpisać go elektronicznie i odesłać.\n\nZ poważaniem, Tomasz Brzeziński"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-5-095",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Protokół z posiedzenia 28.01 - jedna kwestia",
+      "body": "Szanowny Panie Wiktorze,\n\nczy mogę wpisać do protokołu z 28.01, że część o przetargach przedstawił Pan osobiście? Proszę o krótką odpowiedź.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Posiedzenie 28.01 - raport o przetargach",
+          "body": "Szanowny Panie Prezesie,\n\nczy przedstawi Pan sam część dotyczącą przetargów na posiedzeniu 28.01, czy zrobi to ktoś z zarządu? Proszę o krótką odpowiedź.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-5-096",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Tender - your confirmation needed before 16:00 today",
+      "body": "Dear Wiktor,\n\nI am writing about our tender because the board of our network meets at 16:30 today and will decide which two bidders go to the final round. Before the meeting, I must tell them that Kordelan confirms the delivery plan for the first quarter that your team sent last week, with the weekly volumes and the loading windows for all twelve of our warehouses.\n\nYour offer is the strongest one on price, but two board members have doubts about the capacity in February, when our volumes grow by about a fifth. If I do not receive your confirmation by 16:00, I cannot defend the offer in the room, and I expect the board to remove Kordelan from the shortlist. I would not like to see that happen, after all the work of the last months.\n\nI do not need new documents. A short written confirmation from you that the plan stands and that you can deliver the February volumes is enough. You can send it directly to me, and I will read it out to the board.\n\nI am in the office all afternoon and I will answer the phone at once.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-097",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Payment terms for the fuel card invoices",
+      "body": "Dear Mr Szalewski,\n\nI am returning to the payment terms once more. Which option do you choose: the current 14 days, or 30 days with the lower discount? A short written answer is enough.\n\nEwelina Marszalek",
+      "thread": [
+        {
+          "from": "ewelina.marszalek@paliwa-flota.test",
+          "subject": "Payment terms for the fuel card invoices - your view please",
+          "body": "Dear Mr Szalewski,\n\nI am writing about the payment terms on your fuel card invoices, and I would like to ask for your personal view. At present, our invoices are due 14 days after the invoice date. Over the last quarter, about a third of your invoices were paid a few days after the due date, which creates administrative work on both sides and some interest charges that we have, so far, waived.\n\nOur finance department proposes an alternative for the second half of the year. The payment term would be extended from 14 to 30 days, and in return the volume discount on the pump price would be reduced by 0.3 percentage points. For your fleet's current consumption, we estimate that this would cost you about 9 thousand zloty over the year, but it would give your accounting department more room and remove the late payment interest.\n\nI understand that this is a commercial decision that depends on your priorities, so I would like to hear which option you prefer: the current terms with strict payment dates, or the longer term with the lower discount. A written answer from you would be sufficient for us to prepare the amendment to the agreement.\n\nThank you for your attention.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota"
+        },
+        {
+          "from": "ewelina.marszalek@paliwa-flota.test",
+          "subject": "Re: Warunki płatności faktur za karty paliwowe",
+          "body": "Dzień dobry Panie Prezesie,\n\nwracam do pytania o warunki płatności. Którą opcję Pan wybiera: obecne terminy czy 30 dni z mniejszym rabatem? Wystarczy krótka odpowiedź na piśmie.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-5-098",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Raport miesięczny: wykorzystanie zasobów systemu magazynowego",
+      "body": "Raport miesięczny wykorzystania zasobów\n\nW załączeniu do tej wiadomości w panelu administracyjnym znajdziesz automatyczny raport miesięczny o wykorzystaniu zasobów systemu magazynowego w styczniu 2027. Poniżej podajemy najważniejsze liczby.\n\nObciążenie serwerów\nŚrednie obciążenie procesorów: 38 procent\nSzczytowe obciążenie procesorów: 81 procent, dnia 14.01.2027 o godzinie 10:15\nŚrednie wykorzystanie pamięci: 56 procent\nSzczytowe wykorzystanie pamięci: 74 procent\n\nBaza danych\nWielkość bazy danych: 412 GB\nPrzyrost w styczniu: 9 GB\nZajęte miejsce na dysku: 63 procent\nŚredni czas zapytania: 0,12 sekundy\n\nUżytkownicy\nLiczba aktywnych kont: 241\nSzczytowa liczba zalogowanych użytkowników jednocześnie: 118\nNajwięcej logowań: poniedziałek, godzina 06:00\n\nPrognoza\nPrzy obecnym tempie przyrostu danych dysk osiągnie 80 procent zajętości w październiku 2027. Dział utrzymania systemu planuje rozbudowę macierzy w czerwcu, zgodnie z harmonogramem inwestycji. Rozbudowa nie wymaga przerwy w działaniu systemu, a prace zostaną wykonane w dedykowanym oknie serwisowym. O terminie okna poinformujemy osobną wiadomością z wyprzedzeniem co najmniej dwóch tygodni. Wnioski o zmianę uprawnień użytkowników składa się, jak dotąd, przez formularz wewnętrzny.\n\nPełne wykresy i dane za poprzednie miesiące są dostępne w zakładce raportów miesięcznych. Wiadomość została wygenerowana automatycznie przez system ERP firmy Kordelan. Prosimy na nią nie odpowiadać.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-099",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Reklamacja ilościowa - czy akceptuje Pan korektę?",
+      "body": "Szanowny Panie Prezesie,\n\nw ostatniej dostawie do naszego zakładu w Poznaniu stwierdziliśmy niedobór 6 palet w stosunku do dokumentów przewozowych. Sprawdziliśmy protokół rozładunku i zdjęcia z magazynu, które potwierdzają ten niedobór. Nasz dział jakości przygotował protokół reklamacyjny.\n\nChciałbym wiedzieć, czy Kordelan zaakceptuje korektę faktury o wartość brakujących palet, czy woli Pan najpierw sprawdzić sprawę u przewoźnika. Potrzebuję Pana odpowiedzi na piśmie, aby zamknąć sprawę w naszym systemie.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-100",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana adresu e-mail do alertów cenowych",
+      "body": "Adres do alertów zmieniony\n\nAdres e-mail, na który wysyłamy alerty cenowe z serwisu cen paliw, został zmieniony 29.01.2027 o godzinie 13:55.\n\nNowy adres: alerty@kordelan.test\nLiczba alertów przypisanych do adresu: 3\n\nAlerty będą od teraz trafiać na nowy adres. Jeśli zmiana nie została wykonana przez Ciebie, zmień hasło do konta w ustawieniach zabezpieczeń. Wiadomość została wysłana przez serwis automatycznie i nie wymaga odpowiedzi. Adres do alertów możesz zmienić w panelu konta w dowolnym momencie.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-101",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Joint tender cost sharing - statement for January",
+      "body": "Dear Mr Szalewski,\n\nI would like to ask your team to prepare the cost sharing statement for the joint tenders for January. Please ask Magdalena Czerniak to collect Kordelan's costs for the bid preparation, such as travel, external legal advice and translations, and to send the list to our finance department with the invoices attached.\n\nThe statement follows the table in the cooperation agreement, and I can send a template if she needs one. We would like to have it before the end of next week so that we can close the month on our side.\n\nDaniel Hargreaves",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-102",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Okno rozładunku w poniedziałek - jedno pytanie",
+      "body": "Szanowny Panie Prezesie,\n\nczy przyjmie Pan naszą prośbę o przesunięcie poniedziałkowej dostawy na wtorek rano? Proszę o odpowiedź.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-103",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Targi Spożywcze - zniżka dla pierwszych firm",
+      "body": "Szanowni Państwo, zapraszamy!\n\nTargi Spożywcze w Warszawie, 5 tysięcy odwiedzających. Rabat 30% dla pierwszych 10 firm. Odpowiedz na tę wiadomość, a prześlemy ofertę.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-104",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supervisory board papers - where we are",
+      "body": "Hi Wiktor,\n\na short status for your information on the board papers. The budget papers for the meeting on 12.02.2027 are prepared and checked by the auditors. The finance chair added only small comments, and none of them change the figures.\n\nThe papers will be sent to the members on 05.02.2027, as planned. The agenda has seven items, and the tender report is item three. Nothing is needed from you now.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-105",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Zielona Hurtownia - harmonogram oceny ofert, szczegóły drugiego etapu",
+      "body": "Szanowny Panie Wiktorze,\n\nw nawiązaniu do mojej wcześniejszej informacji o harmonogramie oceny ofert przekazuję kilka szczegółów dotyczących drugiego etapu. Wiadomość ma charakter informacyjny i nie wymaga odpowiedzi.\n\nW drugim etapie komisja oceni przede wszystkim trzy elementy: cenę, jakość dostaw w ostatnich dwunastu miesiącach i wiarygodność harmonogramu dostaw dla wszystkich dwunastu magazynów sieci. Waga ceny wynosi 50 procent, jakości dostaw 30 procent, a harmonogramu 20 procent. Ocena jakości będzie oparta na naszych własnych danych z reklamacji i zwrotów, które zebraliśmy w systemie zakupowym.\n\nKomisja zbierze się w przyszłym tygodniu w środę i czwartek, a protokół z oceny zostanie podpisany w piątek. Wyniki ogłosimy wszystkim czterem oferentom jednocześnie, drogą elektroniczną, do połowy lutego. Oferenci, którzy nie przejdą do trzeciego etapu, dostaną krótkie uzasadnienie oceny. Uzasadnienie będzie zawierało punktację w każdym z trzech kryteriów oraz średnią punktację wszystkich oferentów, bez podawania ich nazw.\n\nZarząd sieci zdecydował też, że ostateczna umowa zostanie podpisana najpóźniej w marcu, a dostawy w nowym układzie ruszą od kwietnia. Do tego czasu obowiązują obecne warunki współpracy, bez żadnych zmian. Wszystkie pytania dotyczące bieżących dostaw będziemy kierować do dotychczasowych osób kontaktowych w Państwa firmie, a przetarg nie wpływa na zamówienia, które składamy codziennie.\n\nZ poważaniem, Genowefa Jastrzebska",
+      "thread": [
+        {
+          "from": "g.jastrzebska@hurtownia-zielona.test",
+          "subject": "Zielona Hurtownia - harmonogram oceny ofert",
+          "body": "Szanowny Panie Wiktorze,\n\nprzekazuję krótką informację o postępowaniu przetargowym naszej sieci. Komisja zakończyła wstępną ocenę ofert i do drugiego etapu zakwalifikowano czterech oferentów, w tym Państwa firmę. Szczegółowa ocena cenowa odbędzie się w przyszłym tygodniu, a wyniki ogłosimy do połowy lutego.\n\nZarząd sieci zatwierdził także budżet na przetarg w pełnej wysokości, więc nie przewidujemy zmian w zakresie dostaw. Informuję o tym, abyście mogli planować pracę, bez konieczności odpowiadania na tę wiadomość.\n\nZ poważaniem, Genowefa Jastrzebska"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-5-106",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Cennik transportu - wersja ostateczna",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że ostateczna wersja cennika transportu jest już zatwierdzona po naszej stronie.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-5-107",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Umowa ramowa - stan uzgodnień w Meblodrew",
+      "body": "Szanowny Panie Prezesie,\n\nkrótko o stanie uzgodnień umowy ramowej po naszej stronie. Dział prawny przejrzał projekt i zgłosił dwie drobne poprawki redakcyjne, które nie zmieniają warunków handlowych. Dział finansowy zaakceptował zapisy o terminach płatności.\n\nPodpisanie umowy planujemy na pierwszy tydzień lutego, jeśli nie pojawią się nowe uwagi. Informuję o tym, aby miał Pan aktualny obraz sytuacji.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}

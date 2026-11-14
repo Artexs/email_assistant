@@ -12,6 +12,7 @@ export type SwitchResult =
   | { kind: "changed"; mailbox: MailboxSummary }
   | { kind: "already"; mailbox: MailboxSummary }
   | { kind: "auth_error" }
+  | { kind: "host_blocked" }
   | { kind: "not_found" };
 
 // The conditional update and its audit row share one transaction (the caller's, when `db` is one).
@@ -39,7 +40,15 @@ export async function switchMailboxStatus(
     const mailbox = await getMailboxSummary(trx, ctx, mailboxId);
     if (!mailbox) return { kind: "not_found" };
     if (done) return { kind: "changed", mailbox };
-    return mailbox.status === "auth_error" ? { kind: "auth_error" } : { kind: "already", mailbox };
+    switch (mailbox.status) {
+      case "auth_error":
+        return { kind: "auth_error" };
+      case "host_blocked":
+        return { kind: "host_blocked" };
+      case "active":
+      case "paused":
+        return { kind: "already", mailbox };
+    }
   };
   const result = await (db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run));
   if (result.kind === "changed") {

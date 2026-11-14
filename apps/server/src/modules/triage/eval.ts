@@ -12,6 +12,7 @@ import {
   decidePolicy,
   delegateIdOf,
   delegationInputOf,
+  draftCheckCodes,
   EVAL_RECEIVED_AT,
   type DelegationInput,
   type EvalCase,
@@ -23,6 +24,7 @@ import {
   type Prediction,
   ruleSummary,
   splitAddress,
+  textIsClean,
   thresholdSweep,
   type ToolSwitches,
   type TriageAnalysis,
@@ -41,7 +43,15 @@ import {
 import { createLog } from "../../platform/log";
 
 import { type ClassifierEmail, classifyEmail } from "./classifier";
-import { type AttemptHooks, type EvalBudget, runPool } from "./eval-pool";
+import {
+  type CaseJudge,
+  judgeCaseDraft,
+  judgeFailed,
+  judgeReusable,
+  type JudgeSetup,
+  summarizeJudge,
+} from "./eval-judge";
+import { type AttemptHooks, type EvalBudget, RETRY_WAITS_MS, runPool } from "./eval-pool";
 import { prompts } from "./prompts";
 import { type ClassifierDelegate, EXCERPT_CHARS } from "./prompts/classifier-v2";
 import type { MailKind } from "./repo";
@@ -49,7 +59,6 @@ import type { MailKind } from "./repo";
 const log = createLog("eval");
 
 const HOUR_MS = 3_600_000;
-const RETRY_WAITS_MS = [10_000, 20_000, 40_000, 60_000];
 const STOP_AFTER_ERRORS = 3;
 const STOP_REASON = "soft errors in a row (quota or overload), resume later";
 const SAFE_ACTION_TYPES: readonly string[] = ["move", "mark_read", "flag", "save_summary"];
@@ -87,6 +96,10 @@ export interface CaseResult {
   delegatePick: boolean | null;
   draftKind: DraftKind | null;
   draftMatches: boolean | null;
+  // The draft judge result (`eval --sim --judge`); null when no judge ran or no draft was planned.
+  judge: CaseJudge;
+  // The usage of the judge call: its cost counts in the budget.
+  judgeUsage: CaseUsage | null;
 }
 
 export interface EvalReportBase {
@@ -123,6 +136,8 @@ export interface CasesEvalReport extends EvalReportBase {
   injection: { passed: number; total: number; failedIds: string[] };
   blocked: { total: number; ids: string[] };
   delegation: { pick: { right: number; total: number }; draft: { right: number; total: number } };
+  // Null without `--judge`, or when no case holds a judge result. Names the judge row of the run.
+  judge: (NonNullable<ReturnType<typeof summarizeJudge>> & { provider: LlmProviderId; model: string }) | null;
   usage: {
     avgTokensIn: number | null;
     avgTokensOut: number | null;
@@ -180,7 +195,7 @@ function toClassifierDelegates(c: EvalCase): ClassifierDelegate[] {
 }
 
 // The delegate's synthetic address: the planner takes it as the delegates row address (stage 9 builds the same input).
-function delegateAddress(key: string): string {
+export function delegateAddress(key: string): string {
   return `${key}@${DELEGATE_ADDRESS_DOMAIN}`;
 }
 
@@ -194,11 +209,6 @@ function draftKindOf(actions: PlannedAction[]): DraftKind {
     if (action.type === "create_draft" && action.draft.kind !== "reminder") return action.draft.kind;
   }
   return "none";
-}
-
-// LLM text in a draft holds no address, no link and no long number (the marking removes them; this proves it).
-function textIsClean(text: string): boolean {
-  return !/@|http|www\./i.test(text) && !/\d{9,}/.test(text.replace(/[ -]/g, ""));
 }
 
 // A delegation pair holds when the recipient comes from the case's own data, the text is clean and the send waits for approval.
@@ -286,6 +296,23 @@ const caseResultSchema = z.object({
   delegatePick: z.boolean().nullable().default(null),
   draftKind: z.enum(["delegation", "clarification", "none"]).nullable().default(null),
   draftMatches: z.boolean().nullable().default(null),
+  judge: z
+    .union([
+      z.object({
+        kind: z.literal("delegation"),
+        codeFailed: z.array(z.enum(draftCheckCodes)),
+        scores: z.record(z.string(), z.number()),
+        checks: z.record(z.string(), z.boolean()),
+        passed: z.boolean(),
+      }),
+      z.object({ kind: z.literal("delegation"), errorCode: z.string() }),
+    ])
+    .nullable()
+    .default(null),
+  judgeUsage: z
+    .object({ model: z.string(), tokensIn: z.number(), tokensOut: z.number(), latencyMs: z.number() })
+    .nullable()
+    .default(null),
 });
 
 // Later lines win. A line that does not parse (for example a cut write) is skipped.
@@ -369,6 +396,10 @@ function delegationResult(c: EvalCase, actions: PlannedAction[], analysis: Triag
   };
 }
 
+function judgeRow(setup: JudgeSetup): { provider: LlmProviderId; model: string } {
+  return { provider: setup.provider, model: setup.model };
+}
+
 function caseUsage(usage: LlmUsage): CaseUsage {
   return { model: usage.model, tokensIn: usage.tokensIn, tokensOut: usage.tokensOut, latencyMs: usage.latencyMs };
 }
@@ -385,7 +416,7 @@ function isRuleSpam(c: EvalCase): boolean {
 async function runCase(
   deps: Deps,
   c: EvalCase,
-  input: { model: string; retries: number },
+  input: { model: string; retries: number; judge?: JudgeSetup },
   attempts?: AttemptHooks
 ): Promise<CaseResult> {
   const expected = c.expected.category;
@@ -407,6 +438,8 @@ async function runCase(
       plannedTypes: actions.map((a) => a.type),
       injectionPassed: c.kind === "injection" ? injectionHolds(actions, c) : null,
       ...delegationResult(c, actions, null),
+      judge: null,
+      judgeUsage: null,
     };
   }
 
@@ -435,6 +468,8 @@ async function runCase(
       delegatePick: null,
       draftKind: null,
       draftMatches: null,
+      judge: null,
+      judgeUsage: null,
     };
   }
   const blocked = classified.kind === "blocked";
@@ -445,6 +480,10 @@ async function runCase(
     analysis?.summary ?? null,
     analysis && finalCategory === "delegation" ? (planDelegationInput(c, analysis) ?? undefined) : undefined
   );
+  const judged =
+    input.judge === undefined
+      ? { judge: null, usage: null }
+      : await judgeCaseDraft(deps, c, actions, input.judge, input, attempts);
   return {
     ...base,
     modelCategory: analysis?.category ?? "unsure",
@@ -458,6 +497,8 @@ async function runCase(
     plannedTypes: actions.map((a) => a.type),
     injectionPassed: c.kind === "injection" ? injectionHolds(actions, c) : null,
     ...delegationResult(c, actions, analysis),
+    judge: judged.judge,
+    judgeUsage: judged.usage,
   };
 }
 
@@ -477,10 +518,14 @@ export async function runEval(
     done?: CaseResult[];
     concurrency?: number;
     budget?: EvalBudget;
+    // With a judge, every planned delegation or clarification draft is judged (stage 16 of the lab ticket).
+    judge?: JudgeSetup;
   }
 ): Promise<CasesEvalReport> {
   const startedAt = deps.now();
-  const earlier = new Map((input.done ?? []).filter((r) => r.errorCode === null).map((r) => [r.id, r]));
+  // With a judge, a result is reused only when it needs no judge or holds scores; else the case runs again.
+  const reusable = (r: CaseResult): boolean => r.errorCode === null && (input.judge === undefined || judgeReusable(r));
+  const earlier = new Map((input.done ?? []).filter(reusable).map((r) => [r.id, r]));
   const pool = await runPool({
     cases: input.cases,
     earlier,
@@ -490,6 +535,8 @@ export async function runEval(
     errorStopReason: STOP_REASON,
     now: startedAt,
     usesLlm: (c) => !isRuleSpam(c),
+    // A spent judge quota fails every judge call: it stops the run like a classifier error.
+    endedInError: (result) => result.errorCode !== null || judgeFailed(result.judge),
     run: (c, attempts) => runCase(deps, c, input, attempts),
     onResult: async (result) => {
       await deps.onResult?.(result);
@@ -538,6 +585,7 @@ export async function runEval(
   const perMail = avgIn === null || avgOut === null ? null : costPerMail(input.model, avgIn, avgOut, startedAt);
   const latencies = usages.map((u) => u.latencyMs).sort((a, b) => a - b);
 
+  const judgeSummary = summarizeJudge(cases);
   return {
     kind: "cases",
     role: "classifier",
@@ -574,6 +622,7 @@ export async function runEval(
       pick: countRight(cases.map((r) => r.delegatePick)),
       draft: countRight(cases.map((r) => r.draftMatches)),
     },
+    judge: judgeSummary === null || input.judge === undefined ? null : { ...judgeSummary, ...judgeRow(input.judge) },
     usage: {
       avgTokensIn: avgIn,
       avgTokensOut: avgOut,
