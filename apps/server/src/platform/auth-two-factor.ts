@@ -2,7 +2,7 @@ import { type BetterAuthPlugin } from "better-auth";
 import { APIError, createAuthMiddleware, isAPIError } from "better-auth/api";
 import { twoFactor } from "better-auth/plugins";
 
-import type { AuthEventKind } from "./auth";
+import type { AuthEventKind, AuthHandle } from "./auth";
 import { errorFields } from "./errors";
 import { createLog } from "./log";
 
@@ -44,6 +44,16 @@ export function twoFactorPlugin() {
       },
     },
   });
+}
+
+// The number of unused backup codes, never the codes. null when the read fails (also: no row).
+export async function backupCodesLeft(handle: AuthHandle, userId: string): Promise<number | null> {
+  try {
+    return (await handle.auth.api.viewBackupCodes({ body: { userId } })).backupCodes.length;
+  } catch (error) {
+    log.warn("two_factor_codes_unreadable", { user_id: userId, ...errorFields(error) });
+    return null;
+  }
 }
 
 export type AuthReport = (kind: AuthEventKind, userId: string, data?: Record<string, string>) => Promise<void>;

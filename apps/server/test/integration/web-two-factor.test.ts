@@ -11,6 +11,7 @@ import {
   setBreakGlassOwner,
 } from "../../src/modules/tenancy";
 import { createAuth, type AuthHandle } from "../../src/platform/auth";
+import { backupCodesLeft } from "../../src/platform/auth-two-factor";
 import { createLockoutStore } from "../../src/platform/auth-lockout";
 import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
@@ -784,6 +785,29 @@ describe("two-factor events", () => {
     for (const row of result.rows) {
       for (const key of Object.keys(row.data)) expect(["via", "second_factor", "locked_until"]).toContain(key);
     }
+  });
+});
+
+describe("backupCodesLeft", () => {
+  test("8: counts the unused codes: 10, then 9 after a backup-code sign-in", async () => {
+    const user = await createEnrolled();
+    expect(await backupCodesLeft(handle, user.userId)).toBe(10);
+    const client = await challenge(user);
+    expect((await client.post("/two-factor/verify-backup-code", { code: user.codes[0] ?? "" })).status).toBe(200);
+    expect(await backupCodesLeft(handle, user.userId)).toBe(9);
+  });
+
+  test("8: a user without TOTP gives null and one log line with the user id and no code", async () => {
+    const owner = await createOwner();
+    const before = errorSpy.mock.calls.length;
+    expect(await backupCodesLeft(handle, owner.userId)).toBeNull();
+    const lines = errorSpy.mock.calls
+      .slice(before)
+      .map((call: unknown[]) => call.map((part: unknown) => String(part)).join(" "))
+      .filter((line: string) => line.includes("two_factor_codes_unreadable"));
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain(owner.userId);
+    expect(lines[0]).not.toMatch(BACKUP_CODE);
   });
 });
 

@@ -8,7 +8,7 @@ import { insertUser } from "../../src/modules/tenancy/repo";
 import { countMailboxes, onboardingDeps } from "../../src/web";
 
 import { testDb } from "./helpers";
-import { as, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
+import { as, noBackupCodes, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
 const db = testDb();
 const off = { kind: "off", reason: "env_off" } as const;
@@ -50,6 +50,7 @@ async function setup() {
           countMailboxes: countMailboxes(db),
           operatorContact: null,
           sessions: async () => [],
+          backupCodesLeft: noBackupCodes,
           ...onboardingDeps(db, async () => "fake_ea_bot"),
         })
       ),

@@ -17,7 +17,7 @@ import { countMailboxes, homePathOf, onboardingDeps } from "../../src/web";
 
 import { linkChat, randomChatId, testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
-import { as, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
+import { as, noBackupCodes, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
 const db = testDb();
 const off = { kind: "off", reason: "env_off" } as const;
@@ -68,6 +68,7 @@ async function setup(options: SetupOptions = {}) {
           countMailboxes: countMailboxes(db),
           operatorContact: null,
           sessions: async () => [],
+          backupCodesLeft: noBackupCodes,
           ...onboardingDeps(db, botUsername),
         })
       ),

@@ -20,7 +20,7 @@ import { countMailboxes, onboardingDeps, webDeps } from "../../src/web";
 
 import { testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
-import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
+import { as, noBackupCodes, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
 const db = testDb();
 const off = { kind: "off", reason: "env_off" } as const;
@@ -87,6 +87,7 @@ function appFor(
           countMailboxes: countMailboxes(db),
           operatorContact,
           sessions: async () => [],
+          backupCodesLeft: noBackupCodes,
           ...onboardingDeps(db, async () => "fake_ea_bot"),
         })
       ),
