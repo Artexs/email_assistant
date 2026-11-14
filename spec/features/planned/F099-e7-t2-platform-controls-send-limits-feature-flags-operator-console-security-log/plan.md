@@ -18,7 +18,7 @@ Ticket: [ticket.md](ticket.md). Open defaults for the owner: [questions.md](ques
 - [x] stage-07-operator-org-list [written]
 - [x] stage-08-operator-org-detail-and-notices [written]
 - [x] stage-09-operator-writes [written]
-- [ ] stage-10-operator-page
+- [x] stage-10-operator-page [written]
 - [ ] stage-11-operator-page-writes
 - [ ] stage-12-security-log-route
 - [ ] stage-13-security-log-card
@@ -76,7 +76,7 @@ Ticket: [ticket.md](ticket.md). Open defaults for the owner: [questions.md](ques
 - **D19 The notice list (absorbs F081).** The `operator.notice` audit rows of every organization in the last N days, newest first, at most 200: `{ orgId, kind, key, at }`. The key holds ids and dates only (`channels/operator.ts`). E8b SLO alerts use the same frame, so they appear here without a change.
 - **D20 Writes call the CLI's service functions.** `POST /orgs/:orgId/plan` calls `setOrgPlan` with the hooks of `org:plan` (`onSuspended: cancelPendingOutboxOfOrg`, `onResumed: resumeHook(db)`), injected from `web.ts` as `planHooks`; `POST /orgs/:orgId/flags` calls `setOrgFeature`. Actor = the operator's user id. The audit rows go into the target organization, as for the CLI. No "clear" of a flag (F087 D12 stays). Bodies are `@ea/core/web` schemas (stage 09).
 - **D21 Operator writes work while the operator's own organization is suspended.** `SUSPENDED_WRITE_ALLOW` gets `{ method: "POST", path: /^\/api\/operator\// }` (F087 D15 note). The operator acts on other organizations; its own plan does not matter.
-- **D22 The page `/operator`.** A static Astro page with one island. The server answers non-operators the normal 404 page for every path that matches `/^\/operator(\/|$)/i` (Probe P1: the guard on `c.req.path` covers `/operator`, `/operator/`, `/operator/index.html`, `/%6Fperator`, `/./operator`, `/settings/../operator`). The data is behind the API guard anyway; this hides the page. The nav shows the item "Operator" only when `me.operator` is true. No polling: a "Reload" button.
+- **D22 The page `/operator`.** A static Astro page with one island. The server answers non-operators the normal 404 page for every path that matches `/^\/operator(\/|$)/i` (Probe P1: the guard on `c.req.path` covers `/operator`, `/operator/`, `/operator/index.html`, `/%6Fperator`, `/./operator`, `/settings/../operator`). The data is behind the API guard anyway; this hides the page. The nav shows the item "Operator" only when `me.operator` is true. The page reloads its data every 60 s with the panel's `useResource` pattern, plus a "Reload" button.
 - **D23 `/api/me` gets `operator: boolean` and `features: string[]`.** `features` lists the registry keys that are on for the organization (`featureStates`); `z.array(z.string())` so a web build never fails on a new key. This is the web read path that F087 D22 left to the first web feature; E3a and later epics use it. `operator` comes from an injected `isOperator(userId)` (the `OPERATOR_USER_IDS` set of `webDeps`), so `tenancy` reads no config.
 - **D24 The operator stays a member of an organization** (F087 D17). TOTP for operators comes with E7-T6 (PD-043); this plan adds nothing for it.
 
