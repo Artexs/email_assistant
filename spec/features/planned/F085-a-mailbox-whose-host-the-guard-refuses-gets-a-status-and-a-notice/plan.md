@@ -226,7 +226,7 @@ limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thi
 
 ## Planning progress
 
-- [ ] stage 01 · [ ] stage 02 · [ ] stage 03 · [ ] stage 04 · [ ] stage 05 · [ ] stage 06 · [ ] stage 07
+- [written] stage 01 · [ ] stage 02 · [ ] stage 03 · [ ] stage 04 · [ ] stage 05 · [ ] stage 06 · [ ] stage 07
 - [ ] cold review (`plan-review-1.md`), findings applied
 
 ## Cold review
