@@ -1,6 +1,6 @@
 # Tenancy and plans
 
-> Checked against the code at `334f5a0`, 2026-11-14.
+> Checked against the code at `cf125cf`, 2026-11-14.
 
 ## What it does now
 

@@ -1,6 +1,6 @@
 # Sync
 
-> Checked against the code at `949c81d`, 2026-11-14.
+> Checked against the code at `cf125cf`, 2026-11-14.
 
 ## What it does now
 
