@@ -65,7 +65,8 @@ Two steps. About 250 changed lines.
   - Interfaces:
 
     ```ts
-    // packages/core/src/web/security-log.ts
+    // packages/core/src/web/security-log.ts — the web imports core only through @ea/core/web, so the kinds are re-exported here
+    export { securityEventKinds, type SecurityEventKind } from "../security-log";
     export const securityLogActorSchema = z.discriminatedUnion("kind", [
       z.strictObject({ kind: z.literal("member"), name: z.string() }),
       z.strictObject({ kind: z.literal("former_member") }),
