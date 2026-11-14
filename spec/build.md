@@ -48,7 +48,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F104-e5a-read-sent` (plan landed, cold review 1 fixed, 12 stages): E5a Read Sent; build after F095 closes (F099 closed); drift check first; gate —.
 - `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (plan landed, 15 stages): E7-T6 Identity A (TOTP, backup codes, break-glass); stage 01 the only migration, stage 10 changes `bun.lock`; sequenced after F082 (closed); gate —.
 - `F106-e7-t3-account-data-delete-export-dsr` (🔴 PLANNED, plan landed, 12 stages): E7-T3 Account data (delete, export, DSR); stage 01 the only migration, stage 05 the only `bun.lock` change; build after F082, F098 (closed); gate —.
-- `F107-e7-t4-papers-and-cost` (🔴 PLANNED, needs plan): E7-T4 Papers and cost; sequenced after E7-T3; gate —.
+- `F107-e7-t4-papers-and-cost` (🔴 PLANNED, plan landed, 8 stages): E7-T4 Papers and cost; legal drafts (pl, en), internal papers, claims list, cost model v1; sequenced after F106 (build after F106 is in `done/`); gate —; stage 07 is the VPS deploy (coordinator), stage 08 the cost model.
 - `F108-e7-t5-production-on-the-vps` (🔴 PLANNED, needs plan): E7-T5 Production on the VPS; sequenced after E7-T1 … T4; the E8b drill proves its restore; gate —.
 - `F109-e3b-improve` (🔴 PLANNED, needs plan): E3b Improve; sequenced after E2a, E3a; gate Second pass after the first E2a holdout report (PD-060, PD-061).
 - `F110-e4-b-earn-trust` (🔴 PLANNED, needs plan): E4-B Earn trust; sequenced after E4-A (command contract stage), E3a (flag store, header capture), E2a (urgency shape); the urgency-editor stage needs E3b's urgency command; gate —.
