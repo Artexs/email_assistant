@@ -1,0 +1,391 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-016",
+  "cases": [
+    {
+      "id": "b-inf-0203",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Wspólne przetargi - raport z postępów po trzech tygodniach",
+      "body": "Szanowny Panie Wiktorze,\n\ndziękuję za Pańską krótką odpowiedź. Chciałbym w nawiązaniu do niej przekazać pełniejszy raport z postępów w naszych wspólnych przetargach, ponieważ w ostatnich dniach nastąpiło kilka istotnych zmian, a nie chciałbym, aby dowiedział się Pan o nich z drugiej ręki.\n\nPrzetarg dla sieci handlowej: dokumentacja jest kompletna w dziewięćdziesięciu procentach. Brakuje jeszcze zaświadczeń o niekaralności i polisy ubezpieczeniowej, które nasz dział prawny odbierze w tym tygodniu. Model kosztowy został zaakceptowany przez obie strony, a marża mieści się w założeniach, które uzgodniliśmy na początku współpracy.\n\nPrzetarg na transport chłodniczy: komisja zakończyła ocenę formalną i dopuściła obie nasze oferty. Rozmowy z komisją odbędą się w lutym, a harmonogram prześlę, gdy tylko zostanie opublikowany.\n\nPrzetarg trzeci, na przewozy kontenerowe: zamawiający przesunął ogłoszenie warunków na marzec, więc nie ma tu jeszcze nic do robienia. Nasz zespół obserwuje sytuację i przygotuje wstępną analizę.\n\nZasadniczo wszystko przebiega zgodnie z planem i żadna z tych informacji nie wymaga od Pana decyzji. Piszę po to, by miał Pan aktualny obraz. Następne podsumowanie przekażę za dwa tygodnie, chyba że wcześniej coś się zmieni.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Wspólne przetargi - pierwszy raport",
+          "body": "Daniel, dziękuję za raport. Proszę kontynuować, w razie potrzeby kontaktować się z Piotrem Lewandrowskim. Wiktor"
+        },
+        {
+          "from": "daniel.hargreaves@baltic-freight-partners.test",
+          "subject": "Wspólne przetargi - pierwszy raport",
+          "body": "Szanowny Panie Wiktorze, przesyłam pierwszy raport o stanie wspólnych przetargów. Wszystko idzie zgodnie z planem. Daniel Hargreaves"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0204",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Hamburg and Rotterdam - weekly customs picture",
+      "body": "Wiktor,\n\nthis is the weekly picture from the customs side. Hamburg crossing: two hours on average, no incidents. Rotterdam: the delayed truck from last week got released, and since then four more trucks passed without any holds. Gdynia: normal, just the usual morning queue. Nothing needs your attention, and I would rather you knew the numbers than hear it in the corridor.\n\nNext update on Friday.\n\nOliver",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Customs picture",
+          "body": "Oliver, thanks. Please keep sending these short updates. Wiktor"
+        },
+        {
+          "from": "oliver.pemberton@kordelan.test",
+          "subject": "Customs picture",
+          "body": "Wiktor, summary of the customs situation on our main lanes is below, all fine at the moment. Oliver"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0207",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Broker holiday cover in February",
+      "body": "Dear Wiktor,\n\nPlease note that two of our customs brokers will be on leave in the second half of February. Cover is arranged: their files will be handled by Ms Wrona and a colleague from our Gdansk desk, both of whom already worked on the Kordelan lanes. Clearance times should not change.\n\nI send this for your information only, and the cover details are in our system.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0208",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana adresu rozliczeniowego",
+      "body": "Szanowny Panie Wiktorze,\n\ndla informacji: od pierwszego lutego zmienia się adres naszego działu księgowości, na który należy wysyłać faktury w formie papierowej. Faktury elektroniczne wysyłamy dalej na tę samą skrzynkę. Aktualizacja danych została już wprowadzona w naszym systemie zakupowym, więc nie są potrzebne żadne czynności po Państwa stronie.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0210",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nordic framework agreement - the story so far, for the file",
+      "body": "Hi Wiktor,\n\nsince the Nordic framework is about to be signed, here is a longer summary of how we got here, in case you want it for your records or for the board. It needs no action from you.\n\nThe first talks started last spring, when Karin's company asked for a quote on weekly chilled shipments from Poznan to Gothenburg. We started with a single trial lane in May, and the trial went well: on-time delivery above ninety-five percent, no damage claims, and the paperwork handled by Daniel's broker team without delays. In September, they asked us for a framework agreement covering four lanes and a volume estimate for the next two years.\n\nThe negotiation was mostly about three points. The liability clause, which took two rounds. The price review mechanism, tied to the Swedish diesel index. And the delivery windows at their new distribution centre. All three are now agreed, with only some wording to polish. Piotr did a very good job here, and their lawyers said so.\n\nWhat is next: signing on 22 January, a kick-off call the week after, and the first shipments under the framework in February. Halina has the trailers ready, and Karin's team will confirm the labels.\n\nI think this one is a big deal for us. Nothing to do from your side, but I wanted you to have the full picture.\n\nOliver",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0211",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wynik rozmów w Gdyni",
+      "body": "Cześć Wiktor,\n\nrozmowy z kandydatami do Gdyni zakończone, obsada pełna od poniedziałku.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0212",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wspólny przetarg - informacja o sytuacji klienta",
+      "body": "Szanowny Panie Wiktorze,\n\nzgodnie z naszą rozmową informuję, że klient z kręgu Nordic Foods Trade, który wcześniej pytał o możliwość obsługi przez konsorcjum, otrzymał od nas wstępny opis możliwości. Nie złożył jeszcze zapytania ofertowego i prawdopodobnie zrobi to dopiero w drugim kwartale. Gdyby tak się stało, damy znać, a na razie nie ma żadnych zobowiązań po żadnej ze stron.\n\nPiszę wyłącznie dla informacji.",
+      "thread": [
+        {
+          "from": "karin.lindqvist@nordicfoods-trade.test",
+          "subject": "Question about joint services",
+          "body": "Dear Mr Hargreaves, we heard that Kordelan and your company cooperate on tenders. Could the joint team serve our Nordic lanes in the second half of the year? Karin Lindqvist"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0214",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wspólna oferta - zakończenie kalkulacji",
+      "body": "Szanowny Panie Wiktorze,\n\ninformuję, że nasz zespół zakończył kalkulację do wspólnej oferty na przewozy chłodnicze. Wynik został zaakceptowany przez nasz zarząd, a marża mieści się w założeniach modelu. Koszty paliwa i opłat drogowych policzyliśmy według stawek, które przekazał Państwa dział sprzedaży.\n\nKolejny krok to połączenie kalkulacji z Państwa częścią, który wykonują nasi analitycy razem z koordynatorem Piotrem Lewandrowskim. Mam informację, że jest on na bieżąco, więc nie potrzebuję w tej sprawie Pańskiego udziału.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0215",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana lotu - Sztokholm",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że lot do Sztokholmu został przesunięty na godzinę 11:40, reszta bez zmian.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Wyjazd do Sztokholmu",
+          "body": "Panie Przewodniczący, przyjąłem do wiadomości, życzę dobrej podróży. Wiktor Szalewski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0216",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Odprawy do Szwecji - nowe godziny zgłoszeń",
+      "body": "Szanowny Panie Wiktorze,\n\nzgodnie z wcześniejszą wymianą zdań o wymogach dla Szwecji informuję, że szwedzki urząd celny zmienił godziny przyjmowania zgłoszeń wstępnych: od lutego zgłoszenia można składać do dwudziestej drugiej, a nie, jak dotąd, do osiemnastej. Dla Państwa zleceń to korzystna zmiana, bo kierowcy wyjeżdżający wieczorem będą mogli złożyć zgłoszenie po załadunku.\n\nNasz zespół wprowadził już zmianę w swoim systemie.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "karin.lindqvist@nordicfoods-trade.test",
+          "subject": "Re: Customs for Sweden - hours",
+          "body": "Dear Karin, thank you, we will pass your question to our broker. Best regards, Wiktor Szalewski"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Customs for Sweden - hours",
+          "body": "Dear Mr Szalewski, until what time can pre-notifications for Sweden be filed? Our drivers often leave in the evening. Karin Lindqvist"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0218",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zakończenie szkolenia z nowych procedur",
+      "body": "Szanowny Panie Wiktorze,\n\ndla Pańskiej wiadomości: w środę zakończyliśmy szkolenie naszego zespołu z nowych procedur zgłoszeń wstępnych dla żywności chłodzonej. Wzięło w nim udział dwanaście osób, w tym specjaliści zajmujący się Państwa zleceniami. Wszyscy zdali krótki test, a materiały szkoleniowe trafiły do naszej bazy wiedzy.\n\nDzięki temu od lutego wszystkie zlecenia Kordelana będą obsługiwane zgodnie z nowymi zasadami, bez opóźnień.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0219",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Framework agreement - note on the signing copies",
+      "body": "Dear Mr Szalewski,\n\nFor your information: the customs clauses of the framework agreement were reviewed by our compliance team and they have no objections. Mr Lewandrowski has the confirmation, and the final text will go to signing as agreed.\n\nThe shipments under the agreement will use the same pre-notification procedure as today, so no changes to the export process are needed.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [
+        {
+          "from": "piotr.lewandrowski@kordelan.test",
+          "subject": "Framework agreement - customs annex",
+          "body": "Dear Karin, attached is the customs annex for your compliance team to review before signing. Piotr Lewandrowski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0220",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: karty i opłaty - przegląd rynku",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nRynek kart paliwowych dla firm transportowych w Polsce rośnie szybciej niż rynek paliw. Najwięksi dostawcy poszerzają oferty o płatności za parkingi i myjnie, a część wprowadza karty na stacjach ładowania pojazdów elektrycznych.\n\nEksperci radzą, aby przy porównywaniu ofert zwracać uwagę na opłaty stałe, które w niektórych pakietach rosną w drugim roku umowy. Dobrym zwyczajem jest ustalenie w umowie limitu wzrostu opłat.\n\nWybór karty zależy od tras. Przewoźnicy krajowi korzystają głównie z kart sieciowych, a międzynarodowi z kart wielosieciowych, które działają w kilku krajach.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0221",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wspólna oferta dla klienta z Göteborga - stan prac",
+      "body": "Szanowny Panie Wiktorze,\n\nodnoszę się do pytania klienta z Nordic Foods Trade i Pańskiej odpowiedzi. Nasz zespół przygotował wstępny zarys oferty konsorcjum na przewozy do Skandynawii: dwa dodatkowe samochody tygodniowo, odprawy w naszej wspólnej strukturze i stały kontakt dla klienta. Zarys nie jest jeszcze ofertą i zostanie rozbudowany po otrzymaniu zapytania od klienta.\n\nPiszę, aby Pan wiedział, na jakim etapie jesteśmy.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "karin.lindqvist@nordicfoods-trade.test",
+          "subject": "Re: Joint services for Nordic lanes",
+          "body": "Dear Karin, thank you for asking. Daniel Hargreaves will be in touch with a first outline. Best regards, Wiktor Szalewski"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Joint services for Nordic lanes",
+          "body": "Dear Mr Szalewski, could Kordelan and Baltic Freight Partners serve additional Nordic lanes together? Karin Lindqvist"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0222",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Joint ventures - an overview of what we achieved in the first year",
+      "body": "Dear Wiktor,\n\nNow that the first year of our joint venture is behind us, I would like to share some thoughts and numbers in one place. This is not a request for anything, but I believe you will find the picture useful, especially before the board meets at the end of the month.\n\nResults. We submitted nine joint tenders and won four, which gives a hit rate of about forty-four percent, well above the market average of around twenty-five. The total yearly value of the contracts we won is close to eleven million zloty. Our shared model shows a margin that is slightly above what we planned.\n\nOperations. The cooperation between our brokers and your logistics teams has become routine. The average time between a won tender and the first shipment fell from five weeks to three. We also introduced a single contact desk for customers of the joint offers, which they appreciate.\n\nLessons. The tenders we lost were mostly lost on price for ancillary services. For next year, we plan to prepare simpler price structures for such services. Another lesson is that early involvement of customs specialists helps in tenders that include cross-border lanes.\n\nOutlook. We expect a similar number of tenders in the coming year, with a growing share of chilled transport. Several large customers announced framework tenders for the second half of the year.\n\nI am grateful for the trust and the good atmosphere in our cooperation, and I look forward to the next twelve months.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0223",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supply Chain Weekly: rates, regulation and a look at warehousing",
+      "body": "Supply Chain Weekly - the weekly digest\n\nRates. Container spot rates were mixed this week, with a small rise on Asia to North Europe and a small fall on trans-Atlantic lanes. Reefer rates held steady.\n\nRegulation. The European Commission published draft guidance on the new customs data hub. Forwarders say the project may simplify declarations, but warn that the implementation will take several years.\n\nWarehousing. Prime logistics rents in Central Europe rose by about two percent in the quarter, and developers say that demand remains high from food and e-commerce tenants.\n\nThe full report is available to paid subscribers.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0224",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supply Chain Weekly: Baltic update",
+      "body": "Supply Chain Weekly - Baltic update\n\nBaltic ports handled more containers in December than a year earlier, helped by transhipment from the North Sea. Gdansk reached a monthly record, and Gdynia added a new service to Scandinavia.\n\nRail links between Poland and the Baltic states improved after the completion of works on the main line, which cut transit times by five hours.\n\nSubscribers can read the detailed port statistics in the paid edition.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0225",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supply Chain Weekly: short note",
+      "body": "Supply Chain Weekly - short note\n\nFuel surcharges in European road freight were unchanged this week, as diesel prices remained flat.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0226",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: ceny paliw w skrócie",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nOlej napędowy potaniał w tym tygodniu o grosz, a karty flotowe nie zmieniły cen.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0227",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Delivery window statistics for January",
+      "body": "Dear Mr Szalewski,\n\nI would like to share the delivery window statistics for January from our Gothenburg site. Out of 34 arrivals from Kordelan, 32 were inside the agreed window, one was twenty minutes early and one forty minutes late because of snow on the access road. The average unloading time was 88 minutes, and we recorded no damage on any pallet.\n\nThis is for your information only. Thank you for the reliable service.\n\nBest regards,\nKarin Lindqvist",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0228",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Framework agreement - signing arrangements",
+      "body": "Dear Mr Szalewski,\n\nThank you for your message. I confirm that we will sign the framework agreement on 22 January, and the signed copies will be sent by courier on the same day. Our legal department has finished its review, and we have no open points.\n\nThis is a status note only.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Framework agreement - signing",
+          "body": "Dear Karin, we are glad to confirm the date of 22 January. Our lawyers will send the final copy. Best regards, Wiktor Szalewski"
+        },
+        {
+          "from": "karin.lindqvist@nordicfoods-trade.test",
+          "subject": "Framework agreement - signing",
+          "body": "Dear Mr Szalewski, we plan to sign the agreement on 22 January if the last wording is agreed. Karin Lindqvist"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0230",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Nordic lanes - capacity from the joint venture side",
+      "body": "Dear Wiktor,\n\nThank you for your reply, and for the kind words about the cooperation. I would like to follow up with a more complete picture of what the joint venture can offer on the Nordic lanes, since Oliver raised the subject and you showed interest. I will keep this as an overview, as nothing needs deciding now.\n\nCapacity. We have twelve dedicated trucks for Scandinavia in the second quarter, and two subcontractors who can add six more in peak weeks. The trucks are modern, with full temperature logging, which fits the requirements of Nordic Foods Trade and other importers of chilled goods.\n\nCustoms. Our brokers already hold the registrations needed for the new pre-notification system. The clearance times for chilled goods have fallen to an average of 34 minutes, and we do not see this changing after February.\n\nCommercial model. For any new Nordic lane, we propose to use the same cost model as in the current joint tenders, which both sides already know. A first indicative price could be ready within a week of receiving the lane details.\n\nI will not push this further unless a concrete request arrives. For now I simply wanted you and Oliver to know what we can do.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "oliver.pemberton@kordelan.test",
+          "subject": "Re: Nordic lanes - possible joint offer",
+          "body": "Daniel, thank you. Oliver will send you the details of the new lane when he has them. Wiktor"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Nordic lanes - possible joint offer",
+          "body": "Wiktor, Karin's people may need a few extra lanes in the second half. Could Daniel's team be a partner for that? Oliver Pemberton"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0231",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Cennik - potwierdzenie obowiązywania",
+      "body": "Szanowny Panie Wiktorze,\n\npotwierdzam, że cennik z aneksu obowiązuje u nas od pierwszego lutego, tak jak ustalono.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0234",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Dyżur biura odpraw",
+      "body": "Szanowny Panie Wiktorze,\n\ninformuję, że nasze biuro odpraw w sobotę pracuje do godziny czternastej, według zwykłego grafiku.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0235",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana numeru zgłoszeniowego urzędu",
+      "body": "Szanowny Panie Wiktorze,\n\ndla informacji: urząd celny w porcie zmienił numer telefonu, pod który zgłaszamy pilne wnioski o kontrolę wstępną. Nowy numer został już wprowadzony do naszego systemu, więc nie jest potrzebna żadna zmiana po Państwa stronie. Zespół odpraw zna nowy numer i zawsze kontaktuje się z urzędem w imieniu Kordelana.\n\nJeśli sytuacja ulegnie zmianie, powiadomimy Państwa osobno. Dziękuję za dobrą współpracę w minionym tygodniu.\n\nZ wyrazami szacunku",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}
