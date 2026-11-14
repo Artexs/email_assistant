@@ -165,6 +165,35 @@ export async function recordLlmCall(db: DbOrTrx, ctx: TenantContext, call: LlmCa
   });
 }
 
+// F099 D18: `llm.call` rows of the organization at or after `since`, per model (no model: "unknown").
+export async function sumLlmCallsByModelSince(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  since: Date
+): Promise<{ model: string; calls: number; tokensIn: number; tokensOut: number }[]> {
+  const model = sql<string>`coalesce(data->>'model', 'unknown')`;
+  const rows = await db
+    .selectFrom("audit_log")
+    .select([
+      model.as("model"),
+      sql<string>`count(*)`.as("calls"),
+      sql<string>`coalesce(sum((data->>'tokens_in')::bigint), 0)`.as("tokens_in"),
+      sql<string>`coalesce(sum((data->>'tokens_out')::bigint), 0)`.as("tokens_out"),
+    ])
+    .where("org_id", "=", ctx.orgId)
+    .where("event", "=", auditEvents.llmCall)
+    .where("created_at", ">=", since)
+    .groupBy(model)
+    .orderBy(model)
+    .execute();
+  return rows.map((row) => ({
+    model: row.model,
+    calls: Number(row.calls),
+    tokensIn: Number(row.tokens_in),
+    tokensOut: Number(row.tokens_out),
+  }));
+}
+
 // One `llm.call` row per LLM call attempt; the mailbox id is in `data`, so no join to `emails`.
 // With a role: rows of that role; rows without a role count as classifier rows (written before roles existed).
 export async function countLlmCallsSince(

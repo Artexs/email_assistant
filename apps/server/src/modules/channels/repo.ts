@@ -638,3 +638,17 @@ export async function deleteOldLinkTokens(
     if (changed === 0) return total;
   }
 }
+
+// F099 D17: failed outbox rows created after `since`. The outbox has no failure time; the sender gives up
+// 24 h after the queue time, so `created_at` bounds it. `outdated` and `expired` are cancellations.
+export async function countFailedOutboxSince(db: DbOrTrx, ctx: TenantContext, since: Date): Promise<number> {
+  const row = await db
+    .selectFrom("outbox")
+    .select(sql<string>`count(*)`.as("count"))
+    .where("org_id", "=", ctx.orgId)
+    .where("status", "=", "failed")
+    .where("created_at", ">", since)
+    .where((eb) => eb.or([eb("error_code", "is", null), eb("error_code", "not in", ["outdated", "expired"])]))
+    .executeTakeFirstOrThrow();
+  return Number(row.count);
+}

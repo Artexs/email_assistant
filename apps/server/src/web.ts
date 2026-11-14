@@ -259,7 +259,7 @@ export function apiRouters(
         ...onboardingDeps(db, extras.botUsername),
       })
     );
-    api.route("/operator", operatorRoutes({ db }));
+    api.route("/operator", operatorRoutes({ db, now }));
     api.route(
       "/",
       mailRoutes({
