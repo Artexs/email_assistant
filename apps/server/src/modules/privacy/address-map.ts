@@ -157,16 +157,20 @@ export const NO_PERSONAL_TABLES: Readonly<Record<string, string>> = {
 
 const MAX_ADDRESS_LENGTH = 254;
 
-// Trims and lower-cases. Null unless the value is one address: one `@`, a dot after it, at most 254 characters,
-// and no whitespace, quote, backslash or angle bracket.
+// Trims and lower-cases. Null unless the value is one address: one `@`, a domain of non-empty labels with a dot, at most
+// 254 characters, and no whitespace, quote, backslash, angle bracket, control, format (zero-width) or separator
+// character. A value that NFKC changes (full-width letters) is null: it would match no stored address. Reviewed after
+// stage 06: `p@x.test.`, `p@.test` and `p@x..test` matched nothing and passed.
 export function normalizeDsrAddress(input: string): string | null {
   const address = input.trim().toLowerCase();
   if (address.length === 0 || address.length > MAX_ADDRESS_LENGTH) return null;
-  if (/[\s"\\<>]/u.test(address)) return null;
+  if (/[\s"\\<>\p{Cc}\p{Cf}\p{Z}]/u.test(address)) return null;
+  if (address.normalize("NFKC") !== address) return null;
   const parts = address.split("@");
   if (parts.length !== 2) return null;
   const [local, domain] = parts;
   if (!local || !domain || !domain.includes(".")) return null;
+  if (domain.split(".").some((label) => label === "")) return null;
   return address;
 }
 

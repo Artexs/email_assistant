@@ -203,6 +203,18 @@ describe("DSR address map", () => {
     for (const bad of ["p@x", "a b@x.test", "<p@x.test>", "p@@x.test", "@x.test", "", 'a"b@x.test', "a\\b@x.test"]) {
       expect(normalizeDsrAddress(bad)).toBeNull();
     }
+    // A trailing or empty domain label, a full-width letter and a zero-width space match no stored address: null.
+    for (const bad of [
+      "p@x.test.",
+      "p@.test",
+      "p@x..test",
+      "p@.x.test",
+      "ｐ@x.test",
+      "p@x.test\u200b",
+      "p\u200b@x.test",
+    ]) {
+      expect(normalizeDsrAddress(bad)).toBeNull();
+    }
     expect(normalizeDsrAddress(`${"a".repeat(247)}@x.test`)).toBe(`${"a".repeat(247)}@x.test`); // 254 characters
     expect(normalizeDsrAddress(`${"a".repeat(248)}@x.test`)).toBeNull(); // 255 characters
   });

@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, createHmac, hkdfSync, randomBytes } from "node:crypto";
 
 // AES-256-GCM for mailbox secrets (ADR 0009).
 // ciphertext = base64 of iv (12 bytes) || auth tag (16 bytes) || encrypted bytes.
@@ -79,4 +79,19 @@ export function tombstoneKeyHash(dedupKey: string): string {
   return createHash("sha256")
     .update(dedupKey.replace(/#[0-9]+$/, ""), "utf8")
     .digest("hex");
+}
+
+const DSR_HASH_INFO = "ea/dsr-address/v1";
+
+// The hash of a DSR address for the audit row (F106 account data ticket): HMAC-SHA256 hex over the normalized address. The key is the
+// HKDF-SHA256 of the credentials key (empty salt, info `ea/dsr-address/v1`, 32 bytes), so a person who reads the audit
+// table without the credentials key cannot test guessed addresses against it. A change of the credentials key makes
+// old hashes unmatchable. The caller normalizes the address first; this module cannot import the privacy module.
+export function dsrAddressHash(credentialsKeyBase64: string, address: string): string {
+  const key = decodeBase64(credentialsKeyBase64);
+  if (key === null || key.length !== KEY_BYTES) {
+    throw new CryptoError(`Credentials key must be base64 of exactly ${KEY_BYTES} bytes`);
+  }
+  const derived = Buffer.from(hkdfSync("sha256", key, Buffer.alloc(0), DSR_HASH_INFO, KEY_BYTES));
+  return createHmac("sha256", derived).update(address, "utf8").digest("hex");
 }
