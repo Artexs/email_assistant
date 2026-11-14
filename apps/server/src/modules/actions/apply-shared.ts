@@ -1,5 +1,5 @@
 // The types and the helper that apply.ts, drafts.ts and send.ts share. It imports none of them, so there is no import cycle.
-import type { MoveTarget, OutgoingMessage } from "@ea/core";
+import type { MoveTarget, OutgoingMessage, SendLimits } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -7,6 +7,7 @@ import type { MailProvider, MailSender } from "../mail";
 
 import type { DelegationHooks } from "./hooks";
 import type { ClaimedAction } from "./repo";
+import type { SendLimitHit } from "./send-limit";
 
 export type ApplyOutcome =
   | { kind: "applied" }
@@ -53,6 +54,10 @@ export interface ApplyDeps {
   beforeSend?: () => void | Promise<void>;
   afterSend?: () => void | Promise<void>;
   beforeSentCopy?: () => void | Promise<void>;
+  /** PD-044: the send limits. Absent: `DEFAULT_SEND_LIMITS`. */
+  sendLimits?: SendLimits;
+  /** Called after the commit of a held send; never awaited, a throw is logged (D10). Absent: no callback. */
+  onSendLimited?: (ctx: TenantContext, hit: SendLimitHit) => void;
 }
 
 // Runs `run` in the caller's transaction, or in a new one.

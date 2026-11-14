@@ -28,6 +28,7 @@ export const auditEvents = {
   actionUndoRequested: "action.undo_requested",
   actionExpired: "action.expired",
   actionApplying: "action.applying",
+  actionSendLimited: "action.send_limited", // data: limit, until, mailbox_id; reason_code send_limit
   actionApproved: "action.approved",
   actionRejected: "action.rejected",
   actionSendAgain: "action.send_again",

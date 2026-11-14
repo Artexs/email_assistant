@@ -229,9 +229,9 @@ export const ACTION_EDGES: readonly ActionEdge[] = [
     to: "approved",
     types: ["send"],
     writer: "releaseAction",
-    reasons: ["no sender", "draft not applied", "compose error", "no provider"],
+    reasons: ["no sender", "draft not applied", "compose error", "no provider", "send limit"],
     retry: true,
-    callers: ["apply.ts", "send.ts"],
+    callers: ["apply.ts", "send.ts", "send-limit.ts"],
   },
   {
     id: "E13",

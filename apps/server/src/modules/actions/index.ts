@@ -8,6 +8,7 @@ export {
   type ResolvableFolderKey,
 } from "./apply";
 export { applyDraft, buildDraftMessage } from "./drafts";
+export { type SendLimitHit } from "./send-limit";
 export {
   applySend,
   SEND_HARD_TRIES,

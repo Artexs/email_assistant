@@ -1,7 +1,13 @@
-import { draftPayloadSchema, sendPayloadSchema, type OutgoingMessage, type SendPayload } from "@ea/core";
+import {
+  DEFAULT_SEND_LIMITS,
+  draftPayloadSchema,
+  sendPayloadSchema,
+  type OutgoingMessage,
+  type SendPayload,
+} from "@ea/core";
 
 import type { TenantContext } from "../../platform/db";
-import { describeError, HardError, SoftError } from "../../platform/errors";
+import { describeError, errorFields, HardError, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit, type AuditData } from "../audit";
 import { locateByActionId, MailAuthError, SmtpSendError, type MailProvider } from "../mail";
@@ -13,12 +19,12 @@ import {
   finishAction,
   getDraft,
   insertReverse,
-  markApplying,
   releaseAction,
   updateProviderResult,
   type ClaimedAction,
   type DraftRow,
 } from "./repo";
+import { startSendWithinLimits } from "./send-limit";
 
 const log = createLog("actions");
 
@@ -385,27 +391,28 @@ export async function applySend(
   if (prepared === null || raw === null) return badPayload(deps, ctx, action);
   const { payload, message } = prepared;
 
-  // (2) Own commit, before any SMTP call.
-  const started = await inTransaction(deps.db, async (trx) => {
-    if (
-      !(await markApplying(trx, ctx, action.id, action.locked_at, {
-        outgoingMessageId: message.messageId,
-        sendStartedAt: now,
-      }))
-    ) {
-      return false;
+  // (2) Own commit, before any SMTP call. The limit check and `markApplying` share one transaction under the mailbox lock (PD-044).
+  const start = await inTransaction(deps.db, (trx) =>
+    startSendWithinLimits(trx, ctx, {
+      action,
+      mailboxId: deps.mailboxId,
+      to: payload.to,
+      kind: payload.kind,
+      outgoingMessageId: message.messageId,
+      limits: deps.sendLimits ?? DEFAULT_SEND_LIMITS,
+      now,
+    })
+  );
+  if (start.kind === "lost") return { kind: "lost" };
+  if (start.kind === "held") {
+    log.info("send_limited", { action_id: action.id, mailbox_id: deps.mailboxId, kind: start.hit.limit });
+    try {
+      deps.onSendLimited?.(ctx, start.hit);
+    } catch (error) {
+      log.warn("send_limited_callback_failed", { action_id: action.id, ...errorFields(error) });
     }
-    await recordAudit(trx, ctx, {
-      emailId: action.email_id,
-      actionId: action.id,
-      actor: "system",
-      event: auditEvents.actionApplying,
-      data: { action_type: "send", kind: payload.kind },
-      at: now,
-    });
-    return true;
-  });
-  if (!started) return { kind: "lost" };
+    return { kind: "retry", soft: false };
+  }
 
   // (3) The one SMTP call. The test hooks stand outside the `try`: a throw there is a crash.
   await deps.beforeSend?.();

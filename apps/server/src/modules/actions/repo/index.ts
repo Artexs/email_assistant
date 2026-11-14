@@ -33,6 +33,7 @@ export {
   listOpenReminderSends,
   listRecentSends,
   listSetSends,
+  lockMailboxSends,
   lockSend,
   setApproved,
   setExpired,
