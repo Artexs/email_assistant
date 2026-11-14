@@ -22,7 +22,7 @@
     {
       "id": "b-del-0256",
       "category": "delegation",
-      "blindHash": "2dd46f43e95299ed0e046fa9f4706ac1c9ae63d8478b2606c199262affe0469e"
+      "blindHash": "f7e941d1a1fc000f04a598ab212ce0d27c5c7bcabcf6eeb1cfe76514ef2c0f9b"
     },
     {
       "id": "b-del-0257",
@@ -92,7 +92,7 @@
     {
       "id": "b-inf-0010",
       "category": "info",
-      "blindHash": "2b4d5883983ebf37295f3f01f4fb6918727101b8ca45888839d335ee2fd403c1"
+      "blindHash": "acf975e34b7421583d69a052e7af79f13cf00d26d16203cd3af4327236adf34c"
     },
     {
       "id": "b-inf-0012",
