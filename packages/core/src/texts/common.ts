@@ -6,6 +6,7 @@ export interface CommonTexts {
   subject: string; // "Subject"
   noSubject: string; // "(no subject)"
   unknownSender: string; // "(unknown sender)"
+  unknownAddress: string; // "(unknown)"
   test: string; // "🧪 test"
   right: string;
   change: string;
@@ -18,6 +19,7 @@ export const commonTexts = {
     subject: "Subject",
     noSubject: "(no subject)",
     unknownSender: "(unknown sender)",
+    unknownAddress: "(unknown)",
     test: "🧪 test",
     right: "✅ Right",
     change: "✏️ Change",
@@ -28,6 +30,7 @@ export const commonTexts = {
     subject: "Temat",
     noSubject: "(bez tematu)",
     unknownSender: "(nieznany nadawca)",
+    unknownAddress: "(nieznany)",
     test: "🧪 test",
     right: "✅ Dobrze",
     change: "✏️ Zmień",

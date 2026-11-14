@@ -183,12 +183,12 @@ const cases: Case[] = [
   {
     kind: "approval",
     view: { actionId: id1, view: approvalView, now, timeZone },
-    direct: () => renderApprovalRequest({ actionId: id1, view: approvalView, now, timeZone }),
+    direct: (texts) => renderApprovalRequest({ actionId: id1, view: approvalView, now, timeZone }, texts),
   },
   {
     kind: "approval_set",
     view: { setId: id1, items: setItems, timeZone },
-    direct: () => renderApprovalSetRequest({ setId: id1, items: setItems, timeZone }),
+    direct: (texts) => renderApprovalSetRequest({ setId: id1, items: setItems, timeZone }, texts),
   },
   {
     kind: "send_result",
@@ -200,15 +200,18 @@ const cases: Case[] = [
       subject: "Contract",
       synthetic: false,
     },
-    direct: () =>
-      renderSendResult({
-        actionId: id1,
-        sendKind: "delegation",
-        result: sendResult,
-        recipient: { name: "Anna Nowak", address: "anna@example.test" },
-        subject: "Contract",
-        synthetic: false,
-      }),
+    direct: (texts) =>
+      renderSendResult(
+        {
+          actionId: id1,
+          sendKind: "delegation",
+          result: sendResult,
+          recipient: { name: "Anna Nowak", address: "anna@example.test" },
+          subject: "Contract",
+          synthetic: false,
+        },
+        texts
+      ),
   },
   {
     kind: "delegation_answered",
@@ -221,31 +224,37 @@ const cases: Case[] = [
       timeZone,
       synthetic: false,
     },
-    direct: () =>
-      renderDelegationAnswered({
-        delegationId: id1,
-        delegateName: "Anna Nowak",
-        subject: "Contract",
-        receivedAt,
-        now,
-        timeZone,
-        synthetic: false,
-      }),
+    direct: (texts) =>
+      renderDelegationAnswered(
+        {
+          delegationId: id1,
+          delegateName: "Anna Nowak",
+          subject: "Contract",
+          receivedAt,
+          now,
+          timeZone,
+          synthetic: false,
+        },
+        texts
+      ),
   },
   { kind: "mailbox_removed", view: {}, direct: (texts) => ({ text: texts.notices.mailboxRemoved, buttons: [] }) },
   {
     kind: "send_held",
     view: { mailboxId: id1, address: "me@firma.test", limit: "mailbox_day", waiting: 2, nextAt, now, timeZone },
-    direct: () =>
-      renderSendHeldNotice({
-        mailboxId: id1,
-        address: "me@firma.test",
-        limit: "mailbox_day",
-        waiting: 2,
-        nextAt,
-        now,
-        timeZone,
-      }),
+    direct: (texts) =>
+      renderSendHeldNotice(
+        {
+          mailboxId: id1,
+          address: "me@firma.test",
+          limit: "mailbox_day",
+          waiting: 2,
+          nextAt,
+          now,
+          timeZone,
+        },
+        texts
+      ),
   },
 ];
 
@@ -297,14 +306,17 @@ describe("renderNotice", () => {
       subject: "Contract",
       synthetic: false,
     });
-    const direct = renderSendResult({
-      actionId: id1,
-      sendKind: "delegation",
-      result: sendResult,
-      recipient: { name: null, address: "(unknown)" },
-      subject: "Contract",
-      synthetic: false,
-    });
+    const direct = renderSendResult(
+      {
+        actionId: id1,
+        sendKind: "delegation",
+        result: sendResult,
+        recipient: { name: null, address: "(unknown)" },
+        subject: "Contract",
+        synthetic: false,
+      },
+      textTables.en
+    );
     const result = renderNotice("send_result", view, opts);
     expect(result).toEqual({ ok: true, message: direct });
     expect(direct.text).toContain("(unknown)");
@@ -338,5 +350,15 @@ describe("renderNoticeEdit", () => {
       opts
     );
     expect(message.text).toBe("📤 Send 1 reminder?\n\n✖️ Skipped 11:00: 1 rejected, 0 skipped.");
+  });
+
+  test("the locale does not change the status line while the hold is on", () => {
+    const input = {
+      original: "📤 Send 1 reminder?",
+      outcome: "approved" as const,
+      at: new Date("2026-11-13T10:00:00.000Z"),
+      timeZone: "Europe/Warsaw",
+    };
+    expect(renderNoticeEdit(input, { ...opts, locale: "pl" })).toEqual(renderNoticeEdit(input, opts));
   });
 });

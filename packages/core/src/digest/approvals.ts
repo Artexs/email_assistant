@@ -1,6 +1,6 @@
 import { quoteCut } from "../outgoing/quote";
 import type { ApprovalView } from "../outgoing/sender";
-import { textTables } from "../texts";
+import { type CoreTexts, textTables } from "../texts";
 import type { DraftPayload } from "../triage/payloads";
 import { removeLinks } from "../triage/untrusted-text";
 
@@ -53,9 +53,9 @@ function chatQuoteText(text: string): { text: string; replaced: boolean } {
   return { text: clean, replaced: clean !== text };
 }
 
-function cutLinks(text: string, max: number): string {
+function cutLinks(text: string, max: number, texts: CoreTexts): string {
   const clean = cutText(removeLinks(text), max);
-  return clean === "" ? "(no subject)" : clean;
+  return clean === "" ? texts.common.noSubject : clean;
 }
 
 function cutEnd(text: string, max: number): string {
@@ -69,38 +69,45 @@ function recipientLabel(recipient: { name: string | null; address: string }): st
   return name === "" ? address : `${name} ${address}`;
 }
 
-const SEND_LINE = "The system sends it after your tap. Do not send the draft from your mail client.";
-
-export function renderApprovalRequest(input: {
-  actionId: string;
-  view: ApprovalView;
-  now: Date;
-  timeZone: string;
-}): OutMessage {
+export function renderApprovalRequest(
+  input: {
+    actionId: string;
+    view: ApprovalView;
+    now: Date;
+    timeZone: string;
+  },
+  texts: CoreTexts
+): OutMessage {
   const { view, actionId } = input;
+  const t = texts.approvals;
   const address = cutText(view.recipient.address, FIELD_MAX_CHARS);
   const name = view.recipient.name === null ? "" : cutText(view.recipient.name, FIELD_MAX_CHARS);
-  const nameText = name === "" ? "" : `${name}${view.recipientInactive ? " (inactive)" : ""} `;
-  let title = `📤 Send? Delegation to ${nameText}${address}`;
-  if (view.kind === "clarification") title = `📤 Send? Question to the sender ${address}`;
-  if (view.kind === "reminder") title = `📤 Send? Reminder to ${nameText}${address}`;
-  const head = [view.synthetic ? `${title} · 🧪 test` : title];
+  const nameText = name === "" ? "" : `${name}${view.recipientInactive ? ` ${t.inactive}` : ""} `;
+  let title = t.title.delegation(`${nameText}${address}`);
+  if (view.kind === "clarification") title = t.title.clarification(address);
+  if (view.kind === "reminder") title = t.title.reminder(`${nameText}${address}`);
+  const head = [view.synthetic ? `${title} · ${texts.common.test}` : title];
   if (view.sender !== null) {
-    const label = cutText(removeLinks(view.sender.label), FIELD_MAX_CHARS);
-    head.push(view.sender.external ? `From: ${label} · ⚠️ external sender` : `From: ${label}`);
+    // The view stores the English placeholder (plan D19); the renderer prints it in the row's language.
+    const stored =
+      view.sender.label === textTables.en.common.unknownSender ? texts.common.unknownSender : view.sender.label;
+    const label = cutText(removeLinks(stored), FIELD_MAX_CHARS);
+    head.push(
+      view.sender.external ? `${texts.common.from}: ${label} · ${t.externalSender}` : `${texts.common.from}: ${label}`
+    );
   }
-  head.push(`Subject: ${cleanSubject(view.subject, textTables.en)}`);
-  if (view.dueDate !== null) head.push(`Due: ${view.dueDate}`);
+  head.push(`${texts.common.subject}: ${cleanSubject(view.subject, texts)}`);
+  if (view.dueDate !== null) head.push(`${t.due}: ${view.dueDate}`);
 
   const build = (body: string, bodyNote: boolean, quote: { text: string; replaced: boolean; cut: boolean } | null) => {
-    const lines = [...head, "", "Draft:", body];
-    if (bodyNote) lines.push("(draft text cut; the full text is in the draft)");
+    const lines = [...head, "", t.draft, body];
+    if (bodyNote) lines.push(t.bodyCut);
     if (quote !== null) {
-      lines.push("", "Quoted original:", quote.text);
-      if (quote.replaced) lines.push("(links shown as [link]; the draft has them)");
-      if (quote.cut) lines.push("(quote cut; the draft has the full text)");
+      lines.push("", t.quoted, quote.text);
+      if (quote.replaced) lines.push(t.linksHidden);
+      if (quote.cut) lines.push(t.quoteCut);
     }
-    lines.push("", SEND_LINE);
+    lines.push("", t.sendLine);
     return lines.join("\n");
   };
   const quoteAt = (max: number) => {
@@ -137,8 +144,8 @@ export function renderApprovalRequest(input: {
     text,
     buttons: [
       [
-        { text: "📤 Send", data: encodeCallback({ kind: "approve", actionId }) },
-        { text: "✖️ Reject", data: encodeCallback({ kind: "reject", actionId }) },
+        { text: t.buttons.send, data: encodeCallback({ kind: "approve", actionId }) },
+        { text: t.buttons.reject, data: encodeCallback({ kind: "reject", actionId }) },
       ],
     ],
   };
@@ -162,27 +169,26 @@ const SET_LEVELS = [
   { task: 40, subject: 60, name: 40 },
 ];
 
-export function renderApprovalSetRequest(input: { setId: string; items: SetItem[]; timeZone: string }): OutMessage {
+export function renderApprovalSetRequest(
+  input: { setId: string; items: SetItem[]; timeZone: string },
+  texts: CoreTexts
+): OutMessage {
   const { setId, items, timeZone } = input;
+  const t = texts.approvals;
   if (items.length < 1 || items.length > CHASER_SET_LIMIT) {
     throw new RangeError(`a reminder set has 1 to ${CHASER_SET_LIMIT} items, got ${items.length}`);
   }
   const render = (level: (typeof SET_LEVELS)[number]): string => {
-    const lines = [items.length === 1 ? "📤 Send 1 reminder?" : `📤 Send ${items.length} reminders?`, ""];
+    const lines = [t.set.header(items.length), ""];
     for (const item of items) {
-      // The next stage of the Polish UI plan passes the texts of the row.
-      const due = item.dueAt === null ? "" : `due ${formatDay(item.dueAt, timeZone, "en")}, `;
+      const due = item.dueAt === null ? "" : t.set.dueDay(formatDay(item.dueAt, timeZone, texts.locale));
       const who = `${cutText(item.delegateName, level.name)} ${cutText(item.address, FIELD_MAX_CHARS)}`;
       lines.push(
-        `${item.n}. ${who} — ${cutLinks(item.subject ?? "", level.subject)} (${due}reminder ${item.reminder} of 2)`,
-        `   Task: ${cutText(item.task, level.task)}`
+        `${item.n}. ${who} — ${cutLinks(item.subject ?? "", level.subject, texts)} (${due}${t.set.reminderOf(item.reminder)})`,
+        `   ${t.set.task} ${cutText(item.task, level.task)}`
       );
     }
-    lines.push(
-      "",
-      "Each reminder is the fixed reminder template with this task; it quotes nothing.",
-      "The system sends them after your tap."
-    );
+    lines.push("", t.set.footerTemplate, t.set.footerSends);
     return lines.join("\n");
   };
   let text = "";
@@ -194,8 +200,8 @@ export function renderApprovalSetRequest(input: { setId: string; items: SetItem[
     text,
     buttons: [
       [
-        { text: "📤 Send all", data: encodeCallback({ kind: "approve_set", setId }) },
-        { text: "✖️ Skip all", data: encodeCallback({ kind: "reject_set", setId }) },
+        { text: t.buttons.sendAll, data: encodeCallback({ kind: "approve_set", setId }) },
+        { text: t.buttons.skipAll, data: encodeCallback({ kind: "reject_set", setId }) },
       ],
     ],
   };
@@ -225,151 +231,125 @@ export type SendResultKind =
     }
   | { kind: "rejected"; byName: string | null; draftRemoved: boolean };
 
-const CLOSINGS: Record<DraftPayload["kind"], string> = {
-  delegation: "The delegation was cancelled.",
-  clarification: "",
-  reminder: "The delegation stays open.",
-};
-
 function words(...parts: string[]): string {
   return parts.filter((part) => part !== "").join(" ");
 }
 
-function causeLine(result: Extract<SendResultKind, { kind: "failed" }>): string {
+function causeLine(result: Extract<SendResultKind, { kind: "failed" }>, texts: CoreTexts): string {
   const code = result.code === null ? "" : cutText(result.code, 40);
+  const causes = texts.approvals.causes;
   switch (result.cause) {
     case "tries":
-      return `The send failed ${result.tries} times${code === "" ? "" : ` (${code})`}`;
+      return causes.tries(result.tries, code);
     case "content_soft":
-      return `The mail server refused the content for now (code ${code === "" ? "unknown" : code}); the system never retries after the content`;
+      return causes.contentSoft(code);
     case "soft_cap":
-      return `The mail server did not accept the mail for 6 hours${code === "" ? "" : ` (${code})`}; nothing was sent`;
+      return causes.softCap(code);
     case "compose":
-      return `The mail could not be built ${result.tries} times`;
+      return causes.compose(result.tries);
     case "bad_payload":
-      return "The stored send data is not valid; nothing was sent";
+      return causes.badPayload;
   }
 }
 
-export function renderSendResult(input: {
-  actionId: string;
-  sendKind: DraftPayload["kind"];
-  result: SendResultKind;
-  recipient: { name: string | null; address: string };
-  subject: string;
-  synthetic: boolean;
-}): OutMessage {
+export function renderSendResult(
+  input: {
+    actionId: string;
+    sendKind: DraftPayload["kind"];
+    result: SendResultKind;
+    recipient: { name: string | null; address: string };
+    subject: string;
+    synthetic: boolean;
+  },
+  texts: CoreTexts
+): OutMessage {
   const { actionId, sendKind, result, recipient } = input;
+  const t = texts.approvals;
   const to = recipientLabel(recipient);
-  const subject = cleanSubject(input.subject, textTables.en);
-  const closing = CLOSINGS[sendKind];
+  const subject = cleanSubject(input.subject, texts);
+  const closing = sendKind === "clarification" ? "" : t.closings[sendKind];
   const sendAgain: OutMessage["buttons"] = [
-    [{ text: "📤 Send again", data: encodeCallback({ kind: "send_again", actionId }) }],
+    [{ text: t.buttons.sendAgain, data: encodeCallback({ kind: "send_again", actionId }) }],
   ];
-  const draftText = (draftRemoved: boolean): string =>
-    draftRemoved ? "The draft was removed." : "The draft stays in Drafts.";
+  const draftText = (draftRemoved: boolean): string => (draftRemoved ? t.draftRemoved : t.draftStays);
 
   let first: string;
   let rest: string[] = [];
   let buttons: OutMessage["buttons"] = [];
   switch (result.kind) {
     case "sent":
-      first = `✅ Sent to ${to} · ${subject}`;
-      if (result.sentCopy === "failed") rest.push("No copy in Sent: the server refused the copy.");
-      if (!result.draftRemoved) rest.push("The draft stays in Drafts (no UIDPLUS on this server).");
+      first = t.sendResult.sent(to, subject);
+      if (result.sentCopy === "failed") rest.push(t.sendResult.copyFailed);
+      if (!result.draftRemoved) rest.push(t.sendResult.draftStaysNoUid);
       break;
-    case "rejected_by_server": {
-      first = `❌ Not sent to ${to} · ${subject}`;
-      const code = result.responseCode === null ? "" : `, code ${result.responseCode}`;
-      rest = [
-        words(`The mail server refused it (${cutText(result.stage, 40)}${code}). The draft stays in Drafts.`, closing),
-      ];
+    case "rejected_by_server":
+      first = t.sendResult.notSent(to, subject);
+      rest = [words(t.sendResult.refused(cutText(result.stage, 40), result.responseCode), closing)];
       break;
-    }
     case "failed":
-      first = `❌ Not sent to ${to} · ${subject}`;
-      rest = [words(`${causeLine(result)}. The draft stays in Drafts.`, closing)];
+      first = t.sendResult.notSent(to, subject);
+      rest = [words(t.sendResult.failedStays(causeLine(result, texts)), closing)];
       if (result.cause !== "bad_payload") buttons = sendAgain;
       break;
     case "outcome_unknown":
-      first = `⚠️ Unknown whether the mail to ${to} went out · ${subject}`;
-      rest = [
-        words(
-          "The connection broke after the content was sent. Check Sent or ask the recipient before you send again.",
-          closing
-        ),
-      ];
+      first = t.sendResult.unknown(to, subject);
+      rest = [words(t.sendResult.unknownRest, closing)];
       // A delegation send that went out stays `cancelled` until the owner says so: only it has a delegation to restore.
       buttons =
         sendKind === "delegation"
-          ? [...sendAgain, [{ text: "✅ It went out", data: encodeCallback({ kind: "went_out", actionId }) }]]
+          ? [...sendAgain, [{ text: t.buttons.wentOut, data: encodeCallback({ kind: "went_out", actionId }) }]]
           : sendAgain;
       break;
     case "expired": {
       const draft = draftText(result.draftRemoved);
       const both = [words(closing, draft)];
-      switch (result.reason) {
-        case "timeout":
-          first = `⌛ Not sent: the approval expired (48 h) · ${subject}`;
-          rest = both;
-          break;
-        case "draft_missing":
-          first = `❌ Not sent: the draft could not be created · ${subject}`;
-          rest = [closing];
-          break;
-        case "not_notified":
-          first = `⌛ Not sent: no approval request could go out within 7 days (no linked owner, or the draft was not created) · ${subject}`;
-          rest = both;
-          break;
-        case "not_seen":
-          first = `⌛ Not sent: you did not receive the approval request (the account was paused, or it did not go out) · ${subject}`;
-          rest = both;
-          break;
-        case "held_timeout":
-          first = `⌛ Not sent: it waited 48 h after your approval and was not sent (held by SEND_SCOPE, the send limit or the mailbox state) · ${subject}`;
-          rest = both;
-          break;
-        case "delegation_closed":
-          first = `⌛ Not sent: the delegation was closed · ${subject}`;
-          rest = [draft];
-          break;
-        case "policy_changed":
-          first = `⌛ Not sent: the setting was changed · ${subject}`;
-          rest = both;
-          break;
-      }
+      first = t.sendResult.expired[result.reason](subject);
+      // These two reasons say less: no draft line for a missing draft, no closing for a closed delegation.
+      if (result.reason === "draft_missing") rest = [closing];
+      else if (result.reason === "delegation_closed") rest = [draft];
+      else rest = both;
       break;
     }
     case "rejected": {
-      const by = result.byName === null ? "" : ` by ${cutText(result.byName, FIELD_MAX_CHARS)}`;
-      first = `✖️ Rejected${by} · ${subject}`;
+      const by = result.byName === null ? null : cutText(result.byName, FIELD_MAX_CHARS);
+      first = t.sendResult.rejected(by, subject);
       rest = [words(closing, draftText(result.draftRemoved))];
       break;
     }
   }
-  const lines = [input.synthetic ? `${first} · 🧪 test` : first, ...rest.filter((line) => line !== "")];
+  const lines = [input.synthetic ? `${first} · ${texts.common.test}` : first, ...rest.filter((line) => line !== "")];
   return { text: lines.join("\n"), buttons };
 }
 
-export function renderDelegationAnswered(input: {
-  delegationId: string;
-  delegateName: string;
-  subject: string | null;
-  receivedAt: Date;
-  now: Date;
-  timeZone: string;
-  synthetic: boolean;
-}): OutMessage {
-  const title = `📩 ${cutText(input.delegateName, FIELD_MAX_CHARS)} answered · ${cleanSubject(input.subject, textTables.en)}`;
-  // The next stage of the Polish UI plan passes the texts of the row.
-  const received = formatClock(input.receivedAt, input.timeZone, input.now, "en");
+export function renderDelegationAnswered(
+  input: {
+    delegationId: string;
+    delegateName: string;
+    subject: string | null;
+    receivedAt: Date;
+    now: Date;
+    timeZone: string;
+    synthetic: boolean;
+  },
+  texts: CoreTexts
+): OutMessage {
+  const title = texts.approvals.answered.title(
+    cutText(input.delegateName, FIELD_MAX_CHARS),
+    cleanSubject(input.subject, texts)
+  );
+  const received = formatClock(input.receivedAt, input.timeZone, input.now, texts.locale);
   return {
     text: [
-      input.synthetic ? `${title} · 🧪 test` : title,
-      `Received ${received}. Tap Done when the task is closed.`,
+      input.synthetic ? `${title} · ${texts.common.test}` : title,
+      `${texts.notices.received(received)}. ${texts.approvals.answered.tapDone}`,
     ].join("\n"),
     buttons: [
-      [{ text: "✅ Done", data: encodeCallback({ kind: "delegation_done", delegationId: input.delegationId }) }],
+      [
+        {
+          text: texts.approvals.buttons.done,
+          data: encodeCallback({ kind: "delegation_done", delegationId: input.delegationId }),
+        },
+      ],
     ],
   };
 }
@@ -384,56 +364,54 @@ export type ApprovalEditOutcome =
   | "went_out"
   | "done";
 
-const HELD_TEXTS = {
-  scope: "Sending is held by SEND_SCOPE on the server",
-  paused: "The mailbox is paused, so the send waits",
-  auth_error: "The mailbox login fails, so the send waits",
-};
-
 // The edited message: the text and the buttons that stay.
-export function approvalEdit(input: {
-  original: string;
-  outcome: ApprovalEditOutcome;
-  heldBy?: "scope" | "paused" | "auth_error";
-  at: Date;
-  timeZone: string;
-  actionId?: string;
-  counts?: { done: number; skipped: number };
-}): OutMessage {
+export function approvalEdit(
+  input: {
+    original: string;
+    outcome: ApprovalEditOutcome;
+    heldBy?: "scope" | "paused" | "auth_error";
+    at: Date;
+    timeZone: string;
+    actionId?: string;
+    counts?: { done: number; skipped: number };
+  },
+  texts: CoreTexts
+): OutMessage {
+  const t = texts.approvals;
   const time = localDateTime(input.at, input.timeZone).time;
   const counts = input.counts ?? { done: 0, skipped: 0 };
   let buttons: OutMessage["buttons"] = [];
   let line: string;
   switch (input.outcome) {
     case "approved":
-      line = `⏳ Approved ${time}, sending.`;
+      line = t.edit.approved(time);
       break;
     case "approved_held": {
       if (input.heldBy === undefined) throw new Error("approved_held needs heldBy");
-      line = `⏳ Approved ${time}. ${HELD_TEXTS[input.heldBy]}; /status shows it. It expires 48 h after the tap if it is still held.`;
+      line = t.edit.approvedHeld(time, t.held[input.heldBy]);
       // A set has no single send to reject: no button.
       if (input.actionId !== undefined) {
-        buttons = [[{ text: "✖️ Reject", data: encodeCallback({ kind: "reject", actionId: input.actionId }) }]];
+        buttons = [[{ text: t.buttons.reject, data: encodeCallback({ kind: "reject", actionId: input.actionId }) }]];
       }
       break;
     }
     case "rejected":
-      line = `✖️ Rejected ${time}.`;
+      line = t.edit.rejected(time);
       break;
     case "expired":
-      line = `⌛ Expired ${time}. The mail was not sent.`;
+      line = t.edit.expired(time);
       break;
     case "approved_set":
-      line = `⏳ Approved ${time}: ${counts.done} sending, ${counts.skipped} skipped.`;
+      line = t.edit.approvedSet(time, counts.done, counts.skipped);
       break;
     case "rejected_set":
-      line = `✖️ Skipped ${time}: ${counts.done} rejected, ${counts.skipped} skipped.`;
+      line = t.edit.rejectedSet(time, counts.done, counts.skipped);
       break;
     case "went_out":
-      line = `✅ Marked as sent ${time}.`;
+      line = t.edit.wentOut(time);
       break;
     case "done":
-      line = `✅ Done ${time}.`;
+      line = t.edit.done(time);
       break;
   }
   const tail = `\n\n${line}`;

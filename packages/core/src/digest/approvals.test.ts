@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { ApprovalView } from "../outgoing/sender";
+import { textTables } from "../texts";
 import type { DraftPayload } from "../triage/payloads";
 
 import {
@@ -40,7 +41,7 @@ function view(overrides: Partial<ApprovalView> = {}): ApprovalView {
 }
 
 function request(v: ApprovalView) {
-  return renderApprovalRequest({ actionId: ID, view: v, now: NOW, timeZone: TZ });
+  return renderApprovalRequest({ actionId: ID, view: v, now: NOW, timeZone: TZ }, textTables.en);
 }
 
 describe("renderApprovalRequest", () => {
@@ -195,13 +196,69 @@ function item(n: number, overrides: Partial<Parameters<typeof renderApprovalSetR
   };
 }
 
+describe("renderApprovalRequest in Polish", () => {
+  const pl = textTables.pl;
+  const plRequest = (v: ApprovalView) => renderApprovalRequest({ actionId: ID, view: v, now: NOW, timeZone: TZ }, pl);
+
+  test("a delegation has Polish lines and the same callback data", () => {
+    const message = plRequest(
+      view({
+        recipient: { name: "Jan Kowalski", address: "jan@example.test" },
+        body: "b".repeat(200),
+        quote: { text: "> Hello", cut: false },
+      })
+    );
+    const lines = message.text.split("\n");
+    expect(lines[0]).toBe("📤 Wysłać? Zlecenie: Jan Kowalski jan@example.test");
+    expect(lines[1]).toBe("Od: boss@client.test · ⚠️ nadawca zewnętrzny");
+    expect(lines[2]).toBe("Temat: Fwd: Offer");
+    expect(lines[3]).toBe("Termin: 2026-11-12");
+    expect(lines).toContain("Szkic:");
+    expect(lines).toContain("Cytowany oryginał:");
+    expect(message.buttons[0]?.map((button) => button.text)).toEqual(["📤 Wyślij", "✖️ Odrzuć"]);
+    const en = request(view());
+    expect(message.buttons[0]?.map((button) => button.data)).toEqual(en.buttons[0]?.map((button) => button.data));
+    expect(parseCallback(message.buttons[0]?.[0]?.data ?? "")).toEqual({ kind: "approve", actionId: ID });
+  });
+
+  test("the other kinds, an inactive delegate and a test mail", () => {
+    expect(plRequest(view({ kind: "clarification" })).text.split("\n")[0]).toBe(
+      "📤 Wysłać? Pytanie do nadawcy: anna@example.com"
+    );
+    expect(plRequest(view({ kind: "reminder", sender: null })).text.split("\n")[0]).toBe(
+      "📤 Wysłać? Przypomnienie: Anna Nowak anna@example.com"
+    );
+    expect(plRequest(view({ recipientInactive: true, synthetic: true })).text.split("\n")[0]).toBe(
+      "📤 Wysłać? Zlecenie: Anna Nowak (nieaktywny) anna@example.com · 🧪 test"
+    );
+  });
+
+  test("a long body shrinks the quote and the Polish text keeps the limit and the quote-cut note", () => {
+    const long = view({ body: "b".repeat(2900), quote: { text: "q".repeat(1500), cut: false } });
+    const en = request(long);
+    expect(en.text.length).toBe(MESSAGE_MAX_CHARS);
+    const message = plRequest(long);
+    expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
+    expect(message.text).toContain(textTables.pl.approvals.quoteCut);
+  });
+
+  test("the stored English placeholder prints in the language of the row", () => {
+    const unknown = view({ sender: { label: "(unknown sender)", external: false } });
+    expect(plRequest(unknown).text.split("\n")[1]).toBe("Od: (nieznany nadawca)");
+    expect(request(unknown).text.split("\n")[1]).toBe("From: (unknown sender)");
+  });
+});
+
 describe("renderApprovalSetRequest", () => {
   test("two items, one without a due date", () => {
-    const message = renderApprovalSetRequest({
-      setId: SET_ID,
-      items: [item(1), item(2, { dueAt: null, reminder: 2 })],
-      timeZone: TZ,
-    });
+    const message = renderApprovalSetRequest(
+      {
+        setId: SET_ID,
+        items: [item(1), item(2, { dueAt: null, reminder: 2 })],
+        timeZone: TZ,
+      },
+      textTables.en
+    );
     const lines = message.text.split("\n");
     expect(lines[0]).toBe("📤 Send 2 reminders?");
     expect(message.text).toContain("1. Anna 1 anna1@example.com — Offer 1 (due Thu 5 Nov, reminder 1 of 2)");
@@ -217,7 +274,7 @@ describe("renderApprovalSetRequest", () => {
   });
 
   test("one item reads singular", () => {
-    const message = renderApprovalSetRequest({ setId: SET_ID, items: [item(1)], timeZone: TZ });
+    const message = renderApprovalSetRequest({ setId: SET_ID, items: [item(1)], timeZone: TZ }, textTables.en);
     expect(message.text.split("\n")[0]).toBe("📤 Send 1 reminder?");
   });
 
@@ -229,7 +286,7 @@ describe("renderApprovalSetRequest", () => {
         task: `T${i + 1}${"t".repeat(300)}`,
       })
     );
-    const message = renderApprovalSetRequest({ setId: SET_ID, items, timeZone: TZ });
+    const message = renderApprovalSetRequest({ setId: SET_ID, items, timeZone: TZ }, textTables.en);
     expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
     for (let i = 1; i <= 10; i++) {
       expect(message.text).toContain(`${i}. N${i}`);
@@ -240,8 +297,35 @@ describe("renderApprovalSetRequest", () => {
 
   test("11 items or none is a programming error", () => {
     const items = Array.from({ length: 11 }, (_, i) => item(i + 1));
-    expect(() => renderApprovalSetRequest({ setId: SET_ID, items, timeZone: TZ })).toThrow(RangeError);
-    expect(() => renderApprovalSetRequest({ setId: SET_ID, items: [], timeZone: TZ })).toThrow(RangeError);
+    expect(() => renderApprovalSetRequest({ setId: SET_ID, items, timeZone: TZ }, textTables.en)).toThrow(RangeError);
+    expect(() => renderApprovalSetRequest({ setId: SET_ID, items: [], timeZone: TZ }, textTables.en)).toThrow(
+      RangeError
+    );
+  });
+});
+
+describe("renderApprovalSetRequest in Polish", () => {
+  const pl = textTables.pl;
+
+  test.each([
+    [1, "📤 Wysłać 1 przypomnienie?"],
+    [3, "📤 Wysłać 3 przypomnienia?"],
+    [5, "📤 Wysłać 5 przypomnień?"],
+  ])("%i items", (count, header) => {
+    const items = Array.from({ length: count }, (_, i) => item(i + 1));
+    const message = renderApprovalSetRequest({ setId: SET_ID, items, timeZone: TZ }, pl);
+    expect(message.text.split("\n")[0]).toBe(header);
+    expect(message.buttons[0]?.map((button) => button.text)).toEqual(["📤 Wyślij wszystkie", "✖️ Pomiń wszystkie"]);
+  });
+
+  test("an item line has the Polish day, the reminder number and the task label", () => {
+    const message = renderApprovalSetRequest(
+      { setId: SET_ID, items: [item(1), item(2, { subject: null })], timeZone: TZ },
+      pl
+    );
+    expect(message.text).toContain("1. Anna 1 anna1@example.com — Offer 1 (termin: czw. 5 lis, przypomnienie 1 z 2)");
+    expect(message.text).toContain("   Zadanie: check offer 1");
+    expect(message.text).toContain("— (bez tematu) (");
   });
 });
 
@@ -255,7 +339,10 @@ const closings: Record<SendKind, string> = {
 const recipient = { name: "Anna Nowak", address: "anna@example.com" };
 
 function result(sendKind: SendKind, kind: SendResultKind, synthetic = false) {
-  return renderSendResult({ actionId: ID, sendKind, result: kind, recipient, subject: "Fwd: Offer", synthetic });
+  return renderSendResult(
+    { actionId: ID, sendKind, result: kind, recipient, subject: "Fwd: Offer", synthetic },
+    textTables.en
+  );
 }
 
 function joined(...parts: string[]): string {
@@ -387,42 +474,118 @@ describe("renderSendResult", () => {
   });
 
   test("synthetic mail is marked on the first line; a missing name leaves the address", () => {
-    const message = renderSendResult({
-      actionId: ID,
-      sendKind: "delegation",
-      result: { kind: "sent", sentCopy: "appended", draftRemoved: true },
-      recipient: { name: null, address: "anna@example.com" },
-      subject: "Offer",
-      synthetic: true,
-    });
+    const message = renderSendResult(
+      {
+        actionId: ID,
+        sendKind: "delegation",
+        result: { kind: "sent", sentCopy: "appended", draftRemoved: true },
+        recipient: { name: null, address: "anna@example.com" },
+        subject: "Offer",
+        synthetic: true,
+      },
+      textTables.en
+    );
     expect(message.text).toBe("✅ Sent to anna@example.com · Offer · 🧪 test");
   });
 
   test("a subject with a link and control characters is cleaned", () => {
-    const message = renderSendResult({
-      actionId: ID,
-      sendKind: "delegation",
-      result: { kind: "rejected", byName: null, draftRemoved: true },
-      recipient,
-      subject: "Pay\u0000 www.evil.test now",
-      synthetic: false,
-    });
+    const message = renderSendResult(
+      {
+        actionId: ID,
+        sendKind: "delegation",
+        result: { kind: "rejected", byName: null, draftRemoved: true },
+        recipient,
+        subject: "Pay\u0000 www.evil.test now",
+        synthetic: false,
+      },
+      textTables.en
+    );
     expect(message.text).toContain("Pay [link] now");
     expect(CONTROL.test(message.text)).toBe(false);
   });
 });
 
+describe("Polish send results", () => {
+  const pl = textTables.pl;
+  const resultPl = (sendKind: SendKind, kind: SendResultKind) =>
+    renderSendResult({ actionId: ID, sendKind, result: kind, recipient, subject: "Fwd: Offer", synthetic: false }, pl);
+
+  const kinds: SendResultKind[] = [
+    { kind: "sent", sentCopy: "failed", draftRemoved: false },
+    { kind: "rejected_by_server", stage: "RCPT", responseCode: 550 },
+    { kind: "failed", cause: "tries", code: "ETIMEDOUT", tries: 3 },
+    { kind: "failed", cause: "content_soft", code: null, tries: 1 },
+    { kind: "failed", cause: "soft_cap", code: "421", tries: 1 },
+    { kind: "failed", cause: "compose", code: null, tries: 2 },
+    { kind: "failed", cause: "bad_payload", code: null, tries: 1 },
+    { kind: "outcome_unknown" },
+    { kind: "rejected", byName: "Anna", draftRemoved: true },
+    { kind: "rejected", byName: null, draftRemoved: false },
+    ...(
+      [
+        "timeout",
+        "draft_missing",
+        "not_notified",
+        "not_seen",
+        "held_timeout",
+        "delegation_closed",
+        "policy_changed",
+      ] as const
+    ).map((reason): SendResultKind => ({ kind: "expired", reason, draftRemoved: false })),
+  ];
+
+  test.each(kinds.map((kind, index) => [index, kind] as const))(
+    "case %i has a Polish first line with the emoji of English",
+    (_, kind) => {
+      for (const sendKind of sendKinds) {
+        const en = result(sendKind, kind).text.split("\n")[0] ?? "";
+        const message = resultPl(sendKind, kind);
+        const first = message.text.split("\n")[0] ?? "";
+        expect(first.length).toBeGreaterThan(0);
+        expect(first).not.toBe(en);
+        expect(first.split(" ")[0]).toBe(en.split(" ")[0]);
+        expect(message.text).not.toContain("The ");
+      }
+    }
+  );
+
+  test("an unknown outcome of a delegation has Polish buttons with the English callback data", () => {
+    const message = resultPl("delegation", { kind: "outcome_unknown" });
+    expect(message.buttons.flat().map((button) => button.text)).toEqual(["📤 Wyślij ponownie", "✅ Wysłano"]);
+    expect(message.buttons.flat().map((button) => button.data)).toEqual(
+      result("delegation", { kind: "outcome_unknown" })
+        .buttons.flat()
+        .map((button) => button.data)
+    );
+  });
+
+  test("a sent mail, a refusal and the closing lines", () => {
+    expect(resultPl("delegation", { kind: "sent", sentCopy: "appended", draftRemoved: true }).text).toBe(
+      "✅ Wysłano do: Anna Nowak anna@example.com · Fwd: Offer"
+    );
+    expect(resultPl("reminder", { kind: "rejected_by_server", stage: "RCPT", responseCode: 550 }).text).toBe(
+      "❌ Nie wysłano do: Anna Nowak anna@example.com · Fwd: Offer\nSerwer poczty odrzucił wiadomość (RCPT, kod: 550). Szkic zostaje w folderze Drafts. Zlecenie zostaje otwarte."
+    );
+    expect(resultPl("delegation", { kind: "rejected", byName: "Anna", draftRemoved: true }).text).toBe(
+      "✖️ Odrzucono (Anna) · Fwd: Offer\nZlecenie zostało anulowane. Szkic został usunięty."
+    );
+  });
+});
+
 describe("renderDelegationAnswered", () => {
   test("text and Done button", () => {
-    const message = renderDelegationAnswered({
-      delegationId: ID,
-      delegateName: "Anna Nowak",
-      subject: "Fwd: Offer",
-      receivedAt: new Date("2026-11-07T09:05:00Z"),
-      now: NOW,
-      timeZone: TZ,
-      synthetic: false,
-    });
+    const message = renderDelegationAnswered(
+      {
+        delegationId: ID,
+        delegateName: "Anna Nowak",
+        subject: "Fwd: Offer",
+        receivedAt: new Date("2026-11-07T09:05:00Z"),
+        now: NOW,
+        timeZone: TZ,
+        synthetic: false,
+      },
+      textTables.en
+    );
     expect(message.text).toBe("📩 Anna Nowak answered · Fwd: Offer\nReceived 10:05. Tap Done when the task is closed.");
     expect(message.buttons).toHaveLength(1);
     expect(message.buttons[0]?.[0]?.text).toBe("✅ Done");
@@ -430,16 +593,40 @@ describe("renderDelegationAnswered", () => {
   });
 
   test("synthetic mail is marked; a missing subject reads (no subject)", () => {
-    const message = renderDelegationAnswered({
-      delegationId: ID,
-      delegateName: "Anna",
-      subject: null,
-      receivedAt: NOW,
-      now: NOW,
-      timeZone: TZ,
-      synthetic: true,
-    });
+    const message = renderDelegationAnswered(
+      {
+        delegationId: ID,
+        delegateName: "Anna",
+        subject: null,
+        receivedAt: NOW,
+        now: NOW,
+        timeZone: TZ,
+        synthetic: true,
+      },
+      textTables.en
+    );
     expect(message.text.split("\n")[0]).toBe("📩 Anna answered · (no subject) · 🧪 test");
+  });
+});
+
+describe("renderDelegationAnswered in Polish", () => {
+  test("text and Done button", () => {
+    const message = renderDelegationAnswered(
+      {
+        delegationId: ID,
+        delegateName: "Anna Nowak",
+        subject: null,
+        receivedAt: new Date("2026-11-07T09:05:00Z"),
+        now: NOW,
+        timeZone: TZ,
+        synthetic: false,
+      },
+      textTables.pl
+    );
+    expect(message.text).toBe(
+      "📩 Odpowiedź od: Anna Nowak · (bez tematu)\nOdebrano 10:05. Naciśnij „Gotowe”, gdy zadanie zostanie zamknięte."
+    );
+    expect(message.buttons[0]?.[0]?.text).toBe("✅ Gotowe");
   });
 });
 
@@ -459,14 +646,14 @@ describe("approvalEdit", () => {
   ];
 
   test.each(lines)("%s", (outcome, line) => {
-    const message = approvalEdit({ ...base, outcome });
+    const message = approvalEdit({ ...base, outcome }, textTables.en);
     expect(message.text).toBe(`${original}\n\n${line}`);
     expect(message.buttons).toEqual([]);
   });
 
   test("approved_held keeps one Reject button; the line differs per cause", () => {
     const texts = (["scope", "paused", "auth_error"] as const).map((heldBy) => {
-      const message = approvalEdit({ ...base, outcome: "approved_held", heldBy });
+      const message = approvalEdit({ ...base, outcome: "approved_held", heldBy }, textTables.en);
       expect(message.buttons).toHaveLength(1);
       expect(message.buttons[0]).toHaveLength(1);
       expect(message.buttons[0]?.[0]?.text).toBe("✖️ Reject");
@@ -482,14 +669,44 @@ describe("approvalEdit", () => {
   });
 
   test("approved_held without an action id has no button (a set)", () => {
-    const message = approvalEdit({ ...base, outcome: "approved_held", heldBy: "scope", actionId: undefined });
+    const message = approvalEdit(
+      { ...base, outcome: "approved_held", heldBy: "scope", actionId: undefined },
+      textTables.en
+    );
     expect(message.buttons).toEqual([]);
     expect(message.text).toContain("Sending is held by SEND_SCOPE on the server");
   });
 
   test("a long original is cut from its end, never the new line", () => {
-    const message = approvalEdit({ ...base, original: "o".repeat(4090), outcome: "approved" });
+    const message = approvalEdit({ ...base, original: "o".repeat(4090), outcome: "approved" }, textTables.en);
     expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
     expect(message.text.endsWith("\n\n⏳ Approved 11:07, sending.")).toBe(true);
+  });
+});
+
+describe("approvalEdit in Polish", () => {
+  const at = new Date("2026-11-07T10:07:00Z");
+  const original = "📤 Wysłać? Zlecenie: Anna\nSzkic:\nHi";
+  const base = { original, at, timeZone: TZ, actionId: ID, counts: { done: 2, skipped: 1 } };
+
+  test.each<[ApprovalEditOutcome, string]>([
+    ["approved", "⏳ Zatwierdzono 11:07, wysyłanie."],
+    ["rejected", "✖️ Odrzucono 11:07."],
+    ["expired", "⌛ Wygasło 11:07. Wiadomość nie została wysłana."],
+    ["approved_set", "⏳ Zatwierdzono 11:07. Wysyłanie: 2, pominięto: 1."],
+    ["rejected_set", "✖️ Pominięto 11:07. Odrzucono: 2, pominięto: 1."],
+    ["went_out", "✅ Oznaczono jako wysłane 11:07."],
+    ["done", "✅ Gotowe 11:07."],
+  ])("%s keeps the stored text and adds one Polish line", (outcome, line) => {
+    const message = approvalEdit({ ...base, outcome }, textTables.pl);
+    expect(message.text).toBe(`${original}\n\n${line}`);
+    expect(message.buttons).toEqual([]);
+  });
+
+  test("approved_held has the Polish cause and the Polish Reject button", () => {
+    const message = approvalEdit({ ...base, outcome: "approved_held", heldBy: "paused" }, textTables.pl);
+    expect(message.text).toContain("Skrzynka jest wstrzymana, więc wysyłanie czeka; /status pokazuje szczegóły.");
+    expect(message.buttons[0]?.[0]?.text).toBe("✖️ Odrzuć");
+    expect(parseCallback(message.buttons[0]?.[0]?.data ?? "")).toEqual({ kind: "reject", actionId: ID });
   });
 });

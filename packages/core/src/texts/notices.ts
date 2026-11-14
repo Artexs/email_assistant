@@ -1,3 +1,4 @@
+import type { SendLimitKind } from "../send-limits";
 import type { UserLocale } from "../tenancy";
 
 import { pluralCategory } from "./locale";
@@ -23,9 +24,21 @@ export interface NoticeTexts {
     status: string;
   };
   mailboxRemoved: string;
+  sendHeld: {
+    first: (address: string, limit: string) => string;
+    limit: Record<SendLimitKind, string>;
+    waiting: (count: number, clock: string) => string;
+  };
 }
 
 const PL_TIMES = { one: "raz", few: "razy", many: "razy", other: "razy" } as const;
+
+const PL_WAITING = {
+  one: (count: number) => `${count} wiadomość czeka`,
+  few: (count: number) => `${count} wiadomości czekają`,
+  many: (count: number) => `${count} wiadomości czeka`,
+  other: (count: number) => `${count} wiadomości czeka`,
+} as const;
 
 export const noticeTexts = {
   en: {
@@ -61,6 +74,15 @@ export const noticeTexts = {
       status: "/status shows the mailbox state.",
     },
     mailboxRemoved: "Mailbox removed. Change its password in your mail provider's settings now.",
+    sendHeld: {
+      first: (address, limit) => `⏸ Sends from ${address} wait: ${limit}.`,
+      limit: {
+        mailbox_hour: "the hourly send limit of this mailbox is reached",
+        mailbox_day: "the daily send limit of this mailbox is reached",
+        recipient_day: "the daily limit for one recipient is reached",
+      },
+      waiting: (count, clock) => `${count} waiting; the next one goes out at about ${clock}.`,
+    },
   },
   pl: {
     urgentTitle: "🔴 Pilna wiadomość",
@@ -110,5 +132,14 @@ export const noticeTexts = {
       status: "/status pokazuje stan skrzynki.",
     },
     mailboxRemoved: "Skrzynka usunięta. Zmień teraz jej hasło w ustawieniach dostawcy poczty.",
+    sendHeld: {
+      first: (address, limit) => `⏸ Wysyłanie ze skrzynki ${address} czeka: ${limit}.`,
+      limit: {
+        mailbox_hour: "osiągnięto godzinny limit wysyłania z tej skrzynki",
+        mailbox_day: "osiągnięto dzienny limit wysyłania z tej skrzynki",
+        recipient_day: "osiągnięto dzienny limit dla jednego odbiorcy",
+      },
+      waiting: (count, clock) => `${PL_WAITING[pluralCategory("pl", count)](count)}; następna wyjdzie około ${clock}.`,
+    },
   },
 } satisfies Record<UserLocale, NoticeTexts>;
