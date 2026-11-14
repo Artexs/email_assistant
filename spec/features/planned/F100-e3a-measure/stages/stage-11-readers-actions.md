@@ -20,7 +20,7 @@ After this stage the readers of `actions` (M3), `delegation` (M2) and `audit` (M
 | `listDelegationDueRows` (delegation) | `DelegationDueRow[]` | delegations with `sent_at` not null and `COALESCE(due_at, sent_at + interval '3 days')` in range, of real mail; `doneAt`, `overdueAt` = `MIN(audit_log.created_at)` of `delegation.done` / `delegation.overdue` with `data->>'delegation_id' = d.id::text`; `cancelled = status = 'cancelled'` |
 | `listLlmCallRows` (audit) | `LlmCallRow[]` | `event = 'llm.call'`, `created_at` in range, `data->>'mailbox_id'` = the mailbox when set; `model`, `tokens_in`, `tokens_out` from `data` (numbers or null) |
 
-Range rule: `start ≤ t < end` everywhere. `mailboxId` set → `emails.mailbox_id = $id` (for `listLlmCallRows`: the `data->>'mailbox_id'` key). The readers return no subject and no text; `fromAddress` leaves `listHiddenMoveRows` only for the whitelist check in the service and never reaches a log or a result.
+Range rule: `start ≤ t < end` everywhere. `mailboxId` set → `emails.mailbox_id = $id` (for `listLlmCallRows`: the `data->>'mailbox_id'` key). `audit/repo.ts` already has `sumLlmCallsByModelSince(db, ctx, since)` (F099, plan F18): it sums per model from a start time with no end and no row time; M7 prices each call at its own time (`costPerMail(…, at)`), so `listLlmCallRows` stays its own function in `audit/metrics-repo.ts` and returns `at` per row. The readers return no subject and no text; `fromAddress` leaves `listHiddenMoveRows` only for the whitelist check in the service and never reaches a log or a result.
 
 **Decisions.** D12, D13, D16, D18, D19.
 

@@ -10,7 +10,7 @@ After this stage the database has the three tables of D1 and accepts the feedbac
 
 **Goal.** The tables and the CHECK change of D1, with up and down.
 
-**Files.** `db/migrations/<YYYYMMDDHHMMSS>_measure_capture.sql` (a timestamp later than every file in `db/migrations/`), `apps/server/src/platform/db/schema.ts` (only through `bun run db:types`).
+**Files.** `db/migrations/<YYYYMMDDHHMMSS>_measure_capture.sql` (a timestamp later than every file in `db/migrations/`; at `a6690e4` the newest is `20261114100003_outbox_send_held.sql`, and F097 stage 03 adds one after it), `apps/server/src/platform/db/schema.ts` (only through `bun run db:types`), `apps/server/test/integration/rls-policy.test.ts` (step 2).
 
 **Interfaces.**
 
@@ -75,6 +75,22 @@ CREATE TABLE action_feedback (
   FOREIGN KEY (action_id, org_id) REFERENCES actions (id, org_id) ON DELETE CASCADE
 );
 
+-- Row-level security as for every table with org_id (the block of 20261114100002_rls_tenant_policies.sql).
+ALTER TABLE email_headers ENABLE ROW LEVEL SECURITY;
+CREATE POLICY tenant_rows ON email_headers FOR ALL TO app
+  USING (app_current_org() IS NULL OR org_id = app_current_org())
+  WITH CHECK (app_current_org() IS NULL OR org_id = app_current_org());
+
+ALTER TABLE email_flags ENABLE ROW LEVEL SECURITY;
+CREATE POLICY tenant_rows ON email_flags FOR ALL TO app
+  USING (app_current_org() IS NULL OR org_id = app_current_org())
+  WITH CHECK (app_current_org() IS NULL OR org_id = app_current_org());
+
+ALTER TABLE action_feedback ENABLE ROW LEVEL SECURITY;
+CREATE POLICY tenant_rows ON action_feedback FOR ALL TO app
+  USING (app_current_org() IS NULL OR org_id = app_current_org())
+  WITH CHECK (app_current_org() IS NULL OR org_id = app_current_org());
+
 -- Labels from the answered check of /review get their own source.
 ALTER TABLE triage_feedback DROP CONSTRAINT triage_feedback_source_check;
 ALTER TABLE triage_feedback ADD CONSTRAINT triage_feedback_source_check
@@ -92,6 +108,8 @@ DROP TABLE email_headers;
 
 Before you write it: confirm in your job DB that `emails` and `actions` have a unique `(id, org_id)` (other tables reference it; `pg_constraint` query in a throw-away test under `/tmp/f100-s04/`) and that the source CHECK name and list match F097's migration. If a name differs, use the real one and say so. Then `bun run db:migrate` and `bun run db:types`; commit `schema.ts`.
 
+The RLS blocks are not optional: `rls-policy.test.ts` case 1 fails for a table with `org_id` that is not in its `TENANT_TABLES`, and cases 2–4 check that each such table has RLS on (not forced) and exactly the one `tenant_rows` policy with the text above (F092, plan F14). `DROP TABLE` in the down part drops the policies with the tables. The three tables need no `GRANT`: `20261103000001_app_grants.sql` sets the default privileges for `app`.
+
 **Decisions.** D1, D2, D5, D6, D21, D22.
 
 **Test.** Step 2.
@@ -106,7 +124,7 @@ Before you write it: confirm in your job DB that `emails` and `actions` have a u
 
 **Goal.** The code knows the new source; the constraints hold as written.
 
-**Files.** `packages/core/src/triage/categories.ts` (`feedbackSources` gains `"answered_check"` after `"review"`), `packages/core/src/triage/settings.test.ts`, `apps/server/test/integration/measure-schema.test.ts` (new), any `switch` over `FeedbackSource` that `bun run typecheck` names (for example a web label of the source in `packages/core/src/web/activity.ts` or `apps/web`: add an `en.ts` key "Answered check" if the web shows sources).
+**Files.** `packages/core/src/triage/categories.ts` (`feedbackSources` gains `"answered_check"` after `"review"`), `packages/core/src/triage/settings.test.ts`, `apps/server/test/integration/measure-schema.test.ts` (new), `apps/server/test/integration/rls-policy.test.ts` (`TENANT_TABLES` gains `"action_feedback"`, `"email_flags"`, `"email_headers"` in alphabetical order; `seedOrg` inserts one row of each new table for the organization: keep the `MailboxIds` that `fillMailbox` returns and use its first mail id for `email_headers` and `email_flags` and its first action id for `action_feedback`, as plain Kysely inserts), `docs/capabilities/triage.md` (the feedback source list gains `answered_check`, "written by the answered check of `/review` (F100 stage 15)"; refresh its "Checked against" line), any `switch` over `FeedbackSource` that `bun run typecheck` names (`packages/core/src/web/activity.ts` parses `source` with `z.enum(feedbackSources)`; `apps/web/src/lib/activity-text.ts` shows feedback by verdict: add a panel text only if typecheck asks, then in both `apps/web/src/i18n/en.ts` and `pl.ts`).
 
 **Interfaces.** `feedbackSources = ["cli", "telegram", "undo", "imap_move", "web", "review", "answered_check"] as const`.
 
@@ -114,7 +132,7 @@ Before you write it: confirm in your job DB that `emails` and `actions` have a u
 
 **Test** (`measure-schema.test.ts`, each case in `withRollback`; two orgs from `createOrgWithMailbox`; mails with `insertTestEmail`):
 
-1. Insert an `email_headers` row for org A's mail with org A → ok; the same mail id with org B's `org_id` → foreign-key error.
+1. Insert an `email_headers` row for org A's mail m1 with org A → ok. For org A's second mail m2 (no row yet), a row with org B's `org_id` → foreign-key error (SQLSTATE `23503`). Do not reuse m1 for the second insert: `email_id` is the primary key, so Postgres reports `23505` before the foreign key (cold review 2 N9). The same for `email_flags`.
 2. `email_headers` with `reply_to` of 6 entries → check error; `from_name` of 201 chars → check error; `attachments = '{}'::jsonb` → check error.
 3. `email_flags` with `answered_check = 'yes'` and `answered_check_at` null → check error; `answered_check = 'maybe'` → check error.
 4. `action_feedback` kind `reject_reason` with reason null → check error; kind `mistake` with reason `wrong_person` → check error; two rows `(org, action, reject_reason)` → unique error.
@@ -122,10 +140,11 @@ Before you write it: confirm in your job DB that `emails` and `actions` have a u
 6. `triage_feedback` with `source = 'answered_check'` → ok; `source = 'other'` → check error.
 7. `delete_mailbox(org, mailbox)` (the existing function) removes the new rows of that mailbox's mail.
 8. Unit: `settings.test.ts` expects the 7 sources in this order.
+9. `rls-policy.test.ts` passes with the three new tables: the catalog walk (cases 1–4) and the isolation cases (6–7: each new table shows rows of both organizations without a scope and none of org B under the scope of org A).
 
-**Check.** `bun test packages/core/src/triage/settings.test.ts apps/server/test/integration/measure-schema.test.ts`
+**Check.** `bun test packages/core/src/triage/settings.test.ts apps/server/test/integration/measure-schema.test.ts apps/server/test/integration/rls-policy.test.ts apps/server/src/capability-map.test.ts`
 
-**Done when.** Cases 1–8 pass.
+**Done when.** Cases 1–9 pass.
 
 **Out of scope.** Retention of the new texts (stage 05).
 

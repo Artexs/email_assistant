@@ -2,25 +2,21 @@
 
 Part of [`../plan.md`](../plan.md). After all other stages of this ticket. The last land closes the ticket (`limen land` without `--keep-open`); coordinator steps C5 and C6 follow.
 
-After this stage the docs describe what E3a built: a new capability page for measurement, the touched capability pages, the module and data-model docs, and one standard for later metric work (PD-009).
+After this stage the docs describe what E3a built as one whole: the capability pages that stages 03–18 updated agree with each other and with the code, the module and data-model docs name the new parts, and one standard holds for later metric work (PD-009). Stages 03–18 wrote their own page lines in the same change as their behaviour (plan § Rules for every stage); this stage is the last pass, not the first.
 
-## Step 1 — Capability pages
+## Step 1 — Capability pages: the last pass
 
-**Goal.** One page per capability states the code at this commit (code patterns § Capability map).
+**Goal.** Each page states the code at this commit (code patterns § Capability map).
 
-**Files.** `docs/capabilities/measurement.md` (new, the template of `docs/capabilities/README.md`), `docs/capabilities/README.md` (index row), and the pages that F095 created for: sync, triage, drafts and send, digest and notices, web panel, retention (file names as they are in `docs/capabilities/` at your HEAD).
+**Files.** `docs/capabilities/measurement.md` (stage 12 created it), `docs/capabilities/README.md`, and the pages the stages touched: `sync.md`, `retention.md`, `triage.md`, `drafts-and-send.md`, `digest-and-notices.md`, `web-panel.md`, `tenancy-and-plans.md`.
 
 Content:
 
-- `measurement.md`: "What it does now" (the Monday report, the stats page and route, `stats:week`, M1–M5, M7, M8 with their one-line definitions from plan D11–D17, the snapshot rule D28, real mail only D18); "Rules" (numbered, from D9, D11–D17, D20, D23, D24, D27); "Entry points" (`weekStats` and `recentWeekStats` in `apps/server/src/modules/reports/metrics.ts`, `GET /api/stats`, `bun run stats:week`, `bun run mailbox:signals`, the `weekly_report` detector, `packages/core/src/metrics/`); "Data" (`email_headers`, `email_flags`, `action_feedback`, `triage_feedback.source = 'answered_check'`, outbox kind `weekly_report`); "Limits" (holdout, history check and tripwire fields: F110; E5 loop rows: F116; E6 draft outcome line: F115; IMAP IDLE: F114; the M7 backup share is an assumption); "Decisions" (PD-056–PD-068, ADR 0028); "Tests" (the main test files of stages 08–17).
-- sync page: the interval key `MAIL_SYNC_EVERY_MIN` (default 2), the header capture (D2, D4) and the flag refresh (D6) with their limits.
-- triage page: the answered check and the `answered_check` feedback source (D22).
-- drafts and send page: reject reasons and the mistake mark (D21), the two routes.
-- digest and notices page: the `weekly_report` kind, the handled-share line, the LLM pause line (D8, D23, D24).
-- web panel page: the stats page, `features` in `/api/me` (D25).
-- retention page: the `email_headers` row (if stage 05 put it in `docs/architecture.md` §7 instead, leave it there).
+- `measurement.md` complete: "What it does now" (the Monday report, the stats page and route, `stats:week`, M1–M5, M7, M8 with their one-line definitions from plan D11–D17, the snapshot rule D28, real mail only D18); "Rules" (numbered, from D9, D11–D17, D20, D23, D24, D27); "Entry points" (`weekStats` and `recentWeekStats` in `apps/server/src/modules/reports/metrics.ts`, `GET /api/stats`, `bun run stats:week`, `bun run mailbox:signals`, the `weekly_report` detector, the `/stats` page, `packages/core/src/metrics/`); "Data" (`email_headers`, `email_flags`, `action_feedback`, `triage_feedback.source = 'answered_check'`, outbox kind `weekly_report`); "Limits" (holdout, history check and tripwire fields: F110; E5 loop rows: F116; E6 draft outcome line: F115; IMAP IDLE: F114; the M7 backup share is an assumption); "Decisions" (PD-056–PD-068, ADR 0028); "Tests" (the main test files of stages 08–18).
+- Every other touched page: read the lines that stages 03–18 added against the code at this commit (names, limits, flags, the 2-min interval); fix what differs; add a line that a stage missed. Do not rewrite the pages.
+- `tenancy-and-plans.md`: rule 5 and the Limits line name every flag of the registry and the code that reads them (plan § Rules for every stage, flag rule).
 
-Every page gets a fresh "Checked against" line (this commit's parent sha and today's date).
+Every page this step changes gets a fresh "Checked against" line (this commit's parent sha and today's date).
 
 **Decisions.** D2–D28 (as listed).
 
@@ -28,7 +24,7 @@ Every page gets a fresh "Checked against" line (this commit's parent sha and tod
 
 **Check.** `bun test apps/server/src/capability-map.test.ts`
 
-**Done when.** The test passes; `grep -rn "every 5 min" docs/capabilities docs/architecture.md` shows no line about the mail sync.
+**Done when.** The test passes; `grep -rni "every 5 min" docs/capabilities docs/architecture.md docs/modules.md` shows no line about the mail sync (case-insensitive: "Every 5 minutes" counts; cold review 2 N4); `grep -n "F100" docs/capabilities/*.md` shows no Limits line that says F100 will do a thing it did.
 
 **Out of scope.** User docs (E10a does not exist yet).
 

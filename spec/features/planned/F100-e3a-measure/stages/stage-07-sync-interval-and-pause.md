@@ -1,6 +1,6 @@
 # F100 stage 07 — Sync every 2 min and the LLM pause line (F073)
 
-Part of [`../plan.md`](../plan.md). Needs stage 02 on `master`. Not next to stage 06 (both touch the mail job area and `main.ts`). After the land: tell the owner about owner step O1; coordinator steps C3 and C4 follow stage 07.
+Part of [`../plan.md`](../plan.md). Review job before the land (user-visible texts, plan § Review). Needs stage 02 on `master`. Not next to stage 06 (both touch the mail job area and `main.ts`). After the land: tell the owner about owner step O1; coordinator steps C3 and C4 follow stage 07.
 
 After this stage the mail sync runs every 2 minutes by default (`MAIL_SYNC_EVERY_MIN` = 2, 3 or 5), and `/status` and the digest say when the LLM is paused and why, with the quota case in plain words.
 
@@ -8,7 +8,7 @@ After this stage the mail sync runs every 2 minutes by default (`MAIL_SYNC_EVERY
 
 **Goal.** The interval is a config key with default 2 (D7).
 
-**Files.** `apps/server/src/platform/config.ts` (+ `config.test.ts`), `.env.example`, `apps/server/src/main.ts`, `apps/server/src/modules/channels/commands.ts` (`changeLines` resume text; `CommandDeps` gains `syncEveryMin: number`), the place that builds `CommandDeps` (`createTelegramRuntime` deps in `channels/index.ts` or `telegram/…`; follow `operatorContact`), `apps/server/test/integration/channels-commands.test.ts`, `deploy/compose.yaml` only if it lists env keys one by one (do not set the key there: the default applies).
+**Files.** `apps/server/src/platform/config.ts` (+ `config.test.ts`), `.env.example`, `apps/server/src/main.ts`, `apps/server/src/modules/channels/commands.ts` (`changeLines` resume text; `CommandDeps` gains `syncEveryMin: number`), the place that builds `CommandDeps` (`createTelegramRuntime` deps in `channels/index.ts` or `telegram/…`; follow `operatorContact`), `apps/server/test/integration/channels-commands.test.ts`, `deploy/compose.yaml` only if it lists env keys one by one (do not set the key there: the default applies), `docs/capabilities/sync.md` (line 7 "Every 5 minutes", rule 6 cron, the `mail.sync` job row of Entry points, rule 16 "mail of the last 5 minutes" and the Limits line "E3a (F100) moves the poll to 2 minutes": the interval is `MAIL_SYNC_EVERY_MIN` minutes, default 2, also 3 or 5; the Limits line keeps only "no IMAP IDLE (E8)"), `docs/architecture.md` §4.1 (the flow line `Scheduler: every 5 min per mailbox` → `every MAIL_SYNC_EVERY_MIN min (default 2)`, line ~95) and §6.1 "Sync cursor" ("Every 5 minutes: fetch UIDs above the cursor.", line ~321 → "Every `MAIL_SYNC_EVERY_MIN` minutes (default 2): …"), `docs/capabilities/digest-and-notices.md` rule 9 (the `/resume` text, if the page quotes it).
 
 **Interfaces.**
 
@@ -22,7 +22,7 @@ scheduler.add("mail.sync", mailSyncCron(config), mailSync.run);
 log.info("mail_sync_interval", { minutes: Number(config.MAIL_SYNC_EVERY_MIN) });
 ```
 
-`.env.example`, next to the other mail keys:
+`.env.example`, next to the other mail keys (the F099 `SEND_LIMIT_*` keys are their own block; do not put the key inside it):
 
 ```
 # Minutes between two mail syncs: 2 (default), 3 or 5. Use 3 when the mail host throttles logins.
@@ -31,7 +31,7 @@ MAIL_SYNC_EVERY_MIN=
 
 Resume text: `` `The next sync runs within ${deps.syncEveryMin} minutes. Mail that came during the pause is read then; mail older than 7 days is not triaged.` `` (`changeLines` gets the number as a parameter).
 
-Add `minutes` to `platform/log-fields.ts` if it is not there.
+Add `minutes` to `platform/log-fields.ts` if it is not there (after F103 stage 01: to its number kind list, plan D30). `platform/config.ts` is 493 lines (plan F13): add only the key and `mailSyncCron`, next to `sendLimits`. The resume text follows plan D31: when `packages/core/src/texts/bot.ts` exists (F098 stage 11), it is an entry of `texts.bot` with en and pl; else it stays inline in `commands.ts`.
 
 **Decisions.** D7, D30.
 
@@ -40,9 +40,9 @@ Add `minutes` to `platform/log-fields.ts` if it is not there.
 1. Unit (`config.test.ts`): no key → `"2"` and `mailSyncCron` → `*/2 * * * *`; `"3"` → `*/3 * * * *`; `"4"` → a config error naming `MAIL_SYNC_EVERY_MIN`.
 2. Integration (`channels-commands.test.ts`): `/resume` with `syncEveryMin: 3` → the text holds "within 3 minutes".
 
-**Check.** `bun test apps/server/src/platform/config.test.ts apps/server/test/integration/channels-commands.test.ts`
+**Check.** `bun test apps/server/src/platform/config.test.ts apps/server/test/integration/channels-commands.test.ts apps/server/src/capability-map.test.ts`
 
-**Done when.** Cases 1–2 pass; `grep -rn '"\*/5 \* \* \* \*", mailSync' apps/server/src/main.ts` prints nothing.
+**Done when.** Cases 1–2 pass; `grep -ni "5 min" docs/capabilities/sync.md docs/architecture.md` shows no line about the sync interval (the heartbeat and other 5-minute waits stay); `grep -rn '"\*/5 \* \* \* \*", mailSync' apps/server/src/main.ts` prints nothing.
 
 **Out of scope.** IMAP IDLE (E8); the heartbeat interval (stays 5 min).
 
@@ -50,7 +50,7 @@ Add `minutes` to `platform/log-fields.ts` if it is not there.
 
 **Goal.** A pause and its code are visible to the user from the `llm.call` rows, behind the flag `llm_pause_line` (D8, D26, F073).
 
-**Files.** `packages/core/src/features.ts` (+ test: flag `llm_pause_line`, epic `E3a`, remove-by `2027-03-01`, default off, description "/status and the digest name an LLM pause and its cause."), `apps/server/src/platform/llm/errors.ts` (export the code lists), `apps/server/src/platform/llm/index.ts`, `apps/server/src/modules/audit/repo.ts` or a new `audit/llm-pause.ts` (+ `audit/index.ts`), `packages/core/src/digest/notices.ts` or a new `packages/core/src/digest/llm-pause.ts` (+ index), `packages/core/src/digest/digest.ts` (`DigestInput.llmPause`), `apps/server/src/modules/reports/digest.ts`, `apps/server/src/modules/channels/commands.ts` (`statusMessage`), `apps/server/test/integration/audit-llm-pause.test.ts` (new), unit tests next to the core files.
+**Files.** `packages/core/src/features.ts` (+ test: flag `llm_pause_line`, epic `E3a`, remove-by `2027-03-01`, default off, description "/status and the digest name an LLM pause and its cause.") and the three tests that list every flag (plan § Rules for every stage), `apps/server/src/platform/llm/errors.ts` (export the code lists), `apps/server/src/platform/llm/index.ts`, a new `apps/server/src/modules/audit/llm-pause.ts` (+ `audit/index.ts`; `audit/repo.ts` is 320 lines; it may read the rows with `listAuditEvents(db, ctx, { events: ["llm.call"], since: now − 2 h, limit: 200 })` of F099, plan F18), a new `packages/core/src/digest/llm-pause.ts` (+ index; `digest/notices.ts` gained the F099 send-limit texts), `packages/core/src/digest/digest.ts` (`DigestInput.llmPause`), `apps/server/src/modules/reports/digest.ts`, `apps/server/src/modules/channels/commands.ts` (`statusMessage`), `apps/server/test/integration/audit-llm-pause.test.ts` (new), unit tests next to the core files, `docs/capabilities/digest-and-notices.md` (rule 4: the footer's first line can be the LLM pause line behind `llm_pause_line`; rule 9 `/status`: the pause line after the LLM provider and model; refresh the "Checked against" line), `docs/capabilities/triage.md` (the Limits line "The LLM pause is in memory: a restart clears it" gains: "`/status` and the digest read the pause from the `llm.call` audit rows (`latestLlmPause`), so they show it after a restart too"). The texts follow plan D31.
 
 **Interfaces.**
 
@@ -95,7 +95,7 @@ export function llmPauseLine(pause: LlmPause, timeZone: string, now: Date): stri
 4. Integration (`channels-commands.test.ts`): `/status` with the quota rows of case 3 and the flag on → the text holds `quota or budget is spent`; flag off → no pause line.
 5. Unit: the code lists hold every member of `SoftCode` and `ConfigCode`.
 
-**Check.** `bun test packages/core/src/digest/ apps/server/src/platform/llm/ apps/server/test/integration/channels-commands.test.ts apps/server/test/integration/audit-llm-pause.test.ts`
+**Check.** `bun test packages/core/src/digest/ packages/core/src/features.test.ts apps/server/src/platform/llm/ apps/server/test/integration/channels-commands.test.ts apps/server/test/integration/audit-llm-pause.test.ts apps/server/test/integration/tenancy-features.test.ts apps/server/test/integration/web-operator.test.ts apps/server/test/integration/org-flag-cli.test.ts apps/server/src/capability-map.test.ts`
 
 **Done when.** Cases 1–5 pass.
 
@@ -105,10 +105,10 @@ export function llmPauseLine(pause: LlmPause, timeZone: string, now: Date): stri
 
 **Goal.** The owner can set the budget alert from written steps; the alert entry points to the new line.
 
-**Files.** `deploy/README.md` (new section "LLM provider budget"), `docs/known-alerts.md` (the entry whose source is `triage/pause.ts`).
+**Files.** `deploy/README.md` (new section "LLM provider budget"), `docs/known-alerts.md` (of the three entries whose source is `triage/pause.ts`, the one whose codes list `http_429_quota`, about line 721 at `a6690e4`).
 
 - `deploy/README.md` § "LLM provider budget": why (a spent budget stops triage with `http_429_quota`); the steps in the OpenAI platform: open the project that owns `OPENAI_API_KEY`, set a monthly budget (the pilot used $3, `spec/features/done/2026-11/F026-llm-provider-switch/plan.md` stage 0) and an e-mail alert below it (for example at 80 %); check the `/status` line after a quota pause. Mark the menu names as "not verified (2026-11)"; the owner does the steps (O1).
-- `docs/known-alerts.md`: in the `http_429_quota` fix text add "`/status` and the digest show `⏸ LLM paused … (http_429_quota)` (F100 stage 07)".
+- `docs/known-alerts.md`: in that entry's `http_429_quota` fix text add "`/status` and the digest show `⏸ LLM paused … (http_429_quota)` (F100 stage 07)".
 
 **Decisions.** D8, P8.
 
