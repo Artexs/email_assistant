@@ -121,6 +121,7 @@ bun run db:migrate && bun run db:rollback && bun run db:migrate && bun run db:ty
 - `async function seedOrg(trx): Promise<{ orgId; userId; mailboxId }>`: `createOrgWithMailbox(trx)`; `fillMailbox(trx, { orgId }, mailboxId, userId)`; `linkChat(trx, { orgId }, userId, randomChatId(), NOW)`; `insertLinkToken(trx, { orgId }, { tokenHash: createHash("sha256").update(randomUUID()).digest("hex"), userId, expiresAt: new Date("2026-11-20T10:15:00Z"), createdAt: NOW })`; `insertDigest(trx, { orgId }, { userId, slotKey: "2026-11-20T08:00", periodStart: new Date("2026-11-19T16:00:00Z"), periodEnd: NOW })`; `upsertOrgFeature(trx, { orgId }, { flag: "stats_page", enabled: true, setBy: "cli", setAt: NOW })`. `NOW = new Date("2026-11-20T10:00:00Z")`. Together these write at least one row in each of the 19 tables (test 6 proves it).
 - `async function countWhere(trx, table, column: "org_id" | "id", orgId)`: `select count(*)::int as n from <table> where <column> = <orgId>` with `sql.table` and `sql.ref`.
 - `function sqlState(error): string | undefined` (the `code` field of a `pg` error).
+- `async function expectSqlState(trx, run: () => Promise<unknown>, code: string)`: `savepoint f092_case`, run, expect a throw with `sqlState = code`, then `rollback to savepoint f092_case` (raw `sql` on `trx`). A Postgres error aborts the transaction; the savepoint lets the test go on after it.
 
 **Tests (numbered; values fixed).**
 
@@ -138,17 +139,17 @@ Isolation (one `withRollback` per test; `A = await seedOrg(trx)`, `B = await see
 7. `scopeLocal(trx, A.orgId)`: for each table, `countWhere(…, B.orgId) = 0` and `countWhere(…, A.orgId) >= 1`. Also, for each table, `select count(*) from <t> where <column> <> A.orgId` = 0 (no foreign row by any filter).
 8. `scopeLocal(trx, A.orgId)`, then `scopeLocal(trx, "")` in the same transaction: B rows are visible again (`countWhere(mailboxes, B) = 1`).
 9. `app_current_org()`: `scopeLocal(trx, A.orgId)` → `select app_current_org() as v` = `A.orgId`; `scopeLocal(trx, "")` → `null`.
-10. `scopeLocal(trx, "not-a-uuid")`, then `select count(*) from mailboxes` → throws, `sqlState = "22P02"` (fail closed, P7). Own `withRollback`, no seeding needed.
+10. `scopeLocal(trx, "not-a-uuid")`, then `expectSqlState(trx, () => select count(*) from mailboxes, "22P02")` (fail closed, P7). Own `withRollback`, no seeding needed.
 
-Writes (each its own `withRollback` with A and B seeded, then `scopeLocal(trx, A.orgId)`; a Postgres error aborts the transaction, so one failing statement per test):
+Writes (each its own `withRollback` with A and B seeded, then `scopeLocal(trx, A.orgId)`; every expected error goes through `expectSqlState`, so the test can read after it):
 
 11. `insertSenderRule(trx, { orgId: B.orgId }, { mailboxId: null, pattern: "w11@x.test", kind: "vip" })` → throws, `sqlState = "42501"`.
 12. Insert as `scopeLocal(trx, "")` a rule for A with `mailboxId: null`, `pattern: "w12@x.test"`; then `scopeLocal(trx, A.orgId)`; `update sender_rules set org_id = <B> where pattern = 'w12@x.test'` → throws `42501`.
 13. With `scopeLocal(trx, "")` insert a rule for B (`pattern: "w13@x.test"`, `mailboxId: null`); `scopeLocal(trx, A.orgId)`; `update sender_rules set kind = 'blocklist' where pattern = 'w13@x.test'` → `numUpdatedRows = 0`; `delete from sender_rules where pattern = 'w13@x.test'` → `numDeletedRows = 0`; `scopeLocal(trx, "")` → the rule still exists with `kind = 'vip'`.
 14. `recordAudit(trx, { orgId: A.orgId }, { actor: "system", event: "email.triaged" })` → succeeds (insert under the policy; `app` has only `INSERT`, `SELECT`, D13).
 15. `recordAudit(trx, { orgId: B.orgId }, { actor: "system", event: "email.triaged" })` → throws `42501`.
-16. `select delete_mailbox(<B.orgId>, <B.mailboxId>)` → throws, `sqlState = "P0002"`; then `scopeLocal(trx, "")`: B's mailbox still exists.
-17. `select delete_mailbox(<A.orgId>, <A.mailboxId>)` under A → succeeds; A's mailbox is gone (`countWhere(mailboxes, id… )` by `id = A.mailboxId` → 0 after `scopeLocal(trx, "")`).
+16. `expectSqlState(trx, () => select delete_mailbox(<B.orgId>, <B.mailboxId>), "P0002")`; then `scopeLocal(trx, "")`: `select count(*) from mailboxes where id = <B.mailboxId>` → 1.
+17. `select delete_mailbox(<A.orgId>, <A.mailboxId>)` under A → succeeds; then `scopeLocal(trx, "")` and `select count(*) from mailboxes where id = <A.mailboxId>` → 0.
 18. `scopeLocal(trx, "")`; `select delete_mailbox(<B.orgId>, <B.mailboxId>)` → succeeds (the jobs and CLI path is unchanged).
 
 **Decisions.** D8, D10, D11, D12, D13, D18.
