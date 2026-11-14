@@ -369,7 +369,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `notice send_result queued: outbox <id>`
 
 - **First seen:** 2026-11-07 (S4 code; not seen live, the dev run (stage 19) and the VPS runs (stages 22, 23) are open)
-- **Source:** `apps/server/src/modules/channels/notices.ts` (`[channels]`, level `info`).
+- **Source:** `apps/server/src/modules/channels/notices/` (`[channels]`, level `info`).
 - **Cause:** A send ended (`applied`, `failed`, `expired` or `rejected`) and the notice job queued one result message for each linked owner. The dedup key is `send_result:<action id>`, and `actions.result_notified_at` is set in the same transaction.
 - **Fix:** No action for the line. Read the message in Telegram; the meaning of each text is in `deploy/README.md`, "Approvals and sends". The same line exists for the kinds `approval_set` and `delegation_answered`.
 - **Status:** won't fix (expected behaviour)
@@ -377,7 +377,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `notice approval queued: outbox <id>`
 
 - **First seen:** 2026-11-07 (S4 code; not seen live, the dev run (stage 19) and the VPS runs (stages 22, 23) are open)
-- **Source:** `apps/server/src/modules/channels/notices.ts` (`[channels]`, level `info`).
+- **Source:** `apps/server/src/modules/channels/notices/` (`[channels]`, level `info`).
 - **Cause:** A send is `awaiting_approval`, its draft is `applied` and the mailbox is `active`, so the notice job queued one approval request for each linked owner. The dedup key is `approval:<action id>`; `actions.notified_at` is set in the same transaction. The 48-hour approval time counts from `notified_at`.
 - **Fix:** No action. If no request arrives in Telegram, check that an owner is linked (`telegram:link`) and that the draft is `applied`.
 - **Status:** won't fix (expected behaviour)
@@ -401,7 +401,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `notice <kind> <id>: skipped: <error>`
 
 - **First seen:** 2026-11-07 (S4 code; not seen live)
-- **Source:** `apps/server/src/modules/channels/notices.ts` (`[channels]`, level `warn`; `<kind>` is `approval`, `approval_set`, `send_result` or `delegation_answered`). Once per process and row.
+- **Source:** `apps/server/src/modules/channels/notices/` (`[channels]`, level `warn`; `<kind>` is `approval`, `approval_set`, `send_result` or `delegation_answered`). Once per process and row.
 - **Cause:** The notice job could not build the message for one row (for example a draft payload that does not parse, a missing mailbox, or a missing organization). It skips that row and goes on with the others. The row keeps failing on every tick until someone fixes it, and the owner gets no message for it.
 - **Fix:** Find the row with a read-only query (`$C exec db psql -U postgres -d email_assistant -c "<sql>"`):
   `approval`: `select id, status, notified_at, payload->>'kind' from actions where id = '<id>';`
@@ -478,7 +478,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `notice action_failed queued: outbox <id>`
 
 - **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
-- **Source:** `apps/server/src/modules/channels/notices.ts` (`[channels]`, level `info`).
+- **Source:** `apps/server/src/modules/channels/notices/` (`[channels]`, level `info`).
 - **Cause:** An action became `failed` and the notice job queued one `action_failed` message for the user. The text says which action failed and why. The dedup key is `action_failed:<action id>`, so one action gives one notice.
 - **Fix:** No action for the alert. Read the audit row `action.failed` of the action (`reason_code`). The user decides in the mailbox. See `deploy/README.md`, "Assist mode".
 - **Status:** won't fix (expected behaviour)
@@ -598,7 +598,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `notices for org <id> failed: <label>`
 
 - **First seen:** 2026-11-06 (S2 code; not seen live in the stage 21 dev run or the stage 23 pilot run, 2026-11-07)
-- **Source:** `apps/server/src/modules/channels/notices.ts` (`[channels]`, level `error`).
+- **Source:** `apps/server/src/modules/channels/notices/` (`[channels]`, level `error`).
 - **Cause:** Notice detection for one organization failed (database error or missing organization). The other organizations continue. The next tick (15 s) tries again.
 - **Fix:** Read the label. If it repeats, check the DB and the organization row.
 - **Status:** investigating
