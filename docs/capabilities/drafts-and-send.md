@@ -38,7 +38,7 @@ For a delegation mail, or for a mail that needs one clarifying question, triage 
    - A server reply after the client `DATA` line (the `(2 + recipients)`-th reply after `MAIL FROM`; the reply code does not matter, because nodemailer accepts any 2xx or 3xx reply to `DATA`) starts the content phase.
    - The nodemailer code `EENVELOPE` gives `envelope`, `EMESSAGE` gives `content`. Another error during the send step gives `unknown` when the content phase started or no client line was seen, else `envelope`.
    - An error that is not a `SmtpSendError` is `unknown` too. `content` and `unknown` mean that the server may have the mail: the committer never retries after them.
-5. **Outcomes of a send error (rule 6, `sendOutcomeOf`):**
+5. **Outcomes of a send error (`sendOutcomeOf`):**
 
    | Error                                                                               | The row goes to                                                                                      | `attempts`                                                          |
    | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |

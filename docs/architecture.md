@@ -526,7 +526,7 @@ Tenancy:
 - Moved to [docs/capabilities/actions-and-undo.md](capabilities/actions-and-undo.md) § Rules (F095).
 - Moved to [docs/capabilities/drafts-and-send.md](capabilities/drafts-and-send.md) § Rules (F095).
 - Moved to [docs/capabilities/delegation.md](capabilities/delegation.md) § Rules (F095).
-- Moved to [docs/capabilities/drafts-and-send.md](capabilities/drafts-and-send.md) § Entry points (F095).
+- Moved to [docs/capabilities/drafts-and-send.md](capabilities/drafts-and-send.md) § Rules, rule 10 (F095).
 - **Plan state (S6a):** `organizations.plan` is `trial`, `active` or `suspended`. The operator changes it with `bun run org:plan` (audit row `org.plan_changed`). A `suspended` organization is paused by the operator:
   - **Jobs.** These skip it: mail sync, triage worker, `triage.returned`, committer, chaser, notice detection, digests and the outbox sender (its pending rows wait). The approval expiry and `platform.retention` still run for it. Every job reaches mailboxes through `listSyncTargets`, `listMailboxTargets` or `listLinkedChats`, which skip a `suspended` organization unless the caller sets `includeSuspended`. The sync, triage and committer loops check the plan before each mailbox, so a run that started before the change stops at the next mailbox. A send in flight finishes.
   - **Queued messages.** The change to `suspended` sets every `pending` outbox row of the organization to `failed` / `outdated`, except the kinds `approval` and `approval_set` (the notifier queues them only once).
