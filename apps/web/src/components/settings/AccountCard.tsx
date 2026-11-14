@@ -2,9 +2,11 @@ import { changePasswordFormSchema, fieldErrors as toFieldErrors, sessionsSchema 
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
-import { getLocale, t, type TextKey } from "../../i18n";
+import { getLocale, setLocale, t, useLocale, type TextKey } from "../../i18n";
 import { api } from "../../lib/api";
 import { authClient } from "../../lib/auth-client";
+import { errorText } from "../../lib/errors";
+import { saveLocale } from "../../lib/locale-api";
 import { changePasswordError, signOutAllResult } from "../../lib/password-errors";
 import { useResource } from "../../lib/use-resource";
 import { useMe } from "../shell/MeProvider";
@@ -13,6 +15,7 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Skeleton } from "../ui/skeleton";
 import { Switch } from "../ui/switch";
 import { SecurityLog } from "./SecurityLog";
@@ -66,6 +69,44 @@ function SessionsList() {
         </ul>
       )}
     </section>
+  );
+}
+
+// The language is a display setting: a paused organization may change it, so the select ignores `canWrite`.
+function LanguageSelect() {
+  const locale = useLocale();
+  const { reload } = useMe();
+  const [saving, setSaving] = useState(false);
+
+  async function onChange(value: string) {
+    if (value !== "pl" && value !== "en") return;
+    setSaving(true);
+    try {
+      await saveLocale(value);
+      setLocale(value);
+      reload();
+      toast.success(t("acct_language_saved"));
+    } catch (caught) {
+      toast.error(t(errorText(caught)));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Label htmlFor="acct-language">{t("acct_language_label")}</Label>
+      <Select value={locale} onValueChange={(value) => void onChange(value)} disabled={saving}>
+        <SelectTrigger id="acct-language" className="w-full sm:w-64">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="pl">{t("acct_language_pl")}</SelectItem>
+          <SelectItem value="en">{t("acct_language_en")}</SelectItem>
+        </SelectContent>
+      </Select>
+      <p className="text-muted-foreground text-sm">{t("acct_language_help")}</p>
+    </div>
   );
 }
 
@@ -144,6 +185,7 @@ export function AccountCard() {
         <CardTitle>{t("acct_title")}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
+        <LanguageSelect />
         <form method="post" onSubmit={(event) => void onSubmit(event)} noValidate className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="acct-current">{t("acct_current_label")}</Label>

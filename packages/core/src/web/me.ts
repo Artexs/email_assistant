@@ -1,4 +1,4 @@
-import { membershipRoleSchema, orgPlanSchema } from "../tenancy";
+import { membershipRoleSchema, orgPlanSchema, userLocales } from "../tenancy";
 
 import { onboardingSchema } from "./onboarding";
 import { z } from "./zod";
@@ -35,7 +35,7 @@ export function scopeInfoOf(
 }
 
 export const meSchema = z.object({
-  user: z.object({ id: z.uuid(), email: z.string(), displayName: z.string() }),
+  user: z.object({ id: z.uuid(), email: z.string(), displayName: z.string(), locale: z.enum(userLocales).nullable() }),
   organization: z.object({
     id: z.uuid(),
     name: z.string(),
@@ -57,3 +57,6 @@ export const meSchema = z.object({
   features: z.array(z.string()), // the registry keys that are on for the organization (plan D23)
 });
 export type Me = z.infer<typeof meSchema>;
+
+export const localeBodySchema = z.object({ locale: z.enum(userLocales) });
+export type LocaleBody = z.infer<typeof localeBodySchema>;
