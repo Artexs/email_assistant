@@ -24,6 +24,7 @@ export const evalUsage = [
   "       bun run eval --sim <scenario> --part dev|holdout|week [--provider …] [--model …] [--reasoning-effort …]",
   `                    [--concurrency <n, default ${SIM_DEFAULT_CONCURRENCY}>] [--rpm <n, default ${SIM_DEFAULT_RPM}>] [--budget-usd 1]`,
   "                    [--spend-ledger <file>] [--fresh] [--fresh-lock] [--retries 4] [--limit n] [--out <file.md>]",
+  "                    [--judge [--judge-provider gemini|openai] [--judge-model <id>] [--judge-rpm <n>]]",
 ].join("\n");
 
 const optionsSchema = z.object({
@@ -57,6 +58,10 @@ const optionsSchema = z.object({
   "budget-usd": z.coerce.number().positive().optional(),
   "spend-ledger": z.string().min(1).optional(),
   "fresh-lock": z.boolean().default(false),
+  judge: z.boolean().default(false),
+  "judge-provider": z.enum(llmProviderIds).optional(),
+  "judge-model": z.string().min(1).optional(),
+  "judge-rpm": z.coerce.number().positive().optional(),
 });
 
 export type EvalOptions = z.infer<typeof optionsSchema> & {
@@ -81,7 +86,18 @@ const casesOnly = [
 ] as const;
 // A sim run takes its set and state file from the corpus, and has no DB.
 const simExcluded = ["real", "gap", ...gapOnly, "set", "per-category", "state", ...realOnly] as const;
-const simOnly = ["part", "concurrency", "rpm", "budget-usd", "spend-ledger", "fresh-lock"] as const;
+const simOnly = [
+  "part",
+  "concurrency",
+  "rpm",
+  "budget-usd",
+  "spend-ledger",
+  "fresh-lock",
+  "judge",
+  "judge-provider",
+  "judge-model",
+  "judge-rpm",
+] as const;
 
 // Undefined means a usage error.
 export function parseEvalArgs(args: string[]): EvalOptions | undefined {
@@ -116,6 +132,10 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
         "budget-usd": { type: "string" },
         "spend-ledger": { type: "string" },
         "fresh-lock": { type: "boolean" },
+        judge: { type: "boolean" },
+        "judge-provider": { type: "string" },
+        "judge-model": { type: "string" },
+        "judge-rpm": { type: "string" },
       },
       strict: true,
     });
@@ -132,6 +152,13 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
     if (data.sim !== undefined) {
       if (data.part === undefined) return undefined;
       if (simExcluded.some((key) => values[key] !== undefined)) return undefined;
+      // The judge overrides mean nothing without the judge.
+      if (
+        !data.judge &&
+        (data["judge-provider"] !== undefined || data["judge-model"] !== undefined || data["judge-rpm"] !== undefined)
+      ) {
+        return undefined;
+      }
       return {
         ...data,
         concurrency: data.concurrency ?? SIM_DEFAULT_CONCURRENCY,

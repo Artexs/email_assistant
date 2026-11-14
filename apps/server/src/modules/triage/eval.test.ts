@@ -555,6 +555,8 @@ describe("runEval", () => {
         delegatePick: null,
         draftKind: null,
         draftMatches: null,
+        judge: null,
+        judgeUsage: null,
       };
       expect(toPrediction(rule)).toEqual({
         expected: "spam",
