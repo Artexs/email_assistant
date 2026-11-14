@@ -34,7 +34,7 @@ Every Monday the executive gets one Telegram message with the week's numbers: mi
 
 ## Slices
 
-16 stages, one worker job each. Lanes, the only migration (stage 04), stage-level waits for F097 stages, review jobs, coordinator steps and the one owner step: [plan.md](plan.md) § "How to run". No owner checkpoint.
+16 stages, one worker job each. Lanes, the two migrations (stages 04 and 14), stage-level waits for F097 stages, review jobs, coordinator steps and the one owner step: [plan.md](plan.md) § "How to run". No owner checkpoint.
 
 ## Sequenced
 

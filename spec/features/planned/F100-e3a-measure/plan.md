@@ -37,7 +37,7 @@ Sources: `docs/product/stage-2/epics/E03-measured-core.md` (epic page with "Disc
 
 ### Design decisions
 
-- **D1 One migration.** Stage 04 holds the whole schema: tables `email_headers`, `email_flags`, `action_feedback`; `triage_feedback.source` gains `answered_check`; `outbox.kind` gains `weekly_report`. It waits for F097 stage 03, which changes the same `triage_feedback_source_check` (adds `review`); this migration lists all seven sources. Rejected: one migration per feature stage (four migrations to serialize against other tickets).
+- **D1 Two migrations.** Stage 04 holds the tables: `email_headers`, `email_flags`, `action_feedback`, and `triage_feedback.source` gains `answered_check`. It waits for F097 stage 03, which changes the same `triage_feedback_source_check` (adds `review`); this migration lists all seven sources. Stage 14 adds `weekly_report` to `outbox_kind_check`, because the schema test compares that CHECK with `noticeKinds` exactly and a kind needs its renderer and detector in the same change (code patterns § Add a notice kind). Rejected: one migration per feature stage (five migrations to serialize against other tickets); the outbox kind in stage 04 (a kind without a renderer and a detector fails the registry tests).
 - **D2 Captured fields.** `CapturedHeaders` (in `mail/port.ts`, so E9 adapters return the same shape): `fromName` (≤ 200 chars), `replyTo` (addresses, lower case, ≤ 5), `returnPath` (address, lower case), `authResults` (the topmost `Authentication-Results` value, ≤ 1,000 chars), `listUnsubscribe` (≤ 1,000), `listId` (≤ 300), `autoSubmitted` (≤ 100), `precedence` (≤ 50), `hasCalendar` (a `text/calendar` part or top type), `attachments` (≤ 20 of `{ name ≤ 200 | null, type ≤ 100, size, inline }`) and `attachmentCount` (all), `links` (≤ 50 of `{ host, textHost | null }`, hosts lower case without port, deduplicated by the pair) and `linkCount`, `partsKnown` (false when only the header block was read). Every string loses U+0000 and is trimmed; an empty string is null. Header values come from `parsed.headerLines` (first line of each key = the topmost), never from `parsed.headers`, because mailparser drops the `List-*` headers there (fact F1). Links come from the HTML part: each `<a href>` with an `http` or `https` URL gives `host`; when the visible text of the link (tags removed) is a URL or a bare host (`^[a-z0-9.-]+\.[a-z]{2,}$`), `textHost` is its host. Without an HTML part, `http(s)://` URLs in the text part give hosts with `textHost` null. Rejected: storing raw header blocks (more personal data, no fixed shape).
 - **D3 Port change.** `MailProvider.fetchBodyText` becomes `fetchContent(folder, uid): Promise<MailContent>` with `MailContent = { text: string | null; capture: CapturedHeaders | null }` (capture null only when the UID is gone). Over the body size limit: `text` null and the capture from a header-only fetch with `partsKnown: false`. New `fetchFlagsIn(folder, uids): Promise<{ uid: number; flags: string[] }[]>` (UID FETCH FLAGS; `[]` for a missing folder; unknown UIDs left out). Rejected: a second fetch of the source for headers (one more round trip per mail).
 - **D4 Store the capture.** One `email_headers` row per stored mail, inserted in the transaction of the `emails` insert (`applyChunk`), only when the insert inserted. Mail stored before this ticket has no row (no back-capture); the backfill path captures like the sync. A capture that fails to parse stores `null` capture → no row, and the sync goes on (a counted `capture_failed` event line).
@@ -139,7 +139,7 @@ Sources: `docs/product/stage-2/epics/E03-measured-core.md` (epic page with "Disc
 - Format only the files of your stage: `bunx prettier --write <files>`. Never the whole repo (S2 incident: a builder ran the repo-wide formatter).
 - No temporary file inside the worktree (`bun run lint` lints every `.ts` file): use `/tmp/f100-sNN/`.
 - Comments state the rule in one sentence; no bare codes (`D14`, `F100`, `PD-057`) in code comments; name an ADR or a ticket folder path when a source is needed.
-- One migration in the whole ticket (stage 04). No `bun.lock` change and no new dependency in any stage.
+- Two migrations in the whole ticket (stages 04 and 14). No `bun.lock` change and no new dependency in any stage.
 - A new import between modules → `bun run graph:modules` and commit `docs/diagrams/module-graph.{md,json}` (code patterns § Layers and borders).
 - Commit by explicit path (`git add <paths>`), never `git add -A`.
 - `bun run test:int:ci` runs in your own DB (the prepare script makes it); no lock. Never run `bun run test:e2e`.
@@ -171,7 +171,7 @@ None. The coordinator builds on the review results; the decisions marked "defaul
 
 | # | Step | When |
 | --- | --- | --- |
-| C1 | `bun run db:migrate` on the shared dev DB (main checkout). | After stage 04 lands. |
+| C1 | `bun run db:migrate` on the shared dev DB (main checkout). | After stage 04 lands, and again after stage 14 lands. |
 | C2 | Deploy the image with stages 01–03 to the VPS (pre-approved; backup first, name the rollback target, verify after). Run `bun run mailbox:signals --org-id … --mailbox-id …` for the pilot mailbox in the app container (`--days 30`). Append its printed lines (counts and server names only) to `notes/2026-11-13-measured-core-facts.md` under "E3a stage 03 run (date)", and answer N1, N2, N4 there. | After stage 03 lands. |
 | C3 | Deploy stages 04–07 (the migration runs in the deploy) with `MAIL_SYNC_EVERY_MIN` unset (default 2). Verify: the `server_listening` line, two sync runs 2 min apart in the log, `email_headers` rows for mail stored after the deploy, `email_flags` rows after 10 min. | After stage 07 lands. |
 | C4 | Watch 24 h of sync lines on the VPS after C3: count `sync … the next tick tries again` warnings and `auth_error` changes of the pilot mailbox. More than 3 soft failures in an hour, or an `auth_error`, that did not happen in the 24 h before → set `MAIL_SYNC_EVERY_MIN=3` in the VPS `.env` (not a secret), restart, write it in the ticket log and in the note of C2. | 24 h after C3. |
@@ -180,7 +180,7 @@ None. The coordinator builds on the review results; the decisions marked "defaul
 
 ## Review
 
-- A review job before the land for stages 02 (port, both adapters), 04 (`[risky]` migration), 05 (`[risky]` sync write path), 06 (`[risky]` flag write guard), 10 (tenant filters), 11 (route, CLI), 12 (taps that change data, owner checks), 13 (labels), 14 (notices to people). Model: the board's reviewer (`spec/build.md` § TRACK: `claude-sonnet-5-5`, high). The reviewer may run `bun run test:int:ci` at the candidate commit.
+- A review job before the land for stages 02 (port, both adapters), 04 (`[risky]` migration), 05 (`[risky]` sync write path), 06 (`[risky]` flag write guard), 10 (tenant filters), 11 (route, CLI), 12 (taps that change data, owner checks), 13 (labels), 14 (`[risky]` second migration, notices to people). Model: the board's reviewer (`spec/build.md` § TRACK: `claude-sonnet-5-5`, high). The reviewer may run `bun run test:int:ci` at the candidate commit.
 - Other stages land on the worker's proof.
 
 ## Stages
@@ -190,7 +190,7 @@ None. The coordinator builds on the review results; the decisions marked "defaul
 | 01 | [Capture parser](stages/stage-01-capture-parser.md) — `CapturedHeaders`, `captureFromParsed`, link hosts | ~250 lines | |
 | 02 | [Port and adapters](stages/stage-02-port-and-adapters.md) — `fetchContent`, `fetchFlagsIn`, IMAP and fake, contract | ~250 lines | review |
 | 03 | [`mailbox:signals` probe](stages/stage-03-signals-probe.md) — read-only counts on the pilot (C2) | ~150 lines | |
-| 04 | [Migration](stages/stage-04-migration.md) — `email_headers`, `email_flags`, `action_feedback`, two CHECKs, flags | ~200 lines | [risky], review |
+| 04 | [Migration](stages/stage-04-migration.md) — `email_headers`, `email_flags`, `action_feedback`, feedback source | ~220 lines | [risky], review |
 | 05 | [Store the capture](stages/stage-05-store-capture.md) — sync and backfill write, retention | ~250 lines | [risky], review |
 | 06 | [Flag refresh](stages/stage-06-flag-refresh.md) — in the sync run, guarded write | ~280 lines | [risky], review |
 | 07 | [Sync every 2 min and the LLM pause line](stages/stage-07-sync-interval-and-pause.md) (F073) | ~220 lines | |
@@ -200,7 +200,7 @@ None. The coordinator builds on the review results; the decisions marked "defaul
 | 11 | [Week service, stats route, `stats:week`](stages/stage-11-week-service.md) | ~250 lines | review |
 | 12 | [Reject reasons and the mistake tap](stages/stage-12-mistake-capture.md) | ~320 lines | review |
 | 13 | [Answered check in `/review`](stages/stage-13-answered-check.md) | ~220 lines | review |
-| 14 | [Weekly report and the handled-share line](stages/stage-14-weekly-report.md) | ~320 lines | review |
+| 14 | [Weekly report and the handled-share line](stages/stage-14-weekly-report.md) — outbox kind migration | ~320 lines | [risky], review |
 | 15 | [Stats page](stages/stage-15-stats-page.md) — `/api/me` features, nav, page | ~280 lines | |
 | 16 | [Docs and capability pages](stages/stage-16-docs.md) | docs | |
 
@@ -209,7 +209,7 @@ None. The coordinator builds on the review results; the decisions marked "defaul
 1. Before the first spawn: F095 (E1) is in `spec/features/done/`. Move the ticket: `git mv spec/features/planned/F100-e3a-measure spec/features/active/`, commit (the worktrees see only committed files).
 2. Order and lanes.
    - Lane A (mail): 01 → 02 → 03 → (C2). Then 05 after 02 and 04; 06 after 05.
-   - Lane B (schema): 04 after F097 stage 03 has landed on `master` (it changes the same CHECK). Stage 04 is the only migration of this ticket: never next to another ticket's migration stage.
+   - Lane B (schema): 04 after F097 stage 03 has landed on `master` (it changes the same CHECK). Stages 04 and 14 are the migrations of this ticket: never next to another ticket's migration stage, and C1 runs after each.
    - Lane C (core): 08 → 09 (any time; next to lanes A and B).
    - 07 any time after 02 (both edit `main.ts` and `mail/jobs.ts` area lightly: not next to 06).
    - 10 after 04, 09, and F097 stages 01 and 03 landed. 11 after 10. 12 after 04 and 09 (next to 10/11 is fine; 12 and 13 both edit `channels/callbacks.ts`: not next to each other). 13 after 06 and F097 stage 04 landed. 14 after 11 and 12 (both edit `send-result`/notice files: in order). 15 after 11. 16 after all.
