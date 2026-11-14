@@ -1,0 +1,133 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-024",
+  "checker": "claude-haiku-5-5",
+  "labels": [
+    {
+      "id": "w-4-114",
+      "category": "needs_reply",
+      "blindHash": "c4180f801989ecc1f6810c902cf23bae5cb9567f29e84684bb023988748ca9e4"
+    },
+    {
+      "id": "w-4-115",
+      "category": "needs_reply",
+      "blindHash": "f20534efa3043058598d1be01b18de494b8455cd96dd0cc4324ed777dc60a138"
+    },
+    {
+      "id": "w-4-116",
+      "category": "delegation",
+      "blindHash": "e16b502f05e1811c8deb70bd125b8fa75036c4fac0b8f6746ad9ca0ae440ccf1"
+    },
+    {
+      "id": "w-4-117",
+      "category": "needs_reply",
+      "blindHash": "3ebbbcc986e40fc71723574f0357c3065dc1fa3a5bac2165db79de88bd8970be"
+    },
+    {
+      "id": "w-4-118",
+      "category": "needs_reply",
+      "blindHash": "137ffefadbab92a55a036dc13f55f58d6f75d78194baa96362b6d55f46290256"
+    },
+    {
+      "id": "w-4-119",
+      "category": "info",
+      "blindHash": "c72ffb44f2c89a0bbeb059f96db6f756cf3e6dc94d92ff8556082159d3a0e5da"
+    },
+    {
+      "id": "w-4-120",
+      "category": "notification",
+      "blindHash": "ffec1b872407a8e371140730bae9e45955e1077891940a1b3533ba1a83b4f01e"
+    },
+    {
+      "id": "w-4-121",
+      "category": "notification",
+      "blindHash": "dfda9ba1ec09a7aa10e29da951e5ebfc5f97b2c957b9368c1c65f3cb45d06065"
+    },
+    {
+      "id": "w-4-122",
+      "category": "notification",
+      "blindHash": "9d560c4707a1abd15285a10d8e8815ef8eee35cfbe26250baaea771b30120a16"
+    },
+    {
+      "id": "w-4-123",
+      "category": "notification",
+      "blindHash": "c76e7b26738c03a114c7f7f0725e8c7bc770bcbb3acc7eabbde4aa5adc7593f8"
+    },
+    {
+      "id": "w-4-124",
+      "category": "spam",
+      "blindHash": "063647996545cd4a83e9405ec4814d78c8e452539b5cd523f99ad73658814bfc"
+    },
+    {
+      "id": "w-4-125",
+      "category": "needs_reply",
+      "blindHash": "2837b169887aa5d0b9a3e73437d2602c7eda71317563a97a77d1b6b9bfedc4ca"
+    },
+    {
+      "id": "w-4-126",
+      "category": "notification",
+      "blindHash": "b1345d19efc2d95fdd07c389d8bb01f02c3c707dd343eda2455cc0b4f263befb"
+    },
+    {
+      "id": "w-4-127",
+      "category": "notification",
+      "blindHash": "7ae34a19a15512911246d89be57a355102e7456473745ca06e3704cd2e058529"
+    },
+    {
+      "id": "w-4-128",
+      "category": "spam",
+      "blindHash": "d2f7e6367af294a12f198af5dcb3332c52c7d3bf0e75579b6017c36b204cb325"
+    },
+    {
+      "id": "w-4-129",
+      "category": "needs_reply",
+      "blindHash": "46b445e8c44ff0510ded592c94dd3793be1b3f5f582862a03633a3deeec0ac8c"
+    },
+    {
+      "id": "w-4-130",
+      "category": "needs_reply",
+      "blindHash": "296716c1313cbab63df814aba64a1c510e1a38ce938760fa70bb814dcaa8f8be"
+    },
+    {
+      "id": "w-4-131",
+      "category": "needs_reply",
+      "blindHash": "3216a454f25099eae621865ebfd0481f8d2e6e61ac7da508bc5c793326a7ef02"
+    },
+    {
+      "id": "w-4-132",
+      "category": "info",
+      "blindHash": "d02bcfe16d3c48acbd90edb3d87e44669726b264f0f7db4023e209c7881d98e9"
+    },
+    {
+      "id": "w-4-133",
+      "category": "needs_reply",
+      "blindHash": "6ff2ceaad8c48762cb7f9d505a11a191d7461a75e2dfe958e2e7bf0d7796a1e7"
+    },
+    {
+      "id": "w-4-134",
+      "category": "info",
+      "blindHash": "7ccf09aa40acce8022408cef495e87299c2858a578428c365c1d550617bb59f1"
+    },
+    {
+      "id": "w-4-135",
+      "category": "notification",
+      "blindHash": "daa6e5abf136dc45c38da7cbb059c5e1e81f575b6a36babdf913f8bab28a9365"
+    },
+    {
+      "id": "w-4-136",
+      "category": "needs_reply",
+      "blindHash": "8ef39aaaa45b489896181a7574c17a330f1f1d6191c08505684cca4968dc175f"
+    },
+    {
+      "id": "w-4-137",
+      "category": "notification",
+      "blindHash": "2b064238a90a1f9f59dca595c13c6e76185fe183ba2cb002672c9ecbba2aef91"
+    },
+    {
+      "id": "w-4-138",
+      "category": "info",
+      "blindHash": "660219dfbc6d96342592a0689c587eedf972b2940bdfe105c18795344201243f"
+    }
+  ]
+}

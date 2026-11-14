@@ -1,14 +1,22 @@
-import { randomInt, randomUUID } from "node:crypto";
+import { randomBytes, randomInt, randomUUID } from "node:crypto";
 
 import { symmetricDecrypt } from "better-auth/crypto";
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { sql } from "kysely";
 
-import { createOrganizationWithOwner } from "../../src/modules/tenancy";
+import {
+  clearBreakGlassOwner,
+  createOrganizationWithOwner,
+  isBreakGlassOwner,
+  setBreakGlassOwner,
+} from "../../src/modules/tenancy";
 import { createAuth, type AuthHandle } from "../../src/platform/auth";
 import { createLockoutStore } from "../../src/platform/auth-lockout";
+import { loadConfig } from "../../src/platform/config";
+import { createSecretBox } from "../../src/platform/crypto";
+import { createApp } from "../../src/platform/http";
 import { setLogLevel } from "../../src/platform/log";
-import { auditWebEvent, termsAcceptedHandler } from "../../src/web";
+import { auditWebEvent, termsAcceptedHandler, webDeps } from "../../src/web";
 import { base32Decode, holdsToken, secretOfUri, totpCode } from "../totp";
 
 import { testDb } from "./helpers";
@@ -25,7 +33,7 @@ const BACKUP_CODE = /^[A-Za-z0-9]{5}-[A-Za-z0-9]{5}$/;
 
 const resets: { userId: string; url: string }[] = [];
 
-const makeHandle = (withLockout: boolean): AuthHandle =>
+const makeHandle = (withLockout: boolean, keepsTwoFactor = false): AuthHandle =>
   createAuth({
     databaseUrl: process.env.DATABASE_URL ?? "",
     baseUrl: BASE_URL,
@@ -39,10 +47,12 @@ const makeHandle = (withLockout: boolean): AuthHandle =>
       resets.push(input);
     },
     ...(withLockout ? { lockout: createLockoutStore(db) } : {}),
+    ...(keepsTwoFactor ? { keepsTwoFactor: (userId: string) => isBreakGlassOwner(db, userId) } : {}),
   });
 
 const handle = makeHandle(false);
 const lockHandle = makeHandle(true);
+const keepHandle = makeHandle(false, true);
 const { auth } = handle;
 
 const orgIds: string[] = [];
@@ -83,6 +93,7 @@ afterAll(async () => {
   warnSpy.mockRestore();
   await handle.close();
   await lockHandle.close();
+  await keepHandle.close();
   await db.destroy();
 });
 
@@ -592,6 +603,123 @@ describe("two-factor events", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]?.data).toEqual({ via: "web" });
     expect(rows[0]?.actor).toBe(user.userId);
+  });
+
+  describe("F105 stage 06: the break-glass owner keeps TOTP", () => {
+    const mark = async (user: Enrolment) => {
+      await setBreakGlassOwner(db, { orgId: user.orgId }, { userId: user.userId, actor: "cli", now: new Date() });
+    };
+
+    test("1, 2: the marked owner cannot turn TOTP off; after the mark is cleared the same call works", async () => {
+      const user = await createEnrolled();
+      await mark(user);
+      expect(await isBreakGlassOwner(db, user.userId)).toBe(true);
+      const refused = await user.client.post("/two-factor/disable", { password: PASSWORD }, keepHandle);
+      expect(refused.status).toBe(403);
+      expect(refused.json?.code).toBe("BREAK_GLASS_NEEDS_TWO_FACTOR");
+      expect(await twoFactorFlag(user.userId)).toBe(true);
+      expect(await twoFactorRow(user.userId)).toBeDefined();
+      expect(await auditRows(user.orgId, "web.two_factor_disabled")).toHaveLength(0);
+      await clearBreakGlassOwner(db, { orgId: user.orgId }, { actor: "cli", now: new Date(), reason: "cli" });
+      expect((await user.client.post("/two-factor/disable", { password: PASSWORD }, keepHandle)).status).toBe(200);
+      expect(await twoFactorFlag(user.userId)).toBe(false);
+      expect(await twoFactorRow(user.userId)).toBeUndefined();
+    });
+
+    test("3: a handle without keepsTwoFactor lets a marked user turn TOTP off", async () => {
+      const user = await createEnrolled();
+      await mark(user);
+      expect(await isBreakGlassOwner(db, user.userId)).toBe(true);
+      expect((await user.client.post("/two-factor/disable", { password: PASSWORD })).status).toBe(200);
+      expect(await twoFactorFlag(user.userId)).toBe(false);
+    });
+
+    test("4: with a session two days old the marked owner still gets 403; after the clear it gets 200", async () => {
+      const user = await createEnrolled();
+      await mark(user);
+      expect(await isBreakGlassOwner(db, user.userId)).toBe(true);
+      await sql`UPDATE auth_sessions SET created_at = now() - interval '2 days' WHERE user_id = ${user.userId}`.execute(
+        db
+      );
+      const refused = await user.client.post("/two-factor/disable", { password: PASSWORD }, keepHandle);
+      expect(refused.status).toBe(403);
+      expect(refused.json?.code).toBe("BREAK_GLASS_NEEDS_TWO_FACTOR");
+      expect(await twoFactorFlag(user.userId)).toBe(true);
+      await clearBreakGlassOwner(db, { orgId: user.orgId }, { actor: "cli", now: new Date(), reason: "cli" });
+      const allowed = await user.client.post("/two-factor/disable", { password: PASSWORD }, keepHandle);
+      expect(allowed.status).toBe(200);
+      expect(await twoFactorFlag(user.userId)).toBe(false);
+    });
+
+    test("5: no session cookie gets 401 and nothing changes", async () => {
+      const user = await createEnrolled();
+      await mark(user);
+      const answer = await new Client().post("/two-factor/disable", { password: PASSWORD }, keepHandle);
+      expect(answer.status).toBe(401);
+      expect(await twoFactorFlag(user.userId)).toBe(true);
+      expect(await twoFactorRow(user.userId)).toBeDefined();
+      expect(await auditRows(user.orgId, "web.two_factor_disabled")).toHaveLength(0);
+    });
+
+    test("6: a failed session read in the hook does not let the disable through", async () => {
+      const user = await createEnrolled();
+      await mark(user);
+      // The first read (the hook's) fails once; Better Auth's own later read would work.
+      const context = await keepHandle.auth.$context;
+      const original = context.internalAdapter.findSession;
+      let failed = 0;
+      context.internalAdapter.findSession = (async (...args: Parameters<typeof original>) => {
+        if (failed === 0) {
+          failed += 1;
+          throw new Error("session read failed (test)");
+        }
+        return original(...args);
+      }) as typeof original;
+      try {
+        const answer = await user.client.post("/two-factor/disable", { password: PASSWORD }, keepHandle);
+        expect(failed).toBe(1);
+        expect(answer.status).toBeGreaterThanOrEqual(400);
+      } finally {
+        context.internalAdapter.findSession = original;
+      }
+      expect(await twoFactorFlag(user.userId)).toBe(true);
+      expect(await twoFactorRow(user.userId)).toBeDefined();
+      expect(await auditRows(user.orgId, "web.two_factor_disabled")).toHaveLength(0);
+    });
+
+    test("7: the production web wiring (webDeps) refuses the marked owner", async () => {
+      const user = await createEnrolled();
+      await mark(user);
+      const web = webDeps(
+        loadConfig({
+          ...process.env,
+          WEB_BASE_URL: BASE_URL,
+          WEB_AUTH_SECRET: SECRET,
+          WEB_DIST: "/nonexistent/dist",
+        }),
+        db,
+        {
+          secrets: createSecretBox(randomBytes(32).toString("base64"), 1),
+          actionsScope: { kind: "off" },
+          botUsername: null,
+        }
+      );
+      if (web === null) throw new Error("webDeps returned null");
+      try {
+        const app = createApp({ checkDb: async () => true, web });
+        const cookie = [...user.client.jar].map(([name, value]) => `${name}=${value}`).join("; ");
+        const refused = await app.request("/api/auth/two-factor/disable", {
+          method: "POST",
+          headers: { origin: BASE_URL, "content-type": "application/json", cookie },
+          body: JSON.stringify({ password: PASSWORD }),
+        });
+        expect(refused.status).toBe(403);
+        expect(((await refused.json()) as { code?: string }).code).toBe("BREAK_GLASS_NEEDS_TWO_FACTOR");
+        expect(await twoFactorFlag(user.userId)).toBe(true);
+      } finally {
+        await web.close();
+      }
+    });
   });
 
   test("6: new backup codes write one row and the old codes stop working", async () => {

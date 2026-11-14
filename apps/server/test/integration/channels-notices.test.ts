@@ -308,6 +308,110 @@ describe("auth_error notices", () => {
   });
 });
 
+describe("host_blocked notices", () => {
+  test("one row for the owner per episode; the view holds the address only; a new episode makes the old row outdated", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      const s = at(-20 * MINUTE);
+      await setStatus(trx, o, "host_blocked", s);
+
+      await run(trx);
+      await run(trx);
+      let found = await rows(trx, o.orgId, "host_blocked");
+      expect(found).toHaveLength(1);
+      expect(found[0]?.user_id).toBe(o.ownerId);
+      expect(found[0]?.dedup_key).toBe(`host_blocked:${o.mailboxId}:${s.getTime()}`);
+      expect(found[0]?.mailbox_id).toBe(o.mailboxId);
+      expect(found[0]?.status).toBe("pending");
+      expect(found.some((r) => r.user_id === o.assistantId)).toBe(false);
+
+      const address = (
+        await trx.selectFrom("mailboxes").select("address").where("id", "=", o.mailboxId).executeTakeFirstOrThrow()
+      ).address;
+      expect(found[0]?.view).toEqual({
+        address,
+        since: s.toISOString(),
+        now: T.toISOString(),
+        timeZone: "Europe/Warsaw",
+      });
+      expect(found[0]?.text).toContain(address);
+      expect(found[0]?.text).not.toContain("imap.x.test");
+      expect(found[0]?.text).not.toContain("smtp.x.test");
+
+      const s2 = at(-2 * MINUTE);
+      await setStatus(trx, o, "active");
+      await setStatus(trx, o, "host_blocked", s2);
+      await run(trx);
+      found = await rows(trx, o.orgId, "host_blocked");
+      expect(found).toHaveLength(2);
+      const first = found.find((r) => r.dedup_key === `host_blocked:${o.mailboxId}:${s.getTime()}`);
+      const second = found.find((r) => r.dedup_key === `host_blocked:${o.mailboxId}:${s2.getTime()}`);
+      expect(first?.status).toBe("failed");
+      expect(first?.error_code).toBe("outdated");
+      expect(second?.status).toBe("pending");
+    });
+  });
+
+  test("a pending row becomes outdated when the mailbox is active again", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      await setStatus(trx, o, "host_blocked", at(-20 * MINUTE));
+      await run(trx);
+      await setStatus(trx, o, "active");
+
+      await run(trx);
+      const found = await rows(trx, o.orgId, "host_blocked");
+      expect(found).toHaveLength(1);
+      expect(found[0]?.status).toBe("failed");
+      expect(found[0]?.error_code).toBe("outdated");
+    });
+  });
+
+  test("a paused mailbox and an auth_error mailbox give no host_blocked row", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await org(trx);
+      await setStatus(trx, o, "paused", at(-20 * MINUTE));
+      await run(trx);
+      expect(await rows(trx, o.orgId, "host_blocked")).toHaveLength(0);
+
+      await setStatus(trx, o, "auth_error", at(-10 * MINUTE));
+      await run(trx);
+      expect(await rows(trx, o.orgId, "host_blocked")).toHaveLength(0);
+      expect(await rows(trx, o.orgId, "auth_error")).toHaveLength(1);
+    });
+  });
+
+  test("(tenant) the rows of one organization name its own mailbox and owner only", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const a = await org(trx);
+      const b = await org(trx);
+      const c = await org(trx);
+      await setStatus(trx, a, "host_blocked", at(-20 * MINUTE));
+      // Organization C has a blocked mailbox too, but no linked chat: it gets no notice at all.
+      await trx.deleteFrom("chat_links").where("org_id", "=", c.orgId).execute();
+      await setStatus(trx, c, "host_blocked", at(-20 * MINUTE));
+
+      await run(trx);
+      expect(await rows(trx, b.orgId, "host_blocked")).toHaveLength(0);
+      expect(await rows(trx, c.orgId, "host_blocked")).toHaveLength(0);
+      const found = await rows(trx, a.orgId, "host_blocked");
+      expect(found).toHaveLength(1);
+      expect(found[0]?.mailbox_id).toBe(a.mailboxId);
+      expect(found[0]?.user_id).toBe(a.ownerId);
+      const all = await trx
+        .selectFrom("outbox")
+        .select(["org_id", "mailbox_id"])
+        .where("kind", "=", "host_blocked")
+        .execute();
+      expect(all).toEqual([{ org_id: a.orgId, mailbox_id: a.mailboxId }]);
+    });
+  });
+});
+
 describe("sync notices", () => {
   test("a late sync gives a notice only after the grace time since the start", async () => {
     await withRollback(db, async (trx) => {

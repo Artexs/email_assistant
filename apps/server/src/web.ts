@@ -28,6 +28,7 @@ import { operatorRoutes } from "./modules/operator";
 import { activityRoutes, statsRoutes } from "./modules/reports";
 import {
   getUserAuthProfile,
+  isBreakGlassOwner,
   isOrgSuspended,
   listMembershipsOfUser,
   setUserTerms,
@@ -337,6 +338,7 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     onTermsAccepted: termsAcceptedHandler(db, () => new Date()),
     resetLinkTtlSeconds: 3_600,
     lockout: createLockoutStore(db),
+    keepsTwoFactor: (userId) => isBreakGlassOwner(db, userId),
     ...(config.AUTH_PWNED_CHECK === "on"
       ? { pwnedCheck: (password: string) => checkPwnedPassword(password, { fetch, timeoutMs: 5_000 }) }
       : {}),

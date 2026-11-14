@@ -11,6 +11,7 @@ import { approvalDetector } from "./approval";
 import { approvalSetDetector } from "./approval-set";
 import { authErrorDetector } from "./auth-error";
 import { delegationAnsweredDetector } from "./delegation-answered";
+import { hostBlockedDetector } from "./host-blocked";
 import { log, type Detector, type NoticeDeps, type OrgRun } from "./run";
 import { sendHeldDetector } from "./send-held";
 import { sendResultDetector } from "./send-result";
@@ -28,6 +29,7 @@ export const detectors: readonly Detector[] = [
   urgentDetector,
   actionFailedDetector,
   authErrorDetector,
+  hostBlockedDetector,
   syncDetector,
   approvalDetector,
   approvalSetDetector,

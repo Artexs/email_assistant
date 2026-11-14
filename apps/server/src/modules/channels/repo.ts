@@ -457,7 +457,11 @@ export async function failOutbox(
 export async function cancelPendingOutbox(
   db: DbOrTrx,
   ctx: TenantContext,
-  filter: { kind: "auth_error" | "sync_stale" | "send_held"; mailboxId: string; exceptDedupKey?: string }
+  filter: {
+    kind: "auth_error" | "sync_stale" | "send_held" | "host_blocked";
+    mailboxId: string;
+    exceptDedupKey?: string;
+  }
 ): Promise<number> {
   let query = db
     .updateTable("outbox")

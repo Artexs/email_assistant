@@ -584,6 +584,7 @@ export const pl: Record<TextKey, string> = {
   stats_evidence: "{percent} % z {kept} (≥ {lower} %)",
   stats_evidence_auto: "{percent} % z {kept} (≥ {lower} %) · automat",
   stats_evidence_few: "{kept} z {min} potrzebnych ocenionych wiadomości",
+  stats_evidence_few_auto: "{kept} z {min} potrzebnych ocenionych wiadomości · automat",
   stats_m1: "Pominięte ważne wiadomości (dolna granica)",
   stats_m1_sample: "Losowa próba do oceny: pominięte",
   stats_m2_closed: "Zlecenia zamknięte w terminie",
