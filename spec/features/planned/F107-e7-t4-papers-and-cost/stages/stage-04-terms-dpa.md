@@ -28,24 +28,22 @@ Part of [`../plan.md`](../plan.md). Decisions P1–P3, P5, D2, D5–D7. Needs st
 4. Instructions (Polecenia) — the processor acts only on documented instructions: the settings in the panel and written requests of the owner.
 5. Confidentiality (Poufność) — only the operator has access; `<to confirm: staff>`.
 6. Security measures (Środki bezpieczeństwa) — Annex 1 inside the text: the measures of privacy section 8, written as a list.
-7. Sub-processors (Podprocesorzy) — Annex 2 is the generated table (D2); a new sub-processor changes the version, and each member sees the dialog before it applies (the general written authorisation with notice).
+7. Sub-processors (Podprocesorzy) — Annex 2 is the generated table (D2); general written authorisation; a new row changes the version, so each member sees the dialog at the next sign-in; `<to confirm: objection period>`.
 8. Help with requests (Pomoc przy żądaniach) — the processor tells the controller of a request from a data subject and does not answer it itself (W13); find and erase on instruction; one month.
-9. Breaches (Naruszenia) — the processor tells the controller without undue delay; the procedure is in `docs/legal/breach-procedure.md` (stage 05; name it, no link, the page is public and the repo path is not a URL).
+9. Breaches (Naruszenia) — the processor tells the controller without undue delay and follows its breach procedure (stage 05; no repo path on a public page).
 10. End (Zakończenie) — at the end, the organization delete removes the data; the export on request first; backups expire by their rule.
 11. Audits (Audyty) — `<to confirm: audit rights>`.
 
 **Decisions.**
 - The DPA uses "controller" and "processor" (pl: "administrator", "podmiot przetwarzający") and never "customer" for the controller.
-- Plain language; the Polish text has the same content.
 
 **Test.**
 1. A unit test lists the nine terms headings and the eleven DPA headings of each language in the order above (exact text).
 2. The en and pl DPA sources hold `<provider name>`; the terms sources hold `<to confirm: liability>` and `<to confirm: governing law>`.
-3. (e2e) `legal.spec.ts` of stage 02 passes unchanged: run it under the lock (the Proof of stage 02).
-4. The text guard passes after the bump (D5).
+3. The text guard passes after the bump (D5).
 
-**Check.** The unit tests of `apps/web/src/lib/`, `bun run web:build`, the e2e spec `legal.spec.ts` under the lock.
+**Check.** The unit tests of `apps/web/src/lib/`, `bun run web:build`, `legal.spec.ts` under the lock.
 
-**Done when.** Tests 1–4 pass and the Proof with the e2e step of stage 02 prints `PROOF_OK`. The final message lists statements with a weak source.
+**Done when.** Tests 1–3 pass and the Proof with the e2e step of stage 02 prints `PROOF_OK`. The final message lists statements with a weak source.
 
 **Out of scope.** Privacy text changes (a found error is a question), internal papers (05), the claims list (06).
