@@ -31,3 +31,8 @@ Run `limen land` ALONE. Read its last lines. "Recorded preimage" or CONFLICT = n
 
 ## F097 stage 11 (sim CLI) worker decisions, landed
 - Week mail with direction "sent" is excluded from labelling; labels for dropped texts are ignored (not `label_unknown`); `brief` omits senderHistory (guess: the writer does not need it). Revisit at stage 12 (freeze and audit) or 14 if the owner audit needs them.
+
+## F105 stage 02 review carry-over (landed, PASS)
+- Two parallel `enable` calls give 200+200 (never 500) and one row; the second write replaces the first, so one answer holds a stale secret/backup codes (a wrong secret never becomes verified; enrolment failures do not count to the lock). Plan D22 and "Not verified" are wrong about this. Stage 11 (account card) MUST block a double submit of "Turn on" so the user never sees a QR code or backup codes that are not stored.
+- TOTP replay of the same code in a new challenge gives 200 (plan D26 / owner question Q5 accept this).
+- Sessions made before enrolment on other devices stay alive after TOTP is turned on: stage 03 (D9) ends them.
