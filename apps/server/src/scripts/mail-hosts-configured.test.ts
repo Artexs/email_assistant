@@ -4,7 +4,8 @@ import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 
 const SERVER_SRC = join(import.meta.dir, "..");
-const EXCLUDED_SUFFIXES = [".test.ts", "-args.ts", "-lines.ts", "-rows.ts"];
+// Helper files of a script are no entry points: they open no mail connection.
+const EXCLUDED_SUFFIXES = [".test.ts", "-args.ts", "-lines.ts", "-rows.ts", "-commands.ts"];
 const MAIL_IMPORT = /from "\.\.\/modules\/mail|from "\.\.\/composition"/;
 
 function selectedFiles(): string[] {
