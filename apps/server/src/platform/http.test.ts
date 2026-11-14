@@ -28,6 +28,11 @@ import {
 } from "./http";
 import { setLogFormat, setLogLevel } from "./log";
 
+// Logged user ids must be UUIDs (F103 D1).
+const U_MULTI = "1f2e3d4c-5b6a-4798-8a9b-0c1d2e3f4a5b";
+const U_OTHER = "2a3b4c5d-6e7f-4809-9a0b-1c2d3e4f5a6b";
+const U_OP = "3b4c5d6e-7f80-4910-8b1c-2d3e4f5a6b7c";
+
 describe("GET /health", () => {
   test("returns 200 when the DB is up", async () => {
     const res = await createApp({ checkDb: async () => true, web: null }).request("/health");
@@ -289,12 +294,14 @@ describe("requireTenant", () => {
         { org_id: "org-1", role: "assistant" },
         { org_id: "org-2", role: "owner" },
       ]);
-      const headers = { "x-user": "u-multi" };
+      const headers = { "x-user": U_MULTI };
       const first = await app.request("/who", { headers });
-      expect(await first.json()).toEqual({ ctx: { orgId: "org-1", userId: "u-multi" }, role: "assistant" });
+      expect(await first.json()).toEqual({ ctx: { orgId: "org-1", userId: U_MULTI }, role: "assistant" });
       await app.request("/who", { headers });
       const lines = errorSpy.mock.calls.map((call) => call.join(" "));
-      expect(lines.filter((line) => line.includes("tenant_multi_membership user_id=u-multi count=2"))).toHaveLength(1);
+      expect(lines.filter((line) => line.includes(`tenant_multi_membership user_id=${U_MULTI} count=2`))).toHaveLength(
+        1
+      );
     } finally {
       errorSpy.mockRestore();
     }
@@ -376,7 +383,7 @@ describe("requireOperator", () => {
   };
 
   test("lets an operator through", async () => {
-    const res = await appFor(new Set(["u-op"])).request("/x", { headers: { "x-user": "u-op" } });
+    const res = await appFor(new Set([U_OP])).request("/x", { headers: { "x-user": U_OP } });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });
   });
@@ -384,11 +391,11 @@ describe("requireOperator", () => {
   test("answers 404 not_found to another user and logs the user id only", async () => {
     const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
     try {
-      const res = await appFor(new Set(["u-op"])).request("/x", { headers: { "x-user": "u-other" } });
+      const res = await appFor(new Set([U_OP])).request("/x", { headers: { "x-user": U_OTHER } });
       expect(res.status).toBe(404);
       expect(await res.json()).toEqual({ error: "not_found" });
       const lines = errorSpy.mock.calls.map((call) => call.join(" "));
-      expect(lines.filter((line) => line.includes("operator_route_refused user_id=u-other"))).toHaveLength(1);
+      expect(lines.filter((line) => line.includes(`operator_route_refused user_id=${U_OTHER}`))).toHaveLength(1);
     } finally {
       errorSpy.mockRestore();
     }
@@ -397,11 +404,11 @@ describe("requireOperator", () => {
   test("answers 403 two_factor_required to an operator without TOTP and logs the user id only", async () => {
     const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
     try {
-      const res = await appFor(new Set(["u-op"])).request("/x", { headers: { "x-user": "u-op", "x-totp": "off" } });
+      const res = await appFor(new Set([U_OP])).request("/x", { headers: { "x-user": U_OP, "x-totp": "off" } });
       expect(res.status).toBe(403);
       expect(await res.json()).toEqual({ error: "two_factor_required" });
       const lines = errorSpy.mock.calls.map((call) => call.join(" "));
-      expect(lines.filter((line) => line.includes("operator_two_factor_required user_id=u-op"))).toHaveLength(1);
+      expect(lines.filter((line) => line.includes(`operator_two_factor_required user_id=${U_OP}`))).toHaveLength(1);
     } finally {
       errorSpy.mockRestore();
     }
@@ -491,7 +498,7 @@ describe("requireOperator", () => {
   test("answers 404, not 403, to a non-operator without TOTP", async () => {
     const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
     try {
-      const res = await appFor(new Set(["u-op"])).request("/x", { headers: { "x-user": "u-other", "x-totp": "off" } });
+      const res = await appFor(new Set([U_OP])).request("/x", { headers: { "x-user": U_OTHER, "x-totp": "off" } });
       expect(res.status).toBe(404);
       expect(await res.json()).toEqual({ error: "not_found" });
     } finally {
@@ -502,7 +509,7 @@ describe("requireOperator", () => {
   test("fails closed when the web has no operator list", async () => {
     const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
     try {
-      const res = await appFor().request("/x", { headers: { "x-user": "u-op" } });
+      const res = await appFor().request("/x", { headers: { "x-user": U_OP } });
       expect(res.status).toBe(404);
     } finally {
       errorSpy.mockRestore();
@@ -530,7 +537,7 @@ describe("requireOperator", () => {
         trustedProxies: buildTrustedProxies([]),
         connInfo: () => undefined,
         listMembershipsOfUser: async () => [{ org_id: "org-1", role: "owner" as const }],
-        operatorUserIds: new Set(["u-op"]),
+        operatorUserIds: new Set([U_OP]),
         routers: (api) => {
           api.get("/operator/x", (c) => c.json({ ok: true }));
           api.get("/me-x", (c) => c.json({ ok: true }));
@@ -566,7 +573,7 @@ describe("requireOperator", () => {
       trustedProxies: buildTrustedProxies([]),
       connInfo: () => undefined,
       listMembershipsOfUser: async () => [{ org_id: "org-1", role: "owner" as const }],
-      operatorUserIds: new Set(["u-op"]),
+      operatorUserIds: new Set([U_OP]),
       routers: (api) => {
         api.get("/operator/x", (c) => c.json({ ok: true }));
         api.post("/operator/x", (c) => c.json({ ok: true }));
@@ -623,7 +630,7 @@ describe("requireOperator", () => {
     test("a non-operator still gets 404 not_found on an operator route", async () => {
       const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
       try {
-        const res = await orderApp({ ...asOwner, operatorUserIds: new Set(["u-op"]) }).request("/api/operator/scope");
+        const res = await orderApp({ ...asOwner, operatorUserIds: new Set([U_OP]) }).request("/api/operator/scope");
         expect(res.status).toBe(404);
         expect(await res.json()).toEqual({ error: "not_found" });
       } finally {

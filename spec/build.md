@@ -8,7 +8,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 ## TRACK
 
-- Standing models (owner, 2026-11-14), all `--engine pi --provider claude-bridge --thinking high` with the personal Claude route (`~/.pi/agent/AGENTS.md` § Limen): planner `claude-opus-5-5`; worker `claude-sonnet-5-5`; review of a plan or a stage `claude-opus-5-5` when it is `[risky]` or touches security, auth, privacy, tenant isolation, money or LLM spend, a migration, data delete, sync or dedup, sending to people, deploy or the VPS, or new user-facing Polish text; else `claude-sonnet-5-5`; a mechanical check list (count, compare, verify files) `claude-haiku-5-5`. The review task names the model and the reason. Prepare: `--prepare 'bash scripts/limen-prepare.sh'` (own `.env`, `node_modules`, own DB; drop the job DB by hand after the job). Log lint backlog (E8a): 395 old-form log calls warn after F089 stage 06 (2026-11-13); the converted files (`platform/`, `main.ts`) are at error.
+- Standing models (owner, 2026-11-14), all `--engine pi --provider claude-bridge --thinking high` with the personal Claude route (`~/.pi/agent/AGENTS.md` § Limen): planner `claude-opus-5-5`; worker `claude-sonnet-5-5`; review of a plan or a stage `claude-opus-5-5` when it is `[risky]` or touches security, auth, privacy, tenant isolation, money or LLM spend, a migration, data delete, sync or dedup, sending to people, deploy or the VPS, or new user-facing Polish text; else `claude-sonnet-5-5`; a mechanical check list (count, compare, verify files) `claude-haiku-5-5`. The review task names the model and the reason. Prepare: `--prepare 'bash scripts/limen-prepare.sh'` (own `.env`, `node_modules`, own DB; drop the job DB by hand after the job). Log lint backlog (E8a): 416 old-form log calls warn after F089 stage 06 (2026-11-13); the converted files (`platform/`, `main.ts`) are at error.
 - Now: S6 pre-sale moves to Limen segment by segment (S6a = F077). The S6 master plan and `s6b`–`s6f` still sit in `tasks/` until `plan-task` plans them here; the old `run-task` flow is removed.
 - CI on `master`: red several times on 2026-11-14 from two flaky tests that failed without a code change; F123 (`main-start-log`) is fixed and landed; F126 (`mail-folders-cli`) is fixed and landed; no test is quarantined now. Last known all-green run before that: 2026-11-13 (run 43449221495). Bun pin `.bun-version` 1.4.4. Land check (owner, 2026-11-14, until Limen `land` runs it): before each `limen land`, in the job worktree run `git merge --no-edit master && bun run typecheck && bun run test:unit:ci` (about 1 min); land only on exit 0, else continue the job with the error. Each branch passed alone, but two merges broke master on 2026-11-14 (`989a1b18`: F099 s05 after F098 s06). After each land, check `gh run list --branch master --workflow CI --limit 3`; a red run → `docs/code-patterns.md` § Tests (quarantine the same day).
 
@@ -19,6 +19,8 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F119-e7-t7-identity-b-oidc` (🟠 ACTIVE): E7-T7 Identity B (OIDC)
 - `F106-e7-t3-account-data-delete-export-dsr` (🟠 ACTIVE): E7-T3 Account data (delete, export, DSR)
 - `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (🟠 ACTIVE): E7-T6 Identity A (TOTP, backup codes, break-glass)
+- `F104-e5a-read-sent` (🟠 ACTIVE): E5a Read Sent
+- `F103-e8a-logs` (🟠 ACTIVE): E8a Logs
 - `F101-panel-to-astro-7` (🟠 ACTIVE): Panel to Astro 7
 - `F097-e2a-offline-lab` (🟠 ACTIVE): Every category has a measured precision and recall on a frozen synthetic corpus, and real labels start
 - `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟠 ACTIVE): The server image, CI and local checks run one current Bun (1.4.x)
@@ -44,8 +46,8 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F100-e3a-measure` (🔴 PLANNED, plan landed + refreshed, 19 stages): every Stage 2 metric is measured on real mail and a weekly report leads with misses and mistakes; sequenced after F095; stage-level waits on F097 stages 01, 03, 04; gate none.
 - `F101-panel-to-astro-7` (plan refreshed 2026-11-15 (plan-refresh-1.md), base 560e74e7, 4 stages): Panel to Astro 7; sequenced after E1; gate —.
 - `F102-e4-a-act-from-the-panel` (🔴 PLANNED, needs plan): E4-A Act from the panel; sequenced after E1, E7-T1, Astro 7; gate —.
-- `F103-e8a-logs` (plan landed, 19 stages): every log line an event, CLI output apart, log store on the tailnet; sequenced after E1; gate —.
-- `F104-e5a-read-sent` (plan landed, cold review 1 fixed, 12 stages): E5a Read Sent; build after F095 closes (F099 closed); drift check first; gate —.
+- `F103-e8a-logs` (plan refreshed 2026-11-15 (plan-refresh-1.md), base 560e74e7, 19 stages, active): every log line an event, CLI output apart, log store on the tailnet; sequenced after E1; gate —.
+- `F104-e5a-read-sent` (plan refreshed 2026-11-15 at 560e74e7, review 2 PASS, 13 stages): E5a Read Sent; F095 and F099 closed; stage 12 adds the F106 data-request rule for sent mail; gate —.
 - `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (plan landed, 15 stages): E7-T6 Identity A (TOTP, backup codes, break-glass); stage 01 the only migration, stage 10 changes `bun.lock`; sequenced after F082 (closed); gate —.
 - `F106-e7-t3-account-data-delete-export-dsr` (🔴 PLANNED, plan landed, 12 stages): E7-T3 Account data (delete, export, DSR); stage 01 the only migration, stage 05 the only `bun.lock` change; build after F082, F098 (closed); gate —.
 - `F107-e7-t4-papers-and-cost` (🔴 PLANNED, plan landed, 8 stages): E7-T4 Papers and cost; legal drafts (pl, en), internal papers, claims list, cost model v1; sequenced after F106 (build after F106 is in `done/`); gate —; stage 07 is the VPS deploy (coordinator), stage 08 the cost model.
@@ -87,6 +89,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F127-the-two-factor-text-in-the-account-card-renders-as-one-word-per-line` (🟢 PROVEN): the two-factor text in the Account card renders as one word per line; landed 2026-11-15
 - `F126-mailbox-settings-sync-folder-test-off-then-on-with-a-plain-db-passes-every-time` (🟢 PROVEN): The sync-folder CLI test passes every time; landed 2026-11-14
 - `F123-main-start-log-test-no-longer-fails-with-exit-143-after-sigterm-flaky-twice-f098-stages-03-and-06` (🟢 PROVEN): The server start-log test passes every time: no exit 143 after SIGTERM; landed 2026-11-14
 - `F100-e3a-measure` (🟢 PROVEN): Every Stage 2 metric is measured on real mail and the executive gets a weekly report that leads with misses and mistakes; landed 2026-11-14
@@ -96,5 +99,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F095-e1-close-the-mvp` (🟢 PROVEN): E1 Close the MVP (capability map, docs boundary, NEXT sweep of the old planned tickets); landed 2026-11-14
 - `F092-rls-safety-net` (🟢 PROVEN): Row-level security is a safety net under the tenant filter for every table with `org_id`; landed 2026-11-14
 - `F091-repo-split` (🟢 PROVEN): The big repositories are split by aggregate and action handling is table-driven with a completeness test; landed 2026-11-14
-- `F088-notices-as-facts` (🟢 PROVEN): Notices are stored as facts and rendered per channel, detail and locale by a renderer registry; landed 2026-11-14
-- 2026-11: 69 landed. spec/features/done/2026-11/
+- 2026-11: 70 landed. spec/features/done/2026-11/
