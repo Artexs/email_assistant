@@ -149,6 +149,7 @@ async function auditRows(trx: Transaction<DB>, ctx: TenantContext, event: string
     .where("org_id", "=", ctx.orgId)
     .where("event", "=", event)
     .orderBy("created_at")
+    .orderBy("id")
     .execute();
 }
 

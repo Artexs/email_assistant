@@ -31,6 +31,10 @@ async function find(args: Extract<OrgDsrArgs, { mode: "find" }>, db: Db) {
   line(`listed delegates ${counts.listed.delegates}`);
   line(`listed sender_rules ${counts.listed.sender_rules}`);
   line(`open actions ${counts.open_actions}`);
+  // The erase deletes these too, so the operator sees them before it: actions of kept mails that depend on an action of
+  // a mail that goes, and the delegations that those deletions remove. The report line stays the last line.
+  line(`chain actions ${counts.chain_actions}`);
+  line(`chain delegations ${counts.chain_delegations}`);
   if (result.reportBytes !== null) line(`report ${result.reportBytes} bytes`);
   if (dsrIsEmpty(counts)) process.stderr.write("warning: no match, check the spelling of the address\n");
   return 0;

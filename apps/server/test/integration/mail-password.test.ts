@@ -92,6 +92,7 @@ async function auditRows(trx: Transaction<DB>, orgId: string) {
     .select(["actor", "data"])
     .where("org_id", "=", orgId)
     .where("event", "=", "mailbox.password_changed")
+    .orderBy("id")
     .execute();
 }
 

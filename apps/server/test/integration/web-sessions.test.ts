@@ -91,7 +91,13 @@ async function createMember() {
 }
 
 async function auditRows(orgId: string, event: string) {
-  return db.selectFrom("audit_log").selectAll().where("org_id", "=", orgId).where("event", "=", event).execute();
+  return db
+    .selectFrom("audit_log")
+    .selectAll()
+    .where("org_id", "=", orgId)
+    .where("event", "=", event)
+    .orderBy("id")
+    .execute();
 }
 
 function authPost(path: string, cookie?: string): Promise<Response> {

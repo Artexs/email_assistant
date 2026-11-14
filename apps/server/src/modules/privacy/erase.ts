@@ -1,12 +1,12 @@
 import { sql, type Transaction } from "kysely";
 
 import { dsrAddressHash, tombstoneKeyHash } from "../../platform/crypto";
-import type { DB, Db } from "../../platform/db";
+import { withTenantScope, type DB, type Db } from "../../platform/db";
 import { auditEvents, recordAudit } from "../audit";
 
 import { DSR_ADDRESS_MAP, normalizeDsrAddress } from "./address-map";
 import { dsrAuditData, dsrCounts, type DsrCounts } from "./dsr";
-import { addressPatterns, matchSubject, rowCondition, type AddressPatterns } from "./dsr-match";
+import { addressPatterns, findOpenActions, matchSubject, rowCondition, type AddressPatterns } from "./dsr-match";
 
 const DEADLOCK_CODE = "40P01";
 const FOREIGN_KEY_CODE = "23503";
@@ -139,7 +139,7 @@ async function insertTombstones(trx: Transaction<DB>, orgId: string, dedupKeys: 
 // tombstones; delete the chain actions and the mails; the step of the outbox stage; scrub the kept rows; check that the
 // match is empty; one audit row with the hash and counts.
 // The module logs nothing and puts no address in a result or an error: the CLI prints ids and counts.
-export async function eraseSubjectData(
+async function eraseInScope(
   db: Db,
   input: {
     orgId: string;
@@ -182,6 +182,11 @@ export async function eraseSubjectData(
           select created_at from emails
           where org_id = ${orgId}::uuid and id = any (${mailIds}::uuid[]) order by id for update
         ) as locked`.execute(trx);
+      // The match ran before the lock. A writer that committed between the two (a triage job that added a send) is seen
+      // only now, under the lock: ask again, and refuse with nothing deleted.
+      const patterns = addressPatterns(address);
+      const late = await findOpenActions(trx, orgId, patterns.json, mailIds, match.chainActions);
+      if (late.length > 0) return { kind: "open_actions", actionIds: late };
       const tombstones = await insertTombstones(
         trx,
         orgId,
@@ -199,7 +204,7 @@ export async function eraseSubjectData(
       const stepCounts = input.step
         ? await input.step(trx, orgId, { mailIds, earliestCreatedAt: earliest.rows[0]?.at ?? null })
         : {};
-      const scrubbed = await scrubMentions(trx, orgId, addressPatterns(address));
+      const scrubbed = await scrubMentions(trx, orgId, patterns);
 
       // The erase must leave nothing that the match shows. If it does, roll back: a half erase is worse than none.
       const after = await matchSubject(trx, orgId, address);
@@ -238,4 +243,11 @@ export async function eraseSubjectData(
     }
     throw error;
   }
+}
+
+// The erase runs in the tenant scope of its organization, so the row-level policies back up the `org_id` filter of every
+// query here: a missing filter cannot reach another organization.
+export function eraseSubjectData(db: Db, input: Parameters<typeof eraseInScope>[1]): Promise<DsrEraseResult> {
+  if (input.orgId === "") return Promise.resolve({ kind: "not_found" });
+  return withTenantScope(input.orgId, () => eraseInScope(db, input));
 }

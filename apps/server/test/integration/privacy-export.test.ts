@@ -203,6 +203,7 @@ async function auditRows(orgId: string) {
     .select(["actor", "event", "data"])
     .where("org_id", "=", orgId)
     .where("event", "=", auditEvents.orgExported)
+    .orderBy("id")
     .execute();
 }
 

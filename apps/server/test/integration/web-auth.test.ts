@@ -105,7 +105,13 @@ async function signIn(email: string, password: string) {
 }
 
 async function auditRows(orgId: string, event: string) {
-  return db.selectFrom("audit_log").selectAll().where("org_id", "=", orgId).where("event", "=", event).execute();
+  return db
+    .selectFrom("audit_log")
+    .selectAll()
+    .where("org_id", "=", orgId)
+    .where("event", "=", event)
+    .orderBy("id")
+    .execute();
 }
 
 async function countRows(table: "auth_sessions" | "auth_accounts", userId: string): Promise<number> {

@@ -186,6 +186,9 @@ const LETTERS = "[:alpha:]\\u00c0-\\u00d6\\u00d8-\\u00f6\\u00f8-\\u024f\\u0370-\
 // `bob@x.testé` do not match `bob@x.test`; `bob@x.test.` (end of a sentence), `<bob@x.test>` and `"bob@x.test"` do.
 // The input must be normalized (`normalizeDsrAddress`).
 //
+// A quote or a brace at the start of the text or after a non-`atext` character is a boundary too (found in the stage 08
+// review: `'p@x.test'` and `{p@x.test}` stayed in the text); `p@x.test.vcf` is still a longer domain (a documented limit).
+//
 // A key and `=` in front of the address is a boundary too (`smtp.mailfrom=p@x.test` in `auth_results`, the reason that this
 // column is mapped); a bare `=p@x.test` is still a longer local part. Found in stage 08: the look-behind of `atext`
 // alone left the address in `auth_results`. A local part such as `a=p` is scrubbed too: it errs on the side of removing.
@@ -198,7 +201,9 @@ const LETTERS = "[:alpha:]\\u00c0-\\u00d6\\u00d8-\\u00f6\\u00f8-\\u024f\\u0370-\
 export function addressRegex(address: string, opts: { json?: boolean } = {}): string {
   // `\` before an ASCII punctuation character makes it an ordinary character in a Postgres regex.
   const escaped = address.replace(/[!-/:-@[-`{-~]/gu, "\\$&");
-  const starts = [`(?<![${LETTERS}${ATEXT}])`, "(?<=[a-z]=)"];
+  // A quote or a brace is `atext`, so it joins the local part (`o'p@x.test`, `a{p@x.test`). At the start of the text or
+  // after a character that is not `atext` it is punctuation around the address (`'p@x.test'`, `{p@x.test}`).
+  const starts = [`(?<![${LETTERS}${ATEXT}])`, "(?<=[a-z]=)", `(?<=(?:^|[^${LETTERS}${ATEXT}])['{])`];
   if (opts.json) starts.push("(?<=\\\\[nrtbf])");
   return `(?:${starts.join("|")})${escaped}(?![a-z0-9_${LETTERS}-]|\\.[a-z0-9${LETTERS}])`;
 }

@@ -3,7 +3,7 @@ import { unlink } from "node:fs/promises";
 import { sql, type Transaction } from "kysely";
 
 import { dsrAddressHash } from "../../platform/crypto";
-import type { DB, Db } from "../../platform/db";
+import { withTenantScope, type DB, type Db } from "../../platform/db";
 import { auditEvents, recordAudit, type AuditData } from "../audit";
 
 import { normalizeDsrAddress } from "./address-map";
@@ -104,7 +104,7 @@ async function* reportChunks(
 // and the optional report, so the counts and the file are one snapshot. The one audit row (`dsr.find`) comes after the
 // file is complete; if it fails the file goes too. The address is in the report file only, which is encrypted.
 // A refusal writes no audit row. The module logs nothing: the CLI prints ids, counts and sizes.
-export async function findSubjectData(
+async function findInScope(
   db: Db,
   input: {
     orgId: string;
@@ -155,4 +155,11 @@ export async function findSubjectData(
     throw error;
   }
   return result;
+}
+
+// The find runs in the tenant scope of its organization: the row-level policies back up the `org_id` filter of every
+// query (the match, the report and the audit row).
+export function findSubjectData(db: Db, input: Parameters<typeof findInScope>[1]): Promise<DsrFindResult> {
+  if (input.orgId === "") return Promise.resolve({ kind: "not_found" });
+  return withTenantScope(input.orgId, () => findInScope(db, input));
 }

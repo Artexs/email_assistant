@@ -47,6 +47,7 @@ async function auditRows() {
     .select(["actor", "data"])
     .where("org_id", "=", orgId)
     .where("event", "=", "rule.added")
+    .orderBy("id")
     .execute();
 }
 

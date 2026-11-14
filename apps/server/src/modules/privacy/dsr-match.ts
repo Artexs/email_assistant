@@ -151,7 +151,7 @@ async function findListed(db: DbOrTrx, orgId: string, address: string): Promise<
 }
 
 // A chain action that is `applying` is open too: the erase would delete an action that a worker is running.
-async function findOpenActions(
+export async function findOpenActions(
   db: DbOrTrx,
   orgId: string,
   regex: string,

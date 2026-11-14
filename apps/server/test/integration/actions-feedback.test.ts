@@ -46,7 +46,13 @@ async function feedbackRows(trx: Trx, orgId: string, kind: string) {
 }
 
 async function auditRows(trx: Trx, orgId: string, event: string) {
-  return trx.selectFrom("audit_log").selectAll().where("org_id", "=", orgId).where("event", "=", event).execute();
+  return trx
+    .selectFrom("audit_log")
+    .selectAll()
+    .where("org_id", "=", orgId)
+    .where("event", "=", event)
+    .orderBy("id")
+    .execute();
 }
 
 describe("recordRejectReason", () => {

@@ -33,7 +33,13 @@ async function linkRows(trx: Transaction<DB>, orgId: string) {
 }
 
 async function auditRows(trx: Transaction<DB>, orgId: string, event: string) {
-  return trx.selectFrom("audit_log").selectAll().where("org_id", "=", orgId).where("event", "=", event).execute();
+  return trx
+    .selectFrom("audit_log")
+    .selectAll()
+    .where("org_id", "=", orgId)
+    .where("event", "=", event)
+    .orderBy("id")
+    .execute();
 }
 
 describe("chat linking", () => {

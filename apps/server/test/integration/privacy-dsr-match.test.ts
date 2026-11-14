@@ -236,7 +236,17 @@ describe("DSR address map", () => {
     // A key and `=` in front (an authentication result): found. A bare `=` is a longer local part (below).
     { address: "p@x.test", text: "spf=pass smtp.mailfrom=p@x.test; dkim=pass", hit: true },
     { address: "p@x.test", text: "header.from=P@X.TEST", hit: true },
+    // A quote or a brace at the start of the text, or after a character that is not `atext`: punctuation, found.
+    { address: "p@x.test", text: "'p@x.test'", hit: true },
+    { address: "p@x.test", text: "{p@x.test}", hit: true },
+    { address: "p@x.test", text: "write 'p@x.test' now", hit: true },
+    { address: "p@x.test", text: "a, {p@x.test}", hit: true },
+    { address: "p@x.test", text: "(\"'p@x.test'\")", hit: true },
     // The address inside a longer local part or domain: not found.
+    { address: "p@x.test", text: "a{p@x.test", hit: false },
+    { address: "p@x.test", text: "a'p@x.test", hit: false },
+    { address: "p@x.test", text: "''p@x.test", hit: false },
+    { address: "p@x.test", text: ".{p@x.test", hit: false },
     { address: "p@x.test", text: "jimp@x.test", hit: false },
     { address: "p@x.test", text: "o'p@x.test", hit: false },
     { address: "p@x.test", text: "=p@x.test", hit: false },
@@ -266,6 +276,13 @@ describe("DSR address map", () => {
       const regex = addressRegex(row.address);
       const found = (await sql<{ hit: boolean }>`select ${row.text} ~* ${regex} as hit`.execute(db)).rows[0]?.hit;
       expect({ ...row, hit: found }).toEqual(row);
+      // The json pattern differs only in the escaped line breaks of a jsonb text form.
+      const jsonFound = (
+        await sql<{ hit: boolean }>`select ${row.text} ~* ${addressRegex(row.address, { json: true })} as hit`.execute(
+          db
+        )
+      ).rows[0]?.hit;
+      expect({ ...row, hit: jsonFound }).toEqual(row);
     }
   });
 
@@ -276,6 +293,9 @@ describe("DSR address map", () => {
         .rows[0]?.out;
     expect(await scrub("<p@x.test>, P@X.test. o'p@x.test p@x.testé")).toBe(
       "<[removed]>, [removed]. o'p@x.test p@x.testé"
+    );
+    expect(await scrub("'p@x.test' {p@x.test} a{p@x.test o'p@x.test")).toBe(
+      "'[removed]' {[removed]} a{p@x.test o'p@x.test"
     );
   });
 });

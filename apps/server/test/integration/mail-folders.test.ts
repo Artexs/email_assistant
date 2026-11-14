@@ -45,6 +45,7 @@ async function auditRows(trx: Transaction<DB>, orgId: string, event: string) {
     .select(["actor", "data", "created_at"])
     .where("org_id", "=", orgId)
     .where("event", "=", event)
+    .orderBy("id")
     .execute();
 }
 

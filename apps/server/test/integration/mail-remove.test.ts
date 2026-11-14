@@ -91,7 +91,13 @@ async function statusOf(mailboxId: string): Promise<string | undefined> {
 }
 
 async function auditRows(orgId: string, event: string) {
-  return db.selectFrom("audit_log").selectAll().where("org_id", "=", orgId).where("event", "=", event).execute();
+  return db
+    .selectFrom("audit_log")
+    .selectAll()
+    .where("org_id", "=", orgId)
+    .where("event", "=", event)
+    .orderBy("id")
+    .execute();
 }
 
 const allZero = (row: Record<string, number>) => Object.values(row).every((n) => n === 0);

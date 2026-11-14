@@ -96,7 +96,13 @@ async function setup(trx: Transaction<DB>) {
 }
 
 async function auditRows(trx: Transaction<DB>, ctx: TenantContext, event: string) {
-  return trx.selectFrom("audit_log").selectAll().where("org_id", "=", ctx.orgId).where("event", "=", event).execute();
+  return trx
+    .selectFrom("audit_log")
+    .selectAll()
+    .where("org_id", "=", ctx.orgId)
+    .where("event", "=", event)
+    .orderBy("id")
+    .execute();
 }
 
 async function reverseRows(trx: Transaction<DB>, ctx: TenantContext, draftId: string) {

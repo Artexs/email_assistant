@@ -304,6 +304,22 @@ async function run(args: string[]) {
   return { code, stdout: await new Response(proc.stdout).text(), stderr: await new Response(proc.stderr).text() };
 }
 
+// Polls until a backend waits on a lock while its query text holds `fragment`, or `done()` is true.
+async function waitBlocked(fragment: string, done: () => boolean): Promise<void> {
+  let waiting = false;
+  await waitFor(() => {
+    void db
+      .selectFrom(sql<{ n: string }>`pg_stat_activity`.as("a"))
+      .select(sql<boolean>`true`.as("x"))
+      .where(sql<boolean>`a.wait_event_type = 'Lock' and a.query like ${`%${fragment}%`} and a.pid <> pg_backend_pid()`)
+      .execute()
+      .then((rows) => {
+        waiting = rows.length > 0;
+      });
+    return waiting || done();
+  }, `the erase waits on a lock (${fragment}) or finishes`);
+}
+
 const unique = () => `p-${randomUUID().slice(0, 8)}@x.test`;
 
 describe("eraseSubjectData", () => {
@@ -375,6 +391,15 @@ describe("eraseSubjectData", () => {
         exists (select 1 from audit_log l where org_id = ${w.orgId}::uuid and l::text ilike ${`%${w.person}%`})
       ) as hit`.execute(db);
     expect(dump.rows[0]?.hit).toBe(false);
+  });
+
+  test("2b. an address in single quotes or braces is scrubbed; a longer local part with a quote or a brace stays", async () => {
+    const w = await seedOrg(unique());
+    const body = `quoted '${w.person}' and {${w.person}} but a{${w.person}} and o'${w.person} stay`;
+    await db.updateTable("emails").set({ body_text: body }).where("id", "=", w.k2).execute();
+    await erased(w);
+    const row = await db.selectFrom("emails").select("body_text").where("id", "=", w.k2).executeTakeFirstOrThrow();
+    expect(row.body_text).toBe(`quoted '[removed]' and {[removed]} but a{${w.person}} and o'${w.person} stay`);
   });
 
   test("3. afterwards the match is empty; delegates and sender rules are unchanged and kept", async () => {
@@ -506,6 +531,25 @@ describe("eraseSubjectData", () => {
     expect((await eraseAudit(w.orgId))[0]?.data).toMatchObject({ outbox_blanked: 3 });
   });
 
+  test("8c. the erase runs in the tenant scope of its organization (row-level security backs up the org filter)", async () => {
+    const w = await seedOrg(unique());
+    let scope = "";
+    let visible = -1;
+    await erased(w, {
+      step: async (trx) => {
+        scope =
+          (await sql<{ v: string }>`select current_setting('app.org_id', true) as v`.execute(trx)).rows[0]?.v ?? "";
+        // Another organization's rows are invisible here, even without an org filter.
+        visible = (
+          await sql<{ n: string }>`select count(*)::text as n from emails where org_id <> ${w.orgId}::uuid`.execute(trx)
+        ).rows[0]?.n as unknown as number;
+        return {};
+      },
+    });
+    expect(scope).toBe(w.orgId);
+    expect(Number(visible)).toBe(0);
+  });
+
   test("9. a chain of actions over three levels is deleted and counted; the erase is not blocked", async () => {
     const w = await seedOrg(unique());
     const match = await db.transaction().execute((trx) => matchSubject(trx, w.orgId, w.person));
@@ -618,18 +662,7 @@ describe("the sync folder lock and the tombstones", () => {
     });
     try {
       // The erase waits on the folder lock (a backend that waits on a lock while its text names the folder table).
-      let waiting = false;
-      await waitFor(() => {
-        void db
-          .selectFrom(sql<{ n: string }>`pg_stat_activity`.as("a"))
-          .select(sql<boolean>`true`.as("x"))
-          .where(sql<boolean>`a.wait_event_type = 'Lock' and a.query like '%mailbox_folders%'`)
-          .execute()
-          .then((rows) => {
-            waiting = rows.length > 0;
-          });
-        return waiting || finished;
-      }, "the erase waits on the folder lock or finishes");
+      await waitBlocked("mailbox_folders", () => finished);
       expect(finished).toBe(false);
     } finally {
       release();
@@ -648,6 +681,42 @@ describe("the sync folder lock and the tombstones", () => {
     expect(left).toEqual([]);
     const tombs = await db.selectFrom("dsr_tombstones").select("key_hash").where("org_id", "=", w.orgId).execute();
     expect(tombs.map((row) => row.key_hash)).toContain(tombstoneKeyHash(lateKey));
+  });
+
+  test("an open send that commits after the match, before the mail lock: refused, nothing deleted", async () => {
+    const w = await seedOrg(unique());
+    const ctx = { orgId: w.orgId };
+    let inserted!: () => void;
+    const insertedP = new Promise<void>((resolveInsert) => (inserted = resolveInsert));
+    let release!: () => void;
+    const gate = new Promise<void>((resolveGate) => (release = resolveGate));
+    let sendId = "";
+    // A writer (a triage job) adds an open send to a mail that goes and keeps it uncommitted: the match cannot see it.
+    const writer = db.transaction().execute(async (trx) => {
+      sendId = await insertAction(trx, ctx, w.goes[0] as string, { type: "send", status: "awaiting_approval" });
+      inserted();
+      await gate;
+    });
+    await insertedP;
+    const before = await count("emails", w.orgId);
+    let finished = false;
+    const erasing = erase(w).then((result) => {
+      finished = true;
+      return result;
+    });
+    try {
+      // The erase waits for the row lock of the mail (the writer holds a key share on it through its foreign key).
+      await waitBlocked("from emails", () => finished);
+      expect(finished).toBe(false);
+    } finally {
+      release();
+    }
+    await writer;
+    expect(await erasing).toEqual({ kind: "open_actions", actionIds: [sendId] });
+    expect(await count("emails", w.orgId)).toBe(before);
+    expect(await db.selectFrom("actions").select("id").where("id", "=", sendId).execute()).toHaveLength(1);
+    expect(await count("dsr_tombstones", w.orgId)).toBe(0);
+    expect(await eraseAudit(w.orgId)).toHaveLength(0);
   });
 
   test("4. rescan and backfill store none of the erased mails, not as `#2` either; a new mail from the person is stored", async () => {

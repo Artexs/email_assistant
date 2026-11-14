@@ -15,7 +15,7 @@ import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { dsrAddressHash } from "../../src/platform/crypto";
 import type { DB } from "../../src/platform/db";
 
-import { insertAction, insertDelegate, insertTestEmail, testCapabilities } from "./fixtures";
+import { insertAction, insertDelegate, insertDelegation, insertTestEmail, testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 
 // F106 stage 07: `findSubjectData`, `dsrAddressHash` and the `org:dsr --find` CLI. The seed is committed (the find reads
@@ -152,6 +152,7 @@ async function auditRows(orgId: string) {
     .select(["event", "actor", "data"])
     .where("org_id", "=", orgId)
     .where("event", "=", auditEvents.dsrFind)
+    .orderBy("id")
     .execute();
 }
 
@@ -298,7 +299,7 @@ describe("findSubjectData", () => {
 
   test("8b. the find reads in a REPEATABLE READ READ ONLY transaction: a write inside it fails", async () => {
     const w = await seed();
-    const seen: { readOnly?: string; isolation?: string; writeCode?: unknown } = {};
+    const seen: { readOnly?: string; isolation?: string; scope?: string; writeCode?: unknown } = {};
     // A Db whose `transaction()` reports the mode of the transaction that `findSubjectData` opens, and tries a write in it
     // before the real callback runs (a read only transaction refuses it with SQLSTATE 25006).
     const probe = (builder: ReturnType<typeof db.transaction>): ReturnType<typeof db.transaction> =>
@@ -314,6 +315,9 @@ describe("findSubjectData", () => {
                 ).rows[0]?.v;
                 seen.isolation = (
                   await sql<{ v: string }>`select current_setting('transaction_isolation') as v`.execute(trx)
+                ).rows[0]?.v;
+                seen.scope = (
+                  await sql<{ v: string }>`select current_setting('app.org_id', true) as v`.execute(trx)
                 ).rows[0]?.v;
                 await sql`savepoint probe`.execute(trx);
                 try {
@@ -337,7 +341,7 @@ describe("findSubjectData", () => {
     });
     const result = await findSubjectData(spy, { orgId: w.orgId, address: w.person, credentialsKey: KEY });
     expect(result.kind).toBe("found");
-    expect(seen).toEqual({ readOnly: "on", isolation: "repeatable read", writeCode: "25006" });
+    expect(seen).toEqual({ readOnly: "on", isolation: "repeatable read", scope: w.orgId, writeCode: "25006" });
   });
 
   test("counts and audit data come from the match", async () => {
@@ -384,12 +388,46 @@ describe("org:dsr --find CLI", () => {
     expect(lines).toContain("listed delegates 1");
     expect(lines).toContain("listed sender_rules 0");
     expect(lines).toContain("open actions 1");
+    expect(lines).toContain("chain actions 0");
+    expect(lines).toContain("chain delegations 0");
     expect(lines.at(-1)).toMatch(/^report [1-9][0-9]* bytes$/);
     expect(result.stderr).toBe("");
     for (const needle of [w.person, w.orgName, w.own, "@"]) {
       expect(result.stdout + result.stderr).not.toContain(needle);
     }
     expect(await auditRows(w.orgId)).toHaveLength(1);
+  });
+
+  test("a chain: --find prints the chain actions and the delegations that an erase would delete", async () => {
+    const w = await seed();
+    await db.transaction().execute(async (trx) => {
+      const ctx = { orgId: w.orgId };
+      const mail = await trx
+        .selectFrom("emails")
+        .select("mailbox_id")
+        .where("id", "=", w.kept)
+        .executeTakeFirstOrThrow();
+      const goesAction = await insertAction(trx, ctx, w.goes[0] as string, { type: "move", status: "applied" });
+      const chained = await insertAction(trx, ctx, w.kept, {
+        type: "move",
+        status: "ready",
+        dependsOnActionId: goesAction,
+      });
+      const other = await insertAction(trx, ctx, w.kept, { type: "create_draft", status: "applied" });
+      const delegate = await insertDelegate(trx, ctx, { email: `d-${randomUUID().slice(0, 8)}@x.test` });
+      await insertDelegation(trx, ctx, {
+        mailboxId: mail.mailbox_id,
+        emailId: w.kept,
+        delegateId: delegate,
+        draftActionId: other,
+        sendActionId: chained,
+      });
+    });
+    const result = await run(["--org-id", w.orgId, "--address", w.person, "--find"]);
+    expect(result.code).toBe(0);
+    const lines = result.stdout.trimEnd().split("\n");
+    expect(lines).toContain("chain actions 1");
+    expect(lines).toContain("chain delegations 1");
   });
 
   test("an address that matches nothing: exit 0 and a warning on stderr", async () => {
