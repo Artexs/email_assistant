@@ -14,6 +14,7 @@ import {
   insertUser,
   setOrgPlan,
   setUserTerms,
+  upsertOrgFeature,
 } from "../modules/tenancy";
 import { createAuth } from "../platform/auth";
 import { loadConfig, mailAllowLocal, webTrustedOrigins } from "../platform/config";
@@ -23,10 +24,14 @@ import { describeError } from "../platform/errors";
 import { createLog } from "../platform/log";
 import { auditWebEvent, termsAcceptedHandler } from "../web";
 
-import { seedOtherOrgMail } from "./e2e-activity-rows";
+import { seedActivityRows, seedOtherOrgMail } from "./e2e-activity-rows";
 import {
   E2E_ACTIVITY_MEMBER_EMAILS,
   E2E_ASSISTANT_EMAILS,
+  E2E_DELETE_ASSISTANT_EMAILS,
+  E2E_DELETE_OWNER_EMAILS,
+  e2eDeleteMailbox,
+  e2eDeleteOrgName,
   E2E_MEMBER_EMAILS,
   E2E_MEMBER_PASSWORD,
   E2E_ORG_NAME,
@@ -69,6 +74,7 @@ async function wipe(migratorUrl: string): Promise<void> {
         E2E_PAUSED_ORG_NAME,
         ...E2E_PROJECTS.map(e2eTermsOrgName),
         ...E2E_PROJECTS.map(e2eTwoFactorOrgName),
+        ...E2E_PROJECTS.map(e2eDeleteOrgName),
       ],
     ]);
     // Users are global: the cascade leaves them.
@@ -83,6 +89,8 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map((project) => E2E_TERMS_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_TWO_FACTOR_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_ACTIVITY_MEMBER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_DELETE_OWNER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_DELETE_ASSISTANT_EMAILS[project]),
       ],
     ]);
     // Tokens left by a half-failed run.
@@ -189,6 +197,61 @@ async function main(): Promise<number> {
         twoFactorIds[project] = { userId: twoFactorOwner.userId, orgId: twoFactorOwner.orgId };
       }
 
+      // F106 stage 11: one organization per project with the flag `org_delete` on, one mailbox with mail rows, an owner and
+      // an assistant. Only the delete spec uses them: it deletes the organization. The mailbox points at a closed port, so no sync
+      // reaches the GreenMail of the dev stack.
+      const secretBox = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
+      const deleteIds = {} as Record<E2eProject, { orgId: string; ownerId: string; assistantId: string }>;
+      for (const project of E2E_PROJECTS) {
+        const deleteOwner = await createOrganizationWithOwner(db, {
+          orgName: e2eDeleteOrgName(project),
+          timezone: "Europe/Warsaw",
+          email: E2E_DELETE_OWNER_EMAILS[project],
+          displayName: `E2E Delete owner ${project}`,
+        });
+        const ctx = { orgId: deleteOwner.orgId };
+        const assistant = await insertUser(db, {
+          email: E2E_DELETE_ASSISTANT_EMAILS[project],
+          displayName: `E2E Delete assistant ${project}`,
+        });
+        await insertMembership(db, ctx, { userId: assistant.id, role: "assistant" });
+        await upsertOrgFeature(db, ctx, {
+          flag: "org_delete",
+          enabled: true,
+          setBy: deleteOwner.userId,
+          setAt: new Date(),
+        });
+        const mailboxId = randomUUID();
+        await insertMailbox(db, ctx, {
+          id: mailboxId,
+          address: e2eDeleteMailbox(project),
+          imapHost: "127.0.0.1",
+          imapPort: 1,
+          smtpHost: "127.0.0.1",
+          smtpPort: 1,
+          capabilities: {
+            move: true,
+            uidplus: true,
+            idle: false,
+            condstore: false,
+            specialUse: false,
+            keywords: false,
+          },
+          folderMap: { drafts: "Drafts" },
+        });
+        await insertInboxFolder(db, ctx, mailboxId);
+        const mailboxSecret = secretBox.encrypt("e2e-delete-box-password", `mailbox:${mailboxId}`);
+        await insertCredentials(db, ctx, {
+          mailboxId,
+          encryptedSecret: mailboxSecret.ciphertext,
+          secretKind: "password",
+          keyVersion: mailboxSecret.keyVersion,
+        });
+        await insertDefaultSettings(db, ctx, mailboxId);
+        await seedActivityRows(db, ctx, mailboxId, new Date());
+        deleteIds[project] = { orgId: deleteOwner.orgId, ownerId: deleteOwner.userId, assistantId: assistant.id };
+      }
+
       // The organization of the isolation checks: one mail that the E2E organization must never see.
       const other = await createOrganizationWithOwner(db, {
         orgName: E2E_OTHER_ORG_NAME,
@@ -290,6 +353,24 @@ async function main(): Promise<number> {
         activityMembers[project] = { userId: activityIds[project], email, password: E2E_MEMBER_PASSWORD };
       }
 
+      const deleteOrgs = {} as SeedFile["deleteOrgs"];
+      for (const project of E2E_PROJECTS) {
+        const ownerEmail = E2E_DELETE_OWNER_EMAILS[project];
+        const assistantEmail = E2E_DELETE_ASSISTANT_EMAILS[project];
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(ownerEmail)).pathname.split("/").pop() ?? "");
+        await setPassword(
+          E2E_MEMBER_PASSWORD,
+          new URL(await requestLink(assistantEmail)).pathname.split("/").pop() ?? ""
+        );
+        deleteOrgs[project] = {
+          orgId: deleteIds[project].orgId,
+          name: e2eDeleteOrgName(project),
+          mailboxAddress: e2eDeleteMailbox(project),
+          owner: { userId: deleteIds[project].ownerId, email: ownerEmail, password: E2E_MEMBER_PASSWORD },
+          assistant: { userId: deleteIds[project].assistantId, email: assistantEmail, password: E2E_MEMBER_PASSWORD },
+        };
+      }
+
       // The reset stores the current terms; the terms owners then go back to an old version.
       const termsOwners = {} as SeedFile["termsOwners"];
       for (const project of E2E_PROJECTS) {
@@ -317,6 +398,7 @@ async function main(): Promise<number> {
         activityMembers,
         termsOwners,
         twoFactorOwners,
+        deleteOrgs,
         trialOwner: {
           userId: trial.userId,
           email: E2E_TRIAL_OWNER_EMAIL,

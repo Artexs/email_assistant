@@ -34,6 +34,21 @@ export const E2E_TWO_FACTOR_EMAILS: Record<E2eProject, string> = {
 };
 export const e2eTwoFactorOrgName = (project: E2eProject): string => `E2E Two-factor ${project}`;
 
+// F106 stage 11: one organization per project that only the delete spec uses (it deletes the organization). The owner
+// and an assistant share the member password. The mailbox address names the width, as the spec asserts it on the login page.
+export const E2E_DELETE_OWNER_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-delete-owner-mobile@x.test",
+  desktop: "e2e-delete-owner-desktop@x.test",
+};
+export const E2E_DELETE_ASSISTANT_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-delete-assistant-mobile@x.test",
+  desktop: "e2e-delete-assistant-desktop@x.test",
+};
+export const e2eDeleteOrgName = (project: E2eProject): string =>
+  project === "mobile" ? "E2E Delete Phone" : "E2E Delete Desktop";
+export const e2eDeleteMailbox = (project: E2eProject): string =>
+  project === "mobile" ? "del-phone@x.test" : "del-desktop@x.test";
+
 export const E2E_OTHER_ORG_NAME = "E2E Other";
 export const E2E_OTHER_OWNER_EMAIL = "e2e-other-owner@x.test";
 
@@ -66,6 +81,16 @@ export interface SeedFile {
   activityMembers: Record<E2eProject, { userId: string; email: string; password: string }>;
   termsOwners: Record<E2eProject, { userId: string; email: string; password: string }>;
   twoFactorOwners: Record<E2eProject, { userId: string; orgId: string; email: string; password: string }>;
+  deleteOrgs: Record<
+    E2eProject,
+    {
+      orgId: string;
+      name: string;
+      mailboxAddress: string;
+      owner: { userId: string; email: string; password: string };
+      assistant: { userId: string; email: string; password: string };
+    }
+  >;
   trialOwner: { userId: string; email: string; password: string; orgId: string; trialEndsAt: string };
   pausedOwner: { userId: string; email: string; password: string; orgId: string; mailboxId: string };
 }
