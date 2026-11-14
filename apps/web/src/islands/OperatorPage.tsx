@@ -74,7 +74,7 @@ function Operator() {
       </Card>
     );
   } else if (detail.data !== null) {
-    detailContent = <OrgDetail detail={detail.data} now={now} />;
+    detailContent = <OrgDetail detail={detail.data} now={now} onChanged={reloadAll} />;
   } else if (isNotFound(detail.error)) {
     detailContent = <p>{t("op_not_found")}</p>;
   } else if (detail.error !== null && !detail.loading) {
