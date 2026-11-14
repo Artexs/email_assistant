@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-14
 ---
 
 # F091 · The big repositories are split by aggregate and action handling is table-driven with a completeness test
