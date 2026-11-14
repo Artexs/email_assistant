@@ -10,7 +10,7 @@ import { setLogLevel } from "../../src/platform/log";
 import { auditWebEvent, countMailboxes, onboardingDeps, termsAcceptedHandler } from "../../src/web";
 
 import { testDb } from "./helpers";
-import { as, resetBody, webOrg, webTestApp, type WebOrg } from "./web-helpers";
+import { as, noBackupCodes, resetBody, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
 const db = testDb();
 
@@ -248,6 +248,7 @@ describe("terms in the panel", () => {
             countMailboxes: countMailboxes(db),
             operatorContact: null,
             sessions: async () => [],
+            backupCodesLeft: noBackupCodes,
             ...onboardingDeps(db, async () => "fake_ea_bot"),
           })
         ),

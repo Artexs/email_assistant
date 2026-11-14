@@ -238,12 +238,12 @@
         {
           "from": "wiktor.szalewski@kordelan.test",
           "subject": "Szkolenia dla nowych pracowników",
-          "body": "Wiktor, 12 nowych osób zaczyna w Poznaniu od lutego. Co z ich szkoleniami BHP? Rafał"
+          "body": "Rafał, niech ktoś z zespołu się tym zajmie. Wiktor"
         },
         {
           "from": "rafal.kwiecinski@kordelan.test",
           "subject": "Re: Szkolenia dla nowych pracowników",
-          "body": "Rafał, niech ktoś z zespołu się tym zajmie. Wiktor"
+          "body": "Wiktor, 12 nowych osób zaczyna w Poznaniu od lutego. Co z ich szkoleniami BHP? Rafał"
         }
       ],
       "attachments": []
