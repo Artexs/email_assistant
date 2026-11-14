@@ -21,6 +21,7 @@ import {
   type ApiEnv,
   type WebDeps,
 } from "./http";
+import { currentTenantScope } from "./db";
 import { setLogFormat, setLogLevel } from "./log";
 
 describe("GET /health", () => {
@@ -291,6 +292,37 @@ describe("requireTenant", () => {
   });
 });
 
+describe("requireTenant scope (RLS safety net, ADR 0011)", () => {
+  const A = "aaaaaaaa-0000-4000-8000-000000000001";
+  const appFor = (rows: { org_id: string; role: "owner" }[], onHandler?: () => void) => {
+    const app = new Hono<ApiEnv>();
+    app.use("*", async (c, next) => {
+      c.set("session", { userId: "u-scope", sessionId: "s-test" });
+      await next();
+    });
+    app.use("*", requireTenant({ listMembershipsOfUser: async () => rows }));
+    app.get("/scope", (c) => {
+      onHandler?.();
+      return c.json({ scope: currentTenantScope() });
+    });
+    return app;
+  };
+
+  test("the handler runs in the scope of the first membership, and the scope ends with the request", async () => {
+    const res = await appFor([{ org_id: A, role: "owner" }]).request("/scope");
+    expect(await res.json()).toEqual({ scope: A });
+    expect(currentTenantScope()).toBeNull();
+  });
+
+  test("no membership: 403 no_organization and the handler does not run", async () => {
+    let called = false;
+    const res = await appFor([], () => (called = true)).request("/scope");
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "no_organization" });
+    expect(called).toBe(false);
+  });
+});
+
 describe("requireOwner", () => {
   const appWithRole = (role: "owner" | "assistant") => {
     const app = new Hono<ApiEnv>();
@@ -409,6 +441,9 @@ describe("requireOperator", () => {
       routers: (api) => {
         api.get("/operator/x", (c) => c.json({ ok: true }));
         api.post("/operator/x", (c) => c.json({ ok: true }));
+        api.get("/me-scope", (c) => c.json({ scope: currentTenantScope() }));
+        api.post("/me-scope-write", (c) => c.json({ scope: currentTenantScope() }));
+        api.get("/operator/scope", (c) => c.json({ scope: currentTenantScope() }));
       },
       ...extra,
     } satisfies WebDeps;
@@ -441,6 +476,49 @@ describe("requireOperator", () => {
     } finally {
       errorSpy.mockRestore();
     }
+  });
+
+  describe("scope per route (RLS safety net, ADR 0011; operator routes ADR 0027)", () => {
+    const A = "aaaaaaaa-0000-4000-8000-000000000001";
+    const asOwner = {
+      listMembershipsOfUser: async () => [{ org_id: A, role: "owner" as const }],
+      operatorUserIds: new Set(["u-owner"]),
+    };
+
+    test("a tenant route runs in the scope, an operator route runs without", async () => {
+      const app = orderApp(asOwner);
+      expect(await (await app.request("/api/me-scope")).json()).toEqual({ scope: A });
+      expect(await (await app.request("/api/operator/scope")).json()).toEqual({ scope: null });
+    });
+
+    test("a non-operator still gets 404 not_found on an operator route", async () => {
+      const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+      try {
+        const res = await orderApp({ ...asOwner, operatorUserIds: new Set(["u-op"]) }).request("/api/operator/scope");
+        expect(res.status).toBe(404);
+        expect(await res.json()).toEqual({ error: "not_found" });
+      } finally {
+        errorSpy.mockRestore();
+      }
+    });
+
+    test("refuseSuspendedWrites runs inside the scope", async () => {
+      let seen: string | null = null;
+      const app = orderApp({
+        ...asOwner,
+        isOrgSuspended: async () => {
+          seen = currentTenantScope();
+          return false;
+        },
+      });
+      const res = await app.request("/api/me-scope-write", {
+        method: "POST",
+        headers: { origin: "http://127.0.0.1:8080", "content-type": "application/json" },
+        body: "{}",
+      });
+      expect(res.status).toBe(200);
+      expect(seen === A).toBe(true);
+    });
   });
 });
 
