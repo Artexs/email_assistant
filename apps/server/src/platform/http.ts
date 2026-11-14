@@ -235,12 +235,13 @@ export function requireTenant(deps: {
   };
 }
 
-// S6c adds { method: "DELETE", path: /^\/api\/organization$/ } (delete organization).
 // Sign-out and the password routes are Better Auth paths outside `api`: they need no entry.
 // A paused account can still accept the terms and choose its language: they change no mail and no organization data.
 export const SUSPENDED_WRITE_ALLOW: readonly { method: string; path: RegExp }[] = [
   { method: "POST", path: /^\/api\/me\/terms$/ },
   { method: "PATCH", path: /^\/api\/me\/locale$/ },
+  // A paused account can still delete itself (owner decision of the suspended-organization ticket).
+  { method: "DELETE", path: /^\/api\/organization$/ },
   // The operator acts on other organizations; its own organization's plan does not matter (plan D21).
   { method: "POST", path: /^\/api\/operator\// },
 ];
