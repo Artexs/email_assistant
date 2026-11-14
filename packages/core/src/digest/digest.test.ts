@@ -67,6 +67,43 @@ function emailIdOf(data: string): string | undefined {
   return parsed !== null && isFeedbackCallback(parsed) ? parsed.emailId : undefined;
 }
 
+describe("handled share line", () => {
+  const handledInput = (handled: DigestInput["handled"]): DigestInput => input({ handled });
+
+  test("5. shows the share after the other footer lines; shadow mode shows the would-handle share", () => {
+    const share = { handled: 124, wouldHandle: 0, triaged: 200, shadowOnly: false };
+    const text = render(handledInput(share)).text;
+    expect(text).toContain("🤖 Handled in the last 7 days: 62% (124 of 200)");
+    const shadow = { handled: 0, wouldHandle: 50, triaged: 200, shadowOnly: true };
+    expect(render(handledInput(shadow)).text).toContain("🤖 Would handle in the last 7 days: 25% (50 of 200)");
+    // Shadow mode with handled mail shows the handled share.
+    expect(render(handledInput({ ...shadow, handled: 10 })).text).toContain("Handled in the last 7 days: 5%");
+    expect(render(handledInput({ ...share, triaged: 0 })).text).not.toContain("🤖");
+    expect(render(input()).text).not.toContain("🤖");
+  });
+
+  test("the share is the last footer line, after the pause line (the first) and the shadow line", () => {
+    const text = render(
+      input({
+        items: [item(1, "info")],
+        counts: { info: 1 },
+        waiting: 2,
+        llmPause: { code: "timeout", since: new Date("2026-11-06T06:30:00Z") },
+        handled: { handled: 124, wouldHandle: 0, triaged: 200, shadowOnly: false },
+      })
+    ).text;
+    const footer = text.split("\n").slice(text.split("\n").lastIndexOf("") + 1);
+    expect(footer[0]).toContain("LLM paused");
+    expect(footer.at(-2)).toContain("Shadow mode");
+    expect(footer.at(-1)).toBe("🤖 Handled in the last 7 days: 62% (124 of 200)");
+  });
+
+  test("the Polish line uses the Polish number word", () => {
+    const share = { handled: 124, wouldHandle: 0, triaged: 200, shadowOnly: false };
+    expect(render(handledInput(share), textTables.pl).text).toContain("62% (124 z 200)");
+  });
+});
+
 describe("renderDigest", () => {
   test("empty digest still shows the last sync", () => {
     const message = render(input());
