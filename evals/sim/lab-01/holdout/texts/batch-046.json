@@ -55,13 +55,14 @@
       "thread": [
         {
           "subject": "Nordic Foods Trade framework agreement",
-          "body": "Wiktor, Nordic Foods Trade is ready to sign the framework agreement, but they want to change one number in the price table. Please call me. Oliver"
+          "body": "Oliver, any change in the price table of the Nordic agreement goes through me before you promise anything. Wiktor"
         },
         {
           "subject": "Re: Nordic Foods Trade framework agreement",
-          "body": "Oliver, send me the exact change and what Piotr thinks. Wiktor"
+          "body": "Wiktor, Nordic Foods Trade is ready to sign the framework agreement, but they want to change one number in the price table. Please call me. Oliver"
         }
-      ]
+      ],
+      "note": "rewritten: thread order fixed"
     },
     {
       "id": "b-urg-0103",
