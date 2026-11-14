@@ -1,14 +1,14 @@
-# F100 stage 10 — Row readers
+# F100 stage 10 — Row readers I: the week fixture, triage and channels readers
 
 Part of [`../plan.md`](../plan.md). Review job before the land (tenant filters on many joins).
 
 **Wait:** stages 04 and 09 of this ticket and F097 stages 01 (`TestMailRule`, `mailKindFilter(kind, rule)`) and 03 (source `review`) must be on `master`. Check: `grep -n "export function mailKindFilter" apps/server/src/modules/mail/repo/emails.ts` shows a rule parameter, and `feedbackSources` holds `"review"`. If not, stop and say so.
 
-After this stage each module that owns a table has one reader that returns the stage 08–09 rows for one organization, one week and one or all mailboxes. One shared test fixture seeds a known week; later stages assert on it.
+After this stage one shared test fixture seeds a known week, the query shape of all readers exists, and the readers of `triage` (M1, M4) and `channels` (M5) return the stage 08–09 rows for one organization, one week and one or all mailboxes. Stage 11 adds the readers of `actions`, `delegation` and `audit` on the same fixture.
 
 ## Step 1 — The week fixture
 
-**Goal.** One seeded week with known answers (used by stages 10, 11, 14).
+**Goal.** One seeded week with known answers (used by stages 10, 11, 12 and 17).
 
 **Files.** `apps/server/test/integration/metrics-fixtures.ts` (new).
 
@@ -53,58 +53,51 @@ Plus 10 `llm.call` audit rows of org A (`mailbox_id` = A's mailbox, model `gpt-6
 
 **Done when.** The file compiles; the readers' tests use it.
 
-**Out of scope.** The service (stage 11).
+**Out of scope.** The service (stage 12).
 
-## Step 2 — Readers
+## Step 2 — Query shape and the triage and channels readers
 
-**Goal.** One reader per owner module (D19), each filtering `org_id` on every table it joins, real mail only (D18).
+**Goal.** One query shape; the readers of the mail-level metrics (D11, D14, D15, D18, D19), each filtering `org_id` on every table it joins.
 
-**Files.** `apps/server/src/modules/triage/metrics-repo.ts` (new; `triage/repo.ts` is over 400 lines), `apps/server/src/modules/actions/repo/metrics.ts` (new) + `actions/repo/index.ts`, `apps/server/src/modules/delegation/metrics-repo.ts` (new), `apps/server/src/modules/audit/repo.ts` or `audit/metrics-repo.ts` (new), `apps/server/src/modules/channels/metrics-repo.ts` (new), each module's `index.ts`, `apps/server/test/integration/metrics-readers.test.ts` (new).
+**Files.** `packages/core/src/metrics/query.ts` (new) + `metrics/index.ts`, `apps/server/src/modules/triage/metrics-repo.ts` (new; `triage/repo.ts` is over 400 lines), `apps/server/src/modules/channels/metrics-repo.ts` (new), each module's `index.ts`, `apps/server/test/integration/metrics-readers.test.ts` (new).
 
-**Interfaces.** Every reader takes `(db: DbOrTrx, ctx: TenantContext, q: WeekQuery)` with
+**Interfaces.**
 
 ```ts
+// packages/core/src/metrics/query.ts — structural, so `audit` (layer 1) and `mail` users need no import of `mail`.
 export interface WeekQuery {
   range: { start: Date; end: Date };
   mailboxId: string | null; // null = every mailbox of the organization
-  testMail: TestMailRule; // from F097 stage 01
+  testMail: { senders: readonly string[] }; // F097's TestMailRule has this shape
 }
 ```
+
+Every reader takes `(db: DbOrTrx, ctx: TenantContext, q: WeekQuery)`.
 
 | Reader (module) | Returns | Rows |
 | --- | --- | --- |
 | `listTruthRows` (triage) | `MailTruthRow[]` | real mail, `received_at` in range, with a triage result; `predicted` = latest result (`DISTINCT ON (email_id) ORDER BY created_at DESC, id DESC`); latest feedback row (same order) → `truth = true_category`, `truthSource = truthSourceOf(source)`, `wrongOnly = verdict = 'wrong' AND true_category IS NULL` |
 | `listHandledRows` (triage) | `HandledRow[]` | the same mail set; booleans by `EXISTS` on `actions` (original rows: `reverses_action_id IS NULL`; `type IN ('move','mark_read','flag')` by status `applied`, `undone`, `logged`; a `send` with `payload->>'kind' = 'delegation'` `applied`), `triage_feedback` (`verdict = 'wrong'` and `created_at ≤ latest result created_at + 7 days`), `delegations` (the newest of the mail has status `cancelled`) |
-| `listHiddenMoveRows` (actions) | `(Omit<HiddenMoveRow, "whitelisted"> & { mailboxId: string; fromAddress: string \| null })[]` | original `move` actions with status `applied` or `undone`, `applied_at` in range, `payload->>'folder'` a move target other than `inbox` (parse with `isMoveTarget`; skip other values), of real mail; `vip` from the latest triage result; `truth` from the latest feedback |
-| `listRejectRows` (actions) | `RejectRow[]` | `send` actions with status `rejected` whose first `action.rejected` audit row is in range; `reason` from `action_feedback` (`kind = 'reject_reason'`) or null |
-| `listMistakeRows` (actions) | `MistakeRow[]` | `action_feedback` `kind = 'mistake'` joined to its `send` with status `applied` and `applied_at` in range (`sentAt = applied_at`) |
-| `listDelegationDueRows` (delegation) | `DelegationDueRow[]` | delegations with `sent_at` not null and `COALESCE(due_at, sent_at + interval '3 days')` in range, of real mail; `doneAt`, `overdueAt` = `MIN(audit_log.created_at)` of `delegation.done` / `delegation.overdue` with `data->>'delegation_id' = d.id::text`; `cancelled = status = 'cancelled'` |
-| `listLlmCallRows` (audit) | `LlmCallRow[]` | `event = 'llm.call'`, `created_at` in range, `data->>'mailbox_id'` = the mailbox when set; `model`, `tokens_in`, `tokens_out` from `data` (numbers or null) |
 | `listUrgentNoticeTimes` (channels) | `UrgentNoticeRow[]` | real mail with `backfilled_at IS NULL`, `received_at` in range, latest triage category `urgent`; `noticeAt` = `MIN(outbox.sent_at)` of `kind = 'urgent'`, `status = 'sent'` rows of the mail |
 
-Range rule: `start ≤ t < end` everywhere. `mailboxId` set → `emails.mailbox_id = $id` (for `listLlmCallRows`: the `data` key). The readers return no subject, no text; `fromAddress` leaves `listHiddenMoveRows` only for the whitelist check in the service and never reaches a log or a result.
+Range rule: `start ≤ t < end` everywhere. `mailboxId` set → `emails.mailbox_id = $id`. The readers return no subject and no text.
 
-**Decisions.** D11–D16, D18, D19.
+**Decisions.** D11, D14, D15, D18, D19.
 
 **Test** (integration, `metrics-readers.test.ts`, `seedWeek` in `withRollback`, `range = weekRange(WEEK, "Europe/Warsaw")`, org A's context, `mailboxId: null`, `testMail = { senders: [] }`):
 
 1. `listTruthRows` → 9 rows (e1–e7, e10, e13; not e8 synthetic, not e9, e11, e12 of other weeks); e1 `{ predicted: "info", truth: "urgent", truthSource: "correction" }`; e3 `{ truth: "needs_reply", truthSource: "review" }`.
 2. `listHandledRows` → the same 9 mails; e1 `mailboxActionApplied: true, wrongWithin7Days: true`; e4 applied; e5 applied; e7 `delegationSendApplied: true, delegationCancelled: false`.
-3. `listHiddenMoveRows` → e1 (`ai_info`, truth `urgent`), e4 (`ai_notifications`), e5 (`ai_spam`, `vip: true`); not e9.
-4. `listRejectRows` → s1 `wrong_person` at 2026-11-18T13:00Z, s2 reason null.
-5. `listMistakeRows` → s3 with `sentAt` 2026-11-20T09:10Z.
-6. `listDelegationDueRows` → d2 (answered 2026-11-18T15:00Z) and d3 (`overdueAt` 2026-11-20T06:30Z); not e7's delegation (due 2026-11-23).
-7. `listLlmCallRows` → 10 rows.
-8. `listUrgentNoticeTimes` → e2 (`noticeAt` 10:03Z), e6 (`noticeAt` 2026-11-20T06:00Z), e10 (null); not e8.
-9. Tenants: every reader in org B's context returns only org B's rows (3 truth rows, 1 llm row, 2 urgent rows), and with org A's `mailboxId` returns `[]`.
-10. `mailboxId` = org A's mailbox → the same results as `null` (one mailbox).
-11. `testMail = { senders: [<e2's sender>] }` → e2 is gone from `listTruthRows` and `listUrgentNoticeTimes`.
+3. `listUrgentNoticeTimes` → e2 (`noticeAt` 10:03Z), e6 (`noticeAt` 2026-11-20T06:00Z), e10 (null); not e8.
+4. Tenants: in org B's context `listTruthRows` → 3 rows and `listUrgentNoticeTimes` → 2 rows, none of org A; with org A's `mailboxId` → `[]`.
+5. `mailboxId` = org A's mailbox → the same results as `null` (one mailbox).
+6. `testMail = { senders: [<e2's sender>] }` → e2 is gone from `listTruthRows` and `listUrgentNoticeTimes`.
 
 **Check.** `bun test apps/server/test/integration/metrics-readers.test.ts`
 
-**Done when.** Cases 1–11 pass; `bun run graph:modules` ran if a new import edge appeared.
+**Done when.** Cases 1–6 pass; `bun run graph:modules` ran if a new import edge appeared.
 
-**Out of scope.** Combining the rows (stage 11).
+**Out of scope.** The actions, delegation and audit readers (stage 11); combining the rows (stage 12).
 
 ## Done when (stage)
 

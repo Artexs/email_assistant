@@ -34,12 +34,12 @@ Every Monday the executive gets one Telegram message with the week's numbers: mi
 
 ## Slices
 
-16 stages, one worker job each. Lanes, the two migrations (stages 04 and 14), stage-level waits for F097 stages, review jobs, coordinator steps and the one owner step: [plan.md](plan.md) § "How to run". No owner checkpoint.
+19 stages, one worker job each. Lanes, the two migrations (stages 04 and 16), stage-level waits for F097 stages, review jobs, coordinator steps and the one owner step: [plan.md](plan.md) § "How to run". No owner checkpoint.
 
 ## Sequenced
 
 - Plan after: F097 (E2a Offline lab), which has `stages/`: this plan uses its interfaces (`TestMailRule`, `mailKindFilter(kind, rule)`, feedback source `review`, `/review`, `wilsonInterval`).
-- Build after: F095 (E1 Close the MVP) in `spec/features/done/`. Feature flags come from F087 (landed, the first slice of E7-T2 F099). Stage-level waits: F097 stage 03 landed before F100 stage 04; F097 stages 01 and 03 landed before F100 stage 10; F097 stage 04 landed before F100 stage 13.
+- Build after: F095 (E1 Close the MVP) in `spec/features/done/`. Feature flags come from F087 (landed, the first slice of E7-T2 F099). Stage-level waits: F097 stage 03 landed before F100 stage 04; F097 stages 01 and 03 landed before F100 stages 10 and 11; F097 stage 04 landed before F100 stage 15.
 - Gate: — (owner step O1, the OpenAI budget alert, does not stop the build).
 
 ## Notes

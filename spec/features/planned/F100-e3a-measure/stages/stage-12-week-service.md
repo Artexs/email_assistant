@@ -1,6 +1,6 @@
-# F100 stage 11 — Week service, stats route, `stats:week`
+# F100 stage 12 — Week service, stats route, `stats:week`
 
-Part of [`../plan.md`](../plan.md). Review job before the land (a route and a CLI over tenant data). Needs stage 10 on `master`.
+Part of [`../plan.md`](../plan.md). Review job before the land (a route and a CLI over tenant data). Needs stages 10 and 11 on `master`.
 
 After this stage one service function turns an organization's week into a `WeekStats`; the panel route `GET /api/stats` (behind `stats_page`) and the operator CLI `bun run stats:week` both call it (D19, D20).
 
@@ -37,7 +37,7 @@ export async function recentWeekStats(
 ): Promise<WeekStats[] | "not_found">;
 ```
 
-`weekStats` steps: organization time zone (`getOrganization`); the mailboxes (`listMailboxes`; `mailboxId` not among them → `"not_found"`); `range = weekRange(weekStart, timeZone)`; the stage 10 readers with `{ range, mailboxId, testMail }`; `whitelisted` for each hidden-move row = `matchSender(fromAddress, rules).whitelisted` with `listSenderRules(db, ctx, row.mailboxId)` (read the rules once per mailbox); gates (only when `input.withEvidence`, default true): for each mailbox in scope, the real-label report as `goNoGoFor` builds it (`triage/gate.ts`: `listLabeledResults` + `buildRealReport`; pass the test-mail rule when F097 stage 01 gave `listLabeledResults` one) → per bar category `decision`, `precision`, `recall` (`report.goNoGo[category]`) and `kept`, and `parseCategoryPolicy(settings.category_policy)[category]?.auto ?? false`. Add a small exported function next to `goNoGoFor` in `triage/gate.ts` for this rather than copying its body; `mailboxes` = count of mailboxes in scope with status `active`; then `buildWeekStats(rows, { weekStart, mailboxId, timeZone, now })` (stage 09). It writes nothing.
+`weekStats` steps: organization time zone (`getOrganization`); the mailboxes (`listMailboxes`; `mailboxId` not among them → `"not_found"`); `range = weekRange(weekStart, timeZone)`; the stage 10–11 readers with `{ range, mailboxId, testMail }`; `whitelisted` for each hidden-move row = `matchSender(fromAddress, rules).whitelisted` with `listSenderRules(db, ctx, row.mailboxId)` (read the rules once per mailbox); gates (only when `input.withEvidence`, default true): for each mailbox in scope, the real-label report as `goNoGoFor` builds it (`triage/gate.ts`: `listLabeledResults` + `buildRealReport`; pass the test-mail rule when F097 stage 01 gave `listLabeledResults` one) → per bar category `decision`, `precision`, `recall` (`report.goNoGo[category]`) and `kept`, and `parseCategoryPolicy(settings.category_policy)[category]?.auto ?? false`. Add a small exported function next to `goNoGoFor` in `triage/gate.ts` for this rather than copying its body; `mailboxes` = count of mailboxes in scope with status `active`; then `buildWeekStats(rows, { weekStart, mailboxId, timeZone, now })` (stage 09). It writes nothing.
 
 `recentWeekStats`: `lastFinishedWeek(now, timeZone)` then `previousWeekStart` back, `weeks` times; one `weekStats` call per week, `withEvidence: true` for the newest week only (`m8` is today's evidence; older weeks get `m8: []`, cold review N14).
 
@@ -88,8 +88,8 @@ CLI usage line: `usage: bun run stats:week --org-id <uuid> [--mailbox-id <uuid>]
 
 **Done when.** Cases 1–2 pass; `bun run graph:modules` ran if `web.ts` gained a new module import.
 
-**Out of scope.** The page (stage 15); the operator route (E7).
+**Out of scope.** The page (stage 18); the operator route (E7).
 
 ## Done when (stage)
 
-Steps 1–2 done; the Proof command of `plan.md` passes (`/tmp/f100-s11`).
+Steps 1–2 done; the Proof command of `plan.md` passes (`/tmp/f100-s12`).

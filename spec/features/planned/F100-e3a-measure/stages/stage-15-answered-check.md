@@ -1,8 +1,8 @@
-# F100 stage 13 — The answered check in `/review`
+# F100 stage 15 — The answered check in `/review`
 
 Part of [`../plan.md`](../plan.md). Review job before the land (labels that feed M1 and `eval --real`).
 
-**Wait:** stages 06 and 10 of this ticket and F097 stage 04 (`/review`, `reviewMessage`) must be on `master`. Check: `grep -n "reviewMessage" apps/server/src/modules/channels/commands.ts`. If missing, stop and say so. Not next to stage 12 (same callback files).
+**Wait:** stages 06 and 10 of this ticket and F097 stage 04 (`/review`, `reviewMessage`) must be on `master`. Check: `grep -n "reviewMessage" apps/server/src/modules/channels/commands.ts`. If missing, stop and say so. Not next to stages 13 and 14 (same callback files).
 
 After this stage, with the flags `review_command` and `answered_check` on, `/review` also lists up to 5 recent mails that the user answered (`\Answered`) but the assistant put in "other mail", and asks "Did they need a reply?" with Yes / No buttons (D22). Yes writes a `needs_reply` label with source `answered_check`; No only records the answer.
 
@@ -75,7 +75,7 @@ export const ANSWERED_CHECK_WINDOW_MS = 14 * 24 * 3_600_000;
 export async function listAnsweredCandidates(
   db: DbOrTrx, ctx: TenantContext, q: { mailboxIds: readonly string[]; since: Date; limit: number; testMail: TestMailRule }
 ): Promise<AnsweredItem[]>;
-/** The same filter, counted over all mailboxes of the organization (the weekly report line, stage 14). */
+/** The same filter, counted over all mailboxes of the organization (the weekly report line, stage 17). */
 export async function countAnsweredWaiting(db: DbOrTrx, ctx: TenantContext, q: { since: Date; testMail: TestMailRule }): Promise<number>;
 
 export type AnsweredResult = { kind: "yes" } | { kind: "no" } | { kind: "already" } | { kind: "not_found" };
@@ -108,4 +108,4 @@ export async function answerAnsweredCheck(
 
 ## Done when (stage)
 
-Steps 1–2 done; the Proof command of `plan.md` passes (`/tmp/f100-s13`).
+Steps 1–2 done; the Proof command of `plan.md` passes (`/tmp/f100-s15`).

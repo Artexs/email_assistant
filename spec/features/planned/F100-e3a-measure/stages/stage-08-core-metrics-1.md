@@ -2,7 +2,7 @@
 
 Part of [`../plan.md`](../plan.md). Pure code in `packages/core`; may run any time, next to other stages.
 
-After this stage `@ea/core` has the week and working-day functions and the definitions of M1, M2 and M3 as pure functions over plain rows (D9–D13). The server readers (stage 10) and the E2b week scorer feed them.
+After this stage `@ea/core` has the week and working-day functions and the definitions of M1, M2 and M3 as pure functions over plain rows (D9–D13). The server readers (stages 10–11) and the E2b week scorer feed them.
 
 ## Step 1 — Week math and Wilson
 

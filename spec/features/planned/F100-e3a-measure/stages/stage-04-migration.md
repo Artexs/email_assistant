@@ -4,7 +4,7 @@ Part of [`../plan.md`](../plan.md). **[risky]**: a migration. Review job before 
 
 **Wait:** F097 stage 03 (feedback source `review`) must be on `master` before this job starts: both change `triage_feedback_source_check`. Check: `grep -rn "'review'" db/migrations/` finds F097's migration. If it does not, stop and say so in the final message.
 
-After this stage the database has the three tables of D1 and accepts the feedback source `answered_check`. No code writes them yet (stages 05, 06, 12, 13).
+After this stage the database has the three tables of D1 and accepts the feedback source `answered_check`. No code writes them yet (stages 05, 06, 13, 15).
 
 ## Step 1 — The migration
 
@@ -100,7 +100,7 @@ Before you write it: confirm in your job DB that `emails` and `actions` have a u
 
 **Done when.** The three commands run clean; `schema.ts` has `EmailHeaders`, `EmailFlags`, `ActionFeedback`.
 
-**Out of scope.** `outbox.kind` (stage 14); repository functions (stages 05, 06, 12).
+**Out of scope.** `outbox.kind` (stage 16); repository functions (stages 05, 06, 13, 15).
 
 ## Step 2 — Core list and schema tests
 

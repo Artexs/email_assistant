@@ -2,7 +2,7 @@
 
 Part of [`../plan.md`](../plan.md). Pure code in `packages/core`; after stage 08.
 
-After this stage `@ea/core` has the M4, M5, M7 and M8 functions, the cost constants, and one Zod schema `weekStatsSchema` that the route (stage 11), the page (stage 15) and the weekly notice view (stage 14) share.
+After this stage `@ea/core` has the M4, M5, M7 and M8 functions, the cost constants, and one Zod schema `weekStatsSchema` that the route (stage 12), the page (stage 18) and the weekly notice view (stage 16) share.
 
 ## Step 1 — M4 and M5
 
@@ -55,7 +55,7 @@ Rules (D15): a row with `isQuietTime(receivedAt, timeZone)` → `quietHours` onl
 
 **Done when.** Cases 1–3 pass.
 
-**Out of scope.** The readers that fill the booleans (stage 10).
+**Out of scope.** The readers that fill the booleans (stages 10–11).
 
 ## Step 2 — M7, M8 and the cost model
 
@@ -156,7 +156,7 @@ export const weekStatsSchema = z.strictObject({
     precision: z.number().min(0).max(1).nullable(), recall: z.number().min(0).max(1).nullable(),
     wilsonLower: z.number().min(0).max(1).nullable(),
     decision: z.enum(["go", "no-go", "no-go: too few"]),
-  })).max(1000), // M8 is the evidence at the time of the computation, not of the week: only the newest week carries rows (stage 11)
+  })).max(1000), // M8 is the evidence at the time of the computation, not of the week: only the newest week carries rows (stage 12)
 });
 export type WeekStats = z.infer<typeof weekStatsSchema>;
 export const statsQuerySchema = z.object({
@@ -198,7 +198,7 @@ export function buildWeekStats(
 
 **Done when.** Cases 1–3 pass.
 
-**Out of scope.** The readers and the service (stages 10–11).
+**Out of scope.** The readers and the service (stages 10–12).
 
 ## Done when (stage)
 

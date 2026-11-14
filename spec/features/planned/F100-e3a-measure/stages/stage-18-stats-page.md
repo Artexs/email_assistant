@@ -1,6 +1,6 @@
-# F100 stage 15 — Stats page
+# F100 stage 18 — Stats page
 
-Part of [`../plan.md`](../plan.md). Needs stage 11 on `master`. Shared web files: "Panel to Astro 7" (F101), E7-T1 Polish UI (F098) and E4-A (F102) edit the shell, `nav-items.ts` and `en.ts`; merge `master` before the proof if one of them landed.
+Part of [`../plan.md`](../plan.md). Needs stage 12 on `master`. Shared web files: "Panel to Astro 7" (F101), E7-T1 Polish UI (F098) and E4-A (F102) edit the shell, `nav-items.ts` and `en.ts`; merge `master` before the proof if one of them landed.
 
 After this stage a member of an organization with `stats_page` on sees "Stats" in the panel navigation and a read-only page with the last 8 finished weeks: one table, the metrics as rows, the weeks as columns, each cell a rate with its count, and a mailbox select (D25).
 
@@ -47,7 +47,7 @@ export function statsRows(weeks: readonly WeekStats[]): StatsRow[];
 export function weekLabel(weekStart: string): string; // "16 Nov"
 ```
 
-Rows and their cell text (one function per row; `rate(n, d)` as stage 14's `rateText`: `d = 0` → `–`):
+Rows and their cell text (one function per row; `rate(n, d)` as stage 16's `rateText`: `d = 0` → `–`):
 
 | `label` key (en text) | Cell |
 | --- | --- |
@@ -68,7 +68,7 @@ Page: `AppShell` with `active="stats"`; a mailbox select ("All mailboxes" + each
 
 **Test** (unit, `stats-view.test.ts`):
 
-1. `statsRows([<stage 11 case 1 WeekStats>])` → the `stats_m1` cell `20% (1 of 5)`, `stats_m4` `33% (3 of 9)`, `stats_m5` `3 min (1)`, `stats_m7` `$0.41`.
+1. `statsRows([<stage 12 case 1 WeekStats>])` → the `stats_m1` cell `20% (1 of 5)`, `stats_m4` `33% (3 of 9)`, `stats_m5` `3 min (1)`, `stats_m7` `$0.41`.
 2. A week with `m2.due = 0` → `stats_m2_closed` cell `–`.
 3. Two weeks → each row has 2 cells, the newest first; `weekLabel("2026-11-16")` → `16 Nov`.
 4. `en.test.ts` (exists) passes with the new keys.
@@ -81,4 +81,4 @@ Page: `AppShell` with `active="stats"`; a mailbox select ("All mailboxes" + each
 
 ## Done when (stage)
 
-Steps 1–2 done; the Proof command of `plan.md` passes (`/tmp/f100-s15`).
+Steps 1–2 done; the Proof command of `plan.md` passes (`/tmp/f100-s18`).

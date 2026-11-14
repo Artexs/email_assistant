@@ -1,6 +1,6 @@
 # F100 · E3a Measure — plan
 
-> **Status 2026-11-14 — planned.** 16 stages written; cold review: see § Cold review. Nothing built yet. The build waits for F095 (E1) in `spec/features/done/` and, per stage, for the F097 stages named in § How to run.
+> **Status 2026-11-14 — planned.** 19 stages written; cold review 1 applied (§ Cold review). Nothing built yet. The build waits for F095 (E1) in `spec/features/done/` and, per stage, for the F097 stages named in § How to run.
 
 Sources: `docs/product/stage-2/epics/E03-measured-core.md` (epic page with "Discovery"), `docs/product/stage-2/epics/E03-discovery-notes.md` (design sketch §2, cross-epic §5), `docs/product/stage-2/decisions.md` (PD-056–PD-069; also PD-030, PD-044, PD-045, PD-077, PD-108, PD-113, PD-127), ADR 0028 (autonomy evidence), the F097 plan (`spec/features/planned/F097-e2a-offline-lab/plan.md`, seams S2), `docs/product/stage-2/05-execution-plan.md` §2.1 row 6 and §2.5. Dropped tickets absorbed: `spec/features/dropped/2026-11/F033-handled-share-metric/`, `F042-handled-share-delegations/`, `F073-openai-budget-alert/`.
 
@@ -37,7 +37,7 @@ Sources: `docs/product/stage-2/epics/E03-measured-core.md` (epic page with "Disc
 
 ### Design decisions
 
-- **D1 Two migrations.** Stage 04 holds the tables: `email_headers`, `email_flags`, `action_feedback`, and `triage_feedback.source` gains `answered_check`. It waits for F097 stage 03, which changes the same `triage_feedback_source_check` (adds `review`); this migration lists all seven sources. Stage 14 adds `weekly_report` to `outbox_kind_check`, because the schema test compares that CHECK with `noticeKinds` exactly and a kind needs its renderer and detector in the same change (code patterns § Add a notice kind). Rejected: one migration per feature stage (five migrations to serialize against other tickets); the outbox kind in stage 04 (a kind without a renderer and a detector fails the registry tests).
+- **D1 Two migrations.** Stage 04 holds the tables: `email_headers`, `email_flags`, `action_feedback`, and `triage_feedback.source` gains `answered_check`. It waits for F097 stage 03, which changes the same `triage_feedback_source_check` (adds `review`); this migration lists all seven sources. Stage 16 adds `weekly_report` to `outbox_kind_check`, because the schema test compares that CHECK with `noticeKinds` exactly and a kind needs its renderer and detector in the same change (code patterns § Add a notice kind). Rejected: one migration per feature stage (five migrations to serialize against other tickets); the outbox kind in stage 04 (a kind without a renderer and a detector fails the registry tests).
 - **D2 Captured fields.** `CapturedHeaders` (in `mail/port.ts`, so E9 adapters return the same shape): `fromName` (≤ 200 chars), `replyTo` (addresses, lower case, ≤ 5), `returnPath` (address, lower case), `authResults` (the topmost `Authentication-Results` value, ≤ 1,000 chars), `listUnsubscribe` (≤ 1,000), `listId` (≤ 300), `autoSubmitted` (≤ 100), `precedence` (≤ 50), `hasCalendar` (a `text/calendar` part or top type), `attachments` (≤ 20 of `{ name ≤ 200 | null, type ≤ 100, size, inline }`) and `attachmentCount` (all), `links` (≤ 50 of `{ host, textHost | null }`, hosts lower case without port, deduplicated by the pair) and `linkCount`, `partsKnown` (false when only the header block was read). Every string loses U+0000, is trimmed, made well-formed (`toWellFormed`) and cut by code points (Postgres `char_length` counts code points; a cut inside a surrogate pair breaks the `jsonb` cast, cold review B1); an empty string is null. `returnPath` ≤ 320. `autoSubmitted` and `precedence` keep only a token (`^[a-z0-9-]{1,40}$`, else `other`), because they outlive the text retention (D5). Header values come from `parsed.headerLines` (first line of each key = the topmost), never from `parsed.headers`, because mailparser drops the `List-*` headers there (fact F1). Links come from the HTML part: each `<a href>` with an `http` or `https` URL gives `host`; when the visible text of the link (tags removed) is a URL or a bare host (`^[a-z0-9.-]+\.[a-z]{2,}$`), `textHost` is its host. Without an HTML part, `http(s)://` URLs in the text part give hosts with `textHost` null. Rejected: storing raw header blocks (more personal data, no fixed shape).
 - **D3 Port change.** `MailProvider.fetchBodyText` becomes `fetchContent(folder, uid): Promise<MailContent>` with `MailContent = { text: string | null; capture: CapturedHeaders | null }` (capture null only when the UID is gone). Over the body size limit: `text` null and the capture from a header-only fetch with `partsKnown: false`. New `fetchFlagsIn(folder, uids): Promise<{ uid: number; flags: string[] }[]>` (UID FETCH FLAGS; `[]` for a missing folder; unknown UIDs left out). Rejected: a second fetch of the source for headers (one more round trip per mail).
 - **D4 Store the capture.** One `email_headers` row per stored mail, inserted in the transaction of the `emails` insert (`applyChunk`), only when the insert inserted. Mail stored before this ticket has no row (no back-capture); the backfill path captures like the sync. A capture error never drops the body text (`contentFromSource` catches it and returns `capture: null`). The header insert runs in a savepoint inside the chunk transaction: a database error rolls back only the header row, never the mail row or the cursor (cold review B1: one hostile header must not stop a mailbox). No capture or a failed insert → no row, counted in `captureMissing`, one `capture_missing` event line per folder run.
@@ -109,11 +109,11 @@ Sources: `docs/product/stage-2/epics/E03-measured-core.md` (epic page with "Disc
 2. A mail stored by the sync has one `email_headers` row with the D2 fields, written in the same transaction; retention clears its texts with the body. Shown by: stage 05 integration tests.
 3. The sync run refreshes `email_flags` (at most every 10 min per mailbox, guarded write). Shown by: stage 06 integration tests; after C3 `select count(*) from email_flags` > 0 on the VPS.
 4. The sync runs every `MAIL_SYNC_EVERY_MIN` minutes (default 2); `/status` and the digest name an LLM pause with its code. Shown by: stage 07 tests; C3 sync lines 2 min apart.
-5. `weekStats` returns M1–M5, M7, M8 for one organization and week; `GET /api/stats` and `bun run stats:week` use it. Shown by: stages 08–11 tests.
-6. With `weekly_report` on, each linked member gets one `weekly_report` row per week on Monday; the text leads with M1, M2, M3 with counts. Shown by: stage 14 tests; C6 the first pilot report.
-7. Reject reasons and the mistake tap write `action_feedback` rows behind `mistake_capture`, and M3 counts them. Shown by: stage 12 tests.
-8. `/review` adds the answered check behind `answered_check`; a "yes" writes `source = 'answered_check'` feedback. Shown by: stage 13 tests.
-9. The daily digest has the handled-share line behind `handled_share`; the stats page shows 8 weeks behind `stats_page`; `docs/capabilities/measurement.md` exists and the touched pages are updated. Shown by: stages 14–16.
+5. `weekStats` returns M1–M5, M7, M8 for one organization and week; `GET /api/stats` and `bun run stats:week` use it. Shown by: stages 08–12 tests.
+6. With `weekly_report` on, each linked member gets one `weekly_report` row per week on Monday; the text leads with M1, M2, M3 with counts. Shown by: stages 16–17 tests; C6 the first pilot report.
+7. Reject reasons and the mistake tap write `action_feedback` rows behind `mistake_capture`, and M3 counts them. Shown by: stages 13–14 tests.
+8. `/review` adds the answered check behind `answered_check`; a "yes" writes `source = 'answered_check'` feedback. Shown by: stage 15 tests.
+9. The daily digest has the handled-share line behind `handled_share`; the stats page shows 8 weeks behind `stats_page`; `docs/capabilities/measurement.md` exists and the touched pages are updated. Shown by: stages 17–19.
 
 ## Seams (for other tickets; not built here)
 
@@ -141,13 +141,13 @@ Sources: `docs/product/stage-2/epics/E03-measured-core.md` (epic page with "Disc
 - Format only the files of your stage: `bunx prettier --write <files>`. Never the whole repo (S2 incident: a builder ran the repo-wide formatter).
 - No temporary file inside the worktree (`bun run lint` lints every `.ts` file): use `/tmp/f100-sNN/`.
 - Comments state the rule in one sentence; no bare codes (`D14`, `F100`, `PD-057`) in code comments; name an ADR or a ticket folder path when a source is needed.
-- Two migrations in the whole ticket (stages 04 and 14). No `bun.lock` change and no new dependency in any stage.
+- Two migrations in the whole ticket (stages 04 and 16). No `bun.lock` change and no new dependency in any stage.
 - A new import between modules → `bun run graph:modules` and commit `docs/diagrams/module-graph.{md,json}` (code patterns § Layers and borders).
 - Commit by explicit path (`git add <paths>`), never `git add -A`.
 - `bun run test:int:ci` runs in your own DB (the prepare script makes it); no lock. Never run `bun run test:e2e`.
 - Do not edit `spec/build.md`, `docs/product/stage-2/*` or another ticket.
 - A gap or a deviation is a question in your final message, not a choice.
-- Test helpers: `createOrgWithMailbox` (`apps/server/test/integration/fixtures.ts`), the fake mail provider `createFakeMailProvider` (`mail/fake/index.ts`), the contract suite `apps/server/test/contract/mail-provider.ts`, the Telegram test helpers (`apps/server/test/integration/telegram-helpers.ts`), `waitFor` (`apps/server/test/wait-for.ts`), the web route helpers (`apps/server/test/integration/web-helpers.ts`). This plan adds `metricRows` fixtures in `packages/core/src/metrics/fixtures.ts` (stage 08; stage 09 adds to it) and `seedWeek` in `apps/server/test/integration/metrics-fixtures.ts` (stage 10; stages 11–14 reuse it).
+- Test helpers: `createOrgWithMailbox` (`apps/server/test/integration/fixtures.ts`), the fake mail provider `createFakeMailProvider` (`mail/fake/index.ts`), the contract suite `apps/server/test/contract/mail-provider.ts`, the Telegram test helpers (`apps/server/test/integration/telegram-helpers.ts`), `waitFor` (`apps/server/test/wait-for.ts`), the web route helpers (`apps/server/test/integration/web-helpers.ts`). This plan adds `metricRows` fixtures in `packages/core/src/metrics/fixtures.ts` (stage 08; stage 09 adds to it) and `seedWeek` in `apps/server/test/integration/metrics-fixtures.ts` (stage 10; stages 11, 12 and 17 reuse it).
 
 ## Proof
 
@@ -174,16 +174,16 @@ None. The coordinator builds on the review results; the decisions marked "defaul
 
 | # | Step | When |
 | --- | --- | --- |
-| C1 | `bun run db:migrate` on the shared dev DB (main checkout). | After stage 04 lands, and again after stage 14 lands. |
+| C1 | `bun run db:migrate` on the shared dev DB (main checkout). | After stage 04 lands, and again after stage 16 lands. |
 | C2 | Deploy the image with stages 01–03 to the VPS (pre-approved; backup first, name the rollback target, verify after). Run `bun run mailbox:signals --org-id … --mailbox-id …` for the pilot mailbox in the app container (`--days 30`). Append its printed lines (counts and server names only) to `notes/2026-11-13-measured-core-facts.md` under "E3a stage 03 run (date)", and answer N1, N2, N4 there. | After stage 03 lands. |
 | C3 | Deploy stages 04–07 (the migration runs in the deploy) with `MAIL_SYNC_EVERY_MIN` unset (default 2). Verify: the `server_listening` line, two sync runs 2 min apart in the log, `email_headers` rows for mail stored after the deploy, `email_flags` rows after 10 min. | After stage 07 lands. |
 | C4 | Watch 24 h of sync lines on the VPS after C3: count `sync … the next tick tries again` warnings and `auth_error` changes of the pilot mailbox. More than 3 soft failures in an hour, or an `auth_error`, that did not happen in the 24 h before → ask the owner for O2, write the counts in the ticket log and in the note of C2. | 24 h after C3. |
-| C5 | Deploy the rest; turn on for the pilot organization with `bun run org:flag` (syntax: its usage line): `stats_page`, `weekly_report`, `handled_share`, `mistake_capture`, `answered_check`, `llm_pause_line`. `answered_check` needs `review_command` (F097) on. | After stage 16 lands. |
+| C5 | Deploy the rest; turn on for the pilot organization with `bun run org:flag` (syntax: its usage line): `stats_page`, `weekly_report`, `handled_share`, `mistake_capture`, `answered_check`, `llm_pause_line`. `answered_check` needs `review_command` (F097) on. | After stage 19 lands. |
 | C6 | After the first Monday with `weekly_report` on: run `bun run stats:week --org-id … --week <that Monday − 7 days>` on the VPS and copy its lines (counts only) into the ticket log. It gives the E5 second pass (PD-119, PD-120, PD-122) only M2 for delegations; the loop numbers that pass asks for (due loops per day, median reply time, replies that only promise) come from E5a/E5b, not from E3a (cold review N11). | First Monday after C5. |
 
 ## Review
 
-- A review job before the land for stages 02 (port, both adapters), 04 (`[risky]` migration), 05 (`[risky]` sync write path), 06 (`[risky]` flag write guard), 10 (tenant filters), 11 (route, CLI), 12 (taps that change data, owner checks), 13 (labels), 14 (`[risky]` second migration, notices to people). Model: the board's reviewer (`spec/build.md` § TRACK: `claude-sonnet-5-5`, high). The reviewer may run `bun run test:int:ci` at the candidate commit.
+- A review job before the land for stages 02 (port, both adapters), 04 (`[risky]` migration), 05 (`[risky]` sync write path), 06 (`[risky]` flag write guard), 10 and 11 (tenant filters), 12 (route, CLI), 13 and 14 (writes of mistake labels, owner checks), 15 (labels), 16 (`[risky]` second migration), 17 (notices to people). Model: the board's reviewer (`spec/build.md` § TRACK: `claude-sonnet-5-5`, high). The reviewer may run `bun run test:int:ci` at the candidate commit.
 - Other stages land on the worker's proof.
 
 ## Stages
@@ -199,24 +199,29 @@ None. The coordinator builds on the review results; the decisions marked "defaul
 | 07 | [Sync every 2 min and the LLM pause line](stages/stage-07-sync-interval-and-pause.md) (F073) | ~220 lines | |
 | 08 | [Core metrics I](stages/stage-08-core-metrics-1.md) — week math, M1, M2, M3 | ~300 lines | |
 | 09 | [Core metrics II](stages/stage-09-core-metrics-2.md) — M4, M5, M7, M8, `WeekStats` schema | ~300 lines | |
-| 10 | [Row readers](stages/stage-10-row-readers.md) — one reader per owner module | ~350 lines | review |
-| 11 | [Week service, stats route, `stats:week`](stages/stage-11-week-service.md) | ~250 lines | review |
-| 12 | [Reject reasons and the mistake tap](stages/stage-12-mistake-capture.md) | ~320 lines | review |
-| 13 | [Answered check in `/review`](stages/stage-13-answered-check.md) | ~220 lines | review |
-| 14 | [Weekly report and the handled-share line](stages/stage-14-weekly-report.md) — outbox kind migration | ~320 lines | [risky], review |
-| 15 | [Stats page](stages/stage-15-stats-page.md) — `/api/me` features, nav, page | ~280 lines | |
-| 16 | [Docs and capability pages](stages/stage-16-docs.md) | docs | |
+| 10 | [Row readers I](stages/stage-10-readers-mail.md) — the week fixture, `WeekQuery`, triage and channels readers | ~280 lines | review |
+| 11 | [Row readers II](stages/stage-11-readers-actions.md) — actions, delegation, audit readers | ~220 lines | review |
+| 12 | [Week service, stats route, `stats:week`](stages/stage-12-week-service.md) | ~250 lines | review |
+| 13 | [Mistake capture: core and service](stages/stage-13-mistake-capture-core.md) — flag, callbacks, card edits, `action_feedback` service | ~230 lines | review |
+| 14 | [Mistake capture: Telegram and web](stages/stage-14-mistake-capture-taps.md) — taps, send-result button, two routes | ~200 lines | review |
+| 15 | [Answered check in `/review`](stages/stage-15-answered-check.md) | ~220 lines | review |
+| 16 | [Weekly report: core and the outbox kind migration](stages/stage-16-weekly-report-core.md) | ~220 lines | [risky], review |
+| 17 | [Weekly report: detector and the digest line](stages/stage-17-weekly-report-detector.md) | ~200 lines | review |
+| 18 | [Stats page](stages/stage-18-stats-page.md) — `/api/me` features, nav, page | ~280 lines | |
+| 19 | [Docs and capability pages](stages/stage-19-docs.md) | docs | |
 
 ## How to run (coordinator)
 
 1. Before the first spawn: F095 (E1) is in `spec/features/done/`. Move the ticket: `git mv spec/features/planned/F100-e3a-measure spec/features/active/`, commit (the worktrees see only committed files).
 2. Order and lanes.
    - Lane A (mail): 01 → 02 → 03 → (C2). Then 05 after 02 and 04; 06 after 05.
-   - Lane B (schema): 04 after F097 stage 03 has landed on `master` (it changes the same CHECK). Stages 04 and 14 are the migrations of this ticket: never next to another ticket's migration stage, and C1 runs after each.
+   - Lane B (schema): 04 after F097 stage 03 has landed on `master` (it changes the same CHECK). Stages 04 and 16 are the migrations of this ticket: never next to another ticket's migration stage, and C1 runs after each.
    - Lane C (core): 08 → 09 (any time; next to lanes A and B).
    - 07 any time after 02 (both edit `main.ts` and `mail/jobs.ts` area lightly: not next to 06).
-   - 10 after 04, 09, and F097 stages 01 and 03 landed. 11 after 10. 12 after 04 and 09 (next to 10/11 is fine; 12 and 13 both edit `channels/callbacks.ts`: not next to each other). 13 after 06, 10 and F097 stage 04 landed. 14 after 11, 12 and 13 (it uses `countAnsweredWaiting` of 13; 12 and 14 edit the same notice files: in order). 15 after 11. 16 after all.
-3. Shared files with other tickets (advisory, `05-execution-plan.md` § 2.4): stage 02 and 05 edit `mail/sync.ts`, `mail/port.ts`, both mail adapters (F097 stage 01 edits `mail/repo/emails.ts`; F085 and E5a F104 edit the sync later); stage 12 and 13 edit `channels/callbacks.ts` and `packages/core/src/digest/callback.ts` (F097 stages 03–04 edit the same files: F100 12 and 13 run after them). The later job merges `master` before its proof.
+   - 10 after 04, 09, and F097 stages 01 and 03 landed. 11 after 10. 12 after 11.
+   - 13 after 04 and 09 (next to 10–12 is fine). 14 after 13. 15 after 06, 10 and F097 stage 04 landed; 13, 14 and 15 edit `packages/core/src/digest/callback.ts` or `channels/callbacks.ts`: never two of them at once.
+   - 16 after 09 and 14 (the same notice files). 17 after 12, 15 and 16. 18 after 12. 19 after all.
+3. Shared files with other tickets (advisory, `05-execution-plan.md` § 2.4): stage 02 and 05 edit `mail/sync.ts`, `mail/port.ts`, both mail adapters (F097 stage 01 edits `mail/repo/emails.ts`; F085 and E5a F104 edit the sync later); stages 13, 14 and 15 edit `channels/callbacks.ts` and `packages/core/src/digest/callback.ts` (F097 stages 03–04 edit the same files: F100 13–15 run after them). The later job merges `master` before its proof.
 4. Spawn a stage (`NN`, `<slug>` from the stage list):
 
    ```
@@ -235,7 +240,7 @@ None. The coordinator builds on the review results; the decisions marked "defaul
      "Review F100 stage NN on <B> against spec/features/active/F100-e3a-measure/plan.md and stages/stage-NN-<slug>.md. Check that every numbered test exists and asserts what the stage says, every decision the stage cites, every org_id filter, and that no log line, error or view holds a captured header value, an address, a subject, mail text or a key. Quote file and line for each finding."
    ```
 
-6. Land: `limen land <job-id> --yes --keep-open` (stage 16: without `--keep-open`; it closes the ticket). Drop the job DB from the main checkout: `bun run db:worktree <YYYY-MM-DD>-<hash> --drop`.
+6. Land: `limen land <job-id> --yes --keep-open` (stage 19: without `--keep-open`; it closes the ticket). Drop the job DB from the main checkout: `bun run db:worktree <YYYY-MM-DD>-<hash> --drop`.
 7. Coordinator steps C1–C6 at the times of § Coordinator steps. Owner step O1: tell the owner after stage 07 lands; do not wait.
 8. Workers often break the one-`&&` proof form. Accept a check when its saved log shows the pass. A check with no proof at all → `limen continue`.
 
@@ -243,11 +248,38 @@ None. The coordinator builds on the review results; the decisions marked "defaul
 
 - [written] ticket.md, plan.md, questions.md
 - [written] stages 01–16 (2026-11-14)
-- [pending] cold review 1 (`plan-review-1.md`)
+- [done] cold review 1 (`plan-review-1.md`); stages 10, 12 and 14 split into 10–11, 13–14 and 16–17 (now 19 stages)
 
 ## Cold review
 
-Not run yet.
+Review 1 (2026-11-14, Opus 5.5 high, job `2026-11-14-f100-plan-review-f3f44645`, candidate `dfd0e00`): FAIL, 1 blocking, 23 notes; every recomputed number of stages 08–11 and 14 (old numbers) matched. Filed whole in [plan-review-1.md](plan-review-1.md). What changed:
+
+| Finding | Result |
+| --- | --- |
+| B1 a hostile header fails the DB check and blocks the mailbox | Fixed: D2 cut by code points + `toWellFormed`, `returnPath` ≤ 320 (stage 01 cases 11–13); D4 header insert in a savepoint, a DB error is `captureMissing` (stage 05 `storeCapture`, case 4) |
+| N1 `fetchBodyText` in tests | Fixed: stage 02 lists the test files; "pass with only the rename" |
+| N2 a capture bug drops the body | Fixed: `contentFromSource` catches the capture step (stage 01 case 14) |
+| N3 stale UIDs after UIDVALIDITY get other mail's flags | Fixed: `fetchFlagsIn` returns Message-ID and INTERNALDATE; the refresh checks identity (D6, stage 06 case 6) |
+| N4 test 4 of stage 05 proved nothing | Fixed: replaced by the savepoint case |
+| N5 no `mailboxId` on hidden-move rows | Fixed (stage 11 table) |
+| N6 digest times, `testMail` wiring, `goNoGoFor` rule | Fixed: `getMembership` per member and `DigestJobDeps.testMail` (stage 17); gate reader passes the rule (stage 12) |
+| N7 fixture gaps | Fixed: triage `created_at` = received + 1 min, org B times, PDF bytes (stages 01, 10) |
+| N8 pause line without a flag | Fixed: flag `llm_pause_line` (D8, D26, Q4 changed) |
+| N9 M8 vs PD-066 | Fixed in part: precision only from 30 labels, recall added (D17, stages 09, 16); holdout, history check, tripwire left to E4-B as default Q12; M6 out of E3a as default Q14 |
+| N10 "surfaced" by the due day | Kept due + 1 working day for delegations, default Q13 (reason there) |
+| N11 C6 is not the full E5 trigger | Fixed: C6 says which numbers it gives; seam S9 for the E11 line |
+| N12 M7 vs "real mail only" | Fixed: D16 and D18 name M7 as the one exception |
+| N13 names and texts differ | Fixed: D4 `capture_missing`, D8 and D22 texts equal the stages |
+| N14 M8 is not weekly | Fixed: only the newest week carries M8 (stage 12 case 6); the Monday line picks the row with the most labels |
+| N15 `m8.max(50)` | Fixed: `max(1000)` |
+| N16 weekly recompute on every tick after a failure | Fixed: 15-min backoff per organization and week (stage 17) |
+| N17 "paused" shown for 2 h after one soft error | Fixed: soft codes 10 min, config codes 2 h (D8, stage 07 case 3) |
+| N18 reason line shows the tap time | Fixed: no clock in the reason line (stage 13) |
+| N19 `auto_submitted`, `precedence` outlive retention as sender text | Fixed: token only (D2, stage 01 case 13) |
+| N20 stages 10, 12, 14 too big; `callbacks.ts` size | Fixed: split into 10–11, 13–14, 16–17; tap handlers in new files (stages 14, 15) |
+| N21 duplicate `wilsonInterval` with F097 stage 14 | Outside edit for F097 stage 14 (final message of this job); stage 08 checks first |
+| N22 coordinator edits the VPS `.env` | Fixed: owner step O2, `$C up -d server` |
+| N23 `spec/build.md` still says "needs plan" | Outside edit for the coordinator (final message of this job) |
 
 ## Log
 

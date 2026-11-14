@@ -69,7 +69,7 @@ export async function getEmailFlags(db: DbOrTrx, ctx: TenantContext, emailId: st
 
 **Done when.** Cases 1–6 pass.
 
-**Out of scope.** The answered check writes (stage 13).
+**Out of scope.** The answered check writes (stage 15).
 
 ## Step 2 — Refresh in the sync run
 
