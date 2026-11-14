@@ -30,7 +30,7 @@ F088 (notices as facts) may still be active when this stage runs. Describe the c
 
 ## Step 3 — Check
 
-- **Check:** `grep -n "Moved to \[\`docs/capabilities/digest-and-notices.md" docs/architecture.md` → the §8 lines of step 1. `bun test apps/server/src/capability-map.test.ts` → 0 fail. The README index has 8 rows.
+- **Check:** `grep -n "Moved to \[docs/capabilities/digest-and-notices.md" docs/architecture.md` → the §8 lines of step 1. `bun test apps/server/src/capability-map.test.ts` → 0 fail. The README index has 8 rows.
 - **Done when:** the checks hold.
 
 ## Review focus

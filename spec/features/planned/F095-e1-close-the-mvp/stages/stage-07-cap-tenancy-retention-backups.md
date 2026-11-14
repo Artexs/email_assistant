@@ -45,7 +45,7 @@ The last three pages, the last §8 moves, and a check that `architecture.md` has
   2. §8 keeps only: Scheduler (the table), Work queue, Liveness, `GET /health`, Logging, and the link lines. Any other §8 bullet that is left: move it to the page whose module owns it and name it in the final message.
 - **Check:**
   1. `awk '/^## 8\./,/^## 9\./' docs/architecture.md | grep -c "^- \*\*"` → 5 (Scheduler, Work queue, Liveness, `GET /health`, Logging), plus the link lines.
-  2. `grep -c "Moved to \[\`docs/capabilities/" docs/architecture.md` → 14 or more.
+  2. `grep -c "Moved to \[docs/capabilities/" docs/architecture.md` → 14 or more.
   3. `grep -c "^| \[" docs/capabilities/README.md` → 10 and `ls docs/capabilities/*.md | wc -l` → 11.
   4. `wc -l docs/architecture.md` → write the number in the final message (it was 814 at `9d9bfb8`).
   5. `bun test apps/server/src/capability-map.test.ts` → 0 fail.

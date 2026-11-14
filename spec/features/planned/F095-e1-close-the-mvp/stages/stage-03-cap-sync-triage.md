@@ -10,8 +10,8 @@ Two pages, and the behaviour text of sync and triage moves out of `docs/architec
 2. Read the seams listed for the page (the module `index.ts` first, then the files it exports from), `apps/server/src/main.ts` (job names and schedules), the root `package.json` scripts, the routes files, the tests named, and the source rows of `docs/product/stage-2/02-inventory-and-roadmap.md` §2.
 3. Write the seven sections of the template (`docs/capabilities/README.md`). Each claim must hold in the code you read (D7). A `02` §2 claim that the code does not hold: leave it out and list it in the final message.
 4. Move the named `architecture.md` text into "Rules" or "Data" with its wording (D4); change only its cross-references (`§4.5` → `[drafts-and-send.md](drafts-and-send.md)`, or `docs/architecture.md` §N for what stays there).
-5. In `architecture.md`, replace each moved block with one link line of this exact form: `Moved to [\`docs/capabilities/<page>.md\`](capabilities/<page>.md) § <section> (F095).` Keep headings (D5).
-6. Change the inbound references to each moved block in the files of D6 (`grep -rn "architecture.md\`\? \?§<n>" docs deploy README.md CLAUDE.md .agents`); leave the others (D6).
+5. In `architecture.md`, replace each moved block with one link line of this exact form: `Moved to [docs/capabilities/<page>.md](capabilities/<page>.md) § <section> (F095).` Keep headings (D5).
+6. Change the inbound references to each moved block in the files of D6 (``grep -rn "architecture.md\`\? \?§<n>" docs deploy README.md CLAUDE.md .agents``); leave the others (D6).
 7. Add the page row to the `## Pages` table of `docs/capabilities/README.md`: `| [<page>.md](<page>.md) | <Capability> | <main modules> |`.
 8. `bun test apps/server/src/capability-map.test.ts` → 0 fail.
 
@@ -42,7 +42,7 @@ Two pages, and the behaviour text of sync and triage moves out of `docs/architec
 
 ## Step 3 — Check `architecture.md`
 
-- **Check:** `grep -c "Moved to \[\`docs/capabilities/" docs/architecture.md` → 5 or more (rule 7 triage part, rule 8, §4.4 feedback part, §4.6 emails, §8 mailbox errors; count your own link lines). `grep -n "^### 4\.[1-6]\|^## 8\." docs/architecture.md` → the headings are still there. The flow diagram of §4.1 and rules 1–5 are unchanged (`git diff` shows no change there).
+- **Check:** `grep -c "Moved to \[docs/capabilities/" docs/architecture.md` → 5 or more (rule 7 triage part, rule 8, §4.4 feedback part, §4.6 emails, §8 mailbox errors; count your own link lines). `grep -n "^### 4\.[1-6]\|^## 8\." docs/architecture.md` → the headings are still there. The flow diagram of §4.1 and rules 1–5 are unchanged (`git diff` shows no change there).
 - **Done when:** the checks hold and `bun test apps/server/src/capability-map.test.ts` → 0 fail.
 
 ## Review focus

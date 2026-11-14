@@ -22,7 +22,7 @@ One page: how a plan becomes a mailbox change, how Undo and "moved back" work, a
 
 ## Step 2 — Check `architecture.md`
 
-- **Check:** `grep -n "Moved to \[\`docs/capabilities/actions-and-undo.md" docs/architecture.md` → 5 lines (rule 6 idempotent, rule 7 committer, §4.4, §4.6 actions, §8 S3 jobs). Rule 6 still holds its headline and the `create_draft` and `send` bullets. `git diff` shows no change in rules 1–5, §4.2, §4.3.
+- **Check:** `grep -n "Moved to \[docs/capabilities/actions-and-undo.md" docs/architecture.md` → 5 lines (rule 6 idempotent, rule 7 committer, §4.4, §4.6 actions, §8 S3 jobs). Rule 6 still holds its headline and the `create_draft` and `send` bullets. `git diff` shows no change in rules 1–5, §4.2, §4.3.
 - **Done when:** the check holds and `bun test apps/server/src/capability-map.test.ts` → 0 fail.
 
 ## Review focus

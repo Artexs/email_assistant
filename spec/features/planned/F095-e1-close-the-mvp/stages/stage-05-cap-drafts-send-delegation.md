@@ -36,7 +36,7 @@ Two pages: the draft, approval and send path, and delegation tracking. This stag
 ## Step 3 — Check `architecture.md`
 
 - **Check:**
-  1. `grep -n "Moved to \[\`docs/capabilities/drafts-and-send.md\|Moved to \[\`docs/capabilities/delegation.md" docs/architecture.md` → rule 6, §4.5, §8 for the first page; §4.4, §4.6, §8 for the second.
+  1. `grep -n "Moved to \[docs/capabilities/drafts-and-send.md\|Moved to \[docs/capabilities/delegation.md" docs/architecture.md` → rule 6, §4.5, §8 for the first page; §4.4, §4.6, §8 for the second.
   2. §4.4, §4.5 and §4.6 hold only their heading and link lines: `awk '/^### 4\.4/,/^## 5\./' docs/architecture.md` shows no other text.
   3. Rule 6 holds only its headline lines and one or two link lines.
 - **Done when:** the checks hold and `bun test apps/server/src/capability-map.test.ts` → 0 fail.

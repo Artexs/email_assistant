@@ -41,7 +41,7 @@ If a step fails (no draft, no approval message, a send error): stop the runbook,
 - **Goal:** the final message proves the E1 "Done when" of `plan.md` items 1–8, except the coordinator's parts.
 - **Commands (paste each output):**
   1. `ls docs/capabilities/` and `bun test apps/server/src/capability-map.test.ts`.
-  2. `grep -c "Moved to \[\`docs/capabilities/" docs/architecture.md`; `awk '/^## 8\./,/^## 9\./' docs/architecture.md | grep -c "^- \*\*"`.
+  2. `grep -c "Moved to \[docs/capabilities/" docs/architecture.md`; `awk '/^## 8\./,/^## 9\./' docs/architecture.md | grep -c "^- \*\*"`.
   3. Stage 01 step 3 checks 1, 3 and 4.
   4. `grep -n "docs/capabilities" docs/code-patterns.md .agents/limen/styleguide.md`.
   5. `git show HEAD:spec/build.md | sed -n '/^## NEXT/,/^## PROVEN/p' | head -5` (the coordinator applied `next.md`), and stage 08 step 1 check 1 run against `spec/build.md` instead of `next.md`.
