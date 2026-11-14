@@ -7,6 +7,7 @@ import { api } from "../../lib/api";
 import { authClient } from "../../lib/auth-client";
 import { changePasswordError, signOutAllResult } from "../../lib/password-errors";
 import { useResource } from "../../lib/use-resource";
+import { useMe } from "../shell/MeProvider";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -14,6 +15,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Skeleton } from "../ui/skeleton";
 import { Switch } from "../ui/switch";
+import { SecurityLog } from "./SecurityLog";
 
 type Field = "current" | "password" | "repeat";
 type FieldErrors = Partial<Record<Field, TextKey>>;
@@ -68,6 +70,7 @@ function SessionsList() {
 }
 
 export function AccountCard() {
+  const { me } = useMe();
   const [current, setCurrent] = useState("");
   const [password, setPassword] = useState("");
   const [repeat, setRepeat] = useState("");
@@ -234,6 +237,11 @@ export function AccountCard() {
             </p>
           )}
         </div>
+        {me !== null && me.role === "owner" && me.features.includes("security_log") ? (
+          <div className="border-t pt-4">
+            <SecurityLog timeZone={me.organization.timezone} />
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );
