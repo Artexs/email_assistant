@@ -36,7 +36,7 @@ export async function lockSentSyncState(trx: Transaction<DB>, ctx: TenantContext
 /** Connect: inserts the row; `enabled_at = now()` when enabled. ON CONFLICT (mailbox_id) DO NOTHING. */
 export async function insertSentSyncState(db: DbOrTrx, ctx: TenantContext, mailboxId: string, input: { enabled: boolean }): Promise<void>;
 
-/** The switch (stage 07 calls it inside its transaction, after lockSentSyncState). Upsert of the whole row:
+/** The switch (stage 08 calls it inside its transaction, after lockSentSyncState). Upsert of the whole row:
  *  on → enabled true, enabled_at = at; off → enabled false, enabled_at null; both → path, uidvalidity, last_uid,
  *  first_pass_at, last_pass_at, last_error_code null; updated_at now(). */
 export async function writeSentSwitch(trx: Transaction<DB>, ctx: TenantContext, mailboxId: string, input: { enabled: boolean; at: Date }): Promise<void>;
@@ -77,7 +77,7 @@ Each function filters by `org_id` and `mailbox_id`. Bigint values are written as
 
 **Done when.** Cases 1–9 pass.
 
-**Out of scope.** The setter's transaction, audit and delete (stage 07).
+**Out of scope.** The setter's transaction, audit and delete (stage 08).
 
 ## Step 2 — Row functions
 
@@ -164,7 +164,7 @@ The `org_id` of a new row is `ctx.orgId`. Arrays go in as `text[]` values (Kysel
 
 **Done when.** Cases 1–9 of step 2 pass, and step 1 still passes.
 
-**Out of scope.** Readers for the answered mark, summaries and health (stage 06); retention (stage 06).
+**Out of scope.** Readers for the answered mark, summaries and health (stage 07); retention (stage 07).
 
 ## Done when (stage)
 

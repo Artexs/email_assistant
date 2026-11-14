@@ -101,7 +101,7 @@ Then `bun run db:migrate` on the job DB and `bun run db:types`.
 
 **Done when.** Both directions run; `schema.ts` has `SentEmails` and `MailboxSentSync`.
 
-**Out of scope.** Any repository function (stage 02). The outbox kind (stage 09).
+**Out of scope.** Any repository function (stage 02). The outbox kind (stage 11).
 
 ## Step 2 — Schema tests and the shared test fixtures
 

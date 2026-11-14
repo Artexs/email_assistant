@@ -52,7 +52,7 @@ export async function listSentHealth(db: DbOrTrx, ctx: TenantContext): Promise<S
 
 **Done when.** Cases 1–8 pass.
 
-**Out of scope.** Any caller (stages 08 and 10; other tickets, plan § Seams).
+**Out of scope.** Any caller (stage 09 reads the summary, stage 11 the health rows; other tickets, plan § Seams).
 
 ## Step 2 — Retention
 
