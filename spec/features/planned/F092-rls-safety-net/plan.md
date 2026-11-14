@@ -197,7 +197,7 @@ limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thi
 | #   | Stage | Size | Mark |
 | --- | ----- | ---- | ---- |
 | 01  | [Policies and the catalog test](stages/stage-01-policies.md) — the migration (`app_current_org`, 19 policies, `delete_mailbox` guard), `rls-policy.test.ts` | ~330 lines | `[risky]` migration, tenant isolation |
-| 02  | [Tenant scope and the scoped driver](stages/stage-02-tenant-scope.md) — `tenant-scope.ts`, `scoped-driver.ts`, `createDb`, `runJobTick`, unit and int tests | ~330 lines | `[risky]` tenant isolation |
+| 02  | [Tenant scope and the scoped driver](stages/stage-02-tenant-scope.md) — `tenant-scope.ts`, `scoped-driver.ts`, `createDb`, `runJobTick`, unit and int tests | ~400 lines (two thirds tests) | `[risky]` tenant isolation |
 | 03  | [Web requests run in the scope](stages/stage-03-web-scope.md) — `requireTenant`, `requireOperator`, route walk, call-site test, e2e | ~250 lines | `[risky]` tenant isolation, auth |
 | 04  | [Docs and standards](stages/stage-04-docs.md) — architecture §5 and §7, code patterns, styleguide, ADR 0011 and 0027, modules, known alerts, capability page | ~90 lines | |
 
