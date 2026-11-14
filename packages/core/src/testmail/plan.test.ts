@@ -15,7 +15,7 @@ const mk = (id: string, replyTo?: string) => ({
   expected: { category: "info" as const },
   ...(replyTo === undefined ? {} : { replyTo }),
 });
-const batch: Batch = { batch: batchId, writer: "w", cases: [mk("a"), mk("b", "a"), mk("c")] };
+const batch: Batch = { batch: batchId, writer: "w", delegatesActive: false, cases: [mk("a"), mk("b", "a"), mk("c")] };
 const due: CaseState = { kind: "due" };
 const sent: CaseState = { kind: "sent", attempt: 1, messageId: "<m@x>", threadId: "t", inbox: "i", at: now };
 const open = (at: string, hash = "h1"): CaseState => ({
@@ -118,7 +118,12 @@ describe("planSends", () => {
   });
 
   test("failed root blocks a 3-level chain, each case exactly once", () => {
-    const chain: Batch = { batch: batchId, writer: "w", cases: [mk("a"), mk("b", "a"), mk("d", "b")] };
+    const chain: Batch = {
+      batch: batchId,
+      writer: "w",
+      delegatesActive: false,
+      cases: [mk("a"), mk("b", "a"), mk("d", "b")],
+    };
     const plan = run({ a: { kind: "failed", attempt: 1, code: "x" } }, {}, chain);
     expect(plan.actions).toEqual([]);
     expect(plan.skipped).toEqual([

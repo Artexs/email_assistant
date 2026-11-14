@@ -32,6 +32,7 @@ const target = {
 const batch: Batch = {
   batch: batchId,
   writer: "test",
+  delegatesActive: false,
   cases: ["a", "b"].map((id) => ({
     id,
     persona: "anna",

@@ -26,6 +26,7 @@ function makeCase(id: string, overrides: Partial<BatchCase> = {}): BatchCase {
 const batch: Batch = {
   batch: "2026-11-08-a",
   writer: "claude-sonnet-5-5",
+  delegatesActive: false,
   cases: [
     makeCase("a", { note: "secret note" }),
     makeCase("b", { persona: "peer", replyTo: "a", blind: { category: "info" } }),
@@ -82,6 +83,9 @@ describe("applyBlindLabels", () => {
 describe("blindLabelsSchema", () => {
   test("accepts valid labels", () => {
     expect(blindLabelsSchema.safeParse([{ id: "a", category: "spam" }]).success).toBe(true);
+  });
+  test("accepts the delegation label", () => {
+    expect(blindLabelsSchema.safeParse([{ id: "a", category: "delegation" }]).success).toBe(true);
   });
   test("refuses a duplicate id and an extra field", () => {
     expect(
