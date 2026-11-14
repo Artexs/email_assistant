@@ -1,22 +1,10 @@
-import { convert } from "html-to-text";
 import type { FetchMessageObject, MessageAddressObject } from "imapflow";
-import { simpleParser } from "mailparser";
 
 import { HardError } from "../../../platform/errors";
 import type { FolderMessageMeta, MessageMeta } from "../port";
 
-const BODY_TEXT_LIMIT = 100_000;
-
-// Postgres `text` rejects U+0000: one such mail would fail `insertEmail` on every run and block the cursor.
-function stripNul(value: string): string {
-  return value.replaceAll("\u0000", "");
-}
-
-function cleanOrNull(value: string | undefined): string | null {
-  if (value === undefined) return null;
-  const cleaned = stripNul(value).trim();
-  return cleaned === "" ? null : cleaned;
-}
+import { contentFromSource } from "./capture";
+import { cleanOrNull, stripNul } from "./clean";
 
 function addresses(list: MessageAddressObject[] | undefined): string[] {
   const out: string[] = [];
@@ -79,19 +67,5 @@ export function toFolderMessageMeta(msg: FetchMessageObject): FolderMessageMeta 
 
 /** Plain text of a full RFC 822 source: the text part, else the html part as text. Null on a parse error or no text. */
 export async function bodyTextFromSource(source: Buffer): Promise<string | null> {
-  let text: string;
-  try {
-    const parsed = await simpleParser(source);
-    if (parsed.text !== undefined && parsed.text.trim() !== "") {
-      text = parsed.text;
-    } else if (typeof parsed.html === "string" && parsed.html.trim() !== "") {
-      text = convert(parsed.html, { wordwrap: false });
-    } else {
-      return null;
-    }
-  } catch {
-    return null;
-  }
-  const cleaned = stripNul(text).trim();
-  return cleaned === "" ? null : cleaned.slice(0, BODY_TEXT_LIMIT);
+  return (await contentFromSource(source))?.text ?? null;
 }

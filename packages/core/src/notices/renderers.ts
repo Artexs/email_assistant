@@ -60,9 +60,12 @@ export const noticeRenderers = {
           receivedAt: view.receivedAt,
           synthetic: view.synthetic,
           folderTag: view.folderTag,
-          wouldDo: describeActions(view.actions, new Map(Object.entries(view.delegateNames)), {
-            stayFolder: view.stayFolder,
-          }),
+          wouldDo: describeActions(
+            view.actions,
+            new Map(Object.entries(view.delegateNames)),
+            { stayFolder: view.stayFolder },
+            textsFor(opts.locale)
+          ),
           now: view.now,
           timeZone: view.timeZone,
         }),

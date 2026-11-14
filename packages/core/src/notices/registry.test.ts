@@ -123,7 +123,7 @@ const cases: Case[] = [
         receivedAt,
         synthetic: false,
         folderTag: null,
-        wouldDo: describeActions(actions, names, { stayFolder: "INBOX" }),
+        wouldDo: describeActions(actions, names, { stayFolder: "INBOX" }, textTables.en),
         now,
         timeZone,
       }),

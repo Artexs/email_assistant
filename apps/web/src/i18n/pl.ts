@@ -341,6 +341,11 @@ export const pl: Record<TextKey, string> = {
   acct_this_device: "To urządzenie",
   acct_last_active: "Ostatnia aktywność: {date}",
   acct_unknown_address: "Nieznany adres",
+  acct_language_label: "Język",
+  acct_language_help: "Dla panelu, Telegrama i e-maili o koncie.",
+  acct_language_pl: "Polski",
+  acct_language_en: "English",
+  acct_language_saved: "Zapisano język.",
   // security log (Account card)
   sec_title: "Dziennik bezpieczeństwa",
   sec_help: "Logowania, blokady, zmiany hasła i zakończone sesje tej organizacji z ostatnich 90 dni.",

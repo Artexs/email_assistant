@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { textTables } from "../texts";
 import type { ActionType, MoveTarget } from "../triage/planners";
 
 import { type ActionView, describeAction, describeActions } from "./would-do";
@@ -20,6 +21,8 @@ function act(type: ActionType, status: string, folder: MoveTarget | null = null,
 
 const ANNA = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b";
 const names = new Map([[ANNA, "Anna Nowak"]]);
+const EN = textTables.en;
+const PL = textTables.pl;
 
 function draft(status: string, kind: ActionView["kind"] = "delegation", reverse = false): ActionView {
   return { ...act("create_draft", status, null, reverse), kind, delegateId: kind === "clarification" ? null : ANNA };
@@ -54,7 +57,7 @@ describe("describeActions", () => {
     ],
     ["rejected is left out", [act("flag", "rejected")], "stays in INBOX"],
   ])("%s", (_name, actions, expected) => {
-    expect(describeActions(actions)).toBe(expected);
+    expect(describeActions(actions, new Map(), {}, EN)).toBe(expected);
   });
 });
 
@@ -68,14 +71,16 @@ describe("describeActions for drafts and sends", () => {
     ["undone", "stays in INBOX"],
     ["expired", "stays in INBOX"],
   ])("draft %s", (status, expected) => {
-    expect(describeActions([draft(status)], names)).toBe(expected);
+    expect(describeActions([draft(status)], names, {}, EN)).toBe(expected);
   });
 
   test("the phrase by kind and the name fallback", () => {
-    expect(describeActions([draft("ready", "clarification")], names)).toBe("will draft a question to the sender");
-    expect(describeActions([draft("ready", "reminder")], names)).toBe("will draft a reminder to Anna Nowak");
-    expect(describeActions([draft("ready")])).toBe("will draft a delegation to a delegate");
-    expect(describeActions([draft("ready")], new Map())).toBe("will draft a delegation to a delegate");
+    expect(describeActions([draft("ready", "clarification")], names, {}, EN)).toBe(
+      "will draft a question to the sender"
+    );
+    expect(describeActions([draft("ready", "reminder")], names, {}, EN)).toBe("will draft a reminder to Anna Nowak");
+    expect(describeActions([draft("ready")], new Map(), {}, EN)).toBe("will draft a delegation to a delegate");
+    expect(describeActions([draft("ready")], new Map(), {}, EN)).toBe("will draft a delegation to a delegate");
   });
 
   test.each<[string, string]>([
@@ -88,49 +93,51 @@ describe("describeActions for drafts and sends", () => {
     ["expired", "not sent (approval expired)"],
     ["failed", "not sent (failed)"],
   ])("send %s", (status, expected) => {
-    expect(describeActions([send(status)], names)).toBe(expected);
+    expect(describeActions([send(status)], names, {}, EN)).toBe(expected);
   });
 
   test("an approved send held by the send limit says so; every other status keeps its phrase", () => {
     const held = { ...send("approved"), waiting: "send_limit" as const };
-    expect(describeAction(held, names)).toBe("approved, waiting: send limit");
-    expect(describeAction(send("approved"), names)).toBe("approved, sending");
-    expect(describeActions([draft("ready"), held], names)).toBe(
+    expect(describeAction(held, names, EN)).toBe("approved, waiting: send limit");
+    expect(describeAction(send("approved"), names, EN)).toBe("approved, sending");
+    expect(describeActions([draft("ready"), held], names, {}, EN)).toBe(
       "will draft a delegation to Anna Nowak; approved, waiting: send limit"
     );
-    expect(describeActions([act("flag", "ready"), held], names)).toBe("will flag; approved, waiting: send limit");
+    expect(describeActions([act("flag", "ready"), held], names, {}, EN)).toBe(
+      "will flag; approved, waiting: send limit"
+    );
   });
 
   test("the stay folder is named when no action applies", () => {
-    expect(describeActions([], new Map(), { stayFolder: "Wiadomości-śmieci" })).toBe("stays in Wiadomości-śmieci");
-    expect(describeActions([])).toBe("stays in INBOX");
+    expect(describeActions([], new Map(), { stayFolder: "Wiadomości-śmieci" }, EN)).toBe("stays in Wiadomości-śmieci");
+    expect(describeActions([], new Map(), {}, EN)).toBe("stays in INBOX");
   });
 
   test("a long stay folder name is cut", () => {
-    const text = describeActions([], new Map(), { stayFolder: "F".repeat(45) });
+    const text = describeActions([], new Map(), { stayFolder: "F".repeat(45) }, EN);
     expect(text.startsWith("stays in FFFF")).toBe(true);
     expect(text.length).toBeLessThan("stays in ".length + 45);
   });
 
   test("a draft and a send join with a semicolon", () => {
-    expect(describeActions([draft("ready"), send("awaiting_approval")], names)).toBe(
+    expect(describeActions([draft("ready"), send("awaiting_approval")], names, {}, EN)).toBe(
       "will draft a delegation to Anna Nowak; waits for your approval"
     );
   });
 
   test("an undone draft plus an applied send reads from the send", () => {
-    expect(describeActions([draft("undone"), send("applied")], names)).toBe("sent");
+    expect(describeActions([draft("undone"), send("applied")], names, {}, EN)).toBe("sent");
   });
 
   test("a reverse draft row is skipped", () => {
-    expect(describeActions([draft("applied"), draft("ready", "delegation", true), send("applied")], names)).toBe(
-      "done: draft a delegation to Anna Nowak; sent"
-    );
+    expect(
+      describeActions([draft("applied"), draft("ready", "delegation", true), send("applied")], names, {}, EN)
+    ).toBe("done: draft a delegation to Anna Nowak; sent");
   });
 
   test("two sends with the same phrase print it once", () => {
-    expect(describeActions([send("applied"), send("applied")], names)).toBe("sent");
-    expect(describeActions([draft("undone"), send("applied"), send("applied")], names)).toBe("sent");
+    expect(describeActions([send("applied"), send("applied")], names, {}, EN)).toBe("sent");
+    expect(describeActions([draft("undone"), send("applied"), send("applied")], names, {}, EN)).toBe("sent");
   });
 });
 
@@ -159,17 +166,69 @@ describe("describeAction", () => {
     test(`${type} matches describeActions for every status`, () => {
       for (const status of statuses) {
         const action = make(status);
-        const line = describeActions([action], names);
-        expect(describeAction(action, names)).toBe(line.startsWith("stays in") ? null : line);
+        const line = describeActions([action], names, {}, EN);
+        expect(describeAction(action, names, EN)).toBe(line.startsWith("stays in") ? null : line);
       }
     });
   }
 
   test("pinned phrases and nulls", () => {
-    expect(describeAction(act("move", "applied", "ai_notifications"))).toBe("done: move to AI/Notifications");
-    expect(describeAction(send("awaiting_approval"))).toBe("waits for your approval");
-    expect(describeAction(act("flag", "applied", null, true))).toBeNull();
-    expect(describeAction(act("save_summary", "applied"))).toBeNull();
-    expect(describeAction(draft("undone"))).toBeNull();
+    expect(describeAction(act("move", "applied", "ai_notifications"), new Map(), EN)).toBe(
+      "done: move to AI/Notifications"
+    );
+    expect(describeAction(send("awaiting_approval"), new Map(), EN)).toBe("waits for your approval");
+    expect(describeAction(act("flag", "applied", null, true), new Map(), EN)).toBeNull();
+    expect(describeAction(act("save_summary", "applied"), new Map(), EN)).toBeNull();
+    expect(describeAction(draft("undone"), new Map(), EN)).toBeNull();
+  });
+});
+
+describe("Polish action phrases", () => {
+  const jan = new Map([["d1", "Jan"]]);
+  const delegation = (status: string, delegateId: string | null): ActionView => ({
+    ...act("create_draft", status),
+    kind: "delegation",
+    delegateId,
+  });
+
+  test("a move that would happen", () => {
+    expect(describeActions([act("move", "logged", "ai_info")], jan, {}, PL)).toBe("zrobiłby: przenieść do AI/Info");
+  });
+
+  test("a move and a flag that were done use the noun form", () => {
+    expect(describeActions([act("move", "applied", "ai_info"), act("flag", "applied")], jan, {}, PL)).toBe(
+      "zrobione: przeniesienie do AI/Info, oznaczenie flagą"
+    );
+  });
+
+  test("a delegation draft names the delegate in parentheses", () => {
+    expect(describeActions([delegation("ready", "d1")], jan, {}, PL)).toBe(
+      "zrobi: przygotować szkic zlecenia (wykonawca: Jan)"
+    );
+    expect(describeActions([delegation("ready", "unknown")], jan, {}, PL)).toBe("zrobi: przygotować szkic zlecenia");
+  });
+
+  test("a send waits for approval", () => {
+    expect(describeActions([send("awaiting_approval")], names, {}, PL)).toBe("czeka na Twoje zatwierdzenie");
+  });
+
+  test("no action keeps the message in INBOX", () => {
+    expect(describeActions([], jan, {}, PL)).toBe("zostaje w INBOX");
+  });
+
+  test("a failed mark read", () => {
+    expect(describeAction(act("mark_read", "failed"), jan, PL)).toBe("nieudane: oznaczenie jako przeczytanej");
+  });
+
+  test("the other draft kinds and the send-limit wait", () => {
+    expect(describeActions([draft("applied", "clarification")], jan, {}, PL)).toBe(
+      "zrobione: szkic pytania do nadawcy"
+    );
+    expect(describeActions([{ ...draft("ready", "reminder"), delegateId: "d1" }], jan, {}, PL)).toBe(
+      "zrobi: przygotować szkic przypomnienia (wykonawca: Jan)"
+    );
+    expect(describeAction({ ...send("approved"), waiting: "send_limit" }, jan, PL)).toBe(
+      "zatwierdzone, czeka: limit wysyłki"
+    );
   });
 });
