@@ -1,4 +1,4 @@
-import { outgoingSubject, type DraftPayload, type SendResultKind } from "@ea/core";
+import { draftKinds, type DraftKind, outgoingSubject, type SendResultKind } from "@ea/core";
 
 import { type TenantContext } from "../../../platform/db";
 import {
@@ -17,7 +17,7 @@ import { type LinkedChat } from "../port";
 
 import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped, type Detector } from "./run";
 
-const SEND_KINDS: readonly DraftPayload["kind"][] = ["delegation", "clarification", "reminder"];
+const SEND_KINDS: readonly DraftKind[] = draftKinds;
 const EXPIRY_REASONS = [
   "timeout",
   "draft_missing",

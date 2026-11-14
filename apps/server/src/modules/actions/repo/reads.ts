@@ -1,4 +1,4 @@
-import { MAILBOX_ACTION_TYPES, moveTargets, type ActionView } from "@ea/core";
+import { draftKinds, MAILBOX_ACTION_TYPES, moveTargets, type ActionView } from "@ea/core";
 import { sql } from "kysely";
 import { z } from "zod";
 
@@ -39,7 +39,7 @@ export async function listSummaries(db: DbOrTrx, ctx: TenantContext, emailIds: s
   return new Map(rows.map((row) => [row.email_id, row.summary]));
 }
 const moveTargetSchema = z.enum(moveTargets);
-const sendKindSchema = z.enum(["delegation", "clarification", "reminder"]);
+const sendKindSchema = z.enum(draftKinds);
 // Oldest first per email. A row with an unknown type is left out; an unknown folder gives `null`.
 export async function listActionsForEmails(
   db: DbOrTrx,
