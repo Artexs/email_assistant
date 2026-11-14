@@ -18,7 +18,7 @@ The folder `docs/capabilities/` exists with its index and rules, a unit test che
      - `A new capability adds a page and an index row in the same change.`
      - `` `apps/server/src/capability-map.test.ts` checks the pages: the index, the headings, the "Checked against" line, every repo path, every `bun run` script and every ADR number. ``
   4. `## Page template`: the template of `plan.md` D2 as a fenced Markdown block (H1, the ``> Checked against the code at `<sha>`, YYYY-MM-DD.`` line, the seven `##` headings with one comment line each saying what goes there, from D2).
-  5. `## Pages`: a table `| Page | Capability | Main modules |` with **no rows yet** (header and separator only). Each later stage adds its rows. Under the table one line: ``Planned pages (stages 03–07 of `spec/features/active/F095-e1-close-the-mvp/`): sync, triage, actions and Undo, drafts and send, delegation, digest and notices, web panel, tenancy and plans, retention, backups.``
+  5. `## Pages`: a table `| Page | Capability | Main modules |` with **no rows yet** (header and separator only). Each later stage adds its rows. Under the table one line: `Planned pages (F095 stages 03–07): sync, triage, actions and Undo, drafts and send, delegation, digest and notices, web panel, tenancy and plans, retention, backups.` Stage 07 removes this line.
 - **Decisions:** D1, D2, P2.
 - **Test:** step 2 covers it (the README is checked like a page for paths, scripts and ADRs, not for the seven headings).
 - **Check:** `bunx prettier --check docs/capabilities/README.md`.
@@ -35,7 +35,7 @@ The folder `docs/capabilities/` exists with its index and rules, a unit test che
   const ROOT = path.resolve(import.meta.dir, "../../.."); // repo root (check: ROOT/package.json exists)
   const CAP_DIR = path.join(ROOT, "docs/capabilities");
   const SECTIONS = ["What it does now", "Rules", "Entry points", "Data", "Limits", "Decisions", "Tests"] as const;
-  const PATH_ROOTS = ["apps/", "packages/", "db/", "deploy/", "docs/", "tools/", "scripts/", "evals/", "spec/"];
+  const PATH_ROOTS = ["apps/", "packages/", "db/", "deploy/", "docs/", "tools/", "scripts/", "evals/"]; // not "spec/": ticket folders change lane
 
   function pathTokens(markdown: string): string[]; // backticked tokens that start with a PATH_ROOT; strip a trailing ":<digits>[-<digits>]" and "#…"; skip tokens with a space, "<", "*", "{" or "$"
   function scriptNames(markdown: string): string[]; // names after "bun run " (regex /bun run ([a-z0-9][a-z0-9:_-]*)/g)
@@ -49,7 +49,7 @@ The folder `docs/capabilities/` exists with its index and rules, a unit test che
 - **Decisions:** D3.
 - **Test (numbered cases, fixed values):**
   1. ``pathTokens("see `apps/server/src/main.ts:85`, `docs/x.md#a`, `apps/<m>/`, `bun run lint`, `deploy/`")`` → `["apps/server/src/main.ts", "docs/x.md", "deploy/"]`.
-  2. ``pathTokens("`apps/server/src/retention.ts:19-94`")`` → `["apps/server/src/retention.ts"]`.
+  2. ``pathTokens("`apps/server/src/retention.ts:19-94`, `spec/features/planned/F029-x/`")`` → `["apps/server/src/retention.ts"]` (a `spec/` path is not checked).
   3. ``scriptNames("run `bun run org:flag --org-id x` or bun run lint; bun run --filter x")`` → `["org:flag", "lint"]`.
   4. `adrNumbers("ADR 0014 and ADR 0027, not ADR 14")` → `["0014", "0027"]`.
   5. `indexPages("## Pages\n\n| Page | Capability | Main modules |\n| --- | --- | --- |\n| [sync.md](sync.md) | Sync | mail |\n")` → `["sync.md"]`.

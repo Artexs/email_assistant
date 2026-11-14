@@ -43,6 +43,7 @@ The last three pages, the last §8 moves, and a check that `architecture.md` has
 - **Edits:**
   1. §8 "Scheduler" bullet becomes a job list: one table `| Job | Schedule | Page |` with every `scheduler.add(...)` of `apps/server/src/main.ts` at your base (name, cron text, link to the page that describes it), plus the one-line rules that stay: "one tick never overlaps the next" and the `croner` scheduler. The detail sentences that stages 03–06 did not move yet move now to the page of the job.
   2. §8 keeps only: Scheduler (the table), Work queue, Liveness, `GET /health`, Logging, and the link lines. Any other §8 bullet that is left: move it to the page whose module owns it and name it in the final message.
+  3. `docs/capabilities/README.md`: delete the line `Planned pages (F095 stages 03–07): …` under the index table (all ten pages exist now).
 - **Check:**
   1. `awk '/^## 8\./,/^## 9\./' docs/architecture.md | grep -c "^- \*\*"` → 5 (Scheduler, Work queue, Liveness, `GET /health`, Logging), plus the link lines.
   2. `grep -c "Moved to \[docs/capabilities/" docs/architecture.md` → 14 or more.
