@@ -57,6 +57,71 @@ export interface MessageMeta {
   actionId: string | null;
 }
 
+// What the capture keeps from one mail (F100 D2). Every adapter returns this shape.
+export const CAPTURE_LIMITS = {
+  fromName: 200,
+  replyTo: 5,
+  returnPath: 320,
+  authResults: 1000,
+  listUnsubscribe: 1000,
+  listId: 300,
+  autoSubmitted: 100,
+  precedence: 50,
+  attachments: 20,
+  attachmentName: 200,
+  attachmentType: 100,
+  links: 50,
+  host: 253,
+} as const;
+
+export interface CapturedAttachment {
+  name: string | null;
+  /** Lower case, e.g. "application/pdf". */
+  type: string;
+  /** Bytes, 0 or more. */
+  size: number;
+  /** Content disposition "inline", or a related part with a content id. */
+  inline: boolean;
+}
+
+export interface CapturedLink {
+  /** Lower case, no port, no trailing dot. */
+  host: string;
+  /** The host the visible link text shows, when the text is a URL or a bare host. */
+  textHost: string | null;
+}
+
+export interface CapturedHeaders {
+  fromName: string | null;
+  /** Addresses, lower case, at most 5. */
+  replyTo: string[];
+  returnPath: string | null;
+  /** The topmost Authentication-Results value. */
+  authResults: string | null;
+  listUnsubscribe: string | null;
+  listId: string | null;
+  /** A token: lower case, `^[a-z0-9-]{1,40}$`, else "other". */
+  autoSubmitted: string | null;
+  /** The same token rule. */
+  precedence: string | null;
+  hasCalendar: boolean;
+  /** At most 20, in part order. */
+  attachments: CapturedAttachment[];
+  /** All parts, also past the 20. */
+  attachmentCount: number;
+  /** At most 50, first seen first, unique by (host, textHost). */
+  links: CapturedLink[];
+  /** Unique pairs before the cut. */
+  linkCount: number;
+  /** False: only the header block was read (attachments and links unknown). */
+  partsKnown: boolean;
+}
+
+export interface MailContent {
+  text: string | null;
+  capture: CapturedHeaders | null;
+}
+
 export interface FolderMessageMeta extends MessageMeta {
   /** IMAP flags of the message, e.g. "\\Seen", "\\Flagged". */
   flags: string[];
