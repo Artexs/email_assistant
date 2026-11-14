@@ -1,4 +1,5 @@
 import { HardError } from "../../../platform/errors";
+import { contentFromHeaderBlock, contentFromSource } from "../imap/capture";
 import {
   INBOX,
   MailFolderMissingError,
@@ -16,8 +17,6 @@ import {
 } from "../port";
 import { renderSeedMessage, type SeedMessage } from "../seed";
 import { resolveUidNext } from "../uid-next";
-
-import { contentFromHeaderBlock, contentFromSource } from "../imap/capture";
 
 import { parseRawHeaders } from "./raw";
 

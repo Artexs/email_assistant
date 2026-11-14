@@ -148,14 +148,7 @@ describe("backfillInbox", () => {
       expect(byId.get("<b4@x.test>")?.backfilled_at).toBeNull();
       expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY, lastUid: 4 });
 
-      const readOnly = [
-        "listFolders",
-        "folderStatus",
-        "fetchContent",
-        "fetchMetaIn",
-        "searchSinceIn",
-        "fetchByUidsIn",
-      ];
+      const readOnly = ["listFolders", "folderStatus", "fetchContent", "fetchMetaIn", "searchSinceIn", "fetchByUidsIn"];
       for (const call of s.fake.calls) expect(readOnly).toContain(call);
     });
   });
