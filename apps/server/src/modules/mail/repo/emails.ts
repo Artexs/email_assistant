@@ -70,7 +70,8 @@ export async function markEmailReturned(
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", emailId)
     .whereRef("folder", "<>", "source_folder");
-  if (opts.from !== undefined) query = query.where("folder", "=", opts.from.folder).where("uid", "=", opts.from.uid);
+  if (opts.from !== undefined)
+    query = query.where("folder", "=", opts.from.folder).where("uid", "=", String(opts.from.uid));
   const result = await query.executeTakeFirst();
   return result.numUpdatedRows === 1n;
 }
@@ -89,7 +90,7 @@ export async function markEmailRelocated(
     .where("id", "=", emailId)
     .whereRef("folder", "=", "source_folder")
     .where("folder", "=", change.from);
-  if (change.fromUid !== undefined) query = query.where("uid", "=", change.fromUid);
+  if (change.fromUid !== undefined) query = query.where("uid", "=", String(change.fromUid));
   const result = await query.executeTakeFirst();
   return result.numUpdatedRows === 1n;
 }
