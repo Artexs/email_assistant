@@ -57,6 +57,7 @@ export { clearCapturedHeaders, getEmailHeaders, insertEmailHeaders, type EmailHe
 export {
   getEmailFlags,
   listFlagTargets,
+  setAnsweredCheck,
   touchEmailFlags,
   writeEmailFlags,
   type EmailFlagsRow,

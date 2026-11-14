@@ -1,4 +1,5 @@
 import {
+  ANSWERED_CHECK_LIMIT,
   cutText,
   formatClock,
   formatDay,
@@ -11,6 +12,7 @@ import {
   quotaDayStart,
   renderReviewPage,
   textsFor,
+  withAnsweredCheck,
   type CoreTexts,
   type OutMessage,
 } from "@ea/core";
@@ -33,7 +35,7 @@ import { countOpenDelegations } from "../delegation";
 import { countWaiting, listMailboxes, switchMailboxStatus, type MailboxSummary, type TestMailRule } from "../mail";
 import { buildDigestMessage, digestPeriodStart, WAITING_WINDOW_MS } from "../reports";
 import { getMembership, getOrganization, isFeatureOn, isOrgSuspended } from "../tenancy";
-import { listForReview } from "../triage";
+import { ANSWERED_CHECK_WINDOW_MS, listAnsweredCandidates, listForReview } from "../triage";
 
 import { handleCallback } from "./callbacks";
 import { SYNC_LATE_MS } from "./notices";
@@ -204,7 +206,7 @@ export async function reviewMessage(deps: CommandDeps, link: LinkedChat): Promis
   const now = deps.now();
   const seed = `${link.chatId}:${now.toISOString()}`;
   const items = await listForReview(deps.db, ctx, { mailboxIds, now, seed, testMail: deps.testMail });
-  return renderReviewPage(
+  const page = renderReviewPage(
     {
       items: items.map((item) => ({
         emailId: item.emailId,
@@ -219,6 +221,14 @@ export async function reviewMessage(deps: CommandDeps, link: LinkedChat): Promis
     },
     texts
   );
+  if (!(await isFeatureOn(deps.db, ctx, "answered_check"))) return page;
+  const answered = await listAnsweredCandidates(deps.db, ctx, {
+    mailboxIds,
+    since: new Date(now.getTime() - ANSWERED_CHECK_WINDOW_MS),
+    limit: ANSWERED_CHECK_LIMIT,
+    testMail: deps.testMail,
+  });
+  return withAnsweredCheck(page, answered, { now, timeZone: organization.timezone }, texts);
 }
 
 interface StatusSwitch {

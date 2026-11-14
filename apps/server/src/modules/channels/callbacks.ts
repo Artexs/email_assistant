@@ -5,6 +5,7 @@ import {
   rightAnswer,
   cleanSubject,
   encodeCallback,
+  isAnsweredCallback,
   isFeedbackCallback,
   labelCategories,
   parseCallback,
@@ -17,6 +18,7 @@ import {
 import type { TenantContext } from "../../platform/db";
 import { getLabelTarget, recordFeedback, undoWithFeedback } from "../triage";
 
+import { handleAnsweredTap } from "./answered-taps";
 import { handleApprovalCallback, type CallbackDeps } from "./approval-taps";
 import type { CallbackResult, LinkedChat } from "./port";
 import { feedbackTap, reviewPickerMessage } from "./review-taps";
@@ -50,6 +52,8 @@ export async function handleCallback(deps: CallbackDeps, link: LinkedChat, data:
   const taps = texts.bot.taps;
   if (callback === null) return { answer: taps.invalid };
   const ctx = { orgId: link.orgId, userId: link.userId };
+  if (isAnsweredCallback(callback))
+    return handleAnsweredTap({ db: deps.db, ctx, link, now: deps.now(), texts }, callback);
   if (!isFeedbackCallback(callback)) return handleApprovalCallback(deps, link, ctx, callback, texts);
   const { tap, source } = feedbackTap(callback);
   if (tap.kind === "cancel") return { answer: "", edit: { text: taps.cancelled, buttons: [] } };

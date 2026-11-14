@@ -1,6 +1,7 @@
 import {
   formatClock,
   renderNoticeEdit,
+  type AnsweredCallback,
   type ApprovalEditOutcome,
   type Callback,
   type CoreTexts,
@@ -46,7 +47,8 @@ export interface CallbackDeps {
   sendScope: SendScope;
 }
 
-type ApprovalCallback = Exclude<Callback, FeedbackCallback>;
+// The answered check taps have their own handler (`answered-taps.ts`); `handleCallback` routes them first.
+type ApprovalCallback = Exclude<Callback, FeedbackCallback | AnsweredCallback>;
 
 function statusText(taps: CoreTexts["bot"]["taps"], status: string): string | undefined {
   const texts: Record<string, string> = {
