@@ -13,6 +13,7 @@ import {
   type ScopeInfo,
   type SecurityLog,
   type Sessions,
+  type TwoFactorStatus,
 } from "@ea/core";
 import { Hono } from "hono";
 
@@ -45,11 +46,28 @@ export interface TenancyRouteDeps {
   ) => Promise<{ available: boolean; linked: boolean; botUsername: string | null }>;
   sessions: (userId: string) => Promise<AuthSessionRow[]>; // web.ts: listUserSessions of the auth handle (L21)
   operatorContact: string | null; // the public OPERATOR_CONTACT value (D29), not a secret
+  backupCodesLeft: (userId: string) => Promise<number | null>; // web.ts: backupCodesLeft of the auth handle
   keepMode: (ctx: TenantContext, userId: string, now: Date) => Promise<void>;
 }
 
 export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
   const app = new Hono<ApiEnv>();
+
+  // The own TOTP state. A read, so a suspended organization works. The body holds a count, never a code.
+  app.get("/me/two-factor", async (c) => {
+    const ctx = c.get("ctx");
+    const { userId, twoFactorEnabled } = c.get("session");
+    const member = await getMembership(deps.db, ctx, userId);
+    const requiredBy: TwoFactorStatus["requiredBy"] = [];
+    if (c.get("web").operatorUserIds?.has(userId) === true) requiredBy.push("operator");
+    if (member?.break_glass === true) requiredBy.push("break_glass");
+    const body: TwoFactorStatus = {
+      enabled: twoFactorEnabled,
+      backupCodesLeft: twoFactorEnabled ? await deps.backupCodesLeft(userId) : null,
+      requiredBy,
+    };
+    return c.json(body);
+  });
 
   app.get("/me", async (c) => {
     const ctx = c.get("ctx");

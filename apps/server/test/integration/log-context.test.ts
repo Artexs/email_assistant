@@ -12,7 +12,7 @@ import { countMailboxes, onboardingDeps } from "../../src/web";
 
 import { createOrgWithMailbox, insertTestEmail, pauseOtherMailboxes } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
-import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
+import { as, noBackupCodes, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
 const db = testDb();
 const off = { kind: "off", reason: "env_off" } as const;
@@ -58,6 +58,7 @@ describe("log context", () => {
             countMailboxes: countMailboxes(db),
             operatorContact: null,
             sessions: async () => [],
+            backupCodesLeft: noBackupCodes,
             ...onboardingDeps(db, async () => "fake_ea_bot"),
           })
         ),

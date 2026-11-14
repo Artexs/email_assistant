@@ -40,6 +40,7 @@ import { createAuth, listUserSessions, type AuthDeps, type AuthEventKind } from 
 import { createLockoutStore } from "./platform/auth-lockout";
 import { createAuthMailer, createAuthMailTasks } from "./platform/auth-mail";
 import type { AuthMailKind } from "./platform/auth-mail-texts";
+import { backupCodesLeft } from "./platform/auth-two-factor";
 import {
   authMailSettings,
   mailAllowLocal,
@@ -255,7 +256,8 @@ export function apiRouters(
   db: Db,
   extras: WebExtras,
   now: () => Date,
-  sessions: TenancyRouteDeps["sessions"]
+  sessions: TenancyRouteDeps["sessions"],
+  backupCodes: TenancyRouteDeps["backupCodesLeft"]
 ): NonNullable<WebDeps["routers"]> {
   const scopes = scopeInfos(config);
   const allowLocalHosts = mailAllowLocal(config);
@@ -269,6 +271,7 @@ export function apiRouters(
         countMailboxes: countMailboxes(db),
         operatorContact: config.OPERATOR_CONTACT ?? null,
         sessions,
+        backupCodesLeft: backupCodes,
         ...onboardingDeps(db, extras.botUsername),
       })
     );
@@ -383,7 +386,14 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     connInfo: peerAddress,
     listMembershipsOfUser: (userId) => listMembershipsOfUser(db, userId),
     homePath: homePathOf(db, extras.botUsername),
-    routers: apiRouters(config, db, extras, now, (userId) => listUserSessions(handle, userId)),
+    routers: apiRouters(
+      config,
+      db,
+      extras,
+      now,
+      (userId) => listUserSessions(handle, userId),
+      (userId) => backupCodesLeft(handle, userId)
+    ),
     operatorUserIds: operators,
     isOrgSuspended: (orgId) => isOrgSuspended(db, { orgId }),
     resetRequestOpen: mailTasks !== null,

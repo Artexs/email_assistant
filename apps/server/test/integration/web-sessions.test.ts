@@ -9,7 +9,7 @@ import { setLogLevel } from "../../src/platform/log";
 import { auditWebEvent, onboardingDeps, termsAcceptedHandler } from "../../src/web";
 
 import { testDb } from "./helpers";
-import { as, resetBody, webOrg, webTestApp, type WebOrg } from "./web-helpers";
+import { as, noBackupCodes, resetBody, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
 const db = testDb();
 
@@ -156,6 +156,7 @@ describe("GET /api/me/sessions", () => {
             countMailboxes: async () => ({ total: 0, inAuthError: 0 }),
             operatorContact: null,
             sessions,
+            backupCodesLeft: noBackupCodes,
             ...onboardingDeps(db, null),
           })
         ),

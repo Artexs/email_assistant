@@ -16,6 +16,7 @@ export * from "./settings";
 export * from "./stats";
 export * from "./telegram";
 export * from "./terms";
+export * from "./two-factor";
 export * from "../mail/providers";
 export * from "../texts/locale";
 export { userLocales, userLocaleSchema, type UserLocale } from "../tenancy";
