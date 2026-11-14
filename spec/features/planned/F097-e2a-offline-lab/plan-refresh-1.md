@@ -84,4 +84,22 @@ No change to the outcome, the scope, the stage count, the stage order, the migra
 
 ## Review
 
-The refresh added steps (stage 01 step 4, stage 03 step 4, stage 04 step 3) and decisions D38 and D39, so a cold review runs (`plan-review-2.md`).
+The refresh added steps (stage 01 step 4, stage 03 step 4, stage 04 step 3) and decisions D38 and D39, so a cold review ran: [plan-review-2.md](plan-review-2.md), PASS, 0 blocking, 14 notes.
+
+| Finding | Change |
+| --- | --- |
+| Pre-mortem: F098 does not know `/review` | plan.md How to run 3: the F098 stage 10–11 spawn text names the review texts; D39 last sentence; outside edit for F098 in the final message. |
+| N1 `requeueTooOld`, `listUsageSince` | D1 sentence, stage 01 step 2 paragraph, step 4 page lines; Q11. |
+| N2 wrong page lines, `.env.example` comments | Stage 01 step 4: `actions-and-undo.md` rule 2 (~12), ~49, ~131; `.env.example` ~47, ~51–52. |
+| N3 D39 with only F098 stage 06 | D39 and stage 04 header split the stage 06 and stage 11 cases; test 7 follows. |
+| N4 flag count with F099 stage 12 | Stage 04 steps 1 and 3: registry order, no hard-coded count. |
+| N5 `web-operator.test.ts` case 4 | Stage 04 step 1 and F21: one more row and one more `false`; the title stays. |
+| N6 `tenancy-and-plans.md:31` | Stage 04 step 3 and F19. |
+| N7 more big files | D38: `triage/eval-judge.ts` (stage 16), the `scripts/eval.ts` rule, `config.ts` in F20; Q9. |
+| N8 `pickedText` location | F13 and stage 03: `packages/core/src/digest/answers.ts:26`. |
+| N9 shapes stage 01 changes | Stage 01 step 3: `TriageScope`, `triageScope` in `main.ts`, `getEmailMailbox`. |
+| N10 "import" in the same file; clamp | Stage 14 step 1 wording and the clamp check. |
+| N11 grep exit code | Stage 21 step 3: `! grep -q`. |
+| N12 `triage.md` rule 10 | Stage 04 step 3. |
+| N13 stages 01 and 03 large | Accepted: the page steps are a few lines; the coordinator may split stage 01 at step 3 on a timeout. |
+| N14 "keeps its signature" | Stage 13 step 1 wording. |

@@ -76,6 +76,8 @@ export function mailKindFilter(kind: MailKind, rule: TestMailRule): Expression<S
 // With rule.senders empty, the SQL is today's SQL (no IN () clause: Postgres refuses an empty IN list).
 ```
 
+Two callers are not real-label readers; each gets a fixed choice (plan D1, default Q11): `requeueTooOld` (`mail/repo/claims.ts:155-174`, the re-queue of `mailbox:backfill`, `triage/backfill.ts`) passes `NO_TEST_SENDERS`, so a backfill keeps re-queueing every mail without a synthetic Message-ID and `docs/capabilities/sync.md` rule 15 stays true (one comment line says why). `listUsageSince` (`triage/repo.ts:360-384`, `bun run triage:cost --mail real|synthetic`) takes the rule from config, so test-sender cost counts as `synthetic`; `triage.md` rule 15 says so (step 4).
+
 The repo functions take the rule in their existing `opts` object: `opts: { mail: MailKind; testMail: TestMailRule }`. The composition roots and scripts build it from config (`testMailRule(config)` or equivalent). `triage/gate.ts` (`setCategoryAutoWithGate`) gets the rule from its caller (the web route deps or the CLI); follow the type errors.
 
 **Decisions.** D1.
@@ -98,7 +100,7 @@ The repo functions take the rule in their existing `opts` object: `opts: { mail:
 
 **Goal.** `TRIAGE_LLM_SCOPE=synthetic` and `ACTIONS_SCOPE=synthetic` treat sender test mail as test mail (D1; the old F057 done-when).
 
-**Files.** `apps/server/src/modules/actions/scope.ts`, `actions/repo/filters.ts` (`MailboxClaimFilter`, `mailboxFilterExpr`), `actions/repo/claims.ts` (the expression at ~line 92), `apps/server/src/composition.ts` (`actionsScope`), `apps/server/src/main.ts`, the mail functions with `syntheticOnly` (`claimEmails` in `mail/repo/claims.ts` ~47, caller `triage/jobs.ts:121`; `listThreadContext` in `mail/repo/lookup.ts` ~15, caller `triage/service.ts:472`, which passes `isSyntheticMessageId(…)` today and passes `isTestMail(…)` after this step), the Undo path that calls `scopeAdmits` (`actions/undo.ts:43`; its `mail` object gains `fromAddress`), their tests.
+**Files.** `apps/server/src/modules/actions/scope.ts`, `actions/repo/filters.ts` (`MailboxClaimFilter`, `mailboxFilterExpr`), `actions/repo/claims.ts` (the expression at ~line 92), `apps/server/src/composition.ts` (`actionsScope`), `apps/server/src/main.ts`, the mail functions with `syntheticOnly` (`claimEmails` in `mail/repo/claims.ts` ~47, caller `triage/jobs.ts:121`; `listThreadContext` in `mail/repo/lookup.ts` ~15, caller `triage/service.ts:472`, which passes `isSyntheticMessageId(…)` today and passes `isTestMail(…)` after this step), the Undo path that calls `scopeAdmits` (`actions/undo.ts:43`; its `mail` object comes from `getEmailMailbox` in `mail/repo/emails.ts:130`, which gains `fromAddress`), `TriageScope` (`triage/jobs.ts:25`; built by `triageScope` in `main.ts:45-56`: the `synthetic` kind gains `testMail`, and `triage/service.ts:472` reads the rule from its deps), their tests.
 
 **Interfaces.**
 
@@ -130,7 +132,7 @@ The mail claim functions take `syntheticOnly: false | { testMail: TestMailRule }
 
 **Goal.** The pages say what counts as test mail now (PD-009, plan fact F19).
 
-**Files.** `docs/capabilities/triage.md`: rule 6 (`TRIAGE_LLM_SCOPE` `synthetic` = a synthetic Message-ID or a sender in `TEST_SENDER_ADDRESSES`), rule 13 (real labels leave out test-sender mail) and rule 15 (`triage:label --synthetic`). `docs/capabilities/actions-and-undo.md`: the `ACTIONS_SCOPE` `synthetic` lines (the claim and the Undo `held` answer, ~lines 49 and 131). One sentence each; keep the "Checked against" line.
+**Files.** `docs/capabilities/triage.md`: rule 6 (`TRIAGE_LLM_SCOPE` `synthetic` = a synthetic Message-ID or a sender in `TEST_SENDER_ADDRESSES`), rule 13 (real labels leave out test-sender mail) and rule 15 (`triage:label --synthetic` and `triage:cost --mail` count test-sender mail as `synthetic`). `docs/capabilities/sync.md` does not change (backfill keeps today's SQL). `docs/capabilities/actions-and-undo.md`: rule 2 (line ~12, "`synthetic` claims mail with a synthetic `Message-ID` only") and the Undo `held` lines (~49 and ~131). `.env.example`: the `TRIAGE_LLM_SCOPE` and `ACTIONS_SCOPE` comments (~lines 47 and 51–52, "(@ea-seed.test Message-IDs)") gain "or a sender in `TEST_SENDER_ADDRESSES`". One sentence each; keep the "Checked against" line.
 
 **Check.** `bun test apps/server/src/capability-map.test.ts && bunx prettier --check docs/capabilities/triage.md docs/capabilities/actions-and-undo.md`
 

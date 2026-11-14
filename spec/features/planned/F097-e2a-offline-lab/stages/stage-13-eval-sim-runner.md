@@ -10,7 +10,7 @@ Shared file: `apps/server/src/scripts/eval.ts` was changed by stage 01 (`runReal
 
 **Goal.** `runEval` runs cases in parallel with the same results and stops on errors or budget (D22, D26).
 
-**Files.** `apps/server/src/modules/triage/eval.ts`, `eval.test.ts`, `apps/server/src/modules/triage/eval-pool.ts` (new). `eval.ts` is 557 lines (over the 400-line rule, plan fact F20, D38): the pool, the start rule and the stop rules go into `eval-pool.ts`; `runEval` in `eval.ts` keeps its signature and calls the pool. The tests below stay in `eval.test.ts` and go through `runEval`.
+**Files.** `apps/server/src/modules/triage/eval.ts`, `eval.test.ts`, `apps/server/src/modules/triage/eval-pool.ts` (new). `eval.ts` is 557 lines (over the 400-line rule, plan fact F20, D38): the pool, the start rule and the stop rules go into `eval-pool.ts`; `runEval` stays in `eval.ts` (its input gains the two optional fields below) and calls the pool. The tests below stay in `eval.test.ts` and go through `runEval`.
 
 **Interfaces.**
 

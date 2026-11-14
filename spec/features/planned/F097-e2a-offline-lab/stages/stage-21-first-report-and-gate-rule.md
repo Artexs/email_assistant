@@ -65,7 +65,7 @@ Text to use (adapt the sentence form to each file):
 
 **Decisions.** D29, P3, P10.
 
-**Check.** `bunx prettier --check docs/code-patterns.md .agents/limen/styleguide.md evals/README.md docs/capabilities/triage.md && bun test apps/server/src/capability-map.test.ts && grep -c "go/no-go" docs/code-patterns.md .agents/limen/styleguide.md` (the grep prints `0` for both files).
+**Check.** `bunx prettier --check docs/code-patterns.md .agents/limen/styleguide.md evals/README.md docs/capabilities/triage.md && bun test apps/server/src/capability-map.test.ts && ! grep -q "go/no-go" docs/code-patterns.md .agents/limen/styleguide.md` (exit 0 when no "go/no-go" is left).
 
 **Done when.** The five files carry the rule; no "go/no-go" sentence is left.
 

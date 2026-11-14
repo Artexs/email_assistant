@@ -10,7 +10,7 @@ After this stage a sim report shows everything the epic asks (P5, P9, D23–D28,
 
 **Files.** `packages/core/src/triage/metrics.ts`, `metrics.test.ts`.
 
-First run `grep -n "export function wilsonInterval" packages/core/src/triage/metrics.ts`. If it exists (F100 stage 08 may land first with the same contract, plan fact F13), do not add a second one: import it, check that it matches the signature below, and keep test 1 below (add only the cases its test lacks). A different signature is a question in your final message.
+First run `grep -n "export function wilsonInterval" packages/core/src/triage/metrics.ts`. If it exists (F100 stage 08 may land first with the same contract, plan fact F13), do not add a second one: keep it in `metrics.ts`, check that it matches the signature below and that it clamps both bounds to [0, 1] (F100 stage 08 asks for the clamp; add it to the comment below), and keep test 1 below (add only the cases its test lacks). A different signature is a question in your final message.
 
 **Interfaces.**
 
