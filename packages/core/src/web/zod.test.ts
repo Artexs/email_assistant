@@ -10,7 +10,7 @@ describe("web zod", () => {
   });
 
   test("index exports formatClock", () => {
-    expect(formatClock(new Date("2026-11-08T13:03:00Z"), "Europe/Warsaw", new Date("2026-11-08T18:00:00Z"))).toBe(
+    expect(formatClock(new Date("2026-11-08T13:03:00Z"), "Europe/Warsaw", new Date("2026-11-08T18:00:00Z"), "en")).toBe(
       "14:03"
     );
   });

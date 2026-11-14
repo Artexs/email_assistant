@@ -46,19 +46,36 @@ describe("formatClock and formatDay", () => {
   const now = new Date("2026-11-06T07:00:00Z");
 
   test("same local date: HH:MM", () => {
-    expect(formatClock(new Date("2026-11-06T06:55:00Z"), TZ, now)).toBe("07:55");
+    expect(formatClock(new Date("2026-11-06T06:55:00Z"), TZ, now, "en")).toBe("07:55");
   });
 
   test("same year: D Mon HH:MM", () => {
-    expect(formatClock(new Date("2026-11-04T22:55:00Z"), TZ, now)).toBe("4 Nov 23:55");
+    expect(formatClock(new Date("2026-11-04T22:55:00Z"), TZ, now, "en")).toBe("4 Nov 23:55");
   });
 
   test("other year: D Mon YYYY HH:MM", () => {
-    expect(formatClock(new Date("2025-12-31T10:00:00Z"), TZ, now)).toBe("31 Dec 2025 11:00");
+    expect(formatClock(new Date("2025-12-31T10:00:00Z"), TZ, now, "en")).toBe("31 Dec 2025 11:00");
   });
 
   test("formatDay", () => {
-    expect(formatDay(now, TZ)).toBe("Fri 6 Nov");
+    expect(formatDay(now, TZ, "en")).toBe("Fri 6 Nov");
+  });
+});
+
+describe("formatClock and formatDay in Polish and English", () => {
+  const warsaw = "Europe/Warsaw";
+  const now = new Date("2026-11-14T11:00:00Z");
+
+  test("pl", () => {
+    expect(formatClock(new Date("2026-11-14T11:30:00Z"), warsaw, now, "pl")).toBe("12:30");
+    expect(formatClock(new Date("2026-11-13T11:30:00Z"), warsaw, now, "pl")).toBe("13 lis 12:30");
+    expect(formatClock(new Date("2025-11-13T11:30:00Z"), warsaw, now, "pl")).toBe("13 lis 2025 12:30");
+    expect(formatDay(new Date("2026-11-14T11:30:00Z"), warsaw, "pl")).toBe("sob. 14 lis");
+  });
+
+  test("en", () => {
+    expect(formatClock(new Date("2026-11-13T11:30:00Z"), warsaw, now, "en")).toBe("13 Nov 12:30");
+    expect(formatDay(new Date("2026-11-14T11:30:00Z"), warsaw, "en")).toBe("Sat 14 Nov");
   });
 });
 

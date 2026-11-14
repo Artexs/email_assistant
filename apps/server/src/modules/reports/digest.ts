@@ -1,5 +1,6 @@
 import {
   aiTextFor,
+  textTables,
   describeActions,
   isUndoable,
   mailboxModes,
@@ -107,15 +108,19 @@ export async function buildDigestMessage(db: Db, ctx: TenantContext, request: Di
     receivedAt: row.received_at,
     synthetic: isSyntheticMessageId(row.message_id_header),
     folderTag: row.source_folder === INBOX ? null : row.source_folder,
-    aiText: aiTextFor({
-      category: row.category,
-      reasonCode: row.reason_code,
-      reason: row.reason,
-      summary: summaries.get(row.email_id) ?? null,
-      modelCategory: row.model_category,
-      confidence: row.confidence,
-      task: tasks.get(row.email_id) ?? null,
-    }),
+    // The next stage of the Polish UI plan passes the texts of the row.
+    aiText: aiTextFor(
+      {
+        category: row.category,
+        reasonCode: row.reason_code,
+        reason: row.reason,
+        summary: summaries.get(row.email_id) ?? null,
+        modelCategory: row.model_category,
+        confidence: row.confidence,
+        task: tasks.get(row.email_id) ?? null,
+      },
+      textTables.en
+    ),
     wouldDo: describeActions(actions.get(row.email_id) ?? [], names, { stayFolder: row.folder }),
     undoable: isUndoable(actions.get(row.email_id) ?? [], request.now),
   }));

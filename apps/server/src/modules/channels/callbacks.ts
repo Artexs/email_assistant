@@ -1,5 +1,4 @@
 import {
-  UNDO_TEXTS as SHARED_UNDO_TEXTS,
   categoryTag,
   pickAnswer,
   pickedText,
@@ -11,9 +10,11 @@ import {
   parseCallback,
   formatClock,
   renderNoticeEdit,
+  textsFor,
   type ApprovalEditOutcome,
   type Callback,
   type Category,
+  type CoreTexts,
   type FeedbackCallback,
   type OutMessage,
 } from "@ea/core";
@@ -55,8 +56,6 @@ export interface CallbackDeps {
   uidplus(ctx: TenantContext, mailboxId: string): Promise<boolean>;
   sendScope: SendScope;
 }
-
-export const UNDO_TEXTS: Record<Exclude<UndoResult["kind"], "not_found">, string> = SHARED_UNDO_TEXTS;
 
 export const APPROVAL_TEXTS = {
   owner_only: "Only an owner can approve or reject a send.",
@@ -102,13 +101,18 @@ export const APPROVAL_TEXTS = {
 
 const NOT_FOUND_TEXT = APPROVAL_TEXTS.not_found;
 
-export function pickerMessage(emailId: string, subject: string | null, current: Category): OutMessage {
+export function pickerMessage(
+  emailId: string,
+  subject: string | null,
+  current: Category,
+  texts: CoreTexts
+): OutMessage {
   const pick = (category: (typeof labelCategories)[number]) => ({
-    text: categoryTag(category),
+    text: categoryTag(category, texts),
     data: encodeCallback({ kind: "pick", category, emailId }),
   });
   return {
-    text: `✏️ Pick the right category\n${cleanSubject(subject)}\nAI said: ${categoryTag(current)}`,
+    text: `✏️ Pick the right category\n${cleanSubject(subject)}\nAI said: ${categoryTag(current, texts)}`,
     buttons: [
       [pick("urgent"), pick("needs_reply")],
       [pick("info"), pick("notification")],
@@ -122,7 +126,8 @@ export async function handleCallback(deps: CallbackDeps, link: LinkedChat, data:
   const callback = parseCallback(data);
   if (callback === null) return { answer: "This button is not valid any more." };
   const ctx = { orgId: link.orgId, userId: link.userId };
-  if (!isFeedbackCallback(callback)) return handleApprovalCallback(deps, link, ctx, callback);
+  const texts = textsFor(link.locale);
+  if (!isFeedbackCallback(callback)) return handleApprovalCallback(deps, link, ctx, callback, texts);
   if (callback.kind === "cancel") {
     return { answer: "", edit: { text: "✏️ Cancelled.", buttons: [] } };
   }
@@ -132,14 +137,14 @@ export async function handleCallback(deps: CallbackDeps, link: LinkedChat, data:
       userId: link.userId,
       scope: deps.actionsScope,
     });
-    return { answer: result.kind === "not_found" ? NOT_FOUND_TEXT : UNDO_TEXTS[result.kind] };
+    return { answer: result.kind === "not_found" ? NOT_FOUND_TEXT : texts.answers.undo[result.kind] };
   }
   const target = await getLabelTarget(deps.db, ctx, callback.emailId);
   if (!target) {
     return { answer: NOT_FOUND_TEXT };
   }
   if (callback.kind === "edit") {
-    return { answer: "", send: pickerMessage(callback.emailId, target.subject, target.category) };
+    return { answer: "", send: pickerMessage(callback.emailId, target.subject, target.category, texts) };
   }
   const saved = await recordFeedback(deps.db, ctx, {
     emailId: callback.emailId,
@@ -149,11 +154,11 @@ export async function handleCallback(deps: CallbackDeps, link: LinkedChat, data:
     skipIfSame: true,
   });
   if (callback.kind === "right") {
-    return { answer: rightAnswer(saved.saved, callback.category) };
+    return { answer: rightAnswer(saved.saved, callback.category, texts) };
   }
   return {
-    answer: pickAnswer(saved.saved),
-    edit: { text: pickedText(callback.category, target.category, saved.saved), buttons: [] },
+    answer: pickAnswer(saved.saved, texts),
+    edit: { text: pickedText(callback.category, target.category, saved.saved, texts), buttons: [] },
   };
 }
 
@@ -178,7 +183,8 @@ async function handleApprovalCallback(
   deps: CallbackDeps,
   link: LinkedChat,
   ctx: TenantContext,
-  callback: ApprovalCallback
+  callback: ApprovalCallback,
+  texts: CoreTexts
 ): Promise<CallbackResult> {
   if (callback.kind !== "delegation_done" && link.role !== "owner") return { answer: APPROVAL_TEXTS.owner_only };
   const now = deps.now();
@@ -224,7 +230,7 @@ async function handleApprovalCallback(
           };
         }
         case "already_approved":
-          return { answer: APPROVAL_TEXTS.already_approved(formatClock(result.at, timeZone, now)) };
+          return { answer: APPROVAL_TEXTS.already_approved(formatClock(result.at, timeZone, now, texts.locale)) };
         case "expired":
           // Only the tap that expired the row edits the message; a later tap on an expired row only answers.
           return {

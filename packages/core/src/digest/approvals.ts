@@ -169,7 +169,8 @@ export function renderApprovalSetRequest(input: { setId: string; items: SetItem[
   const render = (level: (typeof SET_LEVELS)[number]): string => {
     const lines = [items.length === 1 ? "📤 Send 1 reminder?" : `📤 Send ${items.length} reminders?`, ""];
     for (const item of items) {
-      const due = item.dueAt === null ? "" : `due ${formatDay(item.dueAt, timeZone)}, `;
+      // The next stage of the Polish UI plan passes the texts of the row.
+      const due = item.dueAt === null ? "" : `due ${formatDay(item.dueAt, timeZone, "en")}, `;
       const who = `${cutText(item.delegateName, level.name)} ${cutText(item.address, FIELD_MAX_CHARS)}`;
       lines.push(
         `${item.n}. ${who} — ${cutLinks(item.subject ?? "", level.subject)} (${due}reminder ${item.reminder} of 2)`,
@@ -359,7 +360,8 @@ export function renderDelegationAnswered(input: {
   synthetic: boolean;
 }): OutMessage {
   const title = `📩 ${cutText(input.delegateName, FIELD_MAX_CHARS)} answered · ${cleanSubject(input.subject)}`;
-  const received = formatClock(input.receivedAt, input.timeZone, input.now);
+  // The next stage of the Polish UI plan passes the texts of the row.
+  const received = formatClock(input.receivedAt, input.timeZone, input.now, "en");
   return {
     text: [
       input.synthetic ? `${title} · 🧪 test` : title,

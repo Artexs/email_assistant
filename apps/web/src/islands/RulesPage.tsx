@@ -9,7 +9,7 @@ import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Skeleton } from "../components/ui/skeleton";
-import { t, useLocale } from "../i18n";
+import { getLocale, t, useLocale } from "../i18n";
 import { api } from "../lib/api";
 import { canWrite } from "../lib/can-write";
 import { groupRules, ruleKindOrder, rulesPath } from "../lib/rules-view";
@@ -77,7 +77,7 @@ function RulesBody({ filter, mailboxes, isOwner, isOwnerRole, timeZone, reloadMe
     <>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          {lastLoad !== null && t("updated_at", { time: formatClock(lastLoad, timeZone, now) })}
+          {lastLoad !== null && t("updated_at", { time: formatClock(lastLoad, timeZone, now, getLocale()) })}
         </p>
         <Button variant="outline" onClick={reload}>
           {t("refresh")}

@@ -6,7 +6,7 @@ import { ActivityList, ActivitySkeleton } from "../components/activity/ActivityL
 import { AppShell } from "../components/shell/AppShell";
 import { useMe } from "../components/shell/MeProvider";
 import { Button } from "../components/ui/button";
-import { t, useLocale } from "../i18n";
+import { getLocale, t, useLocale } from "../i18n";
 import { filtersFromSearch, filtersToSearch, type ActivityFilters } from "../lib/activity-filters";
 import { api } from "../lib/api";
 import { useNow } from "../lib/use-now";
@@ -50,7 +50,7 @@ function Activity() {
         <ActivityFilterBar filters={effective} mailboxes={list} onChange={onChange} />
         <div className="flex items-center gap-2">
           <p className="text-sm text-muted-foreground">
-            {lastLoad !== null && t("updated_at", { time: formatClock(lastLoad, timeZone, now) })}
+            {lastLoad !== null && t("updated_at", { time: formatClock(lastLoad, timeZone, now, getLocale()) })}
           </p>
           <Button variant="outline" onClick={() => setRefreshSignal((n) => n + 1)}>
             {t("refresh")}

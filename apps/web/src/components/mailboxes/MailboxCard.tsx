@@ -2,7 +2,7 @@ import { formatClock, mailboxViewSchema, type MailboxView } from "@ea/core/web";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { t } from "../../i18n";
+import { getLocale, t } from "../../i18n";
 import { api } from "../../lib/api";
 import { errorText } from "../../lib/errors";
 import { Alert, AlertDescription } from "../ui/alert";
@@ -55,7 +55,7 @@ export function MailboxCard({ mailbox, isOwner, timeZone, now, onChanged }: Mail
           <p>
             {mailbox.lastSyncedAt === null
               ? t("mb_never_synced")
-              : t("mb_last_sync", { time: formatClock(new Date(mailbox.lastSyncedAt), timeZone, now) })}
+              : t("mb_last_sync", { time: formatClock(new Date(mailbox.lastSyncedAt), timeZone, now, getLocale()) })}
           </p>
           <p>{t(mailbox.mode === null ? "mb_mode_none" : modeTexts[mailbox.mode])}</p>
         </div>

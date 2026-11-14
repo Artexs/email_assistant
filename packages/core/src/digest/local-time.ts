@@ -1,6 +1,9 @@
 // Time zone helpers for the digest schedule, the quiet hours and the "HH:MM" texts. Pure: no I/O.
+import type { UserLocale } from "../tenancy";
+import { clockTexts } from "../texts/clock";
+
+// `localParts` parses the `en-US` short weekday with this list. The display uses `clockTexts`.
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export interface LocalDateTime {
   date: string; // YYYY-MM-DD
@@ -104,18 +107,19 @@ export function localToInstant(date: string, time: string, timeZone: string): Da
   return new Date(firstOffset === naiveOffset ? first : naive - firstOffset);
 }
 
-export function formatClock(at: Date, timeZone: string, now: Date): string {
+export function formatClock(at: Date, timeZone: string, now: Date, locale: UserLocale): string {
   const local = localParts(at, timeZone);
   const today = localParts(now, timeZone);
   const clock = `${pad(local.hour)}:${pad(local.minute)}`;
   if (dateText(local.year, local.month, local.day) === dateText(today.year, today.month, today.day)) return clock;
-  const dayMonth = `${local.day} ${MONTHS[local.month - 1]}`;
+  const dayMonth = `${local.day} ${clockTexts[locale].months[local.month - 1]}`;
   return local.year === today.year ? `${dayMonth} ${clock}` : `${dayMonth} ${local.year} ${clock}`;
 }
 
-export function formatDay(at: Date, timeZone: string): string {
+export function formatDay(at: Date, timeZone: string, locale: UserLocale): string {
   const local = localParts(at, timeZone);
-  return `${WEEKDAYS[local.weekday]} ${local.day} ${MONTHS[local.month - 1]}`;
+  const { months, weekdays } = clockTexts[locale];
+  return `${weekdays[local.weekday]} ${local.day} ${months[local.month - 1]}`;
 }
 
 export function isQuietTime(at: Date, timeZone: string, quiet: QuietHours = QUIET_HOURS): boolean {

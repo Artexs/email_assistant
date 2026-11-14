@@ -36,7 +36,8 @@ export function renderUrgentNotice(input: {
     `Subject: ${cleanSubject(input.subject)}`,
   ];
   if (input.aiText !== null) lines.push(`💬 ${cutText(input.aiText, 200)}`);
-  lines.push(`Received ${formatClock(input.receivedAt, input.timeZone, input.now)}`, `→ ${input.wouldDo}`);
+  // The next stage of the Polish UI plan passes the texts of the row.
+  lines.push(`Received ${formatClock(input.receivedAt, input.timeZone, input.now, "en")}`, `→ ${input.wouldDo}`);
   return {
     text: lines.join("\n"),
     buttons: [feedbackButtons(input.emailId, "urgent", { right: "✅ Right", edit: "✏️ Change" })],
@@ -50,7 +51,8 @@ export function renderAuthErrorNotice(input: {
   now: Date;
   timeZone: string;
 }): OutMessage {
-  const since = formatClock(input.since, input.timeZone, input.now);
+  // The next stage of the Polish UI plan passes the texts of the row.
+  const since = formatClock(input.since, input.timeZone, input.now, "en");
   return {
     text: [
       `❌ Login to ${cutText(input.address, 60)} failed at ${since}.`,
@@ -92,7 +94,8 @@ export function renderSyncStaleNotice(input: {
   now: Date;
   timeZone: string;
 }): OutMessage {
-  const last = input.lastSyncedAt === null ? "never" : formatClock(input.lastSyncedAt, input.timeZone, input.now);
+  // The next stage of the Polish UI plan passes the texts of the row.
+  const last = input.lastSyncedAt === null ? "never" : formatClock(input.lastSyncedAt, input.timeZone, input.now, "en");
   return {
     text: [
       `⚠️ Mail sync is late for ${cutText(input.address, 60)}.`,
@@ -109,7 +112,8 @@ export function renderSyncOkNotice(input: {
   now: Date;
   timeZone: string;
 }): OutMessage {
-  const last = formatClock(input.lastSyncedAt, input.timeZone, input.now);
+  // The next stage of the Polish UI plan passes the texts of the row.
+  const last = formatClock(input.lastSyncedAt, input.timeZone, input.now, "en");
   return { text: `✅ Mail sync works again for ${cutText(input.address, 60)}. Last sync ${last}.`, buttons: [] };
 }
 

@@ -85,10 +85,11 @@ export async function statusMessage(deps: CommandDeps, link: LinkedChat): Promis
   const organization = await getOrganization(db, ctx);
   if (organization === undefined) throw new HardError("organization not found");
   const timeZone = organization.timezone;
-  const clock = (at: Date): string => formatClock(at, timeZone, now);
+  // Stage 11 of the Polish UI plan moves /status to the texts.
+  const clock = (at: Date): string => formatClock(at, timeZone, now, "en");
 
   const dayStart = quotaDayStart(now, QUOTA_TIMEZONE);
-  const lines = [`📊 Status · ${formatDay(now, timeZone)} ${localDateTime(now, timeZone).time}`];
+  const lines = [`📊 Status · ${formatDay(now, timeZone, "en")} ${localDateTime(now, timeZone).time}`];
 
   const mailboxes = await listMailboxes(db, ctx);
   if (mailboxes.length === 0) lines.push("No mailbox connected.");
