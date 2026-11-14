@@ -33,29 +33,33 @@ const categoryGroups: Record<ValueCategory, readonly SimPersonaGroup[]> = {
   spam: ["marketing", "spammer", "phishing"],
 };
 // An urgent mail whose urgency comes from the profile context: any person writes it.
-const contextGroups: readonly SimPersonaGroup[] = ["boss", "team", "client", "partner", "vendor"];
-const personGroups: readonly SimPersonaGroup[] = ["boss", "team", "delegate", "client", "partner", "vendor"];
+const contextGroups: readonly SimPersonaGroup[] = ["boss", "team", "delegate", "client", "partner", "vendor"];
+export const personGroups: readonly SimPersonaGroup[] = ["boss", "team", "delegate", "client", "partner", "vendor"];
 const listGroups: readonly SimPersonaGroup[] = ["newsletter", "marketing"];
 const noGreetingGroups: readonly SimPersonaGroup[] = ["system", "newsletter", "marketing", "spammer", "phishing"];
 
 const urgencyWeights = [0.5, 0.25, 0.25];
 const urgencyOrder: readonly UrgencySource[] = ["text", "vip", "context"];
 
-interface Planned {
+export interface Planned {
   id: string;
   category: ValueCategory;
   rule?: HardCaseRule;
+  // A planned reply fixes its sender and topic.
+  persona?: string;
+  topic?: string;
 }
 
-interface Env {
+export interface Env {
   scenario: Scenario;
   spec: PlanSpec;
   part: SimPart;
   persons: Map<string, SimPersona>;
-  histories: Map<string, SenderHistory>;
+  // The bank gives each slot the history of its sender; the week keeps the histories in its own file.
+  histories?: Map<string, SenderHistory>;
 }
 
-interface GroupDraws {
+export interface GroupDraws {
   langs: SimLang[];
   lengths: Slot["style"]["length"][];
   formats: Slot["style"]["format"][];
@@ -64,9 +68,9 @@ interface GroupDraws {
   sources: (UrgencySource | undefined)[];
 }
 
-const pad = (n: number, width: number): string => String(n).padStart(width, "0");
+export const pad = (n: number, width: number): string => String(n).padStart(width, "0");
 
-function personaOf(env: Env, key: string): SimPersona {
+export function personaOf(env: Env, key: string): SimPersona {
   const found = env.persons.get(key);
   if (!found) throw new Error(`unknown persona: ${key}`);
   return found;
@@ -84,7 +88,7 @@ function pickSender(rng: Rng, scenario: Scenario, groups: readonly SimPersonaGro
   return rng.pick(sameLang.length > 0 ? sameLang : pool);
 }
 
-function greetingOf(persona: SimPersona, rng: Rng): Slot["style"]["greeting"] {
+export function greetingOf(persona: SimPersona, rng: Rng): Slot["style"]["greeting"] {
   if (noGreetingGroups.includes(persona.group)) return "none";
   if (persona.group === "team" || persona.group === "delegate") return "informal";
   if (persona.group === "boss") return rng.next() < 0.5 ? "formal" : "informal";
@@ -101,25 +105,37 @@ function listHeaders(persona: SimPersona, rng: Rng): Record<string, string> {
   };
 }
 
-function groupDraws(scenario: Scenario, spec: PlanSpec, plans: readonly Planned[], rng: Rng): GroupDraws {
+// `n` items in the shares of `weights`. A group smaller than the bucket count cannot hold the shares,
+// so each item is a seeded weighted draw: the groups of one item still vary in style.
+function drawShares<T>(rng: Rng, items: readonly T[], weights: readonly number[], n: number): T[] {
+  if (n >= items.length) return quota(rng, items, weights, n);
+  const sum = weights.reduce((a, b) => a + b, 0);
+  return Array.from({ length: n }, () => {
+    let left = rng.next() * sum;
+    const at = weights.findIndex((weight) => (left -= weight) < 0);
+    return items[at >= 0 ? at : items.length - 1] as T;
+  });
+}
+
+export function groupDraws(scenario: Scenario, spec: PlanSpec, plans: readonly Planned[], rng: Rng): GroupDraws {
   const n = plans.length;
   const { langShare, threadShare } = spec.bank;
   const rule = plans[0]?.rule;
   const langs: SimLang[] = rule?.lang
     ? Array.from({ length: n }, () => rule.lang as SimLang)
-    : quota(rng, ["pl", "en"] as const, [langShare.pl, langShare.en], n);
+    : drawShares(rng, ["pl", "en"] as const, [langShare.pl, langShare.en], n);
   const urgentCount = plans.filter((p) => p.category === "urgent").length;
   const urgent: UrgencySource[] =
     rule?.id === "urgent_no_keyword"
       ? Array.from({ length: urgentCount }, () => "text" as const)
-      : quota(rng, urgencyOrder, urgencyWeights, urgentCount);
+      : drawShares(rng, urgencyOrder, urgencyWeights, urgentCount);
   const sources = plans.map((p) => (p.category === "urgent" ? urgent.shift() : undefined));
   return {
     langs,
-    lengths: quota(rng, ["short", "medium", "long"] as const, [0.3, 0.5, 0.2], n),
-    formats: quota(rng, ["html", "plain"] as const, [0.15, 0.85], n),
-    signatures: quota(rng, [true, false], [0.7, 0.3], n),
-    threads: quota(rng, [true, false], [threadShare, 1 - threadShare], n),
+    lengths: drawShares(rng, ["short", "medium", "long"] as const, [0.3, 0.5, 0.2], n),
+    formats: drawShares(rng, ["html", "plain"] as const, [0.15, 0.85], n),
+    signatures: drawShares(rng, [true, false], [0.7, 0.3], n),
+    threads: drawShares(rng, [true, false], [threadShare, 1 - threadShare], n),
     sources,
   };
 }
@@ -157,17 +173,19 @@ function threadFor(env: Env, rng: Rng, persona: SimPersona, label: string): Slot
   return entries;
 }
 
-interface ContextState {
+export interface ContextState {
   next: number;
 }
 
-function buildSlot(
+// `at` is the time of the mail when the caller plans the clock (the week); the bank draws its own.
+export function buildSlot(
   env: Env,
   plan: Planned,
   index: number,
   draws: GroupDraws,
   rng: Rng,
-  context: ContextState
+  context: ContextState,
+  at?: string
 ): Omit<Slot, "batch"> {
   const { scenario, part } = env;
   const { category, rule } = plan;
@@ -179,7 +197,9 @@ function buildSlot(
   let label: string;
   let due: string | undefined;
   let topicKey: string | undefined;
-  if (urgencySource === "vip") {
+  if (plan.persona !== undefined) {
+    persona = personaOf(env, plan.persona);
+  } else if (urgencySource === "vip") {
     const vips = scenario.urgency.vip.map((key) => personaOf(env, key));
     if (vips.length === 0) throw new Error("the scenario has no VIP persona for the vip urgency source");
     const sameLang = vips.filter((p) => p.lang === lang);
@@ -202,7 +222,8 @@ function buildSlot(
     if (!wantTopic) due = deadlines[at]?.due;
   } else {
     const mine = scenario.topics.filter((t) => t.personas.includes(persona.key));
-    const topic = rng.pick(mine.length > 0 ? mine : scenario.topics);
+    const topic =
+      scenario.topics.find((t) => t.key === plan.topic) ?? rng.pick(mine.length > 0 ? mine : scenario.topics);
     topicKey = topic.key;
     label = topic.label;
   }
@@ -264,20 +285,22 @@ function buildSlot(
     };
   }
 
-  const historyKey = final.key;
-  let senderHistory = env.histories.get(historyKey);
-  if (!senderHistory) {
-    const historyRng = createRng(deriveSeed(env.spec.seed, `${part}:history:${final.key}`));
-    senderHistory = senderHistoryFor(final, scenario, historyRng, HISTORY_DAYS);
-    env.histories.set(historyKey, senderHistory);
+  let senderHistory: SenderHistory | undefined;
+  if (env.histories) {
+    senderHistory = env.histories.get(final.key);
+    if (!senderHistory) {
+      const historyRng = createRng(deriveSeed(env.spec.seed, `${part}:history:${final.key}`));
+      senderHistory = senderHistoryFor(final, scenario, historyRng, HISTORY_DAYS);
+      env.histories.set(final.key, senderHistory);
+    }
   }
 
   return {
     ...draft,
     id: plan.id,
     part,
-    receivedAt: receivedAt(scenario, rng, due),
-    senderHistory,
+    receivedAt: at ?? receivedAt(scenario, rng, due),
+    ...(senderHistory === undefined ? {} : { senderHistory }),
   };
 }
 

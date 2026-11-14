@@ -1,3 +1,4 @@
+import type { WeekSpec } from "./plan-spec";
 import type { Scenario, SimPersona } from "./scenario";
 
 function persona(key: string, group: SimPersona["group"], lang: SimPersona["lang"], host: string): SimPersona {
@@ -62,4 +63,18 @@ export const miniScenario: Scenario = {
     { key: "audyt", label: "Audyt roczny", personas: ["kasia"] },
     { key: "systemy", label: "Powiadomienia systemowe", personas: ["system-f"] },
   ],
+};
+
+// The week numbers of lab-01 (the real plan file is evals/sim/<id>/plan.json).
+export const defaultWeekSpec: WeekSpec = {
+  weekdayMails: 150,
+  weekendMails: 40,
+  mix: { notification: 0.35, spam: 0.2, info: 0.2, needs_reply: 0.13, delegation: 0.07, urgent: 0.05 },
+  langShare: { pl: 0.7, en: 0.3 },
+  replyShare: 0.3,
+  maxThreadDepth: 5,
+  sentThreadsPerWeekday: 3,
+  offHoursShare: 0.05,
+  behaviour: { done: 0.4, late: 0.2, out_of_office: 0.15, other_address: 0.1, silent: 0.15 },
+  historyDays: 30,
 };

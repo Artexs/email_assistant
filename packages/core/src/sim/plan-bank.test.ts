@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { localDateTime } from "../digest/local-time";
 import { senderHistorySchema } from "../triage/sender-history";
 
-import { miniScenario } from "./fixtures";
+import { defaultWeekSpec, miniScenario } from "./fixtures";
 import { hardCaseRules } from "./hard-cases";
 import { senderHistoryFor } from "./history-gen";
 import { batchSlots, planBank } from "./plan-bank";
@@ -24,6 +24,7 @@ const spec: PlanSpec = {
     langShare: { pl: 0.6, en: 0.4 },
     threadShare: 0.2,
   },
+  week: defaultWeekSpec,
 };
 
 const bank = planBank(miniScenario, spec);
@@ -151,6 +152,12 @@ describe("planBank", () => {
       for (const size of sizes.values()) expect(size).toBeLessThanOrEqual(25);
       expect(slots.map((s) => s.id)).toEqual(slots.map((s) => s.id).sort());
     }
+  });
+
+  test("hard slots keep style variety although each tag has one slot per part", () => {
+    const hard = hardSlots(bank.holdout).filter((s) => !s.hardCases.some((t) => t.startsWith("reply_inj")));
+    expect(new Set(hard.map((s) => s.style.length)).size).toBeGreaterThan(1);
+    expect(new Set(hard.map((s) => s.style.signature)).size).toBeGreaterThan(1);
   });
 
   test("12 hard slots carry the facts of their category", () => {
