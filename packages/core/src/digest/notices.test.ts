@@ -120,7 +120,7 @@ describe("other notices", () => {
     }
     const polish = renderHostBlockedNotice(input, textTables.pl).text.split("\n");
     expect(polish).toHaveLength(4);
-    expect(polish[0]).toBe("⛔ System przestał łączyć się z serwerem poczty skrzynki: me@firma.test. Od: 07:40.");
+    expect(polish[0]).toBe("⛔ System przestał łączyć się z serwerem poczty skrzynki me@firma.test (od 07:40).");
   });
 
   test("host_blocked: a start of the day before shows the date; a long address is cut", () => {

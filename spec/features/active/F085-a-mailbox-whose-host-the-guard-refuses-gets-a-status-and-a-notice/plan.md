@@ -52,9 +52,9 @@ Owner and coordinator words, word for word:
 
   | Where (key) | en | pl |
   | --- | --- | --- |
-  | `notices.hostBlocked.first(address, since)` | `⛔ The system stopped connecting to the mail server of ${address} at ${since}.` | `⛔ System przestał łączyć się z serwerem poczty skrzynki: ${address}. Od: ${since}.` |
+  | `notices.hostBlocked.first(address, since)` | `⛔ The system stopped connecting to the mail server of ${address} at ${since}.` | `⛔ System przestał łączyć się z serwerem poczty skrzynki ${address} (od ${since}).` |
   | `notices.hostBlocked.why` | `The server name points to a private or local network address, and the system never connects there.` | `Nazwa serwera wskazuje adres w sieci prywatnej lub lokalnej, a system nigdy się z takim nie łączy.` |
-  | `notices.hostBlocked.noRead` | `The system does not read or send mail of this mailbox now. No mail is lost: it stays on the mail server.` | `System nie czyta teraz tej skrzynki i nie wysyła z niej poczty. Żadna wiadomość nie ginie: zostaje na serwerze poczty.` |
+  | `notices.hostBlocked.noRead` | `The system does not read or send mail of this mailbox now. No mail is lost: it stays on the mail server.` | `System nie czyta teraz tej skrzynki i nie wysyła z niej poczty. Żadna wiadomość nie ginie, bo zostaje na serwerze poczty.` |
   | `notices.hostBlocked.recheck` | `The system checks the server again at each sync and starts the mailbox again by itself. /status shows the state.` | `System sprawdza serwer przy każdej synchronizacji i sam uruchomi skrzynkę ponownie. /status pokazuje stan.` |
   | `digest.mailbox.hostBlocked(since, last)` | `⛔ Mail server not allowed since ${since} · last sync ${last}` | `⛔ Serwer poczty niedozwolony od ${since} · ostatnia synchronizacja: ${last}` |
   | `bot.status.stateHostBlocked(since)` | `mail server not allowed since ${since} (checked again at each sync)` | `serwer poczty niedozwolony od ${since} (sprawdzany przy każdej synchronizacji)` |
@@ -249,6 +249,7 @@ Review 1 ([plan-review-1.md](plan-review-1.md)), Opus 5.5 at `aad960e`: FAIL, 2 
 
 ## Log
 
+- 2026-11-14: stage 01 build: the Polish notice first line and `noRead` of D9 lose their colons (one colon per line, one separator style; the F098 stage 12 text guard). Meaning and glossary words are the same.
 - 2026-11-14: refresh 1 at c16849f (from 8720bb0): line numbers, the notice-kind list of stage 02 (now 13 kinds with `weekly_report`), F100 stage 07 and F098 stage 12 facts. No decision changed. Detail: [plan-refresh-1.md](plan-refresh-1.md).
 - 2026-11-14: cold review 1 (Opus 5.5): FAIL, 2 major, 11 minor; 12 fixed, 1 rejected with a reason.
 - 2026-11-14: plan written by a planner job (Opus 5.5) at 8720bb0 (the job branch was fast-forwarded from 2170da8 to `master` twice while reading, so the plan reads the newest code: F100 stage 06 flag refresh in `mail/jobs.ts`, F098 stage 11 bot texts).

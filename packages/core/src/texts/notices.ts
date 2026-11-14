@@ -188,10 +188,10 @@ export const noticeTexts = {
         `Aby to naprawić: sprawdź hasło, potem uruchom mailbox:password dla skrzynki: ${mailboxId} (instrukcja: deploy/README.md).`,
     },
     hostBlocked: {
-      first: (address, since) => `⛔ System przestał łączyć się z serwerem poczty skrzynki: ${address}. Od: ${since}.`,
+      first: (address, since) => `⛔ System przestał łączyć się z serwerem poczty skrzynki ${address} (od ${since}).`,
       why: "Nazwa serwera wskazuje adres w sieci prywatnej lub lokalnej, a system nigdy się z takim nie łączy.",
       noRead:
-        "System nie czyta teraz tej skrzynki i nie wysyła z niej poczty. Żadna wiadomość nie ginie: zostaje na serwerze poczty.",
+        "System nie czyta teraz tej skrzynki i nie wysyła z niej poczty. Żadna wiadomość nie ginie, bo zostaje na serwerze poczty.",
       recheck:
         "System sprawdza serwer przy każdej synchronizacji i sam uruchomi skrzynkę ponownie. /status pokazuje stan.",
     },
