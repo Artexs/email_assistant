@@ -17,6 +17,36 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Source: the file and item, for example `spec/features/active/FNNN-slug/questions.md` Q2.
 ```
 
+### 2026-11-14 · Legal drafts name no person, company, bucket region or breach register place (F107) · privacy · new
+- Choice: the drafts use only the placeholders `<provider name>`, `<address>`, `<contact>`, `<B2 region>` and `<breach register location>`. No repo file gives them.
+- Why: the repo is public, and no file states the B2 region.
+- Undo: fill the placeholders in the pages, then bump the terms version.
+- Source: `spec/features/planned/F107-e7-t4-papers-and-cost/questions.md` Q1, Q3, Q5.
+
+### 2026-11-14 · Polish draft line on the legal pages (F107) · user-visible · new
+- Choice: "WERSJA ROBOCZA, nie jest poradą prawną. Ta usługa działa na prywatnym serwerze wyłącznie dla jej właściciela."
+- Why: the pages are drafts with no lawyer review, and the product is not sold.
+- Undo: change one text key and bump the terms version.
+- Source: `spec/features/planned/F107-e7-t4-papers-and-cost/questions.md` Q2.
+
+### 2026-11-14 · Every legal text change needs a new terms version (F107) · user-visible · new
+- Choice: after stage 06, any text change (a typo too) bumps `TERMS_VERSION` and members accept again. Between stage 02 and stage 06, other deploys may show unfinished drafts under the old version.
+- Why: a guard test pins the digest of every legal text to a version (D18).
+- Undo: relax the guard for typo fixes later.
+- Source: `spec/features/planned/F107-e7-t4-papers-and-cost/questions.md` Q7, Q10.
+
+### 2026-11-14 · Breach notice target to the controller is 24 hours (F107) · security · new
+- Choice: the processor notifies the controller without undue delay, target 24 hours.
+- Why: GDPR art. 33(2) says "without undue delay", and 24 hours is a clear target.
+- Undo: change the number in the breach procedure and the DPA.
+- Source: `spec/features/planned/F107-e7-t4-papers-and-cost/questions.md` Q9.
+
+### 2026-11-14 · Cost model uses the Hetzner CX23 reference and a placeholder for the home VPS (F107) · money · new
+- Choice: `costToRun` uses the PD-059 hosting reference (Hetzner CX23). The home VPS cost is `<home VPS cost>`.
+- Why: PD-059 is newer than the E7 notes, and the home VPS cost is not in the repo.
+- Undo: change the constant and the model note.
+- Source: `spec/features/planned/F107-e7-t4-papers-and-cost/questions.md` Q8.
+
 ### 2026-11-14 · Flag refresh marks unreadable mail as "tried" with an empty flag row (F100 stage 06) · data · new
 - Choice: when the refresh cannot find or match a mail, it writes a row in `email_flags` with all flags false and `checked_at` = now. `checked_at` means "last tried", not "flags known".
 - Why: without it, such mail stays first in the queue for 30 days. About 3,000 of them would block the check of live mail, and a later "answered" flag would be missed (M1 under-count). A review reproduced this.

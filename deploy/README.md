@@ -578,7 +578,7 @@ $C run --rm -v <host folder>:/exports server bun run org:export --org-id <org id
 ```
 
 - The output is `exported <org id>: <bytes> bytes` and one line `<table> <count>` for each table. The file has mode 600 and is never replaced: an existing file gives exit 1 (`org_export_refused`, reason `exists`). Choose a new name.
-- If the command fails because the folder is not writable, check the owner and mode of `<host folder>` against the user `bun` of the image (`deploy/Dockerfile`). Do not use a mode wider than 700.
+- If the command fails with `EACCES`, the container user `bun` (uid 1000) cannot write the folder, because the folder belongs to your host user (on the pilot VPS uid 1002). Run the command with your own ids: `$C run --rm --user "$(id -u):$(id -g)" -v <host folder>:/exports server bun run org:export …`. This worked on the pilot VPS on 2026-11-14. Do not use a mode wider than 700.
 - Hand the file over by a private channel, never by an open mail. The person decrypts it with `age -d -i <identity file> <file>`. Delete the file on the server and on every other copy after the delivery.
 - Each export writes the audit row `org.exported` (it shows in the security log of the organization as "Data export made").
 

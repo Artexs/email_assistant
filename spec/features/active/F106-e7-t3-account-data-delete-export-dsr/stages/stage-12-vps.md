@@ -29,7 +29,7 @@ On the VPS, repo root, `C="docker compose -f deploy/compose.yaml --env-file .env
 4. `$C run --rm server bun run org:dsr --org-id S --address nobody@x.test --find` → `mails 0` and exit 0.
 5. `$C run --rm server bun run org:delete --org-id S --confirm "F106 smoke"` → `deleted S`; `org:status --org-id S` → not found.
 6. `$C logs --since "$T" server | grep -E "dropped_fields|_failed"` → no new line from F106 code.
-7. Wait 11 minutes; `$C logs --since "$T" server | grep sync_done` → lines for the pilot mailbox.
+7. Wait 11 minutes; `$C logs --since "$T" server | grep -c "synced 8bc7f572-a7f5-4fa5-aaab-db16dc663e96: folders"` → lines for the pilot mailbox.
 8. **Owner step U1** (optional): the coordinator copies `~/ea-exports/f106-smoke.age` to the owner; the owner runs `age -d -i <backup identity> f106-smoke.age | head -c 300` on the Mac and says whether it opens. Then delete the file on both machines.
 
 Do not turn on `org_delete` for the pilot organization: that is owner step U2.
