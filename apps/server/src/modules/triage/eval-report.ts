@@ -1,18 +1,11 @@
 import { barCategories, categories, DEFAULT_MAILS_PER_DAY, llmPrices } from "@ea/core";
 
 import type { CasesEvalReport, EvalReport } from "./eval";
+import { num, pct, table, usd } from "./eval-format";
+import { type SimReportInput, renderSimSections, simHeaderLines } from "./eval-sim-report";
 
 const MAX_ERROR_SHARE = 0.1;
 const MIN_REAL_LABELS = 100;
-
-const pct = (value: number | null): string => (value === null ? "n/a" : `${(value * 100).toFixed(1)}%`);
-const num = (value: number | null, digits = 0): string => (value === null ? "n/a" : value.toFixed(digits));
-const usd = (value: number | null): string => (value === null ? "n/a" : `$${value.toFixed(6)}`);
-const row = (cells: (string | number)[]): string => `| ${cells.join(" | ")} |`;
-
-function table(head: string[], rows: (string | number)[][]): string[] {
-  return [row(head), row(head.map(() => "---")), ...rows.map(row), ""];
-}
 
 function counts(cases: CasesEvalReport["cases"], kind: "synthetic" | "injection"): number {
   return cases.filter((c) => c.kind === kind).length;
@@ -201,9 +194,18 @@ function casesParts(report: CasesEvalReport, hideIds: boolean): string[] {
 }
 
 // `hideIds`: a holdout report prints counts, never case ids, so the holdout cannot leak into prompt work.
-export function renderEvalReport(report: EvalReport, opts: { title?: string; hideIds?: boolean } = {}): string {
-  const lines: string[] = [`# ${opts.title ?? "Eval report"}`, "", ...header(report), ...sharedParts(report)];
-  if (report.kind === "cases") lines.push(...casesParts(report, opts.hideIds ?? false));
+// `sim`: the lab corpus facts. It adds the corpus and cost header lines and the sim sections; its `hideIds` wins.
+export function renderEvalReport(
+  report: EvalReport,
+  opts: { title?: string; hideIds?: boolean; sim?: SimReportInput } = {}
+): string {
+  const head = header(report);
+  if (opts.sim !== undefined && report.kind === "cases") head.splice(head.length - 1, 0, ...simHeaderLines(opts.sim));
+  const lines: string[] = [`# ${opts.title ?? "Eval report"}`, "", ...head, ...sharedParts(report)];
+  if (report.kind === "cases") {
+    lines.push(...casesParts(report, opts.sim?.hideIds ?? opts.hideIds ?? false));
+    if (opts.sim !== undefined) lines.push(...renderSimSections(opts.sim));
+  }
   return `${lines.join("\n").trimEnd()}\n`;
 }
 
