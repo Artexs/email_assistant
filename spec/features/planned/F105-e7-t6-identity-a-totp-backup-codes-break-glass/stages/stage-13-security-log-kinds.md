@@ -1,6 +1,6 @@
 # F105 stage 13 — Security log kinds
 
-Part of [`../plan.md`](../plan.md). Read its D21, P5 and "Rules for every stage" first. Lane D. **Spawn it only when F099 stages 12 and 13 are on `master`** (the registry `packages/core/src/security-log.ts`, the route `GET /api/security-log`, the web helper `apps/web/src/lib/security-log-text.ts`). Needs stage 07 of this ticket (every new audit event exists: stages 03, 05, 07). If F099 changed the registry shape after its stage files, stop and report the difference.
+Part of [`../plan.md`](../plan.md). Read its D21, P5 and "Rules for every stage" first. Lane D. F099 stages 12 (c18c07a) and 13 (b6fa717) are on `master` (refresh 1): the registry `packages/core/src/security-log.ts`, the route `GET /api/security-log` (owner only, behind the flag `security_log`), `apps/server/src/modules/tenancy/security-log.ts` (`listSecurityLog`) and the web helper `apps/web/src/lib/security-log-text.ts`. At ff61cbc the registry has the shape below (6 kinds; `securityEvents` is `as const satisfies Record<string, SecurityEventKind>`; `@ea/core/web` re-exports `securityEventKinds` through `packages/core/src/web/security-log.ts`). Needs stage 07 of this ticket (every new audit event exists: stages 03, 05, 07). If the registry shape differs from this at your base, stop and report the difference. This stage meets the rule of `docs/code-patterns.md` § Data access: a new security-relevant audit event gets an entry in `securityEvents` and a `sec_kind_*` text.
 
 Two steps. About 120 changed lines.
 
@@ -36,7 +36,7 @@ Two steps. About 120 changed lines.
 
 - [ ] **13.2 Texts**
   - Goal: each new kind has its text in the Account card log.
-  - Files: change `apps/web/src/i18n/en.ts` (and `pl.ts` when it exists, D20).
+  - Files: change `apps/web/src/i18n/en.ts` and `apps/web/src/i18n/pl.ts` (every key in both files: `pl.ts` is on `master` and its type requires each key, D20).
   - Keys (English | Polish):
 
     | Key | English | Polish |
@@ -50,10 +50,10 @@ Two steps. About 120 changed lines.
     | `sec_kind_break_glass_set` | Break-glass owner chosen | Wybrano właściciela awaryjnego |
     | `sec_kind_break_glass_cleared` | Break-glass owner removed | Usunięto właściciela awaryjnego |
 
-    Change `sec_help` (F099 stage 13) to "Sign-ins, lockouts, password and two-factor changes, and ended sessions of this organization in the last 90 days." (Polish, if `pl.ts` has the key: "Logowania, blokady, zmiany hasła i logowania dwuetapowego oraz zakończone sesje tej organizacji z ostatnich 90 dni.").
+    Change `sec_help` (F099 stage 13) to "Sign-ins, lockouts, password and two-factor changes, and ended sessions of this organization in the last 90 days." (Polish in `pl.ts`, which has the key: "Logowania, blokady, zmiany hasła i logowania dwuetapowego oraz zakończone sesje tej organizacji z ostatnich 90 dni.").
   - Decisions: D20, D21.
   - Test: 4. `apps/web/src/lib/security-log-text.test.ts` (F099 stage 13, test 1) passes: every kind has its `sec_kind_*` key.
-  - Check: `bun test apps/web/src/lib apps/web/src/i18n`; `bun run typecheck`; `bun run web:build`.
+  - Check: `bun test apps/web/src/lib apps/web/src/i18n`; `bun run typecheck`; `bun run web:build`. `bun run typecheck` fails until each key is in `pl.ts` too.
   - Done when: test 4 passes and the build passes.
   - Out of scope: the second-factor name in the `sign_in` line.
 

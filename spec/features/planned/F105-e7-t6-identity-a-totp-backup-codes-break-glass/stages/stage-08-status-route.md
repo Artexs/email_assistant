@@ -10,7 +10,7 @@ Two steps. About 200 changed lines.
   - Interfaces:
 
     ```ts
-    // packages/core/src/web/two-factor.ts
+    // packages/core/src/web/two-factor.ts — `import { z } from "./zod";` as the other web schemas
     export const twoFactorRequirements = ["operator", "break_glass"] as const;
     export const twoFactorStatusSchema = z.strictObject({
       enabled: z.boolean(),
@@ -38,7 +38,7 @@ Two steps. About 200 changed lines.
 
 - [ ] **08.2 `GET /api/me/two-factor`**
   - Goal: a member reads the TOTP state of the own account and why the role needs it.
-  - Files: change `apps/server/src/modules/tenancy/routes.ts` (`TenancyRouteDeps`, the route); change `apps/server/src/web.ts` (`apiRouters` passes the dep); change every caller of `tenancyRoutes` and `apiRouters` (`grep -rln "tenancyRoutes(\|apiRouters(" apps/server`: `web-me.test.ts`, `web-http.test.ts`, `web-onboarding.test.ts`, `web-operator.test.ts`, `web-organization.test.ts`, `web-sessions.test.ts`, `web-suspended.test.ts`, `web-terms.test.ts`, `log-context.test.ts` at the plan base); add `noBackupCodes` to `apps/server/test/integration/web-helpers.ts`; add `apps/server/test/integration/web-two-factor-status.test.ts`.
+  - Files: change `apps/server/src/modules/tenancy/routes.ts` (`TenancyRouteDeps`, the route); change `apps/server/src/web.ts` (`apiRouters` passes the dep); change every caller of `tenancyRoutes` and `apiRouters` (`grep -rln "tenancyRoutes(\|apiRouters(" apps/server`; at ff61cbc: `tenancyRoutes` in `log-context.test.ts`, `web-http.test.ts`, `web-locale.test.ts`, `web-me.test.ts`, `web-onboarding.test.ts`, `web-organization.test.ts`, `web-security-log.test.ts`, `web-sessions.test.ts`, `web-terms.test.ts`; `apiRouters` in `web-operator.test.ts`, `web-operator-detail.test.ts`, `web-operator-orgs.test.ts`, `web-operator-writes.test.ts`, `web-suspended.test.ts`, `web-tenant-scope.test.ts`); add `noBackupCodes` to `apps/server/test/integration/web-helpers.ts`; add `apps/server/test/integration/web-two-factor-status.test.ts`.
   - Interfaces:
 
     ```ts
@@ -77,7 +77,7 @@ Two steps. About 200 changed lines.
     8. The owner of organization B (not marked) → `requiredBy: []` while A's owner is marked (tenant filter).
     9. A suspended organization (`isOrgSuspended: async () => true`) → 200 (a read).
     10. `twoFactorStatusSchema.parse` passes on every answer; the body text holds no `@x.test` and no user id.
-  - Check: `bun test apps/server/test/integration/web-two-factor-status.test.ts apps/server/test/integration/web-me.test.ts apps/server/test/integration/web-sessions.test.ts`; `bun run typecheck`; `bun run lint`.
+  - Check: `bun test apps/server/test/integration/web-two-factor-status.test.ts apps/server/test/integration/web-me.test.ts apps/server/test/integration/web-sessions.test.ts apps/server/test/integration/web-tenant-scope.test.ts`; `bun run typecheck`; `bun run lint`. The F092 route walk (`web-tenant-scope.test.ts`) finds the new route by itself and checks that it runs in the tenant scope.
   - Done when: tests 3–10 pass and every old caller compiles and passes.
   - Out of scope: the web section (stage 11).
 

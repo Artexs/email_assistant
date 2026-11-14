@@ -1,6 +1,6 @@
 # F105 stage 15 — VPS deploy and checks [risky]
 
-Part of [`../plan.md`](../plan.md). Read its D10, D25, § Owner steps and § Not verified first. Needs stages 01–14 landed and the `master` CI run of the last land green. Stage 13 may still wait for F099 (plan § How to run, item 6): then this deploy brings 01–12 and 14, and stage 13 goes out with the next deploy of any ticket.
+Part of [`../plan.md`](../plan.md). Read its D10, D25, § Owner steps and § Not verified first. Needs stages 01–14 landed and the `master` CI run of the last land green. Stage 13 no longer waits for F099 (refresh 1), so this deploy normally brings all of 01–14. If stage 13 has not landed, this deploy brings 01–12 and 14, and stage 13 goes out with the next deploy of any ticket.
 
 `[risky]`: the real system with the pilot's sign-in. **The coordinator runs this stage itself** (`spec/build.md`: VPS, ssh and deploy steps are pre-approved; backup first, name the rollback target, verify after). No worker job. One owner step (U1): the owner's phone. No other VPS deploy runs at the same time.
 

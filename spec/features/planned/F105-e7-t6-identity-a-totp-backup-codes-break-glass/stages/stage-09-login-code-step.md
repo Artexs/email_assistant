@@ -6,7 +6,7 @@ Two steps. About 260 changed lines.
 
 - [ ] **09.1 Client plugin and the code-step helpers**
   - Goal: the web client knows the two-factor calls, and one tested helper turns each error of the code step into a text and a "start again" choice.
-  - Files: change `apps/web/src/lib/auth-client.ts`; add `apps/web/src/lib/two-factor-errors.ts` and `apps/web/src/lib/two-factor-errors.test.ts`; change `apps/web/src/i18n/en.ts` (and `pl.ts` if it exists, D20).
+  - Files: change `apps/web/src/lib/auth-client.ts`; add `apps/web/src/lib/two-factor-errors.ts` and `apps/web/src/lib/two-factor-errors.test.ts`; change `apps/web/src/i18n/en.ts` and `apps/web/src/i18n/pl.ts` (every key in both files: `pl.ts` is on `master` and its type requires each key, D20).
   - Interfaces:
 
     ```ts
@@ -69,7 +69,7 @@ Two steps. About 260 changed lines.
     2. `cleanTotpCode`: `"123 456"` → `"123456"`; `" 123456 "` → `"123456"`; `"12345"`, `"1234567"`, `"12a456"`, `""` → null.
     3. `cleanBackupCode`: `"AbCdE-12345"` → same; `" abcde-12345 "` → `"abcde-12345"`; `"abcde12345"` → `"abcde-12345"`; `"abcd-12345"`, `"abcde_12345"`, `""` → null.
   - Check: `bun test apps/web/src/lib/two-factor-errors.test.ts apps/web/src/i18n`; `bun run typecheck`.
-  - Done when: tests 1–3 pass; every key of the table is in `en.ts` (and in `pl.ts` when it exists).
+  - Done when: tests 1–3 pass; every key of the table is in `en.ts` and in `pl.ts` with the texts of the table; `apps/web/src/i18n/i18n.test.ts` passes.
   - Out of scope: the page (09.2).
 
 - [ ] **09.2 The code step in `LoginPage`**

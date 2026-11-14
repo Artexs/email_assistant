@@ -9,8 +9,8 @@ One step. About 150 changed lines (most of it the generated `schema.ts`).
 - [ ] **01.1 Migration `two_factor`, generated types, schema test**
   - Goal: the database holds the second factor of a user and the break-glass mark of a membership, with the constraints of D2.
   - Files:
-    - add `db/migrations/<YYYYMMDD>120001_two_factor.sql` (`<YYYYMMDD>` = the build day; the name must sort after the newest file in `db/migrations/`; at the plan base the newest is `20261114100002_rls_tenant_policies.sql`; if a newer file exists, pick a time after it);
-    - regenerate `apps/server/src/platform/db/schema.ts` with `bun run db:types` (never edit it by hand);
+    - add `db/migrations/<YYYYMMDD>120001_two_factor.sql` (`<YYYYMMDD>` = the build day; the name must sort after the newest file in `db/migrations/`; at plan base ff61cbc the newest is `20261114110001_feedback_source_review.sql`; if a newer file exists, pick a time after it);
+    - regenerate `apps/server/src/platform/db/schema.ts` with `bun run db:types` (never edit it by hand; it is in `.prettierignore`, so do not format it). At ff61cbc the `Generated` type at the top has a line break that the generator may write differently (commit eb41e8a); a diff in that header is fine, every other hunk must be one of the three new parts;
     - add `apps/server/test/integration/auth-two-factor-schema.test.ts`.
   - Interfaces (exact SQL):
 
@@ -43,7 +43,7 @@ One step. About 150 changed lines (most of it the generated `schema.ts`).
     ALTER TABLE users DROP COLUMN two_factor_enabled;
     ```
 
-    The `UNIQUE (user_id)` makes its own index; no second index on `user_id`. The default grants of `20261103000001_app_grants.sql` give the `app` role access to the new table; no `GRANT` line. No RLS policy: the table has no `org_id` (the RLS test checks only `org_id` tables).
+    The `UNIQUE (user_id)` makes its own index; no second index on `user_id`. The default grants of `20261103000001_app_grants.sql` give the `app` role access to the new table; no `GRANT` line. No RLS policy: the table has no `org_id` (the RLS test checks only `org_id` tables). `memberships` has the `tenant_rows` policy (F092, plan F13); a new column needs no policy change.
   - Decisions: D2, D23.
   - Test (`auth-two-factor-schema.test.ts`; pattern of `auth-public-schema.test.ts`: `testDb()`, `withRollback`, a savepoint helper for expected violations; users from `insertUser` with `@x.test` addresses; a membership from `insertMembership` after `insertOrganization`):
     1. A new user has `two_factor_enabled = false`.
