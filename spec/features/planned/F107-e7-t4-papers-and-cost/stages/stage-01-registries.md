@@ -35,10 +35,10 @@ Part of [`../plan.md`](../plan.md). Decisions P2, D3, D4, D12.
 **Files.** New `packages/core/src/legal/data-categories.ts` (exported like step 1); a server integration test for coverage; a server unit test for the retention pins.
 
 **Interfaces.** D4 names and shapes. Categories (ids fixed; tables from `docs/architecture.md` §5 at `HEAD`):
-`account` (users, memberships, auth tables), `organization` (organization and mailbox settings), `mailbox-secret` (encrypted credentials), `mail-body`, `mail-headers` (subject, addresses, captured headers), `mail-ids` (Message-ID, dedup keys: `untilDelete`), `ai-results` (triage results, action payloads, drafts), `delegation` (delegates, delegations), `rules` (sender rules), `chat` (Telegram links, outbox), `audit` (audit log, feedback labels), `tombstones` (DSR hashes). A table holds one category; a table with columns of two kinds (for example `emails`) goes to the category of its most personal column, and the category's `label` names the other columns.
+`account` (users, memberships, auth tables), `organization` (organization and mailbox settings), `mailbox-secret` (encrypted credentials), `mail-body`, `mail-headers` (subject, addresses, captured headers), `mail-ids` (Message-ID, dedup keys: `untilDelete`), `ai-results` (triage results, action payloads, drafts), `delegation` (delegates, delegations), `rules` (sender rules), `chat` (Telegram links, outbox), `audit` (audit log, feedback labels), `tombstones` (DSR hashes). A table holds one category: a mixed table (`emails`) goes to its most personal column's category, whose `label` names the rest.
 
 **Decisions.**
-- `kept` of `mail-body` is `{ kind: "orgSetting", defaultDays: 30 }`; `mail-headers`, `ai-results`, `chat` are `{ kind: "days", days: 90 }`; `audit` and `mail-ids` are `untilDelete`; reset and invite tokens are part of `account` with the note in its label (1 day after expiry). The worker takes each number from the retention code, never from this list.
+- `kept` of `mail-body` is `{ kind: "orgSetting", defaultDays: 30 }`; `mail-headers`, `ai-results`, `chat` are `{ kind: "days", days: 90 }`; `audit` and `mail-ids` are `untilDelete`; reset and invite tokens are part of `account` with the note in its label (1 day after expiry). Take each number from the retention code.
 - `subjects` includes `others` for every category that holds data of senders or recipients who are not users.
 - `NO_PERSONAL_DATA_TABLES`: the migration table and tables of codes or counts only; each entry has a reason string.
 
