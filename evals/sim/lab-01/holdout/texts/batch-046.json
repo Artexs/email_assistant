@@ -94,10 +94,10 @@
     },
     {
       "id": "b-urg-0106",
-      "subject": "Our tender – call needed before 16:00 today",
-      "body": "Dear Wiktor,\n\nI have a question about the tender that I must put to you personally. It concerns how your company would handle returns of damaged goods from our warehouses, which my directors discuss at every meeting.\n\nThey decide on the returns procedure today at 16:30. Please call me before 16:00, because I need to hear what is realistic before I go into that meeting.",
+      "subject": "Tender – returns clause waits for your signature, 16:00 today",
+      "body": "Dear Wiktor,\n\nmy directors approve today at 16:30 the returns procedure for damaged goods from our warehouses, as a clause of the tender contract. The clause was changed this morning and needs your signature on the final version. Your sales coordinator holds the document in the e-signature system, but only you can sign it.\n\nPlease sign it before 16:00. At 16:30 the directors approve the contract without your company, and the framework offer of Kordelan is removed from the list.",
       "thread": [],
-      "note": "rewritten: directors decide returns procedure 16:30 today; call before 16:00"
+      "note": "rewritten: round 2 urgent event: clause signature before 16:00; directors approve contract without Kordelan at 16:30"
     },
     {
       "id": "b-urg-0107",
@@ -131,16 +131,16 @@
     },
     {
       "id": "b-urg-0112",
-      "subject": "Re: Hamburg trip – call me by 11:30",
-      "body": "Wiktor,\n\nplease call me by 11:30 today about the Hamburg trip. The board secretary needs the final delegation at noon, and after that the trip leaves the first quarter travel plan.",
+      "subject": "Re: Hamburg trip – sign the delegation form by 11:30",
+      "body": "Wiktor,\n\nthe delegation form for Hamburg is in your approval queue. Sign it by 11:30 today. At noon the board secretary files the final delegation, and without your signature the trip is cancelled with a fee of 9 500 PLN.",
       "thread": [
         {
           "subject": "Hamburg trip and board calendar",
           "body": "Mr Orlowicz, the board trip to Hamburg is planned for 02.02.2027. Please let me know if you want any changes. Dorota Wilczynska"
         }
       ],
-      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#222;line-height:1.45;\">\n<h3 style=\"margin:0 0 10px 0;color:#222;\">Wiktor,</h3>\n<p style=\"margin:0 0 10px 0;\">please call me by 11:30 today about the Hamburg trip. The board secretary needs the final delegation at noon, and after that the trip leaves the first quarter travel plan.</p>\n</body></html>",
-      "note": "rewritten: call by 11:30; final delegation due at noon today"
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#222;line-height:1.45;\">\n<h3 style=\"margin:0 0 10px 0;color:#222;\">Wiktor,</h3>\n<p style=\"margin:0 0 10px 0;\">the delegation form for Hamburg is in your approval queue. Sign it by 11:30 today. At noon the board secretary files the final delegation, and without your signature the trip is cancelled with a fee of 9 500 PLN.</p>\n</body></html>",
+      "note": "rewritten: round 2 urgent event: delegation form signature by 11:30; filed at noon, cancellation fee otherwise"
     },
     {
       "id": "b-urg-0113",
@@ -163,10 +163,10 @@
     },
     {
       "id": "b-urg-0118",
-      "subject": "Przetarg – proszę o telefon do 15:00",
-      "body": "Panie Wiktorze,\n\nproszę, żeby Pan zadzwonił do mnie dziś do 15:00 w sprawie przetargu. O 15:30 zarząd sieci zatwierdza przewoźnika na 2027 rok i bez rozmowy z Panem wybierze innego.",
+      "subject": "Przetarg – oferta do podpisu przed 15:00",
+      "body": "Panie Wiktorze,\n\noferta na 2027 rok czeka na Pański podpis elektroniczny. Proszę podpisać ją przed 15:00. O 15:30 zarząd sieci zatwierdza przewoźnika, a oferta bez podpisu odpada z głosowania.",
       "thread": [],
-      "note": "rewritten: call before 15:00; network board approves carrier 15:30"
+      "note": "rewritten: round 2 urgent event: offer needs signature before 15:00; network approves carrier 15:30"
     },
     {
       "id": "b-urg-0119",
@@ -183,10 +183,10 @@
     },
     {
       "id": "b-urg-0121",
-      "subject": "Kalendarz – telefon do 14:00, lista delegacji",
-      "body": "Wiktor,\n\nzadzwoń do mnie do 14:00 w sprawie wyjazdu do Hamburga. O 14:30 sekretariat rady zamyka listę delegacji na 02.02, a po tej godzinie wyjazd zarządu wypada z planu kwartału.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "subject": "Kalendarz – podpis na liście delegacji do 14:00",
+      "body": "Wiktor,\n\npodpisz do 14:00 listę delegacji na wyjazd do Hamburga 02.02. O 14:30 sekretariat rady zamyka listę, a bez Twojego podpisu koszty wyjazdu zarząd pokryje z własnego budżetu.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
       "thread": [],
-      "note": "rewritten: call by 14:00; delegation list closes 14:30"
+      "note": "rewritten: round 2 urgent event: delegation list signature by 14:00; list closes 14:30"
     },
     {
       "id": "b-urg-0122",
@@ -196,8 +196,8 @@
     },
     {
       "id": "b-urg-0123",
-      "subject": "Re: Kalendarz zarządu – rozmowa dziś do 12:00",
-      "body": "Wiktorze,\n\ndziękuję za notatkę. Zanim ustalimy kalendarz, chcę z Tobą porozmawiać o wyjeździe do Hamburga i o tym, kto z zarządu jedzie. Wolę to omówić osobiście, a nie przez asystentkę.\n\nProszę o telefon dziś do 12:00. O 13:00 muszę przekazać członkom rady stanowisko w sprawie kosztów delegacji, a asystentka nie ma pełnych danych. Wystarczy kwadrans, a potem poinformuję członków rady o ustaleniach. Bez rozmowy zgłoszę radzie sprzeciw wobec wyjazdu.",
+      "subject": "Re: Kalendarz zarządu – zgoda na wyjazd do 12:00",
+      "body": "Wiktorze,\n\ndziękuję za notatkę. Kalendarz wyjazdu do Hamburga jest gotowy i uzgodniony z asystentką, ale rada przyjmuje delegację tylko z Twoim podpisem pod zleceniem wyjazdu. Asystentka nie może go podpisać, bo tylko Ty zatwierdzasz koszt 21 000 zł.\n\nPodpisz zlecenie dziś do 12:00. O 13:00 sekretariat rady przekazuje delegacje do rozliczenia, a po tej godzinie bilety lotnicze tracą ważność i opłatę za zmianę zapłaci zarząd.\n\nZbigniew Orlowicz",
       "thread": [
         {
           "subject": "Kalendarz zarządu – Hamburg",
@@ -205,10 +205,10 @@
         },
         {
           "subject": "Re: Kalendarz zarządu – Hamburg",
-          "body": "Pani Doroto, dziękuję. Proszę o potwierdzenie z Panem Prezesem. Wiktor Szalewski"
+          "body": "Pani Doroto, dziękuję. Proszę o uzgodnienie szczegółów z Panem Przewodniczącym. Wiktor Szalewski"
         }
       ],
-      "note": "rewritten: call before 12:00; position to council due 13:00 today"
+      "note": "rewritten: round 2 urgent event: travel order needs signature by 12:00; tickets lapse at 13:00"
     },
     {
       "id": "b-urg-0124",

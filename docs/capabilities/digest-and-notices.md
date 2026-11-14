@@ -1,6 +1,6 @@
 # Digest and notices
 
-> Checked against the code at `a765e91`, 2026-11-14.
+> Checked against the code at `a489062`, 2026-11-14.
 
 ## What it does now
 
@@ -60,45 +60,46 @@ Every message that the system sends to a person goes through Telegram. A user li
 
 ## Entry points
 
-| Kind     | Name                                                                                                                            | Where                                                         |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| job      | `channels.notifier` (`*/15 * * * * *`, only with `TELEGRAM_BOT_TOKEN`)                                                          | `apps/server/src/main.ts`                                     |
-| job      | `channels.digest` (`5 * * * * *`, only with `TELEGRAM_BOT_TOKEN`)                                                               | `apps/server/src/main.ts`                                     |
-| job      | `channels.operator` (`0 13 * * * *`)                                                                                            | `apps/server/src/main.ts`                                     |
-| CLI      | `bun run telegram:check` (`getMe` with the token from env)                                                                      | `apps/server/src/scripts/telegram-check.ts`                   |
-| CLI      | `bun run telegram:link --org-id <uuid> [--user-id <uuid>]`                                                                      | `apps/server/src/scripts/telegram-link.ts`                    |
-| CLI      | `bun run telegram:unlink --org-id <uuid> --user-id <uuid>`                                                                      | `apps/server/src/scripts/telegram-unlink.ts`                  |
-| CLI      | `bun run digest:times --org-id <uuid> [--user-id <uuid>] --times <HH:MM,HH:MM \| none>`                                         | `apps/server/src/scripts/digest-times.ts`                     |
-| CLI      | `bun run job:run --name channels.notifier`                                                                                      | `apps/server/src/scripts/job-run.ts`                          |
-| route    | `GET /api/channels/telegram`, `POST /api/channels/telegram/link`, `DELETE /api/channels/telegram/link`                          | `apps/server/src/modules/channels/routes.ts`                  |
-| route    | `PATCH /api/me/digest-times`                                                                                                    | `apps/server/src/modules/tenancy/routes.ts`                   |
-| Telegram | commands `/start <token>`, `/digest`, `/status`, `/pause`, `/resume`, `/review`, `/help`                                        | `apps/server/src/modules/channels/commands.ts`                |
-| Telegram | callbacks `fr fc fe fx fu vr vc ve vx ap ar as rs ag gw dd` (rule 10)                                                           | `apps/server/src/modules/channels/callbacks.ts`               |
-| Telegram | callbacks `ay an` (the answered check, rule 9)                                                                                  | `apps/server/src/modules/channels/answered-taps.ts`           |
-| function | `scheduleDigests`                                                                                                               | `apps/server/src/modules/channels/digest-job.ts`              |
-| function | `detectNotices`                                                                                                                 | `apps/server/src/modules/channels/notices/index.ts`           |
-| function | `queueMailboxRemovedNotices`                                                                                                    | `apps/server/src/modules/channels/notices/mailbox-removed.ts` |
-| function | `queueNotice`                                                                                                                   | `apps/server/src/modules/channels/notice-queue.ts`            |
-| function | `createOutboxSender`                                                                                                            | `apps/server/src/modules/channels/sender.ts`                  |
-| function | `createOperatorNotices`                                                                                                         | `apps/server/src/modules/channels/operator.ts`                |
-| function | `createLinkToken`, `consumeLinkToken`, `unlinkUser`                                                                             | `apps/server/src/modules/channels/linking.ts`                 |
-| function | `createTelegramRuntime`                                                                                                         | `apps/server/src/modules/channels/telegram/runtime.ts`        |
-| function | `createTelegramBot`                                                                                                             | `apps/server/src/modules/channels/telegram/bot.ts`            |
-| function | `startPolling`                                                                                                                  | `apps/server/src/modules/channels/telegram/polling.ts`        |
-| function | `createTelegramApi`, `createTelegramChannel`                                                                                    | `apps/server/src/modules/channels/telegram/api.ts`            |
-| function | `checkBot`                                                                                                                      | `apps/server/src/modules/channels/telegram/check.ts`          |
-| function | `createUpdateHandlers`, `runCommand`, `statusMessage`, `digestNowMessage`, `reviewMessage`, `pauseMailboxes`, `resumeMailboxes` | `apps/server/src/modules/channels/commands.ts`                |
-| function | `handleCallback`, `pickerMessage`                                                                                               | `apps/server/src/modules/channels/callbacks.ts`               |
-| function | `buildDigestMessage`, `digestPeriodStart`                                                                                       | `apps/server/src/modules/reports/digest.ts`                   |
-| function | `llmPauseToShow` (the flag and `latestLlmPause`)                                                                                | `apps/server/src/modules/reports/llm-pause.ts`                |
-| function | `latestLlmPause`                                                                                                                | `apps/server/src/modules/audit/llm-pause.ts`                  |
-| function | `llmPauseLine`                                                                                                                  | `packages/core/src/digest/llm-pause.ts`                       |
-| function | `renderDigest`                                                                                                                  | `packages/core/src/digest/digest.ts`                          |
-| function | `dueDigestSlot`, `nextDigestTime`, `parseDigestTimes`, `isLateSlot`                                                             | `packages/core/src/digest/schedule.ts`                        |
-| function | `isQuietTime`, `quietEnd`                                                                                                       | `packages/core/src/digest/local-time.ts`                      |
-| function | `encodeCallback`, `parseCallback`                                                                                               | `packages/core/src/digest/callback.ts`                        |
-| function | `renderNotice`, `renderNoticeEdit`                                                                                              | `packages/core/src/notices/render.ts`                         |
-| function | `encodeNoticeView`                                                                                                              | `packages/core/src/notices/encode.ts`                         |
+| Kind     | Name                                                                                                                            | Where                                                                   |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| job      | `channels.notifier` (`*/15 * * * * *`, only with `TELEGRAM_BOT_TOKEN`)                                                          | `apps/server/src/main.ts`                                               |
+| job      | `channels.digest` (`5 * * * * *`, only with `TELEGRAM_BOT_TOKEN`)                                                               | `apps/server/src/main.ts`                                               |
+| job      | `channels.operator` (`0 13 * * * *`)                                                                                            | `apps/server/src/main.ts`                                               |
+| CLI      | `bun run telegram:check` (`getMe` with the token from env)                                                                      | `apps/server/src/scripts/telegram-check.ts`                             |
+| CLI      | `bun run telegram:link --org-id <uuid> [--user-id <uuid>]`                                                                      | `apps/server/src/scripts/telegram-link.ts`                              |
+| CLI      | `bun run telegram:unlink --org-id <uuid> --user-id <uuid>`                                                                      | `apps/server/src/scripts/telegram-unlink.ts`                            |
+| CLI      | `bun run digest:times --org-id <uuid> [--user-id <uuid>] --times <HH:MM,HH:MM \| none>`                                         | `apps/server/src/scripts/digest-times.ts`                               |
+| CLI      | `bun run job:run --name channels.notifier`                                                                                      | `apps/server/src/scripts/job-run.ts`                                    |
+| route    | `GET /api/channels/telegram`, `POST /api/channels/telegram/link`, `DELETE /api/channels/telegram/link`                          | `apps/server/src/modules/channels/routes.ts`                            |
+| route    | `PATCH /api/me/digest-times`                                                                                                    | `apps/server/src/modules/tenancy/routes.ts`                             |
+| Telegram | commands `/start <token>`, `/digest`, `/status`, `/pause`, `/resume`, `/review`, `/help`                                        | `apps/server/src/modules/channels/commands.ts`                          |
+| Telegram | callbacks `fr fc fe fx fu vr vc ve vx ap ar as rs ag gw dd` (rule 10)                                                           | `apps/server/src/modules/channels/callbacks.ts`                         |
+| Telegram | callbacks `ay an` (the answered check, rule 9)                                                                                  | `apps/server/src/modules/channels/answered-taps.ts`                     |
+| function | `scheduleDigests`                                                                                                               | `apps/server/src/modules/channels/digest-job.ts`                        |
+| function | `detectNotices`                                                                                                                 | `apps/server/src/modules/channels/notices/index.ts`                     |
+| function | `queueMailboxRemovedNotices`                                                                                                    | `apps/server/src/modules/channels/notices/mailbox-removed.ts`           |
+| function | `queueNotice`                                                                                                                   | `apps/server/src/modules/channels/notice-queue.ts`                      |
+| function | `createOutboxSender`                                                                                                            | `apps/server/src/modules/channels/sender.ts`                            |
+| function | `createOperatorNotices`                                                                                                         | `apps/server/src/modules/channels/operator.ts`                          |
+| function | `createLinkToken`, `consumeLinkToken`, `unlinkUser`                                                                             | `apps/server/src/modules/channels/linking.ts`                           |
+| function | `createTelegramRuntime`                                                                                                         | `apps/server/src/modules/channels/telegram/runtime.ts`                  |
+| function | `createTelegramBot`                                                                                                             | `apps/server/src/modules/channels/telegram/bot.ts`                      |
+| function | `startPolling`                                                                                                                  | `apps/server/src/modules/channels/telegram/polling.ts`                  |
+| function | `createTelegramApi`, `createTelegramChannel`                                                                                    | `apps/server/src/modules/channels/telegram/api.ts`                      |
+| function | `checkBot`                                                                                                                      | `apps/server/src/modules/channels/telegram/check.ts`                    |
+| function | `createUpdateHandlers`, `runCommand`, `statusMessage`, `digestNowMessage`, `reviewMessage`, `pauseMailboxes`, `resumeMailboxes` | `apps/server/src/modules/channels/commands.ts`                          |
+| function | `handleCallback`, `pickerMessage`                                                                                               | `apps/server/src/modules/channels/callbacks.ts`                         |
+| function | `buildDigestMessage`, `digestPeriodStart`                                                                                       | `apps/server/src/modules/reports/digest.ts`                             |
+| function | `llmPauseToShow` (the flag and `latestLlmPause`)                                                                                | `apps/server/src/modules/reports/llm-pause.ts`                          |
+| function | `latestLlmPause`                                                                                                                | `apps/server/src/modules/audit/llm-pause.ts`                            |
+| function | `llmPauseLine`                                                                                                                  | `packages/core/src/digest/llm-pause.ts`                                 |
+| function | `renderDigest`                                                                                                                  | `packages/core/src/digest/digest.ts`                                    |
+| function | `dueDigestSlot`, `nextDigestTime`, `parseDigestTimes`, `isLateSlot`                                                             | `packages/core/src/digest/schedule.ts`                                  |
+| function | `isQuietTime`, `quietEnd`                                                                                                       | `packages/core/src/digest/local-time.ts`                                |
+| function | `encodeCallback`, `parseCallback`                                                                                               | `packages/core/src/digest/callback.ts`                                  |
+| function | `renderNotice`, `renderNoticeEdit`                                                                                              | `packages/core/src/notices/render.ts`                                   |
+| function | `textsFor`, `textTables`, `resolveLocale`, `firstLanguageTag`, `pluralCategory`                                                 | `packages/core/src/texts/index.ts`, `packages/core/src/texts/locale.ts` |
+| function | `encodeNoticeView`                                                                                                              | `packages/core/src/notices/encode.ts`                                   |
 
 ## Data
 
@@ -112,7 +113,7 @@ Every message that the system sends to a person goes through Telegram. A user li
 ## Limits
 
 - Telegram only: no mail channel for the digest and the report (E4-B F110; ADR 0022 is proposed) and no push (E9b F118; ADR 0032 is proposed). `noticeChannels` holds `telegram` only and `noticeDetails` holds `full` only.
-- Telegram texts follow `users.locale`: `textsFor(locale)` returns the table of the locale from `packages/core/src/texts/`. A user with no choice (null) reads Polish. A user with `en` reads the English texts, byte for byte as before. Rows queued before the switch hold `locale = 'pl'` for null users with English stored text; a tap on such a card adds a Polish status line to the English card. The approval buttons stop working after 48 h, but the buttons Gotowe, Wysłano and "To był błąd" work for up to 7 days, so the mixed edit can show for up to 7 days. The command menu follows the app language of Telegram, not `users.locale`.
+- Every Telegram text follows `users.locale`; null → Polish (`textsFor(locale)` returns the table of the locale from `packages/core/src/texts/`). A user with no stored language gets Polish Telegram text at once (owner decision). The chat takes its locale from the link; `/start` with a used or expired token takes it from the token owner. A user with `en` reads the English texts, byte for byte as before. Rows queued before the switch hold `locale = 'pl'` for null users with English stored text; a tap on such a card adds a Polish status line to the English card. The approval buttons stop working after 48 h, but the buttons Gotowe, Wysłano and "To był błąd" work for up to 7 days, so the mixed edit can show for up to 7 days (old cards keep their English text and get Polish status lines on edit). The command menu follows the app language of Telegram, not `users.locale`.
 - The quiet hours are a constant for every user and every kind except the digest. Per-user quiet hours and a per-user route per kind are PD-033 and PD-094 (E4-B F110, E9b F118).
 - The digest lists at most 15 items; the rest is a `+N more` line. There is no web list of past digests.
 - The operator notices go to one chat by a direct send, with no outbox row, no queue and no quiet hours. A failed `auth_mail_failed` notice is not tried again.
@@ -125,6 +126,7 @@ Every message that the system sends to a person goes through Telegram. A user li
 
 ## Tests
 
+- `apps/server/test/integration/channels-locale.test.ts` (Telegram text per `users.locale`; null → Polish), `packages/core/src/texts/index.test.ts`, `packages/core/src/texts/locale.test.ts`.
 - `apps/server/test/integration/channels-notices.test.ts`, `apps/server/test/integration/channels-outbox.test.ts`, `apps/server/test/integration/channels-sender.test.ts`, `apps/server/test/integration/channels-digest-job.test.ts`, `apps/server/test/integration/channels-callbacks.test.ts`, `apps/server/test/integration/channels-commands.test.ts`, `apps/server/test/integration/channels-linking.test.ts`, `apps/server/test/integration/channels-operator.test.ts`.
 - `apps/server/src/modules/channels/notices/registry.test.ts` (every kind has one producer and one renderer), `packages/core/src/texts/bot.test.ts`, `apps/server/src/modules/channels/telegram/polling.test.ts`, `apps/server/src/modules/channels/telegram/runtime.test.ts`.
 - `packages/core/src/digest/digest.test.ts`, `packages/core/src/digest/schedule.test.ts`, `packages/core/src/digest/callback.test.ts`, `packages/core/src/digest/local-time.test.ts`, `packages/core/src/notices/registry.test.ts`, `packages/core/src/notices/encode.test.ts`.

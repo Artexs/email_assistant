@@ -49,6 +49,8 @@ export const auditEvents = {
   orgStyleChanged: "org.style_changed", // data: set
   orgPlanChanged: "org.plan_changed", // data: from, to, max_from, max_to, trial_ends_at
   orgFlagChanged: "org.flag_changed", // data: flag, enabled
+  orgBreakGlassSet: "org.break_glass_set", // data: user_id
+  orgBreakGlassCleared: "org.break_glass_cleared", // data: user_id, reason ("cli" | "replaced" | "two_factor_reset")
   delegateAdded: "delegate.added",
   delegateChanged: "delegate.changed",
   delegationCreated: "delegation.created",
