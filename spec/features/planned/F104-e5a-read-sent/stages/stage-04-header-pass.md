@@ -38,13 +38,13 @@ syncSentHeaders(deps, ctx, mailboxId): Promise<SentHeaderResult>
 
 **Guard (D5).** Each write transaction locks the state row and needs `enabled` and the same `enabledAt`, `path`, `uidValidity`, `lastUid` as the state this call read last. A mismatch writes nothing; the call returns `cursor_moved` with its counts and calls `markSentPass(null)`.
 
-No log lines here. No path, subject or address in an error text.
+No log lines; no path, subject or address in an error text.
 
 **Test** (per test: flag on, switch on at `NOW − 1 h`, `folder_map.sent = "Sent"`, a fake with mail in `"Sent"`, the real `sentOriginOf`):
 
 1. Flag off → `flag_off`; no provider call, no row, `lastPassAt` null.
 2. No state row, or off → `off`; no provider call.
-3. No `sent` key → `no_folder`; `lastErrorCode "no_folder"`, `lastPassAt NOW`.
+3. No `sent` key → `no_folder`, `lastErrorCode "no_folder"`; then `folder_map.sent = "Sent"` (the committer made it) → `initial` there.
 4. Initial over A (`NOW − 1 d`), B (`− 20 d`), C (`− 40 d`), D (`− 2 d`, a draft whose send is `applied`), G (`− 3 d`, send `awaiting_approval`) → `done`, fetched 4, stored 4, system 1; A `user/pending`, B `user/headers_only`, D `system/headers_only`, G `user/pending` with `action_id`; cursor `uidNext − 1`; `firstPassAt NOW`.
 5. In-Reply-To in-1, references root, in-1, to `Anna@X.test`, cc `b`, `B`, date `NOW − 3 h` → parent in-1, thread root, to `{anna@x.test}`, cc `{b@x.test}`, `sent_at NOW − 3 h`.
 6. After 4: E (`NOW − 1 h`) → incremental, stored 1, cursor at E; again → 0; F (`− 40 d`) → `tooOld 1`, cursor at F.
@@ -57,8 +57,8 @@ No log lines here. No path, subject or address in an error text.
 13. `chunkSize 2`, 5 new mails, `sentOriginOf` throws `SoftError` for mail 3 → the call throws; mails 1–2 stored, cursor at 2; the next call stores 3–5.
 14. Org B's pass writes only org B rows; org B's context with org A's mailbox → `off`.
 15. `X-EA-Action-Id: not-a-uuid`, or another mailbox's action → user rows, `action_id` null.
-16. Retention 3 d: mail at `NOW − 5 d` → `headers_only`; at `− 2 d` → `pending`.
-17. A tombstoned mail (`dsr_tombstones` holds its key hash) → no row, no error; the cursor still passes it.
+16. Retention 3 d: mail at `NOW − 5 d` → `headers_only`; `− 2 d` → `pending`.
+17. A tombstoned mail → no row, no error; the cursor passes it.
 
 **Out of scope.** Text step (05); job, logs (06).
 

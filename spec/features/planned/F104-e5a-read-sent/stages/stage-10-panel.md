@@ -4,7 +4,7 @@ Part of [`../plan.md`](../plan.md). Needs stage 09. Read D13, D17, and `apps/web
 
 ## Step 1 — Status helper and texts
 
-**Files.** `apps/web/src/lib/sent-text.ts`, `apps/server/test/integration/sent-text.test.ts` (new); `apps/web/src/i18n/en.ts`, `apps/web/src/i18n/pl.ts`.
+**Files.** `apps/web/src/lib/sent-text.ts`, `apps/web/src/lib/sent-text.test.ts` (new, unit lane); `apps/web/src/i18n/en.ts`, `apps/web/src/i18n/pl.ts`.
 
 **Interface.**
 
@@ -13,7 +13,7 @@ Part of [`../plan.md`](../plan.md). Needs stage 09. Read D13, D17, and `apps/web
 sentStatusLine(view: SentSyncView): { key: TextKey; vars?: Record<string, string> } | null
 ```
 
-Rules for `enabled` true, first match wins: `flagOn` false → `sent_paused`; no folder or `no_folder` → `sent_no_folder`; `folder_missing` → `sent_folder_missing`; `failed` → `sent_failed`; no first pass → `sent_first_pass`; no `lastSentAt` or `storedCount 0` → `sent_none`; else `sent_last` with `vars.at = lastSentAt`. The card renders `sent_last` with `formatClock` in the org time zone, as `apps/web/src/components/mailboxes/MailboxCard.tsx` renders `mb_last_sync`.
+Rules for `enabled` true, first match wins: `flagOn` false → `sent_paused`; no folder or `no_folder` → `sent_no_folder`; `folder_missing` → `sent_folder_missing`; `failed` → `sent_failed`; no first pass → `sent_first_pass`; no `lastSentAt` or `storedCount 0` → `sent_none`; else `sent_last` with `vars.at = lastSentAt`. The card renders it as `t("sent_last", { time: formatClock(new Date(vars.at), timeZone, now, getLocale()) })`, as `apps/web/src/components/mailboxes/MailboxCard.tsx` renders `mb_last_sync`; other keys as `t(key)`.
 
 Texts (both files; Polish per D17):
 

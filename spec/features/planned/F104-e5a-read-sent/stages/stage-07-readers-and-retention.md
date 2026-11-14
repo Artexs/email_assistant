@@ -15,7 +15,7 @@ export interface UserAnswer { answeredAt: Date; sentEmailId: string; }
 listUserAnswers(db, ctx, emailIds: readonly string[]): Promise<Map<string, UserAnswer>>
 export interface SentSummary { userCount: number; newestUserAt: Date | null; }
 getSentSummary(db, ctx, mailboxId, { since }): Promise<SentSummary>
-export interface SentHealthRow { mailboxId: string; firstPassAt: Date; newestUserAt: Date | null; lastErrorCode: SentErrorCode | null; }
+export interface SentHealthRow { mailboxId: string; firstPassAt: Date; lastPassAt: Date | null; newestUserAt: Date | null; lastErrorCode: SentErrorCode | null; }
 listSentHealth(db, ctx): Promise<SentHealthRow[]>
 ```
 
@@ -32,7 +32,7 @@ Rules:
 4. Y without a reply, Z without `message_id_header` → absent; `[]` → empty map.
 5. 600 ids, one answered at position 550 → in the map.
 6. Summary since `NOW − 30 d`, path `"Sent"`: user rows at `− 1 d`, `− 40 d`, a system row at `− 1 h`, a user row of `"Old"` at `− 1 h` → `{ 1, NOW − 1 d }`; no rows or no state → `{ 0, null }`.
-7. Health: M1 on with a first pass, M2 on without, M3 off → only M1, with `newestUserAt` and `lastErrorCode` (`"folder_missing"` shows).
+7. Health: M1 on with a first pass, M2 on without, M3 off → only M1, with `lastPassAt`, `newestUserAt` and `lastErrorCode` (`"folder_missing"` shows).
 8. Org B's context with org A's ids → empty results.
 
 ## Step 2 — Retention

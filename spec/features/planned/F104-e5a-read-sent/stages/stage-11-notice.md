@@ -2,8 +2,6 @@
 
 Part of [`../plan.md`](../plan.md). **[risky]**: a migration and a message to people (review before the land; no other migration in build). Needs stage 10 (it reads `listSentHealth` of stage 07). Read D15, D17, and `docs/code-patterns.md` § "Notices are facts" and § "Add a notice kind"; `host_blocked` (F085) is the newest example of a mailbox notice.
 
-After this stage an owner gets one Telegram notice when a mailbox with the switch on shows no sent mail for 7 days. A new sent mail or a new first pass starts a new period.
-
 ## Step 1 — Core: kind, view, texts, renderer
 
 **Files.** `packages/core/src/notices/kinds.ts`, `packages/core/src/notices/views.ts`, `packages/core/src/notices/renderers.ts`, `packages/core/src/texts/notices.ts`, `packages/core/src/digest/notices.ts`, and their tests.
@@ -21,13 +19,13 @@ sentMissing: { first: (address: string, since: string) => string; ask: string };
 // pl: first → `📭 Brak wysłanej poczty dla ${address} od ${since}.`
 //     ask   → "Czy Twój program pocztowy zapisuje kopię w folderze Wysłane? Asystent potrzebuje jej, żeby wiedzieć, na co czekasz."
 // digest/notices.ts, next to renderHostBlockedNotice
-renderSentMissingNotice({ address, since, now, timeZone }, texts): OutMessage // first(address, formatClock(since, …)) + "\n" + ask; no buttons
-// renderers.ts: sent_missing renderer with that schema and function
+renderSentMissingNotice({ address, since, now, timeZone }, texts): OutMessage // first(cutText(address, 60), formatClock(since, …)) + "\n" + ask; no buttons
+// renderers.ts: the sent_missing renderer. privacy/outbox.ts NOTICE_MAIL_CONTENT: sent_missing: "no_mail" (a mailbox address)
 ```
 
 **Test** (unit):
 
-1. `boss@x.test`, since `2026-11-12T09:00Z`, now `2026-11-20T10:00Z`, `Europe/Warsaw`, `en` → the two lines, the day computed with `formatClock` in the test; no buttons.
+1. `boss@x.test`, since `2026-11-12T09:00Z`, now `2026-11-20T10:00Z`, `Europe/Warsaw`, `en` → the two lines (the day by `formatClock` in the test); no buttons. An 80-character address is cut as in `renderHostBlockedNotice`.
 2. The same in `pl`; the Polish one-colon test passes.
 3. The view schema refuses an extra field and a missing `since`.
 4. The core notice registry test passes.
@@ -46,11 +44,11 @@ Read the newest migration that sets `outbox_kind_check` at your base (`db/migrat
 
 **Files.** `apps/server/src/modules/channels/notices/sent-missing.ts` (new); `apps/server/src/modules/channels/notices/index.ts` (`detectors`, after the host-blocked one); `apps/server/src/modules/channels/repo.ts` (the kind union of `cancelPendingOutbox`); `apps/server/test/integration/channels-notices.test.ts`.
 
-**Interface.** `export const SENT_MISSING_AFTER_MS = 7 * 24 * 3_600_000;` and `sentMissingDetector: Detector` (name and kind `sent_missing`).
+**Interface.** `SENT_MISSING_AFTER_MS = 7 d`, `SENT_PASS_FRESH_MS = 1 h`, `sentMissingDetector: Detector` (kind `sent_missing`).
 
-Rule per mailbox of the run: flag off, mailbox not `active`, no health row, an error code, or `now − quietSince < 7 d` → cancel pending rows of the kind for the mailbox. Else `quietSince` = the later of `newestUserAt` and `firstPassAt`; key `sent_missing:<mailbox id>:<quietSince ms>`; queue one row per owner (`run.owners`, Q6) with the view; each queue in its own try (skip warning as the other detectors); then cancel pending rows of the kind with another key.
+Rule per mailbox: flag off, mailbox not `active`, no health row, an error code, `lastPassAt` older than `SENT_PASS_FRESH_MS` (no fresh read after a flag-off or pause period), or `now − quietSince < 7 d` → cancel pending rows of the kind for the mailbox. Else `quietSince` = the later of `newestUserAt` and `firstPassAt`; key `sent_missing:<mailbox id>:<quietSince ms>`; queue one row per owner (`run.owners`, Q6) with the view; each queue in its own try (skip warning as the other detectors); then cancel pending rows of the kind with another key.
 
-**Test** (`NOW = 2026-11-20T10:00:00Z`; two linked owners and one member; flag on; switch on, `first_pass_at NOW − 8 d`):
+**Test** (two linked owners, one member; flag on; switch on, `first_pass_at NOW − 8 d`, `last_pass_at NOW − 5 min`):
 
 1. No sent mail → 2 rows (owners only); key `sent_missing:<mailbox>:<NOW − 8 d ms>`; `since NOW − 8 d`.
 2. A second run → still 2.
@@ -60,7 +58,7 @@ Rule per mailbox of the run: flag off, mailbox not `active`, no health row, an e
 6. First pass `− 6 d` → no row.
 7. Flag off, mailbox `paused` or `host_blocked`, or switch off → no row; pending rows cancelled.
 8. Org B's mailbox never gets a row in org A.
-9. `last_error_code "folder_missing"` → no row; pending cancelled.
+9. `last_error_code "folder_missing"`, or `last_pass_at NOW − 2 h` → no row; pending cancelled.
 10. The channels notice registry test passes.
 
 ## Step 4 — Docs

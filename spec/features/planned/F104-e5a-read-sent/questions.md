@@ -62,3 +62,9 @@ The owner answered the product questions of E5 (PD-115–PD-129: "You can go wit
 
 - Default: `mailbox.sent_sync_changed` is written to `audit_log` but is not added to the owner's security log (PD-048 lists sign-ins, lockouts, password and 2FA changes, sessions, export, delete and DSR). D11, stage 08.
 - Other option: a security-log kind `sent_sync_changed`. Change: one entry in `packages/core/src/security-log.ts` and its texts.
+
+## Q13 [important: privacy] The operator may turn "Track my sent mail" on by CLI, only on the owner's instruction (review 2, N9)
+
+- Default: `bun run mailbox:settings sent-sync --value on` works for the operator (audit actor `cli`), like `org:dsr`, which the operator runs on the owner's instruction (PD-038). The usage line says so. The pilot consent (U1) is the owner's own tap in the panel; the coordinator does not use the CLI for it. D11, stage 09.
+- Why: test organizations and the live lab (E2b) have no owner who taps the panel.
+- Other option: the CLI may only turn the switch off. Change: refuse `--value on` with a hint to the panel.

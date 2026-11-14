@@ -2,8 +2,6 @@
 
 Part of [`../plan.md`](../plan.md). **[risky]**: a migration and privacy registries (review before the land; no other migration in build). Read D1, D2, D6, D7, D18.
 
-After this stage both tables exist with RLS and the tombstone trigger, and the F106 registries classify every new column. No code writes the tables yet.
-
 ## Step 1 — The migration
 
 **Goal.** One dbmate file `db/migrations/<timestamp>_sent_mail.sql`, later than every file at your base; then `bun run db:types`.
@@ -49,15 +47,16 @@ Both: RLS and the `tenant_rows` policy as the `emails` block of `db/migrations/2
 
 - `apps/server/src/modules/privacy/export-map.ts`: both tables, every column, by `org_id`.
 - `apps/server/src/modules/privacy/address-map.ts` `sent_emails`: `to_addresses`, `cc_addresses` → `recipients`; `from_address` → `equal`; `subject`, `body_text` → `text`. `NOT_PERSONAL`: `dedup_key`, `message_id`, `parent_message_id`, `references_ids`, `thread_key` (Message-IDs), `path` (folder name), `origin`, `content`, `auto_submitted`, `precedence` (codes), `list_id` (list name). `NO_PERSONAL_TABLES`: `mailbox_sent_sync` (path, cursor, codes).
-- `apps/server/src/modules/privacy/dsr-match.ts` `ROW_SHAPE`: `sent_emails` rows belong to no incoming mail, so their mentions are always scrubbed; let the shape type say "no mail column".
+- `apps/server/src/modules/privacy/dsr-match.ts` `ROW_SHAPE`: the type becomes `{ id: string; emailId: string | null }`; `sent_emails` = `{ id: "id", emailId: null }`: no incoming mail, so `findMentions` skips the mail filter (stage 12 adds the filter for sent mail that goes).
+- `MESSAGE_TABLES` stays as it is (its test pins 7; `sent_emails` does not cascade from `emails`).
 
 **Test.**
 
 11. The export-map, DSR-match, find and erase suites pass.
-12. Find: a sent row with the person in `cc_addresses` and `subject` → mentions `sent_emails.cc_addresses` and `sent_emails.subject`.
+12. Find: a sent row to `q@x.test`, with the person in `cc_addresses` and `subject` → mentions `sent_emails.cc_addresses` and `sent_emails.subject` (`q` keeps the row from going in stage 12).
 13. Erase: that row loses the address in both; the after-match is empty; org B's row stays.
 
-**Out of scope.** Sent mail that "goes" (stage 12); repository code (stage 02).
+**Out of scope.** Sent mail that goes (stage 12).
 
 ## Done when
 
