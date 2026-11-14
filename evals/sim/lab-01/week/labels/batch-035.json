@@ -1,0 +1,33 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-035",
+  "checker": "claude-haiku-5-5",
+  "labels": [
+    {
+      "id": "w-7-036",
+      "category": "spam",
+      "blindHash": "175f57e493af4b03be5f0a09eeb129aca3bc8e592db8af9b099e015d4c627370"
+    },
+    {
+      "id": "w-7-037",
+      "category": "notification",
+      "blindHash": "83995fa4b954d55332f90dc27ed947f672590be51e7259fa8eb3c83868f482d6"
+    },
+    {
+      "id": "w-7-038",
+      "category": "urgent",
+      "blindHash": "6e297c25a2b8b7651f0d66f2e757d20adadd6a928521eb60ba65ee87815267b6"
+    },
+    {
+      "id": "w-7-039",
+      "category": "delegation",
+      "blindHash": "1ce1abf28feddd106373139d026bb4b619231f05693796da848e1f35bdaa761a"
+    },
+    {
+      "id": "w-7-040",
+      "category": "notification",
+      "blindHash": "606846ad9cef7743d9c93bfa17fd74bb57c54c0591182aa1b45e4aecb969e10d"
+    }
+  ]
+}
