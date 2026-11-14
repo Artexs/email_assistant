@@ -44,6 +44,8 @@ import {
   otherCopyUids,
   resolveFolderCheck,
   threadKey,
+  type FolderCheckResult,
+  type IncomingDecision,
   type KnownCopy,
 } from "./sync-rules";
 
@@ -176,6 +178,43 @@ function countCrossCopy(mailboxId: string, result: SyncResult, emailId: string):
   log.debug(`sync ${mailboxId} folder ${result.folder}: copy of mail ${emailId} is a cross copy, not stored`);
 }
 
+// The free copies outside S, in copy order: the first one that is gone is the mail the user moved into S.
+// With none gone, the first copy decides as before (an identical new copy, or a cross copy).
+async function checkFolders(
+  deps: SyncDeps,
+  decision: Extract<IncomingDecision, { kind: "check_folder" }>,
+  copies: KnownCopy[],
+  messageId: string | null,
+  baseKey: string
+): Promise<{ check: FolderCheckResult; copy: KnownCopy }> {
+  let first: { check: FolderCheckResult; copy: KnownCopy } | null = null;
+  for (const candidate of decision.candidates) {
+    const copy = copies.find((known) => known.id === candidate.emailId);
+    if (copy === undefined) throw new HardError("matched copy is missing");
+    const key: LocateKey = {
+      messageId,
+      contentHash: copy.contentHash,
+      from: copy.from,
+      receivedAt: copy.receivedAt,
+      hintUid: copy.uid,
+    };
+    const excludeUids = otherCopyUids(copies, copy.id, candidate.folder);
+    const stillInFolder = (await locateMessage(deps.provider, candidate.folder, key, { excludeUids })) !== null;
+    const check = resolveFolderCheck({
+      emailId: candidate.emailId,
+      stillInFolder,
+      systemMoved: candidate.systemMoved,
+      seenElsewhere: decision.seenElsewhere,
+      baseKey,
+      copyCount: copies.length,
+    });
+    if (!stillInFolder) return { check, copy };
+    first ??= { check, copy };
+  }
+  if (first === null) throw new HardError("check_folder without candidates");
+  return first;
+}
+
 // Phase 1: provider calls and DB reads only.
 async function planChunk(
   deps: SyncDeps,
@@ -231,33 +270,15 @@ async function planChunk(
     } else if (decision.kind === "cross_copy") {
       countCrossCopy(mailboxId, result, decision.emailId);
     } else if (decision.kind === "check_folder") {
-      const copy = copies.find((candidate) => candidate.id === decision.emailId);
-      if (copy === undefined) throw new HardError("matched copy is missing");
-      const key: LocateKey = {
-        messageId,
-        contentHash: copy.contentHash,
-        from: copy.from,
-        receivedAt: copy.receivedAt,
-        hintUid: copy.uid,
-      };
-      const excludeUids = otherCopyUids(copies, copy.id, decision.folder);
-      const stillInFolder = (await locateMessage(deps.provider, decision.folder, key, { excludeUids })) !== null;
-      const check = resolveFolderCheck({
-        emailId: decision.emailId,
-        stillInFolder,
-        systemMoved: decision.systemMoved,
-        seenElsewhere: decision.seenElsewhere,
-        baseKey,
-        copyCount: copies.length,
-      });
+      const { check, copy } = await checkFolders(deps, decision, copies, messageId, baseKey);
       if (check.kind === "cross_copy") {
         countCrossCopy(mailboxId, result, check.emailId);
       } else {
-        state.matched.set(decision.emailId, folder);
+        state.matched.set(copy.id, folder);
         if (check.kind === "returned") {
-          writes.push({ kind: "returned", emailId: decision.emailId, uid: meta.uid, folder });
+          writes.push({ kind: "returned", emailId: check.emailId, uid: meta.uid, folder });
         } else if (check.kind === "relocated") {
-          writes.push({ kind: "relocated", emailId: decision.emailId, uid: meta.uid, from: copy.folder, to: folder });
+          writes.push({ kind: "relocated", emailId: check.emailId, uid: meta.uid, from: copy.folder, to: folder });
         } else {
           dedupKey = check.dedupKey;
         }
