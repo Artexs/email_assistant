@@ -1,6 +1,5 @@
-import { describe, expect, test } from "bun:test";
-
 import { securityEvents } from "@ea/core";
+import { describe, expect, test } from "bun:test";
 
 import { auditEvents } from "./repo";
 
