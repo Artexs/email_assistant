@@ -43,7 +43,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F101-panel-to-astro-7` (needs refresh, plan landed, 4 stages): Panel to Astro 7; sequenced after E1; gate —.
 - `F102-e4-a-act-from-the-panel` (🔴 PLANNED, needs plan): E4-A Act from the panel; sequenced after E1, E7-T1, Astro 7; gate —.
 - `F103-e8a-logs` (plan landed, 19 stages): every log line an event, CLI output apart, log store on the tailnet; sequenced after E1; gate —.
-- `F104-e5a-read-sent` (🔴 PLANNED, needs plan): E5a Read Sent; sequenced after E1, E7-T2; gate —.
+- `F104-e5a-read-sent` (plan landed, cold review 1 fixed, 12 stages): E5a Read Sent; build after F095 closes (F099 closed); drift check first; gate —.
 - `F105-e7-t6-identity-a-totp-backup-codes-break-glass` (plan landed, 15 stages): E7-T6 Identity A (TOTP, backup codes, break-glass); stage 01 the only migration, stage 10 changes `bun.lock`; sequenced after F082 (closed); gate —.
 - `F106-e7-t3-account-data-delete-export-dsr` (🔴 PLANNED, needs plan): E7-T3 Account data (delete, export, DSR); sequenced after F082, E7-T1; gate —.
 - `F107-e7-t4-papers-and-cost` (🔴 PLANNED, needs plan): E7-T4 Papers and cost; sequenced after E7-T3; gate —.

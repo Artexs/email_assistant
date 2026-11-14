@@ -1,0 +1,1380 @@
+{
+  "scenario": "lab-01",
+  "part": "dev",
+  "batch": "batch-001",
+  "slots": [
+    {
+      "id": "b-del-0008",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-13T15:36:00.000Z",
+      "category": "delegation",
+      "topic": "joint-venture",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "ksiegowa",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "short",
+        "format": "html",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "head-export",
+          "brief": "the first mail of the exchange about Wspolne przetargi z Baltic Freight Partners"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 13,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 5,
+          "urgent": 1,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 6,
+        "lastUserMailDaysAgo": 17,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 3,
+        "medianUserReplyHours": 30.1,
+        "medianTheirReplyHours": 20.4,
+        "relation": "known"
+      },
+      "brief": "a task in faktury: asks the executive to have Wspolne przetargi z Baltic Freight Partners handled by the team"
+    },
+    {
+      "id": "b-del-0022",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-12T13:17:00.000Z",
+      "category": "delegation",
+      "topic": "joint-venture",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "asystentka",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "short",
+        "format": "html",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 13,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 5,
+          "urgent": 1,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 6,
+        "lastUserMailDaysAgo": 17,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 3,
+        "medianUserReplyHours": 30.1,
+        "medianTheirReplyHours": 20.4,
+        "relation": "known"
+      },
+      "brief": "a task in kalendarz: asks the executive to have Wspolne przetargi z Baltic Freight Partners handled by the team"
+    },
+    {
+      "id": "b-del-0029",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-22T11:40:00.000Z",
+      "category": "delegation",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "koordynator-sprzedazy",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 59,
+        "byCategory": {
+          "needs_reply": 26,
+          "urgent": 15,
+          "info": 12,
+          "delegation": 6
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 37,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 36,
+        "lastUserMailDaysAgo": 29,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 57,
+        "lastSeenDaysAgo": 12,
+        "medianUserReplyHours": 0.9,
+        "medianTheirReplyHours": 12.3,
+        "relation": "vip"
+      },
+      "brief": "a task in umowy: Zbigniew Orlowicz wants someone to take care of Posiedzenie rady nadzorczej i budzet"
+    },
+    {
+      "id": "b-del-0030",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-22T11:52:00.000Z",
+      "category": "delegation",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "asystentka",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 13,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 5,
+          "urgent": 1,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 6,
+        "lastUserMailDaysAgo": 17,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 3,
+        "medianUserReplyHours": 30.1,
+        "medianTheirReplyHours": 20.4,
+        "relation": "known"
+      },
+      "brief": "a task in kalendarz: Daniel Hargreaves wants someone to take care of Eksport i odprawy celne"
+    },
+    {
+      "id": "b-del-0033",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "head-export",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-19T14:16:00.000Z",
+      "category": "delegation",
+      "topic": "umowa-nordic",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "koordynator-sprzedazy",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 30,
+        "byCategory": {
+          "info": 12,
+          "needs_reply": 9,
+          "urgent": 3,
+          "delegation": 3,
+          "notification": 3
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 18,
+        "flagged": 2,
+        "unseen7d": 4,
+        "userMailsTo": 43,
+        "lastUserMailDaysAgo": 11,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 66,
+        "lastSeenDaysAgo": 4,
+        "medianUserReplyHours": 31.1,
+        "medianTheirReplyHours": 11.3,
+        "relation": "known"
+      },
+      "brief": "a task in umowy: Oliver Pemberton wants someone to take care of Umowa ramowa z Nordic Foods Trade"
+    },
+    {
+      "id": "b-del-0039",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-20T07:49:00.000Z",
+      "category": "delegation",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "asystentka",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 59,
+        "byCategory": {
+          "needs_reply": 26,
+          "urgent": 15,
+          "info": 12,
+          "delegation": 6
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 37,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 36,
+        "lastUserMailDaysAgo": 29,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 57,
+        "lastSeenDaysAgo": 12,
+        "medianUserReplyHours": 0.9,
+        "medianTheirReplyHours": 12.3,
+        "relation": "vip"
+      },
+      "brief": "a task in kalendarz: asks the executive to have Posiedzenie rady nadzorczej i budzet handled by the team"
+    },
+    {
+      "id": "b-del-0040",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "dostawca-paliw",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-22T08:34:00.000Z",
+      "category": "delegation",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "koordynator-sprzedazy",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 10,
+        "byCategory": {
+          "info": 4,
+          "needs_reply": 4,
+          "notification": 1,
+          "delegation": 1
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 6,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 12,
+        "lastUserMailDaysAgo": 28,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 73,
+        "lastSeenDaysAgo": 0,
+        "medianUserReplyHours": 9.6,
+        "medianTheirReplyHours": 25.5,
+        "relation": "known"
+      },
+      "brief": "a task in umowy: Ewelina Marszalek wants someone to take care of Faktury i platnosci"
+    },
+    {
+      "id": "b-del-0042",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-22T17:16:00.000Z",
+      "category": "delegation",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "koordynator-sprzedazy",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 59,
+        "byCategory": {
+          "needs_reply": 26,
+          "urgent": 15,
+          "info": 12,
+          "delegation": 6
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 37,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 36,
+        "lastUserMailDaysAgo": 29,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 57,
+        "lastSeenDaysAgo": 12,
+        "medianUserReplyHours": 0.9,
+        "medianTheirReplyHours": 12.3,
+        "relation": "vip"
+      },
+      "brief": "a task in umowy: asks the executive to have Posiedzenie rady nadzorczej i budzet handled by the team"
+    },
+    {
+      "id": "b-del-0043",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-20T10:30:00.000Z",
+      "category": "delegation",
+      "topic": "kalendarz-podroze",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "ksiegowa",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 59,
+        "byCategory": {
+          "needs_reply": 26,
+          "urgent": 15,
+          "info": 12,
+          "delegation": 6
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 37,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 36,
+        "lastUserMailDaysAgo": 29,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 57,
+        "lastSeenDaysAgo": 12,
+        "medianUserReplyHours": 0.9,
+        "medianTheirReplyHours": 12.3,
+        "relation": "vip"
+      },
+      "brief": "a task in faktury: Zbigniew Orlowicz wants someone to take care of Kalendarz zarzadu i podroze sluzbowe"
+    },
+    {
+      "id": "b-del-0048",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "klient-hurtownia",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-15T06:16:00.000Z",
+      "category": "delegation",
+      "topic": "przetarg-zielona",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "koordynator-sprzedazy",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 20,
+        "byCategory": {
+          "needs_reply": 10,
+          "info": 5,
+          "urgent": 3,
+          "delegation": 2
+        },
+        "corrections": {
+          "delegation": 1
+        },
+        "movedBack": 0,
+        "answered": 10,
+        "flagged": 0,
+        "unseen7d": 0,
+        "userMailsTo": 10,
+        "lastUserMailDaysAgo": 6,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 67,
+        "lastSeenDaysAgo": 10,
+        "medianUserReplyHours": 32.8,
+        "medianTheirReplyHours": 41.2,
+        "relation": "vip"
+      },
+      "brief": "a task in umowy: asks the executive to have Przetarg sieci Zielona Hurtownia handled by the team"
+    },
+    {
+      "id": "b-del-0050",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "klient-nordic",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-22T09:06:00.000Z",
+      "category": "delegation",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "asystentka",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "short",
+        "format": "html",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 36,
+        "byCategory": {
+          "needs_reply": 18,
+          "info": 9,
+          "urgent": 5,
+          "delegation": 4
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 24,
+        "flagged": 2,
+        "unseen7d": 2,
+        "userMailsTo": 30,
+        "lastUserMailDaysAgo": 25,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 52,
+        "lastSeenDaysAgo": 11,
+        "medianUserReplyHours": 18.1,
+        "medianTheirReplyHours": 0.9,
+        "relation": "known"
+      },
+      "brief": "a task in kalendarz: Karin Lindqvist wants someone to take care of Eksport i odprawy celne"
+    },
+    {
+      "id": "b-del-0052",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "dostawca-paliw",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-11T11:01:00.000Z",
+      "category": "delegation",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "ksiegowa",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "phishing-paliwa",
+          "brief": "an earlier message of the exchange about Faktury i platnosci"
+        },
+        {
+          "persona": "prezes-zarzadu",
+          "brief": "a short earlier note of the executive about Faktury i platnosci"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 10,
+        "byCategory": {
+          "info": 4,
+          "needs_reply": 4,
+          "notification": 1,
+          "delegation": 1
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 6,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 12,
+        "lastUserMailDaysAgo": 28,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 73,
+        "lastSeenDaysAgo": 0,
+        "medianUserReplyHours": 9.6,
+        "medianTheirReplyHours": 25.5,
+        "relation": "known"
+      },
+      "brief": "a task in faktury: Ewelina Marszalek wants someone to take care of Faktury i platnosci"
+    },
+    {
+      "id": "b-del-0055",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "dostawca-naczepy",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-15T13:51:00.000Z",
+      "category": "delegation",
+      "topic": "flota-naczepy",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "asystentka",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 13,
+        "byCategory": {
+          "info": 5,
+          "needs_reply": 5,
+          "notification": 2,
+          "delegation": 1
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 6,
+        "flagged": 0,
+        "unseen7d": 3,
+        "userMailsTo": 15,
+        "lastUserMailDaysAgo": 12,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 43,
+        "lastSeenDaysAgo": 1,
+        "medianUserReplyHours": 41.6,
+        "medianTheirReplyHours": 36.1,
+        "relation": "known"
+      },
+      "brief": "a task in kalendarz: Matthias Brandt wants someone to take care of Zakup naczep i serwis floty"
+    },
+    {
+      "id": "b-del-0060",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-22T07:57:00.000Z",
+      "category": "delegation",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "koordynator-sprzedazy",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "head-export",
+          "brief": "an earlier message of the exchange about Eksport i odprawy celne"
+        },
+        {
+          "persona": "prezes-zarzadu",
+          "brief": "the executive's earlier answer about Eksport i odprawy celne"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 13,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 5,
+          "urgent": 1,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 6,
+        "lastUserMailDaysAgo": 17,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 3,
+        "medianUserReplyHours": 30.1,
+        "medianTheirReplyHours": 20.4,
+        "relation": "known"
+      },
+      "brief": "a task in umowy: asks the executive to have Eksport i odprawy celne handled by the team"
+    },
+    {
+      "id": "b-del-0062",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-22T06:00:00.000Z",
+      "category": "delegation",
+      "topic": "kalendarz-podroze",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "asystentka",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 59,
+        "byCategory": {
+          "needs_reply": 26,
+          "urgent": 15,
+          "info": 12,
+          "delegation": 6
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 37,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 36,
+        "lastUserMailDaysAgo": 29,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 57,
+        "lastSeenDaysAgo": 12,
+        "medianUserReplyHours": 0.9,
+        "medianTheirReplyHours": 12.3,
+        "relation": "vip"
+      },
+      "brief": "a task in kalendarz: asks the executive to have Kalendarz zarzadu i podroze sluzbowe handled by the team"
+    },
+    {
+      "id": "b-del-0064",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-14T06:52:00.000Z",
+      "category": "delegation",
+      "topic": "joint-venture",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "ksiegowa",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 13,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 5,
+          "urgent": 1,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 6,
+        "lastUserMailDaysAgo": 17,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 3,
+        "medianUserReplyHours": 30.1,
+        "medianTheirReplyHours": 20.4,
+        "relation": "known"
+      },
+      "brief": "a task in faktury: asks the executive to have Wspolne przetargi z Baltic Freight Partners handled by the team"
+    },
+    {
+      "id": "b-del-0077",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "dostawca-naczepy",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-15T15:11:00.000Z",
+      "category": "delegation",
+      "topic": "umowy-sprzedaz",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "asystentka",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 13,
+        "byCategory": {
+          "info": 5,
+          "needs_reply": 5,
+          "notification": 2,
+          "delegation": 1
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 6,
+        "flagged": 0,
+        "unseen7d": 3,
+        "userMailsTo": 15,
+        "lastUserMailDaysAgo": 12,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 43,
+        "lastSeenDaysAgo": 1,
+        "medianUserReplyHours": 41.6,
+        "medianTheirReplyHours": 36.1,
+        "relation": "known"
+      },
+      "brief": "a task in kalendarz: Matthias Brandt wants someone to take care of Umowy i cenniki sprzedazy"
+    },
+    {
+      "id": "b-del-0080",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-14T15:34:00.000Z",
+      "category": "delegation",
+      "topic": "kalendarz-podroze",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "koordynator-sprzedazy",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 59,
+        "byCategory": {
+          "needs_reply": 26,
+          "urgent": 15,
+          "info": 12,
+          "delegation": 6
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 37,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 36,
+        "lastUserMailDaysAgo": 29,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 57,
+        "lastSeenDaysAgo": 12,
+        "medianUserReplyHours": 0.9,
+        "medianTheirReplyHours": 12.3,
+        "relation": "vip"
+      },
+      "brief": "a task in umowy: Zbigniew Orlowicz wants someone to take care of Kalendarz zarzadu i podroze sluzbowe"
+    },
+    {
+      "id": "b-del-0086",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "dyr-hr",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-12T08:20:00.000Z",
+      "category": "delegation",
+      "topic": "rekrutacje",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "ksiegowa",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 62,
+        "byCategory": {
+          "info": 25,
+          "needs_reply": 19,
+          "urgent": 6,
+          "delegation": 6,
+          "notification": 6
+        },
+        "corrections": {
+          "urgent": 1
+        },
+        "movedBack": 2,
+        "answered": 43,
+        "flagged": 0,
+        "unseen7d": 3,
+        "userMailsTo": 34,
+        "lastUserMailDaysAgo": 22,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 34.6,
+        "medianTheirReplyHours": 39.4,
+        "relation": "known"
+      },
+      "brief": "a task in faktury: asks the executive to have Rekrutacje i obsada magazynow handled by the team"
+    },
+    {
+      "id": "b-del-0088",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "klient-meble",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-14T17:43:00.000Z",
+      "category": "delegation",
+      "topic": "terminy-dostaw",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "koordynator-sprzedazy",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 10,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 3,
+          "urgent": 1,
+          "delegation": 1
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 12,
+        "lastUserMailDaysAgo": 13,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 83,
+        "lastSeenDaysAgo": 6,
+        "medianUserReplyHours": 32,
+        "medianTheirReplyHours": 2.4,
+        "relation": "known"
+      },
+      "brief": "a task in umowy: Tomasz Brzezinski wants someone to take care of Terminy dostaw i okna rozladunku"
+    },
+    {
+      "id": "b-del-0095",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "head-export",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-19T10:12:00.000Z",
+      "category": "delegation",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "ksiegowa",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "long",
+        "format": "html",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "klient-nordic",
+          "brief": "an earlier message of the exchange about Eksport i odprawy celne"
+        },
+        {
+          "persona": "prezes-zarzadu",
+          "brief": "a short earlier note of the executive about Eksport i odprawy celne"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 30,
+        "byCategory": {
+          "info": 12,
+          "needs_reply": 9,
+          "urgent": 3,
+          "delegation": 3,
+          "notification": 3
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 18,
+        "flagged": 2,
+        "unseen7d": 4,
+        "userMailsTo": 43,
+        "lastUserMailDaysAgo": 11,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 66,
+        "lastSeenDaysAgo": 4,
+        "medianUserReplyHours": 31.1,
+        "medianTheirReplyHours": 11.3,
+        "relation": "known"
+      },
+      "brief": "a task in faktury: Oliver Pemberton wants someone to take care of Eksport i odprawy celne"
+    },
+    {
+      "id": "b-del-0105",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "dostawca-paliw",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-11T16:23:00.000Z",
+      "category": "delegation",
+      "topic": "karty-paliwowe",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "asystentka",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "bank-system",
+          "brief": "the first mail of the exchange about Karty paliwowe i ceny paliw"
+        },
+        {
+          "persona": "prezes-zarzadu",
+          "brief": "a short earlier note of the executive about Karty paliwowe i ceny paliw"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 10,
+        "byCategory": {
+          "info": 4,
+          "needs_reply": 4,
+          "notification": 1,
+          "delegation": 1
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 6,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 12,
+        "lastUserMailDaysAgo": 28,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 73,
+        "lastSeenDaysAgo": 0,
+        "medianUserReplyHours": 9.6,
+        "medianTheirReplyHours": 25.5,
+        "relation": "known"
+      },
+      "brief": "a task in kalendarz: asks the executive to have Karty paliwowe i ceny paliw handled by the team"
+    },
+    {
+      "id": "b-del-0114",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "klient-nordic",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-20T17:29:00.000Z",
+      "category": "delegation",
+      "topic": "umowa-nordic",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "asystentka",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 36,
+        "byCategory": {
+          "needs_reply": 18,
+          "info": 9,
+          "urgent": 5,
+          "delegation": 4
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 24,
+        "flagged": 2,
+        "unseen7d": 2,
+        "userMailsTo": 30,
+        "lastUserMailDaysAgo": 25,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 52,
+        "lastSeenDaysAgo": 11,
+        "medianUserReplyHours": 18.1,
+        "medianTheirReplyHours": 0.9,
+        "relation": "known"
+      },
+      "brief": "a task in kalendarz: Karin Lindqvist wants someone to take care of Umowa ramowa z Nordic Foods Trade"
+    },
+    {
+      "id": "b-del-0122",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-22T12:45:00.000Z",
+      "category": "delegation",
+      "topic": "joint-venture",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "koordynator-sprzedazy",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 13,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 5,
+          "urgent": 1,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 6,
+        "lastUserMailDaysAgo": 17,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 3,
+        "medianUserReplyHours": 30.1,
+        "medianTheirReplyHours": 20.4,
+        "relation": "known"
+      },
+      "brief": "a task in umowy: Daniel Hargreaves wants someone to take care of Wspolne przetargi z Baltic Freight Partners"
+    },
+    {
+      "id": "b-del-0124",
+      "part": "dev",
+      "batch": "batch-001",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-12T14:36:00.000Z",
+      "category": "delegation",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "expectedDelegate": "koordynator-sprzedazy",
+      "expectedDraft": "delegation",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 13,
+        "byCategory": {
+          "needs_reply": 5,
+          "info": 5,
+          "urgent": 1,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 8,
+        "flagged": 2,
+        "unseen7d": 0,
+        "userMailsTo": 6,
+        "lastUserMailDaysAgo": 17,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 3,
+        "medianUserReplyHours": 30.1,
+        "medianTheirReplyHours": 20.4,
+        "relation": "known"
+      },
+      "brief": "a task in umowy: asks the executive to have Eksport i odprawy celne handled by the team"
+    }
+  ]
+}

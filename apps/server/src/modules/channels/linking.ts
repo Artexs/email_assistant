@@ -24,8 +24,8 @@ const OLD_TOKEN_AGE_MS = 24 * 60 * 60_000;
 
 export type ConsumeResult =
   | { kind: "linked"; orgId: string; userId: string }
-  | { kind: "used" }
-  | { kind: "expired" }
+  | { kind: "used"; userId: string }
+  | { kind: "expired"; userId: string }
   | { kind: "unknown" };
 
 // Only the hash is stored; the plain token leaves the server only in the CLI output.
@@ -100,7 +100,7 @@ export async function consumeLinkToken(
     if (!found) {
       return { kind: "unknown" };
     }
-    return found.usedAt ? { kind: "used" } : { kind: "expired" };
+    return found.usedAt ? { kind: "used", userId: found.userId } : { kind: "expired", userId: found.userId };
   });
 }
 

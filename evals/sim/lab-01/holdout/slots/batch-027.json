@@ -1,0 +1,1320 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-027",
+  "slots": [
+    {
+      "id": "b-rep-0024",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-18T11:20:00.000Z",
+      "category": "needs_reply",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "needs_reply": 6,
+          "info": 5,
+          "urgent": 2,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 9,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 13,
+        "lastUserMailDaysAgo": 8,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 38,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 3.7,
+        "medianTheirReplyHours": 21.7,
+        "relation": "known"
+      },
+      "brief": "asks the executive a direct question about Eksport i odprawy celne and waits for an answer"
+    },
+    {
+      "id": "b-rep-0025",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "dyr-hr",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-12T07:54:00.000Z",
+      "category": "needs_reply",
+      "topic": "rekrutacje",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 61,
+        "byCategory": {
+          "info": 25,
+          "needs_reply": 18,
+          "urgent": 6,
+          "delegation": 6,
+          "notification": 6
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 31,
+        "flagged": 0,
+        "unseen7d": 3,
+        "userMailsTo": 16,
+        "lastUserMailDaysAgo": 26,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 78,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 26.2,
+        "relation": "known"
+      },
+      "brief": "Rafal Kwiecinski wants the executive's view on Rekrutacje i obsada magazynow and asks for a written answer"
+    },
+    {
+      "id": "b-rep-0026",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "klient-nordic",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-18T07:48:00.000Z",
+      "category": "needs_reply",
+      "topic": "umowa-nordic",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 18,
+        "byCategory": {
+          "needs_reply": 9,
+          "info": 4,
+          "urgent": 3,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 13,
+        "flagged": 2,
+        "unseen7d": 3,
+        "userMailsTo": 9,
+        "lastUserMailDaysAgo": 21,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": 46.2,
+        "medianTheirReplyHours": 5.9,
+        "relation": "known"
+      },
+      "brief": "asks the executive a direct question about Umowa ramowa z Nordic Foods Trade and waits for an answer"
+    },
+    {
+      "id": "b-rep-0027",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "dyr-hr",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-18T16:15:00.000Z",
+      "category": "needs_reply",
+      "topic": "rekrutacje",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "dyr-operacyjny",
+          "brief": "the first mail of the exchange about Rekrutacje i obsada magazynow"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 61,
+        "byCategory": {
+          "info": 25,
+          "needs_reply": 18,
+          "urgent": 6,
+          "delegation": 6,
+          "notification": 6
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 31,
+        "flagged": 0,
+        "unseen7d": 3,
+        "userMailsTo": 16,
+        "lastUserMailDaysAgo": 26,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 78,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 26.2,
+        "relation": "known"
+      },
+      "brief": "Rafal Kwiecinski wants the executive's view on Rekrutacje i obsada magazynow and asks for a written answer"
+    },
+    {
+      "id": "b-rep-0029",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-14T15:51:00.000Z",
+      "category": "needs_reply",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": false,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "asystentka",
+          "brief": "an earlier message of the exchange about Posiedzenie rady nadzorczej i budzet"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "asks the executive a direct question about Posiedzenie rady nadzorczej i budzet and waits for an answer"
+    },
+    {
+      "id": "b-rep-0031",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-11T16:48:00.000Z",
+      "category": "needs_reply",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "Zbigniew Orlowicz wants the executive's view on Posiedzenie rady nadzorczej i budzet and asks for a written answer"
+    },
+    {
+      "id": "b-rep-0032",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "dostawca-paliw",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-13T16:32:00.000Z",
+      "category": "needs_reply",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 14,
+        "byCategory": {
+          "info": 6,
+          "needs_reply": 5,
+          "notification": 2,
+          "delegation": 1
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 4,
+        "flagged": 1,
+        "unseen7d": 4,
+        "userMailsTo": 12,
+        "lastUserMailDaysAgo": 21,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 57,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": 16.6,
+        "relation": "known"
+      },
+      "brief": "asks the executive a direct question about Faktury i platnosci and waits for an answer"
+    },
+    {
+      "id": "b-rep-0033",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-12T17:41:00.000Z",
+      "category": "needs_reply",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "Zbigniew Orlowicz wants the executive's view on Posiedzenie rady nadzorczej i budzet and asks for a written answer"
+    },
+    {
+      "id": "b-rep-0034",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "dostawca-naczepy",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-15T10:32:00.000Z",
+      "category": "needs_reply",
+      "topic": "flota-naczepy",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 8,
+        "byCategory": {
+          "info": 3,
+          "needs_reply": 3,
+          "notification": 1,
+          "delegation": 1
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 5,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 12,
+        "lastUserMailDaysAgo": 1,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 41,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": 17.5,
+        "medianTheirReplyHours": 36.6,
+        "relation": "known"
+      },
+      "brief": "asks the executive a direct question about Zakup naczep i serwis floty and waits for an answer"
+    },
+    {
+      "id": "b-rep-0035",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "dyr-hr",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-14T11:39:00.000Z",
+      "category": "needs_reply",
+      "topic": "rekrutacje",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 61,
+        "byCategory": {
+          "info": 25,
+          "needs_reply": 18,
+          "urgent": 6,
+          "delegation": 6,
+          "notification": 6
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 31,
+        "flagged": 0,
+        "unseen7d": 3,
+        "userMailsTo": 16,
+        "lastUserMailDaysAgo": 26,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 78,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 26.2,
+        "relation": "known"
+      },
+      "brief": "asks the executive a direct question about Rekrutacje i obsada magazynow and waits for an answer"
+    },
+    {
+      "id": "b-rep-0038",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "dyr-operacyjny",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-14T11:18:00.000Z",
+      "category": "needs_reply",
+      "topic": "flota-naczepy",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 57,
+        "byCategory": {
+          "info": 23,
+          "needs_reply": 17,
+          "urgent": 6,
+          "delegation": 6,
+          "notification": 5
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 40,
+        "flagged": 2,
+        "unseen7d": 1,
+        "userMailsTo": 27,
+        "lastUserMailDaysAgo": 19,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 63,
+        "lastSeenDaysAgo": 1,
+        "medianUserReplyHours": 43.5,
+        "medianTheirReplyHours": 0.6,
+        "relation": "known"
+      },
+      "brief": "asks the executive a direct question about Zakup naczep i serwis floty and waits for an answer"
+    },
+    {
+      "id": "b-rep-0039",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "dostawca-paliw",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-19T15:54:00.000Z",
+      "category": "needs_reply",
+      "topic": "faktury",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 14,
+        "byCategory": {
+          "info": 6,
+          "needs_reply": 5,
+          "notification": 2,
+          "delegation": 1
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 4,
+        "flagged": 1,
+        "unseen7d": 4,
+        "userMailsTo": 12,
+        "lastUserMailDaysAgo": 21,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 57,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": null,
+        "medianTheirReplyHours": 16.6,
+        "relation": "known"
+      },
+      "brief": "Ewelina Marszalek wants the executive's view on Faktury i platnosci and asks for a written answer"
+    },
+    {
+      "id": "b-rep-0040",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "klient-hurtownia",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-18T17:37:00.000Z",
+      "category": "needs_reply",
+      "topic": "reklamacje",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 33,
+        "byCategory": {
+          "needs_reply": 17,
+          "info": 8,
+          "urgent": 5,
+          "delegation": 3
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 15,
+        "flagged": 2,
+        "unseen7d": 3,
+        "userMailsTo": 11,
+        "lastUserMailDaysAgo": 9,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 34.2,
+        "medianTheirReplyHours": 10.5,
+        "relation": "vip"
+      },
+      "brief": "asks the executive a direct question about Reklamacje i uszkodzone dostawy and waits for an answer"
+    },
+    {
+      "id": "b-rep-0041",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-22T09:56:00.000Z",
+      "category": "needs_reply",
+      "topic": "joint-venture",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "needs_reply": 6,
+          "info": 5,
+          "urgent": 2,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 9,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 13,
+        "lastUserMailDaysAgo": 8,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 38,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 3.7,
+        "medianTheirReplyHours": 21.7,
+        "relation": "known"
+      },
+      "brief": "asks the executive a direct question about Wspolne przetargi z Baltic Freight Partners and waits for an answer"
+    },
+    {
+      "id": "b-rep-0043",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "klient-hurtownia",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-14T17:36:00.000Z",
+      "category": "needs_reply",
+      "topic": "przetarg-zielona",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "prezes-zarzadu",
+          "brief": "the executive's earlier answer about Przetarg sieci Zielona Hurtownia"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 33,
+        "byCategory": {
+          "needs_reply": 17,
+          "info": 8,
+          "urgent": 5,
+          "delegation": 3
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 15,
+        "flagged": 2,
+        "unseen7d": 3,
+        "userMailsTo": 11,
+        "lastUserMailDaysAgo": 9,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 34.2,
+        "medianTheirReplyHours": 10.5,
+        "relation": "vip"
+      },
+      "brief": "asks the executive a direct question about Przetarg sieci Zielona Hurtownia and waits for an answer"
+    },
+    {
+      "id": "b-rep-0046",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "klient-nordic",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-22T12:04:00.000Z",
+      "category": "needs_reply",
+      "topic": "terminy-dostaw",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "head-export",
+          "brief": "the first mail of the exchange about Terminy dostaw i okna rozladunku"
+        },
+        {
+          "persona": "prezes-zarzadu",
+          "brief": "a short earlier note of the executive about Terminy dostaw i okna rozladunku"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 18,
+        "byCategory": {
+          "needs_reply": 9,
+          "info": 4,
+          "urgent": 3,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 13,
+        "flagged": 2,
+        "unseen7d": 3,
+        "userMailsTo": 9,
+        "lastUserMailDaysAgo": 21,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": 46.2,
+        "medianTheirReplyHours": 5.9,
+        "relation": "known"
+      },
+      "brief": "Karin Lindqvist wants the executive's view on Terminy dostaw i okna rozladunku and asks for a written answer"
+    },
+    {
+      "id": "b-rep-0047",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "klient-nordic",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-13T13:44:00.000Z",
+      "category": "needs_reply",
+      "topic": "umowa-nordic",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 18,
+        "byCategory": {
+          "needs_reply": 9,
+          "info": 4,
+          "urgent": 3,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 13,
+        "flagged": 2,
+        "unseen7d": 3,
+        "userMailsTo": 9,
+        "lastUserMailDaysAgo": 21,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": 46.2,
+        "medianTheirReplyHours": 5.9,
+        "relation": "known"
+      },
+      "brief": "Karin Lindqvist wants the executive's view on Umowa ramowa z Nordic Foods Trade and asks for a written answer"
+    },
+    {
+      "id": "b-rep-0048",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-11T08:35:00.000Z",
+      "category": "needs_reply",
+      "topic": "joint-venture",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "needs_reply": 6,
+          "info": 5,
+          "urgent": 2,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 9,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 13,
+        "lastUserMailDaysAgo": 8,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 38,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 3.7,
+        "medianTheirReplyHours": 21.7,
+        "relation": "known"
+      },
+      "brief": "Daniel Hargreaves wants the executive's view on Wspolne przetargi z Baltic Freight Partners and asks for a written answer"
+    },
+    {
+      "id": "b-rep-0049",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-20T11:41:00.000Z",
+      "category": "needs_reply",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "asks the executive a direct question about Posiedzenie rady nadzorczej i budzet and waits for an answer"
+    },
+    {
+      "id": "b-rep-0050",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-21T08:16:00.000Z",
+      "category": "needs_reply",
+      "topic": "joint-venture",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "needs_reply": 6,
+          "info": 5,
+          "urgent": 2,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 9,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 13,
+        "lastUserMailDaysAgo": 8,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 38,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 3.7,
+        "medianTheirReplyHours": 21.7,
+        "relation": "known"
+      },
+      "brief": "Daniel Hargreaves wants the executive's view on Wspolne przetargi z Baltic Freight Partners and asks for a written answer"
+    },
+    {
+      "id": "b-rep-0051",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "dostawca-naczepy",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-14T13:59:00.000Z",
+      "category": "needs_reply",
+      "topic": "flota-naczepy",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 8,
+        "byCategory": {
+          "info": 3,
+          "needs_reply": 3,
+          "notification": 1,
+          "delegation": 1
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 5,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 12,
+        "lastUserMailDaysAgo": 1,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 41,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": 17.5,
+        "medianTheirReplyHours": 36.6,
+        "relation": "known"
+      },
+      "brief": "asks the executive a direct question about Zakup naczep i serwis floty and waits for an answer"
+    },
+    {
+      "id": "b-rep-0052",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "klient-nordic",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-21T11:35:00.000Z",
+      "category": "needs_reply",
+      "topic": "terminy-dostaw",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 18,
+        "byCategory": {
+          "needs_reply": 9,
+          "info": 4,
+          "urgent": 3,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 13,
+        "flagged": 2,
+        "unseen7d": 3,
+        "userMailsTo": 9,
+        "lastUserMailDaysAgo": 21,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": 46.2,
+        "medianTheirReplyHours": 5.9,
+        "relation": "known"
+      },
+      "brief": "asks the executive a direct question about Terminy dostaw i okna rozladunku and waits for an answer"
+    },
+    {
+      "id": "b-rep-0053",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-14T14:52:00.000Z",
+      "category": "needs_reply",
+      "topic": "kalendarz-podroze",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "html",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "asks the executive a direct question about Kalendarz zarzadu i podroze sluzbowe and waits for an answer"
+    },
+    {
+      "id": "b-rep-0054",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "klient-nordic",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-13T10:28:00.000Z",
+      "category": "needs_reply",
+      "topic": "terminy-dostaw",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 18,
+        "byCategory": {
+          "needs_reply": 9,
+          "info": 4,
+          "urgent": 3,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 13,
+        "flagged": 2,
+        "unseen7d": 3,
+        "userMailsTo": 9,
+        "lastUserMailDaysAgo": 21,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": 46.2,
+        "medianTheirReplyHours": 5.9,
+        "relation": "known"
+      },
+      "brief": "Karin Lindqvist wants the executive's view on Terminy dostaw i okna rozladunku and asks for a written answer"
+    },
+    {
+      "id": "b-rep-0055",
+      "part": "holdout",
+      "batch": "batch-027",
+      "persona": "klient-hurtownia",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-12T08:02:00.000Z",
+      "category": "needs_reply",
+      "topic": "reklamacje",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "html",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 33,
+        "byCategory": {
+          "needs_reply": 17,
+          "info": 8,
+          "urgent": 5,
+          "delegation": 3
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 15,
+        "flagged": 2,
+        "unseen7d": 3,
+        "userMailsTo": 11,
+        "lastUserMailDaysAgo": 9,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 34.2,
+        "medianTheirReplyHours": 10.5,
+        "relation": "vip"
+      },
+      "brief": "asks the executive a direct question about Reklamacje i uszkodzone dostawy and waits for an answer"
+    }
+  ]
+}

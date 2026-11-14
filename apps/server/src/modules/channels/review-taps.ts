@@ -48,16 +48,12 @@ export function reviewPickerMessage(
   });
   const [urgent, needsReply, info, notification, spam, delegation] = reviewLabelCategories;
   return {
-    text: texts.review.pickerTitle(cleanSubject(subject, texts), categoryTag(current, texts)),
+    text: texts.bot.taps.picker.title(cleanSubject(subject, texts), categoryTag(current, texts)),
     buttons: [
       [pick(urgent), pick(needsReply)],
       [pick(info), pick(notification)],
       [pick(spam), pick(delegation)],
-      [{ text: texts.review.cancelButton, data: encodeCallback({ kind: "review_cancel", emailId }) }],
+      [{ text: texts.bot.taps.picker.cancelButton, data: encodeCallback({ kind: "review_cancel", emailId }) }],
     ],
   };
-}
-
-export function cancelledText(source: FeedbackSource, texts: CoreTexts): string {
-  return source === "review" ? texts.review.cancelled : "✏️ Cancelled.";
 }
