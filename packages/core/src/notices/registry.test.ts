@@ -16,7 +16,9 @@ import {
   renderSyncStaleNotice,
   renderUrgentNotice,
 } from "../digest/notices";
+import { renderWeeklyReport } from "../digest/weekly";
 import { describeActions, type WouldDoAction } from "../digest/would-do";
+import { weekStatsExample } from "../metrics/fixtures";
 import { type CoreTexts, textTables } from "../texts";
 
 import { encodeNoticeView } from "./encode";
@@ -256,6 +258,11 @@ const cases: Case[] = [
         texts
       ),
   },
+  {
+    kind: "weekly_report",
+    view: { week: weekStatsExample(), timeZone, answeredWaiting: 2 },
+    direct: (texts) => renderWeeklyReport({ week: weekStatsExample(), timeZone, answeredWaiting: 2 }, texts),
+  },
 ];
 
 // The view of a case, as the outbox row stores it.
@@ -272,6 +279,26 @@ describe("notice registries", () => {
 
   test("the fixture table has one case per kind", () => {
     expect(cases.map((testCase) => testCase.kind).sort()).toEqual([...noticeKinds].sort());
+  });
+});
+
+describe("the weekly report view", () => {
+  const view = { week: weekStatsExample(), timeZone, answeredWaiting: 0 };
+
+  test("accepts the stored view and refuses an extra key", () => {
+    expect(noticeViewSchemas.weekly_report.safeParse(view).success).toBe(true);
+    expect(noticeViewSchemas.weekly_report.safeParse({ ...view, subject: "x" }).success).toBe(false);
+    expect(noticeViewSchemas.weekly_report.safeParse({ ...view, answeredWaiting: -1 }).success).toBe(false);
+  });
+
+  test("refuses a week with a subject field", () => {
+    expect(noticeViewSchemas.weekly_report.safeParse({ ...view, week: { ...view.week, subject: "x" } }).success).toBe(
+      false
+    );
+  });
+
+  test("has a renderer", () => {
+    expect(noticeRenderers.weekly_report.schema).toBe(noticeViewSchemas.weekly_report);
   });
 });
 

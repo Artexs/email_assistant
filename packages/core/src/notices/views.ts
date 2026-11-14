@@ -6,6 +6,7 @@ import type { ApprovalView } from "../outgoing/sender";
 import { sendLimitKinds } from "../send-limits";
 import { draftKinds } from "../triage/payloads";
 import { actionTypes, moveTargets } from "../triage/planners";
+import { weekStatsSchema } from "../web/stats";
 
 import type { NoticeKind } from "./kinds";
 
@@ -190,6 +191,13 @@ const sendHeldView = z.strictObject({
   timeZone,
 });
 
+// The numbers of one week (all mailboxes) and the count of replied mails that wait for a check (D23).
+const weeklyReportView = z.strictObject({
+  week: weekStatsSchema,
+  timeZone,
+  answeredWaiting: z.number().int().min(0),
+});
+
 export const noticeViewSchemas = {
   digest: digestView,
   urgent: urgentView,
@@ -203,6 +211,7 @@ export const noticeViewSchemas = {
   delegation_answered: delegationAnsweredView,
   mailbox_removed: mailboxRemovedView,
   send_held: sendHeldView,
+  weekly_report: weeklyReportView,
 } satisfies Record<NoticeKind, z.ZodType>;
 
 export type NoticeView<K extends NoticeKind> = z.output<(typeof noticeViewSchemas)[K]>;
