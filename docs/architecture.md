@@ -692,6 +692,8 @@ Tenancy:
   | Server + DB | home VPS of the user                                                                                                                                                                                       | hosted EU VPS                                             |
   | Papers      | —                                                                                                                                                                                                          | Privacy policy names Google as processor; DPA with Google |
 
+  Changed 2026-11-14 (PD-001, F095 stage 01): no outside user is served now. The column "External customers (S6)" shows the plan for the day outside users come. Production stays on the home VPS (F108); the EU endpoint is ADR 0035 (proposed, F111); the privacy policy and DPA belong to E7 (F107).
+
 ## 8. Reliability and operations
 
 - **Scheduler** (in the server process, `croner`, one tick never overlaps the next): mail sync every 5 min per mailbox;
