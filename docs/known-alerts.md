@@ -55,13 +55,13 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** none for a single line. Many lines for one user id mean someone probes the operator routes: check the user. If the user is the operator, add the id to `OPERATOR_USER_IDS` and restart.
 - **Status:** won't fix (a refusal is the expected answer)
 
-### `sync <id> failed: host not allowed` and `sync <id>: mail host lookup failed (<code>); the next tick tries again`
+### `mailbox_host_blocked` (`reason=sync|committer`), `mailbox_host_check_failed`, `mailbox_host_block_failed`, `mailbox_host_recheck_failed` (before F085: `sync <id> failed: host not allowed`) and `sync <id>: mail host lookup failed (<code>); the next tick tries again`
 
 - **First seen:** 2026-11-13 (S6b, F082 stage 8 and 9; not seen live)
-- **Source:** `apps/server/src/modules/mail/host-guard.ts` (`resolveMailHost`), through `modules/mail/port.ts` (`HostNotAllowedError`, a hard error). The sync job (`modules/mail/jobs.ts`) logs `host not allowed` at level `error` and the failed lookup (a soft error) at level `warn`. The connect form and the send path raise the same errors.
+- **Source:** `apps/server/src/modules/mail/host-guard.ts` (`resolveMailHost`), through `modules/mail/port.ts` (`HostNotAllowedError`, a hard error). `mail/host-status.ts`, `mail/jobs.ts` and `actions/committer.ts` write the lines: `mailbox_host_blocked` (warn; the guard refused a host and the mailbox became `host_blocked`), `mailbox_host_check_failed` (warn; a lookup failed in the re-check), `mailbox_host_block_failed` (error; the DB write of the status failed), `mailbox_host_recheck_failed` (error; the re-check list failed, the sync run goes on). The sync job logs a failed lookup (a soft error) at level `warn`. The connect form and the send path raise the same errors.
 - **Cause:** `host not allowed`: the mail host is, or resolves to, a local, private, multicast, reserved, NAT64 or 6to4 address, and `MAIL_ALLOW_LOCAL_HOSTS` is not true. `mail host lookup failed (<code>)`: the DNS lookup failed (`<code>` is the system code, `ENODATA` for an empty answer, `UNKNOWN` for none).
-- **Fix:** `host not allowed`: check the mailbox host in the panel. A real provider host is public, so a refusal means a wrong host or a DNS change. Do not set `MAIL_ALLOW_LOCAL_HOSTS` on the VPS. `lookup failed`: check DNS from the server container. Until F085 lands, a refused host has no status and no notice: only this log line on every run.
-- **Status:** investigating (per case)
+- **Fix:** `mailbox_host_blocked`: run `bun run mailbox:check --org-id … --mailbox-id …` (it prints which side is refused and does not connect), then check the DNS answer of the provider host from the server container. A real provider host is public, so a refusal means a wrong host or a DNS change. The mailbox returns by itself when the name resolves to a public address. Do not set `MAIL_ALLOW_LOCAL_HOSTS` on the VPS. `mailbox_host_block_failed`: the DB failed; the next run tries again. `lookup failed`: check DNS from the server container.
+- **Status:** fixed for the silent failure (the owner gets a status and a notice); investigating (per case) for a real refusal
 
 ### `pwned_check_unavailable` (`status=`, `reason=no_range_lines`, `error=`; before F089: `pwned check unavailable: <status|name|no range lines in the answer>`)
 
