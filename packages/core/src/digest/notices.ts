@@ -71,6 +71,23 @@ export function renderAuthErrorNotice(
   };
 }
 
+// The mail host guard refuses a host of the mailbox. The view holds no mailbox id, no host name and no network address.
+export function renderHostBlockedNotice(
+  input: { address: string; since: Date; now: Date; timeZone: string },
+  texts: CoreTexts
+): OutMessage {
+  const since = formatClock(input.since, input.timeZone, input.now, texts.locale);
+  return {
+    text: [
+      texts.notices.hostBlocked.first(cutText(input.address, 60), since),
+      texts.notices.hostBlocked.why,
+      texts.notices.hostBlocked.noRead,
+      texts.notices.hostBlocked.recheck,
+    ].join("\n"),
+    buttons: [],
+  };
+}
+
 // Sends of one mailbox wait on a send limit (PD-044). The view holds no limit number: the text names the window.
 export function renderSendHeldNotice(
   input: {

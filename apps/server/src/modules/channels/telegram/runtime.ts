@@ -105,10 +105,10 @@ export function createTelegramRuntime(deps: TelegramRuntimeDeps): TelegramRuntim
 
   return {
     async notify() {
-      await detectNotices({ db, now, startedAt });
+      await detectNotices({ db, now, startedAt, testMail: deps.testMail });
       await sender.run();
     },
-    scheduleDigests: () => scheduleDigests({ db, now }),
+    scheduleDigests: () => scheduleDigests({ db, now, testMail: deps.testMail }),
     startPolling() {
       polling ??= startPolling(bot);
     },

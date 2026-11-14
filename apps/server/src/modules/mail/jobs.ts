@@ -8,6 +8,7 @@ import { isOrgSuspended } from "../tenancy";
 
 import { FLAGS_REFRESH_EVERY_MS, refreshFlags } from "./flags";
 import type { ImapConnectOptions } from "./imap/client";
+import { findUserMoves } from "./moves";
 import { openMailboxProvider } from "./open";
 import { MailAuthError, type MailProvider } from "./port";
 import { listSyncTargets, markSynced, setMailboxStatus } from "./repo";
@@ -58,6 +59,17 @@ async function syncOne(
       try {
         const refreshed = await refreshFlags({ db: deps.db, provider, now: deps.now }, ctx, mailboxId);
         log.info("flags_refreshed", { mailbox_id: mailboxId, count: refreshed.written });
+        // Mail that the refresh did not find in its folder may sit at the same UID in a synced folder below its cursor (a webmail move keeps the UID).
+        if (refreshed.gone.length > 0) {
+          try {
+            // `deps.db`, never a transaction: the finder takes the folder lock per folder and must not hold it across IMAP calls.
+            await findUserMoves({ db: deps.db, provider, now: deps.now }, ctx, mailboxId, refreshed.gone, {
+              skipFolders: [...result.failed, ...result.skipped],
+            });
+          } catch (error) {
+            log.warn("user_moves_failed", { mailbox_id: mailboxId, ...errorFields(error) });
+          }
+        }
       } catch (error) {
         log.warn("flags_refresh_failed", { mailbox_id: mailboxId, ...errorFields(error) });
       }

@@ -146,7 +146,12 @@ describe("an urgent notice", () => {
         createdAt: new Date(T.getTime() - 10 * MINUTE),
       });
 
-      await detectNotices({ db: trx, now: () => T, startedAt: new Date(T.getTime() - HOUR) });
+      await detectNotices({
+        db: trx,
+        now: () => T,
+        startedAt: new Date(T.getTime() - HOUR),
+        testMail: NO_TEST_SENDERS,
+      });
       await sendQueued(trx);
 
       const rows = await outboxRows(trx, m.orgId, "urgent");
@@ -176,7 +181,12 @@ describe("an approval request", () => {
         delegateId,
       });
 
-      await detectNotices({ db: trx, now: () => T, startedAt: new Date(T.getTime() - HOUR) });
+      await detectNotices({
+        db: trx,
+        now: () => T,
+        startedAt: new Date(T.getTime() - HOUR),
+        testMail: NO_TEST_SENDERS,
+      });
       await sendQueued(trx);
       const cards = await outboxRows(trx, m.orgId, "approval");
       expect(cards).toHaveLength(1);
@@ -199,7 +209,7 @@ describe("a scheduled digest", () => {
       const m = await member(trx, locale, { linked: true, linkedAt: new Date("2026-11-05T20:00:00Z") });
       await setDigestTimes(trx, m.ctx, m.userId, ["08:00", "16:00"]);
 
-      await scheduleDigests({ db: trx, now: () => new Date("2026-11-06T07:00:00Z") });
+      await scheduleDigests({ db: trx, now: () => new Date("2026-11-06T07:00:00Z"), testMail: NO_TEST_SENDERS });
 
       const rows = await outboxRows(trx, m.orgId, "digest");
       expect(rows).toHaveLength(1);

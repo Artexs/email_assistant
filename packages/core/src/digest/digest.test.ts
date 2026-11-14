@@ -252,6 +252,13 @@ describe("renderDigest", () => {
         lastSyncedAt: new Date("2026-11-06T06:35:00Z"),
       })
     ).toBe("❌ Login error since 07:40 · last sync 07:35");
+    expect(
+      line({
+        status: "host_blocked",
+        statusChangedAt: new Date("2026-11-06T06:40:00Z"),
+        lastSyncedAt: new Date("2026-11-06T06:35:00Z"),
+      })
+    ).toBe("⛔ Mail server not allowed since 07:40 · last sync 07:35");
     const two = render(
       input({ mailboxes: [mailbox, { ...mailbox, id: "m2", address: "other@firma.test" }] })
     ).text.split("\n");
@@ -432,6 +439,19 @@ describe("renderDigest in Polish", () => {
       ],
     });
     expect(paused.text.split("\n")[2]).toBe("⏸ Wstrzymana od 5 lis 14:00 · ostatnia synchronizacja: nigdy");
+    const blocked = polish({
+      mailboxes: [
+        {
+          ...mailbox,
+          status: "host_blocked",
+          statusChangedAt: new Date("2026-11-06T06:40:00Z"),
+          lastSyncedAt: new Date("2026-11-06T06:35:00Z"),
+        },
+      ],
+    });
+    expect(blocked.text.split("\n")).toContain(
+      "⛔ Serwer poczty niedozwolony od 07:40 · ostatnia synchronizacja: 07:35"
+    );
   });
 
   test("over the limit: the text is cut to the limit", () => {
