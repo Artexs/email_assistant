@@ -19,7 +19,8 @@ export const evalUsage = [
   "                    [--retries 4] [--limit n] [--per-category n] [--state <file.jsonl>] [--fresh]",
   "                    [--out <file.md>]",
   "       bun run eval --real --org-id <uuid> --mailbox-id <uuid> [--synthetic] [--model <id>] [--bar 0.98] [--min-kept 30]",
-  "                    [--out <file.md>]",
+  "                    [--json <file>] [--out <file.md>]",
+  "       bun run eval --gap --sim-json <gate file> --real-json <file> [--out <file.md>]",
   "       bun run eval --sim <scenario> --part dev|holdout|week [--provider …] [--model …] [--reasoning-effort …]",
   `                    [--concurrency <n, default ${SIM_DEFAULT_CONCURRENCY}>] [--rpm <n, default ${SIM_DEFAULT_RPM}>] [--budget-usd 1]`,
   "                    [--spend-ledger <file>] [--fresh] [--fresh-lock] [--retries 4] [--limit n] [--out <file.md>]",
@@ -41,6 +42,10 @@ const optionsSchema = z.object({
   out: z.string().min(1).optional(),
   real: z.boolean().default(false),
   synthetic: z.boolean().default(false),
+  json: z.string().min(1).optional(),
+  gap: z.boolean().default(false),
+  "sim-json": z.string().min(1).optional(),
+  "real-json": z.string().min(1).optional(),
   "org-id": z.uuid().optional(),
   "mailbox-id": z.uuid().optional(),
   sim: z
@@ -66,7 +71,9 @@ export type EvalOptions = z.infer<typeof optionsSchema> & {
 };
 
 // --real reads labels from the DB and takes no case-run options; the case run takes no DB options.
-const realOnly = ["org-id", "mailbox-id", "synthetic"] as const;
+const realOnly = ["org-id", "mailbox-id", "synthetic", "json"] as const;
+// --gap reads two files: no DB, no LLM, no case-run option. Only --out stays.
+const gapOnly = ["sim-json", "real-json"] as const;
 const casesOnly = [
   "provider",
   "reasoning-effort",
@@ -78,7 +85,7 @@ const casesOnly = [
   "fresh",
 ] as const;
 // A sim run takes its set and state file from the corpus, and has no DB.
-const simExcluded = ["real", "set", "per-category", "state", ...realOnly] as const;
+const simExcluded = ["real", "gap", ...gapOnly, "set", "per-category", "state", ...realOnly] as const;
 const simOnly = [
   "part",
   "concurrency",
@@ -112,6 +119,10 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
         out: { type: "string" },
         real: { type: "boolean" },
         synthetic: { type: "boolean" },
+        json: { type: "string" },
+        gap: { type: "boolean" },
+        "sim-json": { type: "string" },
+        "real-json": { type: "string" },
         "org-id": { type: "string" },
         "mailbox-id": { type: "string" },
         sim: { type: "string" },
@@ -131,6 +142,13 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
     const parsed = optionsSchema.safeParse(values);
     if (!parsed.success) return undefined;
     const data = parsed.data;
+    if (data.gap) {
+      const allowed = new Set<string>(["gap", "out", ...gapOnly]);
+      if (Object.keys(values).some((key) => !allowed.has(key))) return undefined;
+      if (data["sim-json"] === undefined || data["real-json"] === undefined) return undefined;
+      return { ...data, concurrency: 1, budgetUsd: RUN_CAP_USD };
+    }
+    if (gapOnly.some((key) => values[key] !== undefined)) return undefined;
     if (data.sim !== undefined) {
       if (data.part === undefined) return undefined;
       if (simExcluded.some((key) => values[key] !== undefined)) return undefined;

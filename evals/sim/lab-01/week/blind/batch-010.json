@@ -1,0 +1,319 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-010",
+  "cases": [
+    {
+      "id": "w-2-073",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: zlecenie serwisowe WMS utworzone",
+      "body": "Zlecenie serwisowe utworzone\n\nSystem ERP Kordelan utworzył zlecenie serwisowe dla modułu WMS.\n\nNumer zlecenia: SRV-0731\nTyp: przegląd planowy\nLokalizacja: magazyn w Łodzi\nTermin realizacji: 28.01.2027, godz. 22:00 - 23:30\nWykonawca: dział utrzymania systemów\nWpływ na pracę magazynu: brak, przegląd wykonywany poza godzinami przyjęć\n\nZakres przeglądu: kontrola indeksów bazy danych, test kopii zapasowej, aktualizacja komponentu komunikacji z terminalami. Po zakończeniu przeglądu system wyśle osobne potwierdzenie. Ta wiadomość została wygenerowana automatycznie, prosimy na nią nie odpowiadać.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-074",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Terminy dostaw na luty - plan okien rozładunku",
+      "body": "Szanowny Panie Prezesie,\n\nprzesyłam krótkie podsumowanie stanu dostaw dla Meblodrew. W styczniu odebraliśmy 19 z 21 zaplanowanych kursów w ustalonych oknach rozładunku, a dwa kursy przesunęły się o jeden dzień z powodu pogody. Plan na luty mamy już uzgodniony z Państwa dyspozytornią: okna rozładunku we wtorki i czwartki, od 7:00 do 11:00.\n\nPiszę wyłącznie informacyjnie, aby Pan wiedział, jak wygląda sytuacja. Szczegóły ma już mój zespół logistyczny.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-075",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: tygodniowy raport dostępności systemu WMS",
+      "body": "Tygodniowy raport dostępności systemu WMS\n\nRaport obejmuje okres od 19.01.2027 do 25.01.2027 i został wygenerowany automatycznie przez System ERP Kordelan.\n\nDostępność modułów\nPrzyjęcia towaru: 99,8 procent\nWydania i kompletacja: 99,5 procent\nInwentaryzacja cykliczna: 100 procent\nIntegracja z modułem ERP: 98,9 procent\nTerminale mobilne: 99,2 procent\n\nZdarzenia w okresie raportu\nPrzerwy w pracy dłuższe niż 15 minut: 2\nPrzerwy zaplanowane: 1, w niedzielę, 40 minut\nPrzerwy nieplanowane: 1, we wtorek, 1 godzina 5 minut, obsługa przyjęć w Gdyni\nZgłoszenia użytkowników do działu utrzymania: 14\nZgłoszenia zamknięte w ciągu jednego dnia roboczego: 12\n\nObciążenie systemu\nNajwyższe obciążenie: czwartek, godz. 14:00 - 15:00\nŚrednia liczba jednoczesnych użytkowników: 112\nMaksymalna liczba jednoczesnych użytkowników: 168\nŚredni czas odpowiedzi: 1,1 sekundy\n\nZadania zaplanowane na kolejny tydzień\nPrzegląd planowy modułu WMS w Łodzi: 28.01.2027, wieczorem\nAktualizacja terminali mobilnych w Poznaniu: 30.01.2027\nTest odtwarzania kopii zapasowej bazy danych: 31.01.2027\n\nUwagi do raportu: wskaźnik dostępności liczony jest bez przerw zaplanowanych i uzgodnionych z użytkownikami. Zgłoszenia niezamknięte w terminie zostały przekazane do przeglądu przez kierownika działu utrzymania.\n\nDane źródłowe raportu są przechowywane w archiwum systemu przez 12 miesięcy. Raport jest wysyłany co tydzień w poniedziałek i wtorek do osób z uprawnieniami nadzorczymi. Ta wiadomość nie wymaga odpowiedzi.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-076",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Reklamacja uszkodzonych palet - Pana stanowisko",
+      "body": "Szanowny Panie Prezesie,\n\nw zeszłym tygodniu do naszego centrum w Łodzi dotarło 14 uszkodzonych palet z wodą mineralną. Państwa dyspozytor przyznał, że opakowania zostały źle zabezpieczone przy załadunku, i dziś mamy do wyboru dwa sposoby rozliczenia: notę kredytową na kwotę reklamacji albo zwrot pieniędzy przelewem.\n\nChciałabym znać Pana zdanie na ten temat, zanim wybiorę rozwiązanie. Proszę o odpowiedź na piśmie.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-077",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Dostawcy kart paliwowych zmieniają prowizje od lutego",
+      "body": "Zmiany w kartach paliwowych od 1 lutego\n\nDwóch największych dostawców kart paliwowych w Polsce ogłosiło nowe warunki prowizji. Od 1 lutego 2027 prowizja od transakcji na stacjach własnych spadnie średnio o 0,5 punktu procentowego, a na stacjach partnerskich wzrośnie o 0,3 punktu.\n\nWedług analityków rynku zmiana oznacza niewielką oszczędność dla firm tankujących głównie na trasach krajowych. Przewoźnicy z dużym udziałem tras zagranicznych mogą zapłacić więcej, ponieważ stacje partnerskie dominują poza Polską.\n\nCeny oleju napędowego w hurcie utrzymały się w tym tygodniu na poziomie z zeszłego tygodnia.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-078",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Swedish broker rate increase - accept or switch?",
+      "body": "Hi Wiktor,\n\nquick update on the Gothenburg broker. He called me back this morning and agreed to hold the current fee until July if we sign the two-year renewal he sent. I looked at the numbers and the renewal is fine for us, the extra cost would only start from next summer.\n\nSo I will close it on my side and tell him we go ahead. Nothing to decide for you here, I am sending this just so you know where it stands.\n\nOliver",
+      "thread": [
+        {
+          "from": "oliver.pemberton@kordelan.test",
+          "subject": "Swedish broker rate increase - accept or switch?",
+          "body": "Hi Wiktor,\n\nour broker in Gothenburg sent a note that his fee per declaration goes up by 6 percent from April. Not huge, but with our volumes it adds up to about 7 thousand euro a year.\n\nI can try to negotiate, or we could look at another broker, but I do not want to go down that road without knowing what you prefer. So, do we accept the increase, or should I start looking for an alternative? Your call, a short answer is fine.\n\nOliver"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-2-079",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP notice: nightly backup finished",
+      "body": "Backup report\n\nThe nightly backup of the warehouse management database finished successfully.\n\nStarted: 02:00\nFinished: 02:41\nSize of the backup: 38 GB\nVerification: passed\nRetention: 30 days\n\nNo errors or warnings were recorded. The backup was copied to the secondary storage site and checked against the source database. Free space on the backup volume after this run: 61 percent. The next backup is scheduled for tonight at 02:00. This message was generated automatically by System ERP Kordelan. Do not reply to this address.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-080",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Your subscription settings were updated",
+      "body": "Preferences saved\n\nYour weekly digest will now arrive on Fridays at 7:00.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-081",
+      "from": "Matthias Brandt <matthias.brandt@trailerwerk-sued.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Oferta serwisowa dla 12 naczep - prośba o Pana zdanie",
+      "body": "Szanowny Panie Prezesie,\n\nw nawiązaniu do rozmów o zakupie naczep przygotowaliśmy dla Państwa dwa warianty umowy serwisowej, które obowiązywałyby od momentu odbioru pierwszej naczepy. Chciałbym poznać Pana stanowisko, zanim przekażę ofertę do zatwierdzenia w naszym zarządzie.\n\nWariant pierwszy zakłada przeglądy co sześć miesięcy w naszym serwisie w Monachium oraz w sieci partnerów w Polsce, z ryczałtem w wysokości 410 euro za naczepę rocznie. Wariant drugi obejmuje dodatkowo naprawy gwarancyjne bez kosztów robocizny i zamienne naczepy na czas naprawy, ale kosztuje 690 euro za naczepę rocznie.\n\nDla floty liczącej dwanaście naczep różnica wynosi około 3 360 euro rocznie. Według naszego doświadczenia klienci o tak intensywnej eksploatacji jak Państwo częściej wybierają wariant drugi, ponieważ przestoje jednej naczepy kosztują więcej niż roczna różnica w opłacie.\n\nRozumiem jednak, że decyzja należy do Pana i ma związek z całym budżetem na flotę. Byłbym wdzięczny za odpowiedź na piśmie, który wariant Pan preferuje i czy dopuszcza Pan negocjację ryczałtu przy podpisaniu umowy na trzy lata zamiast dwóch. Bez Pana decyzji nie mogę uzupełnić ostatecznej wersji umowy ani ustalić terminu dostawy pierwszych dwóch naczep, który zależy od kolejki produkcyjnej w naszej fabryce.\n\nMit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-082",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie zapisu: raport o rynku frachtów",
+      "body": "Potwierdzenie zapisu\n\nTwoje konto zostało zapisane na bezpłatny miesięczny raport o rynku frachtów. Pierwszy raport wyślemy w lutym, na adres, z którego dokonano zapisu. Raport zawiera średnie stawki za przewóz na głównych trasach w Europie oraz zmiany w stosunku do poprzedniego miesiąca. Zapis możesz anulować w każdej chwili w ustawieniach konta. Ta wiadomość została wysłana automatycznie, bez udziału redakcji.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-083",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Blokada konta flotowego za 2 godziny",
+      "body": "Szanowni Państwo,\n\nwykryliśmy próbę nieautoryzowanego dostępu do konta flotowego Państwa firmy. Aby zapobiec utracie środków, konto zostanie zablokowane za dwie godziny, a wszystkie karty kierowców przestaną działać na stacjach.\n\nAby anulować blokadę, odpowiedz teraz na tę wiadomość i podaj numer karty głównej oraz dane do logowania do panelu klienta. Brak odpowiedzi w ciągu dwóch godzin oznacza potwierdzenie blokady oraz opłatę za odblokowanie w wysokości 1 200 zł.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-084",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Przetarg - prosimy o potwierdzenie ceny do godziny 17:00 dzisiaj",
+      "body": "Dear Mr Szalewski,\n\nThank you again for your time. Following my message of yesterday, I still have no written confirmation of the surcharge for extra deliveries. The tender committee closes its comparison table today at 15:00, and your offer will be compared without that surcharge if your confirmation does not reach me before then. Could you send it within the next two hours?\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [
+        {
+          "from": "g.jastrzebska@hurtownia-zielona.test",
+          "subject": "Przetarg - prosimy o potwierdzenie ceny do godziny 17:00 dzisiaj",
+          "body": "Szanowny Panie Prezesie,\n\nzamawiający prowadzi dziś ostatnią turę negocjacji cenowych w przetargu na obsługę logistyczną naszej sieci. Prosimy o ostateczne potwierdzenie ceny z oferty w stawce za paletę oraz opłaty za dodatkowe dostawy. Decyzję musimy otrzymać dzisiaj do godziny 17:00, ponieważ po tej godzinie komisja zamyka tabelę porównawczą i przechodzi do wyboru wykonawcy.\n\nJeżeli cena zostanie potwierdzona bez zmian, Państwa oferta pozostanie w rozmowach. Jeśli Państwo chcieliby ją zmienić, prosimy o przekazanie nowej wersji w tym samym terminie.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-2-085",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Gwarantowane kontakty do klientów",
+      "body": "Dzień dobry,\n\nPremium Leads Pro oferuje bazę 100 000 firm z branży TSL w cenie promocyjnej. Kup dziś, a zyskasz bonus.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-086",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie logowania do bankowości",
+      "body": "Logowanie do bankowości internetowej\n\nZalogowano: 26.01.2027, 12:38\nUrządzenie: komputer firmowy\nStatus: sukces\n\nWiadomość automatyczna.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-087",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Your weekly account activity at Supply Chain Weekly",
+      "body": "Weekly account activity\n\nThis summary shows what happened on your Supply Chain Weekly account between 19.01.2027 and 25.01.2027. It was generated automatically.\n\nDelivered to you\n- Weekly digest, issue of 22.01.2027: delivered, opened\n- Special edition on port congestion in the Baltic: delivered, not opened\n- Two alerts about container freight rates: delivered\n\nSaved items\n- Saved reports: 1\n- Reading list entries: 3\n- Items removed from the list this week: 0\n\nSubscription status\n- Plan: free digest\n- Language of the digest: English\n- Delivery day: Friday, 7:00\n- Linked email address: confirmed\n\nSecurity\n- Last sign-in: 25.01.2027, 17:42\n- Sign-in method: password with one-time code\n- Number of active sessions: 1\n- New devices this week: none\n\nUpcoming\n- Your next digest will be sent on 29.01.2027.\n- Your free plan includes two special editions a month. You have used one of them in January.\n- The annual report on freight markets is available to paid subscribers only. You can add it to your plan at any time in your account settings.\n\nYou are receiving this message because you have an account at Supply Chain Weekly. To change how often we send account summaries, open your account settings. This is an automated message, replies are not monitored.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-088",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Materiały na posiedzenie rady - lista dokumentów",
+      "body": "Dear Mr Szalewski,\n\nFor your information: the secretary has added the notes of the audit committee to the board materials, so the set is now complete. The meeting on 28.01 starts at 10:00 in the boardroom in Gdynia, and I will join from the airport by video for the first hour, after that in person. The agenda and the order of items stay as sent last week. No reply is needed.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Materiały na posiedzenie rady - lista dokumentów",
+          "body": "Szanowny Panie Prezesie,\n\ninformuję, że sekretarz rady zamieścił w repozytorium komplet materiałów na posiedzenie 28.01.2027. W skład materiałów wchodzą: projekt budżetu na rok 2027 z uwagami komitetu audytu, raport zarządu o przetargach, zestawienie ryzyk walutowych oraz protokół z poprzedniego posiedzenia.\n\nWszyscy członkowie rady mają dostęp do dokumentów od dziś rano. Piszę wyłącznie dla Pana wiadomości, aby zarząd wiedział, że materiały są już dostępne i można je pobrać z repozytorium w dowolnym momencie przed posiedzeniem."
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-2-089",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nowa karta Premium z bonusem dla klientów floty",
+      "body": "Szanowni Państwo,\n\nz okazji nowego roku Paliwa Flota Billing przygotowało dla wybranych klientów ofertę kart Premium z rabatem 12 groszy na litr oleju napędowego na wszystkich stacjach partnerskich. Karta Premium to także darmowe ubezpieczenie podróży dla kierowców i ranking oszczędności dla całej floty.\n\nPromocja trwa do końca miesiąca, a pierwsza partia kart będzie wysłana w ciągu tygodnia od zamówienia. Zainteresowanych prosimy o odpowiedź na tę wiadomość z podaniem liczby kart, a nasz doradca przygotuje spersonalizowaną propozycję.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-090",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana limitu przelewów zrealizowana",
+      "body": "Powiadomienie o zmianie limitu\n\nDzienny limit przelewów dla rachunku firmowego został zmieniony.\n\nPoprzedni limit: 500 000,00 PLN\nNowy limit: 750 000,00 PLN\nData zmiany: 26.01.2027\nŹródło zmiany: wniosek złożony w bankowości internetowej, zatwierdzony przez drugiego użytkownika\n\nZmiana obowiązuje od następnej sesji księgowania. To jest automatyczne powiadomienie banku, prosimy na nie nie odpowiadać. Jeśli nie rozpoznajesz tej operacji, skontaktuj się z opiekunem konta oficjalnym kanałem banku.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-091",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Gwarancja kosztów odpraw celnych w Kłajpedzie",
+      "body": "Szanowny Panie Prezesie,\n\nprzygotowując konsorcjalną ofertę, zamawiający prosi nas o wskazanie podmiotu, który gwarantuje pokrycie opłat celnych w przypadku sporu o klasyfikację towarów. Naturalnym kandydatem jest Kordelan, ponieważ to Państwa towary będą przechodzić przez odprawę.\n\nCzy zgadza się Pan, abyśmy w ofercie wpisali Kordelan jako gwaranta kosztów odpraw celnych na trasach przez Kłajpedę? Proszę o odpowiedź na piśmie.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-092",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zestawienie wysłane",
+      "body": "Zestawienie wysłane\n\nZestawienie tygodniowe o kartach paliwowych zostało dostarczone na Twój adres. Następne wyślemy w piątek.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-093",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "LAST SEATS at Warehouse Expo 2027!!!",
+      "body": "ONLY 12 STANDS LEFT!\n\nWarehouse Expo 2027 is the biggest fair for logistics and storage in the region, and your competitors are already booking. Book your stand in the next 7 days and get 25% off the exhibition fee plus a free banner on our main hall wall!\n\nHurry up, the first companies who reply get the best places near the entrance! Send us a short message with the size of the stand you need and our sales team will call you back the same day with the offer.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-095",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: zamówienia zatwierdzone automatycznie",
+      "body": "Zatwierdzenie zamówień\n\nSystem ERP Kordelan zatwierdził automatycznie zamówienia, które mieściły się w limicie akceptacji.\n\nLiczba zatwierdzonych zamówień: 18\nŁączna wartość: 212 640,00 zł\nZamówienia oczekujące na ręczną akceptację: 3\nZamówienia odrzucone przez regułę limitu: 0\nCzas przetwarzania: 11:02 - 11:04\n\nZamówienia oczekujące zostały przekazane osobom z uprawnieniami akceptacji. Zamówienia zatwierdzone automatycznie zostały przekazane do realizacji w magazynach, a dostawcy otrzymali potwierdzenia. Wiadomość została wygenerowana automatycznie, nie wymaga odpowiedzi.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-096",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nordic framework - first pro-forma",
+      "body": "Hi Wiktor,\n\nKarin confirmed this morning that Nordic Foods is ready to start under the framework agreement from 1 February. For the first delivery they need a pro-forma invoice with the new payment terms, otherwise their finance team cant release the order.\n\nCould you ask Magdalena Czerniak to prepare the pro-forma this week and send it directly to Karin? I already sent Magdalena the price list, so she has everything she needs.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-097",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Odprawa celna w Kłajpedzie - wybór agenta",
+      "body": "Szanowny Panie Prezesie,\n\nwracam do mojej wiadomości z poniedziałku, ponieważ nie otrzymałem jeszcze Pana opinii w sprawie agenta celnego dla tras przez Kłajpedę. Od tego czasu mamy kilka nowych informacji, które mogą ułatwić decyzję, a zamawiający potwierdził, że lista podwykonawców będzie oceniana punktowo.\n\nAgent wskazywany przez Państwa zespół eksportu przedstawił referencje z dwóch przetargów publicznych w Polsce, ale żadnego z Litwy. Nasz dotychczasowy agent obsłużył natomiast cztery zgłoszenia w Kłajpedzie w ostatnim kwartale, z których wszystkie zostały zwolnione w ciągu jednego dnia. Różnica w prowizji wynosi około 40 euro na zgłoszenie, co przy planowanych 60 odprawach w roku daje niewielką kwotę w porównaniu z ryzykiem opóźnień.\n\nChciałbym więc ponowić pytanie: którego agenta Pan woli i czy akceptuje Pan wyższy koszt, jeśli ryzyko opóźnień będzie mniejsze? Potrzebuję Pana odpowiedzi na piśmie, aby wpisać agenta do kalkulacji, którą zamykamy przed końcem miesiąca.\n\nJeśli woli Pan omówić to telefonicznie, proszę dać znać, kiedy będzie Pan miał chwilę w tym tygodniu. Mogę też przesłać zestawienie referencji obu agentów oraz stawek w formie krótkiej tabeli, jeśli to ułatwi Panu decyzję.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "daniel.hargreaves@baltic-freight-partners.test",
+          "subject": "Odprawa celna w Kłajpedzie - wybór agenta",
+          "body": "Szanowny Panie Prezesie,\n\nprzygotowując wspólną ofertę na drugi lot przetargu, doszliśmy do pytania, które wymaga Pana opinii. Chodzi o obsługę celną dla tras przez Kłajpedę, ponieważ od tego zależy kalkulacja kosztów i zapisy w umowie z zamawiającym.\n\nWidzimy dwie możliwości. Pierwsza to skorzystanie z agenta celnego, z którym współpracujemy od lat w Baltic Freight Partners, ze stałą prowizją od zgłoszenia. Druga to zatrudnienie agenta, którego od dawna wskazuje wasz zespół eksportu, z lepszymi stawkami, ale bez doświadczenia w przetargach publicznych na Litwie.\n\nRozumiem, że decyzja ma charakter strategiczny i dotyczy relacji z kluczowymi klientami Państwa firmy. Dlatego chciałbym poznać Pana zdanie na piśmie: którego z agentów Pan woli i czy gotowy jest Pan zaakceptować wyższy koszt pierwszego, jeśli ryzyko opóźnień będzie mniejsze.\n\nJeśli zechce Pan omówić sprawę ze mną bezpośrednio, mogę w tej sprawie rozmawiać w dowolnym dniu tego tygodnia. Chcemy zamknąć kalkulację przed końcem miesiąca, bo dokumentacja przetargowa dla zakwalifikowanych oferentów będzie dostępna od 8.02.2027, a po tej dacie zamawiający oczekuje od konsorcjów pełnej listy podwykonawców, w tym agentów celnych i przewoźników, wraz z dokumentami potwierdzającymi ich uprawnienia i dotychczasowe referencje.\n\nZ poważaniem, Daniel Hargreaves"
+        }
+      ],
+      "attachments": []
+    }
+  ]
+}

@@ -22,6 +22,7 @@ export interface MembershipWithUser {
   created_at: Date;
   email: string;
   display_name: string;
+  break_glass: boolean;
 }
 
 export interface OrgPlanState {
@@ -160,6 +161,7 @@ export async function listMemberships(db: Db | Transaction<DB>, ctx: TenantConte
       "memberships.created_at",
       "users.email",
       "users.display_name",
+      "memberships.break_glass",
     ])
     .where("memberships.org_id", "=", ctx.orgId)
     .orderBy("memberships.created_at")
@@ -184,6 +186,7 @@ export async function getMembership(
       "memberships.created_at",
       "users.email",
       "users.display_name",
+      "memberships.break_glass",
     ])
     .where("memberships.org_id", "=", ctx.orgId)
     .where("memberships.user_id", "=", userId)
@@ -236,6 +239,8 @@ export interface UserAuthProfile {
   locale: UserLocale | null;
   termsVersion: string | null;
   termsAcceptedAt: Date | null;
+  // users.two_factor_enabled: a Better Auth column read by our SQL (F105 D11).
+  twoFactorEnabled: boolean;
 }
 
 // No TenantContext: the user gives the row; the web resolves the user from the session (S6b).
@@ -245,7 +250,7 @@ export async function getUserAuthProfile(
 ): Promise<UserAuthProfile | undefined> {
   const row = await db
     .selectFrom("users")
-    .select(["locale", "terms_version", "terms_accepted_at"])
+    .select(["locale", "terms_version", "terms_accepted_at", "two_factor_enabled"])
     .where("id", "=", userId)
     .executeTakeFirst();
   if (!row) {
@@ -255,7 +260,50 @@ export async function getUserAuthProfile(
     locale: userLocaleSchema.nullable().parse(row.locale),
     termsVersion: row.terms_version,
     termsAcceptedAt: row.terms_accepted_at,
+    twoFactorEnabled: row.two_factor_enabled,
   };
+}
+
+// The break-glass owner of the organization (F105 D11), or null. The partial unique index allows at most one.
+export async function getBreakGlassUserId(db: Db | Transaction<DB>, ctx: TenantContext): Promise<string | null> {
+  const row = await db
+    .selectFrom("memberships")
+    .select("user_id")
+    .where("org_id", "=", ctx.orgId)
+    .where("break_glass", "=", true)
+    .executeTakeFirst();
+  return row?.user_id ?? null;
+}
+
+// True when a row changed. Turn the old mark off before the new one on: the partial unique index allows one per organization.
+export async function setBreakGlassFlag(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  userId: string,
+  on: boolean
+): Promise<boolean> {
+  const result = await trx
+    .updateTable("memberships")
+    .set({ break_glass: on })
+    .where("org_id", "=", ctx.orgId)
+    .where("user_id", "=", userId)
+    .where("break_glass", "=", !on)
+    .executeTakeFirst();
+  return Number(result.numUpdatedRows) === 1;
+}
+
+// No TenantContext: the user gives the rows. True when any membership of the user has the mark.
+// RLS (F105 F13): it reads the memberships of every organization, so call it only with no tenant scope
+// (`/api/auth/*`, a CLI, a job). Inside an `/api` request RLS limits it to the session's organization.
+export async function isBreakGlassOwner(db: Db | Transaction<DB>, userId: string): Promise<boolean> {
+  const row = await db
+    .selectFrom("memberships")
+    .select("user_id")
+    .where("user_id", "=", userId)
+    .where("break_glass", "=", true)
+    .limit(1)
+    .executeTakeFirst();
+  return row !== undefined;
 }
 
 // No TenantContext: the user gives the row. True when the row changed; false for an unknown user or when the version is already stored.

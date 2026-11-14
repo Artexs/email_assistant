@@ -1,9 +1,9 @@
-import { activityQuerySchema, statsQuerySchema } from "@ea/core";
+import { activityQuerySchema, firstLanguageTag, resolveLocale, statsQuerySchema, textsFor } from "@ea/core";
 import { Hono } from "hono";
 
 import type { Db } from "../../platform/db";
 import { parseQuery, ValidationError, type ApiEnv } from "../../platform/http";
-import { isFeatureOn } from "../tenancy";
+import { getUserAuthProfile, isFeatureOn } from "../tenancy";
 
 import { decodeActivityCursor, listActivity } from "./activity";
 import { recentWeekStats, type WeekStatsDeps } from "./metrics";
@@ -23,6 +23,9 @@ export function activityRoutes(deps: ActivityRouteDeps): Hono<ApiEnv> {
     if (cursor === null) {
       throw new ValidationError([{ path: "before", code: "invalid_cursor", message: "invalid cursor" }]);
     }
+    // The panel language: the stored choice, else the browser language.
+    const profile = await getUserAuthProfile(deps.db, c.get("session").userId);
+    const locale = resolveLocale(profile?.locale ?? null, firstLanguageTag(c.req.header("accept-language")));
     const page = await listActivity(
       deps.db,
       c.get("ctx"),
@@ -34,7 +37,8 @@ export function activityRoutes(deps: ActivityRouteDeps): Hono<ApiEnv> {
         cursor,
         limit: q.limit,
       },
-      deps.now()
+      deps.now(),
+      textsFor(locale)
     );
     return c.json(page);
   });

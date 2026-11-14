@@ -77,7 +77,7 @@ A new draft kind, in this order:
 
 ## Notices are facts
 
-A module that has something to tell a user through the outbox (digests and notices) queues facts. It never builds the text of a channel (ADR 0032 point 5). Direct replies (command answers, tap answers, the link texts, the operator notices) are not outbox rows and read their texts from `packages/core/src/texts/bot.ts` in the chat's locale (the operator notices in `channels/operator.ts` keep their own).
+A module that has something to tell a user through the outbox (digests and notices) queues facts. It never builds the text of a channel (ADR 0032 point 5). Direct replies (command answers, tap answers, the link texts, the operator notices) are not outbox rows and read their texts from `packages/core/src/texts/bot.ts` in the chat's locale (the operator notices in `channels/operator.ts` stay English).
 
 - A notice enters the outbox only through `queueNotice` (`apps/server/src/modules/channels/notice-queue.ts`) with `{ userId, locale, kind, view, dedupKey }`. The view is the input of the kind's renderer: ids, counts, dates, and the strings from mail data or from users that the text prints (subject, sender, names). It holds no phrase of ours: a fixed word or sentence comes from the renderer, so a new locale or a new channel changes only the renderer.
 - Each kind has a strict view schema (`noticeViewSchemas`, `packages/core/src/notices/views.ts`): no field that the renderer does not print. A view holds mail-derived text: it follows the retention of `outbox.text` (`clearOutboxTexts`, `docs/architecture.md` §7) and never reaches a log line, an error text or a test name.
@@ -95,6 +95,52 @@ A module that has something to tell a user through the outbox (digests and notic
 3. Server: one detector file `apps/server/src/modules/channels/notices/<kind>.ts` that exports a `Detector` listed in `detectors` (`notices/index.ts`), or, for a producer outside the notifier, an entry in `queuedBy`. The producer calls `queueNotice`.
 4. Tests: `channels/notices/registry.test.ts` and the `CHECK` test in `apps/server/test/integration/telegram-schema.test.ts` fail until steps 1–3 are complete. Add an integration case in `channels-notices.test.ts`: one row per member, no second row on a second run.
 5. Docs: the `outbox` row of `docs/architecture.md` §5 (kind, dedup key) and the `channels` table of `docs/modules.md` §3.8.
+
+## Texts carry a locale
+
+Every text that a user reads has an English and a Polish version, from the first commit. Two surfaces, two dictionaries (F098).
+
+**The null rule.** `users.locale` is `pl`, `en` or null. A null value means a different language on each surface:
+
+- Panel: `resolveLocale(users.locale, browserTag)` from `@ea/core`. Null → the browser language (`navigator.language` starting with `pl` → Polish), else English.
+- Telegram and auth mails: null → Polish. A user with no stored language gets Polish Telegram text at once (owner decision, `docs/owner-decisions.md`).
+- The Account card writes only `pl` or `en` (`PATCH /api/me/locale`). A null value cannot be set again.
+
+**Panel texts** (`apps/web/src/i18n/`):
+
+- `en.ts` holds the keys and `TextKey`. `pl.ts` is `Record<TextKey, string>`: a missing or extra key fails `bun run typecheck`. `i18n.test.ts` checks that each key has the same `{placeholders}` in both files.
+- A count text is a plural pair: `enPlurals` (`one`, `other`) and `plPlurals` (`one`, `few`, `many`). Read it with `tp(key, count, vars)`. A single text reads with `t(key, vars)`.
+- The default export of every island calls `useLocale()` on its first line, so a language change re-renders the island (`islands.test.ts` checks every file in `src/islands/`).
+- Every island is `client:only="react"`. The static build cannot know the user's language, and a server-rendered English island hydrated with Polish text gives a hydration mismatch.
+- A date uses `dateLocale()` (`pl-PL` or `en-GB`), never a fixed locale.
+
+**Core texts** (`packages/core/src/texts/`):
+
+- One file per section (`clock.ts`, `categories.ts`, `answers.ts`, `would-do.ts`, `ai-text.ts`, `notices.ts`, `approvals.ts`, `digest.ts`, `bot.ts`, …). Each file has `{ en: {…}, pl: {…} } satisfies Record<UserLocale, Section>`: both languages sit side by side and TypeScript enforces the parity.
+- `index.ts` holds `CoreTexts`, `textTables` and `textsFor(locale)`. A render function takes `texts: CoreTexts` as its last, required parameter. A function never reads a global locale.
+- Where each Telegram path takes its locale: an outbox row, from `outbox.locale` (set by `queueNotice` from `chat_links` → `users.locale ?? "pl"`); a command or a tap, from the chat link (`LinkedChat.locale`); `/start` with a used or expired token, from the token owner (`users.locale ?? "pl"` through `getUserAuthProfile`). The command menu follows the app language of Telegram, not `users.locale`.
+- A route that returns our phrases to the panel (today only `GET /api/activity`) reads the request locale: `resolveLocale(profile?.locale ?? null, firstLanguageTag(c.req.header("accept-language")))`, then `textsFor(locale)`.
+
+**Polish text rules.**
+
+- Informal second person ("ty"), imperative for actions ("Wpisz", "Zapisz"). One word per idea, from the glossary (`spec/features/active/F098-e7-t1-polish-ui-i18n-frame-first/plan.md` § Glossary, until a docs page takes it).
+- A Polish text is a whole sentence. It never reuses English word order or English fragments.
+- Every count goes through `pluralCategory(locale, count)`. Polish has `one`, `few` and `many`; `other` (a fraction) reads as `many`.
+- A line holds at most one colon. A message uses one separator style (`·`, as the English texts do).
+- A name or an address (sender, delegate, mailbox, folder) never takes a Polish case ending. Put it after a fixed word, as in "zostaje w INBOX".
+- A placeholder for an unknown value that is stored in a view (`"(unknown sender)"`) maps to a text of the locale at render time (`texts.common.unknownSender`): the stored English value is a key, not a text.
+
+**The consent version.** `TELEGRAM_CONSENT_VERSION` (`packages/core/src/web/telegram.ts`) names the consent text of the Telegram link step. When the content that goes to Telegram changes (a new field of a notice, a new kind that carries mail text), change the consent text and bump the version in one commit. An old version gets 409 `telegram_consent_outdated`.
+
+**Old cards.** A Telegram card keeps the text that was sent. The edit after a tap adds one status line in the row's locale and never renders the card again. A card that was queued before a language switch keeps its old text, and the status line follows the new one. The buttons Gotowe, Wysłano and "To był błąd" work for 7 days, and the approval buttons for 48 h, so a mixed card can show for up to 7 days. A new text change must plan for this.
+
+### Add a user-visible text
+
+1. Panel: add the key to `apps/web/src/i18n/en.ts` and to `pl.ts` (a count text: both plural tables). Use it through `t()` or `tp()`.
+2. Telegram or a phrase for the panel: add an entry to the section of `packages/core/src/texts/` in `en` and in `pl`. Do not write a text in a renderer.
+3. Test: one unit test with a fixed Polish value (`textTables.pl.…` or `pl[key]`), next to the English one.
+4. If the text changes what goes to Telegram, bump `TELEGRAM_CONSENT_VERSION` and the consent text.
+5. A new route that returns our phrases to the panel reads the request locale (above).
 
 ## Ports and adapters
 
@@ -206,7 +252,7 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 
 ## Web app (`apps/web`)
 
-- Every user-visible string is a key in `apps/web/src/i18n/en.ts` and reaches a component through `t()`. A component never holds a literal text (`react/jsx-no-literals` on the islands and the shell and auth components).
+- Every user-visible string is a key in `apps/web/src/i18n/en.ts` and in `pl.ts` and reaches a component through `t()` or `tp()` (`## Texts carry a locale`). A component never holds a literal text (`react/jsx-no-literals` on the islands and the shell and auth components).
 - No inline `<script>` and no hand-written `<style>`: the build hashes the scripts (D5), and styles come from Tailwind classes.
 - shadcn components come from the shadcn CLI, never by hand.
 - One island per page. The shell is a React component inside the island.

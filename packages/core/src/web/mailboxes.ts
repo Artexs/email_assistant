@@ -62,7 +62,8 @@ export const removeMailboxBodySchema = z.object({
   confirmAddress: z.string().min(1).max(254),
 });
 
-export const mailboxStatuses = ["active", "paused", "auth_error"] as const;
+export const mailboxStatuses = ["active", "paused", "auth_error", "host_blocked"] as const;
+export type MailboxStatus = (typeof mailboxStatuses)[number];
 export const badgeStates = ["on", "off", "synthetic", "self"] as const;
 export const badgeReasons = [
   "env_off",

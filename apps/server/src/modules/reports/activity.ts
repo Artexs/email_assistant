@@ -3,13 +3,13 @@ import {
   ACTIVITY_PAGE_SIZE,
   activityRangeMs,
   aiTextFor,
-  textsFor,
   describeAction,
   describeActions,
   isUndoable,
   type ActivityItem,
   type ActivityWebPage,
   type Category,
+  type CoreTexts,
 } from "@ea/core";
 import { z } from "zod";
 
@@ -65,7 +65,8 @@ export async function listActivity(
   db: Db,
   ctx: TenantContext,
   query: ActivityQuery,
-  now: Date
+  now: Date,
+  texts: CoreTexts
 ): Promise<ActivityWebPage> {
   const limit = query.limit ?? ACTIVITY_PAGE_SIZE;
   const oldest = now.getTime() - ACTIVITY_MAX_DAYS * DAY_MS;
@@ -115,7 +116,6 @@ export async function listActivity(
       category: row.category,
       confidence: row.confidence,
       modelCategory: row.model_category,
-      // Stage 13 of the Polish UI plan uses the request locale.
       aiText: aiTextFor(
         {
           category: row.category,
@@ -126,13 +126,13 @@ export async function listActivity(
           confidence: row.confidence,
           task: tasks.get(row.email_id) ?? null,
         },
-        textsFor("en")
+        texts
       ),
-      phrase: describeActions(own, names, { stayFolder: row.folder }, textsFor("en")),
+      phrase: describeActions(own, names, { stayFolder: row.folder }, texts),
       actions: own
         .filter((action) => !action.reverse)
         .flatMap((action) => {
-          const phrase = describeAction(action, names, textsFor("en"));
+          const phrase = describeAction(action, names, texts);
           if (phrase === null) return [];
           return [
             { type: action.type, status: action.status, phrase, appliedAt: action.appliedAt?.toISOString() ?? null },

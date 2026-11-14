@@ -93,6 +93,7 @@ export const pl: Record<TextKey, string> = {
   status_active: "Aktywna",
   status_paused: "Wstrzymana",
   status_auth_error: "Błąd logowania",
+  status_host_blocked: "Serwer niedozwolony",
   // mailboxes
   mb_connect: "Połącz skrzynkę",
   mb_empty: "Nie ma jeszcze skrzynki.",
@@ -108,6 +109,8 @@ export const pl: Record<TextKey, string> = {
   mb_change_password: "Zmień hasło",
   mb_remove: "Usuń",
   mb_auth_error_hint: "Nie udało się zalogować. Zmień hasło, aby uruchomić skrzynkę ponownie.",
+  mb_host_blocked_hint:
+    "Nazwa serwera poczty wskazuje adres w sieci prywatnej lub lokalnej, więc system się nie łączy. Sprawdza ją przy każdej synchronizacji i sam uruchomi skrzynkę ponownie.",
   mb_paused_toast:
     "Wstrzymano. System nie czyta ani nie klasyfikuje teraz tej skrzynki. Podsumowania nadal przychodzą.",
   mb_resumed_toast: "Wznowiono. Następna synchronizacja zacznie się w ciągu 5 minut.",

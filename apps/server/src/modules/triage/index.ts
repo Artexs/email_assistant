@@ -58,6 +58,8 @@ export type { CaseResult, CaseUsage, CasesEvalReport, EvalReport, EvalReportBase
 export { goNoGoFor, realGoNoGoRows, setCategoryAutoWithGate } from "./gate";
 export type { AutoGateResult } from "./gate";
 export { buildRealPredictions, buildRealReport } from "./eval-real";
+export { GapInputError, gateFileError, realCounts, realCountsSchema, renderGap } from "./eval-gap";
+export type { RealCounts } from "./eval-gap";
 export { evalExitCode, renderEvalReport } from "./eval-report";
 export { judgeDraft, judgePassed } from "./judge";
 export type { JudgeResult } from "./judge";

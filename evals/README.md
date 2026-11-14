@@ -67,6 +67,10 @@ Flags (all optional):
 
 `bun run eval --real --org-id <uuid> --mailbox-id <uuid> [--synthetic] [--model <id>]` reads the labels from `triage_feedback`. It makes no LLM call. With `--model` the report uses only the rows of that model; rows without a model (rules, errors, blocked calls) drop out. The header always shows the rows per model, with `none` for rows without a model.
 
+- `--json <file>`: also write the counts per category (`tp`, `fp`, `fn`, `support`, from the final category with no threshold), the label count and the date. Counts only: no mail id, no address, no text. Keep this file out of git.
+
+`bun run eval --gap --sim-json <gate file> --real-json <file> [--out <file.md>]` compares sim and real numbers for `notification` and `spam` at the same operating point: the final category, no confidence threshold. It needs no DB and no LLM key. The sim side is `categories.<c>.metrics` of a gate file; the real side is the `--real --json` file. The verdict is `gap` when the two 95 % Wilson precision intervals do not overlap, `no gap` when they overlap, and `too few real labels` when real `tp + fp` is under 30. A gate file from before stage 14 has no `metrics`: the command names the missing field and exits 1. `--gap` takes no other option.
+
 ### Resume
 
 The runner appends one JSON line per finished case to the state file. The file is in `evals/.runs/`, outside git.
