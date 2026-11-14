@@ -1,7 +1,6 @@
 ---
 import App from "../layouts/App.astro";
 import OnboardingPage from "../islands/OnboardingPage.tsx";
-import { en } from "../i18n/en";
 ---
 
-<App title={en.title_onboarding}><OnboardingPage client:only="react" /></App>
+<App titleKey="title_onboarding"><OnboardingPage client:only="react" /></App>

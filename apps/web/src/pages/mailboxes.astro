@@ -1,7 +1,6 @@
 ---
 import App from "../layouts/App.astro";
 import MailboxesPage from "../islands/MailboxesPage.tsx";
-import { en } from "../i18n/en";
 ---
 
-<App title={en.title_mailboxes}><MailboxesPage client:only="react" /></App>
+<App titleKey="title_mailboxes"><MailboxesPage client:only="react" /></App>

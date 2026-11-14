@@ -3,7 +3,7 @@ import Public from "../layouts/Public.astro";
 import { en } from "../i18n/en";
 ---
 
-<Public title={en.brand}>
+<Public titleKey="brand">
   <meta http-equiv="refresh" content="0; url=/onboarding" slot="head" />
   <a href="/onboarding">{en.continue}</a>
 </Public>
