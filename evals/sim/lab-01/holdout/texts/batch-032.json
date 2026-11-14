@@ -263,7 +263,7 @@
     {
       "id": "b-rep-0199",
       "subject": "Przypomnienie o fakturze: prośba o termin płatności",
-      "body": "Szanowny Panie Prezesie,\n\nproszę o wskazanie terminu płatności faktury FP/0258 na kwotę 21 340,00 PLN. Potrzebuję daty do czwartku.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "body": "Szanowny Panie Prezesie,\n\nchciałbym zapytać Pana, jaki termin płatności faktury FP/0258 na kwotę 21 340,00 PLN Pan wskaże. Wystarczy mi data do czwartku.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
       "thread": [],
       "expectedPoints": [
         "Give a payment date for invoice FP/0258 of 21 340,00 PLN",
@@ -271,7 +271,8 @@
       ],
       "mustNot": [
         "Do not promise a date earlier than the accounting department allows"
-      ]
+      ],
+      "note": "rewritten: question for the executive's own answer; no accounting task"
     },
     {
       "id": "b-rep-0201",
@@ -331,8 +332,8 @@
     {
       "id": "b-rep-0206",
       "subject": "Board pack: one confirmation",
-      "body": "Dear Wiktor,\n\nplease confirm today that the final budget table in the board pack is the version of 12 January. Thank you.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
-      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Dear Wiktor,</p><p style=\"margin:0 0 12px 0\">please confirm today that the final budget table in the board pack is the version of 12 January. Thank you.</p><p style=\"margin:0 0 12px 0\">Z powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej</p></div>",
+      "body": "Dear Wiktor,\n\ncan you confirm that the final budget table in the board pack is the version of 12 January? I would like your answer today, but it is only a routine check.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Dear Wiktor,</p><p style=\"margin:0 0 12px 0\">can you confirm that the final budget table in the board pack is the version of 12 January? I would like your answer today, but it is only a routine check.</p><p style=\"margin:0 0 12px 0\">Z powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej</p></div>",
       "thread": [],
       "expectedPoints": [
         "Confirm the budget table in the board pack is the version of 12 January",
@@ -340,7 +341,8 @@
       ],
       "mustNot": [
         "Do not send a newer version without telling the chairman"
-      ]
+      ],
+      "note": "rewritten: personal confirmation for the executive; deadline softened"
     },
     {
       "id": "b-rep-0209",

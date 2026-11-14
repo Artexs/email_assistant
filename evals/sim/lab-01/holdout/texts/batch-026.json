@@ -24,15 +24,17 @@
     },
     {
       "id": "b-not-0262",
-      "subject": "Biuletyn: przetargi tygodnia",
-      "body": "Nowe przetargi na usługi transportowe: dwa postępowania z terminem w lutym.\n\nLista postępowań w dziale przetargów.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
-      "thread": []
+      "subject": "Powiadomienie o wygasaniu dostępu do archiwum",
+      "body": "Twój dostęp do archiwum wygasa 31.01.2027. Odnów go w ustawieniach konta, aby nie utracić dostępu.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "note": "rewritten: automated account access expiry notice"
     },
     {
       "id": "b-not-0263",
-      "subject": "Supply Chain Weekly: the year ahead in freight",
-      "body": "Special edition: ten forecasts for freight in the new year\n\nOur editors asked analysts at carriers, forwarders and consultancies what they expect from the freight market in the coming twelve months. Here are the main points.\n\n1. Ocean freight. Most analysts expect modest growth in container volumes and continued pressure on rates, because new vessels keep entering service. Several carriers plan to keep blank sailings in the schedule to protect margins.\n\n2. Road freight. Capacity in Europe will remain tight in the east and the Baltic region. Shortage of drivers and higher toll charges are named as the main drivers of cost. Many operators plan to renew their fleets with low-emission trucks, but delivery times of vehicles stay long.\n\n3. Air cargo. Growth will depend on e-commerce volumes. Forecasters see strong demand on routes from Asia, with less pressure on transatlantic lanes.\n\n4. Warehousing. Vacancy rates remain low. Rents for modern logistics space are expected to rise by three to five percent. Operators of temperature-controlled space report the strongest demand.\n\n5. Technology. More shippers plan to use shared platforms for booking dock slots and tracking pallets. Pilot projects begin in the spring.\n\n6. Regulation. New customs rules for small parcels and a revised framework for driving hours will change daily operations of many carriers.\n\n7. Fuel. Analysts see diesel prices within a narrow range, with a risk of short spikes in the winter months.\n\n8. Labour. Wage growth for warehouse and transport staff will continue at around four percent.\n\n9. Sustainability. Reporting requirements for emissions become stricter for large shippers.\n\n10. Risks. Geopolitical events, weather and strikes remain the main sources of sudden disruptions.\n\nThe detailed figures and charts are in our paid annual report, which is available to subscribers with a discount until the end of the month.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
-      "thread": []
+      "subject": "Annual account statement: Supply Chain Weekly",
+      "body": "Your annual account statement for the Supply Chain Weekly subscription is ready.\n\nAccount: wiktor.szalewski@kordelan.test\nStatement period: 01.01.2026 to 31.12.2026\nPlan: Team, three seats\n\nPayments in the period:\n- 05.02.2026, Team plan renewal, 147,00 EUR\n- 18.06.2026, one extra seat, 29,00 EUR\n- 21.09.2026, one extra seat removed, credit of 14,50 EUR\n\nTotal paid in the period: 161,50 EUR. All invoices are available for download in the billing section of your account.\n\nUsers on the account at the end of the period:\n- wiktor.szalewski@kordelan.test, owner\n- dorota.wilczynska@kordelan.test, member\n- halina.strzemecka@kordelan.test, member\n\nAccount settings at the end of the period:\n- automatic renewal: on\n- two-step sign-in: on\n- sign-in alerts: on\n- billing contact: wiktor.szalewski@kordelan.test\n\nThe next renewal date is 05.02.2027. To change the billing contact, the number of seats or the payment card, sign in and open your account settings before that date. If you want to close the account, request it in the settings; we delete the data 30 days after the closing date. Invoices stay available to the billing contact for ten years, as the accounting rules require.\n\nThis is an automated message. Replies are not monitored.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "note": "rewritten: automated annual account and billing statement"
     },
     {
       "id": "b-rep-0001",
@@ -153,7 +155,7 @@
     {
       "id": "b-rep-0009",
       "subject": "Okno rozładunku w poniedziałek: czy to możliwe?",
-      "body": "Szanowny Panie Prezesie,\n\nzwracam się z pytaniem o zmianę okna rozładunku dla naszych dostaw. Od połowy lutego nasza linia montażowa zaczyna pracę o 06:00, więc obecne okno od 10:00 do 12:00 powoduje przestój w hali przyjęć.\n\nCzy mogą Państwo dostarczać nasze zamówienia w poniedziałki między 06:00 a 08:00? Jeżeli to niemożliwe, proszę o wskazanie najwcześniejszej godziny, którą Państwo mogą zagwarantować.\n\nBędę wdzięczny za odpowiedź do końca tygodnia, ponieważ muszę przekazać plan produkcji kierownikowi zmiany.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "body": "Szanowny Panie Prezesie,\n\nchciałbym zapytać Pana o jedną sprawę. Od połowy lutego nasza linia montażowa zaczyna pracę o 06:00, a obecne okno rozładunku od 10:00 do 12:00 nie pasuje już do tego rytmu i powoduje przestój w hali przyjęć.\n\nCzy zgodzi się Pan, abyśmy odbierali dostawy w poniedziałki między 06:00 a 08:00? Jeżeli to niemożliwe, bardzo proszę o Pana odpowiedź, jaką najwcześniejszą godzinę może Pan nam zagwarantować.\n\nZależy mi na Pana własnym stanowisku, bo to Pan decyduje o takich umowach z naszą firmą. Odpowiedź do końca tygodnia w zupełności mi wystarczy.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
       "thread": [],
       "expectedPoints": [
         "Say whether deliveries between 06:00 and 08:00 on Monday are possible",
@@ -162,7 +164,8 @@
       ],
       "mustNot": [
         "Do not promise a time without the operations director"
-      ]
+      ],
+      "note": "rewritten: direct question and decision for the executive; no task for a team"
     },
     {
       "id": "b-rep-0010",
@@ -185,7 +188,7 @@
     {
       "id": "b-rep-0011",
       "subject": "Wyjazd do Hamburga: termin",
-      "body": "Panie Prezesie,\n\nrada planuje wizytę w oddziale w Hamburgu w dniach 17–18.03.2027. Proszę o potwierdzenie, czy ten termin Panu odpowiada, a jeśli nie, o wskazanie dwóch innych. Odpowiedź proszę przesłać jeszcze dzisiaj, ponieważ sekretariat musi zarezerwować bilety i hotel, a ceny przelotów rosną z dnia na dzień. Spotkanie ma obejmować przegląd wyników oddziału, rozmowę z jego dyrektorem oraz wspólną kolację. Zależy mi, aby Pan był obecny przez oba dni.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "body": "Panie Prezesie,\n\nchciałbym poznać Pana zdanie w sprawie wizyty rady w oddziale w Hamburgu. Planujemy ją na 17–18.03.2027. Czy ten termin Panu odpowiada? Jeśli nie, proszę o wskazanie dwóch innych, które uzna Pan za dogodne.\n\nSpotkanie obejmie przegląd wyników oddziału, rozmowę z jego dyrektorem oraz wspólną kolację. Zależy mi, aby był Pan z nami przez oba dni, dlatego Pana decyzja jest tu najważniejsza.\n\nBędę wdzięczny za odpowiedź jeszcze dzisiaj, jeśli to możliwe. To zwykła sprawa organizacyjna, bez żadnego nagłego problemu.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
       "thread": [],
       "expectedPoints": [
         "Confirm or reject 17-18.03.2027",
@@ -194,7 +197,8 @@
       ],
       "mustNot": [
         "Do not book travel without the assistant"
-      ]
+      ],
+      "note": "rewritten: calm question for the executive's own decision; deadline softened"
     },
     {
       "id": "b-rep-0012",
@@ -255,7 +259,7 @@
     {
       "id": "b-rep-0016",
       "subject": "Invoice FP/0233: payment date",
-      "body": "Dear Mr Szalewski,\n\ncould you confirm by Thursday that invoice FP/0233 for 14 600,00 PLN will be paid on 20.01.2027, as agreed? Our system shows it as overdue.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "body": "Dear Mr Szalewski,\n\nwould you confirm that invoice FP/0233 for 14 600,00 PLN will be paid on 20.01.2027, as you and I agreed? I would like to hear it from you. A short answer by Thursday is enough.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
       "thread": [],
       "expectedPoints": [
         "Confirm the payment date 20.01.2027 for invoice FP/0233",
@@ -263,12 +267,13 @@
       ],
       "mustNot": [
         "Do not promise an earlier payment"
-      ]
+      ],
+      "note": "rewritten: direct question to the executive about his own agreement"
     },
     {
       "id": "b-rep-0017",
       "subject": "Budżet na posiedzenie 28 stycznia",
-      "body": "Panie Prezesie,\n\nczy budżet na rok 2027 będzie gotowy do rozesłania radzie przed posiedzeniem 28.01.2027? Proszę o odpowiedź jeszcze dzisiaj.\n\nZbigniew Orlowicz",
+      "body": "Panie Prezesie,\n\nchcę zapytać Pana osobiście: czy budżet na rok 2027 będzie gotowy do rozesłania radzie przed posiedzeniem 28.01.2027? Odpowiedz mi, proszę, dzisiaj, gdy znajdzie Pan chwilę.\n\nZbigniew Orlowicz",
       "thread": [],
       "expectedPoints": [
         "Say whether the 2027 budget is ready before 28.01.2027",
@@ -276,7 +281,8 @@
       ],
       "mustNot": [
         "Do not send the budget draft without finance approval"
-      ]
+      ],
+      "note": "rewritten: personal question to the executive; deadline panic removed"
     },
     {
       "id": "b-rep-0019",
