@@ -1,0 +1,340 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-012",
+  "cases": [
+    {
+      "id": "b-inf-0080",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Travel arrangements for the January meeting",
+      "body": "Dear Mr Szalewski,\n\nFor your information, the board secretary has booked the travel of the three members who come from abroad. Two arrive on the evening of 27 January and stay at the hotel near the headquarters, and the third arrives on the morning of the meeting. The airport transfers have also been arranged by the secretariat.\n\nNothing is required from the company side. I mention it only so that you can expect the board members at reception in good time.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0081",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Odprawy celne - tydzień w liczbach",
+      "body": "Szanowny Panie Wiktorze,\n\nkrótko o minionym tygodniu: obsłużyliśmy dla Kordelana dziewięć odpraw eksportowych, wszystkie zamknęły się w jednym dniu roboczym. Średni czas odprawy w porcie wyniósł niespełna trzy godziny, co jest najlepszym wynikiem od jesieni. Nie odnotowaliśmy żadnych zatrzymań ładunku ani dodatkowych kontroli.\n\nWiadomość kieruję wyłącznie informacyjnie. Szczegóły są w naszym systemie.\n\nZ wyrazami szacunku\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0082",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Gdynia terminal - update",
+      "body": "Hi Wiktor,\n\nquick update from the port: the truck queue at the Gdynia terminal was under one hour today, all our loads went through without checks.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0083",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana godziny",
+      "body": "Wiktor,\n\nposiedzenie rady 28 stycznia zaczyna się o dziesiątej, nie o dziewiątej. Informuję, żebyś znał godzinę.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0084",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie obowiązującego cennika",
+      "body": "Szanowny Panie Wiktorze,\n\ndla porządku potwierdzam, że od lutego obowiązuje u nas cennik transportu z aneksu podpisanego w grudniu. Nic w nim nie zmieniamy.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0085",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nowe kody taryfowe dla żywności - krótka informacja",
+      "body": "Szanowny Panie Wiktorze,\n\npragnę poinformować, że od lutego obowiązują nowe kody taryfowe dla części przetworzonej żywności eksportowanej do krajów nordyckich. Zmiana dotyczy przede wszystkim gotowych dań mrożonych oraz napojów roślinnych. Nasz zespół zaktualizował już wszystkie szablony zgłoszeń celnych i przeszkolił pracowników biura odpraw.\n\nW przypadku stałych zleceń Kordelana kody zostały zmienione automatycznie, a stawki cła nie ulegają zmianie. Nie jest potrzebna żadna czynność po Państwa stronie, a informację przekazuję, aby nie zaskoczyły Państwa nowe oznaczenia na dokumentach.\n\nZ wyrazami szacunku\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0086",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Customs delay Rotterdam - resolved",
+      "body": "Hi Wiktor,\n\nupdate on the Rotterdam load: customs released it this morning, truck is on the way to Gothenburg.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Customs delay Rotterdam",
+          "body": "Oliver, thanks for the alert. Keep me posted when you hear more. Wiktor"
+        },
+        {
+          "from": "oliver.pemberton@kordelan.test",
+          "subject": "Customs delay Rotterdam",
+          "body": "Wiktor, one of our trailers is held at the Rotterdam customs for a documents check. Will chase and let you know. Oliver"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0088",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Capacity booked for February",
+      "body": "Dear Wiktor,\n\nOur team has booked the extra capacity for February on the Baltic lanes, as planned in our joint model.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0089",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nordic account - where things stand after the January visits",
+      "body": "Hi Wiktor,\n\nI just got back from the two days with the Nordic Foods people and wanted to give you the picture while it is fresh. It is a long one, but you can skim it, as nothing here needs a decision.\n\nKarin's team was very welcoming. We visited the main distribution centre in Gothenburg, and they showed us the new chilled hall that will receive most of our pallets from February. The dock layout is good: four doors for our trucks, a staging area right next to each, and a scanner at every door. They told us the average unloading time of our trucks is now just under ninety minutes, which they consider good.\n\nOn the commercial side, the mood is positive. Their purchasing director said twice that Kordelan is the most reliable of their three Polish carriers this winter, mainly because of the on-time record. He did not promise anything about volumes, but he mentioned that they plan to add two more lanes in the second half of the year, and that we will be asked to quote.\n\nContract status: their legal team is done with the liability clause, and the only open item is the price review wording. Piotr is on it. I would not worry about the signing date of 22 January.\n\nOne small thing I noticed: they use a different pallet label format than we do, and they asked whether we could print theirs from February. Halina's people have already checked it and say it is easy, so it is sorted.\n\nThat is all from me. Will write again after the signing.\n\nOliver",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0090",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: stawki za paliwo w pierwszym kwartale",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nDostawcy kart paliwowych podali zmiany stawek na pierwszy kwartał. Średnia cena oleju napędowego na kartach flotowych spadła o cztery grosze w porównaniu z grudniem, a rabaty dla dużych flot nie uległy zmianie.\n\nBranża zwraca uwagę, że od lutego obowiązują nowe zasady rozliczania opłat drogowych na kartach flotowych. Część dostawców pobiera teraz opłaty drogowe w jednym zestawieniu z paliwem, co upraszcza księgowanie.\n\nDla firm z dużymi flotami korzystne okazują się umowy z ceną opartą na indeksie hurtowym, bo przy obecnych notowaniach daje to niższy koszt niż stała cena. Eksperci radzą jednak porównać obie opcje na danych za ostatni rok.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0091",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Joint tender - preparation under way",
+      "body": "Dear Mr Szalewski,\n\nThank you for your note. I am glad to say that the preparation of the joint tender is on schedule. Our pricing team has delivered the draft of the cost model, and the legal review of the consortium agreement is nearly finished. We expect to circulate the final documents to your sales team early next week.\n\nNothing is needed from you at this point. I write only to keep you informed.\n\nKind regards,\nDaniel",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Joint tender - first steps",
+          "body": "Daniel, thank you. Piotr Lewandrowski will be your contact for the pricing details. Wiktor"
+        },
+        {
+          "from": "daniel.hargreaves@baltic-freight-partners.test",
+          "subject": "Joint tender - first steps",
+          "body": "Dear Wiktor, our team starts the preparation of the joint tender this week. I will send you an update once we have the first drafts ready. Daniel Hargreaves"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0092",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wyniki szkoleń w magazynie",
+      "body": "Cześć Wiktor,\n\nszkolenia wstępne dla nowych pracowników magazynu w Poznaniu zakończyły się wczoraj. Przystąpiło do nich dwadzieścia osób i wszystkie zaliczyły końcowy test. Najlepsze wyniki padły w części o bezpieczeństwie pracy przy wózkach. Instruktorzy ocenili grupę jako zaangażowaną, a dyrektor operacyjna potwierdziła, że nowi pracownicy rozpoczną pracę zgodnie z grafikiem.\n\nInformuję wyłącznie do wiadomości, bez potrzeby jakichkolwiek działań z Twojej strony.\n\nRafał",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0093",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: paliwa - szybka informacja",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nHurtowa cena oleju napędowego spadła w tym tygodniu o dwa grosze, a ceny kart flotowych pozostały bez zmian.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0094",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Okna rozładunku - podsumowanie stycznia i plan na luty",
+      "body": "Cześć Wiktor,\n\npodsumowuję okna rozładunku za styczeń i przekazuję plan na luty, bo kilka rzeczy się zmieniło i chcę, żebyś widział całość w jednym miejscu.\n\nStyczeń: z 168 rozładunków na rampach Poznania i Gdyni w ustalonym oknie zmieściło się 157, czyli około 93 procent. Wszystkie opóźnienia miały przyczyny zewnętrzne: mgła na A2 w pierwszym tygodniu oraz awaria systemu u jednego z klientów. Klienci zostali poinformowani na bieżąco i nikt nie zgłosił reklamacji.\n\nLuty: od pierwszego dnia miesiąca w Poznaniu pracuje dodatkowa ramka rozładunkowa, co daje nam sześć dodatkowych okien tygodniowo. Dla klienta z branży meblowej przesuwamy okna z popołudnia na ranek, zgodnie z jego prośbą z grudnia. Dla odbiorcy z Gotenburga okna zostają we wtorki i czwartki.\n\nObsada: dzięki nowym pracownikom nie planujemy ograniczeń. Jeśli zmieni się plan zleceń, dam znać.\n\nJeszcze jedna rzecz z grafiku: w przyszłym tygodniu dwa okna rozładunku w Gdyni zamieniamy miejscami z oknami przyjęć kontenerów, bo tak ułożyli się kierowcy, i wszystkie osoby, których to dotyczy, już o tym wiedzą. Na rampach nie widzę ryzyka, a magazynierzy mają komplet instrukcji. To tylko informacja, nic nie musisz robić.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0095",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Hotel reservation",
+      "body": "Dear Mr Szalewski,\n\nThe hotel for the board meeting on 28 January has been reserved by the secretariat.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0096",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zestawienie terminów rady na pierwsze półrocze",
+      "body": "Szanowny Panie Prezesie,\n\nprzesyłam do Pańskiej wiadomości zestawienie terminów posiedzeń rady nadzorczej na pierwsze półrocze oraz związanych z nimi spotkań komitetów. Zestawienie zostało zatwierdzone przez sekretarza i jest zgodne z harmonogramem sprawozdawczości spółki, którą rada ma obowiązek zachować wobec akcjonariuszy.\n\nPierwsze posiedzenie odbędzie się 28 stycznia i obejmie omówienie budżetu rocznego oraz kwestie związane ze wspólnymi przetargami. Drugie planujemy w pierwszym tygodniu kwietnia, poświęcone wynikom pierwszego kwartału. Trzecie przypada na koniec czerwca, kiedy rada podejmuje uchwałę w sprawie zatwierdzenia sprawozdania finansowego. Posiedzenia komitetów odbędą się w tygodniu poprzedzającym każde posiedzenie rady.\n\nDla przejrzystości podaję, że wszystkie terminy zostały uzgodnione z członkami rady i nie przewiduję w nich zmian. Zestawienie zostało dodane do portalu rady i jest dostępne dla zarządu.\n\nW załączniku do portalu znajdzie Pan również krótkie uzasadnienie wyboru terminów, w którym sekretarz opisał, dlaczego posiedzenia nie wypadają w tygodniach zamknięcia miesiąca. Przekazuję je jedynie w celu informacyjnym. Nie oczekuję żadnych działań ani odpowiedzi, a ewentualne zmiany będą ogłaszane za pośrednictwem sekretarza rady.\n\nZ poważaniem\nZbigniew Orłowicz",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0098",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana opłat portowych w Gdańsku",
+      "body": "Szanowny Panie Wiktorze,\n\ninformuję, że od pierwszego lutego terminal kontenerowy w Gdańsku podnosi opłatę za składowanie kontenerów eksportowych po upływie trzech dni. Dla Państwa zleceń nie ma to znaczenia, ponieważ nasze biuro planuje odprawy tak, aby kontenery wyjeżdżały w dniu przyjęcia. Zmieniamy jedynie swoje wewnętrzne przypomnienia, aby żaden kontener nie stał dłużej niż dwa dni.\n\nInformację przekazuję do wiadomości.\n\nZ wyrazami szacunku\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0099",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supply Chain Weekly: the week in freight",
+      "body": "Supply Chain Weekly - the week in freight\n\nEuropean road freight rates were broadly unchanged this week. A cold snap in northern Europe slowed some deliveries, and carriers expect normal service from the weekend.\n\nContainer lines announced several blank sailings for February, mostly on the Asia to North Europe trade. Analysts say that the capacity cuts are meant to support rates ahead of the new contract season.\n\nIn the Baltic, a new rail service between Gdansk and Hamburg will start in March, offering weekly departures for intermodal units.\n\nThe extended analysis is part of the paid edition.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0100",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nowe wymogi dokumentowe w eksporcie do Szwecji",
+      "body": "Szanowny Panie Wiktorze,\n\nw nawiązaniu do wcześniejszej korespondencji z klientem z Göteborga informuję, że szwedzki urząd celny potwierdził wejście w życie nowych wymogów dokumentowych dla importu żywności chłodzonej. Od pierwszego lutego do każdego zgłoszenia trzeba dołączyć elektroniczne potwierdzenie temperatury z trasy. Nasze biuro odpraw przygotowało już szablon i przetestowało go na dwóch zleceniach.\n\nDla Państwa kierowców zmiana jest bezobsługowa, bo dane z rejestratorów temperatury trafiają do nas automatycznie. Wiadomość ma charakter informacyjny.\n\nZ wyrazami szacunku\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "karin.lindqvist@nordicfoods-trade.test",
+          "subject": "Re: Customs documents for Sweden",
+          "body": "Dear Karin, thank you for the questions. Our broker will confirm the requirements this week. Best regards, Wiktor Szalewski"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Customs documents for Sweden",
+          "body": "Dear Mr Szalewski, could you tell us if any new temperature documents will be needed for the February shipments? Karin Lindqvist"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0101",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Podsumowanie miesiąca - odprawy i opóźnienia na trasach eksportowych",
+      "body": "Szanowny Panie Wiktorze,\n\nchciałbym przekazać Panu miesięczne podsumowanie obsługi celnej tras eksportowych Kordelana, które prowadzimy w ramach naszej współpracy. Mam nadzieję, że informacja będzie dla Pana użyteczna przy ocenie jakości usług.\n\nW styczniu obsłużyliśmy łącznie czterdzieści osiem odpraw eksportowych, w tym trzydzieści dwie na trasach do Szwecji i Danii. Czterdzieści trzy odprawy zamknęły się w ciągu jednego dnia roboczego, a pięć wymagało dodatkowych wyjaśnień dla urzędu, które nasz zespół załatwił w ciągu dwóch dni. Żadne z tych zdarzeń nie spowodowało opóźnienia dostawy u odbiorcy.\n\nNajważniejszą zmianą w miesiącu było uruchomienie elektronicznego zgłaszania wstępnego dla towarów chłodzonych. Przejście przebiegło sprawnie, a nasi specjaliści zgłosili tylko dwa drobne błędy systemu, które urząd poprawił w ciągu doby. W lutym planujemy rozszerzenie tego rozwiązania na pozostałe grupy towarów.\n\nKoszty odpraw w styczniu mieściły się w budżecie, który uzgodniliśmy w grudniu. Szczegółowe rozliczenie przekażemy księgowości Kordelana w zwykłym trybie, bez potrzeby angażowania Pana.\n\nZ naszej strony uważamy, że miesiąc przebiegł bardzo dobrze, a współpraca z Państwa działem eksportu układa się wzorowo. Wiadomość kieruję wyłącznie do wiadomości.\n\nZ wyrazami szacunku\nDaniel Hargreaves",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0102",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: co dalej z opłatami za kartę",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nDostawcy kart flotowych zapowiadają zmiany w pakietach usługowych. Największy z nich wprowadzi od marca opcję rozliczania paliwa i opłat drogowych na jednej fakturze. Pozostali dostawcy zapowiadają podobne rozwiązania w drugim kwartale.\n\nWedług analityków rynek kart flotowych w Polsce wzrósł w ubiegłym roku o osiem procent, a liczba aktywnych kart przekroczyła milion. Największy wzrost odnotowano w segmencie małych firm transportowych.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0104",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Supply Chain Weekly: ports and parcels",
+      "body": "Supply Chain Weekly - ports and parcels\n\nPort volumes. North European ports reported a four percent increase in container throughput in December, mostly in transhipment. Gdansk and Gdynia grew faster than the regional average.\n\nParcels. European parcel volumes ended the year about six percent above the previous year. Carriers expect the growth to slow in the first quarter as retailers reduce promotions after the holiday season.\n\nSustainability. Several large shippers announced targets for zero-emission last-mile delivery in cities by 2030. Hydrogen trucks remain a niche, while electric vans are spreading quickly.\n\nRead the full analysis in the paid edition.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0105",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Our February schedule - summary of changes at the Gothenburg site",
+      "body": "Dear Mr Szalewski,\n\nI would like to give you an overview of how our Gothenburg receiving operation will look from February, so that your planners can take it into account. I understand that you may already have most of this information from Mr Pemberton, but I prefer to put it in writing.\n\nFirst, the receiving windows. Your trucks will be accepted on Tuesdays and Thursdays from 08:00 to 12:00, with a reserve window on Fridays from 10:00 to 12:00. We have added a second ramp for chilled goods, so two trucks can be unloaded at the same time. The average unloading time is currently about ninety minutes.\n\nSecond, the pallets. Our warehouse management system now prints the pallet labels in a new format. Your warehouse already received the sample and tested the printout, and your operations team confirmed that it works with their equipment.\n\nThird, the documents. The cold chain certificates for the chilled lines were renewed last week, and the new validity period runs until the end of next January. No new paperwork is required from your drivers.\n\nPlease treat this message as a status for your records. We do not need anything from you.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0106",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: krótko o rynku kart paliwowych",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nNowy cennik kart flotowych obowiązuje od poniedziałku w większości sieci stacji w Polsce.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-inf-0107",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Dates confirmed",
+      "body": "Wiktor,\n\nThe secretary confirmed the 28 January date with all members. No changes.\n\nOrlowicz",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}
