@@ -89,11 +89,11 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
       const missing = `Nope-${crypto.randomUUID()}`;
       await expect(provider.folderStatus(missing)).rejects.toBeInstanceOf(MailFolderMissingError);
       await expect(provider.fetchAbove(missing, 0)).rejects.toBeInstanceOf(MailFolderMissingError);
-      await expect(provider.fetchBodyText(missing, 1)).rejects.toBeInstanceOf(MailFolderMissingError);
+      await expect(provider.fetchContent(missing, 1)).rejects.toBeInstanceOf(MailFolderMissingError);
       expect(await provider.fetchAbove(INBOX, 0)).toHaveLength(1);
     });
 
-    test("fetchAbove and fetchBodyText read the asked folder only; an unknown uid gives null", async () => {
+    test("fetchAbove and fetchContent read the asked folder only; an unknown uid gives null", async () => {
       const { provider, seed } = await freshEnv();
       const oferty = await provider.ensureFolder("Oferty");
       await seed("INBOX", mail(1));
@@ -103,8 +103,8 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
       expect(metas.map((m) => m.messageId)).toEqual(["<contract-2@example.test>", "<contract-3@example.test>"]);
       const uids = metas.map((m) => m.uid);
       expect(uids).toEqual([...uids].sort((a, b) => a - b));
-      expect(await provider.fetchBodyText(oferty, uids[0] ?? 0)).toContain("Offer text");
-      expect(await provider.fetchBodyText(INBOX, 999_999)).toBeNull();
+      expect((await provider.fetchContent(oferty, uids[0] ?? 0)).text).toContain("Offer text");
+      expect((await provider.fetchContent(INBOX, 999_999)).text).toBeNull();
     });
 
     test("listFolders lists INBOX and created folders with a delimiter", async () => {
@@ -176,21 +176,66 @@ export function describeMailProviderContract(name: string, makeEnv: () => Promis
       for (const uid of all) expect(found).toContain(uid);
     });
 
-    test("fetchBodyText returns the text of a text mail", async () => {
+    test("fetchContent returns the text of a text mail", async () => {
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(1, { text: "Please approve the budget" }));
       const [meta] = await provider.fetchAbove(INBOX, 0);
-      const body = await provider.fetchBodyText(INBOX, meta?.uid ?? 0);
+      const body = (await provider.fetchContent(INBOX, meta?.uid ?? 0)).text;
       expect(body).toContain("Please approve the budget");
     });
 
-    test("fetchBodyText returns the visible text of an html-only mail without tags", async () => {
+    test("fetchContent returns the visible text of an html-only mail without tags", async () => {
       const { provider, seed } = await freshEnv();
       await seed("INBOX", mail(1, { text: undefined, html: "<p>Visible words</p>" }));
       const [meta] = await provider.fetchAbove(INBOX, 0);
-      const body = await provider.fetchBodyText(INBOX, meta?.uid ?? 0);
+      const body = (await provider.fetchContent(INBOX, meta?.uid ?? 0)).text;
       expect(body).toContain("Visible words");
       expect(body).not.toContain("<p>");
+    });
+
+    test("fetchContent captures Reply-To and List-Unsubscribe", async () => {
+      const { provider, seed } = await freshEnv();
+      await seed(
+        "INBOX",
+        mail(1, {
+          headers: { "Reply-To": "Desk <desk@example.test>", "List-Unsubscribe": "<https://u.example.test/x>" },
+        })
+      );
+      const [meta] = await provider.fetchAbove(INBOX, 0);
+      const content = await provider.fetchContent(INBOX, meta?.uid ?? 0);
+      expect(content.capture?.replyTo).toEqual(["desk@example.test"]);
+      expect(content.capture?.listUnsubscribe).toBe("<https://u.example.test/x>");
+      expect(content.capture?.partsKnown).toBe(true);
+    });
+
+    test("fetchContent of an unknown uid gives no text and no capture", async () => {
+      const { provider, seed } = await freshEnv();
+      await seed("INBOX", mail(1));
+      expect(await provider.fetchContent(INBOX, 999_999)).toEqual({ text: null, capture: null });
+    });
+
+    test("fetchFlagsIn gives the flags and the identity of the asked uids, ascending; unknown uids are left out", async () => {
+      const { provider, seed } = await freshEnv();
+      await seed("INBOX", mail(1));
+      await seed("INBOX", mail(2));
+      const [a, b] = await provider.fetchAbove(INBOX, 0);
+      const uidA = a?.uid ?? 0;
+      const uidB = b?.uid ?? 0;
+      await provider.setFlags(INBOX, uidA, { add: ["\\Seen", "\\Answered"] });
+      const found = await provider.fetchFlagsIn(INBOX, [uidB, uidA, 999_999]);
+      expect(found.map((entry) => entry.uid)).toEqual([uidA, uidB]);
+      expect(found[0]?.flags).toContain("\\Seen");
+      expect(found[0]?.flags).toContain("\\Answered");
+      expect(found[1]?.flags).not.toContain("\\Answered");
+      expect(found.map((entry) => entry.messageId)).toEqual(["<contract-1@example.test>", "<contract-2@example.test>"]);
+      expect(found[0]?.internalDate).toBeInstanceOf(Date);
+    });
+
+    test("fetchFlagsIn gives [] for no uids and for a missing folder", async () => {
+      const { provider, seed } = await freshEnv();
+      await seed("INBOX", mail(1));
+      expect(await provider.fetchFlagsIn(INBOX, [])).toEqual([]);
+      expect(await provider.fetchFlagsIn("No/Such", [1])).toEqual([]);
     });
 
     test("a mail without messageId gives messageId null", async () => {

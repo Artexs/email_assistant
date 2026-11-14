@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 
+import { textTables } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
 import { claimDueOutbox, insertOutbox, queueMailboxRemovedNotices } from "../../src/modules/channels";
-import { MAILBOX_REMOVED_TEXT } from "../../src/modules/channels/texts";
 import { getMailboxSettings, insertDefaultSettings } from "../../src/modules/config";
 import { claimEmails, listSyncTargets, removeMailbox, type RemoveDeps } from "../../src/modules/mail";
 import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
@@ -222,7 +222,7 @@ describe("removeMailbox", () => {
         email_id,
       }))
     ).toEqual([{ user_id: s.userId, status: "pending", text: null, view: {}, mailbox_id: null, email_id: null }]);
-    expect(notices.map((row) => renderedOf(row).text)).toEqual([MAILBOX_REMOVED_TEXT]);
+    expect(notices.map((row) => renderedOf(row).text)).toEqual([textTables.en.notices.mailboxRemoved]);
     const leaks = await db
       .selectFrom("outbox")
       .select("id")

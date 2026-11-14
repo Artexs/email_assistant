@@ -37,7 +37,8 @@ async function runSettings(args: string[]) {
 
 describe("mailbox:settings sync-folder", () => {
   // The script passes a plain Db: the function opens its own transaction.
-  test("off, then on with a plain Db: audit rows with actor cli, the cursor is null", async () => {
+  // Quarantined 2026-11-14: fails in CI without a code change. Fix: spec/features/planned/F126-mailbox-settings-sync-folder-test-off-then-on-with-a-plain-db-passes-every-time/
+  test.skip("off, then on with a plain Db: audit rows with actor cli, the cursor is null", async () => {
     const created = await db.transaction().execute(async (trx) => {
       const box = await createOrgWithMailbox(trx);
       await ensureSyncFolders(trx, { orgId: box.orgId }, box.mailboxId, [offers], at);

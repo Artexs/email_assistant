@@ -8,6 +8,8 @@ The translation rules and the fixed words of stage 08 (its introduction and tabl
 
 **Goal.** `approval`, `approval_set`, `send_result`, `delegation_answered` and the status line after a tap render per locale (D16, D19).
 
+**Added by the coordinator (review of stage 08):** the outbox kind `send_held` (F099 stage 05, `renderSendHeldNotice` in `packages/core/src/digest/notices.ts`) also renders per locale here. Add `noticeTexts.sendHeld` to `packages/core/src/texts/notices.ts` (the three limit texts and a waiting line that uses `pluralCategory` for `waiting`), make `renderSendHeldNotice` take `texts`, and make its registry entry use `textsFor(opts.locale)` and `formatClock(..., opts.locale)`. Stage 12 test 2 needs a Polish render that differs from English for every kind. Also store the missing-sender placeholder of the approval view as a marker and map it when the card renders (`outgoing/sender.ts:51` stores `senderLabel(..., textTables.en)` today).
+
 **Files.** New: `packages/core/src/texts/approvals.ts`. Changed: `packages/core/src/texts/index.ts`, `packages/core/src/digest/approvals.ts` (+ `approvals.test.ts`), `packages/core/src/notices/{renderers,render}.ts`, `apps/server/src/modules/channels/callbacks.ts` (the `renderNoticeEdit` call keeps passing the row's `locale`; nothing else here).
 
 **Interfaces.**

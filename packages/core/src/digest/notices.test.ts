@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
+import { textTables } from "../texts";
+
 import { MESSAGE_MAX_CHARS } from "./message";
 import {
   feedbackButtons,
@@ -29,7 +31,7 @@ const urgent = {
 
 describe("renderUrgentNotice", () => {
   test("has the lines in order, with buttons", () => {
-    const message = renderUrgentNotice(urgent);
+    const message = renderUrgentNotice(urgent, textTables.en);
     expect(message.text.split("\n")).toEqual([
       "🔴 Urgent mail",
       "From: Ann <ann@firma.test>",
@@ -47,26 +49,26 @@ describe("renderUrgentNotice", () => {
   });
 
   test("leaves out the AI line when there is no AI text", () => {
-    expect(renderUrgentNotice({ ...urgent, aiText: null }).text).not.toContain("💬");
+    expect(renderUrgentNotice({ ...urgent, aiText: null }, textTables.en).text).not.toContain("💬");
   });
 
   test("marks a test mail", () => {
-    const first = renderUrgentNotice({ ...urgent, synthetic: true }).text.split("\n")[0];
+    const first = renderUrgentNotice({ ...urgent, synthetic: true }, textTables.en).text.split("\n")[0];
     expect(first?.endsWith("· 🧪 test")).toBe(true);
   });
 
   test("shows the folder of the mail", () => {
-    expect(renderUrgentNotice({ ...urgent, folderTag: "Oferty" }).text.split("\n")[0]).toBe(
+    expect(renderUrgentNotice({ ...urgent, folderTag: "Oferty" }, textTables.en).text.split("\n")[0]).toBe(
       "🔴 Urgent mail · 📁 Oferty"
     );
-    expect(renderUrgentNotice({ ...urgent, folderTag: "Oferty", synthetic: true }).text.split("\n")[0]).toBe(
-      "🔴 Urgent mail · 📁 Oferty · 🧪 test"
-    );
+    expect(
+      renderUrgentNotice({ ...urgent, folderTag: "Oferty", synthetic: true }, textTables.en).text.split("\n")[0]
+    ).toBe("🔴 Urgent mail · 📁 Oferty · 🧪 test");
   });
 
   test("stays short for very long mail fields", () => {
     const long = "x".repeat(10_000);
-    const message = renderUrgentNotice({ ...urgent, from: long, subject: long, aiText: long });
+    const message = renderUrgentNotice({ ...urgent, from: long, subject: long, aiText: long }, textTables.en);
     expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
     const subject = message.text.split("\n")[2]?.slice("Subject: ".length) ?? "";
     expect(Array.from(subject).length).toBeLessThanOrEqual(80);
@@ -81,13 +83,16 @@ describe("feedbackButtons", () => {
 
 describe("other notices", () => {
   test("auth_error", () => {
-    const message = renderAuthErrorNotice({
-      address: "me@firma.test",
-      mailboxId: "mb-1",
-      since: new Date("2026-11-06T06:40:00Z"),
-      now,
-      timeZone,
-    });
+    const message = renderAuthErrorNotice(
+      {
+        address: "me@firma.test",
+        mailboxId: "mb-1",
+        since: new Date("2026-11-06T06:40:00Z"),
+        now,
+        timeZone,
+      },
+      textTables.en
+    );
     expect(message.text).toContain("me@firma.test");
     expect(message.text).toContain("mb-1");
     expect(message.text).toContain("at 07:40");
@@ -95,18 +100,24 @@ describe("other notices", () => {
   });
 
   test("sync late, never synced", () => {
-    const message = renderSyncStaleNotice({ address: "me@firma.test", lastSyncedAt: null, now, timeZone });
+    const message = renderSyncStaleNotice(
+      { address: "me@firma.test", lastSyncedAt: null, now, timeZone },
+      textTables.en
+    );
     expect(message.text).toContain("Last good sync: never.");
     expect(message.buttons).toEqual([]);
   });
 
   test("sync works again", () => {
-    const message = renderSyncOkNotice({
-      address: "me@firma.test",
-      lastSyncedAt: new Date("2026-11-06T06:55:00Z"),
-      now,
-      timeZone,
-    });
+    const message = renderSyncOkNotice(
+      {
+        address: "me@firma.test",
+        lastSyncedAt: new Date("2026-11-06T06:55:00Z"),
+        now,
+        timeZone,
+      },
+      textTables.en
+    );
     expect(message.text).toContain("Last sync 07:55");
   });
 });
@@ -125,7 +136,7 @@ describe("renderActionFailedNotice", () => {
     attempts: 3,
   };
   const lines = (input: Parameters<typeof renderActionFailedNotice>[0]) =>
-    renderActionFailedNotice(input).text.split("\n");
+    renderActionFailedNotice(input, textTables.en).text.split("\n");
 
   test("original move names the folder and cleans the subject", () => {
     expect(lines(base)).toEqual([
@@ -134,7 +145,7 @@ describe("renderActionFailedNotice", () => {
       "Subject: Offer, see [link]",
       "Tried 3 times. The mail stays in INBOX. /status shows the mailbox state.",
     ]);
-    expect(renderActionFailedNotice(base).buttons).toEqual([]);
+    expect(renderActionFailedNotice(base, textTables.en).buttons).toEqual([]);
   });
 
   test("the six shapes carry the verb, the subject and the tries", () => {
@@ -197,7 +208,7 @@ describe("renderActionFailedNotice", () => {
 
   test("marks a test mail after the first line only", () => {
     expect(lines({ ...base, synthetic: true })[1]).toBe("🧪 test");
-    expect(renderActionFailedNotice(base).text).not.toContain("🧪");
+    expect(renderActionFailedNotice(base, textTables.en).text).not.toContain("🧪");
   });
 });
 
@@ -226,5 +237,68 @@ describe("renderSendHeldNotice", () => {
     expect(renderSendHeldNotice({ ...base, limit: "recipient_day" }).text).toContain(
       "wait: the daily limit for one recipient is reached."
     );
+  });
+});
+
+describe("Polish notices", () => {
+  const pl = textTables.pl;
+  const plNow = new Date("2026-11-14T11:00:00Z");
+  const plUrgent = { ...urgent, now: plNow, receivedAt: new Date("2026-11-14T10:15:00Z") };
+
+  test("the urgent notice has Polish labels and the same callback data", () => {
+    const message = renderUrgentNotice(plUrgent, pl);
+    const lines = message.text.split("\n");
+    expect(lines[0]).toBe("🔴 Pilna wiadomość");
+    expect(lines).toContain("Od: Ann <ann@firma.test>");
+    expect(lines).toContain("Temat: Server down");
+    expect(lines).toContain("Odebrano 11:15");
+    expect(message.buttons).toEqual([
+      [
+        { text: "✅ Dobrze", data: `fr:u:${ID}` },
+        { text: "✏️ Zmień", data: `fe:${ID}` },
+      ],
+    ]);
+    expect(renderUrgentNotice({ ...plUrgent, synthetic: true }, pl).text.split("\n")[0]).toBe(
+      "🔴 Pilna wiadomość · 🧪 test"
+    );
+  });
+
+  test("sync stale never synced names /status", () => {
+    const text = renderSyncStaleNotice({ address: "me@firma.test", lastSyncedAt: null, now: plNow, timeZone }, pl).text;
+    expect(text).toContain(pl.notices.syncStale.never);
+    expect(text).toContain("/status");
+  });
+
+  test("a failed move counts the tries with the Polish plural", () => {
+    const base = {
+      actionType: "move" as const,
+      reverse: false,
+      reason: "other" as const,
+      folderName: "AI/Info",
+      sourceFolder: "INBOX",
+      currentFolder: "INBOX",
+      from: "Ann <ann@firma.test>",
+      subject: "Offer",
+      synthetic: false,
+    };
+    for (const [attempts, tried] of [
+      [1, "Próbowano 1 raz."],
+      [2, "Próbowano 2 razy."],
+      [5, "Próbowano 5 razy."],
+    ] as const) {
+      const lines = renderActionFailedNotice({ ...base, attempts }, pl).text.split("\n");
+      expect(lines[0]).toBe("⚠️ Nie udało się przenieść wiadomości do folderu: AI/Info");
+      expect(lines[3]).toBe(`${tried} Wiadomość zostaje w folderze: INBOX. /status pokazuje stan skrzynki.`);
+    }
+  });
+
+  test("the auth error keeps the command and the mailbox id", () => {
+    const text = renderAuthErrorNotice(
+      { address: "me@firma.test", mailboxId: "mb-1", since: new Date("2026-11-14T10:00:00Z"), now: plNow, timeZone },
+      pl
+    ).text;
+    expect(text).toContain("mailbox:password");
+    expect(text).toContain("mb-1");
+    expect(text).toContain("deploy/README.md");
   });
 });

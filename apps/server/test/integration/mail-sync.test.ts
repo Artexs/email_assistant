@@ -111,7 +111,7 @@ async function cursorOf(trx: Db | Transaction<DB>, mailboxId: string) {
   return { uidValidity: Number(row.uidvalidity), lastUid: Number(row.last_uid) };
 }
 
-// Runs `hook` before the n-th call of fetchBodyText, then calls the fake.
+// Runs `hook` before the n-th call of fetchContent, then calls the fake.
 function onBodyCall(fake: FakeMailProvider, hook: (call: number) => Promise<void>): MailProvider {
   let call = 0;
   return {
@@ -119,10 +119,10 @@ function onBodyCall(fake: FakeMailProvider, hook: (call: number) => Promise<void
     serverInfo: () => fake.serverInfo(),
     folderStatus: (folder) => fake.folderStatus(folder),
     fetchAbove: (folder, lastUid) => fake.fetchAbove(folder, lastUid),
-    fetchBodyText: async (folder, uid) => {
+    fetchContent: async (folder, uid) => {
       call += 1;
       await hook(call);
-      return fake.fetchBodyText(folder, uid);
+      return fake.fetchContent(folder, uid);
     },
     close: () => fake.close(),
   };
@@ -155,7 +155,7 @@ function afterFirstCall(
       return method === "searchSinceIn" ? once(uids) : uids;
     },
     fetchByUidsIn: (folder, uids) => fake.fetchByUidsIn(folder, uids),
-    fetchBodyText: (folder, uid) => fake.fetchBodyText(folder, uid),
+    fetchContent: (folder, uid) => fake.fetchContent(folder, uid),
     close: () => fake.close(),
   };
 }
@@ -521,7 +521,7 @@ describe("syncMailbox: incremental", () => {
       const s = await setup(trx);
       for (let n = 1; n <= 5; n += 1) s.fake.deliver("INBOX", seed(n));
       const provider = onBodyCall(s.fake, async (call) => {
-        if (call === 3) s.fake.failOn("fetchBodyText", new SoftError("x"), 1);
+        if (call === 3) s.fake.failOn("fetchContent", new SoftError("x"), 1);
       });
 
       await expect(syncMailbox(deps(trx, provider, { chunkSize: 2 }), s.ctx, s.mailboxId)).rejects.toBeInstanceOf(
@@ -579,7 +579,7 @@ describe("syncMailbox: incremental", () => {
       const fake = createFakeMailProvider({ uidValidity: UID_VALIDITY });
       for (let n = 1; n <= 3; n += 1) fake.deliver("INBOX", seed(n));
       const provider = onBodyCall(fake, async (call) => {
-        if (call === 3) fake.failOn("fetchBodyText", new SoftError("x"), 1);
+        if (call === 3) fake.failOn("fetchContent", new SoftError("x"), 1);
       });
 
       await expect(syncMailbox(deps(db, provider, { chunkSize: 2 }), ctx, created.mailboxId)).rejects.toBeInstanceOf(
@@ -745,7 +745,7 @@ describe("syncMailbox: initial", () => {
       const s = await setupNew(trx);
       for (let n = 1; n <= 3; n += 1) s.fake.deliver("INBOX", seed(n), { internalDate: hoursAgo(1) });
       const provider = onBodyCall(s.fake, async (call) => {
-        if (call === 3) s.fake.failOn("fetchBodyText", new SoftError("x"), 1);
+        if (call === 3) s.fake.failOn("fetchContent", new SoftError("x"), 1);
       });
 
       await expect(syncMailbox(deps(trx, provider, { chunkSize: 2 }), s.ctx, s.mailboxId)).rejects.toBeInstanceOf(
@@ -818,7 +818,7 @@ describe("syncMailbox: rescan", () => {
       const s = await setupKnown(trx);
       s.fake.resetUidValidity(UID_VALIDITY + 1);
       s.fake.deliver("INBOX", seed(4), { internalDate: hoursAgo(1) });
-      s.fake.failOn("fetchBodyText", new SoftError("x"), 1);
+      s.fake.failOn("fetchContent", new SoftError("x"), 1);
 
       await expect(syncMailbox(deps(trx, s.fake, { chunkSize: 2 }), s.ctx, s.mailboxId)).rejects.toBeInstanceOf(
         SoftError
@@ -1396,7 +1396,7 @@ describe("syncMailbox: sync folders", () => {
       const rows = await storedRows(trx, s.mailboxId);
       expect(rows).toHaveLength(1);
       expect(rows[0]).toMatchObject({ folder: SOCIAL, source_folder: SOCIAL, status: "pending", uid: String(uid) });
-      expect(s.fake.folderCalls).toContainEqual({ method: "fetchBodyText", folder: SOCIAL });
+      expect(s.fake.folderCalls).toContainEqual({ method: "fetchContent", folder: SOCIAL });
     });
   });
 
@@ -1513,7 +1513,7 @@ describe("syncMailbox: sync folders", () => {
       s.fake.deliver(JUNK, seed(2), ago(1));
       const provider: MailProvider = {
         ...s.fake,
-        fetchBodyText: async (folder, uid) => {
+        fetchContent: async (folder, uid) => {
           if (folder === OFFERS) {
             await trx
               .updateTable("mailbox_folders")
@@ -1522,7 +1522,7 @@ describe("syncMailbox: sync folders", () => {
               .where("key", "=", "offers")
               .execute();
           }
-          return s.fake.fetchBodyText(folder, uid);
+          return s.fake.fetchContent(folder, uid);
         },
       };
 
@@ -1543,8 +1543,8 @@ describe("syncMailbox: sync folders", () => {
       let crash = true;
       const provider: MailProvider = {
         ...s.fake,
-        fetchBodyText: async (folder, uid) => {
-          const body = await s.fake.fetchBodyText(folder, uid);
+        fetchContent: async (folder, uid) => {
+          const body = await s.fake.fetchContent(folder, uid);
           if (crash && folder === OFFERS) throw new SoftError("crash after the plan");
           return body;
         },
@@ -1808,9 +1808,9 @@ describe("syncMailbox: sync folders", () => {
       s.fake.deliver(JUNK, seed(1), ago(1));
       const provider: MailProvider = {
         ...s.fake,
-        fetchBodyText: async (folder, uid) => {
+        fetchContent: async (folder, uid) => {
           if (folder === OFFERS && uid === failing) throw new SoftError("lost connection");
-          return s.fake.fetchBodyText(folder, uid);
+          return s.fake.fetchContent(folder, uid);
         },
       };
 

@@ -1,7 +1,7 @@
 import type { FetchMessageObject, MessageAddressObject } from "imapflow";
 
 import { HardError } from "../../../platform/errors";
-import type { FolderMessageMeta, MessageMeta } from "../port";
+import type { FlagsOfMessage, FolderMessageMeta, MessageMeta } from "../port";
 
 import { contentFromSource } from "./capture";
 import { cleanOrNull, stripNul } from "./clean";
@@ -63,6 +63,19 @@ export function toMessageMeta(msg: FetchMessageObject): MessageMeta {
 
 export function toFolderMessageMeta(msg: FetchMessageObject): FolderMessageMeta {
   return { ...toMessageMeta(msg), flags: [...(msg.flags ?? [])].sort() };
+}
+
+export function toFlagsOfMessage(msg: FetchMessageObject): FlagsOfMessage {
+  const internalDate = validDate(msg.internalDate);
+  if (internalDate === null) {
+    throw new HardError(`IMAP message uid ${msg.uid} has no valid INTERNALDATE`);
+  }
+  return {
+    uid: msg.uid,
+    flags: [...(msg.flags ?? [])].sort(),
+    messageId: cleanOrNull(msg.envelope?.messageId),
+    internalDate,
+  };
 }
 
 /** Plain text of a full RFC 822 source: the text part, else the html part as text. Null on a parse error or no text. */

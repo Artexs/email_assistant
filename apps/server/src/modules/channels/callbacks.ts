@@ -113,7 +113,7 @@ export function pickerMessage(
     data: encodeCallback({ kind: "pick", category, emailId }),
   });
   return {
-    text: `✏️ Pick the right category\n${cleanSubject(subject)}\nAI said: ${categoryTag(current, texts)}`,
+    text: `✏️ Pick the right category\n${cleanSubject(subject, texts)}\nAI said: ${categoryTag(current, texts)}`,
     buttons: [
       [pick("urgent"), pick("needs_reply")],
       [pick("info"), pick("notification")],

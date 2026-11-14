@@ -1,5 +1,6 @@
 import { quoteCut } from "../outgoing/quote";
 import type { ApprovalView } from "../outgoing/sender";
+import { textTables } from "../texts";
 import type { DraftPayload } from "../triage/payloads";
 import { removeLinks } from "../triage/untrusted-text";
 
@@ -88,7 +89,7 @@ export function renderApprovalRequest(input: {
     const label = cutText(removeLinks(view.sender.label), FIELD_MAX_CHARS);
     head.push(view.sender.external ? `From: ${label} · ⚠️ external sender` : `From: ${label}`);
   }
-  head.push(`Subject: ${cleanSubject(view.subject)}`);
+  head.push(`Subject: ${cleanSubject(view.subject, textTables.en)}`);
   if (view.dueDate !== null) head.push(`Due: ${view.dueDate}`);
 
   const build = (body: string, bodyNote: boolean, quote: { text: string; replaced: boolean; cut: boolean } | null) => {
@@ -260,7 +261,7 @@ export function renderSendResult(input: {
 }): OutMessage {
   const { actionId, sendKind, result, recipient } = input;
   const to = recipientLabel(recipient);
-  const subject = cleanSubject(input.subject);
+  const subject = cleanSubject(input.subject, textTables.en);
   const closing = CLOSINGS[sendKind];
   const sendAgain: OutMessage["buttons"] = [
     [{ text: "📤 Send again", data: encodeCallback({ kind: "send_again", actionId }) }],
@@ -359,7 +360,7 @@ export function renderDelegationAnswered(input: {
   timeZone: string;
   synthetic: boolean;
 }): OutMessage {
-  const title = `📩 ${cutText(input.delegateName, FIELD_MAX_CHARS)} answered · ${cleanSubject(input.subject)}`;
+  const title = `📩 ${cutText(input.delegateName, FIELD_MAX_CHARS)} answered · ${cleanSubject(input.subject, textTables.en)}`;
   // The next stage of the Polish UI plan passes the texts of the row.
   const received = formatClock(input.receivedAt, input.timeZone, input.now, "en");
   return {

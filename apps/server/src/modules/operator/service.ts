@@ -2,10 +2,12 @@ import {
   costPerMail,
   QUOTA_TIMEZONE,
   quotaDayStart,
+  type OperatorFlagBody,
   type OperatorNotices,
   type OperatorOrgDetail,
   type OperatorOrgList,
   type OperatorOrgRow,
+  type OperatorPlanBody,
 } from "@ea/core";
 
 import type { Db, TenantContext } from "../../platform/db";
@@ -14,7 +16,17 @@ import { auditEvents, listAuditEvents, sumLlmCallsByModelSince } from "../audit"
 import { countFailedOutboxSince, lastOutboxSentAt, listLinkedChatsOfOrg } from "../channels";
 import { listMailboxes } from "../mail";
 import { lastDigestSentAt } from "../reports";
-import { featureStates, getOrgPlan, listMemberships, listOrganizations } from "../tenancy";
+import {
+  featureStates,
+  getOrgPlan,
+  listMemberships,
+  listOrganizations,
+  setOrgFeature,
+  setOrgPlan,
+  type SetOrgFeatureResult,
+  type SetOrgPlanHooks,
+  type SetOrgPlanResult,
+} from "../tenancy";
 import { lastTriageAt } from "../triage";
 
 const DAY_MS = 24 * 3_600_000;
@@ -154,4 +166,24 @@ export async function listOperatorNotices(deps: { db: Db; now: () => Date }, day
   }
   notices.sort((a, b) => (a.at === b.at ? a.orgId.localeCompare(b.orgId) : a.at < b.at ? 1 : -1));
   return { notices: notices.slice(0, NOTICE_LIMIT), since: since.toISOString() };
+}
+
+// D20: the same service functions as the CLIs; the actor is the operator's user id. The audit rows go into the target organization.
+export async function changeOrgPlan(
+  deps: { db: Db; now: () => Date; planHooks: SetOrgPlanHooks },
+  input: { orgId: string; actor: string; body: OperatorPlanBody }
+): Promise<SetOrgPlanResult> {
+  return setOrgPlan(
+    deps.db,
+    { orgId: input.orgId },
+    { ...input.body, actor: input.actor, now: deps.now() },
+    deps.planHooks
+  );
+}
+
+export async function changeOrgFlag(
+  deps: { db: Db; now: () => Date },
+  input: { orgId: string; actor: string; body: OperatorFlagBody }
+): Promise<SetOrgFeatureResult> {
+  return setOrgFeature(deps.db, { orgId: input.orgId }, { ...input.body, actor: input.actor, now: deps.now() });
 }

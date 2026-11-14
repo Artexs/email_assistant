@@ -256,8 +256,8 @@ async function planChunk(
     }
 
     if (dedupKey !== null) {
-      const body = await deps.provider.fetchBodyText(folder, meta.uid);
-      writes.push({ kind: "insert", row: newRow(mailboxId, folder, meta, messageId, hash, dedupKey, body) });
+      const content = await deps.provider.fetchContent(folder, meta.uid);
+      writes.push({ kind: "insert", row: newRow(mailboxId, folder, meta, messageId, hash, dedupKey, content.text) });
       state.newKeys.set(baseKey, [...runStored, { dedupKey, folder, uid: meta.uid }]);
       state.matched.set(`run:${dedupKey}`, folder);
     }

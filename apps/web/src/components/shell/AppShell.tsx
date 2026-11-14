@@ -56,7 +56,8 @@ function Frame({ active, title, children }: AppShellProps) {
 
   const email = me?.user.email ?? null;
   const onboardingOpen = me === null || !me.onboarding.done;
-  const navProps = { active, onboardingOpen, email, loading, onLogOut };
+  const operator = me?.operator === true;
+  const navProps = { active, onboardingOpen, operator, email, loading, onLogOut };
 
   let content: ReactNode;
   if (me !== null) {

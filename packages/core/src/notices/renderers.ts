@@ -19,13 +19,12 @@ import {
 import { describeActions } from "../digest/would-do";
 import { textsFor } from "../texts";
 
-import { MAILBOX_REMOVED_TEXT, type NoticeKind, type NoticeRenderOptions } from "./kinds";
+import { type NoticeKind, type NoticeRenderOptions } from "./kinds";
 import { noticeViewSchemas } from "./views";
 
 // One renderer per kind. A channel key holds one function per detail level.
 export interface NoticeRenderer<S extends z.ZodType> {
   schema: S;
-  // en texts for both locales until E7-T1 adds the pl texts (PD-037).
   telegram: { full: (view: z.output<S>, opts: NoticeRenderOptions) => OutMessage };
 }
 
@@ -41,51 +40,56 @@ export const noticeRenderers = {
   urgent: defineRenderer({
     schema: noticeViewSchemas.urgent,
     telegram: {
-      full: (view, opts) =>
-        renderUrgentNotice({
-          emailId: view.emailId,
-          from: view.from,
-          subject: view.subject,
-          aiText: aiTextFor(
-            {
-              category: "urgent",
-              reasonCode: view.ai.reasonCode,
-              reason: view.ai.reason,
-              summary: null,
-              modelCategory: null,
-              confidence: 0,
-            },
-            textsFor(opts.locale)
-          ),
-          receivedAt: view.receivedAt,
-          synthetic: view.synthetic,
-          folderTag: view.folderTag,
-          wouldDo: describeActions(
-            view.actions,
-            new Map(Object.entries(view.delegateNames)),
-            { stayFolder: view.stayFolder },
-            textsFor(opts.locale)
-          ),
-          now: view.now,
-          timeZone: view.timeZone,
-        }),
+      full: (view, opts) => {
+        const texts = textsFor(opts.locale);
+        return renderUrgentNotice(
+          {
+            emailId: view.emailId,
+            from: view.from,
+            subject: view.subject,
+            aiText: aiTextFor(
+              {
+                category: "urgent",
+                reasonCode: view.ai.reasonCode,
+                reason: view.ai.reason,
+                summary: null,
+                modelCategory: null,
+                confidence: 0,
+              },
+              texts
+            ),
+            receivedAt: view.receivedAt,
+            synthetic: view.synthetic,
+            folderTag: view.folderTag,
+            wouldDo: describeActions(
+              view.actions,
+              new Map(Object.entries(view.delegateNames)),
+              { stayFolder: view.stayFolder },
+              texts
+            ),
+            now: view.now,
+            timeZone: view.timeZone,
+          },
+          texts
+        );
+      },
     },
   }),
   auth_error: defineRenderer({
     schema: noticeViewSchemas.auth_error,
-    telegram: { full: (view) => renderAuthErrorNotice(view) },
+    telegram: { full: (view, opts) => renderAuthErrorNotice(view, textsFor(opts.locale)) },
   }),
   sync_stale: defineRenderer({
     schema: noticeViewSchemas.sync_stale,
-    telegram: { full: (view) => renderSyncStaleNotice(view) },
+    telegram: { full: (view, opts) => renderSyncStaleNotice(view, textsFor(opts.locale)) },
   }),
   sync_ok: defineRenderer({
     schema: noticeViewSchemas.sync_ok,
-    telegram: { full: (view) => renderSyncOkNotice(view) },
+    telegram: { full: (view, opts) => renderSyncOkNotice(view, textsFor(opts.locale)) },
   }),
   action_failed: defineRenderer({
     schema: noticeViewSchemas.action_failed,
-    telegram: { full: (view) => renderActionFailedNotice(view) },
+    telegram: { full: (view, opts) => renderActionFailedNotice(view, textsFor(opts.locale)) },
   }),
   approval: defineRenderer({
     schema: noticeViewSchemas.approval,
@@ -111,7 +115,7 @@ export const noticeRenderers = {
   }),
   mailbox_removed: defineRenderer({
     schema: noticeViewSchemas.mailbox_removed,
-    telegram: { full: () => ({ text: MAILBOX_REMOVED_TEXT, buttons: [] }) },
+    telegram: { full: (_view, opts) => ({ text: textsFor(opts.locale).notices.mailboxRemoved, buttons: [] }) },
   }),
   send_held: defineRenderer({
     schema: noticeViewSchemas.send_held,

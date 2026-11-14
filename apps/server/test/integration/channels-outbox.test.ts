@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { NoticeViewError, renderSyncOkNotice } from "@ea/core";
+import { NoticeViewError, renderSyncOkNotice, textTables } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -536,7 +536,7 @@ describe("queueNotice", () => {
       expect(rows[0]?.view).toMatchObject({ lastSyncedAt: "2026-11-06T09:30:00.123Z" });
       expect(rows[0]?.text).toBeNull();
       expect(rows[0]?.buttons).toEqual([]);
-      expect(rows[0] && renderedOf(rows[0]).text).toBe(renderSyncOkNotice(input).text);
+      expect(rows[0] && renderedOf(rows[0]).text).toBe(renderSyncOkNotice(input, textTables.en).text);
     });
   });
 

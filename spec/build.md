@@ -10,7 +10,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 - Standing models: worker and reviewer `--engine pi --provider claude-bridge --model claude-sonnet-5-5 --thinking high`, with the personal Claude route (`~/.pi/agent/AGENTS.md` § Limen). Prepare: `--prepare 'bash scripts/limen-prepare.sh'` (own `.env`, `node_modules`, own DB; drop the job DB by hand after the job). Log lint backlog (E8a): 395 old-form log calls warn after F089 stage 06 (2026-11-13); the converted files (`platform/`, `main.ts`) are at error.
 - Now: S6 pre-sale moves to Limen segment by segment (S6a = F077). The S6 master plan and `s6b`–`s6f` still sit in `tasks/` until `plan-task` plans them here; the old `run-task` flow is removed.
-- CI on `master`: green since 2026-11-13 (run 43449221495); ci 4m56s (unit 30 s, int 191 s), e2e 3m0s. Bun pin `.bun-version` 1.3.14. After each land, check `gh run list --branch master --workflow CI --limit 3`; a red run → `docs/code-patterns.md` § Tests (quarantine the same day).
+- CI on `master`: red several times on 2026-11-14 from two flaky tests that failed without a code change; both are quarantined (`test.skip`) with fix tickets F123 (`main-start-log`) and F126 (`mail-folders-cli`). Last known all-green run before that: 2026-11-13 (run 43449221495). Bun pin `.bun-version` 1.4.4. After each land, check `gh run list --branch master --workflow CI --limit 3`; a red run → `docs/code-patterns.md` § Tests (quarantine the same day).
 
 ## NOW
 
@@ -62,6 +62,8 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F120-e11a-sender-context` (🔴 PLANNED, needs plan): E11a Sender context; sequenced after E3a, E5a, E4-B; gate —.
 - `F121-e10b-public-pages-and-demo` (🔴 PLANNED, needs plan): E10b Public pages and demo; sequenced after E2b, E3a, E4-B, E7-T4, E8b; gate —.
 - `F122-e6b-style-from-sent` (🔴 PLANNED, needs plan): E6b Style from Sent; sequenced after E6a, E5a; gate Gated: only if the E2a judge shows a gain.
+- `F124-the-unit-and-integration-suites-run-in-parallel-and-no-unit-test-waits-for-a-real-multi-second-timeout` (🔴 PLANNED, plan landed, 2 stages, no migration): unit and int run with `--parallel=4` and no unit test waits for a multi-second production timeout; sequenced after none; gate —.
+- `F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged` (🔴 PLANNED, plan landed, 7 read-only stages + cut stages after G1, no migration): a test audit report with approval groups, then owner-approved cuts; sequenced after none (cut stages after F124); gate G1 second pass after stage 07 (the owner marks `audit/report.md`; a real stop).
 - Order rule (owner, 2026-11-14): plan a ticket only after the tickets it needs (§2.1 "Needs") have landed; build it; then plan the next one that depends on it. Independent tickets may be planned in parallel with builds. Do not plan ahead of the code (F098 plan clashed with F091 code). Quota rule: set a `limen rule` wake at the quota reset time plus 2 minutes whenever jobs stop on the 5-hour limit; resume failed jobs with `limen continue` and the claude-bridge flags. Builders have no cap (owner), planners at most three at once; with 5 to 7 jobs the quota lasts about one hour per 5-hour window.
 
 ## PROVEN

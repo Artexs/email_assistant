@@ -13,9 +13,11 @@ import {
   INBOX,
   MailAuthError,
   MailFolderMissingError,
+  type FlagsOfMessage,
   type FolderMessageMeta,
   type FolderStatus,
   type MailCapabilities,
+  type MailContent,
   type MailProvider,
   type MailServerInfo,
   type MessageMeta,
@@ -26,7 +28,8 @@ import {
 } from "../port";
 import { resolveUidNext } from "../uid-next";
 
-import { bodyTextFromSource, toFolderMessageMeta, toMessageMeta } from "./mapper";
+import { contentFromHeaderBlock, contentFromSource } from "./capture";
+import { toFlagsOfMessage, toFolderMessageMeta, toMessageMeta } from "./mapper";
 
 const log = createLog("mail");
 
@@ -52,6 +55,8 @@ const META_QUERY: FetchQueryObject = {
   envelope: true,
   headers: ["references", "x-ea-action-id"],
 };
+const FLAGS_CHUNK = 500;
+const FLAGS_QUERY: FetchQueryObject = { uid: true, flags: true, envelope: true, internalDate: true };
 const FOLDER_META_QUERY: FetchQueryObject = { ...META_QUERY, flags: true };
 
 export interface ImapConnectOptions {
@@ -138,7 +143,7 @@ export async function connectImapClient(opts: ImapConnectOptions): Promise<ImapF
   return client;
 }
 
-function byUid(a: MessageMeta, b: MessageMeta): number {
+function byUid(a: { uid: number }, b: { uid: number }): number {
   return a.uid - b.uid;
 }
 
@@ -266,14 +271,20 @@ class ImapMailProvider implements MailProvider {
     );
   }
 
-  fetchBodyText(folder: string, uid: number): Promise<string | null> {
-    return guard("fetchBodyText", () =>
-      this.withExistingFolder(folder, async () => {
+  fetchContent(folder: string, uid: number): Promise<MailContent> {
+    return guard("fetchContent", () =>
+      this.withExistingFolder(folder, async (): Promise<MailContent> => {
+        const empty: MailContent = { text: null, capture: null };
         const head = await this.client.fetchOne(String(uid), { uid: true, size: true }, { uid: true });
-        if (head === false || (head.size ?? 0) > this.bodyLimitBytes) return null;
+        if (head === false) return empty;
+        if ((head.size ?? 0) > this.bodyLimitBytes) {
+          const block = await this.client.fetchOne(String(uid), { uid: true, headers: true }, { uid: true });
+          if (block === false || block.headers === undefined) return empty;
+          return (await contentFromHeaderBlock(block.headers)) ?? empty;
+        }
         const full = await this.client.fetchOne(String(uid), { uid: true, source: true }, { uid: true });
-        if (full === false || full.source === undefined) return null;
-        return bodyTextFromSource(full.source);
+        if (full === false || full.source === undefined) return empty;
+        return (await contentFromSource(full.source)) ?? empty;
       })
     );
   }
@@ -375,6 +386,23 @@ class ImapMailProvider implements MailProvider {
       this.withFolder<FolderMessageMeta[]>(folder, [], async () =>
         (await this.fetchFolderMetas(uids.join(","))).filter((meta) => asked.has(meta.uid))
       )
+    );
+  }
+
+  fetchFlagsIn(folder: string, uids: number[]): Promise<FlagsOfMessage[]> {
+    if (uids.length === 0) return Promise.resolve([]);
+    const asked = new Set(uids);
+    return guard("fetchFlagsIn", () =>
+      this.withFolder<FlagsOfMessage[]>(folder, [], async () => {
+        const found: FlagsOfMessage[] = [];
+        for (let at = 0; at < uids.length; at += FLAGS_CHUNK) {
+          const chunk = uids.slice(at, at + FLAGS_CHUNK).join(",");
+          for await (const msg of this.client.fetch(chunk, FLAGS_QUERY, { uid: true })) {
+            if (asked.has(msg.uid)) found.push(toFlagsOfMessage(msg));
+          }
+        }
+        return found.sort(byUid);
+      })
     );
   }
 

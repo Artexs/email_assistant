@@ -1,4 +1,4 @@
-import { cleanSubject, localDateTime } from "@ea/core";
+import { cleanSubject, localDateTime, textTables } from "@ea/core";
 
 import { closeDelegation, listDelegations } from "../modules/delegation";
 import { getOrganization } from "../modules/tenancy";
@@ -52,7 +52,7 @@ async function main(): Promise<number> {
             row.id,
             row.status,
             row.delegate_name,
-            cleanSubject(row.subject),
+            cleanSubject(row.subject, textTables.en),
             `due ${day(row.due_at, org.timezone)}`,
             `sent ${day(row.sent_at, org.timezone)}`,
             `reminders ${row.reminders_sent}`,
