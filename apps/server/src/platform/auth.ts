@@ -1,10 +1,12 @@
 import { TERMS_VERSION } from "@ea/core";
 import { betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware, getSessionFromCtx, isAPIError } from "better-auth/api";
+import type { Transaction } from "kysely";
 import { Pool } from "pg";
 import { z } from "zod";
 
 import type { LockoutStore } from "./auth-lockout";
+import type { DB, Db } from "./db";
 import { errorFields } from "./errors";
 import { createLog } from "./log";
 import type { PwnedResult } from "./pwned";
@@ -487,4 +489,12 @@ export function createAuth(deps: AuthDeps): AuthHandle {
     auth: createBetterAuth(deps, pool),
     close: () => pool.end(),
   };
+}
+
+// Retention: deletes the `auth_verifications` rows (reset-password and invite tokens) that expired before `before`.
+// Better Auth deletes expired rows only when it reads one, so rows of tokens nobody uses stay. The only SQL of ours on this table.
+// The caller logs the count; the rows hold a user id (`value`) and a token hash (`identifier`), and neither goes to a log.
+export async function deleteExpiredVerifications(db: Db | Transaction<DB>, opts: { before: Date }): Promise<number> {
+  const result = await db.deleteFrom("auth_verifications").where("expires_at", "<", opts.before).executeTakeFirst();
+  return Number(result.numDeletedRows);
 }

@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-12
+landed: 2026-11-14
 ---
 
 # F078 · Expired Better Auth `auth_verifications` rows are deleted by the retention job

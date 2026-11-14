@@ -31,34 +31,34 @@ One row per `plan-task` run. "Plan name" is the working name until `plan-task` g
 | # | Plan name | Epic page | Stages | Needs (landed) | Gate | F-number |
 | --- | --- | --- | --- | --- | --- | --- |
 | 0 | Foundation group: CI green, module borders, feature flags, notices as facts, event logs, LLM roles, repo split, RLS (`07-foundation-plan.md`; tickets exist, `plan.md` written) | `06-architecture-review.md` | ≈ 28 | —; runs next to E1. F087 is the first slice of E7-T2, F089 the first stage of E8a | Owner: start the group; F092 RLS yes or no | F093, F086, F087, F088, F089, F090, F091, F092 |
-| 1 | E1 Close the MVP (capability map, docs boundary, NEXT sweep of the old planned tickets) | E01 | ≈ 10 | — (F077 landed) | Owner: F047 A phone test; vision text OK (owner-owned) | |
-| 2 | E8-LR Log rotation | E08 (PD-054) | ≈ 1 | — | — | |
-| 3 | E2a Offline lab | E02 | ≈ 14 | E1 | Owner audit of 50 cases per corpus version | |
-| 4 | E7-T1 Polish UI (i18n frame first) | E07 notes §11 | ≈ 6 | F082 | — | |
-| 5 | E7-T2 Platform controls (send limits, feature flags, operator console, security log) | E07 notes §11 | ≈ 12 | F082 | — | |
-| 6 | E3a Measure | E03 | ≈ 13 | E1; E7-T2 before its user-visible stages (flags) | — | |
-| 7 | Panel to Astro 7 | E10 (PD-098 area, notes §5) | ≈ 3 | E1 | — | |
-| 8 | E4-A Act from the panel | E04 | ≈ 20 | E1, E7-T1, Astro 7 | — | |
-| 9 | E8a Logs | E08 | ≈ 8 | E1 | — | |
-| 10 | E5a Read Sent | E05 | ≈ 7 | E1, E7-T2 | — | |
-| 11 | E7-T6 Identity A (TOTP, backup codes, break-glass) | E07 notes §11 | ≈ 4 | F082 | — | |
-| 12 | E7-T3 Account data (delete, export, DSR) | E07 notes §11 | ≈ 8 | F082, E7-T1 | — | |
-| 13 | E7-T4 Papers and cost | E07 notes §11 | ≈ 6 | E7-T3 | — | |
-| 14 | E7-T5 Production on the VPS | E07 notes §11 | ≈ 4 | E7-T1 … T4; the E8b drill proves its restore | — | |
-| 15 | E3b Improve | E03 | ≈ 14 | E2a, E3a | Second pass after the first E2a holdout report (PD-060, PD-061) | |
-| 16 | E4-B Earn trust | E04 | ≈ 25 | E4-A (command contract stage), E3a (flag store, header capture), E2a (urgency shape); the urgency-editor stage needs E3b's urgency command | — | |
-| 17 | E11b Private model option | E11 | ≈ 5 | E2a | Owner: OpenAI Europe project request (PD-111); second pass on the answer (PD-110) before the EU stage | |
-| 18 | E10a Docs site | E10 | ≈ 10 | E1, Astro 7 | — | |
-| 19 | E2b Live lab | E02 | ≈ 16 | E2a | Owner: grow the VPS root volume (PD-055) | |
-| 20 | E8b Alerts and releases (incl. the restore drill) | E08 | ≈ 6 | E8a | Owner: grow the VPS root volume (PD-055) | |
-| 21 | E6a Reply drafts | E06 | ≈ 17 | E2a, E3a, E4-A, E5a, E7-T2 | Stage 1 is the prototype; second pass after it (PD-071, PD-072, PD-083) before the later stages | |
-| 22 | E5b Open loops | E05 | ≈ 22 | E2a, E3a, E4-A, E5a | Second pass after the first E3a weekly report and the E2b live week (PD-119, PD-120, PD-122) | |
-| 23 | E9a Mailbox OAuth | E09 | ≈ 19 | F082, E7-T2 | Owner: one Microsoft 365 Business Basic seat; stage 1 is the spike; second pass after it (PD-086, PD-087) | |
-| 24 | E9b Phone channel (PWA, push, Telegram detail) | E09 | ≈ 14 | E4-A, E4-B | — | |
-| 25 | E7-T7 Identity B (OIDC) | E07 notes §11 | ≈ 10 | E7-T2, E7-T6 | Stage 1 is the spike; second pass after it (PD-040, PD-041) | |
-| 26 | E11a Sender context | E11 | ≈ 10 | E3a, E5a, E4-B | — | |
-| 27 | E10b Public pages and demo | E10 | ≈ 8 | E2b, E3a, E4-B, E7-T4, E8b | — | |
-| 28 | E6b Style from Sent | E06 | ≈ 4 | E6a, E5a | Gated: only if the E2a judge shows a gain | |
+| 1 | E1 Close the MVP (capability map, docs boundary, NEXT sweep of the old planned tickets) | E01 | ≈ 10 | — (F077 landed) | Owner: F047 A phone test; vision text OK (owner-owned) | F095 |
+| 2 | E8-LR Log rotation | E08 (PD-054) | ≈ 1 | — | — | F096 |
+| 3 | E2a Offline lab | E02 | ≈ 14 | E1 | Owner audit of 50 cases per corpus version | F097 |
+| 4 | E7-T1 Polish UI (i18n frame first) | E07 notes §11 | ≈ 6 | F082 | — | F098 |
+| 5 | E7-T2 Platform controls (send limits, feature flags, operator console, security log) | E07 notes §11 | ≈ 12 | F082 | — | F099 |
+| 6 | E3a Measure | E03 | ≈ 13 | E1; E7-T2 before its user-visible stages (flags) | — | F100 |
+| 7 | Panel to Astro 7 | E10 (PD-098 area, notes §5) | ≈ 3 | E1 | — | F101 |
+| 8 | E4-A Act from the panel | E04 | ≈ 20 | E1, E7-T1, Astro 7 | — | F102 |
+| 9 | E8a Logs | E08 | ≈ 8 | E1 | — | F103 |
+| 10 | E5a Read Sent | E05 | ≈ 7 | E1, E7-T2 | — | F104 |
+| 11 | E7-T6 Identity A (TOTP, backup codes, break-glass) | E07 notes §11 | ≈ 4 | F082 | — | F105 |
+| 12 | E7-T3 Account data (delete, export, DSR) | E07 notes §11 | ≈ 8 | F082, E7-T1 | — | F106 |
+| 13 | E7-T4 Papers and cost | E07 notes §11 | ≈ 6 | E7-T3 | — | F107 |
+| 14 | E7-T5 Production on the VPS | E07 notes §11 | ≈ 4 | E7-T1 … T4; the E8b drill proves its restore | — | F108 |
+| 15 | E3b Improve | E03 | ≈ 14 | E2a, E3a | Second pass after the first E2a holdout report (PD-060, PD-061) | F109 |
+| 16 | E4-B Earn trust | E04 | ≈ 25 | E4-A (command contract stage), E3a (flag store, header capture), E2a (urgency shape); the urgency-editor stage needs E3b's urgency command | — | F110 |
+| 17 | E11b Private model option | E11 | ≈ 5 | E2a | Owner: OpenAI Europe project request (PD-111); second pass on the answer (PD-110) before the EU stage | F111 |
+| 18 | E10a Docs site | E10 | ≈ 10 | E1, Astro 7 | — | F112 |
+| 19 | E2b Live lab | E02 | ≈ 16 | E2a | Owner: grow the VPS root volume (PD-055) | F113 |
+| 20 | E8b Alerts and releases (incl. the restore drill) | E08 | ≈ 6 | E8a | Owner: grow the VPS root volume (PD-055) | F114 |
+| 21 | E6a Reply drafts | E06 | ≈ 17 | E2a, E3a, E4-A, E5a, E7-T2 | Stage 1 is the prototype; second pass after it (PD-071, PD-072, PD-083) before the later stages | F115 |
+| 22 | E5b Open loops | E05 | ≈ 22 | E2a, E3a, E4-A, E5a | Second pass after the first E3a weekly report and the E2b live week (PD-119, PD-120, PD-122) | F116 |
+| 23 | E9a Mailbox OAuth | E09 | ≈ 19 | F082, E7-T2 | Owner: one Microsoft 365 Business Basic seat; stage 1 is the spike; second pass after it (PD-086, PD-087) | F117 |
+| 24 | E9b Phone channel (PWA, push, Telegram detail) | E09 | ≈ 14 | E4-A, E4-B | — | F118 |
+| 25 | E7-T7 Identity B (OIDC) | E07 notes §11 | ≈ 10 | E7-T2, E7-T6 | Stage 1 is the spike; second pass after it (PD-040, PD-041) | F119 |
+| 26 | E11a Sender context | E11 | ≈ 10 | E3a, E5a, E4-B | — | F120 |
+| 27 | E10b Public pages and demo | E10 | ≈ 8 | E2b, E3a, E4-B, E7-T4, E8b | — | F121 |
+| 28 | E6b Style from Sent | E06 | ≈ 4 | E6a, E5a | Gated: only if the E2a judge shows a gain | F122 |
 | — | E12 Native mobile app | E12 | — | — | Deferred: discovery only after the E9b PWA is in use | — |
 
 Stage counts are the discovery estimates; `plan-task` sets the real ones.

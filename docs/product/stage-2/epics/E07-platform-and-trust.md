@@ -128,7 +128,7 @@ About 65 stages, 9k source lines (page said 75, 10k): F082 15 (9 landed), Polish
 
 ### Planned tickets: absorbed, replaced, dropped
 
-- Absorbed: F081 (operator notices list → platform controls ticket), F078 (expired `auth_verifications` cleanup → account data ticket), F021 (env split → VPS production ticket, as S6f said). `tasks/planned/s6c-account-data.md`, `s6e-papers-cost.md`, `s6f-hosted-production.md` become the tickets of notes §11.
+- Absorbed: F081 (operator notices list → platform controls ticket), F078 (expired `auth_verifications` cleanup → account data ticket; note 2026-11-13: F078 is built separately, so E7-T3 drops it), F021 (env split → VPS production ticket, as S6f said). `tasks/planned/s6c-account-data.md`, `s6e-papers-cost.md`, `s6f-hosted-production.md` become the tickets of notes §11.
 - Replaced earlier: F056 by F082 (F082's last stage closes it).
 - Dropped: none. Stay their own tickets: F069 (active), F084 (F082 follow-up). Out of Stage 2: F076 (Vertex AI). Elsewhere: F023, F073 (E3), F075 (E9).
 
