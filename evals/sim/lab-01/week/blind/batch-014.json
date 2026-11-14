@@ -1,0 +1,318 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-014",
+  "cases": [
+    {
+      "id": "w-3-019",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Spring partner programme for fleet owners",
+      "body": "Dear fleet owner,\n\nPaliwa-Flota Billing is launching its spring partner programme for transport companies. If you join now, you receive a free fuel card for each driver, a discount of 16 grosz per litre of diesel at every partner station, and a free mobile app for your dispatchers.\n\nWhat is included in the programme:\n- no activation fee and no monthly fee for the first six months,\n- weekly fuel usage reports for every vehicle,\n- a free insurance package for drivers who use our cards,\n- priority support from a dedicated account manager,\n- access to more than 900 partner stations in Poland, Germany and the Baltic states.\n\nThe programme is open to companies that have not used our cards before, and the number of places is limited to the first 200 fleets. Our current customers report average savings of 4 percent on their annual fuel bill after the first quarter, and the cards can be ordered in a few minutes.\n\nTo take part, simply reply to this message with the number of vehicles in your fleet and your estimated monthly fuel consumption. Our adviser will prepare a personal offer and send it on the same day. No documents and no commitments are needed at this stage, and you can cancel the programme at any time without any cost.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-020",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Terminy podróży służbowych członków rady w lutym",
+      "body": "Szanowny Panie Prezesie,\n\nprzekazuję krótką informację o terminach podróży służbowych członków rady w lutym. Dwóch członków rady wyjeżdża na konferencję w Hamburgu w dniach 9-11.02, a trzeci przebywa w tym czasie na urlopie, więc w tym tygodniu rada nie będzie zbierać się w pełnym składzie.\n\nSekretariat rady potwierdził, że żadne z posiedzeń zaplanowanych w lutym nie koliduje z tymi wyjazdami. Wiadomość ma wyłącznie charakter informacyjny, dlatego nie oczekuję odpowiedzi.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-021",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie przelewu krajowego",
+      "body": "Przelew wykonany\n\nZ rachunku firmowego wykonano przelew krajowy.\n\nOdbiorca: Fuelserwis Polska Sp. z o.o.\nKwota: 31 740,50 PLN\nTytuł: Karty paliwowe, faktura za grudzień 2026\nData wykonania: 27.01.2027\nStatus: zrealizowany\n\nTo jest automatyczne powiadomienie z systemu bankowości firmowej. Szczegóły operacji dostępne są w historii rachunku. Prosimy na tę wiadomość nie odpowiadać. Potwierdzenie przelewu w formie dokumentu możesz pobrać z historii rachunku w bankowości internetowej. Prowizja za przelew: 0,00 PLN, rachunek obciążono kwotą przelewu.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-022",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Your digest has been paused",
+      "body": "Digest paused\n\nAs requested, we have paused your weekly digest until 15.02.2027. It resumes automatically.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-023",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: certyfikat integracji wygasa za 30 dni",
+      "body": "Przypomnienie systemowe\n\nCertyfikat usługi integracji między modułem WMS a modułem ERP wygasa 26.02.2027. System rozpoczął automatyczne odnawianie certyfikatu.\n\nStatus odnowienia: w toku\nPrzewidywany czas zakończenia: 3 dni robocze\nWpływ na pracę systemu: brak\nWymagane działania użytkowników: brak\n\nDział utrzymania systemów otrzymał kopię powiadomienia. Jeśli odnowienie nie zakończy się w terminie, system wyśle kolejną wiadomość. Poprzednie odnowienie certyfikatu zakończyło się powodzeniem w lutym ubiegłego roku, bez przerw w pracy interfejsu. Ta wiadomość została wygenerowana automatycznie przez System ERP Kordelan.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-025",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Częstotliwość wystawiania faktur za karty paliwowe - Pana zdanie",
+      "body": "Szanowny Panie Prezesie,\n\nzwracam się do Pana w sprawie sposobu fakturowania Państwa kart paliwowych. Obecnie wystawiamy jedną fakturę zbiorczą na koniec miesiąca, ale część klientów prosi o rozliczenia częstsze, a nasz dział finansowy rozważa zmianę systemu rozliczeń dla całej floty.\n\nPrzygotowaliśmy dwie możliwości. Pierwsza to dotychczasowa faktura miesięczna, ze wszystkimi transakcjami w jednym dokumencie, co jest wygodne dla Państwa księgowości, ale wydłuża czas oczekiwania na płatność. Druga to faktury dwutygodniowe, które skracają cykl rozliczeń, ale wymagają dwukrotnie większej liczby dokumentów do sprawdzenia i zaksięgowania.\n\nW zamian za przejście na faktury dwutygodniowe moglibyśmy zaproponować dodatkowy rabat 0,1 punktu procentowego na cenę przy dystrybutorze. Dla obecnego zużycia Państwa floty oznaczałoby to oszczędność rzędu 3 tysięcy złotych rocznie.\n\nRozumiem, że to decyzja, którą zwykle podejmuje Pan po konsultacji z działem księgowości, ale chciałabym najpierw poznać Pana zdanie. Proszę o odpowiedź na piśmie, którą opcję Pan preferuje: fakturę miesięczną czy dwutygodniową. Na tej podstawie przygotuję projekt aneksu do umowy, który prześlę Państwu do przeglądu przed podpisaniem. Jeśli ma Pan pytania dotyczące liczby dokumentów albo sposobu ich przekazywania do księgowości, chętnie je wyjaśnię.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-026",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Posiedzenie rady - stan przygotowań i budżet",
+      "body": "Panie Wiktorze,\n\nczy uzasadnienie nakładów na flotę, 11 milionów zł, przedstawi Pan osobiście, czy dyrektor operacyjna? Proszę o odpowiedź.",
+      "thread": [
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Posiedzenie rady - stan przygotowań i budżet",
+          "body": "Dzień dobry Panie Wiktorze,\n\ninformuję o stanie przygotowań do posiedzenia rady nadzorczej. Komitet audytu zakończył przegląd projektu budżetu na rok 2027 i nie zgłosił zastrzeżeń do założeń przychodowych. Przychody grupy zaplanowano z wzrostem o 6 procent względem roku bieżącego, przy marży operacyjnej utrzymanej na poziomie z roku poprzedniego.\n\nJedyna pozycja, którą komitet oznaczył do dyskusji, to nakłady na flotę. Zawierają one zakup nowych naczep oraz wymianę części ciągników, łącznie około 11 milionów złotych. Komitet uznał, że uzasadnienie jest spójne, ale chce usłyszeć je wprost na posiedzeniu.\n\nPosiedzenie odbędzie się 28.01.2027 o godzinie 10:00 w sali rady na ostatnim piętrze siedziby. Porządek obrad rozesłała sekretarz rady w zeszłym tygodniu. Dwóch członków rady uczestniczy zdalnie, pozostali na miejscu. Po części formalnej przewidziano blok poświęcony ryzykom walutowym w kontraktach eksportowych, krótki raport zarządu o przetargach oraz sprawy bieżące.\n\nDokumenty finansowe zostały już zamieszczone w repozytorium rady i są dostępne dla wszystkich członków. Wersja uzupełniona o zaktualizowane dane za grudzień ukaże się w środę. Piszę o tym tylko po to, aby zarząd miał pełny obraz stanu prac przed posiedzeniem. Szczegółowe omówienie budżetu zaplanowano na drugą część obrad.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej"
+        },
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Re: Posiedzenie rady - stan przygotowań i budżet",
+          "body": "Panie Wiktorze,\n\nuzupełniam moją wcześniejszą wiadomość. Wersja dokumentów finansowych z danymi za grudzień jest już w repozytorium rady, wcześniej niż zapowiadałem. Wyniki grudnia są zgodne z założeniami budżetu, a nakłady na flotę nie uległy zmianie.\n\nDodatkowo informuję, że posiedzenie rady 28.01.2027 odbędzie się zgodnie z porządkiem obrad, który rozesłano wcześniej, a lista uczestników zdalnych nie uległa zmianie. Piszę wyłącznie, aby zarząd miał aktualny stan.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-3-027",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Tylko dziś: nowe bazy firm",
+      "body": "Dzień dobry,\n\nkupując dziś bazę 50 000 firm, dostajesz drugą gratis. Napisz do nas, a prześlemy ofertę.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-028",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Goście na posiedzeniu rady 28.01",
+      "body": "Panie Wiktorze,\n\nkrótka informacja przed posiedzeniem: w części budżetowej weźmie udział audytor zewnętrzny, który przedstawi radzie swoją opinię o sprawozdaniu za rok 2026. Jego wystąpienie zajmie około dwudziestu minut, a rada będzie mogła zadać pytania.\n\nPoza audytorem na posiedzeniu nie będzie innych gości, a sekretarz rady przygotował już dla niego miejsce przy stole. Piszę tylko dla Pana wiadomości, aby wiedział Pan, kto będzie obecny w sali.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-029",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Card payment notification",
+      "body": "Card transaction\n\nA transaction was made with a company card.\n\nCard: business card, ending 7730\nMerchant: Hotel Baltic Plaza, Gdynia\nAmount: 640.00 PLN\nDate: 27.01.2027, 07:58\nStatus: authorised\n\nThis is an automatic message from the bank. The amount will appear in your account statement after settlement. Do not reply to this address. If you do not recognise the transaction, contact the bank through the official channel.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-031",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Okazja na bazy kontaktów",
+      "body": "Witam,\n\nprzygotowaliśmy dla Państwa świeże bazy adresów e-mail firm. Cena promocyjna tylko dzisiaj. Odpowiedz, a wyślemy próbkę.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-032",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Posiedzenie rady 28.01 - szczegóły organizacyjne",
+      "body": "Dear Mr Szalewski,\n\nplease send me by 14:00 today your one-page summary on the new warehouse system. The secretary sends the printed pack to all members at 15:00, and later additions will not be included.",
+      "thread": [
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Posiedzenie rady 28.01 - szczegóły organizacyjne",
+          "body": "Szanowny Panie Prezesie,\n\nprzekazuję krótką informację organizacyjną przed jutrzejszym posiedzeniem rady nadzorczej. Wiadomość ma charakter informacyjny.\n\nSekretarz rady potwierdził, że posiedzenie odbędzie się w sali konferencyjnej na drugim piętrze siedziby w Gdyni, a nie na pierwszym piętrze, jak podano wcześniej. Rejestracja członków rady rozpocznie się o 9:30, a obrady o 10:00. Dla członków dołączających zdalnie przygotowano połączenie wideo, które zostanie uruchomione 15 minut przed rozpoczęciem.\n\nDo porządku obrad dodano jeden punkt: informację o stanie wdrożenia nowego systemu magazynowego. Prezentacja zarządu na ten temat ma trwać nie dłużej niż dziesięć minut. Pozostałe punkty pozostają bez zmian: sprawozdanie z wyników roku, budżet na 2027, wspólne przetargi i sprawy bieżące.\n\nPrzerwa w obradach zaplanowana jest po drugim punkcie i potrwa pół godziny. Po zakończeniu obrad członkowie rady zjedzą wspólny lunch w restauracji w budynku, a organizacją zajmie się sekretariat. Samochody gości mogą zostać zaparkowane na parkingu podziemnym, z którego można wejść bezpośrednio na piętro.\n\nZarząd nie musi składać wcześniej dodatkowych dokumentów, a członkowie rady otrzymają je w formie papierowej na miejscu, jeśli nie pobrali ich z repozytorium.\n\nProtokół z posiedzenia zostanie przygotowany w ciągu trzech dni roboczych i przesłany wszystkim członkom rady oraz zarządowi.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-3-033",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Podsumowanie aktywności Twojego konta w styczniu",
+      "body": "Podsumowanie aktywności konta\n\nPoniżej znajdziesz zestawienie aktywności Twojego konta w serwisie Logistyka Dzis w styczniu 2027. Ta wiadomość została wygenerowana automatycznie.\n\nWysłane do Ciebie\n- Zestawienia tygodniowe: 4 wysłane, 3 otwarte\n- Alerty o cenach paliw: 17 wysłanych\n- Komunikaty serwisowe: 2\n\nUstawienia konta\n- Plan: konto firmowe\n- Język wiadomości: polski\n- Adres do powiadomień: potwierdzony\n- Powiadomienia o przetargach: wyłączone\n- Zapisane filtry tematów: 3\n\nBezpieczeństwo\n- Ostatnie logowanie: 26.01.2027, 17:12\n- Metoda logowania: hasło i kod jednorazowy\n- Zaufane urządzenia: 2\n- Zmiany hasła w tym miesiącu: 1\n\nRozliczenia\n- Ostatnia płatność: 26.01.2027\n- Status płatności: zaksięgowana\n- Następne odnowienie planu: 01.02.2028\n- Faktury w archiwum: 3\n\nInformacje o planie\nTwój plan obejmuje nielimitowany dostęp do archiwum zestawień, alerty o cenach paliw w dni robocze oraz comiesięczny raport o rynku frachtów. Zmiany planu można wprowadzać w ustawieniach konta, a zmiana zaczyna obowiązywać od następnego okresu rozliczeniowego.\n\nPodsumowanie wysyłamy do wszystkich kont firmowych raz w miesiącu, w pierwszych dniach po zamknięciu okresu. Dane o otwarciach wiadomości służą nam wyłącznie do poprawy jakości serwisu i nie są przekazywane innym podmiotom. Jeśli chcesz zmienić częstotliwość podsumowań, zrobisz to w ustawieniach konta w zakładce Powiadomienia. Wiadomość ma charakter informacji o koncie, nie odpowiadaj na nią.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-034",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana terminu posiedzenia czerwcowego rady",
+      "body": "Panie Prezesie,\n\nz powodu kolizji z konferencją branżową rozważam przeniesienie czerwcowego posiedzenia rady z 24.06 na 17.06. Czy taki termin odpowiada Panu, czy zarząd ma wtedy inne zobowiązania, które by temu przeszkadzały? Proszę o odpowiedź na piśmie, zanim poinformuję pozostałych członków rady. Pozostałe terminy w tym roku pozostają bez zmian, a w razie potrzeby sekretariat rady roześle zaktualizowane zaproszenia w ciągu jednego dnia.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-035",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Reklamacja brakujących palet - korekta faktury",
+      "body": "Szanowny Panie Prezesie,\n\nw ostatniej dostawie do naszego centrum w Poznaniu brakowało sześciu palet z konserwami, co potwierdza protokół rozładunku podpisany przez Państwa kierowcę. Towar nie został dostarczony, a faktura obejmuje wszystkie palety, więc musi zostać skorygowana.\n\nProszę, aby Magdalena Czerniak z Pana księgowości zajęła się tą sprawą. Potrzebujemy trzech rzeczy:\n- korekty faktury o wartość brakujących palet, czyli 7 920 zł netto,\n- potwierdzenia, że korekta zostanie wysłana na nasz adres rozliczeniowy,\n- krótkiej informacji, kiedy kwota zostanie odjęta od należności z kolejnej płatności.\n\nDokumenty dotyczące dostawy, w tym protokół rozładunku i list przewozowy, znajdują się w Państwa systemie, bo kierowca przekazał je na miejscu. Magdalena nie powinna mieć trudności z ich odnalezieniem.\n\nZależy mi na szybkim zamknięciu sprawy, bo nasza księgowość zamyka miesiąc w piątek i chciałabym, aby kwota była rozliczona w styczniu. Jeśli Magdalena będzie potrzebowała dodatkowych informacji, może się skontaktować bezpośrednio z naszą księgową. Całość dotyczy dostawy z 20.01, wykonanej na zamówienie sieciowe, a protokół rozładunku ma numer dostawy wpisany na pierwszej stronie. Przypominam, że w poprzednich miesiącach podobne korekty były załatwiane w ciągu kilku dni roboczych, bez dodatkowych pytań z naszej strony.\n\nZ poważaniem, Genowefa Jastrzębska",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-036",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Payment terms for the fuel card invoices - your view please",
+      "body": "Dear Mr Szalewski,\n\nI am following up on my earlier message about the payment terms on your fuel card invoices. Since then our finance department has prepared a third option, which may suit you better than the two I described before.\n\nOption three: a payment term of 21 days instead of 14 or 30, and a reduction of the volume discount by only 0.15 percentage points. For your fleet's current consumption, we estimate the extra cost at about 4.5 thousand zloty per year, which is half of the cost of the 30-day option. It would also remove the late payment interest that we have waived so far, as your payments usually arrive between day 17 and day 20.\n\nSo the choices are now: the current terms with strict dates, the 30-day term with the lower discount, or the 21-day compromise. I understand that this is a commercial decision for you, and I would be grateful for your view in writing, so that I can prepare the amendment to the agreement for our legal department.\n\nThank you for your attention.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [
+        {
+          "from": "ewelina.marszalek@paliwa-flota.test",
+          "subject": "Payment terms for the fuel card invoices - your view please",
+          "body": "Dear Mr Szalewski,\n\nI am writing about the payment terms on your fuel card invoices, and I would like to ask for your personal view. At present, our invoices are due 14 days after the invoice date. Over the last quarter, about a third of your invoices were paid a few days after the due date, which creates administrative work on both sides and some interest charges that we have, so far, waived.\n\nOur finance department proposes an alternative for the second half of the year. The payment term would be extended from 14 to 30 days, and in return the volume discount on the pump price would be reduced by 0.3 percentage points. For your fleet's current consumption, we estimate that this would cost you about 9 thousand zloty over the year, but it would give your accounting department more room and remove the late payment interest.\n\nI understand that this is a commercial decision that depends on your priorities, so I would like to hear which option you prefer: the current terms with strict payment dates, or the longer term with the lower discount. A written answer from you would be sufficient for us to prepare the amendment to the agreement.\n\nThank you for your attention.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-3-037",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Komitet audytu - brak uwag",
+      "body": "Panie Wiktorze,\n\nkomitet audytu potwierdził, że nie ma dalszych uwag do projektu budżetu.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-038",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Email address verified",
+      "body": "Address verified\n\nThank you. Your email address for Supply Chain Weekly is now verified.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-039",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana osoby upoważnionej do bankowości zatwierdzona",
+      "body": "Zmiana uprawnień w bankowości\n\nWniosek o zmianę uprawnień użytkownika w bankowości internetowej został zatwierdzony przez drugiego administratora.\n\nRachunek: główny rachunek firmowy\nZakres zmiany: dodano uprawnienie do podglądu historii rachunku\nData zatwierdzenia: 27.01.2027\nStatus: aktywne\n\nTo jest automatyczne powiadomienie banku, nie odpowiadaj na nią. Jeśli nie rozpoznajesz tej zmiany, skontaktuj się z opiekunem konta oficjalnym kanałem banku. Zmiana nie wpływa na limity przelewów ani na pozostałych użytkowników rachunku, a historia zmian uprawnień jest dostępna w ustawieniach bankowości.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-040",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Kawa gratis na stacjach przy tankowaniu kartą",
+      "body": "Szanowni Państwo,\n\nPaliwa Flota Billing zaprasza kierowców Państwa firmy na darmową kawę! Każdy kierowca, który zatankuje na dowolnej stacji naszej sieci kartą flotową, dostaje kawę lub herbatę gratis, a dodatkowo losuje nagrody w naszej loterii.\n\nPromocja trwa przez cały luty, a udział w niej nie wymaga żadnych dodatkowych zgłoszeń. Wystarczy, że kierowca pokaże przy kasie kartę. Lista stacji biorących udział w promocji jest dostępna u naszego doradcy, a nagrody w loterii wysyłamy kurierem do firm. Zapraszamy do udziału i życzymy dobrej drogi!",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-041",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Delivery windows in February - confirmed by our warehouse",
+      "body": "Dear Mr Szalewski,\n\nthank you for the confirmation of the February delivery. I would like to ask for your personal answer on a related question, because it concerns the volumes we plan for March.\n\nFrom March our retail customers will increase their orders by about 30 percent. With the present windows, on Tuesdays and Fridays between 6:00 and 10:00, our warehouse can receive at most eight trucks a week. We would need at least ten.\n\nWe see two possibilities. The first is to add a third window on Wednesday mornings, which our warehouse can support without extra cost. The second is a Saturday window, which would mean a surcharge of 120 euro per truck on our side, but it would keep the Wednesday free for other suppliers.\n\nMy question is whether you agree to a third window on Wednesdays from March on a trial basis, or whether you would prefer the Saturday option. A written reply is enough, and I will pass your decision to our warehouse manager. Our retail customers confirm the increase on 5.02, so an answer in the next days would help us plan the staff.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [
+        {
+          "from": "karin.lindqvist@nordicfoods-trade.test",
+          "subject": "Delivery windows in February - confirmed by our warehouse",
+          "body": "Dear Mr Szalewski,\n\nI would like to inform you that our warehouse in Gothenburg has confirmed the unloading windows for February. Deliveries from Poland will be received on Tuesdays and Fridays between 6:00 and 10:00, and each window can take up to four trucks at the same time.\n\nFor the two weeks of the winter holidays in Sweden the warehouse will work with reduced staff, but the windows stay unchanged. The first delivery in the new schedule is planned for 2.02.\n\nThis message is for your information only.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-3-042",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Terminy dostaw na luty - plan okien rozładunku",
+      "body": "Szanowny Panie Prezesie,\n\ndziękuję za uzgodnienie okien rozładunku na luty. Na marzec chcielibyśmy omówić nowy harmonogram, bo nasza produkcja wzrośnie, a okna we wtorki i czwartki od 7:00 do 11:00 mogą okazać się za wąskie.\n\nProszę, aby Dorota Wilczynska umówiła dwugodzinne spotkanie naszego działu logistyki z Państwa dyspozytornią w przyszłym tygodniu i przesłała mi propozycję terminu. Spotkanie może odbyć się u nas albo w formie wideo.\n\nZ poważaniem, Tomasz Brzeziński",
+      "thread": [
+        {
+          "from": "tomasz.brzezinski@meblodrew.test",
+          "subject": "Terminy dostaw na luty - plan okien rozładunku",
+          "body": "Szanowny Panie Prezesie,\n\nprzesyłam krótkie podsumowanie stanu dostaw dla Meblodrew. W styczniu odebraliśmy 19 z 21 zaplanowanych kursów w ustalonych oknach rozładunku, a dwa kursy przesunęły się o jeden dzień z powodu pogody. Plan na luty mamy już uzgodniony z Państwa dyspozytornią: okna rozładunku we wtorki i czwartki, od 7:00 do 11:00.\n\nPiszę wyłącznie informacyjnie, aby Pan wiedział, jak wygląda sytuacja. Szczegóły ma już mój zespół logistyczny.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-3-043",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP: scheduled job report",
+      "body": "Scheduled jobs report\n\nNightly jobs of the ERP system finished on 27.01.2027.\n\nJobs run: 14\nJobs finished without errors: 14\nJobs with warnings: 0\nLongest job: stock valuation, 18 minutes\nTotal run time: 52 minutes\n\nThe next run starts tonight at 01:00. This message was generated automatically by System ERP Kordelan. No action is required, do not reply to this address. A detailed log of every job with start and end times is stored in the ERP system for 90 days.",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}
