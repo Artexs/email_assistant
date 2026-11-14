@@ -33,6 +33,7 @@ One transaction, in this order:
 5. Delete the `chainActions` rows, then the `emails` rows that go (their dependent rows go by cascade, plan F2).
 6. The stage 09 step (an empty step until it lands).
 7. For each mention, by rule: `recipients` → remove every array element whose lower case is the address; `text` → `regexp_replace(col, addressRegex(a), '[removed]', 'gi')`; `json` → the same on `col::text`, cast back to `jsonb`; `equal` → NULL (or the column's empty value when `NOT NULL`). `list` rows never change.
+   Note (stage 06 owner decision, 2026-11-14): `email_headers.from_name` is a `text` column of the map, so this scrub covers it; its CHECK is `char_length <= 200`, so cut a scrubbed value to 200 characters.
 8. One audit row `dsr.erase`, actor `cli`, data `dsrAuditData` plus `tombstones`, `chain_actions` and the counts of step 6 (stage 02 keys, all flat).
 
 - Another foreign-key error (`23503`) rolls back → `blocked` with the constraint (a bug; runbook: report it). A deadlock (`40P01`) retries once.
