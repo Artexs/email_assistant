@@ -25,6 +25,12 @@ export const featureFlags = {
     epic: "E5a",
     removeBy: "2027-03-01",
   },
+  security_log: {
+    default: false,
+    description: "The security log in the Account card (owners).",
+    epic: "E7-T2",
+    removeBy: "2027-03-01",
+  },
 } as const satisfies Record<string, FeatureFlag>;
 
 export type FeatureKey = keyof typeof featureFlags;
