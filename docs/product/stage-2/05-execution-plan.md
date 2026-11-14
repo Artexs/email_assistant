@@ -34,7 +34,7 @@ One row per `plan-task` run. "Plan name" is the working name until `plan-task` g
 | 1 | E1 Close the MVP (capability map, docs boundary, NEXT sweep of the old planned tickets) | E01 | ≈ 10 | — (F077 landed) | Owner: F047 A phone test; vision text OK (owner-owned) | F095 |
 | 2 | E8-LR Log rotation | E08 (PD-054) | ≈ 1 | — | — | F096 |
 | 3 | E2a Offline lab | E02 | 22 | E1 | Owner audit of 50 cases per corpus version (after the F097 corpus freeze, stage 20; does not stop the build) | F097 |
-| 4 | E7-T1 Polish UI (i18n frame first) | E07 notes §11 | ≈ 6 | F082 | — | F098 |
+| 4 | E7-T1 Polish UI (i18n frame first) | E07 notes §11 | 13 | F082 | — | F098 |
 | 5 | E7-T2 Platform controls (send limits, feature flags, operator console, security log) | E07 notes §11 | 15 | F082, F091 (closed) | — | F099 |
 | 6 | E3a Measure | E03 | ≈ 13 | E1; E7-T2 before its user-visible stages (flags) | — | F100 |
 | 7 | Panel to Astro 7 | E10 (PD-098 area, notes §5) | ≈ 3 | E1 | — | F101 |

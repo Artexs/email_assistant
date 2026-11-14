@@ -32,6 +32,8 @@ Waiting-for-reply, commitments, manual delegation (E5). Reply drafts (E6). Opera
 
 ## Dependencies
 
+- The Polish i18n frame (F098) lands before the E4-A page stages. Every new page key goes in `en.ts` and `pl.ts` (the typecheck enforces it). New notice texts go in `packages/core/src/texts/` in en and pl. (Applied 2026-11-14 from the F098 plan.)
+
 E1. Blocks E5, E6, E9, E12. Identity tier 1 (E7) builds after this epic's API commands exist.
 
 ## Open product questions

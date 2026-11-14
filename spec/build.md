@@ -32,7 +32,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F095-e1-close-the-mvp` (🔴 PLANNED, plan landed, 10 stages): the MVP closes: capability map, docs boundary, NEXT sweep, pilot results; no needs; gate Owner U1 (F047 part A phone session) before stage 10; stage 09 not before 2026-11-14T22:40Z.
 - `F096-e8-lr-log-rotation` (🔴 PLANNED, plan landed): Docker rotates every Compose service log (5 × 10 MB), a CI check keeps it; one stage, closed after the check at the next VPS deploy; sequenced after none; gate —.
 - `F097-e2a-offline-lab` (🔴 PLANNED, plan landed, 22 stages): every category gets measured precision and recall on a frozen synthetic corpus, and /review starts real labels; build after F095; the owner audit of 50 cases (after stage 20) does not stop the build.
-- `F098-e7-t1-polish-ui-i18n-frame-first` (🔴 PLANNED, needs plan): E7-T1 Polish UI (i18n frame first); sequenced after F082; gate —.
+- `F098-e7-t1-polish-ui-i18n-frame-first` (🔴 PLANNED, plan landed, 13 stages, no migration): the panel and Telegram follow each user's language (pl/en; Telegram null = Polish), with a Telegram consent step; sequenced after F082 (closed); gate none.
 - `F099-e7-t2-platform-controls-send-limits-feature-flags-operator-console-security-log` (🔴 PLANNED, plan landed, 15 stages): send limits, operator console, /api/me flags, owner security log; sequenced after F082 and F091 (both closed); gate none.
 - `F100-e3a-measure` (🔴 PLANNED, needs plan): E3a Measure; sequenced after E1; E7-T2 before its user-visible stages (flags); gate —.
 - `F101-panel-to-astro-7` (🔴 PLANNED, needs plan): Panel to Astro 7; sequenced after E1; gate —.
