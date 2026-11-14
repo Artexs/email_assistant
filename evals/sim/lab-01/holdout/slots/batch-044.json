@@ -1,0 +1,1375 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-044",
+  "slots": [
+    {
+      "id": "b-urg-0032",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "dyr-hr",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-15T08:20:00.000Z",
+      "category": "urgent",
+      "urgencySource": "text",
+      "topic": "rekrutacje",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 61,
+        "byCategory": {
+          "info": 25,
+          "needs_reply": 18,
+          "urgent": 6,
+          "delegation": 6,
+          "notification": 6
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 31,
+        "flagged": 0,
+        "unseen7d": 3,
+        "userMailsTo": 16,
+        "lastUserMailDaysAgo": 26,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 78,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 26.2,
+        "relation": "known"
+      },
+      "brief": "about Rekrutacje i obsada magazynow: the sender needs the executive to act today and says so plainly"
+    },
+    {
+      "id": "b-urg-0034",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "klient-hurtownia",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-22T09:14:00.000Z",
+      "category": "urgent",
+      "urgencySource": "vip",
+      "topic": "przetarg-zielona",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 33,
+        "byCategory": {
+          "needs_reply": 17,
+          "info": 8,
+          "urgent": 5,
+          "delegation": 3
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 15,
+        "flagged": 2,
+        "unseen7d": 3,
+        "userMailsTo": 11,
+        "lastUserMailDaysAgo": 9,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 34.2,
+        "medianTheirReplyHours": 10.5,
+        "relation": "vip"
+      },
+      "brief": "Genowefa Jastrzebska asks the executive for something about Przetarg sieci Zielona Hurtownia; the tone is calm"
+    },
+    {
+      "id": "b-urg-0035",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-15T09:30:00.000Z",
+      "category": "urgent",
+      "urgencySource": "vip",
+      "topic": "kalendarz-podroze",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "Zbigniew Orlowicz asks the executive for something about Kalendarz zarzadu i podroze sluzbowe; the tone is calm"
+    },
+    {
+      "id": "b-urg-0036",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "klient-nordic",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-20T14:16:00.000Z",
+      "category": "urgent",
+      "urgencySource": "text",
+      "topic": "umowa-nordic",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "koordynator-sprzedazy",
+          "brief": "the first mail of the exchange about Umowa ramowa z Nordic Foods Trade"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 18,
+        "byCategory": {
+          "needs_reply": 9,
+          "info": 4,
+          "urgent": 3,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 13,
+        "flagged": 2,
+        "unseen7d": 3,
+        "userMailsTo": 9,
+        "lastUserMailDaysAgo": 21,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": 46.2,
+        "medianTheirReplyHours": 5.9,
+        "relation": "known"
+      },
+      "brief": "Karin Lindqvist writes about Umowa ramowa z Nordic Foods Trade; a decision is due today and the text makes that clear"
+    },
+    {
+      "id": "b-urg-0039",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-13T12:53:00.000Z",
+      "category": "urgent",
+      "urgencySource": "text",
+      "topic": "kalendarz-podroze",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "ksiegowa",
+          "brief": "an earlier message of the exchange about Kalendarz zarzadu i podroze sluzbowe"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "Zbigniew Orlowicz writes about Kalendarz zarzadu i podroze sluzbowe; a decision is due today and the text makes that clear"
+    },
+    {
+      "id": "b-urg-0042",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "head-export",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-12T17:57:00.000Z",
+      "category": "urgent",
+      "urgencySource": "text",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 66,
+        "byCategory": {
+          "info": 26,
+          "needs_reply": 20,
+          "urgent": 7,
+          "delegation": 7,
+          "notification": 6
+        },
+        "corrections": {
+          "delegation": 1
+        },
+        "movedBack": 2,
+        "answered": 49,
+        "flagged": 0,
+        "unseen7d": 3,
+        "userMailsTo": 47,
+        "lastUserMailDaysAgo": 27,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 54,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 23.1,
+        "medianTheirReplyHours": 1.3,
+        "relation": "known"
+      },
+      "brief": "Oliver Pemberton writes about Eksport i odprawy celne; a decision is due today and the text makes that clear"
+    },
+    {
+      "id": "b-urg-0043",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "klient-hurtownia",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-22T17:48:00.000Z",
+      "category": "urgent",
+      "urgencySource": "vip",
+      "topic": "reklamacje",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 33,
+        "byCategory": {
+          "needs_reply": 17,
+          "info": 8,
+          "urgent": 5,
+          "delegation": 3
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 15,
+        "flagged": 2,
+        "unseen7d": 3,
+        "userMailsTo": 11,
+        "lastUserMailDaysAgo": 9,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 34.2,
+        "medianTheirReplyHours": 10.5,
+        "relation": "vip"
+      },
+      "brief": "a short request about Reklamacje i uszkodzone dostawy from an important person; no deadline words"
+    },
+    {
+      "id": "b-urg-0044",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-22T11:18:00.000Z",
+      "category": "urgent",
+      "urgencySource": "context",
+      "contextRef": {
+        "kind": "deadline",
+        "index": 2
+      },
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "needs_reply": 6,
+          "info": 5,
+          "urgent": 2,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 9,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 13,
+        "lastUserMailDaysAgo": 8,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 38,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 3.7,
+        "medianTheirReplyHours": 21.7,
+        "relation": "known"
+      },
+      "brief": "about Podpisanie umowy z Nordic Foods Trade (due 2027-01-22), needs action today, does not say how pressing it is"
+    },
+    {
+      "id": "b-urg-0045",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "klient-nordic",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-22T11:44:00.000Z",
+      "category": "urgent",
+      "urgencySource": "context",
+      "contextRef": {
+        "kind": "topic",
+        "index": 3
+      },
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 18,
+        "byCategory": {
+          "needs_reply": 9,
+          "info": 4,
+          "urgent": 3,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 2,
+        "answered": 13,
+        "flagged": 2,
+        "unseen7d": 3,
+        "userMailsTo": 9,
+        "lastUserMailDaysAgo": 21,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 5,
+        "medianUserReplyHours": 46.2,
+        "medianTheirReplyHours": 5.9,
+        "relation": "known"
+      },
+      "brief": "Karin Lindqvist writes about Kontrola celna w porcie; action is needed today, but the text stays plain"
+    },
+    {
+      "id": "b-urg-0046",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-11T12:11:00.000Z",
+      "category": "urgent",
+      "urgencySource": "text",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "html",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "asystentka",
+          "brief": "the first mail of the exchange about Posiedzenie rady nadzorczej i budzet"
+        },
+        {
+          "persona": "prezes-zarzadu",
+          "brief": "the executive's earlier answer about Posiedzenie rady nadzorczej i budzet"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "Zbigniew Orlowicz writes about Posiedzenie rady nadzorczej i budzet; a decision is due today and the text makes that clear"
+    },
+    {
+      "id": "b-urg-0048",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-18T07:54:00.000Z",
+      "category": "urgent",
+      "urgencySource": "vip",
+      "topic": "kalendarz-podroze",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "Zbigniew Orlowicz asks the executive for something about Kalendarz zarzadu i podroze sluzbowe; the tone is calm"
+    },
+    {
+      "id": "b-urg-0049",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "klient-hurtownia",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-12T13:22:00.000Z",
+      "category": "urgent",
+      "urgencySource": "vip",
+      "topic": "reklamacje",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "prezes-zarzadu",
+          "brief": "a short earlier note of the executive about Reklamacje i uszkodzone dostawy"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 33,
+        "byCategory": {
+          "needs_reply": 17,
+          "info": 8,
+          "urgent": 5,
+          "delegation": 3
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 15,
+        "flagged": 2,
+        "unseen7d": 3,
+        "userMailsTo": 11,
+        "lastUserMailDaysAgo": 9,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 34.2,
+        "medianTheirReplyHours": 10.5,
+        "relation": "vip"
+      },
+      "brief": "Genowefa Jastrzebska asks the executive for something about Reklamacje i uszkodzone dostawy; the tone is calm"
+    },
+    {
+      "id": "b-urg-0050",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "dyr-operacyjny",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-22T11:42:00.000Z",
+      "category": "urgent",
+      "urgencySource": "text",
+      "topic": "wms-awaria",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "html",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 57,
+        "byCategory": {
+          "info": 23,
+          "needs_reply": 17,
+          "urgent": 6,
+          "delegation": 6,
+          "notification": 5
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 40,
+        "flagged": 2,
+        "unseen7d": 1,
+        "userMailsTo": 27,
+        "lastUserMailDaysAgo": 19,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 63,
+        "lastSeenDaysAgo": 1,
+        "medianUserReplyHours": 43.5,
+        "medianTheirReplyHours": 0.6,
+        "relation": "known"
+      },
+      "brief": "about System magazynowy i awarie ERP: the sender needs the executive to act today and says so plainly"
+    },
+    {
+      "id": "b-urg-0051",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-13T10:48:00.000Z",
+      "category": "urgent",
+      "urgencySource": "text",
+      "topic": "joint-venture",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "html",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "needs_reply": 6,
+          "info": 5,
+          "urgent": 2,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 9,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 13,
+        "lastUserMailDaysAgo": 8,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 38,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 3.7,
+        "medianTheirReplyHours": 21.7,
+        "relation": "known"
+      },
+      "brief": "Daniel Hargreaves writes about Wspolne przetargi z Baltic Freight Partners; a decision is due today and the text makes that clear"
+    },
+    {
+      "id": "b-urg-0052",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "partner-brokers",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-15T15:35:00.000Z",
+      "category": "urgent",
+      "urgencySource": "text",
+      "topic": "eksport-cla",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 15,
+        "byCategory": {
+          "needs_reply": 6,
+          "info": 5,
+          "urgent": 2,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 1,
+        "answered": 9,
+        "flagged": 1,
+        "unseen7d": 3,
+        "userMailsTo": 13,
+        "lastUserMailDaysAgo": 8,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 38,
+        "lastSeenDaysAgo": 2,
+        "medianUserReplyHours": 3.7,
+        "medianTheirReplyHours": 21.7,
+        "relation": "known"
+      },
+      "brief": "about Eksport i odprawy celne: the sender needs the executive to act today and says so plainly"
+    },
+    {
+      "id": "b-urg-0053",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "klient-meble",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-22T13:26:00.000Z",
+      "category": "urgent",
+      "urgencySource": "text",
+      "topic": "terminy-dostaw",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "prezes-zarzadu",
+          "brief": "a short earlier note of the executive about Terminy dostaw i okna rozladunku"
+        },
+        {
+          "persona": "klient-meble",
+          "brief": "an earlier message of the exchange about Terminy dostaw i okna rozladunku"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 16,
+        "byCategory": {
+          "needs_reply": 8,
+          "info": 4,
+          "urgent": 2,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 9,
+        "flagged": 3,
+        "unseen7d": 4,
+        "userMailsTo": 28,
+        "lastUserMailDaysAgo": 5,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 35,
+        "lastSeenDaysAgo": 9,
+        "medianUserReplyHours": 14.9,
+        "medianTheirReplyHours": 19.5,
+        "relation": "known"
+      },
+      "brief": "Tomasz Brzezinski writes about Terminy dostaw i okna rozladunku; a decision is due today and the text makes that clear"
+    },
+    {
+      "id": "b-urg-0054",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "klient-meble",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-20T09:12:00.000Z",
+      "category": "urgent",
+      "urgencySource": "text",
+      "topic": "terminy-dostaw",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 16,
+        "byCategory": {
+          "needs_reply": 8,
+          "info": 4,
+          "urgent": 2,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 9,
+        "flagged": 3,
+        "unseen7d": 4,
+        "userMailsTo": 28,
+        "lastUserMailDaysAgo": 5,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 35,
+        "lastSeenDaysAgo": 9,
+        "medianUserReplyHours": 14.9,
+        "medianTheirReplyHours": 19.5,
+        "relation": "known"
+      },
+      "brief": "Tomasz Brzezinski writes about Terminy dostaw i okna rozladunku; a decision is due today and the text makes that clear"
+    },
+    {
+      "id": "b-urg-0055",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "klient-meble",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-12T09:18:00.000Z",
+      "category": "urgent",
+      "urgencySource": "text",
+      "topic": "terminy-dostaw",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 16,
+        "byCategory": {
+          "needs_reply": 8,
+          "info": 4,
+          "urgent": 2,
+          "delegation": 2
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 9,
+        "flagged": 3,
+        "unseen7d": 4,
+        "userMailsTo": 28,
+        "lastUserMailDaysAgo": 5,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 35,
+        "lastSeenDaysAgo": 9,
+        "medianUserReplyHours": 14.9,
+        "medianTheirReplyHours": 19.5,
+        "relation": "known"
+      },
+      "brief": "about Terminy dostaw i okna rozladunku: the sender needs the executive to act today and says so plainly"
+    },
+    {
+      "id": "b-urg-0057",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-18T07:48:00.000Z",
+      "category": "urgent",
+      "urgencySource": "vip",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "a short request about Posiedzenie rady nadzorczej i budzet from an important person; no deadline words"
+    },
+    {
+      "id": "b-urg-0059",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-12T11:35:00.000Z",
+      "category": "urgent",
+      "urgencySource": "text",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "Zbigniew Orlowicz writes about Posiedzenie rady nadzorczej i budzet; a decision is due today and the text makes that clear"
+    },
+    {
+      "id": "b-urg-0060",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-11T10:02:00.000Z",
+      "category": "urgent",
+      "urgencySource": "vip",
+      "topic": "kalendarz-podroze",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": false,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "a short request about Kalendarz zarzadu i podroze sluzbowe from an important person; no deadline words"
+    },
+    {
+      "id": "b-urg-0061",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "klient-hurtownia",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-18T10:31:00.000Z",
+      "category": "urgent",
+      "urgencySource": "vip",
+      "topic": "przetarg-zielona",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "short",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [
+        {
+          "persona": "koordynator-sprzedazy",
+          "brief": "the first mail of the exchange about Przetarg sieci Zielona Hurtownia"
+        }
+      ],
+      "senderHistory": {
+        "days": 90,
+        "received": 33,
+        "byCategory": {
+          "needs_reply": 17,
+          "info": 8,
+          "urgent": 5,
+          "delegation": 3
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 15,
+        "flagged": 2,
+        "unseen7d": 3,
+        "userMailsTo": 11,
+        "lastUserMailDaysAgo": 9,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 55,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 34.2,
+        "medianTheirReplyHours": 10.5,
+        "relation": "vip"
+      },
+      "brief": "Genowefa Jastrzebska asks the executive for something about Przetarg sieci Zielona Hurtownia; the tone is calm"
+    },
+    {
+      "id": "b-urg-0064",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-18T10:56:00.000Z",
+      "category": "urgent",
+      "urgencySource": "text",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "medium",
+        "format": "plain",
+        "signature": true,
+        "greeting": "formal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "Zbigniew Orlowicz writes about Posiedzenie rady nadzorczej i budzet; a decision is due today and the text makes that clear"
+    },
+    {
+      "id": "b-urg-0066",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "dyr-operacyjny",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "pl",
+      "receivedAt": "2027-01-12T07:29:00.000Z",
+      "category": "urgent",
+      "urgencySource": "text",
+      "topic": "reklamacje",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "html",
+        "signature": true,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 57,
+        "byCategory": {
+          "info": 23,
+          "needs_reply": 17,
+          "urgent": 6,
+          "delegation": 6,
+          "notification": 5
+        },
+        "corrections": {},
+        "movedBack": 0,
+        "answered": 40,
+        "flagged": 2,
+        "unseen7d": 1,
+        "userMailsTo": 27,
+        "lastUserMailDaysAgo": 19,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 63,
+        "lastSeenDaysAgo": 1,
+        "medianUserReplyHours": 43.5,
+        "medianTheirReplyHours": 0.6,
+        "relation": "known"
+      },
+      "brief": "Halina Strzemecka writes about Reklamacje i uszkodzone dostawy; a decision is due today and the text makes that clear"
+    },
+    {
+      "id": "b-urg-0067",
+      "part": "holdout",
+      "batch": "batch-044",
+      "persona": "przewodniczacy-rady",
+      "direction": "in",
+      "to": [
+        "prezes-zarzadu"
+      ],
+      "cc": [],
+      "lang": "en",
+      "receivedAt": "2027-01-12T17:27:00.000Z",
+      "category": "urgent",
+      "urgencySource": "text",
+      "topic": "rada-nadzorcza",
+      "hardCases": [],
+      "kind": "synthetic",
+      "style": {
+        "length": "long",
+        "format": "html",
+        "signature": false,
+        "greeting": "informal"
+      },
+      "headers": {},
+      "attachments": [],
+      "thread": [],
+      "senderHistory": {
+        "days": 90,
+        "received": 42,
+        "byCategory": {
+          "needs_reply": 19,
+          "urgent": 11,
+          "info": 8,
+          "delegation": 4
+        },
+        "corrections": {
+          "info": 1
+        },
+        "movedBack": 2,
+        "answered": 28,
+        "flagged": 3,
+        "unseen7d": 1,
+        "userMailsTo": 29,
+        "lastUserMailDaysAgo": 23,
+        "delegationsTo": 0,
+        "bulkSignals": [],
+        "firstSeenDaysAgo": 56,
+        "lastSeenDaysAgo": 7,
+        "medianUserReplyHours": 40.9,
+        "medianTheirReplyHours": 28.9,
+        "relation": "vip"
+      },
+      "brief": "Zbigniew Orlowicz writes about Posiedzenie rady nadzorczej i budzet; a decision is due today and the text makes that clear"
+    }
+  ]
+}

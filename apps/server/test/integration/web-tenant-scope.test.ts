@@ -156,6 +156,8 @@ describe("the route walk", () => {
       "DELETE /api/mailboxes/:id",
       "GET /api/stats",
       "GET /api/operator/flags",
+      "POST /api/actions/:id/reject-reason",
+      "POST /api/actions/:id/mistake",
     ]) {
       expect(walked.has(route), `${route} was not walked`).toBe(true);
     }

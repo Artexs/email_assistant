@@ -112,6 +112,18 @@ describe("/review", () => {
     await withRollback(db, async (trx) => {
       const { a, link } = await setup(trx);
       await flagOn(trx, a.orgId);
+      const labelled = await triaged(trx, a.orgId, a.mailboxId, "MARKER-LABELLED");
+      await trx
+        .insertInto("triage_feedback")
+        .values({
+          org_id: a.orgId,
+          user_id: a.userId,
+          email_id: labelled,
+          verdict: "right",
+          true_category: "info",
+          source: "telegram",
+        })
+        .execute();
       expect(await reviewMessage(depsAt(trx), link)).toEqual({ text: EMPTY_TEXT, buttons: [] });
     });
   });

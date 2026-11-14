@@ -53,6 +53,7 @@ Triage turns a stored mail with status `pending` into a category, a short reason
 13. **Eval on real mail** (moved from `docs/architecture.md` §4.4): the eval runner reads the labels from `triage_feedback` in the DB. Real labels never go to git. Real labels leave out test mail: mail with a synthetic `Message-ID` and mail from a sender in `TEST_SENDER_ADDRESSES` (the check is case-insensitive and also drops old feedback on such mail).
     Real-mail evals use mail younger than 30 days (the body is cleared after that, `docs/architecture.md` §7). Pilot exception: backfilled mail up to 180 days (`docs/architecture.md` §6.1).
     - `bun run eval` runs the cases of `evals/cases` (80 synthetic, 16 injection, 12 delegation) against one provider and model, and prints precision and recall per category with a bar (default 0.98) and a minimum support (`--min-kept`, default 30). `bun run eval --real --org-id <uuid> --mailbox-id <uuid>` reads the labels from the DB and makes no LLM call. The gate for `auto` per category uses the same report (`goNoGoFor`: precision at least 98% on at least 30 labelled rows of the mailbox).
+    - Synthetic corpora (a made-up company, mail written by agents, labels fixed before the text) are planned and checked with `bun run sim`; the runbook is `evals/sim/README.md`.
 14. **Success metric** (moved from `docs/architecture.md` §4.4; not built) ("share of mail handled without the user", target 80–90%):
     handled = mail in `spam`, `notification`, `info`, or `delegation` sent after one tap, with an applied plan
     that the user did not undo or correct within 7 days. Share = handled ÷ all triaged mail. One line in the weekly digest.
@@ -71,6 +72,7 @@ Triage turns a stored mail with status `pending` into a category, a short reason
 | CLI      | `bun run triage:label`                                                                                                                | `apps/server/src/scripts/triage-label.ts`       |
 | CLI      | `bun run triage:cost`                                                                                                                 | `apps/server/src/scripts/triage-cost.ts`        |
 | CLI      | `bun run eval`                                                                                                                        | `apps/server/src/scripts/eval.ts`               |
+| CLI      | `bun run sim`                                                                                                                         | `apps/server/src/scripts/sim.ts`                |
 | CLI      | `bun run llm:check`                                                                                                                   | `apps/server/src/scripts/llm-check.ts`          |
 | function | `triageOne`, `saveTriage`, `finishTriageError`                                                                                        | `apps/server/src/modules/triage/service.ts`     |
 | function | `classifyEmail`                                                                                                                       | `apps/server/src/modules/triage/classifier.ts`  |

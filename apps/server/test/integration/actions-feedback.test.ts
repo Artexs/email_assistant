@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
-import { markSentMistake, MISTAKE_WINDOW_MS, recordRejectReason } from "../../src/modules/actions";
+import { getActionFeedback, markSentMistake, MISTAKE_WINDOW_MS, recordRejectReason } from "../../src/modules/actions";
 import type { DB, TenantContext } from "../../src/platform/db";
 
 import { addMember, createOrgWithMailbox, insertDraftAndSend, insertTriagedWithActions } from "./fixtures";
@@ -149,6 +149,37 @@ describe("markSentMistake", () => {
       });
       expect(await feedbackRows(trx, s.orgId, "mistake")).toHaveLength(2);
       expect(await feedbackRows(trx, other.orgId, "mistake")).toHaveLength(0);
+    });
+  });
+});
+
+describe("getActionFeedback", () => {
+  test("4. reads the row of its organization and kind; organization B gets nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const other = await setup(trx);
+      const rejected = await sendOf(trx, s, "rejected");
+      const applied = await sendOf(trx, s, "applied", new Date(NOW.getTime() - DAY));
+      const input = { userId: s.userId, via: "web", now: NOW } as const;
+      await recordRejectReason(trx, s.ctx, { ...input, actionId: rejected.sendId, reason: "wrong_content" });
+      await markSentMistake(trx, s.ctx, { ...input, actionId: applied.sendId });
+
+      expect(await getActionFeedback(trx, s.ctx, rejected.sendId, "reject_reason")).toMatchObject({
+        actionId: rejected.sendId,
+        kind: "reject_reason",
+        reason: "wrong_content",
+        userId: s.userId,
+        via: "web",
+      });
+      expect(await getActionFeedback(trx, s.ctx, applied.sendId, "mistake")).toMatchObject({
+        kind: "mistake",
+        reason: null,
+      });
+      // The kind filters too: a send has no row of the other kind.
+      expect(await getActionFeedback(trx, s.ctx, rejected.sendId, "mistake")).toBeUndefined();
+      // The tenant filter: the same action ids read through organization B give nothing.
+      expect(await getActionFeedback(trx, other.ctx, rejected.sendId, "reject_reason")).toBeUndefined();
+      expect(await getActionFeedback(trx, other.ctx, applied.sendId, "mistake")).toBeUndefined();
     });
   });
 });
