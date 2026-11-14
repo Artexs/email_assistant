@@ -44,6 +44,7 @@ async function scheduleForLink(db: Db | Transaction<DB>, link: LinkedChat, now: 
     periodEnd,
     slot: { date: slot.date, time: slot.time, late: isLateSlot(slot, now, timeZone) },
     now,
+    locale: link.locale,
   });
 
   const queue = async (trx: Transaction<DB>): Promise<string | null> => {

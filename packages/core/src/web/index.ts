@@ -12,6 +12,7 @@ export * from "./rules";
 export * from "./security-log";
 export * from "./sessions";
 export * from "./settings";
+export * from "./stats";
 export * from "./telegram";
 export * from "./terms";
 export * from "../mail/providers";

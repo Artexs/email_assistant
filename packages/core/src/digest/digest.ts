@@ -1,4 +1,4 @@
-import { textTables } from "../texts";
+import type { CoreTexts } from "../texts";
 import type { Category, MailboxMode } from "../triage/categories";
 
 import { categoryTag } from "./labels";
@@ -13,15 +13,6 @@ const SYNC_LATE_MS = 30 * 60_000;
 const ACTION_CATEGORIES: readonly Category[] = ["urgent", "needs_reply", "delegation", "unsure"];
 const OTHER_CATEGORIES: readonly Category[] = ["info", "notification", "spam"];
 const CATEGORY_ORDER: readonly Category[] = [...ACTION_CATEGORIES, ...OTHER_CATEGORIES];
-const MORE_NAMES: Record<Category, string> = {
-  urgent: "urgent",
-  needs_reply: "reply",
-  delegation: "delegate",
-  unsure: "unsure",
-  info: "info",
-  notification: "notification",
-  spam: "spam",
-};
 
 export interface DigestMailbox {
   id: string;
@@ -77,64 +68,58 @@ function sortItems(items: readonly DigestItem[]): DigestItem[] {
   );
 }
 
-function headerLine(input: DigestInput): string {
+function headerLine(input: DigestInput, texts: CoreTexts): string {
   const { now, timeZone, slot } = input;
   if (input.kind === "scheduled" && slot !== null) {
-    // The next stage of the Polish UI plan passes the texts of the row.
-    const day = formatDay(localToInstant(slot.date, slot.time, timeZone), timeZone, "en");
-    return `📬 Digest ${slot.time} · ${day}${slot.late ? " (late)" : ""}`;
+    const day = formatDay(localToInstant(slot.date, slot.time, timeZone), timeZone, texts.locale);
+    return texts.digest.header(slot.time, day, slot.late);
   }
-  // The next stage of the Polish UI plan passes the texts of the row.
-  return `📬 Digest now · ${formatDay(now, timeZone, "en")} ${localDateTime(now, timeZone).time}`;
+  return texts.digest.headerNow(formatDay(now, timeZone, texts.locale), localDateTime(now, timeZone).time);
 }
 
-function mailboxLine(input: DigestInput, mailbox: DigestMailbox): string {
+function mailboxLine(input: DigestInput, mailbox: DigestMailbox, texts: CoreTexts): string {
   const { now, timeZone } = input;
-  // The next stage of the Polish UI plan passes the texts of the row.
-  const clock = (at: Date): string => formatClock(at, timeZone, now, "en");
-  const sync = (at: Date | null): string => (at === null ? "never" : clock(at));
+  const clock = (at: Date): string => formatClock(at, timeZone, now, texts.locale);
+  const sync = (at: Date | null): string => (at === null ? texts.digest.never : clock(at));
   const suffix = input.mailboxes.length > 1 ? ` · ${cutText(mailbox.address, 40)}` : "";
   const { lastSyncedAt } = mailbox;
   if (mailbox.status === "paused") {
-    return `⏸ Paused since ${clock(mailbox.statusChangedAt)} · last sync ${sync(lastSyncedAt)}${suffix}`;
+    return `${texts.digest.mailbox.paused(clock(mailbox.statusChangedAt), sync(lastSyncedAt))}${suffix}`;
   }
   if (mailbox.status === "auth_error") {
-    return `❌ Login error since ${clock(mailbox.statusChangedAt)} · last sync ${sync(lastSyncedAt)}${suffix}`;
+    return `${texts.digest.mailbox.authError(clock(mailbox.statusChangedAt), sync(lastSyncedAt))}${suffix}`;
   }
-  if (lastSyncedAt === null) return `⚠️ Last sync: never${suffix}`;
-  if (now.getTime() - lastSyncedAt.getTime() > SYNC_LATE_MS)
-    return `⚠️ Last sync ${clock(lastSyncedAt)} (late)${suffix}`;
-  return `🔄 Last sync ${clock(lastSyncedAt)}${suffix}`;
+  if (lastSyncedAt === null) return `${texts.digest.mailbox.neverSynced}${suffix}`;
+  if (now.getTime() - lastSyncedAt.getTime() > SYNC_LATE_MS) {
+    return `${texts.digest.mailbox.late(clock(lastSyncedAt))}${suffix}`;
+  }
+  return `${texts.digest.mailbox.ok(clock(lastSyncedAt))}${suffix}`;
 }
 
-function itemBlock(n: number, item: DigestItem): string[] {
+function itemBlock(n: number, item: DigestItem, texts: CoreTexts): string[] {
   const lines = [
-    // The next stage of the Polish UI plan passes the texts of the row.
-    `${n}. ${categoryTag(item.category, textTables.en)} · ${senderLabel(item.from, textTables.en)}${item.folderTag === null ? "" : ` · 📁 ${cutText(item.folderTag, 30)}`}${item.synthetic ? " · 🧪 test" : ""}`,
-    cleanSubject(item.subject, textTables.en),
+    `${n}. ${categoryTag(item.category, texts)} · ${senderLabel(item.from, texts)}${item.folderTag === null ? "" : ` · 📁 ${cutText(item.folderTag, 30)}`}${item.synthetic ? ` · ${texts.common.test}` : ""}`,
+    cleanSubject(item.subject, texts),
   ];
   if (item.aiText !== null && item.aiText !== "") lines.push(`💬 ${cutText(item.aiText, 120)}`);
   lines.push(`→ ${item.wouldDo}`);
   return lines;
 }
 
-function renderListed(input: DigestInput, listed: readonly DigestItem[]): OutMessage {
+function renderListed(input: DigestInput, listed: readonly DigestItem[], texts: CoreTexts): OutMessage {
   const { counts } = input;
   const total = sumCounts(counts, CATEGORY_ORDER);
-  // The next stage of the Polish UI plan passes the texts of the row.
-  const since = formatClock(input.periodStart, input.timeZone, input.now, "en");
+  const since = formatClock(input.periodStart, input.timeZone, input.now, texts.locale);
   const lines = [
-    headerLine(input),
-    total > 0
-      ? `Since ${since}: ${total} ${total === 1 ? "mail" : "mails"}, ${sumCounts(counts, ACTION_CATEGORIES)} need action`
-      : `No new mail since ${since}.`,
+    headerLine(input, texts),
+    total > 0 ? texts.digest.since(since, total, sumCounts(counts, ACTION_CATEGORIES)) : texts.digest.noMail(since),
   ];
-  if (input.mailboxes.length === 0) lines.push("Last sync: no mailbox connected");
-  for (const mailbox of input.mailboxes) lines.push(mailboxLine(input, mailbox));
+  if (input.mailboxes.length === 0) lines.push(texts.digest.noMailbox);
+  for (const mailbox of input.mailboxes) lines.push(mailboxLine(input, mailbox, texts));
 
   const sections = [
-    { title: "NEEDS ACTION", categories: ACTION_CATEGORIES },
-    { title: "OTHER MAIL", categories: OTHER_CATEGORIES },
+    { title: texts.digest.actionTitle, categories: ACTION_CATEGORIES },
+    { title: texts.digest.otherTitle, categories: OTHER_CATEGORIES },
   ];
   listed.forEach((item, index) => {
     const section = sections.find((s) => s.categories.includes(item.category));
@@ -144,24 +129,24 @@ function renderListed(input: DigestInput, listed: readonly DigestItem[]): OutMes
     } else {
       lines.push("");
     }
-    lines.push(...itemBlock(index + 1, item));
+    lines.push(...itemBlock(index + 1, item, texts));
   });
 
   const parts = CATEGORY_ORDER.flatMap((category) => {
     const rest = Math.max(0, (counts[category] ?? 0) - listed.filter((item) => item.category === category).length);
-    return rest > 0 ? [{ rest, name: MORE_NAMES[category] }] : [];
+    return rest > 0 ? [{ rest, name: texts.digest.moreName[category](rest) }] : [];
   });
   const footer: string[] = [];
   const more = parts.reduce((sum, part) => sum + part.rest, 0);
-  if (more > 0) footer.push(`+${more} more: ${parts.map((part) => `${part.rest} ${part.name}`).join(", ")}`);
-  if (input.skippedTooOld > 0) footer.push(`📭 Not processed (older than 7 days): ${input.skippedTooOld}`);
-  if (input.skippedBacklog > 0) footer.push(`📭 Not processed (from the account pause): ${input.skippedBacklog}`);
-  if (input.waiting > 0) footer.push(`⏳ Waiting for triage: ${input.waiting}`);
+  if (more > 0) footer.push(texts.digest.more(more, parts.map((part) => `${part.rest} ${part.name}`).join(", ")));
+  if (input.skippedTooOld > 0) footer.push(texts.digest.notProcessedOld(input.skippedTooOld));
+  if (input.skippedBacklog > 0) footer.push(texts.digest.notProcessedBacklog(input.skippedBacklog));
+  if (input.waiting > 0) footer.push(texts.digest.waiting(input.waiting));
   if (input.delegations !== undefined && input.delegations.open + input.delegations.overdue > 0) {
-    footer.push(`👥 Delegations: ${input.delegations.open} waiting for a reply, ${input.delegations.overdue} overdue`);
+    footer.push(texts.digest.delegations(input.delegations.open, input.delegations.overdue));
   }
   if (total > 0 && input.mailboxes.length > 0 && input.mailboxes.every((mailbox) => mailbox.mode === "shadow")) {
-    footer.push("Shadow mode: the system changed nothing in your mailbox.");
+    footer.push(texts.digest.shadow);
   }
   if (footer.length > 0) lines.push("", ...footer);
 
@@ -186,10 +171,10 @@ function cutToLimit(text: string): string {
   return `${text.slice(0, end)}…`;
 }
 
-export function renderDigest(input: DigestInput): OutMessage {
+export function renderDigest(input: DigestInput, texts: CoreTexts): OutMessage {
   const listed = sortItems(input.items).slice(0, input.maxLines ?? DIGEST_MAX_LINES);
   for (;;) {
-    const message = renderListed(input, listed);
+    const message = renderListed(input, listed, texts);
     if (message.text.length <= MESSAGE_MAX_CHARS) return message;
     if (listed.length === 0) return { text: cutToLimit(message.text), buttons: [] };
     listed.pop();

@@ -115,3 +115,15 @@ Source of the full text: `spec/features/done/2026-11/F058-sync-sort-folders/plan
 - **F3 One UID counter.** All folders of the mailbox share one UID counter. A webmail move keeps the UID.
 - **F4 Volumes (8 days).** INBOX 83, `Oferty` 56 (about 7 a day), `Społeczności` 0, `Rachunki` 0, `Wiadomości-śmieci` 3.
 - **F12 Sorter on COPY.** See "Sort-folder probe" above: a COPY into INBOX or `Oferty` is sorted again, an APPEND is not.
+
+## Real delegation round trip (F047 part A, 2026-11-14)
+
+Source: the owner's U1 session (F095 stage 10); the raw facts are in a local file outside the repo. First real send from the pilot mailbox through Interia SMTP to the delegate Gmail.
+
+- **SMTP response line shape:** `250 OK. ID: <id>` (the id is replaced here).
+- **Sent copy:** `provider_result.sent_copy` = `appended` for the delegation send and for the reminder send. Interia webmail `Wysłane` showed the copy (one thread with 2 items: the draft at 12:20 and the sent mail at 12:24); the draft folder was empty after the send.
+- **How Interia webmail shows the draft:** the folder is named **`Kopie robocze`**. The app writes the `provider_result` folder value `Wersje robocze` (the provider folder name in the app). The draft opens as a compose window: From = the owner name and address, To = the delegate name, subject `Fwd: …`, the quote in the body.
+- **`From` display in Gmail:** the owner display name plus the owner address; Gmail shows "signed-by/sent from interia.pl" and standard TLS.
+- **Gmail spam:** no. The task mail went to Inbox (`Odebrane`).
+- **Reminder in Gmail:** the reminder (`Re: Fwd: …`) showed as its own row in the Gmail list, separate from the `Fwd:` row. The owner did not say whether the conversation view grouped them.
+- **Reply path:** a reply from the delegate Gmail reached Interia `Odebrane` in the same thread; the delegation became `answered` within about 2 minutes (sync tick).
