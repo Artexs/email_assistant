@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { relationOf, senderHistorySchema } from "./sender-history";
+import { relationOf, senderHistorySchema, type SenderHistory } from "./sender-history";
 
 const base = { isDelegate: false, isVip: false, received: 10, bulkMails: 0, answered: 0, userMailsTo: 0 };
 
@@ -26,7 +26,7 @@ describe("relationOf", () => {
 });
 
 describe("senderHistorySchema", () => {
-  const valid = {
+  const valid: SenderHistory = {
     days: 30,
     received: 4,
     byCategory: { info: 3, spam: 1 },
