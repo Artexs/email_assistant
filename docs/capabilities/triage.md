@@ -1,6 +1,6 @@
 # Triage
 
-> Checked against the code at `c757cc5`, 2026-11-14.
+> Checked against the code at `cfaf62a`, 2026-11-14.
 
 ## What it does now
 
@@ -41,7 +41,7 @@ Triage turns a stored mail with status `pending` into a category, a short reason
     a mail that the user moves back to a synced folder after a system move (`docs/architecture.md` §6.1); the web panel (S5).
     Every source writes a `triage_feedback` row through `triage.recordFeedback()`. A known mail is never triaged again (no loop).
     - The source `review` is for the labels of the Telegram `/review` page (a random sample of unlabelled real mail, `listReviewSample` in `triage/review-repo.ts`); its buttons are `vr`, `vc`, `ve`, `vx` (see [digest-and-notices.md](digest-and-notices.md) rule 10), so metrics can tell them from digest taps.
-    - The source `answered_check` is written only by a "yes" in the answered check of `/review` ([digest-and-notices.md](digest-and-notices.md) rule 9): `answerAnsweredCheck` sets `email_flags.answered_check` and writes one row (`true_category` `needs_reply`, verdict `wrong`, `skipIfSame`) in one transaction. A "no" writes the answer only. The first answer wins. The check acts only on mail whose flag read said "answered" (`email_flags.answered`); a row of mail that sync could not read (all flags false) is never a candidate and a tap on it answers "not found". Candidates (`listAnsweredCandidates`): real mail of the chat's mailboxes of the last 14 days, answered, latest category `info`, `notification` or `spam`, no feedback row, no answer yet, oldest first, at most 5. `countAnsweredWaiting` counts the same over the organization.
+    - The source `answered_check` is written only by a "yes" in the answered check of `/review` ([digest-and-notices.md](digest-and-notices.md) rule 9): `answerAnsweredCheck` sets `email_flags.answered_check` and writes one row (`true_category` `needs_reply`, verdict `wrong`, `skipIfSame`) in one transaction. A "no" writes the answer only. The first answer wins. A mail that already has any feedback row (for example a ✅ on the random `/review` page) keeps that first label: a "yes" then saves the answer, so the block does not show the mail again, but writes no `answered_check` row. The check acts only on mail whose flag read said "answered" (`email_flags.answered`); a row of mail that sync could not read (all flags false) is never a candidate and a tap on it answers "not found". Candidates (`listAnsweredCandidates`): real mail of the chat's mailboxes of the last 14 days, answered, latest category `info`, `notification` or `spam`, no feedback row, no answer yet, oldest first, at most 5. `countAnsweredWaiting` counts the same over the organization.
     - Check against the code: `triage.returned` (every 15 s) and the Undo path also call `recordFeedback`; the Telegram handler and `POST /api/feedback` set `skipIfSame`, so the same answer twice writes no row.
 11. **Buttons under a digest line (S2)** (moved from `docs/architecture.md` §4.4): ✅ means "the shown category is right": it writes `true_category` = the shown category (verdict `right`).
     ✏️ opens a picker with five categories (Urgent, Reply, Info, Notification, Spam) and Cancel; a pick writes `true_category` = the pick

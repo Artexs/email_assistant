@@ -6,7 +6,7 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { getEmailFlags, mailKindFilter, setAnsweredCheck, type TestMailRule } from "../mail";
 
 import { recordFeedback } from "./feedback";
-import { getLabelTarget } from "./repo";
+import { getLabelTarget, latestFeedback } from "./repo";
 
 type DbOrTrx = Db | Transaction<DB>;
 
@@ -96,6 +96,8 @@ export type AnsweredResult = { kind: "yes" } | { kind: "no" } | { kind: "already
 /**
  * One transaction: the answer, and on "yes" the label `needs_reply` (source `answered_check`). A mail with no flag read that
  * says "answered", or with no triage result, is `not_found`; a mail that has an answer is `already`.
+ * A mail that already has any feedback row (a tap on the random page of /review came first) keeps its first label: the
+ * answer is saved, so the block does not show the mail again, but no second label is written.
  */
 export async function answerAnsweredCheck(
   db: DbOrTrx,
@@ -113,13 +115,12 @@ export async function answerAnsweredCheck(
       at: input.now,
     });
     if (!wrote) return { kind: "already" };
-    if (input.answer === "yes") {
+    if (input.answer === "yes" && (await latestFeedback(trx, ctx, input.emailId)) === undefined) {
       await recordFeedback(trx, ctx, {
         emailId: input.emailId,
         trueCategory: "needs_reply",
         source: "answered_check",
         userId: input.userId,
-        skipIfSame: true,
       });
     }
     return { kind: input.answer };

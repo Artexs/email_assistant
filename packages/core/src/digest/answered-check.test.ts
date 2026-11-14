@@ -99,6 +99,7 @@ describe("answered check texts", () => {
       const category = pluralCategory("pl", count);
       expect(word(count)).toBe(category === "one" ? "wiadomość" : "wiadomości");
     }
+    expect(pl.review.answered.already).toBe("Odpowiedź już zapisana.");
     expect(pl.review.answered.block(1)).toContain("Czy wymagała odpowiedzi?");
     expect(pl.review.answered.block(5)).toContain("Czy wymagały odpowiedzi?");
   });

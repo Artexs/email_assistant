@@ -60,7 +60,7 @@ export const reviewTexts = {
       noButton: (n) => `➖ Nie ${n}`,
       savedYes: "Zapisano: wiadomość wymagała odpowiedzi.",
       savedNo: "Zapisano: odpowiedź nie była potrzebna.",
-      already: "Już odpowiedziano.",
+      already: "Odpowiedź już zapisana.",
       off: "Ten przycisk jest teraz wyłączony.",
     },
   },
