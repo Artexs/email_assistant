@@ -348,7 +348,8 @@ export const en = {
   acct_language_saved: "Language saved.",
   // security log (Account card)
   sec_title: "Security log",
-  sec_help: "Sign-ins, lockouts, password and two-factor changes, and ended sessions of this organization in the last 90 days.",
+  sec_help:
+    "Sign-ins, lockouts, password and two-factor changes, and ended sessions of this organization in the last 90 days.",
   sec_empty: "No security events in the last 90 days.",
   sec_kind_sign_in: "Signed in",
   sec_kind_locked: "Sign-in locked after failed tries",

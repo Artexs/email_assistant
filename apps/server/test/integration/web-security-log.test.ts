@@ -180,7 +180,7 @@ describe("GET /api/security-log", () => {
       locked_until: "2026-11-20T08:15:00.000Z",
     });
     await audit(org.orgId, auditEvents.orgBreakGlassSet, "cli", ago(2 * HOUR), { user_id: org.ownerId });
-    await audit(org.orgId, auditEvents.webTwoFactorReset, "cli", ago(3 * HOUR), { via: "cli", sessions_ended: 1 });
+    await audit(org.orgId, auditEvents.webTwoFactorReset, "cli", ago(3 * HOUR), { via: "cli" });
     const res = await app().request("/api/security-log", as("owner"));
     expect(res.status).toBe(200);
     const text = await res.text();

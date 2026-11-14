@@ -357,7 +357,8 @@ export const pl: Record<TextKey, string> = {
   acct_language_saved: "Zapisano język.",
   // security log (Account card)
   sec_title: "Dziennik bezpieczeństwa",
-  sec_help: "Logowania, blokady, zmiany hasła i logowania dwuetapowego oraz zakończone sesje tej organizacji z ostatnich 90 dni.",
+  sec_help:
+    "Logowania, blokady, zmiany hasła i logowania dwuetapowego oraz zakończone sesje tej organizacji z ostatnich 90 dni.",
   sec_empty: "Brak zdarzeń bezpieczeństwa z ostatnich 90 dni.",
   sec_kind_sign_in: "Zalogowano",
   sec_kind_locked: "Logowanie zablokowane po nieudanych próbach",
