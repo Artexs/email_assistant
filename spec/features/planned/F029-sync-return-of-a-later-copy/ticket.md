@@ -28,7 +28,8 @@ When the user moves a known mail back or between folders, the stored row follows
 - A mail moved by the user into a synced folder below that folder's cursor: after the next flag refresh (at most 10 min), the row has the new `folder`.
 - That row is `returned` when the system had moved it, else `relocated`.
 - Test 8.4 of `mail-sync.test.ts` asserts the new result instead of the known limit.
-- A sync pass makes no new IMAP call; a flag refresh adds at most (synced folders) × 6 UID fetches.
+- The move finder makes no IMAP call in a sync pass; a flag refresh adds at most (synced folders) × 6 UID fetches.
+- The later-copy check adds at most 4 more locates, and only for an incoming mail with several known identical copies in other folders.
 - All checks: `plan.md` § Done when (9 items).
 
 ## Slices

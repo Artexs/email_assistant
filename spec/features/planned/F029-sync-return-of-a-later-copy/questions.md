@@ -18,9 +18,9 @@ Each refresh with gone mail adds `fetchByUidsIn` calls: at most (synced folders)
 
 The later-copy check locates at most 5 known identical copies per incoming mail. With 6 or more copies in other folders and only the 6th gone, the sync stores a new copy as today. **Default:** 5 (D2). No such case is known.
 
-## Q5 — A return into another synced folder counts as "wrong" `[minor]`
+## Q5 — A return into another synced folder counts as "wrong", also into the spam folder `[important: user-visible]`
 
-A mail that the system moved (for example to `AI/Info`) and that the user later files into `Oferty` is a return: the job `triage.returned` writes "wrong" feedback for the system's category. This is the existing rule of the sort-folder sync (ADR 0014 D8, decided 2026-11-08) and now also applies below the cursor. **Default:** keep the rule (D8). Option: a move into a folder that is not the source counts as no feedback; that changes the existing above-cursor rule too (a new ticket).
+A mail that the system moved (for example to `AI/Info`) and that the user later files into `Oferty` is a return: the job `triage.returned` marks the system move undone (`user_moved_back`) and writes "wrong" feedback for the system's category. This is the existing rule of the sort-folder sync (ADR 0014 D8, decided 2026-11-08), and the move finder now applies it below the cursor too. One case is odd: the system moved a mail to `AI/Spam`, and the user files it into the provider spam folder (`Wiadomości-śmieci`, for example with the webmail "Spam" button). The user agrees that it is spam, but the rule writes "wrong", and the measured spam precision (F100) drops. Below the junk cursor the finder makes this case more common than before (cold review 1, M4). **Default:** keep the owner's rule in both paths (D8); stage 05 check 5 counts the case on the pilot. **Option:** a move from `AI/Spam` into the `junk` folder counts as "filed": new location, no undo mark, no feedback. That is a new ticket that changes the folder check of the sync passes and the finder in the same way.
 
 ## Q6 — Flags of a found mail wait one refresh `[minor]`
 

@@ -10,7 +10,7 @@ Interia keeps the UID when the user moves a mail in webmail. If the user moves a
 
 ## Sequenced
 
-- Planned together with F029: the plan, stages and questions are in [`../F029-sync-return-of-a-later-copy/`](../F029-sync-return-of-a-later-copy/plan.md) (stages 02–05 are this ticket's part). This folder gets no stages of its own.
+- Planned together with F029: the plan, stages and questions are in the F029 folder (`spec/features/<lane>/F029-sync-return-of-a-later-copy/plan.md`; stages 02–05 are this ticket's part). This folder gets no stages of its own.
 - Plan after: none. Build after: as F029 (F091 in `done/`).
 - Gate: —. F032 (a copy below the cursor, planned separately) builds after F029.
 
