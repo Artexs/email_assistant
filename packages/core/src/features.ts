@@ -73,6 +73,12 @@ export const featureFlags = {
     epic: "E7-T3",
     removeBy: "2027-03-01",
   },
+  sso_sign_in: {
+    default: false,
+    description: "Sign in with the company account (SSO).",
+    epic: "E7-T7",
+    removeBy: "2027-06-01",
+  },
 } as const satisfies Record<string, FeatureFlag>;
 
 export type FeatureKey = keyof typeof featureFlags;

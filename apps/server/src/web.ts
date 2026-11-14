@@ -32,6 +32,7 @@ import {
   isBreakGlassOwner,
   isOrgSuspended,
   listMembershipsOfUser,
+  resolveSsoMember,
   setUserTerms,
   tenancyRoutes,
   type TenancyRouteDeps,
@@ -99,6 +100,21 @@ export function auditWebEvent(db: Db): AuthDeps["onEvent"] {
     } catch (error) {
       log.error(`web: audit ${kind} failed: ${describeError(error)}`);
     }
+  };
+}
+
+// F119: an SSO sign-in or refusal is a row in the provider's organization. `ssoPlugins` catches a failure and logs it.
+export function auditSsoEvent(db: Db): NonNullable<AuthDeps["onSsoEvent"]> {
+  return async (event) => {
+    await recordAudit(
+      db,
+      { orgId: event.orgId },
+      {
+        event: event.kind === "login" ? auditEvents.ssoLogin : auditEvents.ssoRefused,
+        actor: event.userId ?? "system",
+        data: event.data,
+      }
+    );
   };
 }
 
@@ -360,6 +376,8 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
     resetLinkTtlSeconds: 3_600,
     lockout,
     keepsTwoFactor: (userId) => isBreakGlassOwner(db, userId),
+    resolveSsoMember: (identity) => resolveSsoMember(db, identity),
+    onSsoEvent: auditSsoEvent(db),
     ...(config.AUTH_PWNED_CHECK === "on"
       ? { pwnedCheck: (password: string) => checkPwnedPassword(password, { fetch, timeoutMs: 5_000 }) }
       : {}),
