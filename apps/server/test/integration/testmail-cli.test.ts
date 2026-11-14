@@ -37,6 +37,7 @@ function makeBatch(overrides: { blind?: boolean; disagree?: boolean } = {}): Bat
   return {
     batch: batchId,
     writer: "test",
+    delegatesActive: false,
     cases: [
       {
         id: "a",
