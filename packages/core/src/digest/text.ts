@@ -1,3 +1,4 @@
+import type { CoreTexts } from "../texts";
 import { removeLinks } from "../triage/untrusted-text";
 
 // eslint-disable-next-line no-control-regex -- the point is to remove them
@@ -17,12 +18,12 @@ export function cutText(text: string, max: number): string {
   return `${points.slice(0, max - 1).join("")}…`;
 }
 
-export function cleanSubject(subject: string | null): string {
+export function cleanSubject(subject: string | null, texts: CoreTexts): string {
   const clean = subject === null ? "" : cutText(removeLinks(subject), 80);
-  return clean === "" ? "(no subject)" : clean;
+  return clean === "" ? texts.common.noSubject : clean;
 }
 
-export function senderLabel(from: string | null): string {
+export function senderLabel(from: string | null, texts: CoreTexts): string {
   const clean = from === null ? "" : cutText(from, 40);
-  return clean === "" ? "(unknown sender)" : clean;
+  return clean === "" ? texts.common.unknownSender : clean;
 }
