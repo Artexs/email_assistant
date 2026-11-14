@@ -222,7 +222,7 @@ Order and parallel work:
 | 03 | 02 | 04, 08 | edits `platform/auth-two-factor.ts`, `web.ts` (the event map) |
 | 04 | 02 | 03, 08 | edits `platform/http.ts`, `web.ts` (`getSession`), test fakes |
 | 05 | 03 | 08, 09 | edits `platform/auth.ts` (before hook), `web.ts`, tenancy |
-| 06 | 05 | 07, 08, 09 | tenancy service, `platform/auth-two-factor-reset.ts`, two CLIs in `package.json` scripts |
+| 06 | 05 | 07, 08, 09 | tenancy service, `platform/auth-two-factor-reset.ts`, one CLI script in `package.json` |
 | 07 | 04, 05 | 06, 08, 09 | tenancy routes, `web.ts`, `auth-two-factor.ts` (a new function at the end) |
 | 08 | 02 | 03–07 | web only: `LoginPage.tsx`, `auth-client.ts`, `en.ts` |
 | 09 | 08 | 03–07 (not next to another `bun.lock` change of any ticket) | `apps/web/package.json`, `bun.lock` |
