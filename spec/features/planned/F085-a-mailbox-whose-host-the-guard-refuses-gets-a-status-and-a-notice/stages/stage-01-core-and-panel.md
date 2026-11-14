@@ -70,18 +70,38 @@ No migration, no server change except what typecheck forces (none expected). Aft
   - Out of scope: the registry entry (`noticeRenderers`, `noticeKinds`, `noticeViewSchemas`): stage 02, with the DB CHECK.
 
 - [ ] **1.3 Panel badge and hint**
-  - Goal: the panel shows the status on the mailbox card and in the operator detail.
+  - Goal: the panel shows the status on the mailbox card and in the operator detail, through one pure map that a unit test proves.
   - Files:
-    - `apps/web/src/components/mailboxes/StatusBadge.tsx`: `variants` gets `host_blocked: "destructive"`; `texts` gets `host_blocked: "status_host_blocked"`. Type `variants` as `Record<MailboxView["status"], "default" | "secondary" | "destructive">` so a later status fails typecheck here too (D10).
-    - `apps/web/src/components/mailboxes/MailboxCard.tsx`: next to the `auth_error` alert, `{isOwner && mailbox.status === "host_blocked" && (<Alert variant="destructive"><AlertDescription><p>{t("mb_host_blocked_hint")}</p></AlertDescription></Alert>)}`. No new button: the pause, resume and password buttons stay bound to `active`, `paused` and `auth_error`; the "More" menu stays as it is (D13).
+    - New `apps/web/src/lib/mailbox-status.ts`: `mailboxStatusUi` (interface below). New `apps/web/src/lib/mailbox-status.test.ts` (the unit glob of `package.json` runs `apps/web/src/lib`).
+    - `apps/web/src/components/mailboxes/StatusBadge.tsx`: replace the two local maps with `mailboxStatusUi[status].variant` and `t(mailboxStatusUi[status].text)`.
+    - `apps/web/src/components/mailboxes/MailboxCard.tsx`: the owner alert shows `t(hint)` when `mailboxStatusUi[mailbox.status].hint` is not null (this replaces the `auth_error`-only condition; the `auth_error` alert text stays `mb_auth_error_hint`). No new button: the pause, resume and password buttons stay bound to `active`, `paused` and `auth_error`; the "More" menu stays as it is (D13).
+    - `apps/web/src/components/mailboxes/PasswordDialog.tsx:49`: the toast `password_saved_active` also when the mailbox was `host_blocked` and the answer is `active` (`(mailbox.status === "auth_error" || mailbox.status === "host_blocked") && view.status === "active"`): a password change ends both statuses (plan D5, stage 04).
     - `apps/web/src/i18n/en.ts`: `status_host_blocked` (after `status_auth_error`), `mb_host_blocked_hint` (after `mb_auth_error_hint`); `apps/web/src/i18n/pl.ts`: the same keys (D9).
-  - Interfaces: none new.
-  - Decisions: D9, D13.
+  - Interfaces:
+
+    ```ts
+    // apps/web/src/lib/mailbox-status.ts — a Record, so a later status fails typecheck here (D10)
+    import type { MailboxView } from "@ea/core/web";
+    import type { TextKey } from "../i18n";
+    export const mailboxStatusUi: Record<
+      MailboxView["status"],
+      { variant: "default" | "secondary" | "destructive"; text: TextKey; hint: TextKey | null }
+    > = {
+      active: { variant: "default", text: "status_active", hint: null },
+      paused: { variant: "secondary", text: "status_paused", hint: null },
+      auth_error: { variant: "destructive", text: "status_auth_error", hint: "mb_auth_error_hint" },
+      host_blocked: { variant: "destructive", text: "status_host_blocked", hint: "mb_host_blocked_hint" },
+    };
+    ```
+
+    If `apps/web/src/lib/` may not import from `../i18n` (check how other `lib` files get `TextKey`; `lib/errors.ts` maps codes to keys), follow that file's way.
+  - Decisions: D5, D9, D13.
   - Test:
-    1. `apps/web/src/i18n/i18n.test.ts` passes (both keys in `en` and `pl`, no placeholder; the Polish texts differ from the English ones, so they are not in `SAME_IN_BOTH`).
-    2. `bun run typecheck` passes for `@ea/web` (`StatusBadge` covers every status).
-  - Check: `bun test apps/web/src/i18n`; `bun run typecheck`; `bun run lint`.
-  - Done when: tests 1–2 pass.
+    1. `mailbox-status.test.ts`: the keys of `mailboxStatusUi` equal `mailboxStatuses` (core); `host_blocked` → `{ variant: "destructive", text: "status_host_blocked", hint: "mb_host_blocked_hint" }`; `en[mailboxStatusUi.host_blocked.text]` is `Server not allowed` and `pl[...]` is `Serwer niedozwolony`; `active` and `paused` have no hint.
+    2. `apps/web/src/i18n/i18n.test.ts` passes (both keys in `en` and `pl`, no placeholder; the Polish texts differ from the English ones, so they are not in `SAME_IN_BOTH`).
+    3. `bun run typecheck` passes for `@ea/web`.
+  - Check: `bun test apps/web/src/lib apps/web/src/i18n`; `bun run typecheck`; `bun run lint`.
+  - Done when: tests 1–3 pass.
   - Out of scope: the operator list count and `op_col_mailboxes` (stage 03, with the server count); a banner (D13: none).
 
 ## Done when

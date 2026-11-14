@@ -16,7 +16,7 @@ The ticket sets the outcome (a status, one notice per episode, no host name or a
 
 ## Q3 [important: privacy] The notice names the mailbox by its own mail address
 
-- Default: the text names the mailbox by its mail address (as the login-error notice does) and never prints the server name, the resolved network address, the port or which server (IMAP or SMTP) was refused. No log line, audit row, CLI line or panel text prints them either. D8, D9.
+- Default: the text names the mailbox by its mail address (as the login-error notice does) and never prints the server name, the resolved network address, the port or which server (IMAP or SMTP) was refused. No log line, audit row, CLI line or panel text prints the name, the address or the port either. Only the operator command `mailbox:check` says which server (IMAP or SMTP) was refused. D8, D9, D14.
 - Why: "no host name or address in the text" (ticket) keeps internal network facts out of chat; the mail address is needed to tell two mailboxes apart.
 - Other option: no mail address either (the owner cannot tell which mailbox with two or more). Change: the view and the first text line (stages 01 and 02).
 

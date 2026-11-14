@@ -28,7 +28,7 @@ When the mail host guard (F082 stage 8) refuses the host of a mailbox, the mailb
 
 ## Slices
 
-One worker job per stage (`plan.md` § How to run): 01 → 02 → 03 → 04 → 05 → 07, each after the one before has landed. Stage 06 may build after stage 04 lands, next to stage 05. Stage 02 is the only migration: never next to another migration in build. No `bun.lock` change. No owner checkpoint.
+One worker job per stage (`plan.md` § How to run): 01 → 02 → 03 → 04 → 05 → 07, each after the one before has landed. Stage 06 may build after stage 04 lands, next to stage 05; stage 07 waits for 05 and 06. Stage 02 is the only migration: never next to another migration in build. No `bun.lock` change. No owner checkpoint.
 
 ## Sequenced
 

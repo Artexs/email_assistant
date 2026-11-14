@@ -37,7 +37,7 @@ No migration. Two normal steps, about 150 changed lines.
   - Decisions: D8, D14.
   - Test (D19: `configureMailHosts({ allowLocal: false, lookup })` with a fake `lookup` that records the names it gets; `configureMailHosts({ allowLocal: true })` in `afterEach`; a mailbox from `createOrgWithMailbox` of `fixtures.ts`, hosts `imap.x.test` / `smtp.x.test`, in `withRollback`):
     1. `lookup` answers `10.0.0.7` for `imap.x.test` and `93.184.216.34` for `smtp.x.test` → `{ status: "active", hosts: { imap: "refused", smtp: "allowed" }, report: null }`; `lookup` got exactly `["imap.x.test", "smtp.x.test"]` (no connect attempt: a connect would call it a third time).
-    2. A `host_blocked` mailbox (set with `setMailboxStatus` at `2026-11-14T11:00:00Z`) → `status: "host_blocked"`, `statusChangedAt` that time; the row is unchanged afterwards.
+    2. A `host_blocked` mailbox (set with `setMailboxStatus` at `2026-11-14T11:00:00Z`) and a `lookup` that answers `10.0.0.7` for both hosts → `status: "host_blocked"`, `statusChangedAt` that time, `report: null`; the row is unchanged afterwards. (A public answer would call `checkMailbox`, which throws `mailbox has no stored password`: `createOrgWithMailbox` stores no credentials.)
     3. `lookup` throws `ENOTFOUND` → both `lookup_failed`, `report: null`.
     4. An unknown mailbox id → throws `mailbox not found`.
   - Check: `bun test apps/server/test/integration/mail-check.test.ts`.
@@ -58,7 +58,7 @@ No migration. Two normal steps, about 150 changed lines.
   - Decisions: D8 (no host name, no address in the output), D14.
   - Test:
     1. "prints the report; the password is not in the output" (line 296): stdout also contains `status: active since ` and the lines `imap-host: allowed` and `smtp-host: allowed`, before `capabilities:`.
-    2. A new script test: with the file's `createOrg(db, suffix)` helper, insert a mailbox with `imapHost` and `smtpHost` `127.0.0.1` and stored credentials (`insertMailbox`, `insertCredentials` with the configured `secrets`, committed, deleted in `finally` as the test above does); run the script with `env: { ...process.env, MAIL_ALLOW_LOCAL_HOSTS: "false" }` → exit code 2; stdout contains `imap-host: refused`, `smtp-host: refused` and `the host guard refuses a mail server of this mailbox: no connection`; stdout does not contain `capabilities:` or `127.0.0.1`.
+    2. A new script test: with the file's `createOrg(db, suffix)` helper, insert a mailbox with `imapHost` and `smtpHost` `127.0.0.1` and stored credentials (import `insertMailbox` and `insertCredentials` from `../../src/modules/mail/repo`; encrypt with the file's `secrets`, which use the configured key; the rows are committed and deleted in `finally` as the test above does). The file's `runCheck` (near line 285) sets `MAIL_ALLOW_LOCAL_HOSTS: "true"`: give it an optional second parameter `env` (default `{ MAIL_ALLOW_LOCAL_HOSTS: "true" }`, spread over `process.env`) and pass `{ MAIL_ALLOW_LOCAL_HOSTS: "false" }` here → exit code 2; stdout contains `imap-host: refused`, `smtp-host: refused` and `the host guard refuses a mail server of this mailbox: no connection`; stdout does not contain `capabilities:` or `127.0.0.1`.
   - Check: `bun test apps/server/test/integration/mail-check.test.ts` (the file needs the local GreenMail today; test 2 itself needs none).
   - Done when: tests 1–2 pass.
   - Out of scope: `--probe` behaviour (unchanged); other CLI tools.
