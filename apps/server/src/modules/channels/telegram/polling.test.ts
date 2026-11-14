@@ -1,5 +1,8 @@
+import { botCommandNames, textTables } from "@ea/core";
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { Bot } from "grammy";
+
+import { commandNames } from "../port";
 
 import { BOT_COMMANDS, startPolling } from "./polling";
 
@@ -82,16 +85,32 @@ describe("startPolling", () => {
   test("polls, sets the commands and stops cleanly", async () => {
     const { bot, calls } = startFake();
     const polling = startPolling(bot);
-    await until(() => calls.some((c) => c.method === "setMyCommands"));
+    await until(() => calls.filter((c) => c.method === "setMyCommands").length >= 2);
     await until(() => calls.filter((c) => c.method === "getUpdates").length >= 1);
 
     await polling.stop();
     await polling.done;
 
     expect(lines(infoSpy).some((l) => l.includes("polling as @probe_bot (id 7)"))).toBe(true);
-    const commands = calls.find((c) => c.method === "setMyCommands")?.body.commands;
-    expect(commands).toEqual(BOT_COMMANDS.map((c) => ({ ...c })));
-    expect(commands as unknown[]).toHaveLength(6);
+    const menus = calls.filter((c) => c.method === "setMyCommands");
+    expect(menus).toHaveLength(2);
+    // 1. The default menu (English): today's list, no language code.
+    expect(menus[0]?.body.commands).toEqual(BOT_COMMANDS.map((c) => ({ ...c })));
+    expect(menus[0]?.body.commands as unknown[]).toHaveLength(6);
+    expect(menus[0]?.body.language_code).toBeUndefined();
+    // 2. The Polish menu for Telegram apps set to Polish.
+    expect(menus[1]?.body.language_code).toBe("pl");
+    expect(menus[1]?.body.commands).toEqual(
+      botCommandNames.map((command) => ({ command, description: textTables.pl.bot.commands[command] }))
+    );
+    expect((menus[1]?.body.commands as { description: string }[]).map((c) => c.description)).toEqual([
+      "Podsumowanie teraz",
+      "Skrzynki, ostatnia synchronizacja, wywołania AI",
+      "Wstrzymaj czytanie i klasyfikację",
+      "Wznów czytanie i klasyfikację",
+      "Oznacz próbkę ostatnich wiadomości",
+      "Lista poleceń",
+    ]);
     const updates = calls.filter((c) => c.method === "getUpdates");
     expect(updates.at(-1)?.body.timeout ?? 0).toBe(0);
     expect(updates.at(-1)?.body.limit).toBe(1);
@@ -158,11 +177,14 @@ describe("startPolling", () => {
   test("goes on when setMyCommands fails", async () => {
     const { bot, calls } = startFake({ setMyCommands: () => fail(400) });
     const polling = startPolling(bot);
-    await until(() => lines(warnSpy).some((l) => l.includes("setMyCommands failed: GrammyError setMyCommands 400")));
+    await until(
+      () => lines(warnSpy).filter((l) => l.includes("setMyCommands failed: GrammyError setMyCommands 400")).length >= 2
+    );
     await until(() => calls.some((c) => c.method === "getUpdates"));
     await polling.stop();
 
-    expect(lines(warnSpy).filter((l) => l.includes("setMyCommands failed"))).toHaveLength(1);
+    // One warning for each of the two calls.
+    expect(lines(warnSpy).filter((l) => l.includes("setMyCommands failed"))).toHaveLength(2);
   });
 
   test("the default sleep ends early on stop", async () => {
@@ -202,6 +224,16 @@ describe("startPolling", () => {
 
     for (const line of [...lines(infoSpy), ...lines(warnSpy), ...lines(errorSpy)]) {
       expect(line).not.toContain("TOKEN");
+    }
+  });
+});
+
+// The command list of the server (`port.ts`) and the texts of core (`botCommandNames`) must name the same commands.
+describe("the command lists", () => {
+  test("the server list and the texts hold the same commands in both languages", () => {
+    expect([...commandNames].sort()).toEqual([...botCommandNames].sort());
+    for (const locale of ["en", "pl"] as const) {
+      expect(Object.keys(textTables[locale].bot.commands).sort()).toEqual([...commandNames].sort());
     }
   });
 });

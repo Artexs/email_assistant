@@ -77,7 +77,7 @@ A new draft kind, in this order:
 
 ## Notices are facts
 
-A module that has something to tell a user through the outbox (digests and notices) queues facts. It never builds the text of a channel (ADR 0032 point 5). Direct replies (command answers, tap answers, the link texts, the operator notices) are not outbox rows and keep their texts where they are (`channels/texts.ts`, `callbacks.ts`, `channels/operator.ts`).
+A module that has something to tell a user through the outbox (digests and notices) queues facts. It never builds the text of a channel (ADR 0032 point 5). Direct replies (command answers, tap answers, the link texts, the operator notices) are not outbox rows and read their texts from `packages/core/src/texts/bot.ts` in the chat's locale (the operator notices in `channels/operator.ts` keep their own).
 
 - A notice enters the outbox only through `queueNotice` (`apps/server/src/modules/channels/notice-queue.ts`) with `{ userId, locale, kind, view, dedupKey }`. The view is the input of the kind's renderer: ids, counts, dates, and the strings from mail data or from users that the text prints (subject, sender, names). It holds no phrase of ours: a fixed word or sentence comes from the renderer, so a new locale or a new channel changes only the renderer.
 - Each kind has a strict view schema (`noticeViewSchemas`, `packages/core/src/notices/views.ts`): no field that the renderer does not print. A view holds mail-derived text: it follows the retention of `outbox.text` (`clearOutboxTexts`, `docs/architecture.md` §7) and never reaches a log line, an error text or a test name.

@@ -4,6 +4,7 @@ import type { UserLocale } from "../tenancy";
 import { aiTextTexts, type AiTextTexts } from "./ai-text";
 import { answerTexts, type AnswerTexts } from "./answers";
 import { approvalTexts, type ApprovalTexts } from "./approvals";
+import { botTexts, type BotCommandName, type BotTexts } from "./bot";
 import { categoryTexts, type CategoryTexts } from "./categories";
 import { clockTexts, type ClockTexts } from "./clock";
 import { commonTexts, type CommonTexts } from "./common";
@@ -12,11 +13,14 @@ import { noticeTexts, type NoticeTexts } from "./notices";
 import { reviewTexts, type ReviewTexts } from "./review";
 import { wouldDoTexts, type WouldDoTexts } from "./would-do";
 
+export { botCommandNames } from "./bot";
 export type { ActionTense, SendPhraseStatus } from "./would-do";
 export type {
   AiTextTexts,
   AnswerTexts,
   ApprovalTexts,
+  BotCommandName,
+  BotTexts,
   CategoryTexts,
   ClockTexts,
   CommonTexts,
@@ -38,7 +42,7 @@ export interface CoreTexts {
   approvals: ApprovalTexts;
   review: ReviewTexts;
   digest: DigestTexts;
-  // Stage 11 adds bot.
+  bot: BotTexts;
 }
 
 export const textTables: Record<UserLocale, CoreTexts> = {
@@ -54,6 +58,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     approvals: approvalTexts.en,
     review: reviewTexts.en,
     digest: digestTexts.en,
+    bot: botTexts.en,
   },
   pl: {
     locale: "pl",
@@ -67,6 +72,7 @@ export const textTables: Record<UserLocale, CoreTexts> = {
     approvals: approvalTexts.pl,
     review: reviewTexts.pl,
     digest: digestTexts.pl,
+    bot: botTexts.pl,
   },
 };
 

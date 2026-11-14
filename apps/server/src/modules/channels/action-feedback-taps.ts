@@ -26,7 +26,7 @@ export interface FeedbackTapInput {
   link: LinkedChat;
   now: Date;
   texts: CoreTexts;
-  notFound: string; // the "not in your account" answer of `APPROVAL_TEXTS`
+  notFound: string; // the "not in your account" answer of `texts.bot.taps.notFound`
   edit: CardEdit;
 }
 

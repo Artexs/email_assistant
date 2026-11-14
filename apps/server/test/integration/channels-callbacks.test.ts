@@ -8,8 +8,6 @@ import { noDelegationHooks, type DelegationHooks, type SendScope } from "../../s
 import { auditEvents } from "../../src/modules/audit";
 import { createUpdateHandlers, handleCallback, insertOutbox, type CallbackDeps } from "../../src/modules/channels";
 import type { LinkedChat } from "../../src/modules/channels";
-import { APPROVAL_TEXTS } from "../../src/modules/channels/callbacks";
-import { accountPausedText } from "../../src/modules/channels/texts";
 import { delegationHooks, detectReply } from "../../src/modules/delegation";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { configureFeatures, setOrgFeature } from "../../src/modules/tenancy";
@@ -461,7 +459,7 @@ describe("approval taps", () => {
       await queueFor(trx, s.ctx, s.o1, "approval", sendId, emailId);
 
       const first = await handleCallback(s.deps, s.owner1, `ap:${sendId}`);
-      expect(first.answer).toBe(APPROVAL_TEXTS.approved);
+      expect(first.answer).toBe(textTables.en.bot.taps.approved);
       expect(first.edit).toEqual({ text: `${ORIGINAL}\n\n⏳ Approved 11:00, sending.`, buttons: [] });
       expect(await sendRow(trx, sendId)).toMatchObject({
         status: "approved",
@@ -481,7 +479,7 @@ describe("approval taps", () => {
       const { sendId } = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, { notifiedAt: T, createdAt: T });
       for (const kind of ["ap", "ar", "as", "rs", "ag"]) {
         const result = await handleCallback(s.deps, s.assistantLink, `${kind}:${sendId}`);
-        expect(result).toEqual({ answer: APPROVAL_TEXTS.owner_only });
+        expect(result).toEqual({ answer: textTables.en.bot.taps.ownerOnly });
       }
       expect(await sendRow(trx, sendId)).toMatchObject({ status: "awaiting_approval", approved_by: null });
     });
@@ -508,13 +506,13 @@ describe("approval taps", () => {
       await queueFor(trx, s.ctx, s.o1, "approval", sendId, emailId);
 
       const tap = await handleCallback(s.deps, s.owner1, `ap:${sendId}`);
-      expect(tap.answer).toBe(APPROVAL_TEXTS.approved_held);
+      expect(tap.answer).toBe(textTables.en.bot.taps.approvedHeld);
       expect(tap.edit?.buttons).toEqual([[{ text: "✖️ Reject", data: `ar:${sendId}` }]]);
       expect(tap.edit?.text).toContain("Sending is held by SEND_SCOPE");
       expect(await sendRow(trx, sendId)).toMatchObject({ status: "approved" });
 
       const rejected = await handleCallback(s.deps, s.owner1, `ar:${sendId}`);
-      expect(rejected.answer).toBe(APPROVAL_TEXTS.rejected_now);
+      expect(rejected.answer).toBe(textTables.en.bot.taps.rejectedNow);
       expect(await sendRow(trx, sendId)).toMatchObject({ status: "rejected" });
     });
   });
@@ -535,7 +533,7 @@ describe("approval taps", () => {
       });
 
       const tap = await handleCallback(s.deps, s.owner1, `ap:${sendId}`);
-      expect(tap.answer).toBe(APPROVAL_TEXTS.approved);
+      expect(tap.answer).toBe(textTables.en.bot.taps.approved);
       expect(tap.edit).toBeUndefined();
       expect(await sendRow(trx, sendId)).toMatchObject({ status: "approved" });
     });
@@ -561,13 +559,13 @@ describe("approval taps", () => {
 
       await trx.updateTable("mailboxes").set({ status: "paused" }).where("id", "=", s.a.mailboxId).execute();
       const paused = await handleCallback(s.deps, s.owner1, `ap:${one.sendId}`);
-      expect(paused.answer).toBe(APPROVAL_TEXTS.approved_paused);
+      expect(paused.answer).toBe(textTables.en.bot.taps.approvedPaused);
       expect(paused.edit?.text).toContain("The mailbox is paused, so the send waits");
       expect(paused.edit?.buttons).toEqual([[{ text: "✖️ Reject", data: `ar:${one.sendId}` }]]);
 
       await trx.updateTable("mailboxes").set({ status: "auth_error" }).where("id", "=", s.a.mailboxId).execute();
       const broken = await handleCallback(s.deps, s.owner1, `ap:${two.sendId}`);
-      expect(broken.answer).toBe(APPROVAL_TEXTS.approved_auth_error);
+      expect(broken.answer).toBe(textTables.en.bot.taps.approvedAuthError);
     });
   });
 
@@ -581,7 +579,7 @@ describe("approval taps", () => {
       await queueFor(trx, s.ctx, s.o1, "approval", sendId, emailId);
 
       const tap = await handleCallback(s.deps, s.owner1, `ap:${sendId}`);
-      expect(tap.answer).toBe(APPROVAL_TEXTS.expired);
+      expect(tap.answer).toBe(textTables.en.bot.taps.expired);
       expect(tap.edit).toEqual({ text: `${ORIGINAL}\n\n⌛ Expired 11:00. The mail was not sent.`, buttons: [] });
       expect(await sendRow(trx, sendId)).toMatchObject({
         status: "expired",
@@ -603,7 +601,7 @@ describe("approval taps", () => {
       await queueFor(trx, s.ctx, s.o1, "approval", sendId, emailId);
 
       const tap = await handleCallback(s.deps, s.owner1, `ar:${sendId}`);
-      expect(tap.answer).toBe(APPROVAL_TEXTS.rejected_now);
+      expect(tap.answer).toBe(textTables.en.bot.taps.rejectedNow);
       expect(tap.edit).toEqual({ text: `${ORIGINAL}\n\n✖️ Rejected 11:00.`, buttons: [] });
       expect(await sendRow(trx, sendId)).toMatchObject({ status: "rejected" });
       const reverse = await trx.selectFrom("actions").selectAll().where("reverses_action_id", "=", draftId).execute();
@@ -611,7 +609,7 @@ describe("approval taps", () => {
       expect(s.cancelled).toEqual(["rejected"]);
 
       const again = await handleCallback(s.deps, s.owner2, `ap:${sendId}`);
-      expect(again).toEqual({ answer: APPROVAL_TEXTS.rejected });
+      expect(again).toEqual({ answer: textTables.en.bot.taps.rejected });
     });
   });
 
@@ -644,7 +642,7 @@ describe("approval taps", () => {
       for (const send of sends) expect(await sendRow(trx, send.sendId)).toMatchObject({ status: "approved" });
 
       const skip = await handleCallback(s.deps, s.owner2, `rs:${setId}`);
-      expect(skip).toEqual({ answer: APPROVAL_TEXTS.set_nothing });
+      expect(skip).toEqual({ answer: textTables.en.bot.taps.setNothing });
     });
   });
 
@@ -691,7 +689,7 @@ describe("approval taps", () => {
       );
 
       const tap = await handleCallback(s.deps, s.owner1, `ag:${failed.sendId}`);
-      expect(tap.answer).toBe(APPROVAL_TEXTS.send_again);
+      expect(tap.answer).toBe(textTables.en.bot.taps.sendAgain);
       expect(tap.edit).toEqual({
         text: "⚠️ Unknown whether the mail went out\n\n⏳ Approved 11:00, sending.",
         buttons: [],
@@ -705,7 +703,7 @@ describe("approval taps", () => {
 
       for (const link of [s.owner1, s.owner2]) {
         const again = await handleCallback(s.deps, link, `ag:${failed.sendId}`);
-        expect(again).toEqual({ answer: APPROVAL_TEXTS.send_again_already });
+        expect(again).toEqual({ answer: textTables.en.bot.taps.sendAgainAlready });
       }
       const count = await trx
         .selectFrom("actions")
@@ -720,7 +718,7 @@ describe("approval taps", () => {
         createdAt: T,
       });
       const notFailed = await handleCallback(s.deps, s.owner1, `ag:${applied.sendId}`);
-      expect(notFailed).toEqual({ answer: APPROVAL_TEXTS.send_again_not_failed });
+      expect(notFailed).toEqual({ answer: textTables.en.bot.taps.sendAgainNotFailed });
     });
   });
 
@@ -766,7 +764,7 @@ describe("approval taps", () => {
       const actionsBefore = await trx.selectFrom("actions").select("id").where("org_id", "=", s.a.orgId).execute();
 
       const tap = await handleCallback(s.deps, s.owner1, `gw:${u.sendId}`);
-      expect(tap.answer).toBe(APPROVAL_TEXTS.went_out);
+      expect(tap.answer).toBe(textTables.en.bot.taps.wentOut);
       expect(tap.edit).toEqual({
         text: "⚠️ Unknown whether the mail went out\n\n✅ Marked as sent 11:00.",
         buttons: [],
@@ -804,7 +802,7 @@ describe("approval taps", () => {
 
       // The second tap, by any owner, changes nothing.
       const again = await handleCallback(s.deps, s.owner2, `gw:${u.sendId}`);
-      expect(again).toEqual({ answer: APPROVAL_TEXTS.went_out_already });
+      expect(again).toEqual({ answer: textTables.en.bot.taps.wentOutAlready });
       const auditAfter = await trx
         .selectFrom("audit_log")
         .select("id")
@@ -828,7 +826,7 @@ describe("approval taps", () => {
         });
 
       expect(await handleCallback(s.deps, s.assistantLink, `gw:${u.sendId}`)).toEqual({
-        answer: APPROVAL_TEXTS.owner_only,
+        answer: textTables.en.bot.taps.ownerOnly,
       });
       await unchanged();
 
@@ -852,7 +850,7 @@ describe("approval taps", () => {
         .where("id", "=", u.delegationId)
         .execute();
       expect(await handleCallback(s.deps, s.owner1, `gw:${u.sendId}`)).toEqual({
-        answer: APPROVAL_TEXTS.went_out_delegation_not_open,
+        answer: textTables.en.bot.taps.wentOutDelegationNotOpen,
       });
       await trx
         .updateTable("delegations")
@@ -867,14 +865,14 @@ describe("approval taps", () => {
         createdAt: T,
       });
       expect(await handleCallback(s.deps, s.owner1, `gw:${applied.sendId}`)).toEqual({
-        answer: APPROVAL_TEXTS.went_out_not_unknown,
+        answer: textTables.en.bot.taps.wentOutNotUnknown,
       });
 
       // The send was sent again: the resend decides.
       const resend = await handleCallback(s.deps, s.owner1, `ag:${u.sendId}`);
-      expect(resend.answer).toBe(APPROVAL_TEXTS.send_again);
+      expect(resend.answer).toBe(textTables.en.bot.taps.sendAgain);
       expect(await handleCallback(s.deps, s.owner1, `gw:${u.sendId}`)).toEqual({
-        answer: APPROVAL_TEXTS.went_out_sent_again,
+        answer: textTables.en.bot.taps.wentOutSentAgain,
       });
       await unchanged();
     });
@@ -909,7 +907,7 @@ describe("approval taps", () => {
       );
 
       const tap = await handleCallback(s.deps, s.assistantLink, `dd:${delegationId}`);
-      expect(tap.answer).toBe(APPROVAL_TEXTS.done);
+      expect(tap.answer).toBe(textTables.en.bot.taps.done);
       expect(tap.edit).toEqual({ text: "📩 Delegate answered\n\n✅ Done 11:00.", buttons: [] });
       const row = await trx
         .selectFrom("delegations")
@@ -926,7 +924,7 @@ describe("approval taps", () => {
       expect(audit).toEqual([{ actor: s.assistant }]);
 
       const again = await handleCallback(s.deps, s.assistantLink, `dd:${delegationId}`);
-      expect(again).toEqual({ answer: APPROVAL_TEXTS.done_already });
+      expect(again).toEqual({ answer: textTables.en.bot.taps.doneAlready });
 
       const second = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, {
         sendStatus: "applied",
@@ -942,7 +940,7 @@ describe("approval taps", () => {
         status: "sent",
       });
       const notClosable = await handleCallback(s.deps, s.assistantLink, `dd:${waiting}`);
-      expect(notClosable).toEqual({ answer: APPROVAL_TEXTS.done_not_closable });
+      expect(notClosable).toEqual({ answer: textTables.en.bot.taps.doneNotClosable });
       const missing = await handleCallback(s.deps, s.assistantLink, `dd:${randomUUID()}`);
       expect(missing).toEqual({ answer: NOT_FOUND });
     });
@@ -959,7 +957,7 @@ describe("approval taps", () => {
       await queueFor(trx, s.ctx, s.o1, "approval", sendId, emailId);
 
       const tap = await handleCallback(s.deps, s.owner1, `ap:${sendId}`);
-      expect(tap).toEqual({ answer: APPROVAL_TEXTS.expired });
+      expect(tap).toEqual({ answer: textTables.en.bot.taps.expired });
     });
   });
 
@@ -974,7 +972,7 @@ describe("approval taps", () => {
       await queueFor(trx, s.ctx, s.o1, "approval", sendId, emailId);
 
       const tap = await handleCallback(s.deps, s.owner1, `ap:${sendId}`);
-      expect(tap).toEqual({ answer: APPROVAL_TEXTS.draft_not_ready });
+      expect(tap).toEqual({ answer: textTables.en.bot.taps.draftNotReady });
       expect(await sendRow(trx, sendId)).toMatchObject({ status: "awaiting_approval", approved_by: null });
     });
   });
@@ -991,7 +989,7 @@ describe("approval taps", () => {
       });
       for (const kind of ["as", "rs"]) {
         const result = await handleCallback(s.deps, s.owner1, `${kind}:${setId}`);
-        expect(result).toEqual({ answer: APPROVAL_TEXTS.set_nothing });
+        expect(result).toEqual({ answer: textTables.en.bot.taps.setNothing });
       }
       expect(await sendRow(trx, other.sendId)).toMatchObject({ status: "awaiting_approval", approved_by: null });
     });
@@ -1038,7 +1036,7 @@ describe("approval taps", () => {
       await trx.updateTable("actions").set({ status_reason: "smtp_error" }).where("id", "=", failed.sendId).execute();
       await queueFor(trx, s.ctx, s.o1, "send_result", failed.sendId, failed.emailId);
       const again = await handleCallback(s.deps, s.owner1, `ag:${failed.sendId}`);
-      expect(again.answer).toBe(APPROVAL_TEXTS.send_again_held.scope);
+      expect(again.answer).toBe(textTables.en.bot.taps.sendAgainHeld.scope);
       const newSend = await trx
         .selectFrom("actions")
         .select("id")
@@ -1059,7 +1057,7 @@ describe("approval taps", () => {
       const set = await handleCallback(s.deps, s.owner1, `as:${setId}`);
       // The mailbox state comes before the scope, as in /status.
       expect(set.answer).toBe(
-        `⏳ 1 reminders approved, 0 skipped. ${APPROVAL_TEXTS.held_notes.paused}; /status shows it.`
+        `⏳ 1 reminders approved, 0 skipped. ${textTables.en.bot.taps.heldNotes.paused}; /status shows it.`
       );
       expect(set.edit?.text).toContain("The mailbox is paused, so the send waits");
       expect(set.edit?.buttons).toEqual([]);
@@ -1161,7 +1159,7 @@ describe("approval taps", () => {
         const waiting = await handleCallback(s.deps, s.owner1, `rw:p:${sendId}`);
         expect(waiting).toEqual({ answer: "This send is not rejected." });
         const foreign = await handleCallback(s.deps, s.owner1, `rw:p:${randomUUID()}`);
-        expect(foreign).toEqual({ answer: APPROVAL_TEXTS.not_found });
+        expect(foreign).toEqual({ answer: textTables.en.bot.taps.notFound });
         expect(await reasonRows(trx, sendId, "reject_reason")).toHaveLength(0);
       });
     });
@@ -1174,7 +1172,9 @@ describe("approval taps", () => {
         await handleCallback(s.deps, s.owner1, `ar:${sendId}`);
         const applied = await appliedSend(trx, s, DAY);
         for (const data of [`rw:p:${sendId}`, `mk:${applied.sendId}`]) {
-          expect(await handleCallback(s.deps, s.assistantLink, data)).toEqual({ answer: APPROVAL_TEXTS.owner_only });
+          expect(await handleCallback(s.deps, s.assistantLink, data)).toEqual({
+            answer: textTables.en.bot.taps.ownerOnly,
+          });
         }
         const rows = await trx.selectFrom("action_feedback").selectAll().execute();
         expect(rows.filter((row) => row.org_id === s.a.orgId)).toHaveLength(0);
@@ -1240,7 +1240,7 @@ describe("approval taps", () => {
 });
 
 describe("taps of a suspended organization", () => {
-  const PAUSED = accountPausedText("ops@example.test");
+  const PAUSED = textTables.en.bot.accountPaused("ops@example.test");
 
   function handlersFor(deps: CallbackDeps) {
     return createUpdateHandlers({
