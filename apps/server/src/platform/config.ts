@@ -152,6 +152,8 @@ const baseSchema = z.object({
   SEND_LIMIT_MAILBOX_HOUR: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(10_000).default(20)),
   SEND_LIMIT_MAILBOX_DAY: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(10_000).default(100)),
   SEND_LIMIT_RECIPIENT_DAY: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(10_000).default(5)),
+  // Minutes between two mail syncs (D7 of F100): 2, 3 or 5. Empty = 2.
+  MAIL_SYNC_EVERY_MIN: z.preprocess(emptyAsUndefined, z.enum(["2", "3", "5"]).default("2")),
   // Empty = the web is off.
   WEB_BASE_URL: z.preprocess(
     emptyAsUndefined,
@@ -433,6 +435,11 @@ export function sendLimits(config: Config): SendLimits {
     mailboxDay: config.SEND_LIMIT_MAILBOX_DAY,
     recipientDay: config.SEND_LIMIT_RECIPIENT_DAY,
   };
+}
+
+/** The cron expression of the `mail.sync` job: every `MAIL_SYNC_EVERY_MIN` minutes. */
+export function mailSyncCron(config: Config): string {
+  return `*/${config.MAIL_SYNC_EVERY_MIN} * * * *`;
 }
 
 // The operator's chat id for operator notices; null = log lines only.

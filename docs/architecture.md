@@ -92,7 +92,7 @@ Module rules:
 
 ```mermaid
 flowchart TD
-    Tick[Scheduler: every 5 min per mailbox] --> Sync[mail.sync: INBOX and the synced folders above each folder's UID cursor]
+    Tick[Scheduler: every MAIL_SYNC_EVERY_MIN min (default 2)] --> Sync[mail.sync: INBOX and the synced folders above each folder's UID cursor]
     Sync -->|known mail back in a synced folder after a system move| Ret[(emails.returned_at set)]
     Ret --> FB[triage.returned writes triage_feedback: wrong]
     Sync -->|new dedup key| Store[(emails: status = pending)]
@@ -320,7 +320,7 @@ Tenancy:
 - **Synced folders (ADR 0014):** INBOX and the rows of `mailbox_folders`. At Interia the job inserts a row for each default name that the server lists exactly: `Oferty`, `Społeczności`, `Rachunki` (role `sort`) and `Wiadomości-śmieci` (role `junk`; Interia's tabs are folders, `notes/2026-11-07-agentmail-test-mail.md` §10).
   Never `AI/*`, Sent, Drafts, Trash or a user folder. One run per mailbox goes folder by folder: INBOX, the `sort` folders, then the spam folder. An error in a folder other than INBOX gives a warning and the run goes on.
   `bun run mailbox:settings sync-folder --key offers|social|bills|junk --value on|off` is the off switch per folder (INBOX has none); on again clears the cursor (a new 24 h first sync).
-- **Sync cursor:** one per folder: `UIDVALIDITY` + last UID in its `mailbox_folders` row. Every 5 minutes: fetch UIDs above the cursor.
+- **Sync cursor:** one per folder: `UIDVALIDITY` + last UID in its `mailbox_folders` row. Every `MAIL_SYNC_EVERY_MIN` minutes (default 2): fetch UIDs above the cursor.
   The INBOX cursor is also written to `mailboxes.uidvalidity` and `last_uid` (dual write, for a code rollback). IMAP IDLE (push) can come later.
   Trap: `UID FETCH n:*` also returns the highest message when its UID is below n (RFC 3501 range rule, `*` = highest UID). Filter `uid > last_uid` in code.
 - **Dedup key:** `Message-ID` + `content_hash` (hash of the `From` address, the `Date` header (else INTERNALDATE) and RFC822.SIZE).
@@ -441,7 +441,7 @@ Tenancy:
 - **Triage config keys:** `TRIAGE_LLM_SCOPE` (default `off`): `off` = no triage worker; `synthetic` = only the seeded test mail of every mailbox;
   `all` = also real mail of every active mailbox of an organization that is not `suspended`. The server refuses to start with `synthetic` or `all` and no key for the chosen provider (`GEMINI_API_KEY` or `OPENAI_API_KEY`).
   `LLM_DAILY_CAP` (default 300): the cap of §4.1 rule 8.
-  `GEMINI_RPM` (default 12). The LLM pause (§4.1 rule 7) has no key: 5 min, doubling to 60 min.
+  `GEMINI_RPM` (default 12). The LLM pause (§4.1 rule 7) has no key: 5 min, doubling to 60 min. `/status` and the digest read the pause from the `llm.call` audit rows (`latestLlmPause`, at most 200 rows of the last 2 h), so on a very long run the shown start (`since`) can be later than the real start.
 - **Data by stage:** OpenAI (pilot, since 2026-11-06): paid API terms, no training on API data, abuse logs up to 30 days, no EU location; accepted by the user for their own mail (ADR 0015). Gemini: pilot = Gemini API free tier for the temporary pilot mailbox (ADR 0013; the free-tier terms allow human review and training;
   accepted by the user 2026-11-04); the paid tier (55-day abuse logging, no EU location, accepted 2026-11-02) when billing goes on.
   An EU endpoint before any outside user's mail: ADR 0035 (proposed, E11b F111). No outside user is served (PD-001).
@@ -524,7 +524,7 @@ Tenancy:
 
   | Job                  | Schedule                                                                      | Page                                                        |
   | -------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------- |
-  | `mail.sync`          | `*/5 * * * *` (every 5 min)                                                   | [sync.md](capabilities/sync.md)                             |
+  | `mail.sync`          | `*/N * * * *` (every `MAIL_SYNC_EVERY_MIN` min; default 2)                    | [sync.md](capabilities/sync.md)                             |
   | `platform.heartbeat` | `*/5 * * * *` (every 5 min)                                                   | Liveness, below                                             |
   | `channels.operator`  | `0 13 * * * *` (hourly at minute 13)                                          | [digest-and-notices.md](capabilities/digest-and-notices.md) |
   | `triage.worker`      | `*/15 * * * * *` (every 15 s; only when the triage scope is not `off`)        | [triage.md](capabilities/triage.md)                         |

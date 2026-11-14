@@ -11,6 +11,7 @@ import {
   llmRoleTable,
   loadConfig,
   loadTestmailConfig,
+  mailSyncCron,
   operatorChatId,
   operatorUserIds,
   sendLimits,
@@ -651,6 +652,25 @@ describe("send limits", () => {
       for (const value of ["0", "-1", "1.5", "abc", "10001"]) {
         expect(configError({ ...fullEnv, [key]: value }).keys).toContain(key);
       }
+    }
+  });
+});
+
+describe("mailSyncCron", () => {
+  test("no key (or an empty one) syncs every 2 minutes", () => {
+    expect(loadConfig(fullEnv).MAIL_SYNC_EVERY_MIN).toBe("2");
+    expect(mailSyncCron(loadConfig(fullEnv))).toBe("*/2 * * * *");
+    expect(mailSyncCron(loadConfig({ ...fullEnv, MAIL_SYNC_EVERY_MIN: "" }))).toBe("*/2 * * * *");
+  });
+
+  test("3 and 5 are allowed", () => {
+    expect(mailSyncCron(loadConfig({ ...fullEnv, MAIL_SYNC_EVERY_MIN: "3" }))).toBe("*/3 * * * *");
+    expect(mailSyncCron(loadConfig({ ...fullEnv, MAIL_SYNC_EVERY_MIN: "5" }))).toBe("*/5 * * * *");
+  });
+
+  test("another value stops the start and names the key", () => {
+    for (const value of ["4", "1", "0", "abc"]) {
+      expect(configError({ ...fullEnv, MAIL_SYNC_EVERY_MIN: value }).keys).toContain("MAIL_SYNC_EVERY_MIN");
     }
   });
 });
