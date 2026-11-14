@@ -114,15 +114,16 @@
     {
       "id": "w-6-017",
       "subject": "Re: Przetarg - cena na drugi kwartał",
-      "body": "Panie Wiktorze,\n\nczy cena za paletę z Państwa oferty obowiązuje także dla dostaw w drugim kwartale? Proszę o odpowiedź na piśmie.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
-      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Panie Wiktorze,</p><p style=\"margin:0 0 12px 0\">czy cena za paletę z Państwa oferty obowiązuje także dla dostaw w drugim kwartale? Proszę o odpowiedź na piśmie.</p><p style=\"margin:0 0 12px 0\">Genowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes</p></div>",
+      "body": "Panie Wiktorze,\n\nmam jedno pytanie do Państwa oferty: czy cena za paletę obowiązuje także dla dostaw w drugim kwartale? Nie ma pośpiechu. Proszę o odpowiedź na piśmie, kiedy Pan to rozważy.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Panie Wiktorze,</p><p style=\"margin:0 0 12px 0\">mam jedno pytanie do Państwa oferty: czy cena za paletę obowiązuje także dla dostaw w drugim kwartale? Nie ma pośpiechu. Proszę o odpowiedź na piśmie, kiedy Pan to rozważy.</p><p style=\"margin:0 0 12px 0\">Genowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes</p></div>",
       "thread": [],
       "expectedPoints": [
         "Czy cena za paletę z oferty obowiązuje także dla dostaw w drugim kwartale"
       ],
       "mustNot": [
         "Nie obiecywać zmiany stawek bez decyzji prezesa"
-      ]
+      ],
+      "note": "rewritten: removed time pressure, kept the question and the request for a written answer"
     },
     {
       "id": "w-6-018",
