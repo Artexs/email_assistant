@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { textsFor } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { KyselyPlugin, Transaction } from "kysely";
 
@@ -93,7 +94,7 @@ describe("listActivity", () => {
     await withRollback(db, async (trx) => {
       const { a, ctxA } = await setup(trx);
       const { emailId } = await insertMoved(trx, ctxA, a.mailboxId, ago(HOUR));
-      const page = await listActivity(trx, ctxA, query, NOW);
+      const page = await listActivity(trx, ctxA, query, NOW, textsFor("en"));
       expect(page.nextBefore).toBeNull();
       expect(page.items).toHaveLength(1);
       const item = one(page.items);
@@ -132,7 +133,7 @@ describe("listActivity", () => {
       });
       expect(result.kind).toBe("started");
 
-      const pending = one((await listActivity(trx, ctxA, query, NOW)).items);
+      const pending = one((await listActivity(trx, ctxA, query, NOW, textsFor("en"))).items);
       expect(pending.undoable).toBe(false);
       expect(pending.undoPending).toBe(true);
 
@@ -149,7 +150,7 @@ describe("listActivity", () => {
         .where("reverses_action_id", "is", null)
         .execute();
 
-      const done = one((await listActivity(trx, ctxA, query, NOW)).items);
+      const done = one((await listActivity(trx, ctxA, query, NOW, textsFor("en"))).items);
       expect(done.phrase.startsWith("undone:")).toBe(true);
       expect(done.undoable).toBe(false);
       expect(done.undoPending).toBe(false);
@@ -177,7 +178,7 @@ describe("listActivity", () => {
         });
         expectedBy.set(emailId, phrase);
       }
-      const page = await listActivity(trx, ctxA, query, NOW);
+      const page = await listActivity(trx, ctxA, query, NOW, textsFor("en"));
       for (const item of page.items) {
         const expected = expectedBy.get(item.emailId) ?? "missing";
         expect(item.actions.map((action) => action.phrase)).toEqual([expected]);
@@ -205,7 +206,7 @@ describe("listActivity", () => {
         reason: "Hard to tell.",
         fields: { model_category: "info" },
       });
-      const page = await listActivity(trx, ctxA, query, NOW);
+      const page = await listActivity(trx, ctxA, query, NOW, textsFor("en"));
       const byId = new Map(page.items.map((item) => [item.emailId, item]));
       expect(byId.get(info.emailId)?.aiText).toBe("A short summary.");
       const u = one([byId.get(unsure)]);
@@ -237,7 +238,7 @@ describe("listActivity", () => {
         status: "drafted",
         dueAt,
       });
-      const item = one((await listActivity(trx, ctxA, query, NOW)).items);
+      const item = one((await listActivity(trx, ctxA, query, NOW, textsFor("en"))).items);
       expect(item.emailId).toBe(emailId);
       expect(item.aiText).toBe("Send the Q4 report");
       expect(item.phrase).toContain("draft a delegation to Ola");
@@ -257,7 +258,7 @@ describe("listActivity", () => {
         source: "web",
         userId: a.userId,
       });
-      const item = one((await listActivity(trx, ctxA, query, NOW)).items);
+      const item = one((await listActivity(trx, ctxA, query, NOW, textsFor("en"))).items);
       expect(item.feedback?.verdict).toBe("right");
       expect(item.feedback?.trueCategory).toBe("info");
       expect(item.feedback?.source).toBe("web");
@@ -279,7 +280,7 @@ describe("listActivity", () => {
       let cursor: ActivityCursor | undefined;
       let last: string | null = null;
       for (let i = 0; i < 5; i += 1) {
-        const page = await listActivity(trx, ctxA, { ...query, limit: 2, cursor }, NOW);
+        const page = await listActivity(trx, ctxA, { ...query, limit: 2, cursor }, NOW, textsFor("en"));
         sizes.push(page.items.length);
         seen.push(...page.items.map((item) => item.emailId));
         last = page.nextBefore;
@@ -314,10 +315,10 @@ describe("listActivity", () => {
         createdAt: ago(DAY),
         receivedAt: ago(DAY),
       });
-      const clamped = await listActivity(trx, ctxA, { ...query, since: ago(120 * DAY) }, NOW);
+      const clamped = await listActivity(trx, ctxA, { ...query, since: ago(120 * DAY) }, NOW, textsFor("en"));
       expect(clamped.items.map((item) => item.emailId)).toEqual([fresh, mid]);
       expect(clamped.items.map((item) => item.emailId)).not.toContain(old);
-      const def = await listActivity(trx, ctxA, query, NOW);
+      const def = await listActivity(trx, ctxA, query, NOW, textsFor("en"));
       expect(def.items.map((item) => item.emailId)).toEqual([fresh]);
     });
   });
@@ -327,9 +328,11 @@ describe("listActivity", () => {
       const { a, b, ctxA, ctxB } = await setup(trx);
       const mine = await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: ago(HOUR) });
       await insertTriaged(trx, ctxB, b.mailboxId, { category: "info", createdAt: ago(HOUR) });
-      const page = await listActivity(trx, ctxA, query, NOW);
+      const page = await listActivity(trx, ctxA, query, NOW, textsFor("en"));
       expect(page.items.map((item) => item.emailId)).toEqual([mine]);
-      expect((await listActivity(trx, ctxA, { ...query, mailboxId: b.mailboxId }, NOW)).items).toEqual([]);
+      expect((await listActivity(trx, ctxA, { ...query, mailboxId: b.mailboxId }, NOW, textsFor("en"))).items).toEqual(
+        []
+      );
     });
   });
 
@@ -369,13 +372,25 @@ describe("listActivity", () => {
 
       await addTriple(0);
       const small = countingPlugin();
-      const page3 = await listActivity(trx.withPlugin(small.plugin), ctxA, { ...query, limit: 100 }, NOW);
+      const page3 = await listActivity(
+        trx.withPlugin(small.plugin),
+        ctxA,
+        { ...query, limit: 100 },
+        NOW,
+        textsFor("en")
+      );
       expect(page3.items).toHaveLength(3);
       expect(small.counter.count).toBeLessThanOrEqual(7);
 
       for (let n = 1; n < 20; n += 1) await addTriple(n);
       const large = countingPlugin();
-      const page60 = await listActivity(trx.withPlugin(large.plugin), ctxA, { ...query, limit: 100 }, NOW);
+      const page60 = await listActivity(
+        trx.withPlugin(large.plugin),
+        ctxA,
+        { ...query, limit: 100 },
+        NOW,
+        textsFor("en")
+      );
       expect(page60.items).toHaveLength(60);
       expect(large.counter.count).toBe(small.counter.count);
     });
@@ -385,7 +400,7 @@ describe("listActivity", () => {
     await withRollback(db, async (trx) => {
       const { ctxA } = await setup(trx);
       const { counter, plugin } = countingPlugin();
-      const page = await listActivity(trx.withPlugin(plugin), ctxA, query, NOW);
+      const page = await listActivity(trx.withPlugin(plugin), ctxA, query, NOW, textsFor("en"));
       expect(page).toEqual({ items: [], nextBefore: null });
       expect(counter.count).toBe(1);
     });
