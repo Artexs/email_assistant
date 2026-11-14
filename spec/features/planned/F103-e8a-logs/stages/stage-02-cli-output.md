@@ -9,6 +9,7 @@ Three steps. Needs stage 01 landed.
 **Goal.** Scripts get an output helper that prints readable lines to the terminal and is not a log (D3).
 
 **Files.**
+
 - `apps/server/src/platform/cli.ts` (new)
 - `apps/server/src/platform/cli.test.ts` (new)
 - `eslint.config.js` (one zone in `borderZones()`)
@@ -28,13 +29,14 @@ export interface CliOutput {
 export function createCliOutput(name: string): CliOutput;
 ```
 
-- `print` calls `console.log(\`[${name}]\`, text)`, `fail` calls `console.error(\`[${name}]\`, text)`, each with an `// eslint-disable-next-line no-console` comment (the only other `console` user is `platform/log.ts`). Two arguments, so the joined text is the same as the old text form (`console.log(prefix, ...args)`).
-- Import border: in `borderZones()` of `eslint.config.js`, after the `packages` zone, push three zones with `from: \`${serverSrc}/platform/cli.ts\``, message `"Only scripts print CLI output (platform/cli.ts); other server code logs events (docs/code-patterns.md § Logs)."`, and the targets `${serverSrc}/modules`, `${serverSrc}/platform` and `${serverSrc}/*.ts` (one zone each; the comment of the file says a `from` list must not mix globs and paths, so keep one target per zone too). Tests are ignored by the borders block, so `cli.test.ts` may import it.
+- `print` calls ``console.log(`[${name}]`, text)``, `fail` calls ``console.error(`[${name}]`, text)``, each with an `// eslint-disable-next-line no-console` comment (the only other `console` user is `platform/log.ts`). Two arguments, so the joined text is the same as the old text form (`console.log(prefix, ...args)`).
+- Import border: in `borderZones()` of `eslint.config.js`, after the `packages` zone, push three zones with `` from: `${serverSrc}/platform/cli.ts` ``, message `"Only scripts print CLI output (platform/cli.ts); other server code logs events (docs/code-patterns.md § Logs)."`, and the targets `${serverSrc}/modules`, `${serverSrc}/platform` and `${serverSrc}/*.ts` (one zone each; the comment of the file says a `from` list must not mix globs and paths, so keep one target per zone too). Tests are ignored by the borders block, so `cli.test.ts` may import it.
 - `log-lint.test.ts`: change `fixtureFile` (the warn cases, line 13) to `apps/server/src/lint-fixture/__log-fixture.ts` and the import path of those cases to `"../platform/log"`. That virtual folder is never converted, so the warn cases stay true until stage 11 flips them. Change the `.test.ts` case at line 121 the same way.
 
 **Decisions.** D3, D23.
 
 **Test.**
+
 1. `cli.test.ts`: with spies on `console.log` and `console.error`, `createCliOutput("rules").print("added rule 3")` calls `console.log` once with `("[rules]", "added rule 3")`; `fail("refused: x")` calls `console.error` once with `("[rules]", "refused: x")`.
 2. `print` prints with `setLogLevel("error")` and with `setLogFormat("json")` (restore both in `afterEach`): the same two arguments.
 3. `log-lint.test.ts` new case: `lintText` of `import { createCliOutput } from "../../platform/cli";\ncreateCliOutput("x").print("y");\n` with `filePath` `apps/server/src/modules/mail/__cli-fixture.ts` gives one `import/no-restricted-paths` message; the same text for `apps/server/src/scripts/__cli-fixture.ts` with the import path `"../platform/cli"` gives none.
@@ -53,9 +55,10 @@ export function createCliOutput(name: string): CliOutput;
 **Files** (`apps/server/src/scripts/`; old-form calls at `0a5c2ee`): `delegates.ts` 3, `delegations.ts` 3, `digest-times.ts` 7, `e2e-activity.ts` 4, `e2e-seed.ts` 4, `job-run.ts` 5, `llm-check.ts` 4, `module-graph.ts` 2, `invite-delivery.ts` 5, `pick-member.ts` 2, `org-invite.ts` 6, `telegram-link.ts` 5, `web-invite.ts` 5. `invite-delivery.ts` and `pick-member.ts` take a logger parameter (`log: ReturnType<typeof createLog>`); its type becomes `out: CliOutput` and every caller in this list passes its `out`.
 
 **How to convert.**
+
 - `const log = createLog("<name>")` → `const out = createCliOutput("<name>")` with the same name.
 - `log.debug(…)` and `log.info(…)` → `out.print(<text>)`; `log.warn(…)` and `log.error(…)` → `out.fail(<text>)`.
-- `<text>` is one string that prints the same characters as before: one string argument stays; several arguments join with one space in a template literal (`log.error("failed:", describeError(error))` → `` out.fail(`failed: ${describeError(error)}`) ``). A non-string argument other than a string or number: keep its old printed form with `format(x)` from `node:util` and list the line in the final message.
+- `<text>` is one string that prints the same characters as before: one string argument stays; several arguments join with one space in a template literal (`log.error("failed:", describeError(error))` → ``out.fail(`failed: ${describeError(error)}`)``). A non-string argument other than a string or number: keep its old printed form with `format(x)` from `node:util` and list the line in the final message.
 - `job-run.ts` keeps `withLogContext({ job, run_id }, …)` around the job: the job's module lines are logs. Only its own lines move to `out`.
 - A `log.debug` line printed only under `LOG_LEVEL=debug` before; it now always prints. List such lines (none at `0a5c2ee`).
 - Error text: `describeError` or `telegramErrorLabel` only (D4: none of these 13 scripts may print `error.message`).

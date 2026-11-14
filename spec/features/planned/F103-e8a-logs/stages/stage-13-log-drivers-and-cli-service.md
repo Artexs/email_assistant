@@ -63,12 +63,14 @@ x-logging-local: &logging-local
 **Files.** `deploy/check-logging.sh`, `apps/server/src/deploy-logging.test.ts` (new).
 
 **Interfaces.**
+
 - `check-logging.sh`: two wanted objects, `collected='{"driver":"json-file","options":{"max-size":"10m","max-file":"5"}}'` and `local='{"driver":"local","options":{"max-size":"10m","max-file":"5"}}'`. The service `server` must have `collected`; every other service must have `local`. One message per fault: `logging: <service> must be json-file 10m 5` or `logging: <service> must be local 10m 5`. Keep the rest of the script (file list, no config print).
-- A second check in the same script, run only without arguments: `grep -nE '(^|[[:space:]])run([[:space:]]+-{1,2}[A-Za-z-]+)*[[:space:]]+server([[:space:]]|$)' deploy/*.md deploy/*.sh docs/*.md docs/decisions/*.md docs/capabilities/*.md` (not `docs/product/`). A match prints `check-logging: <file>:<line>: a one-off command runs in server; use \`run --rm cli\`` (the line number, not the line text) and exits 1.
+- A second check in the same script, run only without arguments: `grep -nE '(^|[[:space:]])run([[:space:]]+-{1,2}[A-Za-z-]+)*[[:space:]]+server([[:space:]]|$)' deploy/*.md deploy/*.sh docs/*.md docs/decisions/*.md docs/capabilities/*.md` (not `docs/product/`). A match prints `` check-logging: <file>:<line>: a one-off command runs in server; use `run --rm cli` `` (the line number, not the line text) and exits 1.
 - The success line becomes `logging ok: server json-file; local: <other services>`.
 - `deploy-logging.test.ts` runs `bash deploy/check-logging.sh <file>` with `Bun.spawnSync` on compose files that it writes to a temp folder (`mkdtempSync(join(tmpdir(), "f103-logging-"))`, removed in `afterAll`). It needs the `docker compose` CLI (CI has it; V8: no daemon needed).
 
 **Test** (`deploy-logging.test.ts`).
+
 1. `bash deploy/check-logging.sh` without arguments exits 0 at this commit.
 2. A compose file with `server` on `local` → exit 1, stderr holds `server must be json-file`.
 3. A compose file with `db` on `json-file` → exit 1, stderr holds `db must be local`.

@@ -11,6 +11,7 @@ Two steps.
 **Files** (`apps/server/src/scripts/`, old-form calls at `0a5c2ee`): `db-worktree.ts` 15, `eval.ts` 8, `org-create.ts` 5, `org-flag.ts` 10, `org-plan.ts` 9, `org-status.ts` 5, `rules.ts` 5, `telegram-check.ts` 6, `telegram-unlink.ts` 4, `testmail-target.ts` 2, `testmail.ts` 8, `triage-cost.ts` 3, `triage-label.ts` 6. Also any script that exists at your base commit and still imports `createLog` (another ticket may have added one, D16): convert it the same way and list it.
 
 **How to convert.** The rules of stage 02 step 2. Also:
+
 - `testmail.ts` and `testmail-target.ts` may keep `error.message` where they print it today (D4). `telegram-check.ts` prints Telegram errors only through `telegramErrorLabel` (D4).
 - `org-create.ts:70` prints `created org <id> user <id> plan … trial_ends_at …`; `tenancy.test.ts:191` matches it with `/\[org-create\] created org (\S+) user (\S+)/`. The text stays.
 
@@ -29,8 +30,9 @@ Two steps.
 **Goal.** A new script line in the old log form fails the lint (D8).
 
 **Files.**
+
 - `eslint.config.js`: add `"apps/server/src/scripts/**/*.ts"` to the `files` of the `error` block (the block with the comment "Converted to events (F089)"). Change its comment to: "Converted to events: an old-form log line here fails the lint. Each F103 conversion stage adds its folders."
-- `apps/server/src/platform/log-lint.test.ts`: one case in "log lint: converted files fail": `log.info(\`x ${y}\`);` in `apps/server/src/scripts/__log-fixture.ts` (import path `"../platform/log"`) gives `[2]`.
+- `apps/server/src/platform/log-lint.test.ts`: one case in "log lint: converted files fail": ``log.info(`x ${y}`);`` in `apps/server/src/scripts/__log-fixture.ts` (import path `"../platform/log"`) gives `[2]`.
 - `docs/code-patterns.md` § Logs: extend the CLI bullet of stage 02 with "Scripts never import `createLog`; `scripts/` is at lint error."
 
 **Decisions.** D8.

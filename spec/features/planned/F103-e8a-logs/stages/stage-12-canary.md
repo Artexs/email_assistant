@@ -9,6 +9,7 @@ Two steps. About 350 changed lines; most are test setup copied from the existing
 **Goal.** One helper captures every log line and checks it; the five marker tests run in JSON format through it (D11).
 
 **Files.**
+
 - `apps/server/test/log-capture.ts` (new; next to `wait-for.ts`)
 - `apps/server/test/log-capture.test.ts` (new; unit cases of the helper; it lives in `test/`, so `test:int` runs it)
 - `apps/server/test/integration/triage-logs.test.ts`, `actions-logs.test.ts`, `actions-send-logs.test.ts`, `telegram-logs.test.ts`, `web-auth-logs.test.ts` (change: use the helper)
@@ -34,6 +35,7 @@ export function logProblems(lines: readonly string[], planted: readonly string[]
 - `stop()` restores `setLogFormat("text")` and `setLogLevel("info")`.
 
 **Test** (`log-capture.test.ts`).
+
 1. A line `{"time":"…","level":"info","module":"m","event":"a","msg":"a","count":1}` and planted `["X-1"]` → no problem.
 2. A line that holds `X-1` → one problem whose text does not hold `X-1`.
 3. `not json` → one problem; `{"event":"a","msg":"a","subject":"s"}` → one problem (`subject`); a line with `dropped_fields` → one problem; `log_call_invalid` → one problem.
@@ -63,6 +65,7 @@ export function logProblems(lines: readonly string[], planted: readonly string[]
 6. Web: one `GET /api/me` and one `GET /api/emails` (or the route that lists mails) for the member through `webTestApp` (`web-helpers.ts`).
 
 **Asserts.**
+
 1. `logProblems(capture.lines, planted)` is `[]`.
 2. The capture holds at least these events (proves the steps ran): `sync_done`, `sync_soft_error`, `sync_failed`, `triage_done`, `send_retry` or `send_failed`, `committer_done`, `outbox_sent`, `digest_queued`. If a name differs because a conversion stage chose another code, use the code that stage wrote (its table) and say so.
 3. At least one line carries a `run_id` (the jobs run through `runJobTick`, or the test wraps each job call in `withLogContext({ job, run_id: randomUUID() }, …)`), and one line carries a `request_id`.

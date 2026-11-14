@@ -9,6 +9,7 @@ One step.
 **Goal.** Each allowed field name has a kind: `uuid`, `number` or `code`. The writer keeps a value only when it fits the kind of its name. `LogFields` is typed per kind (D1).
 
 **Files.**
+
 - `apps/server/src/platform/log-fields.ts` (change)
 - `apps/server/src/platform/log.ts` (change: use the kind check; nothing else)
 - `apps/server/src/platform/log.test.ts` (change and add cases)
@@ -19,15 +20,45 @@ One step.
 ```ts
 // log-fields.ts
 export const uuidFieldNames = [
-  "org_id", "mailbox_id", "email_id", "action_id", "delegation_id", "outbox_id", "user_id",
-  "run_id", "request_id",
+  "org_id",
+  "mailbox_id",
+  "email_id",
+  "action_id",
+  "delegation_id",
+  "outbox_id",
+  "user_id",
+  "run_id",
+  "request_id",
 ] as const;
 export const numberFieldNames = [
-  "count", "attempts", "ms", "tokens_in", "tokens_out", "mailbox_count", "org_count", "suspended_count", "port",
+  "count",
+  "attempts",
+  "ms",
+  "tokens_in",
+  "tokens_out",
+  "mailbox_count",
+  "org_count",
+  "suspended_count",
+  "port",
 ] as const;
 export const codeFieldNames = [
-  "job", "code", "error", "error_code", "kind", "status", "reason", "scope", "folder_key", "provider", "model",
-  "role", "method", "route", "config_key", "flag", "release",
+  "job",
+  "code",
+  "error",
+  "error_code",
+  "kind",
+  "status",
+  "reason",
+  "scope",
+  "folder_key",
+  "provider",
+  "model",
+  "role",
+  "method",
+  "route",
+  "config_key",
+  "flag",
+  "release",
 ] as const;
 /** All allowed names (kept for callers and tests). */
 export const logFieldNames = [...uuidFieldNames, ...numberFieldNames, ...codeFieldNames] as const;
@@ -61,6 +92,7 @@ export function isLogValue(value: unknown): value is string | number | boolean |
 **Decisions.** D1, D2. F089 D7 (the code rule), D8 (key order, drops), D19 (no field named `key`, `token`, `secret`, `password`; this stays).
 
 **Test** (`log.test.ts`, JSON format, `M` and `O` are the UUID constants of the file):
+
 1. `{ mailbox_id: M }` is kept; `{ mailbox_id: "m1" }`, `{ mailbox_id: M.toUpperCase() }`, `{ mailbox_id: 7 }`, `{ mailbox_id: true }` are each dropped, `dropped_fields: 1`.
 2. `{ count: 3 }`, `{ count: 0 }`, `{ count: null }` are kept; `{ count: "3" }`, `{ count: true }`, `{ count: Number.NaN }` are dropped.
 3. `{ code: "http_503" }`, `{ code: 503 }`, `{ code: true }`, `{ code: null }` are kept; `{ code: "a b" }`, `{ code: "x@y.test" }`, `{ code: "https://x.test" }` are dropped (the F089 cases stay).

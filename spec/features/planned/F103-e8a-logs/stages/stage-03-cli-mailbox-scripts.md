@@ -11,6 +11,7 @@ Two steps.
 **Files** (`apps/server/src/scripts/`, old-form calls at `0a5c2ee`): `mailbox-audit.ts` 6, `mailbox-backfill.ts` 7, `mailbox-check.ts` 4, `mailbox-connect.ts` 9, `mailbox-password.ts` 10, `mailbox-probe-move.ts` 4, `mailbox-probe-send.ts` 5, `mailbox-rescan.ts` 5, `mailbox-seed.ts` 4, `mailbox-settings.ts` 16.
 
 **How to convert.** The rules of stage 02 step 2 (name, `print` for `debug`/`info`, `fail` for `warn`/`error`, one string with the same characters). Also:
+
 - A callback that a module function gets for its report lines (`log: (line) => log.info(line)` in `mailbox-probe-move.ts:66` and `mailbox-probe-send.ts:106`) becomes `(line) => out.print(line)`. The module function's parameter type does not change.
 - `for (const line of reportLines(report)) log.info(line)` → `out.print(line)`.
 - `error.message` stays where it is today in these scripts (D4: they test a mail server connection; the operator needs the server's reply). Do not add a new one.
