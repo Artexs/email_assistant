@@ -1,5 +1,5 @@
 import { fieldErrors as toFieldErrors, loginFormSchema, safeNextPath } from "@ea/core/web";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { AuthCard } from "../components/auth/AuthCard";
 import { Alert } from "../components/ui/alert";
@@ -30,6 +30,7 @@ export default function LoginPage() {
   const [code, setCode] = useState("");
   const [trust, setTrust] = useState(false);
   const [codeError, setCodeError] = useState<TextKey | null>(null);
+  const codeInput = useRef<HTMLInputElement>(null);
   const [restartNotice, setRestartNotice] = useState<TextKey | null>(null);
 
   useEffect(() => {
@@ -45,6 +46,11 @@ export default function LoginPage() {
       active = false;
     };
   }, []);
+
+  // Move focus to the code field when the code step opens or the method changes.
+  useEffect(() => {
+    if (step === "code") codeInput.current?.focus();
+  }, [step, method]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -147,7 +153,7 @@ export default function LoginPage() {
               type="text"
               autoComplete={totp ? "one-time-code" : "off"}
               {...(totp ? { inputMode: "numeric" as const, maxLength: 7 } : {})}
-              autoFocus
+              ref={codeInput}
               required
               value={code}
               onChange={(event) => setCode(event.target.value)}
