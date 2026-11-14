@@ -25,9 +25,9 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **First seen:** the land date of F029 stage 04 (not seen live)
 - **Source:** `apps/server/src/modules/mail/jobs.ts` (`syncOne`). `[mail]`, level `warn`. The line holds `mailbox_id` and the error fields only.
 - **Cause:** the move finder failed after a good flag refresh: a lost connection, a DB error. The sync, the refresh line and `last_synced_at` are not affected.
-- **Fix:** none needed for one line: the next refresh tries again. Many lines in a row: read `error_code`, check the IMAP connection of the mailbox.
-- **Status:** not seen live
-- **Related info lines** (not alerts): `user_moves_checked` (the candidate count of one refresh, with `count`), `user_moves_found` (the rows that got a new folder) and `user_moves_retry` (a folder cursor moved; the next refresh tries again).
+- **Fix:** none needed for one line: the next refresh tries again (for a mailbox with more than 3,000 mails in the 30-day window it can be later in the rotation: the refresh touches the gone mail, which moves it to the back of the queue). Many lines in a row: read `error_code`, check the IMAP connection of the mailbox.
+- **Status:** won't fix (expected behaviour; the next refresh tries again)
+- **Related info lines** (not alerts): `user_moves_checked` (`count` = the candidates of one refresh: gone rows that still have the folder and UID of the read and no fresh move marker; it can be lower than the gone count of the refresh), `user_moves_found` (the rows that got a new folder) and `user_moves_retry` (a folder cursor moved; the next refresh tries again, with the same rotation delay for a mailbox of more than 3,000 mails).
 
 ---
 
