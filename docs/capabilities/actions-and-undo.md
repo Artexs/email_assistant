@@ -54,7 +54,7 @@ The committer is the only component that changes a mailbox. The job `actions.com
    and `triage.returned` (every 15 s, always on; turns `returned_at` into feedback, rules 6 and 7 above).
    `channels.notifier` also detects failed actions: one `action_failed` notice per failed action (not for `save_summary`) to the linked owners (dedup `action_failed:<action id>`; `actions.notified_at` is set in the same transaction;
    a row older than 24 h is marked notified with no notice; an original row with `mail_not_found` gets none). The text names the action, the cleaned subject, "tried 3 times" and where the mail is.
-   - One `action_failed` notice goes out for a `move`, `flag` or `mark_read` that failed, and for a reverse `create_draft`. A failed `create_draft` original and a failed `send` end in a `send_result` notice instead. The text and the buttons are in `digest-and-notices.md`.
+   - One `action_failed` notice goes out for a `move`, `flag` or `mark_read` that failed, and for a reverse `create_draft`. A failed `create_draft` original and a failed `send` end in a `send_result` notice instead. The text and the buttons are in [digest-and-notices.md](digest-and-notices.md).
 
 ## Entry points
 

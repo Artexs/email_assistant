@@ -519,10 +519,7 @@ Tenancy:
 - **Scheduler** (in the server process, `croner`, one tick never overlaps the next): mail sync every 5 min per mailbox;
   triage worker, committer and returned job every 15 s; approval expiry hourly; retention job `platform.retention` daily at 02:40 (the backup runs at 03:30);
   operator notices `channels.operator` hourly at minute 13; chaser every 15 min (S4, acts at 07:30 local time).
-  S2 jobs: `channels.notifier` every 15 s (notice detection, then the outbox sender; at most 3 messages per user per tick;
-  a 429 waits `retry_after`, a network error or HTTP 5xx backs off from 30 s to 15 min, a 401 pauses sending for 10 min,
-  a 403 marks the row `failed` / `blocked`, a row older than 24 h becomes `failed` / `expired`) and `channels.digest` every minute
-  (the digest at each member's times in the organization timezone; a missed slot is sent if the server is back within 6 hours).
+  Moved to [docs/capabilities/digest-and-notices.md](capabilities/digest-and-notices.md) § Rules (F095): the S2 jobs `channels.notifier` and `channels.digest`.
 - Moved to [docs/capabilities/actions-and-undo.md](capabilities/actions-and-undo.md) § Rules (F095).
 - Moved to [docs/capabilities/drafts-and-send.md](capabilities/drafts-and-send.md) § Rules (F095).
 - Moved to [docs/capabilities/delegation.md](capabilities/delegation.md) § Rules (F095).
@@ -537,14 +534,10 @@ Tenancy:
   - **48 h rule.** For every plan, the committer claims an `approved` send only when the tap is less than 48 h old. A send approved before a pause ends as `held_timeout` after it.
   - **Mailbox limit.** `connectMailbox` (web and CLI) refuses a mailbox above `max_mailboxes` with `mailbox_limit` (web: `409`). The count runs under an advisory lock after the IMAP check, so two connects at once give one success.
 - **Feature flags (F087):** `bun run org:flag --org-id <uuid> [--flag <key> --on|--off]` lists or changes the flags of one organization (audit row `org.flag_changed`). `FEATURES_OFF` turns flags off for every organization at the next restart (kill switch); an unknown key stops the start. The start log line `features off by FEATURES_OFF: <keys|none>` shows it.
-- **Operator notices (S6a):** `channels.operator` sends three events to the operator chat `OPERATOR_TELEGRAM_CHAT_ID` by a direct send, or writes a `warn` log line when the key is empty. The texts hold ids, dates and counts only. The events and their keys are `trial_ending` (`trial_ending:<org id>:<trial_ends_at ms>`, 3 days before the end and after it), `llm_cap` (`llm_cap:<mailbox id>:<quota day start>`, sent by the triage job when a mailbox reaches `LLM_DAILY_CAP`) and `auth_error_24h` (`auth_error_24h:<mailbox id>:<status_changed_at ms>`, a mailbox in `auth_error` for 24 h). The dedup is an audit row `operator.notice` with the key, written after a successful send: a crash between the send and the row repeats one notice (at least once). A failed send is tried again at the next hourly run. Quiet hours do not apply. A suspended organization gets no `trial_ending` or `auth_error_24h` notice.
+- Moved to [docs/capabilities/digest-and-notices.md](capabilities/digest-and-notices.md) § Rules (F095).
 - **Work queue:** `emails` and `actions` rows with `status`, `attempts`, `next_attempt_at`, `locked_at`, claimed with `FOR UPDATE SKIP LOCKED`.
 - Moved to [docs/capabilities/sync.md](capabilities/sync.md) § Rules (F095).
-- **Notices (S2):** urgent mail goes to every linked member (24 h look-back, one notice per mail). `auth_error`, sync late and sync works again go to linked owners only.
-  Notices never go out in quiet hours (22:00–07:00 in the organization timezone); they wait until 07:00. Digests go out at their times.
-  Sync late: an `active` mailbox whose last good sync is older than 30 min, not within 30 min after the mailbox became `active` again,
-  and only 10 min after the process started. One notice per episode (the episode is the `last_synced_at` value). When the sync is fresh again, a sent
-  "late" notice gets one "sync works again" notice. An unsent notice that is out of date becomes `failed` / `outdated`. A paused mailbox gets no urgent or sync notice.
+- Moved to [docs/capabilities/digest-and-notices.md](capabilities/digest-and-notices.md) § Rules (F095).
 - **Liveness:** the server sends a heartbeat every 5 min to Healthchecks.io (`HEARTBEAT_URL`, outbound only; period 5 min, grace 10 min, email alert). The service alerts when heartbeats stop.
   A Telegram admin notice goes out when the last good sync is older than 30 min. Every digest shows "last sync HH:MM", also when it is empty.
 - **`GET /health`:** DB reachable, last good sync per mailbox.
