@@ -1,7 +1,6 @@
 import { sso } from "@better-auth/sso";
 import type { SSOUserResolution, SSOUserResolutionInput } from "@better-auth/sso";
 import type { SsoRefusal } from "@ea/core";
-import { type BetterAuthPlugin } from "better-auth";
 import { APIError } from "better-auth/api";
 
 // The sign-in with a company identity provider (F119). This file is the only one that imports `@better-auth/sso` (ESLint).
@@ -95,7 +94,7 @@ function resolver(deps: SsoDeps) {
 }
 
 // Plugin order in `platform/auth.ts`: `twoFactorPlugin()`, `ssoPlugin(...)`, `signInAuditPlugin(report)` last.
-export function ssoPlugin(deps: SsoDeps): BetterAuthPlugin {
+export function ssoPlugin(deps: SsoDeps) {
   return sso({
     modelName: "sso_providers",
     fields: {

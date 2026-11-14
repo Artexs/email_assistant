@@ -57,6 +57,8 @@ export async function startFakeOidc(opts: FakeOidcOptions = {}): Promise<FakeOid
   const requests: string[] = [];
   const issuedCodes: string[] = [];
   const issuedIdTokens: string[] = [];
+  // Set once the server listens (the port is random); a request always comes after that.
+  let origin = "";
 
   const server = Bun.serve({
     hostname: "127.0.0.1",
@@ -64,7 +66,7 @@ export async function startFakeOidc(opts: FakeOidcOptions = {}): Promise<FakeOid
     fetch: async (req) => {
       const url = new URL(req.url);
       requests.push(`${req.method} ${url.pathname}`);
-      const issuer = `http://127.0.0.1:${server.port}`;
+      const issuer = origin;
       if (url.pathname === "/.well-known/openid-configuration") {
         return Response.json({
           issuer,
@@ -153,7 +155,7 @@ export async function startFakeOidc(opts: FakeOidcOptions = {}): Promise<FakeOid
       return new Response("not found", { status: 404 });
     },
   });
-  const origin = `http://127.0.0.1:${server.port}`;
+  origin = `http://127.0.0.1:${server.port}`;
   return {
     issuer: origin,
     origin,
