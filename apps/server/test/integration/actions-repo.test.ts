@@ -301,6 +301,33 @@ describe("claimActions", () => {
     });
   });
 
+  test("filter synthetic with a test sender rule claims a planned move from that sender only", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      const fromTestSender = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
+        category: "info",
+        createdAt: ago(2 * HOUR),
+        messageId: "<t-1@ses.test>",
+        from: "T@a.test",
+        actions: [ready("move")],
+      });
+      await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
+        category: "info",
+        createdAt: ago(HOUR),
+        messageId: "<b-1@firma.test>",
+        from: "boss@firma.test",
+        actions: [ready("move")],
+      });
+      const claimed = await claimActions(
+        trx,
+        a.ctx,
+        a.mailboxId,
+        claimOpts({ kind: "synthetic", testMail: { senders: ["t@a.test"] } })
+      );
+      expect(claimed.map((row) => `${row.type}:${row.email_id}`)).toEqual([`move:${fromTestSender.emailId}`]);
+    });
+  });
+
   test("next_attempt_at in the future and a fresh lock are skipped; a stale lock is claimed", async () => {
     await withRollback(db, async (trx) => {
       const { a } = await createTwoTenants(trx);

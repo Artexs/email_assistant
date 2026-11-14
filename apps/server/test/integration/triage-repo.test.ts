@@ -412,6 +412,117 @@ describe("triage repository", () => {
     });
   });
 
+  describe("test mail by sender (F097)", () => {
+    const rule = { senders: ["ea-testmail-75wd@agentmail.to"] };
+
+    // A real, B from the test sender, C seeded: each has a triage result; `labeled` adds a feedback row.
+    async function insertSenderKinds(
+      trx: Transaction<DB>,
+      tenant: Tenant,
+      labeled: boolean,
+      senderB = rule.senders[0]
+    ) {
+      const a = await insertTestEmail(trx, tenant.ctx, tenant.mailboxId, {
+        message_id_header: "<1@mail.firma.test>",
+        from_address: "boss@firma.test",
+        received_at: new Date("2026-11-01T10:00:00Z"),
+      });
+      const b = await insertTestEmail(trx, tenant.ctx, tenant.mailboxId, {
+        message_id_header: "<x@ses.test>",
+        from_address: senderB,
+        received_at: new Date("2026-11-01T11:00:00Z"),
+      });
+      const c = await insertTestEmail(trx, tenant.ctx, tenant.mailboxId, {
+        message_id_header: "<c@ea-seed.test>",
+        from_address: "seed@firma.test",
+        received_at: new Date("2026-11-01T12:00:00Z"),
+      });
+      for (const emailId of [a, b, c]) {
+        await insertTriageResult(trx, tenant.ctx, resultRow(emailId));
+        if (labeled) {
+          await insertFeedback(trx, tenant.ctx, {
+            emailId,
+            verdict: "right",
+            trueCategory: null,
+            source: "cli",
+            userId: null,
+          });
+        }
+      }
+      return { a, b, c };
+    }
+
+    test("real readers leave out the test sender; synthetic readers take it", async () => {
+      await withRollback(db, async (trx) => {
+        const { a: tenant } = await createTwoTenants(trx);
+        const { a, b, c } = await insertSenderKinds(trx, tenant, true);
+        const ids = async (mail: "real" | "synthetic", testMail: { senders: readonly string[] }) =>
+          sortedIds(
+            (await listLabeledResults(trx, tenant.ctx, tenant.mailboxId, { mail, testMail })).map((r) => r.email_id)
+          );
+        expect(await ids("real", rule)).toEqual(sortedIds([a]));
+        expect(await ids("synthetic", rule)).toEqual(sortedIds([b, c]));
+        expect(await ids("real", NO_TEST_SENDERS)).toEqual(sortedIds([a, b]));
+      });
+    });
+
+    test("listUnlabeled and listUsageSince follow the same rule", async () => {
+      await withRollback(db, async (trx) => {
+        const { a: tenant } = await createTwoTenants(trx);
+        const { a, b, c } = await insertSenderKinds(trx, tenant, false);
+        const since = new Date(Date.now() - 60 * 60 * 1000);
+        const unlabeled = async (mail: "real" | "synthetic", testMail: { senders: readonly string[] }) =>
+          sortedIds(
+            (await listUnlabeled(trx, tenant.ctx, tenant.mailboxId, { limit: 10, mail, testMail })).map(
+              (r) => r.email_id
+            )
+          );
+        expect(await unlabeled("real", rule)).toEqual(sortedIds([a]));
+        expect(await unlabeled("synthetic", rule)).toEqual(sortedIds([b, c]));
+        expect(await unlabeled("real", NO_TEST_SENDERS)).toEqual(sortedIds([a, b]));
+        const usage = async (mail: "real" | "synthetic") =>
+          (await listUsageSince(trx, tenant.ctx, tenant.mailboxId, since, { mail, testMail: rule })).length;
+        expect(await usage("real")).toBe(1);
+        expect(await usage("synthetic")).toBe(2);
+      });
+    });
+
+    test("the sender compare is lower case", async () => {
+      await withRollback(db, async (trx) => {
+        const { a: tenant } = await createTwoTenants(trx);
+        const { a, b, c } = await insertSenderKinds(trx, tenant, true, "EA-TestMail-75wd@AgentMail.to");
+        const real = await listLabeledResults(trx, tenant.ctx, tenant.mailboxId, { mail: "real", testMail: rule });
+        expect(real.map((r) => r.email_id)).toEqual([a]);
+        const synthetic = await listLabeledResults(trx, tenant.ctx, tenant.mailboxId, {
+          mail: "synthetic",
+          testMail: rule,
+        });
+        expect(sortedIds(synthetic.map((r) => r.email_id))).toEqual(sortedIds([b, c]));
+      });
+    });
+
+    test("a NULL sender with a real Message-ID is real under any rule", async () => {
+      await withRollback(db, async (trx) => {
+        const { a: tenant } = await createTwoTenants(trx);
+        const emailId = await insertTestEmail(trx, tenant.ctx, tenant.mailboxId, {
+          message_id_header: "<n@x.test>",
+          from_address: null,
+        });
+        await insertTriageResult(trx, tenant.ctx, resultRow(emailId));
+        for (const testMail of [rule, NO_TEST_SENDERS]) {
+          const real = await listUnlabeled(trx, tenant.ctx, tenant.mailboxId, { limit: 10, mail: "real", testMail });
+          expect(real.map((r) => r.email_id)).toEqual([emailId]);
+          const synthetic = await listUnlabeled(trx, tenant.ctx, tenant.mailboxId, {
+            limit: 10,
+            mail: "synthetic",
+            testMail,
+          });
+          expect(synthetic).toEqual([]);
+        }
+      });
+    });
+  });
+
   test("listLabeledResults takes the latest result and the latest feedback per email", async () => {
     await withRollback(db, async (trx) => {
       const { a } = await createTwoTenants(trx);
