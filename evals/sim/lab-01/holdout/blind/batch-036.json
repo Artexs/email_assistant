@@ -1,0 +1,307 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-036",
+  "cases": [
+    {
+      "id": "b-spa-0045",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wirtualny asystent dla firm, pierwszy miesiąc gratis",
+      "body": "Wspaniala wiadomosc dla kazdej firmy!\n\nPremium Leads Pro sprzedaje teraz nowa usluge: wirtualny asystent dla Panstwa firmy za jedyne 19 euro miesiecznie. Odbiera telefony, pisze maile i robi raporty, a takze znajduje nowych klientow dzien i noc. Pierwszy miesiac bezplatnie, bez umowy, bez zobowiazan.\n\nTylko dla pierwszych 50 firm. Odpowiedz TAK na ten mail, a my zadzwonimy w ciagu godziny i zalozymy konto.\n\nPremium Leads Pro | Sales Team\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0046",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Pilne: niezapłacona faktura i blokada kart",
+      "body": "Szanowny Kliencie,\n\nPaliwa-Flota Billing Department informuje, że faktura numer 2027/01/0201 pozostaje nieopłacona od 21 dni. W ciągu 12 godzin wszystkie Państwa karty paliwowe zostaną zablokowane, a sprawa przekazana do windykacji.\n\nAby uniknąć blokady, prosimy o pilne potwierdzenie nowych danych rachunku do płatności w formularzu pod przyciskiem w tej wiadomości. Nie należy odpowiadać na ten adres ani kontaktować się z opiekunem konta, ponieważ wiadomość wysłał system automatyczny. Po upływie terminu naliczymy też opłatę za windykację w wysokości 150 złotych.\n\nPaliwa-Flota Billing Department\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0047",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Pozycjonowanie strony: wyniki w 7 dni, gwarantujemy",
+      "body": "Szanowny Panie,\n\nzauwazylismy, ze strona Panstwa firmy nie jest widoczna w wyszukiwarce. Mamy rozwiazanie! Nasza usluga SEO PRO to 100% skutecznosci, tysiace zadowolonych klientow, wyniki po 7 dniach. Cena tylko 69 euro za miesiac, a pierwszy miesiac polowa ceny!\n\nGwarantujemy pierwsza pozycje na slowa kluczowe z Panstwa branzy, albo zwrot calych pieniedzy. Odpowiedz na ten mail jeszcze dzis, a wyslemy bezplatny raport. Oferta konczy sie w piatek, wiec nie zwlekaj, bo konkurencja juz z nas korzysta.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0048",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wielka promocja na bilety wstępu",
+      "body": "Uwaga, branża magazynowa!\n\nTargi Magazynowe Expo to największe wydarzenie roku, a dla Waszej firmy mamy szczególną ofertę: pięćdziesiąt biletów wstępu w cenie dwudziestu pięciu! Do tego bezpłatne warsztaty o robotyce i darmowy obiad dla każdego uczestnika. Rejestracja trwa tylko do czwartku!\n\nOdpowiedzcie na tę wiadomość z liczbą potrzebnych biletów, a nasz doradca przygotuje fakturę proforma jeszcze dziś. Pierwsze zgłoszenia dostaną dodatkowo miejsce w pierwszym rzędzie na gali otwarcia. Nie czekajcie, bo zainteresowanie jest ogromne!",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0049",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Fuel savings program for your company",
+      "body": "Dear Customer,\n\nPaliwa-Flota Billing Department has activated for your company a special savings program, which gives a discount of 18 cents per litre for the next six months. To confirm participation, please use the secure button in this message and verify the company data and the authorised person within 24 hours. Customers who do not confirm in time will lose the discount and may be charged an administration fee.\n\nPlease do not contact your account manager about this offer.\n\nRegards | Paliwa-Flota Billing Department\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0050",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nowe kontakty biznesowe w Twojej skrzynce",
+      "body": "Dzien dobry Prezesie,\n\nczy chcial by Pan, aby Panstwa firma miala 10000 nowych klientow w ciagu miesiaca? Nasz system wysyla personalizowane maile do tysiecy decydentow w Polsce, bez ryzyka spamu i bez problemow prawnych. Cena? Tylko 149 euro za pakiet startowy, do tego cala kampania gratis.\n\nMamy referencje od firm z calej Europy, ktore zwiekszyly sprzedaz kilkukrotnie w pare tygodni. Odpowiedz teraz, a dostaniesz dostep do panelu za darmo na 14 dni. Tylko dzisiaj, potem cena wzrosnie dwukrotnie!",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0051",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Card bonus: 300 litres free",
+      "body": "Dear customer, confirm your fuel card profile today and receive 300 litres free. The offer is valid for 24 hours and needs confirmation in the secure panel button below.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0052",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Pilna oferta reklamowa",
+      "body": "Szanowni Panstwo,\nreklama na 5 milionach stron, tylko 15 euro, odpowiedz TAK dzisiaj!\n\nPremium Leads Pro | Sales Team\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0053",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Tłumaczenia, strony WWW i grafika: pakiet dla firm",
+      "body": "Szanowni Panstwo,\n\nmamy dla Panstwa super pakiet uslug dla firm! W jednej cenie, 199 euro, dostajecie: nowa strone WWW w 3 dni, logo od profesjonalnego grafika, tlumaczenia na 12 jezykow oraz kampanie w mediach spolecznosciowych na caly miesiac. Wszystko robi nasz zespol ekspertow, a Wy nie musicie robic niczego.\n\nMamy ponad dwa tysiace zadowolonych klientow i gwarancje zwrotu pieniedzy. Oferta jest wazna tylko do piatku. Odpowiedzcie na ten mail jednym slowem, a nasz konsultant zadzwoni jeszcze dzis i wyjasni szczegoly.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0056",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Win a free stand at Warehouse Expo!",
+      "body": "Hello! Warehouse Expo is giving away a free stand to one lucky company, and every company that replies today enters the draw. Reply now and also get 40% off a second stand!",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0057",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Boost your rankings",
+      "body": "Dear Owner,\nOur team gets you to the first page of search in 5 days. Only 39 euro! Reply YES.\n\nPremium Leads Pro | Sales Team\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0058",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rabat paliwowy dla firm: odbierz kod",
+      "body": "Szanowni Państwo,\n\nPaliwa-Flota Billing Department ma przyjemność poinformować, że Państwa firma została wybrana do udziału w programie rabatowym \"Paliwo Plus\", organizowanym tylko dla największych klientów flotowych w regionie. Uczestnicy programu otrzymują rabat 14 groszy na litrze, bezpłatne przedłużenie okresu płatności do 60 dni oraz kartę premium z podwyższonym limitem miesięcznym.\n\nAby przystąpić do programu, prosimy o potwierdzenie danych firmy w bezpiecznym panelu, otwieranym przez przycisk w tej wiadomości. Konieczne jest podanie imienia osoby upoważnionej, numeru NIP i numeru rachunku do rozliczeń. Cała procedura zajmuje około dwóch minut. Uczestnicy dostają także miesięczne zestawienie oszczędności i dostęp do aplikacji, w której widać zużycie paliwa każdego pojazdu. W zeszłym miesiącu z programu skorzystało ponad dwieście firm, a wiele z nich wskazało, że oszczędności były większe niż się spodziewały.\n\nProgram jest ważny tylko do końca tygodnia. Firmy, które nie potwierdzą danych, zostaną wykluczone, a ich profil oznaczony jako nieaktywny, co może skutkować ograniczeniem kart. Prosimy nie kontaktować się z dotychczasowym opiekunem konta, ponieważ program obsługuje wyłącznie nasz dział rozliczeń. Jeśli ma Pan problem z logowaniem, wystarczy odpowiedzieć na tę wiadomość, a asystent rozliczeń zadzwoni jeszcze dzisiaj i pomoże wypełnić formularz.\n\nPaliwa-Flota Billing Department\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0059",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Premium booth, only 3 left",
+      "body": "Dear Exhibitor,\nonly three premium booths remain at Warehouse Expo. Reply today for a 30% discount.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0061",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Pakiet reklamowy w katalogu targowym",
+      "body": "Szanowni Państwo, w katalogu Targów Magazynowych Expo zostało ostatnie wolne miejsce na reklamę na okładce! Dla firm, które zdecydują się do piątku, przygotowaliśmy rabat 40 procent oraz bezpłatne umieszczenie logo na stronie wydarzenia. Katalog trafi do ponad dwudziestu tysięcy odwiedzających, a do tego do prasy branżowej i partnerów handlowych.\n\nOdpowiedzcie na tę wiadomość, a nasz doradca przygotuje projekt reklamy bez żadnych opłat. Liczba miejsc jest ograniczona, więc nie czekajcie!",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0063",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Premia za terminową płatność",
+      "body": "Szanowny Kliencie, za terminowe płatności Paliwa-Flota Billing przyznaje Państwu premię 2 procent. Potwierdź dane w formularzu pod przyciskiem w tej wiadomości.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0065",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Gala branży magazynowej, zaproszenie dla firm",
+      "body": "Szanowni Państwo,\n\nz okazji Targów Magazynowych Expo organizujemy wielką galę dla przedstawicieli firm z branży! Bilety są dostępne w specjalnej cenie dla pierwszych trzydziestu firm: tylko 290 złotych od osoby, zamiast 590. W cenie biletu: kolacja trzydaniowa, występ zespołu muzycznego, losowanie nagród i wejście na wszystkie hale targowe następnego dnia.\n\nRabat obowiązuje do czwartku do północy! Wystarczy odpowiedzieć na tę wiadomość z liczbą osób, a nasz zespół wystawi fakturę i zarezerwuje stoliki. Liczba miejsc ograniczona, więc nie zwlekajcie!",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0066",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Exclusive fuel discount valid only for 48 hours",
+      "body": "Dear Customer,\n\nThe Paliwa-Flota Billing Department is pleased to offer your company an exclusive discount on fuel which is not available to the public. The discount is 20 cents per litre on all purchases made with your fleet cards during the next three months, and it can be combined with every other promotion in your contract. For a fleet of your size, our calculations show that the yearly saving may exceed fifteen thousand zloty.\n\nTo activate the discount, you must verify the company profile in our secure panel, which opens after you press the button below this message. The panel will ask for the name of an authorised person, the company tax number and the bank account to which we should return the savings every month. The whole procedure is automatic and takes about two minutes.\n\nPlease note that the offer is valid for 48 hours only. After this time all unverified profiles will be closed, and the fuel cards connected to them may be suspended without further notice. We also kindly ask you not to forward this message to your colleagues or to contact your account manager, because the discount is personal and the manager has no access to this program.\n\nThank you for your cooperation and for choosing our services.\n\nRegards | Paliwa-Flota Billing Department\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0067",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Promocja na leady",
+      "body": "Szanowni Panstwo,\nmamy 1 milion adresow firm, tylko 49 euro, odpowiedz TAK dzis!\n\nPremium Leads Pro | Sales Team\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0069",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Want to double your income? Read this.",
+      "body": "Hello Friend,\n\nI am writing to tell you about a unique way to double the income of your company in ninety days, without more work. Our automatic marketing robot finds clients on social networks and in business directories, and it works for you twenty four hours a day. More than five hundred companies in Europe already use it, and the first results appear in one week.\n\nToday you can buy the full license for 149 euro, but only for the first twenty buyers. After that the price goes up to 599 euro. Please reply with the word GO and my colleague will send you the contract and the invoice. No hidden costs, no risk.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0070",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Premium stand package: 50% discount for logistics companies",
+      "body": "Dear Executive,\n\nWarehouse Expo 2027 invites logistics companies to take part in the biggest event of the year. We have prepared a special package for the first fifteen companies that reply to this message: a stand of twelve square metres in Hall A, a free banner above the entrance, two evening gala tickets and a place in the printed catalogue, all at half of the normal price.\n\nOver the last three editions our exhibitors met more than eighty thousand visitors from forty countries. Some of them signed contracts with big retail chains straight at the stand, and many came back every year. This is not just an exhibition, it is the place where the market makes its decisions for the whole season.\n\nThe programme this year includes a robotics zone with live demonstrations, a conference about sustainable transport, a startup arena with forty young companies and a business dinner for the owners and chief executives, where you can meet future partners in a relaxed atmosphere. Our hotel partners offer special prices for all exhibitors.\n\nPlaces are limited, and the half price applies only until the end of this week. To book your stand, simply reply to this email and our sales adviser will call you today with a ready contract. Do not let your competitors take the place that is best for you!\n\nZespol Targi Magazynowe Expo | Dzial Handlowy\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0071",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Buy one list, get one free",
+      "body": "Dear Business Owner,\n\nPremium Leads Pro has a special offer for you today: buy one list of business emails and get a second list free! Choose from logistic, food, furniture or finance, 200,000 verified addresses in each list, with the names of managers and company sizes. The price of one list is only 69 euro, and delivery is in five minutes after payment. Reply YES to receive the invoice.\n\nPremium Leads Pro | Sales Team\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0072",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nie przegap okazji!",
+      "body": "Dzien dobry, mamy dla Pana baze 300000 kontaktow za jedyne 39 euro. Oferta tylko dzis, odpowiedz TAK, a wyslemy fakture!",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0073",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nowa karta flotowa z bonusem 1000 zł",
+      "body": "Szanowni Państwo,\n\nPaliwa-Flota Billing Department zaprasza do skorzystania z promocji \"Nowa karta flotowa\". Każda firma, która aktywuje nową kartę w tym tygodniu, otrzymuje bonus w wysokości 1000 złotych na zakup paliwa oraz bezpłatny dostęp do aplikacji do zarządzania flotą.\n\nAby aktywować kartę, prosimy o zalogowanie się przez przycisk w tej wiadomości i potwierdzenie danych firmy oraz numeru rachunku do wypłaty bonusu. Oferta ważna 48 godzin, a po tym czasie profil zostanie zamknięty.\n\nPaliwa-Flota Billing Department\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0074",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Last minute: Warehouse Expo gala tickets at 50%",
+      "body": "Dear Guest,\n\nWarehouse Expo invites your company to the opening gala of the biggest warehouse fair in the region. Tickets are now half price, only 290 PLN per person, and the price includes a three-course dinner, a live concert and entry to all halls the next day. The offer is open only for the first thirty companies, so please reply to this email today with the number of tickets, and our team will send the invoice right away.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0075",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Jak zdobyć klientów bez wysiłku?",
+      "body": "Szanowny Prezesie,\n\nczy zastanawial sie Pan kiedys, ile traci Panstwa firma, bo klienci nie moga jej znalezc w internecie? Premium Leads Pro rozwiaze ten problem raz na zawsze! Nasz pakiet \"Klient 24\" laczy pozycjonowanie, reklame w mediach spolecznosciowych i wysylke miliona wiadomosci do firm z calej Europy. Wszystko za 249 euro miesiecznie, bez umowy.\n\nCo dostaje Pan w pakiecie? Po pierwsze, audyt strony internetowej i liste bledow do poprawy. Po drugie, miesieczny raport z pozycji w wyszukiwarce. Po trzecie, baze 500000 kontaktow do menedzerow w Panstwa branzy. Po czwarte, konsultanta, ktory odpowiada na pytania dzien i noc. Po piate, gwarancje zwrotu pieniedzy, jezeli wyniki nie beda widoczne po 30 dniach. Nasi klienci z branzy transportowej juz po tygodniu zauwazyli wzrost liczby zapytan, a niektorzy podwoili sprzedaz.\n\nPromocja obowiazuje tylko do konca tygodnia i tylko dla dwudziestu firm. Odpowiedz TAK na ten mail, a my wyslemy fakture i zaczniemy prace jeszcze dzis. Nie ryzykujesz niczego, a zyskujesz wszystko! Nasi konsultanci mówią po polsku, niemiecku i angielsku, więc dogadamy się w każdym języku, a pierwsze wyniki zobaczy Pan jeszcze w tym miesiącu.\n\nPremium Leads Pro | Sales Team\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}
