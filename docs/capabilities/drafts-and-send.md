@@ -130,7 +130,7 @@ For a delegation mail, or for a mail that needs one clarifying question, triage 
 | job      | `channels.notifier` (every 15 s; its detectors queue the approval and result notices)                          | `apps/server/src/modules/channels/notices/index.ts`        |
 | CLI      | `bun run job:run --name <job> [--force]`                                                                       | `apps/server/src/scripts/job-run.ts`                       |
 | CLI      | `bun run mailbox:probe-send` (a test mailbox only; sends one real mail)                                        | `apps/server/src/scripts/mailbox-probe-send.ts`            |
-| Telegram | callbacks `ap:`, `ar:`, `as:`, `rs:`, `ag:`, `gw:` (Send, Reject, Send all, Skip all, Send again, It went out) | `apps/server/src/modules/channels/callbacks.ts`            |
+| Telegram | callbacks `ap:`, `ar:`, `as:`, `rs:`, `ag:`, `gw:` (Send, Reject, Send all, Skip all, Send again, It went out) | `apps/server/src/modules/channels/approval-taps.ts`        |
 | Telegram | callbacks `rw:` (reject reason) and `mk:` (this was a mistake), behind `mistake_capture`                       | `apps/server/src/modules/channels/action-feedback-taps.ts` |
 | route    | `POST /api/actions/:id/reject-reason`, `POST /api/actions/:id/mistake` (owner only, behind `mistake_capture`)  | `apps/server/src/modules/actions/routes.ts`                |
 | function | `recordRejectReason`, `markSentMistake`                                                                        | `apps/server/src/modules/actions/feedback.ts`              |
