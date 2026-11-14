@@ -408,8 +408,16 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
           await rejectLeakedPassword(ctx, deps.pwnedCheck);
         }
         if (ctx.path === TWO_FACTOR_DISABLE_PATH && deps.keepsTwoFactor) {
+          // `getSessionFromCtx` returns null when the session read fails, so null must not pass (fail closed).
+          // A request with no session cannot turn TOTP off anyway.
           const session = await getSessionFromCtx(ctx);
-          if (session && (await deps.keepsTwoFactor(session.user.id))) {
+          if (!session) {
+            throw APIError.from("UNAUTHORIZED", {
+              code: "SESSION_REQUIRED",
+              message: "A signed-in session is required.",
+            });
+          }
+          if (await deps.keepsTwoFactor(session.user.id)) {
             throw APIError.from("FORBIDDEN", {
               code: "BREAK_GLASS_NEEDS_TWO_FACTOR",
               message: "The break-glass owner keeps two-factor sign-in.",
