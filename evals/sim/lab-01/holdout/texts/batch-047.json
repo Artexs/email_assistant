@@ -55,10 +55,10 @@
     },
     {
       "id": "b-urg-0132",
-      "subject": "Telefon do 10:00 – kalendarz zarządu",
-      "body": "Wiktor,\n\nzadzwoń do mnie dziś do 10:00 w sprawie kalendarza zarządu. O 10:30 sekretariat potwierdza rezerwację wyjazdu, a po tej godzinie zmiana składu delegacji kosztuje opłatę za anulowanie.",
+      "subject": "Rezerwacja wyjazdu – Twój podpis do 10:00",
+      "body": "Wiktor,\n\nsekretariat potwierdza dziś o 10:30 rezerwację wyjazdu zarządu. Podpisz do 10:00 zgodę na koszt. Po 10:30 rezerwacja przepada, a nowa kosztuje o 6 000 zł więcej.",
       "thread": [],
-      "note": "rewritten: call before 10:00; booking confirmed 10:30 with cancellation fee"
+      "note": "rewritten: round 2 urgent event: booking cost approval by 10:00; booking lost 10:30"
     },
     {
       "id": "b-urg-0133",
@@ -99,10 +99,10 @@
     },
     {
       "id": "b-urg-0141",
-      "subject": "Budżet rady – telefon do 11:00",
-      "body": "Wiktor,\n\nzadzwoń do mnie do 11:00 w sprawie budżetu. O 12:00 zamykam uwagi do projektu uchwały, który dziś trafia do wszystkich członków rady, a mam jedno pytanie o rezerwę.",
+      "subject": "Uchwała budżetowa – podpis zarządu do 11:00",
+      "body": "Wiktor,\n\nprojekt uchwały budżetowej trafia dziś o 12:00 do wszystkich członków rady. Brakuje w nim Twojego podpisu pod rezerwą na przetarg. Podpisz go do 11:00, bo bez podpisu uchwała wyjdzie bez rezerwy.",
       "thread": [],
-      "note": "rewritten: call by 11:00; draft resolution goes to all members at noon"
+      "note": "rewritten: round 2 urgent event: resolution needs signature by 11:00; goes to all members at 12:00 without reserve"
     },
     {
       "id": "b-urg-0142",
@@ -119,15 +119,15 @@
     },
     {
       "id": "b-urg-0145",
-      "subject": "Re: Przetarg – telefon dziś do 19:00",
-      "body": "Panie Wiktorze,\n\ndziękuję za Pana krótką wiadomość o przetargu. Chciałabym jednak, żebyśmy porozmawiali bezpośrednio, a nie tylko przez wymianę e-maili. Mam kilka uwag do ostatniej wersji oferty i wolę je przekazać osobiście, bo dotyczą poufnych danych o naszych magazynach i planowanych zmianach w sieci.\n\nProszę o telefon dziś do 19:00. Jutro o 8:00 mój zarząd zatwierdza ostateczną wersję oferty i bez rozmowy z Panem podpiszemy umowę z innym przewoźnikiem. Jeśli nie odbiorę, oddzwonię w ciągu kwadransa.",
+      "subject": "Re: Przetarg – podpis umowy do 19:00",
+      "body": "Panie Wiktorze,\n\ndziękuję za Pańską krótką wiadomość o przetargu. Ostateczna wersja umowy z Pańskimi uwagami jest w systemie podpisów od godziny. Brakuje tylko Pańskiego podpisu, a wszystkie inne strony już go złożyły.\n\nMój dział prawny zamyka dziś o 19:30 pakiet dla zarządu. Proszę podpisać umowę do 19:00, żebym zdążyła sprawdzić komplet. Jutro o 8:00 zarząd sieci podpisuje umowę przewozową, a bez Pańskiego podpisu będzie to umowa z innym przewoźnikiem.\n\nGenowefa Jastrzebska",
       "thread": [
         {
           "subject": "Przetarg Zielona Hurtownia – odpowiedź",
           "body": "Pani Genowefo, dziękuję za uwagi do oferty. Odezwę się wkrótce. Wiktor Szalewski"
         }
       ],
-      "note": "rewritten: network board finalizes offer tomorrow 8:00; call before 19:00"
+      "note": "rewritten: round 2 urgent event: contract signature by 19:00; legal package closes 19:30, competitor signs tomorrow"
     },
     {
       "id": "b-urg-0146",
@@ -137,23 +137,23 @@
     },
     {
       "id": "b-urg-0147",
-      "subject": "Przetarg – dziś o 15:00 mija termin ofert",
-      "body": "Szanowny Panie Prezesie,\n\ndziś o 15:00 mija termin składania ofert w przetargu naszej sieci i potrzebuję rozmowy z Panem przed tą godziną. Chodzi o układ współpracy po podpisaniu umowy, szczególnie o to, kto po Pańskiej stronie będzie naszym stałym kontaktem.\n\nChcę też usłyszeć Pana zdanie o tym, jak szybko można uruchomić pierwsze trasy dla naszych dwóch nowych magazynów. Proszę o telefon do 14:00. Bez tej rozmowy Pańska oferta zostanie zgłoszona bez tych warunków.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "subject": "Przetarg – oferta do podpisu, termin mija dziś o 15:00",
+      "body": "Szanowny Panie Prezesie,\n\ndziś o 15:00 mija termin składania ofert w przetargu naszej sieci. Pańska oferta jest załadowana na portalu przetargowym, ale portal przyjmie ją dopiero po Pańskim podpisie kwalifikowanym. Podpis może złożyć wyłącznie Pan.\n\nProszę podpisać ofertę do 14:00, żeby zostawić czas na weryfikację. Po 15:00 portal się zamyka, a niepodpisana oferta zostanie odrzucona bez możliwości poprawy. Kordelan traci wtedy udział w przetargu wartym 4,8 mln zł.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
       "thread": [],
-      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#222;line-height:1.45;\">\n<h3 style=\"margin:0 0 10px 0;color:#1e6b3a;\">Szanowny Panie Prezesie,</h3>\n<p style=\"margin:0 0 10px 0;\">dziś o 15:00 mija termin składania ofert w przetargu naszej sieci i potrzebuję rozmowy z Panem przed tą godziną. Chodzi o układ współpracy po podpisaniu umowy, szczególnie o to, kto po Pańskiej stronie będzie naszym stałym kontaktem.</p>\n<p style=\"margin:0 0 10px 0;\">Chcę też usłyszeć Pana zdanie o tym, jak szybko można uruchomić pierwsze trasy dla naszych dwóch nowych magazynów. Proszę o telefon do 14:00. Bez tej rozmowy Pańska oferta zostanie zgłoszona bez tych warunków.</p>\n<p style=\"margin:12px 0 0 0;color:#666;font-size:12px;\">Genowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes</p>\n</body></html>",
-      "note": "rewritten: tender offer deadline today 15:00; call needed by 14:00"
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#222;line-height:1.45;\">\n<h3 style=\"margin:0 0 10px 0;color:#222;\">Szanowny Panie Prezesie,</h3>\n<p style=\"margin:0 0 10px 0;\">dziś o 15:00 mija termin składania ofert w przetargu naszej sieci. Pańska oferta jest załadowana na portalu przetargowym, ale portal przyjmie ją dopiero po Pańskim podpisie kwalifikowanym. Podpis może złożyć wyłącznie Pan.</p>\n<p style=\"margin:0 0 10px 0;\">Proszę podpisać ofertę do 14:00, żeby zostawić czas na weryfikację. Po 15:00 portal się zamyka, a niepodpisana oferta zostanie odrzucona bez możliwości poprawy. Kordelan traci wtedy udział w przetargu wartym 4,8 mln zł.</p>\n<p style=\"margin:12px 0 0 0;color:#666;font-size:12px;\">Genowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes</p>\n</body></html>",
+      "note": "rewritten: round 2 urgent event: qualified signature on tender offer before 15:00 portal close"
     },
     {
       "id": "b-urg-0148",
-      "subject": "Re: Damaged deliveries – call me before 14:00",
-      "body": "Dear Wiktor,\n\nthank you for your short answer. I would prefer to speak to you directly about the damaged deliveries, since the matter has grown beyond the claims procedure.\n\nPlease call me before 14:00 today. At 15:00 my directors meet to decide whether we stop deliveries from Kordelan to the Radom centre from Monday, and I want to hear your way forward first.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "subject": "Re: Damaged deliveries – protocol must be signed by 14:00",
+      "body": "Dear Wiktor,\n\nthank you for your short answer. The claims report is ready, and the damage protocol for the three deliveries to Radom needs your signature as the representative of the carrier. Your claims team cannot sign it.\n\nPlease sign it by 14:00 today. At 15:00 the filing window of our insurer closes, and without your signature we file the full claim of 142 000 PLN against Kordelan.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
       "thread": [
         {
           "subject": "Damaged deliveries",
           "body": "Dear Genowefa, I received your note and asked the claims team to prepare a report. I will come back to you. Wiktor Szalewski"
         }
       ],
-      "note": "rewritten: directors meet 15:00 today to stop deliveries; call before 14:00"
+      "note": "rewritten: round 2 urgent event: damage protocol signature by 14:00; insurer filing window closes 15:00"
     },
     {
       "id": "b-urg-0149",
@@ -163,15 +163,15 @@
     },
     {
       "id": "b-urg-0150",
-      "subject": "Re: Calendar – call me by 15:00 today",
-      "body": "Hi Wiktor,\n\nDorota sent me your draft calendar, thank you. Before I answer, I need to hear from you about the Hamburg trip, because I have one concern that I do not want to put in writing.\n\nPlease call me by 15:00 today. At 16:00 the secretary sends the February calendar to all board members, and I must tell her before that whether the trip stays in. Five minutes will do.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "subject": "Re: Calendar – approval of the Hamburg trip by 15:00",
+      "body": "Hi Wiktor,\n\nDorota sent me your draft calendar, thank you. The Hamburg trip in it needs your approval in the system before the secretary can release the calendar, and only you can give it.\n\nPlease approve it by 15:00 today. At 16:00 the secretary sends the February calendar to all board members, and she sends it without the trip. The hotel block and the group fare, 17 400 PLN in total, lapse at the same hour.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
       "thread": [
         {
           "subject": "Board calendar for February",
           "body": "Mr Orlowicz, attached is the draft calendar of the board for February, including the trip to Hamburg. Please let me know if you have comments. Dorota Wilczynska"
         }
       ],
-      "note": "rewritten: calendar mailed to all members at 16:00; call by 15:00"
+      "note": "rewritten: round 2 urgent event: trip approval by 15:00; calendar sent 16:00 without trip, hotel and fare lapse"
     },
     {
       "id": "b-urg-0151",
