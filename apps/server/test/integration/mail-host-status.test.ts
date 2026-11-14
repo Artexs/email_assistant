@@ -4,7 +4,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "
 import type { Transaction } from "kysely";
 
 import { configureMailHosts, type LookupAll } from "../../src/modules/mail";
-import { recheckBlockedHosts } from "../../src/modules/mail/host-status";
+import { markHostBlocked, recheckBlockedHosts } from "../../src/modules/mail/host-status";
 import { changeMailboxStatus, setMailboxStatus } from "../../src/modules/mail/repo";
 import type { DB, Db } from "../../src/platform/db";
 
@@ -317,5 +317,117 @@ describe("recheckBlockedHosts", () => {
       expect(failed).toHaveLength(1);
       expect(failed[0]).not.toContain("boom");
     });
+  });
+});
+
+describe("recheckBlockedHosts against a newer block", () => {
+  test("11: a block that begins between the read and the write keeps its status and its episode", async () => {
+    await withRollback(db, async (trx) => {
+      const box = await blockedBox(trx);
+      const newer = new Date(NOW.getTime() - 60_000);
+      // The lookup runs after the read of the row. Here a new block of the same mailbox begins: same status, newer episode.
+      configureMailHosts({
+        allowLocal: false,
+        lookup: async () => {
+          await trx
+            .updateTable("mailboxes")
+            .set({ status_changed_at: newer })
+            .where("id", "=", box.mailboxId)
+            .execute();
+          return [{ address: PUBLIC, family: 4 }];
+        },
+      });
+
+      const result = await run(trx);
+
+      expect(result.reopened).toBe(0);
+      const row = await rowOf(trx, box.mailboxId);
+      expect(row.status).toBe("host_blocked");
+      expect(row.status_changed_at).toEqual(newer);
+      expect(await auditOf(trx, box.mailboxId)).toHaveLength(0);
+    });
+  });
+});
+
+async function blockAuditOf(trx: Transaction<DB>, mailboxId: string) {
+  const rows = await trx
+    .selectFrom("audit_log")
+    .select(["actor", "data", "created_at"])
+    .where("event", "=", "mailbox.host_blocked")
+    .execute();
+  return rows.filter((row) => (row.data as { mailbox_id?: string }).mailbox_id === mailboxId);
+}
+
+describe("markHostBlocked", () => {
+  test("1: an active mailbox becomes host_blocked once, with one audit row; a second call changes nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId, mailboxId } = await createOrgWithMailbox(trx);
+
+      expect(await markHostBlocked(trx, { orgId }, mailboxId, { now: NOW, source: "sync" })).toBe(true);
+      const later = new Date(NOW.getTime() + 60_000);
+      expect(await markHostBlocked(trx, { orgId }, mailboxId, { now: later, source: "committer" })).toBe(false);
+
+      const row = await rowOf(trx, mailboxId);
+      expect(row.status).toBe("host_blocked");
+      expect(row.status_changed_at).toEqual(NOW);
+      const audit = await blockAuditOf(trx, mailboxId);
+      expect(audit).toHaveLength(1);
+      expect(audit[0]).toMatchObject({
+        actor: "system",
+        data: { mailbox_id: mailboxId, source: "sync" },
+        created_at: NOW,
+      });
+      expect(
+        lines.filter((line) => line.includes("mailbox_host_blocked") && line.includes("reason=sync"))
+      ).toHaveLength(1);
+      expect(lines.filter((line) => line.includes("mailbox_host_refused"))).toHaveLength(1);
+    });
+  });
+
+  test("2: a paused mailbox and an auth_error mailbox keep their status, their time and no audit row", async () => {
+    await withRollback(db, async (trx) => {
+      for (const status of ["paused", "auth_error"] as const) {
+        const { orgId, mailboxId } = await createOrgWithMailbox(trx);
+        await setMailboxStatus(trx, { orgId }, mailboxId, status, BLOCKED_AT);
+        lines = [];
+
+        expect(await markHostBlocked(trx, { orgId }, mailboxId, { now: NOW, source: "sync" })).toBe(false);
+
+        const row = await rowOf(trx, mailboxId);
+        expect(row.status).toBe(status);
+        expect(row.status_changed_at).toEqual(BLOCKED_AT);
+        expect(await blockAuditOf(trx, mailboxId)).toEqual([]);
+        expect(lines.filter((line) => line.includes("mailbox_host_refused"))).toHaveLength(1);
+      }
+    });
+  });
+
+  test("3: the context of another organization changes nothing", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await createOrgWithMailbox(trx);
+      const b = await createOrgWithMailbox(trx);
+
+      expect(await markHostBlocked(trx, { orgId: b.orgId }, a.mailboxId, { now: NOW, source: "sync" })).toBe(false);
+
+      expect((await rowOf(trx, a.mailboxId)).status).toBe("active");
+      expect(await blockAuditOf(trx, a.mailboxId)).toEqual([]);
+    });
+  });
+
+  test("4: a database failure is one error line, and the call returns false", async () => {
+    const stub = {
+      isTransaction: false,
+      transaction: () => ({
+        execute: () => Promise.reject(new Error("boom")),
+      }),
+    } as unknown as Db;
+
+    expect(await markHostBlocked(stub, { orgId: randomUUID() }, randomUUID(), { now: NOW, source: "sync" })).toBe(
+      false
+    );
+
+    const failed = lines.filter((line) => line.includes("mailbox_host_block_failed"));
+    expect(failed).toHaveLength(1);
+    expect(failed[0]).not.toContain("boom");
   });
 });

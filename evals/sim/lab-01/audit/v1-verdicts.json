@@ -1,0 +1,126 @@
+{
+  "scenario": "lab-01",
+  "version": "1",
+  "verdicts": [
+    {
+      "id": "b-del-0028",
+      "verdict": "pending"
+    },
+    {
+      "id": "b-del-0130",
+      "verdict": "pending"
+    },
+    {
+      "id": "b-inf-0163",
+      "verdict": "pending"
+    },
+    {
+      "id": "b-inf-0173",
+      "verdict": "pending"
+    },
+    {
+      "id": "b-not-0069",
+      "verdict": "pending"
+    },
+    {
+      "id": "b-not-0140",
+      "verdict": "pending"
+    },
+    {
+      "id": "b-not-0141",
+      "verdict": "pending"
+    },
+    {
+      "id": "b-rep-0079",
+      "verdict": "pending"
+    },
+    {
+      "id": "b-rep-0138",
+      "verdict": "pending"
+    },
+    {
+      "id": "b-rep-0180",
+      "verdict": "pending"
+    },
+    {
+      "id": "b-rep-0196",
+      "verdict": "pending"
+    },
+    {
+      "id": "b-spa-0061",
+      "verdict": "pending"
+    },
+    {
+      "id": "b-spa-0171",
+      "verdict": "pending"
+    },
+    {
+      "id": "b-spa-0256",
+      "verdict": "pending"
+    },
+    {
+      "id": "b-urg-0052",
+      "verdict": "pending"
+    },
+    {
+      "id": "b-urg-0124",
+      "verdict": "pending"
+    },
+    {
+      "id": "h-vip-05",
+      "verdict": "pending"
+    },
+    {
+      "id": "w-1-100",
+      "verdict": "pending"
+    },
+    {
+      "id": "w-1-117",
+      "verdict": "pending"
+    },
+    {
+      "id": "w-2-083",
+      "verdict": "pending"
+    },
+    {
+      "id": "w-3-011",
+      "verdict": "pending"
+    },
+    {
+      "id": "w-3-018",
+      "verdict": "pending"
+    },
+    {
+      "id": "w-3-040",
+      "verdict": "pending"
+    },
+    {
+      "id": "w-4-133",
+      "verdict": "pending"
+    },
+    {
+      "id": "w-5-022",
+      "verdict": "pending"
+    },
+    {
+      "id": "w-5-059",
+      "verdict": "pending"
+    },
+    {
+      "id": "w-5-060",
+      "verdict": "pending"
+    },
+    {
+      "id": "w-5-068",
+      "verdict": "pending"
+    },
+    {
+      "id": "w-6-042",
+      "verdict": "pending"
+    },
+    {
+      "id": "w-7-038",
+      "verdict": "pending"
+    }
+  ]
+}
