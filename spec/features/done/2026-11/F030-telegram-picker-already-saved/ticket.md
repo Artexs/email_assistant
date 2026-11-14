@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-07
+landed: 2026-11-14
 ---
 
 # F030 · Telegram picker: say "Already saved" in the message too
