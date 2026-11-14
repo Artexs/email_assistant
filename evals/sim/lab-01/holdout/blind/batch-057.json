@@ -1,0 +1,271 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-057",
+  "cases": [
+    {
+      "id": "h-rnt-08",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Cennik transportu mebli na 2027 - czekam na odpowiedź",
+      "body": "Szanowny Panie Prezesie,\n\nwidziałem uwagę dostawcy paliw w naszej wymianie i rozumiem, że koszty paliwa rosną, ale nasz zarząd nadal czeka na Pana odpowiedź w sprawie stawek na 2027 rok. Proszę o informację, czy utrzyma Pan stawkę z ubiegłego roku dla tras do Poznania i Opola, czy planuje Pan podwyżkę, a jeśli tak, to o ile.\n\nOdpowiedź jest mi potrzebna do planu zakupów na pierwszy kwartał.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [
+        {
+          "from": "tomasz.brzezinski@meblodrew.test",
+          "subject": "Cennik transportu mebli na 2027",
+          "body": "Szanowny Panie Prezesie, proszę o przesłanie cennika transportu na 2027 rok dla tras do Poznania i Opola. Tomasz Brzezinski"
+        },
+        {
+          "from": "ewelina.marszalek@paliwa-flota.test",
+          "subject": "Re: Cennik transportu mebli na 2027",
+          "body": "Dear all, fuel prices rise this quarter, so any price list for 2027 should include a fuel clause. Ewelina Marszalek"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Cennik transportu mebli na 2027",
+          "body": "Panie Tomaszu, przygotujemy cennik w tym tygodniu. Wiktor Szalewski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "h-rnt-09",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Nordic contract - what do we tell Karin?",
+      "body": "Wiktor,\n\nfollowing the exchange below, the bank notice about the guarantee is in, so we can move on. I need to know today what we tell Karin about the price list: do we offer twelve months fixed, or six months with a review? Piotr thinks twelve is too risky with the fuel price going up, and he wants a review clause after six months in any case. Karin will ask for our answer in the call on Thursday, so please tell me which version I should offer. Your call.\n\nOliver",
+      "thread": [
+        {
+          "from": "oliver.pemberton@kordelan.test",
+          "subject": "Nordic contract",
+          "body": "Wiktor, Karin asks for a fixed price list for twelve months. What do I answer? Oliver"
+        },
+        {
+          "from": "noreply@bank-aurum.test",
+          "subject": "Re: Nordic contract",
+          "body": "Powiadomienie: gwarancja bankowa na kwotę 150 000 EUR została wystawiona. Data: 13.01.2027. Powiadomienia Bankowe"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Nordic contract",
+          "body": "Oliver, tell Karin that we are thinking about it. I need to talk to Piotr first. Wiktor"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "h-rnt-10",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Wyjazd do Frankfurtu - brakuje Twojej odpowiedzi",
+      "body": "Wiktorze,\n\nwracam do naszej wymiany o wyjeździe do Frankfurtu, bo od kilku dni nie mam od Ciebie odpowiedzi, a w międzyczasie linia lotnicza zmieniła warunki rezerwacji grupowej. Ewelina z dostawcy paliw, z którą rozmawiałeś na targach, napisała mi, że jej firma zorganizuje kolację dla uczestników i że chce wiedzieć, ilu gości przyjdzie z naszej strony. Muszę więc podać liczbę osób i potrzebuję Twojej decyzji w trzech sprawach.\n\nPo pierwsze, czy lecisz z nami w poniedziałek rano, czy dołączysz później? Po drugie, czy chcesz mieć osobny pokój z widokiem na ruch targowy, czy wystarczy Ci standardowy, tak jak pozostałym członkom zarządu, czy wolisz pokój w tym samym hotelu co ja? Po trzecie, czy zgadzasz się, żeby kolację zorganizowała firma paliwowa, czy wolisz, żeby rada zaprosiła gości na własny koszt, aby uniknąć wrażenia zależności od dostawcy.\n\nMoim zdaniem lepiej, jeśli płaci rada, bo klient i dostawca zawsze będą wtedy traktowani jednakowo, ale to Ty jesteś gospodarzem spotkania, więc decyzja należy do Ciebie. Daj znać, gdy tylko ją podejmiesz, choćby jednym zdaniem, żebym mógł dokończyć listę uczestników i potwierdzić rezerwacje w terminie.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Wyjazd do Frankfurtu",
+          "body": "Wiktorze, planuję wyjazd rady do Frankfurtu na targi. Czy lecisz z nami? Zbigniew"
+        },
+        {
+          "from": "ewelina.marszalek@paliwa-flota.test",
+          "subject": "Re: Wyjazd do Frankfurtu",
+          "body": "Hello, my company would be glad to host a dinner for your group at the fair. Please tell me the number of guests. Ewelina Marszalek"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Wyjazd do Frankfurtu",
+          "body": "Zbigniew, muszę sprawdzić kalendarz. Odezwę się. Wiktor"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "h-unk-02",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Podpis na uchwale rady - dzisiaj do godziny 15:00",
+      "body": "Szanowny Panie Prezesie,\n\nuchwała rady w sprawie powołania nowego członka zarządu musi zostać podpisana przez Pana dzisiaj do godziny 15:00, ponieważ sekretariat składa dokumenty w sądzie rejestrowym jeszcze przed końcem dnia. Podpis można złożyć w sekretariacie albo przesłać skan z podpisem w odpowiedzi na tę wiadomość.\n\nJeżeli podpis nie wpłynie do tej godziny, wniosek zostanie złożony dopiero w przyszłym tygodniu, co opóźni cały proces o co najmniej siedem dni.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-unk-03",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Hotel list for the trip - your answer by 14:00 today",
+      "body": "Wiktor,\n\nthe travel agent needs the final list of hotel rooms for the Brussels trip, and the booking closes at 14:00 today. I have eleven names and your room is still open. Please tell me whether you take a single room for two nights or three.\n\nAfter 14:00 the agent releases the rooms back to the hotel, and the group rate is gone. The rest of the board has already confirmed, so only your answer is missing, and I would like to send the list before lunch.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-unk-04",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Awaria skanerów w Strykowie - potrzebna zgoda do 12:00",
+      "body": "Wiktor, skanery w Strykowie padły po aktualizacji. Serwis chce wejść do magazynu dziś o 12:00 i potrzebuje Twojej zgody na przestój linii.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Skanery w Strykowie",
+          "body": "Halina, zgłoś usterkę serwisowi i daj mi znać, co proponują. Wiktor"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "h-unk-05",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Przetarg Zielona - brakujący dokument do dzisiejszego wieczora",
+      "body": "Szanowny Panie Prezesie,\n\nw Państwa ofercie do przetargu na obsługę naszej sieci hurtowni brakuje jednego dokumentu, bez którego komisja przetargowa nie przyjmie oferty. Chodzi o oświadczenie zarządu o braku zaległości wobec urzędu skarbowego i ZUS, podpisane osobiście przez Pana. Pana koordynator sprzedaży przesłał nam wersję bez podpisu, a regulamin wyraźnie wymaga oryginału albo skanu z podpisem.\n\nKomisja zbiera dokumenty tylko do dzisiejszego wieczora, do godziny 20:00. Po tej godzinie system przyjmowania ofert zostanie zamknięty, a Państwa oferta nie weźmie udziału w ocenie, nawet jeśli reszta dokumentów jest kompletna i cena jest najlepsza spośród złożonych.\n\nProszę o podpisanie oświadczenia i przesłanie skanu na ten adres jeszcze dzisiaj. Wiem, że to formalność, ale komisja jest w tej sprawie bezwzględna, i nie chciałabym, żeby cała praca Państwa zespołu oraz naszej komisji poszła na marne z powodu jednej brakującej kartki. Jeśli ma Pan kłopot z dostępem do podpisu elektronicznego, wystarczy zdjęcie podpisanego dokumentu, które komisja zaakceptuje po telefonicznym potwierdzeniu.\n\nMogę być dostępna pod telefonem aż do zamknięcia systemu przyjmowania ofert, jeśli chciałby Pan o coś zapytać. Proszę o potwierdzenie, że wiadomość dotarła i że zdąży Pan z dokumentem przed wieczorem.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-unk-07",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Ostateczna wersja oferty - potrzebuję Pana akceptacji do 16:00",
+      "body": "Szanowny Panie Prezesie,\n\nzespół przygotował ostateczną wersję oferty dla naszej sieci i czeka na Pana akceptację. Proszę o odpowiedź dzisiaj do godziny 16:00, ponieważ o tej porze nasz zarząd zbiera się na posiedzeniu i chcemy mieć gotowe stanowisko.\n\nJeżeli zgadza się Pan na zapisy dotyczące terminów dostaw i kar umownych, wystarczy krótkie potwierdzenie w odpowiedzi na tę wiadomość. Jeśli ma Pan uwagi, proszę o ich przesłanie, a postaramy się uwzględnić je jeszcze przed posiedzeniem.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-unk-09",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Your quote for the loan item",
+      "body": "Wiktor,\n\nsend me your numbers for the loan item by 17:00 today, so I can put them into the board pack before it goes out.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-unk-10",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Tender submission: your signature before the office closes",
+      "body": "Dear Wiktor,\n\nthe tender office in Riga closes at 16:00 local time today, and the consortium declaration still lacks your signature. Our courier waits at the office and can take the signed document directly to the counter, but only if I send him the scan before 14:30.\n\nCould you sign the last page and return it to me today? The other pages are final and checked by both legal teams. Without your signature the declaration is not valid, and our joint offer cannot be accepted by the office, even if the price and the vehicle list are complete.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-vip-01",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zaproszenie na bankiet noworoczny rady - proszę o odpowiedź",
+      "body": "Szanowny Panie Prezesie,\n\nz przyjemnością zapraszam Pana na bankiet noworoczny rady, 30.01.2027, godzina 19:00. Proszę o potwierdzenie obecności i liczby osób towarzyszących.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-vip-02",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nowe zasady kart paliwowych - przegląd dla członków rady",
+      "body": "Szanowny Panie Prezesie,\n\nprzesyłam Panu przegląd nowych zasad rozliczania kart paliwowych, które rada zatwierdziła na ostatnim posiedzeniu. Wyglądem przypomina ulotkę, bo przygotował ją sekretariat, ale treść jest rzeczowa.\n\nNajważniejsze zmiany:\n- limit miesięczny na pojazd obniżony o 10 procent,\n- obowiązek podania celu przejazdu przy każdym tankowaniu powyżej 400 litrów,\n- kwartalny raport dla rady o zużyciu paliwa.\n\nZmiany wchodzą w życie od 01.03.2027. Przesyłam to tylko do wiadomości, nie jest potrzebna żadna odpowiedź. Zarząd dostanie osobne wytyczne od sekretariatu.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-vip-03",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Specjalna oferta dla Pana: spotkanie przy kawie 28.01",
+      "body": "Szanowny Panie Prezesie,\n\ntemat wiadomości brzmi jak reklama, ale to zwykłe zaproszenie. Chciałabym zaprosić Pana na kawę w czwartek 28.01.2027 o godzinie 9:00 w kawiarni przy dworcu w Łodzi, żeby porozmawiać o terminach podróży służbowych naszych zespołów w okresie przetargu. Zabiorę ze sobą moją dyrektor logistyki.\n\nProszę o odpowiedź, czy termin Panu odpowiada, a jeśli nie, o propozycję innego dnia w tym samym tygodniu. Spotkanie nie powinno potrwać dłużej niż godzinę. Ponieważ kalendarze naszych zespołów są pełne, wolałabym ustalić termin teraz.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-vip-04",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Board travel policy: summary of changes for 2027",
+      "body": "Dear Mr Szalewski,\n\nthank you for your answer about the travel plans. As promised, I send you a summary of the updated travel policy of the supervisory board for 2027. It has the look of a newsletter because our secretary uses a standard template for all member communications, but the content is genuine and relevant for you.\n\nMain changes:\n- Flights within Europe: economy class for all members, business class only for flights longer than five hours.\n- Hotels: the nightly limit rises to 220 EUR in Frankfurt, Brussels and Hamburg, where prices went up last year.\n- Advance bookings: all trips must be booked at least fourteen days before departure, with exceptions approved by the chairman.\n- Expense reports: members submit them within seven days after the return, together with the receipts.\n- Group trips: the secretary books flights and hotels for the whole group to use the group rates.\n\nThe new rules are valid from 01.02.2027 and apply to all trips of the supervisory board and, where the management board takes part in them, to the executives as well. In practice this means that you can continue to travel as before, but any exceptions to the flight class should be discussed with the secretary beforehand.\n\nThis message is for your information. No answer is needed, but if you have remarks on the policy, I will consider them before the next meeting of the board, where we plan to adopt it formally.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Travel plans of the board",
+          "body": "Dear Mr Orlowicz, thank you for the plan. Please send me the rules for the trips of the board. Wiktor Szalewski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "h-vip-05",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Special price for you: the new auditor's invoice",
+      "body": "Wiktor,\n\nthe subject sounds like a promo, I know, but it is just the auditor's invoice. The auditor sent a new invoice with a strange discount of 15 percent on the second half of the fee, and I do not know whether we agreed on it. Can you tell me whether the discount is right? I do not want to pay a wrong amount, and the sender asked me to confirm by the end of the month.\n\nIf you do not remember it, ask the accountant to check the engagement letter and let me know what it says. Whatever the answer is, I just need a clear yes or no from the management board.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-vip-07",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Join us: Nordic contract round table",
+      "body": "Wiktor,\n\nlooks like an advert, but it is an invitation: round table on the Nordic contract, 29.01.2027, 10:00. Can you join?\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-vip-08",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Przegląd tygodnia: co się stało w Strykowie",
+      "body": "Szanowny Panie Prezesie,\n\nta wiadomość wygląda jak biuletyn, bo piszę ją w szablonie naszej firmy, ale jest do Pana osobiście. Chciałabym Pana poinformować o wnioskach z awarii systemu magazynowego, która dotknęła także nasze dostawy w ubiegłym tygodniu.\n\nPodsumowanie z naszej strony:\n- dwie dostawy dotarły z opóźnieniem około trzech godzin,\n- szkód w towarze nie stwierdziliśmy,\n- Państwa dyspozytor kontaktował się z nami na bieżąco.\n\nDziękuję za sprawną komunikację. Nie oczekuję odpowiedzi ani działań, dziękuję tylko, że zostaliśmy poinformowani na czas.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}

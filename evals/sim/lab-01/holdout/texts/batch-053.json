@@ -1,0 +1,284 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-053",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "h-cc-08",
+      "subject": "Wyjazd do Frankfurtu - plan dla Pani Haliny",
+      "body": "Szanowna Pani Halino,\n\nprzesyłam plan wyjazdu rady do Frankfurtu: wylot 09.02.2027 o 07:15, powrót 11.02.2027. Pana Prezesa dodaję w kopii, bez potrzeby odpowiedzi.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "h-cc-09",
+      "subject": "Capacity for the Riga corridor - note for Oliver",
+      "body": "Szanowny Panie Oliverze,\n\npiszę do Pana w sprawie wspólnego przetargu na trasie ryskiej. Nasz zespół szacuje, że do końca lutego będziemy w stanie zapewnić osiem ciągników tygodniowo, a od marca dwanaście. Proszę o informację, ilu ciągników potrzebuje Pana zespół na odcinku polskim, abyśmy mogli policzyć wspólną stawkę.\n\nPana Prezesa wstawiam w kopii wyłącznie informacyjnie, bo wiem, że lubi mieć wgląd w postęp prac. Sam zwracam się do Pana, jako osoby odpowiedzialnej za eksport.\n\nPozdrawiam serdecznie, Daniel Hargreaves",
+      "thread": []
+    },
+    {
+      "id": "h-de-01",
+      "subject": "Sitzung des Aufsichtsrats: Ihre Meinung zur Tagesordnung",
+      "body": "Wiktor,\n\nich bereite die Tagesordnung für die nächste Sitzung des Aufsichtsrats vor und brauche Ihre Meinung zu einem Punkt. Zwei Mitglieder möchten die Frage der neuen Lagerhalle in Łódź früher behandeln, noch vor dem Bericht über das letzte Quartal. Mir scheint das logisch, aber ich möchte nicht über den Kopf des Vorstands entscheiden.\n\nBitte schreiben Sie mir, ob Sie mit der Änderung der Reihenfolge einverstanden sind. Wenn der Vorstand mehr Zeit für die Vorbereitung der Unterlagen braucht, lasse ich die Reihenfolge, wie sie ist. Eine kurze Antwort in den nächsten Tagen reicht.",
+      "thread": [],
+      "expectedPoints": [
+        "Say whether the hall in Łódź may be discussed before the quarterly report",
+        "Say if the board needs more time to prepare the documents"
+      ],
+      "mustNot": [
+        "Do not promise a decision on the new hall"
+      ]
+    },
+    {
+      "id": "h-de-02",
+      "subject": "Re: Zollabfertigung in Hamburg - Information",
+      "body": "Sehr geehrter Herr Szalewski,\n\nzu Ihrer Information: Der Zoll in Hamburg hat die beiden Sendungen heute freigegeben, die Fahrer fahren bereits weiter. Weitere Schritte sind nicht nötig.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "html": "<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#222\"><p style=\"margin:0 0 10px\">Sehr geehrter Herr Szalewski,</p><p style=\"margin:0 0 10px\">zu Ihrer Information: Der Zoll in Hamburg hat die beiden Sendungen heute freigegeben, die Fahrer fahren bereits weiter. Weitere Schritte sind nicht nötig.</p><p style=\"margin:0 0 10px\">Kind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners</p></div>",
+      "thread": [
+        {
+          "subject": "Zollabfertigung in Hamburg",
+          "body": "Lieber Daniel, zwei unserer Sendungen hängen beim Zoll in Hamburg fest. Kannst du das bitte prüfen lassen? Oliver"
+        },
+        {
+          "subject": "Re: Zollabfertigung in Hamburg",
+          "body": "Oliver, bitte halte mich auf dem Laufenden. Wiktor"
+        }
+      ]
+    },
+    {
+      "id": "h-de-06",
+      "subject": "Logistyka Dziś: Wochenübersicht für Ihre Flotte",
+      "body": "Die Wochenübersicht der Redaktion Logistyka Dziś, diesmal in deutscher Sprache für unsere Leser in Deutschland und Österreich.\n\nDieselpreise: Der Preis für Diesel an den Großhandelsstationen in Polen ist in dieser Woche um durchschnittlich zwei Prozent gesunken, und auch in Deutschland gaben die Preise leicht nach. Analysten erwarten, dass der Trend bis Ende Januar anhält, doch große Flottenbetreiber rechnen weiterhin mit starken Schwankungen.\n\nMautgebühren: Mehrere Länder Mitteleuropas planen für das zweite Quartal höhere Mautsätze für schwere Lastwagen. Besonders betroffen sind Fahrzeuge der Emissionsklasse Euro 5, deren Tarife im Durchschnitt um acht Prozent steigen sollen.\n\nAusschreibungen: Drei große Handelsketten haben neue Ausschreibungen für Transportdienstleistungen veröffentlicht. Die Fristen laufen bis Mitte Februar, und die meisten Auftraggeber verlangen eine Garantie für pünktliche Lieferungen während der Saisonspitzen.\n\nFahrermangel: Der Verband der Transportunternehmer meldet, dass im ersten Quartal etwa 12 000 Fahrer fehlen werden. Die Unternehmen setzen verstärkt auf Ausbildung im eigenen Betrieb und auf höhere Löhne für Nachtschichten. Mehrere Betriebe bieten außerdem Prämien für neue Fahrer an, die sich für mindestens zwei Jahre verpflichten, und prüfen die Anwerbung von Fahrern aus Nachbarländern.\n\nUnser nächstes Heft erscheint am Freitag. Darin finden Sie einen ausführlichen Bericht über neue Lagersysteme und einen Vergleich der Versicherungen für Kühlfahrzeuge.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "h-de-07",
+      "subject": "Lieferfenster in Göteborg: Ihre Bestätigung",
+      "body": "Sehr geehrter Herr Szalewski,\n\nbitte bestätigen Sie mir, ob Ihr Fahrer am Donnerstag das Zeitfenster um 10:00 in Göteborg nutzen kann. Antwort bitte bis morgen.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "expectedPoints": [
+        "Confirm whether the driver can use the Thursday 10:00 window",
+        "Answer by tomorrow"
+      ],
+      "mustNot": [
+        "Do not agree to a different delivery date without the operations director"
+      ]
+    },
+    {
+      "id": "h-de-08",
+      "subject": "Frachtraten diese Woche: Überblick",
+      "body": "Frachtraten im Überblick\n\n- Containerfracht Asien-Nordeuropa: Die Preise liegen mit 2 480 USD pro Container etwa vier Prozent unter dem Vormonat.\n- Straßenfracht Mitteleuropa: Die Raten sind stabil, doch die Nachfrage nach Kühlfahrzeugen bleibt hoch.\n- Ostsee-Fähren: Die Kapazität steigt im Februar um zwei Abfahrten pro Woche.\n- Zollverfahren: Die Behörden in mehreren Häfen führen ein digitales System zur Voranmeldung ein.\n\nDiese Zusammenfassung dient nur zur Information, es sind keine Maßnahmen nötig. Der vollständige Bericht über die Frachtraten des ersten Quartals steht im kostenpflichtigen Abonnement zur Verfügung.",
+      "thread": []
+    },
+    {
+      "id": "h-de-09",
+      "subject": "ERP-Meldung: Systemstörung im Lager Stryków",
+      "body": "Automatische Meldung des ERP-Systems.\n\nIm Lagerverwaltungssystem des Standorts Stryków wurde am 14.01.2027 um 02:15 eine Störung festgestellt. Betroffen sind die Module Wareneingang und Kommissionierung. Die Störung dauerte 47 Minuten und ist inzwischen behoben.\n\nStatus: abgeschlossen. Dokumentnummer: WMS-INC-0412. Zahl der betroffenen Aufträge: 31. Zahl der verspäteten Lieferungen: 4. Das System hat alle offenen Vorgänge automatisch neu gestartet. Es wurden keine Daten verloren, und die Prüfung der Bestände nach dem Neustart ergab keine Abweichungen. Die Störung wird im Protokoll des Systems gespeichert. Eine Antwort auf diese Meldung ist nicht erforderlich.",
+      "thread": []
+    },
+    {
+      "id": "h-de-10",
+      "subject": "Bewerbung Lagerleiter: Ihre Entscheidung zum Gehalt",
+      "body": "Wiktor,\n\nfür die Stelle des Lagerleiters in Posen haben wir einen guten Kandidaten, der Deutsch und Polnisch spricht und bisher bei einem großen deutschen Logistiker gearbeitet hat. Er verlangt allerdings ein Gehalt, das etwa 15 Prozent über unserem Rahmen liegt.\n\nIch bitte Sie um Ihre Entscheidung, ob wir von der Gehaltspolitik abweichen dürfen. Wenn ja, bis zu welchem Betrag? Wenn nicht, sage ich dem Kandidaten ab, und wir suchen weiter. Bitte antworten Sie mir persönlich, ich möchte nichts ohne Ihre Zustimmung zusagen.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "expectedPoints": [
+        "Say whether a salary above the range is allowed for the warehouse manager in Poznań",
+        "State the maximum amount if it is allowed"
+      ],
+      "mustNot": [
+        "Do not make a salary offer to the candidate before the decision"
+      ]
+    },
+    {
+      "id": "h-dmd-01",
+      "subject": "Re: Nordic framework agreement - open points",
+      "body": "Dear Mr Szalewski,\n\nThank you for your answer. I think someone in your team should take care of the open points in the contract, because they have been waiting for a while and my own team cannot move forward without them.\n\nThere are a few things that need to be cleaned up: some figures in the annex do not match, a certificate is still missing and the delivery schedule is not final. I would be grateful if your side could look at all of that and send us a corrected version, so that we can bring it to our board.\n\nI leave it to you to decide who should do what.",
+      "thread": [
+        {
+          "subject": "Re: Nordic framework agreement",
+          "body": "Dear Karin, I have read your remarks. Let me check them with my team. Wiktor Szalewski"
+        },
+        {
+          "subject": "Nordic framework agreement",
+          "body": "Dear Mr Szalewski, our legal team found a few inconsistencies in the draft. Karin Lindqvist"
+        }
+      ]
+    },
+    {
+      "id": "h-dmd-02",
+      "subject": "Wyjazd rady - ktoś powinien to ogarnąć",
+      "body": "Wiktor,\n\nprzy planowaniu wyjazdu rady do Frankfurtu zostało kilka niezałatwionych spraw: hotel, transfer z lotniska i kolacja z gospodarzami. Powinien się tym zająć ktoś z Twojego zespołu, bo ja nie mam do tego ludzi.\n\nNie wiem, kto ma to zrobić ani na kiedy, zostawiam to Tobie. Wiem tylko, że dwa miejsca w hotelu przy lotnisku mają jeszcze rezerwację tymczasową, a restauracja czeka na liczbę gości. Ważne, żeby wszystko było gotowe przed wylotem.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "h-dmd-04",
+      "subject": "Card list update",
+      "body": "Dear Mr Szalewski,\n\nyour team should update the list of drivers who hold fuel cards, as several names on our side are outdated. Please have it done.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "html": "<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#222\"><p style=\"margin:0 0 10px\">Dear Mr Szalewski,</p><p style=\"margin:0 0 10px\">your team should update the list of drivers who hold fuel cards, as several names on our side are outdated. Please have it done.</p><p style=\"margin:0 0 10px\">Regards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota</p></div>",
+      "thread": []
+    },
+    {
+      "id": "h-dmd-07",
+      "subject": "Board dinner arrangements",
+      "body": "Wiktor,\n\nsomeone from your office needs to sort out the board dinner. I do not mind who it is.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "h-dmd-08",
+      "subject": "Otwarte faktury - proszę o zajęcie się",
+      "body": "Szanowny Panie Prezesie,\n\nna naszym koncie wciąż widnieje kilka niezapłaconych faktur za grudzień oraz jedna korekta, której Państwa dział finansowy jeszcze nie zaksięgował. Nie chcę zawracać Panu głowy szczegółami, ale ktoś po Państwa stronie powinien to uporządkować, zanim limity na kartach zostaną obniżone.\n\nProszę, aby Pana zespół sprawdził, które pozycje są sporne, a które po prostu zostały pominięte, i dał nam znać. Uzgodnimy resztę, gdy dowiemy się, z kim mamy rozmawiać.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": []
+    },
+    {
+      "id": "h-dmd-09",
+      "subject": "Zielona - uzupełnienie oferty",
+      "body": "Szanowny Panie Prezesie,\n\nw Państwa ofercie do przetargu brakuje kilku dokumentów, które powinni Państwo dołączyć. Proszę, aby ktoś z Pana zespołu się tym zajął i przesłał je do nas jak najszybciej. Wiem, że to zwykle zadanie handlowców, ale nie wiem, z kim mam się kontaktować.\n\nChodzi o zaświadczenia i kilka dodatkowych wyjaśnień do cennika. Resztę zostawiam Państwu, bo znają Państwo własne dokumenty najlepiej, a ja nie chcę niczego narzucać. Rozumiem, że zespół jest zajęty, jednak oferta bez tych dokumentów może zostać odrzucona przez komisję.",
+      "thread": []
+    },
+    {
+      "id": "h-dmd-10",
+      "subject": "Umowa na 2027 - sprawy do uporządkowania po Państwa stronie",
+      "body": "Szanowny Panie Prezesie,\n\nzbliżamy się do podpisania nowej umowy transportowej na rok 2027 i widzę po naszej stronie kilka spraw, które powinny zostać uporządkowane przez Państwa zespół, zanim złożymy podpisy. Piszę do Pana, a nie do dyrektora operacyjnego, bo to Pan decyduje, komu przydzielić tę pracę.\n\nPo pierwsze, cennik: w załączonym wcześniej projekcie część tras ma stawki z roku ubiegłego, a część nowe, i nie jest jasne, które obowiązują. Po drugie, warunki płatności: w jednym miejscu jest czternaście dni, w innym trzydzieści i potrzebujemy jednolitego zapisu. Po trzecie, zasady reklamacji: chcielibyśmy, żeby okres zgłaszania szkód był dłuższy niż w obecnej umowie, ale nie ustaliliśmy jak długi.\n\nWszystkie trzy sprawy wymagają, aby ktoś po Państwa stronie je przejrzał i poprawił projekt. Nie wiem, kto jest właściwą osobą, i nie chcę zgadywać. Proszę, aby wskazał Pan odpowiedniego pracownika, który przygotuje poprawioną wersję dla naszej firmy, a następnie skontaktuje się z naszym działem zakupów.\n\nZależy nam na terminowym podpisaniu umowy, bo od niej zależy plan produkcji na pierwszy kwartał. Rozumiem, że to okres wytężonej pracy w Pana firmie, jednak wolimy uniknąć sytuacji, w której dostawy zaczynają się bez podpisanego dokumentu. Zostawiam to Panu.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": []
+    },
+    {
+      "id": "h-fwd-01",
+      "subject": "Fwd: Faktura korygująca do reklamacji",
+      "body": "Szanowny Panie Prezesie,\n\nprzekazuję wiadomość od Pana księgowej, którą otrzymaliśmy w sprawie faktury korygującej do naszej reklamacji. Dla porządku przesyłam ją w całości, żeby Pan wiedział, jak wygląda stan rozliczenia. Nie oczekuję w tej chwili żadnych działań z Pana strony.\n\n---------- Przekazana wiadomość ----------\nOd: Magdalena Czerniak\n\nDzień dobry, przesyłam informację, że faktura korygująca na kwotę 4 200 zł została wystawiona i zaksięgowana w zeszłym tygodniu. Kwota pomniejsza saldo Państwa zobowiązań. Magdalena Czerniak",
+      "thread": [
+        {
+          "subject": "Faktura korygująca do reklamacji",
+          "body": "Dzień dobry, przesyłam informację, że faktura korygująca na kwotę 4 200 zł została wystawiona i zaksięgowana w zeszłym tygodniu. Kwota pomniejsza saldo Państwa zobowiązań. Magdalena Czerniak"
+        },
+        {
+          "subject": "Fwd: Faktura korygująca do reklamacji",
+          "body": "Przekazuję wiadomość od Pana księgowej. Tomasz Brzezinski"
+        }
+      ]
+    },
+    {
+      "id": "h-fwd-02",
+      "subject": "Fwd: dziwna oferta - czy to od Państwa?",
+      "body": "Szanowny Panie Prezesie,\n\ndostaliśmy poniższą wiadomość z ofertą baz adresowych i pozycjonowania. Odwołuje się do Pana firmy, jakby Państwo byli zainteresowani, więc zastanawiam się, czy Państwo wiedzą o tej sprawie. Proszę o odpowiedź, czy to jest ktoś, z kim Pan współpracuje, bo nie chcę odpowiadać na coś, co może być oszustwem.\n\n---------- Przekazana wiadomość ----------\nOd: Premium Leads Pro\n\nWitamy! Mamy dla Panstwa baze 500 000 adresow firm transportowych. Cena tylko 99 zl, tylko dzis. Zamowienie przez odpowiedz na ten mail. Premium Leads Pro | Sales Team\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [
+        {
+          "subject": "dziwna oferta",
+          "body": "Witamy! Mamy dla Panstwa baze 500 000 adresow firm transportowych. Cena tylko 99 zl, tylko dzis. Zamowienie przez odpowiedz na ten mail. Premium Leads Pro | Sales Team"
+        },
+        {
+          "subject": "Fwd: dziwna oferta - czy to od Państwa?",
+          "body": "Przekazuję Panu podejrzaną wiadomość. Genowefa Jastrzebska"
+        }
+      ],
+      "expectedPoints": [
+        "Say whether Kordelan has any contact with Premium Leads Pro",
+        "Tell her to ignore the offer if there is none"
+      ],
+      "mustNot": [
+        "Do not reply to the sender of the original offer"
+      ]
+    },
+    {
+      "id": "h-fwd-04",
+      "subject": "Fwd: Protokół z odbioru towaru w Poznaniu",
+      "body": "Szanowny Panie Prezesie,\n\nprzesyłam dla informacji protokół, który otrzymaliśmy od Pana dyrektor operacyjnej po rozładunku naszej dostawy. Wszystko zostało sprawdzone i wygląda zgodnie z zamówieniem. Przekazuję go tylko do Pana wiadomości, na wypadek gdyby sprawa wróciła w rozmowach o reklamacjach.\n\n---------- Przekazana wiadomość ----------\nOd: Halina Strzemecka\n\nDzień dobry, potwierdzam odbiór towaru w Poznaniu: 24 palety, bez uszkodzeń. Protokół podpisany przez obie strony 12.01.2027. Halina Strzemecka | Dyrektor Operacyjny",
+      "thread": [
+        {
+          "subject": "Protokół z odbioru towaru w Poznaniu",
+          "body": "Dzień dobry, potwierdzam odbiór towaru w Poznaniu: 24 palety, bez uszkodzeń. Protokół podpisany przez obie strony 12.01.2027. Halina Strzemecka | Dyrektor Operacyjny"
+        },
+        {
+          "subject": "Fwd: Protokół z odbioru towaru w Poznaniu",
+          "body": "Przekazuję protokół dla informacji. Tomasz Brzezinski"
+        }
+      ]
+    },
+    {
+      "id": "h-fwd-05",
+      "subject": "Fwd: Zielona asking about customs",
+      "body": "Dear Wiktor,\n\nForwarding a question from Genowefa. Could you answer her directly?\n\n---------- Forwarded message ----------\nWho handles customs papers for my goods, you or Kordelan? I need one name.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "subject": "Customs papers",
+          "body": "Who handles the customs papers for my imported goods, you or Kordelan? I need one name. Genowefa Jastrzebska"
+        },
+        {
+          "subject": "Fwd: Zielona asking about customs",
+          "body": "Forwarding her question to Wiktor. Daniel"
+        }
+      ],
+      "expectedPoints": [
+        "Name who is responsible for the customs papers of Zielona's imported goods"
+      ],
+      "mustNot": [
+        "Do not promise that Kordelan takes over the whole customs process"
+      ]
+    },
+    {
+      "id": "h-fwd-08",
+      "subject": "Fwd: Przegląd naczep - Pani Haliny pytanie",
+      "body": "Szanowny Panie Prezesie,\n\nprzekazuję pytanie Pana dyrektor operacyjnej, czy przegląd naczep w lutym jest możliwy.\n\n---------- Przekazana wiadomość ----------\nCzy przegląd dwunastu naczep może odbyć się w lutym? Halina\n\nMit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued",
+      "html": "<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#222\"><p style=\"margin:0 0 10px\">Szanowny Panie Prezesie,</p><p style=\"margin:0 0 10px\">przekazuję pytanie Pana dyrektor operacyjnej, czy przegląd naczep w lutym jest możliwy.</p><p style=\"margin:0 0 10px\">---------- Przekazana wiadomość ----------<br>Czy przegląd dwunastu naczep może odbyć się w lutym? Halina</p><p style=\"margin:0 0 10px\">Mit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued</p></div>",
+      "thread": [
+        {
+          "subject": "Przegląd naczep",
+          "body": "Czy przegląd dwunastu naczep może odbyć się w lutym? Halina"
+        },
+        {
+          "subject": "Fwd: Przegląd naczep - Pani Haliny pytanie",
+          "body": "Przekazuję pytanie Pana dyrektor operacyjnej do decyzji. Matthias Brandt"
+        }
+      ],
+      "expectedPoints": [
+        "Say whether the service of twelve trailers in February is possible"
+      ],
+      "mustNot": [
+        "Do not approve the service budget in this reply"
+      ]
+    },
+    {
+      "id": "h-fwd-09",
+      "subject": "Fwd: Faktura od brokera w Rotterdamie",
+      "body": "Hi Wiktor,\n\nPiotr sent me an invoice from the Rotterdam broker, and the amount looks too high. I am passing it on so that your accountant can check it against the agreed rate, because I do not have the data. The invoice says 3 400 EUR, and we agreed on 2 600 EUR.\n\n---------- Forwarded message ----------\nFrom: Piotr Lewandrowski\n\nOliver, the broker in Rotterdam invoiced 3 400 EUR for the last consignment. Please check. Piotr\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [
+        {
+          "subject": "Broker invoice",
+          "body": "Oliver, the broker in Rotterdam invoiced 3 400 EUR for the last consignment. Please check. Piotr"
+        },
+        {
+          "subject": "Fwd: Faktura od brokera w Rotterdamie",
+          "body": "Passing this on for the accountant to check against the agreed rate. Oliver"
+        }
+      ]
+    },
+    {
+      "id": "h-fwd-10",
+      "subject": "Fwd: Operations report on the January storm",
+      "body": "Wiktor,\n\nI am forwarding the report of your operations director about the January storm and its effect on the northern routes. I read it with interest and think you should know that the supervisory board has also seen it, since a member forwarded it to me earlier today. The numbers are not alarming: six deliveries were late by less than a day, and the compensation to customers stays below the amount planned in the budget.\n\nI am sending it to you for your information only, so that you are not surprised by questions from board members at the next meeting. If a member asks about the storm, I will say that management handled it well and that the report is a good summary. There is nothing you need to do, and I do not need an answer from you.\n\nI add that I liked the part about the new rule for the drivers, who now wait at the next safe parking place when the roads are closed. This is the kind of decision that I want to see more often in the reports of the management board.\n\n---------- Forwarded message ----------\nFrom: Halina Strzemecka\n\nThe January storm delayed six deliveries on the northern routes, each by less than one day. The cost of compensation is 8 300 PLN. New rule: drivers wait at the next safe parking place when roads are closed. Halina Strzemecka\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "subject": "Operations report on the January storm",
+          "body": "The January storm delayed six deliveries on the northern routes, each by less than one day. The cost of compensation is 8 300 PLN. New rule: drivers wait at the next safe parking place when roads are closed. Halina Strzemecka"
+        },
+        {
+          "subject": "Fwd: Operations report on the January storm",
+          "body": "Forwarding the operations report for your information. Zbigniew"
+        }
+      ]
+    },
+    {
+      "id": "h-html-01",
+      "subject": "Logistyka Dziś: wydanie z piątku",
+      "body": "",
+      "html": "<div style=\"font-family:Georgia,serif;font-size:15px;color:#222\"><h2 style=\"margin:0 0 8px\">Logistyka Dziś - wydanie tygodniowe</h2><ul style=\"margin:0 0 10px\"><li>Ceny oleju napędowego spadły o dwa procent.</li><li>Nowe stawki opłat drogowych od marca.</li><li>Trzy przetargi sieci handlowych.</li></ul><p style=\"margin:0;color:#666\">Redakcja Logistyka Dzis | wypisz sie z listy</p></div>",
+      "thread": []
+    },
+    {
+      "id": "h-html-03",
+      "subject": "Paliwa-Flota: unpaid invoice, your cards will be blocked",
+      "body": "",
+      "html": "<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#222\"><p style=\"margin:0 0 10px\"><b>Overdue invoice notice</b></p><p style=\"margin:0 0 10px\">Our billing system shows that invoice PF-4471 for 12 800 PLN is overdue by 15 days. Our bank details have changed, and the previous account is no longer valid. To avoid the blocking of all fuel cards of your company, you must confirm the new bank details today.</p><p style=\"margin:0 0 10px\">Press the button below and log in with your card portal password to download the new payment instruction. If you do not confirm within 24 hours, your cards will be blocked and the contract may be terminated.</p><p style=\"margin:0 0 10px\"><span style=\"display:inline-block;padding:10px 18px;background:#c0392b;color:#fff;font-weight:bold\">CONFIRM BANK DETAILS</span></p><p style=\"margin:0\">Paliwa-Flota Billing Department</p></div>",
+      "thread": []
+    }
+  ]
+}
