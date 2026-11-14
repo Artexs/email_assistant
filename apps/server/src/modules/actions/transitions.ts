@@ -573,14 +573,14 @@ export const PAIR_RULES: readonly PairRule[] = [
     id: "P1",
     when: "a send is claimed",
     then: "its draft (`depends_on_action_id`) must be `applied`",
-    enforcedBy: ["claimableWhere (repo.ts)", "send.ts re-check (E12)"],
+    enforcedBy: ["claimableWhere (repo/claims.ts)", "send.ts re-check (E12)"],
     test: "actions-repo.test.ts › 2: an approved send with an applied draft is claimed with the mail fields; actions-repo.test.ts › 1: a ready draft is claimed while its send waits; the send is not; actions-send.test.ts › a claimed send whose draft is no longer applied is released as approved with no count (P1 re-check)",
   },
   {
     id: "P2",
     when: "a draft (original) is claimed",
     then: "one of its sends must be `awaiting_approval`; else the draft ends `expired` (`send_closed`)",
-    enforcedBy: ["sendWaits (repo.ts)", "drafts.ts (E8)", "expiry.ts (E14c)"],
+    enforcedBy: ["sendWaits (repo/claims.ts)", "drafts.ts (E8)", "expiry.ts (E14c)"],
     test: "actions-repo.test.ts › 3: a draft waits for its send to wait too; actions-drafts.test.ts › a dead send: no APPEND, the draft expires with send_closed",
   },
   {
