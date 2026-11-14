@@ -10,7 +10,7 @@ Ticket: [ticket.md](ticket.md). Open defaults for the owner: [questions.md](ques
 - [x] Facts checked (probe P1, reference check P2).
 - [x] Decisions D1–D32.
 - [x] stage-01-send-limit-rule [written]
-- [ ] stage-02-send-started-column
+- [x] stage-02-send-started-column [written]
 - [ ] stage-03-hold-in-the-committer
 - [ ] stage-04-visible-wait-and-operator-notice
 - [ ] stage-05-send-held-notice
