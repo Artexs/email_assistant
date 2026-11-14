@@ -20,6 +20,7 @@ The server modules sit in layers. `bun run lint` fails on an import that crosses
 | Layer | Modules                                                                                                                             |
 | ----- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | roots | the composition roots `apps/server/src/*.ts` (`main.ts`, `web.ts`, `composition.ts`, `retention.ts`) and `apps/server/src/scripts/` |
+| 5     | `operator`                                                                                                                          |
 | 4     | `reports`, `channels`, `testmail`                                                                                                   |
 | 3     | `triage`, `actions`, `delegation`                                                                                                   |
 | 2     | `config`, `mail`                                                                                                                    |

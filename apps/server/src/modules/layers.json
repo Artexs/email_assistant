@@ -4,7 +4,8 @@
     ["audit", "tenancy"],
     ["config", "mail"],
     ["triage", "actions", "delegation"],
-    ["reports", "channels", "testmail"]
+    ["reports", "channels", "testmail"],
+    ["operator"]
   ],
   "sameLayerEdges": [
     {
