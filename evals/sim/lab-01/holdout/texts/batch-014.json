@@ -1,0 +1,172 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-014",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-inf-0139",
+      "subject": "Zmiana sali na posiedzenie",
+      "body": "Wiktor,\n\nposiedzenie rady 28 stycznia odbędzie się w dużej sali na pierwszym piętrze, bo mała jest zajęta. Informuję tylko, żebyś wiedział.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Wiktor,</p><p style=\"margin:0 0 12px 0\">posiedzenie rady 28 stycznia odbędzie się w dużej sali na pierwszym piętrze, bo mała jest zajęta. Informuję tylko, żebyś wiedział.</p><p style=\"margin:0 0 12px 0\">Z powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0140",
+      "subject": "Logistyka Dziś: stacje i karty - gdzie tankować taniej",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nNajnowsze zestawienie cen paliwa na trasach tranzytowych pokazuje, że najtaniej tankuje się w tym tygodniu na stacjach przy granicy z Czechami. Różnica w stosunku do stacji w centralnej Polsce wynosi średnio osiem groszy na litrze. Dla firm z dużą flotą to realna oszczędność, choć wymaga planowania tras.\n\nDostawcy kart flotowych podkreślają, że karty zagraniczne mają różne limity dobowe. Przed wyjazdem warto sprawdzić, czy limit pokrywa pełny bak ciężarówki. Niektórzy dostawcy podnoszą limity automatycznie dla klientów z dobrą historią płatności.\n\nPrzypominamy, że kolejne wydanie ukaże się w piątek.",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0141",
+      "subject": "Cennik na 2027 - nasza wewnętrzna akceptacja",
+      "body": "Szanowny Panie Wiktorze,\n\ndla Pańskiej wiadomości: nasz zarząd zaakceptował wewnętrznie cennik transportu na ten rok w wersji uzgodnionej z Państwa koordynatorem sprzedaży. Dokument jest już w naszym systemie zakupowym, a dział finansowy zna nowe stawki. Kolejne kroki leżą po naszej stronie.\n\nDziękuję za sprawne prowadzenie rozmów i pozdrawiam serdecznie.",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Szanowny Panie Wiktorze,</p><p style=\"margin:0 0 12px 0\">dla Pańskiej wiadomości: nasz zarząd zaakceptował wewnętrznie cennik transportu na ten rok w wersji uzgodnionej z Państwa koordynatorem sprzedaży. Dokument jest już w naszym systemie zakupowym, a dział finansowy zna nowe stawki. Kolejne kroki leżą po naszej stronie.</p><p style=\"margin:0 0 12px 0\">Dziękuję za sprawne prowadzenie rozmów i pozdrawiam serdecznie.</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0142",
+      "subject": "WMS - plan aktualizacji",
+      "body": "Cześć Wiktor,\n\ndostawca systemu magazynowego zapowiedział aktualizację na noc z soboty na niedzielę, w godzinach od pierwszej do piątej. W tym czasie magazyny w Poznaniu i Gdyni nie przyjmują dostaw, ale w weekendy mamy tylko dwa zaplanowane rozładunki, które przesunęliśmy na poniedziałek rano. Dział IT będzie na dyżurze i sprawdzi działanie systemu po zakończeniu prac.\n\nWszystko jest ustalone z dostawcą i klientami, więc nie wymaga od Ciebie żadnych działań. Piszę tylko, żebyś nie był zaskoczony powiadomieniem z systemu.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Cześć Wiktor,</p><p style=\"margin:0 0 12px 0\">dostawca systemu magazynowego zapowiedział aktualizację na noc z soboty na niedzielę, w godzinach od pierwszej do piątej. W tym czasie magazyny w Poznaniu i Gdyni nie przyjmują dostaw, ale w weekendy mamy tylko dwa zaplanowane rozładunki, które przesunęliśmy na poniedziałek rano. Dział IT będzie na dyżurze i sprawdzi działanie systemu po zakończeniu prac.</p><p style=\"margin:0 0 12px 0\">Wszystko jest ustalone z dostawcą i klientami, więc nie wymaga od Ciebie żadnych działań. Piszę tylko, żebyś nie był zaskoczony powiadomieniem z systemu.</p><p style=\"margin:0 0 12px 0\">Pozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0143",
+      "subject": "Obsada magazynu - tydzień w liczbach",
+      "body": "Cześć Wiktor,\n\nkrótkie podsumowanie obsady magazynów na ten tydzień. Poznań: komplet na wszystkich zmianach, zero nieobecności bez zgłoszenia. Gdynia: dwie osoby na zwolnieniu, ale agencja zapewniła zastępstwo w ciągu jednego dnia, więc rozładunki idą zgodnie z planem.\n\nWykorzystanie nadgodzin spadło o jedną trzecią w porównaniu z grudniem, co wynika z nowych zatrudnień. Szkolenia nowych osób przebiegają planowo i instruktorzy nie zgłaszają trudności.\n\nWszystko jest pod kontrolą, informuję tylko dla porządku.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Cześć Wiktor,</p><p style=\"margin:0 0 12px 0\">krótkie podsumowanie obsady magazynów na ten tydzień. Poznań: komplet na wszystkich zmianach, zero nieobecności bez zgłoszenia. Gdynia: dwie osoby na zwolnieniu, ale agencja zapewniła zastępstwo w ciągu jednego dnia, więc rozładunki idą zgodnie z planem.</p><p style=\"margin:0 0 12px 0\">Wykorzystanie nadgodzin spadło o jedną trzecią w porównaniu z grudniem, co wynika z nowych zatrudnień. Szkolenia nowych osób przebiegają planowo i instruktorzy nie zgłaszają trudności.</p><p style=\"margin:0 0 12px 0\">Wszystko jest pod kontrolą, informuję tylko dla porządku.</p><p style=\"margin:0 0 12px 0\">Pozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0146",
+      "subject": "Logistyka Dziś: branża w liczbach",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nWedług danych statystycznych polscy przewoźnicy wykonali w ubiegłym roku o trzy procent więcej przewozów międzynarodowych niż rok wcześniej. Największy wzrost odnotowano w przewozach do Niemiec i krajów skandynawskich, a spadek na trasach wschodnich.\n\nLiczba firm transportowych zarejestrowanych w kraju przekroczyła trzydzieści tysięcy. Wzrosła również liczba pojazdów o normie emisji spalin Euro 6, które stanowią już ponad osiemdziesiąt procent floty w segmencie ciężkich ciężarówek.\n\nBranża spodziewa się dalszego wzrostu w tym roku, choć wskazuje na niedobór kierowców jako główną barierę.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0147",
+      "subject": "Zakończenie przeglądu dokumentacji przetargowej",
+      "body": "Szanowny Panie Wiktorze,\n\npragnę poinformować, że nasi prawnicy zakończyli przegląd dokumentacji przetargowej dla postępowania na obsługę sieci handlowej. Nie znaleźli zapisów, które stanowiłyby ryzyko dla wspólnej oferty, a kilka drobnych uwag redakcyjnych przekazaliśmy już Państwa koordynatorowi sprzedaży.\n\nWszystko idzie zgodnie z harmonogramem. Dokumenty będą gotowe do podpisu w przyszłym tygodniu, a ich podpisanie odbędzie się w trybie elektronicznym. Informuję wyłącznie do wiadomości.\n\nZ wyrazami szacunku",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0148",
+      "subject": "Logistyka Dziś: ceny paliw tydzień po tygodniu",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nOlej napędowy potaniał w tym tygodniu na większości stacji. Średnia cena na stacjach sieciowych wyniosła nieco poniżej sześciu złotych za litr, a na stacjach niezależnych była o kilka groszy niższa.\n\nKarty paliwowe: dostawcy oferują od lutego nowe progi rabatowe dla firm z flotą powyżej pięćdziesięciu pojazdów. Szczegóły zależą od umowy, ale rabaty mogą sięgać kilkunastu groszy na litrze.\n\nAnalitycy zwracają uwagę, że zmiany cen paliw na rynku hurtowym docierają do stacji z kilkudniowym opóźnieniem. Przy stałej cenie z kartą oznacza to chwilową korzyść dla odbiorców.",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0150",
+      "subject": "Logistyka Dziś: opłaty dodatkowe na kartach flotowych",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nJeden z dużych dostawców kart flotowych ogłosił nowy pakiet usług dla przewoźników, obejmujący opłaty drogowe w kilku krajach UE rozliczane na jednej fakturze. Opłata za obsługę pakietu jest niewielka i zależy od liczby pojazdów.\n\nEksperci zwracają uwagę, że pakiety tego typu upraszczają księgowanie, ale wymagają uważnej analizy stawek. Zalecają porównanie kosztów za ostatni rok.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0151",
+      "subject": "Rekrutacje - podsumowanie stycznia i plan na pierwszy kwartał",
+      "body": "Cześć Wiktor,\n\nprzesyłam podsumowanie rekrutacji w styczniu wraz z planem na kolejne tygodnie, żebyś miał pełny obraz bez potrzeby pytania.\n\nW styczniu przyjęliśmy trzydzieści dwie osoby, głównie do magazynów w Poznaniu i Gdyni. Rozmowy kwalifikacyjne prowadziliśmy z blisko osiemdziesięcioma kandydatami, a średni czas od zgłoszenia do podpisania umowy wyniósł osiemnaście dni. Dwie osoby zrezygnowały przed rozpoczęciem pracy, ale zostały zastąpione z listy rezerwowej, więc plan jest wypełniony.\n\nNajważniejsze zmiany w procesie to krótsza ankieta dla kandydatów oraz wspólne rozmowy z dyrektor operacyjną dla stanowisk kierowniczych, co skróciło decyzje o kilka dni. Agencja pracy tymczasowej dostarczyła osiem osób na wzmożony ruch, a ich umowy kończą się w marcu.\n\nW lutym zostało do obsadzenia dziesięć stanowisk: sześć w Gdyni, dwa w biurze i dwa w księgowości. Ogłoszenia są opublikowane i spływają zgłoszenia. Koszty mieszczą się w budżecie rekrutacyjnym, a Magdalena potwierdziła, że faktury agencji są księgowane na bieżąco.\n\nNie ma tu nic, co wymagałoby decyzji, więc piszę tylko dla informacji.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0152",
+      "subject": "Re: Delivery windows - Friday reserve slot confirmed",
+      "body": "Dear Mr Szalewski,\n\nThank you for your reply on the unloading windows. I would like to confirm in writing the arrangement that our teams discussed, so that both sides have the same understanding and no one needs to look through the earlier correspondence.\n\nOur receiving dock in Gothenburg will accept your trucks on Tuesdays and Thursdays between 08:00 and 12:00. The Friday window from 10:00 to 12:00 stays available as a reserve and is released automatically at noon on Thursday if you have not used it. We have updated our dock scheduling system accordingly, and your dispatcher will see the reserve window in the shared calendar.\n\nFor pallets, we continue to use the label format that was agreed in December. The quality department checked the certificates of the chilled lines and confirmed that no changes are needed until their expiry date. We also informed our security team about the new truck registration numbers that you sent, so your drivers will not be delayed at the gate.\n\nThe first delivery under the new schedule is planned for the first Tuesday of February. We will send a short confirmation on the day before.\n\nThis message is for information only. We do not require anything from your side.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [
+        {
+          "subject": "Re: Delivery windows for February",
+          "body": "Dear Karin, thank you for the schedule. Our operations team accepts the Tuesday and Thursday windows and will confirm the Friday reserve. Best regards, Wiktor Szalewski"
+        },
+        {
+          "subject": "Delivery windows for February",
+          "body": "Dear Mr Szalewski, we propose the following windows for the February deliveries to our Gothenburg dock: Tuesdays and Thursdays, morning hours. Karin Lindqvist"
+        }
+      ]
+    },
+    {
+      "id": "b-inf-0153",
+      "subject": "Supply Chain Weekly: the fuel surcharge note",
+      "body": "Supply Chain Weekly - fuel notes\n\nSeveral carriers lowered fuel surcharges for February after a drop in diesel prices in the last two weeks.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0154",
+      "subject": "Logistyka Dziś: karty flotowe w liczbach",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nLiczba kart paliwowych w obiegu w Polsce przekroczyła milion. Najszybciej rośnie rynek kart dla małych firm transportowych.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0156",
+      "subject": "Reklamacje w styczniu - co się wydarzyło i co z tego wynika",
+      "body": "Cześć Wiktor,\n\nwysyłam do wiadomości omówienie reklamacji ze stycznia. Nie ma tu nic, co wymagałoby decyzji, ale uznałam, że warto, abyś znał liczby i wnioski, bo klienci mogą o to zapytać na rozmowach.\n\nW styczniu wpłynęło osiem reklamacji, w poprzednim miesiącu było ich dwanaście. Pięć dotyczyło uszkodzeń transportowych palet, dwie braków w dostawie, jedna opóźnienia. Wszystkie zostały zamknięte w ciągu pięciu dni roboczych, a dla czterech klient dostał rekompensatę w formie noty korygującej.\n\nNajwiększa sprawa dotyczyła dostawy mebli do klienta w Radomiu, gdzie uszkodzone zostały dwie palety. Ustaliliśmy, że winne było niewłaściwe zabezpieczenie ładunku w Gdyni. Kierowca i magazynier dostali szkolenie, a przy rampie pojawiła się dodatkowa kontrola przed wyjazdem.\n\nWnioski: liczba reklamacji spada, a koszty z nimi związane spadły o jedną trzecią. Utrzymamy dodatkowe kontrole do końca kwartału i zobaczymy, czy to przynosi efekty. Klienci, z którymi rozmawiałam po zamknięciu spraw, byli zadowoleni z szybkości reakcji, a dwóch z nich wprost pochwaliło kierowców za uprzejmość przy rozładunku. Dział jakości przygotuje w lutym pełny raport z podziałem na magazyny i rodzaje towarów, który mogę udostępnić na prośbę. Informuję tylko dla porządku.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0157",
+      "subject": "Logistyka Dziś: kolejki na granicach",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nCzas oczekiwania ciężarówek na przejściach granicznych z Niemcami skrócił się w tym tygodniu do średnio dwóch godzin.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0159",
+      "subject": "Reklamacja - informacja o zamknięciu",
+      "body": "Szanowny Panie Wiktorze,\n\ninformuję, że ostatnia reklamacja z grudnia została u nas zamknięta.",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Szanowny Panie Wiktorze,</p><p style=\"margin:0 0 12px 0\">informuję, że ostatnia reklamacja z grudnia została u nas zamknięta.</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0160",
+      "subject": "Podsumowanie reklamacji i jakości dostaw w ostatnim kwartale",
+      "body": "Szanowny Panie Wiktorze,\n\nchciałbym przekazać Panu informacje o reklamacjach, które zgłaszaliśmy w ostatnim kwartale, aby miał Pan obraz tego, jak od strony klienta wygląda jakość dostaw. Piszę ten raport z własnej inicjatywy, ponieważ cenimy sobie dobrą współpracę i chcemy, aby zarząd Kordelana miał rzetelne dane.\n\nW trzecim kwartale zgłosiliśmy pięć reklamacji, w czwartym trzy. Wartość uszkodzonego towaru spadła z około czterdziestu tysięcy złotych do mniej niż dziesięciu. Poprawa jest widoczna szczególnie w przypadku płyt meblowych, które wymagają ostrożnego mocowania. Z naszych obserwacji wynika, że nowe zabezpieczenia w naczepach i dodatkowe pasy robią różnicę.\n\nCo do terminów, osiemdziesiąt osiem procent dostaw przyjechało w uzgodnionym oknie, a pozostałe z opóźnieniem do dwóch godzin, które uprzedzono telefonicznie. Taka komunikacja bardzo nam pomaga w planowaniu produkcji.\n\nWszystkie sprawy zostały rozliczone i uważamy je za zamknięte. Wiadomość ma charakter informacyjny i nie wymaga Pańskiej odpowiedzi. Dziękujemy za rzetelną współpracę.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0161",
+      "subject": "Nordic contract - quick status",
+      "body": "Hi Wiktor,\n\nshort update on the Nordic deal. Their lawyers returned the draft with only two small comments, both about wording, nothing on price or liability. Piotr has already accepted both changes and sent the clean version back this morning. If nothing else comes up, we sign on the 22nd as planned.\n\nNothing for you to do for now, but I wanted you to know where we are.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0162",
+      "subject": "Wyniki testów kwalifikacyjnych kierowców",
+      "body": "Cześć Wiktor,\n\nw tym tygodniu przeprowadziliśmy testy kwalifikacyjne dla kandydatów na kierowców wózków i kierowców dostawczych. Przystąpiło czternaście osób, a dziesięć zaliczyło testy praktyczne i teoretyczne. Dla czterech pozostałych zaplanowaliśmy powtórkę za dwa tygodnie. Dział HR zna wyniki i wystawi oferty osobom, które zdały.\n\nPrzekazuję informację, żebyś wiedział, że obsada kierowców idzie zgodnie z planem. Do niczego nie jest potrzebna Twoja decyzja.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0163",
+      "subject": "Export desk - January wrap-up and how February looks",
+      "body": "Wiktor,\n\nwrapping up January from the export desk, in case you want the overview. It is a bit long, but there is nothing here that needs your attention.\n\nVolumes: we shipped 214 loads on export lanes, 9 percent more than in December. The Nordic lanes took about half of that, followed by Germany and the Baltic states. Our on-time record was 96 percent, which is the best monthly figure since summer.\n\nCustoms: apart from two short holds in Hamburg, everything cleared within a working day. The new pre-notification system for chilled food is working properly. Our broker partner handled it without problems.\n\nCustomers: Nordic Foods is happy, and Karin has said so twice in writing. A Danish importer asked for a quote on a new weekly lane. Piotr is preparing it, and I will tell you if it grows into something bigger.\n\nFebruary: demand looks steady, with a small peak around the middle of the month for chilled goods. We have enough trailers, and Halina confirmed the driver schedule. The only thing on my radar is the possible port strike in Gdynia, but at the moment it is only a rumour.\n\nThat is it from me.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0165",
+      "subject": "Board committee dates",
+      "body": "Wiktor,\n\nFor your information: the audit committee will meet remotely on the second Wednesday of February, and the remuneration committee in the first week of March. Both dates are in the board portal. Nothing is required from you, since neither meeting needs management on the call.\n\nOrlowicz",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0166",
+      "subject": "Customs check cleared",
+      "body": "Dear Wiktor,\n\nThe customs check on the Gdynia consignment is finished, and the load left the terminal at noon.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0168",
+      "subject": "Logistyka Dziś: kary za przekroczenia limitów",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nInspekcja transportu drogowego podała, że w styczniu skontrolowano ponad trzy tysiące pojazdów, a odsetek naruszeń spadł do pięciu procent.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0169",
+      "subject": "Logistyka Dziś: nowy raport o rynku najmu",
+      "body": "Logistyka Dziś, wydanie piątkowe\n\nStawki najmu powierzchni magazynowej w Polsce wzrosły w czwartym kwartale o dwa procent, a wskaźnik pustostanów pozostał niski.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-inf-0171",
+      "subject": "Posiedzenie rady - raport o stanie przygotowań, komitety i ryzyka",
+      "body": "Szanowny Panie Prezesie,\n\nchciałbym przekazać Panu raport o stanie przygotowań do posiedzenia rady 28 stycznia, w tym o pracach komitetów i rejestrze ryzyk, który rada będzie omawiać. Piszę to dla porządku, aby zarząd miał pełną informację przed spotkaniem.\n\nKomitet audytu zakończył przegląd budżetu i nie zgłosił zastrzeżeń do założeń przychodowych. Komitet wynagrodzeń przygotował propozycję bez zmian w strukturze premii. Obie rekomendacje trafią do rady jako materiały informacyjne, a uchwały zostaną podjęte na posiedzeniu.\n\nRejestr ryzyk został zaktualizowany. Najwyższą ocenę ma ryzyko zależności od jednego klienta, czyli sieci Zielona Hurtownia, a drugą ryzyko wahań cen paliw. Rada zna ocenę zarządu dotyczącą działań zaradczych i nie oczekuje dodatkowych dokumentów.\n\nPozostałe punkty porządku nie ulegają zmianie, a sekretarz potwierdził wszystkie rezerwacje i połączenia zdalne. Wiadomość ma charakter informacyjny i nie wymaga odpowiedzi. Jeśli sekretarz zmieni cokolwiek w organizacji dnia, sekretariat rady powiadomi o tym zarząd w zwykły sposób, a pełna dokumentacja pozostaje dostępna w portalu rady dla wszystkich uprawnionych osób.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    }
+  ]
+}
