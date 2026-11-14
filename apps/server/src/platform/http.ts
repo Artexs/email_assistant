@@ -13,7 +13,7 @@ import { secureHeaders } from "hono/secure-headers";
 import type { z } from "zod";
 
 import { isAllowedAuthPath } from "./auth";
-import type { Db, TenantContext } from "./db";
+import { type Db, type TenantContext, withoutTenantScope, withTenantScope } from "./db";
 import { errorFields } from "./errors";
 import { createLog, withLogContext } from "./log";
 
@@ -227,7 +227,10 @@ export function requireTenant(deps: {
     }
     c.set("ctx", { orgId: first.org_id, userId });
     c.set("role", first.role);
-    await next();
+    // RLS safety net (ADR 0011): the rest of the request runs in the tenant scope of the session's organization.
+    // The scope reaches every connection the request acquires. Code must never leave a raw transaction open on a held
+    // connection: the driver remembers the value per connection, and a raw `set_config(…, false)` would make it drift.
+    await withTenantScope(first.org_id, () => next());
   };
 }
 
@@ -269,7 +272,8 @@ export const requireOperator: MiddlewareHandler<ApiEnv> = async (c, next) => {
     log.warn("operator_route_refused", { user_id: userId });
     return c.json({ error: "not_found" }, 404);
   }
-  await next();
+  // Operator routes read across organizations: no tenant scope (ADR 0027).
+  await withoutTenantScope(() => next());
 };
 
 export const requireOwner: MiddlewareHandler<ApiEnv> = async (c, next) => {
