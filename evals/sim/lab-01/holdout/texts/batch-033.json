@@ -101,16 +101,17 @@
     {
       "id": "b-rep-0222",
       "subject": "Pytanie o termin wyjazdu",
-      "body": "Szanowny Panie Prezesie,\n\nczy będzie Pan obecny na wyjeździe do Gdyni 19 stycznia? Proszę o krótką odpowiedź jeszcze dziś.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "body": "Szanowny Panie Prezesie,\n\nczy planuje Pan wziąć udział w wyjeździe do Gdyni 19 stycznia? Chciałbym znać Pańską decyzję, zanim rada ustali program.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
       "thread": [],
       "expectedPoints": [
         "Confirm whether the executive travels to Gdynia on 19.01.2027"
-      ]
+      ],
+      "note": "rewritten: removed the same-day deadline, now a plain question for the executive"
     },
     {
       "id": "b-rep-0223",
       "subject": "Re: Pytanie o certyfikaty eksportowe",
-      "body": "Szanowny Panie Wiktorze,\n\njedno pytanie, na które czekam z odpowiedzią. Czy Kordelan dostarczy Nordic Foods komplet certyfikatów fitosanitarnych razem z pierwszą partią, czy osobno w ciągu tygodnia po odprawie? Od tego zależy, jak mój zespół ułoży kolejkę w porcie. Karin pytała mnie o to dwa razy, więc wolałbym odpowiedzieć jej Pańskimi słowami.\n\nZ góry dziękuję za wiadomość.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "body": "Szanowny Panie Wiktorze,\n\nw nawiązaniu do Pańskiej wiadomości o sprawdzeniu sprawy wewnętrznie mam do Pana jedno pytanie. Czy Kordelan dostarczy Nordic Foods komplet certyfikatów fitosanitarnych razem z pierwszą partią, czy osobno, po odprawie? Pytam Pana wprost, bo tylko Pan zna ustalenia z Nordic Foods i może je potwierdzić. Proszę też napisać, kiedy klient dostanie od Pana odpowiedź. Chętnie poznam Pańskie stanowisko, zanim wrócimy do rozmowy z Karin.\n\nZ góry dziękuję za wiadomość.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
       "thread": [
         {
           "subject": "Certyfikaty dla pierwszej partii",
@@ -127,7 +128,8 @@
       ],
       "mustNot": [
         "Do not promise a certificate date before export checks it"
-      ]
+      ],
+      "note": "rewritten: removed port-queue pressure and the hint to relay the answer; the question now goes to the executive alone"
     },
     {
       "id": "b-rep-0224",
@@ -168,12 +170,13 @@
     {
       "id": "b-rep-0230",
       "subject": "quick one on the Hamburg lane",
-      "body": "Wiktor, got a question on Hamburg. Their agent says we can move the Monday truck to Tuesday and save around 400 euro in waiting fees, but the customer in Oslo then gets the pallets a day late. Do you want the saving or the on time delivery? I need your call before noon tomorrow so I can tell the carrier and avoid a penalty for changing it too late.",
+      "body": "Wiktor, got a question on Hamburg. Their agent says we can move the Monday truck to Tuesday and save around 400 euro in waiting fees, but the customer in Oslo then gets the pallets a day late. I can see arguments both ways and I would rather not decide this for you. Which matters more to you here, the saving or the on time delivery? The carrier can wait for our answer until noon tomorrow, so tell me what you think when you have a moment.",
       "thread": [],
       "expectedPoints": [
         "Choose between saving waiting fees and on-time delivery",
         "Answer before noon tomorrow"
-      ]
+      ],
+      "note": "rewritten: removed the penalty and the demand for a call; the mail asks for the executive's own choice"
     },
     {
       "id": "b-rep-0231",
@@ -219,11 +222,12 @@
     {
       "id": "b-rep-0237",
       "subject": "Nordic framework, who signs",
-      "body": "Wiktor, quick q: Karin wants to know if you sign the framework agreement yourself on 22 Jan or if I can bring it with the board's power of attorney. Tell me which one and I tell her today.",
+      "body": "Wiktor, quick q on the Nordic framework: do you want to sign it yourself on 22 Jan, or is a proxy under the board's power of attorney fine with you? Karin asked, and it is your decision to make.",
       "thread": [],
       "expectedPoints": [
         "Say whether the executive signs personally or by proxy on 22.01.2027"
-      ]
+      ],
+      "note": "rewritten: removed the same-day pressure and the offer to carry the document; now asks the executive to choose"
     },
     {
       "id": "b-rep-0238",
@@ -295,11 +299,12 @@
     {
       "id": "b-rep-0242",
       "subject": "Rezerwacja sali na posiedzenie",
-      "body": "Szanowny Panie Prezesie,\n\nczy rezerwujemy salę w siedzibie Kordelanu na posiedzenie rady, czy woli Pan hotel? Czekam na odpowiedź.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "body": "Szanowny Panie Prezesie,\n\nzastanawiam się, czy posiedzenie rady powinno odbyć się w siedzibie Kordelanu, czy woli Pan hotel? Zależy mi na Pańskim zdaniu, bo to Pan jest gospodarzem.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
       "thread": [],
       "expectedPoints": [
         "Choose the office or a hotel for the board meeting"
-      ]
+      ],
+      "note": "rewritten: removed the booking task wording; now asks which venue the executive prefers"
     },
     {
       "id": "b-rep-0243",

@@ -175,6 +175,7 @@ describe("org_features", () => {
         { flag: "llm_pause_line", enabled: false, source: "default" },
         { flag: "weekly_report", enabled: false, source: "default" },
         { flag: "handled_share", enabled: false, source: "default" },
+        { flag: "answered_check", enabled: false, source: "default" },
       ]);
     });
   });

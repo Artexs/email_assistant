@@ -123,6 +123,26 @@ export async function touchEmailFlags(
   return touched;
 }
 
+// The answer of the answered check (`/review`). The first answer wins: it writes only while `answered_check` is null.
+// It also needs `answered`: only a real flag read sets that column, and a "last tried" row (`touchEmailFlags`) has it false.
+// Returns true when it wrote.
+export async function setAnsweredCheck(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailId: string,
+  input: { answer: "yes" | "no"; userId: string; at: Date }
+): Promise<boolean> {
+  const result = await db
+    .updateTable("email_flags")
+    .set({ answered_check: input.answer, answered_check_at: input.at, answered_check_by: input.userId })
+    .where("org_id", "=", ctx.orgId)
+    .where("email_id", "=", emailId)
+    .where("answered", "=", true)
+    .where("answered_check", "is", null)
+    .executeTakeFirst();
+  return result.numUpdatedRows === 1n;
+}
+
 export interface EmailFlagsRow {
   emailId: string;
   seen: boolean;

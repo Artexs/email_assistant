@@ -1,6 +1,6 @@
 # Sync
 
-> Checked against the code at `d82f781`, 2026-11-14.
+> Checked against the code at `dd24841`, 2026-11-14.
 
 ## What it does now
 
@@ -78,7 +78,7 @@ Sync brings mail from an IMAP mailbox into the `emails` table. An owner connects
 - `mailbox_folders`: one row per synced folder: `key`, `path`, `role` (`inbox`, `sort`, `junk`), `enabled`, `uidvalidity`, `last_uid`. At most one `junk` row per mailbox. The INBOX row is always `INBOX` and enabled.
 - `emails` written by sync: `dedup_key`, `message_id_header`, `content_hash`, `uid`, `folder`, `source_folder`, `thread_key`, headers, `body_text` (at most 100 000 characters), `received_at`, `returned_at`, `backfilled_at`, and status `pending`. The status flow of `emails` after the insert is in `triage.md`.
 - `email_headers` written by sync: one row per stored mail (rule 18), with `captured_at`; `texts_cleared_at` is set by retention.
-- `email_flags` written by the flag refresh: one row per checked mail (rule 6) with `seen`, `answered`, `flagged`, the first time of each flag, and `checked_at` (the last try; a row of mail that could not be read has all flags false and no first-seen time); the `answered_check` columns are not written by sync.
+- `email_flags` written by the flag refresh: one row per checked mail (rule 6) with `seen`, `answered`, `flagged`, the first time of each flag, and `checked_at` (the last try; a row of mail that could not be read has all flags false and no first-seen time); the `answered_check` columns are not written by sync (the `/review` answered check writes them, and only on a row whose `answered` flag is true).
 - Audit events: `mailbox.connected`, `mailbox.paused`, `mailbox.resumed`, `mailbox.password_changed`, `mailbox.removed`, `mailbox.sync_folder_added`, `mailbox.sync_folder_changed`.
 
 ## Limits
