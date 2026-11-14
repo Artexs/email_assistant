@@ -1,10 +1,10 @@
 # Measurement
 
-> Checked against the code at `ed2bb9a`, 2026-11-14.
+> Checked against the code at `d91e47f`, 2026-11-14.
 
 ## What it does now
 
-`weekStats` computes the numbers of one week of one organization: missed important mail (M1), open loops on time (M2), serious mistakes (M3), handled share (M4), urgent notice time (M5), cost per mailbox (M7) and the evidence of each category (M8). It can take one mailbox or all mailboxes of the organization. `recentWeekStats` gives the last finished weeks, newest first, and only the newest week carries M8. The route `GET /api/stats` (flag `stats_page`) and the operator CLI `bun run stats:week` call these functions. The panel page `/stats` reads the route and shows the last 8 finished weeks as one read-only table: the metrics are the rows, the weeks are the columns, each rate has its count, and a mailbox select picks one mailbox or all (`apps/web/src/lib/stats-view.ts` builds the cells). Every metric reads real mail only, and a call recomputes from the database and writes nothing. The pure metric code is in `packages/core/src/metrics`; each module that owns a table has the row reader for its tables.
+`weekStats` computes the numbers of one week of one organization: missed important mail (M1), open loops on time (M2), serious mistakes (M3), handled share (M4), urgent notice time (M5), cost per mailbox (M7) and the evidence of each category (M8). It can take one mailbox or all mailboxes of the organization. `recentWeekStats` gives the last finished weeks, newest first, and only the newest week carries M8. The route `GET /api/stats` (flag `stats_page`) and the operator CLI `bun run stats:week` call these functions. The panel page `/stats` reads the route and shows the last 8 finished weeks as one read-only table: the metrics are the rows, the weeks are the columns, each rate has its count, and a mailbox select picks one mailbox or all. An evidence row shows its precision only from 30 labels (`EVIDENCE_MIN_LABELS`); below that it shows the label count. `apps/web/src/lib/stats-view.ts` builds the cells. Every metric reads real mail only, and a call recomputes from the database and writes nothing. The pure metric code is in `packages/core/src/metrics`; each module that owns a table has the row reader for its tables.
 
 ## Rules
 

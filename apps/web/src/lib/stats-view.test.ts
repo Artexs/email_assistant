@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import type { WeekStats } from "@ea/core/web";
+import { EVIDENCE_MIN_LABELS, type WeekStats } from "@ea/core/web";
 
 import { en } from "../i18n/en";
 import { setLocaleForTest } from "../i18n";
@@ -132,6 +132,21 @@ describe("statsRows", () => {
     expect(cellOf(rows, "stats_m8_urgent")).toBe("–");
   });
 
+  test("the evidence hides precision below 30 labels and shows it from 30", () => {
+    const gate = { recall: 0.9, decision: "go" as const, auto: false, mailboxId: MAILBOX, category: "spam" as const };
+    const few = statsRows([week({ m8: [{ ...gate, kept: 3, precision: 1, wilsonLower: 0.44 }] })]);
+    expect(cellOf(few, "stats_m8_spam")).toBe("3 of 30 rated mails needed");
+    expect(cellOf(few, "stats_m8_spam")).not.toContain("%");
+    const justBelow = statsRows([week({ m8: [{ ...gate, kept: 29, precision: 1, wilsonLower: 0.88 }] })]);
+    expect(cellOf(justBelow, "stats_m8_spam")).toBe("29 of 30 rated mails needed");
+    const shown = statsRows([week({ m8: [{ ...gate, kept: 30, precision: 0.97, wilsonLower: 0.83 }] })]);
+    expect(cellOf(shown, "stats_m8_spam")).toBe("97% of 30 (≥ 83%)");
+  });
+
+  test("the label minimum is the one of the metrics", () => {
+    expect(EVIDENCE_MIN_LABELS).toBe(30);
+  });
+
   test("every row label is an English key and the rows are the same for every week count", () => {
     const rows = statsRows([week()]);
     expect(rows).toHaveLength(14);
@@ -141,7 +156,12 @@ describe("statsRows", () => {
 
   test("the Polish cells keep the count and use the Polish connector", () => {
     setLocaleForTest("pl");
-    expect(cellOf(statsRows([week()]), "stats_m1")).toBe("20% (1 z 5)");
+    expect(cellOf(statsRows([week()]), "stats_m1")).toBe("20 % (1 z 5)");
+    const gate = { recall: 0.9, decision: "go" as const, auto: true, mailboxId: MAILBOX, category: "spam" as const };
+    const few = statsRows([week({ m8: [{ ...gate, kept: 3, precision: 1, wilsonLower: 0.44 }] })]);
+    expect(cellOf(few, "stats_m8_spam")).toBe("3 z 30 potrzebnych ocenionych wiadomości");
+    const shown = statsRows([week({ m8: [{ ...gate, kept: 30, precision: 0.97, wilsonLower: 0.83 }] })]);
+    expect(cellOf(shown, "stats_m8_spam")).toBe("97 % z 30 (≥ 83 %) · automat");
   });
 });
 

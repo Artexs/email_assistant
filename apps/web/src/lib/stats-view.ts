@@ -1,4 +1,4 @@
-import { barCategories, type BarCategory, type WeekStats } from "@ea/core/web";
+import { barCategories, EVIDENCE_MIN_LABELS, type BarCategory, type WeekStats } from "@ea/core/web";
 
 import { dateLocale, t, type TextKey } from "../i18n";
 
@@ -37,6 +37,8 @@ function evidenceText(week: WeekStats, category: BarCategory): string {
     if (best === null || row.kept > best.kept) best = row;
   }
   if (best === null || best.precision === null || best.wilsonLower === null) return NONE;
+  // Below the label minimum a precision says too little: show the count of labels only (PD-066).
+  if (best.kept < EVIDENCE_MIN_LABELS) return t("stats_evidence_few", { kept: best.kept, min: EVIDENCE_MIN_LABELS });
   return t(best.auto ? "stats_evidence_auto" : "stats_evidence", {
     percent: Math.round(best.precision * 100),
     kept: best.kept,

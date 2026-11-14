@@ -1,10 +1,10 @@
 # Web panel
 
-> Checked against the code at `ed2bb9a`, 2026-11-14.
+> Checked against the code at `d91e47f`, 2026-11-14.
 
 ## What it does now
 
-The web panel is a static Astro build with one React island per page (`apps/web`). The server serves it from `WEB_DIST` and answers the JSON API under `/api` from the same process (`apps/server/src/web.ts`, `apps/server/src/platform/http.ts`). A user signs in with an e-mail and a password (Better Auth, 12 to 128 characters), gets a session cookie, and reaches eight pages: Onboarding, Activity, Mailboxes, Settings and Rules after sign-in, and Login, Setup and Forgot before it, plus the legal stubs. The panel connects and manages mailboxes, shows what the system did to each mail with Undo and feedback buttons, sets the mode, the switches, the category policy, the sync folders, the digest times, the time zone and the signature, manages the sender rules, links Telegram, and lists the live sessions. The panel is reachable only through Tailscale Serve on the tailnet of the owner. It is off while `WEB_BASE_URL` is empty. An operator (a user in `OPERATOR_USER_IDS`) has one route that reads across organizations. The panel has no approvals, delegates or delegations page: those stay in Telegram.
+The web panel is a static Astro build with one React island per page (`apps/web`). The server serves it from `WEB_DIST` and answers the JSON API under `/api` from the same process (`apps/server/src/web.ts`, `apps/server/src/platform/http.ts`). A user signs in with an e-mail and a password (Better Auth, 12 to 128 characters), gets a session cookie, and reaches ten pages: Onboarding, Activity, Mailboxes, Settings and Rules after sign-in, Stats (only while the flag `stats_page` is on) and Operator (only for an operator), and Login, Setup and Forgot before it, plus the legal stubs. The panel connects and manages mailboxes, shows what the system did to each mail with Undo and feedback buttons, sets the mode, the switches, the category policy, the sync folders, the digest times, the time zone and the signature, manages the sender rules, links Telegram, and lists the live sessions. The panel is reachable only through Tailscale Serve on the tailnet of the owner. It is off while `WEB_BASE_URL` is empty. An operator (a user in `OPERATOR_USER_IDS`) has one route that reads across organizations. The panel has no approvals, delegates or delegations page: those stay in Telegram.
 
 ## Rules
 
