@@ -270,6 +270,13 @@ export async function insertSendAgain(
   return row?.id ?? null;
 }
 
+// Serializes the limit check of one mailbox until the transaction ends (D6). Like `lockMailboxLimit` (mail/repo):
+// outside a transaction the lock would end with its own statement, so it throws.
+export async function lockMailboxSends(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<void> {
+  if (!db.isTransaction) throw new Error("lockMailboxSends needs a transaction");
+  await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`send_limit:${ctx.orgId}:${mailboxId}`}, 0))`.execute(db);
+}
+
 // PD-044 (D4): the sends of one mailbox that may have reached people and started after `since`.
 // An `approved` row with an old stamp (put back before a retry), `rejected`, `expired` and refused sends do not count.
 // `to` holds the strings of `payload.to`; retention may have cleared the payload, then `to` is [].

@@ -56,6 +56,9 @@ export interface CommitterDeps {
   // S4 (D33): the delegation callbacks and the composer. The defaults serve the tests of S3; `main.ts` wires them (stage 18).
   hooks?: DelegationHooks;
   compose?(message: OutgoingMessage): Promise<Buffer>;
+  // PD-044: absent = `DEFAULT_SEND_LIMITS` and no callback (the older tests). `main.ts` wires them (stage 04).
+  sendLimits?: ApplyDeps["sendLimits"];
+  onSendLimited?: ApplyDeps["onSendLimited"];
 }
 
 // The owner and the organization of one tenant, read once per run (D12).
@@ -264,6 +267,8 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
       sender,
       hooks: deps.hooks ?? noDelegationHooks,
       appendFolders,
+      ...(deps.sendLimits === undefined ? {} : { sendLimits: deps.sendLimits }),
+      ...(deps.onSendLimited === undefined ? {} : { onSendLimited: deps.onSendLimited }),
     };
     let index = 0;
     try {
