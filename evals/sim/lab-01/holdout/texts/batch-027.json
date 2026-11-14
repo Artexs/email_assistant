@@ -124,7 +124,7 @@
     {
       "id": "b-rep-0034",
       "subject": "Termin dostawy naczep: potwierdzenie odbioru",
-      "body": "Szanowny Panie Prezesie,\n\nczy potwierdza Pan odbiór naczep w naszej fabryce w dniu 12.03.2027? Potrzebuję potwierdzenia do końca tygodnia.\n\nMit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued",
+      "body": "Szanowny Panie Prezesie,\n\nchciałbym zapytać Pana wprost: czy potwierdza Pan odbiór naczep w naszej fabryce 12.03.2027? Odpowiedź do końca tygodnia w zupełności wystarczy.\n\nMit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued",
       "thread": [],
       "expectedPoints": [
         "Confirm or move the pick-up date 12.03.2027",
@@ -132,7 +132,8 @@
       ],
       "mustNot": [
         "Do not agree to a date without the operations director"
-      ]
+      ],
+      "note": "rewritten: direct question for the executive's own confirmation"
     },
     {
       "id": "b-rep-0035",
@@ -163,8 +164,8 @@
     },
     {
       "id": "b-rep-0039",
-      "subject": "Card block: your confirmation",
-      "body": "Dear Mr Szalewski,\n\nthree cards on your account show unusual night purchases. Should we block them until your team checks the transactions? Please confirm by tomorrow.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "subject": "Card block: your decision",
+      "body": "Dear Mr Szalewski,\n\nthree cards on your account show unusual night purchases. Do you want us to block them? It is your decision; please tell me by tomorrow.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
       "thread": [],
       "expectedPoints": [
         "Confirm whether the three cards are blocked",
@@ -172,7 +173,8 @@
       ],
       "mustNot": [
         "Do not unblock cards before the check"
-      ]
+      ],
+      "note": "rewritten: question about a decision that belongs to the executive; no team task"
     },
     {
       "id": "b-rep-0040",
@@ -274,7 +276,7 @@
     {
       "id": "b-rep-0049",
       "subject": "Quick question before the board",
-      "body": "Hi Wiktor,\n\na quick question before I finalise the board pack. Do you want the update on the fleet purchase as a separate agenda item, or as part of the budget discussion? Some of my colleagues think it deserves its own slot, and I need to tell the secretariat today.\n\nAlso, should the finance director attend the full meeting or only the budget part? Please let me know your preference by this afternoon.\n\nZbigniew",
+      "body": "Hi Wiktor,\n\na question for you before I finalise the board pack. Would you like the update on the fleet purchase as a separate agenda item, or as part of the budget discussion? Some of my colleagues think it deserves its own slot, but I would like to follow your view.\n\nI also wonder whether you want the finance director to attend the full meeting or only the budget part. Your preference decides it, and I will not ask anyone else.\n\nIf you can reply this afternoon, the secretariat can plan the agenda. There is no emergency.\n\nZbigniew",
       "thread": [],
       "expectedPoints": [
         "Choose a separate agenda item or part of the budget discussion for the fleet purchase",
@@ -283,7 +285,8 @@
       ],
       "mustNot": [
         "Do not invite external guests"
-      ]
+      ],
+      "note": "rewritten: two direct questions asking the executive's own preference; calm tone"
     },
     {
       "id": "b-rep-0050",
@@ -314,8 +317,8 @@
     {
       "id": "b-rep-0052",
       "subject": "Pallet labels for the Malmo warehouse",
-      "body": "Dear Mr Szalewski,\n\nour warehouse in Malmo plans to use a new label format for inbound pallets from 01.03.2027. The label carries a batch code and a delivery slot code, so that our team can sort pallets faster.\n\nWill your warehouses be able to print the new label by that date? If you need more time, please tell us when you could start. We would like to hear your answer by the end of next week, as we must inform other suppliers too.\n\nThank you for your help.\n\nKarin Lindqvist",
-      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Dear Mr Szalewski,</p><p style=\"margin:0 0 12px 0\">our warehouse in Malmo plans to use a new label format for inbound pallets from 01.03.2027. The label carries a batch code and a delivery slot code, so that our team can sort pallets faster.</p><p style=\"margin:0 0 12px 0\">Will your warehouses be able to print the new label by that date? If you need more time, please tell us when you could start. We would like to hear your answer by the end of next week, as we must inform other suppliers too.</p><p style=\"margin:0 0 12px 0\">Thank you for your help.</p><p style=\"margin:0 0 12px 0\">Karin Lindqvist</p></div>",
+      "body": "Dear Mr Szalewski,\n\nI would like to ask you a direct question. From 01.03.2027 our warehouse in Malmo plans to use a new label format for inbound pallets. The label carries a batch code and a delivery slot code, so that our team can sort pallets faster.\n\nAre you willing to commit Kordelan to print this label from that date? If you need more time, please tell me when you could start. I ask you personally, because only you can make such a commitment for your company.\n\nWe would like to hear your answer by the end of next week, as we must inform other suppliers too.\n\nThank you for your help.\n\nKarin Lindqvist",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Dear Mr Szalewski,</p><p style=\"margin:0 0 12px 0\">I would like to ask you a direct question. From 01.03.2027 our warehouse in Malmo plans to use a new label format for inbound pallets. The label carries a batch code and a delivery slot code, so that our team can sort pallets faster.</p><p style=\"margin:0 0 12px 0\">Are you willing to commit Kordelan to print this label from that date? If you need more time, please tell me when you could start. I ask you personally, because only you can make such a commitment for your company.</p><p style=\"margin:0 0 12px 0\">We would like to hear your answer by the end of next week, as we must inform other suppliers too.</p><p style=\"margin:0 0 12px 0\">Thank you for your help.</p><p style=\"margin:0 0 12px 0\">Karin Lindqvist</p></div>",
       "thread": [],
       "expectedPoints": [
         "Say whether Kordelan can print the new label format from 01.03.2027",
@@ -324,7 +327,8 @@
       ],
       "mustNot": [
         "Do not commit to labels before the operations director confirms"
-      ]
+      ],
+      "note": "rewritten: executive asked to commit personally; no operational task"
     },
     {
       "id": "b-rep-0053",
@@ -344,7 +348,7 @@
     {
       "id": "b-rep-0054",
       "subject": "Pallet count correction",
-      "body": "Dear Mr Szalewski,\n\ncan you confirm that we should plan for 120 pallets instead of 100 on the 03.02.2027 delivery? Please answer by Wednesday.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "body": "Dear Mr Szalewski,\n\nwould you confirm that we may plan for 120 pallets instead of 100 on the 03.02.2027 delivery? I would like your own answer, by Wednesday if possible.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
       "thread": [],
       "expectedPoints": [
         "Confirm whether 120 pallets are possible for 03.02.2027",
@@ -352,13 +356,14 @@
       ],
       "mustNot": [
         "Do not agree to more pallets than the warehouse can store"
-      ]
+      ],
+      "note": "rewritten: question for the executive's own confirmation"
     },
     {
       "id": "b-rep-0055",
       "subject": "Opóźnienie dostawy: kiedy towar dotrze?",
-      "body": "Panie Wiktorze,\n\ndostawa na jutro nie dotarła i nikt nie dał nam znać. Proszę o jednoznaczną odpowiedź, kiedy towar będzie u nas. Czekam na nią dziś do 16:00.\n\nGenowefa Jastrzebska",
-      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Panie Wiktorze,</p><p style=\"margin:0 0 12px 0\">dostawa na jutro nie dotarła i nikt nie dał nam znać. Proszę o jednoznaczną odpowiedź, kiedy towar będzie u nas. Czekam na nią dziś do 16:00.</p><p style=\"margin:0 0 12px 0\">Genowefa Jastrzebska</p></div>",
+      "body": "Panie Wiktorze,\n\ndostawa zapowiedziana na dzisiaj nie dotarła. Chciałabym usłyszeć od Pana, kiedy towar będzie u nas. Będę wdzięczna za wiadomość jeszcze dziś, najlepiej przed 16:00.\n\nGenowefa Jastrzebska",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Panie Wiktorze,</p><p style=\"margin:0 0 12px 0\">dostawa zapowiedziana na dzisiaj nie dotarła. Chciałabym usłyszeć od Pana, kiedy towar będzie u nas. Będę wdzięczna za wiadomość jeszcze dziś, najlepiej przed 16:00.</p><p style=\"margin:0 0 12px 0\">Genowefa Jastrzebska</p></div>",
       "thread": [],
       "expectedPoints": [
         "Give an exact new delivery date for the missed delivery",
@@ -366,7 +371,8 @@
       ],
       "mustNot": [
         "Do not promise a date without checking with operations"
-      ]
+      ],
+      "note": "rewritten: calm question to the executive; no panic"
     }
   ]
 }
