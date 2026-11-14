@@ -23,12 +23,13 @@ Part of [`../plan.md`](../plan.md). `[risky]` (security). Needs stage 04; may ru
 
 **Interfaces.**
 - `getSsoState(db, ctx): Promise<SsoState | null>`, `SsoState = { providerId, issuer, domain, proof: "dns" | "attested" | null, required, linkedMembers, breakGlassReady }` (`breakGlassReady`: a break-glass owner has TOTP on). Never the config. Stages 08, 09, 11 use it.
-- `setSsoProvider(db, ctx, { issuer, domain, clientId, oidcConfig: string, actor, now }): Promise<{ kind: "new" | "secret" | "boundary" | "unchanged" | "not_found" | "domain_taken" }>`. One transaction: `lockOrganization`, then the provider row `FOR UPDATE` (a callback in flight finishes first, N7), then:
+- `setSsoProvider(db, ctx, { issuer, domain, clientId, oidcConfig: string, actor, now }): Promise<{ kind: "new" | "secret" | "boundary" | "unchanged" | "not_found" | "domain_taken" | "domain_invalid" }>`. One transaction: `lockOrganization`, then the provider row `FOR UPDATE` (a callback in flight finishes first, N7), then:
   - no row → insert (`provider_id` = org id, unproved): `new`;
   - same issuer, domain and client id, other JSON → update the config; links and sessions stay: `secret`;
   - other issuer, domain or client id (F10, N1) → update, unproved, `sso_required = false`, delete its links and those users' `sso` sessions: `boundary`;
   - identical → `unchanged`, no write;
   - another organization's domain → `domain_taken`.
+  - Before any write: refuse a domain whose labels are all digits (`1.2`) with `domain_invalid`; the stage 02 CHECK allows it (review N6).
   - Audit `sso.provider_set` (`provider_id`, `change`, `issuer_host`, `domain`, `links_removed`, `sessions_ended`), actor `cli`.
 - `removeSsoProvider(db, ctx, { actor, now }): Promise<{ kind: "removed"; linksRemoved; sessionsEnded } | { kind: "none" }>`: the same lock order; links, their users' `sso` sessions and the provider go; `sso_required = false`; audit `sso.provider_removed`.
 

@@ -135,6 +135,7 @@ describe("sso_providers constraints", () => {
       const refused = [
         "http://idp.x.test",
         "http://127.0.0.1",
+        "http://127.0.0.1:123456",
         "http://127.0.0.1:4000/x",
         "http://localhost:4000",
         "http://10.0.0.1:4000",
@@ -249,6 +250,33 @@ describe("auth_sessions sign-in method and cap", () => {
         () => sql`update auth_sessions set sso_started_at = null where id = ${sso}::uuid`.execute(trx),
         CHECK
       );
+    });
+  });
+  test("8c: one UPDATE that sets the method and sso_started_at together cannot change the method", async () => {
+    await withRollback(db, async (trx) => {
+      const A = await seedOrg(trx);
+      const sso = await insertSession(trx, A.userId, { method: "sso", startedAgo: "1 hour", expiresIn: "1 day" });
+      await expectSqlState(
+        trx,
+        () =>
+          sql`update auth_sessions set sign_in_method = 'password', sso_started_at = null
+            where id = ${sso}::uuid`.execute(trx),
+        CHECK
+      );
+      expect(await readSession(trx, sso)).toMatchObject({ method: "sso", capped: true });
+
+      const plain = await insertSession(trx, A.userId, { expiresIn: "30 days" });
+      await expectSqlState(
+        trx,
+        () =>
+          sql`update auth_sessions set sign_in_method = 'sso', sso_started_at = now() - interval '1 hour'
+            where id = ${plain}::uuid`.execute(trx),
+        CHECK
+      );
+      const row = await readSession(trx, plain);
+      expect(row.method).toBe("password");
+      expect(row.capped).toBe(false);
+      expect(row.left_s).toBeGreaterThan(29 * 24 * 3600);
     });
   });
 });

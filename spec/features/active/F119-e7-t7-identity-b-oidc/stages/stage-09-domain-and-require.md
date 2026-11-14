@@ -11,6 +11,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (security). Needs stages 06 and 08
 **Interfaces.**
 - `ssoDomainToken(key: Buffer, orgId: string, domain: string): string` — lower-case hex, first 32 characters of HMAC-SHA256(`key`, `${orgId}:${domain}`).
 - `ssoDomainKey(credentialsKey: string): Buffer` — HKDF-SHA256 of the decoded `CREDENTIALS_KEY`, empty salt, info `ea/sso-domain/v1`, 32 bytes (the pattern of the DSR address hash, `docs/capabilities/account-data.md` rule 13).
+- A domain whose labels are all digits (`1.2`) passes the stage 02 CHECK (review N6): `verifySsoDomain` and `attestSsoDomain` answer `none` for it and write nothing, so a row made by SQL cannot get a proof.
 - TXT record: name `_ea-sso.<domain>`, value `ea-sso=<token>`.
 - `verifySsoDomain(db, ctx, { resolveTxt: (name: string) => Promise<string[][]>, key: Buffer, actor, now }): Promise<{ kind: "verified" | "already" | "none" | "not_found_in_dns" }>` — the DNS read runs before the transaction; a record matches when its chunks joined and trimmed equal the value exactly. Then lock the organization, re-read the row (the domain may have changed: `none` if the provider or domain is gone), set `domain_verified = true`, `domain_proof = 'dns'`, audit `sso.domain_verified` (`provider_id`, `domain`). A DNS error (`ENOTFOUND`, `ENODATA`, timeout) → `not_found_in_dns`, no write.
 - `attestSsoDomain(db, ctx, { confirmDomain, actor, now }): Promise<{ kind: "attested" | "already" | "none" | "confirm_mismatch" }>` — `domain_proof = 'attested'`, audit `sso.domain_attested` (`provider_id`, `domain`).

@@ -21,7 +21,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (migration). The only migration of
   - RLS: `ENABLE ROW LEVEL SECURITY` and the `tenant_rows` policy for `app`, as every `org_id` table (`20261114100002_rls_tenant_policies.sql`). Grants for `app` as the other tables, `UPDATE` included: the plugin locks the provider row with an `UPDATE` as `app` (spike C5).
 - `organizations.sso_required boolean NOT NULL DEFAULT false`.
 - `auth_sessions.sign_in_method text NOT NULL DEFAULT 'password' CHECK (sign_in_method IN ('password','sso'))` and `auth_sessions.sso_started_at timestamptz`, with `CHECK ((sign_in_method = 'sso') = (sso_started_at IS NOT NULL))`. `sso_started_at` is the IdP sign-in time; a session made from an SSO session keeps it (D6, F9).
-- Function and trigger `auth_sessions_sso_cap` `BEFORE INSERT OR UPDATE ON auth_sessions FOR EACH ROW`: on UPDATE, `NEW.sign_in_method := OLD.sign_in_method` and `NEW.sso_started_at := OLD.sso_started_at` unless the update sets `sso_started_at` itself (tests move it, D16); then, when `NEW.sign_in_method = 'sso'`, `NEW.expires_at := LEAST(NEW.expires_at, NEW.sso_started_at + interval '12 hours')`.
+- Function and trigger `auth_sessions_sso_cap` `BEFORE INSERT OR UPDATE ON auth_sessions FOR EACH ROW`: on UPDATE, always `NEW.sign_in_method := OLD.sign_in_method` (review N1); `sso_started_at` may change, and the pair CHECK then refuses clearing or setting it on a session of the other method (tests move the start only on a session of method `sso`, D16); then, when `NEW.sign_in_method = 'sso'`, `NEW.expires_at := LEAST(NEW.expires_at, NEW.sso_started_at + interval '12 hours')`.
 - Down: drop in reverse order.
 
 **Registries (F106 rule 18, `docs/capabilities/account-data.md`).**
@@ -35,7 +35,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (migration). The only migration of
 **Test** (`apps/server/test/integration/sso-schema.test.ts`, new):
 
 1. Insert a provider for org A with `domain = 'x.test'`, `domain_verified = false`, `domain_proof = NULL`: ok. A second provider for org A: unique violation. A provider for org B with `domain = 'x.test'`: unique violation.
-2. `domain = 'X.test'`, `'x'`, `'-x.test'`: check violation each. `issuer = 'http://idp.x.test'`, `'http://127.0.0.1'`, `'http://127.0.0.1:4000/x'`, `'http://localhost:4000'`, `'http://10.0.0.1:4000'`: check violation each; `'http://127.0.0.1:4000'`: ok.
+2. `domain = 'X.test'`, `'x'`, `'-x.test'`: check violation each. `issuer = 'http://idp.x.test'`, `'http://127.0.0.1'`, `'http://127.0.0.1:123456'`, `'http://127.0.0.1:4000/x'`, `'http://localhost:4000'`, `'http://10.0.0.1:4000'`: check violation each; `'http://127.0.0.1:4000'`: ok.
 3. `domain_verified = true` with `domain_proof = NULL`: check violation; `domain_proof = 'dns'` with `domain_verified = false`: check violation.
 4. `saml_config = '{}'`: check violation.
 5. Insert a session with `sign_in_method = 'sso'`, `sso_started_at = now() - 2 h`, `expires_at = now() + 30 days`: stored `expires_at = sso_started_at + 12 h`.

@@ -7,6 +7,7 @@
 -- One provider per organization (PD-040), and one organization per domain. `provider_id` is the org id as text.
 -- `oidc_config` is the plugin's JSON and holds the client secret in clear (plan.md, secrets decision); the export never reads it.
 -- The issuer is `https://…`, or exactly `http://127.0.0.1:<port>` for the fake IdP of the tests (plan.md, issuer CHECK decision).
+-- The domain CHECK allows a name whose labels are all digits (`1.2`); the provider service and the domain proof refuse it.
 CREATE TABLE sso_providers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   provider_id text NOT NULL UNIQUE,
@@ -38,15 +39,14 @@ ALTER TABLE auth_sessions
   ADD COLUMN sso_started_at timestamptz,
   ADD CONSTRAINT auth_sessions_sso_started_check CHECK ((sign_in_method = 'sso') = (sso_started_at IS NOT NULL));
 
--- An SSO session ends 12 h after the IdP sign-in, whatever Better Auth writes at a refresh (facts.md, session refresh). On UPDATE the
--- method and the start stay as they were, unless the update sets `sso_started_at` itself (tests move it).
+-- An SSO session ends 12 h after the IdP sign-in, whatever Better Auth writes at a refresh (facts.md, session refresh).
+-- On UPDATE the method always stays as it was. `sso_started_at` may change (tests move it); the pair CHECK refuses to
+-- clear it on an SSO session or to set it on a password session, so no UPDATE changes the method.
 CREATE FUNCTION auth_sessions_sso_cap() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'UPDATE' THEN
-    IF NEW.sso_started_at IS NOT DISTINCT FROM OLD.sso_started_at THEN
-      NEW.sign_in_method := OLD.sign_in_method;
-    END IF;
+    NEW.sign_in_method := OLD.sign_in_method;
   END IF;
   IF NEW.sign_in_method = 'sso' THEN
     NEW.expires_at := LEAST(NEW.expires_at, NEW.sso_started_at + interval '12 hours');
