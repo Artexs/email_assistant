@@ -141,10 +141,10 @@ export const pl: Record<TextKey, string> = {
   help_gmail:
     "Gmail wymaga hasła aplikacji: włącz weryfikację dwuetapową, a potem utwórz hasło na myaccount.google.com/apppasswords.",
   help_onet: "Najpierw włącz IMAP i SMTP w ustawieniach poczty Onet (Ustawienia poczty → Konto główne).",
-  help_wp: "Przy logowaniu dwuetapowym utwórz w ustawieniach konta hasło dla programów pocztowych.",
-  help_o2: "Przy logowaniu dwuetapowym utwórz w ustawieniach konta hasło dla programów pocztowych.",
+  help_wp: "Przy logowaniu dwustopniowym utwórz w ustawieniach konta hasło do programu pocztowego.",
+  help_o2: "Przy logowaniu dwustopniowym utwórz w ustawieniach konta hasło do programu pocztowego.",
   help_icloud:
-    "iCloud wymaga hasła aplikacji: utwórz je na account.apple.com (Logowanie i bezpieczeństwo → Hasła dla aplikacji).",
+    "iCloud wymaga hasła aplikacji: utwórz je na account.apple.com (Logowanie i bezpieczeństwo → Hasła aplikacji).",
   help_other:
     "Wpisz serwery IMAP i SMTP swojego dostawcy. IMAP musi używać SSL/TLS (zwykle port 993). SMTP używa SSL/TLS (port 465) albo STARTTLS (port 587). Certyfikat serwera jest zawsze sprawdzany.",
   address_label: "Adres e-mail",
