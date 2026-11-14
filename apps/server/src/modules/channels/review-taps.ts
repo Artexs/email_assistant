@@ -48,7 +48,7 @@ export function reviewPickerMessage(
   });
   const [urgent, needsReply, info, notification, spam, delegation] = reviewLabelCategories;
   return {
-    text: texts.review.pickerTitle(cleanSubject(subject), categoryTag(current, texts)),
+    text: texts.review.pickerTitle(cleanSubject(subject, texts), categoryTag(current, texts)),
     buttons: [
       [pick(urgent), pick(needsReply)],
       [pick(info), pick(notification)],
