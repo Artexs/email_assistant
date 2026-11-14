@@ -91,6 +91,16 @@ export interface ApprovalTexts {
     title: (name: string, subject: string) => string;
     tapDone: string;
   };
+  // The answers to the reason and mistake taps (F100 stage 14).
+  feedbackTaps: {
+    noted: (reason: string) => string; // `reason` = an entry of `reasons`
+    notRejected: string;
+    off: string;
+    markedMistake: string;
+    alreadyMarked: string;
+    tooLate: string;
+    notSent: string;
+  };
 }
 
 const PL_TIMES = { one: "raz", few: "razy", many: "razy", other: "razy" } as const;
@@ -201,6 +211,15 @@ export const approvalTexts = {
       title: (name, subject) => `📩 ${name} answered · ${subject}`,
       tapDone: "Tap Done when the task is closed.",
     },
+    feedbackTaps: {
+      noted: (reason) => `Noted: ${reason}.`,
+      notRejected: "This send is not rejected.",
+      off: "This button is off now.",
+      markedMistake: "⚠️ Noted as a mistake.",
+      alreadyMarked: "Already marked.",
+      tooLate: "Too late: a mistake can be marked within 7 days of the send.",
+      notSent: "This mail was not sent.",
+    },
   },
   pl: {
     title: {
@@ -301,6 +320,15 @@ export const approvalTexts = {
     answered: {
       title: (name, subject) => `📩 Odpowiedź od: ${name} · ${subject}`,
       tapDone: "Naciśnij „Gotowe”, gdy zadanie zostanie zamknięte.",
+    },
+    feedbackTaps: {
+      noted: (reason) => `Zapisano: ${reason}.`,
+      notRejected: "Ta wysyłka nie jest odrzucona.",
+      off: "Ten przycisk jest teraz wyłączony.",
+      markedMistake: "⚠️ Zapisano jako błąd.",
+      alreadyMarked: "Już oznaczono.",
+      tooLate: "Za późno: błąd można oznaczyć w ciągu 7 dni od wysyłki.",
+      notSent: "Ta wiadomość nie została wysłana.",
     },
   },
 } satisfies Record<UserLocale, ApprovalTexts>;
