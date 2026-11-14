@@ -371,6 +371,13 @@ Built in S5. The routers are mounted under `/api` (`api.route("/", …)` in `app
 - **Reads:** `tenancy` (`listOrganizations`, `getOrgPlan`, `featureStates`), `mail` (mailboxes), `actions` (holds, failed sends, last send), `channels` (failed outbox, last notice), `audit` (notices, LLM calls), `reports` (last digest) and `triage` (last triage).
 - **Imports:** only the `index.ts` of lower layers; no module imports `operator`.
 
+### 3.13 `privacy` — delete, export and data requests (F106, layer 5)
+
+- **Owns:** `DELETE /api/organization` (owner, flag `org_delete`), the CLIs `org:delete`, `org:export` and `org:dsr`, the registries `EXPORT_MAP`, `DSR_ADDRESS_MAP`, `NOT_PERSONAL` and `NO_PERSONAL_TABLES`, the registry `NOTICE_MAIL_CONTENT`, and the table `dsr_tombstones` with the function `delete_organization` and the trigger `emails_skip_tombstoned` (migration `20261114160001`). Rules: `docs/capabilities/account-data.md`.
+- **Does:** `deleteOrganization` (one transaction, then the privileged function), `exportOrganization` (an `age`-encrypted file of one read-only snapshot), `findSubjectData` and `eraseSubjectData` (the match, tombstones, the scrub of kept rows, one audit row with the address hash). The erase runs generic SQL over the registries: the exception to "the module that owns a text column clears it" (`docs/code-patterns.md` § Data access).
+- **Reads and writes:** `audit` (`recordAudit`), `tenancy` (membership, organization, `isFeatureOn`) and `channels` (`closeWaitingApprovalSetsSince`, `SENDER_STALE_MS`, the same predicate as the resume hook).
+- **Imports:** only the `index.ts` of lower layers; no module imports `privacy`.
+
 ## 4. `apps/web` — pages
 
 | Page                 | Content                                                                                                                                                                         | Slice       |

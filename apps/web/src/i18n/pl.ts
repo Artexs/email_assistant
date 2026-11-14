@@ -453,7 +453,7 @@ export const pl: Record<TextKey, string> = {
   sec_kind_break_glass_set: "Wybrano właściciela awaryjnego",
   sec_kind_break_glass_cleared: "Usunięto właściciela awaryjnego",
   sec_kind_data_exported: "Wykonano eksport danych",
-  sec_kind_delete_refused: "Odmowa usunięcia organizacji: złe hasło",
+  sec_kind_delete_refused: "Odmowa usunięcia organizacji: błędne hasło",
   sec_kind_dsr_find: "Wniosek o dane: wyszukano dane osoby",
   sec_kind_dsr_erase: "Wniosek o dane: usunięto dane osoby",
   sec_kind_other: "Inne zdarzenie bezpieczeństwa",

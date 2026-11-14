@@ -54,8 +54,8 @@ The job writes these columns and no others: `emails` (`body_text`, `subject`, `f
 
 ## Limits
 
-- No delete of an organization's data and no export: E7-T3 (F106).
-- No data-subject erase of a sender who is not a user (`org:dsr`): E7-T3 (F106, PD-038).
+- Retention does not delete rows or a person's data on request. The delete of an organization, the export and the erase of a sender's data (`org:delete`, `org:export`, `org:dsr`) are in [account-data.md](account-data.md) (F106). A restore of a backup brings back rows that a delete or an erase removed after the backup; the operator runs them again (`account-data.md` rule 15).
+- Retention is not the erase: it clears texts by age and keeps the rows. A tombstone (`dsr_tombstones`) has no expiry and no retention job clears it.
 - No route or CLI changes `data_retention_days`; the value changes only in the database.
 - No alert when the job fails or does not run. The log line is the only sign.
 

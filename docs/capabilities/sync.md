@@ -85,6 +85,8 @@ Sync brings mail from an IMAP mailbox into the `emails` table. An owner connects
 - `email_flags` written by the flag refresh: one row per checked mail (rule 6) with `seen`, `answered`, `flagged`, the first time of each flag, and `checked_at` (the last try; a row of mail that could not be read has all flags false and no first-seen time); the `answered_check` columns are not written by sync (the `/review` answered check writes them, and only on a row whose `answered` flag is true).
 - Audit events: `mailbox.connected`, `mailbox.paused`, `mailbox.resumed`, `mailbox.password_changed`, `mailbox.removed`, `mailbox.host_blocked`, `mailbox.host_allowed`, `mailbox.sync_folder_added`, `mailbox.sync_folder_changed`.
 
+19. **Tombstones (F106).** The trigger `emails_skip_tombstoned` (`BEFORE INSERT` on `emails`) returns NULL for a mail whose dedup key without a `#<n>` suffix has a row in `dsr_tombstones` of the organization. `insertEmail` (`ON CONFLICT DO NOTHING`) then answers `false`, so sync, rescan and backfill store nothing, raise no error and (as for any known mail) store no `email_headers` row. The erase (`org:dsr --erase`) writes the tombstones and takes the `mailbox_folders` row locks that `applyChunk` takes, so a chunk planned before the erase meets the tombstone. A mail that was never stored has no tombstone: run the erase again after a backfill, after the first sync of a newly enabled sync folder and after a newly connected mailbox. Rules: [account-data.md](account-data.md).
+
 ## Limits
 
 - No IMAP IDLE: IDLE is an E8 Should item.
@@ -95,6 +97,7 @@ Sync brings mail from an IMAP mailbox into the `emails` table. An owner connects
 - `F062-drop-mailbox-cursor-columns`: the INBOX cursor is still written twice (`mailboxes` and `mailbox_folders`).
 - `F060-backfill-per-folder`: `mailbox:backfill` reads INBOX only; a new synced folder gets only the 24 h first sync.
 - The mailbox limit is a count only (`tenancy-and-plans.md`).
+- A tombstone covers only mail that was stored when the erase ran (rule 19): the operator repeats the erase after a backfill, a new sync folder or a new mailbox ([account-data.md](account-data.md) § Limits).
 
 ## Decisions
 

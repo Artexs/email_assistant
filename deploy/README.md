@@ -544,6 +544,96 @@ The security log of an organization (a card in Settings for owners) is behind th
 $C run --rm server bun run org:flag --org-id <org id> --flag security_log --on
 ```
 
+## Account data (F106)
+
+Three commands delete an organization, export its data and find or erase the data of one person who is not a user. The rules and the code are in `docs/capabilities/account-data.md`. The commands print ids, counts, paths and sizes. `org:delete` also prints the mailbox addresses. No command logs an address, an organization name or a mail text.
+
+### Delete an organization
+
+The owner can do it in Settings → Account when the flag `org_delete` is on for the organization (off by default):
+
+```sh
+$C run --rm server bun run org:flag --org-id <org id> --flag org_delete --on
+```
+
+The operator can do it with a command. It needs no flag:
+
+```sh
+$C run --rm server bun run org:delete --org-id <org id> --confirm "<organization name>"
+```
+
+- The output is `deleted <org id>: mailboxes <n>` and one line `change the password of <address>` for each mailbox. Tell the owner to change these mailbox passwords at the mail provider: the assistant knew them and they still work. The drafts and folders that the assistant made stay in the mailboxes; the owner deletes them in the mail program.
+- Everything of the organization goes at once: mailboxes, mail, results, actions, delegations, rules, Telegram links, history, the audit rows and the members' accounts. A member who also belongs to another organization stays. Backups keep the rows until they expire.
+- `busy, try again` (exit 1): a lock wait ran out (a mailbox job or an invite holds a row). Nothing changed. Run the command again. `--lock-timeout-ms <ms>` changes the 30 s wait.
+- Keep the line `deleted <org id>: …` outside the server (see Restore below).
+- After a delete, remove the user id of a deleted operator from `OPERATOR_USER_IDS` at the next change of `.env`.
+
+### Export
+
+An export is an `age`-encrypted file of every table that `EXPORT_MAP` lists. It holds no password hash, credential, token or session. The container has no `age` binary; it needs only the public key (`age1…`) of the person who gets the file.
+
+```sh
+mkdir -m 700 <host folder>
+$C run --rm -v <host folder>:/exports server bun run org:export --org-id <org id> --recipient <age1…> --out /exports/<org id>-<date>.age
+```
+
+- The output is `exported <org id>: <bytes> bytes` and one line `<table> <count>` for each table. The file has mode 600 and is never replaced: an existing file gives exit 1 (`org_export_refused`, reason `exists`). Choose a new name.
+- If the command fails because the folder is not writable, check the owner and mode of `<host folder>` against the user `bun` of the image (`deploy/Dockerfile`). Do not use a mode wider than 700.
+- Hand the file over by a private channel, never by an open mail. The person decrypts it with `age -d -i <identity file> <file>`. Delete the file on the server and on every other copy after the delivery.
+- Each export writes the audit row `org.exported` (it shows in the security log of the organization as "Data export made").
+
+### Data request (a person who is not a user)
+
+GDPR Art. 12(3): answer within one month. Run these commands only on the written instruction of the owner of the organization. The owner keeps the request. The address is on the command line: clear that line from the shell history afterwards.
+
+1. Find (a dry run; it changes nothing). For an access request, add a report that is encrypted to the owner's `age` public key:
+
+   ```sh
+   $C run --rm server bun run org:dsr --org-id <org id> --address <address> --find
+   mkdir -m 700 <host folder>
+   $C run --rm -v <host folder>:/exports server bun run org:dsr --org-id <org id> --address <address> --find --recipient <age1…> --out /exports/<name>.age
+   ```
+
+   The output is counts: `mails`, `mention <table.column> <n>`, `listed delegates`, `listed sender_rules`, `open actions`, `chain actions`, `chain delegations`, and `report <bytes> bytes`. A find that matches nothing prints `warning: no match, check the spelling of the address` (exit 0): check the address. The report holds the whole mail of each mail that goes; handle the file as an export.
+
+2. Send the report or the counts to the owner. Wait for the owner to ask for the erase.
+3. Erase. `--confirm` repeats the address:
+
+   ```sh
+   $C run --rm server bun run org:dsr --org-id <org id> --address <address> --erase --confirm <address>
+   ```
+
+   The erase is one transaction. It deletes the mails of the person, writes a tombstone for each (sync, rescan and backfill skip them), removes the address from the kept rows (the text becomes `[removed]`), and blanks the stored digests and approval sets that can list the erased mail. It prints `erased mails`, `tombstones`, `scrubbed <table.column> <n>`, `blanked outbox`, `dropped outbox`, `kept delegates`, `kept sender_rules` and the line `record: dsr erase <org id> <date>`.
+   - `open action <id>` (exit 1, `open_actions`): a send or draft of a mail that goes, or an action of a kept mail that names the person, is still open. The owner rejects or finishes those sends first. Then run the erase again.
+   - `blocked <constraint>` (exit 1): a foreign key that the erase did not expect stopped it. Nothing changed. This is a bug: report the constraint name.
+   - `own_address` (exit 1): the address is a mailbox of the organization or the e-mail of a member. The command refuses it.
+   - A lock wait that runs past 30 s ends with the log line `org_dsr_failed` (exit 1) and changes nothing. Run the command again.
+
+4. Tell the owner what stays:
+   - Delegates and sender rules that hold the address stay until the owner changes them (the find lists them).
+   - The mail stays in the mailbox. The owner deletes it there if wanted. Telegram messages that were already delivered stay in the chat; nothing can recall them. The owner deletes them there.
+   - Backups keep the rows until they expire.
+
+**Erase again** when mail of the person may be stored later. A mail that was never stored has no tombstone. Run the same `--erase` command again after a backfill (`mailbox:backfill`), after the first sync of a newly enabled sync folder, and after a newly connected mailbox. A second run that finds nothing prints zero counts.
+
+**What the match does not find** (limits of the address pattern):
+
+- An address inside an attachment file name, such as `p@x.test.vcf`, is not matched: the pattern reads `.vcf` as a longer domain. The same rule keeps `a@b.com.pl` apart from `a@b.com`.
+- An address at the boundary of single quotes or braces (`'p@x.test'`, `{p@x.test}`) is matched only at the start of the text or after a character that is not allowed in a local part.
+- A fresh approval set that the sender has claimed (younger than 5 minutes) can still reach Telegram with the erased mail in it.
+- An approval card that was already sent and that the erase blanked can still be tapped. The answer then shows `[removed]`.
+- Telegram messages that were already delivered cannot be recalled.
+
+### Restore (D20)
+
+A backup restore brings back the deletes and erases that were made after the backup. Keep each `deleted <org id>: …` line of `org:delete` and each `record: dsr erase …` line of `org:dsr` outside the server (for example in the operator's own notes; the owner keeps the request). After a restore (§ Backups), and before the panel opens, run each of them again: `org:delete` with the same id and name, `org:dsr --erase` with the same address. No table on the server keeps this list, because a restore would roll it back too.
+
+### Hash of the address
+
+The audit rows `dsr.find` and `dsr.erase` hold a hash of the address, never the address. The key comes from `CREDENTIALS_KEY` (HKDF, no new secret). The same address gives the same hash in every organization. A change of `CREDENTIALS_KEY` makes old hashes unmatchable to an address.
+
+Both DSR commands and `org:export` and the refused delete attempts show in the security log of the organization (Account card, flag `security_log`).
+
 ## Reboot
 
 Run once: `sudo systemctl enable docker`.
