@@ -155,22 +155,45 @@ After the refresh: `bash scripts/plan-drift.sh spec/features/planned/F104-e5a-re
 - `cancelPendingOutbox` keeps `exceptDedupKey`; its kind union now holds `host_blocked` too.
 - No landed ticket built a step of this plan: no `sent_emails`, `mailbox_sent_sync`, `SentFolderReader`, `sentOriginOf` or `listUserAnswers` in the code.
 
-## Word counts (`wc -w`, after the refresh)
+## Review 2 answers ([plan-review-2.md](plan-review-2.md): PASS, 17 notes)
+
+Cold review model: `claude-opus-5-5` (the plan has `[risky]` stages; refresh 1 changed stage 01 in substance and added stage 12).
+
+- **N1 fixed.** Stage 12: the encrypted find report gets a `sent_mails` array; test 4 checks it.
+- **N2 fixed.** Stage 12: `dsrIsEmpty` counts `sent_mails`; test 4b.
+- **N3 fixed.** Stage 01 test 12: the row also goes to `q@x.test`, so stage 12 keeps it as a mention.
+- **N4 fixed.** D15 and stage 11: no notice without a pass in the last hour (`SENT_PASS_FRESH_MS`); `SentHealthRow.lastPassAt` (stage 07); stage 11 test 9.
+- **N5 outside edit.** `ticket.md` is not edited in a refresh (`.agents/limen/planner.md` § Refresh job step 6). The needed lines are in the job's final message: Slices (01 → 13, stage 13 runbook), Out of scope (DSR line), one Acceptance bullet for the sent-mail data request, Sequenced "Build after" (the F106 code on `master`). plan.md names the outdated line.
+- **N6 fixed.** Stage 10: `apps/web/src/lib/sent-text.test.ts` (unit lane). The refresh's path expansion had put it in the integration folder.
+- **N7 fixed.** F2, F3, F6, F9 name their sources again.
+- **N8 fixed.** D8, D9, D12, D13, D14, D15, D17 have a reason or a rejected option; D15 keeps "the card names errors"; edge case 3 and stage 04 test 3 cover a Sent folder that appears later; the "no bare codes" rule and the E2b seam are back. D16 is a doc rule (no option to reject).
+- **N9 fixed.** D11 and Q13: the operator may turn the switch on by CLI only on the owner's instruction; U1 says the pilot consent is the owner's tap.
+- **N10 noted.** Q11 is `[important: privacy]`: the coordinator copies it to `docs/owner-decisions.md`.
+- **N11 fixed.** Stage 01: `MESSAGE_TABLES` stays (pinned at 7; `sent_emails` does not cascade from `emails`).
+- **N12 fixed.** Stage 01 names the `ROW_SHAPE` type (`emailId: string | null`); stage 12 names the second exclusion list of `findMentions`.
+- **N13 fixed.** Stage 12 test 3 stores S1 by a first pass of the fake.
+- **N14 fixed.** Stage 11: `NOTICE_MAIL_CONTENT.sent_missing = "no_mail"`.
+- **N15 fixed.** Stage 10 names the render call (`vars.at` → `formatClock` → `{time}`).
+- **N16 fixed.** Stage 11: the address is cut with `cutText(address, 60)`; test 1 has an 80-character case.
+- **N17 rejected.** Stages 04, 09 and 11 stay one job each: each fits 700 words, follows one existing pattern, and stages 04 and 11 get a review job. A split would renumber the stages that other files name.
+- **Limit (review note).** A system send whose incoming mail an erase deleted reads as user mail after a new first pass: stage 12 docs name it.
+
+## Word counts (`wc -w`, after review 2)
 
 ```
- 1498 plan.md
-  664 stages/stage-01-migration.md
+ 1499 plan.md
+  678 stages/stage-01-migration.md
   700 stages/stage-02-repository.md
   658 stages/stage-03-rules.md
-  699 stages/stage-04-header-pass.md
+  700 stages/stage-04-header-pass.md
   579 stages/stage-05-text-step.md
   649 stages/stage-06-wiring-and-docs.md
-  688 stages/stage-07-readers-and-retention.md
+  693 stages/stage-07-readers-and-retention.md
   532 stages/stage-08-switch.md
-  691 stages/stage-09-settings-api-and-cli.md
-  682 stages/stage-10-panel.md
-  694 stages/stage-11-notice.md
-  656 stages/stage-12-dsr-sent.md
+  697 stages/stage-09-settings-api-and-cli.md
+  691 stages/stage-10-panel.md
+  682 stages/stage-11-notice.md
+  692 stages/stage-12-dsr-sent.md
   697 stages/stage-13-pilot-deploy.md
-10087 total
+10147 total
 ```
