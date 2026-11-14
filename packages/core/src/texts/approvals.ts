@@ -1,3 +1,4 @@
+import type { RejectReason } from "../metrics/m3";
 import type { UserLocale } from "../tenancy";
 
 import { pluralCategory } from "./locale";
@@ -29,7 +30,12 @@ export interface ApprovalTexts {
     sendAgain: string;
     wentOut: string;
     done: string;
+    reasonWrongPerson: string; // after a reject: "✖️ Wrong person"
+    reasonWrongContent: string;
+    reasonNotNeeded: string;
+    mistake: string; // on a sent mail: "⚠️ This was a mistake"
   };
+  reasons: Record<RejectReason, string>; // inside a sentence, after "Reason: "
   set: {
     header: (count: number) => string;
     dueDay: (day: string) => string; // ends with ", " : it sits before the reminder number
@@ -78,6 +84,8 @@ export interface ApprovalTexts {
     rejectedSet: (time: string, done: number, skipped: number) => string;
     wentOut: (time: string) => string;
     done: (time: string) => string;
+    rejectedReason: (reason: string) => string; // no clock: the tap time is not the reject time
+    markedMistake: (time: string) => string;
   };
   answered: {
     title: (name: string, subject: string) => string;
@@ -117,7 +125,12 @@ export const approvalTexts = {
       sendAgain: "📤 Send again",
       wentOut: "✅ It went out",
       done: "✅ Done",
+      reasonWrongPerson: "✖️ Wrong person",
+      reasonWrongContent: "✖️ Wrong content",
+      reasonNotNeeded: "Not needed",
+      mistake: "⚠️ This was a mistake",
     },
+    reasons: { wrong_person: "wrong person", wrong_content: "wrong content", not_needed: "not needed" },
     set: {
       header: (count) => (count === 1 ? "📤 Send 1 reminder?" : `📤 Send ${count} reminders?`),
       dueDay: (day) => `due ${day}, `,
@@ -181,6 +194,8 @@ export const approvalTexts = {
       rejectedSet: (time, done, skipped) => `✖️ Skipped ${time}: ${done} rejected, ${skipped} skipped.`,
       wentOut: (time) => `✅ Marked as sent ${time}.`,
       done: (time) => `✅ Done ${time}.`,
+      rejectedReason: (reason) => `✖️ Rejected. Reason: ${reason}.`,
+      markedMistake: (time) => `⚠️ Marked as a mistake ${time}.`,
     },
     answered: {
       title: (name, subject) => `📩 ${name} answered · ${subject}`,
@@ -210,7 +225,12 @@ export const approvalTexts = {
       sendAgain: "📤 Wyślij ponownie",
       wentOut: "✅ Wysłano",
       done: "✅ Gotowe",
+      reasonWrongPerson: "✖️ Zła osoba",
+      reasonWrongContent: "✖️ Zła treść",
+      reasonNotNeeded: "Niepotrzebne",
+      mistake: "⚠️ To był błąd",
     },
+    reasons: { wrong_person: "zła osoba", wrong_content: "zła treść", not_needed: "niepotrzebne" },
     set: {
       header: (count) => `📤 Wysłać ${count} ${PL_SET_REMINDERS[pluralCategory("pl", count)]}?`,
       dueDay: (day) => `termin: ${day}, `,
@@ -275,6 +295,8 @@ export const approvalTexts = {
       rejectedSet: (time, done, skipped) => `✖️ Pominięto ${time}. Odrzucono: ${done}, pominięto: ${skipped}.`,
       wentOut: (time) => `✅ Oznaczono jako wysłane ${time}.`,
       done: (time) => `✅ Gotowe ${time}.`,
+      rejectedReason: (reason) => `✖️ Odrzucono. Powód: ${reason}.`,
+      markedMistake: (time) => `⚠️ Oznaczono jako błąd ${time}.`,
     },
     answered: {
       title: (name, subject) => `📩 Odpowiedź od: ${name} · ${subject}`,

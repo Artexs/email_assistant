@@ -60,6 +60,7 @@ const approvals: [Callback, string][] = [
   [{ kind: "send_again", actionId: ID }, `ag:${ID}`],
   [{ kind: "went_out", actionId: ID }, `gw:${ID}`],
   [{ kind: "delegation_done", delegationId: ID }, `dd:${ID}`],
+  [{ kind: "mistake", actionId: ID }, `mk:${ID}`],
 ];
 
 describe("approval callback data", () => {
@@ -78,6 +79,32 @@ describe("approval callback data", () => {
 
   test("the S2 and S3 kinds still parse", () => {
     expect(parseCallback(`fu:${ID}`)).toEqual({ kind: "undo", emailId: ID });
+  });
+});
+
+describe("reject reason callback data", () => {
+  test.each([
+    ["wrong_person", "p"],
+    ["wrong_content", "c"],
+    ["not_needed", "n"],
+  ] as const)("round trip %s", (reason, code) => {
+    const callback: Callback = { kind: "reject_reason", reason, actionId: ID };
+    const data = encodeCallback(callback);
+    expect(data).toBe(`rw:${code}:${ID}`);
+    expect(Buffer.byteLength(data)).toBeLessThanOrEqual(CALLBACK_MAX_BYTES);
+    expect(parseCallback(data)).toEqual(callback);
+  });
+
+  test.each([`rw:x:${ID}`, `rw:${ID}`, `rw:p:${ID.toUpperCase()}`, `rw:p:${ID}:x`, "rw:p:not-a-uuid"])(
+    "rejects %p",
+    (data) => {
+      expect(parseCallback(data)).toBeNull();
+    }
+  );
+
+  test("encode refuses a bad id", () => {
+    expect(() => encodeCallback({ kind: "reject_reason", reason: "not_needed", actionId: "x" })).toThrow("bad id");
+    expect(() => encodeCallback({ kind: "mistake", actionId: "x" })).toThrow("bad id");
   });
 });
 

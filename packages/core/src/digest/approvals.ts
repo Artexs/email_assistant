@@ -1,9 +1,11 @@
+import type { RejectReason } from "../metrics/m3";
 import { quoteCut } from "../outgoing/quote";
 import type { ApprovalView } from "../outgoing/sender";
 import { type CoreTexts, textTables } from "../texts";
 import type { DraftPayload } from "../triage/payloads";
 import { removeLinks } from "../triage/untrusted-text";
 
+import { mistakeButton, reasonButtons, rejectReasonText } from "./action-feedback";
 import { encodeCallback } from "./callback";
 import { formatClock, formatDay, localDateTime } from "./local-time";
 import { MESSAGE_MAX_CHARS, type OutMessage } from "./message";
@@ -260,6 +262,7 @@ export function renderSendResult(
     recipient: { name: string | null; address: string };
     subject: string;
     synthetic: boolean;
+    mistakeButton?: boolean;
   },
   texts: CoreTexts
 ): OutMessage {
@@ -281,6 +284,7 @@ export function renderSendResult(
       first = t.sendResult.sent(to, subject);
       if (result.sentCopy === "failed") rest.push(t.sendResult.copyFailed);
       if (!result.draftRemoved) rest.push(t.sendResult.draftStaysNoUid);
+      if (input.mistakeButton === true) buttons = mistakeButton(actionId, texts);
       break;
     case "rejected_by_server":
       first = t.sendResult.notSent(to, subject);
@@ -358,11 +362,13 @@ export type ApprovalEditOutcome =
   | "approved"
   | "approved_held"
   | "rejected"
+  | "rejected_reason"
   | "expired"
   | "approved_set"
   | "rejected_set"
   | "went_out"
-  | "done";
+  | "done"
+  | "marked_mistake";
 
 // The edited message: the text and the buttons that stay.
 export function approvalEdit(
@@ -374,6 +380,8 @@ export function approvalEdit(
     timeZone: string;
     actionId?: string;
     counts?: { done: number; skipped: number };
+    reason?: RejectReason;
+    reasonButtons?: boolean;
   },
   texts: CoreTexts
 ): OutMessage {
@@ -397,6 +405,14 @@ export function approvalEdit(
     }
     case "rejected":
       line = t.edit.rejected(time);
+      // The reason buttons need the action id; a set has none.
+      if (input.reasonButtons === true && input.actionId !== undefined) {
+        buttons = reasonButtons(input.actionId, texts);
+      }
+      break;
+    case "rejected_reason":
+      if (input.reason === undefined) throw new Error("rejected_reason needs reason");
+      line = t.edit.rejectedReason(rejectReasonText(input.reason, texts));
       break;
     case "expired":
       line = t.edit.expired(time);
@@ -412,6 +428,9 @@ export function approvalEdit(
       break;
     case "done":
       line = t.edit.done(time);
+      break;
+    case "marked_mistake":
+      line = t.edit.markedMistake(time);
       break;
   }
   const tail = `\n\n${line}`;

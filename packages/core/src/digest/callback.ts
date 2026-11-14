@@ -1,3 +1,4 @@
+import { type RejectReason, rejectReasons } from "../metrics/m3";
 import type { Category } from "../triage/categories";
 
 export const labelCategories = ["urgent", "needs_reply", "info", "notification", "spam"] as const;
@@ -35,7 +36,10 @@ export type Callback =
   | { kind: "reject_set"; setId: string }
   | { kind: "send_again"; actionId: string }
   | { kind: "went_out"; actionId: string }
-  | { kind: "delegation_done"; delegationId: string };
+  | { kind: "delegation_done"; delegationId: string }
+  // After a reject: the reason (p = wrong_person, c = wrong_content, n = not_needed). After a send: "this was a mistake".
+  | { kind: "reject_reason"; reason: RejectReason; actionId: string }
+  | { kind: "mistake"; actionId: string };
 
 export function isFeedbackCallback(callback: Callback): callback is FeedbackCallback {
   return "emailId" in callback;
@@ -66,7 +70,13 @@ const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 // The digest prefixes (fr, fc) keep the five label codes; the review prefixes (vr, vc) also take `d`.
 const WITH_CODE = new RegExp(`^(fr|fc):([urins]):(${UUID})$|^(vr|vc):([urinsd]):(${UUID})$`);
 const WITHOUT_CODE = new RegExp(`^(fe|fx|fu|ve|vx):(${UUID})$`);
-const APPROVAL = new RegExp(`^(ap|ar|as|rs|ag|gw|dd):(${UUID})$`);
+const APPROVAL = new RegExp(`^(ap|ar|as|rs|ag|gw|dd|mk):(${UUID})$`);
+const REASON = new RegExp(`^rw:([pcn]):(${UUID})$`);
+const REASON_CODES: Record<RejectReason, string> = { wrong_person: "p", wrong_content: "c", not_needed: "n" };
+const CODE_TO_REASON = Object.fromEntries(rejectReasons.map((reason) => [REASON_CODES[reason], reason])) as Record<
+  string,
+  RejectReason
+>;
 
 // Button data is at most 64 bytes (Telegram); the longest value here is 41.
 export function encodeCallback(callback: Callback): string {
@@ -85,6 +95,10 @@ export function encodeCallback(callback: Callback): string {
       return `gw:${checkedId(callback.actionId)}`;
     case "delegation_done":
       return `dd:${checkedId(callback.delegationId)}`;
+    case "reject_reason":
+      return `rw:${REASON_CODES[callback.reason]}:${checkedId(callback.actionId)}`;
+    case "mistake":
+      return `mk:${checkedId(callback.actionId)}`;
     default:
       return encodeFeedback(callback);
   }
@@ -137,9 +151,19 @@ export function parseCallback(data: string): Callback | null {
         return { kind: "send_again", actionId: id };
       case "gw":
         return { kind: "went_out", actionId: id };
+      case "mk":
+        return { kind: "mistake", actionId: id };
       default:
         return { kind: "delegation_done", delegationId: id };
     }
+  }
+  const reason = REASON.exec(data);
+  if (reason !== null) {
+    return {
+      kind: "reject_reason",
+      reason: CODE_TO_REASON[reason[1] as string] as RejectReason,
+      actionId: reason[2] as string,
+    };
   }
   const withCode = WITH_CODE.exec(data);
   if (withCode !== null) {

@@ -37,6 +37,12 @@ export const featureFlags = {
     epic: "E2a",
     removeBy: "2027-03-01",
   },
+  mistake_capture: {
+    default: false,
+    description: "Reason buttons after a reject and a 'this was a mistake' button on a sent mail.",
+    epic: "E3a",
+    removeBy: "2027-03-01",
+  },
 } as const satisfies Record<string, FeatureFlag>;
 
 export type FeatureKey = keyof typeof featureFlags;
