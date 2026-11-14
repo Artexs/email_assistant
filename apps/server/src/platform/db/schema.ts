@@ -24,6 +24,18 @@ export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
+export interface ActionFeedback {
+  action_id: string;
+  created_at: Timestamp;
+  id: Generated<string>;
+  kind: string;
+  org_id: string;
+  reason: string | null;
+  updated_at: Timestamp;
+  user_id: string | null;
+  via: string;
+}
+
 export interface Actions {
   applied_at: Timestamp | null;
   approved_at: Timestamp | null;
@@ -171,6 +183,42 @@ export interface Digests {
   sent_at: Timestamp | null;
   slot_key: string;
   user_id: string;
+}
+
+export interface EmailFlags {
+  answered: boolean;
+  answered_check: string | null;
+  answered_check_at: Timestamp | null;
+  answered_check_by: string | null;
+  checked_at: Timestamp;
+  email_id: string;
+  first_answered_at: Timestamp | null;
+  first_flagged_at: Timestamp | null;
+  first_seen_at: Timestamp | null;
+  flagged: boolean;
+  org_id: string;
+  seen: boolean;
+}
+
+export interface EmailHeaders {
+  attachment_count: Generated<number>;
+  attachments: Generated<Json>;
+  auth_results: string | null;
+  auto_submitted: string | null;
+  captured_at: Timestamp;
+  email_id: string;
+  from_name: string | null;
+  has_calendar: Generated<boolean>;
+  link_count: Generated<number>;
+  links: Generated<Json>;
+  list_id: string | null;
+  list_unsubscribe: string | null;
+  org_id: string;
+  parts_known: boolean;
+  precedence: string | null;
+  reply_to: Generated<string[]>;
+  return_path: string | null;
+  texts_cleared_at: Timestamp | null;
 }
 
 export interface Emails {
@@ -363,6 +411,7 @@ export interface Users {
 }
 
 export interface DB {
+  action_feedback: ActionFeedback;
   actions: Actions;
   audit_log: AuditLog;
   auth_accounts: AuthAccounts;
@@ -374,6 +423,8 @@ export interface DB {
   delegates: Delegates;
   delegations: Delegations;
   digests: Digests;
+  email_flags: EmailFlags;
+  email_headers: EmailHeaders;
   emails: Emails;
   mailbox_credentials: MailboxCredentials;
   mailbox_folders: MailboxFolders;
