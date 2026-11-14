@@ -60,3 +60,7 @@ Run `limen land` ALONE. Read its last lines. "Recorded preimage" or CONFLICT = n
 ## F100 s16 review carry-over (landed)
 - N6 open for the owner/F098 follow-up: Polish `Załatwiłbym` (digest and weekly wouldHandle) is a masculine first-person verb; the F098 glossary has no neutral form. Polish stays off until F098 s12. Decide the assistant's grammatical voice before Polish goes live (neutral: "Do załatwienia przez asystenta: …").
 - Migration 20261114140001 applied on the shared dev DB.
+
+## F029 s01 review carry-over (landed)
+- Stage 04 docs: architecture.md 6.1 "Known mail" parenthetical sits in the system-moved sentence; the multi-copy rule also covers a first copy in its source folder (test 1.5). Say so in stage 04 docs.
+- Accepted risks (D1, Q4): more locates = more exposure to Interia SEARCH limit (h) for tab-folder copies (false `relocated`); with 6+ copies and only the 6th gone, a new copy is stored silently.
