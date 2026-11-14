@@ -3,6 +3,7 @@
 - Status: proposed (E9 discovery, 2026-11-13). The E9b ticket sets "accepted".
 - Date: 2026-11-13
 - Amends: 0005 (Telegram is one of several notice channels), 0016 (the panel becomes an installable PWA)
+- Point 5 built by `spec/features/done/2026-11/F088-notices-as-facts/` (the outbox stores the view, the sender renders). The status stays proposed until E9b.
 
 ## Context
 

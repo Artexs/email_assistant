@@ -396,6 +396,18 @@ $C run --rm server bun run job:run --name platform.retention
 
 Roll back the code, not the migration. A `db:rollback` of `20261108000001_delegation` deletes all `create_draft` and `send` rows, all delegations and all delegates.
 
+## Notices as facts (migration `outbox_view`)
+
+### Update
+
+Run `bun run db:migrate` before you start the new code: the code writes `outbox.view`, `channel`, `locale` and `detail`. Rows queued by the old code keep their text and go out as they are.
+
+A later change of a notice view schema (a stricter field, a renamed field) needs care: the sender renders a row up to 24 h after its queue, with the code that runs at the send. Release it only if the new schema still accepts the views of the rows queued in the last 24 h. Otherwise wait until `select count(*) from outbox where status in ('pending', 'sending') and view <> '{}'::jsonb and kind = '<kind>'` is 0, then release. A waiting row that the new schema rejects becomes `failed` / `bad_view` and the user gets no notice.
+
+### Roll back
+
+Roll back the code, not the migration. The code that comes with this migration already renders a row without text, so a rollback to any release that has this migration loses nothing. A release without this migration sends a row without text as an empty message: Telegram refuses it, and the row fails with `bad_request`, approval requests too (their sends expire after 48 h, and the owner gets the result notice). Before a rollback that far, wait until `select count(*) from outbox where text is null and status in ('pending', 'sending')` is 0 (outside the quiet hours the outbox empties within minutes). Do not run `db:rollback`: its down part fails every waiting row without text.
+
 ## Customers (S6a)
 
 Each customer is one organization with a plan. The operator manages the plan with the commands below. The output holds ids, codes, dates and counts only, never a name or an address.

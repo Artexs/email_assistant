@@ -41,6 +41,27 @@ The server modules sit in layers. `bun run lint` fails on an import that crosses
 - Registries over if-chains: action handlers, notice detectors, notice renderers, LLM roles, prompts and jobs are entries in a typed record keyed by the enum. A test checks the record against the enum and, where one exists, the CHECK list of the migration. A new kind is a new entry, not a new `if` or `case` in a shared function.
 - A CLI script that reads or writes the DB parses its arguments, loads config and calls a service function of a module index, the same function a route calls (ADR 0023). It does not query a repository directly. A dev tool that touches no DB (`scripts/module-graph.ts`) is outside this rule. Existing scripts change when they are touched.
 
+## Notices are facts
+
+A module that has something to tell a user through the outbox (digests and notices) queues facts. It never builds the text of a channel (ADR 0032 point 5). Direct replies (command answers, tap answers, the link texts, the operator notices) are not outbox rows and keep their texts where they are (`channels/texts.ts`, `callbacks.ts`, `channels/operator.ts`).
+
+- A notice enters the outbox only through `queueNotice` (`apps/server/src/modules/channels/notice-queue.ts`) with `{ userId, locale, kind, view, dedupKey }`. The view is the input of the kind's renderer: ids, counts, dates, and the strings from mail data or from users that the text prints (subject, sender, names). It holds no phrase of ours: a fixed word or sentence comes from the renderer, so a new locale or a new channel changes only the renderer.
+- Each kind has a strict view schema (`noticeViewSchemas`, `packages/core/src/notices/views.ts`): no field that the renderer does not print. A view holds mail-derived text: it follows the retention of `outbox.text` (`clearOutboxTexts`, `docs/architecture.md` §7) and never reaches a log line, an error text or a test name.
+- `queueNotice` renders the view once as a check. A view that does not render never enters the outbox, and the event gets no row. Where the producer marks its source row (approvals, sets, send results, delegation answers, action failures, digests), the mark is in the same transaction, so it rolls back and the event is tried again. Urgent, `auth_error`, `sync_stale` and `sync_ok` have no mark: the next tick finds the event again and retries through the dedup key.
+- The sender renders when it sends: `renderNotice(kind, view, { channel, detail, locale })` from `@ea/core`. `outbox.text` and `outbox.buttons` are the cache of the sent message (null and `[]` until the send). A row whose view does not render becomes `failed` / `bad_view`.
+- A row waits up to 24 h in the outbox (the sender fails an older row with `expired`), and newer code may render it. A change of a view schema or of a view field must still accept the views of the rows queued in the last 24 h. If it cannot, the change waits until those rows drain (`deploy/README.md` § Notices as facts). Otherwise every waiting row of the kind becomes `failed` / `bad_view` and the user gets nothing.
+- A clock in a view is a fact of the queue time (`now`, `timeZone`): a notice held by the quiet hours prints the same text when it goes out.
+- The edit after a tap keeps the stored text of the card and adds one status line (`renderNoticeEdit`); it never renders the card again.
+- Texts are `en` today. The row's `locale` comes from `users.locale` (null = `pl`, as the auth mails); a renderer selects the `pl` text when E7-T1 adds it.
+
+### Add a notice kind
+
+1. Core: add the kind to `noticeKinds` (`packages/core/src/notices/kinds.ts`), a strict view schema to `noticeViewSchemas` (`views.ts`) and an entry with a `telegram.full` function to `noticeRenderers` (`renderers.ts`). Unit test: the exact text for one fixed view.
+2. Migration: add the kind to `outbox_kind_check` (drop and add the constraint, as `db/migrations/20261111000001_delete_mailbox.sql` does); the `down` part deletes the rows of the kind first. A kind that needs `email_id`, `mailbox_id` or `digest_id` gets that check too.
+3. Server: one detector file `apps/server/src/modules/channels/notices/<kind>.ts` that exports a `Detector` listed in `detectors` (`notices/index.ts`), or, for a producer outside the notifier, an entry in `queuedBy`. The producer calls `queueNotice`.
+4. Tests: `channels/notices/registry.test.ts` and the `CHECK` test in `apps/server/test/integration/telegram-schema.test.ts` fail until steps 1–3 are complete. Add an integration case in `channels-notices.test.ts`: one row per member, no second row on a second run.
+5. Docs: the `outbox` row of `docs/architecture.md` §5 (kind, dedup key) and the `channels` table of `docs/modules.md` §3.8.
+
 ## Ports and adapters
 
 - A port (interface) lives in the module that owns it: `MailProvider` in `mail/port.ts`, `ChatChannel` in `channels/port.ts`.

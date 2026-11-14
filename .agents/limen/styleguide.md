@@ -32,6 +32,7 @@ Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit:
 - Registries (a typed record keyed by the enum, with a test against the enum and the CHECK list) over if-chains for handlers, detectors, renderers, roles, prompts and jobs.
 - A new table with `org_id` gets tenant-filter tests, retention (if it holds text) and a note for the organization delete and DSR map (`docs/code-patterns.md` § Data access).
 - A new user-visible behaviour reads `isFeatureOn(db, ctx, flag)`; the flag is in `packages/core/src/features.ts` with an owner epic and a remove-by date, default off, on for the pilot first. Change a flag only through `setOrgFeature`.
+- Notices are facts: a producer calls `queueNotice({ kind, view, locale })`; the sender renders with `renderNotice` from `@ea/core`. A new kind follows the checklist in `docs/code-patterns.md` § Notices are facts. A view schema change still accepts the views of rows queued in the last 24 h.
 
 ## Avoid
 
@@ -47,3 +48,4 @@ Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit:
 - Bare codes in comments (`S3`, `D29`, `A23`, `F079`): name the rule, an ADR or a ticket folder path.
 - A CLI that queries a repository directly: a CLI that uses the DB calls the service function that a route calls.
 - `use("*")` in a router mounted at `/` (it runs for every `/api` path); reading `FEATURES_OFF` or `OPERATOR_USER_IDS` outside `platform/config`; a settings argument on a flag read.
+- The text of an outbox notice built outside a renderer in `packages/core/src/notices/` (direct replies and tap answers keep their own texts). A view, a rendered text or a Zod error in a log line.
