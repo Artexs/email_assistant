@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-12
+landed: 2026-11-14
 ---
 
 # F082 · The panel login has the production shape: invite only, lockout, leaked-password check, terms, session list
