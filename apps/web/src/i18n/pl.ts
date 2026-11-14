@@ -66,6 +66,10 @@ export const pl: Record<TextKey, string> = {
   tf_error_locked: "Za dużo błędnych kodów. Spróbuj ponownie za 15 minut.",
   tf_error_state:
     "Wystąpił problem z logowaniem dwuetapowym. Użyj kodu zapasowego albo poproś operatora o jego wyłączenie.",
+  tf_qr_label: "Kod QR dla aplikacji uwierzytelniającej",
+  tf_error_password: "Błędne hasło.",
+  tf_error_break_glass:
+    "Jesteś właścicielem awaryjnym organizacji, więc logowanie dwuetapowe zostaje włączone. Najpierw poproś operatora o wybranie innego właściciela awaryjnego.",
   // setup
   setup_title: "Ustaw hasło",
   new_password_label: "Nowe hasło",

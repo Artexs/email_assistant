@@ -21,6 +21,31 @@ export function codeStepError(error: { status?: number; code?: string } | null |
   return { key: "error_generic", restart: false };
 }
 
+export interface AccountTwoFactorError {
+  // The form field that shows the text; null means the text stands alone.
+  field: "password" | "code" | null;
+  key: TextKey;
+}
+
+// Maps a Better Auth error of enable, verify, disable or new codes to a field and a text.
+export function accountTwoFactorError(
+  error: { status?: number; code?: string } | null | undefined
+): AccountTwoFactorError | null {
+  if (error === null || error === undefined) return null;
+  if (error.status === 429) return { field: null, key: "error_too_many" };
+  if (error.code === "INVALID_PASSWORD") return { field: "password", key: "tf_error_password" };
+  if (error.code === "INVALID_CODE") return { field: "code", key: "tf_error_code" };
+  if (error.code === "BREAK_GLASS_NEEDS_TWO_FACTOR") return { field: null, key: "tf_error_break_glass" };
+  if (
+    error.code === "TOTP_ALREADY_ENABLED" ||
+    error.code === "TWO_FACTOR_NOT_ENABLED" ||
+    error.code === "TOTP_NOT_ENABLED"
+  ) {
+    return { field: null, key: "tf_error_state" };
+  }
+  return { field: null, key: "error_generic" };
+}
+
 // Spaces removed; exactly 6 digits give the digits, anything else gives null.
 export function cleanTotpCode(input: string): string | null {
   const code = input.replace(/\s+/g, "");
