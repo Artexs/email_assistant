@@ -21,7 +21,7 @@ Sync brings mail from an IMAP mailbox into the `emails` table. An owner connects
 3. **Presets.** The web form accepts a preset (`interia`, `gmail`, `onet`, `wp`, `o2`, `icloud`) or explicit hosts. `mailbox:connect` takes the hosts as flags.
 4. **Capability check.** `bun run mailbox:check` reads the server capabilities (IDLE, MOVE, UIDPLUS, CONDSTORE, SPECIAL-USE, KEYWORDS) and the folder list. With `--probe` it also adds one draft and sends one mail to the mailbox itself, to test `SEARCH HEADER` and the auto-save of sent mail. Use `--probe` only on a test account. Connect stores the capabilities in `mailboxes.capabilities`.
 5. **Folder keys (ADR 0014).** The keys are `inbox`, `offers`, `social`, `bills` and `junk`. At Interia the defaults are `Oferty`, `Społeczności`, `Rachunki` (role `sort`) and `Wiadomości-śmieci` (role `junk`). At each run the job adds a row for each default name that the server lists exactly. It never adds a folder that is Drafts, Sent, Trash, an `AI/*` folder or the `AI` root. Sync reads INBOX and the enabled rows of `mailbox_folders` only; it never reads `AI/*`, Sent, Drafts, Trash or the user's own folders, so that mail is never touched. The run goes folder by folder: INBOX, the `sort` folders, then the spam folder. An error in a folder other than INBOX gives a warning and the run goes on; the third failed run in a row for one folder gives one `error` line. A folder row that the server does not list is skipped. `bun run mailbox:settings sync-folder --key offers|social|bills|junk --value on|off` switches a folder (INBOX has no switch); switching on again clears its cursor, so the folder starts with a new 24 h first sync. The web panel does the same with `PATCH /api/settings/:mailboxId/sync-folders/:key` (owner only). Details of the folder rules: `docs/architecture.md` §6.1.
-6. **The `mail.sync` job.** Cron `*/5 * * * *`. The target list is `listSyncTargets`: mailboxes with status `active` of organizations whose plan is not `suspended`. The job checks the plan before each mailbox, so a suspend during a run stops at the next mailbox. After a good run it sets `mailboxes.last_synced_at`. Then, on the same connection, the job refreshes the IMAP flags of the mailbox (`refreshFlags`, `flags.ts`): at most every 10 minutes per mailbox and process (an in-memory map, so a restart refreshes at the first run). It checks mail received in the last 30 days, at most 3,000 per run, never-checked mail first and then the oldest check. It asks the server for `\Seen`, `\Answered` and `\Flagged` per folder in chunks of 500 UIDs (`fetchFlagsIn`) and keeps them in `email_flags` with the first time each flag was seen. The write is guarded: it changes a row only while `emails.folder` and `emails.uid` still equal what the run read, and only when the fetched mail is the stored one (the same normalized Message-ID, else the same INTERNALDATE to the second), because a UID can name another mail after a UIDVALIDITY change. A UID the server no longer returns counts as `notFound`, a UID of another mail as `mismatch`; both write nothing. The refresh only reads FLAGS, so "sync only reads the mailbox" stays true. A failure in the refresh (also a login error) is one `flags_refresh_failed` warning and never fails the sync. The log lines hold the mailbox id and counts only.
+6. **The `mail.sync` job.** Cron `*/5 * * * *`. The target list is `listSyncTargets`: mailboxes with status `active` of organizations whose plan is not `suspended`. The job checks the plan before each mailbox, so a suspend during a run stops at the next mailbox. After a good run it sets `mailboxes.last_synced_at`. Then, on the same connection, the job refreshes the IMAP flags of the mailbox (`refreshFlags`, `flags.ts`): at most every 10 minutes per mailbox and process (an in-memory map, so a restart refreshes at the first run). It checks mail received in the last 30 days, at most 3,000 per run, never-checked mail first and then the oldest check. It asks the server for `\Seen`, `\Answered` and `\Flagged` per folder in chunks of 500 UIDs (`fetchFlagsIn`) and keeps them in `email_flags` with the first time each flag was seen. The write is guarded: it changes a row only while `emails.folder` and `emails.uid` still equal what the run read, and only when the fetched mail is the stored one (the same normalized Message-ID, else the same INTERNALDATE to the second), because a UID can name another mail after a UIDVALIDITY change. A UID the server no longer returns counts as `notFound`, a UID of another mail as `mismatch` (a Message-ID on one side only is also a mismatch); both write no flags. They only set `email_flags.checked_at` (`touchEmailFlags`), so such mail goes to the back of the queue and cannot fill the 3,000 of a run; a mail without a row gets one with all flags false and no first-seen time. `checked_at` means "last tried", not "flags read". The refresh only reads FLAGS, so "sync only reads the mailbox" stays true. A failure in the refresh (also a login error) is one `flags_refresh_failed` warning and never fails the sync. The log lines hold the mailbox id and counts only.
 7. **Cursor and first sync.** The cursor of a folder is `uidvalidity` and `last_uid` in its `mailbox_folders` row. An incremental run fetches the UIDs above the cursor and drops the UIDs at or below it (`UID FETCH n:*` also returns the highest message). The mode is `initial` when the folder has no cursor (only mail of the last 24 h), `incremental` when UIDVALIDITY is unchanged, and `rescan` when it changed (mail of the last 7 days; the dedup key stops duplicates). `bun run mailbox:rescan` forces a rescan of every synced folder of one mailbox. The INBOX cursor is also written to `mailboxes.uidvalidity` and `last_uid` (a rollback aid). The UIDNEXT of a folder is the largest of the STATUS value, the SELECT value and the highest UID + 1, because Interia gives a wrong STATUS value.
 8. **Dedup key.** `Message-ID` plus `content_hash` (SHA-256 of the `From` address, the `Date` header, else INTERNALDATE, and RFC822.SIZE). A mail without a `Message-ID` uses the hash only. The same `Message-ID` with another hash is a new mail. A second identical copy gets the key with `#2`, `#3`, and so on. The unique index is `(mailbox_id, dedup_key)`. Exact rules: `docs/architecture.md` §6.1.
 9. **Own mail is skipped.** A message whose `X-EA-Action-Id` header matches an `actions` row of the mailbox is the system's own draft or sent mail: sync does not store it (`isOwnActionId`). `From:` with the owner's address is not a reason to skip.
@@ -39,37 +39,37 @@ Sync brings mail from an IMAP mailbox into the `emails` table. An owner connects
 
 ## Entry points
 
-| Kind     | Name                                                            | Where                                           |
-| -------- | --------------------------------------------------------------- | ----------------------------------------------- |
-| job      | `mail.sync` (`*/5 * * * *`)                                     | `apps/server/src/modules/mail/jobs.ts`          |
-| route    | `GET /api/mailboxes`                                            | `apps/server/src/modules/mail/routes.ts`        |
-| route    | `POST /api/mailboxes` (owner)                                   | `apps/server/src/modules/mail/routes.ts`        |
-| route    | `POST /api/mailboxes/:id/password` (owner)                      | `apps/server/src/modules/mail/routes.ts`        |
-| route    | `POST /api/mailboxes/:id/pause`, `POST .../resume` (owner)      | `apps/server/src/modules/mail/routes.ts`        |
-| route    | `DELETE /api/mailboxes/:id` (owner)                             | `apps/server/src/modules/mail/routes.ts`        |
-| route    | `PATCH /api/settings/:mailboxId/sync-folders/:key` (owner)      | `apps/server/src/modules/config/routes.ts`      |
-| Telegram | `/pause`, `/resume` (owner)                                     | `apps/server/src/modules/channels/commands.ts`  |
-| CLI      | `bun run mailbox:connect`                                       | `apps/server/src/scripts/mailbox-connect.ts`    |
-| CLI      | `bun run mailbox:check`                                         | `apps/server/src/scripts/mailbox-check.ts`      |
-| CLI      | `bun run mailbox:password`                                      | `apps/server/src/scripts/mailbox-password.ts`   |
-| CLI      | `bun run mailbox:rescan`                                        | `apps/server/src/scripts/mailbox-rescan.ts`     |
-| CLI      | `bun run mailbox:backfill`                                      | `apps/server/src/scripts/mailbox-backfill.ts`   |
-| CLI      | `bun run mailbox:seed`                                          | `apps/server/src/scripts/mailbox-seed.ts`       |
-| CLI      | `bun run mailbox:audit`                                         | `apps/server/src/scripts/mailbox-audit.ts`      |
-| CLI      | `bun run mailbox:signals`                                       | `apps/server/src/scripts/mailbox-signals.ts`    |
-| CLI      | `bun run mailbox:settings` (`sync-folder`)                      | `apps/server/src/scripts/mailbox-settings.ts`   |
-| function | `syncMailbox`, `backfillInbox`                                  | `apps/server/src/modules/mail/sync.ts`          |
-| function | `refreshFlags`                                                  | `apps/server/src/modules/mail/flags.ts`         |
-| function | `listFlagTargets`, `writeEmailFlags`, `getEmailFlags`           | `apps/server/src/modules/mail/repo/flags.ts`    |
-| function | `storeCapture`                                                  | `apps/server/src/modules/mail/capture-store.ts` |
-| function | `insertEmailHeaders`, `getEmailHeaders`, `clearCapturedHeaders` | `apps/server/src/modules/mail/repo/headers.ts`  |
-| function | `connectMailbox`, `updateMailboxPassword`, `buildFolderMap`     | `apps/server/src/modules/mail/connect.ts`       |
-| function | `resolveMailHost`, `configureMailHosts`                         | `apps/server/src/modules/mail/host-guard.ts`    |
-| function | `checkMailbox`                                                  | `apps/server/src/modules/mail/check.ts`         |
-| function | `removeMailbox`                                                 | `apps/server/src/modules/mail/remove.ts`        |
-| function | `switchMailboxStatus`                                           | `apps/server/src/modules/mail/status.ts`        |
-| function | `ensureSyncFolders`                                             | `apps/server/src/modules/mail/folders.ts`       |
-| function | `locateMessage`, `locateByActionId`                             | `apps/server/src/modules/mail/locate.ts`        |
+| Kind     | Name                                                                     | Where                                           |
+| -------- | ------------------------------------------------------------------------ | ----------------------------------------------- |
+| job      | `mail.sync` (`*/5 * * * *`)                                              | `apps/server/src/modules/mail/jobs.ts`          |
+| route    | `GET /api/mailboxes`                                                     | `apps/server/src/modules/mail/routes.ts`        |
+| route    | `POST /api/mailboxes` (owner)                                            | `apps/server/src/modules/mail/routes.ts`        |
+| route    | `POST /api/mailboxes/:id/password` (owner)                               | `apps/server/src/modules/mail/routes.ts`        |
+| route    | `POST /api/mailboxes/:id/pause`, `POST .../resume` (owner)               | `apps/server/src/modules/mail/routes.ts`        |
+| route    | `DELETE /api/mailboxes/:id` (owner)                                      | `apps/server/src/modules/mail/routes.ts`        |
+| route    | `PATCH /api/settings/:mailboxId/sync-folders/:key` (owner)               | `apps/server/src/modules/config/routes.ts`      |
+| Telegram | `/pause`, `/resume` (owner)                                              | `apps/server/src/modules/channels/commands.ts`  |
+| CLI      | `bun run mailbox:connect`                                                | `apps/server/src/scripts/mailbox-connect.ts`    |
+| CLI      | `bun run mailbox:check`                                                  | `apps/server/src/scripts/mailbox-check.ts`      |
+| CLI      | `bun run mailbox:password`                                               | `apps/server/src/scripts/mailbox-password.ts`   |
+| CLI      | `bun run mailbox:rescan`                                                 | `apps/server/src/scripts/mailbox-rescan.ts`     |
+| CLI      | `bun run mailbox:backfill`                                               | `apps/server/src/scripts/mailbox-backfill.ts`   |
+| CLI      | `bun run mailbox:seed`                                                   | `apps/server/src/scripts/mailbox-seed.ts`       |
+| CLI      | `bun run mailbox:audit`                                                  | `apps/server/src/scripts/mailbox-audit.ts`      |
+| CLI      | `bun run mailbox:signals`                                                | `apps/server/src/scripts/mailbox-signals.ts`    |
+| CLI      | `bun run mailbox:settings` (`sync-folder`)                               | `apps/server/src/scripts/mailbox-settings.ts`   |
+| function | `syncMailbox`, `backfillInbox`                                           | `apps/server/src/modules/mail/sync.ts`          |
+| function | `refreshFlags`                                                           | `apps/server/src/modules/mail/flags.ts`         |
+| function | `listFlagTargets`, `writeEmailFlags`, `touchEmailFlags`, `getEmailFlags` | `apps/server/src/modules/mail/repo/flags.ts`    |
+| function | `storeCapture`                                                           | `apps/server/src/modules/mail/capture-store.ts` |
+| function | `insertEmailHeaders`, `getEmailHeaders`, `clearCapturedHeaders`          | `apps/server/src/modules/mail/repo/headers.ts`  |
+| function | `connectMailbox`, `updateMailboxPassword`, `buildFolderMap`              | `apps/server/src/modules/mail/connect.ts`       |
+| function | `resolveMailHost`, `configureMailHosts`                                  | `apps/server/src/modules/mail/host-guard.ts`    |
+| function | `checkMailbox`                                                           | `apps/server/src/modules/mail/check.ts`         |
+| function | `removeMailbox`                                                          | `apps/server/src/modules/mail/remove.ts`        |
+| function | `switchMailboxStatus`                                                    | `apps/server/src/modules/mail/status.ts`        |
+| function | `ensureSyncFolders`                                                      | `apps/server/src/modules/mail/folders.ts`       |
+| function | `locateMessage`, `locateByActionId`                                      | `apps/server/src/modules/mail/locate.ts`        |
 
 ## Data
 
@@ -78,7 +78,7 @@ Sync brings mail from an IMAP mailbox into the `emails` table. An owner connects
 - `mailbox_folders`: one row per synced folder: `key`, `path`, `role` (`inbox`, `sort`, `junk`), `enabled`, `uidvalidity`, `last_uid`. At most one `junk` row per mailbox. The INBOX row is always `INBOX` and enabled.
 - `emails` written by sync: `dedup_key`, `message_id_header`, `content_hash`, `uid`, `folder`, `source_folder`, `thread_key`, headers, `body_text` (at most 100 000 characters), `received_at`, `returned_at`, `backfilled_at`, and status `pending`. The status flow of `emails` after the insert is in `triage.md`.
 - `email_headers` written by sync: one row per stored mail (rule 18), with `captured_at`; `texts_cleared_at` is set by retention.
-- `email_flags` written by the flag refresh: one row per checked mail (rule 6) with `seen`, `answered`, `flagged`, the first time of each flag, and `checked_at`; the `answered_check` columns are not written by sync.
+- `email_flags` written by the flag refresh: one row per checked mail (rule 6) with `seen`, `answered`, `flagged`, the first time of each flag, and `checked_at` (the last try; a row of mail that could not be read has all flags false and no first-seen time); the `answered_check` columns are not written by sync.
 - Audit events: `mailbox.connected`, `mailbox.paused`, `mailbox.resumed`, `mailbox.password_changed`, `mailbox.removed`, `mailbox.sync_folder_added`, `mailbox.sync_folder_changed`.
 
 ## Limits

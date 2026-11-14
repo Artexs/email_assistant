@@ -1,7 +1,13 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
-import { getEmailFlags, listFlagTargets, writeEmailFlags, type FlagRead } from "../../src/modules/mail";
+import {
+  getEmailFlags,
+  listFlagTargets,
+  touchEmailFlags,
+  writeEmailFlags,
+  type FlagRead,
+} from "../../src/modules/mail";
 import type { DB, TenantContext } from "../../src/platform/db";
 
 import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
@@ -158,6 +164,82 @@ describe("email flags repository", () => {
         flagged: true,
         checkedAt: T2,
       });
+    });
+  });
+
+  test("7: first_seen_at and first_flagged_at never reset or move", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await newOrg(trx);
+      const m1 = await mail(trx, org, 11, new Date("2026-11-01T00:00:00Z"));
+      await writeEmailFlags(trx, org.ctx, [read(m1, 11, { seen: true, flagged: true })], T1);
+      await writeEmailFlags(trx, org.ctx, [read(m1, 11)], T2);
+      expect(await getEmailFlags(trx, org.ctx, m1)).toMatchObject({
+        seen: false,
+        flagged: false,
+        firstSeenAt: T1,
+        firstFlaggedAt: T1,
+      });
+      await writeEmailFlags(trx, org.ctx, [read(m1, 11, { seen: true, flagged: true })], T3);
+      expect(await getEmailFlags(trx, org.ctx, m1)).toMatchObject({
+        seen: true,
+        flagged: true,
+        firstSeenAt: T1,
+        firstFlaggedAt: T1,
+      });
+    });
+  });
+
+  test("8: another organization's context reads nothing of the row", async () => {
+    await withRollback(db, async (trx) => {
+      const orgA = await newOrg(trx);
+      const orgB = await newOrg(trx);
+      const m1 = await mail(trx, orgA, 11, new Date("2026-11-01T00:00:00Z"));
+      await writeEmailFlags(trx, orgA.ctx, [read(m1, 11, { seen: true })], T1);
+      expect(await getEmailFlags(trx, orgA.ctx, m1)).toBeDefined();
+      expect(await getEmailFlags(trx, orgB.ctx, m1)).toBeUndefined();
+    });
+  });
+
+  test("9: a touch sets checked_at only; a mail without a row gets one with unknown flags; guards hold", async () => {
+    await withRollback(db, async (trx) => {
+      const orgA = await newOrg(trx);
+      const orgB = await newOrg(trx);
+      const m1 = await mail(trx, orgA, 11, new Date("2026-11-01T00:00:00Z"));
+      const m2 = await mail(trx, orgA, 12, new Date("2026-11-02T00:00:00Z"));
+      await writeEmailFlags(trx, orgA.ctx, [read(m1, 11, { seen: true, answered: true, flagged: true })], T1);
+      await trx
+        .updateTable("email_flags")
+        .set({ answered_check: "no", answered_check_at: T1 })
+        .where("email_id", "=", m1)
+        .execute();
+      const targets = [read(m1, 11), read(m2, 12)];
+      expect(await touchEmailFlags(trx, orgA.ctx, targets, T2)).toBe(2);
+      expect(await getEmailFlags(trx, orgA.ctx, m1)).toEqual({
+        emailId: m1,
+        seen: true,
+        answered: true,
+        flagged: true,
+        firstSeenAt: T1,
+        firstAnsweredAt: T1,
+        firstFlaggedAt: T1,
+        checkedAt: T2,
+        answeredCheck: "no",
+      });
+      expect(await getEmailFlags(trx, orgA.ctx, m2)).toEqual({
+        emailId: m2,
+        seen: false,
+        answered: false,
+        flagged: false,
+        firstSeenAt: null,
+        firstAnsweredAt: null,
+        firstFlaggedAt: null,
+        checkedAt: T2,
+        answeredCheck: null,
+      });
+      // Another UID (the mail moved) and another organization touch nothing.
+      expect(await touchEmailFlags(trx, orgA.ctx, [read(m1, 99)], T3)).toBe(0);
+      expect(await touchEmailFlags(trx, orgB.ctx, [read(m1, 11)], T3)).toBe(0);
+      expect(await getEmailFlags(trx, orgA.ctx, m1)).toMatchObject({ checkedAt: T2 });
     });
   });
 

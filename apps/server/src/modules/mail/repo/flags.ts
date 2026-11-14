@@ -93,6 +93,36 @@ export async function writeEmailFlags(db: DbOrTrx, ctx: TenantContext, reads: Fl
   return written;
 }
 
+// N1 (review 1): mail that a refresh could not read (gone, moved, or a UID of another mail) must not stay at the head of the
+// queue. This sets `checked_at` ("last tried") only, under the same folder and UID guard as `writeEmailFlags`. A mail without
+// a row gets one with all flags false and no first-seen time: that row means "tried, flags unknown", never "unread".
+// The flags, the first_*_at times and the answered check of an existing row are not touched.
+export async function touchEmailFlags(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  targets: FlagTarget[],
+  at: Date
+): Promise<number> {
+  const latest = [...new Map(targets.map((target) => [target.emailId, target])).values()];
+  let touched = 0;
+  for (let from = 0; from < latest.length; from += WRITE_CHUNK) {
+    const rows = latest
+      .slice(from, from + WRITE_CHUNK)
+      .map((t) => sql`(${t.emailId}::uuid, ${t.folder}::text, ${t.uid}::bigint)`);
+    const result = await sql`
+      INSERT INTO email_flags (email_id, org_id, seen, answered, flagged, checked_at)
+      SELECT e.id, e.org_id, false, false, false, ${at}::timestamptz
+      FROM emails e
+      JOIN (VALUES ${sql.join(rows)}) AS r(email_id, folder, uid)
+        ON e.id = r.email_id AND e.folder = r.folder AND e.uid = r.uid
+      WHERE e.org_id = ${ctx.orgId}
+      ON CONFLICT (email_id) DO UPDATE SET checked_at = excluded.checked_at
+    `.execute(db);
+    touched += Number(result.numAffectedRows ?? 0n);
+  }
+  return touched;
+}
+
 export interface EmailFlagsRow {
   emailId: string;
   seen: boolean;

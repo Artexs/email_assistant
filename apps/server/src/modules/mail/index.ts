@@ -88,6 +88,7 @@ export {
   requeueTooOld,
   setFolderMapEntry,
   setUndoPending,
+  touchEmailFlags,
   updateEmailLocation,
   writeEmailFlags,
 } from "./repo";

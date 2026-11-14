@@ -257,7 +257,14 @@ describe("refreshFlags", () => {
 
       const result = await refreshFlags({ db: trx, provider: fake, now: () => NOW }, ctx, box.mailboxId);
       expect(result).toEqual({ checked: 1, written: 0, notFound: 0, mismatch: 1 });
-      expect(await getEmailFlags(trx, ctx, m1)).toBeUndefined();
+      // Nothing of the other mail's flags is written; the row only says "tried, flags unknown" (N1).
+      expect(await getEmailFlags(trx, ctx, m1)).toMatchObject({
+        seen: false,
+        answered: false,
+        flagged: false,
+        firstSeenAt: null,
+        checkedAt: NOW,
+      });
     });
   });
 
@@ -283,6 +290,74 @@ describe("refreshFlags", () => {
         .where("id", "=", same)
         .execute();
       expect(await refreshFlags(deps, ctx, box.mailboxId)).toMatchObject({ written: 0, mismatch: 1 });
+    });
+  });
+
+  test("N3: a UID with a Message-ID on one side only is a mismatch, even with an equal INTERNALDATE", async () => {
+    await withRollback(db, async (trx) => {
+      const box = await addBox(trx);
+      const ctx = { orgId: box.orgId };
+      const fake = createFakeMailProvider({ uidValidity: 7 });
+      const date = new Date("2026-11-03T08:00:00Z");
+      const withId = fake.deliver("INBOX", seed(1), { internalDate: date });
+      const withoutId = fake.deliver("INBOX", { ...seed(2), messageId: "" }, { internalDate: date });
+      // The stored mail has no Message-ID but the server mail has one; and the reverse.
+      const a = await insertTestEmail(trx, ctx, box.mailboxId, {
+        uid: withId,
+        received_at: date,
+        message_id_header: null,
+      });
+      const b = await insertTestEmail(trx, ctx, box.mailboxId, {
+        uid: withoutId,
+        received_at: date,
+        message_id_header: "<m2@x.test>",
+      });
+      const result = await refreshFlags({ db: trx, provider: fake, now: () => NOW }, ctx, box.mailboxId);
+      expect(result).toMatchObject({ checked: 2, written: 0, mismatch: 2 });
+      // Both are only touched: the rows say "tried, flags unknown".
+      expect(await getEmailFlags(trx, ctx, a)).toMatchObject({ seen: false, firstSeenAt: null, checkedAt: NOW });
+      expect(await getEmailFlags(trx, ctx, b)).toMatchObject({ seen: false, firstSeenAt: null, checkedAt: NOW });
+    });
+  });
+
+  test("N1: a gone mail does not hold the head of the queue; live mail is checked in a later run", async () => {
+    await withRollback(db, async (trx) => {
+      const box = await addBox(trx);
+      const ctx = { orgId: box.orgId };
+      const fake = createFakeMailProvider({ uidValidity: 7 });
+      const [uid1] = deliverTwo(fake) as [number, number];
+      const live = await storeLike(trx, box, fake, uid1);
+      await fake.setFlags("INBOX", uid1, { add: ["\\Answered"] });
+      // The newest mail is gone from the server (uid 999 is not in the fake), so it sorts first among the never-checked mail.
+      const gone = await insertTestEmail(trx, ctx, box.mailboxId, {
+        uid: 999,
+        received_at: new Date(NOW.getTime() - 60_000),
+        message_id_header: "<gone@x.test>",
+      });
+      const at = (run: number) => new Date(NOW.getTime() + run * 11 * MIN);
+      const run = (n: number) =>
+        refreshFlags({ db: trx, provider: fake, now: () => at(n), runLimit: 1 }, ctx, box.mailboxId);
+
+      expect(await run(0)).toEqual({ checked: 1, written: 0, notFound: 1, mismatch: 0 });
+      expect(await getEmailFlags(trx, ctx, live)).toBeUndefined();
+      expect(await getEmailFlags(trx, ctx, gone)).toMatchObject({
+        answered: false,
+        firstAnsweredAt: null,
+        checkedAt: at(0),
+      });
+
+      // The gone mail was tried, so the live mail is the head now and gets its first check.
+      expect(await run(1)).toEqual({ checked: 1, written: 1, notFound: 0, mismatch: 0 });
+      expect(await getEmailFlags(trx, ctx, live)).toMatchObject({
+        answered: true,
+        firstAnsweredAt: at(1),
+        checkedAt: at(1),
+      });
+      expect(await getEmailFlags(trx, ctx, gone)).toMatchObject({ checkedAt: at(0) });
+
+      // Then the queue rotates by the oldest try: the gone mail again, the live mail untouched.
+      expect(await run(2)).toMatchObject({ checked: 1, notFound: 1 });
+      expect(await getEmailFlags(trx, ctx, live)).toMatchObject({ checkedAt: at(1) });
     });
   });
 });
