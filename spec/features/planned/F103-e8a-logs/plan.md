@@ -19,9 +19,9 @@
 - [x] stage-10-convert-roots-testmail [written]
 - [x] stage-11-lint-error-everywhere [written]
 - [x] stage-12-canary [written]
-- [ ] stage-13-log-drivers-and-cli-service
-- [ ] stage-14-log-store
-- [ ] stage-15-vps-rollout
+- [x] stage-13-log-drivers-and-cli-service [written]
+- [x] stage-14-log-store [written]
+- [x] stage-15-vps-rollout [written]
 - [ ] Cold review (`plan-review-1.md`), fixes in § "Cold review".
 
 ## Input
@@ -86,7 +86,7 @@ A gap or a deviation that a worker finds is a question in its final message, not
 - 17 calls print `error.message`: `mail/jobs.ts` 1 (two calls by the `instanceof` form at lines 54 and 78; the grep counts one line), 16 in scripts (D4).
 - `modules/channels/operator.ts:62` writes the notice text into the log when no operator chat is set. The event form drops the text (`operator_notice_unsent { kind }`); the audit row keeps the notice.
 - `web.ts:357` prints the base URL; `polling.ts:67` prints the bot user name with `@`. Both values fail the code rule; the events carry `port` and `bot_id`.
-- `deploy/README.md` has 29 one-off lines `$C run … server …`; a cron line at `deploy/README.md:470` runs `mailbox:seed` that way (D13).
+- `deploy/README.md` has 32 one-off lines `$C run … server …`; a cron line at `deploy/README.md:470` runs `mailbox:seed` that way (D13).
 
 ## Facts checked (2026-11-14)
 
@@ -120,7 +120,7 @@ Probes ran in `.probe-f103/` in this worktree and `/tmp/f103-*` (binaries downlo
 3. No script imports `createLog`; CLI output keeps its text. Shown by: `grep -rln createLog apps/server/src/scripts` prints nothing (stage 04); the 18 CLI integration tests pass.
 4. Every line of one Telegram update carries `job=telegram.update` and its `run_id`. Shown by: stage 06 test.
 5. The canary test passes. Shown by: `apps/server/test/integration/log-canary.test.ts` (stage 12).
-6. `bash deploy/check-logging.sh` passes: `server` `json-file` 10m × 5, every other service `local` 10m × 5, no one-off `run … server` line in `deploy/` or `docs/`; it fails on each fault. Shown by: `deploy/check-logging.test.ts` (stage 13).
+6. `bash deploy/check-logging.sh` passes: `server` `json-file` 10m × 5, every other service `local` 10m × 5, no one-off `run … server` line in `deploy/` or `docs/`; it fails on each fault. Shown by: `apps/server/src/deploy-logging.test.ts` (stage 13).
 7. `docker compose -f deploy/compose.yaml --profile ops config` holds the two store services with the flags of D14. Shown by: stage 14 test.
 8. On the VPS: a search for one `run_id` shows every line of that run; a `$C run --rm cli …` line is not in the store; `docker stats` stays under the limits. Shown by: stage 15 record in `docs/known-alerts.md` and the coordinator's final message.
 9. `docs/code-patterns.md`, the styleguide, ADR 0024 (accepted), `docs/capabilities/logs.md` and `docs/known-alerts.md` state the rules. Shown by: stage 11, 13, 14 diffs.
@@ -130,6 +130,7 @@ Probes ran in `.probe-f103/` in this worktree and `/tmp/f103-*` (binaries downlo
 - Read `CLAUDE.md`, `.agents/limen/styleguide.md`, `docs/code-patterns.md` § Logs, the ticket, this file and your stage file first. Build only your stage.
 - Format only the files of your stage: `bunx prettier --write <files>`. Never `bun run format` or `prettier --write .` (S2 incident: a builder ran the repo-wide formatter).
 - A new or converted log line: `log.<level>("<event_code>", { <fields> })` (D5). Ids through a child logger (D6). Errors only through `...errorFields(error)` or `...telegramErrorFields(error)` (D7). Never `error.message`, mail text, an address, a URL, a token, a folder path or a list of ids in a field. A code value from a closed set only (D2).
+- A new field name goes into the list of its kind in `platform/log-fields.ts` (D1) only if it is not there yet: another conversion stage may have added it first. A number name is free; a UUID or code name comes from your stage table or is a question (D2).
 - Keep the level of each converted line (`info` stays `info`). Keep the stream (the writer picks it by level).
 - The printed text of a CLI line stays byte for byte (D23), unless the stage table says otherwise.
 - A test that matches an old log text changes to the event text in the same commit. Before the commit: `grep -rn "<old text start>" apps/server/test apps/server/src --include=*.test.ts` for each converted line.
@@ -204,7 +205,7 @@ limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thi
 | 14  | [Log store](stages/stage-14-log-store.md) — profile `ops`, `deploy/logs.sh`, docs                              | ~220 lines | review                    |
 | 15  | [VPS rollout](stages/stage-15-vps-rollout.md) — coordinator: deploy, Serve, search check                       | no code    | VPS                       |
 
-Order: 01 → 02 → 03 → 04; 05 → 06; 07; 08; 09; 10; then 11 → 12. Stages 05–10 need 01 and may run in any order, at most two at once (both edit `log-fields.ts`, `eslint.config.js` and `docs/known-alerts.md`: a land conflict is a merge, D19). Stage 11 needs 01–10 landed. Stages 13 and 14 need only 01 landed (13 before 14) and may run next to any stage. Stage 15 needs 12 and 14 landed.
+Order: 01 → 02 → 03 → 04; 05 → 06; 07; 08; 09; 10; then 11 → 12. Stages 05–10 need 01 and may run in any order, at most two at once (both edit `log-fields.ts`, `eslint.config.js` and `docs/known-alerts.md`: a land conflict is a merge, D19). Stage 11 needs 01–10 landed. Stage 13 needs no other stage; stage 14 needs 13. Both may run next to any stage (they edit `deploy/`, docs and `apps/server/src/deploy-logging.test.ts`; `docs/capabilities/logs.md` is created by whichever of stages 11 and 14 runs first). Stage 15 needs 12 and 14 landed.
 
 ## How to run (coordinator)
 
