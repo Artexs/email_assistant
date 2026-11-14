@@ -58,7 +58,7 @@ Block text: first line `You replied to ${n} ${n === 1 ? "mail" : "mails"} that t
 
 **Goal.** `/review` appends the block; a tap writes the answer in one transaction (D22).
 
-**Files.** `apps/server/src/modules/mail/repo/flags.ts` (`setAnsweredCheck`), `apps/server/src/modules/triage/answered-check.ts` (new: candidates reader and service) + `triage/index.ts`, `apps/server/src/modules/channels/commands.ts` (`reviewMessage`), `apps/server/src/modules/channels/callbacks.ts` (two kinds), `apps/server/test/integration/triage-answered-check.test.ts` (new), `channels-commands.test.ts`, `channels-callbacks.test.ts`.
+**Files.** `apps/server/src/modules/mail/repo/flags.ts` (`setAnsweredCheck`), `apps/server/src/modules/triage/answered-check.ts` (new: candidates reader and service) + `triage/index.ts`, `apps/server/src/modules/channels/commands.ts` (`reviewMessage`), `apps/server/src/modules/channels/answered-taps.ts` (new: the tap handler and its answer texts; `callbacks.ts` only routes the two kinds to it), `apps/server/src/modules/channels/callbacks.ts`, `apps/server/test/integration/triage-answered-check.test.ts` (new), `channels-commands.test.ts`, `channels-callbacks.test.ts`.
 
 **Interfaces.**
 

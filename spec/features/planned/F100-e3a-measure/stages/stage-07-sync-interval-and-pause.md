@@ -48,9 +48,9 @@ Add `minutes` to `platform/log-fields.ts` if it is not there.
 
 ## Step 2 — LLM pause cause in `/status` and the digest
 
-**Goal.** A pause and its code are visible to the user from the `llm.call` rows (D8, F073).
+**Goal.** A pause and its code are visible to the user from the `llm.call` rows, behind the flag `llm_pause_line` (D8, D26, F073).
 
-**Files.** `apps/server/src/platform/llm/errors.ts` (export the code lists), `apps/server/src/platform/llm/index.ts`, `apps/server/src/modules/audit/repo.ts` or a new `audit/llm-pause.ts` (+ `audit/index.ts`), `packages/core/src/digest/notices.ts` or a new `packages/core/src/digest/llm-pause.ts` (+ index), `packages/core/src/digest/digest.ts` (`DigestInput.llmPause`), `apps/server/src/modules/reports/digest.ts`, `apps/server/src/modules/channels/commands.ts` (`statusMessage`), `apps/server/test/integration/audit-llm-pause.test.ts` (new), unit tests next to the core files.
+**Files.** `packages/core/src/features.ts` (+ test: flag `llm_pause_line`, epic `E3a`, remove-by `2027-03-01`, default off, description "/status and the digest name an LLM pause and its cause."), `apps/server/src/platform/llm/errors.ts` (export the code lists), `apps/server/src/platform/llm/index.ts`, `apps/server/src/modules/audit/repo.ts` or a new `audit/llm-pause.ts` (+ `audit/index.ts`), `packages/core/src/digest/notices.ts` or a new `packages/core/src/digest/llm-pause.ts` (+ index), `packages/core/src/digest/digest.ts` (`DigestInput.llmPause`), `apps/server/src/modules/reports/digest.ts`, `apps/server/src/modules/channels/commands.ts` (`statusMessage`), `apps/server/test/integration/audit-llm-pause.test.ts` (new), unit tests next to the core files.
 
 **Interfaces.**
 
@@ -63,12 +63,14 @@ export const configCodes = [
 ] as const satisfies readonly ConfigCode[];
 // A test checks that each list holds every member of its type (an exhaustive Record<SoftCode, true> in the test).
 
-// audit — the newest llm.call row of the organization at or after `since`. Its reason_code is a pause code →
-// `{ code, since }`, where `since` is the oldest row of the unbroken run of pause-code rows before it (no `ok` between).
+// audit — the newest llm.call row of the organization. A pause when its reason_code is a soft code and the row is at most
+// 10 min old (a soft pause starts at 5 min, triage/pause.ts), or a config code and the row is at most 2 h old (a config
+// pause doubles up to 60 min and a quota stays spent). Then `{ code, since }`, where `since` is the oldest row of the
+// unbroken run of pause-code rows before it (no `ok` between). Else null.
 export async function latestLlmPause(
   db: DbOrTrx,
   ctx: TenantContext,
-  opts: { since: Date; pauseCodes: readonly string[] }
+  opts: { now: Date; softCodes: readonly string[]; configCodes: readonly string[] }
 ): Promise<{ code: string; since: Date } | null>;
 
 // core
@@ -79,9 +81,9 @@ export function llmPauseLine(pause: LlmPause, timeZone: string, now: Date): stri
 // clock = formatClock(since, timeZone, now)
 ```
 
-- `latestLlmPause` reads at most 200 newest rows of the window (`ORDER BY created_at DESC, id DESC LIMIT 200`, `event = 'llm.call'`, `org_id` filter); in code: newest row not a pause code → null; else walk back while the rows are pause codes.
-- `statusMessage`: after the `LLM: <provider> · <model>` line, when `latestLlmPause(since = now − 2 h, pauseCodes = [...softCodes, ...configCodes])` is not null, add `llmPauseLine(...)`. `CommandDeps` needs no new field for it.
-- `buildDigestMessage` passes `llmPause` (same call); `renderDigest` adds `llmPauseLine` as the first footer line when set.
+- `latestLlmPause` reads at most 200 newest rows of the last 2 h (`ORDER BY created_at DESC, id DESC LIMIT 200`, `event = 'llm.call'`, `org_id` filter); in code: the age rule above on the newest row; then walk back while the rows are pause codes.
+- `statusMessage`: when `isFeatureOn(db, ctx, "llm_pause_line")` and `latestLlmPause(...)` is not null, add `llmPauseLine(...)` after the `LLM: <provider> · <model>` line. `CommandDeps` needs no new field for it.
+- `buildDigestMessage` passes `llmPause` (same flag, same call); `renderDigest` adds `llmPauseLine` as the first footer line when set.
 
 **Decisions.** D8.
 
@@ -89,8 +91,8 @@ export function llmPauseLine(pause: LlmPause, timeZone: string, now: Date): stri
 
 1. Unit (core): `llmPauseLine({ code: "http_429_quota", since: 2026-11-20T09:05:00Z }, "Europe/Warsaw", now = 2026-11-20T10:00:00Z)` → `⏸ LLM paused since 10:05: the provider quota or budget is spent (http_429_quota). Triage waits.` (the clock text as `formatClock` prints it for the same day); `{ code: "timeout", … }` → the generic line.
 2. Unit (core): `renderDigest` with `llmPause` set → the footer's first line is that line; without it the digest text is unchanged (existing cases green).
-3. Integration (audit): rows `ok` at 09:00, `http_429_quota` at 09:05 and 09:10 → `{ code: "http_429_quota", since: 09:05 }`; add an `ok` row at 09:20 → null; only rows older than `since` → null; org B sees null for org A's rows.
-4. Integration (`channels-commands.test.ts`): `/status` with the rows of case 3 (without the `ok`) → the text holds `quota or budget is spent`.
+3. Integration (audit, `now` = 09:15): rows `ok` at 09:00, `http_429_quota` at 09:05 and 09:10 → `{ code: "http_429_quota", since: 09:05 }`; add an `ok` row at 09:12 → null; the same quota rows with `now` = 11:20 → null (older than 2 h); one `timeout` row at 09:00 with `now` = 09:05 → `{ code: "timeout", … }`, with `now` = 09:20 → null; org B sees null for org A's rows.
+4. Integration (`channels-commands.test.ts`): `/status` with the quota rows of case 3 and the flag on → the text holds `quota or budget is spent`; flag off → no pause line.
 5. Unit: the code lists hold every member of `SoftCode` and `ConfigCode`.
 
 **Check.** `bun test packages/core/src/digest/ apps/server/src/platform/llm/ apps/server/test/integration/channels-commands.test.ts apps/server/test/integration/audit-llm-pause.test.ts`

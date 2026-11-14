@@ -17,6 +17,7 @@ After this stage one pure function in the IMAP adapter turns a parsed mail into 
 export const CAPTURE_LIMITS = {
   fromName: 200,
   replyTo: 5,
+  returnPath: 320,
   authResults: 1000,
   listUnsubscribe: 1000,
   listId: 300,
@@ -48,8 +49,8 @@ export interface CapturedHeaders {
   authResults: string | null; // the topmost Authentication-Results value
   listUnsubscribe: string | null;
   listId: string | null;
-  autoSubmitted: string | null; // lower case
-  precedence: string | null; // lower case
+  autoSubmitted: string | null; // a token: lower case, `^[a-z0-9-]{1,40}$`, else "other"
+  precedence: string | null; // the same token rule
   hasCalendar: boolean;
   attachments: CapturedAttachment[]; // ≤ 20, in part order
   attachmentCount: number; // all parts, also past the 20
@@ -65,8 +66,12 @@ export interface MailContent {
 
 // imap/capture.ts
 export function captureFromParsed(parsed: ParsedMail, opts: { partsKnown: boolean }): CapturedHeaders;
-/** One `simpleParser` call: the text as `bodyTextFromSource` gives it, and the capture. Null on a parse error. */
-export async function contentFromSource(source: Buffer): Promise<MailContent | null>;
+/** One `simpleParser` call: the text as `bodyTextFromSource` gives it, and the capture. Null when `simpleParser` fails.
+ *  An error inside `capture` gives `capture: null` and keeps the text (a capture bug never drops the body). */
+export async function contentFromSource(
+  source: Buffer,
+  capture: typeof captureFromParsed = captureFromParsed
+): Promise<MailContent | null>;
 /** For a mail over the size limit: the header block only; `text` null, `partsKnown` false. Null on a parse error. */
 export async function contentFromHeaderBlock(headers: Buffer): Promise<MailContent | null>;
 ```
@@ -77,7 +82,8 @@ Rules (D2):
 - `fromName`: `parsed.from?.value[0]?.name`, cleaned; empty → null. Keep it as it is (an address inside the name stays: E3b's display-name rule needs it).
 - `replyTo`: `parsed.replyTo?.value` addresses, lower case, unique, first 5.
 - `returnPath`: the address in the first `return-path` line (`<a@b>` → `a@b`, lower case); `<>` or empty → null.
-- Cut every string to its limit (`slice(0, limit)`), after `stripNul` and trim. An empty string → null.
+- Every string of the capture (also attachment names and types, hosts, addresses) goes through one helper `cleanCut(value, limit)`: `stripNul`, trim, `toWellFormed()` (a lone surrogate becomes U+FFFD), then a cut by code points (`Array.from(value).slice(0, limit).join("")`), because Postgres `char_length` counts code points and a cut inside a surrogate pair breaks the `jsonb` cast. An empty result → null.
+- `autoSubmitted` and `precedence`: the first word of the value (up to `;`, space or `,`), lower case; it matches `^[a-z0-9-]{1,40}$` → that word, else `"other"`. They stay after retention (D5), so they hold a token, never sender text.
 - `hasCalendar`: `parsed.headerLines` content type starts with `text/calendar`, or any attachment `contentType` is `text/calendar`.
 - `attachments`: from `parsed.attachments` in order: `name = filename ?? null`, `type = contentType.toLowerCase()`, `size = size ?? content.length`, `inline = contentDisposition === "inline" || (related === true && cid !== undefined)`. Never keep `content`.
 - `links`: from `parsed.html` when it is a string: every `<a …href="…"…>text</a>` (quotes `"`, `'` or none; case-insensitive tag and attribute). `href` that parses with `new URL()` and has protocol `http:` or `https:` → `host = url.hostname` lower case, trailing `.` removed. Visible text: tags removed, HTML entities `&amp; &lt; &gt; &quot; &#39;` decoded, trimmed; if it parses as an `http(s)` URL → its host; else if it matches `^[a-z0-9.-]+\.[a-z]{2,}$` (lower-cased) → the text itself; else `textHost = null`. Without an HTML part: every `https?://[^\s<>"')]+` in `parsed.text` gives `{ host, textHost: null }`. Unique by `${host} ${textHost}`; `linkCount` counts the unique pairs; keep the first 50.
@@ -98,10 +104,14 @@ Rules (D2):
 8. `contentFromHeaderBlock` of the header lines of case 1 → `text = null`, `partsKnown = false`, `authResults` as case 1, `attachments = []`, `links = []`.
 9. `bodyTextFromSource` gives the same text as before for the existing `mapper.test.ts` cases (keep those cases green, unchanged).
 10. `contentFromSource(Buffer.from("not a mail"))` does not throw (returns a value or null; assert no throw).
+11. An attachment name of 199 `y` then `😀z` → the kept name has at most 200 code points, `JSON.stringify` of the capture holds no lone surrogate (no `\ud83d"`), and `name.isWellFormed()` is true.
+12. A `Return-Path` with a 400-character address → `returnPath` has 320 characters.
+13. `Auto-Submitted: Auto-Replied; reason=x` → `autoSubmitted = "auto-replied"`; `Precedence: <script>` → `"other"`.
+14. `contentFromSource(<case 1 source>, () => { throw new Error("x") })` → `text` as without the second argument, `capture = null`.
 
 **Check.** `bun test apps/server/src/modules/mail/imap/capture.test.ts apps/server/src/modules/mail/imap/mapper.test.ts`
 
-**Done when.** Cases 1–10 pass; `bun run lint` passes (only `mail/imap/` imports `mailparser`).
+**Done when.** Cases 1–14 pass; `bun run lint` passes (only `mail/imap/` imports `mailparser`).
 
 **Out of scope.** The port method and the adapters (stage 02); storing the capture (stage 05); any rule that reads it (E3b).
 

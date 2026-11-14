@@ -61,13 +61,14 @@ export async function clearCapturedHeaders(
 
 **Goal.** The row comes with the mail, in its transaction (D4).
 
-**Files.** `apps/server/src/modules/mail/sync.ts` (`Write` insert variant, `planChunk`, `applyChunk`), `apps/server/test/integration/mail-sync.test.ts` (new cases) or a new `mail-sync-capture.test.ts`, `apps/server/src/platform/log-fields.ts` if a field is new.
+**Files.** `apps/server/src/modules/mail/sync.ts` (`Write` insert variant, `planChunk`, `applyChunk`), `apps/server/src/modules/mail/capture-store.ts` (new: `storeCapture`), `apps/server/test/integration/mail-sync.test.ts` (new cases) or a new `mail-sync-capture.test.ts`, `apps/server/src/platform/log-fields.ts` if a field is new.
 
 **Interfaces.**
 
 - `Write` insert variant: `{ kind: "insert"; row: NewEmail; capture: CapturedHeaders | null }`; `planChunk` passes `content.capture` (stage 02 left it unused).
-- `applyChunk`: `if (await insertEmail(trx, ctx, write.row)) { stored += 1; if (write.capture !== null) await insertEmailHeaders(trx, ctx, { mailboxId, dedupKey: write.row.dedup_key }, write.capture, deps.now()); else missing += 1; }`.
-- `SyncResult` gains `captureMissing: number`; `syncFolder` logs one event line `log.info("capture_missing", { mailbox_id: mailboxId, count })` when it is > 0 (no other new log line).
+- `applyChunk`: `if (await insertEmail(trx, ctx, write.row)) { stored += 1; if (write.capture === null || !(await storeCapture(trx, ctx, …))) missing += 1; }`.
+- `storeCapture` (new, in `mail/capture-store.ts`, not in `sync.ts`): runs `insertEmailHeaders` inside a savepoint, with raw SQL because the chunk transaction is not a controlled Kysely transaction: `` sql`savepoint capture_row` ``, the insert, `` sql`release savepoint capture_row` ``; on a database error `` sql`rollback to savepoint capture_row` `` and return false. A header row can never roll back the mail row or the cursor, so one hostile header cannot stop a mailbox (cold review B1). It also works when `deps.db` is already a transaction (tests in `withRollback`).
+- `SyncResult` gains `captureMissing: number` (no capture, or the savepoint insert failed); `syncFolder` logs one event line `log.warn("capture_missing", { mailbox_id: mailboxId, count })` when it is > 0 (no other new log line; never the error text, only `...errorFields(error)` of the last failure if you add it).
 - `backfillInbox` uses the same `planChunk` and `applyChunk`, so backfilled mail gets rows too (no extra code; a test proves it).
 
 **Decisions.** D4, D30.
@@ -77,7 +78,7 @@ export async function clearCapturedHeaders(
 1. A sync of 2 new INBOX mails (one with `Reply-To` and `List-Unsubscribe` headers) → 2 `emails` rows and 2 `email_headers` rows; the first has `reply_to` and `list_unsubscribe` set.
 2. A second sync with no new mail → still 2 rows (no duplicate).
 3. A mail over the fake's `bodyLimitBytes` → its row has `parts_known = false` and `body_text` null.
-4. A transaction failure after the email insert (force `CursorMovedError` by moving the cursor between plan and apply, as the existing cursor test does) → neither the `emails` row nor the `email_headers` row exists; the next sync stores both.
+4. A provider wrapper whose `fetchContent` returns, for mail 1 of 3 in one chunk, a capture with a 400-character `returnPath` (it bypasses the stage 01 cut, so the `CHECK (char_length(return_path) <= 320)` fails) → all 3 `emails` rows are stored, mails 2 and 3 have header rows, mail 1 has none, `captureMissing = 1`, the cursor moved; the next sync stores no duplicate.
 5. `backfillInbox` of 1 older mail → 1 `emails` row with `backfilled_at` and 1 `email_headers` row.
 6. A provider whose `fetchContent` returns `{ text: "x", capture: null }` (wrap the fake) → the mail is stored, no header row, `captureMissing = 1`.
 

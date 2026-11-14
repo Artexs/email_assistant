@@ -28,7 +28,7 @@ mistake_capture: {
 // approvals.ts — approvalEdit input gains `reason?: RejectReason` and `reasonButtons?: boolean`; outcomes gain:
 //   "rejected" with reasonButtons (needs `actionId`) → the same line and one row of three buttons
 //     [✖️ Wrong person | ✖️ Wrong content | Not needed] with rw: callbacks
-//   "rejected_reason" → `✖️ Rejected ${time}. Reason: ${REJECT_REASON_TEXTS[reason]}.` and no buttons
+//   "rejected_reason" → `✖️ Rejected. Reason: ${REJECT_REASON_TEXTS[reason]}.` and no buttons (no clock: the tap time is not the reject time)
 //   "marked_mistake"  → `⚠️ Marked as a mistake ${time}.` and no buttons
 export const REJECT_REASON_TEXTS: Record<RejectReason, string> = {
   wrong_person: "wrong person",
@@ -50,7 +50,7 @@ export const REJECT_REASON_TEXTS: Record<RejectReason, string> = {
 
 1. `encodeCallback({ kind: "reject_reason", reason: "wrong_content", actionId: id })` → `rw:c:${id}`; `parseCallback` gives it back; `rw:x:${id}` → null; `mk:${id}` ↔ `{ kind: "mistake", actionId: id }`; every old prefix still parses (existing cases green); byte length ≤ 64.
 2. `approvalEdit({ outcome: "rejected", reasonButtons: true, … })` → line `✖️ Rejected HH:MM.` and 3 buttons with data `rw:p:…`, `rw:c:…`, `rw:n:…`; without `reasonButtons` → no buttons (old behaviour).
-3. `approvalEdit({ outcome: "rejected_reason", reason: "wrong_person", … })` → last line `✖️ Rejected HH:MM. Reason: wrong person.`, no buttons.
+3. `approvalEdit({ outcome: "rejected_reason", reason: "wrong_person", … })` → last line `✖️ Rejected. Reason: wrong person.`, no buttons.
 4. `renderSendResult({ result: { kind: "sent", … }, mistakeButton: true, … })` → one button `mk:<id>`; `mistakeButton` absent → no button; result `failed` with `mistakeButton: true` → only its old buttons.
 5. `noticeViewSchemas.send_result` accepts a view without `mistakeButton` (an old row) and with it.
 6. `featureFlags.mistake_capture.default === false`, epic `E3a`.
@@ -110,7 +110,7 @@ Repository: `upsertActionFeedback(trx, ctx, { actionId, kind, reason, userId, vi
 
 **Goal.** The taps and routes call the service behind the flag (D21).
 
-**Files.** `apps/server/src/modules/channels/callbacks.ts` (reject case, two new cases, `APPROVAL_TEXTS`), `apps/server/src/modules/channels/notices/send-result.ts` (set `mistakeButton`), `apps/server/src/modules/actions/routes.ts` (new: `actionRoutes`), `packages/core/src/web/actions.ts` (new: `rejectReasonBodySchema = z.object({ reason: z.enum(rejectReasons) })`) + `web/index.ts`, `apps/server/src/web.ts` (mount), `apps/server/test/integration/channels-callbacks.test.ts`, `channels-notices.test.ts`, `apps/server/test/integration/web-actions.test.ts` (new).
+**Files.** `apps/server/src/modules/channels/action-feedback-taps.ts` (new: the two tap handlers and their answer texts; `callbacks.ts` is 393 lines, so it only dispatches the two kinds to this file and adds the reason buttons to the reject edit), `apps/server/src/modules/channels/callbacks.ts`, `apps/server/src/modules/channels/notices/send-result.ts` (set `mistakeButton`), `apps/server/src/modules/actions/routes.ts` (new: `actionRoutes`), `packages/core/src/web/actions.ts` (new: `rejectReasonBodySchema = z.object({ reason: z.enum(rejectReasons) })`) + `web/index.ts`, `apps/server/src/web.ts` (mount), `apps/server/test/integration/channels-callbacks.test.ts`, `channels-notices.test.ts`, `apps/server/test/integration/web-actions.test.ts` (new).
 
 **Interfaces and rules.**
 

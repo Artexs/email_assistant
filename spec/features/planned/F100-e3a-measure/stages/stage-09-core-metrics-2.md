@@ -97,9 +97,11 @@ export interface GateRow {
   auto: boolean;
   kept: number;
   precision: number | null;
+  recall: number | null; // of the same real labels (GoNoGoRow.recall)
   decision: GoDecision;
 }
 export interface AutoEvidence extends GateRow { wilsonLower: number | null }
+export const EVIDENCE_MIN_LABELS = 30; // PD-066: real-label precision is shown only from 30 labels
 export function autoEvidence(rows: readonly GateRow[]): AutoEvidence[];
 ```
 
@@ -113,7 +115,7 @@ Rules (D17): `wilsonLower = precision === null || kept === 0 ? null : wilsonInte
 
 1. M7: 1,000 `gpt-6-luna` rows of 1,036 in and 80 out tokens at `2026-11-17T10:00:00Z`, 2 rows of model `gpt-6.1-terra`, 1 row with null tokens → `llmCalls = 1,003`, `unpricedCalls = 2`, `llmUsdWeek ≈ 0.1436` (±0.0001), with `mailboxes: 1` → `perMailboxMonthUsd ≈ 0.1436 × 30 / 7 + 0.355 + 0.05 ≈ 1.0204` (±0.001).
 2. M7 with `mailboxes: 0` → treated as 1.
-3. M8: `{ precision: 0.97, kept: 41 }` → `wilsonLower` = `wilsonInterval(40, 41).lower` (≈ 0.874, ±0.002); `{ precision: null, kept: 0 }` → null.
+3. M8: `{ precision: 0.97, kept: 41 }` → `wilsonLower` = `wilsonInterval(40, 41).lower` (≈ 0.874, ±0.002); `{ precision: null, kept: 0 }` → null; `recall` passes through unchanged.
 
 **Check.** `bun test packages/core/src/metrics/`
 
@@ -151,9 +153,10 @@ export const weekStatsSchema = z.strictObject({
   }),
   m8: z.array(z.strictObject({
     mailboxId: z.uuid(), category: z.enum(barCategories), auto: z.boolean(), kept: count,
-    precision: z.number().min(0).max(1).nullable(), wilsonLower: z.number().min(0).max(1).nullable(),
+    precision: z.number().min(0).max(1).nullable(), recall: z.number().min(0).max(1).nullable(),
+    wilsonLower: z.number().min(0).max(1).nullable(),
     decision: z.enum(["go", "no-go", "no-go: too few"]),
-  })).max(50),
+  })).max(1000), // M8 is the evidence at the time of the computation, not of the week: only the newest week carries rows (stage 11)
 });
 export type WeekStats = z.infer<typeof weekStatsSchema>;
 export const statsQuerySchema = z.object({

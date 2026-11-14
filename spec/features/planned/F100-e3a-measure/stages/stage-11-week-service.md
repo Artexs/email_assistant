@@ -24,7 +24,7 @@ export interface WeekStatsDeps {
 export async function weekStats(
   db: Db | Transaction<DB>,
   ctx: TenantContext,
-  input: { weekStart: string; mailboxId: string | null; now: Date },
+  input: { weekStart: string; mailboxId: string | null; now: Date; withEvidence?: boolean },
   deps: WeekStatsDeps
 ): Promise<WeekStats | "not_found">;
 
@@ -37,9 +37,9 @@ export async function recentWeekStats(
 ): Promise<WeekStats[] | "not_found">;
 ```
 
-`weekStats` steps: organization time zone (`getOrganization`); the mailboxes (`listMailboxes`; `mailboxId` not among them → `"not_found"`); `range = weekRange(weekStart, timeZone)`; the stage 10 readers with `{ range, mailboxId, testMail }`; `whitelisted` for each hidden-move row = `matchSender(fromAddress, rules).whitelisted` with `listSenderRules(db, ctx, <the row's mailbox>)` (read the rules once per mailbox); gates: for each mailbox in scope, `goNoGoFor(db, ctx, mailboxId, now)` and `parseCategoryPolicy(settings.category_policy)[category]?.auto ?? false` for each bar category; `mailboxes` = count of mailboxes in scope with status `active`; then `buildWeekStats(rows, { weekStart, mailboxId, timeZone, now })` (stage 09). It writes nothing.
+`weekStats` steps: organization time zone (`getOrganization`); the mailboxes (`listMailboxes`; `mailboxId` not among them → `"not_found"`); `range = weekRange(weekStart, timeZone)`; the stage 10 readers with `{ range, mailboxId, testMail }`; `whitelisted` for each hidden-move row = `matchSender(fromAddress, rules).whitelisted` with `listSenderRules(db, ctx, row.mailboxId)` (read the rules once per mailbox); gates (only when `input.withEvidence`, default true): for each mailbox in scope, the real-label report as `goNoGoFor` builds it (`triage/gate.ts`: `listLabeledResults` + `buildRealReport`; pass the test-mail rule when F097 stage 01 gave `listLabeledResults` one) → per bar category `decision`, `precision`, `recall` (`report.goNoGo[category]`) and `kept`, and `parseCategoryPolicy(settings.category_policy)[category]?.auto ?? false`. Add a small exported function next to `goNoGoFor` in `triage/gate.ts` for this rather than copying its body; `mailboxes` = count of mailboxes in scope with status `active`; then `buildWeekStats(rows, { weekStart, mailboxId, timeZone, now })` (stage 09). It writes nothing.
 
-`recentWeekStats`: `lastFinishedWeek(now, timeZone)` then `previousWeekStart` back, `weeks` times; one `weekStats` call per week.
+`recentWeekStats`: `lastFinishedWeek(now, timeZone)` then `previousWeekStart` back, `weeks` times; one `weekStats` call per week, `withEvidence: true` for the newest week only (`m8` is today's evidence; older weeks get `m8: []`, cold review N14).
 
 **Decisions.** D17, D19, D28.
 
@@ -50,10 +50,11 @@ export async function recentWeekStats(
 3. `weekStats(org B, WEEK, <org A's mailbox>)` → `"not_found"`; `weekStats(org B, WEEK, null)` → `m5.urgent = 2`, `m1.important = 2`, none of org A's numbers.
 4. `recentWeekStats(org A, { weeks: 3, now: 2026-11-24T10:00:00Z })` → weekStarts exactly `2026-11-16`, `2026-11-09`, `2026-11-02`, newest first.
 5. Calling `weekStats` twice gives deep-equal results and writes no row (count `audit_log` and `outbox` before and after).
+6. `recentWeekStats(… weeks: 3 …)` → only the first week has `m8` rows (5); the other two have `m8 = []`.
 
 **Check.** `bun test apps/server/test/integration/reports-metrics.test.ts`
 
-**Done when.** Cases 1–5 pass.
+**Done when.** Cases 1–6 pass.
 
 **Out of scope.** Caching (one week is a few queries; the page asks for 8).
 

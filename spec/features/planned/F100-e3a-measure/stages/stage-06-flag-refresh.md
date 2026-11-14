@@ -17,6 +17,8 @@ export interface FlagTarget {
   emailId: string;
   folder: string; // emails.folder (the path)
   uid: number; // emails.uid
+  messageId: string | null; // emails.message_id_header
+  receivedAt: Date; // emails.received_at (INTERNALDATE)
 }
 
 /** Mail of the mailbox received at or after `since`, never-checked first, then the oldest `checked_at`, then `received_at`. */
@@ -87,10 +89,10 @@ export async function refreshFlags(
   deps: { db: Db | Transaction<DB>; provider: MailProvider; now(): Date },
   ctx: TenantContext,
   mailboxId: string
-): Promise<{ checked: number; written: number; notFound: number }>;
+): Promise<{ checked: number; written: number; notFound: number; mismatch: number }>;
 ```
 
-- `refreshFlags`: `listFlagTargets(since = now − 30 days, limit = 3,000)`; group by `folder`; per folder, chunks of 500 UIDs: `provider.fetchFlagsIn(folder, uids)`; map each returned uid back to its target (a uid returned for no target is ignored; a target with no returned uid counts in `notFound`); `writeEmailFlags(reads, now)` per chunk (no transaction around chunks: each chunk is consistent on its own). Flags by exact name: `\Seen`, `\Answered`, `\Flagged` (case-insensitive compare).
+- `refreshFlags`: `listFlagTargets(since = now − 30 days, limit = 3,000)`; group by `folder`; per folder, chunks of 500 UIDs: `provider.fetchFlagsIn(folder, uids)`; map each returned uid back to its target (a uid returned for no target is ignored; a target with no returned uid counts in `notFound`). Identity check before a write (cold review N3: after a UIDVALIDITY change the rescan updates only the last 7 days, so an older row can hold a UID that now names another mail): when both the target's `messageId` and the returned `messageId` are set, `normalizeMessageId` of both must be equal; else the returned `internalDate` must equal `receivedAt` to the second; a mismatch counts in `mismatch` and writes nothing; `writeEmailFlags(reads, now)` per chunk (no transaction around chunks: each chunk is consistent on its own). Flags by exact name: `\Seen`, `\Answered`, `\Flagged` (case-insensitive compare).
 - `createMailSyncJob` keeps `const lastFlagsAt = new Map<string, number>()` next to `failures`. In `syncOne`, after `syncMailbox` and `markSynced` and before `provider.close()`: when `now − (lastFlagsAt.get(mailboxId) ?? 0) ≥ FLAGS_REFRESH_EVERY_MS`, set `lastFlagsAt` to now first, then `try { const r = await refreshFlags(…); log.info("flags_refreshed", { mailbox_id, count: r.written }) } catch (error) { log.warn("flags_refresh_failed", { mailbox_id, ...errorFields(error) }) }`. A `MailAuthError` here is also only logged (the next sync run finds it).
 
 **Decisions.** D6, D30.
@@ -102,10 +104,11 @@ export async function refreshFlags(
 3. A mail moved by the user to another folder in the fake (`userMove` helper), its row still on the old folder and UID → `notFound = 1`, its row unchanged.
 4. A provider whose `fetchFlagsIn` throws `SoftError` → the sync result is stored and `markSynced` ran; a `flags_refresh_failed` line (assert with the log capture helper the tests use, by event code only).
 5. 2 mailboxes of 2 orgs in one run → each gets its own rows; no row of org A in org B.
+6. A stored row whose `uid` is set (in the test) to the UID of another fake mail with a different Message-ID → `mismatch = 1`, no `email_flags` row for it.
 
 **Check.** `bun test apps/server/test/integration/mail-flags.test.ts apps/server/test/integration/mail-jobs.test.ts`
 
-**Done when.** Cases 1–5 pass; the existing job tests pass unchanged.
+**Done when.** Cases 1–6 pass; the existing job tests pass unchanged.
 
 **Out of scope.** Flags in `fetchAbove`; CONDSTORE (Interia has none, plan F2).
 

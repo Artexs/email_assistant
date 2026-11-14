@@ -25,7 +25,7 @@ export interface SeededWeek {
 export async function seedWeek(trx: Transaction<DB>): Promise<SeededWeek>;
 ```
 
-Use `createOrgWithMailbox`, `insertTestEmail`, and the repository insert functions of each module (or plain Kysely inserts in the fixture; the fixture is test code). Rows must pass the table CHECKs: a `send` with status `applied` needs `approved_at`; a delegation in `sent`, `answered` or `overdue` needs `sent_message_id` and `sent_at`; a send needs its `create_draft` row as `depends_on_action_id` if the existing fixtures build it that way (copy the shape from `actions-approvals.test.ts` and `delegation-repo.test.ts`). Organization A: time zone `Europe/Warsaw`, one mailbox in `assist` mode. Times are UTC.
+Every triage result's `created_at` is the mail's `received_at` + 1 minute; feedback rows have the times in the table (e3's at 2026-11-18T10:30Z). Use `createOrgWithMailbox`, `insertTestEmail`, and the repository insert functions of each module (or plain Kysely inserts in the fixture; the fixture is test code). Rows must pass the table CHECKs: a `send` with status `applied` needs `approved_at`; a delegation in `sent`, `answered` or `overdue` needs `sent_message_id` and `sent_at`; a send needs its `create_draft` row as `depends_on_action_id` if the existing fixtures build it that way (copy the shape from `actions-approvals.test.ts` and `delegation-repo.test.ts`). Organization A: time zone `Europe/Warsaw`, one mailbox in `assist` mode. Times are UTC.
 
 | Id | Mail | Triage (latest) | Rows |
 | --- | --- | --- | --- |
@@ -43,7 +43,7 @@ Use `createOrgWithMailbox`, `insertTestEmail`, and the repository insert functio
 | e12 | 2026-11-12T10:00Z | `delegation` | delegation d3 `overdue`, `sent_at` 2026-11-13T09:00Z, `due_at` 2026-11-19T09:00Z; audit `delegation.overdue` `{ delegation_id: d3 }` at 2026-11-20T06:30Z |
 | e13 | 2026-11-19T10:00Z | `info` | send s2 `rejected`, audit `action.rejected` at 2026-11-19T13:00Z; no reason row |
 
-Plus 10 `llm.call` audit rows of org A (`mailbox_id` = A's mailbox, model `gpt-6-luna`, 1,036 in, 80 out) at 2026-11-17T10:00Z and one at 2026-11-10T10:00Z. Organization B: one mailbox, two mails received 2026-11-17 triaged `urgent` with `sent` urgent outbox rows, one `llm.call` row in the week, one `move` `applied` in the week.
+Plus 10 `llm.call` audit rows of org A (`mailbox_id` = A's mailbox, model `gpt-6-luna`, 1,036 in, 80 out) at 2026-11-17T10:00Z and one at 2026-11-10T10:00Z. Organization B: one mailbox, two mails received 2026-11-17T10:00Z and 2026-11-17T11:00Z (outside quiet hours) triaged `urgent` with `sent` urgent outbox rows 2 min later, one `llm.call` row in the week, one `move` `applied` in the week (of a third mail received 2026-11-17T12:00Z, triaged `info`).
 
 **Decisions.** D11–D16, D18.
 
@@ -75,7 +75,7 @@ export interface WeekQuery {
 | --- | --- | --- |
 | `listTruthRows` (triage) | `MailTruthRow[]` | real mail, `received_at` in range, with a triage result; `predicted` = latest result (`DISTINCT ON (email_id) ORDER BY created_at DESC, id DESC`); latest feedback row (same order) → `truth = true_category`, `truthSource = truthSourceOf(source)`, `wrongOnly = verdict = 'wrong' AND true_category IS NULL` |
 | `listHandledRows` (triage) | `HandledRow[]` | the same mail set; booleans by `EXISTS` on `actions` (original rows: `reverses_action_id IS NULL`; `type IN ('move','mark_read','flag')` by status `applied`, `undone`, `logged`; a `send` with `payload->>'kind' = 'delegation'` `applied`), `triage_feedback` (`verdict = 'wrong'` and `created_at ≤ latest result created_at + 7 days`), `delegations` (the newest of the mail has status `cancelled`) |
-| `listHiddenMoveRows` (actions) | `(Omit<HiddenMoveRow, "whitelisted"> & { fromAddress: string \| null })[]` | original `move` actions with status `applied` or `undone`, `applied_at` in range, `payload->>'folder'` a move target other than `inbox` (parse with `isMoveTarget`; skip other values), of real mail; `vip` from the latest triage result; `truth` from the latest feedback |
+| `listHiddenMoveRows` (actions) | `(Omit<HiddenMoveRow, "whitelisted"> & { mailboxId: string; fromAddress: string \| null })[]` | original `move` actions with status `applied` or `undone`, `applied_at` in range, `payload->>'folder'` a move target other than `inbox` (parse with `isMoveTarget`; skip other values), of real mail; `vip` from the latest triage result; `truth` from the latest feedback |
 | `listRejectRows` (actions) | `RejectRow[]` | `send` actions with status `rejected` whose first `action.rejected` audit row is in range; `reason` from `action_feedback` (`kind = 'reject_reason'`) or null |
 | `listMistakeRows` (actions) | `MistakeRow[]` | `action_feedback` `kind = 'mistake'` joined to its `send` with status `applied` and `applied_at` in range (`sentAt = applied_at`) |
 | `listDelegationDueRows` (delegation) | `DelegationDueRow[]` | delegations with `sent_at` not null and `COALESCE(due_at, sent_at + interval '3 days')` in range, of real mail; `doneAt`, `overdueAt` = `MIN(audit_log.created_at)` of `delegation.done` / `delegation.overdue` with `data->>'delegation_id' = d.id::text`; `cancelled = status = 'cancelled'` |
@@ -96,7 +96,7 @@ Range rule: `start ≤ t < end` everywhere. `mailboxId` set → `emails.mailbox_
 6. `listDelegationDueRows` → d2 (answered 2026-11-18T15:00Z) and d3 (`overdueAt` 2026-11-20T06:30Z); not e7's delegation (due 2026-11-23).
 7. `listLlmCallRows` → 10 rows.
 8. `listUrgentNoticeTimes` → e2 (`noticeAt` 10:03Z), e6 (`noticeAt` 2026-11-20T06:00Z), e10 (null); not e8.
-9. Tenants: every reader in org B's context returns only org B's rows (2 truth rows, 1 llm row, 2 urgent rows), and with org A's `mailboxId` returns `[]`.
+9. Tenants: every reader in org B's context returns only org B's rows (3 truth rows, 1 llm row, 2 urgent rows), and with org A's `mailboxId` returns `[]`.
 10. `mailboxId` = org A's mailbox → the same results as `null` (one mailbox).
 11. `testMail = { senders: [<e2's sender>] }` → e2 is gone from `listTruthRows` and `listUrgentNoticeTimes`.
 
