@@ -185,8 +185,20 @@ const LETTERS = "[:alpha:]\\u00c0-\\u00d6\\u00d8-\\u00f6\\u00f8-\\u024f\\u0370-\
 // `regexp_replace(…, 'gi')` in stage 08. `jimbob@x.test`, `o'bob@x.test`, `bob@x.test.pl`, `bob@x.test_x` and
 // `bob@x.testé` do not match `bob@x.test`; `bob@x.test.` (end of a sentence), `<bob@x.test>` and `"bob@x.test"` do.
 // The input must be normalized (`normalizeDsrAddress`).
-export function addressRegex(address: string): string {
+//
+// A key and `=` in front of the address is a boundary too (`smtp.mailfrom=p@x.test` in `auth_results`, the reason that this
+// column is mapped); a bare `=p@x.test` is still a longer local part. Found in stage 08: the look-behind of `atext`
+// alone left the address in `auth_results`. A local part such as `a=p` is scrubbed too: it errs on the side of removing.
+//
+// With `json: true` the pattern is for the text form of a jsonb value. There a line break, a tab or a similar control
+// character stands as a two-character escape (`\n`), so a letter stands in front of an address that follows a line break
+// (`Regards\np@x.test`). The json pattern also accepts a look-behind of such an escape. It can scrub a little more than
+// needed (`\\np@x.test`: an escaped backslash and `np@x.test`); it never scrubs less. Found in stage 08: the plain
+// pattern left an address on its own line of a draft payload.
+export function addressRegex(address: string, opts: { json?: boolean } = {}): string {
   // `\` before an ASCII punctuation character makes it an ordinary character in a Postgres regex.
   const escaped = address.replace(/[!-/:-@[-`{-~]/gu, "\\$&");
-  return `(?<![${LETTERS}${ATEXT}])${escaped}(?![a-z0-9_${LETTERS}-]|\\.[a-z0-9${LETTERS}])`;
+  const starts = [`(?<![${LETTERS}${ATEXT}])`, "(?<=[a-z]=)"];
+  if (opts.json) starts.push("(?<=\\\\[nrtbf])");
+  return `(?:${starts.join("|")})${escaped}(?![a-z0-9_${LETTERS}-]|\\.[a-z0-9${LETTERS}])`;
 }

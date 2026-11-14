@@ -19,6 +19,7 @@ export interface DsrCounts {
   listed: { delegates: number; sender_rules: number };
   open_actions: number;
   chain_actions: number;
+  chain_delegations: number;
 }
 
 export function dsrCounts(match: DsrMatch): DsrCounts {
@@ -28,6 +29,7 @@ export function dsrCounts(match: DsrMatch): DsrCounts {
     listed: { delegates: match.listed.delegates.length, sender_rules: match.listed.senderRules.length },
     open_actions: match.openActions.length,
     chain_actions: match.chainActions.length,
+    chain_delegations: match.chainDelegations.length,
   };
 }
 
@@ -43,7 +45,8 @@ export function dsrIsEmpty(counts: DsrCounts): boolean {
     counts.listed.delegates === 0 &&
     counts.listed.sender_rules === 0 &&
     counts.open_actions === 0 &&
-    counts.chain_actions === 0
+    counts.chain_actions === 0 &&
+    counts.chain_delegations === 0
   );
 }
 

@@ -6,13 +6,14 @@ import { join, resolve } from "node:path";
 
 import { Decrypter, generateX25519Identity, identityToRecipient } from "age-encryption";
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
-import { sql } from "kysely";
+import { sql, type Transaction } from "kysely";
 
 import { auditEvents } from "../../src/modules/audit";
 import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { dsrAuditData, dsrCounts, dsrIsEmpty, findSubjectData, matchSubject } from "../../src/modules/privacy";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import { dsrAddressHash } from "../../src/platform/crypto";
+import type { DB } from "../../src/platform/db";
 
 import { insertAction, insertDelegate, insertTestEmail, testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
@@ -293,6 +294,50 @@ describe("findSubjectData", () => {
     });
     expect(await tableCounts(w.orgId)).toEqual(before);
     expect(before.emails).toBe(3);
+  });
+
+  test("8b. the find reads in a REPEATABLE READ READ ONLY transaction: a write inside it fails", async () => {
+    const w = await seed();
+    const seen: { readOnly?: string; isolation?: string; writeCode?: unknown } = {};
+    // A Db whose `transaction()` reports the mode of the transaction that `findSubjectData` opens, and tries a write in it
+    // before the real callback runs (a read only transaction refuses it with SQLSTATE 25006).
+    const probe = (builder: ReturnType<typeof db.transaction>): ReturnType<typeof db.transaction> =>
+      new Proxy(builder, {
+        get(target, prop) {
+          const member = Reflect.get(target, prop, target);
+          if (typeof member !== "function") return member;
+          if (prop === "execute") {
+            return (callback: (trx: Transaction<DB>) => Promise<unknown>) =>
+              target.execute(async (trx) => {
+                seen.readOnly = (
+                  await sql<{ v: string }>`select current_setting('transaction_read_only') as v`.execute(trx)
+                ).rows[0]?.v;
+                seen.isolation = (
+                  await sql<{ v: string }>`select current_setting('transaction_isolation') as v`.execute(trx)
+                ).rows[0]?.v;
+                await sql`savepoint probe`.execute(trx);
+                try {
+                  await sql`update emails set subject = subject where org_id = ${w.orgId}::uuid`.execute(trx);
+                } catch (error) {
+                  seen.writeCode = (error as { code?: unknown }).code;
+                  await sql`rollback to savepoint probe`.execute(trx);
+                }
+                return callback(trx);
+              });
+          }
+          return (...args: unknown[]) => probe((member as (...a: unknown[]) => never).apply(target, args));
+        },
+      });
+    const spy = new Proxy(db, {
+      get(target, prop) {
+        if (prop === "transaction") return () => probe(target.transaction());
+        const member = Reflect.get(target, prop, target);
+        return typeof member === "function" ? member.bind(target) : member;
+      },
+    });
+    const result = await findSubjectData(spy, { orgId: w.orgId, address: w.person, credentialsKey: KEY });
+    expect(result.kind).toBe("found");
+    expect(seen).toEqual({ readOnly: "on", isolation: "repeatable read", writeCode: "25006" });
   });
 
   test("counts and audit data come from the match", async () => {

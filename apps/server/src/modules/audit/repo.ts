@@ -81,7 +81,7 @@ export const auditEvents = {
   orgDeleteRefused: "org.delete_refused", // data: reason, via
   orgExported: "org.exported", // data: tables, rows
   dsrFind: "dsr.find", // data: address_hash, mails, mentions, listed_delegates, listed_sender_rules, open_actions
-  dsrErase: "dsr.erase", // data: the keys of dsr.find, tombstones, chain_actions, outbox_blanked, outbox_dropped
+  dsrErase: "dsr.erase", // data: the keys of dsr.find, tombstones, chain_actions, chain_delegations, outbox_blanked, outbox_dropped
 } as const;
 
 export interface AuditEvent {

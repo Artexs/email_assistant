@@ -233,6 +233,9 @@ describe("DSR address map", () => {
     { address: "p@x.test", text: "line one\np@x.test\nline three", hit: true },
     { address: "p@x.test", text: "“p@x.test”", hit: true },
     { address: "p@x.test", text: "P@X.TEST", hit: true },
+    // A key and `=` in front (an authentication result): found. A bare `=` is a longer local part (below).
+    { address: "p@x.test", text: "spf=pass smtp.mailfrom=p@x.test; dkim=pass", hit: true },
+    { address: "p@x.test", text: "header.from=P@X.TEST", hit: true },
     // The address inside a longer local part or domain: not found.
     { address: "p@x.test", text: "jimp@x.test", hit: false },
     { address: "p@x.test", text: "o'p@x.test", hit: false },
@@ -510,6 +513,7 @@ describe("matchSubject", () => {
           listed: { delegates: [], senderRules: [] },
           openActions: [],
           chainActions: [],
+          chainDelegations: [],
         });
       }
       expect((await matchSubject(trx, w.orgId, w.person)).ownAddress).toBe(false);
