@@ -47,7 +47,11 @@ test("from open to done and back", async ({ page }, testInfo) => {
   await page.goto("/onboarding");
   await expect(page.getByText(enPlurals.ob_mailbox_done.one)).toBeVisible();
 
-  await page.getByRole("button", { name: en.tg_link }).click();
+  const linkButton = page.getByRole("button", { name: en.tg_link });
+  await expect(linkButton).toBeDisabled();
+  await page.getByLabel(en.tg_consent_label).check();
+  await expect(linkButton).toBeEnabled();
+  await linkButton.click();
   const url = page.getByLabel(en.tg_link_label, { exact: true });
   await expect(url).toHaveValue(/^https:\/\/t\.me\/fake_ea_bot\?start=[A-Za-z0-9_-]{43}$/);
   const token = (await url.inputValue()).split("start=")[1];

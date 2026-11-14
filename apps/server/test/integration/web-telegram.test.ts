@@ -1,4 +1,4 @@
-import { telegramLinkSchema, telegramStateSchema } from "@ea/core";
+import { TELEGRAM_CONSENT_VERSION, telegramLinkSchema, telegramStateSchema } from "@ea/core";
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import { Hono } from "hono";
 
@@ -40,6 +40,8 @@ async function setup(botUsername: (() => Promise<string>) | null = async () => "
   return { org, app };
 }
 
+const VALID = { consentVersion: TELEGRAM_CONSENT_VERSION };
+
 const tokenRows = (orgId: string) =>
   db.selectFrom("chat_link_tokens").selectAll().where("org_id", "=", orgId).execute();
 
@@ -78,7 +80,7 @@ describe("telegram routes", () => {
 
   test("POST /link makes a token, the token links the chat", async () => {
     const { app, org } = await setup();
-    const res = await app.request("/api/channels/telegram/link", as("assistant", { method: "POST" }));
+    const res = await app.request("/api/channels/telegram/link", as("assistant", { method: "POST", body: VALID }));
     expect(res.status).toBe(200);
     expect(res.headers.get("cache-control")).toBe("no-store");
     const body = telegramLinkSchema.parse(await res.json());
@@ -102,7 +104,7 @@ describe("telegram routes", () => {
 
   test("DELETE /link unlinks, audits the user and is idempotent", async () => {
     const { app, org } = await setup();
-    const res = await app.request("/api/channels/telegram/link", as("owner", { method: "POST" }));
+    const res = await app.request("/api/channels/telegram/link", as("owner", { method: "POST", body: VALID }));
     const token = new URL(telegramLinkSchema.parse(await res.json()).url).searchParams.get("start") ?? "";
     await consumeLinkToken(db, { token, chatId: randomChatId(), now: NOW });
 
@@ -144,7 +146,7 @@ describe("telegram routes", () => {
     });
     const warn = spyOn(console, "error").mockImplementation((): void => undefined);
     try {
-      const res = await app.request("/api/channels/telegram/link", as("owner", { method: "POST" }));
+      const res = await app.request("/api/channels/telegram/link", as("owner", { method: "POST", body: VALID }));
       expect(res.status).toBe(502);
       expect(await res.json()).toEqual({ error: "telegram_unreachable" });
     } finally {
@@ -163,7 +165,7 @@ describe("telegram routes", () => {
 
   test("the owner of another organization cannot unlink this organization's chat", async () => {
     const { app, org } = await setup();
-    const res = await app.request("/api/channels/telegram/link", as("owner", { method: "POST" }));
+    const res = await app.request("/api/channels/telegram/link", as("owner", { method: "POST", body: VALID }));
     const token = new URL(telegramLinkSchema.parse(await res.json()).url).searchParams.get("start") ?? "";
     await consumeLinkToken(db, { token, chatId: randomChatId(), now: NOW });
 
@@ -181,7 +183,7 @@ describe("telegram routes", () => {
     let lines: string[] = [];
     let token = "";
     try {
-      const res = await app.request("/api/channels/telegram/link", as("owner", { method: "POST" }));
+      const res = await app.request("/api/channels/telegram/link", as("owner", { method: "POST", body: VALID }));
       token = new URL(telegramLinkSchema.parse(await res.json()).url).searchParams.get("start") ?? "";
       await app.request("/api/channels/telegram", as("owner"));
       await app.request("/api/channels/telegram/link", as("owner", { method: "DELETE" }));
@@ -196,5 +198,91 @@ describe("telegram routes", () => {
       expect(line).not.toContain(token);
       expect(line).not.toContain("start=");
     }
+  });
+});
+
+const consentRows = (orgId: string) =>
+  db
+    .selectFrom("audit_log")
+    .selectAll()
+    .where("org_id", "=", orgId)
+    .where("event", "=", "web.telegram_consent")
+    .execute();
+
+describe("telegram link consent", () => {
+  const LINK = "/api/channels/telegram/link";
+
+  test("a request with no body, a bad body or an old version is refused and leaves no token or consent row", async () => {
+    const { app, org } = await setup();
+    const none = await app.request(LINK, as("owner", { method: "POST" }));
+    expect(none.status).toBe(400);
+    for (const body of [{}, { consentVersion: "" }]) {
+      const res = await app.request(LINK, as("owner", { method: "POST", body }));
+      expect(res.status).toBe(400);
+    }
+    const old = await app.request(LINK, as("owner", { method: "POST", body: { consentVersion: "2000-01-01" } }));
+    expect(old.status).toBe(409);
+    expect(await old.json()).toEqual({ error: "telegram_consent_outdated" });
+    expect(await tokenRows(org.orgId)).toHaveLength(0);
+    expect(await consentRows(org.orgId)).toHaveLength(0);
+  });
+
+  test("the current version makes one token and one consent row", async () => {
+    const { app, org } = await setup();
+    const res = await app.request(LINK, as("owner", { method: "POST", body: VALID }));
+    expect(res.status).toBe(200);
+    expect(telegramLinkSchema.parse(await res.json()).url).toStartWith("https://t.me/");
+    const tokens = await tokenRows(org.orgId);
+    expect(tokens).toHaveLength(1);
+    expect(tokens[0]?.user_id).toBe(org.ownerId);
+    const consents = await consentRows(org.orgId);
+    expect(consents).toHaveLength(1);
+    expect(consents[0]?.actor).toBe(org.ownerId);
+    expect(consents[0]?.data).toEqual({ via: "web", version: TELEGRAM_CONSENT_VERSION });
+  });
+
+  test("a second accepted request makes a second consent row and the first token stops working", async () => {
+    const { app, org } = await setup();
+    const tokenOf = async () =>
+      new URL(
+        telegramLinkSchema.parse(
+          await (await app.request(LINK, as("owner", { method: "POST", body: VALID }))).json()
+        ).url
+      ).searchParams.get("start") ?? "";
+    const first = await tokenOf();
+    await tokenOf();
+    expect(await consentRows(org.orgId)).toHaveLength(2);
+    expect(await consumeLinkToken(db, { token: first, chatId: randomChatId(), now: NOW })).toEqual({ kind: "unknown" });
+  });
+
+  test("when Telegram does not answer, a valid body makes no token and no consent row", async () => {
+    const { app, org } = await setup(async () => {
+      throw new Error("down");
+    });
+    const warn = spyOn(console, "error").mockImplementation((): void => undefined);
+    try {
+      const res = await app.request(LINK, as("owner", { method: "POST", body: VALID }));
+      expect(res.status).toBe(502);
+    } finally {
+      warn.mockRestore();
+    }
+    expect(await tokenRows(org.orgId)).toHaveLength(0);
+    expect(await consentRows(org.orgId)).toHaveLength(0);
+  });
+
+  test("Telegram off is 409 telegram_off before the body is read", async () => {
+    const { app } = await setup(null);
+    const res = await app.request(LINK, as("owner", { method: "POST" }));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "telegram_off" });
+  });
+
+  test("an assistant with a valid body is the actor of the consent row", async () => {
+    const { app, org } = await setup();
+    const res = await app.request(LINK, as("assistant", { method: "POST", body: VALID }));
+    expect(res.status).toBe(200);
+    const consents = await consentRows(org.orgId);
+    expect(consents).toHaveLength(1);
+    expect(consents[0]?.actor).toBe(org.assistantId);
   });
 });
