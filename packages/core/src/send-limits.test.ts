@@ -7,6 +7,8 @@ import {
   sendLimitKinds,
   sendLimitOfError,
   type RecentSend,
+  type SendLimitKind,
+  type SendLimitResult,
   type SendLimits,
 } from "./send-limits";
 
@@ -26,7 +28,11 @@ const twentyInHour = range(-50, 20);
 function check(recent: RecentSend[], to: string[] = ["n@x.test"], limits: SendLimits = DEFAULT_SEND_LIMITS, now = NOW) {
   return checkSendLimits({ now, recent, to, limits });
 }
-const held = (limit: string, until: string) => ({ kind: "held", limit, until: new Date(until) });
+const held = (limit: SendLimitKind, until: string): SendLimitResult => ({
+  kind: "held",
+  limit,
+  until: new Date(until),
+});
 
 describe("checkSendLimits", () => {
   test("1: 19 sends in the hour pass", () => {
