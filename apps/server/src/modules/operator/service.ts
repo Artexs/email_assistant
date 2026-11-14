@@ -74,6 +74,7 @@ async function operatorOrgRow(db: Db, orgId: string, now: Date): Promise<Operato
       active: count("active"),
       paused: count("paused"),
       authError: count("auth_error"),
+      hostBlocked: count("host_blocked"),
     },
     lastSyncAt: synced.length > 0 ? new Date(Math.max(...synced)).toISOString() : null,
     failures24h: { sends, outbox },

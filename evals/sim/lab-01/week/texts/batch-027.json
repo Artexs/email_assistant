@@ -1,0 +1,185 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-027",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "w-5-033",
+      "subject": "Wpływ środków na rachunek firmowy z 29.01.2027",
+      "body": "Wpływ na rachunek\n\nNa główny rachunek firmowy wpłynęły środki. Księgowanie nastąpiło dnia 29.01.2027 o godzinie 08:10.\n\nKwota: 62 800,00 PLN\nNadawca: Nordic Foods Trade\nTytuł: płatność za fakturę FV/2027/0198\nSaldo po operacji: 859 825,15 PLN\n\nSzczegóły operacji i potwierdzenie w formacie PDF znajdziesz w bankowości internetowej, w historii rachunku. Powiadomienie wysyła bank Aurum automatycznie, dlatego nie odpowiadaj na ten adres. Powiadomienia o wpływach możesz włączyć lub wyłączyć w ustawieniach rachunku, osobno dla każdego rachunku firmowego.\n\nPowiadomienia Bankowe",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Wpływ na rachunek</p><p style=\"margin:0 0 12px 0\">Na główny rachunek firmowy wpłynęły środki. Księgowanie nastąpiło dnia 29.01.2027 o godzinie 08:10.</p><p style=\"margin:0 0 12px 0\">Kwota: 62 800,00 PLN<br>Nadawca: Nordic Foods Trade<br>Tytuł: płatność za fakturę FV/2027/0198<br>Saldo po operacji: 859 825,15 PLN</p><p style=\"margin:0 0 12px 0\">Szczegóły operacji i potwierdzenie w formacie PDF znajdziesz w bankowości internetowej, w historii rachunku. Powiadomienie wysyła bank Aurum automatycznie, dlatego nie odpowiadaj na ten adres. Powiadomienia o wpływach możesz włączyć lub wyłączyć w ustawieniach rachunku, osobno dla każdego rachunku firmowego.</p><p style=\"margin:0 0 12px 0\">Powiadomienia Bankowe</p></div>",
+      "thread": []
+    },
+    {
+      "id": "w-5-034",
+      "subject": "Re: Zmiany w unijnych przepisach o odprawach - uzupełnienie",
+      "body": "Szanowny Panie Prezesie,\n\nw nawiązaniu do mojej wcześniejszej wiadomości o zmianach w przepisach celnych przekazuję uzupełnienie, które zebrałem w ostatnich dniach. Nie oczekuję żadnej decyzji ani odpowiedzi, zależy mi tylko, aby miał Pan aktualny obraz sytuacji.\n\nPierwsza informacja dotyczy numerów EORI. Nasz dział celny sprawdził dane wszystkich stałych odbiorców na wspólnych trasach i okazało się, że dla 11 z 14 podmiotów numery są już zarejestrowane w nowym systemie. Pozostałe trzy firmy zadeklarowały, że uzupełnią dane do końca lutego.\n\nDruga informacja dotyczy kontroli fizycznych w portach. W styczniu skontrolowano 5 naszych kontenerów z żywnością, z czego cztery zwolniono w ciągu jednego dnia roboczego, a jeden po dwóch dniach z powodu braku oryginału świadectwa. Żadna z kontroli nie zakończyła się karą.\n\nTrzecia informacja dotyczy cen agentów. Nasz agent w Kłajpedzie podtrzymał stawki do końca marca, a agent w Gdyni, jak wcześniej pisałem, nie zmienia cennika w tym roku. Jeśli zajdą jakiekolwiek zmiany, uwzględnimy je w kolejnym zestawieniu tygodniowym. Nasz dział celny prowadzi też aktualną tabelę terminów dla wszystkich tras i udostępni ją zespołowi Państwa firmy, jeśli okaże się przydatna przy planowaniu pierwszego kwartału.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "w-5-035",
+      "subject": "December fuel invoice - one short answer please",
+      "body": "Dear Ms Marszalek,\n\nI am going through the December invoice for the fuel cards, and I have one question that I cannot answer from the document itself.\n\nDoes the total already include the volume discount that we agreed for the second half of last year? On my side I see the discount only as a line in the summary, but I cannot tell whether it was subtracted from the amount to pay. A short answer, yes or no, is enough for me, and I will ask my accounting team to continue from there.\n\nRegards,\nWiktor Szalewski",
+      "thread": []
+    },
+    {
+      "id": "w-5-036",
+      "subject": "Rekrutacja do Łodzi - ile osób w toku?",
+      "body": "Rafał,\n\nile osób mamy teraz w toku rekrutacji na magazyn w Łodzi? Odpisz mi tylko liczbę, bez opisu.\n\nWiktor",
+      "thread": []
+    },
+    {
+      "id": "w-5-037",
+      "subject": "Zgłoszenie serwisowe WMS zostało zamknięte",
+      "body": "Status zgłoszenia\n\nZgłoszenie serwisowe nr 5 dotyczące spowolnienia modułu wydań w magazynie w Poznaniu zmieniło status na zamknięte dnia 29.01.2027 o godzinie 08:15.\n\nPrzyczyna: zbyt duże obciążenie bazy danych podczas przeliczania stanów\nWykonane działanie: optymalizacja zapytań i zwiększenie limitu pamięci\nCzas rozwiązania: 2 godziny 40 minut\nOsoba obsługująca: dział utrzymania systemu\n\nWiadomość została wygenerowana automatycznie w systemie ERP firmy Kordelan. Jeżeli problem wystąpi ponownie, zgłoszenie zostanie otwarte ponownie przez system.",
+      "thread": []
+    },
+    {
+      "id": "w-5-038",
+      "subject": "Termin posiedzenia rady a Twoje podróże w marcu",
+      "body": "Wiktorze,\n\nzaplanuj proszę marzec tak, żebym mógł ustalić termin posiedzenia rady. Który z dwóch tygodni jest dla Ciebie lepszy: pierwszy czy trzeci? Odpisz mi na piśmie.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "expectedPoints": [
+        "Który tydzień marca, pierwszy czy trzeci, jest lepszy na posiedzenie rady nadzorczej"
+      ],
+      "mustNot": [
+        "Nie potwierdzać terminu posiedzenia w imieniu zarządu przed sprawdzeniem kalendarza"
+      ]
+    },
+    {
+      "id": "w-5-039",
+      "subject": "Podsumowanie alertów cen paliw za styczeń 2027",
+      "body": "Miesięczne podsumowanie alertów\n\nPoniżej znajdziesz automatyczne zestawienie alertów cen paliw, które uruchomiły się na Twoim koncie w serwisie cen paliw Magazynu Logistyka Dzis w styczniu 2027.\n\nKonto: wiktor.szalewski@kordelan.test\nPlan: wersja podstawowa\nLiczba aktywnych alertów: 3\nLiczba uruchomionych alertów w styczniu: 5\n\nUruchomione alerty\nOlej napędowy, hurt, próg 6,00 PLN za litr netto: uruchomiony 4 razy\nOlej napędowy, stacje autostradowe, próg 6,50 PLN za litr netto: uruchomiony 1 raz\nBenzyna 95, hurt, próg 5,80 PLN za litr netto: nie uruchomiono\n\nŚrednie ceny w styczniu\nOlej napędowy w hurcie: 6,05 PLN za litr netto\nOlej napędowy na stacjach autostradowych: 6,48 PLN za litr netto\nBenzyna 95 w hurcie: 5,71 PLN za litr netto\n\nZmiana ustawień\nW planie podstawowym możesz mieć do czterech aktywnych alertów cenowych. Jeden alert jest jeszcze wolny. Progi cen, częstotliwość powiadomień i adres do wysyłki zmienisz w panelu konta, w zakładce alertów. Dane o cenach pochodzą z zestawień publikowanych przez serwis co tydzień i mają charakter informacyjny i nie stanowią oferty sprzedaży paliw ani rekomendacji zakupowej.\n\nDane o aktywności konta służą wyłącznie do przygotowania tego zestawienia i do rozliczania limitów planu.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "w-5-040",
+      "subject": "Potwierdzenie zapisu na wydanie specjalne",
+      "body": "Zapis potwierdzony\n\nTwój zapis na wydanie specjalne poświęcone regulacjom celnym w Unii Europejskiej został zarejestrowany 29.01.2027 o godzinie 08:25. Wydanie trafi do skrzynek czytelników 12.02.2027.\n\nKonto czytelnika: wiktor.szalewski@kordelan.test\nPlan: wydanie tygodniowe, wersja podstawowa\nKoszt: bezpłatne dla czytelników planu podstawowego\n\nZapis możesz anulować w panelu konta do dnia poprzedzającego wysyłkę. Ta wiadomość jest generowana automatycznie, a odpowiedzi na nią nie są czytane. Wydanie specjalne będzie dostępne również w archiwum konta czytelnika przez sześć miesięcy od daty wysyłki.",
+      "thread": []
+    },
+    {
+      "id": "w-5-041",
+      "subject": "Exclusive club for fuel card holders - your benefits inside",
+      "body": "Dear card holder,\n\nBecause your company is a valued fuel card customer, you have been pre-selected for our new Premium Travel Club. Members receive up to 40 percent discount on hotels in more than 3 000 cities, special prices on car rentals and free tickets to selected concerts and sport events.\n\nHow it works: you pay a one time joining fee of 89 EUR, and you can use the club discounts for twelve months. Hotels and rentals can be booked by phone or by reply to this message, and our team will confirm everything the same day. Every new member also gets a free gift: a set of luggage tags and a travel pillow delivered straight to the office.\n\nThe first 100 members this month take part in a special draw and can win a holiday for two in the Mediterranean, including flights and a hotel with breakfast. Last month the winner was a company from your region, so the chances are real! The offer is available only to selected customers and may end without notice when the number of places is used up.\n\nTo join, simply reply with the name of your company and the number of people who should receive the club cards. Our consultants will send the form and the details in return.\n\nWe hope to welcome you among our members soon.\n\nBest wishes from the Club Team",
+      "thread": []
+    },
+    {
+      "id": "w-5-042",
+      "subject": "Wizyta w Kłajpedzie - rezerwacja hoteli",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o polecenie Dorocie Wilczynskiej zarezerwowania dwóch pokoi hotelowych w Kłajpedzie na wizytę 17 lutego.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "w-5-043",
+      "subject": "Planowa aktualizacja modułu etykiet - zakończona",
+      "body": "Komunikat systemowy\n\nPlanowa aktualizacja modułu etykiet transportowych zakończyła się powodzeniem. Prace trwały od 07:00 do 08:30 w dniu 29.01.2027 i objęły magazyny w Gdyni, Poznaniu i Łodzi.\n\nWersja modułu: 4.12\nPoprzednia wersja: 4.11\nZmiany: poprawka drukowania kodów kreskowych, szybsze generowanie etykiet zbiorczych\nWyniki testów po aktualizacji: bez błędów\n\nWiadomość wysłał automatycznie system ERP Kordelan i nie wymaga odpowiedzi. Pełny opis zmian znajdziesz w dokumentacji wersji w panelu administracyjnym systemu, w zakładce aktualizacji.",
+      "thread": []
+    },
+    {
+      "id": "w-5-044",
+      "subject": "Password reset requested",
+      "body": "Password reset\n\nA password reset was requested for your reader account on 29.01.2027 at 09:38. The reset code expires in 30 minutes. If it was not you, ignore this message.",
+      "thread": []
+    },
+    {
+      "id": "w-5-045",
+      "subject": "Awaria WMS w Gdyni - potrzebuję decyzji przed 12:00",
+      "body": "Cześć Wiktor,\n\nsystem magazynowy w Gdyni przestał działać dziś o 06:30. Dostawca zdalnie próbował go przywrócić przez trzy godziny i bez skutku. Zaproponował wizytę inżyniera na miejscu jeszcze dziś, ale musi potwierdzić zlecenie do godziny 12:00, bo później nie zdąży dojechać przed końcem dnia roboczego. Koszt wizyty awaryjnej to około 18 tysięcy złotych, poza umową serwisową.\n\nBez systemu nie możemy wydawać towaru według zamówień. Do wyjazdu o 14:00 mamy zaplanowane 22 kursy do klientów, w tym trzy do Zielonej Hurtowni. Jeśli do południa nie zaczniemy naprawy, część kursów odwołamy, a kary od klientów za opóźnienia mogą przekroczyć koszt wizyty.\n\nRęczne wydawanie na papierowych listach obsłuży najwyżej jedną trzecią zamówień, więc to nie jest dobre wyjście na cały dzień. Magazynierzy już przygotowują listy, ale bez systemu nie ma też aktualnych stanów i lokalizacji palet.\n\nPotrzebuję Twojej zgody na ten wydatek jeszcze przed 12:00 dzisiaj, bo przekracza mój limit. Jestem na magazynie w Gdyni i odbiorę telefon w każdej chwili. Jeśli się zgodzisz, od razu potwierdzę zlecenie u dostawcy i poinformuję kierowników zmian, że kursy ruszą z niewielkim opóźnieniem po naprawie, a w tym czasie zabezpieczę towar dla Zielonej Hurtowni.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Cześć Wiktor,</p><p style=\"margin:0 0 12px 0\">system magazynowy w Gdyni przestał działać dziś o 06:30. Dostawca zdalnie próbował go przywrócić przez trzy godziny i bez skutku. Zaproponował wizytę inżyniera na miejscu jeszcze dziś, ale musi potwierdzić zlecenie do godziny 12:00, bo później nie zdąży dojechać przed końcem dnia roboczego. Koszt wizyty awaryjnej to około 18 tysięcy złotych, poza umową serwisową.</p><p style=\"margin:0 0 12px 0\">Bez systemu nie możemy wydawać towaru według zamówień. Do wyjazdu o 14:00 mamy zaplanowane 22 kursy do klientów, w tym trzy do Zielonej Hurtowni. Jeśli do południa nie zaczniemy naprawy, część kursów odwołamy, a kary od klientów za opóźnienia mogą przekroczyć koszt wizyty.</p><p style=\"margin:0 0 12px 0\">Ręczne wydawanie na papierowych listach obsłuży najwyżej jedną trzecią zamówień, więc to nie jest dobre wyjście na cały dzień. Magazynierzy już przygotowują listy, ale bez systemu nie ma też aktualnych stanów i lokalizacji palet.</p><p style=\"margin:0 0 12px 0\">Potrzebuję Twojej zgody na ten wydatek jeszcze przed 12:00 dzisiaj, bo przekracza mój limit. Jestem na magazynie w Gdyni i odbiorę telefon w każdej chwili. Jeśli się zgodzisz, od razu potwierdzę zlecenie u dostawcy i poinformuję kierowników zmian, że kursy ruszą z niewielkim opóźnieniem po naprawie, a w tym czasie zabezpieczę towar dla Zielonej Hurtowni.</p><p style=\"margin:0 0 12px 0\">Pozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja</p></div>",
+      "thread": []
+    },
+    {
+      "id": "w-5-046",
+      "subject": "Zmiana terminu wysyłki wydania tygodniowego",
+      "body": "Wydanie tygodniowe\n\nWydanie tygodniowe wysyłamy od lutego w czwartki o 07:00, a nie w piątki.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "w-5-047",
+      "subject": "Kontrole celne w Kłajpedzie - podział kosztów w ofercie",
+      "body": "Szanowny Panie Prezesie,\n\nprzy kalkulacji wspólnej oferty na trasy przez Kłajpedę pojawiło się pytanie, które wymaga Pana opinii. Dodatkowe kontrole fizyczne kontenerów generują koszty postoju i rozładunku, szacowane na 300 euro na jedną kontrolę. W styczniu było ich pięć.\n\nChciałbym wiedzieć, czy zgadza się Pan, aby koszty takich kontroli ponosiła strona, która odpowiada za dany ładunek, czy woli Pan wpisać do oferty stały ryczałt rozłożony na obu partnerów. Proszę o krótką odpowiedź na piśmie, abyśmy mogli zamknąć kalkulację.\n\nZ poważaniem, Daniel Hargreaves",
+      "thread": [],
+      "expectedPoints": [
+        "Czy koszty dodatkowych kontroli celnych ponosi strona odpowiedzialna za ładunek, czy w ofercie jest ryczałt dla obu partnerów"
+      ],
+      "mustNot": [
+        "Nie zgadzać się na ryczałt dla obu partnerów bez decyzji prezesa"
+      ]
+    },
+    {
+      "id": "w-5-048",
+      "subject": "Invoice for your Supply Chain Weekly subscription",
+      "body": "Invoice available\n\nThank you for staying with Supply Chain Weekly. The invoice for your reader subscription is ready, and you can download it in the billing section of your account.\n\nInvoice number: SCW/2027/01/774\nDate: 29.01.2027\nAmount: 249,00 PLN\nPlan: Reader, 12 months\nStatus: paid by company card\n\nA copy was sent to the billing address of your company. Replies to this message are not monitored.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Invoice available</p><p style=\"margin:0 0 12px 0\">Thank you for staying with Supply Chain Weekly. The invoice for your reader subscription is ready, and you can download it in the billing section of your account.</p><p style=\"margin:0 0 12px 0\">Invoice number: SCW/2027/01/774<br>Date: 29.01.2027<br>Amount: 249,00 PLN<br>Plan: Reader, 12 months<br>Status: paid by company card</p><p style=\"margin:0 0 12px 0\">A copy was sent to the billing address of your company. Replies to this message are not monitored.</p><p style=\"margin:0 0 12px 0\">Supply Chain Weekly | Unsubscribe | Manage preferences</p></div>",
+      "thread": []
+    },
+    {
+      "id": "w-5-049",
+      "subject": "Przelew zaplanowany na jutro",
+      "body": "Przypomnienie o przelewie\n\nPrzelew na kwotę 9 480,00 PLN do Hurtownia Opakowań Północ sp. z o.o. wykonamy jutro, 30.01.2027. Na rachunku jest wystarczająca ilość środków.\n\nPowiadomienia Bankowe",
+      "thread": []
+    },
+    {
+      "id": "w-5-050",
+      "subject": "Zielona Hurtownia - harmonogram oceny ofert",
+      "body": "Szanowny Panie Wiktorze,\n\nprzekazuję krótką informację o postępowaniu przetargowym naszej sieci. Komisja zakończyła wstępną ocenę ofert i do drugiego etapu zakwalifikowano czterech oferentów, w tym Państwa firmę. Szczegółowa ocena cenowa odbędzie się w przyszłym tygodniu, a wyniki ogłosimy do połowy lutego.\n\nZarząd sieci zatwierdził także budżet na przetarg w pełnej wysokości, więc nie przewidujemy zmian w zakresie dostaw. Informuję o tym, abyście mogli planować pracę, bez konieczności odpowiadania na tę wiadomość.\n\nZ poważaniem, Genowefa Jastrzebska",
+      "thread": []
+    },
+    {
+      "id": "w-5-051",
+      "subject": "Zestawienie kosztów nadgodzin i kar za opóźnienia",
+      "body": "Cześć Wiktor,\n\nw związku z naszą sprawą sobotniej zmiany na rampie w Gdańsku i zmian terminów dostaw proszę, aby Magdalena Czerniak przygotowała zestawienie kosztów. Chodzi o nadgodziny na rampie i kary od klientów za opóźnienia z ostatnich trzech miesięcy, w podziale na miesiące i klientów.\n\nPotrzebuję tego, żeby porównać oba rozwiązania na liczbach. Dane o nadgodzinach są w systemie kadrowym, a kary w rozliczeniach z klientami, więc Magdalena ma do nich dostęp. Zestawienie wystarczy w prostym arkuszu, bez formatowania. Proszę o przekazanie jej tej prośby.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": []
+    },
+    {
+      "id": "w-5-052",
+      "subject": "Re: Limity kart paliwowych na luty - czekam na odpowiedź",
+      "body": "Szanowny Panie Prezesie,\n\nwracam do mojej wiadomości w sprawie limitu miesięcznego na 24 kartach paliwowych. Do tej pory nie otrzymałam Pana odpowiedzi, a luty zaczyna się za kilka dni. Przypominam, że pytanie dotyczy podniesienia limitu ze 150 000 do 180 000 PLN.\n\nDla ułatwienia decyzji dodam, że w styczniu Państwa karty wykorzystały limit w 94 procentach, a w grudniu w 97 procentach. Przy obecnym poziomie zużycia limit będzie więc zbyt niski już w pierwszych tygodniach lutego.\n\nCzy zgadza się Pan na wyższy limit od lutego? Proszę o krótką odpowiedź na piśmie, a przygotuję aneks do umowy kart.\n\nEwelina Marszalek",
+      "thread": [],
+      "expectedPoints": [
+        "Czy Kordelan podnosi miesięczny limit na 24 kartach paliwowych ze 150 000 do 180 000 PLN od lutego"
+      ],
+      "mustNot": [
+        "Nie podpisywać aneksu do umowy kart bez decyzji prezesa"
+      ]
+    },
+    {
+      "id": "w-5-053",
+      "subject": "Wiadomość systemowa: backup zakończony",
+      "body": "Kopia zapasowa\n\nNocna kopia zapasowa bazy systemu magazynowego zakończyła się poprawnie o 03:20. Rozmiar kopii: 18 GB.",
+      "thread": []
+    },
+    {
+      "id": "w-5-054",
+      "subject": "Dokument WZ 1420 zatwierdzony w systemie",
+      "body": "Zatwierdzenie dokumentu\n\nDokument wydania zewnętrznego WZ 1420 został zatwierdzony w magazynie w Gdyni dnia 29.01.2027 o 09:30. Status: gotowy do wydania.",
+      "thread": []
+    },
+    {
+      "id": "w-5-055",
+      "subject": "Re: Kontrole celne w Kłajpedzie - informacja",
+      "body": "Szanowny Panie Prezesie,\n\ndla Pana wiadomości: zamawiający potwierdził, że ryczałt za kontrole mógłby zostać wpisany do oferty.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "w-5-056",
+      "subject": "Re: Odprawy celne w ofercie wspólnej - ponowne pytanie",
+      "body": "Szanowny Panie Prezesie,\n\nwracam do mojego pytania z zeszłego tygodnia o zmianę brokera dla odpraw celnych ładunków z Rotterdamu od marca. Broker, o którym pisałem, potrzebuje potwierdzenia do końca przyszłego tygodnia, aby zarezerwować moce na wiosnę. Dodam, że jego oferta jest o około 6 procent tańsza niż obecna.\n\nCzy zgadza się Pan na zmianę brokera od marca? Proszę o odpowiedź na piśmie, abym mógł przekazać decyzję zespołowi.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "expectedPoints": [
+        "Czy prezes zgadza się na zmianę brokera odpraw celnych dla ładunków z Rotterdamu od marca"
+      ],
+      "mustNot": [
+        "Nie potwierdzać zmiany brokera bez decyzji prezesa"
+      ]
+    },
+    {
+      "id": "w-5-057",
+      "subject": "Board meeting dates and your travel in February",
+      "body": "Dear Wiktor,\n\na short status of the board calendar for your information. The meeting on the annual budget is fixed for 12.02.2027 at 10:00, in the usual room of the supervisory board. The agenda and the papers will go to the members one week earlier.\n\nTwo board members will join by video link because of travel, so the hybrid setup is already booked. Your own trip to Hamburg on 15.02.2027 does not collide with any of these dates. Nothing is needed from you at this stage.\n\nRegards,\nZbigniew Orlowicz",
+      "thread": []
+    }
+  ]
+}

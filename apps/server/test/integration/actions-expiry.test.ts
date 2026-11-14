@@ -226,6 +226,19 @@ describe("createExpiryJob", () => {
     });
   });
 
+  test("(5b) a host_blocked mailbox is walked", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      await setMailboxStatus(trx, s.ctx, s.mailboxId, "host_blocked", now);
+      const { hooks } = recordingHooks();
+      const p = await waiting(trx, s.ctx, s.mailboxId, { notifiedAt: ago(49 * HOUR) });
+
+      await jobFor(trx, hooks).run();
+
+      expect((await getSend(trx, s.ctx, p.sendId))?.status).toBe("expired");
+    });
+  });
+
   test("(6) held_timeout: old approval with no lock expires; 47 h and in-flight stay", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);

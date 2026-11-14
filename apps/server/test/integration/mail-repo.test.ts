@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { mailboxStatuses } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -10,6 +11,7 @@ import {
   forceRescan,
   getCredentials,
   getMailbox,
+  getMailboxSummary,
   getJunkFolderPath,
   getSyncFolder,
   insertCredentials,
@@ -194,6 +196,28 @@ describe("mail repository: mailboxes", () => {
       expect(targets).toContainEqual({ orgId: a.ctx.orgId, mailboxId: a.mailboxId });
       expect(targets).toContainEqual({ orgId: b.ctx.orgId, mailboxId: b.mailboxId });
       expect(targets.map((t) => t.mailboxId)).not.toContain(paused.mailboxId);
+    });
+  });
+});
+
+describe("mail repository: mailbox status", () => {
+  test("the status CHECK lists the statuses of core; host_blocked is accepted and a free word is not", async () => {
+    await withRollback(db, async (trx) => {
+      const result = await sql<{ def: string }>`
+        select pg_get_constraintdef(oid) as def from pg_constraint
+        where conrelid = 'mailboxes'::regclass and conname = 'mailboxes_status_check'`.execute(trx);
+      const values = [...(result.rows[0]?.def.matchAll(/'([a-z_]+)'/g) ?? [])].map((m) => m[1]).sort();
+      expect(values).toEqual([...mailboxStatuses].sort());
+
+      const { a } = await createTwoTenants(trx);
+      await trx.updateTable("mailboxes").set({ status: "host_blocked" }).where("id", "=", a.mailboxId).execute();
+      expect((await getMailboxSummary(trx, a.ctx, a.mailboxId))?.status).toBe("host_blocked");
+
+      await sql`savepoint frozen`.execute(trx);
+      await expect(
+        trx.updateTable("mailboxes").set({ status: "frozen" }).where("id", "=", a.mailboxId).execute()
+      ).rejects.toMatchObject({ code: "23514" });
+      await sql`rollback to savepoint frozen`.execute(trx);
     });
   });
 });

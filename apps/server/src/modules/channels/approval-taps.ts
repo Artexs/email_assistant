@@ -6,6 +6,7 @@ import {
   type Callback,
   type CoreTexts,
   type FeedbackCallback,
+  type HeldBy,
   type OutMessage,
   type RejectReason,
 } from "@ea/core";
@@ -29,7 +30,7 @@ import {
   type SendScope,
 } from "../actions";
 import { closeDelegation } from "../delegation";
-import { getMailbox } from "../mail";
+import { getMailbox, mailboxStatusSchema } from "../mail";
 import { getOrganization, isFeatureOn } from "../tenancy";
 
 import { handleMistakeTap, handleReasonTap } from "./action-feedback-taps";
@@ -91,7 +92,7 @@ export async function handleApprovalCallback(
     dedupKey: string,
     outcome: ApprovalEditOutcome,
     extra: {
-      heldBy?: "scope" | "paused" | "auth_error";
+      heldBy?: HeldBy;
       actionId?: string;
       counts?: { done: number; skipped: number };
       reason?: RejectReason;
@@ -269,25 +270,32 @@ export async function handleApprovalCallback(
   }
   return { answer: taps.notFound };
 }
-function heldAnswers(taps: CoreTexts["bot"]["taps"]) {
-  return { scope: taps.approvedHeld, paused: taps.approvedPaused, auth_error: taps.approvedAuthError };
+function heldAnswers(taps: CoreTexts["bot"]["taps"]): Record<HeldBy, string> {
+  return {
+    scope: taps.approvedHeld,
+    paused: taps.approvedPaused,
+    auth_error: taps.approvedAuthError,
+    host_blocked: taps.approvedHostBlocked,
+  };
 }
 
 // Why the committer will not claim the send just approved: the state of the mailbox first, then the scope (as /status).
 // A send or mailbox that cannot be read counts as held by the scope: the toast must not promise a send.
-async function heldReason(
-  deps: CallbackDeps,
-  ctx: TenantContext,
-  actionId: string
-): Promise<"scope" | "paused" | "auth_error" | undefined> {
+async function heldReason(deps: CallbackDeps, ctx: TenantContext, actionId: string): Promise<HeldBy | undefined> {
   const send = await getSend(deps.db, ctx, actionId);
   const mailbox = send === undefined ? undefined : await getMailbox(deps.db, ctx, send.email.mailbox_id);
   if (send === undefined || mailbox === undefined) return "scope";
   const to = Array.isArray(send.payload.to) ? send.payload.to.filter((item) => typeof item === "string") : [];
-  if (mailbox.status === "paused") return "paused";
-  if (mailbox.status === "auth_error") return "auth_error";
-  if (!sendScopeAdmits(sendFilterFor(deps.sendScope), to)) return "scope";
-  return undefined;
+  switch (mailboxStatusSchema.parse(mailbox.status)) {
+    case "paused":
+      return "paused";
+    case "auth_error":
+      return "auth_error";
+    case "host_blocked":
+      return "host_blocked";
+    case "active":
+      return sendScopeAdmits(sendFilterFor(deps.sendScope), to) ? undefined : "scope";
+  }
 }
 
 // A set holds the first cause found among its approved sends: the mailbox is the same, the recipients can differ.
@@ -295,7 +303,7 @@ async function heldReasonOfAny(
   deps: CallbackDeps,
   ctx: TenantContext,
   actionIds: string[]
-): Promise<"scope" | "paused" | "auth_error" | undefined> {
+): Promise<HeldBy | undefined> {
   for (const actionId of actionIds) {
     const reason = await heldReason(deps, ctx, actionId);
     if (reason !== undefined) return reason;

@@ -198,6 +198,14 @@ const weeklyReportView = z.strictObject({
   answeredWaiting: z.number().int().min(0),
 });
 
+// The mail host guard refuses a host of the mailbox. The view holds the mailbox address only: no host name, no network address.
+const hostBlockedView = z.strictObject({
+  address: text,
+  since: isoDate,
+  now: isoDate,
+  timeZone,
+});
+
 export const noticeViewSchemas = {
   digest: digestView,
   urgent: urgentView,
@@ -212,6 +220,7 @@ export const noticeViewSchemas = {
   mailbox_removed: mailboxRemovedView,
   send_held: sendHeldView,
   weekly_report: weeklyReportView,
+  host_blocked: hostBlockedView,
 } satisfies Record<NoticeKind, z.ZodType>;
 
 export type NoticeView<K extends NoticeKind> = z.output<(typeof noticeViewSchemas)[K]>;

@@ -488,7 +488,7 @@ export const en = {
   op_col_org: "Organization",
   op_col_plan: "Plan",
   op_col_trial_end: "Trial ends",
-  op_col_mailboxes: "Mailboxes (all / login error)",
+  op_col_mailboxes: "Mailboxes (all / login error / server not allowed)",
   op_col_last_sync: "Last sync",
   op_col_failures: "Failures 24 h (sends / notices)",
   op_col_llm: "AI today",
