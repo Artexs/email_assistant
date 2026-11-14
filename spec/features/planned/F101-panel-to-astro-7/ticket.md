@@ -24,12 +24,13 @@ The web panel builds on Astro 7 with the same pages, texts and Content Security 
 
 ## Acceptance
 
-- `bun run web:build` on Astro 7.4.12 builds 16 pages and logs `csp checked in 16 page(s)`.
+- `bun run web:build` on Astro 7.4.12 builds every page and logs `csp checked in <n> page(s)`, with `<n>` the number of built `.html` files (16 at plan time; [plan.md](plan.md) § Proof, page count).
+- The panel CSS keeps its font and theme values: the custom properties differ from the Astro 5 build only by the same-value lines of `probes/css-vars-expected.diff`.
 - A built page without the CSP meta, or with `'unsafe-inline'` in `script-src`, fails the build (unit tests of stage 01).
 - The full e2e suite passes on the desktop and mobile projects with no CSP violation.
 - The `ci`, `e2e` and `image` jobs of the first `master` CI run after the Astro 7 land are green.
 - On the VPS, `/login` carries the CSP meta of ADR 0016 and its `/_astro/` script answers 200.
-- All checks: [plan.md](plan.md) § Done when (7 items).
+- All checks: [plan.md](plan.md) § Done when (8 items).
 
 ## Slices
 

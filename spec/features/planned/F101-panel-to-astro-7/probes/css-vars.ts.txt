@@ -1,0 +1,6 @@
+// F101 planning probe (2026-11-14). Copy to /tmp/f101-s02/css-vars.ts and run: bun /tmp/f101-s02/css-vars.ts <file.css> > <out.txt>
+// Prints every CSS custom property definition (name: value) of a CSS file, one per line, sorted and unique.
+const css = await Bun.file(process.argv[2]!).text();
+const out = new Set<string>();
+for (const m of css.matchAll(/(--[A-Za-z0-9_-]+)\s*:\s*([^;}]*)[;}]/g)) out.add(`${m[1]}: ${m[2]!.replace(/\s+/g, "")}`);
+console.log([...out].sort().join("\n"));
