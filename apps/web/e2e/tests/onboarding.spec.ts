@@ -47,12 +47,28 @@ test("from open to done and back", async ({ page }, testInfo) => {
   await page.goto("/onboarding");
   await expect(page.getByText(enPlurals.ob_mailbox_done.one)).toBeVisible();
 
-  await page.getByRole("button", { name: en.tg_link }).click();
-  const url = page.getByLabel(en.tg_link_label, { exact: true });
-  await expect(url).toHaveValue(/^https:\/\/t\.me\/fake_ea_bot\?start=[A-Za-z0-9_-]{43}$/);
-  const token = (await url.inputValue()).split("start=")[1];
-  await createFakeTelegramClient(E2E_TELEGRAM_URL).send(`/start ${token}`, { chatId });
-  await expect(page.getByText(/Linked since/)).toBeVisible({ timeout: 10_000 });
+  const linkButton = page.getByRole("button", { name: en.tg_link });
+  const linkTelegram = async () => {
+    await page.getByLabel(en.tg_consent_label).check();
+    await expect(linkButton).toBeEnabled();
+    await linkButton.click();
+    const url = page.getByLabel(en.tg_link_label, { exact: true });
+    await expect(url).toHaveValue(/^https:\/\/t\.me\/fake_ea_bot\?start=[A-Za-z0-9_-]{43}$/);
+    const token = (await url.inputValue()).split("start=")[1];
+    await createFakeTelegramClient(E2E_TELEGRAM_URL).send(`/start ${token}`, { chatId });
+    await expect(page.getByText(/Linked since/)).toBeVisible({ timeout: 10_000 });
+  };
+
+  await expect(linkButton).toBeDisabled();
+  await linkTelegram();
+
+  // The tick does not outlive the link: after an unlink on the same page, a new link needs a new tick.
+  await page.getByRole("button", { name: en.tg_unlink }).click();
+  await page.getByRole("dialog").getByRole("button", { name: en.tg_unlink }).click();
+  await expect(page.getByText(en.tg_unlinked_toast)).toBeVisible();
+  await expect(page.getByLabel(en.tg_consent_label)).not.toBeChecked();
+  await expect(linkButton).toBeDisabled();
+  await linkTelegram();
 
   if (!modeKept) {
     await page.getByRole("button", { name: en.ob_keep_shadow }).click();

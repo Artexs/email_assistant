@@ -1,9 +1,10 @@
-import type { TelegramLink, TelegramState } from "@ea/core";
+import { TELEGRAM_CONSENT_VERSION, telegramLinkBodySchema, type TelegramLink, type TelegramState } from "@ea/core";
 import { Hono } from "hono";
 
 import type { Db } from "../../platform/db";
-import type { ApiEnv } from "../../platform/http";
+import { parseBody, type ApiEnv } from "../../platform/http";
 import { createLog } from "../../platform/log";
+import { auditEvents, recordAudit } from "../audit";
 
 import { createLinkToken, unlinkUser } from "./linking";
 import { getChatLinkForUser } from "./repo";
@@ -39,6 +40,10 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
     if (deps.botUsername === null) return c.json({ error: "telegram_off" }, 409);
     const ctx = c.get("ctx");
     const { userId } = c.get("session");
+    const body = await parseBody(c, telegramLinkBodySchema);
+    if (body.consentVersion !== TELEGRAM_CONSENT_VERSION) {
+      return c.json({ error: "telegram_consent_outdated" }, 409);
+    }
     let username: string;
     try {
       username = await deps.botUsername();
@@ -46,7 +51,17 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
       log.warn(`web: telegram getMe failed: ${telegramErrorLabel(error)}`);
       return c.json({ error: "telegram_unreachable" }, 502);
     }
-    const { token, expiresAt } = await createLinkToken(deps.db, ctx, userId, deps.now());
+    // The consent row and the token go together: no token without the row.
+    const now = deps.now();
+    const { token, expiresAt } = await deps.db.transaction().execute(async (trx) => {
+      await recordAudit(trx, ctx, {
+        event: auditEvents.webTelegramConsent,
+        actor: userId,
+        data: { via: "web", version: TELEGRAM_CONSENT_VERSION },
+        at: now,
+      });
+      return createLinkToken(trx, ctx, userId, now);
+    });
     log.info(`web: telegram link made for user ${userId}`);
     c.header("Cache-Control", "no-store");
     const linkAnswer: TelegramLink = {

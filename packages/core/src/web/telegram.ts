@@ -13,3 +13,9 @@ export const telegramLinkSchema = z.object({
   expiresAt: z.iso.datetime(),
 });
 export type TelegramLink = z.infer<typeof telegramLinkSchema>;
+
+// The date of the consent text in the panel (i18n keys tg_consent_*). A change of that text gets a new date:
+// the server then refuses links made with the old text.
+export const TELEGRAM_CONSENT_VERSION = "2026-11-14";
+export const telegramLinkBodySchema = z.object({ consentVersion: z.string().min(1).max(32) });
+export type TelegramLinkBody = z.infer<typeof telegramLinkBodySchema>;
