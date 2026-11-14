@@ -1,0 +1,369 @@
+{
+  "scenario": "lab-01",
+  "part": "dev",
+  "batch": "batch-012",
+  "cases": [
+    {
+      "id": "b-urg-0041",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Uchwała o budżecie",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o telefon do mnie po otrzymaniu tej wiadomości. Chodzi o projekt uchwały w sprawie budżetu na ten rok i o zapis dotyczący inwestycji we flotę, który budzi moje wątpliwości. Wolę omówić to osobiście niż przez pocztę, bo część informacji nie powinna trafić do protokołu przed posiedzeniem. Będę dostępny na komórce przez cały wieczór.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0047",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nasze stanowisko przed radą nadzorczą",
+      "body": "Szanowny Panie Prezesie,\n\npiszę w sprawie posiedzenia rady nadzorczej, na którym będzie omawiany nasz wspólny przetarg w Gdańsku. Pan Orlowicz zapytał mnie wczoraj przez telefon, czy Baltic Freight Partners popiera uchwałę, która zwiększa Państwa udział w konsorcjum z czterdziestu do pięćdziesięciu procent. Nie chcę mu odpowiadać, zanim nie uzgodnimy wspólnego stanowiska, bo nie chciałbym, żeby usłyszał dwie różne wersje z dwóch źródeł.\n\nZ mojej strony widzę trzy możliwości. Pierwsza: wspieramy uchwałę w obecnym kształcie, ale prosimy o zapis, że podział marży zostaje bez zmian. Druga: prosimy o odroczenie głosowania do następnego posiedzenia, żeby nasi prawnicy mogli przejrzeć zmiany. Trzecia: zgłaszamy sprzeciw, ale wtedy konsorcjum będzie musiało zostać przedefiniowane, a termin złożenia oferty jest bliski.\n\nPosiedzenie jest zaplanowane na 28 stycznia, ale przewodniczący chce poznać nasze stanowisko już teraz, żeby przygotować porządek obrad. Proszę o kontakt telefoniczny jeszcze dziś przed końcem dnia roboczego, żebyśmy mogli to ustalić i ja mógł oddzwonić do pana Orlowicza. Zależy mi na tym, żebyśmy przedstawili radzie jedno, spójne stanowisko, bo od tego zależy zaufanie członków rady do całego konsorcjum.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0056",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nordic container stuck in Gdynia",
+      "body": "Hi Wiktor,\n\nquick heads up from the road, sorry for typos. Customs in Gdynia put a hold on the Nordic Foods container this morning because the origin certificate has a wrong stamp. The broker says he can release it today, but only if you sign a letter of guarantee as the board member. I have no authority to sign it. Can you do it today? The broker closes his desk at 16:00 and after that it is Monday, and the cold chain will not survive the weekend.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0058",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Awaria WMS w Poznaniu – potrzebna Twoja decyzja",
+      "body": "Wiktor,\n\ndostawca systemu mówi, że naprawa potrwa jeszcze do jutra rana, a my mamy w Poznaniu 14 tirów do rozładunku. Mam dwie opcje: przerzucamy część przyjęć do Łodzi albo przyjmujemy towar ręcznie, na papierze, z ryzykiem błędów w stanach. Łódź oznacza dodatkowe 11 tysięcy złotych za transport, papier oznacza korektę stanów po naprawie.\n\nPotrzebuję Twojej decyzji do końca dnia, bo kierowcy czekają i mamy karne postoje.",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Awaria WMS w Poznaniu",
+          "body": "Halina, dziękuję za informację. Sprawdźcie z dostawcą, czy naprawa naprawdę potrwa do jutra. Na razie przyjmujcie to, co się da, ale bez żadnych decyzji o transporcie do Łodzi. Dajcie mi znać, jeśli sytuacja się zmieni.\n\nWiktor"
+        },
+        {
+          "from": "halina.strzemecka@kordelan.test",
+          "subject": "Awaria WMS w Poznaniu",
+          "body": "Wiktor, od 6:30 nie działa system magazynowy w Poznaniu. Dostawca zgłosił usterkę bazy danych i obiecał wstępną diagnozę przed 10:00. Rampy stoją, kierowcy czekają. Dam znać, gdy dowiem się więcej.\n\nHalina"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0062",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Annual budget and the dividend: your answer is needed today",
+      "body": "Dear Wiktor,\n\nFollowing your short note of last week, I have now seen the revised budget with the higher fuel line, and I must ask you to act on it today. The supervisory board secretary needs the final version of the management report by 16:00 so that she can print the folders and send them by courier to the board members before Thursday. The current draft still shows the old fuel assumption in the summary table, while the detailed tables use the new one, and the figures do not match.\n\nPlease send the corrected summary table to the secretary and copy me. If the numbers cannot be reconciled in time, tell me today, and I will ask the board to accept the report with a written note on the difference. I would rather do this than let members find the discrepancy on the day of the meeting.\n\nI also need your confirmation that the proposal on the dividend remains unchanged. Several members asked about it, and I want to answer them consistently. If anything has changed since your December note, please say so in your reply.\n\nI know the timing is difficult, and I appreciate your quick help in this matter.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Budget for the board meeting",
+          "body": "Zbigniew, understood. The higher fuel line is in, I will send the full tables by the end of next week. The dividend proposal stays as agreed in December.\n\nWiktor"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0063",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nordic agreement – last open question",
+      "body": "Hi Wiktor,\n\nKarin from Nordic called me twice this morning. They are ready to sign the framework agreement today if you agree to one change: delivery windows of two hours instead of four at their Gothenburg depot. I checked with Halina and operations can live with it, but it needs your OK because it changes the penalty clause. Karin wants the answer by 17:00, her time, which is the same as ours. Can you ring me?\n\nOliver",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0065",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Pytanie do Pana Prezesa",
+      "body": "Szanowny Panie Prezesie,\n\nproszę mi odpowiedzieć na jedno pytanie, które dotyczy naszej wspólnej odpowiedzialności przed akcjonariuszami. Czy projekt budżetu, który otrzymałem od pani Czerniak, uwzględnia już koszty nowych naczep, które zarząd zatwierdził w grudniu? Z tabel wynika, że nie, a jeśli to prawda, uważam, że projekt nie nadaje się do przedstawienia radzie w obecnej formie. Proszę o telefon lub krótką wiadomość, gdy Pan to przeczyta.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0077",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rada nadzorcza i nasz kontrakt",
+      "body": "Szanowny Panie Prezesie,\n\nsłyszałam od znajomej z branży, że na posiedzeniu rady nadzorczej Kordelanu ma być omawiana zmiana warunków współpracy z sieciami hurtowni, w tym z moją. Chcę, żeby ktoś mi to wyjaśnił, zanim moi ludzie zaczną zadawać pytania. Zadzwonię do Pana o 18:30 i oczekuję, że będzie Pan dostępny. Nie chodzi mi o żadne szczegóły, ale o Pana własne wyjaśnienie tej sprawy, bo od lat opieramy współpracę na tym, że mówimy sobie wszystko bezpośrednio.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0083",
+      "from": "Piotr Lewandrowski <piotr.lewandrowski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Umowa Nordic – brakuje Twojego podpisu na aneksie",
+      "body": "Cześć Wiktor,\n\nNordic odesłał podpisaną umowę ramową, a ja mam już wszystko przygotowane po naszej stronie. Brakuje tylko Twojego podpisu na aneksie nr 2 z tabelą stawek, bez którego Karin nie zwolni pierwszego zlecenia. Termin podpisania całości upływa 22 stycznia, czyli dziś, a system ich zamówień blokuje się o 17:00.\n\nPlik leży w Twojej skrzynce od rana, musisz tylko go podpisać elektronicznie i odesłać mi z powrotem. Jak coś jest do poprawy, dzwoń od razu, naprawimy to w kilka minut!\n\nPiotr L. | Koordynator Sprzedazy | tel. wew. 214",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0098",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Replacement of the damaged goods",
+      "body": "Dear Mr Szalewski,\n\nI am writing to ask a favour. Last week's delivery to our Lublin warehouse contained damaged pallets, and my quality team has now completed the inspection. The report is attached to the claim form which our logistics manager sent to your claims department yesterday.\n\nI would like you to look at the report personally and to confirm today how Kordelan intends to compensate us. The stock affects the delivery to our shops at the beginning of next week, and I would rather settle it between us before it becomes a formal dispute. I understand that you are busy, so a short call is enough.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0099",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: reklamacja Meblodrew – potrzebuję Twojej zgody dziś",
+      "body": "Wiktor,\n\nwracam do reklamacji Meblodrew, bo Tomasz Brzeziński znowu dzwonił i tym razem postawił sprawę jasno. Chodzi o dwa kursy z poprzedniego tygodnia, w których uszkodzono palety z elementami szaf. Wartość szkody to około 38 tysięcy złotych, a zgłoszenie do ubezpieczyciela przejdzie dopiero za dwa tygodnie. Tomasz chce wiedzieć, czy pokrywamy szkodę z własnych środków już teraz i czekamy na zwrot od ubezpieczyciela, czy czekamy ze wszystkim na jego decyzję.\n\nMoja rekomendacja jest prosta: płacimy z własnych środków. Meblodrew jest naszym drugim największym klientem w segmencie produkcji i nie możemy zaryzykować, żeby wstrzymali kolejne zlecenia. Sprzedaż ma już zgodę na rabat w następnym kwartale, ale to nie zastąpi gotówki.\n\nPotrzebuję Twojej decyzji dziś do końca dnia, ponieważ Tomasz dał nam czas do jutra rano. Jeżeli się zgodzisz, poproszę panią Czerniak o przygotowanie noty uznaniowej jeszcze przed 16:00, a ja napiszę do Meblodrewu z potwierdzeniem. Jeśli się nie zgodzisz, to chciałabym wiedzieć, jaką odpowiedź mam mu przekazać, żeby nie wyglądało, że spychamy temat.\n\nDaj znać, czy mogę to ruszyć. Pamiętaj też, że Tomasz rozmawia równolegle z naszym działem prawnym, więc każda godzina zwłoki może zamienić tę sprawę w formalny spór, którego wszyscy chcemy uniknąć.\n\nHalina",
+      "thread": [
+        {
+          "from": "tomasz.brzezinski@meblodrew.test",
+          "subject": "Reklamacja – uszkodzone palety",
+          "body": "Szanowna Pani Dyrektor,\n\nw dniach 13 i 14 stycznia otrzymaliśmy dwie dostawy z uszkodzonymi paletami. Szkoda obejmuje elementy szaf wartości około 38 tysięcy złotych. Zdjęcia i protokół szkody w załączeniu do formularza reklamacyjnego. Proszę o informację, czy Kordelan uzna reklamację i w jakim terminie wypłaci odszkodowanie.\n\nZ powazaniem\nTomasz Brzezinski\nDyrektor Zakupow, Meblodrew"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0108",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Calendar for the Frankfurt trip",
+      "body": "Wiktor,\n\nI looked at the calendar your assistant sent over. Please do not take the morning flight to Frankfurt without calling me first. I want to ask you about something before you travel, and it should not wait until you land. A short call is enough, and I am reachable on my mobile all day.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Frankfurt trip",
+          "body": "Zbigniew, my assistant has booked the 07:10 flight on Friday and the return on Saturday. Let me know if the plan is a problem for you.\n\nWiktor"
+        },
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Frankfurt trip",
+          "body": "Wiktor, the shareholders meeting in Frankfurt is on Friday. Are you going yourself or will you send somebody? Please send me your plan.\n\nZbigniew"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0115",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Telefon w sprawie reklamacji",
+      "body": "Szanowny Panie Prezesie,\n\nproszę zadzwonić do mnie w sprawie reklamacji z dostawy do Lublina. Dwie osoby z mojego zespołu jeszcze nie otrzymały odpowiedzi od Państwa działu reklamacji i uważam, że rozmowa na poziomie zarządu przyspieszy sprawę. Pracuję w biurze do końca dnia, można dzwonić na numer firmowy. Sprawa ciągnie się od dłuższego czasu i nie chcę, żeby przerodziła się w spór, którego żadna ze stron nie potrzebuje.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0117",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zgoda na nadgodziny – dziś",
+      "body": "Cześć Wiktor,\n\npotrzebuję Twojej zgody dziś do 15:00 na nadgodziny dla 22 osób w poznańskim magazynie. Bez tego nie wystawię list na jutro.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0134",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Port inspection",
+      "body": "Mr Szalewski,\n\nthe customs authority has announced a physical inspection of our containers in the port. Please contact me this afternoon.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0140",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Nordic budget 2027 – confirmation of your price",
+      "body": "Dear Mr Szalewski,\n\nI am following up on the price quotation for the 2027 deliveries, which your Head of Export sent us earlier this month. Our annual budget closes on 5 February, and our finance team has told me that all supplier prices must be locked in the system before the end of this week. The quotation is valid only if Kordelan confirms it in writing, and I have not yet seen your confirmation.\n\nThe attached summary shows the three price lines we plan to enter: the pallet rate, the cold chain surcharge and the customs fee. If any of them has changed since the quotation, please let me know before my colleague starts the data entry this afternoon. I would be grateful for your answer today.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [
+        {
+          "from": "oliver.pemberton@kordelan.test",
+          "subject": "Re: Nordic 2027 prices",
+          "body": "Karin, the quotation from Oliver stands. I will confirm it in writing once the board has seen the final numbers. Regards, Wiktor"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Nordic 2027 prices",
+          "body": "Hello Karin, please find the price quotation for the 2027 deliveries: pallet rate, cold chain surcharge and customs fee. The offer is valid until the end of January. Oliver"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0144",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zielona Hurtownia – rozmowa z agencją",
+      "body": "Cześć Wiktor,\n\nagencja pracy tymczasowej, z którą rozmawialiśmy w sprawie obsady magazynu pod nowy kontrakt, chce od nas potwierdzenia, że przetarg Zielonej Hurtowni jest nasz, zanim przydzieli ludzi na luty. Odpowiedziałem, że dopiero dziś rano złożyliśmy ofertę i nie mamy jeszcze decyzji. Agencja twierdzi, że jeśli nie podpiszemy umowy o obsadzie przed końcem dnia, ludzie pójdą do innego klienta. To dziewięć osób z uprawnieniami na wózki.\n\nPotrzebuję od Ciebie jednego zdania: podpisujemy bez gwarancji kontraktu czy nie.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0162",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zielona Hurtownia – prośba do Pana Prezesa",
+      "body": "Szanowny Panie Prezesie,\n\nproszę, żeby Pan do mnie zadzwonił i potwierdził, że nasze warunki dostaw z oferty przetargowej pozostają takie same jak w obecnej umowie.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0166",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Brak kierowców na jutro",
+      "body": "Wiktor, na jutrzejszą zmianę brakuje mi czterech kierowców, bo dwóch zachorowało, a dwóch agencja nie przysłała. Zgódź się na ściągnięcie ludzi z Łodzi, dziś, bo później nie dam rady ułożyć grafiku.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0168",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Klauzula paliwowa w jutrzejszej ofercie",
+      "body": "Szanowny Panie Prezesie,\n\nPański koordynator sprzedaży powiedział mi dzisiaj rano, że Kordelan składa ofertę dla Zielonej Hurtowni o godzinie 16:00 i że cena oferty zawiera warunki dostaw paliwa, które uzgodniliśmy jesienią. Muszę zwrócić uwagę na jeden drobny, ale ważny szczegół. Nasz cennik zmienił się pierwszego dnia miesiąca, a dopłata paliwowa w Państwa ofercie opiera się na starym. Jeśli złoży Pan ofertę w tej formie, Kordelan poniesie różnicę przez cały okres kontraktu, czyli trzy lata.\n\nMogę przesłać poprawioną tabelę dopłat w ciągu godziny, razem z listem od Paliwa-Flota potwierdzającym nowe warunki i stałą cenę na pierwszych dwanaście miesięcy. Dałoby to Państwa ofercie stabilną podstawę kosztową i chroniłoby przed niemiłą niespodzianką w drugim roku umowy.\n\nPotrzebuję od Pana tylko krótkiego potwierdzenia, że chce Pan dołączyć poprawioną tabelę. Jeżeli Państwa zespół przygotował już końcowe dokumenty, wymiana jednego załącznika zajmie kilka minut. Jestem dostępna telefonicznie i mailowo do końca popołudnia i dostosuję się do Państwa terminów.\n\nDziękuję za uwagę poświęconą tej sprawie i pozostaję do dyspozycji, jeśli potrzebna jest jakakolwiek dodatkowa informacja o naszych cenach.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0170",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Tender terms",
+      "body": "Dear Mr Szalewski,\n\nplease call me about the tender terms. Mr Lewandrowski told me something yesterday that I want to hear from you in person.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [
+        {
+          "from": "piotr.lewandrowski@kordelan.test",
+          "subject": "Tender terms",
+          "body": "Dear Ms Jastrzebska, as agreed, I am sending you the updated terms for the Zielona Hurtownia tender. The delivery schedule in clause 4 changed a little, and I would like to go through it with you. Best regards, Piotr Lewandrowski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0171",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Reklamacja z Lublina – decyzja do 15:00",
+      "body": "Szanowny Panie Prezesie,\n\nw poniedziałek zgłosiłam reklamację na trzy palety nabiału, które dotarły do naszego magazynu w Lublinie z uszkodzeniami. Do tej pory nie otrzymałam odpowiedzi od Państwa działu, a dziś o 15:00 odbieram dostawę z innego źródła i muszę wiedzieć, czy mam liczyć na zamiennik od Państwa. Jeśli nie, zamówię towar u konkurencji.\n\nProszę o decyzję do 15:00. Oczekuję rozmowy z Panem, nie z działem reklamacji.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0175",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Moja sprawa wymaga Pana osobistego zaangażowania",
+      "body": "Szanowny Panie Prezesie,\n\npiszę do Pana bezpośrednio, ponieważ rozmowy na niższym szczeblu nie przynoszą rezultatów. Reklamacja z końca grudnia dotycząca uszkodzonych dostaw do trzech naszych magazynów jest otwarta od czterech tygodni, a mimo to wciąż nie mam kompletnej odpowiedzi od Państwa działu reklamacji. Szkoda finansowa przekroczyła już ustalony próg, a moi ludzie pytają mnie, dlaczego współpraca z firmą, którą od lat polecam, wygląda w ten sposób.\n\nZielona Hurtownia jest największym Państwa klientem. Nie piszę tego, żeby się nim chwalić, tylko żeby Pan zrozumiał, że sprawa ma dla mnie znaczenie wykraczające poza jedną szkodę. Pracowaliśmy razem od siedmiu lat i zawsze udawało nam się rozwiązywać trudne sytuacje rozmową, a nie korespondencją prawników.\n\nOczekuję, że zajmie się Pan tą sprawą osobiście i że spotkamy się lub porozmawiamy telefonicznie w tym tygodniu. Chciałabym usłyszeć od Pana konkretną propozycję rozwiązania, a nie kolejne zapewnienia, że sprawa jest w toku. Moja asystentka jest do dyspozycji, jeśli potrzeba uzgodnić termin, a ja mogę znaleźć czas nawet w piątek po południu, jeśli będzie to konieczne.\n\nZ góry dziękuję za zrozumienie.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0180",
+      "from": "Piotr Lewandrowski <piotr.lewandrowski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Genowefa i awaria – prośba o zgodę",
+      "body": "Wiktor,\n\nGenowefa znowu pyta o awarię systemu, bo w nocy nie wyszły jej dwie dostawy i chce wiedzieć, czy dostanie zwrot za opóźnienia. Powiedziałem jej, że to Twoja decyzja. Ona oczekuje odpowiedzi do końca dnia, bo jutro rano ma rozmowę z zarządem swojej sieci. Zgodzisz się na zwrot 5 procent wartości tych dwóch dostaw jako gest handlowy? Jeśli tak, podeślę jej od razu potwierdzenie, jeśli nie, zadzwoń do niej sam.",
+      "thread": [
+        {
+          "from": "g.jastrzebska@hurtownia-zielona.test",
+          "subject": "Re: Awaria systemu – opóźnione dostawy",
+          "body": "Genowefo, wiem, że sytuacja jest trudna. Awaria systemu magazynowego dotknęła nas wszystkich, ale pracujemy nad rozwiązaniem. Proszę dać nam jeszcze dzień, wtedy ustalimy z Panią konkrety.\n\nWiktor"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Awaria systemu – dwie dostawy nie wyszły",
+          "body": "Piotr, w nocy nie wyszły dwie nasze dostawy z powodu awarii u Was. Proszę o informację, kiedy system będzie działał i jak zostaniemy zrekompensowani. Genowefa"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-urg-0182",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Naczepy z Niemiec – podpis do 14:00",
+      "body": "Cześć Wiktor,\n\nTrailerwerk potwierdził termin dostawy sześciu naczep na koniec marca, ale warunkiem jest podpisanie zamówienia dziś do 14:00. Po tym terminie ich linia produkcyjna przechodzi na kolejnego klienta, a my czekalibyśmy do czerwca. Całość zamówienia to 612 tysięcy euro, w tym zaliczka 20 procent.\n\nZamówienie leży u Ciebie w skrzynce. Potrzebuję tylko Twojego podpisu, resztę zrobię sama.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}

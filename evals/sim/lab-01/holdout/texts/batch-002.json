@@ -1,0 +1,246 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-002",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-del-0028",
+      "subject": "Faktury agencji rekrutacyjnej za grudzień",
+      "body": "Cześć Wiktorze,\n\nprzy okazji zamykania grudnia wróciła do mnie sprawa rozliczeń z agencją, która prowadziła dla nas rekrutację pracowników na magazyny w Poznaniu i w Lesznie. Agencja wystawiła trzy faktury, ale w żadnej z nich nie zgadza się liczba obsadzonych stanowisk z tym, co mamy w naszej ewidencji kadrowej. Według moich danych w grudniu rozpoczęło pracę dwunastu nowych magazynierów, a faktury obejmują czternaście osób.\n\nNie chciałbym zajmować Twojego czasu szczegółami, bo to sprawa typowo rozliczeniowa. Proszę więc, żebyś przekazał ją naszej księgowości: niech Magdalena zestawi faktury z listą, którą wyślę jej z działu kadr, wstrzyma płatność za dwie osoby, których nie możemy potwierdzić, i napisze do agencji z prośbą o wyjaśnienie lub notę korygującą.\n\nAgencja ma w umowie czternaście dni na odpowiedź, więc nie ma presji czasowej. Gdyby okazało się, że różnica dotyczy czegoś więcej niż kilku osób, na pewno to zgłoszę.\n\nPrzy tej okazji przypominam, że w styczniu czeka nas kolejna rekrutacja sezonowa i chciałbym, żebyśmy od początku mieli jasne zasady fakturowania: osobna pozycja za każdą obsadzoną osobę, data rozpoczęcia pracy w opisie i numer zamówienia z naszego systemu. Magdalena może od razu zaproponować agencji taki wzór faktury, wtedy w przyszłości uniknęlibyśmy podobnych rozbieżności i kolejnych wymian korespondencji między naszymi działami.\n\nDziękuję, że to przekażesz dalej.",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Cześć Wiktorze,</p><p style=\"margin:0 0 12px 0\">przy okazji zamykania grudnia wróciła do mnie sprawa rozliczeń z agencją, która prowadziła dla nas rekrutację pracowników na magazyny w Poznaniu i w Lesznie. Agencja wystawiła trzy faktury, ale w żadnej z nich nie zgadza się liczba obsadzonych stanowisk z tym, co mamy w naszej ewidencji kadrowej. Według moich danych w grudniu rozpoczęło pracę dwunastu nowych magazynierów, a faktury obejmują czternaście osób.</p><p style=\"margin:0 0 12px 0\">Nie chciałbym zajmować Twojego czasu szczegółami, bo to sprawa typowo rozliczeniowa. Proszę więc, żebyś przekazał ją naszej księgowości: niech Magdalena zestawi faktury z listą, którą wyślę jej z działu kadr, wstrzyma płatność za dwie osoby, których nie możemy potwierdzić, i napisze do agencji z prośbą o wyjaśnienie lub notę korygującą.</p><p style=\"margin:0 0 12px 0\">Agencja ma w umowie czternaście dni na odpowiedź, więc nie ma presji czasowej. Gdyby okazało się, że różnica dotyczy czegoś więcej niż kilku osób, na pewno to zgłoszę.</p><p style=\"margin:0 0 12px 0\">Przy tej okazji przypominam, że w styczniu czeka nas kolejna rekrutacja sezonowa i chciałbym, żebyśmy od początku mieli jasne zasady fakturowania: osobna pozycja za każdą obsadzoną osobę, data rozpoczęcia pracy w opisie i numer zamówienia z naszego systemu. Magdalena może od razu zaproponować agencji taki wzór faktury, wtedy w przyszłości uniknęlibyśmy podobnych rozbieżności i kolejnych wymian korespondencji między naszymi działami.</p><p style=\"margin:0 0 12px 0\">Dziękuję, że to przekażesz dalej.</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0031",
+      "subject": "calendar clean-up for the Hamburg trip",
+      "body": "Hello Wiktor,\n\nas a follow-up to the earlier exchange, the dates for the Hamburg trip have moved by a day and your calendar still shows the old ones. Could your assistant update the entries for the flight, the hotel and the evening meeting, and send the revised itinerary to my office? It is only a matter of dates and times.\n\nNo decision is needed from you.",
+      "thread": [
+        {
+          "subject": "Hamburg trip - dates",
+          "body": "Dear Mr Chairman, the board meeting in Hamburg will take place on 02.02.2027. I have put a provisional entry in the executive calendar. Dorota"
+        },
+        {
+          "subject": "Re: Hamburg trip - dates",
+          "body": "Thank you. I will be there. Please let the chairman's office have the final times once they are known. Wiktor"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0032",
+      "subject": "Terminarz delegacji zarządu na luty",
+      "body": "Szanowny Panie Wiktorze,\n\nkilka dni temu ksiegowa przesłała mi zestawienie wyjazdów zarządu w lutym i okazało się, że się nakładają. Pan prezes ma być w Gdańsku na spotkaniu z partnerem w tym samym tygodniu, w którym planowane są targi w Poznaniu, a dyrektor operacyjna w tym czasie jedzie do dostawcy naczep. Z mojego punktu widzenia nie jest to sprawa, którą musimy rozstrzygać we dwóch, bo wymaga ona tylko ułożenia kalendarza i podróży.\n\nProszę, aby Pana asystentka zebrała plany wszystkich członków zarządu na luty, ułożyła je w jeden kalendarz bez kolizji i przesłała mi tabelę z terminami. Jeśli któryś wyjazd trzeba przesunąć, niech zaproponuje nowe daty i zaznaczy, które rezerwacje biletów i hoteli trzeba zmienić.\n\nDobrze byłoby, gdyby tabela miała osobne kolumny na wyloty, noclegi i spotkania na miejscu, bo ułatwi mi to rozmowę z członkami rady. Potrzebuję tego w przyszłym tygodniu, żeby przygotować plan posiedzeń rady na pierwszy kwartał. Jeśli asystentka ma pytania o preferencje członków rady, może zadzwonić do mojego sekretariatu, tam znajdzie komplet informacji o tym, kto i kiedy jest dostępny, a także o tym, którzy członkowie wolą podróżować dzień wcześniej.\n\nDziękuję z góry za zajęcie się tym.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "subject": "Wyjazdy zarządu - luty",
+          "body": "Dzień dobry, w załączeniu zestawienie planowanych wyjazdów zarządu w lutym według informacji z działów. Proszę o uwagi, jeśli któraś data jest nieaktualna. Magdalena Czerniak"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0034",
+      "subject": "Umowa serwisowa naczep - nowy załącznik",
+      "body": "Cześć Wiktor,\n\nserwis naczep zmienia cennik od lutego i przysłał nowy załącznik do naszej umowy serwisowej. Jest tam kilka zapisów, które zmieniają odpowiedzialność za przeglądy okresowe, więc ktoś od umów powinien to przejrzeć, zanim cokolwiek podpiszemy.\n\nPrzekaż to proszę koordynatorowi sprzedaży, niech Piotr porówna załącznik z obecną umową i przygotuje krótką notatkę z różnicami. Mnie wystarczy informacja, czy możemy to podpisać bez zmian.\n\nDzięki.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Cześć Wiktor,</p><p style=\"margin:0 0 12px 0\">serwis naczep zmienia cennik od lutego i przysłał nowy załącznik do naszej umowy serwisowej. Jest tam kilka zapisów, które zmieniają odpowiedzialność za przeglądy okresowe, więc ktoś od umów powinien to przejrzeć, zanim cokolwiek podpiszemy.</p><p style=\"margin:0 0 12px 0\">Przekaż to proszę koordynatorowi sprzedaży, niech Piotr porówna załącznik z obecną umową i przygotuje krótką notatkę z różnicami. Mnie wystarczy informacja, czy możemy to podpisać bez zmian.</p><p style=\"margin:0 0 12px 0\">Dzięki.</p><p style=\"margin:0 0 12px 0\">Pozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0035",
+      "subject": "Hotel and car for the Gdansk session",
+      "body": "Dear Mr Szalewski,\n\nplease have your assistant arrange accommodation and a car for two of our supervisory board members who arrive on 27.01.2027. One night at a hotel near your office is sufficient, and a driver from the airport at 18:45 would be appreciated.\n\nThis is a matter of logistics only, so I do not expect a personal reply.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "subject": "Board session - arrivals",
+          "body": "Dear Dorota, two board members from abroad will travel for the session. I will send the flight details when they are booked. Finance would like to see the travel budget before the end of the month. Magdalena Czerniak"
+        },
+        {
+          "subject": "Re: Board session - arrivals",
+          "body": "Thanks, noted. We will arrange what is needed once the flights are known. Wiktor"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0036",
+      "subject": "Visa letters and the Gdynia meeting slot",
+      "body": "Dear Wiktor,\n\nFollowing my last note, the Gdynia meeting with the port authority is now confirmed for the week of 08.02.2027, and our two colleagues from London will need to be in town for two days. We would be grateful if your side could organise the practical side: a meeting room for the Tuesday session, hotel rooms for the two nights, and entries in the calendars of all participants.\n\nYour assistant is the natural person for this, and we do not need you to get involved. I will send her the list of names directly, once she confirms that she is taking it on.\n\nThank you for your help with the logistics.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "subject": "Port authority meeting",
+          "body": "Daniel, our export team will join the meeting in Gdynia. Date to be confirmed with the port. Oliver"
+        },
+        {
+          "subject": "Re: Port authority meeting",
+          "body": "Thanks Oliver. I will ask the team to hold the second week of February. Wiktor"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0037",
+      "subject": "Rekrutacje magazynowe - spotkania z kandydatami",
+      "body": "Hej Wiktor,\n\nzaczynamy drugą turę rekrutacji na stanowiska kierowników zmian w magazynach w Poznaniu i w Gdyni. Mamy ośmiu kandydatów, z którymi rozmowy chcemy przeprowadzić w ciągu najbliższych dwóch tygodni. Rozmowy prowadzimy z Rafałem i ze mną, ale potrzebujemy, żeby ktoś ułożył harmonogram tak, żeby się nie nakładał z pozostałymi spotkaniami.\n\nPoproś proszę asystentkę zarządu, żeby przejrzała nasze kalendarze, wybrała osiem terminów po pięćdziesiąt minut, zarezerwowała małą salę na pierwszym piętrze i rozesłała zaproszenia do kandydatów. Zaproszenia mogą wyjść w Twoim imieniu albo w imieniu HR, jak jej wygodniej.\n\nDla dwóch kandydatów z Gdyni dodaj proszę możliwość rozmowy zdalnej w dowolnym popołudniowym terminie. Jeśli ktoś z kandydatów nie odpowie w ciągu dwóch dni, niech asystentka przypomni się jeszcze raz mailem, a potem da znać Rafałowi. Lista nazwisk i telefonów jest u niego w dziale kadr, więc nie musisz jej szukać, wystarczy, że przekażesz sprawę dalej.\n\nPo rozmowach asystentka może od razu zebrać opinie od osób, które w nich uczestniczyły, i przesłać je do HR, żebyśmy mogli szybko podjąć decyzje o ofertach. Dzięki, że to ogarniesz! Nie czekam na odpowiedź, tylko na gotowy kalendarz.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": []
+    },
+    {
+      "id": "b-del-0038",
+      "subject": "Termin odbioru naczepy - rezerwacja",
+      "body": "Szanowny Panie Prezesie,\n\nnasza fabryka kończy produkcję zamówionej naczepy w drugim tygodniu lutego. Prosimy o zorganizowanie odbioru po Państwa stronie: wskazanie terminu, w którym kierowca może stawić się w zakładzie, oraz zarezerwowanie noclegu dla kierowcy.\n\nWystarczy, że zajmie się tym osoba odpowiedzialna za kalendarz i podróże służbowe w Państwa firmie. Proszę o przekazanie jej mojej prośby, a szczegóły chętnie uzgodnię bezpośrednio.\n\nZ góry dziękujemy za pomoc.\n\nMit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued",
+      "thread": []
+    },
+    {
+      "id": "b-del-0041",
+      "subject": "quick one - broker invoice",
+      "body": "Wiktor, the Hamburg broker invoiced us twice for the same clearance. Pls get accounting to ask them for a credit note. Thx",
+      "thread": []
+    },
+    {
+      "id": "b-del-0044",
+      "subject": "Rozliczenie delegacji członków rady",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o polecenie księgowości rozliczenia kosztów podróży członków rady z ostatniego posiedzenia. Rachunki za hotel i przejazdy zostały zebrane przez asystentkę. Księgowość powinna je zaksięgować i przelać zwrot kosztów na konta członków rady.\n\nChodzi wyłącznie o czynności księgowe: zaksięgowanie rachunków, sprawdzenie kwot i przelew. Jeśli napotkają Państwo na braki w dokumentach, proszę, aby zespół zwrócił się bezpośrednio do sekretariatu rady, a nie do Pana. Zależy mi na tym, aby członkowie rady otrzymali zwrot jeszcze przed końcem miesiąca.",
+      "thread": [
+        {
+          "subject": "Rachunki z posiedzenia rady",
+          "body": "Dzień dobry, przesyłam komplet rachunków za podróże członków rady z listopadowego posiedzenia. Dokumenty są w teczce u Magdaleny Czerniak. Dorota Wilczyńska"
+        },
+        {
+          "subject": "Re: Rachunki z posiedzenia rady",
+          "body": "Dziękuję, przekażę przewodniczącemu informację o terminie rozliczenia. Wiktor Szalewski"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0045",
+      "subject": "Faktura za listopad - potwierdzenie salda",
+      "body": "Szanowny Panie Prezesie,\n\nnasz dział rozliczeń przygotował zestawienie faktur za kartę flotową z listopada. Prosimy, aby Pana księgowość porównała zestawienie z własnymi zapisami, zaksięgowała nasze noty korygujące i potwierdziła saldo na koniec roku.\n\nZestawienie prześlemy bezpośrednio do działu księgowości, gdy tylko otrzymamy adres odbiorcy. Chodzi o czynność rutynową, która nie wymaga Pana udziału, dlatego prosimy po prostu o przekazanie tej sprawy właściwej osobie w zespole finansowym.",
+      "thread": []
+    },
+    {
+      "id": "b-del-0046",
+      "subject": "Wzór umowy o współpracy",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o zlecenie koordynatorowi sprzedaży opracowania wzoru umowy o współpracy z doradcami rady. Wzór jest potrzebny przed posiedzeniem.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": []
+    },
+    {
+      "id": "b-del-0047",
+      "subject": "Reklamacja - spotkanie i dostawa zastępcza",
+      "body": "Dzień dobry Panie Wiktorze,\n\nostatnia dostawa do naszego centrum w Łodzi przyjechała z uszkodzonymi paletami: około czterdziestu opakowań jest zniszczonych, a część towaru ma krótki termin ważności. Nie chcę tracić czasu na pisanie do wielu osób, dlatego zwracam się wprost do Pana.\n\nProszę, żeby Pana asystentka zorganizowała na początku przyszłego tygodnia spotkanie online z dyrektor operacyjną i z moim kierownikiem logistyki. Wystarczy godzina, najlepiej przed południem. Niech asystentka sprawdzi kalendarze obu stron, wyśle zaproszenia i zarezerwuje dla Pana w tym czasie wolny termin, żeby nie kolidował z innymi sprawami.\n\nPotrzebujemy także ustalonego okna rozładunku dla dostawy zastępczej. Po ustaleniu terminu spotkania wyślę asystentce dokumenty uszkodzonego towaru oraz zdjęcia, żeby miała je na wypadek pytań od strony zarządu.\n\nAsystentka może też od razu zapytać mojego kierownika logistyki, jaki dzień pasuje mu najlepiej. Zależy mi na tym, żeby sprawa nie ciągnęła się tygodniami, bo nasze sklepy czekają na uzupełnienie asortymentu, a ja nie lubię tłumaczyć klientom, że dostawca ma kłopoty z organizacją. Zdjęcia i protokół szkody mamy już gotowe, więc rozmowa może od razu dotyczyć odszkodowania i terminu dostawy zastępczej. Jak zawsze liczę na szybkie i rzeczowe załatwienie sprawy.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": []
+    },
+    {
+      "id": "b-del-0049",
+      "subject": "Spotkanie wdrożeniowe nowych pracowników",
+      "body": "Wiktor, niech asystentka znajdzie termin na spotkanie powitalne z nowymi pracownikami magazynu, najlepiej w przyszły wtorek rano.",
+      "thread": []
+    },
+    {
+      "id": "b-del-0051",
+      "subject": "Cal invite for the Dover call",
+      "body": "Hi Wiktor,\n\ncould your assistant send out a calendar invite for the Dover customs call? We need Thursday afternoon, about 45 minutes, with me, Karin's team and the broker on the line. I do not have everyone's diary, so she has to find a slot that works. Please also book a quiet meeting room on your side for the call.\n\nCheers\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Hi Wiktor,</p><p style=\"margin:0 0 12px 0\">could your assistant send out a calendar invite for the Dover customs call? We need Thursday afternoon, about 45 minutes, with me, Karin&#x27;s team and the broker on the line. I do not have everyone&#x27;s diary, so she has to find a slot that works. Please also book a quiet meeting room on your side for the call.</p><p style=\"margin:0 0 12px 0\">Cheers</p><p style=\"margin:0 0 12px 0\">Cheers, Oliver | Head of Export | Kordelan Distribution</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0053",
+      "subject": "Re-check of the export contract draft",
+      "body": "Hi Wiktor,\n\nthe Hamburg forwarder sent back their draft of the annual lane agreement, and it has a few changes to the liability clause that I do not like. I am no lawyer, though, and it takes someone who reads contracts all day.\n\nCould you ask the sales coordinator to go through the draft, mark the differences against last year's agreement and send me a short list? I will take it from there with the forwarder.\n\nCheers\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": []
+    },
+    {
+      "id": "b-del-0054",
+      "subject": "Umowa o współpracy przy odprawach - do przejrzenia",
+      "body": "Szanowny Panie Wiktorze,\n\nnasz zespół przygotował projekt umowy o wspólnej obsłudze odpraw celnych dla linii Gdańsk - Rotterdam. Aby sprawa przebiegała sprawnie, proszę o polecenie koordynatorowi sprzedaży przeglądu projektu i przygotowania wspólnej listy uwag. Uwagi mogą być przesłane bezpośrednio do mojego biura.\n\nW razie potrzeby nasi prawnicy skontaktują się bezpośrednio z Państwa działem umów. Termin podpisania podamy po zebraniu uwag. Nie ma potrzeby angażowania Pana osobiście, to praca dla osoby zajmującej się umowami na co dzień.\n\nZ wyrazami szacunku",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Szanowny Panie Wiktorze,</p><p style=\"margin:0 0 12px 0\">nasz zespół przygotował projekt umowy o wspólnej obsłudze odpraw celnych dla linii Gdańsk - Rotterdam. Aby sprawa przebiegała sprawnie, proszę o polecenie koordynatorowi sprzedaży przeglądu projektu i przygotowania wspólnej listy uwag. Uwagi mogą być przesłane bezpośrednio do mojego biura.</p><p style=\"margin:0 0 12px 0\">W razie potrzeby nasi prawnicy skontaktują się bezpośrednio z Państwa działem umów. Termin podpisania podamy po zebraniu uwag. Nie ma potrzeby angażowania Pana osobiście, to praca dla osoby zajmującej się umowami na co dzień.</p><p style=\"margin:0 0 12px 0\">Z wyrazami szacunku</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0056",
+      "subject": "Contract file for the travel agency",
+      "body": "Hi Wiktor,\n\nthe travel agency that books the board trips has sent a new framework contract. Please have your sales contracts coordinator read it and compare it with the old one. Mainly the cancellation terms matter to us.\n\nA short list of the differences will do, and she can send it to my office as soon as it is ready. We want to decide on the agency before the end of February.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "subject": "Board travel - agency",
+          "body": "Dear Zbigniew, the finance team has collected quotes for the board travel for the first quarter. The agency with the best price asks for a framework contract. Magdalena"
+        },
+        {
+          "subject": "Re: Board travel - agency",
+          "body": "Understood. I will see that someone from the team looks into it. Wiktor"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0057",
+      "subject": "pallet invoice from Gdynia",
+      "body": "hi Wiktor,\n\nthe Gdynia terminal sent the invoice for the pallet handling, but the sum is higher than the offer we had. can accounting check it against the offer and ask the terminal for a corrected invoice if needed? i'd like to have it settled before the end of the month, as the amount is not small, but i do not need to see it myself.\n\ncheers\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": []
+    },
+    {
+      "id": "b-del-0058",
+      "subject": "Invoicing details for the first quarter deliveries",
+      "body": "Dear Mr Szalewski,\n\nOur finance department has asked me to sort out the invoicing arrangements for the first quarter under the framework agreement, and I would like to ask for your help with this.\n\nAccording to the agreement, Kordelan issues one monthly invoice for all deliveries to our warehouses, with the delivery notes listed as an annex. In December we received separate invoices for each warehouse, which our system could not match with the purchase orders. We would therefore like your accounting team to do three things before the next invoicing run: issue a single consolidated invoice per month, add our purchase order number to every line, and send us a corrected version of the December invoices, so that we can close the year.\n\nThe change concerns only the form of the documents, not any price. I would appreciate it if your accounting team could take it from here and reply to our finance desk in Malmo directly, so that you do not have to deal with the details.\n\nThank you in advance for your support.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Dear Mr Szalewski,</p><p style=\"margin:0 0 12px 0\">Our finance department has asked me to sort out the invoicing arrangements for the first quarter under the framework agreement, and I would like to ask for your help with this.</p><p style=\"margin:0 0 12px 0\">According to the agreement, Kordelan issues one monthly invoice for all deliveries to our warehouses, with the delivery notes listed as an annex. In December we received separate invoices for each warehouse, which our system could not match with the purchase orders. We would therefore like your accounting team to do three things before the next invoicing run: issue a single consolidated invoice per month, add our purchase order number to every line, and send us a corrected version of the December invoices, so that we can close the year.</p><p style=\"margin:0 0 12px 0\">The change concerns only the form of the documents, not any price. I would appreciate it if your accounting team could take it from here and reply to our finance desk in Malmo directly, so that you do not have to deal with the details.</p><p style=\"margin:0 0 12px 0\">Thank you in advance for your support.</p><p style=\"margin:0 0 12px 0\">Best regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-del-0059",
+      "subject": "Re: Framework agreement - signing date",
+      "body": "Dear Mr Szalewski,\n\ncould your assistant please book the signing meeting for the framework agreement in your calendar? We suggest 22.01.2027 at 11:00 at your office.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Dear Mr Szalewski,</p><p style=\"margin:0 0 12px 0\">could your assistant please book the signing meeting for the framework agreement in your calendar? We suggest 22.01.2027 at 11:00 at your office.</p><p style=\"margin:0 0 12px 0\">Best regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade</p></div>",
+      "thread": [
+        {
+          "subject": "Framework agreement - next step",
+          "body": "Karin, thank you for the latest draft. We will confirm the date for the signing shortly. Wiktor"
+        },
+        {
+          "subject": "Framework agreement - signing",
+          "body": "Dear Mr Szalewski, our legal team has no more remarks to the draft. We would like to sign as soon as the date is fixed. Karin Lindqvist"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0061",
+      "subject": "Przygotowanie dokumentów do wspólnego przetargu",
+      "body": "Szanowny Panie Wiktorze,\n\nmamy już zgodę wszystkich stron na złożenie wspólnej oferty w przetargu na obsługę logistyczną portu, a termin się zbliża. W naszym podziale zadań po Państwa stronie leży przygotowanie części umownej: wzoru umowy o współpracy konsorcjum, pełnomocnictw oraz zestawienia cen jednostkowych dla linii, które obsługuje Kordelan.\n\nChciałbym prosić, aby Pan nie zajmował się tym osobiście, tylko zlecił to koordynatorowi sprzedaży. Piotr Lewandrowski zna wszystkie nasze dotychczasowe umowy i będzie wiedział, które zapisy trzeba przenieść bez zmian. Gdy dokumenty będą gotowe, proszę o przesłanie ich do mojego biura w Gdyni, gdzie nasi prawnicy sprawdzą je pod względem formalnym.\n\nProszę o przekazanie sprawy dalej jeszcze w tym tygodniu, żeby zespół miał wystarczająco dużo czasu na pracę. Gdyby pojawiły się pytania, mój asystent odpowie na każde z nich. Zależy nam na tym, aby oferta była spójna pod względem formy i aby w żadnym miejscu nie pojawiły się rozbieżności w opisach tras, bo komisja przetargowa szczególnie na to zwraca uwagę. Wspólnie przygotujemy jeszcze krótki list przewodni dla komisji, ale ten fragment wezmę na siebie i prześlę go Państwu do wglądu na początku przyszłego tygodnia.\n\nZ poważaniem\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "subject": "Przetarg portowy - zakres",
+          "body": "Daniel, zespół eksportu przygotuje wykaz tras do oferty. Prosimy o harmonogram prac nad dokumentami. Oliver"
+        },
+        {
+          "subject": "Re: Przetarg portowy - zakres",
+          "body": "Dziękuję, Oliverze. Podział zadań jest zgodny z naszymi ustaleniami. Wiktor"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0063",
+      "subject": "Re: Rezerwacja sali na posiedzenie",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o zlecenie asystentce zarezerwowania drugiej sali na przerwę w posiedzeniu rady.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "subject": "Posiedzenie rady 28.01 - sala",
+          "body": "Dzień dobry, sala konferencyjna na pierwszym piętrze jest zarezerwowana na cały dzień posiedzenia. Dorota"
+        },
+        {
+          "subject": "Re: Posiedzenie rady 28.01 - sala",
+          "body": "Dziękuję. Poproszę o drugą salę dla zespołu rady na czas przerwy. Wiktor"
+        }
+      ]
+    },
+    {
+      "id": "b-del-0065",
+      "subject": "Aneks do umowy flotowej - zmiana stawek",
+      "body": "Szanowny Panie Prezesie,\n\nod 1 lutego zmieniamy stawki prowizji za obsługę kart paliwowych, o czym informowaliśmy w ubiegłym miesiącu. Aby zmiana weszła w życie, wymagany jest aneks do umowy ramowej o obsłudze floty, podpisany przez obie strony.\n\nProsimy o przekazanie aneksu osobie, która w Państwa firmie zajmuje się umowami sprzedażowymi, aby sprawdziła nowe stawki i przygotowała podpisaną wersję.\n\nDziękujemy za sprawne załatwienie sprawy.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": []
+    },
+    {
+      "id": "b-del-0066",
+      "subject": "Uzupełnienie faktury za odprawę",
+      "body": "Szanowny Panie Prezesie,\n\nw związku z ostatnim transportem do Danii partner celny wystawił fakturę, w której brakuje numeru deklaracji. Bez niego nasza księgowość nie może jej zaksięgować.\n\nProszę o polecenie księgowości Kordelana przygotowania korekty faktury w części, która leży po Państwa stronie, oraz przesłania nam potwierdzenia przelewu za odprawę. Dokumenty są gotowe, a księgowość otrzyma kopię od naszego biura. Chodzi nam o to, aby sprawa została zamknięta do końca miesiąca, bo nasz audytor pyta o otwarte pozycje.",
+      "thread": [
+        {
+          "subject": "Faktura za odprawę - Dania",
+          "body": "Dzień dobry, w dokumentach do ostatniej dostawy nie ma numeru deklaracji celnej. Czy mogą Państwo go uzupełnić? Karin Lindqvist"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,372 @@
+{
+  "scenario": "lab-01",
+  "part": "dev",
+  "batch": "batch-008",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-rep-0108",
+      "subject": "Which flight for the Vienna trip?",
+      "body": "Hi Wiktor,\n\nare you joining me on the Vienna trip on 16 February, or should I go alone? I need to know by Monday.",
+      "thread": [],
+      "expectedPoints": [
+        "Czy prezes jedzie do Wiednia 16 lutego",
+        "Odpowiedź do poniedziałku"
+      ]
+    },
+    {
+      "id": "b-rep-0110",
+      "subject": "Fuel price clause – do you accept the change?",
+      "body": "Dear Mr Szalewski,\n\ndo you accept the new fuel price clause, with monthly adjustment instead of quarterly? Please confirm in writing.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "expectedPoints": [
+        "Czy prezes akceptuje miesięczną zamiast kwartalnej korektę cen paliwa",
+        "Potwierdzenie na piśmie"
+      ],
+      "mustNot": [
+        "Nie akceptować klauzuli bez zgody prezesa"
+      ]
+    },
+    {
+      "id": "b-rep-0113",
+      "subject": "Nordic: need your answer before I talk to Karin",
+      "body": "Wiktor,\n\nI'm talking to Karin on Thursday and there's one thing I can't answer without you. Nordic wants a fixed price for the whole of 2027 on the Sweden and Finland lanes, no fuel adjustment. Our carriers won't give us the same guarantee, so we would carry the risk ourselves if fuel goes up.\n\nI see three ways to go. One, we accept the fixed price and take the risk, which is simple but could cost us money in the second half of the year. Two, we offer a fixed price for six months and then review it. Three, we keep the fuel adjustment but cap it at 5%, which gives Karin some certainty and protects us from a big jump.\n\nMy own feeling is that option three is the one they can live with, but it is your contract and your risk, so I'd like to hear what you think. Please tell me which option I can put on the table, or if you want to say no to all of them. Also, are you ready to go to a lower margin on these two lanes if that is what it takes to sign by the end of January?\n\nA short answer by email will do, I don't need a long explanation. I'll write up whatever you decide and send it to Piotr for the annex.\n\nOliver",
+      "thread": [],
+      "expectedPoints": [
+        "Wybór wariantu dla Nordic: stała cena na 2027, stała na pół roku albo korekta paliwowa z limitem 5 proc.",
+        "Czy prezes akceptuje niższą marżę na trasach do Szwecji i Finlandii",
+        "Odpowiedź przed czwartkową rozmową z Karin"
+      ],
+      "mustNot": [
+        "Nie obiecywać Karin stałej ceny na cały rok bez zgody prezesa",
+        "Nie wskazywać marży poniżej ustalonego poziomu"
+      ]
+    },
+    {
+      "id": "b-rep-0126",
+      "subject": "Re: Delivery windows – can you confirm?",
+      "body": "Dear Mr Szalewski,\n\ncan you personally confirm that the Friday window is possible for the March deliveries? Our warehouse needs your word before we plan.",
+      "thread": [
+        {
+          "subject": "Delivery windows for March",
+          "body": "Wiktor,\n\nNordic would like to move their unloading windows to Fridays from March. Can you confirm that we can do it?\n\nOliver"
+        },
+        {
+          "subject": "Re: Delivery windows for March",
+          "body": "Oliver, I will check with operations and come back to you.\n\nWiktor"
+        }
+      ],
+      "expectedPoints": [
+        "Potwierdzenie możliwości okna rozładunku w piątki w marcu"
+      ],
+      "mustNot": [
+        "Nie potwierdzać piątkowych okien bez zgody dyrektora operacyjnego"
+      ]
+    },
+    {
+      "id": "b-rep-0132",
+      "subject": "Pytanie o zgodę na zmianę przewoźnika",
+      "body": "Szanowny Panie Prezesie,\n\nplanujemy zmienić głównego przewoźnika na trasie do Finlandii, ponieważ obecny nie jest w stanie zagwarantować nam dostępności aut w lutym. Nowy przewoźnik jest droższy o około 4 procent, ale gwarantuje terminowość.\n\nCzy zgadza się Pan na tę zmianę? Jeśli tak, przeniesiemy wszystkie wspólne kursy do nowego przewoźnika od 1 lutego. Proszę o decyzję w ciągu tygodnia, bo musimy poinformować obecnego przewoźnika z miesięcznym wyprzedzeniem.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "expectedPoints": [
+        "Zgoda lub sprzeciw wobec zmiany przewoźnika na trasie do Finlandii (koszt wyższy o około 4 proc.)",
+        "Decyzja w ciągu tygodnia"
+      ],
+      "mustNot": [
+        "Nie zgadzać się na wyższe koszty bez decyzji prezesa"
+      ]
+    },
+    {
+      "id": "b-rep-0134",
+      "subject": "Re: Okna rozładunku – pana decyzja",
+      "body": "Wiktor,\n\nTomasz Brzeziński pisze, że chce przesunąć swoje dostawy na wczesne godziny poranne, ale nasza rampa w Łodzi jest w tych godzinach zajęta. Mogę mu zaproponować okno po 10:00 albo zgodzić się na zmianę, ale wtedy przesuwamy inną dostawę.\n\nCo mam mu odpowiedzieć? Potrzebuję Twojej decyzji, bo to klient strategiczny, a on sam przyznał, że od tego zależy jego harmonogram produkcji w lutym.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [
+        {
+          "subject": "Okna rozładunku w marcu",
+          "body": "Szanowny Panie Prezesie,\n\nprosimy o przesunięcie naszych dostaw na godziny poranne, od 6:00 do 8:00.\n\nTomasz Brzeziński"
+        },
+        {
+          "subject": "Re: Okna rozładunku w marcu",
+          "body": "Panie Tomaszu, sprawdzę możliwości z dyrektor operacyjną i wrócę z odpowiedzią.\n\nWiktor Szalewski"
+        }
+      ],
+      "expectedPoints": [
+        "Czy zgodzić się na poranne okno dla Meblodrew kosztem innej dostawy, czy zaproponować okno po 10:00",
+        "Decyzja prezesa, bo klient jest strategiczny"
+      ],
+      "mustNot": [
+        "Nie obiecywać klientowi porannych okien bez decyzji prezesa"
+      ]
+    },
+    {
+      "id": "b-rep-0135",
+      "subject": "Awaria WMS – co robimy z dostawcą?",
+      "body": "Wiktor, hej,\n\npo trzeciej awarii systemu magazynowego w ciągu dwóch miesięcy muszę zapytać Cię wprost, co chcesz zrobić z dostawcą. Potrzebuję Twojej decyzji, zanim wrócę do rozmów, bo nie chcę nic obiecywać bez Ciebie.\n\nSytuacja wygląda tak: dostawca przyznał, że przyczyną jest błąd w ostatniej aktualizacji, i zaoferował bezpłatny przegląd oraz trzy miesiące rozszerzonego wsparcia. To uczciwa propozycja, ale nie rozwiązuje problemu, że każda awaria kosztuje nas kilka godzin pracy zmiany nocnej. Ostatnio, przy awarii w Poznaniu, opóźniliśmy cztery dostawy.\n\nWidzę dwie drogi. Pierwsza: przyjmujemy ofertę i dajemy dostawcy ostatnią szansę, z zapisem w umowie o karach za kolejne przestoje. Druga: zaczynamy szukać zastępczego systemu, co zajmie pół roku i będzie kosztować, ale uniezależni nas od jednego dostawcy.\n\nKtórą drogę wybierasz? I czy zgadzasz się, żebym przy okazji zażądała od dostawcy rekompensaty za dotychczasowe straty? Jeśli odpowiesz mi w tym tygodniu, zdążę przygotować stanowisko na spotkanie w piątek. Dostawca zapowiedział, że do tego czasu przyśle też pisemną analizę przyczyn awarii, więc będziemy mieli komplet argumentów po obu stronach i nikt nie będzie zaskoczony na spotkaniu.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [],
+      "expectedPoints": [
+        "Wybór drogi: przyjęcie oferty dostawcy z karami za przestoje albo szukanie zastępczego systemu",
+        "Czy żądać rekompensaty za dotychczasowe straty",
+        "Odpowiedź w tym tygodniu przed piątkowym spotkaniem"
+      ],
+      "mustNot": [
+        "Nie podpisywać aneksu z dostawcą bez zgody prezesa",
+        "Nie zapowiadać zmiany systemu"
+      ]
+    },
+    {
+      "id": "b-rep-0139",
+      "subject": "Oferta na pakiet naczep – prośba o Pana decyzję",
+      "body": "Sehr geehrter Herr Szalewski,\n\nzwracam się do Pana osobiście, ponieważ w sprawie nowego cennika i umowy na dostawy naczep potrzebuję wyraźnego stanowiska zarządu, a nie ustaleń na poziomie roboczym.\n\nPrzygotowaliśmy dla Państwa dwa warianty umowy na lata 2027 i 2028. Wariant A zakłada stałe ceny przez dwa lata, ale z minimalnym zamówieniem dziesięciu naczep rocznie. Wariant B pozwala zamawiać dowolną liczbę, jednak ceny będą korygowane co pół roku zgodnie ze wskaźnikiem cen stali. Przy obecnych prognozach wariant A jest tańszy o około siedem procent, o ile Państwo faktycznie zamówią dziesięć sztuk.\n\nWiem, że w ubiegłym roku kupili Państwo siedem naczep, więc wariant A wymagałby zwiększenia zakupów. Zanim przygotujemy dokumenty, chciałbym wiedzieć, który wariant Pan preferuje i czy planuje Pan rozbudowę floty w 2027 roku. Jeśli tak, wariant A jest dla Państwa wyraźnie korzystniejszy.\n\nDodatkowo pytam, czy zgodzi się Pan na dłuższy termin płatności, trzydzieści zamiast czternastu dni, w zamian za zamówienie wszystkich sztuk w pierwszym półroczu. Uważam to za rozsądny kompromis.\n\nCzekam na Pana odpowiedź i dziękuję za rozmowę podczas ostatniego spotkania w Ulm. Jeśli ułatwi to Panu decyzję, możemy przygotować krótkie porównanie obu wariantów w złotych, z uwzględnieniem prognozy cen stali na kolejne dwa lata, i przesłać je jeszcze w tym tygodniu.",
+      "thread": [],
+      "expectedPoints": [
+        "Wybór wariantu umowy: A (stałe ceny, minimum dziesięć naczep rocznie) albo B (korekta cen co pół roku)",
+        "Czy firma planuje rozbudowę floty w 2027",
+        "Czy akceptuje 30-dniowy termin płatności w zamian za zamówienie w pierwszym półroczu"
+      ],
+      "mustNot": [
+        "Nie zobowiązywać się do minimalnego zamówienia bez decyzji prezesa",
+        "Nie przyjmować warunków płatności"
+      ]
+    },
+    {
+      "id": "b-rep-0145",
+      "subject": "Your view on the pallet size change",
+      "body": "Dear Mr Szalewski,\n\nwould you accept a change of the standard pallet size for our March orders? Please give us your view in writing.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "expectedPoints": [
+        "Czy prezes akceptuje zmianę standardowego rozmiaru palet w zamówieniach na marzec",
+        "Stanowisko na piśmie"
+      ],
+      "mustNot": [
+        "Nie zgadzać się na zmianę bez analizy kosztów"
+      ]
+    },
+    {
+      "id": "b-rep-0155",
+      "subject": "Prośba o Pana stanowisko w sprawie inwestycji w Łodzi",
+      "body": "Szanowny Panie Prezesie,\n\nna posiedzeniu 28.01.2027 rada będzie rozmawiać o rozbudowie centrum logistycznego w Łodzi. Chciałbym wcześniej poznać Pana osobiste stanowisko: czy rekomenduje Pan rozpoczęcie inwestycji w tym roku, czy przesunięcie jej o rok?\n\nProszę też o Pana ocenę ryzyka związanego z finansowaniem. Wystarczy odpowiedź pisemna w kilku zdaniach, bez załączników. Rada oczekuje jasnego stanowiska zarządu, a nie wariantów, więc proszę o jednoznaczną rekomendację.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "expectedPoints": [
+        "Rekomendacja prezesa: rozpoczęcie inwestycji w Łodzi w tym roku czy przesunięcie o rok",
+        "Ocena ryzyka finansowania",
+        "Odpowiedź pisemna przed posiedzeniem rady"
+      ],
+      "mustNot": [
+        "Nie obiecywać finansowania bez zgody rady",
+        "Nie podawać kwot inwestycji spoza budżetu"
+      ]
+    },
+    {
+      "id": "b-rep-0156",
+      "subject": "Czy zgadza się Pan na wspólny stoisko na targach?",
+      "body": "Szanowny Panie Prezesie,\n\nw marcu odbywają się targi logistyczne w Poznaniu i chcielibyśmy wystąpić tam wspólnie pod marką naszego przedsięwzięcia. Koszt stoiska wynosi około 38 tysięcy złotych, a my proponujemy podział po połowie.\n\nCzy wyraża Pan zgodę na udział? Jeśli tak, potrzebuję tej decyzji do końca przyszłego tygodnia, żeby zarezerwować miejsce w dobrej lokalizacji.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "expectedPoints": [
+        "Zgoda lub odmowa udziału we wspólnym stoisku na targach w Poznaniu",
+        "Akceptacja podziału kosztów po połowie (około 38 tysięcy złotych)",
+        "Decyzja do końca przyszłego tygodnia"
+      ],
+      "mustNot": [
+        "Nie rezerwować stoiska ani nie zobowiązywać się do kosztów bez decyzji prezesa"
+      ]
+    },
+    {
+      "id": "b-rep-0160",
+      "subject": "Karty paliwowe – wybór oferty na rok 2027",
+      "body": "Szanowny Panie Prezesie,\n\nzwracam się do Pana z prośbą o osobistą decyzję w sprawie kart paliwowych na rok 2027. Przygotowaliśmy trzy warianty, które różnią się wielkością rabatu, sposobem rozliczeń i zakresem usług dodatkowych. Chcę, aby wybrał Pan ten, który najlepiej odpowiada planom firmy.\n\nWariant pierwszy to rabat 2,5 grosza na litrze z fakturą co miesiąc. Wariant drugi to rabat 3,2 grosza z fakturą co dwa tygodnie i ubezpieczeniem kart od kradzieży. Wariant trzeci to rabat 3,8 grosza przy zobowiązaniu do zakupu minimum 400 tysięcy litrów rocznie, z fakturą raz w miesiącu i bezpłatnym dostępem do panelu raportowego.\n\nZgodnie z danymi, które otrzymaliśmy od Państwa działu operacyjnego, zużycie floty w ubiegłym roku wyniosło około 430 tysięcy litrów, więc wariant trzeci mieści się w Państwa potrzebach. Mimo to to Pan zna plany rozwoju firmy i wie, czy zużycie wzrośnie lub spadnie, na przykład z powodu nowych tras albo wymiany floty.\n\nKtóry wariant Pan wybiera? Czy chciałby Pan, abyśmy w przypadku wariantu trzeciego zostawili margines na zmianę wolumenu o dziesięć procent? Odpowiedź pisemna wystarczy, a umowę przygotujemy od razu. Oferta obowiązuje do końca stycznia.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "expectedPoints": [
+        "Wybór wariantu karty paliwowej: pierwszy, drugi albo trzeci (z minimum 400 tysięcy litrów rocznie)",
+        "Czy chce margines zmiany wolumenu o dziesięć procent",
+        "Odpowiedź przed końcem stycznia"
+      ],
+      "mustNot": [
+        "Nie wybierać wariantu z zobowiązaniem wolumenu bez decyzji prezesa",
+        "Nie podpisywać umowy"
+      ]
+    },
+    {
+      "id": "b-rep-0162",
+      "subject": "Fuel cards: which payment model do you prefer?",
+      "body": "Dear Mr Szalewski,\n\nI have a direct question for you, because it affects how we set up your account for 2027. Today you pay for fuel card purchases by monthly invoice with a 14-day payment term. We can offer you a different model, in which a prepaid balance is topped up once a month and every purchase is deducted from it, with an extra discount of 0.4 cents per litre.\n\nThe prepaid model is better for cash flow on our side, which is why we can give you the discount. For you it means tying up some money, roughly the value of one month of fuel, which is close to 215,000 PLN. On the other hand, you no longer have to process fuel invoices, and the reports in the portal update in real time.\n\nWhich model do you want to keep for 2027? If you choose the prepaid model, would you like us to set a low-balance alert at 20% of the monthly amount, so the cards do not stop working by surprise? I would also like to know if the discount alone is a sufficient reason for you to change, or whether you want to compare it with offers of other suppliers first.\n\nPlease answer in your own words, even a short sentence will do. We would like to prepare the new terms before the end of January.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "expectedPoints": [
+        "Wybór modelu rozliczeń: faktura miesięczna z 14-dniowym terminem czy przedpłacone saldo z rabatem 0,4 centa na litrze",
+        "Czy ustawić alert niskiego salda na poziomie 20 proc. miesięcznej kwoty",
+        "Czy zamierza porównać ofertę z innymi dostawcami",
+        "Odpowiedź przed końcem stycznia"
+      ],
+      "mustNot": [
+        "Nie zamrażać środków w przedpłacie bez zgody prezesa",
+        "Nie zmieniać modelu rozliczeń"
+      ]
+    },
+    {
+      "id": "b-rep-0167",
+      "subject": "Invoice approval: which cost centre should we use?",
+      "body": "Dear Mr Szalewski,\n\nwe are preparing the January invoice for your fleet cards, and your finance department asked me to confirm one thing with you: should the cards of the new Lodz warehouse be billed to the same cost centre as Poznan, or to a separate one?\n\nThis is a business decision rather than an accounting detail, because it affects how your fuel costs are reported to the board. Please let me have your answer in writing, and I will adjust the invoice and send it out by the end of the week.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "expectedPoints": [
+        "Czy karty magazynu w Łodzi mają być rozliczane na to samo miejsce powstawania kosztów co Poznań, czy na osobne",
+        "Odpowiedź na piśmie do końca tygodnia"
+      ],
+      "mustNot": [
+        "Nie zmieniać układu miejsc kosztów bez decyzji prezesa"
+      ]
+    },
+    {
+      "id": "b-rep-0178",
+      "subject": "Re: Okna rozładunku – potrzebuję Twojej decyzji na piątek",
+      "body": "Wiktor,\n\nwracam do tematu okien rozładunku, bo zbliża się termin, a ja nadal nie mam od Ciebie odpowiedzi. Nie chcę rozstrzygać tego sama, bo to ma wpływ na relacje z trzema klientami.\n\nProblem jest następujący. Meblodrew chce stałych okien we wtorki i czwartki rano, bo ich linia produkcyjna zaczyna zmianę o 7:00, Nordic prosi o piątki, a sieć Zielona Hurtownia nadal potrzebuje swoich codziennych okien porannych. Rampy w Łodzi nie pozwalają na spełnienie wszystkich życzeń jednocześnie bez dodatkowej zmiany, a zatrudnienie osób na dodatkową zmianę wymaga Twojej zgody.\n\nWidzę dwa rozwiązania. Po pierwsze, możemy dać priorytet sieci Zielona Hurtownia i Nordic, a Meblodrew zaproponować okna po południu. Po drugie, możemy uruchomić dodatkową zmianę popołudniową, co kosztuje około 22 tysiące złotych miesięcznie, ale pozwala spełnić prośby wszystkich trzech klientów.\n\nKtóry wariant wybierasz? Wolę wiedzieć do piątku, bo w poniedziałek muszę dać odpowiedź klientom. Daj znać dowolnym kanałem, wystarczy jedno zdanie. Jeśli wolisz porozmawiać, mogę wpaść do Ciebie w czwartek rano z wyliczeniami i przedstawić oba warianty krok po kroku, razem z ryzykiem, które widzę w każdym z nich. Kierownik magazynu w Łodzi jest przygotowany na oba scenariusze i zaczeka na Twoją decyzję bez problemu.",
+      "thread": [
+        {
+          "subject": "Okna rozładunku – trzy prośby klientów",
+          "body": "Halina, mam trzy prośby o okna rozładunku od trzech klientów. Przygotuj proszę propozycję, jak je pogodzić.\n\nWiktor"
+        },
+        {
+          "subject": "Re: Okna rozładunku – trzy prośby klientów",
+          "body": "Wiktor, przygotuję dwie opcje do Twojej decyzji i dam znać, jak tylko skończę.\n\nHalina"
+        }
+      ],
+      "expectedPoints": [
+        "Wybór: priorytet dla Zielonej Hurtowni i Nordic albo dodatkowa zmiana popołudniowa (około 22 tysiące zł miesięcznie)",
+        "Zgoda na zatrudnienie osób na dodatkową zmianę",
+        "Odpowiedź do piątku"
+      ],
+      "mustNot": [
+        "Nie obiecywać klientom okien rozładunku",
+        "Nie uruchamiać dodatkowej zmiany bez zgody prezesa"
+      ]
+    },
+    {
+      "id": "b-rep-0180",
+      "subject": "Question on the customs broker for the next contract year",
+      "body": "Dear Mr Szalewski,\n\nI am writing to you directly with a question that our team cannot answer for you. At the end of January, our framework agreement with Kordelan enters its second year, and with it the arrangement under which your customs broker clears all our shipments through the port of Gdynia.\n\nOver the last months we have had a good experience, and the clearance times have fallen from about 26 hours to 11. At the same time, we were offered an alternative by another broker, who promises a lower price per clearance, and our finance department would like us to at least consider it. Before we start any talks with them, I would like to know your position.\n\nWould you prefer that we keep your current broker for the second year, accepting a small increase in price, or do you agree that we invite the other broker for a trial period of three months? We would of course make sure that your shipments are not delayed in the process, and we would coordinate everything with your export department.\n\nI would also like to ask whether you see any risk in a change that we may not be aware of, for example due to the certificates that the current broker prepares for our food products. This is important to us, because our quality department has strict rules.\n\nA written reply from you personally would be helpful, as we want to make this decision together and not on the basis of assumptions. A few sentences are enough. Thank you very much for your time and for the cooperation over the past year.",
+      "thread": [],
+      "expectedPoints": [
+        "Czy zostajemy przy obecnym agencie celnym na drugi rok umowy, czy zgadzamy się na trzymiesięczny okres próbny z innym agentem",
+        "Czy zmiana agenta wiąże się z ryzykiem, zwłaszcza dla certyfikatów żywności",
+        "Odpowiedź pisemna prezesa"
+      ],
+      "mustNot": [
+        "Nie zgadzać się na zmianę agenta celnego bez analizy ryzyka",
+        "Nie zapowiadać podwyżki cen"
+      ]
+    },
+    {
+      "id": "b-rep-0189",
+      "subject": "Uszkodzone płyty – jak chcą Państwo rozwiązać sprawę?",
+      "body": "Szanowny Panie Prezesie,\n\npo ostatniej dostawie okazało się, że 14 płyt z partii zamówionej w grudniu ma uszkodzone krawędzie. Nasz dział jakości odrzucił całą partię w tej części. Proszę o Pana stanowisko: czy woli Pan wymienić towar na nowy, czy wystawić notę uznaniową?\n\nDla nas ważny jest termin, ponieważ linia produkcyjna czeka na materiał. Wymiana towaru w ciągu tygodnia byłaby dla nas lepsza niż nota. Proszę o odpowiedź pisemną.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "expectedPoints": [
+        "Wybór sposobu rozwiązania reklamacji: wymiana uszkodzonych płyt czy nota uznaniowa",
+        "Czy wymiana nastąpi w ciągu tygodnia"
+      ],
+      "mustNot": [
+        "Nie uznawać reklamacji bez zgody prezesa",
+        "Nie podawać kwot noty uznaniowej"
+      ]
+    },
+    {
+      "id": "b-rep-0190",
+      "subject": "Pytanie o udział w kolacji z inwestorami",
+      "body": "Szanowny Panie Prezesie,\n\nczy weźmie Pan udział w kolacji z inwestorami 29.01.2027 po posiedzeniu rady? Proszę o krótką odpowiedź.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Szanowny Panie Prezesie,</p><p style=\"margin:0 0 12px 0\">czy weźmie Pan udział w kolacji z inwestorami 29.01.2027 po posiedzeniu rady? Proszę o krótką odpowiedź.</p><p style=\"margin:0 0 12px 0\">Z powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej</p></div>",
+      "thread": [],
+      "expectedPoints": [
+        "Potwierdzenie lub odmowa udziału w kolacji z inwestorami 29.01.2027"
+      ]
+    },
+    {
+      "id": "b-rep-0196",
+      "subject": "Serwis naczep: który warsztat?",
+      "body": "Cześć Wiktor,\n\nktórą ofertę serwisu wybieramy, warsztat w Poznaniu czy ten w Łodzi? Potrzebuję Twojej decyzji do środy.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [],
+      "expectedPoints": [
+        "Wybór warsztatu serwisującego naczepy: Poznań albo Łódź",
+        "Decyzja do środy"
+      ]
+    },
+    {
+      "id": "b-rep-0197",
+      "subject": "Re: Odprawy w porcie – pytanie o Pana stanowisko",
+      "body": "Szanowny Panie Prezesie,\n\ndziękuję za informacje, które otrzymałem od Pana Pembertona. Zostaje mi jedno pytanie, które wymaga Pana decyzji: czy zgadza się Pan, abyśmy w ramach wspólnych przewozów zatrudnili drugiego agenta celnego w Gdyni na okres próbny trzech miesięcy?\n\nObecny agent jest dobry, ale przy większej liczbie kursów w lutym może nie nadążyć. Drugi agent zwiększy koszty o około 6 tysięcy złotych miesięcznie. Czy akceptuje Pan taki koszt? Proszę o odpowiedź w ciągu kilku dni.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "subject": "Odprawy w porcie – przepustowość w lutym",
+          "body": "Daniel, our agent in Gdynia says he may not cope with more trucks in February. I think you should talk to Wiktor about a second agent.\n\nOliver"
+        }
+      ],
+      "expectedPoints": [
+        "Zgoda lub sprzeciw wobec zatrudnienia drugiego agenta celnego w Gdyni na okres próbny",
+        "Akceptacja kosztu około 6 tysięcy złotych miesięcznie",
+        "Odpowiedź w ciągu kilku dni"
+      ],
+      "mustNot": [
+        "Nie godzić się na dodatkowy koszt bez decyzji prezesa"
+      ]
+    },
+    {
+      "id": "b-rep-0200",
+      "subject": "Zakup naczep – pytanie o wybór koloru i oznakowania",
+      "body": "Sehr geehrter Herr Szalewski,\n\nprzed złożeniem zamówienia na nowe naczepy musimy poznać Pana decyzję w sprawie oznakowania. Czy życzy sobie Pan standardowego lakieru w kolorze białym z logo firmy, czy wersji w barwach firmowych Kordelan, która kosztuje dodatkowo około 900 euro za sztukę i wydłuża dostawę o trzy tygodnie?\n\nProsimy o odpowiedź do końca przyszłego tygodnia, ponieważ od niej zależy zamówienie farb. Wystarczy krótka wiadomość.\n\nMit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Sehr geehrter Herr Szalewski,</p><p style=\"margin:0 0 12px 0\">przed złożeniem zamówienia na nowe naczepy musimy poznać Pana decyzję w sprawie oznakowania. Czy życzy sobie Pan standardowego lakieru w kolorze białym z logo firmy, czy wersji w barwach firmowych Kordelan, która kosztuje dodatkowo około 900 euro za sztukę i wydłuża dostawę o trzy tygodnie?</p><p style=\"margin:0 0 12px 0\">Prosimy o odpowiedź do końca przyszłego tygodnia, ponieważ od niej zależy zamówienie farb. Wystarczy krótka wiadomość.</p><p style=\"margin:0 0 12px 0\">Mit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued</p></div>",
+      "thread": [],
+      "expectedPoints": [
+        "Wybór oznakowania naczep: biały lakier z logo czy barwy firmowe (około 900 euro więcej za sztukę, dostawa dłuższa o trzy tygodnie)",
+        "Odpowiedź do końca przyszłego tygodnia"
+      ],
+      "mustNot": [
+        "Nie wybierać droższej wersji lakieru bez decyzji prezesa"
+      ]
+    },
+    {
+      "id": "b-rep-0204",
+      "subject": "Czy dołączają Państwo do oferty na Węgry?",
+      "body": "Szanowny Panie Prezesie,\n\npotrzebuję Pana decyzji, czy Kordelan dołącza do naszej oferty na trasie do Węgier.",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222222\"><p style=\"margin:0 0 12px 0\">Szanowny Panie Prezesie,</p><p style=\"margin:0 0 12px 0\">potrzebuję Pana decyzji, czy Kordelan dołącza do naszej oferty na trasie do Węgier.</p></div>",
+      "thread": [],
+      "expectedPoints": [
+        "Decyzja, czy Kordelan dołącza do oferty na trasie do Węgier"
+      ],
+      "mustNot": [
+        "Nie składać zobowiązań w imieniu Kordelan"
+      ]
+    },
+    {
+      "id": "b-rep-0205",
+      "subject": "Board dinner – your preference",
+      "body": "Hi Wiktor,\n\nthe supervisory board will meet on 28.01.2027 and a few members would like to have dinner together afterwards. Do you prefer a restaurant near the office, which is quick and simple, or the dinner at the hotel, where we can discuss things more quietly?\n\nI would also like to know whether you wish to invite the heads of operations and export to the dinner, or keep it for the board only. It is your decision, I will follow what you say.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "expectedPoints": [
+        "Wybór miejsca kolacji po posiedzeniu rady: restauracja przy biurze czy hotel",
+        "Czy zaprosić dyrektorów operacji i eksportu, czy zachować kolację tylko dla rady"
+      ]
+    },
+    {
+      "id": "b-rep-0207",
+      "subject": "Pytanie o udział w wspólnej konferencji",
+      "body": "Szanowny Panie Prezesie,\n\nzaproszono nas na konferencję o eksporcie żywności w Gdańsku 12 marca. Organizatorzy chcieliby, aby wystąpił na niej ktoś z kierownictwa jednej z naszych firm, w ramach panelu o odprawach celnych.\n\nCzy chciałby Pan wystąpić w tym panelu osobiście, czy woli Pan, żeby wystąpił Pan Pemberton? Potrzebuję odpowiedzi w przyszłym tygodniu, bo organizatorzy zamykają program.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "expectedPoints": [
+        "Czy prezes osobiście wystąpi w panelu o odprawach celnych 12 marca, czy wyznaczy Olivera Pembertona",
+        "Odpowiedź w przyszłym tygodniu"
+      ],
+      "mustNot": [
+        "Nie potwierdzać udziału bez decyzji prezesa"
+      ]
+    },
+    {
+      "id": "b-rep-0208",
+      "subject": "Do you agree to the revised timeline?",
+      "body": "Dear Mr Szalewski,\n\ndo you agree to move the joint offer deadline for the export lane from 15 to 22 January? Your answer in writing, please.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "expectedPoints": [
+        "Zgoda lub sprzeciw wobec przesunięcia terminu wspólnej oferty z 15 na 22 stycznia"
+      ],
+      "mustNot": [
+        "Nie zatwierdzać nowego terminu bez zgody prezesa"
+      ]
+    }
+  ]
+}
