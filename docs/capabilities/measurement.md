@@ -1,6 +1,6 @@
 # Measurement
 
-> Checked against the code at `e063d6b`, 2026-11-14.
+> Checked against the code at `94d8ffcc`, 2026-11-14.
 
 ## What it does now
 
@@ -16,7 +16,7 @@
 6. **M4, handled share.** The base is real mail of the week with a triage result. Handled is a `spam`, `notification` or `info` mail with an applied original `move`, `mark_read` or `flag`, none undone and no "wrong" feedback within 7 days of the triage, or a `delegation` mail with an applied delegation send whose delegation is not cancelled. `wouldHandle` is the same for status `logged`. A summary never counts.
 7. **M5, urgent notice time.** For each real, non-backfilled `urgent` mail the notice time is the earliest `sent_at` of its `urgent` outbox rows. Mail that arrived in quiet hours is counted as `quietHours` and left out. The result holds `urgent`, `noticed`, `withoutNotice` and the 90th percentile in minutes (nearest rank). The reader of `channels` is a dependency of the service (`UrgentNoticeReader`), because `reports` may not import `channels`.
 8. **M7, cost.** `perMailboxMonthUsd` is the LLM cost of the week times 30/7 divided by the active mailboxes (at least 1), plus the hosting share and the backup share of `packages/core/src/metrics/cost-model.ts`. A call of a model without a price counts in `unpricedCalls`. The target is $5 per mailbox per month.
-9. **M8, evidence.** For each mailbox in scope and each bar category: `auto` from the category policy, and `kept`, `precision`, `recall` and `decision` of the real-label gate report (`realGoNoGoRows`), with the Wilson 95 % lower bound of the precision. It is the evidence at the time of the call, not of the week. The CLI prints the precision only from 30 labels.
+9. **M8, evidence.** For each mailbox in scope and each bar category: `auto` from the category policy, and `kept`, `precision`, `recall` and `decision` of the real-label gate report (`realGoNoGoRows`), with the Wilson 95 % lower bound of the precision. It is the evidence at the time of the call, not of the week. The CLI and the stats page show the precision only from 30 labels (`EVIDENCE_MIN_LABELS`); below that the page shows `stats_evidence_few` (for a category on `auto`: `stats_evidence_few_auto`, which keeps the `auto` mark) and the CLI shows the label count. A category with no labels (`kept` 0) shows `–` on the page, with or without `auto`. If the page asks for a mailbox that is gone or foreign (the route answers 404 for that id), it shows the table of all mailboxes and the text `stats_mailbox_gone`.
 10. **The route.** `GET /api/stats?weeks=<1–12, default 8>&mailboxId=<uuid>` answers any member. With the flag `stats_page` off, a foreign mailbox or an unknown mailbox it answers `404 not_found`; a bad query answers `400`. The answer is `{ weeks }`.
 11. **The CLI.** `bun run stats:week --org-id <uuid> [--mailbox-id <uuid>] [--week YYYY-MM-DD]` prints one week (a Monday; default the last finished week) as one `key value …` line per metric. It ignores the flag, writes nothing and prints no address, subject or mail id. A bad argument, an unknown organization or a foreign mailbox prints the usage line and exits 1.
 12. **The Monday message.** Flag `weekly_report` (default off) and the detector `weeklyReportDetector` (`channels/notices/weekly-report.ts`). On a Monday in the organization time zone, each linked member gets one `weekly_report` notice (dedup `weekly_report:<week start>`, the last finished week, all mailboxes, no buttons) from their slot: the first digest time from 07:00, else 08:00. The slot is per member; the week is one `weekStats` snapshot per organization and run, so all members of an organization get the same numbers (one message per member, not per mailbox). A member who links later on that Monday gets the message at the next tick; a Monday that passes with no row skips the week. The message holds M1–M3 first, then the other lines, and the count of replied mails that wait for an answered check (last 14 days). A run that fails is not tried again for 15 minutes (per organization and week), so a failing run does not read the week every 15 s. With the flag off, nothing is queued.
@@ -52,6 +52,7 @@ Tables that other capabilities write for the measures:
 
 ## Limits
 
+- The weekly report (stage 17) goes to Telegram only. The flag `weekly_report` is off by default. The flag `handled_share` (the handled-share line of the daily digest) is off by default too.
 - The Monday message goes to Telegram only; a mail channel is E4-B.
 - The holdout result, the history check and the tripwire are not in M8: F110. E5 loop rows are not in M2: F116. The E6 draft outcome line is not in the report: F115.
 - The M1 answered-check signal is not computed from `email_flags` yet: the metric reads `triage_feedback` rows of source `answered_check` only.
