@@ -660,7 +660,8 @@ describe("two-factor events", () => {
 });
 
 describe("two-factor enrolment edge cases", () => {
-  const errorLines = () => errorSpy.mock.calls.map((call) => call.map((part: unknown) => String(part)).join(" "));
+  const errorLines = (): string[] =>
+    (errorSpy.mock.calls as unknown[][]).map((call) => call.map((part) => String(part)).join(" "));
 
   // One user with a second session (jar B) and one trusted-device row; TOTP is off.
   async function plant() {
@@ -695,7 +696,7 @@ describe("two-factor enrolment edge cases", () => {
     expect(await auditRows(user.orgId, "web.two_factor_enabled")).toHaveLength(0);
     const rollback = errorLines()
       .slice(warnsBefore)
-      .filter((line) => line.includes("two_factor_enrol_rollback"));
+      .filter((line: string) => line.includes("two_factor_enrol_rollback"));
     expect(rollback).toHaveLength(1);
     expect(rollback[0]).toContain(user.userId);
     expect(rollback[0]).not.toContain("two_factor_enrol_rollback_failed");
@@ -731,7 +732,7 @@ describe("two-factor enrolment edge cases", () => {
     expect(failed.status).toBe(500);
     const lines = errorLines()
       .slice(linesBefore)
-      .filter((line) => line.includes("two_factor_enrol_rollback_failed"));
+      .filter((line: string) => line.includes("two_factor_enrol_rollback_failed"));
     expect(lines).toHaveLength(1);
     expect(lines[0]).toContain(user.userId);
     expect(await auditRows(user.orgId, "web.two_factor_enabled")).toHaveLength(0);
