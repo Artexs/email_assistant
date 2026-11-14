@@ -233,6 +233,35 @@ describe("delete_organization", () => {
     expect(Object.keys(DELETE_SEEDS).sort()).toEqual(found);
   });
 
+  // A foreign key of another name (`created_by REFERENCES users`) hides a table from test 1: walk the constraints.
+  test("1b: every foreign key to organizations or users cascades or sets null, and its table is in DELETE_SEEDS", async () => {
+    const { rows } = await sql<{ table_name: string; column_name: string; ref: string; rule: string }>`
+      select c.conrelid::regclass::text as table_name, a.attname as column_name, c.confrelid::regclass::text as ref,
+        c.confdeltype::text as rule
+      from pg_constraint c
+        join pg_class t on t.oid = c.conrelid
+        join pg_namespace n on n.oid = t.relnamespace
+        join pg_attribute a on a.attrelid = c.conrelid and a.attnum = any (c.conkey)
+      where c.contype = 'f' and n.nspname = 'public' and c.confrelid in ('organizations'::regclass, 'users'::regclass)
+      order by 1, 2`.execute(db);
+    expect(rows.length).toBeGreaterThan(0);
+    const problems: string[] = [];
+    for (const row of rows) {
+      // c = CASCADE, n = SET NULL; a = NO ACTION, r = RESTRICT and d = SET DEFAULT would block or keep the delete.
+      if (row.rule !== "c" && row.rule !== "n") {
+        problems.push(
+          `${row.table_name}.${row.column_name} references ${row.ref} without ON DELETE CASCADE or SET NULL`
+        );
+      }
+      if (!(row.table_name in DELETE_SEEDS)) {
+        problems.push(
+          `${row.table_name}.${row.column_name} references ${row.ref} but ${row.table_name} is not in DELETE_SEEDS`
+        );
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+
   test("2: removes every row of the organization and of its owner; the other organization stays whole", async () => {
     await withRollback(db, async (trx) => {
       const A = await seedOrg(trx);
@@ -281,6 +310,32 @@ describe("delete_organization", () => {
         trx
       );
       expect(own.rows[0]?.n).toBe(0);
+    });
+  });
+
+  test("4b: delete_organization is SECURITY DEFINER of migrator, executable by app only, with a fixed search_path", async () => {
+    await withRollback(db, async (trx) => {
+      const privilege = async (role: string) => {
+        const { rows } = await sql<{ ok: boolean }>`
+          select has_function_privilege(${role}, 'delete_organization(uuid)', 'EXECUTE') as ok`.execute(trx);
+        return rows[0]?.ok;
+      };
+      expect(await privilege("public")).toBe(false);
+      expect(await privilege("app")).toBe(true);
+      const { rows } = await sql<{
+        acl: string[] | null;
+        prosecdef: boolean;
+        owner: string;
+        proconfig: string[] | null;
+      }>`
+        select proacl::text[] as acl, prosecdef, proowner::regrole::text as owner, proconfig
+        from pg_proc where proname = 'delete_organization' and pronamespace = 'public'::regnamespace`.execute(trx);
+      expect(rows).toHaveLength(1);
+      const row = rows[0];
+      expect(row?.prosecdef).toBe(true);
+      expect(row?.owner).toBe("migrator");
+      expect(row?.proconfig).toEqual(["search_path=pg_catalog, public, pg_temp"]);
+      for (const entry of row?.acl ?? []) expect(entry.startsWith("=")).toBe(false);
     });
   });
 
