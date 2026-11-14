@@ -411,6 +411,16 @@ describe("the SSO session", () => {
     });
   });
 
+  test("11: the shared callback without a provider id stays closed: 404 and no session", async () => {
+    const org = await ssoOrg("ann");
+    const browser = new Browser(openApp());
+    for (const path of ["/api/auth/sso/callback", "/api/auth/sso/callback?code=x&state=y"]) {
+      expect((await browser.get(path)).status).toBe(404);
+    }
+    expect(await sessionsOf(org.userId)).toHaveLength(0);
+    expect(browser.jar.size).toBe(0);
+  });
+
   test("10: a user with TOTP on signs in by SSO without a code: one session, one sso.login, no web.login", async () => {
     const org = await ssoOrg("ann");
     const app = openApp();

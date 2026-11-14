@@ -12,7 +12,15 @@ const log = createLog("auth_sso");
 // Better Auth loads the plugin with a small surface: two paths, no provider endpoints, no sign-up.
 
 export const SSO_SIGN_IN_PATH = "/sign-in/sso";
-const SSO_CALLBACK_PREFIX = "/sso/callback/";
+const SSO_CALLBACK_PATH = "/sso/callback";
+const SSO_CALLBACK_PREFIX = `${SSO_CALLBACK_PATH}/`;
+
+// The plugin also has the shared callback `/sso/callback` (no provider id, used with `redirectURI`). Our HTTP gate keeps it closed
+// (`isAllowedSsoPath`), but every hook that must know "this is an SSO callback" matches both forms, so a gate change cannot leave
+// a callback session unmarked. `path` is the route template, not the concrete path.
+export function isSsoCallbackPath(path: string | undefined): boolean {
+  return path === SSO_CALLBACK_PATH || path?.startsWith(SSO_CALLBACK_PREFIX) === true;
+}
 
 // An SSO session ends this long after the IdP sign-in (the session hook and the database trigger enforce it).
 export const SSO_SESSION_SECONDS = 43_200;
@@ -51,7 +59,7 @@ export function ssoSessionData(input: {
   current: object | null | undefined;
   now: Date;
 }): SsoSessionData | undefined {
-  if (input.path?.startsWith(SSO_CALLBACK_PREFIX) === true) {
+  if (isSsoCallbackPath(input.path)) {
     return {
       signInMethod: "sso",
       ssoStartedAt: input.now,
@@ -185,7 +193,7 @@ function ssoAuditPlugin(deps: SsoDeps, pending: Map<string, PendingLogin>) {
       after: [
         {
           // `ctx.path` is the route template `/sso/callback/:providerId` (`spike.md`, finding on `ctx.path`).
-          matcher: (context: { path?: string }) => context.path?.startsWith(SSO_CALLBACK_PREFIX) === true,
+          matcher: (context: { path?: string }) => isSsoCallbackPath(context.path),
           handler: createAuthMiddleware(async (ctx) => {
             const userId = ctx.context.newSession?.user.id;
             if (userId === undefined) return;

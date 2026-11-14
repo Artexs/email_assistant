@@ -467,6 +467,11 @@ describe("requireOperator", () => {
       const lines = errorSpy.mock.calls.map((call) => call.join(" "));
       // The page route logs a request id between the event and the fields.
       expect(lines.filter((line) => /operator_sso_session_refused .*user_id=u-op$/.test(line))).toHaveLength(1);
+      // An operator without TOTP and with an SSO session: the SSO rule comes first, so the answer is the 404 page, not the redirect.
+      const ssoNoTotp = await pageApp("sso", false).request("/operator");
+      expect(ssoNoTotp.status).toBe(404);
+      expect(await ssoNoTotp.text()).toBe("not found page");
+      expect(ssoNoTotp.headers.get("location")).toBeNull();
       const noTotp = await pageApp("password", false).request("/operator");
       expect(noTotp.status).toBe(302);
       expect(noTotp.headers.get("location")).toBe("/settings?two_factor=required");

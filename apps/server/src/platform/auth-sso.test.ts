@@ -3,7 +3,14 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, test } from "bun:test";
 
 import { isAllowedAuthPath } from "./auth";
-import { isAllowedSsoPath, rejectUnknownSsoBodyKeys, withoutIdpTokens } from "./auth-sso";
+import {
+  isAllowedSsoPath,
+  isSsoCallbackPath,
+  rejectUnknownSsoBodyKeys,
+  ssoSessionData,
+  SSO_SESSION_SECONDS,
+  withoutIdpTokens,
+} from "./auth-sso";
 
 // The paths of `@better-auth/sso` 1.7.18 and the other Better Auth paths that our server keeps closed.
 const CLOSED_PATHS = [
@@ -63,6 +70,52 @@ describe("isAllowedSsoPath", () => {
     expect(isAllowedAuthPath("POST", "/sign-in/sso")).toBe(true);
     expect(isAllowedAuthPath("GET", "/sso/callback/some-id")).toBe(true);
     expect(isAllowedAuthPath("GET", "/sign-in/sso")).toBe(false);
+  });
+});
+
+describe("ssoSessionData", () => {
+  const now = new Date("2026-11-20T10:00:00.000Z");
+  const HOUR_MS = 3_600_000;
+
+  test("an SSO session lasts 12 h (43200 s)", () => {
+    expect(SSO_SESSION_SECONDS).toBe(43_200);
+  });
+
+  test("a callback session starts now and ends 12 h later, whatever the database trigger does", () => {
+    for (const path of ["/sso/callback/:providerId", "/sso/callback"]) {
+      expect(ssoSessionData({ path, current: null, now })).toEqual({
+        signInMethod: "sso",
+        ssoStartedAt: now,
+        expiresAt: new Date(now.getTime() + 12 * HOUR_MS),
+      });
+    }
+  });
+
+  test("a session made from an SSO session keeps its start and ends 12 h after it", () => {
+    const started = new Date(now.getTime() - 2 * HOUR_MS);
+    const data = ssoSessionData({
+      path: "/two-factor/verify-totp",
+      current: { signInMethod: "sso", ssoStartedAt: started },
+      now,
+    });
+    expect(data).toEqual({
+      signInMethod: "sso",
+      ssoStartedAt: started,
+      expiresAt: new Date(started.getTime() + 12 * HOUR_MS),
+    });
+  });
+
+  test("a password sign-in and a session made from a password session are not marked", () => {
+    expect(ssoSessionData({ path: "/sign-in/email", current: null, now })).toBeUndefined();
+    expect(ssoSessionData({ path: "/change-password", current: { signInMethod: "password" }, now })).toBeUndefined();
+  });
+
+  test("the callback match takes both callback forms and nothing that only looks like them", () => {
+    expect(isSsoCallbackPath("/sso/callback")).toBe(true);
+    expect(isSsoCallbackPath("/sso/callback/:providerId")).toBe(true);
+    expect(isSsoCallbackPath("/sso/callbackx")).toBe(false);
+    expect(isSsoCallbackPath("/sso/register")).toBe(false);
+    expect(isSsoCallbackPath(undefined)).toBe(false);
   });
 });
 
