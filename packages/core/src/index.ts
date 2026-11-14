@@ -13,3 +13,4 @@ export * from "./llm-roles";
 export * from "./send-limits";
 export * from "./security-log";
 export * from "./sim";
+export * from "./metrics";

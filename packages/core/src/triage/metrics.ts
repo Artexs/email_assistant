@@ -157,3 +157,18 @@ export function confidenceHistogram(
   }
   return buckets;
 }
+
+// The Wilson score interval of `successes` out of `n`, clamped to [0, 1]. `n = 0` knows nothing: [0, 1].
+export function wilsonInterval(successes: number, n: number, z = 1.959964): { lower: number; upper: number } {
+  if (n <= 0) return { lower: 0, upper: 1 };
+  const p = successes / n;
+  const z2 = z * z;
+  const denominator = 1 + z2 / n;
+  const center = (p + z2 / (2 * n)) / denominator;
+  const margin = (z * Math.sqrt((p * (1 - p)) / n + z2 / (4 * n * n))) / denominator;
+  // At the edges the bound is exact; the formula only gives it up to rounding.
+  return {
+    lower: successes <= 0 ? 0 : Math.max(0, center - margin),
+    upper: successes >= n ? 1 : Math.min(1, center + margin),
+  };
+}
