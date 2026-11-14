@@ -30,7 +30,7 @@ A member can turn on a second sign-in factor in the Account card: an authenticat
 
 ## Slices
 
-14 stages, one worker job each ([plan.md](plan.md) § Stages). Stage 01 is the only migration (never next to another migration of any ticket). Stage 09 changes `bun.lock` (never next to another `bun.lock` change). Lanes: server 01→02→03→05→06, operator rule 04 after 02, status route 07 after 04 and 05, web 08 after 02, 09 any time, 10 after 07–09, e2e 11 after 10, security log 12 after 03 and F099 stages 12–13, docs 13, VPS 14. No owner checkpoint. Commands: [plan.md](plan.md) § "How to run (coordinator)".
+14 stages, one worker job each ([plan.md](plan.md) § Stages). Stage 01 is the only migration (never next to another migration of any ticket). Stage 09 changes `bun.lock` (never next to another `bun.lock` change). Lanes: server 01→02→03→05→06, operator rule 04 after 02, status route 07 after 04 and 05, web 08 after 02, 09 after 08, 10 after 07 and 09, e2e 11 after 10, security log 12 after 03 and F099 stages 12–13, docs 13, VPS 14. No owner checkpoint. Commands: [plan.md](plan.md) § "How to run (coordinator)".
 
 ## Sequenced
 

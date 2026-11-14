@@ -58,7 +58,7 @@ The owner's words (word for word):
 - **F8 Challenge user.** In an after hook of a failed sign-in verify, `ctx.getSignedCookie(ctx.context.createAuthCookie("two_factor").name, ctx.context.secret)` gives the challenge id and `ctx.context.internalAdapter.findVerificationValue(id)` gives `value` = the user id (probe P3). `ctx.context.adapter.findOne({ model: "twoFactor", where: [{ field: "userId", value }] })` returns `failedVerificationCount` and `lockedUntil` (probe P4).
 - **F9 Session read.** `auth.api.getSession` returns `user.twoFactorEnabled` (probe P1 cases 2 and 6). No cookie cache is set (`docs/architecture.md` §7), so a change shows at the next request.
 - **F10 Password reset and 2FA.** `/reset-password` does not sign in, so a reset link does not skip the code; `/change-password` keeps 2FA on and replaces the session (probe P2 case 5).
-- **F11 QR code.** `uqr` 0.1.3 (MIT, no dependencies, npm 2026-11-14): `encode(text, { ecc: "M", border: 2 })` returns `{ size, data: boolean[][] }`; for a 140-character `otpauth` URI, size 53 (probe P5 in a separate folder). No QR library is in `bun.lock` today.
+- **F11 QR code.** `uqr` 0.1.3 (MIT, no dependencies, npm 2026-11-14): `encode(text, { ecc: "M", border: 2 })` returns `{ size, data: boolean[][] }`; for a 152-character `otpauth` URI, version 8 and size 53 (probe P5 in a separate folder). No QR library is in `bun.lock` today.
 - **F12 Repo.** `AUTH_ALLOWED_PATHS` (`platform/auth.ts:54`) lists 7 paths; `/two-factor/*` answers 404 today. `memberships.role` is `owner` or `assistant`; no code changes a role or deletes a membership (`grep updateTable("memberships")`: only `setDigestTimes`). `requireOperator` and the `/operator` page guard read `web.operatorUserIds` (`platform/http.ts:266`, `:389`). `WebSession` is built in `web.ts:345` and in test fakes (`test/integration/web-helpers.ts:40`, `web-http.test.ts:63,65,195`, `src/platform/http.test.ts:261,323,367,398`). The RLS test checks only tables with `org_id` (`test/integration/rls-policy.test.ts` test 1). E2e address blocks in use: 10, 40, 60, 70, 80, 90, 100 (+100 for desktop); 50 and 150 are free.
 
 ## Not verified (the stage that checks it)
@@ -217,15 +217,15 @@ Order and parallel work:
 
 | Stage | Needs (landed) | May run next to | Why not more |
 | ----- | -------------- | --------------- | ------------ |
-| 01 | — | 09 | the only migration: no other migration of any ticket next to it |
-| 02 | 01 | 09 | edits `platform/auth.ts`, `web.ts` |
-| 03 | 02 | 04, 08, 09 | edits `platform/auth-two-factor.ts`, `web.ts` (the event map) |
-| 04 | 02 | 03, 08, 09 | edits `platform/http.ts`, `web.ts` (`getSession`), test fakes |
+| 01 | — | — | the only migration: no other migration of any ticket next to it |
+| 02 | 01 | — | edits `platform/auth.ts`, `web.ts` |
+| 03 | 02 | 04, 08 | edits `platform/auth-two-factor.ts`, `web.ts` (the event map) |
+| 04 | 02 | 03, 08 | edits `platform/http.ts`, `web.ts` (`getSession`), test fakes |
 | 05 | 03 | 08, 09 | edits `platform/auth.ts` (before hook), `web.ts`, tenancy |
-| 06 | 05 | 08, 09 | tenancy service, `auth-two-factor.ts` |
+| 06 | 05 | 07, 08, 09 | tenancy service, `platform/auth-two-factor-reset.ts`, two CLIs in `package.json` scripts |
 | 07 | 04, 05 | 06, 08, 09 | tenancy routes, `web.ts`, `auth-two-factor.ts` (a new function at the end) |
-| 08 | 02 | 03–07, 09 | web only: `LoginPage.tsx`, `auth-client.ts`, `en.ts` |
-| 09 | — | 01–08 (not next to another `bun.lock` change of any ticket) | `apps/web/package.json`, `bun.lock` |
+| 08 | 02 | 03–07 | web only: `LoginPage.tsx`, `auth-client.ts`, `en.ts` |
+| 09 | 08 | 03–07 (not next to another `bun.lock` change of any ticket) | `apps/web/package.json`, `bun.lock` |
 | 10 | 07, 08, 09 | 12 | `AccountCard.tsx`, `en.ts` |
 | 11 | 10 | 12 | the e2e seed and the whole e2e run |
 | 12 | 03, and F099 stages 12–13 | 04–11 | `packages/core/src/security-log.ts`, `en.ts` |
