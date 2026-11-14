@@ -5,7 +5,7 @@
 ## Planning progress
 
 - [x] Collect: ticket, `05-execution-plan.md` §2, E08 page and discovery notes, ADR 0024, F089 (plan, stages, review), `docs/code-patterns.md` § Logs, `eslint.config.js`, `platform/log.ts`, `platform/log-fields.ts`, `platform/errors.ts`, every old-form call site, the log tests, `deploy/compose.yaml`, `deploy/check-logging.sh`, `deploy/README.md`, the stages of F095, F097–F100.
-- [x] Facts checked (probes V1–V7, lint count L1).
+- [x] Facts checked (probes V1–V10, lint count L1).
 - [x] Decisions D1–D24.
 - [x] stage-01-field-kinds [written]
 - [x] stage-02-cli-output [written]
@@ -17,8 +17,8 @@
 - [x] stage-08-convert-mail [written]
 - [x] stage-09-convert-triage-delegation-tenancy [written]
 - [x] stage-10-convert-roots-testmail [written]
-- [ ] stage-11-lint-error-everywhere
-- [ ] stage-12-canary
+- [x] stage-11-lint-error-everywhere [written]
+- [x] stage-12-canary [written]
 - [ ] stage-13-log-drivers-and-cli-service
 - [ ] stage-14-log-store
 - [ ] stage-15-vps-rollout
@@ -100,6 +100,8 @@ Probes ran in `.probe-f103/` in this worktree and `/tmp/f103-*` (binaries downlo
 - **V6 Docker log paths.** moby `v28.5.2` `container/container.go:452–473`: `json-file` writes `<root>/<id>-json.log`; `local` writes `<root>/local-logs/container.log`. `daemon/logger/local/local.go`: `local` defaults 20 MB × 5, compressed; accepts `max-size`, `max-file`, `compress`.
 - **V7 Images.** Docker Hub `victoriametrics/victoria-logs:v1.54.0` and `victoriametrics/vlagent:v1.54.0` (2026-11-13), linux/amd64 config: entrypoint `/victoria-logs-prod` and `/vlagent-prod`, user `0`, exposed ports 9428 and 9429.
 - **V8 Compose.** Compose 5.6.1 (this machine) accepts `extends: { service: server }` with `profiles`, `logging`, `restart`, `healthcheck: { disable: true }` overrides in the same file; `docker compose … config` needs no Docker daemon (it ran without socket access). `deploy/check-logging.sh` passes at `0a5c2ee` (`logging ok: db greenmail server`).
+- **V9 The `.message` selector.** With `typescript-eslint`'s parser and `no-restricted-syntax`, the selector `${logCall} > ObjectExpression > Property > MemberExpression.value[property.name="message"]` flagged `log.info("a", { reason: error.message })` and `mailboxLog.warn("b", { code: e.message })`, and not `{ reason: error.name }`, `{ ...error }`, `{ message: "x" }` (probe `.probe-f103/lint/`, ESLint of the repo).
+- **V10 Field types.** TypeScript 5.9.3 (`tsc -p` with `strict`) on the `LogFields` type of stage 01: `log.info("x", { count: "a" })` and `log.info("x", { subject: "a" })` are errors (both `@ts-expect-error` lines held); a spread `{ ...{ error: "Error" } }` into a type without `error` is an error only by the weak-type rule (TS2559, no property in common).
 - Code: `fake.failOn(method, error)` exists in `modules/mail/fake/` (throws once). `createFixedLlmClient` in `platform/llm/testing`. The five marker tests spy on `console.log` and `console.error`. Better Auth user ids are UUIDs (`platform/auth.ts:375`, `generateId: "uuid"`). The incoming `x-request-id` is reused only as a lower-cased UUID (F089 D17), and `runJobTick` uses `randomUUID()`, so the context ids pass the UUID kind.
 - F089 facts that this plan reuses: `AsyncLocalStorage` survives `await` in Bun 1.4.4 and CI (F089 P1, stage 03 test in CI), lint warnings do not fail `bun run lint` (F089 P4), flat config replaces the options of `no-restricted-syntax` per block (F089 D18).
 
@@ -235,4 +237,4 @@ Not run yet.
 
 ## Log
 
-- 2026-11-14: planned by a planning job (Opus 5.5); probes V1–V8 and the lint count L1.
+- 2026-11-14: planned by a planning job (Opus 5.5); probes V1–V10 and the lint count L1.

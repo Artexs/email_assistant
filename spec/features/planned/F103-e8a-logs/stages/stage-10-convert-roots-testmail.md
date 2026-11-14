@@ -45,7 +45,7 @@ Two steps.
 **Decisions.** D2, D5, D7, D16.
 
 **Test.**
-1. Every test that matched an old text matches the event text: `grep -rn "web is on\|web is off\|operator ids\|auth mail: \|AUTH_PWNED_CHECK=off\|no organization for user\|audit .* failed\|terms record\|auth mail notice\|actions committer\|sends go\|sends: off\|retention\|waiting .* ms\|stopped: \|recovered .* by label" apps/server/test apps/server/src --include=*.test.ts`. At least `retention-job.test.ts`, `web-terms.test.ts` (`terms record`, F089 review M4), `web-http.test.ts`, `main-start-log.test.ts`, `testmail/send.test.ts`, `composition.test.ts` may match.
+1. Every test that matched an old text matches the event text: `grep -rn "web is on\|web is off\|operator ids\|auth mail: \|AUTH_PWNED_CHECK=off\|no organization for user\|audit .* failed\|terms record\|auth mail notice\|actions committer\|sends go\|sends: off\|retention\|waiting .* ms\|stopped: \|recovered .* by label" apps/server/test apps/server/src --include=*.test.ts`. At least `retention-job.test.ts`, `web-terms.test.ts` (`terms record`, F089 review M4), `web-http.test.ts`, `main-start-log.test.ts`, `testmail/send.test.ts` may match.
 2. `main-start-log.test.ts` passes: the server start writes only event lines with allow-listed keys, now also for `web_on` and the scope lines.
 3. New case in the test of `web.ts` (or `web-http.test.ts`): with `WEB_BASE_URL=http://panel.x.test:4321`, no captured line holds `panel.x.test` or `4321`.
 
