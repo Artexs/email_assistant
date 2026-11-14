@@ -264,7 +264,6 @@ const web = webDeps(config, db, {
 const app = createApp({ checkDb: () => checkDb(db), web });
 // idleTimeout: the connect route runs a mailbox login inside the request; Bun's default is 10 s.
 const server = Bun.serve({ port: config.PORT, idleTimeout: 90, fetch: app.fetch });
-log.info("server_listening", { port: server.port });
 
 const SHUTDOWN_WAIT_MS = 30_000;
 // bot.stop() can wait for the network.
@@ -305,3 +304,6 @@ async function shutdown(): Promise<void> {
 
 process.on("SIGTERM", () => void shutdown());
 process.on("SIGINT", () => void shutdown());
+
+// After the handlers: this line says the server is ready. A SIGTERM before the handlers exist would kill the process with exit 143 (F123).
+log.info("server_listening", { port: server.port });

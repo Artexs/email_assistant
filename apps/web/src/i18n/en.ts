@@ -197,6 +197,11 @@ export const en = {
   tg_unlink_title: "Unlink Telegram?",
   tg_unlink_text: "Digests, notices and approvals stop until you link again.",
   tg_unlinked_toast: "Telegram unlinked.",
+  tg_consent_title: "What goes to Telegram",
+  tg_consent_text:
+    "Telegram receives the messages of this bot: the sender and subject of your mails, the AI's short reason or summary, the texts of drafts that wait for your approval with the quoted part of the original mail, the names of delegates and the addresses of your mailboxes. Telegram is a service outside the EU, and data can be processed outside the European Economic Area. Chats with a bot are not end-to-end encrypted (from sender to recipient only). Telegram keeps the messages until you delete them in the chat. You can withdraw your consent at any time by unlinking Telegram. Messages that are already in the chat stay there until you delete them.",
+  tg_consent_label: "I consent to these data going to Telegram.",
+  tg_consent_outdated: "The consent text has changed. Reload the page and read it again.",
   // onboarding
   ob_mailbox_title: "Connect a mailbox",
   ob_mailbox_open: "Connect the mailbox the assistant should read.",

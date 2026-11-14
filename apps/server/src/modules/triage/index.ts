@@ -1,4 +1,5 @@
-export { listForLabeling, recordFeedback, recordWebFeedback } from "./feedback";
+export { listForLabeling, listForReview, recordFeedback, recordWebFeedback } from "./feedback";
+export { listReviewSample, REVIEW_PAGE_SIZE, REVIEW_WINDOW_DAYS } from "./review-repo";
 export type { LabelItem, RecordFeedbackInput, WebFeedbackResult } from "./feedback";
 export { undoWithFeedback } from "./undo";
 export { triageRoutes } from "./routes";

@@ -49,3 +49,28 @@ export function deriveSeed(seed: number, label: string): number {
   }
   return hash >>> 0;
 }
+
+// Splits `total` by the weights with the largest-remainder rule (ties go to the lower index): the counts add up to `total`.
+export function largestRemainder(weights: readonly number[], total: number): number[] {
+  const sum = weights.reduce((a, b) => a + b, 0);
+  if (!(sum > 0)) throw new Error("largestRemainder needs a positive weight sum");
+  const exact = weights.map((w) => (w / sum) * total);
+  const counts = exact.map((x) => Math.floor(x + 1e-9));
+  const order = exact
+    .map((x, index) => ({ index, rest: x - (counts[index] as number) }))
+    .sort((a, b) => b.rest - a.rest || a.index - b.index);
+  let left = total - counts.reduce((a, b) => a + b, 0);
+  for (const { index } of order) {
+    if (left <= 0) break;
+    counts[index] = (counts[index] as number) + 1;
+    left -= 1;
+  }
+  return counts;
+}
+
+// `total` items from `items` in the exact shares of `weights` (largest remainder), then shuffled.
+export function quota<T>(rng: Rng, items: readonly T[], weights: readonly number[], total: number): T[] {
+  const counts = largestRemainder(weights, total);
+  const out = items.flatMap((item, index) => Array.from({ length: counts[index] as number }, () => item));
+  return rng.shuffle(out);
+}

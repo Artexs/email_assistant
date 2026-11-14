@@ -20,7 +20,9 @@ import {
   latestTriageResult,
   listUnlabeled,
   type MailKind,
+  type UnlabeledResult,
 } from "./repo";
+import { listReviewSample, REVIEW_PAGE_SIZE, REVIEW_WINDOW_DAYS } from "./review-repo";
 
 export interface RecordFeedbackInput {
   emailId: string;
@@ -134,7 +136,30 @@ export async function listForLabeling(
   mailboxId: string,
   opts: { limit: number; mail: MailKind; testMail: TestMailRule }
 ): Promise<LabelItem[]> {
-  const rows = await listUnlabeled(db, ctx, mailboxId, opts);
+  return withSummaries(db, ctx, await listUnlabeled(db, ctx, mailboxId, opts));
+}
+
+// The /review page: a seeded random page of unlabelled real mail of the last 30 days (F097 D4).
+export async function listForReview(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  input: { mailboxIds: readonly string[]; now: Date; seed: string; testMail: TestMailRule }
+): Promise<LabelItem[]> {
+  const rows = await listReviewSample(db, ctx, {
+    mailboxIds: input.mailboxIds,
+    since: new Date(input.now.getTime() - REVIEW_WINDOW_DAYS * 24 * 60 * 60 * 1000),
+    seed: input.seed,
+    limit: REVIEW_PAGE_SIZE,
+    testMail: input.testMail,
+  });
+  return withSummaries(db, ctx, rows);
+}
+
+async function withSummaries(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  rows: UnlabeledResult[]
+): Promise<LabelItem[]> {
   const summaries = await listSummaries(
     db,
     ctx,
