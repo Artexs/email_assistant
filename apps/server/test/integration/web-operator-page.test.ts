@@ -30,6 +30,7 @@ const app = () =>
   webTestApp({
     db,
     dist,
+    routers: () => undefined,
     sessions: { owner: org.ownerId, assistant: org.assistantId, other: org.otherOwnerId },
     operatorUserIds: new Set([org.assistantId]),
   });
@@ -97,7 +98,7 @@ describe("the operator console page (F099 stage 06, D22)", () => {
   });
 
   test("a web without operatorUserIds refuses the operator user too", async () => {
-    const bare = webTestApp({ db, dist, sessions: { assistant: org.assistantId } });
+    const bare = webTestApp({ db, dist, routers: () => undefined, sessions: { assistant: org.assistantId } });
     expect((await bare.request("/operator", as("assistant"))).status).toBe(404);
   });
 });
