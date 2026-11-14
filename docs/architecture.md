@@ -329,7 +329,7 @@ Tenancy:
 - **Which mail is new:** a message in a synced folder with a dedup key that the DB does not know. Skip it only when its `X-EA-Action-Id`
   matches an `actions` row of this mailbox (the system's own draft or sent mail). The owner's address in `From:` is not a reason
   to skip (a sender can forge it).
-- **Known mail:** the folder being synced is S. If `emails.folder` ≠ `emails.source_folder` (the system moved it), locate the mail in that folder by identity (`locateMessage`, D3; below).
+- **Known mail:** the folder being synced is S. If `emails.folder` ≠ `emails.source_folder` (the system moved it), locate the mail in that folder by identity (`locateMessage`, D3; below; with several identical copies outside S, each in copy order, at most 5, until one is gone).
   The mail is still there → the mail in S is a second identical copy: store it as a new email (dedup key + `#2`, `#3`, …) and triage it.
   The mail is gone → the user moved it back: set `emails.returned_at`, `folder` and `source_folder` = S (§4.4).
   If the known mail is in its source folder, update `uid` silently. If it is in its source folder and that is not S, the mail sits in two synced folders (a cross copy): store nothing and count it. If it is gone there, the user moved it between synced folders: set `folder` and `source_folder` = S, with no feedback and no triage.

@@ -1,6 +1,6 @@
 # Sync
 
-> Checked against the code at `cfaf62a`, 2026-11-14.
+> Checked against the code at `dd24841`, 2026-11-14.
 
 ## What it does now
 
@@ -26,7 +26,7 @@ Sync brings mail from an IMAP mailbox into the `emails` table. An owner connects
 8. **Dedup key.** `Message-ID` plus `content_hash` (SHA-256 of the `From` address, the `Date` header, else INTERNALDATE, and RFC822.SIZE). A mail without a `Message-ID` uses the hash only. The same `Message-ID` with another hash is a new mail. A second identical copy gets the key with `#2`, `#3`, and so on. The unique index is `(mailbox_id, dedup_key)`. Exact rules: `docs/architecture.md` §6.1.
 9. **Own mail is skipped.** A message whose `X-EA-Action-Id` header matches an `actions` row of the mailbox is the system's own draft or sent mail: sync does not store it (`isOwnActionId`). `From:` with the owner's address is not a reason to skip.
 10. **Known mail is never triaged again.** `update_uid` and `returned` never change `emails.status`.
-11. **Returned mail.** When the user moves a mail that the system moved back to a synced folder, sync sets `emails.returned_at`, `folder` and `source_folder` (the mail is gone from the folder it was moved to). The job `triage.returned` then writes the feedback row (`triage.md`). At the end of each incremental run, sync also looks at the mail that the system moved in the last 7 days (at most 500, newest first) in the folder it came from, for a return that kept its UID below the cursor. A mail that sits in two synced folders (a cross copy) is counted and not stored. While a system move runs (`emails.undo_pending_at` younger than 24 h), sync stores no copy of the mail.
+11. **Returned mail.** When the user moves a mail that the system moved back to a synced folder, sync sets `emails.returned_at`, `folder` and `source_folder` (the mail is gone from the folder it was moved to). When the mail has two or more known identical copies outside the synced folder, the sync checks them in copy order (at most 5) and the first one that is gone is the mail that came back; only when all are still there does it store a new identical copy (`#n`). The job `triage.returned` then writes the feedback row (`triage.md`). At the end of each incremental run, sync also looks at the mail that the system moved in the last 7 days (at most 500, newest first) in the folder it came from, for a return that kept its UID below the cursor. A mail that sits in two synced folders (a cross copy) is counted and not stored. While a system move runs (`emails.undo_pending_at` younger than 24 h), sync stores no copy of the mail.
 12. **Mailbox statuses.** `active`: synced. `paused`: not synced and not triaged; the owner sets it on the web panel (`POST /api/mailboxes/:id/pause`, `.../resume`) or with Telegram `/pause` and `/resume` (owner only). `auth_error`: set by the job when a login fails; a pause or resume on an `auth_error` mailbox answers `409 wrong_status` on the web. Each change writes an audit row (`mailbox.paused`, `mailbox.resumed`).
 13. **Mailbox errors** (moved from `docs/architecture.md` §8). IMAP/SMTP login error → mailbox `auth_error`, a Telegram notice to the linked owners (one per `status_changed_at`), other mailboxes continue. The way out is `bun run mailbox:password` (new password on stdin, login test, `auth_error` → `active`). Connection errors → a warning; the next 5-minute tick tries again.
     - A hard error is logged as an `error` line. A cursor that moved during a run (`CursorMovedError`) is a soft error like a connection error.
@@ -86,7 +86,6 @@ Sync brings mail from an IMAP mailbox into the `emails` table. An owner connects
 - No IMAP IDLE: IDLE is an E8 Should item.
 - No read of the Sent folder: E5a (F104).
 - Password only, no OAuth: E9a (F117).
-- `F029-sync-return-of-a-later-copy`: a later copy that returns while two identical copies sit in one folder stores a new `#n` row and triages it again.
 - `F032-copy-below-cursor`: a copy that lands below the cursor is logged and counted, not stored.
 - `F064-sync-return-to-other-folder`: a move into another synced folder with a UID below that folder's cursor is not seen, so an action on that row can end `mail_not_found`.
 - `F062-drop-mailbox-cursor-columns`: the INBOX cursor is still written twice (`mailboxes` and `mailbox_folders`).
