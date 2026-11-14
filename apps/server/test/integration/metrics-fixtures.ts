@@ -169,11 +169,10 @@ export async function seedWeek(trx: Transaction<DB>): Promise<SeededWeek> {
   const a = await createOrgWithMailbox(trx);
   const ctx: TenantContext = { orgId: a.orgId };
   await trx.updateTable("organizations").set({ timezone: "Europe/Warsaw" }).where("id", "=", a.orgId).execute();
+  // `createOrgWithMailbox` inserts no settings row: an UPDATE would change nothing.
   await trx
-    .updateTable("mailbox_settings")
-    .set({ mode: "assist" })
-    .where("org_id", "=", a.orgId)
-    .where("mailbox_id", "=", a.mailboxId)
+    .insertInto("mailbox_settings")
+    .values({ org_id: a.orgId, mailbox_id: a.mailboxId, mode: "assist" })
     .execute();
   const mailboxId = a.mailboxId;
   const ids: Record<string, string> = {};
