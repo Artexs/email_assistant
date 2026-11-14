@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { describeActions, type WouldDoAction } from "../digest/would-do";
+import { textTables } from "../texts";
 
 import { encodeNoticeView, NoticeViewError } from "./encode";
 
@@ -71,6 +72,6 @@ describe("describeActions", () => {
     const actions: WouldDoAction[] = [
       { type: "flag", status: "logged", folder: null, reverse: false, kind: null, delegateId: null },
     ];
-    expect(describeActions(actions)).toBe("would flag");
+    expect(describeActions(actions, new Map(), {}, textTables.en)).toBe("would flag");
   });
 });

@@ -1,5 +1,5 @@
 // Every action type is complete. The CHECK list of actions.type is compared in apps/server/test/integration/actions-transitions.test.ts.
-import { actionTypes, describeAction, type ActionType, type PlannedAction } from "@ea/core";
+import { actionTypes, describeAction, textTables, type ActionType, type PlannedAction } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 import { APPLY_HANDLERS } from "./apply";
@@ -52,14 +52,18 @@ describe("every action type is complete", () => {
 
   test("each type has a digest phrase", () => {
     for (const type of actionTypes) {
-      const phrase = describeAction({
-        type,
-        status: "logged",
-        folder: type === "move" ? "ai_info" : null,
-        reverse: false,
-        kind: type === "create_draft" || type === "send" ? "delegation" : null,
-        delegateId: null,
-      });
+      const phrase = describeAction(
+        {
+          type,
+          status: "logged",
+          folder: type === "move" ? "ai_info" : null,
+          reverse: false,
+          kind: type === "create_draft" || type === "send" ? "delegation" : null,
+          delegateId: null,
+        },
+        new Map(),
+        textTables.en
+      );
       if (NO_PHRASE.includes(type)) {
         expect(phrase).toBeNull();
         continue;
