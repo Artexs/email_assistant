@@ -202,7 +202,9 @@ describe("a scheduled digest", () => {
 
       const rows = await outboxRows(trx, m.orgId, "digest");
       expect(rows).toHaveLength(1);
-      const text = renderedOf({ ...rows[0]!, text: rows[0]?.text ?? null }).text;
+      const row = rows[0];
+      if (!row) throw new Error("no digest row");
+      const text = renderedOf(row).text;
       expect(text.startsWith(expected === "pl" ? "📬 Podsumowanie" : "📬 Digest")).toBe(true);
     });
   });

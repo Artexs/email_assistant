@@ -296,13 +296,15 @@ describe("renderNotice", () => {
     }
   );
 
-  test("the digest kind prints its stored text for both locales", () => {
-    const testCase = cases.find((entry) => entry.kind === "digest")!;
-    const view = stored(testCase);
-    expect(renderNotice("digest", view, { ...opts, locale: "pl" })).toEqual(
-      renderNotice("digest", view, { ...opts, locale: "en" })
-    );
-  });
+  test.each(cases.filter((testCase) => testCase.kind === "digest"))(
+    "the digest kind prints its stored text for both locales",
+    (testCase) => {
+      const view = stored(testCase);
+      expect(renderNotice("digest", view, { ...opts, locale: "pl" })).toEqual(
+        renderNotice("digest", view, { ...opts, locale: "en" })
+      );
+    }
+  );
 
   test.each(cases)("$kind: the Polish texts fit one message", (testCase) => {
     const message = testCase.direct(textTables.pl);
