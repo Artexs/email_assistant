@@ -25,6 +25,7 @@ Before you diagnose an alert, grep docs/known-alerts.md.
 
 - Work runs through Limen. Tickets: `spec/features/<lane>/FNNN-slug/`. Board and standing choices (models, prepare): `spec/build.md`. Product intent: `spec/vision.md`. Code style: `.agents/limen/styleguide.md`.
 - Old tasks are in `spec/features/` too: `plan.md` in each folder is the old task file.
+- Owner decisions log: `docs/owner-decisions.md`. Agents took these defaults for the owner; only the coordinator writes it. A session with the owner tells them the count of `new` entries (`grep -c ' · new$' docs/owner-decisions.md`).
 - Detailed implementation plans: the `plan-task` skill writes them as a Limen feature folder (`ticket.md`, `plan.md`, `stages/`); the coordinator builds them stage by stage.
 - Stage 2 order: `docs/product/stage-2/05-execution-plan.md` §2 (ticket table, `## Sequenced` rule, coordinator start rule). A `plan-task` run for a Stage 2 ticket does the four steps of its §2.3.
 - The old S6 files in `tasks/` are history: S6a = F077 (done), S6b = F082, S6c = F106, S6e = F107, S6f = F108.

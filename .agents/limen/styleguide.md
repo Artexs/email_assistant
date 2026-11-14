@@ -51,3 +51,10 @@ Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit:
 - A CLI that queries a repository directly: a CLI that uses the DB calls the service function that a route calls.
 - `use("*")` in a router mounted at `/` (it runs for every `/api` path); reading `FEATURES_OFF` or `OPERATOR_USER_IDS` outside `platform/config`; a settings argument on a flag read.
 - The text of an outbox notice built outside a renderer in `packages/core/src/notices/` (direct replies and tap answers keep their own texts). A view, a rendered text or a Zod error in a log line.
+
+## Decisions for the owner
+
+- The owner reads `docs/owner-decisions.md`; only the coordinator writes it. A worker or reviewer never edits it.
+- A worker that meets a product decision the plan does not answer: if the answer does not change the stage, take the safest default, note it in a code comment or the stage's notes file where a later reader needs it, and go on. If the answer changes what the stage builds, commit what is useful, write the question, the options and a proposed default to a plain file in the ticket folder, and finish; the coordinator decides and resumes the job.
+- Every worker final message ends with a section `Decisions for the owner`: one line per default taken (kind: user-visible, security, privacy, money, irreversible, production, scope or rule-exception; the choice; how to undo it). Write `none` when there is none. A small technical choice is not a decision for the owner.
+- Still stop and ask, never default: an API key or secret, real money, deletion of real data, a publication outside the repository.
