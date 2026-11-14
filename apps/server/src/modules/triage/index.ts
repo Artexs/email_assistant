@@ -52,6 +52,15 @@ export { goNoGoFor, realGoNoGoRows, setCategoryAutoWithGate } from "./gate";
 export type { AutoGateResult } from "./gate";
 export { buildRealPredictions, buildRealReport } from "./eval-real";
 export { evalExitCode, renderEvalReport } from "./eval-report";
+export {
+  buildGateFile,
+  gateFileName,
+  gateFileRefusal,
+  gateFileSchema,
+  renderSimSections,
+  simMetaOf,
+} from "./eval-sim-report";
+export type { GateFile, SimMeta, SimReportInput } from "./eval-sim-report";
 export { prompts, rolesWithoutPrompt } from "./prompts";
 export type { PromptEntry } from "./prompts";
 export type { ClassifierDelegate } from "./prompts/classifier-v2";
