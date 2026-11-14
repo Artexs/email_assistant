@@ -16,6 +16,10 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F101-panel-to-astro-7` (🟠 ACTIVE): Panel to Astro 7
+- `F099-e7-t2-platform-controls-send-limits-feature-flags-operator-console-security-log` (🟠 ACTIVE): E7-T2 Platform controls (send limits, feature flags, operator console, security log)
+- `F098-e7-t1-polish-ui-i18n-frame-first` (🟠 ACTIVE): E7-T1 Polish UI (i18n frame first)
+- `F097-e2a-offline-lab` (🟠 ACTIVE): Every category has a measured precision and recall on a frozen synthetic corpus, and real labels start
 - `F095-e1-close-the-mvp` (🟠 ACTIVE): E1 Close the MVP (capability map, docs boundary, NEXT sweep of the old planned tickets)
 - `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟠 ACTIVE): The server image, CI and local checks run one current Bun (1.4.x)
 - `F071-limen-transition` (🟠 ACTIVE): Move the agent workflow to Limen
@@ -65,6 +69,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F096-e8-lr-log-rotation` (🟢 PROVEN): E8-LR Log rotation; landed 2026-11-14
+- `F092-rls-safety-net` (🟢 PROVEN): Row-level security is a safety net under the tenant filter for every table with `org_id`; landed 2026-11-14
 - `F091-repo-split` (🟢 PROVEN): The big repositories are split by aggregate and action handling is table-driven with a completeness test; landed 2026-11-14
 - `F088-notices-as-facts` (🟢 PROVEN): Notices are stored as facts and rendered per channel, detail and locale by a renderer registry; landed 2026-11-14
 - `F082-s6b-public-login` (🟢 PROVEN): The panel login has the production shape: invite only, lockout, leaked-password check, terms, session list; landed 2026-11-14
@@ -73,5 +78,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F093-ci-green` (🟢 PROVEN): CI on master is green and a flaky test is quarantined the same day; landed 2026-11-13
 - `F090-llm-roles` (🟢 PROVEN): LLM calls name a role; provider, model, cap share and prompt version follow the role; landed 2026-11-13
 - `F089-structured-logs` (🟢 PROVEN): Logs are events with allow-listed fields and run ids, with a lint rule in warn mode; landed 2026-11-13
-- `F087-feature-flags` (🟢 PROVEN): Feature flags per organization and the operator check exist before the first Stage 2 feature; landed 2026-11-13
-- 2026-11: 60 landed. spec/features/done/2026-11/
+- 2026-11: 61 landed. spec/features/done/2026-11/
