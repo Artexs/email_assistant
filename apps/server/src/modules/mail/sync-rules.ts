@@ -69,10 +69,21 @@ export function otherCopyUids(copies: readonly KnownCopy[], exceptId: string, fo
   return new Set(copies.filter((copy) => copy.id !== exceptId && copy.folder === folder).map((copy) => copy.uid));
 }
 
+/** A free known copy outside the synced folder, in copy-number order. */
+export interface FolderCandidate {
+  emailId: string;
+  folder: string;
+  /** folder <> source_folder: the system moved it there. */
+  systemMoved: boolean;
+}
+
+/** The folder check tries at most this many free copies of one mail. */
+export const CHECK_FOLDER_MAX_CANDIDATES = 5;
+
 export type IncomingDecision =
   | { kind: "move_in_flight"; emailId: string }
   | { kind: "update_uid"; emailId: string; isSource: boolean }
-  | { kind: "check_folder"; emailId: string; folder: string; systemMoved: boolean; seenElsewhere: boolean }
+  | { kind: "check_folder"; candidates: FolderCandidate[]; seenElsewhere: boolean }
   | { kind: "cross_copy"; emailId: string }
   | { kind: "new"; dedupKey: string };
 
@@ -86,6 +97,7 @@ function copyNumber(dedupKey: string): number {
  * D7. `folder` = S, the synced folder of the incoming mail. `copies` = rows with the same Message-ID and hash.
  * `matched` maps an email id (or `run:<dedup key>` of a row that this run stored) to the folder where this run
  * matched or stored it: such a copy is never free, so it is never located and never `relocated`.
+ * check_folder lists the free copies outside S in copy order; the caller checks them until one is gone.
  */
 export function decideIncoming(input: {
   folder: string;
@@ -109,13 +121,14 @@ export function decideIncoming(input: {
   const free = sorted.filter((copy) => !matched.has(copy.id));
   const here = free.find((copy) => copy.folder === folder);
   if (here !== undefined) return { kind: "update_uid", emailId: here.id, isSource: here.folder === here.sourceFolder };
-  const other = free[0];
-  if (other !== undefined) {
+  if (free.length > 0) {
     return {
       kind: "check_folder",
-      emailId: other.id,
-      folder: other.folder,
-      systemMoved: other.folder !== other.sourceFolder,
+      candidates: free.slice(0, CHECK_FOLDER_MAX_CANDIDATES).map((copy) => ({
+        emailId: copy.id,
+        folder: copy.folder,
+        systemMoved: copy.folder !== copy.sourceFolder,
+      })),
       seenElsewhere,
     };
   }

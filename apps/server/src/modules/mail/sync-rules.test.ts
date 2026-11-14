@@ -4,6 +4,7 @@ import type { FolderMessageMeta, MessageMeta } from "./port";
 import type { MovedRow } from "./repo";
 import {
   baseDedupKey,
+  CHECK_FOLDER_MAX_CANDIDATES,
   contentHash,
   copyDedupKey,
   decideIncoming,
@@ -213,9 +214,7 @@ describe("decideIncoming", () => {
   test("S Oferty, a copy in INBOX gives check_folder INBOX, not system moved", () => {
     expect(decide("Oferty", [copy({ id: "e1", key: BASE, folder: "INBOX" })])).toEqual({
       kind: "check_folder",
-      emailId: "e1",
-      folder: "INBOX",
-      systemMoved: false,
+      candidates: [{ emailId: "e1", folder: "INBOX", systemMoved: false }],
       seenElsewhere: false,
     });
   });
@@ -223,9 +222,7 @@ describe("decideIncoming", () => {
   test("S Oferty, a copy in AI/Info gives check_folder AI/Info, system moved", () => {
     expect(decide("Oferty", [copy({ id: "e1", key: BASE, folder: "AI/Info" })])).toEqual({
       kind: "check_folder",
-      emailId: "e1",
-      folder: "AI/Info",
-      systemMoved: true,
+      candidates: [{ emailId: "e1", folder: "AI/Info", systemMoved: true }],
       seenElsewhere: false,
     });
   });
@@ -238,7 +235,7 @@ describe("decideIncoming", () => {
 
   test("a move marker of 25 h is a leftover: the normal rules apply", () => {
     const copies = [copy({ id: "e1", key: BASE, folder: "AI/Info", movePendingAt: new Date("2026-11-07T11:00:00Z") })];
-    expect(decide("INBOX", copies)).toMatchObject({ kind: "check_folder", emailId: "e1" });
+    expect(decide("INBOX", copies)).toMatchObject({ kind: "check_folder", candidates: [{ emailId: "e1" }] });
   });
 
   test("a copy in S wins over an earlier copy in another folder", () => {
@@ -261,7 +258,7 @@ describe("decideIncoming", () => {
     ];
     expect(decide("Oferty", copies, new Map([["e1", "Oferty"]]))).toMatchObject({
       kind: "check_folder",
-      emailId: "e2",
+      candidates: [{ emailId: "e2" }],
     });
   });
 
@@ -302,9 +299,7 @@ describe("decideIncoming", () => {
     ];
     expect(decide("Oferty", copies, new Map([["e2", "INBOX"]]))).toEqual({
       kind: "check_folder",
-      emailId: "e1",
-      folder: "AI/Info",
-      systemMoved: true,
+      candidates: [{ emailId: "e1", folder: "AI/Info", systemMoved: true }],
       seenElsewhere: true,
     });
   });
@@ -325,9 +320,7 @@ describe("decideIncoming", () => {
   test("S INBOX, a copy in another folder gives check_folder, system moved", () => {
     expect(decide("INBOX", [copy({ id: "e1", key: BASE, folder: "AI/Info" })])).toEqual({
       kind: "check_folder",
-      emailId: "e1",
-      folder: "AI/Info",
-      systemMoved: true,
+      candidates: [{ emailId: "e1", folder: "AI/Info", systemMoved: true }],
       seenElsewhere: false,
     });
   });
@@ -339,9 +332,7 @@ describe("decideIncoming", () => {
     ];
     expect(decide("INBOX", copies, new Map([["e1", "INBOX"]]))).toEqual({
       kind: "check_folder",
-      emailId: "e2",
-      folder: "AI/Info",
-      systemMoved: true,
+      candidates: [{ emailId: "e2", folder: "AI/Info", systemMoved: true }],
       seenElsewhere: false,
     });
   });
@@ -364,6 +355,62 @@ describe("decideIncoming", () => {
       ["e2", "INBOX"],
     ]);
     expect(decide("INBOX", copies, matched)).toEqual({ kind: "new", dedupKey: `${BASE}#3` });
+  });
+
+  test("S INBOX, two free copies in AI/Spam: both are candidates in copy order", () => {
+    const copies = [
+      copy({ id: "e1", key: BASE, folder: "AI/Spam" }),
+      copy({ id: "e2", key: `${BASE}#2`, folder: "AI/Spam" }),
+    ];
+    expect(decide("INBOX", copies)).toEqual({
+      kind: "check_folder",
+      candidates: [
+        { emailId: "e1", folder: "AI/Spam", systemMoved: true },
+        { emailId: "e2", folder: "AI/Spam", systemMoved: true },
+      ],
+      seenElsewhere: false,
+    });
+  });
+
+  test("S INBOX, candidates follow the copy number, not the input order", () => {
+    const copies = [
+      copy({ id: "e2", key: `${BASE}#2`, folder: "AI/Info" }),
+      copy({ id: "e1", key: BASE, folder: "Oferty", sourceFolder: "Oferty" }),
+    ];
+    expect(decide("INBOX", copies)).toEqual({
+      kind: "check_folder",
+      candidates: [
+        { emailId: "e1", folder: "Oferty", systemMoved: false },
+        { emailId: "e2", folder: "AI/Info", systemMoved: true },
+      ],
+      seenElsewhere: false,
+    });
+  });
+
+  test("S INBOX, seven free copies: only the first five are candidates", () => {
+    const copies = Array.from({ length: 7 }, (_, index) =>
+      copy({ id: `e${index + 1}`, key: index === 0 ? BASE : `${BASE}#${index + 1}`, folder: "AI/Spam" })
+    );
+    const decision = decide("INBOX", copies);
+    expect(decision.kind).toBe("check_folder");
+    if (decision.kind !== "check_folder") return;
+    expect(decision.candidates.map((candidate) => candidate.emailId)).toEqual(["e1", "e2", "e3", "e4", "e5"]);
+  });
+
+  test("S INBOX, a copy matched in Oferty is no candidate: the free copy is, seen elsewhere", () => {
+    const copies = [
+      copy({ id: "e1", key: BASE, folder: "AI/Spam" }),
+      copy({ id: "e2", key: `${BASE}#2`, folder: "AI/Spam" }),
+    ];
+    expect(decide("INBOX", copies, new Map([["e1", "Oferty"]]))).toEqual({
+      kind: "check_folder",
+      candidates: [{ emailId: "e2", folder: "AI/Spam", systemMoved: true }],
+      seenElsewhere: true,
+    });
+  });
+
+  test("the folder check tries at most 5 copies", () => {
+    expect(CHECK_FOLDER_MAX_CANDIDATES).toBe(5);
   });
 
   test("a run copy stored in INBOX: cross_copy for S Oferty, new #2 for S INBOX", () => {
