@@ -127,4 +127,30 @@ describe("break-glass owner (F105 stage 05)", () => {
     expect(await auditRows(org.otherOrgId, "org.break_glass_set")).toHaveLength(0);
     expect(await auditRows(org.otherOrgId, "org.break_glass_cleared")).toHaveLength(0);
   });
+
+  test("6b an owner of two organizations is marked only in the organization set", async () => {
+    const other = { orgId: org.otherOrgId };
+    const dual = await insertUser(db, { email: `dual-owner-${randomUUID()}@x.test`, displayName: "Dual" });
+    try {
+      await insertMembership(db, ctx, { userId: dual.id, role: "owner" });
+      await insertMembership(db, other, { userId: dual.id, role: "owner" });
+      await turnTotpOn(dual.id);
+
+      expect(await set(dual.id)).toEqual({ kind: "set", replaced: null });
+      expect((await getMembership(db, ctx, dual.id))?.break_glass).toBe(true);
+      expect((await getMembership(db, other, dual.id))?.break_glass).toBe(false);
+      expect(await getBreakGlassUserId(db, other)).toBeNull();
+
+      expect(await clearBreakGlassOwner(db, ctx, { actor: "cli", now: NOW, reason: "cli" })).toEqual({
+        kind: "cleared",
+        userId: dual.id,
+      });
+      expect((await getMembership(db, other, dual.id))?.break_glass).toBe(false);
+      expect(await getBreakGlassUserId(db, other)).toBeNull();
+      expect(await auditRows(org.otherOrgId, "org.break_glass_set")).toHaveLength(0);
+      expect(await auditRows(org.otherOrgId, "org.break_glass_cleared")).toHaveLength(0);
+    } finally {
+      await db.deleteFrom("users").where("id", "=", dual.id).execute();
+    }
+  });
 });
