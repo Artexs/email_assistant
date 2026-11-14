@@ -1,28 +1,21 @@
 # F104 stage 10 — Panel: card and connect line
 
-Part of [`../plan.md`](../plan.md). Needs stage 09 on `master`. Read D13 and D17 first, and `apps/web/src/components/settings/SyncFoldersCard.tsx` (the model for the card) and `apps/web/src/components/mailboxes/ConnectDialog.tsx`.
-
-After this stage the owner sees a "Sent mail" card on the mailbox settings page (switch, plain line, status line) when the flag is on, and the connect dialog shows the plain line. Members see the card read-only.
+Part of [`../plan.md`](../plan.md). Needs stage 09. Read D13, D17, and `components/settings/SyncFoldersCard.tsx` (the card model) and `components/mailboxes/ConnectDialog.tsx`.
 
 ## Step 1 — Status helper and texts
 
-**Goal.** One pure function picks the status line; every text exists in `en` and `pl`.
+**Files.** `apps/web/src/lib/sent-text.ts`, `sent-text.test.ts` (new); `apps/web/src/i18n/en.ts`, `pl.ts`.
 
-**Files.** `apps/web/src/lib/sent-text.ts` (new), `apps/web/src/lib/sent-text.test.ts` (new), `apps/web/src/i18n/en.ts`, `apps/web/src/i18n/pl.ts`.
-
-**Interfaces.**
+**Interface.**
 
 ```ts
-import type { SentSyncView } from "@ea/core/web";
-import type { TextKey } from "../i18n";
-
 /** The one status line under the switch; null when the switch is off. */
-export function sentStatusLine(view: SentSyncView): { key: TextKey; vars?: Record<string, string> } | null;
+sentStatusLine(view: SentSyncView): { key: TextKey; vars?: Record<string, string> } | null
 ```
 
-Order of the rules (first match wins), for `enabled` true: `flagOn` false → `sent_paused`; `folder === null` or `errorCode === "no_folder"` → `sent_no_folder`; `errorCode === "folder_missing"` → `sent_folder_missing`; `errorCode === "failed"` → `sent_failed`; `!firstPassDone` → `sent_first_pass`; `lastSentAt === null` or `storedCount === 0` → `sent_none`; else `{ key: "sent_last", vars: { at: view.lastSentAt } }`. The card renders that one as `t("sent_last", { time: formatClock(new Date(at), timeZone, now, getLocale()) })`, as `MailboxCard.tsx` line 58 renders `mb_last_sync`; every other key renders as `t(key)`.
+Rules for `enabled` true, first match wins: `flagOn` false → `sent_paused`; no folder or `no_folder` → `sent_no_folder`; `folder_missing` → `sent_folder_missing`; `failed` → `sent_failed`; no first pass → `sent_first_pass`; no `lastSentAt` or `storedCount 0` → `sent_none`; else `sent_last` with `vars.at = lastSentAt`. The card renders `sent_last` with `formatClock` in the org time zone, as `MailboxCard.tsx` renders `mb_last_sync`.
 
-Texts (keys in both files; the Polish follows the F098 glossary, P6 of its plan):
+Texts (both files; Polish per D17):
 
 | Key | en | pl |
 | --- | --- | --- |
@@ -40,51 +33,27 @@ Texts (keys in both files; the Polish follows the F098 glossary, P6 of its plan)
 | `sent_on_toast` | Sent mail is tracked. | Wysłana poczta jest śledzona. |
 | `sent_off_toast` | Sent mail is not tracked. The stored sent mail is deleted. | Wysłana poczta nie jest śledzona. Zapisana wysłana poczta została usunięta. |
 
-**Decisions.** D13, D17.
+**Test** (`view()` = on, folder `Sent`, first pass done, `lastSentAt "2026-11-19T10:00:00.000Z"`, `storedCount 3`, no error, flag on):
 
-**Test** (unit, `sent-text.test.ts`; a `view(overrides)` helper with `enabled true, folder "Sent", firstPassDone true, lastSentAt "2026-11-19T10:00:00.000Z", storedCount 3, errorCode null`):
+1. Off → null. 2. Flag off → `sent_paused` (before every other rule).
+3. No folder, or `no_folder` → `sent_no_folder`. 4. `folder_missing`, `failed` → their keys.
+5. No first pass → `sent_first_pass`. 6. `storedCount 0` or no `lastSentAt` → `sent_none`.
+7. The default → `sent_last` with `at`. 8. `en.sent_line` and `pl.sent_line` are not empty; the i18n suites pass.
 
-1. `enabled false` → null.
-1b. `flagOn false`, `enabled true` → `sent_paused` (before every other rule).
-2. `folder null` → `sent_no_folder`; `errorCode "no_folder"` → `sent_no_folder`.
-3. `errorCode "folder_missing"` → `sent_folder_missing`; `"failed"` → `sent_failed`.
-4. `firstPassDone false` → `sent_first_pass`.
-5. `storedCount 0` → `sent_none`; `lastSentAt null` → `sent_none`.
-6. The default view → `{ key: "sent_last", vars: { at: "2026-11-19T10:00:00.000Z" } }`.
-7. Every key of the table exists in `en` and `pl` (typecheck forces it; one test reads `en.sent_line` and `pl.sent_line` and expects both non-empty).
+## Step 2 — Card and connect line
 
-**Check.** `bun test apps/web/src/lib/sent-text.test.ts && bun run typecheck`
+- `components/settings/SentMailCard.tsx` (new), props as `SyncFoldersCard` plus `timeZone`: `data-card="sent"`, title, one `Switch` (label `sent_switch`; disabled for a member, while pending, and when paused and off) that calls `patchSettings(id, "/sent-sync", { enabled })`, then a toast key; under it `sent_line`, the folder path, the status line (muted), `sent_off_note` (muted). Errors as the folder card; a 404 calls `onMissing`. Only existing `ui/` components.
+- `islands/SettingsPage.tsx`: the card after `SyncFoldersCard` when `sentSync !== null`.
+- `ConnectDialog.tsx`: a prop `sentSyncLine`; true → one muted `sent_line` paragraph above the footer. `MailboxesPage.tsx` passes `me.features.includes("sent_sync")`.
 
-**Done when.** Cases 1–7 and 1b pass.
+**Check.** `bun run lint && bun run typecheck`; the card has no literal text.
 
-## Step 2 — The card and the connect line
-
-**Goal.** The card on the settings page; the line in the connect dialog.
-
-**Files.** `apps/web/src/components/settings/SentMailCard.tsx` (new), `apps/web/src/islands/SettingsPage.tsx`, `apps/web/src/components/mailboxes/ConnectDialog.tsx`, `apps/web/src/islands/MailboxesPage.tsx`.
-
-**Interfaces.**
-
-- `SentMailCard({ settings, isOwner, timeZone, onChanged, onMissing })`, the shape of `SyncFoldersCard`: `Card` with `data-card="sent"`, title `sent_title`; one row: label `sent_switch` and a `Switch` (`aria-label` = `t("sent_switch")`, `checked = settings.sentSync.enabled`, disabled when `!isOwner`, when pending, or when `!settings.sentSync.flagOn && !settings.sentSync.enabled` (paused: only off is allowed)) that calls `patchSettings(settings.mailboxId, "/sent-sync", { enabled })` and then `onChanged(result, enabled ? "sent_on_toast" : "sent_off_toast")`; under it `t("sent_line")`, the folder path when not null (as the folder rows show `folder.path`), the status line of `sentStatusLine` (muted text), and `t("sent_off_note")` (muted). Errors: `toast.error(t(errorText(error)))`; a 404 calls `onMissing`. Use only the existing `ui/` components.
-- `SettingsPage.tsx`: render `<SentMailCard …/>` after `SyncFoldersCard` only when `data.sentSync !== null`; `timeZone` from `me.organization.timezone` (the page reads `me` already; pass it into `MailboxSettings` if that component does not get it yet).
-- `ConnectDialog.tsx`: a new prop `sentSyncLine: boolean`; when true, one muted paragraph `t("sent_line")` above the dialog footer. `MailboxesPage.tsx` passes `sentSyncLine={me.features.includes("sent_sync")}` (the `AccountCard.tsx` line 282 form).
-
-**Decisions.** D13.
-
-**Test.** Typecheck and lint cover the components (the panel has no component tests). Manual check is not required.
-
-**Check.** `bun run lint && bun run typecheck`
-
-**Done when.** Both pass; `grep -n "sent_" apps/web/src/components/settings/SentMailCard.tsx` shows only `t(…)` keys, no literal text.
-
-**Out of scope.** An e2e case (the e2e seed has no feature flags; a later e2e ticket may add one).
+**Out of scope.** An e2e case (a later spec takes a free `nextAddress` block of `apps/web/e2e/env.ts`).
 
 ## Step 3 — Docs
 
-`docs/capabilities/web-panel.md`: the settings page gains the "Sent mail" card (flag `sent_sync`) and the connect dialog line. `docs/capabilities/sent-mail.md`: Entry points row `page` `/settings` (card "Sent mail") → `apps/web/src/components/settings/SentMailCard.tsx`; remove "no switch in the panel yet" from Limits.
+`docs/capabilities/web-panel.md`: the card (flag `sent_sync`) and the connect line. `docs/capabilities/sent-mail.md`: entry point of the card; drop "no switch in the panel" from Limits.
 
-**Check.** `bun test apps/server/src/capability-map.test.ts`
+## Done when
 
-## Done when (stage)
-
-Steps 1–3 done; the Proof command of `plan.md` passes (`/tmp/f104-s10`).
+Steps 1–3 done; the Proof passes (`/tmp/f104-s10`).
