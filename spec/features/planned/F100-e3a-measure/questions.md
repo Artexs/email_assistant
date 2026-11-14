@@ -1,0 +1,17 @@
+# F100 — open questions (defaults taken; the build does not wait)
+
+Each item is a small question: the stages stay the same with any answer. The plan uses the default. To change one, the owner tells the coordinator; the change goes into the stage before it is built.
+
+| # | Question | Default (plan decision) | Why |
+| --- | --- | --- | --- |
+| Q1 | Which wrong label is a "miss" in M1? | An `urgent` mail is missed when it was not labelled `urgent` (no urgent notice); a `needs_reply` mail is missed when it was labelled `info`, `notification` or `spam` (the digest's "other mail" section). `needs_reply` labelled `urgent`, `delegation` or `unsure` is not a miss (D11). | The rule follows what the user sees: the urgent notice and the digest's "needs action" section. |
+| Q2 | In which week does an M3 event count? | The week of the mistake itself: the move's `applied_at`, the reject reason's time, the send's `applied_at` for a "mistake" tap (D13). The stats page recomputes, so a later label can add an event to an old week there; the Monday message is a snapshot (D28). | A mistake belongs to the week the system made it. |
+| Q3 | One weekly message per organization or per mailbox? | One message per linked member with the organization's totals (all mailboxes); the stats page splits by mailbox (D23). | Most organizations have one mailbox; one message keeps Telegram short. |
+| Q4 | Does the LLM pause line (F073) need a feature flag? | No flag: it makes an existing operator status text exact (D8). | It changes no behaviour, only names the cause of a pause that already happens. |
+| Q5 | Answered check scope. | Yes / No buttons only; mail of the last 14 days labelled `info`, `notification` or `spam`; at most 5 per `/review`; a "no" writes no label (D22). | A reply proves attention, not the category; the user confirms only the one question PD-058 asks. |
+| Q6 | M7 constants. | Hosting $7.10 per month (CX23 €5.99) ÷ 20 mailboxes = $0.355; backup $0.05 per mailbox per month (assumption under the E3 notes' "< 0.1"); target $5 (D16). | PD-059 names the hosting reference; the backup share is small and marked as an assumption in the code. |
+| Q7 | Flag refresh window and rate. | Inside the sync run, at most every 10 min per mailbox, mail of the last 30 days, at most 3,000 mails per run (D6). | 30 days covers the E4-B history check and the E11 "never seen after 7 days"; no extra IMAP login (Interia throttle risk). |
+| Q8 | What does the stats route answer when `stats_page` is off? | 404 `not_found` (D20). The `stats:week` CLI ignores the flag. | The flag hides a user-visible page; the operator needs the numbers before the roll-out. |
+| Q9 | When does the Monday message go? | The member's first digest time at or after 07:00 on Monday, else 08:00; queued until Monday 23:59 local, then skipped (D23). | "Monday at the digest time" (PD-066); quiet hours end at 07:00. |
+| Q10 | M5 and quiet hours. | Urgent mail that arrived between 22:00 and 07:00 is left out of the p90 and counted on its own (D15). | The sender holds notices in quiet hours on purpose; the hold is not latency. |
+| Q11 | 2-min sync fallback. | Config key `MAIL_SYNC_EVERY_MIN` (2, 3 or 5; default 2); the coordinator sets 3 on the VPS if the pilot host throttles (D7, C4). | PD-065 names the fallback; a key avoids a code change. |
