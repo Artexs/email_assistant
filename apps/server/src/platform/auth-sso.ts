@@ -29,6 +29,47 @@ export function isAllowedSsoPath(method: string, path: string): boolean {
 
 export type { SsoIdentity, SsoResolution };
 
+export interface SsoSessionData {
+  signInMethod: "sso";
+  ssoStartedAt: Date;
+  expiresAt: Date;
+}
+
+// The `sso_started_at` of a session row: a `Date` from the adapter, a string in a copied value. Anything else is no mark.
+function startOf(value: unknown): Date | null {
+  const at = value instanceof Date ? value : typeof value === "string" ? new Date(value) : null;
+  return at !== null && !Number.isNaN(at.getTime()) ? at : null;
+}
+
+// What the session hook of `platform/auth.ts` adds to a new session row.
+// `path` is the route template (`/sso/callback/:providerId`), so the match is by prefix, never by the concrete path.
+// `current` is the session of the request, if the endpoint has one (TOTP turn-on, `/change-password`): a session made from an
+// SSO session keeps its method and its start, because Better Auth copies the fields but sets the defaults after them.
+// A sign-in path has no current session, so a password sign-in never inherits. `undefined` = a plain password session.
+export function ssoSessionData(input: {
+  path: string | undefined;
+  current: object | null | undefined;
+  now: Date;
+}): SsoSessionData | undefined {
+  if (input.path?.startsWith(SSO_CALLBACK_PREFIX) === true) {
+    return {
+      signInMethod: "sso",
+      ssoStartedAt: input.now,
+      expiresAt: new Date(input.now.getTime() + SSO_SESSION_SECONDS * 1000),
+    };
+  }
+  const current: { signInMethod?: unknown; ssoStartedAt?: unknown } = input.current ?? {};
+  if (current.signInMethod !== "sso") return undefined;
+  // An SSO session without a start cannot exist (the pair CHECK); if it does, fail closed: no new session.
+  const started = startOf(current.ssoStartedAt);
+  if (started === null) throw new Error("sso_session_without_start");
+  return {
+    signInMethod: "sso",
+    ssoStartedAt: started,
+    expiresAt: new Date(started.getTime() + SSO_SESSION_SECONDS * 1000),
+  };
+}
+
 // A row for the audit log (ADR 0026 point 8). `data` is flat: ids and codes only, never the IdP e-mail.
 export interface SsoEvent {
   kind: "login" | "refused";

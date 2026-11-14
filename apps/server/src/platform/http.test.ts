@@ -1,4 +1,7 @@
+import { mkdtempSync, writeFileSync } from "node:fs";
 import type { BlockList } from "node:net";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import { describe, expect, spyOn, test } from "bun:test";
 import { Hono } from "hono";
@@ -18,6 +21,7 @@ import {
   requireOperator,
   requireOwner,
   requireTenant,
+  signInMethodOf,
   ValidationError,
   type ApiEnv,
   type WebDeps,
@@ -259,7 +263,12 @@ describe("requireTenant", () => {
   const appFor = (rows: Rows) => {
     const app = new Hono<ApiEnv>();
     app.use("*", async (c, next) => {
-      c.set("session", { userId: c.req.header("x-user") ?? "u-none", sessionId: "s-test", twoFactorEnabled: true });
+      c.set("session", {
+        userId: c.req.header("x-user") ?? "u-none",
+        sessionId: "s-test",
+        twoFactorEnabled: true,
+        signInMethod: "password",
+      });
       await next();
     });
     app.use("*", requireTenant({ listMembershipsOfUser: async () => rows }));
@@ -297,7 +306,7 @@ describe("requireTenant scope (RLS safety net, ADR 0011)", () => {
   const appFor = (rows: { org_id: string; role: "owner" }[], onHandler?: () => void) => {
     const app = new Hono<ApiEnv>();
     app.use("*", async (c, next) => {
-      c.set("session", { userId: "u-scope", sessionId: "s-test", twoFactorEnabled: true });
+      c.set("session", { userId: "u-scope", sessionId: "s-test", twoFactorEnabled: true, signInMethod: "password" });
       await next();
     });
     app.use("*", requireTenant({ listMembershipsOfUser: async () => rows }));
@@ -356,6 +365,7 @@ describe("requireOperator", () => {
         userId: c.req.header("x-user") ?? "u-none",
         sessionId: "s-test",
         twoFactorEnabled: c.req.header("x-totp") !== "off",
+        signInMethod: c.req.header("x-method") === "sso" ? "sso" : "password",
       });
       c.set("web", (operatorUserIds === undefined ? {} : { operatorUserIds }) as WebDeps);
       await next();
@@ -397,6 +407,82 @@ describe("requireOperator", () => {
     }
   });
 
+  test("answers 403 password_sign_in_required to an operator with an SSO session and logs the user id only", async () => {
+    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    try {
+      const res = await appFor(new Set(["u-op"])).request("/x", { headers: { "x-user": "u-op", "x-method": "sso" } });
+      expect(res.status).toBe(403);
+      expect(await res.json()).toEqual({ error: "password_sign_in_required" });
+      const lines = errorSpy.mock.calls.map((call) => call.join(" "));
+      expect(lines.filter((line) => line.includes("operator_sso_session_refused user_id=u-op"))).toHaveLength(1);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test("the SSO rule comes before the TOTP rule, and the 404 for a non-operator comes first", async () => {
+    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    try {
+      const app = appFor(new Set(["u-op"]));
+      const noTotp = await app.request("/x", { headers: { "x-user": "u-op", "x-method": "sso", "x-totp": "off" } });
+      expect(noTotp.status).toBe(403);
+      expect(await noTotp.json()).toEqual({ error: "password_sign_in_required" });
+      const other = await app.request("/x", { headers: { "x-user": "u-other", "x-method": "sso" } });
+      expect(other.status).toBe(404);
+      expect(await other.json()).toEqual({ error: "not_found" });
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test("the /operator page: an SSO session gets the 404 page and the warn line; a password session without TOTP keeps the redirect", async () => {
+    const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
+    const dist = mkdtempSync(join(tmpdir(), "http-test-dist-"));
+    writeFileSync(join(dist, "404.html"), "not found page");
+    try {
+      const pageApp = (signInMethod: "password" | "sso", twoFactorEnabled: boolean) =>
+        createApp({
+          checkDb: async () => true,
+          web: {
+            auth: {
+              handler: async () => new Response(null),
+              getSession: async () => ({ userId: "u-op", sessionId: "s1", twoFactorEnabled, signInMethod }),
+            },
+            db: {} as WebDeps["db"],
+            now: () => new Date("2026-11-20T10:00:00Z"),
+            dist,
+            baseUrl: new URL("http://127.0.0.1:8080"),
+            trustedOrigins: new Set(["http://127.0.0.1:8080"]),
+            trustedProxies: buildTrustedProxies([]),
+            connInfo: () => undefined,
+            listMembershipsOfUser: async () => [],
+            operatorUserIds: new Set(["u-op"]),
+            routers: () => undefined,
+          } satisfies WebDeps,
+        });
+      const sso = await pageApp("sso", true).request("/operator");
+      expect(sso.status).toBe(404);
+      expect(await sso.text()).toBe("not found page");
+      expect(sso.headers.get("cache-control")).toBe("private, no-store");
+      const lines = errorSpy.mock.calls.map((call) => call.join(" "));
+      // The page route logs a request id between the event and the fields.
+      expect(lines.filter((line) => /operator_sso_session_refused .*user_id=u-op$/.test(line))).toHaveLength(1);
+      const noTotp = await pageApp("password", false).request("/operator");
+      expect(noTotp.status).toBe(302);
+      expect(noTotp.headers.get("location")).toBe("/settings?two_factor=required");
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test("signInMethodOf: only the exact value password is a password session; anything else is sso (fail closed)", () => {
+    expect(signInMethodOf("password")).toBe("password");
+    expect(signInMethodOf("sso")).toBe("sso");
+    expect(signInMethodOf(undefined)).toBe("sso");
+    expect(signInMethodOf(null)).toBe("sso");
+    expect(signInMethodOf("x")).toBe("sso");
+  });
+
   test("answers 404, not 403, to a non-operator without TOTP", async () => {
     const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
     try {
@@ -424,7 +510,12 @@ describe("requireOperator", () => {
       const web = {
         auth: {
           handler: async () => new Response(null),
-          getSession: async () => ({ userId: "u-owner", sessionId: "s1", twoFactorEnabled: true }),
+          getSession: async () => ({
+            userId: "u-owner",
+            sessionId: "s1",
+            twoFactorEnabled: true,
+            signInMethod: "password",
+          }),
         },
         db: {} as WebDeps["db"],
         now: () => new Date("2026-11-20T10:00:00Z"),
@@ -455,7 +546,12 @@ describe("requireOperator", () => {
     const web = {
       auth: {
         handler: async () => new Response(null),
-        getSession: async () => ({ userId: "u-owner", sessionId: "s1", twoFactorEnabled: true }),
+        getSession: async () => ({
+          userId: "u-owner",
+          sessionId: "s1",
+          twoFactorEnabled: true,
+          signInMethod: "password",
+        }),
       },
       db: {} as WebDeps["db"],
       now: () => new Date("2026-11-20T10:00:00Z"),

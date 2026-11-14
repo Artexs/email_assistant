@@ -62,7 +62,7 @@ import {
 import type { SecretBox } from "./platform/crypto";
 import type { Db, TenantContext } from "./platform/db";
 import { describeError } from "./platform/errors";
-import { buildTrustedProxies, type WebDeps, type WebSession } from "./platform/http";
+import { buildTrustedProxies, signInMethodOf, type WebDeps, type WebSession } from "./platform/http";
 import { createLog } from "./platform/log";
 import { checkPwnedPassword } from "./platform/pwned";
 
@@ -399,6 +399,7 @@ export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime |
       userId: response.response.user.id,
       sessionId: response.response.session.id,
       twoFactorEnabled: response.response.user.twoFactorEnabled === true,
+      signInMethod: signInMethodOf(response.response.session.signInMethod),
       setCookie: response.headers.getSetCookie(),
     };
   };
