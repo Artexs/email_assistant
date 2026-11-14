@@ -54,3 +54,11 @@ export { claimEmails, countWaiting, finishEmail, releaseEmail, requeueTooOld, ty
 export { listEmailsByMessageIds, listFolderEmailKeys, listThreadContext } from "./lookup";
 export { PENDING_BODY_DAYS, clearMailBodies, clearMailHeaders } from "./retention";
 export { clearCapturedHeaders, getEmailHeaders, insertEmailHeaders, type EmailHeadersRow } from "./headers";
+export {
+  getEmailFlags,
+  listFlagTargets,
+  writeEmailFlags,
+  type EmailFlagsRow,
+  type FlagRead,
+  type FlagTarget,
+} from "./flags";
