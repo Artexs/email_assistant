@@ -1,0 +1,341 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-019",
+  "cases": [
+    {
+      "id": "w-3-144",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Odprawy celne w ofercie wspólnej - pytanie",
+      "body": "Szanowny Panie Prezesie,\n\nczy zgadza się Pan, aby od marca odprawy celne dla ładunków z Rotterdamu w naszej wspólnej ofercie przejął broker, którego Pan zna? Proszę o odpowiedź.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-145",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Reklamacja dostawy z 19.01 - zamykamy sprawę",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że w naszej sieci zamknęliśmy sprawę reklamacji dostawy z 19.01.2027, w której 14 palet z produktami mrożonymi dotarło do trzech sklepów z przerwanym łańcuchem chłodniczym. Po oględzinach w magazynie centralnym i analizie zapisów z rejestratorów temperatury ustaliliśmy, że przyczyną była awaria agregatu w naczepie, a nie nasze opóźnienie przy rozładunku.\n\nWartość towaru, który musieliśmy wycofać ze sprzedaży, wyniosła 38 400 zł netto. Nasz dział jakości wystawił notę obciążeniową na tę kwotę, a Państwa ubezpieczyciel potwierdził już przyjęcie szkody do rozpatrzenia. Według jego wstępnej informacji wypłata nastąpi w ciągu około trzech tygodni od daty zgłoszenia.\n\nDla porządku podaję, że dostawy z 21.01 i 25.01 przyjęliśmy bez zastrzeżeń, a zapisy temperatury z obu dostaw mieszczą się w normie od 0 do 4 stopni. Po stronie naszej sieci nie widzimy innych otwartych reklamacji dotyczących Państwa usług.\n\nWszystkie decyzje dotyczące rozliczenia szkody zostały już podjęte i w tej chwili nie potrzebujemy od Pana żadnych działań. Zapisy z rejestratorów oraz protokół z oględzin są dostępne w aktach sprawy. Przekazuję te informacje po to, aby miał Pan pełny obraz sytuacji przed rozmową z naszym działem zakupów w przyszłym tygodniu.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-146",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Standing order executed: rent for the Poznan warehouse",
+      "body": "Standing order executed\n\nA standing order from your company account was executed on 27.01.2027. Amount: 21,300.00 PLN. Recipient: Poznan Logistics Park. Status: executed.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-147",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wyprzedaż rowerów elektrycznych dla Twoich pracowników - 35% taniej",
+      "body": "Szanowni Państwo,\n\nwiemy, że zdrowi i zadowoleni pracownicy są najcenniejszym zasobem każdej firmy. Dlatego w tym miesiącu, w ramach naszej akcji dla klientów flotowych, oferujemy rowery elektryczne i hulajnogi do 35% taniej. W ofercie są modele miejskie, trekkingowe i składane, z gwarancją na silnik i baterię na 36 miesięcy oraz bezpłatnym przeglądem po pierwszym roku.\n\nZamówienia powyżej dziesięciu sztuk otrzymują dodatkowy rabat 8% oraz bezpłatny transport na wskazany adres. Firma może rozliczyć zakup jako benefit pracowniczy, a nasi doradcy pomagają przy dokumentach. Dostępne są modele w kolorach grafitowym, zielonym i białym, z koszykiem lub bagażnikiem na zamówienie. Dla firm z większą flotą rowerów oferujemy też abonament serwisowy z naprawami na miejscu.\n\nOferta obowiązuje do wyczerpania zapasów. W magazynie mamy jeszcze 240 rowerów, a z każdym dniem zainteresowanie rośnie. Aby zarezerwować partię, kliknij przycisk poniżej i podaj dane firmy oraz numer rachunku, z którego możemy pobrać zaliczkę w wysokości 20 procent wartości zamówienia.\n\nZamówienie można anulować tylko przed pobraniem zaliczki. Nie przyjmujemy zwrotów rowerów po rozpoczęciu użytkowania. Cena obejmuje montaż, wstępną regulację oraz zestaw podstawowych akcesoriów, w tym kask, zapięcie i oświetlenie. Szczegółowe zestawienie modeli prześlemy po zgłoszeniu zamówienia.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-148",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zlecenie stałe wykonane: czynsz za magazyn",
+      "body": "Zlecenie stałe zostało wykonane.\n\nKwota: 21 300,00 PLN\nOdbiorca: Poznań Logistics Park\nData: 27.01.2027\nStatus: wykonane",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-149",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nowa e-faktura do zapłaty: operator telekomunikacyjny",
+      "body": "Nowa faktura w bankowości\n\nW Twojej bankowości internetowej pojawiła się nowa e-faktura do opłacenia.\n\nWystawca: Telefonia Biznes sp. z o.o.\nNumer faktury: FV/01/2027/5512\nKwota do zapłaty: 2 786,40 PLN\nTermin płatności: 10.02.2027\nRachunek odbiorcy: zweryfikowany w bazie kontrahentów\nStatus: do zapłaty\n\nFakturę możesz opłacić jednym kliknięciem po zalogowaniu do bankowości lub zaplanować przelew na wybrany dzień. To jest automatyczne powiadomienie banku. Prosimy na nie nie odpowiadać.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-150",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana zasad programu flotowego - rezygnacja z korespondencji",
+      "body": "Szanowni Państwo,\n\ninformujemy o zmianie regulaminu programu flotowego, która wchodzi w życie 1.02.2027. Nowe zasady obejmują sposób naliczania rabatów, terminy płatności oraz zasady komunikacji z klientami. Pełny tekst zmian zostanie opublikowany na koncie administratora kart.\n\nJeżeli nie chcą Państwo otrzymywać od nas wiadomości o zmianach regulaminu i ofertach specjalnych, mogą Państwo zrezygnować z korespondencji w każdej chwili. W tym celu prosimy kliknąć przycisk \"Wypisz mnie z listy\" poniżej, zalogować się na konto administratora kart i potwierdzić swoją tożsamość, podając numer karty, kod PIN oraz dane do przelewów firmowych. Bez potwierdzenia rezygnacja nie zostanie przyjęta, a wiadomości będą wysyłane nadal.\n\nZwracamy uwagę, że po rezygnacji z korespondencji firma nie będzie otrzymywać informacji o limitach, zablokowanych kartach ani o terminach rozliczeń. Dlatego zalecamy zachowanie aktualnych danych kontaktowych i regularne logowanie na konto. Zmiana ustawień korespondencji nie wpływa na wystawianie faktur ani na działanie kart. Zespół obsługi klienta nie odpowiada na pytania o rezygnację telefonicznie.\n\nWiadomość została wysłana automatycznie do wszystkich administratorów kart w Państwa firmie. Prosimy o niekierowanie jej do innych adresatów. Zmiany w regulaminie dotyczą także zasad rozliczania opłat za karty dodatkowe, które od lutego będą naliczane osobno dla każdej karty.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-151",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Przetarg - ostateczne kryteria oceny ofert",
+      "body": "Szanowny Panie Prezesie,\n\nprzekazuję informację o ostatecznych kryteriach, według których komisja oceni oferty w finale przetargu. Cena będzie miała wagę 55 procent, terminowość dostaw 25 procent, a jakość obsługi reklamacji i raportowania 20 procent. Zamawiający potwierdził, że kryteria są niezmienne i nie będą już modyfikowane.\n\nDla porządku dodaję, że komisja weźmie pod uwagę zapisy z dostaw w ostatnich dwunastu miesiącach.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-152",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Dzienne podsumowanie operacji na rachunku firmowym",
+      "body": "Podsumowanie dnia\n\nPoniżej znajdziesz dzienne podsumowanie operacji na rachunku firmowym za 27.01.2027.\n\nLiczba operacji obciążających: 7\nLiczba operacji uznaniowych: 3\nSuma obciążeń: 103 220,50 PLN\nSuma uznań: 91 740,00 PLN\nSaldo na koniec dnia: dostępne w bankowości internetowej\nLiczba przelewów oczekujących na wykonanie: 2\nRachunek: główny rachunek firmowy\n\nSzczegółowa lista operacji jest dostępna w historii rachunku. To jest automatyczne powiadomienie banku wysyłane codziennie o godzinie 20:00. Prosimy na nie nie odpowiadać.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-153",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Zestawienie umów dla rady - porządek posiedzenia",
+      "body": "Szanowny Panie Prezesie,\n\ninformuję, że porządek posiedzenia rady nadzorczej 3.02.2027 został uzupełniony o dwa punkty: zestawienie umów sprzedaży powyżej miliona złotych oraz omówienie kredytu na zakup naczep. Zestawienie umów rada otrzyma razem z pakietem materiałów, zgodnie z wcześniejszą informacją.\n\nPosiedzenie rozpocznie się o godzinie 10:00 i potrwa około trzech godzin. Materiały trafią do członków rady w poniedziałek do godziny 12:00, a po posiedzeniu odbędzie się wspólny obiad zarządu i rady. Salę zarezerwowano już w siedzibie spółki.\n\nZbigniew Orlowicz",
+      "thread": [
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Zestawienie umów dla rady",
+          "body": "Panie Wiktorze,\n\nproszę, aby Piotr Lewandrowski przygotował dla rady zestawienie umów sprzedaży powyżej miliona złotych, z terminami obowiązywania.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-3-154",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Karty paliwowe zablokowane - płatność wymagana do 22:00 dzisiaj",
+      "body": "Ostatnie powiadomienie\n\nZaległa płatność za karty paliwowe nie została odnotowana na naszym koncie. Wszystkie karty Państwa firmy zostaną zablokowane dziś o 22:00, a konto zostanie przekazane do windykacji.\n\nAby uniknąć blokady, prosimy natychmiast potwierdzić nowe dane do przelewu i zapłacić zaległość w wysokości 4 318,50 zł, korzystając z przycisku w tej wiadomości. Po godzinie 22:00 odblokowanie kart będzie wymagało dodatkowej opłaty administracyjnej.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-3-155",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Nordic: price review clause",
+      "body": "Hi Wiktor,\n\nthanks for your answer on the price review clause. I passed it on to Karin this evening, and she said her team will take it to their board meeting next Tuesday. Legal added the final wording to the draft, and it is already in the shared folder.\n\nSo the clause is in, with the six-month review and the 10 percent diesel trigger.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [
+        {
+          "from": "oliver.pemberton@kordelan.test",
+          "subject": "Nordic: price review clause - ok for you?",
+          "body": "Hi Wiktor,\n\nKarin asked this morning whether we could add a price review clause to the framework agreement, so both sides can reopen the rates after six months if diesel moves by more than 10 percent. Legal says it is possible and the wording is easy to add.\n\nBefore I answer her, I need to know if you are fine with it. It would also mean we could not hold the rates fixed for the whole first year, which we promised in the first draft. So, do we accept the clause or do we push back? A short written answer is enough.\n\nCheers, Oliver | Head of Export | Kordelan Distribution"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-4-001",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wynajem kamperów dla zespołu - rabat 40% na sezon wiosenny",
+      "body": "Szanowni Państwo,\n\nplanujecie integrację zespołu na wiosnę? Wynajmij kamper z pełnym wyposażeniem w specjalnej cenie dla firm. Mamy 18 pojazdów, które pomieszczą nawet sześć osób, z kuchnią, ogrzewaniem i bezpłatnym GPS. Rabat 40% obowiązuje przy rezerwacji do końca tygodnia.\n\nWystarczy podać dane firmy i numer rachunku, aby zablokować termin. Liczba miejsc jest ograniczona. Każdy kamper ma bezpłatne ubezpieczenie, a pierwszy tydzień wynajmu można wykorzystać bez limitu kilometrów, więc oferta sprawdza się przy wyjazdach integracyjnych całego zespołu.\n\nPaliwa-Flota Billing",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-003",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wspólna oferta - decyzja do 11:00",
+      "body": "Szanowny Panie Prezesie,\n\npotrzebuję Pana decyzji do godziny 11:00 dzisiaj: czy podpisuje Pan list intencyjny do wspólnej oferty? Zamawiający przyjmuje dokumenty do 12:00, a później odrzuca zgłoszenie.\n\nDaniel Hargreaves",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-004",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Klaipeda slots - booking confirmed",
+      "body": "Dear Mr Szalewski,\n\nthank you for your message. I am happy to confirm that the Klaipeda slots were booked on time. We completed the booking on 26.01.2027, one day before the deadline, and received the written confirmation from the terminal this morning.\n\nHere is the short status:\n\n- Slots confirmed: 4 gates per week, Tuesday and Thursday, between 06:00 and 10:00\n- Start of the arrangement: 09.02.2027\n- Booking fee for the first quarter: 1,800 EUR, paid by us and invoiced to the joint venture at month end\n- Terminal contact for operational questions: assigned to our dispatcher in Riga\n\nThe terminal also told us that it plans to extend gate hours in the summer season, which should give us more flexibility when we have additional volume from the Nordic customers. We will watch this and report if any change affects our schedule. The Nordic customers know about the new gate times, and our dispatcher in Riga has already adjusted the weekly plan for the first month.\n\nThere is nothing further for you to do at this point. I am writing only so that you have the full picture, as you asked in your last message.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Klaipeda slots",
+          "body": "Dear Mr Hargreaves,\n\nthank you for the information about the Klaipeda slots. Could you confirm briefly whether the booking was completed before the deadline?\n\nWiktor Szalewski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-4-005",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Stock synchronisation completed after the outage",
+      "body": "Synchronisation report\n\nThe stock synchronisation between the warehouse management system and the ERP completed successfully after the outage.\n\nJob: stock sync, all sites\nStart: 28.01.2027, 05:30\nEnd: 28.01.2027, 06:18\nRecords processed: 48,320\nRecords corrected: 112\nStatus: completed\n\nThe corrected records are listed in the daily incident summary, and all stock levels now match the physical counts of the night shift. The synchronisation ran without manual interaction. This message was generated automatically by the ERP system. Please do not reply.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-006",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rent a verified business email list - first 100 contacts free",
+      "body": "Hello,\n\nLooking for new clients in transport and logistics? Rent our verified email list of 25,000 decision makers and send your offer today. The first 100 contacts are FREE, just to prove our quality, and the full list is 80% cheaper than the market price.\n\nOur clients report 12 times more replies in the first week. Limited stock! We also offer a free consultation about your mailing strategy, written subject lines that get opened and a ready template for your first campaign.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-007",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Planowane okno serwisowe systemu magazynowego",
+      "body": "Powiadomienie o pracach serwisowych\n\nZespół wsparcia WMS zaplanował okno serwisowe systemu magazynowego.\n\nTermin: 30.01.2027, od 22:00 do 02:00\nZakres: aktualizacja modułu przyjęć i usługi synchronizacji skanerów\nWpływ: system będzie niedostępny w czasie prac, a magazyny pracują w trybie ręcznym\nLokalizacje: Łódź, Poznań, Gdynia\nCzas trwania: cztery godziny\nPrzygotowanie: operatorzy magazynów otrzymali instrukcję pracy ręcznej\n\nWiadomość została wygenerowana automatycznie przez system ERP Kordelan i nie wymaga odpowiedzi.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-008",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Gwarancja celna - podpis do 10:00",
+      "body": "Szanowny Panie Prezesie,\n\nagent w Hamburgu potrzebuje dziś do godziny 10:00 Pana podpisu na gwarancji celnej. Po tej godzinie traci slot, a kontenery stoją do poniedziałku.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "daniel.hargreaves@baltic-freight-partners.test",
+          "subject": "Odprawa kontenerów z Hamburga - decyzja dzisiaj do 15:00",
+          "body": "Szanowny Panie Prezesie,\n\npiszę w sprawie dwóch kontenerów z towarem Nordic Foods Trade, które od soboty stoją w porcie przy odprawie. Urząd celny wezwał nas wczoraj do uzupełnienia dokumentów, a nasz agent ma dla nas dwa warianty. Potrzebuję Pana decyzji dzisiaj do godziny 15:00, bo po tej porze agent traci rezerwację slotu odprawy i następny wolny termin to dopiero czwartek.\n\nWariant pierwszy: składamy zgłoszenie uzupełniające z gwarancją zabezpieczającą, co kosztuje około 3 tysięcy euro, ale kontenery wyjadą jeszcze dziś wieczorem. Wariant drugi: czekamy na pełną dokumentację od producenta, bez dodatkowych kosztów, lecz towar stoi co najmniej do piątku i naliczane są opłaty magazynowe w porcie.\n\nPonieważ gwarancja wymaga podpisu osoby upoważnionej do reprezentowania spółki, a opcja ma znaczenie także dla naszej wspólnej umowy z Nordic, nie chcę podejmować tej decyzji bez Pana. Jeśli wybierze Pan wariant pierwszy, agent przygotuje druk do podpisu w ciągu godziny.\n\nDziękuję z góry za szybką odpowiedź. Jestem dziś w biurze przez cały dzień, a agent czeka na wiadomość od nas przez telefon służbowy. Przygotowałem też krótkie zestawienie kosztów obu wariantów, które mogę przesłać na życzenie.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-4-009",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Scheduled job completed: nightly stock report",
+      "body": "Job completed\n\nThe nightly stock report ran on 28.01.2027 at 06:30. Status: completed. No errors.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-010",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Raport rozbieżności zapasów po awarii WMS",
+      "body": "Raport rozbieżności zapasów\n\nPo zakończeniu awarii systemu magazynowego wygenerowano raport rozbieżności zapasów.\n\nData raportu: 28.01.2027, 06:35\nMagazyn Łódź: 41 pozycji z rozbieżnością\nMagazyn Poznań: 12 pozycji z rozbieżnością\nMagazyn Gdynia: 0 pozycji z rozbieżnością\nStatus: raport wygenerowany\nPrzyczyna rozbieżności: dokumenty przyjęć wprowadzane ręcznie w czasie awarii\n\nPełna lista pozycji jest dostępna w module magazynowym. Wiadomość została wygenerowana automatycznie przez system ERP Kordelan i nie wymaga odpowiedzi.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-011",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie zlecenia przelewu krajowego",
+      "body": "Zlecenie przelewu zapisane\n\nZlecenie przelewu krajowego zostało zapisane w bankowości internetowej i zostanie wykonane w wybranym terminie.\n\nOdbiorca: Hurtownia Opakowań Północ sp. z o.o.\nTytuł: Zapłata za fakturę FV/2027/0087\nKwota: 9 480,00 PLN\nTermin wykonania: 29.01.2027\nStatus: zaplanowane\nRachunek obciążany: główny rachunek firmowy\n\nZlecenie można zmienić lub anulować w bankowości do dnia poprzedzającego termin wykonania. To jest automatyczne powiadomienie banku. Prosimy na nie nie odpowiadać.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-4-012",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Częstotliwość wystawiania faktur za karty paliwowe",
+      "body": "Szanowny Panie Prezesie,\n\nwracam jeszcze raz do sprawy częstotliwości faktur za karty paliwowe, ponieważ nasz system rozliczeń musi mieć ustawienie na luty. Przygotowałam już projekty aneksu w dwóch wersjach, dla faktury miesięcznej i dla dwutygodniowej, więc po Pana odpowiedzi mogę od razu wysłać właściwy dokument do przeglądu.\n\nCzy może Pan wskazać, którą wersję wybiera Pan dla firmy? Wystarczy jedno zdanie w odpowiedzi na tę wiadomość. Rozumiem, że ma Pan dużo spraw na głowie, dlatego nie ponaglam.\n\nEwelina Marszałek",
+      "thread": [
+        {
+          "from": "ewelina.marszalek@paliwa-flota.test",
+          "subject": "Częstotliwość wystawiania faktur za karty paliwowe - Pana zdanie",
+          "body": "Szanowny Panie Prezesie,\n\nzwracam się do Pana w sprawie sposobu fakturowania Państwa kart paliwowych. Obecnie wystawiamy jedną fakturę zbiorczą na koniec miesiąca, ale część klientów prosi o rozliczenia częstsze, a nasz dział finansowy rozważa zmianę systemu rozliczeń dla całej floty.\n\nPrzygotowaliśmy dwie możliwości. Pierwsza to dotychczasowa faktura miesięczna, ze wszystkimi transakcjami w jednym dokumencie, co jest wygodne dla Państwa księgowości, ale wydłuża czas oczekiwania na płatność. Druga to faktury dwutygodniowe, które skracają cykl rozliczeń, ale wymagają dwukrotnie większej liczby dokumentów do sprawdzenia i zaksięgowania.\n\nW zamian za przejście na faktury dwutygodniowe moglibyśmy zaproponować dodatkowy rabat 0,1 punktu procentowego na cenę przy dystrybutorze. Dla obecnego zużycia Państwa floty oznaczałoby to oszczędność rzędu 3 tysięcy złotych rocznie.\n\nRozumiem, że to decyzja, którą zwykle podejmuje Pan po konsultacji z działem księgowości, ale chciałabym najpierw poznać Pana zdanie. Proszę o odpowiedź na piśmie, którą opcję Pan preferuje: fakturę miesięczną czy dwutygodniową. Na tej podstawie przygotuję projekt aneksu do umowy, który prześlę Państwu do przeglądu przed podpisaniem. Jeśli ma Pan pytania dotyczące liczby dokumentów albo sposobu ich przekazywania do księgowości, chętnie je wyjaśnię.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota"
+        },
+        {
+          "from": "ewelina.marszalek@paliwa-flota.test",
+          "subject": "Re: Częstotliwość wystawiania faktur za karty paliwowe - Pana zdanie",
+          "body": "Szanowny Panie Prezesie,\n\nwracam do mojego pytania o częstotliwość wystawiania faktur za karty paliwowe. Nasz dział finansowy zamyka ustawienia systemu rozliczeń na luty i chciałabym wiedzieć, czy ma Pan już zdanie: faktura miesięczna czy dwutygodniowa?\n\nWystarczy krótka odpowiedź na piśmie, wtedy przygotuję projekt aneksu do umowy i prześlę go do Pana przeglądu. Nie spieszę Pana z odpowiedzią ponad miarę, ale zależy mi na tym, aby nowe ustawienia zaczęły działać od pierwszego dnia lutego."
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-4-013",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Gothenburg customs clearance - corrected invoice",
+      "body": "Dear Mr Szalewski,\n\nthank you, we received the corrected invoice for the first three clearances today. The company name is now right and our finance team has booked it.",
+      "thread": [
+        {
+          "from": "karin.lindqvist@nordicfoods-trade.test",
+          "subject": "Update: Gothenburg customs clearance - new process in place",
+          "body": "Dear Mr Szalewski,\n\nI am writing to let you know that our customs broker in Gothenburg has completed the switch to the new digital declaration process for all inbound shipments from Poland. The first three clearances under the new process took less than two hours each, compared with about six hours before.\n\nThe broker also confirmed that the tariff codes for your chilled product range were accepted without queries. Our team sees no open points on the customs side at the moment.\n\nThis is a status report for your information only.\n\nBest regards,\nKarin Lindqvist"
+        },
+        {
+          "from": "karin.lindqvist@nordicfoods-trade.test",
+          "subject": "Re: Update: Gothenburg customs clearance - new process in place",
+          "body": "Dear Mr Szalewski,\n\nThank you for the update. One point is open on our side: the broker's fee invoice for the first three clearances still shows the old company name. Could you ask Magdalena Czerniak in your accounting team to issue a corrected invoice this week?\n\nBest regards"
+        }
+      ],
+      "attachments": []
+    }
+  ]
+}
