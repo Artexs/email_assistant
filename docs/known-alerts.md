@@ -20,6 +20,22 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `operator_two_factor_required` (field `user_id`)
+
+- **First seen:** 2026-11-14 (F105 stage 04; not seen live)
+- **Source:** `apps/server/src/platform/http.ts` (`requireOperator` and the `/operator` page guard). Level `warn`. The line holds the event name and the user id only.
+- **Cause:** an operator without two-factor sign-in opened the console or called `/api/operator/*`. The API answers `403 { error: "two_factor_required" }`; the page redirects to `/settings?two_factor=required`.
+- **Fix:** the operator turns on two-factor sign-in in Settings → Account, then opens the console again. The line stops.
+- **Status:** won't fix (a refusal is the expected answer)
+
+### `two_factor_codes_unreadable` (field `user_id`)
+
+- **First seen:** 2026-11-14 (F105 stage 08; not seen live)
+- **Source:** `apps/server/src/platform/auth-two-factor.ts` (`backupCodesLeft`, called by `GET /api/me/two-factor`). Level `warn`. The line holds the user id and the error fields only.
+- **Cause:** the user has two-factor sign-in on, but the `auth_two_factors` row is missing or its backup codes do not decrypt. The usual case is a changed `WEB_AUTH_SECRET`. The panel then shows that the number of backup codes is unknown.
+- **Fix:** `$C run --rm server bun run web:two-factor-reset --org-id <uuid> --user-id <uuid>` for that user, after the check of who asks (`deploy/README.md` § Two-factor sign-in). The user turns the second factor on again.
+- **Status:** workaround
+
 ### `user_moves_failed`
 
 - **First seen:** the land date of F029 stage 04 (not seen live)

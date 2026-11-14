@@ -222,6 +222,32 @@ A user who types a wrong password 10 times in 15 minutes waits 15 minutes. The a
 
 Every password set or change asks `api.pwnedpasswords.com` (5 hex characters of the SHA-1 leave the server, not the password). The server needs outbound HTTPS to that host. When it is down, password sets fail with "try again later" and nothing changes. `AUTH_PWNED_CHECK=off` is for tests only.
 
+### Two-factor sign-in (F105)
+
+A member turns on two-factor sign-in in Settings → Account: password, QR code or key in an authenticator app, first code, then 10 backup codes (shown once). Later sign-ins ask for the code after the password.
+
+The operator needs it too. The console and `/api/operator/*` refuse an operator without it. Turn it on before the next console use.
+
+Break-glass owner (one owner of an organization; for the later "SSO required" rule). List the owners and their state, set the owner, or clear it:
+
+```sh
+$C run --rm server bun run org:break-glass --org-id <uuid>
+$C run --rm server bun run org:break-glass --org-id <uuid> --user-id <uuid>
+$C run --rm server bun run org:break-glass --org-id <uuid> --clear
+```
+
+The user must be an owner and must have two-factor sign-in on. The break-glass owner cannot turn it off.
+
+A member who lost the phone and the backup codes:
+
+1. Check who asks, outside the system: a call to a known number, or in person. Do not trust a mail or a chat message.
+2. Run `$C run --rm server bun run web:two-factor-reset --org-id <uuid> --user-id <uuid>`.
+3. The reset ends every session and every trusted device of the user and clears the break-glass mark. The user signs in with the password and can turn two-factor sign-in on again.
+
+Never change `WEB_AUTH_SECRET` without a plan to reset every member's second factor: the secrets and codes are encrypted with it, and a new value makes them unreadable. Each member then needs the reset above.
+
+Each change is an audit row (`web.two_factor_enabled`, `web.two_factor_disabled`, `web.two_factor_reset`, `web.backup_codes_generated`, `web.backup_code_used`, `web.two_factor_locked`, `org.break_glass_set`, `org.break_glass_cleared`) and shows in the security log of an organization.
+
 ### After the first deploy of S6b
 
 Every member sees the terms dialog once at the next sign-in. The legal pages are drafts until S6e.
@@ -502,6 +528,8 @@ Set up (once, on the server):
 1. Find your user id: `$C exec -T db psql -U postgres -d email_assistant -c "select id from users where email = '<your email>'"`. A user id is not a secret, but keep it out of the repo.
 2. Put the id in the VPS `.env`: `OPERATOR_USER_IDS=<user id>` (a comma list for more than one operator). Restart: `$C up -d server`.
 3. You must be a member of an organization: the page works inside your own sign-in. Every other user gets the 404 page, also for `/operator/index.html` and the same path in other forms.
+
+The console needs two-factor sign-in (F105): an operator without it is sent to Settings → Account (`/settings?two_factor=required`). Turn it on there first.
 
 What the page shows:
 
