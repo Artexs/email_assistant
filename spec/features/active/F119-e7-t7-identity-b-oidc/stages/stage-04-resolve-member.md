@@ -17,10 +17,12 @@ Part of [`../plan.md`](../plan.md). `[risky]` (auth). Needs stage 03.
 1. No `sso_providers` row with this `provider_id` → `no_provider` (`orgId: null`).
 2. `isFeatureOn(db, { orgId }, "sso_sign_in")` false → `sso_off`.
 3. A link exists (`auth_accounts`: this `provider_id`, `account_id` = `subject`) and its user's oldest membership is the provider's organization → `link` (`firstLink: false`; a changed IdP e-mail is accepted). A link whose user fails that → `not_a_member`.
-4. No link. `emailVerified === false` → `email_unverified`. The e-mail, lower-cased, has the provider `domain` after the last `@` (a subdomain fails, Q8), and for the issuer `https://accounts.google.com` `hostedDomain` equals the domain (a consumer Google account on a work address, cold review N4) → else `domain_mismatch`.
+4. No link. `emailVerified === false` → `email_unverified`. The e-mail, lower-cased, has the provider `domain` after the last `@` (a subdomain fails, Q8), and for the issuer `https://accounts.google.com` `hostedDomain` equals the domain (cold review N4) → else `domain_mismatch`.
 5. A user with `users.email` = that e-mail whose oldest membership (the session tenant, `requireTenant`) is the provider's organization → else `not_a_member` (cold review N5: another organization's IdP never opens this tenant).
 6. That user already has an `auth_accounts` row of this provider with another `account_id` → `identity_mismatch` (the IdP account was made again; the operator runs `org:member --unlink-sso`, stage 09).
 7. Else `link` with `firstLink: true`.
+
+The adapter never answers the plugin `continue`: with `requestSignUp: true` that makes a user (spike C5, S9).
 
 ## Step 04.2 — SSO audit rows
 
@@ -31,7 +33,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (auth). Needs stage 03.
 **Interfaces.**
 - `auditEvents.ssoLogin: "sso.login"` (`provider_id`, `first_link`; actor the user) and `ssoRefused: "sso.refused"` (`provider_id`, `code`; actor `"system"`), in the provider's organization.
 - `ssoPlugin` deps get `onSsoEvent?: (event: { kind: "login" | "refused"; orgId; userId: string | null; data }) => Promise<void>`; it never throws into Better Auth (catch, log `sso_audit_failed` with `kind`).
-- Rule (cold review N13): `sso.refused` is written for each `reject` of our resolver that has an `orgId` (each needs a real IdP sign-in, so no flood). Plugin-level failures (bad state, provider changed, missing claims) and refused passwords (stage 06) get a log line, no row. `sso.login` is written once per callback session, after the plugin transaction commits (the hook that sees the commit; `spike.md` S3).
+- Rule (cold review N13): `sso.refused` is written for each `reject` of our resolver that has an `orgId` (each needs a real IdP sign-in, so no flood). Plugin-level failures (bad state, provider changed, missing claims) and refused passwords (stage 06) get a log line, no row. `sso.login` is written once per callback session, after the plugin transaction commits (`spike.md` S3).
 - Log lines `sso_sign_in` (`org_id`, `user_id`), `sso_refused` (`org_id`, `code`): existing fields (the provider id equals the org id).
 
 **Decisions.** D12, D15, D16.

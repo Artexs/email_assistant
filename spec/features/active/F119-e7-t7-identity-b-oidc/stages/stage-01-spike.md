@@ -1,6 +1,6 @@
 # F119 stage 01 — Spike: the SSO plugin on our schema and pool
 
-Part of [`../plan.md`](../plan.md). `[risky]` (auth). Gate G1 follows: the build stops after this stage.
+Part of [`../plan.md`](../plan.md). `[risky]` (auth). Done 2026-11-14 (`spike.md`, all PASS); G1 passed.
 
 ## Step 01.1 — Probe and report
 

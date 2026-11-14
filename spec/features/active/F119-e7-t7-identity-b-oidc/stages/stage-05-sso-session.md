@@ -11,8 +11,8 @@ Part of [`../plan.md`](../plan.md). `[risky]` (auth). Needs stage 04.
 **Interfaces.**
 - Better Auth `session.additionalFields`: `signInMethod` (`sign_in_method`, `input: false`, default `"password"`) and `ssoStartedAt` (`sso_started_at`, date, `input: false`).
 - `databaseHooks.session.create.before` (F7, `spike.md` S4):
-  - path starts with `/sso/callback/` → `signInMethod: "sso"`, `ssoStartedAt: now`, `expiresAt = now + SSO_SESSION_SECONDS`;
-  - else, when the endpoint's current session (`ctx.context.session`, set for every endpoint that needs a session) is `sso` (TOTP turn-on, `/change-password` with `revokeOtherSessions`, F9; cold review B2) → copy its `signInMethod` and `ssoStartedAt`, `expiresAt = ssoStartedAt + SSO_SESSION_SECONDS`;
+  - `ctx.path` is the route template `/sso/callback/:providerId`, not the concrete path (spike C2): match with `startsWith("/sso/callback/")`, never with an exact path. That path → `signInMethod: "sso"`, `ssoStartedAt: now`, `expiresAt = now + SSO_SESSION_SECONDS`;
+  - else, when the endpoint's current session (`ctx.context.session`, set for every endpoint that needs a session) is `sso` (TOTP turn-on, `/change-password` with `revokeOtherSessions`, F9; cold review B2) → copy its `signInMethod` and `ssoStartedAt`, `expiresAt = ssoStartedAt + SSO_SESSION_SECONDS` (the hook data already has `ssoStartedAt` but `signInMethod: "password"`, spike C5: set both);
   - else unchanged (`password`). A sign-in path never inherits (it has no current session).
 - The stage 02 trigger keeps the cap through every refresh (F5). Each read of an SSO session then refreshes the row once (one UPDATE and a `Set-Cookie` per request; accepted, cold review N10).
 
@@ -45,6 +45,8 @@ Part of [`../plan.md`](../plan.md). `[risky]` (auth). Needs stage 04.
 9. Ann (not an operator) with an SSO session: `/api/operator/orgs` 404 (the 404 check stays first).
 10. Ann has TOTP on and signs in by SSO: a session, no code step, no `web.login` row, one `sso.login` row (S6).
 11. Unit: the page guard and `requireOperator` with a fake `{ signInMethod: "sso" }` give the answers of 7; `getSession` mapping of `undefined` and `"x"` gives `"sso"`.
+
+No test asserts the cookie `Max-Age` (30 days on each refresh; the row decides the end; spike C4).
 
 **Check.** The Proof of `plan.md` (`/tmp/f119-s05`).
 

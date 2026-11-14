@@ -31,7 +31,7 @@ Members of an organization with its own identity provider sign in with their com
 
 ## Slices
 
-15 stages, one worker job each ([plan.md](plan.md) § Stages). Stage 01 is the spike; gate G1 (second pass, PD-040, PD-041) stops the build after it. Stage 02 is the only migration; stage 03 the only `bun.lock` change. Stages 14 (VPS) and 15 (real Entra check, owner step U1) come last. Order and lanes: [plan.md](plan.md) § Stages and § How to run.
+15 stages, one worker job each ([plan.md](plan.md) § Stages). Stage 01 is the spike; gate G1 (second pass, PD-040, PD-041) follows it ([plan.md](plan.md) § Owner checkpoints). Stage 02 is the only migration; stage 03 the only `bun.lock` change. Stages 14 (VPS) and 15 (real Entra check, owner step U1) come last. Order and lanes: [plan.md](plan.md) § Stages and § How to run.
 
 ## Sequenced
 
