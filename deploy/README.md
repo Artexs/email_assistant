@@ -58,7 +58,7 @@ $C up -d --build --wait
 docker inspect --format '{{.Name}} {{.HostConfig.LogConfig.Type}} {{index .HostConfig.LogConfig.Config "max-size"}} {{index .HostConfig.LogConfig.Config "max-file"}}' $($C ps -q)
 ```
 
-   A line that differs: run `$C up -d --force-recreate --wait <service>` for that service, then check again. A recreated container starts a new log file. The first deploy with a changed `logging:` block recreates `db` at `up -d --wait db`: a short DB restart.
+A line that differs: run `$C up -d --force-recreate --wait <service>` for that service, then check again. A recreated container starts a new log file. The first deploy with a changed `logging:` block recreates `db` at `up -d --wait db`: a short DB restart.
 
 ## Logs
 
@@ -340,7 +340,7 @@ Close a delegation by hand with `delegations:done` or with the ✅ Done button o
 
 State of this section: written from the code of the S4 task. The dev run (stage 19) and the VPS runs (stage 22: self-send, stage 23: the first real delegation) are not done. Only the Interia probe of stage 1 sent a real mail.
 
-How a delegation goes (details: `docs/architecture.md` §4.5):
+How a delegation goes (details: `docs/capabilities/drafts-and-send.md` and `docs/capabilities/delegation.md`):
 
 1. The triage worker plans a draft and a send. The committer puts the draft in the Drafts folder (it needs `ACTIONS_SCOPE` other than `off`, the mailbox mode `assist` and the switch `create_draft` on).
 2. The owner gets a Telegram message with the full draft, the recipient and the original sender, and the buttons 📤 Send and ✖️ Reject. Only an owner can tap them.
