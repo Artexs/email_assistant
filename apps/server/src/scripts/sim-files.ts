@@ -4,18 +4,22 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 import {
   blindBatchFileSchema,
   labelBatchFileSchema,
+  manifestSchema,
   planSpecSchema,
   scenarioSchema,
   slotBatchFileSchema,
   textBatchFileSchema,
   validateScenario,
+  verdictFileSchema,
   type CaseText,
+  type Manifest,
   type PlanSpec,
   type Scenario,
   type SimBlindBatchFile,
   type SimLabelBatchFile,
   type SimPart,
   type SimTextBatchFile,
+  type VerdictFile,
   type Slot,
   type SlotBatchFile,
   type ValueCategory,
@@ -184,4 +188,27 @@ export function readLabelEntries(dir: string, part: SimPart): Map<string, LabelE
 
 export function readLabels(dir: string, part: SimPart): Map<string, ValueCategory> {
   return new Map([...readLabelEntries(dir, part)].map(([id, entry]) => [id, entry.category]));
+}
+
+// Freeze and audit files: `manifest.json` and `audit/v<version>-{list.md,verdicts.json}`.
+export function readManifest(dir: string): Manifest | undefined {
+  return readParsed(dir, join(dir, "manifest.json"), manifestSchema);
+}
+
+export function writeManifest(dir: string, manifest: Manifest): void {
+  writeJson(join(dir, "manifest.json"), manifest);
+}
+
+// Paths relative to the corpus folder, as the manifest holds them.
+export function auditPaths(version: string): { list: string; verdicts: string } {
+  return { list: `audit/v${version}-list.md`, verdicts: `audit/v${version}-verdicts.json` };
+}
+
+export function readVerdicts(dir: string, version: string): VerdictFile | undefined {
+  return readParsed(dir, join(dir, auditPaths(version).verdicts), verdictFileSchema);
+}
+
+export function writeText(path: string, text: string): void {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, text);
 }

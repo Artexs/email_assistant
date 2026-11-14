@@ -1,14 +1,15 @@
-import { cutText } from "@ea/core";
+import { cutText, textsFor, type UserLocale } from "@ea/core";
 import { Bot, type Context } from "grammy";
 import type { UserFromGetMe } from "grammy/types";
 import type { Transaction } from "kysely";
 
 import type { DB, Db } from "../../../platform/db";
+import { errorFields } from "../../../platform/errors";
 import { createLog } from "../../../platform/log";
+import { getUserAuthProfile } from "../../tenancy";
 import { consumeLinkToken } from "../linking";
 import { commandNames, type LinkedChat, type UpdateHandlers } from "../port";
 import { findChatLink } from "../repo";
-import { ALREADY_LINKED_TEXT, ERROR_TEXT, helpText, LINK_EXPIRED_TEXT, LINK_USED_TEXT, LINKED_TEXT } from "../texts";
 
 import { messageOptions } from "./api";
 import { isNotModified, telegramErrorLabel } from "./errors";
@@ -16,6 +17,16 @@ import { isNotModified, telegramErrorLabel } from "./errors";
 const log = createLog("telegram");
 
 const ANSWER_MAX_CHARS = 200;
+
+// The language of a user who has no linked chat yet (D12). A user with no choice gets the default of plan P2: Polish.
+export async function localeOfUser(db: Db | Transaction<DB>, userId: string): Promise<UserLocale> {
+  try {
+    return (await getUserAuthProfile(db, userId))?.locale ?? "pl";
+  } catch (error) {
+    log.warn("telegram_locale_read_failed", { user_id: userId, ...errorFields(error) });
+    return "pl";
+  }
+}
 
 export interface BotDeps {
   db: Db | Transaction<DB>;
@@ -54,25 +65,28 @@ export function createTelegramBot(
     const chatId = ctx.chat.id;
     const payload = ctx.match.trim();
     if (payload === "") {
-      if (await findChatLink(db, chatId)) {
-        await reply(ctx, helpText());
-      }
+      const link = await findChatLink(db, chatId);
+      if (link) await reply(ctx, textsFor(link.locale).bot.help);
       return;
     }
     const result = await consumeLinkToken(db, { token: payload, chatId, now: deps.now() });
     if (result.kind === "linked") {
       log.info(`chat linked for user ${result.userId} in org ${result.orgId}`);
-      await reply(ctx, LINKED_TEXT);
+      await reply(ctx, textsFor(await localeOfUser(db, result.userId)).bot.linked);
     } else if (result.kind === "used") {
       log.info("a used link token was tried");
-      await reply(ctx, (await findChatLink(db, chatId)) ? ALREADY_LINKED_TEXT : LINK_USED_TEXT);
+      const link = await findChatLink(db, chatId);
+      await reply(
+        ctx,
+        link ? textsFor(link.locale).bot.alreadyLinked : textsFor(await localeOfUser(db, result.userId)).bot.linkUsed
+      );
     } else if (result.kind === "expired") {
       log.info("an expired link token was tried");
-      await reply(ctx, LINK_EXPIRED_TEXT);
-    } else if (await findChatLink(db, chatId)) {
-      await reply(ctx, helpText());
+      await reply(ctx, textsFor(await localeOfUser(db, result.userId)).bot.linkExpired);
     } else {
-      log.debug("ignored /start with an unknown token");
+      const link = await findChatLink(db, chatId);
+      if (link) await reply(ctx, textsFor(link.locale).bot.help);
+      else log.debug("ignored /start with an unknown token");
     }
   });
 
@@ -103,7 +117,7 @@ export function createTelegramBot(
         message = await handlers.command(linkOf(ctx), name);
       } catch (error) {
         log.error(`command failed: ${telegramErrorLabel(error)}`);
-        message = { text: ERROR_TEXT, buttons: [] };
+        message = { text: textsFor(linkOf(ctx).locale).bot.error, buttons: [] };
       }
       try {
         await ctx.reply(message.text, messageOptions(message.buttons, { clearKeyboard: false }));
@@ -121,7 +135,7 @@ export function createTelegramBot(
       result = await handlers.callback(link, ctx.callbackQuery.data);
     } catch (error) {
       log.error(`callback failed: ${telegramErrorLabel(error)}`);
-      result = { answer: ERROR_TEXT };
+      result = { answer: textsFor(link.locale).bot.error };
     }
     try {
       await ctx.answerCallbackQuery({ text: cutText(result.answer, ANSWER_MAX_CHARS) });
@@ -144,7 +158,7 @@ export function createTelegramBot(
 
   // 6. Any other message of a linked chat.
   bot.on("message", async (ctx) => {
-    await reply(ctx, helpText());
+    await reply(ctx, textsFor(linkOf(ctx).locale).bot.help);
   });
 
   // 7. Without this, grammY stops polling on the first error.

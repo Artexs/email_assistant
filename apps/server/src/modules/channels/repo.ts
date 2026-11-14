@@ -116,13 +116,13 @@ export async function useLinkToken(
 export async function findLinkToken(
   db: DbOrTrx,
   tokenHash: string
-): Promise<{ usedAt: Date | null; expiresAt: Date } | undefined> {
+): Promise<{ usedAt: Date | null; expiresAt: Date; userId: string } | undefined> {
   const row = await db
     .selectFrom("chat_link_tokens")
-    .select(["used_at", "expires_at"])
+    .select(["used_at", "expires_at", "user_id"])
     .where("token_hash", "=", tokenHash)
     .executeTakeFirst();
-  return row ? { usedAt: row.used_at, expiresAt: row.expires_at } : undefined;
+  return row ? { usedAt: row.used_at, expiresAt: row.expires_at, userId: row.user_id } : undefined;
 }
 
 // D18: the chat moves to the token's member, so the link of this chat in any organization goes first.

@@ -22,6 +22,7 @@ const log = createLog("http");
 export interface WebSession {
   userId: string;
   sessionId: string; // the id of the session row, not the cookie token
+  twoFactorEnabled: boolean; // the session user has TOTP on (users.two_factor_enabled, read by Better Auth)
   setCookie?: string[]; // refreshed cookies from Better Auth (W17)
 }
 
@@ -267,11 +268,16 @@ export const refuseSuspendedWrites: MiddlewareHandler<ApiEnv> = async (c, next) 
 };
 
 // D15: every path under /api/operator answers a non-operator like a path that does not exist. The log holds the user id only.
+// F105 D10 (ADR 0026 point 1): an operator needs TOTP. The 404 check stays first, so a non-operator never learns about this rule.
 export const requireOperator: MiddlewareHandler<ApiEnv> = async (c, next) => {
-  const { userId } = c.get("session");
+  const { userId, twoFactorEnabled } = c.get("session");
   if (c.get("web").operatorUserIds?.has(userId) !== true) {
     log.warn("operator_route_refused", { user_id: userId });
     return c.json({ error: "not_found" }, 404);
+  }
+  if (!twoFactorEnabled) {
+    log.warn("operator_two_factor_required", { user_id: userId });
+    return c.json({ error: "two_factor_required" }, 403);
   }
   // Operator routes read across organizations: no tenant scope (ADR 0027).
   await withoutTenantScope(() => next());
@@ -395,6 +401,11 @@ export function createApp(deps: HttpDeps): Hono<ApiEnv> {
       log.warn("operator_page_refused", { user_id: session.userId });
       c.header("Cache-Control", "private, no-store");
       return c.html(notFoundHtml, 404);
+    }
+    if (OPERATOR_PAGE.test(path) && !session.twoFactorEnabled) {
+      log.warn("operator_two_factor_required", { user_id: session.userId });
+      c.header("Cache-Control", "private, no-store");
+      return c.redirect("/settings?two_factor=required", 302);
     }
     return next();
   });

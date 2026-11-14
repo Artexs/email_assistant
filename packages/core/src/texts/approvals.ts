@@ -323,9 +323,9 @@ export const approvalTexts = {
     },
     feedbackTaps: {
       noted: (reason) => `Zapisano: ${reason}.`,
-      notRejected: "Ta wysyłka nie jest odrzucona.",
+      notRejected: "Ta wysyłka nie została odrzucona.",
       off: "Ten przycisk jest teraz wyłączony.",
-      markedMistake: "⚠️ Zapisano jako błąd.",
+      markedMistake: "⚠️ Oznaczono jako błąd.",
       alreadyMarked: "Już oznaczono.",
       tooLate: "Za późno: błąd można oznaczyć w ciągu 7 dni od wysyłki.",
       notSent: "Ta wiadomość nie została wysłana.",

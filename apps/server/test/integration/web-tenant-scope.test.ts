@@ -154,6 +154,7 @@ describe("the route walk", () => {
       "GET /api/mailboxes",
       "POST /api/mailboxes",
       "DELETE /api/mailboxes/:id",
+      "GET /api/stats",
       "GET /api/operator/flags",
       "POST /api/actions/:id/reject-reason",
       "POST /api/actions/:id/mistake",

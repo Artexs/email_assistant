@@ -1,19 +1,13 @@
 import { randomUUID } from "node:crypto";
 
+import { textTables } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { GrammyError } from "grammy";
 import type { Transaction } from "kysely";
 
 import { createLinkToken, createTelegramBot, type CommandName, type LinkedChat } from "../../src/modules/channels";
 import type { CallbackResult, UpdateHandlers } from "../../src/modules/channels/port";
-import {
-  ALREADY_LINKED_TEXT,
-  ERROR_TEXT,
-  helpText,
-  LINK_EXPIRED_TEXT,
-  LINK_USED_TEXT,
-  LINKED_TEXT,
-} from "../../src/modules/channels/texts";
+import { localeOfUser } from "../../src/modules/channels/telegram/bot";
 import type { DB } from "../../src/platform/db";
 
 import { addMember, createOrgWithMailbox, linkChat, randomChatId } from "./fixtures";
@@ -133,7 +127,7 @@ describe("telegram router", () => {
       await send(chatId, `/start ${token}`);
       expect(calls).toHaveLength(1);
       expect(calls[0]?.method).toBe("sendMessage");
-      expect(calls[0]?.payload.text).toBe(LINKED_TEXT);
+      expect(calls[0]?.payload.text).toBe(textTables.en.bot.linked);
       expect(calls[0]?.payload.link_preview_options).toEqual({ is_disabled: true });
       expect(calls[0]?.payload.parse_mode).toBeUndefined();
       expect(await linkCount(trx, chatId)).toBe(1);
@@ -151,7 +145,7 @@ describe("telegram router", () => {
       calls.length = 0;
       await send(second, `/start ${token}`);
       expect(calls).toHaveLength(1);
-      expect(calls[0]?.payload.text).toBe(LINK_USED_TEXT);
+      expect(calls[0]?.payload.text).toBe(textTables.en.bot.linkUsed);
       expect(await linkCount(trx, second)).toBe(0);
     });
   });
@@ -167,7 +161,7 @@ describe("telegram router", () => {
       await send(chatId, `/start ${token}`);
       expect(calls).toHaveLength(1);
       expect(calls[0]?.method).toBe("sendMessage");
-      expect(calls[0]?.payload.text).toBe(ALREADY_LINKED_TEXT);
+      expect(calls[0]?.payload.text).toBe(textTables.en.bot.alreadyLinked);
       expect(await linkCount(trx, chatId)).toBe(1);
     });
   });
@@ -184,7 +178,7 @@ describe("telegram router", () => {
       );
       await send(linked.chatId, `/start ${token}`);
       expect(calls).toHaveLength(1);
-      expect(calls[0]?.payload.text).toBe(LINK_EXPIRED_TEXT);
+      expect(calls[0]?.payload.text).toBe(textTables.en.bot.linkExpired);
     });
   });
 
@@ -196,8 +190,38 @@ describe("telegram router", () => {
       const { token } = await createLinkToken(trx, { orgId }, userId, new Date(T.getTime() - 16 * 60_000));
       await send(chatId, `/start ${token}`);
       expect(calls).toHaveLength(1);
-      expect(calls[0]?.payload.text).toBe(LINK_EXPIRED_TEXT);
+      expect(calls[0]?.payload.text).toBe(textTables.en.bot.linkExpired);
       expect(await linkCount(trx, chatId)).toBe(0);
+    });
+  });
+
+  test("D12: a failed locale read falls back to pl and warns with the user id only", async () => {
+    await withRollback(db, async (trx) => {
+      const { userId } = await createOrgWithMailbox(trx);
+      // Only the read of the users table fails; the error text must not reach the log.
+      const failing = new Proxy(trx, {
+        get(target, prop) {
+          if (prop === "selectFrom") {
+            return (table: string) => {
+              if (table === "users") throw new Error("MARKER-DB-DOWN secret detail");
+              return (target.selectFrom as (name: string) => unknown)(table);
+            };
+          }
+          const value: unknown = Reflect.get(target, prop);
+          return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+        },
+      });
+      expect(await localeOfUser(failing, userId)).toBe("pl");
+      const warned = lines.filter(
+        (line) => line.level === "error" && line.text.includes("telegram_locale_read_failed")
+      );
+      expect(warned).toHaveLength(1);
+      expect(warned[0]?.text).toContain(userId);
+      expect(warned[0]?.text).not.toContain("MARKER-DB-DOWN");
+      // A working read: no row choice gives pl; a stored choice wins.
+      expect(await localeOfUser(trx, userId)).toBe("pl");
+      await trx.updateTable("users").set({ locale: "en" }).where("id", "=", userId).execute();
+      expect(await localeOfUser(trx, userId)).toBe("en");
     });
   });
 
@@ -222,7 +246,11 @@ describe("telegram router", () => {
       for (const text of ["/start", "hello", "/foo"]) {
         await send(linked.chatId, text);
       }
-      expect(calls.map((call) => call.payload.text)).toEqual([helpText(), helpText(), helpText()]);
+      expect(calls.map((call) => call.payload.text)).toEqual([
+        textTables.en.bot.help,
+        textTables.en.bot.help,
+        textTables.en.bot.help,
+      ]);
       expect(fake.commands).toHaveLength(1);
     });
   });
@@ -261,7 +289,7 @@ describe("telegram router", () => {
       await tap(linked.chatId, "fe:abc");
       expect(calls).toHaveLength(1);
       expect(calls[0]?.method).toBe("answerCallbackQuery");
-      expect(calls[0]?.payload.text).toBe(ERROR_TEXT);
+      expect(calls[0]?.payload.text).toBe(textTables.en.bot.error);
       const errors = lines.filter((line) => line.level === "error");
       expect(errors).toHaveLength(1);
       expect(errors[0]?.text).toContain("callback failed");
@@ -329,7 +357,7 @@ describe("telegram router", () => {
       await send(linked.chatId, "/status");
       expect(calls).toHaveLength(1);
       expect(calls[0]?.method).toBe("sendMessage");
-      expect(calls[0]?.payload.text).toBe(ERROR_TEXT);
+      expect(calls[0]?.payload.text).toBe(textTables.en.bot.error);
       const errors = lines.filter((line) => line.level === "error");
       expect(errors).toHaveLength(1);
       expect(errors[0]?.text).toContain("command failed");
@@ -349,7 +377,7 @@ describe("telegram router", () => {
         return prev(method, payload);
       });
       await send(linked.chatId, "/status");
-      expect(calls.filter((call) => call.payload.text === ERROR_TEXT)).toHaveLength(0);
+      expect(calls.filter((call) => call.payload.text === textTables.en.bot.error)).toHaveLength(0);
       expect(calls.filter((call) => call.method === "sendMessage")).toHaveLength(1);
       expect(lines.filter((line) => line.text.includes("replying to a command failed"))).toHaveLength(1);
       expect(lines.filter((line) => line.text.includes("command failed"))).toHaveLength(1);
