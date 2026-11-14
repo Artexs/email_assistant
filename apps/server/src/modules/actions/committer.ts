@@ -9,10 +9,12 @@ import { auditEvents, recordAudit } from "../audit";
 import {
   composeMessage,
   getMailbox,
+  HostNotAllowedError,
   INBOX,
   listSyncFolders,
   listSyncTargets,
   MailAuthError,
+  markHostBlocked,
   openMailboxProvider,
   setFolderMapEntry,
   setMailboxStatus,
@@ -200,6 +202,8 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
       if (error instanceof MailAuthError) {
         await setMailboxStatus(deps.db, ctx, mailboxId, "auth_error", now);
         log.warn(`committer ${mailboxId}: login failed, status is now auth_error`);
+      } else if (error instanceof HostNotAllowedError) {
+        await markHostBlocked(deps.db, ctx, mailboxId, { now, source: "committer" });
       } else if (error instanceof SoftError) {
         log.warn(`committer ${mailboxId}: ${describeError(error)}; the next tick tries again`);
       } else {

@@ -40,14 +40,21 @@ export interface HostStatusDeps {
 }
 
 // The status change and its audit row share one transaction (the caller's, when `db` is one).
+// `seenChangedAt` is the episode the check read: a block that began after the read keeps its status.
 async function reopenHost(
   db: Db | Transaction<DB>,
   ctx: TenantContext,
   mailboxId: string,
-  now: Date
+  now: Date,
+  seenChangedAt: Date
 ): Promise<boolean> {
   const run = async (trx: Transaction<DB>): Promise<boolean> => {
-    const changed = await changeMailboxStatus(trx, ctx, mailboxId, { from: "host_blocked", to: "active", at: now });
+    const changed = await changeMailboxStatus(trx, ctx, mailboxId, {
+      from: "host_blocked",
+      to: "active",
+      at: now,
+      seenChangedAt,
+    });
     if (changed) {
       await recordAudit(trx, ctx, {
         actor: "system",
@@ -59,6 +66,41 @@ async function reopenHost(
     return changed;
   };
   return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
+}
+
+/** The way into host_blocked. Only an active mailbox changes: a pause or a login error stays. Never throws: each outcome is one log line. */
+export async function markHostBlocked(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  input: { now: Date; source: "sync" | "committer" }
+): Promise<boolean> {
+  const run = async (trx: Transaction<DB>): Promise<boolean> => {
+    const changed = await changeMailboxStatus(trx, ctx, mailboxId, {
+      from: "active",
+      to: "host_blocked",
+      at: input.now,
+    });
+    if (changed) {
+      await recordAudit(trx, ctx, {
+        actor: "system",
+        event: auditEvents.mailboxHostBlocked,
+        data: { mailbox_id: mailboxId, source: input.source },
+        at: input.now,
+      });
+    }
+    return changed;
+  };
+  let changed: boolean;
+  try {
+    changed = await (db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run));
+  } catch (error) {
+    log.error("mailbox_host_block_failed", { mailbox_id: mailboxId, ...errorFields(error) });
+    return false;
+  }
+  if (changed) log.warn("mailbox_host_blocked", { mailbox_id: mailboxId, reason: input.source });
+  else log.info("mailbox_host_refused", { mailbox_id: mailboxId });
+  return changed;
 }
 
 /** The way out of host_blocked. Never throws: each failure is one log line, and the sync run goes on. */
@@ -81,7 +123,7 @@ export async function recheckBlockedHosts(deps: HostStatusDeps): Promise<{ check
       const hosts = await checkMailboxHosts(mailbox);
       checked += 1;
       if (hosts.imap === "allowed" && hosts.smtp === "allowed") {
-        if (await reopenHost(deps.db, ctx, mailboxId, now)) {
+        if (await reopenHost(deps.db, ctx, mailboxId, now, mailbox.status_changed_at)) {
           reopened += 1;
           log.info("mailbox_host_allowed", { mailbox_id: mailboxId });
         }
