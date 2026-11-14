@@ -56,6 +56,7 @@ export interface TelegramRuntimeDeps {
   sendScope: SendScope;
   testMail: TestMailRule;
   operatorContact: string | null;
+  syncEveryMin: number;
   // Tests, and TELEGRAM_API_ROOT (loopback only, platform/config).
   apiRoot?: string;
   // Only for tests.
@@ -92,6 +93,7 @@ export function createTelegramRuntime(deps: TelegramRuntimeDeps): TelegramRuntim
         sendScope: deps.sendScope,
         testMail: deps.testMail,
         operatorContact: deps.operatorContact,
+        syncEveryMin: deps.syncEveryMin,
       }),
     },
     { botInfo: deps.botInfo, apiRoot: deps.apiRoot }

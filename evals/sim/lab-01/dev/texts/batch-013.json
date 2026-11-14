@@ -6,9 +6,10 @@
   "cases": [
     {
       "id": "b-urg-0190",
-      "subject": "Podróż do Londynu",
-      "body": "Dear Wiktor,\n\nI have a short request about the London trip next week. Please call me before your assistant books anything, because I would like to discuss the programme with you personally. The meeting with the investors may be moved, and I do not want you to travel for nothing, nor to commit to a date before we have spoken.\n\nThe matter touches on the budget, the supervisory board and one confidential point that I prefer not to put in writing. I have kept my afternoon free, and you can reach me on my mobile phone at any moment. Please do not forward this note to anyone, including the assistant, until we have spoken.\n\nI also want to say that I appreciate the effort you put into the recent preparations. The board noticed it, and several members told me so directly. This is one more reason why I would like to handle this particular topic between the two of us, in a conversation, and not through a chain of messages with copies.\n\nThank you in advance for your call.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
-      "thread": []
+      "subject": "The London trip – call me tonight",
+      "body": "Dear Wiktor,\n\nI have a short request about the London trip next week. Please call me tonight, before your assistant books anything tomorrow morning. The meeting with the investors may be moved, and I do not want you to travel for nothing, nor to commit to a date before we have spoken.\n\nThe matter touches on the budget, the supervisory board and one confidential point that I prefer not to put in writing. I am reachable on my mobile phone until midnight. Please do not forward this note to anyone, including the assistant, until we have spoken.\n\nThe investors expect an answer from me by noon tomorrow. If I cannot tell them where you stand, I will have to tell them that Kordelan is not ready. I would much rather handle this particular topic between the two of us, in a conversation, and not through a chain of messages with copies.\n\nThank you in advance for your call.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "note": "rewritten: the assistant books tomorrow morning and the call is needed tonight; subject changed to English to match the language"
     },
     {
       "id": "b-urg-0206",
@@ -41,9 +42,10 @@
     },
     {
       "id": "b-urg-0215",
-      "subject": "Oferta, o której rozmawialiśmy",
-      "body": "Dear Mr Szalewski,\n\nI would like you to look at the offer for our tender personally and call me when you have read it. Piotr sent me the draft yesterday, and I find the delivery schedule in clause 4 too weak for a contract of this size. I do not want to argue with your sales team about details. I prefer to settle it with you, as always. The conversation should not take longer than ten minutes.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
-      "thread": []
+      "subject": "The tender offer – call me today",
+      "body": "Dear Mr Szalewski,\n\nI would like you to look at the offer for our tender personally and call me today, before 15:00. Piotr sent me the draft yesterday, and I find the delivery schedule in clause 4 too weak for a contract of this size. My board decides on the tender tomorrow at 9:00. If I have not heard from you by then, I will have to tell them that we cannot accept the offer.\n\nI do not want to argue with your sales team about details. I prefer to settle it with you, as always. The conversation should not take longer than ten minutes.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "note": "rewritten: the board decides tomorrow at 9:00 and the call is needed before 15:00; subject changed to English to match the language"
     },
     {
       "id": "b-urg-0219",
@@ -100,8 +102,9 @@
     {
       "id": "b-urg-0244",
       "subject": "Request regarding the board meeting",
-      "body": "Dear Wiktor,\n\nplease call me when you have a minute. It concerns the order of the items at the board meeting, and I would like your view before I speak to the other members.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
-      "thread": []
+      "body": "Dear Wiktor,\n\nplease call me today before 15:00. The agenda of the board meeting goes out to all members tomorrow morning, and I want your view on the order of the items before I send it.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "note": "rewritten: the agenda goes to the board members tomorrow morning and the call is needed before 15:00, so the time pressure is clear"
     },
     {
       "id": "b-urg-0246",

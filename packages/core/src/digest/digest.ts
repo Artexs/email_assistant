@@ -2,6 +2,7 @@ import type { CoreTexts } from "../texts";
 import type { Category, MailboxMode } from "../triage/categories";
 
 import { categoryTag } from "./labels";
+import { llmPauseLine, type LlmPause } from "./llm-pause";
 import { formatClock, formatDay, localDateTime, localToInstant } from "./local-time";
 import { MESSAGE_MAX_CHARS, type OutButton, type OutMessage } from "./message";
 import { feedbackButtons } from "./notices";
@@ -60,6 +61,8 @@ export interface DigestInput {
   skippedBacklog: number;
   waiting: number;
   delegations?: { open: number; overdue: number };
+  // The LLM pause (F100 stage 07, flag `llm_pause_line`). Set: its line is the first line of the footer.
+  llmPause?: LlmPause;
   // The handled share of the last 7 days (D24): set only while `handled_share` is on.
   handled?: DigestHandled;
   maxLines?: number;
@@ -147,6 +150,7 @@ function renderListed(input: DigestInput, listed: readonly DigestItem[], texts: 
     return rest > 0 ? [{ rest, name: texts.digest.moreName[category](rest) }] : [];
   });
   const footer: string[] = [];
+  if (input.llmPause !== undefined) footer.push(llmPauseLine(input.llmPause, input.timeZone, input.now, texts));
   const more = parts.reduce((sum, part) => sum + part.rest, 0);
   if (more > 0) footer.push(texts.digest.more(more, parts.map((part) => `${part.rest} ${part.name}`).join(", ")));
   if (input.skippedTooOld > 0) footer.push(texts.digest.notProcessedOld(input.skippedTooOld));
@@ -158,7 +162,7 @@ function renderListed(input: DigestInput, listed: readonly DigestItem[], texts: 
   if (total > 0 && input.mailboxes.length > 0 && input.mailboxes.every((mailbox) => mailbox.mode === "shadow")) {
     footer.push(texts.digest.shadow);
   }
-  // Stage 07 of F100 puts the LLM pause line before this one.
+  // The handled share is the last footer line, after the pause line (the first line) and the shadow line.
   if (input.handled !== undefined && input.handled.triaged > 0) {
     const { handled, wouldHandle, triaged, shadowOnly } = input.handled;
     if (handled > 0 || !shadowOnly) footer.push(texts.digest.handled(rateText(handled, triaged, texts.common.of)));

@@ -12,7 +12,7 @@ const log = createLog("mailbox-audit");
 
 const usage = [
   "usage: bun run mailbox:audit --org-id <uuid> --mailbox-id <uuid> --since <ISO time>",
-  "  Read-only. Run it right after a sync: mail from the last 5 minutes can show as missing.",
+  "  Read-only. Run it right after a sync: mail from the last sync interval (MAIL_SYNC_EVERY_MIN, default 2 minutes) can show as missing.",
   "  Checks INBOX and every other enabled synced folder. cross = mail that has a row in another synced folder (not lost).",
   "  Exit 0: no difference in INBOX. Exit 2: lost or duplicate INBOX mail. Exit 1: error. cross never changes the code.",
 ].join("\n");

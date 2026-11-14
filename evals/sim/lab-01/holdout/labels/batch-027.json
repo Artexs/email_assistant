@@ -1,0 +1,133 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-027",
+  "checker": "claude-haiku-5-5",
+  "labels": [
+    {
+      "id": "b-rep-0024",
+      "category": "needs_reply",
+      "blindHash": "9025e6b74c220fbe2bccf110be0257e31057a88f050ba1d41b495f7ebb66630e"
+    },
+    {
+      "id": "b-rep-0025",
+      "category": "needs_reply",
+      "blindHash": "7c3c7f7f38eef6e42e5aa96792f4838727598764bec93f6d676e29b8098e2f40"
+    },
+    {
+      "id": "b-rep-0026",
+      "category": "needs_reply",
+      "blindHash": "702dfa33c6281a2e6cc6209c46b53c8e48bc8173eade801ca14a08f7fde21ab6"
+    },
+    {
+      "id": "b-rep-0027",
+      "category": "needs_reply",
+      "blindHash": "eee25b70455eabb6c470a38a3d2b27daeb8f68b6b1735ec1e47c38a84d730d34"
+    },
+    {
+      "id": "b-rep-0029",
+      "category": "needs_reply",
+      "blindHash": "61920a679f0e1245a3c652dc179cf8eda8590d735ba502a3cc3b263bce56fa97"
+    },
+    {
+      "id": "b-rep-0031",
+      "category": "needs_reply",
+      "blindHash": "9b6c2d1a479558cce88dad6a80fd456edc9c374f4f5bc26b8343165daf82d702"
+    },
+    {
+      "id": "b-rep-0032",
+      "category": "needs_reply",
+      "blindHash": "d4fc1d4fa077267ac50837dad331b8ee615801c9c392f33ebe36a80268a24e3c"
+    },
+    {
+      "id": "b-rep-0033",
+      "category": "needs_reply",
+      "blindHash": "121146a168ba3cba41ccc90201b0b8793d676400b777d84d08d77f4549cbc6de"
+    },
+    {
+      "id": "b-rep-0034",
+      "category": "delegation",
+      "blindHash": "952e1fffdd7dfa216d06f3b2f10541f84bf1f2e5b42d9bf25bd6981edee8bfa6"
+    },
+    {
+      "id": "b-rep-0035",
+      "category": "needs_reply",
+      "blindHash": "c7b44ac71563ca983dd94a639a86c739d412948f939abe9ea5a6250b92db5a21"
+    },
+    {
+      "id": "b-rep-0038",
+      "category": "needs_reply",
+      "blindHash": "dea8f74583153143daebf13af96e8aa086e1625c3bca40470365fdbbf0cccc7b"
+    },
+    {
+      "id": "b-rep-0039",
+      "category": "urgent",
+      "blindHash": "5e300ce16a537532007b75bcb1f85dcc576d27bbcfdb06cf8866d23ae50fd878"
+    },
+    {
+      "id": "b-rep-0040",
+      "category": "needs_reply",
+      "blindHash": "244a4d3e21037b4d9ff8202f8fe065724837f537ee2b801b9c79f846915149fc"
+    },
+    {
+      "id": "b-rep-0041",
+      "category": "needs_reply",
+      "blindHash": "6577cc447e03241382c4b48fd70db0a0411bccd76d6c2bbab37b2b307533e7a3"
+    },
+    {
+      "id": "b-rep-0043",
+      "category": "needs_reply",
+      "blindHash": "b49c15b176c45eee96d3c1f12b21e72ccd909ced2a3370ac3f2ab8a1a3552eb4"
+    },
+    {
+      "id": "b-rep-0046",
+      "category": "needs_reply",
+      "blindHash": "5a6753b080333cfafa5dcdec26c0b5be53c0044f7ab4634ea618d6ac7d299f0f"
+    },
+    {
+      "id": "b-rep-0047",
+      "category": "needs_reply",
+      "blindHash": "868c3045b5663647f53ca0434b9751d0292d121a76da6878ca0c52b5d781b901"
+    },
+    {
+      "id": "b-rep-0048",
+      "category": "needs_reply",
+      "blindHash": "3e3eaea844956f689268c7075f41d0f551ff133f7708c5721c38f51be56ff1d8"
+    },
+    {
+      "id": "b-rep-0049",
+      "category": "urgent",
+      "blindHash": "0e4150e95ae3a6a51537f5d45b8b9489a2e623c45aa7fa3eccc376da76c25623"
+    },
+    {
+      "id": "b-rep-0050",
+      "category": "needs_reply",
+      "blindHash": "1b4ff8b5858013794bb05e28067204899e1a6622450d0db7463c7ab11c9fb7ff"
+    },
+    {
+      "id": "b-rep-0051",
+      "category": "needs_reply",
+      "blindHash": "002fbd7a0eef17dd32c48b5d668e1d8a12406362e8dfcef4c3d905d3c9d4f390"
+    },
+    {
+      "id": "b-rep-0052",
+      "category": "delegation",
+      "blindHash": "9f7da51ca174e70fd81da6133e255b0c2a426f377b7a5aab07e900d82d9375b4"
+    },
+    {
+      "id": "b-rep-0053",
+      "category": "needs_reply",
+      "blindHash": "19e6a673201367ab9b797eee77c0b192dd68f32d5145d98934a9f0b54ef4952f"
+    },
+    {
+      "id": "b-rep-0054",
+      "category": "delegation",
+      "blindHash": "c96081b74376f1252ae815b3d1667b46173b0230246174f42b0ae598c5e05d99"
+    },
+    {
+      "id": "b-rep-0055",
+      "category": "urgent",
+      "blindHash": "2b4d4dda7ba70988dd3c8587a13f455df775f5e145365c39de837d01a9c1a91b"
+    }
+  ]
+}

@@ -77,7 +77,13 @@ const PL_OPEN = { one: "otwarte", few: "otwarte", many: "otwartych", other: "otw
 
 const PL_CALLS = { one: "wywołanie", few: "wywołania", many: "wywołań", other: "wywołań" } as const;
 
-const PL_LABELS = { one: "etykiety", few: "etykiety", many: "etykiet", other: "etykiet" } as const;
+// After "z" and a count the noun is genitive plural, except after 1.
+const PL_LABELS = { one: "etykiety", few: "etykiet", many: "etykiet", other: "etykiet" } as const;
+
+const PL_MISSED = { one: "pominięta", few: "pominięte", many: "pominiętych", other: "pominiętych" } as const;
+
+// Polish writes a decimal with a comma.
+const plDecimal = (value: number | string): string => String(value).replace(".", ",");
 
 const PL_REVIEW = {
   one: (count: number) => `${count} wiadomość z odpowiedzią czeka`,
@@ -98,7 +104,7 @@ export const noticeTexts = {
     },
     syncStale: {
       first: (address) => `⚠️ Mail sync is late for ${address}.`,
-      last: (last) => `Last good sync: ${last}. The system tries again every 5 minutes.`,
+      last: (last) => `Last good sync: ${last}. The system keeps trying.`,
       status: "/status shows the state.",
       never: "never",
     },
@@ -174,7 +180,7 @@ export const noticeTexts = {
     },
     syncStale: {
       first: (address) => `⚠️ Synchronizacja poczty jest opóźniona: ${address}.`,
-      last: (last) => `Ostatnia udana synchronizacja: ${last}. System ponawia próbę co 5 minut.`,
+      last: (last) => `Ostatnia udana synchronizacja: ${last}. System dalej próbuje.`,
       status: "/status pokazuje stan.",
       never: "nigdy",
     },
@@ -224,7 +230,8 @@ export const noticeTexts = {
       title: (from, to) => `📈 Tydzień ${from} – ${to}`,
       noMail: "W tym tygodniu nie było poczty.",
       missed: (rate) => `Pominięta ważna poczta (dolna granica): ${rate}`,
-      sample: (missed, important) => `Losowa próba z /review: ${missed} pominiętych z ${important}`,
+      sample: (missed, important) =>
+        `Losowa próba z /review: ${missed} ${PL_MISSED[pluralCategory("pl", missed)]} z ${important}`,
       loopsClosed: (percent, counts) => `${percent} zamkniętych ${counts}`,
       loopsSurfaced: (percent, counts) => `${percent} zgłoszonych Ci ${counts}`,
       loops: (closed, surfaced, pending) =>
@@ -241,10 +248,10 @@ export const noticeTexts = {
       handled: (rate) => `Załatwione za Ciebie: ${rate}`,
       wouldHandle: (rate) => `Załatwiłbym (tryb podglądu): ${rate}`,
       urgent: (p90, noticed, withoutNotice) =>
-        `Czas powiadomienia o pilnej poczcie: p90 ${p90 === null ? "–" : `${p90} min`} (${noticed} ${PL_NOTICES[pluralCategory("pl", noticed)]}${withoutNotice > 0 ? `, ${withoutNotice} bez powiadomienia` : ""})`,
+        `Czas powiadomienia o pilnej poczcie: p90 ${p90 === null ? "–" : `${plDecimal(p90)} min`} (${noticed} ${PL_NOTICES[pluralCategory("pl", noticed)]}${withoutNotice > 0 ? `, ${withoutNotice} bez powiadomienia` : ""})`,
       urgentNone: "Czas powiadomienia o pilnej poczcie: brak pilnej poczty",
       cost: (perMailbox, target, unpricedCalls) =>
-        `Koszt: $${perMailbox} miesięcznie na skrzynkę (cel ≤ $${target})${unpricedCalls > 0 ? `, ${unpricedCalls} ${PL_CALLS[pluralCategory("pl", unpricedCalls)]} bez ceny` : ""}`,
+        `Koszt: $${plDecimal(perMailbox)} miesięcznie na skrzynkę (cel ≤ $${plDecimal(target)})${unpricedCalls > 0 ? `, ${unpricedCalls} ${PL_CALLS[pluralCategory("pl", unpricedCalls)]} bez ceny` : ""}`,
       category: {
         urgent: "pilne",
         needs_reply: "do odpowiedzi",

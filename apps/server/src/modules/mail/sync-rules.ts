@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { type FolderMessageMeta, type MessageMeta } from "./port";
-import type { MovedRow } from "./repo";
+import type { MoveCandidateRow, MovedRow } from "./repo";
 
 // Pure dedup and "is this mail new" rules (docs/architecture.md §6.1).
 // A known mail is never triaged again: `update_uid` and `returned` never change `status`.
@@ -222,6 +222,39 @@ export function matchReturned(
     );
     // A row whose `inbox_uid` is the meta UID wins over a row whose folder `uid` is.
     const row = matches.find((candidate) => candidate.inbox_uid === meta.uid) ?? matches[0];
+    if (row !== undefined) hits.set(row.id, { emailId: row.id, uid: meta.uid });
+  }
+  return [...hits.values()];
+}
+
+/**
+ * A user move of a known mail into a synced folder: the server keeps the UID (Interia has one UID counter per mailbox),
+ * so a meta of that folder at the row's own `uid`, not `\Deleted`, with the identity of the row, is the row's mail.
+ * Each row and each meta give at most one hit; for one meta the first matching row of `rows` wins.
+ */
+export function matchMoved(
+  metas: readonly FolderMessageMeta[],
+  rows: readonly MoveCandidateRow[],
+  mode: IdentityMode = IDENTITY_MODE
+): { emailId: string; uid: number }[] {
+  const hits = new Map<string, { emailId: string; uid: number }>();
+  for (const meta of metas) {
+    if (isDeleted(meta)) continue;
+    const row = rows.find(
+      (candidate) =>
+        !hits.has(candidate.id) &&
+        candidate.uid === meta.uid &&
+        sameMailIdentity(
+          meta,
+          {
+            messageId: candidate.message_id_header,
+            contentHash: candidate.content_hash,
+            from: candidate.from_address,
+            receivedAt: candidate.received_at,
+          },
+          mode
+        )
+    );
     if (row !== undefined) hits.set(row.id, { emailId: row.id, uid: meta.uid });
   }
   return [...hits.values()];

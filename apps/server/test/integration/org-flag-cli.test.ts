@@ -71,6 +71,7 @@ describe("org:flag CLI", () => {
     expect(result.stdout).toContain("security_log off (default)");
     expect(result.stdout).toContain("review_command off (default)");
     expect(result.stdout).toContain("mistake_capture off (default)");
+    expect(result.stdout).toContain("llm_pause_line off (default)");
     expect(result.stdout).toContain("weekly_report off (default)");
     expect(result.stdout).toContain("handled_share off (default)");
     expectNoName(result, orgName);

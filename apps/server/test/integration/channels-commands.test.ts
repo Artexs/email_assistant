@@ -5,7 +5,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
 import { noDelegationHooks } from "../../src/modules/actions";
-import { auditEvents, recordAudit } from "../../src/modules/audit";
+import { auditEvents, recordAudit, recordLlmCall } from "../../src/modules/audit";
 import {
   createUpdateHandlers,
   digestNowMessage,
@@ -21,7 +21,7 @@ import { insertDefaultSettings } from "../../src/modules/config";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { insertMailbox, listSyncTargets, markSynced, setMailboxStatus } from "../../src/modules/mail/repo";
 import { insertDigest, markDigestSent } from "../../src/modules/reports";
-import { setDigestTimes } from "../../src/modules/tenancy";
+import { setDigestTimes, setOrgFeature } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
 
 import {
@@ -63,6 +63,7 @@ function depsAt(trx: Transaction<DB>, now: Date, extra: Partial<CommandDeps> = {
     sendScope: { kind: "off" },
     testMail: NO_TEST_SENDERS,
     operatorContact: null,
+    syncEveryMin: 2,
     ...extra,
   };
 }
@@ -317,6 +318,45 @@ describe("statusMessage", () => {
     });
   });
 
+  test("the LLM pause line follows the flag llm_pause_line, after the LLM line", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, link } = await setup(trx);
+      const row = (outcome: string, when: Date) =>
+        recordLlmCall(
+          trx,
+          { orgId: a.orgId },
+          {
+            mailboxId: a.mailboxId,
+            role: "classifier",
+            promptVersion: "test",
+            model: "gemini-3.5-flash-lite",
+            outcome,
+            tokensIn: null,
+            tokensOut: null,
+            latencyMs: 5,
+            at: when,
+          }
+        );
+      await row("ok", at(-20 * MIN));
+      await row("http_429_quota", at(-10 * MIN));
+      await row("http_429_quota", at(-5 * MIN));
+
+      const off = await statusMessage(depsAt(trx, T), link);
+      expect(off.text).not.toContain("LLM paused");
+
+      await setOrgFeature(trx, { orgId: a.orgId }, { flag: "llm_pause_line", enabled: true, actor: "cli", now: T });
+      const on = (await statusMessage(depsAt(trx, T), link)).text.split("\n");
+      const llmAt = on.indexOf("LLM: gemini · gemini-3.5-flash-lite");
+      expect(llmAt).toBeGreaterThan(-1);
+      expect(on[llmAt + 1]).toBe(
+        "⏸ LLM paused since 10:50: the provider quota or budget is spent (http_429_quota). Triage waits."
+      );
+
+      await row("ok", at(-2 * MIN));
+      expect((await statusMessage(depsAt(trx, T), link)).text).not.toContain("LLM paused");
+    });
+  });
+
   test("a mailbox without settings is mode none", async () => {
     await withRollback(db, async (trx) => {
       const { a, link } = await setup(trx);
@@ -460,8 +500,9 @@ describe("pauseMailboxes and resumeMailboxes", () => {
       expect(again.text).toBe(`${address} was paused already.`);
       expect(await auditRows(trx, a.orgId, auditEvents.mailboxPaused)).toHaveLength(1);
 
-      const resumed = await resumeMailboxes(depsAt(trx, at(2 * MIN)), link);
+      const resumed = await resumeMailboxes(depsAt(trx, at(2 * MIN), { syncEveryMin: 3 }), link);
       expect(resumed.text).toStartWith(`▶️ Resumed: ${address}\n`);
+      expect(resumed.text).toContain("The next sync runs within 3 minutes.");
       const back = await mailboxRow(trx, a.mailboxId);
       expect(back.status).toBe("active");
       expect(back.status_changed_at).toEqual(at(2 * MIN));

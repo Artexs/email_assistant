@@ -28,6 +28,11 @@ export interface DigestTexts {
   waiting: (count: number) => string;
   delegations: (open: number, overdue: number) => string;
   shadow: string;
+  // The LLM pause line of /status and the digest footer (F100 stage 07): the quota case has its own words.
+  llmPause: {
+    quota: (since: string, code: string) => string;
+    other: (since: string, code: string) => string;
+  };
   // The handled-share line of the footer (F100 stage 16); `rate` is a text like "62% (124 of 200)".
   handled: (rate: string) => string;
   wouldHandle: (rate: string) => string;
@@ -82,6 +87,11 @@ export const digestTexts = {
     waiting: (count) => `⏳ Waiting for triage: ${count}`,
     delegations: (open, overdue) => `👥 Delegations: ${open} waiting for a reply, ${overdue} overdue`,
     shadow: "Shadow mode: the system changed nothing in your mailbox.",
+    llmPause: {
+      quota: (since, code) =>
+        `⏸ LLM paused since ${since}: the provider quota or budget is spent (${code}). Triage waits.`,
+      other: (since, code) => `⏸ LLM paused since ${since} (${code}). Triage waits.`,
+    },
     handled: (rate) => `🤖 Handled in the last 7 days: ${rate}`,
     wouldHandle: (rate) => `🤖 Would handle in the last 7 days: ${rate}`,
   },
@@ -119,6 +129,11 @@ export const digestTexts = {
     delegations: (open, overdue) =>
       `👥 Zlecenia: ${open} ${PL_WAIT[pluralCategory("pl", open)]} na odpowiedź, ${overdue} po terminie`,
     shadow: "Tryb podglądu: system niczego nie zmienił w Twojej skrzynce.",
+    llmPause: {
+      quota: (since, code) =>
+        `⏸ Klasyfikacja AI wstrzymana od ${since}. Wyczerpał się limit lub budżet u dostawcy (${code}). Wiadomości czekają.`,
+      other: (since, code) => `⏸ Klasyfikacja AI wstrzymana od ${since} (${code}). Wiadomości czekają.`,
+    },
     handled: (rate) => `🤖 Załatwione w ostatnich 7 dniach: ${rate}`,
     wouldHandle: (rate) => `🤖 Załatwiłbym w ostatnich 7 dniach: ${rate}`,
   },

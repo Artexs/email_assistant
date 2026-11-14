@@ -1,0 +1,383 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-029",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-rep-0084",
+      "subject": "Tender timeline: can you attend the client meeting?",
+      "body": "Dear Mr Szalewski,\n\nthe client invited both our companies to a presentation of the joint tender on 29.01.2027 at 11:00. Will you attend personally, or should Piotr represent Kordelan? I need to confirm by Wednesday.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Dear Mr Szalewski,</p><p style=\"margin:0 0 12px 0\">the client invited both our companies to a presentation of the joint tender on 29.01.2027 at 11:00. Will you attend personally, or should Piotr represent Kordelan? I need to confirm by Wednesday.</p><p style=\"margin:0 0 12px 0\">Kind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners</p></div>",
+      "thread": [],
+      "expectedPoints": [
+        "Say whether the executive attends the client presentation on 29.01.2027 or sends the sales coordinator",
+        "Answer by Wednesday"
+      ],
+      "mustNot": [
+        "Do not promise commercial terms for the client meeting"
+      ]
+    },
+    {
+      "id": "b-rep-0086",
+      "subject": "Dodatkowe stawki za pracę w weekendy",
+      "body": "Cześć Wiktor,\n\nzwiązki zawodowe w magazynie w Gdyni zwróciły się z prośbą o podniesienie dodatku za pracę w soboty z 50 do 75 procent stawki godzinowej. Argumentują, że w ostatnich miesiącach pracujemy w soboty prawie co drugi tydzień, a dodatek nie zmienił się od trzech lat.\n\nPoliczyłem, że zmiana kosztowałaby nas około 11 000 PLN miesięcznie. Z drugiej strony, brak decyzji grozi napięciami i większą rotacją. Chciałbym zaproponować kompromis: 65 procent od marca, z przeglądem po pół roku.\n\nCzy zgadzasz się na taki kompromis? Potrzebuję Twojej decyzji przed spotkaniem ze związkami w czwartek.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "expectedPoints": [
+        "Approve or reject the compromise of a 65 percent Saturday allowance from March",
+        "Decide before Thursday's meeting with the unions"
+      ],
+      "mustNot": [
+        "Do not agree to 75 percent without the finance director"
+      ]
+    },
+    {
+      "id": "b-rep-0087",
+      "subject": "Przetarg sieci: spór o termin płatności i Pana stanowisko",
+      "body": "Panie Wiktorze,\n\nwracam do sprawy przetargu, bo na ostatnim spotkaniu zostawiliśmy otwarty punkt, który może rozstrzygnąć całą sprawę. Chodzi o termin płatności faktur.\n\nNasz dział finansowy chce wprowadzić jednolity termin 60 dni dla wszystkich dostawców, którzy wygrają przetarg. Wiem, że Państwa obecny standard to 30 dni, i rozumiem, że dłuższy termin oznacza dla Pana zamrożony kapitał. Z drugiej strony, nasz zarząd stawia sprawę jasno: bez zgody na 60 dni oferta nie przejdzie do drugiego etapu oceny.\n\nZaproponowałam Pana firmie rozwiązanie pośrednie: 45 dni z możliwością skrócenia do 30 dni, jeśli zapłacimy z góry za część dostaw w sezonie. Chcę usłyszeć, czy to Pan akceptuje, czy ma Pan inną propozycję.\n\nProszę mi odpowiedzieć wprost, nie przez Pana koordynatora. Ta decyzja należy do Pana, bo dotyczy płynności firmy i marży na całym kontrakcie. Mam czas do końca tygodnia, a potem muszę przedstawić listę dostawców zarządowi. Jeśli nie dostanę odpowiedzi, wpiszę Pana firmę na listę rezerwową, co oznacza mniejszy udział w kontrakcie.\n\nWolałabym tego uniknąć, bo cenię współpracę, ale nie mogę czekać w nieskończoność. Proszę o szybką odpowiedź, najlepiej telefoniczną, a potem potwierdzoną krótkim mailem, żebym miała ją w aktach przetargu.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "expectedPoints": [
+        "Accept or reject 45-day payment terms with a 30-day option for prepayment",
+        "Offer a counter proposal if rejected",
+        "Answer himself, not through the sales coordinator",
+        "Reply by the end of the week"
+      ],
+      "mustNot": [
+        "Do not accept 60-day terms without finance review"
+      ]
+    },
+    {
+      "id": "b-rep-0088",
+      "subject": "Re: Odprawa eksportowa: opinia w sprawie zmiany brokera",
+      "body": "Szanowny Panie Prezesie,\n\nOliver napisał do Pana w sprawie opóźnień odpraw eksportowych na trasie do Szwecji. Dołączam do tej rozmowy, bo jako wspólnik w spółce zależy mi na szybkim rozwiązaniu.\n\nProponuję zmienić głównego brokera w porcie w Gdyni na firmę, z którą współpracujemy przy trasach bałtyckich. Gwarantuje ona odprawę w ciągu czterech godzin od zgłoszenia, a obecny broker potrzebuje czasem doby. Koszt jest wyższy o około 8 procent za zgłoszenie.\n\nCzy akceptuje Pan zmianę brokera? Proszę o odpowiedź do końca przyszłego tygodnia.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Szanowny Panie Prezesie,</p><p style=\"margin:0 0 12px 0\">Oliver napisał do Pana w sprawie opóźnień odpraw eksportowych na trasie do Szwecji. Dołączam do tej rozmowy, bo jako wspólnik w spółce zależy mi na szybkim rozwiązaniu.</p><p style=\"margin:0 0 12px 0\">Proponuję zmienić głównego brokera w porcie w Gdyni na firmę, z którą współpracujemy przy trasach bałtyckich. Gwarantuje ona odprawę w ciągu czterech godzin od zgłoszenia, a obecny broker potrzebuje czasem doby. Koszt jest wyższy o około 8 procent za zgłoszenie.</p><p style=\"margin:0 0 12px 0\">Czy akceptuje Pan zmianę brokera? Proszę o odpowiedź do końca przyszłego tygodnia.</p><p style=\"margin:0 0 12px 0\">Kind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners</p></div>",
+      "thread": [
+        {
+          "subject": "Customs delays Gdynia",
+          "body": "Wiktor, Swedish shipments are stuck again at the Gdynia broker. Third time this month. We need to decide on a change. Oliver"
+        }
+      ],
+      "expectedPoints": [
+        "Accept or reject the change of main customs broker in Gdynia",
+        "Answer by the end of next week"
+      ],
+      "mustNot": [
+        "Do not terminate the current broker contract in the reply"
+      ]
+    },
+    {
+      "id": "b-rep-0090",
+      "subject": "Stawki frachtu wspólnego: aktualizacja od kwietnia",
+      "body": "Szanowny Panie Prezesie,\n\nod kwietnia planujemy aktualizację stawek frachtu na wspólnych trasach do Skandynawii. Nasza analiza kosztów wskazuje na konieczność podwyżki o 3,5 procent, głównie z powodu wzrostu opłat drogowych i cen paliwa.\n\nMamy dwie propozycje. Pierwsza: podwyżka od razu od 1 kwietnia dla wszystkich klientów. Druga: podwyżka rozłożona na dwie raty, 2 procent od kwietnia i 1,5 procent od lipca.\n\nKtórą opcję Pan popiera? Chciałbym poznać Pańskie zdanie na piśmie przed spotkaniem zarządu wspólnego przedsięwzięcia w przyszłym tygodniu.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "expectedPoints": [
+        "Choose one-step or two-step freight rate rise from April",
+        "Answer in writing before the joint venture board meeting next week"
+      ],
+      "mustNot": [
+        "Do not communicate rates to clients"
+      ]
+    },
+    {
+      "id": "b-rep-0091",
+      "subject": "Praktyki letnie: czy ogłaszamy nabór?",
+      "body": "Cześć Wiktor,\n\nczy zgadzasz się na ogłoszenie naboru na praktyki letnie dla ośmiu studentów? Chciałbym ruszyć w przyszłym tygodniu.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "expectedPoints": [
+        "Approve or refuse a summer internship intake for eight students",
+        "Answer before next week"
+      ],
+      "mustNot": [
+        "Do not promise paid placements"
+      ]
+    },
+    {
+      "id": "b-rep-0092",
+      "subject": "Nowe wymogi celne dla przesyłek do Norwegii",
+      "body": "Szanowny Panie Prezesie,\n\nod lutego Norwegia wprowadza dodatkowe wymogi dla dokumentów przewozowych przesyłek chłodniczych. Wymagany będzie elektroniczny zapis temperatury w całym łańcuchu, a nie tylko na etapie załadunku.\n\nNasz system potrafi obsłużyć ten wymóg, ale wymaga integracji z rejestratorami w Państwa naczepach. Koszt jednorazowy to około 6 500 EUR za cały park.\n\nCzy chce Pan, abyśmy wdrożyli to rozwiązanie wspólnie, czy woli Pan własnego dostawcę? Proszę o odpowiedź do 28.01.2027.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "expectedPoints": [
+        "Choose joint rollout of electronic temperature logging or Kordelan's own supplier",
+        "Answer by 28.01.2027"
+      ],
+      "mustNot": [
+        "Do not approve the 6 500 EUR cost without finance"
+      ]
+    },
+    {
+      "id": "b-rep-0093",
+      "subject": "Brexit-style paperwork for the Irish lane: a proposal and a question",
+      "body": "Dear Mr Szalewski,\n\nI would like to put a proposal to you and ask for your own view on it. We see growing demand for transport of food products to Ireland, and our brokerage receives a number of enquiries each month from retailers there. At the moment, none of the companies in our joint venture offers a regular lane to Ireland.\n\nThe idea is simple. We start with one weekly departure from Gdynia via the Netherlands, with a ferry crossing, and we run it for three months as a pilot. The customs paperwork would be handled by our broker in Rotterdam, who has experience with Irish import rules. According to my calculation, the pilot needs a capacity of about twenty-four pallets per week and a budget of around 18 000 EUR for the first quarter, which we would share equally.\n\nThe risk is the low volume at the beginning. If the lane runs only half full, the loss would be about 5 000 EUR for each partner. On the other hand, the early start would give us a good position when the demand grows.\n\nWould you support such a pilot? And if yes, would you accept the equal split of the cost? I would also appreciate your view on whether Kordelan could provide the refrigerated trailers for the pilot, because we do not have enough of our own.\n\nI need your answer by 03.02.2027 to book the ferry capacity.\n\nKind regards,\nDaniel",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Dear Mr Szalewski,</p><p style=\"margin:0 0 12px 0\">I would like to put a proposal to you and ask for your own view on it. We see growing demand for transport of food products to Ireland, and our brokerage receives a number of enquiries each month from retailers there. At the moment, none of the companies in our joint venture offers a regular lane to Ireland.</p><p style=\"margin:0 0 12px 0\">The idea is simple. We start with one weekly departure from Gdynia via the Netherlands, with a ferry crossing, and we run it for three months as a pilot. The customs paperwork would be handled by our broker in Rotterdam, who has experience with Irish import rules. According to my calculation, the pilot needs a capacity of about twenty-four pallets per week and a budget of around 18 000 EUR for the first quarter, which we would share equally.</p><p style=\"margin:0 0 12px 0\">The risk is the low volume at the beginning. If the lane runs only half full, the loss would be about 5 000 EUR for each partner. On the other hand, the early start would give us a good position when the demand grows.</p><p style=\"margin:0 0 12px 0\">Would you support such a pilot? And if yes, would you accept the equal split of the cost? I would also appreciate your view on whether Kordelan could provide the refrigerated trailers for the pilot, because we do not have enough of our own.</p><p style=\"margin:0 0 12px 0\">I need your answer by 03.02.2027 to book the ferry capacity.</p><p style=\"margin:0 0 12px 0\">Kind regards,<br>Daniel</p></div>",
+      "thread": [],
+      "expectedPoints": [
+        "Say whether Kordelan supports a three-month Irish lane pilot",
+        "Say whether Kordelan accepts the equal cost split of about 18 000 EUR",
+        "Say whether Kordelan can provide refrigerated trailers",
+        "Answer by 03.02.2027"
+      ],
+      "mustNot": [
+        "Do not commit trailers or budget before operations and finance review"
+      ]
+    },
+    {
+      "id": "b-rep-0094",
+      "subject": "Polityka dywidendy: pytanie przed posiedzeniem",
+      "body": "Panie Prezesie,\n\nrada chce omówić na najbliższym posiedzeniu politykę dywidendy za rok 2026. Zanim to nastąpi, proszę o Pańskie stanowisko: czy zarząd rekomenduje wypłatę dywidendy, i jeśli tak, w jakiej wysokości.\n\nRada zwraca uwagę, że planowane inwestycje w naczepy i w automatyzację magazynu mogą ograniczyć przestrzeń na wypłatę. Oczekuję rekomendacji z uzasadnieniem, opartej na prognozie przepływów pieniężnych, a nie ogólnych deklaracji. Odpowiedź proszę przesłać najpóźniej do 21.01.2027.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "expectedPoints": [
+        "Recommend a dividend payment or none, with an amount",
+        "Justify it with the cash flow forecast",
+        "Reply by 21.01.2027"
+      ],
+      "mustNot": [
+        "Do not promise a dividend before the finance director's forecast"
+      ]
+    },
+    {
+      "id": "b-rep-0096",
+      "subject": "Faktura za paliwo: prośba o potwierdzenie dwóch pozycji",
+      "body": "Szanowny Panie Prezesie,\n\nprzy uzgadnianiu salda zauważyliśmy dwie pozycje na fakturze za grudzień, które Państwa księgowość zakwestionowała: dwa tankowania z nocy 14.12.2026 na łączną kwotę 3 460,00 PLN. Według naszego systemu transakcje wykonano kartami przypisanymi do Państwa pojazdów, ale Państwa dział uważa, że to pomyłka.\n\nMamy dwa wyjścia: uznać obie pozycje za sporne i wstrzymać zapłatę tej części do wyjaśnienia, albo uznać je i dochodzić zwrotu u stacji. Który sposób Pan wybiera?\n\nProszę o odpowiedź w ciągu trzech dni, bo termin płatności faktury upływa w przyszłym tygodniu.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "expectedPoints": [
+        "Choose to dispute the two fuel transactions or to accept them",
+        "Answer within three days"
+      ],
+      "mustNot": [
+        "Do not pay the disputed 3 460 PLN before the answer"
+      ]
+    },
+    {
+      "id": "b-rep-0097",
+      "subject": "Draft minutes: your comments",
+      "body": "Hi Wiktor,\n\nI have the draft minutes of the last board meeting and I would like your view on one paragraph. The minutes say that management \"agreed to review the fleet strategy by March\". Do you agree with this wording, or would you rather say \"in the first half of the year\"? The difference matters to the other members.\n\nI also need to know whether you want your remarks on the budget to appear in the minutes or in an annex. Please tell me by Thursday, so that I can send the minutes for signature.\n\nZbigniew",
+      "thread": [],
+      "expectedPoints": [
+        "Agree with the wording \"by March\" or suggest \"in the first half of the year\"",
+        "Say whether budget remarks go in the minutes or in an annex",
+        "Answer by Thursday"
+      ],
+      "mustNot": [
+        "Do not change other paragraphs of the minutes"
+      ]
+    },
+    {
+      "id": "b-rep-0098",
+      "subject": "Elastyczny czas pracy w biurze: Twoja opinia",
+      "body": "Cześć Wiktor,\n\nkilku pracowników biura sprzedaży i księgowości prosi o możliwość pracy zdalnej jeden dzień w tygodniu. Zebrałem argumenty obu stron. Za przemawia mniejsza rotacja i łatwiejsza rekrutacja. Przeciw przemawia konieczność obecności przy zamykaniu miesiąca i obsługa klientów, którzy dzwonią w ciągu dnia.\n\nProponuję pilotaż na trzy miesiące dla biura sprzedaży, a dla księgowości odroczenie decyzji do końca kwartału. Czy zgadzasz się na takie rozwiązanie? Gdybyś miał wątpliwości, napisz, co zmienić.\n\nPotrzebuję odpowiedzi do piątku, bo wtedy wysyłam informację do kierowników działów.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "expectedPoints": [
+        "Approve or reject a three-month remote work pilot for the sales office",
+        "Say whether the accounting decision is postponed to the end of the quarter",
+        "Answer by Friday"
+      ],
+      "mustNot": [
+        "Do not extend remote work to warehouse staff"
+      ]
+    },
+    {
+      "id": "b-rep-0099",
+      "subject": "Wspólna oferta dla sieci drogerii: warunki, na które potrzebuję Pana zgody",
+      "body": "Szanowny Panie Prezesie,\n\nzwracam się do Pana w sprawie wspólnej oferty dla sieci drogerii, która ogłosiła przetarg na obsługę dystrybucji w czterech województwach. To dla nas obu bardzo ciekawy kontrakt, bo roczna wartość może przekroczyć 14 milionów PLN. Zanim jednak zamkniemy ofertę, potrzebuję Pana decyzji w trzech sprawach.\n\nPo pierwsze, zamawiający wymaga gwarancji dostępności floty. Proponuję, abyśmy wskazali wspólną pulę trzydziestu pojazdów, z czego dwanaście miałoby pochodzić od Kordelan. Czy jest Pan w stanie zadeklarować tyle pojazdów na wskazany okres?\n\nPo drugie, oferta musi zawierać cennik z indeksacją paliwową. Moi analitycy zaproponowali formułę opartą na średniej cenie oleju napędowego z poprzedniego miesiąca. Czy to dla Pana akceptowalne?\n\nPo trzecie, zamawiający żąda, aby jedna firma była wskazana jako główny wykonawca w kontaktach z sieciami sklepów. Proponuję, aby była to Baltic Freight Partners, ale Kordelan miałby prawo wglądu w cały obieg dokumentów.\n\nTermin składania ofert upływa 12.02.2027, a ja potrzebuję około dwóch tygodni na przygotowanie dokumentów, więc Pana odpowiedź jest potrzebna do 28.01.2027. Chętnie wyjaśnię szczegóły telefonicznie, jeśli woli Pan taką formę, i mogę przesłać Panu pełne zestawienie warunków przetargu wraz z moją oceną każdego z punktów, tak aby decyzja nie wymagała samodzielnego czytania całej dokumentacji.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "expectedPoints": [
+        "Say whether Kordelan commits twelve vehicles to the shared pool of thirty",
+        "Accept or reject the fuel-indexed price formula",
+        "Accept or reject Baltic Freight Partners as main contractor with document access for Kordelan",
+        "Answer by 28.01.2027"
+      ],
+      "mustNot": [
+        "Do not commit vehicles or prices before operations and sales review"
+      ]
+    },
+    {
+      "id": "b-rep-0100",
+      "subject": "Swedish customs - need your call",
+      "body": "Hi Wiktor,\n\nquick one. The Swedish customs office asked us to file the pre-arrival notice 24 hours before the truck arrives, not 12 as before. This means our Friday trucks have to leave earlier or we pay a late fee of about 150 EUR per truck.\n\nI think we should move the Friday cut-off to 14:00 for Swedish loads. Warehouse will hate it but it saves money. Are you ok with that? Need your yes or no by tomorow so I can tell the customers.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Hi Wiktor,</p><p style=\"margin:0 0 12px 0\">quick one. The Swedish customs office asked us to file the pre-arrival notice 24 hours before the truck arrives, not 12 as before. This means our Friday trucks have to leave earlier or we pay a late fee of about 150 EUR per truck.</p><p style=\"margin:0 0 12px 0\">I think we should move the Friday cut-off to 14:00 for Swedish loads. Warehouse will hate it but it saves money. Are you ok with that? Need your yes or no by tomorow so I can tell the customers.</p><p style=\"margin:0 0 12px 0\">Cheers, Oliver | Head of Export | Kordelan Distribution</p></div>",
+      "thread": [],
+      "expectedPoints": [
+        "Approve or reject moving the Friday cut-off for Swedish loads to 14:00",
+        "Answer by tomorrow"
+      ],
+      "mustNot": [
+        "Do not tell customers about the cut-off before the decision"
+      ]
+    },
+    {
+      "id": "b-rep-0101",
+      "subject": "Re: Karty paliwowe: nowa stawka i prośba o zgodę",
+      "body": "Szanowny Panie Prezesie,\n\nw nawiązaniu do rozmowy z Pana księgową chciałabym przedstawić ostateczną propozycję dotyczącą kart paliwowych i prosić o Pańską zgodę. Proponujemy cenę oleju napędowego obniżoną o 6 groszy na litrze względem cennika, przy rocznym zobowiązaniu zakupowym 1,2 miliona litrów.\n\nJeśli zużycie spadnie poniżej tego poziomu, rabat zmniejszy się o jeden grosz za każdy niewykupiony procent. Rozumiem, że to wymaga analizy po Państwa stronie, ale termin ofertowy upływa 28.01.2027.\n\nCzy akceptuje Pan te warunki?\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [
+        {
+          "subject": "Karty paliwowe: wstępna oferta",
+          "body": "Dzień dobry, otrzymałam od Pani wstępną ofertę kart paliwowych. Zobowiązanie roczne wydaje się wysokie. Proszę o wyjaśnienie, co się stanie przy niższym zużyciu. Magdalena Czerniak"
+        },
+        {
+          "subject": "Re: Karty paliwowe",
+          "body": "Pani Ewelino, dziękuję za ofertę. Proszę o szczegóły dotyczące zobowiązania rocznego. Wiktor Szalewski"
+        }
+      ],
+      "expectedPoints": [
+        "Accept or reject the 6 grosz discount with the 1.2 million litre annual commitment",
+        "Answer before 28.01.2027"
+      ],
+      "mustNot": [
+        "Do not sign the commitment without finance review"
+      ]
+    },
+    {
+      "id": "b-rep-0102",
+      "subject": "Board travel: Frankfurt visit",
+      "body": "Dear Wiktor,\n\nthe board has been invited to visit one of our largest customers in Frankfurt on 11 and 12 February 2027. Would you be available to join the delegation on both days? The trip includes a plant visit on the first day and a business dinner in the evening.\n\nYour presence would be an important signal to the customer. I would appreciate a written answer by Friday, so that the secretariat can reserve the flights and hotel rooms.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "html": "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222222\"><p style=\"margin:0 0 12px 0\">Dear Wiktor,</p><p style=\"margin:0 0 12px 0\">the board has been invited to visit one of our largest customers in Frankfurt on 11 and 12 February 2027. Would you be available to join the delegation on both days? The trip includes a plant visit on the first day and a business dinner in the evening.</p><p style=\"margin:0 0 12px 0\">Your presence would be an important signal to the customer. I would appreciate a written answer by Friday, so that the secretariat can reserve the flights and hotel rooms.</p><p style=\"margin:0 0 12px 0\">Z powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej</p></div>",
+      "thread": [],
+      "expectedPoints": [
+        "Confirm availability for 11-12.02.2027 in Frankfurt",
+        "Answer in writing by Friday"
+      ],
+      "mustNot": [
+        "Do not book flights before the confirmation"
+      ]
+    },
+    {
+      "id": "b-rep-0103",
+      "subject": "Cennik naczep używanych: czy jest Pan zainteresowany?",
+      "body": "Szanowny Panie Prezesie,\n\nmamy w ofercie sześć używanych naczep chłodniczych z naszego programu zwrotów, w bardzo dobrym stanie technicznym, z przebiegiem poniżej trzystu tysięcy kilometrów. Cena jednostkowa to 21 500 EUR, co stanowi około połowy ceny nowej naczepy.\n\nMogę zarezerwować je dla Państwa na dziesięć dni, ale chciałbym wiedzieć, czy temat jest dla Pana ciekawy. Czy ma Pan wolę rozważyć zakup używanych naczep jako uzupełnienie floty na sezon?\n\nProszę o krótką odpowiedź do 25.01.2027.\n\nMatthias Brandt",
+      "thread": [],
+      "expectedPoints": [
+        "Say whether Kordelan wants to consider buying six used trailers",
+        "Answer by 25.01.2027"
+      ],
+      "mustNot": [
+        "Do not reserve or buy trailers in the reply"
+      ]
+    },
+    {
+      "id": "b-rep-0104",
+      "subject": "Fuel card: contract renewal",
+      "body": "Dear Mr Szalewski,\n\nyour fuel card contract ends on 31.03.2027. Do you want to renew it for another year on the current terms? Please answer by the end of next week.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "expectedPoints": [
+        "Say whether the fuel card contract is renewed for one year on current terms",
+        "Answer by the end of next week"
+      ],
+      "mustNot": [
+        "Do not agree to new terms without review"
+      ]
+    },
+    {
+      "id": "b-rep-0105",
+      "subject": "Ocena ryzyka w kontrakcie z siecią handlową: Pana zdanie",
+      "body": "Szanowny Panie Prezesie,\n\npo analizie dokumentacji przetargu na obsługę logistyczną sieci handlowej moi analitycy wskazali kilka ryzyk, które chcę omówić z Panem, zanim podejmiemy ostateczną decyzję o udziale.\n\nPierwsze ryzyko to kary za opóźnienia. Dokumentacja przewiduje karę 0,5 procent wartości zamówienia za każdy rozpoczęty dzień zwłoki, bez górnego limitu. W najgorszym scenariuszu pojedyncze opóźnienie może kosztować nas obu kilkanaście tysięcy euro.\n\nDrugie ryzyko to wymóg gwarancji bankowej na kwotę 400 000 EUR przez cały okres kontraktu. Moja firma jest w stanie wystawić połowę tej kwoty, ale potrzebuję, aby Kordelan wystawił drugą połowę. Wiem, że to wpływa na Państwa limity kredytowe.\n\nTrzecie ryzyko to klauzula o jednostronnej zmianie warunków przez zamawiającego po dwunastu miesiącach.\n\nMoje pytanie brzmi: czy w świetle tych ryzyk chce Pan wziąć udział w przetargu, a jeśli tak, to na jakich warunkach? Szczególnie zależy mi na Pańskim stanowisku w sprawie gwarancji bankowej, bo od tego zależy, czy w ogóle możemy złożyć ofertę.\n\nCzas ma znaczenie: oferta musi zostać złożona do 09.02.2027. Proszę o odpowiedź do 29.01.2027. Jeżeli potrzebuje Pan więcej czasu na konsultacje z prawnikami lub z dyrektorem finansowym, proszę dać mi znać już teraz, a postaram się uzyskać przedłużenie terminu u zamawiającego.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "expectedPoints": [
+        "Say whether Kordelan takes part in the tender in view of the three risks",
+        "Say whether Kordelan issues half of the 400 000 EUR bank guarantee",
+        "State conditions such as a cap on delay penalties",
+        "Answer by 29.01.2027"
+      ],
+      "mustNot": [
+        "Do not commit to the guarantee before finance and legal review"
+      ]
+    },
+    {
+      "id": "b-rep-0106",
+      "subject": "Re: Travel plan: April trip",
+      "body": "Dear Wiktor,\n\nthe secretariat needs your final answer on the April trip. Do you confirm the dates of 14 to 16 April, yes or no? I must close the bookings on Wednesday.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "subject": "Travel plan April: dates",
+          "body": "Dzień dobry, wstępny plan wyjazdu rady w kwietniu przewiduje termin 14–16 kwietnia. Proszę o potwierdzenie z kalendarza pana prezesa. Dorota Wilczynska"
+        },
+        {
+          "subject": "Re: Travel plan April",
+          "body": "Dear Mr Orlowicz, I can probably manage the middle of April, but I would like to check my calendar first. Wiktor Szalewski"
+        }
+      ],
+      "expectedPoints": [
+        "Confirm or reject the dates 14-16 April",
+        "Answer before Wednesday"
+      ],
+      "mustNot": [
+        "Do not agree to dates that conflict with quarter closing"
+      ]
+    },
+    {
+      "id": "b-rep-0107",
+      "subject": "Strategy day: venue or video?",
+      "body": "Hi Wiktor,\n\nI am planning the strategy day for the board in March and I need your opinion on the format. The secretariat suggests a full day at the Gdynia office, with lunch and a tour of the warehouse. Another option is a shorter video session of three hours.\n\nMy view is that a physical meeting gives better discussion, but I do not want to take your whole day if it is not necessary. The cost of the physical format is about 6 000 PLN for the room and the catering, the video option costs nothing.\n\nWhich format would you prefer? Please let me know by next Monday, so that I can send the invitations.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "expectedPoints": [
+        "Choose a full day at the Gdynia office or a three-hour video session",
+        "Answer by next Monday"
+      ],
+      "mustNot": [
+        "Do not approve the 6 000 PLN cost without finance"
+      ]
+    },
+    {
+      "id": "b-rep-0109",
+      "subject": "Umowa ramowa na części zamienne: stanowisko w sprawie cennika i gwarancji",
+      "body": "Szanowny Panie Prezesie,\n\nw nawiązaniu do rozmów z Pana dyrektor operacyjną i z Pana odpowiedzi na nasze pierwsze propozycje chciałbym przedstawić zaktualizowane warunki umowy ramowej na części zamienne do naczep, z prośbą o Pana osobiste stanowisko.\n\nWnioski z dotychczasowych rozmów były następujące. Pani Strzemecka wskazała, że nasz poprzedni cennik jest zbyt skomplikowany i że czas dostaw części, wynoszący siedem dni roboczych, jest zbyt długi dla floty, która nie może czekać dłużej niż trzy dni. W odpowiedzi na to przygotowaliśmy uproszczony cennik z trzema grupami cenowymi, zamiast dotychczasowych jedenastu.\n\nProponujemy też usługę ekspresowej dostawy w trzy dni za dopłatą 8 procent wartości zamówienia, oraz rozszerzenie gwarancji na części z dwunastu do osiemnastu miesięcy. Rabat roczny wzrósłby z 4 do 6 procent przy zakupach powyżej 80 000 EUR.\n\nWarunkiem tych korzyści jest zawarcie umowy na dwa lata, z klauzulą wyłączności na części do naczep naszej marki. Rozumiem, że to wymaga Pana decyzji, ponieważ wyłączność ogranicza Państwa elastyczność wobec innych dostawców.\n\nCzy akceptuje Pan ten pakiet? A jeśli nie, które z elementów chciałby Pan zmienić? Proszę o odpowiedź do 30.01.2027.\n\nMit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued",
+      "thread": [
+        {
+          "subject": "Części zamienne: cennik",
+          "body": "Dzień dobry, w Pańskim cenniku jest za dużo grup cenowych, a czas dostaw części przekracza nasze potrzeby. Potrzebujemy trzech dni zamiast siedmiu. Halina Strzemecka"
+        },
+        {
+          "subject": "Części zamienne: uwagi do cennika",
+          "body": "Panie Matthiasie, dyrektor operacyjna zgłosiła mi uwagi do cennika i czasu dostaw. Proszę o poprawioną propozycję. Wiktor Szalewski"
+        }
+      ],
+      "expectedPoints": [
+        "Accept or reject the two-year spare parts package with exclusivity",
+        "Name the elements to change if rejected",
+        "Answer by 30.01.2027"
+      ],
+      "mustNot": [
+        "Do not accept exclusivity without legal and operations review"
+      ]
+    },
+    {
+      "id": "b-rep-0111",
+      "subject": "Premie roczne dla kadry magazynowej",
+      "body": "Cześć Wiktor,\n\nzbliża się czas wypłaty premii rocznych i chcę poznać Twoją decyzję w sprawie zasad dla kadry magazynowej. W zeszłym roku pula wynosiła 120 000 PLN, a w tym roku wyniki magazynów są lepsze, bo zmniejszyliśmy liczbę błędów w kompletacji o jedną czwartą.\n\nProponuję zwiększenie puli o 10 procent, czyli do 132 000 PLN, z podziałem według liczby przepracowanych zmian i jakości pracy. Alternatywnie możemy zostać przy poprzedniej puli i podzielić ją na więcej osób, bo załoga urosła.\n\nKtórą opcję zatwierdzasz? Wypłata ma nastąpić w lutym, więc potrzebuję decyzji do 20.01.2027.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "expectedPoints": [
+        "Approve a pool of 132 000 PLN or keep 120 000 PLN",
+        "Decide by 20.01.2027"
+      ],
+      "mustNot": [
+        "Do not announce the bonus before approval"
+      ]
+    },
+    {
+      "id": "b-rep-0112",
+      "subject": "Szkolenie z pierwszej pomocy dla kierowców: obowiązkowe czy dobrowolne?",
+      "body": "Cześć Wiktor,\n\ninspekcja pracy zasugerowała, że kierowcy powinni przejść szkolenie z pierwszej pomocy co dwa lata. Obecnie szkolimy ich tylko na początku zatrudnienia. Szkolenie trwa osiem godzin i kosztuje około 280 PLN od osoby, plus utracony dzień jazdy.\n\nMamy 64 kierowców. Czy wprowadzamy szkolenie jako obowiązkowe dla wszystkich, czy tylko dla kierowców z dłuższym stażem? Pierwsza opcja jest bezpieczniejsza, druga tańsza.\n\nProszę o odpowiedź do końca tygodnia, bo muszę zamówić terminy u dostawcy szkoleń.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "expectedPoints": [
+        "Choose mandatory first aid training for all 64 drivers or only for longer-serving drivers",
+        "Answer by the end of the week"
+      ],
+      "mustNot": [
+        "Do not order training dates before the decision"
+      ]
+    },
+    {
+      "id": "b-rep-0114",
+      "subject": "Wspólny przetarg: kto podpisuje oświadczenie o niekaralności?",
+      "body": "Szanowny Panie Prezesie,\n\ndokumentacja przetargowa wymaga oświadczeń o niekaralności członków zarządu obu firm biorących udział w konsorcjum. Mój zarząd podpisze swoje bez problemu, ale potrzebuję wiedzieć, kto po Państwa stronie złoży oświadczenie.\n\nCzy będzie to Pan osobiście, czy ktoś z zarządu? Jeżeli Pan, proszę o potwierdzenie, że do 05.02.2027 przekaże Pan podpisany dokument w oryginale. Jeżeli ktoś inny, proszę o jego dane do formularza.\n\nProszę o odpowiedź do końca tygodnia.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "expectedPoints": [
+        "Say who signs the clean record declaration for Kordelan",
+        "Promise the signed original by 05.02.2027 or give the other person's details",
+        "Answer by the end of the week"
+      ],
+      "mustNot": [
+        "Do not sign on behalf of other board members"
+      ]
+    }
+  ]
+}

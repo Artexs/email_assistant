@@ -51,6 +51,7 @@ test("link, urgent notice, digest and undo run against the fake, the DB and Gree
       sendScope: { kind: "off" },
       testMail: NO_TEST_SENDERS,
       operatorContact: null,
+      syncEveryMin: 2,
       apiRoot: fake.apiRoot,
     });
     const committer = createCommitterJob({

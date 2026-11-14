@@ -113,4 +113,46 @@ describe("renderWeeklyReport", () => {
     expect(text).toContain("W tym tygodniu nie było poczty.");
     expect(text).toContain("Automat: żadna kategoria nie działa sama");
   });
+
+  test("Polish: the review sample follows the plural form of the missed count", () => {
+    const sample = (missed: number): string => {
+      const base = weekStatsExample();
+      const week = weekStatsExample({
+        m1: { ...base.m1, sample: { labelled: 9, important: 40, misses: missed, missRateUpper: null } },
+      });
+      return renderWeeklyReport({ week, timeZone, answeredWaiting: 0 }, pl).text;
+    };
+    expect(sample(1)).toContain("Losowa próba z /review: 1 pominięta z 40");
+    expect(sample(2)).toContain("2 pominięte z 40");
+    expect(sample(5)).toContain("5 pominiętych z 40");
+    expect(sample(12)).toContain("12 pominiętych z 40");
+    expect(sample(22)).toContain("22 pominięte z 40");
+  });
+
+  test("Polish: the auto line puts the genitive plural after z", () => {
+    const base = weekStatsExample();
+    const auto = (kept: number): string => {
+      const week = weekStatsExample({
+        m8: base.m8.map((row) => (row.category === "notification" ? { ...row, kept } : row)),
+      });
+      return renderWeeklyReport({ week, timeZone, answeredWaiting: 0 }, pl).text;
+    };
+    expect(auto(32)).toContain("97% z 32 etykiet (dolna granica 87%)");
+    expect(auto(52)).toContain("97% z 52 etykiet");
+    expect(auto(41)).toContain("97% z 41 etykiet");
+    expect(auto(30)).toContain("97% z 30 etykiet");
+    expect(auto(12)).toContain("mniej niż 30 etykiet (12)");
+    expect(textTables.pl.notices.weekly.autoEnough("x", 97, 1)).toBe("x 97% z 1 etykiety");
+  });
+
+  test("Polish decimals use a comma; English keeps the point", () => {
+    const base = weekStatsExample();
+    const week = weekStatsExample({ m5: { ...base.m5, p90Minutes: 2.5 } });
+    const polish = renderWeeklyReport({ week, timeZone, answeredWaiting: 0 }, pl).text;
+    expect(polish).toContain("p90 2,5 min");
+    expect(polish).toContain("$0,41 miesięcznie");
+    const english = renderWeeklyReport({ week, timeZone, answeredWaiting: 0 }, en).text;
+    expect(english).toContain("p90 2.5 min");
+    expect(english).toContain("$0.41 per mailbox");
+  });
 });

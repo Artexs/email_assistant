@@ -1,0 +1,159 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-023",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-not-0158",
+      "subject": "Logistyka Dziś: potwierdzenie rezygnacji z dodatkowych powiadomień",
+      "body": "POTWIERDZENIE ZMIANY | konto czytelnika\n\nDodatkowe powiadomienia o nowych artykułach w dziale Przetargi zostały wyłączone w Twoim koncie 15.01.2027 o 12:40. Od tej chwili system nie będzie wysyłał osobnych wiadomości o nowych artykułach tego działu. Wydanie tygodniowe nie zmienia się i nadal dociera w piątki o 8:00. Zmianę możesz cofnąć w zakładce Powiadomienia. Wiadomość została wygenerowana automatycznie i nie wymaga odpowiedzi.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0159",
+      "subject": "Zestawienie operacji zleceń stałych i poleceń zapłaty na luty",
+      "body": "Aurum Bank | Zestawienie automatyczne\n\nPoniższe zestawienie przygotowano automatycznie 15.01.2027 i obejmuje zlecenia stałe oraz polecenia zapłaty zaplanowane na luty 2027 dla rachunku PL00-TEST-4410. Zestawienie ma charakter informacyjny i nie wymaga żadnych czynności.\n\nZlecenia stałe:\n1. Baltic Lease Trailers, rata leasingowa, 21 600,00 PLN, termin 15.02.2027.\n2. Magazyny Poznań Sp. z o.o., najem hali, 32 700,00 PLN, termin 10.02.2027.\n3. Biuro Rachunkowe Fiskus, abonament, 3 800,00 PLN, termin 05.02.2027.\n4. Serwis Opon Sp. z o.o., umowa serwisowa, 2 450,00 PLN, termin 20.02.2027.\n\nPolecenia zapłaty:\n1. Nordwest Fleet Insurance, składka luty, 9 240,00 PLN, termin 14.02.2027, limit na jedno obciążenie 12 000,00 PLN.\n2. Serwis Opon Sp. z o.o., opłata serwisowa, do 5 000,00 PLN, od 18.01.2027.\n\nŁączna kwota zleceń stałych: 60 550,00 PLN. Łączna kwota poleceń zapłaty według ostatnich wartości: 14 240,00 PLN.\n\nTerminy przypadające na dni wolne od pracy zostały przesunięte na najbliższy dzień roboczy. Dotyczy to terminu 14.02.2027, który przypada w niedzielę.\n\nZlecenia stałe można zmieniać i usuwać w bankowości internetowej, w zakładce Zlecenia stałe. Zestawienie wysyłamy automatycznie 15 dnia każdego miesiąca. Kwoty poleceń zapłaty podano według ostatnich obciążeń i mogą się zmienić, jeśli wierzyciel zmieni wysokość należności. Zestawienia z poprzednich miesięcy pozostają w archiwum raportów w bankowości internetowej. Prosimy nie odpowiadać na tę wiadomość.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0160",
+      "subject": "Supply Chain Weekly: your digest language was set to English",
+      "body": "SUPPLY CHAIN WEEKLY | Account notification\n\nThe language of your digest was set to English on 15.01.2027 at 09:41. The setting applies to the section titles and to the account messages, such as this one. The text of the articles stays in the language in which the author wrote it. The next issue arrives on Friday at 07:00. This message was generated automatically, please do not reply. You can change the language on your account page at any time.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0161",
+      "subject": "ERP: zadanie przeliczenia stref zakończone",
+      "body": "ERP Kordelan | Zadanie przeliczenia stref magazynowych zakończone o 05:05. Zmienionych lokalizacji: 214. Wiadomość automatyczna.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0162",
+      "subject": "Logistyka Dziś: komunikat o nowej funkcji w koncie czytelnika",
+      "body": "KOMUNIKAT AUTOMATYCZNY | nowa funkcja\n\nW koncie czytelnika dodano możliwość zapisywania ustawień wyświetlania wydania w formie szablonu. Funkcja jest dostępna od 15.01.2027 w zakładce Wyświetlanie. System wysłał tę wiadomość do wszystkich kont, które mają włączone komunikaty o zmianach w serwisie. Szablon zapisuje wybrane działy, układ listy artykułów i rozmiar czcionki, a ustawienia można zmienić w dowolnym momencie. Jeśli nie chcesz ich otrzymywać, wyłączysz je w zakładce Powiadomienia. Wiadomość wygenerowana automatycznie.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0163",
+      "subject": "Logistyka Dziś: zmiana działu",
+      "body": "ZMIANA DZIAŁU\n\nW Twoim wydaniu włączono dział Regulacje. Wiadomość automatyczna.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0164",
+      "subject": "Potwierdzenie złożenia zlecenia stałego",
+      "body": "Aurum Bank | Potwierdzenie zlecenia\n\nNowe zlecenie stałe zostało zapisane w bankowości internetowej 15.01.2027 o 15:02. Beneficjent: Serwis Naczep Gdynia. Kwota: 6 880,00 PLN. Częstotliwość: co miesiąc, od 01.03.2027. Tytuł: umowa serwisowa floty. Status: aktywne, oczekuje na pierwszą realizację.\n\nZlecenie zatwierdzono podwójnie, zgodnie z regulaminem rachunku. Pierwsze obciążenie nastąpi w terminie wskazanym w zleceniu, a środki muszą być dostępne na rachunku do godziny granicznej tego dnia. Zlecenie można zmienić lub usunąć w bankowości internetowej. Wiadomość wygenerowana automatycznie. Prosimy na nią nie odpowiadać.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0165",
+      "subject": "Logistyka Dziś: aktualizacja zestawienia cen kart paliwowych",
+      "body": "SERWIS KART PALIWOWYCH | aktualizacja automatyczna\n\nZestawienie cen kart paliwowych, które obserwujesz w serwisie, zostało zaktualizowane 15.01.2027 o 7:00. Zmieniły się stawki prowizji u dwóch wystawców kart dla pojazdów powyżej 12 ton, a trzeci wystawca dodał nowy pakiet z limitem miesięcznym. Szczegóły są widoczne w zestawieniu na koncie. System wysłał to powiadomienie, ponieważ masz włączoną opcję powiadomień o zmianach w zestawieniach. Wiadomość nie wymaga odpowiedzi.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#333;\">\n<h3 style=\"color:#8a1c1c;\">Serwis kart paliwowych | aktualizacja automatyczna</h3>\n<p>Zestawienie cen kart paliwowych, które obserwujesz w serwisie, zostało zaktualizowane 15.01.2027 o 7:00. Zmieniły się stawki prowizji u dwóch wystawców kart dla pojazdów powyżej 12 ton, a trzeci wystawca dodał nowy pakiet z limitem miesięcznym.</p>\n<p>Szczegóły są widoczne w zestawieniu na koncie. System wysłał to powiadomienie, ponieważ masz włączoną opcję powiadomień o zmianach w zestawieniach. Wiadomość nie wymaga odpowiedzi.</p>\n<p style=\"font-size:12px;color:#777;\">Redakcja Logistyka Dzis | wypisz sie z listy</p>\n</body></html>"
+    },
+    {
+      "id": "b-not-0166",
+      "subject": "Logistyka Dziś: podsumowanie powiadomień systemowych z roku 2026",
+      "body": "RAPORT ROCZNY | konto czytelnika, 2026\n\nWiadomość jest generowana automatycznie raz w roku przez system serwisu. Zawiera tylko dane techniczne konta i nie zawiera treści redakcyjnych ani ofert.\n\nWydania tygodnika: do Twojego adresu wysłano 52 wydania. Dostarczono 52. Żadne wydanie nie wróciło jako niedostarczone. Wydania otwarte co najmniej raz: 37.\n\nZmiany w koncie: 5. Zmieniono adres e-mail raz, hasło dwa razy, a ustawienia działów dwa razy. Wszystkie zmiany potwierdzono zgodnie z procedurą konta.\n\nAlerty cenowe: ustawiono 8 alertów, uruchomiono 6. Aktywne na koniec roku: 2.\n\nZapisane artykuły: 14. Otwarte później: 9. Usunięte po 90 dniach bez otwarcia: 5.\n\nPowiadomienia o pracach technicznych serwisu: 3. Dotyczyły zmian godziny wysyłki wydania oraz krótkich przerw w dostępie do konta.\n\nBezpieczeństwo: 4 logowania z nowych urządzeń, wszystkie potwierdzone. Zablokowanych prób logowania: 0.\n\nDane: szczegóły otwarć i kliknięć usuwamy po 12 miesiącach, a sumy z tego raportu zostają. Pełną historię konta pobierzesz w zakładce Dane i prywatność w formie pliku tabelarycznego.\n\nZasady wysyłki: z tego adresu wysyłamy tylko wydania i wiadomości o zmianach w koncie lub w usłudze. Nie wysyłamy z niego wiadomości reklamowych.\n\nWiadomość wygenerowana automatycznie 02.01.2027. Nie odpowiadaj na ten adres. Numer raportu: LD-R-2026-77.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0169",
+      "subject": "ERP: automatyczne przypisanie ramp na jutro zakończone",
+      "body": "System ERP Kordelan | Powiadomienie automatyczne\n\nPrzypisanie ramp do dostaw awizowanych na 16.01.2027 zakończyło się 15.01.2027 o 18:00. Przypisano 58 dostaw w trzech magazynach: Poznań 26, Gdynia 19, Łódź 13. Dostawy bez przypisanej rampy: 0. Konflikty okien rozładunku: 2, oba rozwiązane przez system przez przesunięcie o 30 minut. Plan jest dostępny w module magazynowym w widoku Ramy na dzień.\n\nWiadomość wygenerowana automatycznie, nie odpowiadaj na ten adres.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0170",
+      "subject": "ERP: monthly license usage notice",
+      "body": "ERP system Kordelan | License notice\n\nThe monthly count of active user licences of the warehouse module was generated on 15.01.2027. Licences in the contract: 160. Active accounts: 142. Free licences: 18. Accounts that did not sign in for 60 days: 7, and they are listed in the administration module. The count is made automatically on the 15th day of each month, and the system sends this notice to the administrators of the system. No reply is needed.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0171",
+      "subject": "ERP: raport zużycia zasobów serwera i trendów pojemności, styczeń",
+      "body": "SYSTEM ERP KORDELAN | Raport zasobów serwera, 1 do 15 stycznia 2027\n\nRaport jest generowany automatycznie 15 dnia każdego miesiąca i obejmuje pierwszą połowę miesiąca. Zawiera tylko wskaźniki techniczne.\n\nProcesor: średnie obciążenie 34 procent, szczyt 78 procent o 8:40 w dniu 12.01.2027. Obciążenie powyżej 90 procent: 0 minut.\n\nPamięć operacyjna: średnie użycie 61 procent, szczyt 82 procent w tym samym dniu.\n\nDyski: baza danych zajmuje 71,4 procent przydzielonego miejsca, kopie zapasowe 58,2 procent. Przyrost bazy w okresie: 0,9 procent. Przy obecnym tempie próg powiadomienia o pojemności, ustawiony na 85 procent, zostanie osiągnięty za około 14 miesięcy.\n\nSieć: średnia przepustowość 120 Mb/s, szczyt 310 Mb/s. Utracone pakiety: 0,01 procent.\n\nCzas odpowiedzi zapytań: średnio 0,41 sekundy, 95 percentyl 1,1 sekundy.\n\nZapytania wolne, powyżej 5 sekund: 12 w okresie, wszystkie z modułu raportów, wykonane w godzinach nocnych.\n\nPołączenia użytkowników: średnio 96 jednoczesnych sesji, maksimum 131.\n\nZdarzenia: jedno krótkie ostrzeżenie o zużyciu pamięci, zamknięte przez system po 4 minutach. Zdarzenia krytyczne: brak.\n\nZmiany konfiguracji w okresie: 2, zapisane w dzienniku konfiguracji z datą i nazwą administratora.\n\nNastępny raport: 01.02.2027. Wiadomość wygenerowana przez usługę monitoringu ERP. Nie odpowiadaj na ten adres. Wersja raportu: 2.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0173",
+      "subject": "ERP: sesja użytkownika zakończona po bezczynności",
+      "body": "ERP Kordelan | Sesja konta w magazynie w Poznaniu zakończyła się po 30 minutach bezczynności. Wiadomość automatyczna.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0174",
+      "subject": "Supply Chain Weekly: your plan details and renewal information",
+      "body": "PLAN INFORMATION | automated message\n\nThis message confirms the details of your free plan, as stored in the subscription system on 15.01.2027. The plan includes the weekly digest and previews of paid reports. It has no fee and no renewal date, and the system does not store a payment method for your account. The plan stays active until you cancel it. If the terms change, a notice is sent at least 30 days before the change. This message was generated automatically.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": []
+    },
+    {
+      "id": "b-not-0175",
+      "subject": "Supply Chain Weekly: terms of service update, effective March 2027",
+      "body": "SUPPLY CHAIN WEEKLY | Service notice\n\nThis notice is generated by the subscription system and sent to all active accounts. It contains no editorial content and no offer. It describes changes to the terms of the service that apply from 01.03.2027.\n\nChange one: the retention of reading data. The details of opens and link clicks are kept for 12 months, as before. From March, the totals are kept for 36 months instead of 24, so that the annual summary can show longer trends.\n\nChange two: delivery times. The weekly digest is sent on Fridays at 07:00 central European time. From March, the system sends a short reminder, only when a regular issue is skipped, on the day before the planned send time.\n\nChange three: preview of paid reports. The free plan shows the first page of each paid report. From March, the preview contains the table of contents and a short summary of the findings. The full text stays available only in paid plans.\n\nChange four: account security. The system adds a notice about each sign-in from a new device. The notice is sent to the address of the account and contains the date, the browser type and the approximate region of the device.\n\nChange five: contact for data requests. Requests about personal data can be sent through the form in the Data and privacy section of your account page. The response time is up to 30 days.\n\nYou do not need to do anything. The use of the service after 01.03.2027 means that you accept the new terms. If you do not accept them, you can close your account on the account page, and the system will delete the data within 30 days.\n\nThe full text of the terms is available on the account page in the section Documents. This message was generated automatically. Please do not reply to this address.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0176",
+      "subject": "Logistyka Dziś: zmiana ustawień alertów o kartach",
+      "body": "Alert o kartach paliwowych przełączono na wysyłkę raz w tygodniu. Wiadomość automatyczna.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0178",
+      "subject": "Logistyka Dziś: potwierdzenie subskrypcji alertów o kartach flotowych",
+      "body": "POTWIERDZENIE | alerty o kartach flotowych\n\nSubskrypcja alertów o zmianach w ofertach kart flotowych została włączona w Twoim koncie 15.01.2027. System będzie wysyłał jedną wiadomość dziennie, tylko jeśli zmieni się któraś z obserwowanych ofert. Powiadomienia nie zawierają treści redakcyjnych. Rezygnacja jest możliwa w każdej chwili w zakładce Powiadomienia. Pierwsza wiadomość z alertem dotrze po najbliższej zmianie w ofertach, najwcześniej 16.01.2027. Jeśli żadna oferta się nie zmieni, system nie wyśle żadnej wiadomości. Wiadomość wygenerowana automatycznie, nie odpowiadaj na ten adres.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0181",
+      "subject": "ERP: duplicate scan ignored",
+      "body": "ERP system Kordelan | A duplicate pallet scan at gate 2 in Poznan was ignored at 09:14. Stock is unchanged. Automatic message.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0182",
+      "subject": "Logistyka Dziś: zestawienie wyników dzisiejszych notowań kart paliwowych",
+      "body": "NOTOWANIA | wiadomość automatyczna z serwisu kart paliwowych\n\nZestawienie notowań kart paliwowych z dnia 15.01.2027, przygotowane przez system o 9:00. Średnia prowizja za tankowanie w kraju: 0,00 procent, za granicą: 1,18 procent. Średni limit dzienny karty flotowej: 1 150 litrów. Liczba ofert w zestawieniu: 14, w tym 2 nowe od poprzedniego notowania. Dane pochodzą z automatycznej wymiany informacji z wystawcami kart. Wiadomość nie wymaga odpowiedzi i nie zawiera treści redakcyjnych.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0183",
+      "subject": "Logistyka Dziś: miesięczne zestawienie zmian w ofertach kart flotowych",
+      "body": "ZESTAWIENIE AUTOMATYCZNE | karty flotowe, grudzień 2026\n\nSystem przygotował zestawienie zmian w ofertach kart flotowych, które obserwujesz w serwisie, za grudzień 2026. Zestawienie jest generowane raz w miesiącu i nie zawiera treści redakcyjnych.\n\nZmiany prowizji: u czterech z siedmiu obserwowanych wystawców zmieniła się prowizja za tankowanie za granicą. U dwóch wzrosła o 0,05 do 0,15 punktu procentowego, u dwóch spadła o 0,10 punktu procentowego.\n\nZmiany limitów: jeden wystawca podniósł limit dzienny z 1000 do 1200 litrów. Pozostali bez zmian.\n\nNowe oferty: dwie nowe karty z pakietem opłat stałych, obie z limitem miesięcznym. Ich warunki są opisane w zestawieniu na koncie.\n\nZakończone oferty: jedna karta wycofana z oferty dla firm z flotą poniżej 10 pojazdów.\n\nAlerty uruchomione w grudniu: 2. Alerty aktywne: 3.\n\nLiczba pozycji na Twojej liście obserwowanych: 7. Limit listy: 15.\n\nZestawienie przygotowano na podstawie danych przekazanych przez wystawców kart do 31.12.2026. Dane mogą się różnić od aktualnych warunków w ofercie wystawcy.\n\nWiadomość wygenerowana automatycznie 05.01.2027. Nie odpowiadaj na ten adres. Rezygnację z zestawienia zgłosisz w ustawieniach konta, w zakładce Powiadomienia. Zestawienia archiwalne z poprzednich miesięcy są dostępne w koncie przez 12 miesięcy. Dane liczbowe w zestawieniu nie są ofertą ani rekomendacją i służą wyłącznie informacji.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0184",
+      "subject": "Logistyka Dziś: potwierdzenie zmiany godziny wysyłki",
+      "body": "POTWIERDZENIE USTAWIEŃ | wysyłka wydań\n\nGodzina wysyłki wydania tygodniowego została zmieniona na 9:00 w Twoim koncie czytelnika. Zmiana obowiązuje od następnego wydania, czyli od piątku 22.01.2027. Dotychczasowa godzina wysyłki to 8:00. Jeśli nie wprowadzałeś zmiany, możesz ją cofnąć w zakładce Powiadomienia w ustawieniach konta. Zmiana dotyczy tylko wydania tygodniowego, a wiadomości systemowe, takie jak ta, nadal wysyłamy bez opóźnienia. Wiadomość została wygenerowana automatycznie i nie wymaga odpowiedzi.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0185",
+      "subject": "Supply Chain Weekly: temporary access to the archive granted",
+      "body": "SUPPLY CHAIN WEEKLY | Account notification\n\nTemporary access to the full archive of past issues was added to your account on 15.01.2027. The access lasts for 7 days, until 22.01.2027, and it was activated by the system after your request in the account page. After this time, the free plan shows only the last 4 issues. The access does not create any charge. This message was generated automatically, please do not reply.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0186",
+      "subject": "Supply Chain Weekly: your issue notes were exported",
+      "body": "EXPORT COMPLETED | automated message\n\nThe notes that you saved on issues of the digest were exported on 15.01.2027 at 14:12. The export contains 6 notes and was created as a plain text file. It is available in the account page for 7 days, and the system deletes it after that time. The notes are not shared with anyone. This message was generated automatically, please do not reply.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": []
+    },
+    {
+      "id": "b-not-0187",
+      "subject": "ERP: weryfikacja spójności numeracji dokumentów",
+      "body": "System ERP Kordelan | Raport automatyczny\n\nWeryfikacja ciągłości numeracji dokumentów magazynowych w roku 2027 została wykonana 15.01.2027 o 03:30. Sprawdzono 1 954 dokumenty przyjęcia i wydania z okresu od 01.01.2027. Luk w numeracji nie znaleziono, a duplikatów numerów nie wykryto. Weryfikacja jest wykonywana co tydzień, w nocy z czwartku na piątek, a jej wynik jest zapisywany w dzienniku jakości danych. Jeśli zostanie wykryta luka lub duplikat, system wyśle osobne powiadomienie do administratorów.\n\nWiadomość wygenerowana automatycznie, nie odpowiadaj na ten adres.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0188",
+      "subject": "Supply Chain Weekly: your question form was received by the system",
+      "body": "FORM RECEIVED | automated receipt\n\nThe form that was submitted from your account on 15.01.2027 at 10:52 was received. The system created the ticket SCW-F-3320 and put it in the queue of the account service. This is an automatic receipt only. It does not contain an answer, and it is not a reply from a person. Replies to forms are sent from the account service to the address of the account within five working days. Please do not reply to this message.",
+      "thread": []
+    }
+  ]
+}

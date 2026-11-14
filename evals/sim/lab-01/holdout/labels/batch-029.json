@@ -1,0 +1,133 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-029",
+  "checker": "claude-haiku-5-5",
+  "labels": [
+    {
+      "id": "b-rep-0084",
+      "category": "needs_reply",
+      "blindHash": "fe0b1d82d0f136df5330c0cc7e34d6c1838e1aefa6019961bdfc695ed087dc78"
+    },
+    {
+      "id": "b-rep-0086",
+      "category": "needs_reply",
+      "blindHash": "fa7364657ab6d5b4f10f2831ab164cc2536fc2c72d04e895bacd65e226122fec"
+    },
+    {
+      "id": "b-rep-0087",
+      "category": "needs_reply",
+      "blindHash": "e0f4d666e68d6bf1c01c3d089481aea880377a49ad2ba2202ff6e47fa72bae52"
+    },
+    {
+      "id": "b-rep-0088",
+      "category": "needs_reply",
+      "blindHash": "da478306950dfb85981ebcb9d25f70efe80280a4c64d7f1f89b91df21ea35063"
+    },
+    {
+      "id": "b-rep-0090",
+      "category": "needs_reply",
+      "blindHash": "4304d5c927d4df417ba0b58d2951616fae0f1b8fad1710c16126998191a4688a"
+    },
+    {
+      "id": "b-rep-0091",
+      "category": "needs_reply",
+      "blindHash": "a11ab5096ea280d1f11b2dc678cf621cc91906975190e0dc02d6f407be474573"
+    },
+    {
+      "id": "b-rep-0092",
+      "category": "needs_reply",
+      "blindHash": "11fabeb2949b891e6199991b5457f814acb89f7f1cabc9712a4af592875e5735"
+    },
+    {
+      "id": "b-rep-0093",
+      "category": "needs_reply",
+      "blindHash": "6b226e47ecb0336e2b8bd9eea2a515a8b440ceb1c0a878c43084495921835708"
+    },
+    {
+      "id": "b-rep-0094",
+      "category": "needs_reply",
+      "blindHash": "d42deeb58ad9c8662e658cd476f65a64b7cf5723f5e85af3cda16564b8bbac6c"
+    },
+    {
+      "id": "b-rep-0096",
+      "category": "needs_reply",
+      "blindHash": "d6dbf0cc930089787d0b2480ff6bbd9f2584d72707159ae580ba9c532ab52d15"
+    },
+    {
+      "id": "b-rep-0097",
+      "category": "needs_reply",
+      "blindHash": "3203804345cb60cc34ff61f067a7df138c16bc6f721a434f00c806bfa9358650"
+    },
+    {
+      "id": "b-rep-0098",
+      "category": "needs_reply",
+      "blindHash": "a3de235b0903344ba85dff0ffbaf0ca0e1c350e7d3ba8c71797e9fef20903c34"
+    },
+    {
+      "id": "b-rep-0099",
+      "category": "needs_reply",
+      "blindHash": "09bc0599334dfc3b3de20bc6dcbf73752b25b206ffdc7febe16c7a079af2ea08"
+    },
+    {
+      "id": "b-rep-0100",
+      "category": "needs_reply",
+      "blindHash": "4ffdd0ae98d7c66a7f5525de21305a16c476f414eb0dbe084de6a48b79e8a74e"
+    },
+    {
+      "id": "b-rep-0101",
+      "category": "needs_reply",
+      "blindHash": "f563134924605e7bc12ff1e062630ec0eed61fcda5753be2f4ceb918fd80a052"
+    },
+    {
+      "id": "b-rep-0102",
+      "category": "needs_reply",
+      "blindHash": "4156c8fb4666d2a0c97ab914a933f7a68e7f541d34d06228c68651d6a3b40716"
+    },
+    {
+      "id": "b-rep-0103",
+      "category": "needs_reply",
+      "blindHash": "40df65f3b391d30b79ac63fd7fed475857e1ad68a898dfbc37131e6217e77474"
+    },
+    {
+      "id": "b-rep-0104",
+      "category": "needs_reply",
+      "blindHash": "9145ed156f474724c6dd72f93f17c6696105610d1ea3cbeb660188220af62e87"
+    },
+    {
+      "id": "b-rep-0105",
+      "category": "needs_reply",
+      "blindHash": "001605b66bed825a600cba188acf546ee4e9974d6fae151e418263ef1d1c3883"
+    },
+    {
+      "id": "b-rep-0106",
+      "category": "needs_reply",
+      "blindHash": "659ce6e50a56668fa0fb9ca8bbca66964ac06bb51ce06dd016993a2e6e2cf5db"
+    },
+    {
+      "id": "b-rep-0107",
+      "category": "needs_reply",
+      "blindHash": "c8c8ec4862c6b5670d76442752a300e91a454375ea7af6fb61a595d4e4ed3025"
+    },
+    {
+      "id": "b-rep-0109",
+      "category": "needs_reply",
+      "blindHash": "287939f2ad4440a5c39bdc320ab22701c1365dfed0b2ca68f4cbc998a10950cb"
+    },
+    {
+      "id": "b-rep-0111",
+      "category": "needs_reply",
+      "blindHash": "d44fc22530dc33dbac752b803924d3629b8f4c455cde56df82f4515570e24514"
+    },
+    {
+      "id": "b-rep-0112",
+      "category": "needs_reply",
+      "blindHash": "f9282053660db3c705d5cc1632520dd69b0f232804193e4e1216316e326d699a"
+    },
+    {
+      "id": "b-rep-0114",
+      "category": "needs_reply",
+      "blindHash": "c86bf1c22b6ab55c50665edbfcd06900c7f71c6c5c546023cea91415f6b8d972"
+    }
+  ]
+}

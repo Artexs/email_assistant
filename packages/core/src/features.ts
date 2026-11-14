@@ -43,6 +43,12 @@ export const featureFlags = {
     epic: "E3a",
     removeBy: "2027-03-01",
   },
+  llm_pause_line: {
+    default: false,
+    description: "/status and the digest name an LLM pause and its cause.",
+    epic: "E3a",
+    removeBy: "2027-03-01",
+  },
   weekly_report: {
     default: false,
     description: "The weekly report message on Monday.",

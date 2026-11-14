@@ -82,6 +82,22 @@ describe("handled share line", () => {
     expect(render(input()).text).not.toContain("🤖");
   });
 
+  test("the share is the last footer line, after the pause line (the first) and the shadow line", () => {
+    const text = render(
+      input({
+        items: [item(1, "info")],
+        counts: { info: 1 },
+        waiting: 2,
+        llmPause: { code: "timeout", since: new Date("2026-11-06T06:30:00Z") },
+        handled: { handled: 124, wouldHandle: 0, triaged: 200, shadowOnly: false },
+      })
+    ).text;
+    const footer = text.split("\n").slice(text.split("\n").lastIndexOf("") + 1);
+    expect(footer[0]).toContain("LLM paused");
+    expect(footer.at(-2)).toContain("Shadow mode");
+    expect(footer.at(-1)).toBe("🤖 Handled in the last 7 days: 62% (124 of 200)");
+  });
+
   test("the Polish line uses the Polish number word", () => {
     const share = { handled: 124, wouldHandle: 0, triaged: 200, shadowOnly: false };
     expect(render(handledInput(share), textTables.pl).text).toContain("62% (124 z 200)");
@@ -327,6 +343,32 @@ describe("delegations footer", () => {
     );
     expect(render(input({ delegations: { open: 0, overdue: 0 } })).text).not.toContain("Delegations");
     expect(render(input()).text).not.toContain("Delegations");
+  });
+});
+
+describe("LLM pause footer line", () => {
+  const pause = { code: "http_429_quota", since: new Date("2026-11-06T06:30:00Z") };
+  const line = "⏸ LLM paused since 07:30: the provider quota or budget is spent (http_429_quota). Triage waits.";
+
+  test("the line is the first footer line", () => {
+    const text = render(
+      input({ items: [item(1, "info")], counts: { info: 1 }, waiting: 2, skippedTooOld: 1, llmPause: pause })
+    ).text;
+    const lines = text.split("\n");
+    expect(lines).toContain(line);
+    expect(lines.indexOf(line)).toBe(lines.indexOf("📭 Not processed (older than 7 days): 1") - 1);
+    expect(lines.indexOf(line)).toBeGreaterThan(lines.indexOf(""));
+  });
+
+  test("a digest with nothing else in the footer shows the line after one blank line", () => {
+    const text = render(input({ llmPause: { code: "timeout", since: new Date("2026-11-06T06:30:00Z") } })).text;
+    expect(text.endsWith("\n\n⏸ LLM paused since 07:30 (timeout). Triage waits.")).toBe(true);
+  });
+
+  test("without a pause the text does not change", () => {
+    const base = input({ waiting: 2 });
+    expect(render({ ...base, llmPause: undefined }).text).toBe(render(base).text);
+    expect(render(base).text).not.toContain("⏸ LLM");
   });
 });
 
