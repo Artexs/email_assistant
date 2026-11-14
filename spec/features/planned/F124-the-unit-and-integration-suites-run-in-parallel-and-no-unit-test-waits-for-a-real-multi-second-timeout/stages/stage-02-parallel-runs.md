@@ -10,8 +10,12 @@ Goal of the stage: both suites run their files in 4 workers and pass 5 times in 
 - **Files:** none in the repo. Output to `/tmp/f124-s02/`.
 - **Check (save each output):**
   1. `bun test apps/server/test tools/fake-telegram/test --parallel=4 > /tmp/f124-s02/probe-int.log 2>&1` — note pass, fail and the total time.
-  2. While it runs, in a second shell, every 2 s: `psql "$DATABASE_URL" -Atc "select count(*) from pg_stat_activity where datname = current_database()"`; save the peak to `/tmp/f124-s02/conn.log`. Also `psql "$DATABASE_URL" -Atc "show max_connections"`. Never print `DATABASE_URL`.
-- **Done when:** the final message states the serial and parallel times, the failures, the peak connections, `max_connections`, and the result of `peak × 5 < max_connections`. If it is false: stop and report (N2); do not change the pool size.
+  2. While it runs, in a second shell in the checkout root, every 2 s run this probe (Bun loads `.env` by itself; no shell reads `.env`, and nothing prints the URL):
+     ```
+     bun -e 'import { sql } from "kysely"; import { createDb } from "./apps/server/src/platform/db"; const db = createDb(process.env.DATABASE_URL ?? "", { max: 1 }); const own = await sql<{ n: number }>`select count(*)::int as n from pg_stat_activity where datname = current_database()`.execute(db); const all = await sql<{ n: number }>`select count(*)::int as n from pg_stat_activity`.execute(db); const max = await sql<{ max_connections: string }>`show max_connections`.execute(db); process.stdout.write(`${own.rows[0]?.n} ${all.rows[0]?.n} ${max.rows[0]?.max_connections}\n`); await db.destroy();' >> /tmp/f124-s02/conn.log
+     ```
+     Columns: connections to this job's DB, connections to the whole server, `max_connections`. If `DATABASE_URL` is empty the probe fails: stop and report; do not fall back to a default DB.
+- **Done when:** the final message states the parallel time (compare with the serial 183 s of `plan.md` F6), the failures, the peak of column 1, the peak of column 2, `max_connections`, and the result of `peak(column 1) × 5 < max_connections`. If it is false: stop and report (N2); do not change the pool size.
 
 ## Step 2 — Fix the shared-state tests
 

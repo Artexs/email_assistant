@@ -1,6 +1,6 @@
 # F125 stage 05 — Reader review: `apps/server/src` unit tests
 
-Part of [`../plan.md`](../plan.md). Phase A, read-only on tests. Needs stages 01–02 landed. May run at the same time as stages 04 and 06. Spawn with `--timeout 2h`.
+Part of [`../plan.md`](../plan.md). Phase A, read-only on tests. Needs stages 01–02 landed. May run at the same time as stages 04 and 06. Spawn with `--timeout 2h`. At most 150 items for the whole stage, committed every 50 (`plan.md` § Reader method).
 
 Goal of the stage: one review row per flagged item of `apps/server/src` (1,261 cases in 82 files, F1), by `plan.md` § Reader method, § Rules for the classes and the K rules. No mutation data here (D5): duplicates are judged by reading.
 

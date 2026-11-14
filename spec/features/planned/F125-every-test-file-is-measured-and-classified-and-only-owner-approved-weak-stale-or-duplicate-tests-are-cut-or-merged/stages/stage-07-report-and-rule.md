@@ -7,9 +7,10 @@ Goal of the stage: the owner gets one file to decide from (`audit/report.md`, §
 ## Step 1 — Approval groups
 
 - **Input:** `audit/review-core-web-tools.md`, `audit/review-server-unit.md`, `audit/review-int-e2e.md`, `audit/data/*.tsv`.
-- **Rule:** group the non-`KEEP`, non-`GAP` rows by action, then by area folder (for example `apps/server/test/integration` CLI tests), then by rule. A group holds 5 to about 60 rows; split a bigger one by folder; merge a smaller one with the nearest group of the same action. Group ids `G01…` in order of time saved, then lines saved.
+- **Rule:** group the non-`KEEP`, non-`GAP` rows by action, then by area folder (for example `apps/server/test/integration` CLI tests), then by rule. A group holds 5 to about 60 rows; split a bigger one by folder. A smaller one merges only with a group of the same action and the same rule (another folder); if none exists, it stays a small group. Group ids `G01…` in order of time saved, then lines saved.
 - **Open branches:** run `git branch --no-merged master --list 'limen/*'` and `git diff --name-only master...<branch>` per branch. Per group, write the count of rows in files that an open branch changes (they wait in phase B, Cut stage rule 2).
 - **Unit/int pairs:** if `unit-int-pairs.tsv` (stage 05) and `int-unit-pairs.tsv` (stage 06) both exist, merge them and remove double rows.
+- **Kept-key check:** every `Kept key` of a `DELETE-DUP` or `MOVE-TO-UNIT` row must not appear in the `Keys` of any cut row. A conflict: the row whose group has less time saved becomes `KEEP` with rule `kept-conflict`. Write the conflict count in the final message.
 - **Output:** `audit/approval-groups.tsv`: `group`, `action`, `rule`, `area`, `rows`, `lines`, `time_s`, `blocked_rows`, `keys`.
 
 ## Step 2 — `audit/report.md`

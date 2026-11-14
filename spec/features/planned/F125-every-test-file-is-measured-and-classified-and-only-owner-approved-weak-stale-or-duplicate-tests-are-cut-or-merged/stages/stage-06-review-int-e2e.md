@@ -1,6 +1,6 @@
 # F125 stage 06 — Reader review: integration and e2e tests
 
-Part of [`../plan.md`](../plan.md). Phase A, read-only on tests. Needs stages 01–02 landed. May run at the same time as stages 04 and 05. Spawn with `--timeout 2h`.
+Part of [`../plan.md`](../plan.md). Phase A, read-only on tests. Needs stages 01–02 landed. May run at the same time as stages 04 and 05. Spawn with `--timeout 2h`. At most 150 items for the whole stage, committed every 50 (`plan.md` § Reader method).
 
 Goal of the stage: one review row per flagged item of `apps/server/test`, `tools/fake-telegram/test` (1,683 cases, 135 files) and `apps/web/e2e` (12 files, about 41 cases; static only), by `plan.md` § Reader method, § Rules for the classes and the K rules. The int suite holds 95 % of the suite time (F124 F6), so `MOVE-TO-UNIT` and `DELETE-DUP` against unit tests matter most here.
 
@@ -8,9 +8,9 @@ Goal of the stage: one review row per flagged item of `apps/server/test`, `tools
 
 - **Input:** `audit/data/cases.tsv` rows of `kind` `int`; `groups.tsv`; `audit/data/unit-int-pairs.tsv` if stage 05 has landed (else find the unit twins yourself and write them to `audit/data/int-unit-pairs.tsv`).
 - **Extra rules:**
-  - Contract suites (`apps/server/test/contract/`, `imap-contract.test.ts`, 62 cases, 43.5 s): K4. Do not propose cuts there; note in the summary that a split of the file into several files would shorten parallel runs (out of scope, F124 ticket).
+  - The contract suite (`apps/server/test/contract/mail-provider.ts`, run by `imap-contract.test.ts`, 62 cases, 43.5 s): K4. Do not propose cuts there; note in the summary that a split of the file into several files would shorten parallel runs (out of scope, F124 ticket).
   - Repository tests against Postgres (tenant filter, RLS, `FOR UPDATE SKIP LOCKED`, status-change with audit row): K3 when they check isolation or exactly-once.
-  - CLI tests that spawn a script (`*-cli.test.ts`, the slowest group: `testmail-cli` 13 s, `mail-seed` 24 s, `mail-check` 16 s): for each, check whether a unit test of the same command logic exists. If yes, `MOVE-TO-UNIT` or `DELETE-DUP` for the cases that only re-check the logic; keep one case per CLI that proves the wiring (exit code and one output line).
+  - CLI tests: test files that spawn a script process (`Bun.spawn`, `spawn`, `$\`bun …\``), whatever their name; the slowest: `mail-seed.test.ts` 24 s, `mail-check.test.ts` 16 s, `testmail-cli.test.ts` 13 s: for each, check whether a unit test of the same command logic exists. If yes, `MOVE-TO-UNIT` or `DELETE-DUP` for the cases that only re-check the logic; keep one case per CLI that proves the wiring (exit code and one output line).
   - `e2e-seed.test.ts:89` (`describe.skipIf` without the E2E env): `FIX-NEVER-RUNS` (F6). Evidence: the `ci` job env in `.github/workflows/ci.yml`.
 - **Output:** `audit/review-int-e2e.md` § Integration.
 

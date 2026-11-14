@@ -1,6 +1,6 @@
 # F125 stage 04 — Reader review: `packages/core`, `apps/web`, `tools/fake-telegram`
 
-Part of [`../plan.md`](../plan.md). Phase A, read-only on tests. Needs stages 01–03 landed. May run at the same time as stages 05 and 06.
+Part of [`../plan.md`](../plan.md). Phase A, read-only on tests. Needs stages 01–03 landed. May run at the same time as stages 05 and 06. Spawn with `--timeout 2h`. At most 150 items for the whole stage (all three sections), committed every 50 (`plan.md` § Reader method).
 
 Goal of the stage: one review row per flagged item of the area, by `plan.md` § Reader method, § Rules for the classes and the K rules.
 

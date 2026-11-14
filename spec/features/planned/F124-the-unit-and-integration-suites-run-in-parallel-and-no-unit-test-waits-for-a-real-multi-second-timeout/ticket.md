@@ -6,7 +6,7 @@ opened: 2026-11-14
 
 ## Outcome
 
-`bun run test:unit` and `bun run test:int` run their files in 4 worker processes (`bun test --parallel=4`). Every Limen stage proof and every CI run gets faster: the probe on 2026-11-14 cut unit from 27 s to 8 s and int from 183 s to 56 s. No unit test waits for a fixed production timeout of several seconds: the code takes the timeout as a parameter, and the test passes a short one.
+`bun run test:unit` and `bun run test:int` run their files in 4 worker processes (`bun test --parallel=4`). Every Limen stage proof and every CI run gets faster: probes on 2026-11-14 with 4 workers cut int from 183 s to 56 s, and unit to about 6 s once the slow waits are gone (15.5 s with them). No unit test waits for a fixed production timeout of several seconds: the code takes the timeout as a parameter, and the test passes a short one.
 
 ## Scope
 
@@ -23,15 +23,15 @@ opened: 2026-11-14
 
 ## Acceptance
 
-- `bun run test:unit:ci` passes and its log shows `4× PARALLEL` (or the Bun 1.4.4 banner for `--parallel=4`) and a total under 12 s on the owner PC.
-- `bun run test:int:ci` passes 5 times in a row with `--parallel=4`; each run is under 80 s on the owner PC.
-- No unit test case takes longer than 3 s in a JUnit report of `test:unit` (serial run).
+- `bun run test:unit:ci` passes and its log shows `4x PARALLEL` and a total under 12 s on the owner PC.
+- `bun run test:int:ci` passes 5 times in a row with `--parallel=4`, 2 of them on 4 CPU cores only (`taskset -c 0-3`, the CI runner size); each run is under 80 s on the owner PC.
+- No unit test case takes longer than 3 s in a serial JUnit report of `test:unit`, except the scheduler overlap test (real one-second ticks, 2–3 s).
 - The first `master` CI run after the land is green, and its `test:int` step is shorter than 191 s.
 - `plan.md` § Done when holds the full list.
 
 ## Slices
 
-Two stages, one worker job each, in order: [`stages/stage-01-unit-waits.md`](stages/stage-01-unit-waits.md), then [`stages/stage-02-parallel-runs.md`](stages/stage-02-parallel-runs.md). No migration, no `bun.lock` change: both may run next to other builds. Stage 02 gets a review job before the land. How to run: `plan.md` § How to run.
+Two stages, one worker job each, strictly in order (stage 02 measures the unit time that stage 01 makes possible): [`stages/stage-01-unit-waits.md`](stages/stage-01-unit-waits.md), then [`stages/stage-02-parallel-runs.md`](stages/stage-02-parallel-runs.md). No migration, no `bun.lock` change: both may run next to other builds. Stage 02 gets a review job before the land. How to run: `plan.md` § How to run.
 
 ## Sequenced
 

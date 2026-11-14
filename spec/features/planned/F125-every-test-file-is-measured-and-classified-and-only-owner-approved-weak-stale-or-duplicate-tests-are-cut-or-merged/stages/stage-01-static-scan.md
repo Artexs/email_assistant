@@ -42,7 +42,7 @@ Goal of the stage: `bun scripts/test-audit/scan.ts` writes one row per test case
   - `describePath` from enclosing `describe(`/`test.describe(` calls (and their `.skip`/`.skipIf` forms, whose condition also goes to `skipCondition`).
   - Asserting helper: build one `ts.Program` over all test files with `tsconfig.base.json` options; a call in the body whose callee declaration (through imports, `checker.getAliasedSymbol`) holds `expect(` in its body, up to 3 calls deep, counts as one expect call. Any `expect(`, `expect.assertions(`, `expect.hasAssertions(` in the body counts.
   - Matchers: for each `expect(...)` chain, the property names after `expect(...)` joined by `.` (`not.toBe`, `rejects.toThrow`).
-  - Flags as in `plan.md` § Flags: S1 (`expectCalls === 0`), S2, S3, S4, S5 (set by `assignGroups`), S6 (set by `assignGroups`, only when `each` is false), S7 (`skipCondition !== ""`), S8 (the file imports no module outside the helper paths of § Flags).
+  - Flags as in `plan.md` § Flags: S1 (`expectCalls === 0`), S2, S3, S4, S5 (set by `assignGroups`), S6 (set by `assignGroups`, only when `each` is false), S7 (`skipCondition !== ""`), S8 (exactly the definition of § Flags: unit and int files only; allowed imports are `bun:test`, `@playwright/test`, `node:*` and the test support paths listed there).
   - Body text for S5: print the callback body with `ts.createPrinter({ removeComments: true })`, collapse whitespace. Shape for S6: the same, with every string, number, template and regex literal replaced by `_`. B groups: 2 or more cases with the same body (any file). T groups: 3 or more cases with the same shape in one file.
   - Group ids are stable for the same input: number them in order of the first key (sorted by file, then line).
 - **Test** (`scripts/test-audit/scan.test.ts`, inline source strings, no repo files):
@@ -58,6 +58,7 @@ Goal of the stage: `bun scripts/test-audit/scan.ts` writes one row per test case
   10. A local helper `function check(v) { expect(v).toBe(1); }` called in the body → `expectCalls` 1, no `S1`.
   11. `await expect(p).rejects.toThrow("x")` → matcher `rejects.toThrow`.
   12. Group ids: the same input twice gives the same ids.
+  13. S8: a unit file that imports only `bun:test` and `../../test/helpers` → `S8`; one more import of `./service` → no `S8`; an e2e file → never `S8`.
 - **Check:** `bun test scripts/test-audit`.
 - **Done when:** tests 1–12 pass.
 
@@ -67,8 +68,8 @@ Goal of the stage: `bun scripts/test-audit/scan.ts` writes one row per test case
 - **Command:** `bun scripts/test-audit/scan-cli.ts --out spec/features/active/F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged/audit/data`.
 - **Format:** TSV with a header row; columns in the order of `CaseRow`; arrays joined with `,`; tabs and newlines in names replaced by a space. `groups.tsv`: `group`, `type` (B/T), `files`, `cases`, `keys`. `scan-summary.md`: total rows; rows per `kind` and per area (`packages/core`, `apps/server/src`, `apps/server/test`, `apps/web/src`, `apps/web/e2e`, `tools/fake-telegram`); count per flag per area; group counts; the 20 biggest groups.
 - **Output rules:** the CLI writes with `Bun.write` and prints one line per file written (`process.stdout.write`), no `console.log`.
-- **Check:** the row count is within 5 % of the JUnit totals of `plan.md` F1 plus the e2e count (about 4,000 rows; `each` cases count once here). Write the exact numbers in the final message.
-- **Done when:** the three files are committed; the final message gives the count per flag and per area (N4) and names every area with more than 250 flagged cases.
+- **Check:** one row per call site, so the count is lower than the JUnit count (an `each` table or a loop is one row and many JUnit cases; core at 2d2b3f5: 627 call sites, 834 JUnit cases). Independent count (3,576 at 2d2b3f5): `git ls-files '*.test.ts' '*.test.tsx' '*.spec.ts' | grep -v '^scripts/test-audit/' | xargs grep -cE '^\s*(test|it)(\.[a-zA-Z]+)*(\([^)]*\))?\(' ` summed; the scan count must be within 5 % of it (a multi-line or nested call can differ). Write both numbers in the final message. The real join check is stage 02 Step 3.
+- **Done when:** the three files are committed; the final message gives the count per flag and per area (N4) and names every area with more than 150 flagged items.
 
 ## Done when
 

@@ -2,7 +2,7 @@
 
 Part of [`../plan.md`](../plan.md). Not `[risky]`: test seams with the old values as defaults.
 
-Goal of the stage: the 7 unit cases of `plan.md` F3 in `apps/server/src` that wait for production timeouts run in under 3 s each, most in under 500 ms. Production behaviour does not change.
+Goal of the stage: the 6 unit cases of `plan.md` F3 in `apps/server/src` that wait for production timeouts (auth 1, Telegram 1, scheduler 4) are shorter; all but the overlap test run in under 1 s. Production behaviour does not change.
 
 ## Step 1 — Auth mail: injectable outer guard extra
 
@@ -32,7 +32,7 @@ Goal of the stage: the 7 unit cases of `plan.md` F3 in `apps/server/src` that wa
 
 ## Step 3 — Scheduler tests: cron only where croner is under test
 
-- **Goal:** `platform/scheduler.test.ts` runs in under 4 s in total (now about 7.8 s), with the same rules proven.
+- **Goal:** `platform/scheduler.test.ts` runs in under 5 s in total (now about 7.8 s; the overlap test alone takes 2–3 s), with the same rules proven.
 - **Files:** `apps/server/src/platform/scheduler.test.ts` only. No change to `scheduler.ts`.
 - **Decisions:** D4.
 - **Test:** keep one case per rule:
@@ -41,8 +41,8 @@ Goal of the stage: the 7 unit cases of `plan.md` F3 in `apps/server/src` that wa
   3. "a failed job logs its error label and not its message": call `runJobTick` directly, with no scheduler. Same four `expect` lines (`job_failed`, `job=throws`, `error=Error`, no `MARKER-SCHED`).
   4. "stop() stops all jobs": keep real ticks, but wait for one witness tick (`witnessRuns >= 1`), not two. The rule (jobs stopped before their first tick never run) holds after one tick of a later scheduler.
   5. Other cases of the file: unchanged.
-- **Check:** `bun test apps/server/src/platform/scheduler.test.ts` and a JUnit run of the file: `bun test apps/server/src/platform/scheduler.test.ts --reporter=junit --reporter-outfile=/tmp/f124-s01/scheduler.xml`; the `time` of the file suite is under 4.
-- **Done when:** all cases pass; the file time is under 4 s.
+- **Check:** `bun test apps/server/src/platform/scheduler.test.ts` and a JUnit run of the file: `bun test apps/server/src/platform/scheduler.test.ts --reporter=junit --reporter-outfile=/tmp/f124-s01/scheduler.xml`; the `time` of the file suite is under 5.
+- **Done when:** all cases pass; the file time is under 5 s.
 - **Out of scope:** a fake clock or a fake cron driver (D4 rejects them).
 
 ## Stage check
@@ -50,7 +50,7 @@ Goal of the stage: the 7 unit cases of `plan.md` F3 in `apps/server/src` that wa
 ```
 bun test packages/core apps/server/src tools/fake-telegram/src apps/web/src/lib apps/web/src/i18n apps/web/integrations --reporter=junit --reporter-outfile=/tmp/f124-s01/unit.xml
 ```
-No case in `/tmp/f124-s01/unit.xml` has `time` over 3 (Done when 1). A one-line check: `grep -oE 'testcase [^>]*time="[0-9.]+"' /tmp/f124-s01/unit.xml | grep -E 'time="([3-9]|[1-9][0-9]+)\.' ` prints nothing. Save its output to `/tmp/f124-s01/slow.log`. `tools/fake-telegram/src/server.test.ts:73` (1.2 s, long poll) stays as it is.
+No case in `/tmp/f124-s01/unit.xml` has `time` of 3 or more, except "a tick never overlaps the previous one" (Done when 1). A one-line check: `grep -oE 'testcase name="[^"]*" [^>]*time="[0-9.]+"' /tmp/f124-s01/unit.xml | grep -v 'name="a tick never overlaps the previous one"' | grep -E 'time="([3-9]|[1-9][0-9]+)\.' ` prints nothing. Save its output to `/tmp/f124-s01/slow.log`. `tools/fake-telegram/src/server.test.ts:73` (1.2 s, long poll) stays as it is.
 
 ## Done when
 
