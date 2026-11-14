@@ -1,0 +1,166 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-020",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-not-0070",
+      "subject": "Logistyka Dziś: nowy alert o kartach paliwowych został zapisany",
+      "body": "ALERT ZAPISANY\n\nAlert dla kart paliwowych z limitem powyżej 1000 litrów został zapisany w Twoim koncie. Wiadomość automatyczna.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0071",
+      "subject": "ERP: zmiana statusu rampy w magazynie w Łodzi",
+      "body": "System ERP Kordelan | Powiadomienie automatyczne\n\nStatus rampy nr 3 w magazynie w Łodzi zmienił się z zajętej na wolną 15.01.2027 o 10:14. Poprzedni status obowiązywał od 08:50, a rozładunek zakończył się zgodnie z planem. System przypisał rampę do następnej dostawy z kolejki, zaplanowanej na 11:00, i wysłał komunikat do panelu przy bramie.\n\nWiadomość wygenerowana automatycznie, nie odpowiadaj na ten adres. Historia statusów ramp jest dostępna w module magazynowym.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0072",
+      "subject": "Logistyka Dziś: potwierdzenie usunięcia alertu",
+      "body": "ALERT USUNIĘTY\n\nAlert na prowizję karty flotowej został usunięty z konta na Twoją prośbę. Wiadomość automatyczna.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0073",
+      "subject": "Account statement ready for download",
+      "body": "Aurum Bank | Statement notification\n\nThe monthly statement of your business account PL00-TEST-4410 for December 2026 is ready. It contains 214 operations and was generated on 04.01.2027. The statement is available as a file in online banking, in the section Statements, and stays there for 24 months.\n\nOpening balance: 241 380,15 PLN. Closing balance: 297 682,25 PLN. Total debits: 1 482 910,00 PLN. Total credits: 1 539 212,10 PLN.\n\nThis message was generated automatically. Do not reply to this address.",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#222;\">\n<h3 style=\"color:#12446b;\">Aurum Bank | Statement notification</h3>\n<p>The monthly statement of your business account PL00-TEST-4410 for December 2026 is ready. It contains 214 operations and was generated on 04.01.2027. The statement is available as a file in online banking, in the section Statements, and stays there for 24 months.</p>\n<table style=\"border-collapse:collapse;font-size:14px;\">\n<tr><td style=\"padding:2px 14px 2px 0;\">Opening balance</td><td>241 380,15 PLN</td></tr>\n<tr><td style=\"padding:2px 14px 2px 0;\">Closing balance</td><td>297 682,25 PLN</td></tr>\n<tr><td style=\"padding:2px 14px 2px 0;\">Total debits</td><td>1 482 910,00 PLN</td></tr>\n<tr><td style=\"padding:2px 14px 2px 0;\">Total credits</td><td>1 539 212,10 PLN</td></tr>\n</table>\n<p style=\"color:#777;\">This message was generated automatically. Do not reply to this address.</p>\n</body></html>"
+    },
+    {
+      "id": "b-not-0074",
+      "subject": "Digest delivery: temporary pause confirmed",
+      "body": "Supply Chain Weekly | The delivery of your digest is paused until 31.01.2027. Automatic message.",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:13px;\">\n<p><b>Supply Chain Weekly</b></p>\n<p>The delivery of your digest is paused until 31.01.2027. Automatic message, please do not reply.</p>\n</body></html>"
+    },
+    {
+      "id": "b-not-0075",
+      "subject": "Payment order received",
+      "body": "Aurum Bank | Order PL00-TEST-6188 received on 15.01.2027, 11:40. Amount: 7 320,00 PLN. Status: awaiting second approval. Automatic message.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0076",
+      "subject": "ERP: zadanie harmonogramu zakończone",
+      "body": "ERP Kordelan | Zadanie eksportu stanów do księgowości zakończone o 04:20, bez błędów. Wiadomość automatyczna.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0077",
+      "subject": "ERP: nowe konto użytkownika utworzone",
+      "body": "System ERP Kordelan | Administrator utworzył konto użytkownika magazynu w Poznaniu 14.01.2027. Hasło tymczasowe wysłano osobnym kanałem. Wiadomość automatyczna.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0078",
+      "subject": "Foreign currency payment: exchange rate confirmation",
+      "body": "Aurum Bank | Payment notification\n\nA foreign currency transfer from your account was processed. Beneficiary: Nordic Foods Trade AB, Title: Credit note CN/2027/003, Amount: 2 150,00 EUR, Exchange rate applied by the bank: 4,2480 PLN per EUR, Debit amount: 9 133,20 PLN, Execution date: 15.01.2027, Status: completed.\n\nThe rate is fixed at the moment of execution. This message was generated automatically. Do not reply to this address.",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#222;\">\n<h3 style=\"color:#12446b;\">Aurum Bank | Payment notification</h3>\n<p>A foreign currency transfer from your account was processed.</p>\n<ul>\n<li>Beneficiary: Nordic Foods Trade AB</li>\n<li>Title: Credit note CN/2027/003</li>\n<li>Amount: 2 150,00 EUR</li>\n<li>Exchange rate applied by the bank: 4,2480 PLN per EUR</li>\n<li>Debit amount: 9 133,20 PLN</li>\n<li>Execution date: 15.01.2027</li>\n<li>Status: completed</li>\n</ul>\n<p>The rate is fixed at the moment of execution.</p>\n<p style=\"color:#777;\">This message was generated automatically. Do not reply to this address.</p>\n</body></html>"
+    },
+    {
+      "id": "b-not-0080",
+      "subject": "Supply Chain Weekly: a saved article was removed",
+      "body": "SUPPLY CHAIN WEEKLY | Account notification\n\nOne article was removed from your saved list on 14.01.2027, because it was older than 90 days and was not opened in that time. The article was a report on container lane capacity in the autumn of 2026. The list now holds 3 articles. The system removes old items once a week, as described in the terms of your free plan.\n\nThis message was generated automatically, please do not reply. You can change the clean-up rule on your account page.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": []
+    },
+    {
+      "id": "b-not-0081",
+      "subject": "Logistyka Dziś: aktualizacja regulaminu serwisu",
+      "body": "KOMUNIKAT SYSTEMOWY | regulamin serwisu\n\nInformujemy, że od 01.02.2027 obowiązuje zaktualizowany regulamin serwisu dla czytelników. Zmiana dotyczy zasad przechowywania danych o aktywności w koncie oraz opisu powiadomień wysyłanych przez system. Nowa treść regulaminu jest dostępna na stronie konta, w zakładce Dokumenty. Dalsze korzystanie z konta po tej dacie nie wymaga od Ciebie żadnych czynności. Wiadomość wygenerowana automatycznie.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0082",
+      "subject": "Zestawienie płatności zbiorczych za tydzień 3",
+      "body": "Aurum Bank | Zestawienie tygodniowe\n\nPoniżej zestawienie przelewów wychodzących z rachunku firmowego PL00-TEST-4410 za okres od 11.01.2027 do 15.01.2027. Zestawienie wygenerowano automatycznie w piątek po zamknięciu dnia księgowego.\n\nPrzelewy zrealizowane:\n1. 11.01.2027, Pelagia Fuel Services, FV/2027/01/118, 18 450,00 PLN.\n2. 12.01.2027, Baltic Lease Trailers, rata 01/2027, 21 600,00 PLN.\n3. 13.01.2027, Nordwest Fleet Insurance, składka styczniowa, 9 240,00 PLN.\n4. 14.01.2027, Magazyny Poznań Sp. z o.o., najem hali, 32 700,00 PLN.\n5. 15.01.2027, Serwis Naczep Gdynia, faktura FV/2027/01/204, 6 880,00 PLN.\n\nPrzelewy odrzucone: 0. Przelewy oczekujące na akceptację: 1, na kwotę 7 320,00 PLN, zlecone 15.01.2027.\n\nSuma przelewów zrealizowanych: 88 870,00 PLN. Wykorzystanie limitu tygodniowego: 35,5 procent.\nSaldo na koniec tygodnia: 301 214,60 PLN.\n\nPełne potwierdzenia operacji w formie dokumentów PDF znajdują się w bankowości internetowej, w zakładce Historia operacji. Zestawienie tygodniowe wysyłamy automatycznie w każdy piątek. Wiadomość wygenerowana przez system, prosimy na nią nie odpowiadać. Zestawienie ma charakter informacyjny i nie zastępuje wyciągu z rachunku. Przelewy zlecone po godzinie granicznej w piątek zostaną uwzględnione w zestawieniu za następny tydzień. Wartości w zestawieniu podano w złotych, bez przeliczania walut obcych, a przelewy zagraniczne wykazujemy w osobnej zakładce bankowości internetowej. Kopie zestawień z poprzednich tygodni znajdują się w archiwum rachunku.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0083",
+      "subject": "ERP: powiadomienie o wersji raportu magazynowego",
+      "body": "System ERP Kordelan | Powiadomienie o aktualizacji\n\nRaport stanów magazynowych został zaktualizowany do wersji 8. Nowa wersja zawiera dodatkową kolumnę z datą przydatności partii oraz poprawiony układ wydruku na papierze formatu A4. Zmiana jest aktywna od 15.01.2027, a wcześniej zapisane raporty pozostają dostępne w archiwum modułu bez zmian.\n\nZmianę wprowadzono w planowym oknie serwisowym i nie wymaga ona żadnych czynności od użytkowników. Poprzednia wersja raportu pozostaje dostępna w historii wersji szablonów. Wiadomość wygenerowana przez system. Nie odpowiadaj na ten adres.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0084",
+      "subject": "Supply Chain Weekly: preferences saved",
+      "body": "PREFERENCES SAVED | automated message\n\nYour digest preferences were saved on 14.01.2027. Changes apply from the next issue.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:13px;color:#222;\">\n<p><b>Preferences saved</b></p>\n<p>Your digest preferences were saved on 14.01.2027. Changes apply from the next issue.</p>\n<p style=\"color:#777;\">Supply Chain Weekly | Unsubscribe | Manage preferences</p>\n</body></html>"
+    },
+    {
+      "id": "b-not-0085",
+      "subject": "Logistyka Dziś: zmiana hasła do konta",
+      "body": "BEZPIECZEŃSTWO KONTA\n\nHasło do Twojego konta czytelnika zmieniono 15.01.2027. Wiadomość wygenerowana automatycznie.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0086",
+      "subject": "Notice of a returned transfer",
+      "body": "Aurum Bank | Returned transfer\n\nA transfer to your account was returned by the sending bank. Sender: Kordelan trade partner, Title: Invoice FV/2026/12/917, Amount: 3 480,00 PLN, Return date: 15.01.2027, Reason code: account closed at the sending bank. The amount was not credited to your account, and your balance is unchanged.\n\nThis message was generated automatically. Do not reply to this address. Details are available in online banking.",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#222;\">\n<h3 style=\"color:#12446b;\">Aurum Bank | Returned transfer</h3>\n<p>A transfer to your account was returned by the sending bank.</p>\n<p>Sender: Kordelan trade partner<br>Title: Invoice FV/2026/12/917<br>Amount: 3 480,00 PLN<br>Return date: 15.01.2027<br>Reason code: account closed at the sending bank</p>\n<p>The amount was not credited to your account, and your balance is unchanged.</p>\n<p style=\"color:#777;\">This message was generated automatically. Do not reply to this address. Details are available in online banking.</p>\n</body></html>"
+    },
+    {
+      "id": "b-not-0087",
+      "subject": "Logistyka Dziś: raport dostarczalności wydań za grudzień",
+      "body": "RAPORT AUTOMATYCZNY | dostarczalność\n\nSystem wysyłkowy przygotował raport dostarczalności wydań tygodnika na Twój adres za grudzień 2026. Wysłano 4 wydania, wszystkie dostarczone bez błędów. Średni czas dostarczenia: 3 minuty od wysyłki. Wiadomości oznaczone jako niechciane: 0. Raport nie zawiera treści redakcyjnych i jest generowany raz w miesiącu, pierwszego dnia roboczego. Nie wymaga odpowiedzi. Jeśli chcesz przestać otrzymywać raporty dostarczalności, wyłączysz je w ustawieniach konta w zakładce Powiadomienia.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0088",
+      "subject": "ERP: raport rozliczenia zleceń transportowych, tydzień 2",
+      "body": "SYSTEM ERP KORDELAN | Raport tygodniowy rozliczenia zleceń transportowych\n\nRaport został wygenerowany automatycznie w poniedziałek 11.01.2027 o 06:00 i obejmuje zlecenia z okresu od 04.01.2027 do 10.01.2027. Poniżej wartości liczbowe, bez komentarza.\n\nZlecenia razem: 486. Zlecenia zakończone: 471. Zlecenia w toku: 12. Zlecenia anulowane: 3.\n\nZlecenia według magazynu: Poznań 210, Gdynia 156, Łódź 120.\n\nCzas realizacji: średnio 1,8 dnia od przyjęcia zlecenia do potwierdzenia dostawy. Najdłuższy czas: 6 dni, zlecenie eksportowe z odprawą celną.\n\nTerminowość dostaw: 96,4 procent. W porównaniu z tygodniem poprzednim wskaźnik wzrósł o 0,7 punktu procentowego.\n\nReklamacje zapisane w systemie: 5, z tego 3 dotyczą uszkodzeń opakowań, 1 braku towaru, 1 błędnego adresu. Wszystkie reklamacje zapisano w module obsługi klienta.\n\nKoszty transportu zewnętrznego: 148 320,00 PLN, z tego frachty drogowe 131 100,00 PLN, usługi spedycji celnej 17 220,00 PLN.\n\nDane pobrano z modułu zleceń o godzinie 05:50. Zlecenia zmienione po tej godzinie pojawią się w raporcie następnego tygodnia.\n\nPozostałe wskaźniki: liczba zleceń z awizacją dostawy 441, liczba zleceń z potwierdzeniem odbioru przez klienta 458. Liczby mogą się zmienić po uzupełnieniu danych z zewnętrznych interfejsów w ciągu kolejnych dni.\n\nWersja raportu: 4. Wiadomość wygenerowana przez system. Nie odpowiadaj na ten adres.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0089",
+      "subject": "Logistyka Dziś: zapis na alert o kartach paliwowych",
+      "body": "ZAPIS NA ALERT\n\nZapisano alert o zmianach w kartach paliwowych. Wiadomość automatyczna.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:13px;color:#333;\">\n<p><b>Zapis na alert</b></p>\n<p>Zapisano alert o zmianach w kartach paliwowych. Wiadomość automatyczna.</p>\n<p style=\"color:#777;\">Redakcja Logistyka Dzis | wypisz sie z listy</p>\n</body></html>"
+    },
+    {
+      "id": "b-not-0090",
+      "subject": "Direct debit mandate registered",
+      "body": "Aurum Bank | Mandate notification\n\nA new direct debit mandate was registered on your business account. Creditor: Serwis Opon Sp. z o.o., Mandate reference: PL00-TEST-3402, Maximum amount per debit: 5 000,00 PLN, Valid from: 18.01.2027, Valid until: 17.01.2029, Status: active. The creditor may collect payments only within the maximum amount, and each collection is shown in the daily statement.\n\nThe mandate was entered by an authorised user and confirmed by the bank. This message was generated automatically. Do not reply to this address.",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:14px;color:#222;\">\n<h3 style=\"color:#12446b;\">Aurum Bank | Mandate notification</h3>\n<p>A new direct debit mandate was registered on your business account.</p>\n<p>Creditor: Serwis Opon Sp. z o.o.<br>Mandate reference: PL00-TEST-3402<br>Maximum amount per debit: 5 000,00 PLN<br>Valid from: 18.01.2027<br>Valid until: 17.01.2029<br>Status: active</p>\n<p>The mandate was entered by an authorised user and confirmed by the bank.</p>\n<p style=\"color:#777;\">This message was generated automatically. Do not reply to this address.</p>\n</body></html>"
+    },
+    {
+      "id": "b-not-0091",
+      "subject": "Logistyka Dziś: potwierdzenie przesłania opinii",
+      "body": "DZIĘKUJEMY\n\nTwoja ankieta czytelnika została przyjęta. Wiadomość automatyczna.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": []
+    },
+    {
+      "id": "b-not-0092",
+      "subject": "Powiadomienie o zmianie regulaminu rachunku firmowego",
+      "body": "Aurum Bank | Informacja dla klientów firmowych\n\nInformujemy o zmianach w regulaminie rachunków firmowych, które wejdą w życie 01.03.2027. Poniżej wskazujemy zakres zmian. Wiadomość została wygenerowana automatycznie i jest wysyłana do wszystkich użytkowników rachunków firmowych.\n\nZmiana 1: nowe godziny graniczne dla przelewów krajowych. Przelewy złożone do godziny 15:30 będą realizowane tego samego dnia roboczego, a złożone później następnego dnia roboczego. Dotychczasowa godzina graniczna to 16:00.\n\nZmiana 2: nowe zasady dotyczące limitów jednorazowych. Limit jednorazowy dla przelewu można ustawić osobno dla każdego użytkownika rachunku w bankowości internetowej.\n\nZmiana 3: zmiana opłaty za wyciąg w formie papierowej z 6,00 PLN na 8,50 PLN za każdy wyciąg. Wyciągi elektroniczne pozostają bezpłatne.\n\nZmiana 4: uzupełnienie opisu usług powiadomień o logowaniu i o operacjach. Powiadomienia wysyłamy na adresy wskazane w ustawieniach rachunku.\n\nPełna treść zmienionego regulaminu znajduje się w bankowości internetowej, w zakładce Dokumenty. Brak sprzeciwu do dnia wejścia zmian w życie oznacza ich akceptację. Klient, który nie akceptuje zmian, może wypowiedzieć umowę rachunku bez opłat do dnia wejścia zmian w życie, zgodnie z zasadami opisanymi w regulaminie. Okres wypowiedzenia i zasady rozliczenia opisano w tabeli opłat i prowizji. Prosimy nie odpowiadać na tę wiadomość.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0093",
+      "subject": "Raport z limitów użytkowników bankowości, styczeń 2027",
+      "body": "Aurum Bank | Raport automatyczny\n\nRaport o limitach i uprawnieniach użytkowników rachunku firmowego PL00-TEST-4410 według stanu na 15.01.2027. Raport został wygenerowany przez system i obejmuje tylko dane o uprawnieniach, bez operacji.\n\nLiczba użytkowników z dostępem do rachunku: 5.\nUżytkownicy z uprawnieniem do przygotowywania przelewów: 3, każdy z limitem jednorazowym 50 000,00 PLN.\nUżytkownicy z uprawnieniem do zatwierdzania przelewów: 2, z limitem jednorazowym 250 000,00 PLN.\nUżytkownik z uprawnieniem wyłącznie do odczytu: 1.\n\nLimit dzienny rachunku dla przelewów wychodzących: 250 000,00 PLN.\nLimit tygodniowy: 900 000,00 PLN.\nLimit miesięczny karty firmowej: 20 000,00 PLN.\n\nZmiany uprawnień w ciągu ostatnich 30 dni: 1. Zmianę wprowadzono 22.12.2026 i zatwierdzono podwójnie, zgodnie z regulaminem rachunku.\n\nOstatnie logowanie każdego z użytkowników: w ciągu ostatnich 7 dni. Nieudane próby logowania w ostatnich 30 dniach: 3, bez blokady konta.\n\nRaport wysyłamy automatycznie raz w miesiącu, w połowie miesiąca, do administratora rachunku i do adresu powiadomień. Wiadomość nie wymaga odpowiedzi. Szczegółowe ustawienia limitów i uprawnień znajdują się w bankowości internetowej. Raport nie zawiera haseł ani danych uwierzytelniających, a bank nigdy nie prosi o ich podanie w wiadomości e-mail. Historia raportów z poprzednich miesięcy jest przechowywana w serwisie przez 12 miesięcy.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0094",
+      "subject": "Supply Chain Weekly: issue skipped for holiday schedule",
+      "body": "SUPPLY CHAIN WEEKLY | Service notice\n\nThis is an automated service message. The digest of 22.01.2027 will not be sent, because of the editorial break on that date. The next issue arrives on 29.01.2027 at the usual time of 07:00, and it will contain the topics of both weeks. Your settings are not changed, and you do not need to do anything. Messages like this one are sent only when a regular issue is skipped.",
+      "thread": []
+    },
+    {
+      "id": "b-not-0096",
+      "subject": "ERP: summary of the weekly stock count and carrier slots",
+      "body": "ERP SYSTEM KORDELAN | Weekly operations summary, week 2\n\nThis summary is generated automatically each Monday at 06:00 for the warehouse management module. It lists values only and holds no comments. The period covers 04.01.2027 to 10.01.2027.\n\nStock count: 612 locations counted in Poznan, 284 in Gdynia and 198 in Lodz. Differences found: 7 in total, each corrected within the tolerance rule. Cycle counts completed: 100 percent of the plan.\n\nCarrier slots: 112 slots booked, 109 used, 3 released without use. Average waiting time at the gate: 14 minutes. The longest waiting time: 47 minutes on 06.01.2027 in Gdynia, caused by two trucks arriving together.\n\nLabels: 1 640 pallet labels printed, 4 reprints because of damaged paper.\n\nSystem: availability 99.97 percent. Two short warnings about scanner synchronisation, both closed by the system. No critical events.\n\nPlanned work: the next maintenance window is on 16.01.2027 from 22:00 to 23:30. The warehouse module will be read-only in that time.\n\nThis is an automatic message from the ERP monitoring service. Please do not reply to this address. Report version: 6. The previous weekly summaries are stored in the report archive of the warehouse module and can be opened by users with the reporting role.",
+      "thread": [],
+      "html": "<html><body style=\"font-family:Arial,sans-serif;font-size:13px;color:#222;\">\n<h3>ERP system Kordelan | Weekly operations summary, week 2</h3>\n<p>This summary is generated automatically each Monday at 06:00 for the warehouse management module. It lists values only and holds no comments. The period covers 04.01.2027 to 10.01.2027.</p>\n<p><b>Stock count:</b> 612 locations counted in Poznan, 284 in Gdynia and 198 in Lodz. Differences found: 7 in total, each corrected within the tolerance rule. Cycle counts completed: 100 percent of the plan.</p>\n<p><b>Carrier slots:</b> 112 slots booked, 109 used, 3 released without use. Average waiting time at the gate: 14 minutes. The longest waiting time: 47 minutes on 06.01.2027 in Gdynia, caused by two trucks arriving together.</p>\n<p><b>Labels:</b> 1 640 pallet labels printed, 4 reprints because of damaged paper.</p>\n<p><b>System:</b> availability 99.97 percent. Two short warnings about scanner synchronisation, both closed by the system. No critical events.</p>\n<p><b>Planned work:</b> the next maintenance window is on 16.01.2027 from 22:00 to 23:30. The warehouse module will be read-only in that time.</p>\n<p style=\"color:#777;\">This is an automatic message from the ERP monitoring service. Please do not reply to this address. Report version: 6. The previous weekly summaries are stored in the report archive of the warehouse module and can be opened by users with the reporting role.</p>\n</body></html>"
+    }
+  ]
+}
