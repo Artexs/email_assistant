@@ -4,7 +4,7 @@
 
 ## What it does now
 
-An organization keeps a list of delegates: people who get tasks from the user. Today the owner manages the list with `bun run delegates:*`; there is no web page for it. When the classifier calls a mail `delegation` and picks a delegate id from the list, triage plans a draft and a send to that delegate and writes one `delegations` row (`drafted`). After the owner approves the send (`drafts-and-send.md`) the delegation is `sent` and has a due date. A mail from the delegate in the same thread closes the wait: the delegation becomes `answered` and every linked member gets a notice with a ✅ Done button. When no answer comes by the due date, the chaser job marks the delegation `overdue` and plans a reminder for the owner to approve, at most 2 reminders per delegation. `bun run delegations:list` and `delegations:done` read and close delegations from the shell.
+An organization keeps a list of delegates: people who get tasks from the user. Today the owner manages the list with the `delegates:add`, `delegates:list`, `delegates:disable` and `delegates:enable` scripts; there is no web page for it. When the classifier calls a mail `delegation` and picks a delegate id from the list, triage plans a draft and a send to that delegate and writes one `delegations` row (`drafted`). After the owner approves the send (`drafts-and-send.md`) the delegation is `sent` and has a due date. A mail from the delegate in the same thread closes the wait: the delegation becomes `answered` and every linked member gets a notice with a ✅ Done button. When no answer comes by the due date, the chaser job marks the delegation `overdue` and plans a reminder for the owner to approve, at most 2 reminders per delegation. `bun run delegations:list` and `delegations:done` read and close delegations from the shell.
 
 ## Rules
 
@@ -30,22 +30,22 @@ An organization keeps a list of delegates: people who get tasks from the user. T
 
 ## Entry points
 
-| Kind     | Name                                                                                          | Where                                                       |
-| -------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| job      | `delegation.chaser` (`20 */15 * * * *`: second 20 of every 15th minute; acts from 07:30 local) | `apps/server/src/modules/delegation/chaser.ts`              |
-| CLI      | `bun run delegates:add`, `delegates:list`, `delegates:disable`, `delegates:enable`            | `apps/server/src/scripts/delegates.ts`                      |
-| CLI      | `bun run delegations:list`, `delegations:done`                                                | `apps/server/src/scripts/delegations.ts`                    |
-| CLI      | `bun run job:run --name delegation.chaser [--force]`                                          | `apps/server/src/scripts/job-run.ts`                        |
-| Telegram | callback `dd:<delegation id>` (the ✅ Done button); `as:` and `rs:` for a reminder set        | `apps/server/src/modules/channels/callbacks.ts`             |
-| function | `addDelegate`, `setDelegateState`                                                             | `apps/server/src/modules/delegation/service.ts`             |
-| function | `createDelegation`, `detectReply`, `markAnswered`, `cancelDelegation`, `closeDelegation`      | `apps/server/src/modules/delegation/service.ts`             |
-| function | `delegationHooks`                                                                             | `apps/server/src/modules/delegation/service.ts`             |
-| function | `listDelegates`, `listDelegations`, `countOpenDelegations`, `listDueDelegations`              | `apps/server/src/modules/delegation/repo.ts`                |
-| function | `createChaserJob`, `runChaserForMailbox`, `reminderDecision`                                  | `apps/server/src/modules/delegation/chaser.ts`              |
-| function | `saveTriage`                                                                                  | `apps/server/src/modules/triage/service.ts`                 |
-| function | `delegationAnsweredDetector`                                                                  | `apps/server/src/modules/channels/notices/delegation-answered.ts` |
-| function | `delegationInputOf`, `planActions`                                                            | `packages/core/src/triage/planners.ts`                      |
-| function | `renderApprovalSetRequest`, `renderDelegationAnswered`                                        | `packages/core/src/digest/approvals.ts`                     |
+| Kind     | Name                                                                                           | Where                                                             |
+| -------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| job      | `delegation.chaser` (`20 */15 * * * *`: second 20 of every 15th minute; acts from 07:30 local) | `apps/server/src/modules/delegation/chaser.ts`                    |
+| CLI      | `bun run delegates:add`, `delegates:list`, `delegates:disable`, `delegates:enable`             | `apps/server/src/scripts/delegates.ts`                            |
+| CLI      | `bun run delegations:list`, `delegations:done`                                                 | `apps/server/src/scripts/delegations.ts`                          |
+| CLI      | `bun run job:run --name delegation.chaser [--force]`                                           | `apps/server/src/scripts/job-run.ts`                              |
+| Telegram | callback `dd:<delegation id>` (the ✅ Done button); `as:` and `rs:` for a reminder set         | `apps/server/src/modules/channels/callbacks.ts`                   |
+| function | `addDelegate`, `setDelegateState`                                                              | `apps/server/src/modules/delegation/service.ts`                   |
+| function | `createDelegation`, `detectReply`, `markAnswered`, `cancelDelegation`, `closeDelegation`       | `apps/server/src/modules/delegation/service.ts`                   |
+| function | `delegationHooks`                                                                              | `apps/server/src/modules/delegation/service.ts`                   |
+| function | `listDelegates`, `listDelegations`, `countOpenDelegations`, `listDueDelegations`               | `apps/server/src/modules/delegation/repo.ts`                      |
+| function | `createChaserJob`, `runChaserForMailbox`, `reminderDecision`                                   | `apps/server/src/modules/delegation/chaser.ts`                    |
+| function | `saveTriage`                                                                                   | `apps/server/src/modules/triage/service.ts`                       |
+| function | `delegationAnsweredDetector`                                                                   | `apps/server/src/modules/channels/notices/delegation-answered.ts` |
+| function | `delegationInputOf`, `planActions`                                                             | `packages/core/src/triage/planners.ts`                            |
+| function | `renderApprovalSetRequest`, `renderDelegationAnswered`                                         | `packages/core/src/digest/approvals.ts`                           |
 
 ## Data
 

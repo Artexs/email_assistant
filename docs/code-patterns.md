@@ -134,7 +134,7 @@ A module that has something to tell a user through the outbox (digests and notic
   The committer finds its mailboxes with `listSyncTargets`; it adds no new entry point without a `TenantContext`.
 - A mail is located by identity (`locateMessage`), never by `SEARCH HEADER`: Interia finds nothing by `Message-ID`.
 - Non-idempotent provider calls (`create_draft`, `send`): commit status `applying` first; add the header `X-EA-Action-Id`.
-- `send` is at-most-once: never retry it by itself after SMTP DATA starts (`docs/architecture.md` §4.1 rule 6).
+- `send` is at-most-once: never retry it by itself after SMTP DATA starts (`docs/capabilities/drafts-and-send.md` § Rules).
 - SMTP errors are classified by stage (`SmtpSendError.stage`: `connect`, `login`, `envelope`, `content`, `unknown`). The committer never retries after `content` or `unknown`.
 - A recipient comes only from a `delegates` row or from `emails.from_address` (a clarification). Never use LLM text as a recipient.
   The raw message is built only by `buildOutgoingMessage` (`packages/core`) and `composeMessage` (`mail`): the draft and the send share the bytes.
