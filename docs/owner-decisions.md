@@ -19,6 +19,18 @@ Decisions that agents took for the owner with a default, so the work did not sto
 
 ## Entries
 
+### 2026-11-14 · F100 stages 01-02 start although the plan-drift check says drift (F100) · rule-exception · new
+- Choice: the coordinator started F100 stages 01 and 02 (capture parser, port and adapters) with a drift exit 1 (23 named paths changed since the refresh base), without a second refresh job.
+- Why: the refresh landed minutes earlier and other tickets keep landing, so a new refresh goes stale at once; the changed paths belong to later stages (callbacks, digest, web, config). The workers must check every named path against HEAD.
+- Undo: stop the two jobs; run `Refresh F100` again before the later stages (they wait for F097 stages 03-04 and F098 stages 08-11 anyway).
+- Source: `scripts/plan-drift.sh spec/features/planned/F100-e3a-measure a6690e4`; owner rule plan-refresh in `spec/build.md`.
+
+### 2026-11-14 · Telegram and panel texts of F100 follow the F098 registry state (F100) · user-visible · new
+- Choice: a new F100 text goes into the F098 section file of its kind with en and pl only if that file exists when the stage starts; otherwise it stays English inline. Panel texts always get en and pl keys.
+- Why: F098 moves the Telegram texts into a registry stage by stage; F100 must not block on it or undo it.
+- Undo: change D31 in the F100 plan.
+- Source: `spec/features/planned/F100-e3a-measure/questions.md` Q15.
+
 ### 2026-11-14 · Row-level security joined the foundation group, built as a per-connection tenant scope (F092) · security · new
 - Choice: the coordinator planned and built RLS on the review's default "yes". The web sets `app.org_id` on each connection acquire from an async tenant scope, not in one request transaction. A caller that runs raw SQL as `app` can still clear the setting, so the docs say "a safety net against a missed org_id filter".
 - Why: existing code opens transactions inside requests (Kysely refuses nesting), so one request transaction would break it; the scope needs no route or repository change.
