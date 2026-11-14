@@ -6,9 +6,10 @@ import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "b
 import { sql } from "kysely";
 
 import { insertMailbox } from "../../src/modules/mail/repo";
+import { privacyRoutes } from "../../src/modules/privacy";
 import { createOrganizationWithOwner, upsertOrgFeature } from "../../src/modules/tenancy";
 import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
-import { LOCKOUT_MAX_FAILURES } from "../../src/platform/auth-lockout";
+import { createLockoutStore, LOCKOUT_MAX_FAILURES } from "../../src/platform/auth-lockout";
 import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
 import { createApp } from "../../src/platform/http";
@@ -37,6 +38,8 @@ let recording = false;
 const lines: string[] = [];
 const answers: string[] = [];
 const spies: { mockRestore(): void }[] = [];
+// The events of every audit row that afterEach read before it deleted the organization.
+const auditEventsSeen = new Set<string>();
 
 const orgIds: string[] = [];
 const userIds: string[] = [];
@@ -73,6 +76,13 @@ beforeAll(() => {
 
 afterEach(async () => {
   recording = false;
+  // Every audit row the tests wrote (sign-in, lock, refusal) goes into the record of test 10, not only the refusals.
+  for (const orgId of orgIds) {
+    for (const row of await db.selectFrom("audit_log").selectAll().where("org_id", "=", orgId).execute()) {
+      auditEventsSeen.add(row.event);
+      answers.push(JSON.stringify(row));
+    }
+  }
   for (const orgId of orgIds) await db.deleteFrom("organizations").where("id", "=", orgId).execute();
   if (userIds.length > 0) {
     await sql`DELETE FROM auth_verifications WHERE value IN (${sql.join(userIds)})`.execute(db);
@@ -294,12 +304,72 @@ describe("DELETE /api/organization", () => {
     expect(await orgCount(s.orgId)).toBe(1);
   });
 
-  test("a right password does not reset the lockout count", async () => {
+  test("a right password does not reset the lockout count, also when the delete itself is then refused", async () => {
     const s = await seed();
-    await remove(s.ownerCookie, { password: WRONG_PASSWORD, confirmName: "acme test" });
-    // A right password with a wrong name stops at the name check and leaves the count as it is.
-    await remove(s.ownerCookie, { password: PASSWORD, confirmName: WRONG_NAME });
+    // The real session, a stand-in for the password check: it accepts the right password and renames the organization
+    // before it answers, so the delete that follows the password check answers wrong_name.
+    let verified = 0;
+    const raced = createApp({
+      checkDb: async () => true,
+      web: {
+        ...web,
+        connInfo: () => `10.${randomInt(1, 250)}.${randomInt(1, 250)}.${randomInt(1, 250)}`,
+        routers: (api) =>
+          api.route(
+            "/",
+            privacyRoutes({
+              db,
+              now: () => new Date(),
+              lockout: createLockoutStore(db),
+              onEvent: async () => undefined,
+              verifyPassword: async (_headers, password) => {
+                if (password !== PASSWORD) return false;
+                verified++;
+                await sql`UPDATE organizations SET name = 'Renamed in between' WHERE id = ${s.orgId}`.execute(db);
+                return true;
+              },
+              expiredSessionCookie: async () => "ea.session_token=; Max-Age=0; Path=/",
+            })
+          ),
+      },
+    });
+    const send = async (body: unknown) => {
+      const res = await raced.request("/api/organization", {
+        method: "DELETE",
+        headers: { cookie: s.ownerCookie, origin: TEST_ORIGIN, "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const text = await res.text();
+      answers.push(text);
+      return { status: res.status, json: JSON.parse(text) as Record<string, unknown> };
+    };
+    expect((await send({ password: WRONG_PASSWORD, confirmName: "acme test" })).json).toEqual({
+      error: "wrong_password",
+    });
     expect(await failedCount(s.ownerId)).toBe(1);
+    // The right password and the right name pass both checks; the delete then finds another name.
+    const refused = await send(right);
+    expect(verified).toBe(1);
+    expect({ status: refused.status, json: refused.json }).toEqual({ status: 400, json: { error: "wrong_name" } });
+    expect(await orgCount(s.orgId)).toBe(1);
+    expect(await failedCount(s.ownerId)).toBe(1);
+  });
+
+  test("a body orgId is ignored: the owner of org B deletes org B and org A stays whole", async () => {
+    const a = await seed();
+    const b = await seed();
+    const memberCount = async (orgId: string) =>
+      (await db.selectFrom("memberships").select("user_id").where("org_id", "=", orgId).execute()).length;
+    const mailboxCount = async (orgId: string) =>
+      (await db.selectFrom("mailboxes").select("id").where("org_id", "=", orgId).execute()).length;
+    const res = await remove(b.ownerCookie, { ...right, orgId: a.orgId }, { keep: true });
+    expect(res.status).toBe(200);
+    expect(orgDeleteResponseSchema.parse(res.json).mailboxAddresses).toEqual(b.addresses);
+    expect(await orgCount(b.orgId)).toBe(0);
+    expect(await orgCount(a.orgId)).toBe(1);
+    expect(await memberCount(a.orgId)).toBe(2);
+    expect(await mailboxCount(a.orgId)).toBe(2);
+    expect(await db.selectFrom("users").select("id").where("id", "=", a.ownerId).execute()).toHaveLength(1);
   });
 
   test("7: a suspended organization can delete itself", async () => {
@@ -320,6 +390,9 @@ describe("DELETE /api/organization", () => {
   test("10: no log line, answer or audit row of the other tests holds a password, a name or an address", () => {
     expect(lines.length).toBeGreaterThan(0);
     expect(answers.length).toBeGreaterThan(0);
+    // The scan covers the audit rows of the lock and of the refusals, not only the refusals.
+    expect(auditEventsSeen).toContain("web.login_locked");
+    expect(auditEventsSeen).toContain("org.delete_refused");
     for (const text of [...lines, ...answers]) {
       for (const marker of FORBIDDEN)
         expect({ marker, text: text.includes(marker) ? text : "" }).toEqual({ marker, text: "" });
