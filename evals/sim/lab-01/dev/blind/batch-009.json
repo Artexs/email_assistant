@@ -1,0 +1,313 @@
+{
+  "scenario": "lab-01",
+  "part": "dev",
+  "batch": "batch-009",
+  "cases": [
+    {
+      "id": "b-rep-0211",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wspólny przetarg z Kordelanem – Pana stanowisko",
+      "body": "Szanowny Panie Prezesie,\n\nczy Baltic Freight Partners może wystąpić jako podwykonawca w przetargu sieci Zielona Hurtownia, a Kordelan jako lider konsorcjum? Potrzebuję Pana odpowiedzi na piśmie do piątku, bo zarząd BFP chce zamknąć ten temat przed złożeniem oferty.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0216",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Odprawy celne w Gdyni – jak widzi Pan podział kosztów?",
+      "body": "Szanowny Panie Prezesie,\n\nod połowy stycznia agent celny w Gdyni podniósł stawki za odprawy kontenerowe, a my w ramach joint venture musimy zdecydować, kto pokrywa różnicę. Widzę dwie drogi: dzielimy dopłatę po połowie albo przerzucamy ją na klientów eksportowych od lutego.\n\nChciałbym poznać Pana opinię, zanim przedstawię to partnerom po naszej stronie. Wolałbym nie wysyłać Panu w tej sprawie propozycji w ciemno, więc jeśli któraś z opcji jest dla Kordelanu nie do przyjęcia, proszę o krótką wiadomość z uzasadnieniem. Zależy mi na odpowiedzi na piśmie, bo będę ją cytować w notatce dla zespołu.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0217",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Question on certificates for the February Gdynia shipment",
+      "body": "Dear Mr Szalewski,\n\nI have two questions about the February shipment that we need to settle before our customs broker files the paperwork.\n\n1. Will the phytosanitary certificates for the frozen berries be issued by your side or by the producer in Poland?\n2. Can you confirm that the pallets will arrive in Gdynia no later than 3 February, so that the unloading window is not lost?\n\nOur warehouse in Gothenburg plans its team around this slot, so I would be grateful for a direct answer from you rather than from the sales team.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0219",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Obsada magazynu w Poznaniu – potrzebuję Twojej decyzji",
+      "body": "Cześć Wiktor,\n\nmamy problem z obsadą nowego magazynu w Poznaniu. Agencja pracy tymczasowej proponuje 18 osób od 1 lutego, ale dopiero po podpisaniu umowy na pełny kwartał, a my wolelibyśmy zacząć od dwóch miesięcy.\n\nSą trzy ścieżki: przyjąć warunki agencji, poszukać drugiej agencji albo zatrudnić część osób bezpośrednio na umowy na czas określony. Ta ostatnia kosztowałaby nas więcej w styczniu, ale daje większą elastyczność.\n\nJak widzisz tę sprawę? Potrzebuję Twojej odpowiedzi do środy, bo agencja trzyma ofertę tylko do czwartku.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0226",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Board meeting on 28 January: two points I need from you",
+      "body": "Dear Wiktor,\n\nBefore the supervisory board meets on 28 January, I would like your written view on two matters. First, do you still expect the annual budget to close at the level you indicated in December, given the higher fuel costs? Second, which risk do you consider the most serious for the first quarter: the Zielona Hurtownia tender, the customs delays, or the warehouse system failures?\n\nI need short, concrete answers. Please send them by Monday so that I can prepare the agenda.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0227",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Joint tender for the Baltic ports – can we count on your fleet?",
+      "body": "Hi Wiktor,\n\nI will be direct. The Gdańsk port authority has opened a tender for inland container transport, and BFP would like to bid together with Kordelan. We bring the contracts with the shipping lines, and you bring the trucks and the drivers.\n\nCan you commit at least forty trailers from March to the end of the year? If not, what number is realistic? Our board meets on Thursday, and I would rather give them your real figure than a guess.\n\nIf the answer is yes in principle, I will send you a draft consortium letter this week. Let me know what you think and what worries you about this setup.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0229",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Cennik na 2027 – pytanie o rabat wolumenowy",
+      "body": "Szanowny Panie Prezesie,\n\notrzymaliśmy nowy cennik transportu na 2027 rok i mam jedno zasadnicze pytanie. W obecnej umowie mamy rabat 4 procent po przekroczeniu stu kursów w kwartale, a w nowym dokumencie tego zapisu nie widzę. Czy to pomyłka, czy Kordelan świadomie rezygnuje z tego rabatu?\n\nMeblodrew przewozi z Państwem około 140 kursów kwartalnie, więc różnica jest dla nas istotna. Proszę o odpowiedź bezpośrednio od Pana, ponieważ moja rozmowa z koordynatorem sprzedaży nie przyniosła jasnego wyjaśnienia. Zarząd naszej firmy zamyka budżet logistyki na początku lutego.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0234",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Budżet – jedno pytanie",
+      "body": "Wiktor,\n\nwczoraj dostałem od pani Czerniak wstępne zestawienie kosztów za czwarty kwartał. Wynika z niego, że wydatki na paliwo przekroczyły plan o prawie dwanaście procent.\n\nProszę o wyjaśnienie na piśmie: czy to jednorazowy skok, czy trend, który utrzyma się w styczniu? Chcę to wiedzieć przed posiedzeniem rady, żeby nie dowiedzieć się tego od członków rady podczas obrad. Jeśli planujesz działania zaradcze, napisz jakie.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0235",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Quick question about the 28 January agenda",
+      "body": "Wiktor, quick one. Should we put the Nordic Foods framework agreement on the agenda of the board meeting on 28 January, or do you prefer to present it only as an information item after signing?\n\nI think members will ask about it anyway. Tell me which way you lean and I will arrange the agenda accordingly.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0236",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Plan szkoleń i premie dla kierowników magazynów – potrzebna Twoja opinia",
+      "body": "Cześć Wiktor,\n\nwracam do tematu, który zostawiliśmy otwarty po grudniowym spotkaniu. Mamy w tej chwili dziewięciu kierowników magazynów i czterech z nich zapowiedziało, że w pierwszym kwartale rozważa zmianę pracy. Dwóch dostało już oferty od konkurencji, w tym od operatora, który otwiera centrum dystrybucyjne pod Łodzią.\n\nProponuję dwa działania. Po pierwsze, program szkoleniowy z zakresu zarządzania zespołem i systemu magazynowego, który miałby się zacząć w marcu i trwać cztery miesiące. Po drugie, premię retencyjną wypłacaną w dwóch ratach, w czerwcu i w grudniu, pod warunkiem pozostania w firmie. Koszt całości oszacowałem na około 85 tysięcy złotych w skali roku, ale szczegółowy kosztorys jest jeszcze w przygotowaniu.\n\nNajbardziej interesuje mnie Twoja opinia w dwóch sprawach: czy w ogóle chcesz iść w stronę premii retencyjnych, bo to tworzy precedens dla innych działów, oraz czy program szkoleniowy ma być dla wszystkich kierowników, czy tylko dla tych, których chcemy zatrzymać. Dyrektor Strzemecka jest za pierwszym, ja mam wątpliwości. Odpowiedz mi proszę do końca tygodnia, bo chcę przedstawić propozycję na spotkaniu z zespołem w poniedziałek.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0247",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana limitów na kartach paliwowych – prosimy o decyzję",
+      "body": "Dzień dobry,\n\nod 1 lutego Paliwa-Flota wprowadza nowy model limitów na kartach paliwowych: zamiast dziennych limitów na kartę proponujemy miesięczny limit dla całej floty Kordelanu. Dla Państwa to około 310 tysięcy złotych miesięcznie przy obecnym zużyciu.\n\nCzy zarząd akceptuje taki model, czy woli Pan pozostać przy limitach dziennych, które będą od lutego droższe o dwa procent? Ponieważ zmiana dotyczy całej floty, prosimy o decyzję od Pana osobiście, a nie od działu operacyjnego. Odpowiedź potrzebna do 25 stycznia.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-rep-0250",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Baltic ports tender – follow-up on your answer",
+      "body": "Hi Wiktor,\n\nthanks for your note last week. I read it carefully, and I have one follow-up. You said Kordelan could commit around thirty trailers but only from April. Our shipping-line partners need start-up capacity in March, at least for the first ten weeks.\n\nCould you tell me whether a short-term arrangement is possible, for example a subcontracted fleet that Kordelan manages for the first two months? If yes, I can write this into the draft letter. If not, I need to know today rather than next week, so that we can find another capacity partner.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Baltic ports tender",
+          "body": "Hi Daniel,\n\nthank you for the outline. In principle we are interested. Kordelan could commit around thirty trailers, but only from April, because the new units arrive at the end of March. I will confirm the exact number once our operations director has reviewed the plan.\n\nBest regards,\nWiktor Szalewski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0005",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wygrałeś kartę podarunkową na 500 zł – odbierz teraz",
+      "body": "Dzień dobry,\n\ndziękujemy, że od lat korzystacie Państwo z naszych usług. W ramach akcji \"Lojalni kierowcy\" wylosowaliśmy Państwa firmę do nagrody: bon do sklepu z elektroniką o wartości 500 zł oraz roczny abonament na streaming filmowy.\n\nAby odebrać nagrodę, wystarczy wypełnić krótką ankietę pod adresem http://paliwa-fiota.test/nagroda i podać numer karty płatniczej do weryfikacji. Oferta jest ważna tylko przez 48 godzin, potem bon przejdzie na kolejną firmę z listy.\n\nNie przegap okazji, która zdarza się raz w roku!\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0008",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Exclusive deal just for your company",
+      "body": "Dear customer,\n\nwe have selected your company for a limited promotion on premium sunglasses and designer watches, shipped directly from our partner warehouse. Up to 70 percent off the usual price, only this week, and only for the first 200 buyers.\n\nClaim your discount here: http://paliwa-fiota.test/promo/watches\n\nSimply enter the voucher code FLOTA-70 at checkout. This offer cannot be combined with other discounts and will not be repeated. Do not miss it.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0019",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Fresh B2B lead list: 50,000 verified emails for only $49",
+      "body": "Hello,\n\nAre you tired of low sales? We have the BEST verified email list of decision makers in logistics, transport and warehousing. 50,000 contacts, updated this month, delivered in 24 hours to your inbox.\n\nSpecial price only today: $49 instead of $490. We also offer SEO packages that will put your website on the first page of Google in 14 days, guaranteed.\n\nReply to this message with the word YES and our manager will send the payment details. Do not wait, your competitors are already using our lists.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0023",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Account notice – get your free bonus",
+      "body": "Hello, you have a bonus waiting: free access to our investment webinar and a gift for new members. Click http://paliwa-fiota.test/bonus to claim it today. Offer ends soon.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0025",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zwiększ sprzedaż o 300% w 30 dni – oferta tylko dla wybranych firm",
+      "body": "Szanowni Państwo,\n\nczy wiedzą Państwo, że 9 na 10 firm logistycznych traci klientów, bo nie są widoczne w internecie? Premium Leads Pro rozwiązuje ten problem raz na zawsze. Nasz pakiet \"Rakieta\" zawiera pozycjonowanie strony w Google, kampanię w mediach społecznościowych oraz bazę 20 tysięcy aktualnych kontaktów do firm z branży TSL w całej Polsce.\n\nDlaczego warto skorzystać właśnie dziś? Ponieważ tylko do końca tygodnia oferujemy rabat 80 procent na pierwszy miesiąc współpracy. Po tym terminie cena wróci do standardowej, czyli aż pięć razy wyższej. Zagwarantowane efekty albo zwracamy pieniądze, bez żadnych pytań i bez drobnego druku.\n\nNasi klienci zwiększyli sprzedaż średnio o 300 procent. To nie jest obietnica bez pokrycia, to nasza średnia z ostatnich trzech lat. Wystarczy, że odpowiedzą Państwo na tę wiadomość słowem TAK, a nasz konsultant skontaktuje się z Państwem jeszcze dziś i przygotuje bezpłatną wycenę.\n\nNie czekaj, bo miejsc w promocji zostało już tylko siedem. Konkurencja nie śpi, a Ty możesz być następny w kolejce po sukces.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0028",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Last chance: Warehouse Expo 2027 – exhibition stands 30% off for early birds!",
+      "body": "WAREHOUSE EXPO 2027 – LAST CALL FOR EXHIBITORS!\n\nDear Sir or Madam,\n\nThe biggest warehouse and logistics fair in the region is coming to Katowice this spring, and we have just released the final batch of exhibition stands. If you book before the end of the month, you get 30 percent off the stand price, a free listing in our fair catalogue and two complimentary VIP passes for your guests.\n\nWhy exhibit with us? More than 400 exhibitors from 18 countries, over 12,000 visitors expected, a dedicated networking evening with live music and a gala dinner. Last year, 87 percent of exhibitors said they would come back. Most of the good stands near the main entrance are already gone, and only 14 remain in the hall B.\n\nBook now and secure the best position for your brand. Fill in the online form on our website and our sales team will call you within a day to arrange the details. Remember that the early-bird discount ends at midnight on the last day of January, and we cannot extend it for anyone.\n\nDo not miss your chance to be seen by thousands of buyers!\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0036",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Baza e-mail dla Twojej firmy – promocja -90%",
+      "body": "Witam,\n\noferujemy bazę adresów e-mail kierowników działów zakupów z firm produkcyjnych i handlowych w całej Europie. Ponad 100 tysięcy rekordów, gotowe do importu w kilka minut, z dołączoną gwarancją skuteczności.\n\nPromocyjna cena tylko do jutra: 199 zł zamiast 1990 zł. Płatność jest możliwa również w kryptowalutach, a faktury nie wystawiamy, żeby obniżyć koszty. Chcesz zobaczyć próbkę? Odpowiedz na tę wiadomość, a wyślemy Ci plik z dziesięcioma przykładowymi kontaktami.\n\nNie zwlekaj, bo oferta wygasa już jutro o północy.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0040",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Pozycjonowanie strony kordelan.test – pierwsza strona Google gwarantowana",
+      "body": "Dzień dobry,\n\nanalizowaliśmy stronę Państwa firmy i znaleźliśmy 47 poważnych błędów, które odstraszają klientów. Możemy je naprawić w ciągu tygodnia, a po miesiącu gwarantujemy Państwa stronie miejsce na pierwszej stronie wyników Google.\n\nW promocji tylko do piątku proponujemy pełny pakiet SEO za 299 zł miesięcznie zamiast 1499 zł. Do pakietu dodajemy wpisy w 500 katalogach firm i bezpłatny audyt konkurencji. Napisz, a podeślemy ofertę.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0041",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Targi Magazynowe Expo 2027 – ostatnie wolne stoiska, rabat 25 procent!",
+      "body": "Szanowni Państwo,\n\nTargi Magazynowe Expo odbędą się w kwietniu w Katowicach, a lista wystawców zamyka się już za kilka dni. Wszystkim firmom, które zgłoszą się do końca stycznia, dajemy rabat 25 procent na wynajem stoiska oraz bezpłatny wpis w katalogu targowym.\n\nOczekujemy ponad 10 tysięcy zwiedzających z całej Polski, a w tym roku po raz pierwszy także gości z Niemiec i Czech. Na wystawców czeka strefa networkingu, wieczór branżowy i konkurs na najlepsze stoisko. Liczba miejsc jest ograniczona, w hali A zostało tylko dziewięć stoisk.\n\nJeśli chcą Państwo zarezerwować miejsce, odpowiedzcie na tę wiadomość lub zadzwońcie do naszego działu handlowego. Nie przegap okazji!\n\nZespol Targi Magazynowe Expo | Dzial Handlowy\n\nAby zrezygnować z otrzymywania tych wiadomości, kliknij link wypisania w stopce.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0054",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Pilna weryfikacja karty – uzyskaj zwrot do 12% za tankowanie",
+      "body": "Szanowni Państwo,\n\nw ramach nowej akcji \"Zwrot z paliwa\" użytkownicy kart flotowych mogą odzyskać do 12 procent wartości zakupów paliwa z ostatnich trzech miesięcy. Aby przystąpić do programu, trzeba zalogować się na swoje konto i potwierdzić dane firmy oraz numer karty.\n\nFormularz znajduje się tutaj: http://paliwa-fiota.test/zwrot. Prosimy o wypełnienie go w ciągu 24 godzin, w przeciwnym razie program zostanie zamknięty dla Państwa firmy, a karta może zostać czasowo zablokowana.\n\nDziękujemy za współpracę.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0055",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Specjalna oferta na ubezpieczenie floty tylko dla Ciebie",
+      "body": "Szanowni Państwo,\n\nmamy dla Państwa wyjątkową okazję: ubezpieczenie OC i AC dla całej floty ze zniżką do 45 procent, bez badania pojazdów i bez wizyty agenta. Wystarczy, że wejdą Państwo na stronę http://paliwa-fiota.test/ubezpieczenie i wpiszą numer rejestracyjny każdego samochodu.\n\nOferta obowiązuje tylko dziś. Nie czekaj, następna taka okazja nie powtórzy się w tym roku. Nasi doradcy czekają na Twoje zgłoszenie.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0060",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Jedyne takie targi w Polsce! Zarezerwuj stoisko do piątku i zyskaj pakiet reklamowy za darmo",
+      "body": "Dzień dobry!!!\n\nTylko u nas! Do piątku przyjmujemy zgłoszenia na Targi Magazynowe Expo, a każda firma, która zarezerwuje stoisko w tym tygodniu, dostaje DARMOWY pakiet reklamowy: baner na naszej stronie, wpis w newsletterze i logo w katalogu targowym.\n\nLiczba miejsc jest ograniczona! Do tej pory zgłosiło się już 312 firm, a hala wypełnia się szybciej niż w zeszłym roku. Przy rezerwacji na ten tydzień obowiązuje także rabat 15 procent na stoiska narożne.\n\nOdpowiedz na ten e-mail, wpisując w temacie słowo TARGI, a nasz opiekun skontaktuje się z Tobą w ciągu godziny. Nie przegap okazji!!!\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "b-spa-0062",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Boost your website traffic today",
+      "body": "Hello! Our SEO team can double your website traffic in 30 days, guaranteed. Special price this week only: $99. Reply YES to get started.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}
