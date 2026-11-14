@@ -1,0 +1,410 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-053",
+  "cases": [
+    {
+      "id": "h-cc-08",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "halina.strzemecka@kordelan.test"
+      ],
+      "cc": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "subject": "Wyjazd do Frankfurtu - plan dla Pani Haliny",
+      "body": "Szanowna Pani Halino,\n\nprzesyłam plan wyjazdu rady do Frankfurtu: wylot 09.02.2027 o 07:15, powrót 11.02.2027. Pana Prezesa dodaję w kopii, bez potrzeby odpowiedzi.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-cc-09",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "oliver.pemberton@kordelan.test"
+      ],
+      "cc": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "subject": "Capacity for the Riga corridor - note for Oliver",
+      "body": "Szanowny Panie Oliverze,\n\npiszę do Pana w sprawie wspólnego przetargu na trasie ryskiej. Nasz zespół szacuje, że do końca lutego będziemy w stanie zapewnić osiem ciągników tygodniowo, a od marca dwanaście. Proszę o informację, ilu ciągników potrzebuje Pana zespół na odcinku polskim, abyśmy mogli policzyć wspólną stawkę.\n\nPana Prezesa wstawiam w kopii wyłącznie informacyjnie, bo wiem, że lubi mieć wgląd w postęp prac. Sam zwracam się do Pana, jako osoby odpowiedzialnej za eksport.\n\nPozdrawiam serdecznie, Daniel Hargreaves",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-de-01",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Sitzung des Aufsichtsrats: Ihre Meinung zur Tagesordnung",
+      "body": "Wiktor,\n\nich bereite die Tagesordnung für die nächste Sitzung des Aufsichtsrats vor und brauche Ihre Meinung zu einem Punkt. Zwei Mitglieder möchten die Frage der neuen Lagerhalle in Łódź früher behandeln, noch vor dem Bericht über das letzte Quartal. Mir scheint das logisch, aber ich möchte nicht über den Kopf des Vorstands entscheiden.\n\nBitte schreiben Sie mir, ob Sie mit der Änderung der Reihenfolge einverstanden sind. Wenn der Vorstand mehr Zeit für die Vorbereitung der Unterlagen braucht, lasse ich die Reihenfolge, wie sie ist. Eine kurze Antwort in den nächsten Tagen reicht.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-de-02",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Zollabfertigung in Hamburg - Information",
+      "body": "Sehr geehrter Herr Szalewski,\n\nzu Ihrer Information: Der Zoll in Hamburg hat die beiden Sendungen heute freigegeben, die Fahrer fahren bereits weiter. Weitere Schritte sind nicht nötig.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "oliver.pemberton@kordelan.test",
+          "subject": "Zollabfertigung in Hamburg",
+          "body": "Lieber Daniel, zwei unserer Sendungen hängen beim Zoll in Hamburg fest. Kannst du das bitte prüfen lassen? Oliver"
+        },
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Zollabfertigung in Hamburg",
+          "body": "Oliver, bitte halte mich auf dem Laufenden. Wiktor"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "h-de-06",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: Ihr Abonnement-Konto - Zahlung und Sicherheitshinweis",
+      "body": "Dies ist eine automatische Nachricht Ihres Abonnement-Kontos bei Logistyka Dziś. Bitte antworten Sie nicht auf diese E-Mail.\n\nKonto: wiktor.szalewski@kordelan.test\nEreignis: Verlängerung des Abonnements\n\nIhr Jahresabonnement für die Wochenausgabe wurde am 18.01.2027 automatisch verlängert und gilt nun bis zum 31.12.2027. Der Betrag von 480,00 PLN wurde Ihrer hinterlegten Karte belastet. Die Rechnung mit der Nummer FV-LD-2027-0412 steht in Ihrem Konto zum Abruf bereit.\n\nÄnderung der Einstellungen: Die Sprache der Wochenausgabe wurde auf Deutsch gesetzt, die Zustellung erfolgt weiterhin freitags. Wenn Sie diese Änderung nicht selbst vorgenommen haben, können Sie sie in den Konto-Einstellungen jederzeit zurücksetzen.\n\nSicherheitshinweis: Am 18.01.2027 um 13:12 Uhr wurde Ihr Konto auf einem neuen Gerät angemeldet. Waren Sie das nicht, ändern Sie bitte umgehend Ihr Passwort und beenden Sie alle aktiven Sitzungen. Wir fragen Sie niemals per E-Mail nach Ihrem Passwort.\n\nDie Zahlungsdaten und Ihre Zustelladresse können Sie unter Konto, Abonnement und Rechnungen prüfen. Diese Nachricht wurde vom System erzeugt, weil sich Daten Ihres Kontos geändert haben.\n\nHinweis zur Zustellung: Die nächste Ausgabe wird am Freitag an die oben genannte Adresse gesendet. Möchten Sie keine Benachrichtigungen mehr erhalten, können Sie diese in den Konto-Einstellungen deaktivieren.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-de-07",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Lieferfenster in Göteborg: Ihre Zusage",
+      "body": "Sehr geehrter Herr Szalewski,\n\nich möchte von Ihnen persönlich wissen, ob Kordelan das Zeitfenster am Donnerstag um 10:00 in Göteborg zusagt. Eine kurze Antwort bis morgen genügt.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-de-08",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Frachtraten diese Woche: Überblick",
+      "body": "Frachtraten im Überblick\n\n- Containerfracht Asien-Nordeuropa: Die Preise liegen mit 2 480 USD pro Container etwa vier Prozent unter dem Vormonat.\n- Straßenfracht Mitteleuropa: Die Raten sind stabil, doch die Nachfrage nach Kühlfahrzeugen bleibt hoch.\n- Ostsee-Fähren: Die Kapazität steigt im Februar um zwei Abfahrten pro Woche.\n- Zollverfahren: Die Behörden in mehreren Häfen führen ein digitales System zur Voranmeldung ein.\n\nDiese Zusammenfassung dient nur zur Information, es sind keine Maßnahmen nötig. Der vollständige Bericht über die Frachtraten des ersten Quartals steht im kostenpflichtigen Abonnement zur Verfügung.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-de-09",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "ERP-Meldung: Systemstörung im Lager Stryków",
+      "body": "Automatische Meldung des ERP-Systems.\n\nIm Lagerverwaltungssystem des Standorts Stryków wurde am 14.01.2027 um 02:15 eine Störung festgestellt. Betroffen sind die Module Wareneingang und Kommissionierung. Die Störung dauerte 47 Minuten und ist inzwischen behoben.\n\nStatus: abgeschlossen. Dokumentnummer: WMS-INC-0412. Zahl der betroffenen Aufträge: 31. Zahl der verspäteten Lieferungen: 4. Das System hat alle offenen Vorgänge automatisch neu gestartet. Es wurden keine Daten verloren, und die Prüfung der Bestände nach dem Neustart ergab keine Abweichungen. Die Störung wird im Protokoll des Systems gespeichert. Eine Antwort auf diese Meldung ist nicht erforderlich.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-de-10",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Bewerbung Lagerleiter: Ihre Entscheidung zum Gehalt",
+      "body": "Wiktor,\n\nfür die Stelle des Lagerleiters in Posen haben wir einen guten Kandidaten, der Deutsch und Polnisch spricht und bisher bei einem großen deutschen Logistiker gearbeitet hat. Er verlangt allerdings ein Gehalt, das etwa 15 Prozent über unserem Rahmen liegt.\n\nIch bitte Sie um Ihre Entscheidung, ob wir von der Gehaltspolitik abweichen dürfen. Wenn ja, bis zu welchem Betrag? Wenn nicht, sage ich dem Kandidaten ab, und wir suchen weiter. Bitte antworten Sie mir persönlich, ich möchte nichts ohne Ihre Zustimmung zusagen.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-dmd-01",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Nordic framework agreement - open points",
+      "body": "Dear Mr Szalewski,\n\nThank you for your answer. I think someone in your team should take care of the open points in the contract, because they have been waiting for a while and my own team cannot move forward without them.\n\nThere are a few things that need to be cleaned up: some figures in the annex do not match, a certificate is still missing and the delivery schedule is not final. I would be grateful if your side could look at all of that and send us a corrected version, so that we can bring it to our board.\n\nI leave it to you to decide who should do what.",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Nordic framework agreement",
+          "body": "Dear Karin, I have read your remarks. Let me check them with my team. Wiktor Szalewski"
+        },
+        {
+          "from": "karin.lindqvist@nordicfoods-trade.test",
+          "subject": "Nordic framework agreement",
+          "body": "Dear Mr Szalewski, our legal team found a few inconsistencies in the draft. Karin Lindqvist"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "h-dmd-02",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wyjazd rady - ktoś powinien to ogarnąć",
+      "body": "Wiktor,\n\nprzy planowaniu wyjazdu rady do Frankfurtu zostało kilka niezałatwionych spraw: hotel, transfer z lotniska i kolacja z gospodarzami. Powinien się tym zająć ktoś z Twojego zespołu, bo ja nie mam do tego ludzi.\n\nNie wiem, kto ma to zrobić ani na kiedy, zostawiam to Tobie. Wiem tylko, że dwa miejsca w hotelu przy lotnisku mają jeszcze rezerwację tymczasową, a restauracja czeka na liczbę gości. Ważne, żeby wszystko było gotowe przed wylotem.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-dmd-04",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Card list update",
+      "body": "Dear Mr Szalewski,\n\nyour team should update the list of drivers who hold fuel cards, as several names on our side are outdated. Please have it done.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-dmd-07",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Board dinner arrangements",
+      "body": "Wiktor,\n\nsomeone from your office needs to sort out the board dinner. I do not mind who it is.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-dmd-08",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Otwarte faktury - proszę o zajęcie się",
+      "body": "Szanowny Panie Prezesie,\n\nna naszym koncie wciąż widnieje kilka niezapłaconych faktur za grudzień oraz jedna korekta, której Państwa dział finansowy jeszcze nie zaksięgował. Nie chcę zawracać Panu głowy szczegółami, ale ktoś po Państwa stronie powinien to uporządkować, zanim limity na kartach zostaną obniżone.\n\nProszę, aby Pana zespół sprawdził, które pozycje są sporne, a które po prostu zostały pominięte, i dał nam znać. Uzgodnimy resztę, gdy dowiemy się, z kim mamy rozmawiać.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-dmd-09",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zielona - uzupełnienie oferty",
+      "body": "Szanowny Panie Prezesie,\n\nw Państwa ofercie do przetargu brakuje kilku dokumentów, które powinni Państwo dołączyć. Proszę, aby ktoś z Pana zespołu się tym zajął i przesłał je do nas jak najszybciej. Wiem, że to zwykle zadanie handlowców, ale nie wiem, z kim mam się kontaktować.\n\nChodzi o zaświadczenia i kilka dodatkowych wyjaśnień do cennika. Resztę zostawiam Państwu, bo znają Państwo własne dokumenty najlepiej, a ja nie chcę niczego narzucać. Rozumiem, że zespół jest zajęty, jednak oferta bez tych dokumentów może zostać odrzucona przez komisję.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-dmd-10",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Umowa na 2027 - sprawy do uporządkowania po Państwa stronie",
+      "body": "Szanowny Panie Prezesie,\n\nzbliżamy się do podpisania nowej umowy transportowej na rok 2027 i widzę po naszej stronie kilka spraw, które powinny zostać uporządkowane przez Państwa zespół, zanim złożymy podpisy. Piszę do Pana, a nie do dyrektora operacyjnego, bo to Pan decyduje, komu przydzielić tę pracę.\n\nPo pierwsze, cennik: w załączonym wcześniej projekcie część tras ma stawki z roku ubiegłego, a część nowe, i nie jest jasne, które obowiązują. Po drugie, warunki płatności: w jednym miejscu jest czternaście dni, w innym trzydzieści i potrzebujemy jednolitego zapisu. Po trzecie, zasady reklamacji: chcielibyśmy, żeby okres zgłaszania szkód był dłuższy niż w obecnej umowie, ale nie ustaliliśmy jak długi.\n\nWszystkie trzy sprawy wymagają, aby ktoś po Państwa stronie je przejrzał i poprawił projekt. Nie wiem, kto jest właściwą osobą, i nie chcę zgadywać. Proszę, aby wskazał Pan odpowiedniego pracownika, który przygotuje poprawioną wersję dla naszej firmy, a następnie skontaktuje się z naszym działem zakupów.\n\nZależy nam na terminowym podpisaniu umowy, bo od niej zależy plan produkcji na pierwszy kwartał. Rozumiem, że to okres wytężonej pracy w Pana firmie, jednak wolimy uniknąć sytuacji, w której dostawy zaczynają się bez podpisanego dokumentu. Zostawiam to Panu.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-fwd-01",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Fwd: Faktura korygująca do reklamacji",
+      "body": "Szanowny Panie Prezesie,\n\nprzekazuję wiadomość od Pana księgowej, którą otrzymaliśmy w sprawie faktury korygującej do naszej reklamacji. Dla porządku przesyłam ją w całości, żeby Pan wiedział, jak wygląda stan rozliczenia. Nie oczekuję w tej chwili żadnych działań z Pana strony.\n\n---------- Przekazana wiadomość ----------\nOd: Magdalena Czerniak\n\nDzień dobry, przesyłam informację, że faktura korygująca na kwotę 4 200 zł została wystawiona i zaksięgowana w zeszłym tygodniu. Kwota pomniejsza saldo Państwa zobowiązań. Magdalena Czerniak",
+      "thread": [
+        {
+          "from": "magdalena.czerniak@kordelan.test",
+          "subject": "Faktura korygująca do reklamacji",
+          "body": "Dzień dobry, przesyłam informację, że faktura korygująca na kwotę 4 200 zł została wystawiona i zaksięgowana w zeszłym tygodniu. Kwota pomniejsza saldo Państwa zobowiązań. Magdalena Czerniak"
+        },
+        {
+          "from": "tomasz.brzezinski@meblodrew.test",
+          "subject": "Fwd: Faktura korygująca do reklamacji",
+          "body": "Przekazuję wiadomość od Pana księgowej. Tomasz Brzezinski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "h-fwd-02",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Fwd: dziwna oferta - czy to od Państwa?",
+      "body": "Szanowny Panie Prezesie,\n\ndostaliśmy poniższą wiadomość z ofertą baz adresowych i pozycjonowania. Odwołuje się do Pana firmy, jakby Państwo byli zainteresowani, więc zastanawiam się, czy Państwo wiedzą o tej sprawie. Proszę o odpowiedź, czy to jest ktoś, z kim Pan współpracuje, bo nie chcę odpowiadać na coś, co może być oszustwem.\n\n---------- Przekazana wiadomość ----------\nOd: Premium Leads Pro\n\nWitamy! Mamy dla Panstwa baze 500 000 adresow firm transportowych. Cena tylko 99 zl, tylko dzis. Zamowienie przez odpowiedz na ten mail. Premium Leads Pro | Sales Team\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [
+        {
+          "from": "deals@premium-leads-pro.test",
+          "subject": "dziwna oferta",
+          "body": "Witamy! Mamy dla Panstwa baze 500 000 adresow firm transportowych. Cena tylko 99 zl, tylko dzis. Zamowienie przez odpowiedz na ten mail. Premium Leads Pro | Sales Team"
+        },
+        {
+          "from": "g.jastrzebska@hurtownia-zielona.test",
+          "subject": "Fwd: dziwna oferta - czy to od Państwa?",
+          "body": "Przekazuję Panu podejrzaną wiadomość. Genowefa Jastrzebska"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "h-fwd-04",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Fwd: Protokół z odbioru towaru w Poznaniu",
+      "body": "Szanowny Panie Prezesie,\n\nprzesyłam dla informacji protokół, który otrzymaliśmy od Pana dyrektor operacyjnej po rozładunku naszej dostawy. Wszystko zostało sprawdzone i wygląda zgodnie z zamówieniem. Przekazuję go tylko do Pana wiadomości, na wypadek gdyby sprawa wróciła w rozmowach o reklamacjach.\n\n---------- Przekazana wiadomość ----------\nOd: Halina Strzemecka\n\nDzień dobry, potwierdzam odbiór towaru w Poznaniu: 24 palety, bez uszkodzeń. Protokół podpisany przez obie strony 12.01.2027. Halina Strzemecka | Dyrektor Operacyjny",
+      "thread": [
+        {
+          "from": "halina.strzemecka@kordelan.test",
+          "subject": "Protokół z odbioru towaru w Poznaniu",
+          "body": "Dzień dobry, potwierdzam odbiór towaru w Poznaniu: 24 palety, bez uszkodzeń. Protokół podpisany przez obie strony 12.01.2027. Halina Strzemecka | Dyrektor Operacyjny"
+        },
+        {
+          "from": "tomasz.brzezinski@meblodrew.test",
+          "subject": "Fwd: Protokół z odbioru towaru w Poznaniu",
+          "body": "Przekazuję protokół dla informacji. Tomasz Brzezinski"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "h-fwd-05",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Fwd: Zielona asking about customs",
+      "body": "Dear Wiktor,\n\nForwarding a question from Genowefa. Could you answer her directly?\n\n---------- Forwarded message ----------\nWho handles customs papers for my goods, you or Kordelan? I need one name.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "g.jastrzebska@hurtownia-zielona.test",
+          "subject": "Customs papers",
+          "body": "Who handles the customs papers for my imported goods, you or Kordelan? I need one name. Genowefa Jastrzebska"
+        },
+        {
+          "from": "daniel.hargreaves@baltic-freight-partners.test",
+          "subject": "Fwd: Zielona asking about customs",
+          "body": "Forwarding her question to Wiktor. Daniel"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "h-fwd-08",
+      "from": "Matthias Brandt <matthias.brandt@trailerwerk-sued.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Fwd: Przegląd naczep - pytanie Pani Haliny do Pana",
+      "body": "Szanowny Panie Prezesie,\n\nPani Halina zapytała, czy przegląd naczep może odbyć się w lutym. Czy zgadza się Pan na ten termin?\n\n---------- Przekazana wiadomość ----------\nCzy przegląd dwunastu naczep może odbyć się w lutym? Halina\n\nMit freundlichen Gruessen | Matthias Brandt | Vertriebsleiter | Trailerwerk Sued",
+      "thread": [
+        {
+          "from": "halina.strzemecka@kordelan.test",
+          "subject": "Przegląd naczep",
+          "body": "Czy przegląd dwunastu naczep może odbyć się w lutym? Halina"
+        },
+        {
+          "from": "matthias.brandt@trailerwerk-sued.test",
+          "subject": "Fwd: Przegląd naczep - pytanie Pani Haliny do Pana",
+          "body": "Pani Halina pyta, czy zgadza się Pan na przegląd w lutym. Czekam na Pana odpowiedź. Matthias Brandt"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "h-fwd-09",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Fwd: Faktura od brokera w Rotterdamie",
+      "body": "Hi Wiktor,\n\nPiotr sent me an invoice from the Rotterdam broker, and the amount looks too high. I am passing it on so that your accountant can check it against the agreed rate, because I do not have the data. The invoice says 3 400 EUR, and we agreed on 2 600 EUR.\n\n---------- Forwarded message ----------\nFrom: Piotr Lewandrowski\n\nOliver, the broker in Rotterdam invoiced 3 400 EUR for the last consignment. Please check. Piotr\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [
+        {
+          "from": "piotr.lewandrowski@kordelan.test",
+          "subject": "Broker invoice",
+          "body": "Oliver, the broker in Rotterdam invoiced 3 400 EUR for the last consignment. Please check. Piotr"
+        },
+        {
+          "from": "oliver.pemberton@kordelan.test",
+          "subject": "Fwd: Faktura od brokera w Rotterdamie",
+          "body": "Passing this on for the accountant to check against the agreed rate. Oliver"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "h-fwd-10",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Fwd: Operations report on the January storm",
+      "body": "Wiktor,\n\nI am forwarding the report of your operations director about the January storm and its effect on the northern routes. I read it with interest and think you should know that the supervisory board has also seen it, since a member forwarded it to me earlier today. The numbers are not alarming: six deliveries were late by less than a day, and the compensation to customers stays below the amount planned in the budget.\n\nI am sending it to you for your information only, so that you are not surprised by questions from board members at the next meeting. If a member asks about the storm, I will say that management handled it well and that the report is a good summary. There is nothing you need to do, and I do not need an answer from you.\n\nI add that I liked the part about the new rule for the drivers, who now wait at the next safe parking place when the roads are closed. This is the kind of decision that I want to see more often in the reports of the management board.\n\n---------- Forwarded message ----------\nFrom: Halina Strzemecka\n\nThe January storm delayed six deliveries on the northern routes, each by less than one day. The cost of compensation is 8 300 PLN. New rule: drivers wait at the next safe parking place when roads are closed. Halina Strzemecka\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "from": "halina.strzemecka@kordelan.test",
+          "subject": "Operations report on the January storm",
+          "body": "The January storm delayed six deliveries on the northern routes, each by less than one day. The cost of compensation is 8 300 PLN. New rule: drivers wait at the next safe parking place when roads are closed. Halina Strzemecka"
+        },
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Fwd: Operations report on the January storm",
+          "body": "Forwarding the operations report for your information. Zbigniew"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "h-html-01",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Logistyka Dziś: potwierdzenie odnowienia prenumeraty",
+      "body": "POTWIERDZENIE ODNOWIENIA PRENUMERATY\n\nPrenumerata została odnowiona do 31.12.2027. Płatność 480,00 PLN kartą, faktura\nFV-LD-2027-0412. To automatyczna wiadomość konta, nie odpowiadaj na nią.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-html-03",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Paliwa-Flota: unpaid invoice, your cards will be blocked",
+      "body": "Overdue invoice notice\n\nOur billing system shows that invoice PF-4471 for 12 800 PLN is overdue by 15\ndays. Our bank details have changed, and the previous account is no longer\nvalid. To avoid the blocking of all fuel cards of your company, you must confirm\nthe new bank details today.\n\nPress the button below and log in with your card portal password to download the\nnew payment instruction. If you do not confirm within 24 hours, your cards will\nbe blocked and the contract may be terminated.\n\nCONFIRM BANK DETAILS\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}

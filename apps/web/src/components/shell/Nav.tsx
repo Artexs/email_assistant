@@ -5,25 +5,33 @@ import { t } from "../../i18n";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "../ui/sheet";
 import { Skeleton } from "../ui/skeleton";
-import { ONBOARDING_ITEM, OPERATOR_ITEM, TAB_ITEMS, type NavItem, type NavKey } from "./nav-items";
+import { navItems, ONBOARDING_ITEM, OPERATOR_ITEM, type NavItem, type NavKey } from "./nav-items";
 import { UserMenu } from "./UserMenu";
 
 export interface NavMenuProps {
   active: NavKey;
   onboardingOpen: boolean;
   operator: boolean;
+  features: readonly string[];
   email: string | null;
   loading: boolean;
   onLogOut: () => void;
 }
 
-export function BottomTabs({ active }: { active: NavKey }) {
+// Fixed class names: Tailwind builds only the names that appear whole in the source.
+const TAB_COLUMNS: Record<number, string> = { 4: "grid-cols-4", 5: "grid-cols-5" };
+
+export function BottomTabs({ active, features }: { active: NavKey; features: readonly string[] }) {
+  const items = navItems(features);
   return (
     <nav
       aria-label={t("nav_main")}
-      className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t bg-background lg:hidden"
+      className={cn(
+        "fixed inset-x-0 bottom-0 z-40 grid border-t bg-background lg:hidden",
+        TAB_COLUMNS[items.length] ?? "grid-cols-4"
+      )}
     >
-      {TAB_ITEMS.map((item) => (
+      {items.map((item) => (
         <a
           key={item.key}
           href={item.href}
@@ -57,8 +65,9 @@ function SidebarLink({ item, active }: { item: NavItem; active: NavKey }) {
   );
 }
 
-export function Sidebar({ active, onboardingOpen, operator, email, loading, onLogOut }: NavMenuProps) {
-  const tabs = onboardingOpen ? [ONBOARDING_ITEM, ...TAB_ITEMS] : TAB_ITEMS;
+export function Sidebar({ active, onboardingOpen, operator, features, email, loading, onLogOut }: NavMenuProps) {
+  const base = navItems(features);
+  const tabs = onboardingOpen ? [ONBOARDING_ITEM, ...base] : base;
   const items = operator ? [...tabs, OPERATOR_ITEM] : tabs;
   return (
     <aside className="hidden border-r lg:flex lg:flex-col">

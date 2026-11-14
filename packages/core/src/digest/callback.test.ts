@@ -152,3 +152,25 @@ describe("review callback data", () => {
     expect(isReviewCallback({ kind: "approve", actionId: ID })).toBe(false);
   });
 });
+
+describe("answered check callback data", () => {
+  test("ay: and an: round trip, at most 64 bytes", () => {
+    for (const kind of ["answered_yes", "answered_no"] as const) {
+      const data = encodeCallback({ kind, emailId: ID });
+      expect(data).toBe(`${kind === "answered_yes" ? "ay" : "an"}:${ID}`);
+      expect(Buffer.byteLength(data)).toBeLessThanOrEqual(CALLBACK_MAX_BYTES);
+      expect(parseCallback(data)).toEqual({ kind, emailId: ID });
+    }
+  });
+
+  test("they are not feedback callbacks; old prefixes parse as before", () => {
+    expect(isFeedbackCallback({ kind: "answered_yes", emailId: ID })).toBe(false);
+    expect(isFeedbackCallback({ kind: "answered_no", emailId: ID })).toBe(false);
+    expect(parseCallback(`fe:${ID}`)).toEqual({ kind: "edit", emailId: ID });
+    expect(parseCallback(`mk:${ID}`)).toEqual({ kind: "mistake", actionId: ID });
+  });
+
+  test.each([`ay:${ID.toUpperCase()}`, `an:${ID}:x`, "ay:not-a-uuid", `az:${ID}`])("rejects %p", (data) => {
+    expect(parseCallback(data)).toBeNull();
+  });
+});

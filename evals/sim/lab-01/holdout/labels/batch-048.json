@@ -1,0 +1,133 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-048",
+  "checker": "claude-haiku-5-5",
+  "labels": [
+    {
+      "id": "b-urg-0153",
+      "category": "urgent",
+      "blindHash": "4d39a4548ed03584a737cf947cae2a8a2cad1b51a9c4252238d64712a2df482b"
+    },
+    {
+      "id": "b-urg-0154",
+      "category": "urgent",
+      "blindHash": "217017e3970d05e1d9e354f43f72c63a9dcb4243c70e912a6920597620ddd7bb"
+    },
+    {
+      "id": "b-urg-0155",
+      "category": "urgent",
+      "blindHash": "daeb90347d0c1f409eab47fa0da67ade2731c8db92e88f99a47561d41d00c3a6"
+    },
+    {
+      "id": "b-urg-0156",
+      "category": "urgent",
+      "blindHash": "6e00e312b58da1258410636b44ad6527d52bce05d328304515b9c644f2d99bf3"
+    },
+    {
+      "id": "b-urg-0157",
+      "category": "urgent",
+      "blindHash": "1127f63f46b0b3161701e98bdfb12d14dc285b002ee90e5708d72e9414915c6c"
+    },
+    {
+      "id": "b-urg-0158",
+      "category": "needs_reply",
+      "blindHash": "3b1c8f171bfdf98a3be61839230f286fdcfc584d952b221edb2331648d10fed4"
+    },
+    {
+      "id": "b-urg-0159",
+      "category": "urgent",
+      "blindHash": "aa450a0b40159151813ae3d8ae06b7ddd5bf89aaaac338b0a41a218c55aba7fe"
+    },
+    {
+      "id": "b-urg-0160",
+      "category": "urgent",
+      "blindHash": "557bab4d9b0d4719ff8325945493ebcd0e8e2cb845f996cd024eca6d39810230"
+    },
+    {
+      "id": "b-urg-0161",
+      "category": "urgent",
+      "blindHash": "6ea5e62ec891ce0db938611d6c6822ec203eb3d9ddf4fe55fce2b0db2bf092bf"
+    },
+    {
+      "id": "b-urg-0163",
+      "category": "needs_reply",
+      "blindHash": "164756dea4eb4a3876b230a3d7c1962f4b55c5a5ad79e7b27e63ed897ba9067a"
+    },
+    {
+      "id": "b-urg-0164",
+      "category": "urgent",
+      "blindHash": "c6735448f3bdc1bc9fa293f32788b26dfd62d2d49aa72b1c611d3695e11d3685"
+    },
+    {
+      "id": "b-urg-0165",
+      "category": "urgent",
+      "blindHash": "b93f1a113410a0289004d5b952a589c18f42bc64c16672da105ab18babab25da"
+    },
+    {
+      "id": "b-urg-0167",
+      "category": "urgent",
+      "blindHash": "961c792788fbb15d7ae30e7ea76c3c2d556b984fb59ea60c245170c8c3dd99fa"
+    },
+    {
+      "id": "b-urg-0169",
+      "category": "urgent",
+      "blindHash": "e9870ec579b1473f666bee2b0b6a33e11d65ad8a384d0249167f6159153faf05"
+    },
+    {
+      "id": "b-urg-0172",
+      "category": "urgent",
+      "blindHash": "18ddbbd06b0819eb7a73b0ac647bc4eeedb83f0f6a48168f5409172cf8ea751c"
+    },
+    {
+      "id": "b-urg-0173",
+      "category": "urgent",
+      "blindHash": "d1b4273055957d130a726a5d82551ea8fac9302010b010ac35d62a530f8cf9b6"
+    },
+    {
+      "id": "b-urg-0174",
+      "category": "urgent",
+      "blindHash": "f41479d8ecfc038e8b7ded31abd7a729648bc0867cad764bc711cb41442d10ef"
+    },
+    {
+      "id": "b-urg-0176",
+      "category": "urgent",
+      "blindHash": "7729e31b50460ba810d4e80a06f0754734550850b29fb32baf0b0d1f0164b359"
+    },
+    {
+      "id": "b-urg-0177",
+      "category": "needs_reply",
+      "blindHash": "c6e7c56c999044587aa330ccd350220479ea0f6585760c5caffdedaa2b1d8d7e"
+    },
+    {
+      "id": "b-urg-0178",
+      "category": "urgent",
+      "blindHash": "6d5c14412be6e70fcbea358579be6203c21291f0c20dcc21a1f138adfc440e7b"
+    },
+    {
+      "id": "b-urg-0179",
+      "category": "urgent",
+      "blindHash": "a916c6f460856c13c54ea80c811ce5025777a835b19dc3a40239abb0bf146b21"
+    },
+    {
+      "id": "b-urg-0181",
+      "category": "needs_reply",
+      "blindHash": "9a872c8642ecee60bcf01547716b803f157f7f67f499d75da30d5dd89637d434"
+    },
+    {
+      "id": "b-urg-0183",
+      "category": "urgent",
+      "blindHash": "fe7d6f1c9721780d6daa07450396368244232d62f27fbf76c7a0bd1dddb64973"
+    },
+    {
+      "id": "b-urg-0184",
+      "category": "urgent",
+      "blindHash": "ed68a5ec22b9e0d78651f81ccfe86956e56a62abf9664918ab9d585e7fe00f74"
+    },
+    {
+      "id": "b-urg-0185",
+      "category": "urgent",
+      "blindHash": "4afad6f7b393461945a161e02c57a13d46cb9ca38ffd76261be76a1012531601"
+    }
+  ]
+}

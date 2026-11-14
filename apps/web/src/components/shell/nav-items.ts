@@ -1,8 +1,17 @@
-import { Activity, ClipboardList, Inbox, ListFilter, Settings, ShieldCheck, type LucideIcon } from "lucide-react";
+import {
+  Activity,
+  BarChart3,
+  ClipboardList,
+  Inbox,
+  ListFilter,
+  Settings,
+  ShieldCheck,
+  type LucideIcon,
+} from "lucide-react";
 
 import type { TextKey } from "../../i18n";
 
-export type NavKey = "onboarding" | "activity" | "mailboxes" | "settings" | "rules" | "operator";
+export type NavKey = "onboarding" | "activity" | "mailboxes" | "settings" | "rules" | "operator" | "stats";
 
 export interface NavItem {
   key: NavKey;
@@ -18,6 +27,15 @@ export const TAB_ITEMS: NavItem[] = [
   { key: "settings", href: "/settings", label: "nav_settings", icon: Settings },
   { key: "rules", href: "/rules", label: "nav_rules", icon: ListFilter },
 ];
+
+// Shown after "activity" while the organization has the feature `stats_page` on (`/api/me` field `features`).
+export const STATS_ITEM: NavItem = { key: "stats", href: "/stats", label: "nav_stats", icon: BarChart3 };
+
+export function navItems(features: readonly string[]): NavItem[] {
+  if (!features.includes("stats_page")) return TAB_ITEMS;
+  const [first, ...rest] = TAB_ITEMS;
+  return first === undefined ? [STATS_ITEM] : [first, STATS_ITEM, ...rest];
+}
 
 export const ONBOARDING_ITEM: NavItem = {
   key: "onboarding",

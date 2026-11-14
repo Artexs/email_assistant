@@ -1,0 +1,330 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-008",
+  "cases": [
+    {
+      "id": "w-2-023",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Kolekcja zegarków dla prezesów - cena specjalna dla Pana firmy!",
+      "body": "Szanowny Panie,\n\nczy szuka Pan eleganckiego prezentu dla kluczowych klientów albo dla siebie? Targi Magazynowe Expo przygotowały ofertę, która nie ma nic wspólnego z targami, ale na pewno Pana zainteresuje: ekskluzywną kolekcję zegarków szwajcarskich z grawerem dla firm, w cenach o 40 procent niższych niż w sklepach.\n\nW kolekcji znajdzie Pan modele klasyczne i sportowe, z możliwością indywidualnego grawerunku logo Pana firmy lub dedykacji. Każdy zegarek jest dostarczany w eleganckim etui z certyfikatem autentyczności oraz dwuletnią gwarancją producenta.\n\nPrzy zamówieniu pięciu sztuk lub więcej udzielamy dodatkowego rabatu 15 procent, a przy dziesięciu sztukach dodajemy bezpłatny zestaw eleganckich piór. Liczba zegarków w promocji jest ograniczona do 200 sztuk, a według naszych doradców większość z nich rozchodzi się w ciągu kilku dni od ogłoszenia oferty.\n\nWystarczy odpowiedzieć na tę wiadomość z podaniem liczby sztuk oraz modelu, a nasz dział handlowy przygotuje fakturę proforma i wyśle zamówienie kurierem w ciągu 48 godzin. Dla stałych klientów targów mamy również możliwość płatności w trzech ratach, bez odsetek.\n\nNie zwlekaj z decyzją, bo oferta kończy się w piątek o północy! Zadowoleni klienci polecają nas swoim partnerom biznesowym.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-024",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Sobotnia zmiana na rampie w Gdańsku w lutym - Twoja opinia",
+      "body": "Cześć Wiktor,\n\nmam dla Ciebie pytanie, na które chciałabym dostać odpowiedź pisemną, bo decyzja wiąże się z kosztami i z umowami z pracownikami. Meblodrew skraca w lutym okna rozładunku u siebie, o czym pewnie już wiesz, i część ich dostaw musimy przesunąć na inne dni. To samo dotyczy kilku innych klientów, którzy zgłaszają prośby o zmiany terminów.\n\nWidzę dwa rozwiązania. Pierwsze: otwieramy w lutym dodatkową zmianę sobotnią na rampie w Gdańsku, od 7:00 do 13:00, z zespołem ośmiu osób na nadgodzinach. Koszt to około 14 tysięcy złotych miesięcznie, ale uniknęlibyśmy zatorów w tygodniu i kar za opóźnienia. Drugie: zostajemy przy dotychczasowych godzinach i prosimy klientów o przesunięcie dostaw na wtorki i czwartki, co jest tańsze, ale może się nie spodobać części z nich.\n\nSkłaniam się ku pierwszej opcji, ale to Twoja decyzja, bo dotyczy budżetu i relacji z klientami. Czy zgadzasz się na sobotnią zmianę w lutym? Jeśli tak, czy mam ją utrzymać także w marcu, jeśli sytuacja się nie poprawi?\n\nDziękuję za szybką odpowiedź, ale nie musisz się spieszyć. Najpóźniej do końca tygodnia powinnam wiedzieć, jak planować grafik, bo muszę z wyprzedzeniem uzgodnić dyspozycyjność ludzi i poinformować kierowników zmian.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-025",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Budget meeting - one point with you",
+      "body": "Dear Wiktor,\n\nplease call me when you read this. One of the council members raised a concern about the fleet investment item in the budget, and I prefer to speak to you directly before it is discussed with the others. The matter concerns your area and I do not want to take any position without you.\n\nI would rather settle it by phone than in writing, and I will be available at my desk through the morning.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-026",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Przegląd tygodnia: transport intermodalny w Polsce",
+      "body": "Dzień dobry,\n\nkrótkie podsumowanie tygodnia z rynku logistycznego. Przewozy intermodalne w Polsce wzrosły w ubiegłym roku o 7 procent, a operatorzy terminali zapowiadają kolejne inwestycje w nowe place przeładunkowe. Największy wzrost odnotowano na trasach z portów bałtyckich do centrum kraju.\n\nOperatorzy kolejowi zwracają uwagę na ograniczenia przepustowości na wybranych liniach, które mogą wydłużyć czas dostaw w pierwszej połowie roku.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-027",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie płatności za prenumeratę - dokument księgowy",
+      "body": "Dzień dobry,\n\nto jest automatyczne potwierdzenie z systemu rozliczeń serwisu Logistyka Dzis. Zaksięgowaliśmy płatność za Twoją prenumeratę cyfrową.\n\nDane płatności:\n- numer faktury: FV-LD-2027-0188,\n- data wpłaty: 26.01.2027,\n- kwota brutto: 1 476,00 PLN,\n- sposób płatności: przelew bankowy,\n- okres prenumeraty: 01.01.2027 - 31.12.2027.\n\nFaktura w formacie PDF jest dostępna w panelu prenumeraty w zakładce Faktury i została wysłana na adres rozliczeniowy konta. Jeśli dane nabywcy na fakturze są nieprawidłowe, możesz zgłosić korektę w panelu do 14 dni od daty wystawienia.\n\nPrzypominamy, że status prenumeraty zmienił się na opłacona i dostęp do wszystkich wydań oraz archiwum jest aktywny do końca okresu rozliczeniowego. Przed końcem okresu wyślemy przypomnienie o możliwości przedłużenia. W razie zmiany danych firmy, na przykład adresu lub numeru identyfikacji podatkowej, zaktualizuj je w ustawieniach konta przed wystawieniem kolejnej faktury, ponieważ wystawionych dokumentów nie zmieniamy automatycznie.\n\nDokument został wygenerowany automatycznie przez system rozliczeń i nie wymaga podpisu. Kopię faktury w formacie XML do importu do systemu księgowego można pobrać z tej samej zakładki panelu, a dane do przelewu na kolejne okresy pozostają bez zmian. Odpowiedzi na ten adres nie są odczytywane, a pytania dotyczące rozliczeń można zgłaszać przez formularz kontaktowy w panelu.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-028",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "New sign-in to your Supply Chain Weekly account",
+      "body": "Hello,\n\nthis is an automated security message. We noticed a new sign-in to your Supply Chain Weekly account.\n\nTime: 26.01.2027, 07:44 UTC\nDevice: web browser on a Linux computer\nApproximate location: Gdynia, Poland\n\nIf this was you, no action is needed. If you do not recognise this sign-in, please change your password in the account settings and sign out of all devices.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-029",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Przypomnienie: wygasa token dostępu do aplikacji mobilnej",
+      "body": "To jest automatyczne przypomnienie z serwisu Logistyka Dzis.\n\nToken dostępu do aplikacji mobilnej serwisu, powiązany z Twoim kontem, wygasa 2.02.2027. Po tej dacie aplikacja poprosi o ponowne zalogowanie przy pierwszym uruchomieniu. Nie musisz podejmować żadnych działań z wyprzedzeniem.\n\nPonowne logowanie nie wpływa na zapisane alerty ani na listę zapisanych artykułów. Jeśli korzystasz z aplikacji na kilku urządzeniach, dotyczy to każdego z nich osobno.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-030",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Przelew przychodzący",
+      "body": "Na Twoje konto firmowe wpłynął przelew.\nData: 26.01.2027, 07:48\nKwota: 14 250,00 PLN\nNadawca: Hurtownia Zielona\nTytuł: faktura FV-1181",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-031",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Rekrutacja magazynierów - umowy dla nowych pracowników",
+      "body": "Cześć Wiktor,\n\nw uzupełnieniu mojej wiadomości o rekrutacji magazynierów: potrzebujemy jeszcze umów dla 12 nowych osób, a ja nie mam czasu, żeby się tym zająć. Prosiłabym, żeby ktoś z działu umów, na przykład Piotr, przygotował wzór umowy na czas określony do końca września i uzgodnił z agencją pracy warunki przejęcia pracowników.\n\nGdy ktoś potwierdzi, że to zrobi, wyślę mu listę kandydatów i wymagane stawki.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [
+        {
+          "from": "halina.strzemecka@kordelan.test",
+          "subject": "Rekrutacja magazynierów - grafik rozmów i sale",
+          "body": "Cześć Wiktor,\n\nwystartowała rekrutacja 12 magazynierów na wiosenny szczyt i potrzebuję, żeby ktoś z Twojego zespołu zajął się logistyką rozmów, bo moi ludzie są w tym tygodniu w pełni obłożeni inwentaryzacją. Zrobiłabym to sama, ale po prostu nie mam na to czasu.\n\nCo jest do zrobienia:\n- ułożyć grafik rozmów z 24 kandydatami w dwóch blokach, we wtorek i czwartek w przyszłym tygodniu,\n- zarezerwować salę B na całe dwa dni oraz przygotować wodę i kawę,\n- rozesłać zaproszenia kandydatom z godziną i miejscem,\n- wpisać mnie i Rafała do kalendarza jako prowadzących, na zmianę po dwie godziny.\n\nLista kandydatów jest w arkuszu rekrutacji, który zespół HR już udostępnił, razem z krótkimi notatkami z rozmów telefonicznych. Najlepiej, żeby tym zajęła się Dorota, ma największe doświadczenie w pilnowaniu kalendarzy, ale zostawiam to Tobie. Jeśli pojawią się konflikty terminów z moimi spotkaniami w Gdyni, niech uwzględni, że w czwartek po 14:00 jestem już poza biurem.\n\nGdyby coś się nie zgadzało z liczbą sal albo z dostępnością osób, daj znać, to coś wymyślimy razem. Nie chcę, żeby rekrutacja przeciągnęła się poza koniec lutego, bo wtedy zabraknie ludzi na szczyt.\n\nZ góry dziękuję.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-2-032",
+      "from": "Ewelina Marszalek <ewelina.marszalek@paliwa-flota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Payment terms for the fuel card invoices - your view please",
+      "body": "Dear Mr Szalewski,\n\nI am writing about the payment terms on your fuel card invoices, and I would like to ask for your personal view. At present, our invoices are due 14 days after the invoice date. Over the last quarter, about a third of your invoices were paid a few days after the due date, which creates administrative work on both sides and some interest charges that we have, so far, waived.\n\nOur finance department proposes an alternative for the second half of the year. The payment term would be extended from 14 to 30 days, and in return the volume discount on the pump price would be reduced by 0.3 percentage points. For your fleet's current consumption, we estimate that this would cost you about 9 thousand zloty over the year, but it would give your accounting department more room and remove the late payment interest.\n\nI understand that this is a commercial decision that depends on your priorities, so I would like to hear which option you prefer: the current terms with strict payment dates, or the longer term with the lower discount. A written answer from you would be sufficient for us to prepare the amendment to the agreement.\n\nThank you for your attention.\n\nRegards | Ewelina Marszalek | Key Account Manager | Paliwa-Flota",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-033",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rabat na myjnie dla Pana floty - ważny przez tydzień",
+      "body": "Dzień dobry,\n\nprzygotowaliśmy rabat 20 procent na korzystanie z myjni samochodowych naszej sieci partnerskiej dla Państwa floty. Oferta nie wynika z Państwa umowy i jest dostępna wyłącznie w tym tygodniu.\n\nAby ją aktywować, odpowiedz na tę wiadomość i podaj login do portalu kart paliwowych. Aktywacja trwa kilka minut, a ta zniżka obowiązuje od następnego dnia po zgłoszeniu. Liczba zniżek jest ograniczona do pierwszych 500 firm, a oferta nie łączy się z innymi promocjami sieci partnerskiej.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-034",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zwrot nadpłaty z faktury - potwierdź numer rachunku",
+      "body": "Szanowni Państwo,\n\nna Państwa koncie klienta w Paliwa-Flota wykryliśmy nadpłatę w wysokości 340 złotych, którą chcemy zwrócić. Aby to zrobić, prosimy o odpowiedź na tę wiadomość i podanie numeru rachunku firmowego, jego PIN-u do bankowości oraz kodu z wiadomości SMS.\n\nZwrot nastąpi w ciągu jednego dnia roboczego po otrzymaniu danych. Jeśli nie odpowiedzą Państwo w ciągu 24 godzin, nadpłata zostanie przekazana na fundusz rozwoju i nie będzie możliwa do odzyskania.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-035",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Framework agreement - legal review completed",
+      "body": "Dear Mr Szalewski,\n\nour legal department has completed its review of the framework agreement draft and has no further comments on the latest version. This is for your information.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-036",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Security update: active sessions and recent changes to your account",
+      "body": "Hello,\n\nthis is an automated security summary from Supply Chain Weekly, generated on 26.01.2027. It lists the active sessions and the recent changes on your account, so that you can check that everything is as expected.\n\nActive sessions:\n- web browser, Linux computer, Gdynia, last activity 26.01.2027, 07:44 UTC,\n- web browser, Windows computer, Gdansk, last activity 21.01.2027, 14:02 UTC.\n\nRecent changes to your account:\n- 25.01.2027: topic preferences updated, air cargo removed,\n- 25.01.2027: new notification email requested and confirmed,\n- 26.01.2027: new sign-in from a new device.\n\nYour account has two-factor authentication switched off. You can switch it on in the account settings under Security. We recommend this for all accounts that have access to paid reports, because it protects the account even if the password is stolen.\n\nIf you see a session or a change you do not recognise, change your password immediately and sign out of all devices. We will never ask you for your password in an email or on the phone.\n\nThis message was generated automatically. Replies to this address are not read.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-037",
+      "from": "Paliwa Flota Billing <billing@paliwa-fiota.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Wygraj telewizor 55 cali - losowanie dla klientów",
+      "body": "Szanowni Klienci,\n\nw losowaniu dla klientów Paliwa Flota do wygrania jest telewizor 55 cali i dziesięć kart podarunkowych o wartości 200 zł do sklepu z elektroniką. Losowanie nie jest związane z Państwa umową na karty paliwowe.\n\nAby wziąć w nim udział, wystarczy jeszcze dziś odpowiedzieć na tę wiadomość i podać dane karty paliwowej wraz z kodem CVV oraz adres do wysyłki nagrody.\n\nPaliwa-Flota Billing Department",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-038",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Automatyczna odpowiedź: dział obsługi klienta nieczynny",
+      "body": "Dziękujemy za wiadomość. To jest automatyczna odpowiedź. Dział obsługi klienta jest nieczynny do 28.01.2027, a Twoja wiadomość zostanie rozpatrzona po tym terminie.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-039",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Out of office: Business Customer Service until 29.01.2027",
+      "body": "Dear customer,\n\nthank you for your message. This is an automatic reply. The Business Customer Service team of Bank Aurum is attending a training day and will have limited access to email until 29.01.2027. Messages sent to this address are not read during that time.\n\nFor urgent matters concerning your business account, please use one of the following options:\n- online banking, where you can block a card, change limits and see the status of transfers,\n- the business customer hotline, which is available on working days between 8:00 and 18:00,\n- your branch, which is open during the regular opening hours.\n\nIf you wrote to us about a transfer that has not arrived, please check the status of the transfer in online banking first. In most cases the transfer is booked on the next working day after the order is placed, and this is not a sign of a problem.\n\nIf your message is not urgent, you do not need to do anything. We will answer all messages in the order in which they were received, as soon as the team is back at work.\n\nPlease note that we will never ask you for your password, authorisation codes or card details in an email message. If you receive a message that asks for such data and appears to come from us, do not reply to it and report it to the bank.\n\nKind regards,\nBank Aurum, Business Customer Service",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-040",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nowy numer: karty paliwowe w Logistyka Dzis",
+      "body": "Automatyczne powiadomienie: dostępne jest nowe wydanie dodatku \"Karty paliwowe\".\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-041",
+      "from": "Karin Lindqvist <karin.lindqvist@nordicfoods-trade.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Swedish customs: new documentation requirement from March",
+      "body": "Dear Mr Szalewski,\n\nI would like to let you know that the Swedish customs authority has announced a new documentation requirement for imports of chilled food products from outside the EU. In practice, it affects only goods that are re-exported, and it does not apply to your direct deliveries from Poland.\n\nOur customs broker has confirmed this in writing, and he sees no changes for the current shipments. We will inform you if the situation changes after March.\n\nThis message is only a status update.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-042",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Rynek paliw: ceny hurtowe bez zmian",
+      "body": "Dzień dobry,\n\nceny hurtowe oleju napędowego nie zmieniły się w poniedziałek w stosunku do poprzedniego tygodnia.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-043",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Obsada magazynu w Gdyni - faktura agencji, spotkanie",
+      "body": "Dzień dobry Wiktorze,\n\nw nawiązaniu do mojej poprzedniej wiadomości o fakturze agencji pracy tymczasowej: sprawa wymaga jeszcze spotkania z przedstawicielem agencji, na którym ustalimy warunki rozliczenia pierwszego miesiąca oraz zasady przejmowania pracowników na etaty po okresie próbnym.\n\nProsiłbym, żeby ktoś z Pana zespołu, najlepiej asystentka zarządu, znalazł wspólny termin w przyszłym tygodniu dla mnie, dla dyrektor operacyjnej, dla kogoś z księgowości oraz dla agencji. Spotkanie potrwa około 60 minut i może odbyć się w Gdyni albo zdalnie, w zależności od tego, co będzie wygodniejsze dla uczestników.\n\nAgencja jest dostępna od poniedziałku do czwartku w godzinach 10:00-15:00, a ja mam wolne okna we wtorek po południu oraz w środę rano, w godzinach, które wskazałem w kalendarzu. Dane kontaktowe przedstawiciela agencji przekażę osobie, która zajmie się organizacją spotkania. Ponadto proszę, aby zaproszenie zawierało krótki porządek obrad, który mogę przesłać wcześniej.\n\nRozumiem, że to sprawa organizacyjna, i nie wymaga Pańskiego osobistego udziału, dlatego proszę o przekazanie jej właściwej osobie. Chcę uniknąć sytuacji, w której rozliczenie z agencją, jak to bywało w poprzednich latach, przeciągnie się na kolejny miesiąc i wygeneruje zbędne odsetki oraz pytania ze strony księgowości.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [
+        {
+          "from": "rafal.kwiecinski@kordelan.test",
+          "subject": "Obsada magazynu w Gdyni - prosze o Pana opinie",
+          "body": "Dzień dobry Wiktorze,\n\nod kilku tygodni pracujemy w Gdyni na niepełnej obsadzie: brakuje nam dwóch brygadzistów na zmianie nocnej, a rotacja wśród magazynierów sięgnęła w grudniu 14 procent. Mam dwie możliwości i chciałbym poznać Pana zdanie, zanim cokolwiek ogłoszę.\n\nPierwsza to podniesienie widełek dla brygadzistów o około 8 procent, co kosztowałoby budżet około 6 tysięcy złotych miesięcznie. Druga to zatrudnienie agencji pracy tymczasowej na kwartał, drożej, ale szybciej. Osobiście skłaniam się ku pierwszej, ponieważ lepiej buduje stabilność zespołu, jednak decyzja ma konsekwencje budżetowe i woli ją Pan podjąć sam.\n\nBędę wdzięczny za krótką odpowiedź pisemną, na którą mogę się później powołać w rozmowie z działem finansowym.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych"
+        },
+        {
+          "from": "rafal.kwiecinski@kordelan.test",
+          "subject": "Re: Obsada magazynu w Gdyni - faktura agencji",
+          "body": "Dzień dobry Wiktorze,\n\nw związku z obsadą w Gdyni: agencja pracy tymczasowej, z którą rozmawiałem, przysłała już fakturę zaliczkową za pierwszy miesiąc współpracy na kwotę 18 400 zł. Niezależnie od tego, jaką wybierzemy opcję, ktoś z księgowości musi sprawdzić tę fakturę i zdecydować o terminie jej zapłaty, bo ja nie mam do tego dostępu.\n\nProsiłbym więc, aby ktoś z Pana zespołu zajął się weryfikacją faktury i przypisaniem kosztu do właściwego centrum w budżecie na ten rok. Fakturę przekażę zaraz po tym, jak dowiem się, kto się tym zajmie.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-2-044",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Bilety na mecz dla Pana zespołu - promocja dla firm",
+      "body": "Dzień dobry,\n\noferujemy bilety na mecz ligi koszykówki w Gdyni dla firm, z miejscami w strefie VIP. Przy zamówieniu dziesięciu biletów dwa kolejne gratis, a każdy bilet obejmuje catering w przerwie meczu.\n\nOferta nie jest związana z targami, ale zależało nam, aby podzielić się nią z naszymi klientami. Liczba miejsc w strefie VIP jest ograniczona, a ceny obowiązują do końca stycznia. Zamówienia przyjmuje nasz dział handlowy.\n\nZespol Targi Magazynowe Expo | Dzial Handlowy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-045",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Spotkanie wspólników 5.02 w Gdańsku",
+      "body": "Szanowny Panie Prezesie,\n\nczy weźmie Pan udział w spotkaniu wspólników 5.02 w Gdańsku? Proszę o odpowiedź pisemną.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-2-046",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Terminy dostaw do zakładu w lutym - zmiana dni dostaw",
+      "body": "Szanowny Panie Prezesie,\n\nwracam do mojej informacji o oknach rozładunku w naszym zakładzie w lutym. Przy skróconym oknie od 7:00 do 12:00 nie jesteśmy w stanie przyjąć dostaw w poniedziałki, bo wtedy mamy największy ruch od innych dostawców.\n\nCzy zgodzi się Pan, abyśmy w lutym odbierali dostawy od Państwa w środy zamiast w poniedziałki? Dla Państwa magazynu w Gdańsku oznaczałoby to zmianę dnia załadunku, ale nie zmieniałoby godzin ani cen. Proszę o odpowiedź, żebyśmy mogli zaktualizować plan.",
+      "thread": [
+        {
+          "from": "tomasz.brzezinski@meblodrew.test",
+          "subject": "Terminy dostaw do zakładu w lutym - zmiany okien rozładunku",
+          "body": "Szanowny Panie Prezesie,\n\ninformuję o zmianach w oknach rozładunku w naszym zakładzie w lutym. W związku z modernizacją linii produkcyjnej od 1.02.2027 do 28.02.2027 zmieniamy godziny przyjmowania dostaw na rampie głównej.\n\nDo tej pory dostawy przyjmowaliśmy od 6:00 do 14:00. W lutym okno będzie krótsze i wyniesie od 7:00 do 12:00, od poniedziałku do piątku, a w soboty rampa pozostaje nieczynna. Dostawy chłodzone mają pierwszeństwo przy rozładunku i zostaną przyjęte w pierwszej kolejności, niezależnie od kolejności przyjazdu.\n\nZmiana dotyczy wszystkich dostawców, w tym Państwa firmy, i została już uwzględniona w naszym systemie planowania. Okna będą rezerwowane przez dostawców w naszym portalu logistycznym z wyprzedzeniem co najmniej 24 godzin. Jeśli kierowca przyjedzie poza zarezerwowanym oknem, rozładunek może zostać przesunięty na kolejny dzień roboczy.\n\nZ naszej strony zrobiliśmy wszystko, aby zmiany były jak najmniej uciążliwe, a od 1.03.2027 powracamy do dotychczasowych godzin pracy rampy. Piszę wyłącznie, aby Pan i Pana zespół mieli aktualną informację o terminach dostaw w najbliższym miesiącu. Dotychczasowa współpraca z Państwa firmą układa się bardzo dobrze, a zmiany okien nie wpływają na ustalone ceny ani na warunki umowy ramowej.\n\nZ poważaniem,\nTomasz Brzeziński\nDyrektor Zakupów, Meblodrew"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-2-047",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Pobranie składki ubezpieczeniowej z rachunku",
+      "body": "Bank Aurum - powiadomienie dla klienta firmowego\n\n26.01.2027 o godzinie 09:30 z Twojego rachunku firmowego pobrano składkę ubezpieczeniową na podstawie zgody na polecenie zapłaty.\n\nBeneficjent: Towarzystwo Ubezpieczeń Morze\nTytuł: ubezpieczenie floty, rata za styczeń 2027\nKwota: 12 880,00 PLN\nStatus: zaksięgowano\n\nZgodę na polecenie zapłaty można wycofać w bankowości internetowej w sekcji Zgody i upoważnienia. Kolejne pobranie jest zaplanowane na 26.02.2027.\n\nWiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}

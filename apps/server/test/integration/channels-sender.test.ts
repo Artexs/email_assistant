@@ -542,7 +542,7 @@ describe("outbox sender, rows without text (F088)", () => {
     });
   });
 
-  test("the pl row renders the same text as the en row (D16, until E7-T1)", async () => {
+  test("the pl row renders Polish text and the en row English text", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const t = await tenant(trx);
@@ -551,7 +551,10 @@ describe("outbox sender, rows without text (F088)", () => {
       const s = senderFor(trx);
       await s.run(T);
       expect(s.channel.sent).toHaveLength(2);
-      expect(s.channel.sent[0]?.message.text).toBe(s.channel.sent[1]?.message.text as string);
+      // The claim order of two rows with one creation time is not fixed: match each text by its title.
+      const texts = s.channel.sent.map((sent) => sent.message.text);
+      expect(texts.filter((text) => text.startsWith("🔴 Pilna wiadomość"))).toHaveLength(1);
+      expect(texts.filter((text) => text.startsWith("🔴 Urgent mail"))).toHaveLength(1);
     });
   });
 

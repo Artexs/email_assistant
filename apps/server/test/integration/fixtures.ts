@@ -50,6 +50,7 @@ export function applyDepsDefaults(): Pick<
   };
 }
 
+// Fixture users read English, so the text assertions keep their meaning; channels-locale.test.ts covers pl and null.
 export async function createOrgWithMailbox(
   trx: Transaction<DB>,
   opts?: { address?: string }
@@ -60,6 +61,7 @@ export async function createOrgWithMailbox(
     timezone: "Europe/Warsaw",
     email: `owner-${suffix}@x.test`,
     displayName: "Owner",
+    locale: "en",
   });
   const mailboxId = randomUUID();
   await insertMailbox(
@@ -131,7 +133,11 @@ export async function addMember(
   orgId: string,
   role: MembershipRole = "assistant"
 ): Promise<string> {
-  const user = await insertUser(trx, { email: `member-${randomUUID()}@x.test`, displayName: "Member" });
+  const user = await insertUser(trx, {
+    email: `member-${randomUUID()}@x.test`,
+    displayName: "Member",
+    locale: "en",
+  });
   await insertMembership(trx, { orgId }, { userId: user.id, role });
   return user.id;
 }

@@ -1,0 +1,133 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-044",
+  "checker": "claude-haiku-5-5",
+  "labels": [
+    {
+      "id": "b-urg-0032",
+      "category": "urgent",
+      "blindHash": "b63560597d56e62e0bda8eccab9a92550b8924dfa734508a51cbdceb5c91eaa3"
+    },
+    {
+      "id": "b-urg-0034",
+      "category": "needs_reply",
+      "blindHash": "9ccaa83d500ecf01c56bed5e81b70262be93da8e88d80eba187f69077c81534e"
+    },
+    {
+      "id": "b-urg-0035",
+      "category": "needs_reply",
+      "blindHash": "ee93cc0032a60a5e58afde5157ac4a10b264711e707993650770bceb8f81465f"
+    },
+    {
+      "id": "b-urg-0036",
+      "category": "urgent",
+      "blindHash": "dd2591576dedfe965711ee2cc8a2e05068cab35ba53dd6824f7733299643a821"
+    },
+    {
+      "id": "b-urg-0039",
+      "category": "urgent",
+      "blindHash": "8a0697b7bd4c7e94e2383a2e5eb6b05cc10c0d7eb1fbc6c4aa65fe47c4f08213"
+    },
+    {
+      "id": "b-urg-0042",
+      "category": "urgent",
+      "blindHash": "6bfa304f19eff92bc394c36476c44c2a90fffd27ed3a6dd8a254c7fa0c27f3a5"
+    },
+    {
+      "id": "b-urg-0043",
+      "category": "needs_reply",
+      "blindHash": "b4a96bf2bf91c5ff98908950e3e6470f08c111ec260df724a27395fbf1df39dd"
+    },
+    {
+      "id": "b-urg-0044",
+      "category": "urgent",
+      "blindHash": "41abd0ff5f5da165f1c4545034aaeeed601499a6aa14b084d7e728b8141b2503"
+    },
+    {
+      "id": "b-urg-0045",
+      "category": "urgent",
+      "blindHash": "d4ec87bce6c6a12ec80e1bca71a6f400812a3fcbb815f5c5612b4420bb95ea95"
+    },
+    {
+      "id": "b-urg-0046",
+      "category": "urgent",
+      "blindHash": "17e650c0175100c1f023a442741734ca278de37f1a686581050ac2ac376be5f9"
+    },
+    {
+      "id": "b-urg-0048",
+      "category": "urgent",
+      "blindHash": "8fb85374e80cac13d2d3c419457a2b4451822e9cf60558aab950470076322e28"
+    },
+    {
+      "id": "b-urg-0049",
+      "category": "needs_reply",
+      "blindHash": "90b5d59430fef8d9e3856594cd56100a73c70e952d9eb0b30fc02b4e564e6493"
+    },
+    {
+      "id": "b-urg-0050",
+      "category": "urgent",
+      "blindHash": "d9a7cfc2d5db2cf2d49ed00af2f5544cbdff47e599154ff462d3bf945737b397"
+    },
+    {
+      "id": "b-urg-0051",
+      "category": "urgent",
+      "blindHash": "e27d53bc54d0ca419829dd5f16808e4afc3a0b9ba728909cc1773c7ebc03f873"
+    },
+    {
+      "id": "b-urg-0052",
+      "category": "urgent",
+      "blindHash": "2bf1ccd4a0e22d8e4b9348e2ae7e6301723c85c03ff3bff51fa7bb898a3c56c4"
+    },
+    {
+      "id": "b-urg-0053",
+      "category": "urgent",
+      "blindHash": "c540ad38a5125f03d622f3242bd406defc61e8b99232dea92bb00746368ec078"
+    },
+    {
+      "id": "b-urg-0054",
+      "category": "urgent",
+      "blindHash": "1eb56296372080ccb50905fc23281f9405e712fba1fc012b3c719950fde958ac"
+    },
+    {
+      "id": "b-urg-0055",
+      "category": "urgent",
+      "blindHash": "46c6f65cf4a50b08db30e181c60a3776fcfcfcec9c22f5df048337fdbf2fa137"
+    },
+    {
+      "id": "b-urg-0057",
+      "category": "needs_reply",
+      "blindHash": "bc6d0f6238f5857619d5cec8e83a32159ea3548a4cb5f864728ee095fa4d3924"
+    },
+    {
+      "id": "b-urg-0059",
+      "category": "urgent",
+      "blindHash": "923663a62a26850fe46b0b152e88810a09d726ca977438dec72bf1eef65a72d5"
+    },
+    {
+      "id": "b-urg-0060",
+      "category": "needs_reply",
+      "blindHash": "fc89738a3e696a8e676359a1b6e9c471260ddb96a5be4e426ee9739c747bc55e"
+    },
+    {
+      "id": "b-urg-0061",
+      "category": "needs_reply",
+      "blindHash": "28fdd784397a896aa3decbb15727e7ee5dd96421723f75d79b190b8f6476579a"
+    },
+    {
+      "id": "b-urg-0064",
+      "category": "urgent",
+      "blindHash": "a993656881e945906dc1afe252297b958716ca8d00be68a2fd3c6f12a4bf08b1"
+    },
+    {
+      "id": "b-urg-0066",
+      "category": "urgent",
+      "blindHash": "111ba4a77e0218128528ed4d11dd77028e4a905d55c67441f942ab7cc6a9b402"
+    },
+    {
+      "id": "b-urg-0067",
+      "category": "urgent",
+      "blindHash": "4168c7f568cf804706f24fe8aab5e77cd03d54cb0b987011cbc36488568c3e63"
+    }
+  ]
+}

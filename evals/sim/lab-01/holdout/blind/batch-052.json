@@ -1,0 +1,343 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-052",
+  "cases": [
+    {
+      "id": "h-auto-02",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Out of office: editorial team away",
+      "body": "Thank you for writing to the Supply Chain Weekly editorial desk.\n\nAll editors are away at the annual freight conference from 20.01.2027 to 22.01.2027. During this time we read messages only once a day and cannot promise a full answer.\n\nThis reply is generated automatically. Your message stays in our inbox, and the editor on duty reads it after the conference. Questions about your subscription go to the subscription desk, which keeps its usual hours. No further reply to this automatic message is needed.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-auto-03",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Automatic reply: we are away from the desk",
+      "body": "Thank you for your message to Supply Chain Weekly.\n\nOur editorial team is on its yearly winter break from 25.01.2027 until 29.01.2027. This is an automatic reply, and no person has read your message yet.\n\nWhat happens next:\n- Your message is stored and will be read by the editor on duty after the break.\n- Letters to the editor are answered in the order of arrival, usually within five working days after the team is back.\n- Press releases and rate reports are collected in a separate folder and reviewed for the weekly digest.\n- Subscription changes, such as a new address or a stopped delivery, can be made through the subscription desk at any time, and no editor is needed for that.\n\nOur next digest will be sent on the usual day, with a short summary of the freight rates for the Baltic region, a note on the changes in road tolls in Central Europe and a review of the new port capacity in the North Sea. The paid report on container prices will be available again in the second week of February.\n\nWe apologise for the delay and thank you for your patience. Please do not send the same message twice, because every copy waits in the same queue and does not speed up the answer.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-auto-05",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Odpowiedź automatyczna: redakcja nieobecna",
+      "body": "To jest automatyczna odpowiedź. Redakcja jest nieobecna do 25.01.2027. Twoją wiadomość o cenach kart paliwowych przeczytamy po powrocie.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-auto-07",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Automatyczna odpowiedź: urlop redakcji",
+      "body": "Dziękujemy za wiadomość do redakcji Logistyka Dziś.\n\nRedakcja jest na urlopie od 18.01.2027 do 24.01.2027. To jest automatyczna odpowiedź systemu poczty, a nie wiadomość napisana przez człowieka. Twój list został zapisany i trafi do dyżurnego redaktora, który przeczyta go po powrocie zespołu.\n\nNajbliższy numer tygodnika ukaże się w piątek zgodnie z kalendarzem wydawniczym, a w nim przegląd przetargów i zmian w przepisach o transporcie. Jeśli wiadomość dotyczy prenumeraty, prosimy o kontakt z działem prenumeraty, który pracuje w zwykłych godzinach. Dodatkowa odpowiedź na tę wiadomość nie jest potrzebna.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-auto-09",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Poza biurem: Logistyka Dziś",
+      "body": "Dziękujemy za Twoją wiadomość.\n\nZespół redakcji jest poza biurem do 19.01.2027, w związku z targami branżowymi w Poznaniu. To jest automatyczna odpowiedź, więc nikt jeszcze nie przeczytał Twojej wiadomości. Przeczytamy ją po powrocie i odpowiemy w kolejności zgłoszeń.\n\nW sprawach prenumeraty działa dział obsługi czytelników w zwykłych godzinach. W sprawach ogłoszeń i ofert reklamowych prosimy o wiadomość do działu reklamy, bo redakcja nie zajmuje się takimi zapytaniami.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-auto-10",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Automatyczna odpowiedź: użytkownik nieobecny",
+      "body": "Wiadomość automatyczna systemu ERP. Użytkownik K. Wrona jest nieobecny do 20.01.2027. Dokumenty zatwierdzenia zostaną przekazane zastępcy.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-bnc-02",
+      "from": "Powiadomienia Bankowe <mailer-daemon@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Undeliverable: Warehouse system outage - report",
+      "body": "Delivery Status Notification (Failure)\n\nYour message to magazyn.centralny@fabryka-lodz.test could not be delivered.\n\nReason: the receiving server rejected the message, error 550, mailbox unavailable. The address does not exist or has been disabled by its owner.\n\nOriginal message: \"Warehouse system outage - report\", sent 12.01.2027 at 11:09. No copy of the message was kept on our server. Check the address and send the message again. This is an automatic message, do not reply.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-bnc-03",
+      "from": "System ERP Kordelan <mailer-daemon@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Błąd dostarczenia: Karty paliwowe - zestawienie limitów",
+      "body": "Raport o niedostarczeniu wiadomości\n\nWiadomość wysłana z konta wiktor.szalewski@kordelan.test nie została dostarczona do adresata: obsluga@paliwa-flota-pl.test.\n\nPrzyczyna: serwer odbiorcy nie odpowiada. Po trzech próbach w odstępach godzinnych system przerwał wysyłanie. Kod błędu: 4.4.1, przekroczony czas połączenia.\n\nSzczegóły wiadomości:\n- temat: Karty paliwowe - zestawienie limitów\n- data wysłania: 14.01.2027, godzina 09:40\n- liczba prób: 3\n- status końcowy: niedostarczona\n\nTreść oryginalnej wiadomości nie została zapisana w tym raporcie. Wiadomość nie wymaga odpowiedzi, ponieważ została wygenerowana automatycznie przez serwer pocztowy firmy. Jeśli problem powtarza się dla tego samego adresata, administrator poczty sprawdzi konfigurację serwera i listę zablokowanych domen. Sprawdzenie adresu odbiorcy i ponowne wysłanie wiadomości zwykle rozwiązują kłopot. W przypadku trwałego błędu skontaktuj się z administratorem systemu pocztowego, który zna reguły filtrowania ruchu wychodzącego. Administrator może też sprawdzić, czy domena odbiorcy nie znalazła się na liście czasowo blokowanych adresów, co zdarza się po masowych wysyłkach z innych kont. Dopóki problem nie zostanie wyjaśniony, żadne kolejne wiadomości do tego adresata nie zostaną ponowione automatycznie, a kopia tego raportu zostanie zachowana w dzienniku serwera przez trzydzieści dni, do celów kontrolnych działu informatyki.\n\nTen raport został wysłany automatycznie przez serwer poczty wychodzącej. Nie odpowiadaj na tę wiadomość.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-bnc-04",
+      "from": "Powiadomienia Bankowe <mailer-daemon@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Mail delivery failed: Re: Server restart window",
+      "body": "This is the mail system at the host of the sender.\n\nYour message could not be delivered to the following recipient:\n\n  serwis@hosting-magazyn.test\n\nReason: 552 mailbox full. The recipient has exceeded the storage quota, and no new messages are accepted until space is released.\n\nThe message was sent on 12.01.2027 at 16:20 with the subject \"Server restart window\". The system tried to deliver it twice. No more attempts will be made. You may send the message again later or use another address of the recipient.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-bnc-05",
+      "from": "Powiadomienia Bankowe <mailer-daemon@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Delivery failure notice",
+      "body": "Your message to dyspozytor@trans-nord.test was not delivered. Error 550: no such user. Original subject: \"Delivery slot Friday\". Sent 13.01.2027 at 08:15.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-bnc-06",
+      "from": "System ERP Kordelan <mailer-daemon@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Niedostarczona wiadomość: zamówienie zakupu",
+      "body": "Raport systemu ERP\n\nWiadomość z zatwierdzeniem zamówienia zakupu wygenerowana w systemie nie została dostarczona do dostawcy: zamowienia@trailerwerk-test.test.\n\nPowód: adres odbiorcy odrzucił wiadomość z powodu zbyt dużego załącznika. Limit wynosi 10 MB, a plik z zamówieniem ma 14 MB. System nie ponowi próby automatycznie.\n\nWiadomość została wysłana 13.01.2027, godzina 10:55. Aby doręczyć dokument, użytkownik powinien wysłać mniejszy plik lub podać dostawcy inny sposób odbioru. Raport nie wymaga odpowiedzi.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-bnc-07",
+      "from": "Powiadomienia Bankowe <mailer-daemon@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Błąd dostarczenia wiadomości do klienta",
+      "body": "Powiadomienie o niedostarczeniu\n\nWiadomość z potwierdzeniem przelewu nie została dostarczona do adresata: ksiegowosc@meblodrew-test.test. Serwer odbiorcy zwrócił kod 550 i informację, że adres nie istnieje.\n\nKwota przelewu: 18 450,00 PLN. Data operacji: 11.01.2027. Potwierdzenie zostało wysłane z konta firmowego w imieniu wiktor.szalewski@kordelan.test i nie dotarło do odbiorcy.\n\nPrzelew został zaksięgowany prawidłowo, a ten komunikat dotyczy tylko wiadomości z potwierdzeniem. Prosimy o sprawdzenie adresu odbiorcy. Odpowiedź na ten komunikat nie jest przetwarzana.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-bnc-09",
+      "from": "System ERP Kordelan <mailer-daemon@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Niedostarczono: faktura FV-2027-014",
+      "body": "Raport ERP: wiadomość z fakturą FV-2027-014 nie została dostarczona do odbiorcy, adres rozliczenia@zielona-sklepy.test odrzucił ją. Kod 550, 12.01.2027.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-cal-01",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zaproszenie: spotkanie w sprawie reklamacji, 21.01.2027",
+      "body": "Szanowny Panie Prezesie,\n\nzapraszam Pana na spotkanie w naszym centrum w Radomiu w czwartek 21.01.2027 o godzinie 14:00. Chcę omówić zaległe reklamacje z ostatnich dwóch miesięcy oraz zasady odszkodowań, które ustalilibyśmy na przyszłość. W spotkaniu wezmą udział mój dyrektor logistyki i nasz prawnik.\n\nZaproszenie w kalendarzu znajdzie Pan w pliku invite.ics. Proszę o potwierdzenie, czy Pan przyjedzie, a jeśli termin nie pasuje, o propozycję innego dnia w tym samym tygodniu.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": [
+        "invite.ics"
+      ]
+    },
+    {
+      "id": "h-cal-02",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Spotkanie w sprawie podróży do Hamburga",
+      "body": "Szanowny Panie Prezesie,\n\nw pliku invite.ics przesyłam zaproszenie na rozmowę o wyjeździe do Hamburga, 19.01.2027, godzina 09:00. Proszę o odpowiedź, czy termin Panu odpowiada.",
+      "thread": [],
+      "attachments": [
+        "invite.ics"
+      ]
+    },
+    {
+      "id": "h-cal-04",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Nordic contract call - invite",
+      "body": "Hi Wiktor,\n\ninvite for a call on the Nordic contract is in invite.ics, Thursday 14.01.2027 at 15:00. Can you make it? Say yes or give me another slot.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": [
+        "invite.ics"
+      ]
+    },
+    {
+      "id": "h-cal-06",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Meeting with Karin about the contract - please answer the invite",
+      "body": "Wiktor,\n\nI set up a meeting with Karin and her legal adviser for next week and put the invite in invite.ics. It is a one-hour video call, Tuesday 19.01.2027 at 10:00 our time, and the point is to close the three open items of the Nordic framework contract before they send it to their board.\n\nThe three items are the penalty for late delivery, the validity of the price list and the minimum yearly volume. Karin said she accepts the penalty if we keep the price list for twelve months. I would like to agree on this in the call, but I cannot promise it without you, because only you can decide on the price list. Piotr will join to answer questions about the numbers, and I will lead the call so you can listen and decide.\n\nPlease accept or decline the invite today or tomorrow, because Karin must confirm the slot to her adviser who works in another time zone. If Tuesday is not good, tell me two other slots, and I will ask her. Wednesday morning would also work for me, and Thursday only after 14:00, because I fly back from Gdynia in the morning.\n\nOne more thing: if you cannot join, say so, and I will ask Karin to move the call to the week after. I do not want to talk about the price list without you.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": [
+        "invite.ics"
+      ]
+    },
+    {
+      "id": "h-cal-07",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Invite: review of the Nordic penalty clause",
+      "body": "Wiktor,\n\nI sent you an invite for a short review of the penalty clause in the Nordic contract. It is in invite.ics: Friday 15.01.2027, 11:30, in the small meeting room on the third floor, thirty minutes.\n\nHalina and Piotr will be there. Halina will show the delay numbers of the last quarter, and Piotr will explain what Karin's team wants to change. I think half an hour is enough if everyone comes prepared.\n\nPlease say if you can come. If not, I will move it to the next week, but then we lose a few days before Karin's board meets.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": [
+        "invite.ics"
+      ]
+    },
+    {
+      "id": "h-cal-08",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Zaproszenie na kolację rady - odpowiedź",
+      "body": "Wiktorze,\n\ndziękuję za wstępną odpowiedź. Przesyłam teraz formalne zaproszenie w pliku invite.ics: kolacja rady nadzorczej z zarządem odbędzie się we wtorek 26.01.2027 o 19:00, w restauracji przy porcie w Gdyni. Dress code służbowy, około piętnastu osób.\n\nProszę o potwierdzenie udziału w zaproszeniu albo krótką wiadomość, jeśli nie możesz przyjść. Muszę przekazać restauracji liczbę gości, a potrzebuję też wiedzieć, czy będziesz mówił kilka słów powitania, bo wtedy zaplanuję to w programie.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "from": "wiktor.szalewski@kordelan.test",
+          "subject": "Re: Kolacja rady",
+          "body": "Panie Zbigniewie, dziękuję za pomysł kolacji. Chętnie wezmę udział, proszę przesłać szczegóły. Wiktor Szalewski"
+        }
+      ],
+      "attachments": [
+        "invite.ics"
+      ]
+    },
+    {
+      "id": "h-cal-10",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zaproszenie na rozmowę o odprawach celnych",
+      "body": "Szanowny Panie Prezesie,\n\nzapraszam Pana na rozmowę online poświęconą odprawom celnym na naszych wspólnych trasach do Holandii. Termin: piątek 22.01.2027, godzina 13:00, czas trwania czterdzieści pięć minut. Zaproszenie znajduje się w pliku invite.ics.\n\nChcę omówić z Panem kilka wniosków z ostatnich miesięcy: opóźnienia na granicy, koszty przestojów i pomysł na wspólnego agenta celnego. Mój zespół przygotuje krótkie zestawienie, żebyśmy nie tracili czasu na liczby.\n\nProszę o potwierdzenie terminu albo o propozycję innego, jeśli ten Panu nie odpowiada. Chętnie dopasuję się do Pana kalendarza.",
+      "thread": [],
+      "attachments": [
+        "invite.ics"
+      ]
+    },
+    {
+      "id": "h-cc-01",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "halina.strzemecka@kordelan.test"
+      ],
+      "cc": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "subject": "Nordic: delay report for Halina",
+      "body": "Halina,\n\nas promised, the delay report for the Nordic lane is ready. Last quarter we had four late deliveries, all at the border. I put Wiktor in copy only so he sees the numbers.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-cc-02",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "rafal.kwiecinski@kordelan.test"
+      ],
+      "cc": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "subject": "Re: Rekrutacja dyrektora finansowego - tryb pracy rady",
+      "body": "Rafale,\n\npiszę do Ciebie, bo Magdalena prosi o jasne zasady, jak rada ma uczestniczyć w rekrutacji nowego dyrektora finansowego. Wiktor jest tylko w kopii, żeby wiedział, jak ustaliliśmy ten tryb pracy, i nie musi na to odpowiadać.\n\nProponuję trzy zasady. Po pierwsze, dział HR prowadzi cały proces i przedstawia radzie trzech finalistów wraz z krótką oceną każdego z nich. Po drugie, rada ma prawo spotkać się z dwoma finalistami przed decyzją, a spotkanie nie trwa dłużej niż godzinę, żeby nie wydłużać całej rekrutacji. Po trzecie, decyzja o zatrudnieniu należy do zarządu, a rada wydaje opinię w ciągu pięciu dni roboczych od otrzymania zestawienia finalistów.\n\nMagdalena wspomniała w swojej wiadomości, że część dokumentów od kandydatów jest już w dziale finansowym, bo kandydaci prosili o zapoznanie się ze sprawozdaniem spółki. Proszę, aby wszystkie takie dokumenty trafiały najpierw do Ciebie, a dopiero potem do rady, żebyśmy mieli jedno źródło informacji. Do końca tygodnia przygotuję dla rady krótką notatkę o procedurze i przekażę ją członkom, którzy pytali o ten proces.\n\nJeżeli któraś z zasad budzi Twoje wątpliwości, napisz do mnie bezpośrednio, ustalimy to razem przed następnym posiedzeniem. Dziękuję za Twoją pracę przy tej rekrutacji, bo wiem, że to wymaga dużo czasu.",
+      "thread": [
+        {
+          "from": "magdalena.czerniak@kordelan.test",
+          "subject": "Rekrutacja dyrektora finansowego",
+          "body": "Panie Zbigniewie, proszę o jasne zasady udziału rady w rekrutacji nowego dyrektora finansowego. Dokumenty kandydatów są już u nas. Magdalena Czerniak"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "h-cc-03",
+      "from": "Genowefa Jastrzebska <g.jastrzebska@hurtownia-zielona.test>",
+      "to": [
+        "oliver.pemberton@kordelan.test"
+      ],
+      "cc": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "subject": "Reklamacja nr 7 - dokumenty dla Pana Olivera",
+      "body": "Szanowny Panie Oliverze,\n\nw nawiązaniu do naszej rozmowy z zeszłego tygodnia przesyłam informację o dostawie do Radomia, w której zginęły dwie palety z nabiałem. Proszę o sprawdzenie u przewoźnika, gdzie znajduje się ładunek, oraz o potwierdzenie, czy sprawa została zgłoszona ubezpieczycielowi.\n\nPana Prezesa wstawiam do wiadomości jedynie w celu informacyjnym. Z moją prośbą zwracam się do Pana.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-cc-05",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "halina.strzemecka@kordelan.test"
+      ],
+      "cc": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "subject": "Nordic Q1 plan - numbers for Halina",
+      "body": "Halina,\n\nhere are the numbers for the Nordic first-quarter plan: 120 pallets a week in January, 140 in February and 160 in March. The share of chilled goods grows from 30 to 45 percent, so we need two more reefer trailers from February.\n\nPlease check whether your night shift in Stryków can load the extra volume. Reply to me with the headcount you need. Wiktor is in copy only for his information.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "h-cc-06",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "oliver.pemberton@kordelan.test"
+      ],
+      "cc": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "subject": "Joint tender: capacity table for Oliver",
+      "body": "Dear Oliver,\n\nfollowing our call yesterday, here is the capacity summary for the joint tender. Baltic Freight Partners can offer twelve trucks per week on the Riga corridor and eight on the Tallinn route, starting in March. We need to know how many trucks Kordelan commits on the Polish leg, so that we can calculate the price.\n\nCould you send me your capacity numbers by the end of next week? Wiktor is in copy only to follow the process, and no action is needed from him.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}

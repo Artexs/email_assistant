@@ -1,0 +1,228 @@
+{
+  "scenario": "lab-01",
+  "part": "holdout",
+  "batch": "batch-050",
+  "writer": "claude-sonnet-5-5",
+  "cases": [
+    {
+      "id": "b-urg-0217",
+      "subject": "Board meeting: your decision on the loan item today",
+      "body": "Dear Mr Szalewski,\n\nThe supervisory board has asked me to confirm today whether the management board supports the proposal to raise the working capital loan from four to six million zloty. The bank gave us a deadline for the application, and my colleagues on the board want to vote by e-mail this evening.\n\nI need your position in writing before 18:00. A short answer is enough: support, reject or support with conditions, and if there are conditions, please name them. I will pass your answer to the members tonight, and I will state clearly that the decision comes from the management board and not from the finance department.\n\nIf you cannot answer in writing, ring my secretary and she will connect me with you at any time this afternoon.",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0218",
+      "subject": "Przetarg Zielona - rozmowa dziś przed 18:30",
+      "body": "Szanowny Panie Prezesie,\n\nzwracam się do Pana osobiście, bo wiem, że to Pan podejmuje ostateczne decyzje. Prowadzimy rozmowy z dwoma przewoźnikami w sprawie przetargu na obsługę naszych hurtowni i chciałabym, żeby Pana firma miała w nim dobrą pozycję.\n\nDziś o 19:00 komisja przetargowa mojej sieci kończy ocenę ofert. Proszę, aby zadzwonił Pan do mnie przed 18:30. Chcę omówić z Panem sposób rozliczania zwrotów palet, o którym nie chcę pisać. Jeśli nie porozmawiamy przed 18:30, komisja oceni Państwa ofertę bez tej wiedzy i wybierze drugiego przewoźnika.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "note": "rewritten: tender commission closes at 19:00 today, call from the executive needed before 18:30"
+    },
+    {
+      "id": "b-urg-0220",
+      "subject": "Customs inspection at the port - containers held now",
+      "body": "Dear Mr Szalewski,\n\nA friend at the harbour authority told me this morning that two Kordelan containers are held for a customs inspection at the Gdynia terminal. The inspector in charge wants a board member of the company on the line before 11:00 and will accept no one else.\n\nIf nobody with that authority answers before 11:00, the containers go to the bonded warehouse. Storage fees start today, and the goods for the customer we discussed at the last supervisory board meeting will miss their delivery date.\n\nPlease contact the inspector yourself before 11:00 and call me right after. I do not want to interfere in operational matters, but this one needs you.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "note": "rewritten: customs wants the board member on the line before 11:00 today, no one else accepted"
+    },
+    {
+      "id": "b-urg-0221",
+      "subject": "Hamburg dinner - I need your yes or no before noon",
+      "body": "Wiktor,\n\nI need a yes or no from you before 12:00 today. The supervisory board trip to Hamburg in March includes a private dinner with the shipowners on the second evening, held in a restaurant by the harbour, and about twelve people are invited. The owner of the fleet we want to hire trailers from will be there, and he asked for you in person.\n\nThe restaurant closes the guest list at noon. After that the seat goes to someone else, and the owner told me he will not repeat the invitation, because he decides about our trailer offer this week. The dinner is not on the official programme, so nothing is in your calendar, and your secretary does not know about it.\n\nYou do not have to stay for the whole trip. A flight on the afternoon of the dinner and a return flight the next morning would be enough, and the board pays for the hotel as it does for all members. I think this conversation matters for the discussion about the new trailers, and it is easier when the chief executive is there himself.\n\nPlease answer me before 12:00, by mail or by phone, even with one word. If the answer is no, I need to tell the host today.\n\nZbigniew",
+      "thread": [],
+      "note": "rewritten: guest list closes at noon today, answer from the executive needed before 12:00"
+    },
+    {
+      "id": "b-urg-0223",
+      "subject": "Re: Delivery windows for next week - your confirmation needed today",
+      "body": "Dear Mr Szalewski,\n\nThank you for your earlier note about the unloading windows. I need your own confirmation today on one point: the warehouse in Gothenburg plans its staff for Thursday at 15:00 local time. By then it must have your firm word that the three trucks arrive at 07:00, 09:30 and 13:00.\n\nIf I cannot tell the warehouse by 15:00 that you confirm these hours, it cancels the Thursday slot, and the chilled pallets wait until the following week. Please reply to me directly with a yes or a different time before 15:00 local time today.\n\nBest regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade",
+      "html": "<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#222\"><p style=\"margin:0 0 10px\">Dear Mr Szalewski,</p><p style=\"margin:0 0 10px\">Thank you for your earlier note about the unloading windows. I need your own confirmation today on one point: the warehouse in Gothenburg plans its staff for Thursday at 15:00 local time. By then it must have your firm word that the three trucks arrive at 07:00, 09:30 and 13:00.</p><p style=\"margin:0 0 10px\">If I cannot tell the warehouse by 15:00 that you confirm these hours, it cancels the Thursday slot, and the chilled pallets wait until the following week. Please reply to me directly with a yes or a different time before 15:00 local time today.</p><p style=\"margin:0 0 10px\">Best regards | Karin Lindqvist | Procurement Lead | Nordic Foods Trade</p></div>",
+      "thread": [
+        {
+          "subject": "Delivery windows for next week",
+          "body": "Dear Ms Lindqvist, thank you for the proposed windows. We will send you the pallet list this week. Wiktor Szalewski"
+        }
+      ],
+      "note": "rewritten: warehouse cancels Thursday slot at 15:00 local today, confirmation from the executive himself"
+    },
+    {
+      "id": "b-urg-0224",
+      "subject": "Re: Zamknięcie budżetu rocznego - dziś do 13:00",
+      "body": "Szanowny Panie Prezesie,\n\ndziękuję za odpowiedź. Niestety nie wyjaśnia ona kluczowej sprawy, więc piszę ponownie i proszę o Pana osobistą decyzję jeszcze dziś.\n\nRada musi otrzymać ostateczną wersję zamkniętego budżetu rocznego do 05.02.2027. Dziś o 14:00 zbiera się komitet rady, który ustala harmonogram posiedzenia zatwierdzającego. Aby budżet trafił do porządku obrad, potrzebuję od Pana do 13:00 trzech rzeczy: podpisanego przez Pana zestawienia kosztów floty za ostatni kwartał, Pana wyjaśnienia różnicy między planem a wykonaniem w pozycji paliw oraz Pana listy inwestycji przesuniętych na rok następny.\n\nJeśli nie otrzymam ich do 13:00, komitet nie wpisze budżetu na posiedzenie, a termin zamknięcia przepadnie. Rada już raz przesunęła ten termin z powodu opóźnień po stronie spółki i nie wyrazi na to zgody po raz drugi. Jeśli któregoś dokumentu nie da się przygotować w całości, proszę przesłać wersję roboczą z oznaczeniem, czego brakuje. Wolę wiedzieć o braku od razu, niż dowiedzieć się o nim na posiedzeniu, kiedy będzie już za późno na poprawki. Dopiero po otrzymaniu kompletu dokumentów rada będzie mogła zwołać posiedzenie zatwierdzające budżet, więc każda godzina zwłoki przesuwa cały harmonogram prac rady.\n\nJeśli ma Pan pytania, proszę zadzwonić do mnie bezpośrednio. Proszę też o krótkie potwierdzenie, że wiadomość dotarła, abym nie musiał dopytywać o jej odbiór.",
+      "thread": [
+        {
+          "subject": "Re: Zamknięcie budżetu rocznego",
+          "body": "Panie Zbigniewie, zespół finansowy pracuje nad zamknięciem. Wyślę dokumenty tak szybko, jak to możliwe. Wiktor Szalewski"
+        },
+        {
+          "subject": "Zamknięcie budżetu rocznego",
+          "body": "Szanowny Panie Prezesie, proszę o informację, na jakim etapie jest zamknięcie budżetu rocznego i kiedy rada otrzyma komplet dokumentów. Zbigniew Orlowicz"
+        }
+      ],
+      "note": "rewritten: committee meets at 14:00 today, signed documents from the executive needed by 13:00"
+    },
+    {
+      "id": "b-urg-0225",
+      "subject": "Re: Przetarg Zielona - rozmowa dziś przed 16:30",
+      "body": "Szanowny Panie Prezesie,\n\nwidziałam odpowiedź Pana koordynatora, ale wolę usłyszeć to od Pana. Dziś o 17:00 zarząd mojej sieci wybiera głównego przewoźnika w przetargu. Proszę, aby porozmawiał Pan ze mną osobiście przed 16:30, przez telefon albo u nas w Radomiu.\n\nChodzi o kwestie strategiczne: zasady wyboru głównego przewoźnika i gwarancje, jakie jest Pan gotów dać naszej sieci. Jeśli nie usłyszę Pana przed 16:30, decyzja zapadnie bez Państwa, a wybierzemy firmę, która dała mi te gwarancje na piśmie.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [
+        {
+          "subject": "Re: Przetarg Zielona - spotkanie",
+          "body": "Dzień dobry Pani Genowefo, Pan Prezes jest w podróży, ale przekazałem Pani prośbę. Oddzwoni do Pani w najbliższym czasie. Piotr Lewandrowski"
+        },
+        {
+          "subject": "Przetarg Zielona",
+          "body": "Pani Genowefo, dziękujemy za zaproszenie do przetargu. Nasz zespół przygotowuje ofertę. Wiktor Szalewski"
+        }
+      ],
+      "note": "rewritten: client board picks the carrier at 17:00 today, talk with the executive needed before 16:30"
+    },
+    {
+      "id": "b-urg-0226",
+      "subject": "Rada: decyzja w sprawie biegłego rewidenta",
+      "body": "Wiktor,\n\npotrzebuję Twojej decyzji jeszcze dziś w sprawie biegłego rewidenta na ten rok. Rada ma wybrać firmę na najbliższym posiedzeniu, ale jedna z dwóch ofert wygasa dzisiaj o 17:00, a druga jest o jedną trzecią droższa. Jeśli nie powiesz mi do tej godziny, czy zarząd popiera tańszą ofertę, nie będę mógł jej przedstawić radzie.\n\nOdpisz proszę krótko: tak lub nie, a jeśli nie, podaj powód. Nie czekaj na księgową, to decyzja zarządu.\n\nZbigniew",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0227",
+      "subject": "Joint tender: your approval today",
+      "body": "Dear Wiktor,\n\nI hope the week treats you well. I am writing because we need your approval today on the joint bid for the Baltic corridor tender. The tender office accepts final documents only until this evening, and our legal team has just finished the consortium agreement.\n\nTwo points need your decision. First, the split of the risk: we propose 60:40 in favour of Kordelan for the Polish leg and the opposite for the Baltic leg. Second, the guarantee: the tender requires a bank guarantee of 150 000 EUR, and we can share it equally or each side can give its own.\n\nPlease answer today, even if only with the numbers you can accept, and I will ask the lawyers to adjust the draft tonight.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0228",
+      "subject": "Poręczenie za spółkę w Czechach - decyzja dziś",
+      "body": "Szanowny Panie Prezesie,\n\ndziś rano bank poinformował mnie, że do uruchomienia nowej linii kredytowej potrzebne jest poręczenie spółki za zobowiązania spółki zależnej w Czechach. Nie zostało to uwzględnione w materiałach, które rada dostała w zeszłym miesiącu, więc rada nie mogła go zatwierdzić.\n\nZ tego powodu muszę poprosić Pana o decyzję dzisiaj: czy zarząd jest gotów poręczyć za spółkę zależną do kwoty dwóch milionów złotych, czy też woli Pan znaleźć inne zabezpieczenie? Od Pana odpowiedzi zależy, czy będę mógł jeszcze dziś zwołać krótkie posiedzenie rady w trybie obiegowym, tak aby bank otrzymał uchwałę przed zamknięciem swojego okna kredytowego.\n\nProszę o przesłanie odpowiedzi na ten adres. Do wiadomości proszę dodać, kto z zarządu podpisze poręczenie, oraz czy potrzebna będzie opinia prawnika. Jeśli opinia jest wymagana, proszę o wskazanie kancelarii, z którą spółka zwykle współpracuje, żebym mógł ją od razu poinformować o zakresie zlecenia.\n\nWiem, że to nieprzyjemna niespodzianka tuż przed końcem dnia, ale bank nie zostawił nam wyboru. Jeżeli odpowiedź będzie dla Pana trudna, wolę zadzwonić, więc proszę o informację, o której godzinie jest Pan dziś dostępny. Dziękuję za pomoc w tej sprawie i za szybkie działanie po Pana stronie.",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0229",
+      "subject": "Oferta na naczepy chłodnicze do przetargu Zielonej Hurtowni",
+      "body": "Szanowny Panie Prezesie,\n\nw nawiązaniu do rozmowy z Pana dyrektorem operacyjnym przesyłam ostateczną wycenę dwunastu naczep chłodniczych, które Państwo chcą zaproponować w przetargu sieci Zielona Hurtownia. Cena obejmuje przegląd przed dostawą oraz pierwszy rok serwisu w naszej sieci partnerskiej.\n\nTa wycena jest ważna do godziny 18:00 dzisiejszego dnia, bo jutro zmienia się nasz cennik producenta. Aby ją zatrzymać, potrzebuję Pana potwierdzenia na piśmie wraz z informacją, czy chcą Państwo kupić naczepy, czy wziąć je w leasing. Potwierdzenie można wysłać odpowiedzią na tę wiadomość.\n\nJeśli ma Pan pytania do specyfikacji, chętnie odpowiem telefonicznie.",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0230",
+      "subject": "Re: Swedish customs - I need a yes from you today",
+      "body": "Hi Wiktor,\n\nPiotr told me you want to see the new numbers before the decision, so here is the short version. Today I need your go or no-go on moving the Swedish consignments to the other customs broker. If we say yes today, they start Monday and we lose only one week of throughput. If we wait, we lose two or three weeks, and the autumn volumes are already booked.\n\nThe cost is 90 EUR per declaration against 70 now. For about forty shipments it means 800 EUR more every month. Not nice, but the old broker has started to lose files and twice this month a truck stood at the border for six hours.\n\nWhat I need from you: one word, yes or no, by tonight. I can sign the contract with the new broker tomorrow morning if you say yes. If you say no, I will keep the old broker for now, but I will then ask Piotr to add a delay clause to the next offers, because we cannot keep promising Nordic customers a delivery date that the border can break. Also, please tell Dorota whether you want me in the board call on Thursday, so she can reserve the room.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [
+        {
+          "subject": "Re: Szwedzki broker celny",
+          "body": "Wiktor, Oliver chce zmienić brokera w Szwecji. Poczekaj na jego liczby, zanim zdecydujesz. Piotr"
+        },
+        {
+          "subject": "Szwedzki broker celny",
+          "body": "Piotr, powiedz Oliverowi, że chcę zobaczyć koszty miesięczne przed jakąkolwiek zmianą. Wiktor"
+        }
+      ]
+    },
+    {
+      "id": "b-urg-0234",
+      "subject": "Reklamacje - rozmowa przed południem",
+      "body": "Szanowny Panie Prezesie,\n\nmam do Pana prośbę. W zeszłym miesiącu rozmawiałam z Pana dyrektorem operacyjnym o reklamacjach z ostatnich trzech miesięcy i obiecał podsumowanie, którego do dziś nie dostałam. W naszych sklepach klienci pytają już o brakujące towary.\n\nDziś o 13:00 podpisuję zlecenie dla innego przewoźnika na trzy najbliższe kursy, chyba że ustalimy z Panem jedną zasadę rozliczania szkód transportowych. Teraz każda reklamacja jest załatwiana inaczej. Proszę o telefon do mnie przed 12:30. Po tej godzinie zlecenie wychodzi.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "note": "rewritten: order to another carrier signed at 13:00 today, call from the executive needed before 12:30"
+    },
+    {
+      "id": "b-urg-0235",
+      "subject": "Re: Reklamacje - odpowiedź przed 15:30",
+      "body": "Szanowny Panie Prezesie,\n\ndziękuję za wiadomość. Nie chcę prowadzić tej rozmowy przez kolejne maile, bo sprawa trwa już zbyt długo. Dziś o 16:00 przyjmujemy w Radomiu kolejną dostawę, a trzy poprzednie miały uszkodzone palety.\n\nProszę, aby przyjechał Pan do naszego centrum i zobaczył na własne oczy, w jakim stanie przyjeżdżają palety. Sama oprowadzę Pana po magazynie. Potrzebuję Pana odpowiedzi do 15:30, czy przyjedzie Pan. Jeśli jej nie dostanę, odmówię dziś przyjęcia dostawy i wstrzymam płatności za styczeń do czasu wyjaśnienia.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [
+        {
+          "subject": "Re: Reklamacje - proszę o spotkanie",
+          "body": "Pani Genowefo, rozumiem, że sprawa jest ważna. Proszę o przysłanie dokumentacji zdjęciowej, wtedy ustalimy zasady odszkodowań. Wiktor Szalewski"
+        },
+        {
+          "subject": "Reklamacje - proszę o spotkanie",
+          "body": "Szanowny Panie Prezesie, trzy ostatnie dostawy miały uszkodzone palety. Chciałabym porozmawiać o tym z Panem osobiście. Genowefa Jastrzebska"
+        }
+      ],
+      "note": "rewritten: delivery arrives at 16:00 today, reply needed by 15:30, otherwise refusal and payment hold"
+    },
+    {
+      "id": "b-urg-0236",
+      "subject": "Brazil lane - need your call today",
+      "body": "Wiktor,\n\nneed your call on something today. The shipping line for the Santos lane has cut our space for next month by half, and offers us the rest only on a spot rate, nearly 30 percent above the contract. If we say yes, we keep the customers but lose margin. If we say no, I move the cargo to another line, which means new contracts and a delay of about two weeks.\n\nLine wants an answer before the end of the day, they said they have other bookings waiting. I think we take the spot rate for one month and look for another line at the same time. Tell me if you agree and I will confirm with them straight away. If you want to talk first, I am at the office until 17:00.\n\nOliver",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0239",
+      "subject": "Wspólna oferta: potrzebuję Pana zgody dzisiaj",
+      "body": "Szanowny Panie Prezesie,\n\nproszę o decyzję dziś: czy zgadza się Pan na złożenie wspólnej oferty z udziałem 55 do 45 na rzecz Baltic Freight Partners? Organizator zamyka przyjmowanie ofert o 16:00.",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0240",
+      "subject": "Framework agreement - confirmation today",
+      "body": "Dear Mr Szalewski,\n\nplease confirm today that Kordelan accepts the updated delivery schedule of the framework agreement. Our board signs this afternoon.",
+      "html": "<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#222\"><p style=\"margin:0 0 10px\">Dear Mr Szalewski,</p><p style=\"margin:0 0 10px\">please confirm today that Kordelan accepts the updated delivery schedule of the framework agreement. Our board signs this afternoon.</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0241",
+      "subject": "Re: Customs clearance for the Rotterdam consignments - your signature today",
+      "body": "Dear Wiktor,\n\nFollowing my earlier note, I now need you to act today. The Rotterdam consignments are held at the border because the certificates of origin are missing for six pallets, and customs accept a replacement only as a declaration signed by a board member of the exporter.\n\nPlease sign the declaration yourself and send it to me before 15:00 today, the cut-off of our broker for the border system. Without your signature the trucks stay where they are or turn back, and the storage fee of 600 euro per day is already running.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "subject": "Re: Customs clearance for the Rotterdam consignments",
+          "body": "Daniel, I will look into it myself and come back to you. Wiktor"
+        },
+        {
+          "subject": "Customs clearance for the Rotterdam consignments",
+          "body": "Dear Wiktor, our broker reports a problem with the certificates of origin for the Rotterdam trucks. Daniel"
+        }
+      ],
+      "note": "rewritten: border cut-off 15:00 today, signature of a board member needed, no task for the export team"
+    },
+    {
+      "id": "b-urg-0242",
+      "subject": "Export certificates: your signature needed today",
+      "body": "Dear Mr Szalewski,\n\nOur import department has informed me that the certificates of origin for the last two consignments carry the stamp of your head of export but not your own signature, which the new Nordic regulation requires for chilled products. The pallets are standing at the terminal in Malmo, and the customs office will release them only when the corrected documents arrive.\n\nCould you please sign the scanned certificates, which I will send in a separate message, and return them today? The customs office closes at 16:30 local time, and a delay means that the goods will spend the weekend in the terminal, with a risk for the cold chain.\n\nIf it helps, I can ask our customs agent to call your office and explain the procedure step by step.",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0243",
+      "subject": "Zgoda na uchwałę obiegową - dziś",
+      "body": "Szanowny Panie Prezesie,\n\nrada nadzorcza głosuje dziś w trybie obiegowym nad uchwałą o zmianie harmonogramu spłaty kredytu inwestycyjnego. Zgodnie ze statutem uchwała wymaga wcześniejszego stanowiska zarządu na piśmie, które powinno dotrzeć do mnie do końca dnia roboczego.\n\nProszę o przesłanie tego stanowiska dziś. Wystarczy krótka wiadomość, w której zarząd potwierdza, że zmiana harmonogramu jest zgodna z planem finansowym i że spółka nie widzi przeszkód prawnych. Jeśli zarząd ma zastrzeżenia, proszę je wymienić, żebym mógł je przedstawić członkom rady przed głosowaniem.\n\nBez tego stanowiska nie mogę rozpocząć głosowania, a bank oczekuje uchwały jeszcze w tym tygodniu.",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0245",
+      "subject": "Odprawa celna w Rotterdamie - decyzja dziś",
+      "body": "Szanowny Panie Prezesie,\n\npiszę po polsku, ponieważ wiem, że tak Panu wygodniej. Nasze wspólne ładunki do Rotterdamu stoją od rana na granicy, bo spedytor wykrył rozbieżność w dokumentach przewozowych. Mamy dwie możliwości: zapłacić karę umowną w wysokości 2 500 EUR i zwolnić towar jeszcze dziś albo złożyć odwołanie, co potrwa trzy do pięciu dni.\n\nPotrzebuję Pana decyzji dziś, ponieważ urząd celny zamyka dzisiaj biuro o 17:00, a jutro nie będzie już możliwości zapłaty bez dodatkowych opłat. Moim zdaniem lepiej zapłacić teraz, bo przestój naczep kosztuje nas więcej niż sama kara, ale ostateczną decyzję zostawiam Panu.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0247",
+      "subject": "Reklamacja z Radomia - decyzja dziś do 19:00",
+      "body": "Szanowny Panie Prezesie,\n\npiszę spokojnie, ale stanowczo. Z ostatniej dostawy do Radomia mamy czternaście palet z naruszonym opakowaniem, a część produktów jest nieprzydatna do sprzedaży. Rozmawiałam już z Pana dyspozytorem, który obiecał oddzwonić, jednak do tej pory nic się nie wydarzyło.\n\nDziś o 20:00 muszę powiadomić sklepy, że czternaście palet wraca. Potrzebuję Pana osobistej decyzji do 19:00: czy przyjmuje Pan reklamację w całości, czy rozliczamy się według protokołu naszego magazynu. Jeśli do 19:00 nie zadzwoni Pan do mnie, wystawię notę obciążeniową i wstrzymam rozładunek jutrzejszych dostaw.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "thread": [],
+      "note": "rewritten: shops informed at 20:00 today, decision of the executive needed by 19:00, otherwise debit note"
+    },
+    {
+      "id": "b-urg-0249",
+      "subject": "Przetarg sieci Zielona Hurtownia - dziś potrzebuję Pana decyzji",
+      "body": "Szanowny Panie Prezesie,\n\ndziś mija termin, w którym musimy ostatecznie ustalić warunki przetargu na obsługę naszej sieci hurtowni, a w Państwa ofercie nadal brakuje jednej istotnej rzeczy. Proszę o Pana decyzję jeszcze dzisiaj, bo komisja przetargowa zbiera się jutro rano i nie mogę jej przedstawić niekompletnej oferty.\n\nChodzi o gwarancję terminowości dostaw w okresie świątecznym. W dokumentach przetargowych wpisaliśmy karę umowną za każde opóźnienie powyżej czterech godzin, a Państwa oferta zawiera zastrzeżenie, że kara nie obowiązuje przy awariach systemu magazynowego. Dla nas takie zastrzeżenie jest nie do przyjęcia, bo to właśnie awarie systemów były przyczyną większości opóźnień w ubiegłym roku.\n\nProszę więc o jedną z trzech odpowiedzi: pierwsza, Państwo wycofują zastrzeżenie i akceptują karę bez wyjątków; druga, proponują Państwo inną formę gwarancji, na przykład zwiększoną stawkę za dostawy w grudniu; trzecia, Państwo rezygnują z udziału w przetargu. Wolę wiedzieć od razu, co Pan wybiera, niż zgadywać po milczeniu zespołu handlowego.\n\nRozumiem, że to wymagająca decyzja, ale ten przetarg jest dla nas najważniejszy w tym roku i dla Państwa również powinien taki być. Czekam na Pana odpowiedź dziś, a jeśli to potrzebne, jestem dostępna telefonicznie do godziny 19:00 i chętnie omówię szczegóły bezpośrednio.\n\nGenowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes",
+      "html": "<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#222\"><p style=\"margin:0 0 10px\">Szanowny Panie Prezesie,</p><p style=\"margin:0 0 10px\">dziś mija termin, w którym musimy ostatecznie ustalić warunki przetargu na obsługę naszej sieci hurtowni, a w Państwa ofercie nadal brakuje jednej istotnej rzeczy. Proszę o Pana decyzję jeszcze dzisiaj, bo komisja przetargowa zbiera się jutro rano i nie mogę jej przedstawić niekompletnej oferty.</p><p style=\"margin:0 0 10px\">Chodzi o gwarancję terminowości dostaw w okresie świątecznym. W dokumentach przetargowych wpisaliśmy karę umowną za każde opóźnienie powyżej czterech godzin, a Państwa oferta zawiera zastrzeżenie, że kara nie obowiązuje przy awariach systemu magazynowego. Dla nas takie zastrzeżenie jest nie do przyjęcia, bo to właśnie awarie systemów były przyczyną większości opóźnień w ubiegłym roku.</p><p style=\"margin:0 0 10px\">Proszę więc o jedną z trzech odpowiedzi: pierwsza, Państwo wycofują zastrzeżenie i akceptują karę bez wyjątków; druga, proponują Państwo inną formę gwarancji, na przykład zwiększoną stawkę za dostawy w grudniu; trzecia, Państwo rezygnują z udziału w przetargu. Wolę wiedzieć od razu, co Pan wybiera, niż zgadywać po milczeniu zespołu handlowego.</p><p style=\"margin:0 0 10px\">Rozumiem, że to wymagająca decyzja, ale ten przetarg jest dla nas najważniejszy w tym roku i dla Państwa również powinien taki być. Czekam na Pana odpowiedź dziś, a jeśli to potrzebne, jestem dostępna telefonicznie do godziny 19:00 i chętnie omówię szczegóły bezpośrednio.</p><p style=\"margin:0 0 10px\">Genowefa Jastrzebska | Zielona Hurtownia sp.j. | Prezes</p></div>",
+      "thread": []
+    },
+    {
+      "id": "b-urg-0251",
+      "subject": "Re: Nordic Foods - certificate problem, decision today",
+      "body": "Hi Wiktor,\n\nKarin wrote again this morning (her mail is below), and the situation got worse. Our chilled pallets for Gothenburg are held at the Swedish border because the veterinary certificate is not valid for the new product code. I need a decision from you today: do we send a vet to re-issue the certificate, which costs about 600 EUR and one day, or do we turn the trucks back and re-pack, which costs roughly 3 000 EUR and three days?\n\nMy view: re-issue the certificate. The cost is small compared with the risk of losing the delivery window, and Karin is already unhappy. The vet in Szczecin can come tonight if I call him before 17:00, and then the trucks can cross on the morning ferry.\n\nPlease reply with yes or no today, and tell Dorota to move your calendar if you want to join the call with Karin tomorrow. She has asked for a short conference at 10:00, and I think your presence would calm her.\n\nThanks, and sorry for the long mail from the road. I know it is a lot of information, but I wanted you to have the full picture before you decide, because the situation changes every hour and we cannot afford a wrong choice here.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "html": "<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#222\"><p style=\"margin:0 0 10px\">Hi Wiktor,</p><p style=\"margin:0 0 10px\">Karin wrote again this morning (her mail is below), and the situation got worse. Our chilled pallets for Gothenburg are held at the Swedish border because the veterinary certificate is not valid for the new product code. I need a decision from you today: do we send a vet to re-issue the certificate, which costs about 600 EUR and one day, or do we turn the trucks back and re-pack, which costs roughly 3 000 EUR and three days?</p><p style=\"margin:0 0 10px\">My view: re-issue the certificate. The cost is small compared with the risk of losing the delivery window, and Karin is already unhappy. The vet in Szczecin can come tonight if I call him before 17:00, and then the trucks can cross on the morning ferry.</p><p style=\"margin:0 0 10px\">Please reply with yes or no today, and tell Dorota to move your calendar if you want to join the call with Karin tomorrow. She has asked for a short conference at 10:00, and I think your presence would calm her.</p><p style=\"margin:0 0 10px\">Thanks, and sorry for the long mail from the road. I know it is a lot of information, but I wanted you to have the full picture before you decide, because the situation changes every hour and we cannot afford a wrong choice here.</p><p style=\"margin:0 0 10px\">Cheers, Oliver | Head of Export | Kordelan Distribution</p></div>",
+      "thread": [
+        {
+          "subject": "Veterinary certificate - Gothenburg consignment",
+          "body": "Dear Oliver, the border veterinary office says the certificate does not cover product code 4417. Please advise how you want to proceed. Karin"
+        }
+      ]
+    },
+    {
+      "id": "b-urg-0252",
+      "subject": "Frankfurt flight - answer before 10:00",
+      "body": "Wiktor,\n\nI need to know before 10:00 today when you fly to Frankfurt. The airline releases our block of board seats at 10:00, and seats after that cost three times more.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "note": "rewritten: airline releases the seat block at 10:00 today, answer needed before"
+    }
+  ]
+}

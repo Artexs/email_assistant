@@ -1,4 +1,11 @@
 export { listForLabeling, listForReview, recordFeedback, recordWebFeedback } from "./feedback";
+export {
+  ANSWERED_CHECK_WINDOW_MS,
+  answerAnsweredCheck,
+  countAnsweredWaiting,
+  listAnsweredCandidates,
+} from "./answered-check";
+export type { AnsweredResult } from "./answered-check";
 export { listReviewSample, REVIEW_PAGE_SIZE, REVIEW_WINDOW_DAYS } from "./review-repo";
 export type { LabelItem, RecordFeedbackInput, WebFeedbackResult } from "./feedback";
 export { undoWithFeedback } from "./undo";
@@ -45,6 +52,15 @@ export { goNoGoFor, realGoNoGoRows, setCategoryAutoWithGate } from "./gate";
 export type { AutoGateResult } from "./gate";
 export { buildRealPredictions, buildRealReport } from "./eval-real";
 export { evalExitCode, renderEvalReport } from "./eval-report";
+export {
+  buildGateFile,
+  gateFileName,
+  gateFileRefusal,
+  gateFileSchema,
+  renderSimSections,
+  simMetaOf,
+} from "./eval-sim-report";
+export type { GateFile, SimMeta, SimReportInput } from "./eval-sim-report";
 export { prompts, rolesWithoutPrompt } from "./prompts";
 export type { PromptEntry } from "./prompts";
 export type { ClassifierDelegate } from "./prompts/classifier-v2";
