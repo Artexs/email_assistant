@@ -4,8 +4,8 @@ import { feedbackSources } from "./categories";
 import { parseCategoryPolicy, parseToolSwitches, thresholdFor, autoFor } from "./settings";
 
 describe("feedbackSources", () => {
-  test("has exactly the 5 values", () => {
-    expect([...feedbackSources]).toEqual(["cli", "telegram", "undo", "imap_move", "web"]);
+  test("has exactly the 6 values", () => {
+    expect([...feedbackSources]).toEqual(["cli", "telegram", "undo", "imap_move", "web", "review"]);
   });
 });
 
