@@ -1,0 +1,357 @@
+{
+  "scenario": "lab-01",
+  "part": "week",
+  "batch": "batch-033",
+  "cases": [
+    {
+      "id": "w-6-028",
+      "from": "Targi Magazynowe Expo <oferty@targi-magazynowe.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "OSTATNIE SZTUKI! Zestaw patelni tytanowych -70%",
+      "body": "SUPER PROMOCJA tylko do północy!!!\n\nKomplet 12 patelni tytanowych za jedyne 99 zł zamiast 329 zł! Zamów teraz, a dostaniesz gratis nóż szefa kuchni. Zapas ograniczony, kto pierwszy, ten lepszy!",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-029",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie przelewu wychodzącego - Kordelan Dystrybucja",
+      "body": "Powiadomienie o transakcji\n\nInformujemy, że na rachunku firmowym Kordelan Dystrybucja Sp. z o.o. zrealizowano przelew wychodzący.\n\nRachunek obciążony: PL00-TEST-4821\nRachunek odbiorcy: PL00-TEST-7710\nOdbiorca: Paliwa-Flota\nKwota: 48 250,00 PLN\nTytuł przelewu: Faktura za paliwo, rozliczenie miesięczne\nData księgowania: 30.01.2027, godzina 16:41\nStatus: zrealizowany\nSaldo po operacji zostanie udostępnione w panelu bankowości internetowej po zakończeniu dnia operacyjnego.\n\nTen przelew został zatwierdzony przez dwóch uprawnionych użytkowników zgodnie z obowiązującymi limitami i zasadami autoryzacji. Szczegóły zatwierdzenia, w tym godziny i identyfikatory użytkowników, znajdziesz w historii operacji w panelu systemu.\n\nInformacje dodatkowe: potwierdzenie przelewu w formacie PDF jest dostępne w zakładce Dokumenty przez 90 dni od daty księgowania. Po tym czasie potwierdzenie można pobrać z archiwum rachunku.\n\nBezpieczeństwo: bank nigdy nie prosi o podanie pełnego hasła, kodu autoryzacyjnego ani danych karty w wiadomościach e-mail. Jeżeli nie rozpoznajesz tej operacji, skorzystaj z procedury zgłaszania nieautoryzowanych transakcji opisanej w regulaminie rachunku.\n\nUwaga dotycząca limitów: wykorzystanie dziennego limitu przelewów dla tego rachunku po tej operacji wynosi 31 procent. Limity możesz sprawdzić i zmienić w ustawieniach rachunku, po zalogowaniu w panelu.\n\nTa wiadomość została wygenerowana automatycznie przez system Powiadomienia Bankowe i nie wymaga odpowiedzi. Wiadomości wysłane na ten adres nie są odczytywane przez pracowników banku.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-030",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Boost your sales: 50,000 verified CEO emails for $49",
+      "body": "Hello Sir/Madam,\n\nAre you tired of low sales? We have a SPECIAL OFFER only for you today!\n\nOur database of 50,000 verified CEO and manager emails costs only $49 (regular price $499). We also offer first page Google ranking in 7 days, guaranteed, or your money back.\n\nWhy choose Premium Leads Pro?\n- 100% verified contacts\n- Instant download after payment\n- Free bonus: 10,000 leads from Europe\n\nThis discount ends in 24 hours, so do not wait. Reply to this email with the word YES and our sales team will send you the payment form today. Do not miss this unique chance to grow your business without any effort!",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-031",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Joint tenders - short status",
+      "body": "Dear Mr Szalewski,\n\nfor your information: our bid team in Riga finished the first pass of the tender documents for the Gdynia terminal. The cost model is complete and the partner split stays at 60 to 40.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-032",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Fleet financing - term sheet signature before 11:00",
+      "body": "Szanowny Panie Wiktorze,\n\ndziękuję za szybkie podpisanie term sheet w sprawie finansowania floty. Bank potwierdził jego otrzymanie, więc ta część jest zamknięta.\n\nTeraz zostaje przygotowanie materiałów dla rady na najbliższe posiedzenie. Proszę, aby Pan polecił Dorocie Wilczyńskiej zebranie dokumentów dotyczących finansowania floty i budżetu, ułożenie ich w jednej teczce dla członków rady oraz uzgodnienie z sekretarzem rady godziny, o której Pan zaprezentuje ten punkt. Dorota zna układ naszych posiedzeń, więc powinna poradzić sobie z tym bez dodatkowych wskazówek z mojej strony.\n\nGotową teczkę proszę przesłać do sekretarza rady przed końcem przyszłego tygodnia. Wystarczy mi krótka informacja zwrotna od Doroty, że materiały zostały wysłane.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Fleet financing - term sheet signature before 11:00",
+          "body": "Dear Wiktor,\n\nthe bank that offered the fleet financing told me this morning that it withdraws the offer at 11:00 today. The signed term sheet must reach them by then. After 11:00 the rate is gone and the council loses the budget line it has planned for the fleet.\n\nOnly you can sign for the company, so I cannot do it for you. The term sheet is with the legal office and ready for your signature. Please sign it and send it back to the bank before 11:00.\n\nI will be at my desk if anything blocks you.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-6-033",
+      "from": "Tomasz Brzezinski <tomasz.brzezinski@meblodrew.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Okna rozładunku dla trzech najbliższych dostaw",
+      "body": "Szanowny Panie Prezesie,\n\nw związku z rozpoczęciem produkcji nowej serii szafek potrzebujemy potwierdzenia okien rozładunku na naszym magazynie dla trzech najbliższych dostaw płyt z Państwa strony. Nasza rampa przyjmuje towar w godzinach od 6:00 do 14:00, a w piątki do 12:00.\n\nUprzejmie proszę, aby polecił Pan Piotrowi Lewandrowskiemu przygotowanie harmonogramu tych trzech dostaw wraz z proponowanymi godzinami przyjazdu samochodów oraz przesłanie go na mój adres. Panu Lewandrowskiemu przekazaliśmy już wcześniej dane kontaktowe naszego kierownika magazynu, więc może skontaktować się z nim bezpośrednio, jeśli będzie miał pytania.\n\nGdy otrzymam harmonogram, potwierdzę go po stronie Meblodrew.\n\nZ powazaniem | Tomasz Brzezinski | Dyrektor Zakupow | Meblodrew",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-034",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Incoming payment received - Kordelan Dystrybucja",
+      "body": "Account notification\n\nAn incoming payment was credited to your business account PL00-TEST-4821 today.\n\nAmount: 126,400.00 PLN\nPayer: Meblodrew\nReference: Invoice settlement, transport January\nBooking date: 30.01.2027, 17:52\nStatus: booked\n\nThe updated balance is available in your online banking panel. A confirmation in PDF format is stored under Documents for 90 days.\n\nThis message was generated automatically by the Powiadomienia Bankowe system. Please do not reply to this address, because no employee of the bank reads it. If you do not recognise this operation, follow the procedure for unauthorised transactions described in your account terms.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-035",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Alert cenowy: olej napędowy powyżej ustawionego progu",
+      "body": "Alert cenowy - Karty paliwowe\n\nCena referencyjna oleju napędowego dla flot przekroczyła próg 5,80 zł za litr, który ustawiono w Twoim alercie o nazwie \"Karty paliwowe - Polska\".\n\nAktualna cena referencyjna: 5,86 zł za litr\nPoprzednia cena referencyjna: 5,74 zł za litr\nCzas pomiaru: 30.01.2027, godzina 18:00\n\nTen alert został wygenerowany automatycznie zgodnie z ustawieniami Twojego konta w serwisie Magazyn Logistyka Dzis. Alert zostanie wysłany ponownie dopiero wtedy, gdy cena spadnie poniżej progu, a następnie znów go przekroczy. Ustawienia alertów możesz zmienić w panelu konta.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-036",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie zmiany ustawień powiadomień o cenach paliw",
+      "body": "Ustawienia powiadomień zostały zmienione\n\nZmiana ustawień powiadomień na Twoim koncie w serwisie Magazyn Logistyka Dzis została zapisana.\n\nZmiana: alert cen kart paliwowych zostanie teraz wysyłany raz dziennie o godzinie 8:00, a nie po każdej zmianie ceny.\nKonto: wiktor.szalewski@kordelan.test\nData zmiany: 30.01.2027, godzina 18:21\n\nJeżeli to nie Ty zmieniłeś ustawienia, zaloguj się do panelu konta i przywróć poprzednią konfigurację. Wiadomość została wysłana automatycznie, prosimy na nią nie odpowiadać.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-037",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Kalendarz rady - wizyta w magazynie w Poznaniu",
+      "body": "Szanowny Panie Prezesie,\n\ndla Pana wiadomości: wizyta członków rady w magazynie w Poznaniu została wpisana do kalendarza rady na 18.03.2027. Plan wizyty obejmuje obchód hali i spotkanie z kierownictwem magazynu.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-038",
+      "from": "Rafal Kwiecinski <rafal.kwiecinski@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Kierownik zmiany w Łodzi - Twoja decyzja",
+      "body": "Cześć Wiktorze,\n\nmam do Ciebie pytanie w sprawie obsady stanowiska kierownika zmiany w nowym magazynie w Łodzi. Mamy dwie możliwości. Pierwsza to awans wewnętrzny: kandydat z naszego magazynu w Poznaniu zna nasze procedury i system magazynowy, ale musielibyśmy szukać jego następcy w Poznaniu. Druga to ogłoszenie zewnętrzne, które potrwa dłużej, ale da nam większy wybór doświadczonych osób z rynku.\n\nDyrektor operacyjna widzi zalety obu rozwiązań i zostawia wybór Tobie. Czy wolisz, abyśmy awansowali kandydata z Poznania, czy abyśmy ogłosili rekrutację zewnętrzną? Czekam na Twoją odpowiedź, bo to ona wyznaczy dalszy plan rekrutacji.\n\nZ wyrazami szacunku | Rafal Kwiecinski | Dyrektor ds. Personalnych",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-039",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Informacja o przelewie przychodzącym i saldzie dnia",
+      "body": "Powiadomienie systemowe\n\nNa rachunek PL00-TEST-4821 wpłynął przelew przychodzący.\n\nKwota: 18 730,50 PLN\nNadawca: Nordic Foods Trade\nTytuł: Płatność za fakturę, usługa transportowa\nData księgowania: 30.01.2027\nStatus: zaksięgowany\n\nSaldo rachunku na koniec dnia operacyjnego będzie dostępne w panelu bankowości internetowej. Wiadomość została wygenerowana automatycznie i nie wymaga odpowiedzi. Bank nie prosi w wiadomościach e-mail o hasła ani kody autoryzacyjne. Jeżeli nie rozpoznajesz tej operacji, skorzystaj z procedury zgłaszania nieautoryzowanych transakcji opisanej w regulaminie rachunku, a szczegóły przelewu sprawdź w historii operacji.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-040",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Wspólna oferta - klauzula indeksacji paliwowej",
+      "body": "Szanowny Panie Prezesie,\n\nw nawiązaniu do mojej wcześniejszej wiadomości o klauzuli indeksacji paliwowej przekazuję krótki raport z postępu prac. Nasi prawnicy wpisali klauzulę do projektu umowy konsorcjum, z progiem zmiany ceny oleju napędowego na poziomie 7 procent, tak jak wynikało z rozmowy z zamawiającym.\n\nWzór obliczenia zmiany ceny opiera się na średniej z trzech ostatnich miesięcy, a rozliczenie odbywa się raz na kwartał. Zespół ofertowy z Rygi sprawdził ten mechanizm na danych z ubiegłego roku i nie widzi w nim zagrożeń dla marży. Projekt umowy trafi do Państwa prawników po zakończeniu naszego przeglądu. Do tego czasu nie ma żadnych decyzji do podjęcia po Pana stronie.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "daniel.hargreaves@baltic-freight-partners.test",
+          "subject": "Wspólna oferta - klauzula indeksacji paliwowej",
+          "body": "Szanowny Panie Prezesie,\n\nprzygotowując wspólną ofertę na przetarg bałtycki, zastanawiamy się, czy dodać do niej klauzulę indeksacji paliwowej. Zamawiający dopuszcza taką klauzulę, a ona chroniłaby obie nasze spółki przed gwałtownym wzrostem cen paliwa w trzyletnim okresie umowy.\n\nZ drugiej strony klauzula może obniżyć naszą konkurencyjność cenową, ponieważ pozostali oferenci zapewne zaproponują stałe stawki. Chciałbym poznać Pana opinię w tej sprawie: czy zgadza się Pan, aby w naszej ofercie znalazła się indeksacja paliwowa, i jeśli tak, to przy jakim progu zmiany ceny paliwa.\n\nBędę wdzięczny za odpowiedź pisemną.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners"
+        },
+        {
+          "from": "daniel.hargreaves@baltic-freight-partners.test",
+          "subject": "Re: Wspólna oferta - klauzula indeksacji paliwowej",
+          "body": "Dear Mr Szalewski,\n\nAn update on the fuel indexation clause. I spoke to the tender authority this morning, and they confirmed that the clause is allowed for the whole three-year period. They also told me that a threshold of 7 percent change in the diesel price is the most common in comparable tenders.\n\nI have noted both points in our working draft, so that you have them when we meet. Nothing needs to be decided today.\n\nDaniel Hargreaves"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-6-041",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Potwierdzenie płatności za subskrypcję raportu o cenach paliw",
+      "body": "Potwierdzenie płatności\n\nOtrzymaliśmy płatność za odnowienie subskrypcji Raport o cenach paliw i kartach paliwowych w serwisie Magazyn Logistyka Dzis.\n\nKonto: wiktor.szalewski@kordelan.test\nKwota: 149,00 PLN brutto\nOkres subskrypcji: od 1.02.2027 do 31.01.2028\nMetoda płatności: karta firmowa\nData płatności: 30.01.2027, godzina 20:11\n\nFaktura zostanie wystawiona automatycznie i wysłana na adres konta w ciągu trzech dni roboczych. Subskrypcją możesz zarządzać w panelu konta. Wiadomość została wygenerowana automatycznie i nie wymaga odpowiedzi.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-6-042",
+      "from": "Supply Chain Weekly <digest@supplychain-weekly.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Your Supply Chain Weekly subscription was renewed",
+      "body": "Receipt: your annual subscription to Supply Chain Weekly was renewed on 30.01.2027. Amount charged: EUR 79.00. An invoice is available in your account.\n\nSupply Chain Weekly | Unsubscribe | Manage preferences",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-001",
+      "from": "Premium Leads Pro <deals@premium-leads-pro.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zarabiaj 500 EUR dziennie bez wychodzenia z domu",
+      "body": "Dzień dobry!\n\nMamy dla Ciebie wyjątkową okazję, której nie możesz przegapić! Nasz system automatycznego inwestowania generuje średnio 500 EUR zysku dziennie, bez doświadczenia i bez wiedzy o rynkach. Wystarczy wpłacić 250 EUR na start, a pierwsze zyski zobaczysz jeszcze w tym tygodniu.\n\nSetki zadowolonych klientów już zarabia z nami. Oferta ważna tylko dla pierwszych 50 osób, a miejsc zostało bardzo mało. Odpowiedz na tę wiadomość słowem TAK, a nasz doradca przyśle Ci formularz rejestracyjny i instrukcję wpłaty.\n\nPremium Leads Pro | Sales Team",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-002",
+      "from": "Daniel Hargreaves <daniel.hargreaves@baltic-freight-partners.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Zmiany w unijnych przepisach o odprawach - uzupełnienie",
+      "body": "Szanowny Panie Prezesie,\n\nw nawiązaniu do mojej ostatniej wiadomości o zmianach w przepisach celnych przekazuję kolejne uzupełnienie, aby miał Pan aktualny obraz sytuacji. Nie oczekuję odpowiedzi ani decyzji, a wiadomość ma charakter wyłącznie informacyjny.\n\nPo pierwsze, numery EORI. Trzy firmy, które brakowało nam do kompletu na wspólnych trasach, uzupełniły już dane w nowym systemie. Obecnie wszystkich czternastu stałych odbiorców ma aktywne numery, a nasz dział celny przestał prowadzić osobną listę wyjątków.\n\nPo drugie, kontrole fizyczne. W tym tygodniu port w Gdyni skontrolował dwa kolejne nasze kontenery z żywnością. Oba zwolniono w ciągu jednego dnia roboczego, bez kar i bez uwag do dokumentów. Dzięki temu średni czas zwolnienia kontenera w styczniu spadł do około półtora dnia roboczego.\n\nPo trzecie, ceny agentów. Agent w Kłajpedzie potwierdził pisemnie, że podtrzymuje obecne stawki do końca marca, a agent w Gdyni nadal nie planuje zmian w cenniku. Zapytałem również o stawki na drugi kwartał i spodziewam się odpowiedzi w przyszłym tygodniu. Jeżeli pojawią się jakiekolwiek zmiany, uwzględnię je w kolejnym zestawieniu.\n\nNa koniec drobna informacja organizacyjna: nasz dział celny zakończył aktualizację tabeli terminów dla wszystkich tras i udostępni ją Państwa zespołowi, gdy tylko zostanie zatwierdzona przez naszego dyrektora operacyjnego. Tabela pomoże w planowaniu wysyłek w pierwszym kwartale.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners",
+      "thread": [
+        {
+          "from": "daniel.hargreaves@baltic-freight-partners.test",
+          "subject": "Zmiany w unijnych przepisach o odprawach - krótkie podsumowanie",
+          "body": "Szanowny Panie Prezesie,\n\nchciałbym podzielić się informacjami o zmianach w przepisach dotyczących odpraw celnych, które mogą dotyczyć naszych wspólnych tras. Zbieram je dla Pana wiadomości, nie oczekuję w tej chwili żadnych decyzji.\n\nPo pierwsze, od 1 kwietnia 2027 wszystkie zgłoszenia celne dla ładunków przewożonych drogą do krajów trzecich muszą być składane w systemie elektronicznym z numerem EORI zarówno nadawcy, jak i odbiorcy. Dotychczas dopuszczano uproszczoną procedurę dla stałych klientów, która wygasa z końcem marca.\n\nPo drugie, władze celne w portach bałtyckich wprowadziły w styczniu losowe kontrole fizyczne dla około 4 procent kontenerów z żywnością. Dotychczasowa praktyka w Kłajpedzie i Gdyni pokazuje, że kontrola wydłuża odprawę średnio o jeden dzień roboczy, bez dodatkowych opłat dla przewoźnika.\n\nPo trzecie, kilku agentów celnych zapowiedziało podwyżkę stawek za zgłoszenie o 5 do 8 procent od drugiego kwartału, tłumacząc to kosztami wdrożenia nowych systemów. Nasz główny agent w Gdyni potwierdził, że w tym roku nie zamierza zmieniać cennika dla stałych klientów.\n\nPozostaję do dyspozycji, gdyby chciał Pan wrócić do tych tematów przy okazji najbliższego spotkania wspólników, które planujemy na początku lutego.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners"
+        },
+        {
+          "from": "daniel.hargreaves@baltic-freight-partners.test",
+          "subject": "Re: Zmiany w unijnych przepisach o odprawach - uzupełnienie",
+          "body": "Szanowny Panie Prezesie,\n\nw nawiązaniu do mojej wcześniejszej wiadomości o zmianach w przepisach celnych przekazuję uzupełnienie, które zebrałem w ostatnich dniach. Nie oczekuję żadnej decyzji ani odpowiedzi, zależy mi tylko, aby miał Pan aktualny obraz sytuacji.\n\nPierwsza informacja dotyczy numerów EORI. Nasz dział celny sprawdził dane wszystkich stałych odbiorców na wspólnych trasach i okazało się, że dla 11 z 14 podmiotów numery są już zarejestrowane w nowym systemie. Pozostałe trzy firmy zadeklarowały, że uzupełnią dane do końca lutego.\n\nDruga informacja dotyczy kontroli fizycznych w portach. W styczniu skontrolowano 5 naszych kontenerów z żywnością, z czego cztery zwolniono w ciągu jednego dnia roboczego, a jeden po dwóch dniach z powodu braku oryginału świadectwa. Żadna z kontroli nie zakończyła się karą.\n\nTrzecia informacja dotyczy cen agentów. Nasz agent w Kłajpedzie podtrzymał stawki do końca marca, a agent w Gdyni, jak wcześniej pisałem, nie zmienia cennika w tym roku. Jeśli zajdą jakiekolwiek zmiany, uwzględnimy je w kolejnym zestawieniu tygodniowym. Nasz dział celny prowadzi też aktualną tabelę terminów dla wszystkich tras i udostępni ją zespołowi Państwa firmy, jeśli okaże się przydatna przy planowaniu pierwszego kwartału.\n\nKind regards | Daniel Hargreaves | Managing Partner | Baltic Freight Partners"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-7-003",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Limit kredytowy - stanowisko komitetu audytu",
+      "body": "Szanowny Panie Wiktorze,\n\ndla Pana informacji: bank potwierdził pisemnie warunki podwyższenia limitu kredytu obrotowego, o których pisałem wcześniej. Prowizja pozostaje na poziomie 0,4 procent od kwoty podwyżki, a pozostałe warunki nie zmieniły się w stosunku do oferty przedstawionej komitetowi audytu.\n\nSekretarz rady włączył sprawę do porządku najbliższego posiedzenia. Materiały w tej sprawie trafią do członków rady razem z pozostałymi dokumentami budżetowymi, w tym samym terminie. Komitet audytu nie zgłosił dodatkowych uwag, a kwestia wskaźników zadłużenia nie budzi wątpliwości po stronie rady.\n\nWiadomość ma charakter wyłącznie informacyjny i nie wymaga odpowiedzi.",
+      "thread": [
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Limit kredytowy - stanowisko zarządu",
+          "body": "Cześć Wiktorze,\n\nbank zaproponował podniesienie limitu kredytu obrotowego z 10 do 14 milionów złotych na czas zakupu naczep. Rada musi zająć stanowisko na posiedzeniu 3.02, a Twoja opinia będzie dla niej kluczowa, bo wyższy limit zwiększa zadłużenie spółki i zmienia wskaźniki, które monitoruje komitet audytu.\n\nCzy zarząd poprze wniosek o podniesienie limitu do 14 milionów? Proszę o odpowiedź na piśmie.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej"
+        },
+        {
+          "from": "z.orlowicz@rada-kordelan.test",
+          "subject": "Re: Limit kredytowy - stanowisko komitetu audytu",
+          "body": "Szanowny Panie Wiktorze,\n\ndla Pana wiadomości: komitet audytu zapoznał się z warunkami banku w sprawie podniesienia limitu kredytu obrotowego i nie zgłosił zastrzeżeń do wskaźników zadłużenia po zmianie. Komitet zwrócił uwagę tylko na prowizję banku, która wynosi 0,4 procent od kwoty podwyżki.\n\nRada rozpatrzy sprawę w pełnym składzie na najbliższym posiedzeniu, a materiały trafią do członków razem z pozostałymi dokumentami. Nie oczekuję odpowiedzi na tę wiadomość.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej"
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-7-004",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zmiana częstotliwości wysyłki zapisana",
+      "body": "Ustawienia konta zaktualizowane. Częstotliwość wysyłki powiadomień zmieniono na jeden raz dziennie. Wiadomość wygenerowano automatycznie, prosimy na nią nie odpowiadać.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-005",
+      "from": "Magazyn Logistyka Dzis <redakcja@logistyka-dzis.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Filtr alertów o kartach paliwowych został zapisany",
+      "body": "Nowy filtr alertów\n\nNa Twoim koncie w serwisie Magazyn Logistyka Dzis zapisano nowy filtr alertów o kartach paliwowych i cenach paliw.\n\nNazwa filtra: Karty paliwowe - flota\nZakres: ceny oleju napędowego i zmiany warunków kart paliwowych\nCzęstotliwość: raz dziennie o godzinie 8:00\nData zapisania: 31.01.2027, godzina 7:46\n\nAby wyłączyć filtr lub zmienić jego zakres, wejdź do ustawień konta. Wiadomość została wygenerowana automatycznie i nie wymaga odpowiedzi.\n\nRedakcja Logistyka Dzis | wypisz sie z listy",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-006",
+      "from": "Zbigniew Orlowicz <z.orlowicz@rada-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Board travel pack",
+      "body": "Hi Wiktor,\n\nplease ask Piotr Lewandrowski to send me the list of signed sales contracts for the board travel pack to Gdansk.\n\nZ powazaniem | Zbigniew Orlowicz | Przewodniczacy Rady Nadzorczej",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-007",
+      "from": "Powiadomienia Bankowe <noreply@bank-aurum.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Zrealizowano zlecenie stałe - limit dzienny",
+      "body": "Powiadomienie systemowe\n\nZlecenie stałe z rachunku PL00-TEST-4821 zostało zrealizowane.\n\nKwota: 7 500,00 PLN\nOdbiorca: Biuro rachunkowe Kordelan\nTytuł: Opłata miesięczna za obsługę\nData realizacji: 31.01.2027, godzina 8:05\nStatus: zrealizowane\n\nWykorzystanie dziennego limitu przelewów po tej operacji: 12 procent. Operacja została zatwierdzona zgodnie z zasadami autoryzacji ustawionymi dla rachunku firmowego. Wiadomość wygenerowano automatycznie i nie wymaga odpowiedzi. Szczegóły operacji znajdziesz w panelu bankowości internetowej w zakładce Historia. Bank nie prosi nigdy o podanie haseł.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-008",
+      "from": "Oliver Pemberton <oliver.pemberton@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Re: Dutch customs: AEO status",
+      "body": "Hi Wiktor,\n\nquick update on AEO for your info, no action needed from you. I went through the application checklist with compliance on Friday and we are further than I thought. 18 of 26 items are done, and the rest are mostly paperwork that our customs team can finish before the pre-audit meeting on 12.02.\n\nThe main open point was the list of our authorised persons for customs matters. Compliance sent the final version to the Dutch side yesterday and it was accepted without comments. That was the item I worried about most, because last year the same list took us almost three weeks to settle with the authorities.\n\nTwo other things you should know. First, the Dutch customs office told us that the pre-audit will take one full day and that they will check our warehouse in Gdansk and the export documents of the last twelve months. We pulled a sample of 40 export files and checked them ourselves. Only 2 had small typos in the product codes, and both are already corrected.\n\nSecond, our forwarder in Rotterdam offered to join the pre-audit meeting as a supporter. I think it is a good idea, because they know the local inspectors, but it is only an offer for now. I will send you the short plan after the meeting, as I said before. If something changes earlier, I will tell you straight away.\n\nCheers, Oliver | Head of Export | Kordelan Distribution",
+      "thread": [
+        {
+          "from": "oliver.pemberton@kordelan.test",
+          "subject": "Dutch customs: AEO status - your view please",
+          "body": "Hi Wiktor,\n\nI have been thinking about our customs setup for the Dutch and Swedish lanes and I want your view before I take it further. The question is whether we should apply for AEO status (the trusted trader certificate) for the whole company.\n\nThe pros are clear: fewer physical inspections, faster clearance at the ports and an easier time with big importers like Nordic Foods, who already asked about it twice. The cons are the effort and the cost. Our compliance guy estimates the application would take about four months, with roughly 25 thousand zloty for the audit and consultants, and the auditors would want a lot of paperwork from the warehouses in Gdynia and Poznan.\n\nMy own feeling is that it pays off within two years, but I am biased because I see the delays every week. Maybe the money is better spent on a second broker in Rotterdam instead. That is not my call to make, it is a budget decision.\n\nSo, do we apply for AEO this year or not? Could you answer me in writing so I can show it to the compliance team? No rush, but I would like to start planning the spring around your answer.\n\nCheers, Oliver | Head of Export | Kordelan Distribution"
+        },
+        {
+          "from": "oliver.pemberton@kordelan.test",
+          "subject": "Re: Dutch customs: AEO status",
+          "body": "Hi Wiktor,\n\nsmall update on AEO. Compliance sent me the application checklist today and the first pre-audit meeting is on 12.02. I will send you the short plan after that meeting."
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "w-7-009",
+      "from": "System ERP Kordelan <noreply@erp-kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "WMS synchronisation report - warehouse Poznan",
+      "body": "Automatic report\n\nThe scheduled synchronisation between the warehouse management system and the ERP finished on 31.01.2027 at 08:40.\n\nWarehouse: Poznan\nJob started: 08:30\nJob finished: 08:40\nDocuments synchronised: 1,246\nDocuments with warnings: 3\nErrors: 0\n\nThe three documents with warnings were delivery notes with a missing carrier code. The system applied the default carrier and marked the documents for review in the ERP panel under Warehouse - Synchronisation.\n\nThis message was sent automatically by System ERP Kordelan. Please do not reply to this address.",
+      "thread": [],
+      "attachments": []
+    },
+    {
+      "id": "w-7-010",
+      "from": "Halina Strzemecka <halina.strzemecka@kordelan.test>",
+      "to": [
+        "wiktor.szalewski@kordelan.test"
+      ],
+      "cc": [],
+      "subject": "Obsada magazynów - stan na koniec stycznia",
+      "body": "Cześć Wiktorze,\n\nkrótko o tym, jak wygląda obsada magazynów na koniec stycznia. Wiadomość jest tylko dla Twojej wiedzy, bez pytań i bez próśb o decyzję.\n\nPoznań: pełna obsada, 62 osoby na dwóch zmianach. Dwóch pracowników jest na zwolnieniu, ale agencja tymczasowa uzupełniła braki od poniedziałku. Absencja w styczniu wyniosła 4,1 procent, czyli o pół punktu mniej niż w grudniu.\n\nGdańsk: 48 osób, wszystkie etaty zajęte. Dwóch magazynierów zakończyło szkolenie na wózki wysokiego składu i od lutego będą pracować na nocnej zmianie. Dzięki temu nocna zmiana nie będzie już zależna od jednej osoby z uprawnieniami.\n\nŁódź: nowy magazyn nadal w fazie uruchamiania. Mamy 17 osób z docelowych 40. Rekrutacja idzie zgodnie z planem, a Rafał prowadzi rozmowy z kolejnymi kandydatami. Do końca lutego spodziewam się kolejnych dziewięciu osób, a resztę mamy w planie na marzec.\n\nDodatkowo: w styczniu zakończyliśmy okres próbny sześciu pracowników, z czego pięciu zostało z umowami na czas określony. Jedna osoba odeszła na własną prośbę. To normalny poziom rotacji w tym okresie.\n\nKolejne zestawienie przygotuję na koniec lutego. Gdyby coś ważnego zmieniło się wcześniej, dam Ci znać osobno.\n\nPozdrawiam | Halina Strzemecka | Dyrektor Operacyjny | Kordelan Dystrybucja",
+      "thread": [],
+      "attachments": []
+    }
+  ]
+}
