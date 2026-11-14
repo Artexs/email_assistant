@@ -289,3 +289,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: a wrong setting shows at once, not at the first judge call weeks later.
 - Undo: a small config change.
 - Source: `spec/features/done/2026-11/F090-llm-roles/questions.md` Q2.
+
+### 2026-11-15 · Read Sent: data requests erase sent mail; the operator may turn the switch on by CLI (F104) · privacy · new
+- Choice: `org:dsr --erase` treats sent mail as the F106 rule treats incoming mail (a sent mail whose only other party is the person is deleted and tombstoned; other sent mail loses the address). The operator may turn "Track my sent mail" on with the CLI, only on the owner's instruction. Turning it on or off writes an audit row, not a security-log entry.
+- Why: F106 landed first, so F104 adds the sent columns to its registries. Test organizations have no owner who taps the panel.
+- Undo: scrub only, drop stage 12 (Q11); the CLI turns the switch off only (Q13); add a security-log kind (Q12).
+- Source: `spec/features/planned/F104-e5a-read-sent/questions.md` Q11, Q12, Q13.

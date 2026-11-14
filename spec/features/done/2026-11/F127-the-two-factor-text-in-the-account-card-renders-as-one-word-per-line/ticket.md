@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-15
+landed: 2026-11-15
 ---
 
 # F127 · the two-factor text in the Account card renders as one word per line
