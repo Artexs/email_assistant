@@ -41,7 +41,7 @@ export function pluralCategory(locale: UserLocale, count: number): PluralCategor
 
 **Done when.** Tests 1–4 pass.
 
-**Out of scope.** Message texts (stage 05).
+**Out of scope.** Message texts (stages 06–11).
 
 ## Step 2 — The locale store, `t` and `tp`
 
@@ -79,7 +79,8 @@ const plurals: PluralTables = { en: enPlurals, pl: { /* each key: { one: en.one,
 export const LOCALE_STORAGE_KEY = "ea.locale";
 export function getLocale(): UserLocale;
 export function setLocale(locale: UserLocale): void; // D1: no-op when equal; else set, persist (try/catch), set <html lang>, notify
-export function initLocale(): UserLocale;            // D1: stored "pl"/"en", else localeOfLanguageTag(navigator.language)
+export function initLocale(): UserLocale;            // D1: stored "pl"/"en", else localeOfLanguageTag(navigator.language);
+                                                     // sets the current locale and <html lang>, notifies nobody, never writes storage
 export function subscribeLocale(listener: () => void): () => void;
 export function useLocale(): UserLocale;              // useSyncExternalStore(subscribeLocale, getLocale, () => "en")
 export function t(key: TextKey, vars?: Record<string, string | number>): string;   // same fill rule as today
@@ -131,7 +132,7 @@ Call sites: `count === 1 ? t("x_one") : t("x_many", { count })` becomes `tp("x",
 
 **Done when.** Both cases pass; `bun run web:build` and the full e2e suite pass.
 
-**Out of scope.** The sync with `me.user.locale` (stage 03).
+**Out of scope.** The sync with `me.user.locale` (stage 04).
 
 ## Step 4 — Titles, `<html lang>`, dates, legal links, the last literals
 
@@ -141,10 +142,10 @@ Call sites: `count === 1 ? t("x_one") : t("x_many", { count })` becomes `tp("x",
 
 **Interfaces.**
 
-- Layouts: prop `titleKey: TextKey` replaces `title: string`; the static `<title>` stays `{en[titleKey]} · {en.brand}` (English in the HTML file). Pages pass `titleKey="title_settings"` etc. The legal page passes its own title text (step 4 of stage 02 changes it); keep a `title` prop there or give `Public.astro` an optional `title?: string` that wins over `titleKey` — choose the smaller change and say which in the final message.
+- Layouts: prop `titleKey: TextKey` replaces `title: string`; the static `<title>` stays `{en[titleKey]} · {en.brand}` (English in the HTML file). Pages pass `titleKey="title_settings"` etc. The legal page passes its own title text (stage 03 changes it); keep a `title` prop there or give `Public.astro` an optional `title?: string` that wins over `titleKey` — choose the smaller change and say which in the final message.
 - `AppShell` (its `title: TextKey` prop) and `AuthCard` (`title: TextKey`): `const locale = useLocale(); useEffect(() => { document.title = `${t(title)} · ${t("brand")}`; }, [title, locale]);`.
 - `trialDateText(iso, timeZone)` uses `dateLocale()` instead of `"en-GB"`; its test sets the locale with `setLocaleForTest`.
-- `AccountCard`: the module-level `dateFormat` becomes a call inside render with `new Intl.DateTimeFormat(dateLocale(), { dateStyle: "medium" })`.
+- `AccountCard`: the module-level `dateFormat` becomes a call inside render with `new Intl.DateTimeFormat(getLocale() === "pl" ? "pl-PL" : undefined, { dateStyle: "medium" })`. English keeps today's browser default (`undefined`), so no English date changes (plan rule "English texts do not change").
 - `lib/legal.ts`: `legalLang` is removed; callers use `getLocale()` (a `LegalLang` is a `UserLocale`). `legal.test.ts` drops its `legalLang` cases and keeps the path cases.
 - `dialog.tsx` and `sheet.tsx`: `Close` → `{t("close")}`.
 
@@ -157,9 +158,9 @@ Call sites: `count === 1 ? t("x_one") : t("x_many", { count })` becomes `tp("x",
 
 **Check.** `bun test apps/web/src/lib apps/web/src/i18n`; `bun run typecheck`; `bun run lint`; `bun run web:build`.
 
-**Done when.** Tests pass; `grep -rn '"en-GB"\|Intl.DateTimeFormat(undefined' apps/web/src` finds only `i18n/index.ts`.
+**Done when.** Tests pass; `grep -rn '"en-GB"' apps/web/src` finds only `i18n/index.ts`, and `grep -rn 'Intl.DateTimeFormat(undefined' apps/web/src` finds nothing.
 
-**Out of scope.** `formatClock` (core, stage 05). The Polish dictionary (stage 02).
+**Out of scope.** `formatClock` (core, stage 06). The Polish dictionary (stage 02).
 
 ## Stage done when
 

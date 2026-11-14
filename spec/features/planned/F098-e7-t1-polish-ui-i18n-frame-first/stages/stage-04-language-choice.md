@@ -1,14 +1,14 @@
-# F098 stage 03 — The language choice
+# F098 stage 04 — The language choice
 
-Part of [`../plan.md`](../plan.md). Decisions: P1, P2, P3, D1, D3, D8. Needs stage 02 landed. Lands on the worker's proof. Three steps.
+Part of [`../plan.md`](../plan.md). Decisions: P1, P2, P3, D1, D3, D8. Needs stage 02 landed (stage 03 may run next to it). Lands on the worker's proof. Three steps.
 
-After this stage the Account card has a language select. The choice is stored in `users.locale`, the panel switches at once, and the panel takes the stored choice after every sign-in on any device. Telegram reads the same column (it switches to Polish texts in stage 08); the auth mails read it already.
+After this stage the Account card has a language select. The choice is stored in `users.locale`, the panel switches at once, and the panel takes the stored choice after every sign-in on any device. Telegram reads the same column (it switches to Polish texts in stage 12); the auth mails read it already.
 
 ## Step 1 — `user.locale` in `/api/me` and `PATCH /api/me/locale`
 
 **Goal.** The server returns and stores the choice (D8).
 
-**Files.** `packages/core/src/web/me.ts` (the schema and `localeBodySchema`), `apps/server/src/modules/tenancy/{repo,routes,index}.ts`, `apps/server/src/platform/http.ts` (`SUSPENDED_WRITE_ALLOW`), `docs/code-patterns.md` (the list of user-scoped tenancy functions that take no `TenantContext`: add `setUserLocale` next to `getUserAuthProfile`; `grep -n "getUserAuthProfile" docs/code-patterns.md` finds the list). New test: `apps/server/test/integration/web-locale.test.ts`. Tests that build a `Me` object fail `bun run typecheck` until they get `locale`: add `locale: null` there and nothing else (`apps/server/test/integration/telegram-helpers.ts`, `web-onboarding.test.ts`, and any other file the typecheck lists).
+**Files.** `packages/core/src/web/me.ts` (the schema and `localeBodySchema`), `apps/server/src/modules/tenancy/{repo,routes,index}.ts`, `apps/server/src/platform/http.ts` (`SUSPENDED_WRITE_ALLOW`), `docs/code-patterns.md` (the list of user-scoped tenancy functions that take no `TenantContext`: add `setUserLocale` next to `getUserAuthProfile`; `grep -n "getUserAuthProfile" docs/code-patterns.md` finds the list). New test: `apps/server/test/integration/web-locale.test.ts`. Tests that build a `Me` object fail `bun run typecheck` until they get `locale`: add `locale: null` there and nothing else (`bun run typecheck` lists them; `grep -rln "meSchema\|: Me\b" apps packages` finds the readers).
 
 **Interfaces.**
 
@@ -26,7 +26,7 @@ export async function setUserLocale(db: DbOrTrx, userId: string, locale: UserLoc
 - `GET /me`: `user.locale = profile?.locale ?? null` (the route reads `getUserAuthProfile` already).
 - `PATCH /me/locale` in `tenancyRoutes`: `parseBody(c, localeBodySchema)` → `setUserLocale(deps.db, c.get("session").userId, body.locale)` → `false` gives 404 `not_found`, else 204. No `requireOwner`; no audit row.
 - `SUSPENDED_WRITE_ALLOW` gets `{ method: "PATCH", path: /^\/api\/me\/locale$/ }`; extend the comment above the list: the language, like the terms, changes no mail and no organization data.
-- `apps/server/test/integration/web-suspended.test.ts` lists every write route and fails on a new one: add `"PATCH /api/me/locale"` to `WRITE_ROUTES` (keep the sort order) and to `ALLOWED_WHEN_SUSPENDED`, and change the count in its comment ("The 18 write routes" → 19).
+- `apps/server/test/integration/web-suspended.test.ts` lists every write route and fails on a new one: add `"PATCH /api/me/locale"` to `ALLOWED_WHEN_SUSPENDED` only (next to `"POST /api/me/terms"`, which is not in `WRITE_ROUTES` either). The test compares the found routes with `[...WRITE_ROUTES, ...ALLOWED_WHEN_SUSPENDED]`, so a route in both lists fails it. The count comment of `WRITE_ROUTES` (18) stays.
 
 **Decisions.** D8, P3.
 
@@ -44,7 +44,7 @@ export async function setUserLocale(db: DbOrTrx, userId: string, locale: UserLoc
 
 **Done when.** Tests 1–7 pass; `web-me.test.ts` and `web-suspended.test.ts` pass.
 
-**Out of scope.** Telegram (stage 08). Any audit row.
+**Out of scope.** Telegram (stage 12). Any audit row.
 
 ## Step 2 — The panel takes the stored choice
 
@@ -105,4 +105,4 @@ useEffect(() => {
 ## Stage done when
 
 - Steps 1–3 are done.
-- The Proof chain for page stages in `plan.md` § Proof (with `NN` = 03) prints `PROOF_OK`.
+- The Proof chain for page stages in `plan.md` § Proof (with `NN` = 04) prints `PROOF_OK`.

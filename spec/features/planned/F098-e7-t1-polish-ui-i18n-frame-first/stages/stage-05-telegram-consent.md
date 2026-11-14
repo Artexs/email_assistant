@@ -1,6 +1,6 @@
-# F098 stage 04 — Telegram consent in the link step [risky]
+# F098 stage 05 — Telegram consent in the link step [risky]
 
-Part of [`../plan.md`](../plan.md). Decisions: P4, P6, D14. Needs stage 03 landed (the Polish dictionary and the settings page as stage 03 left them). Review job before the land. One step (`[risky]`: a privacy gate).
+Part of [`../plan.md`](../plan.md). Decisions: P4, P6, D14. Needs stage 04 landed (both add keys to `en.ts`/`pl.ts` and `SAME_IN_BOTH`; `TelegramLink` sits on the Mailboxes and Onboarding pages). Review job before the land. One step (`[risky]`: a privacy gate).
 
 After this stage nobody gets a Telegram link from the panel without the consent tick, and each accepted link request leaves an audit row with the consent version.
 
@@ -81,4 +81,4 @@ Web keys (en / pl; copy word for word):
 ## Stage done when
 
 - Step 1 is done.
-- The Proof chain for page stages in `plan.md` § Proof (with `NN` = 04) prints `PROOF_OK`.
+- The Proof chain for page stages in `plan.md` § Proof (with `NN` = 05) prints `PROOF_OK`.

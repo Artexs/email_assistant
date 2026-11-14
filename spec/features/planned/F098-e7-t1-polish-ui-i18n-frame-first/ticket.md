@@ -12,7 +12,7 @@ The web panel and the Telegram bot speak Polish or English, in the language of e
 
 - Panel i18n frame: a locale store, `t()` and plurals per locale, a Polish dictionary with every English key, the language rule (S6 master plan D12, PD-037). Starting seam: `apps/web/src/i18n/`.
 - The Account choice and `user.locale` in `/api/me`; the panel switches without a reload.
-- Telegram texts and the server phrases that the panel shows, in one core texts registry (en, pl), switched on at once in the last stage.
+- Telegram texts and the server phrases that the panel shows, in one core texts registry (en, pl), switched on at once in one late stage.
 - The Telegram consent text in the link step (S6 master plan D27; the agent's draft, P19).
 
 ## Out of scope
@@ -31,13 +31,13 @@ The web panel and the Telegram bot speak Polish or English, in the language of e
 
 ## Slices
 
-Eight stages, one worker job each: 01 panel frame; 02 Polish panel texts; 03 language choice; 04 `[risky]` Telegram consent; 05–07 core texts registry (clock, labels, answers; notices and approvals; digest and bot); 08 switch on, panel phrases, docs. Order, parallel rules and reviews: [plan.md](plan.md) § "How to run (coordinator)". No migration, no `bun.lock` change, no owner checkpoint, no owner step.
+Thirteen stages, one worker job each: 01 panel frame; 02 Polish dictionary; 03 static pages and the Polish browser spec; 04 language choice; 05 `[risky]` Telegram consent; 06–11 core texts registry (clock, labels, answers; action phrases; notices; approvals; digest; bot and command menu); 12 switch on; 13 panel phrases and docs. Order, parallel rules and reviews: [plan.md](plan.md) § "How to run (coordinator)". No migration, no `bun.lock` change, no owner checkpoint, no owner step.
 
 ## Sequenced
 
 - Plan after: none (the plan uses only landed code: the public login F082, feature flags F087, notices as facts F088).
 - Build after: F082 (in `spec/features/done/`).
-- Gate: — (`docs/product/stage-2/05-execution-plan.md` §2.1 row 4). Advisory file overlap: stages 05–07 edit `packages/core/src/{digest,notices}/` and `apps/server/src/modules/channels/`, which the repository split (F091) asks no other job to edit while one of its stages runs; stage 03 edits `AccountCard.tsx`, which the platform controls ticket (F099, security log) also edits.
+- Gate: — (`docs/product/stage-2/05-execution-plan.md` §2.1 row 4). Advisory file overlap: stages 06–11 edit `packages/core/src/{digest,notices,outgoing}/` and `apps/server/src/modules/channels/`, which the repository split (F091) asks no other job to edit while one of its stages runs (it already changed `digest/would-do.ts`); stage 04 edits `AccountCard.tsx`, which the platform controls ticket (F099, security log) also edits.
 
 ## Notes
 

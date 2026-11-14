@@ -1,14 +1,16 @@
-# F098 stage 05 — Core texts registry, part 1: clock, categories, answers, AI line, action phrases
+# F098 stage 06 — Core texts registry: clock, categories, answers, AI line
 
-Part of [`../plan.md`](../plan.md). Decisions: P6, P7, the glossary, D6, D9, D10, D11. Needs stage 02 landed (the Polish panel words that the tie tests compare). May run next to stages 03 and 04. Lands on the worker's proof. Three steps.
+Part of [`../plan.md`](../plan.md). Decisions: P6, P7, the glossary, D6, D9, D10, D11. Needs stage 02 landed (the Polish panel words that the tie tests compare). May run next to stages 03–05. Review job before the land (every render signature changes; new Polish texts). Two steps.
 
-After this stage the shared words of Telegram and the activity list (clock, category names, tap answers, the AI line, the "what the system does" phrase) live in `packages/core/src/texts/` in English and Polish. Every function that prints them takes a `texts: CoreTexts` argument. `textsFor(locale)` still returns English for every locale (the hold, D10), so no user sees a change. The panel's clock follows the panel locale at once (D6).
+After this stage the shared words of Telegram and the activity list (clock, category names, tap answers, the AI line) live in `packages/core/src/texts/` in English and Polish. Every function that prints them takes a `texts: CoreTexts` argument. `textsFor(locale)` still returns English for every locale (the hold, D10), so no user sees a change. The panel's clock follows the panel locale at once (D6). Stage 07 adds the action phrases.
+
+Size note: most of the diff is one added argument at about 150 call sites (`bun run typecheck` lists them). Do those edits mechanically; do not refactor the callers.
 
 ## Step 1 — The registry and the hold
 
 **Goal.** One place for message texts per locale, with type-enforced parity (D9, D10).
 
-**Files.** New: `packages/core/src/texts/{index,clock,categories,answers,ai-text,would-do}.ts`, `packages/core/src/texts/index.test.ts`. Changed: `packages/core/src/index.ts` (export `./texts`), `packages/core/src/web/index.ts` (export `textTables`, `type CoreTexts`, `categoryEmoji`, `categoryTag`, `formatClock`; remove the exports this stage deletes).
+**Files.** New: `packages/core/src/texts/{index,clock,categories,answers,ai-text}.ts`, `packages/core/src/texts/index.test.ts`. Changed: `packages/core/src/index.ts` (export `./texts`), `packages/core/src/web/index.ts` (export `textTables`, `type CoreTexts`, `categoryEmoji`, `categoryTag`, `formatClock`; remove the exports this stage deletes).
 
 **Interfaces.**
 
@@ -21,34 +23,34 @@ export interface CoreTexts {
   categories: CategoryTexts;
   answers: AnswerTexts;
   aiText: AiTextTexts;
-  wouldDo: WouldDoTexts;
+  // Stage 07 adds wouldDo; stages 08–11 add common, notices, approvals, digest, bot.
 }
 export const textTables: Record<UserLocale, CoreTexts> = {
-  en: { locale: "en", clock: clockTexts.en, categories: categoryTexts.en, answers: answerTexts.en, aiText: aiTextTexts.en, wouldDo: wouldDoTexts.en },
+  en: { locale: "en", clock: clockTexts.en, categories: categoryTexts.en, answers: answerTexts.en, aiText: aiTextTexts.en },
   pl: { locale: "pl", … .pl },
 };
-// Telegram and the panel phrases switch to Polish together in the last stage of
-// spec/features/<lane>/F098-e7-t1-polish-ui-i18n-frame-first/plan.md (D10); until then every locale gets English.
+// Telegram and the panel phrases switch to Polish together in stage 12 of the plan in the ticket folder
+// F098-e7-t1-polish-ui-i18n-frame-first (D10); until then every locale gets English.
 const POLISH_MESSAGES_ON = false;
 export function textsFor(locale: UserLocale): CoreTexts {
   return POLISH_MESSAGES_ON ? textTables[locale] : textTables.en;
 }
 ```
 
-Each section file: `export interface <Section>Texts {…}` and `export const <section>Texts = { en: {…}, pl: {…} } satisfies Record<UserLocale, <Section>Texts>;`. Text values that take arguments are functions. Stages 06 and 07 add sections the same way.
+Each section file: `export interface <Section>Texts {…}` and `export const <section>Texts = { en: {…}, pl: {…} } satisfies Record<UserLocale, <Section>Texts>;`. Text values that take arguments are functions. Stages 07–11 add sections the same way.
 
 **Decisions.** D9, D10.
 
 **Test.** `texts/index.test.ts`:
 
-1. `textsFor("en") === textTables.en`; `textsFor("pl") === textTables.en` (the hold; stage 08 changes this case); `textTables.pl.locale === "pl"`; `textTables.en.locale === "en"`.
+1. `textsFor("en") === textTables.en`; `textsFor("pl") === textTables.en` (the hold; stage 12 changes this case); `textTables.pl.locale === "pl"`; `textTables.en.locale === "en"`.
 2. A walk over `textTables.pl` and `textTables.en`: every string value (also in arrays) is non-empty; every function returns a non-empty string for the sample arguments the step tests use.
 
 **Check.** `bun test packages/core/src/texts`; `bun run typecheck`.
 
 **Done when.** Cases 1–2 pass.
 
-**Out of scope.** Notices and approvals (stage 06), digest and bot (stage 07).
+**Out of scope.** Action phrases (stage 07), notices and approvals (stages 08, 09), digest and bot (stages 10, 11).
 
 ## Step 2 — Clock, categories, answers, AI line
 
@@ -109,12 +111,12 @@ The Polish answer texts are the Polish panel texts, so the tie test of the panel
 
 Callers:
 
-- Core render functions that this stage does not move to `texts` yet (`digest/notices.ts`, `digest/approvals.ts`, `digest/digest.ts`) call `formatClock(…, "en")`, `formatDay(…, "en")` and `categoryTag(c, textTables.en)` with the comment `// The next stage of the Polish UI plan passes the texts of the row.` Stages 06 and 07 replace these.
+- Core render functions that this stage does not move to `texts` yet (`digest/notices.ts`, `digest/approvals.ts`, `digest/digest.ts`) call `formatClock(…, "en")`, `formatDay(…, "en")` and `categoryTag(c, textTables.en)` with the comment `// The next stage of the Polish UI plan passes the texts of the row.` Stages 08–10 replace these.
 - `notices/renderers.ts` (urgent): `aiTextFor(…, textsFor(opts.locale))`.
 - `outgoing/quote.ts:23`: `formatDay(at, timezone, "en")` (the outgoing quote keeps its own Polish branch, plan P7).
 - `channels/callbacks.ts`: `textsFor(link.locale)` once per tap, passed to `categoryTag`, `rightAnswer`, `pickAnswer`, `pickedText`, the undo answer (`texts.answers.undo[kind]`), and `formatClock(…, texts.locale)`.
-- `channels/commands.ts`: `formatClock(…, "en")`, `formatDay(…, "en")` with the same comment (stage 07 moves `/status`).
-- `reports/activity.ts`: `textsFor("en")` with the comment `// The last stage of the Polish UI plan uses the request locale.`; `reports/digest.ts`: `textTables.en` with the stage-07 comment.
+- `channels/commands.ts`: `formatClock(…, "en")`, `formatDay(…, "en")` with the same comment (stage 11 moves `/status`).
+- `reports/activity.ts` (`aiTextFor`): `textsFor("en")` with the comment `// Stage 13 of the Polish UI plan uses the request locale.`; `reports/digest.ts` (`aiTextFor`): `textTables.en` with the comment of the first bullet (stage 10 replaces it).
 - The panel: every `formatClock(…)` gets `getLocale()` from `../i18n` (or `useLocale()` where a component already calls it). `MailboxCard`, `TelegramLink`, `ActivityRow`, `ActivityPanel`, `ActivityPage`, `MailboxesPage`, `RulesPage`.
 
 **Decisions.** D6, D9, D11, P7.
@@ -131,76 +133,9 @@ Callers:
 
 **Done when.** Cases 1–5 pass; every old test passes with only the added `texts`/locale argument.
 
-**Out of scope.** Moving whole render functions (stages 06, 07).
-
-## Step 3 — The action phrases
-
-**Goal.** "What the system does or would do" in both languages, without English word order in Polish (D11).
-
-**Files.** `packages/core/src/digest/would-do.ts` (+ `would-do.test.ts`), `packages/core/src/texts/would-do.ts`, the callers that `bun run typecheck` lists (`notices/renderers.ts`, `reports/activity.ts`, `reports/digest.ts`, `would-do.test.ts`, `digest.test.ts`).
-
-**Interfaces.**
-
-```ts
-// texts/would-do.ts
-export type ActionTense = "would" | "will" | "done" | "undone" | "failed";
-export type SendPhraseStatus = "logged" | "awaiting_approval" | "approved" | "applying" | "applied" | "rejected" | "expired" | "failed";
-export type DraftKind = "delegation" | "clarification" | "reminder";
-export interface WouldDoTexts {
-  tense: Record<ActionTense, string>;
-  flag: (tense: ActionTense) => string;
-  markRead: (tense: ActionTense) => string;
-  move: (tense: ActionTense, folder: string | null) => string;
-  draft: (tense: ActionTense, kind: DraftKind, name: string | null) => string;
-  send: Record<SendPhraseStatus, string>;
-  staysIn: (folder: string) => string;
-}
-```
-
-`would-do.ts` keeps the status → tense maps (`TENSES`, `DRAFT_TENSES`) but their values become `ActionTense` keys (`logged` → `would`; `ready`, `applying`, `awaiting_approval`, `approved` → `will`; `applied` → `done`; `undone` → `undone`; `failed` → `failed`). The composition stays: groups by tense in first-seen order, `${texts.wouldDo.tense[tense]} ${phrases.join(", ")}`, sends after the groups, no phrase twice in a row, parts joined with `"; "`. A draft whose `kind` is null uses `"delegation"`. Signatures:
-
-```ts
-export function describeAction(action: WouldDoAction, names: ReadonlyMap<string, string>, texts: CoreTexts): string | null;
-export function describeActions(actions: readonly WouldDoAction[], names: ReadonlyMap<string, string>, opts: { stayFolder?: string }, texts: CoreTexts): string;
-```
-
-(No defaults: every caller passes all four.) The folder in `move` is `MOVE_TARGET_NAMES[folder]` (an IMAP folder name, plan P7); `staysIn` gets `opts.stayFolder` cut to 30 characters or `"INBOX"`.
-
-Text tables (copy word for word):
-
-| Entry | en (today's output) | pl |
-| --- | --- | --- |
-| `tense` | would · will · done: · undone: · failed: | zrobiłby: · zrobi: · zrobione: · cofnięte: · nieudane: |
-| `flag(t)` | flag | would, will: "oznaczyć flagą"; done, undone, failed: "oznaczenie flagą" |
-| `markRead(t)` | mark read | would, will: "oznaczyć jako przeczytaną"; else "oznaczenie jako przeczytanej" |
-| `move(t, null)` | move | would, will: "przenieść"; else "przeniesienie" |
-| `move(t, f)` | `move to ${f}` | would, will: `przenieść do ${f}`; else `przeniesienie do ${f}` |
-| `draft(t, "clarification", _)` | draft a question to the sender | would, will: "przygotować szkic pytania do nadawcy"; else "szkic pytania do nadawcy" |
-| `draft(t, "reminder", n)` | `draft a reminder to ${n ?? "a delegate"}` | would, will: `przygotować szkic przypomnienia` + (n ? ` (wykonawca: ${n})` : ""); else `szkic przypomnienia` + the same suffix |
-| `draft(t, "delegation", n)` | `draft a delegation to ${n ?? "a delegate"}` | would, will: `przygotować szkic zlecenia` + (n ? ` (wykonawca: ${n})` : ""); else `szkic zlecenia` + the same suffix |
-| `send` | logged "would ask you to send it", awaiting_approval "waits for your approval", approved "approved, sending", applying "sending", applied "sent", rejected "rejected", expired "not sent (approval expired)", failed "not sent (failed)" | "poprosiłby Cię o wysłanie", "czeka na Twoje zatwierdzenie", "zatwierdzone, wysyłanie", "wysyłanie", "wysłane", "odrzucone", "niewysłane (zatwierdzenie wygasło)", "niewysłane (błąd)" |
-| `staysIn(f)` | `stays in ${f}` | `zostaje w ${f}` |
-
-The name in parentheses avoids a Polish case ending on a name we cannot decline.
-
-**Decisions.** D11.
-
-**Test.** `would-do.test.ts`: every old case gets `textTables.en` and keeps its expected text (byte-identical). New `pl` cases (`names = new Map([["d1", "Jan"]])`):
-
-1. One `move` `logged` to the folder key of `AI/Newsletters` (use the key whose `MOVE_TARGET_NAMES` value the old tests use) → `"zrobiłby: przenieść do <that name>"`.
-2. `move` `applied` + `flag` `applied` → `"zrobione: przeniesienie do <name>, oznaczenie flagą"`.
-3. `create_draft` `ready` kind `delegation` delegate `d1` → `"zrobi: przygotować szkic zlecenia (wykonawca: Jan)"`; delegate unknown → `"zrobi: przygotować szkic zlecenia"`.
-4. `send` `awaiting_approval` → `"czeka na Twoje zatwierdzenie"`.
-5. No actions, `stayFolder` undefined → `"zostaje w INBOX"`.
-6. `describeAction` of a `mark_read` `failed` → `"nieudane: oznaczenie jako przeczytanej"`.
-
-**Check.** `bun test packages/core/src`; `bun run typecheck`; `bun test apps/server/test/integration/reports-activity.test.ts apps/server/test/integration/reports-digest.test.ts apps/server/test/integration/channels-notices.test.ts`.
-
-**Done when.** Cases 1–6 pass; old cases pass unchanged except the argument.
-
-**Out of scope.** Panel phrases per request locale (stage 08).
+**Out of scope.** Moving whole render functions (stages 07–11).
 
 ## Stage done when
 
-- Steps 1–3 are done; `grep -rn "categoryLabels\|UNDO_TEXTS" apps packages --include=*.ts --include=*.tsx` finds nothing.
-- The Proof chain for page stages in `plan.md` § Proof (with `NN` = 05) prints `PROOF_OK` (the panel's clock changed, so the build and the e2e suite run).
+- Steps 1–2 are done; `grep -rn "categoryLabels\|UNDO_TEXTS" apps packages --include=*.ts --include=*.tsx` finds nothing.
+- The Proof chain for page stages in `plan.md` § Proof (with `NN` = 06) prints `PROOF_OK`. (the panel's clock changed, so the build and the e2e suite run).
