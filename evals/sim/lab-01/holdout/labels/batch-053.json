@@ -26,13 +26,13 @@
     },
     {
       "id": "h-de-06",
-      "category": "info",
-      "blindHash": "21031e3a6e924cb149455940a2a47975379b955c668d038474fb8a1c88355f7c"
+      "category": "notification",
+      "blindHash": "95c7dd8bb50fd8e8ca27eb887f4143869937d3bd72f53cf2a6ba4f111ddbace9"
     },
     {
       "id": "h-de-07",
-      "category": "delegation",
-      "blindHash": "dbb55db0066ae615393780e6ca8e22b454329eda05dd2bae4cb339d841e95e34"
+      "category": "needs_reply",
+      "blindHash": "1367d52011e0d3461b909a66b125e1dc19f0643a66446b507a30427cffc524df"
     },
     {
       "id": "h-de-08",
@@ -106,8 +106,8 @@
     },
     {
       "id": "h-fwd-08",
-      "category": "delegation",
-      "blindHash": "91d3ce8dea36581eddcdc46c233b31c352b1d61116d2aa69cf639aa19f504d77"
+      "category": "needs_reply",
+      "blindHash": "74ca864cfd8e95399f9b4cc0ba6f39d3921e71a2ad1761df9619e19b67f29e1d"
     },
     {
       "id": "h-fwd-09",
@@ -121,8 +121,8 @@
     },
     {
       "id": "h-html-01",
-      "category": "info",
-      "blindHash": "f19d12dade5b9d884868de3f220074aa75d127a62d86fbde56b8f90c6dc1a054"
+      "category": "notification",
+      "blindHash": "ceb302565cb1282343bb9e500663db800d2aa6889b327127294dcb3d1b7326ed"
     },
     {
       "id": "h-html-03",
