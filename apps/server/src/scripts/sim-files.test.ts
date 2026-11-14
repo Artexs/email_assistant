@@ -22,7 +22,14 @@ import {
   writeJson,
   writeSlots,
 } from "./sim-files";
-import { createMiniCorpus, fixtureText, miniPlanSpec, runSimCli, type MiniCorpus } from "./sim-fixtures.test-helper";
+import {
+  createMiniCorpus,
+  fixtureText,
+  miniPlanSpec,
+  runSimCli,
+  runSimInProcess,
+  type MiniCorpus,
+} from "./sim-fixtures.test-helper";
 
 let corpus: MiniCorpus | undefined;
 afterEach(() => {
@@ -35,7 +42,7 @@ async function planned(): Promise<MiniCorpus> {
   return corpus;
 }
 
-const sim = (c: MiniCorpus, ...args: string[]) => runSimCli([...args, "--root", c.root]);
+const sim = (c: MiniCorpus, ...args: string[]) => runSimInProcess([...args, "--root", c.root]);
 
 function slotsOf(c: MiniCorpus, part: SimPart, batch: string): Slot[] {
   return readSlots(c.dir, part).filter((slot) => slot.batch === batch);
@@ -96,7 +103,7 @@ describe("file layer", () => {
 describe("plan and status", () => {
   test("1 plan writes the three parts and history; a second plan needs --force and rewrites identical files", async () => {
     corpus = await createMiniCorpus();
-    const first = sim(corpus, "plan", "mini");
+    const first = await sim(corpus, "plan", "mini");
     expect(first.code).toBe(0);
     expect(first.stdout).toMatch(/^part dev slots \d+ batches 2$/m);
     expect(first.stdout).toMatch(/^part holdout slots \d+ batches \d+$/m);
@@ -111,10 +118,10 @@ describe("plan and status", () => {
       );
     const before = snapshot();
     const history = readFileSync(join(corpus.dir, "week", "history.json"), "utf8");
-    const again = sim(corpus, "plan", "mini");
+    const again = await sim(corpus, "plan", "mini");
     expect(again.code).toBe(1);
     expect(again.stdout).toContain("slots exist: use --force");
-    expect(sim(corpus, "plan", "mini", "--force").code).toBe(0);
+    expect((await sim(corpus, "plan", "mini", "--force")).code).toBe(0);
     expect(snapshot()).toEqual(before);
     expect(readFileSync(join(corpus.dir, "week", "history.json"), "utf8")).toBe(history);
   });
@@ -122,7 +129,7 @@ describe("plan and status", () => {
   test("2 plan --force is refused once a texts file exists", async () => {
     const c = await planned();
     writeCleanBatch(c);
-    const result = sim(c, "plan", "mini", "--force");
+    const result = await sim(c, "plan", "mini", "--force");
     expect(result.code).toBe(1);
     expect(result.stdout).toContain("texts exist: re-plan not allowed");
   });
@@ -130,7 +137,7 @@ describe("plan and status", () => {
   test("3 status after plan counts the slots and writes nothing", async () => {
     const c = await planned();
     const bank = planBank(miniScenario, miniPlanSpec);
-    const result = sim(c, "status", "mini");
+    const result = await sim(c, "status", "mini");
     expect(result.code).toBe(0);
     for (const [part, slots] of [
       ["dev", bank.dev],
@@ -160,7 +167,7 @@ describe("plan and status", () => {
 describe("brief", () => {
   test("prints the facts of one batch: scenario, the personas it uses, delegates, slots", async () => {
     const c = await planned();
-    const result = sim(c, "brief", "mini", "--part", "dev", "--batch", "001");
+    const result = await sim(c, "brief", "mini", "--part", "dev", "--batch", "001");
     expect(result.code).toBe(0);
     const out = JSON.parse(result.stdout) as {
       scenario: { company: unknown; topics: unknown[] };
@@ -174,7 +181,7 @@ describe("brief", () => {
     const used = new Set(out.slots.flatMap((slot) => [slot.persona, ...slot.thread.map((t) => t.persona)]));
     used.delete(miniScenario.executive.key);
     expect(out.personas.map((p) => p.key).sort()).toEqual([...used].sort());
-    expect(sim(c, "brief", "mini", "--part", "dev", "--batch", "009").code).toBe(1);
+    expect((await sim(c, "brief", "mini", "--part", "dev", "--batch", "009")).code).toBe(1);
   });
 });
 
@@ -182,7 +189,7 @@ describe("check", () => {
   test("1 clean texts give ok and exit 0", async () => {
     const c = await planned();
     writeCleanBatch(c);
-    const result = sim(c, "check", "mini", "--part", "dev", "--batches", "1-1");
+    const result = await sim(c, "check", "mini", "--part", "dev", "--batches", "1-1");
     expect(result.stdout).toBe("ok\n");
     expect(result.code).toBe(0);
   });
@@ -192,7 +199,7 @@ describe("check", () => {
     const { texts } = writeCleanBatch(c);
     const first = texts[0] as CaseText;
     writeTexts(c, "dev", "batch-001", [{ ...first, body: `${first.body}\ntel. 600 700 800` }, ...texts.slice(1)]);
-    const result = sim(c, "check", "mini", "--part", "dev", "--batches", "1-1");
+    const result = await sim(c, "check", "mini", "--part", "dev", "--batches", "1-1");
     expect(result.code).toBe(1);
     expect(result.stdout).toContain(`case ${first.id} phone_number`);
     expect(result.stdout).toMatch(/issues \d+/);
@@ -204,7 +211,7 @@ describe("check", () => {
     const { texts } = writeCleanBatch(c);
     const [dropped, ...rest] = texts as [CaseText, ...CaseText[]];
     writeTexts(c, "dev", "batch-001", [...rest, { ...dropped, id: "b-zzz-9999" }]);
-    const result = sim(c, "check", "mini", "--part", "dev", "--batches", "1-1");
+    const result = await sim(c, "check", "mini", "--part", "dev", "--batches", "1-1");
     expect(result.code).toBe(1);
     expect(result.stdout).toContain("case b-zzz-9999 slot_unknown");
     expect(result.stdout).toContain(`case ${dropped.id} text_missing`);
@@ -220,7 +227,7 @@ describe("check", () => {
         slotsOf(c, "dev", batch).map((slot) => fixtureText(slot))
       );
     }
-    expect(sim(c, "check", "mini", "--part", "dev").stdout).toBe("ok\n");
+    expect((await sim(c, "check", "mini", "--part", "dev")).stdout).toBe("ok\n");
     for (const batch of ["batch-001", "batch-002"]) {
       writeTexts(
         c,
@@ -229,18 +236,18 @@ describe("check", () => {
         slotsOf(c, "dev", batch).map((slot) => fixtureText({ ...slot, style: { ...slot.style, length: "long" } }))
       );
     }
-    expect(sim(c, "check", "mini", "--part", "dev").stdout).toMatch(/^spread dev length_share \d+/m);
+    expect((await sim(c, "check", "mini", "--part", "dev")).stdout).toMatch(/^spread dev length_share \d+/m);
   });
 
   test("a range with no texts says so and exits 1; an invalid file names its path", async () => {
     const c = await planned();
-    expect(sim(c, "check", "mini", "--part", "dev", "--batches", "1-2")).toMatchObject({
+    expect(await sim(c, "check", "mini", "--part", "dev", "--batches", "1-2")).toMatchObject({
       code: 1,
       stdout: "nothing written in range\n",
     });
     mkdirSync(join(c.dir, "dev", "texts"), { recursive: true });
     writeFileSync(join(c.dir, "dev", "texts", "batch-001.json"), JSON.stringify({ cases: "do-not-print" }));
-    const result = sim(c, "check", "mini", "--part", "dev", "--batches", "1-1");
+    const result = await sim(c, "check", "mini", "--part", "dev", "--batches", "1-1");
     expect(result.code).toBe(1);
     expect(result.stdout).toContain("dev/texts/batch-001.json");
     expect(result.stdout).not.toContain("do-not-print");
@@ -251,7 +258,7 @@ describe("blind view and labels", () => {
   test("4 blind-export writes a file that parses and holds no slot field", async () => {
     const c = await planned();
     writeCleanBatch(c);
-    const result = sim(c, "blind-export", "mini", "--part", "dev", "--batches", "1-1");
+    const result = await sim(c, "blind-export", "mini", "--part", "dev", "--batches", "1-1");
     expect(result.code).toBe(0);
     const raw = readFileSync(join(c.dir, "dev", "blind", "batch-001.json"), "utf8");
     const blind = blindBatchFileSchema.parse(JSON.parse(raw));
@@ -270,14 +277,16 @@ describe("blind view and labels", () => {
     const slot = readSlots(c.dir, part ?? "dev").find((s) => s.hardCases.includes("html_only")) as Slot;
     writeTexts(c, slot.part, slot.batch, [fixtureText(slot)]);
     expect(
-      sim(
-        c,
-        "blind-export",
-        "mini",
-        "--part",
-        slot.part,
-        "--batches",
-        `${Number(slot.batch.slice(6))}-${Number(slot.batch.slice(6))}`
+      (
+        await sim(
+          c,
+          "blind-export",
+          "mini",
+          "--part",
+          slot.part,
+          "--batches",
+          `${Number(slot.batch.slice(6))}-${Number(slot.batch.slice(6))}`
+        )
       ).code
     ).toBe(0);
     const blind = blindBatchFileSchema.parse(
@@ -293,9 +302,9 @@ describe("blind view and labels", () => {
     const other = valueCategories.find((category) => category !== wrong.category);
     const labelFile = (ids: Slot[], bad: boolean) =>
       JSON.stringify(ids.map((s) => ({ id: s.id, category: bad && s.id === wrong.id ? other : s.category })));
-    expect(sim(c, "blind-export", "mini", "--part", "dev", "--batches", "1-1").code).toBe(0);
+    expect((await sim(c, "blind-export", "mini", "--part", "dev", "--batches", "1-1")).code).toBe(0);
     writeFileSync(join(c.root, "labels.json"), labelFile(slots, true));
-    const imported = sim(
+    const imported = await sim(
       c,
       "label-import",
       "mini",
@@ -310,47 +319,49 @@ describe("blind view and labels", () => {
     );
     expect(imported.code).toBe(0);
     const range = ["--part", "dev", "--batches", "1-1"];
-    expect(sim(c, "reconcile", "mini", ...range).stdout).toBe(
+    expect((await sim(c, "reconcile", "mini", ...range)).stdout).toBe(
       `disagree ${wrong.id} slot ${wrong.category} blind ${other} round 1\n`
     );
-    expect(sim(c, "stale", "mini", ...range).stdout).toBe("");
-    expect(sim(c, "check", "mini", ...range).stdout).toBe("ok\n");
+    expect((await sim(c, "stale", "mini", ...range)).stdout).toBe("");
+    expect((await sim(c, "check", "mini", ...range)).stdout).toBe("ok\n");
 
     const first = texts[0] as CaseText;
     const rewrite = (patch: Partial<CaseText>) =>
       writeTexts(c, "dev", "batch-001", [{ ...first, ...patch }, ...texts.slice(1)]);
     rewrite({ body: `${first.body}\nTo jest nowe zdanie, ale nie ma w nim nic więcej.`, note: "rewritten: clearer" });
-    expect(sim(c, "blind-export", "mini", ...range).code).toBe(0);
-    expect(sim(c, "stale", "mini", ...range).stdout).toBe(`stale ${wrong.id}\n`);
-    expect(sim(c, "reconcile", "mini", ...range).stdout).toBe("");
-    const stale = sim(c, "check", "mini", ...range);
+    expect((await sim(c, "blind-export", "mini", ...range)).code).toBe(0);
+    expect((await sim(c, "stale", "mini", ...range)).stdout).toBe(`stale ${wrong.id}\n`);
+    expect((await sim(c, "reconcile", "mini", ...range)).stdout).toBe("");
+    const stale = await sim(c, "check", "mini", ...range);
     expect(stale.code).toBe(1);
     expect(stale.stdout).toContain(`case ${wrong.id} label_stale`);
 
     writeFileSync(join(c.root, "again.json"), JSON.stringify([{ id: wrong.id, category: other }]));
     expect(
-      sim(
-        c,
-        "label-import",
-        "mini",
-        "--part",
-        "dev",
-        "--batch",
-        "1",
-        "--checker",
-        "haiku",
-        "--file",
-        join(c.root, "again.json")
+      (
+        await sim(
+          c,
+          "label-import",
+          "mini",
+          "--part",
+          "dev",
+          "--batch",
+          "1",
+          "--checker",
+          "haiku",
+          "--file",
+          join(c.root, "again.json")
+        )
       ).code
     ).toBe(0);
-    expect(sim(c, "reconcile", "mini", ...range).stdout).toBe(
+    expect((await sim(c, "reconcile", "mini", ...range)).stdout).toBe(
       `disagree ${wrong.id} slot ${wrong.category} blind ${other} round 2\n`
     );
     // The import replaced one label and kept the other 24.
     expect(readLabels(c.dir, "dev").size).toBe(25);
 
     rewrite({ body: `${first.body}\nTo jest nowe zdanie, ale nie ma w nim nic więcej.`, note: "borderline: both fit" });
-    expect(sim(c, "reconcile", "mini", ...range).stdout).toBe("");
+    expect((await sim(c, "reconcile", "mini", ...range)).stdout).toBe("");
   });
 
   test("6 two blind-exports with no text change give the same file and no stale label", async () => {
@@ -358,29 +369,31 @@ describe("blind view and labels", () => {
     const { slots } = writeCleanBatch(c);
     const range = ["--part", "dev", "--batches", "1-1"];
     const path = join(c.dir, "dev", "blind", "batch-001.json");
-    expect(sim(c, "blind-export", "mini", ...range).code).toBe(0);
+    expect((await sim(c, "blind-export", "mini", ...range)).code).toBe(0);
     const first = readFileSync(path, "utf8");
     writeFileSync(join(c.root, "labels.json"), JSON.stringify(slots.map((s) => ({ id: s.id, category: s.category }))));
     expect(
-      sim(
-        c,
-        "label-import",
-        "mini",
-        "--part",
-        "dev",
-        "--batch",
-        "1",
-        "--checker",
-        "haiku",
-        "--file",
-        join(c.root, "labels.json")
+      (
+        await sim(
+          c,
+          "label-import",
+          "mini",
+          "--part",
+          "dev",
+          "--batch",
+          "1",
+          "--checker",
+          "haiku",
+          "--file",
+          join(c.root, "labels.json")
+        )
       ).code
     ).toBe(0);
-    expect(sim(c, "blind-export", "mini", ...range).code).toBe(0);
+    expect((await sim(c, "blind-export", "mini", ...range)).code).toBe(0);
     expect(readFileSync(path, "utf8")).toBe(first);
-    expect(sim(c, "stale", "mini", ...range).stdout).toBe("");
-    expect(sim(c, "reconcile", "mini", ...range).stdout).toBe("");
-    const status = sim(c, "status", "mini").stdout;
+    expect((await sim(c, "stale", "mini", ...range)).stdout).toBe("");
+    expect((await sim(c, "reconcile", "mini", ...range)).stdout).toBe("");
+    const status = (await sim(c, "status", "mini")).stdout;
     expect(status).toMatch(/^total slots \d+ written 25 dropped 0 labelled 25 agree 25 disagree 0 borderline 0$/m);
   });
 
@@ -388,7 +401,7 @@ describe("blind view and labels", () => {
     const c = await planned();
     writeCleanBatch(c);
     writeFileSync(join(c.root, "labels.json"), JSON.stringify([{ id: "b-zzz-9999", category: "info" }]));
-    const result = sim(
+    const result = await sim(
       c,
       "label-import",
       "mini",
