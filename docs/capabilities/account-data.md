@@ -1,6 +1,6 @@
 # Account data
 
-> Checked against the code at `0a5bf4d2`, 2026-11-14.
+> Checked against the code at `83fd450b`, 2026-11-14.
 
 ## What it does now
 
