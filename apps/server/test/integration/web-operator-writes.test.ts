@@ -11,7 +11,7 @@ import { createSecretBox } from "../../src/platform/crypto";
 import { apiRouters } from "../../src/web";
 
 import { testDb } from "./helpers";
-import { as, noBackupCodes, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
+import { as, noBackupCodes, noPrivacy, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
 // F099 stage 09: POST /api/operator/orgs/:orgId/plan and /flags. The operator is the assistant of A; the target is B.
 const db = testDb();
@@ -38,7 +38,8 @@ const routers = () =>
     extras,
     () => NOW,
     async () => [],
-    noBackupCodes
+    noBackupCodes,
+    noPrivacy
   );
 const operatorApp = (suspendedA = false, twoFactorOff?: ReadonlySet<string>) =>
   webTestApp({

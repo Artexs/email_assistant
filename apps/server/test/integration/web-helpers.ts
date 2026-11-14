@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { TERMS_VERSION } from "@ea/core";
 import type { Hono } from "hono";
 
+import type { PrivacyRouteDeps } from "../../src/modules/privacy";
 import { createOrganizationWithOwner, listMembershipsOfUser } from "../../src/modules/tenancy";
 import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
 import type { TenancyRouteDeps } from "../../src/modules/tenancy/routes";
@@ -19,6 +20,20 @@ export function resetBody(
 
 // The backup-code count of a test that does not read it.
 export const noBackupCodes: TenancyRouteDeps["backupCodesLeft"] = async () => null;
+
+// The privacy wiring of a test that does not call DELETE /api/organization (web.ts builds the real one).
+export const noPrivacy: Omit<PrivacyRouteDeps, "db" | "now"> = {
+  lockout: {
+    isLocked: async () => false,
+    recordFailure: async () => null,
+    recordSuccess: async () => undefined,
+    clear: async () => undefined,
+    claimMail: async () => false,
+  },
+  onEvent: async () => undefined,
+  verifyPassword: async () => false,
+  expiredSessionCookie: async () => "ea.session_token=; Max-Age=0; Path=/",
+};
 
 export const TEST_ORIGIN = "http://127.0.0.1:8080";
 

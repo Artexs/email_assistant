@@ -59,3 +59,15 @@ export const digestTimesBodySchema = z
   });
 
 export const digestTimesSchema = z.object({ times: z.array(z.string()) });
+
+// DELETE /api/organization (F106 D4): the password of the signed-in owner and the typed organization name.
+// The name is matched on the server (`orgNameMatches`). Neither value goes to a log line, an error text or an audit row.
+export const orgDeleteRequestSchema = z.object({
+  password: z.string().min(1).max(128),
+  confirmName: z.string().min(1).max(200),
+});
+export type OrgDeleteRequest = z.infer<typeof orgDeleteRequestSchema>;
+
+// The mailbox addresses of the deleted organization, sorted: the owner changes these mailbox passwords.
+export const orgDeleteResponseSchema = z.object({ mailboxAddresses: z.array(z.string()) });
+export type OrgDeleteResponse = z.infer<typeof orgDeleteResponseSchema>;

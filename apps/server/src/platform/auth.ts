@@ -1,11 +1,12 @@
 import { TERMS_VERSION } from "@ea/core";
 import { betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware, getSessionFromCtx, isAPIError } from "better-auth/api";
+import { serialize as serializeCookie } from "hono/utils/cookie";
 import type { Transaction } from "kysely";
 import { Pool } from "pg";
 import { z } from "zod";
 
-import type { LockoutStore } from "./auth-lockout";
+import { recordPasswordFailure, type LockoutStore } from "./auth-lockout";
 import { signInAuditPlugin, twoFactorPlugin, TWO_FACTOR_ALLOWED_PATHS } from "./auth-two-factor";
 import type { DB, Db } from "./db";
 import { errorFields } from "./errors";
@@ -250,12 +251,7 @@ async function rejectLeakedPassword(ctx: HookContext, pwnedCheck: NonNullable<Au
   }
 }
 
-async function countSignIn(
-  ctx: HookContext,
-  deps: AuthDeps,
-  now: () => Date,
-  report: (kind: AuthEventKind, userId: string, data?: Record<string, string>) => Promise<void>
-): Promise<void> {
+async function countSignIn(ctx: HookContext, deps: AuthDeps, now: () => Date): Promise<void> {
   const lockout = deps.lockout;
   if (!lockout) return;
   const returned = ctx.context.returned;
@@ -266,14 +262,10 @@ async function countSignIn(
     if (typeof email !== "string") return;
     const found = await ctx.context.internalAdapter.findUserByEmail(email.toLowerCase());
     if (!found) return;
-    // Stage 5: a failure during a lock is not counted.
-    if (await lockout.isLocked(found.user.id, now())) return;
-    const lock = await lockout.recordFailure(found.user.id, now());
-    if (lock === null) return;
-    await report("login_locked", found.user.id, { locked_until: lock.lockedUntil.toISOString() });
-    if (deps.sendLockoutMail && (await lockout.claimMail(found.user.id, now()))) {
-      deps.sendLockoutMail({ userId: found.user.id, email: found.user.email });
-    }
+    await recordPasswordFailure(
+      { lockout, now, onEvent: deps.onEvent, sendLockoutMail: deps.sendLockoutMail },
+      { id: found.user.id, email: found.user.email }
+    );
     return;
   }
   const userId = ctx.context.newSession?.user.id;
@@ -429,7 +421,7 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
       after: createAuthMiddleware(async (ctx) => {
         if (ctx.path === SIGN_IN_PATH && deps.lockout) {
           try {
-            await countSignIn(ctx, deps, now, report);
+            await countSignIn(ctx, deps, now);
           } catch (error) {
             log.error("lockout_failed", { ...errorFields(error) });
           }
@@ -502,6 +494,26 @@ export async function listUserSessions(handle: AuthHandle, userId: string): Prom
     updatedAt: row.updatedAt,
     expiresAt: row.expiresAt,
   }));
+}
+
+// Is `password` the password of the signed-in user of `headers`? Wrong password: false. Any other error
+// (no session, no database) is thrown, so the route fails closed (500). The password is never logged.
+export async function verifyOwnPassword(handle: AuthHandle, headers: Headers, password: string): Promise<boolean> {
+  try {
+    await handle.auth.api.verifyPassword({ body: { password }, headers });
+    return true;
+  } catch (error) {
+    const body = isAPIError(error) ? (error.body as { code?: unknown } | undefined) : undefined;
+    if (body?.code === "INVALID_PASSWORD") return false;
+    throw error;
+  }
+}
+
+// The `Set-Cookie` line that ends the session cookie. Better Auth gives the name (`ea.session_token`,
+// with `__Secure-` on https) and the attributes (path, SameSite, HttpOnly, Secure), as `deleteSessionCookie` uses them.
+export async function expiredSessionCookie(handle: AuthHandle): Promise<string> {
+  const { sessionToken } = (await handle.auth.$context).authCookies;
+  return serializeCookie(sessionToken.name, "", { ...sessionToken.attributes, maxAge: 0 });
 }
 
 export function createAuth(deps: AuthDeps): AuthHandle {
