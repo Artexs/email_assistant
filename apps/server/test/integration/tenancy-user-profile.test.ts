@@ -20,6 +20,7 @@ describe("user auth profile", () => {
         locale: null,
         termsVersion: null,
         termsAcceptedAt: null,
+        twoFactorEnabled: false,
       });
       expect(await getUserAuthProfile(trx, randomUUID())).toBeUndefined();
     });
@@ -34,6 +35,7 @@ describe("user auth profile", () => {
         locale: null,
         termsVersion: "2026-11-12",
         termsAcceptedAt: at,
+        twoFactorEnabled: false,
       });
       expect(await setUserTerms(trx, user.id, "2026-11-12", new Date("2026-11-21T10:00:00Z"))).toBe(false);
       expect((await getUserAuthProfile(trx, user.id))?.termsAcceptedAt).toEqual(at);
