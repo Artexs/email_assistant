@@ -29,7 +29,7 @@ Two steps in `apps/web`.
   - T4: a second browser context opens the old id and saves an edit → the "Someone changed this draft" text, and the button opens version 2.
   - T5: change the delegate to Piotr Lis with no text change → the detail shows `Piotr Lis <piotr@example.com>`.
   - T6: a reminder item has no Edit button.
-  - T7 (`desktop`, keyboard only, no mouse call): from the page start, Tab reaches the first item; Enter opens its detail; Tab reaches Edit; Enter opens the dialog with focus in Subject; typing changes the subject; Tab reaches Save; Enter saves; Escape on a dialog with changes asks to discard; Tab reaches Approve; Enter approves. Each step checks `document.activeElement` by role and name.
+  - T7 (`desktop`, keyboard only, no mouse call): from the page start, Tab reaches the first item; Enter opens its detail; Tab reaches Edit; Enter opens the dialog with focus in Subject; typing changes the subject; Escape asks to discard, and "Keep editing" puts focus back in Subject; Tab reaches Save; Enter saves; Tab reaches Approve; Enter approves. Each step checks `document.activeElement` by role and name.
   - T8: `expectNoA11yViolations` with the edit dialog open, both projects.
 - **Done when:** T3–T8 pass; the full e2e suite passes.
 
